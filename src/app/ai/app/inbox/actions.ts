@@ -1,0 +1,106 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { getSessionUser } from "@/lib/auth";
+import { hasMinimumRole } from "@/lib/permissions";
+import { sendWhatsAppText } from "@/lib/whatsapp-bot/send";
+import {
+  getWaConversation,
+  markConversationRead,
+  recordWaOutboundMessage,
+  setWaContactAiEnabled,
+} from "@/lib/wa-inbox-store";
+
+export type InboxActionState = { ok: boolean; message: string };
+
+export async function sendInboxReply(
+  conversationId: string,
+  body: string,
+): Promise<InboxActionState> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "STAFF")) {
+    return { ok: false, message: "You cannot send replies." };
+  }
+
+  const trimmed = body.trim();
+  if (!trimmed) {
+    return { ok: false, message: "Message cannot be empty." };
+  }
+
+  const conversation = await getWaConversation(user.organizationId, conversationId);
+  if (!conversation) {
+    return { ok: false, message: "Conversation not found." };
+  }
+
+  const result = await sendWhatsAppText({
+    organizationId: user.organizationId,
+    toPhone: conversation.contact.phone,
+    body: trimmed,
+  });
+
+  if (!result.sent) {
+    const detail =
+      "detail" in result && typeof result.detail === "string"
+        ? result.detail
+        : "Could not send WhatsApp message.";
+    return {
+      ok: false,
+      message: detail,
+    };
+  }
+
+  await recordWaOutboundMessage({
+    organizationId: user.organizationId,
+    toPhone: conversation.contact.phone,
+    body: trimmed,
+    sentByUserId: user.id,
+    aiGenerated: false,
+  });
+
+  await setWaContactAiEnabled(user.organizationId, conversation.contact.id, false);
+
+  revalidatePath("/ai/app/inbox");
+  revalidatePath("/ai/app/contacts");
+  return { ok: true, message: "Message sent." };
+}
+
+export async function setInboxHumanTakeover(
+  contactId: string,
+  humanTakeover: boolean,
+): Promise<InboxActionState> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "STAFF")) {
+    return { ok: false, message: "You cannot change AI settings." };
+  }
+
+  const updated = await setWaContactAiEnabled(
+    user.organizationId,
+    contactId,
+    !humanTakeover,
+  );
+
+  if (!updated) {
+    return { ok: false, message: "Contact not found." };
+  }
+
+  revalidatePath("/ai/app/inbox");
+  revalidatePath("/ai/app/contacts");
+  return {
+    ok: true,
+    message: humanTakeover
+      ? "Human takeover on — AI paused for this contact."
+      : "AI re-enabled for this contact.",
+  };
+}
+
+export async function markInboxConversationRead(
+  conversationId: string,
+): Promise<void> {
+  const user = await getSessionUser();
+  if (!user) {
+    return;
+  }
+
+  await markConversationRead(user.organizationId, conversationId);
+  revalidatePath("/ai/app/inbox");
+}

@@ -1,0 +1,84 @@
+.wa-page-hero {
+  background:
+    linear-gradient(135deg, rgba(24, 169, 87, 0.14), transparent 38%),
+    linear-gradient(315deg, rgba(37, 211, 102, 0.16), transparent 42%),
+    #f4fff8;
+  border-bottom: 1px solid var(--wa-green-line);
+}
+
+.wa-highlight-grid {
+  display: grid;
+  gap: 10px;
+}
+
+@media (min-width: 640px) {
+  .wa-highlight-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.wa-highlight-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--wa-green-line);
+  background: #fff;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
+  line-height: 1.45;
+  color: #0f172a;
+}
+
+.wa-highlight-item svg {
+  flex-shrink: 0;
+  color: var(--wa-green-dark);
+  margin-top: 2px;
+}
+
+.wa-plan-switch {
+  font-size: var(--text-sm);
+}
+
+.wa-plan-switch button,
+.wa-plan-switch a {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
+  white-space: normal;
+  padding: 14px 12px;
+  min-height: 52px;
+}
+
+@media (min-width: 640px) {
+  .wa-plan-switch button,
+  .wa-plan-switch a {
+    font-size: var(--text-md);
+    padding: 0 20px;
+    min-height: 64px;
+    white-space: nowrap;
+  }
+}
+
+.wa-plan-card-actions {
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+.wa-note-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .wa-note-actions {
+    align-items: flex-end;
+  }
+}
+
+.wa-note-actions .wa-secondary-btn {
+  width: 100%;
+  max-width: 220px;
+}

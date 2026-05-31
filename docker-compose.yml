@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: sheetomatic
+      POSTGRES_PASSWORD: sheetomatic
+      POSTGRES_DB: sheetomatic
+    volumes:
+      - sheetomatic_pg:/var/lib/postgresql/data
+
+volumes:
+  sheetomatic_pg:

@@ -1,0 +1,803 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MANAGER
+  STAFF
+  VIEWER
+}
+
+enum OrganizationStatus {
+  ONBOARDING
+  ACTIVE
+}
+
+enum WorkspaceLinkType {
+  GOOGLE_SHEET
+  LOOKER_STUDIO
+  APPSHEET
+  WHATSAPP
+  GOOGLE_FORM
+  OTHER
+}
+
+model Organization {
+  id              String                   @id @default(cuid())
+  name            String
+  slug            String                   @unique
+  industry        String?
+  googleSheetId   String?
+  status          OrganizationStatus       @default(ONBOARDING)
+  isPrimary       Boolean                  @default(false)
+  memberships     Membership[]
+  links           WorkspaceLink[]
+  kpis            WorkspaceKpi[]
+  metricCards     WorkspaceMetricCard[]
+  followUps       WorkspaceFollowUp[]
+  pendingPayments WorkspacePendingPayment[]
+  attentionItems  WorkspaceAttentionItem[]
+  approvals       WorkspaceApproval[]
+  invitations     Invitation[]
+  tasks           DelegatedTask[]
+  whatsappTemplates WhatsAppTemplate[]
+  whatsappSettings  WorkspaceWhatsAppSettings?
+  whatsappInboundEvents WhatsAppInboundEvent[]
+  waContacts        WaContact[]
+  waConversations   WaConversation[]
+  waMessages        WaMessage[]
+  aiKnowledgeItems  AiKnowledgeItem[]
+  hrSettings        WorkspaceHrSettings?
+  attendanceRecords AttendanceRecord[]
+  leaveRequests     LeaveRequest[]
+  leaveBalances     LeaveBalance[]
+  payrollRuns       PayrollRun[]
+  fieldCheckIns     FieldCheckIn[]
+  fieldVisits       FieldVisit[]
+  jobOpenings       JobOpening[]
+  candidates        Candidate[]
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+}
+
+enum AiKnowledgeType {
+  FAQ
+  DOCUMENT
+  WEBSITE
+  YOUTUBE_CHANNEL
+}
+
+enum AiKnowledgeStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+model AiKnowledgeItem {
+  id             String             @id @default(cuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  type           AiKnowledgeType
+  title          String
+  question       String?
+  content        String
+  sourceUrl      String?
+  status         AiKnowledgeStatus  @default(ACTIVE)
+  lastSyncedAt   DateTime?
+  createdById    String
+  createdBy      User               @relation("AiKnowledgeCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([organizationId, type, status])
+  @@index([organizationId, status])
+}
+
+model DelegatedTask {
+  id                     String         @id @default(cuid())
+  organizationId         String
+  organization           Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title                  String
+  instructions           String?
+  status                 TaskStatus     @default(PENDING)
+  priority               TaskPriority   @default(MEDIUM)
+  department             TaskDepartment @default(GENERAL)
+  category               String?
+  frequency              TaskFrequency  @default(ONCE)
+  recurrenceWeeklyDays   String?
+  recurrenceMonthDay     Int?
+  isRecurring            Boolean        @default(false)
+  seriesId               String?
+  occurrenceNumber       Int            @default(1)
+  nextOccurrenceAt       DateTime?
+  remindViaEmail         Boolean        @default(false)
+  remindViaWhatsApp      Boolean        @default(false)
+  emailAssignmentSentAt  DateTime?
+  whatsappAssignmentSentAt DateTime?
+  emailReminderSentAt    DateTime?
+  whatsappReminderSentAt DateTime?
+  dueAt                  DateTime
+  assigneeUserId         String
+  assignee               User           @relation("TaskAssignee", fields: [assigneeUserId], references: [id], onDelete: Cascade)
+  createdById            String
+  createdBy              User           @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  completedAt            DateTime?
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+
+  @@index([organizationId, status])
+  @@index([organizationId, assigneeUserId])
+  @@index([organizationId, dueAt])
+  @@index([organizationId, status, dueAt])
+  @@index([organizationId, seriesId])
+}
+
+model RateLimitBucket {
+  key     String   @id
+  count   Int      @default(0)
+  resetAt DateTime
+  updatedAt DateTime @updatedAt
+
+  @@index([resetAt])
+}
+
+enum WhatsAppTemplateCategory {
+  MARKETING
+  UTILITY
+  AUTHENTICATION
+}
+
+enum WhatsAppTemplateStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  DISABLED
+}
+
+model WhatsAppTemplate {
+  id               String                   @id @default(cuid())
+  organizationId   String
+  organization     Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name             String
+  category         WhatsAppTemplateCategory
+  language         String                   @default("en")
+  body             String
+  variables        Json                     @default("[]")
+  status           WhatsAppTemplateStatus   @default(PENDING)
+  externalId       String?
+  rejectionReason  String?
+  submittedAt      DateTime                 @default(now())
+  approvedAt       DateTime?
+  createdById      String
+  createdBy        User                     @relation("WhatsAppTemplateCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+
+  @@unique([organizationId, name, language])
+  @@index([organizationId, status])
+}
+
+model WorkspaceWhatsAppSettings {
+  organizationId  String       @id
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  businessPhone   String?
+  redlavaApiKey   String?
+  redlavaPhoneId  String?
+  metaAccessToken String?
+  metaWabaId      String?
+  metaBusinessId  String?
+  botLiveAt       DateTime?
+  lastInboundAt   DateTime?
+  updatedAt       DateTime     @updatedAt
+}
+
+model WhatsAppInboundEvent {
+  id             String        @id @default(cuid())
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  externalId     String        @unique
+  fromPhone      String
+  messageType    String
+  status         String        @default("received")
+  error          String?
+  taskId         String?
+  processedAt    DateTime?
+  createdAt      DateTime      @default(now())
+
+  @@index([organizationId, createdAt])
+}
+
+enum WaConversationStatus {
+  OPEN
+  CLOSED
+}
+
+enum WaMessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum WaPipelineStage {
+  NEW
+  QUALIFIED
+  DEMO_BOOKED
+  WON
+  LOST
+}
+
+enum WaLeadCaptureStep {
+  PENDING
+  FORM
+  NAME
+  EMAIL
+  CITY
+  REQUIREMENT
+  COMPLETE
+}
+
+model WaContact {
+  id                     String             @id @default(cuid())
+  organizationId         String
+  organization           Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  phone                  String
+  name                   String?
+  email                  String?
+  city                   String?
+  requirementDescription String?
+  intent                 String?
+  source                 String             @default("whatsapp")
+  pipelineStage          WaPipelineStage    @default(NEW)
+  leadCaptureStep        WaLeadCaptureStep  @default(PENDING)
+  leadCaptureComplete    Boolean            @default(false)
+  tags                   Json               @default("[]")
+  notes                  String?
+  assignedToId   String?
+  assignedTo     User?           @relation("WaContactAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  lastMessageAt  DateTime?
+  unreadCount    Int             @default(0)
+  aiEnabled      Boolean         @default(true)
+  conversations  WaConversation[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@unique([organizationId, phone])
+  @@index([organizationId, lastMessageAt])
+  @@index([organizationId, pipelineStage])
+}
+
+model WaConversation {
+  id             String               @id @default(cuid())
+  organizationId String
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contactId      String
+  contact        WaContact            @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  status         WaConversationStatus @default(OPEN)
+  aiHandled      Boolean              @default(false)
+  preview        String?
+  lastMessageAt  DateTime?
+  messages       WaMessage[]
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@index([organizationId, lastMessageAt])
+  @@index([contactId])
+}
+
+model WaMessage {
+  id             String             @id @default(cuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  conversationId String
+  conversation   WaConversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  externalId     String?            @unique
+  direction      WaMessageDirection
+  body           String
+  messageType    String             @default("text")
+  sentByUserId   String?
+  sentBy         User?              @relation("WaMessageSender", fields: [sentByUserId], references: [id], onDelete: SetNull)
+  aiGenerated    Boolean            @default(false)
+  aiConfidence   Float?
+  aiSourceTitles Json?
+  createdAt      DateTime           @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([organizationId, createdAt])
+}
+
+enum MetricTone {
+  DEFAULT
+  WARNING
+  SUCCESS
+}
+
+model WorkspaceMetricCard {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  label          String
+  value          String
+  tone           MetricTone   @default(DEFAULT)
+  actionLabel    String       @default("Update")
+  actionHref     String?
+  minRole        Role         @default(VIEWER)
+  sortOrder      Int          @default(0)
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+model WorkspaceFollowUp {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  clientName     String
+  followUpAt     DateTime
+  remarks        String?
+  minRole        Role         @default(STAFF)
+  assigneeUserId String?
+  assignee       User?        @relation("FollowUpAssignee", fields: [assigneeUserId], references: [id], onDelete: SetNull)
+  sortOrder      Int          @default(0)
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([assigneeUserId])
+}
+
+model WorkspacePendingPayment {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  clientName     String
+  amount         String
+  dueAt          DateTime
+  minRole        Role         @default(STAFF)
+  sortOrder      Int          @default(0)
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+model WorkspaceKpi {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  label          String
+  value          String
+  icon           String       @default("trending")
+  minRole        Role         @default(VIEWER)
+  sortOrder      Int          @default(0)
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+model WorkspaceAttentionItem {
+  id               String       @id @default(cuid())
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title            String
+  count            Int
+  minRole          Role         @default(STAFF)
+  assigneeUserId   String?
+  assignee         User?        @relation(fields: [assigneeUserId], references: [id], onDelete: SetNull)
+  sortOrder        Int          @default(0)
+  updatedAt        DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([assigneeUserId])
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum TaskPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum TaskDepartment {
+  OPERATIONS
+  SALES
+  ACCOUNTS
+  ADMIN
+  GENERAL
+}
+
+enum TaskFrequency {
+  ONCE
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+model WorkspaceApproval {
+  id             String         @id @default(cuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title          String
+  department     String
+  status         ApprovalStatus @default(PENDING)
+  pendingSince   DateTime       @default(now())
+  minRole        Role           @default(MANAGER)
+  reviewNote     String?
+  reviewedById   String?
+  reviewedBy     User?          @relation("ApprovalReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt     DateTime?
+  sheetRowKey    String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([organizationId, status])
+  @@unique([organizationId, sheetRowKey])
+}
+
+model WorkspaceLink {
+  id             String            @id @default(cuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  type           WorkspaceLinkType
+  label          String
+  url            String
+  sortOrder      Int               @default(0)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([organizationId])
+}
+
+model User {
+  id                   String                   @id @default(cuid())
+  name                 String?
+  phone                String?
+  email                String                   @unique
+  emailVerified        DateTime?
+  passwordHash         String?
+  image                String?
+  isSuperAdmin         Boolean                  @default(false)
+  accounts             Account[]
+  sessions             Session[]
+  memberships          Membership[]
+  invitationsSent      Invitation[]             @relation("InvitationSender")
+  reviewedApprovals    WorkspaceApproval[]      @relation("ApprovalReviewer")
+  assignedAttention    WorkspaceAttentionItem[]
+  assignedFollowUps    WorkspaceFollowUp[]      @relation("FollowUpAssignee")
+  assignedTasks        DelegatedTask[]          @relation("TaskAssignee")
+  createdTasks         DelegatedTask[]          @relation("TaskCreator")
+  whatsappTemplates    WhatsAppTemplate[]       @relation("WhatsAppTemplateCreator")
+  assignedWaContacts   WaContact[]              @relation("WaContactAssignee")
+  waMessagesSent       WaMessage[]              @relation("WaMessageSender")
+  aiKnowledgeCreated   AiKnowledgeItem[]        @relation("AiKnowledgeCreator")
+  attendanceRecords    AttendanceRecord[]       @relation("AttendanceUser")
+  attendanceMarked     AttendanceRecord[]       @relation("AttendanceMarker")
+  leaveRequests        LeaveRequest[]           @relation("LeaveRequester")
+  leaveReviews         LeaveRequest[]           @relation("LeaveReviewer")
+  fieldCheckIns        FieldCheckIn[]
+  fieldVisitsAssigned  FieldVisit[]             @relation("FieldVisitAssignee")
+  candidatesOwned      Candidate[]              @relation("CandidateOwner")
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+}
+
+model Invitation {
+  id             String       @id @default(cuid())
+  email          String
+  role           Role         @default(STAFF)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  token          String       @unique
+  invitedById    String
+  invitedBy      User         @relation("InvitationSender", fields: [invitedById], references: [id], onDelete: Cascade)
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@unique([email, organizationId])
+  @@index([organizationId])
+}
+
+model Membership {
+  id                 String              @id @default(cuid())
+  role               Role                @default(STAFF)
+  department         TaskDepartment?
+  designation        String?
+  attendanceWorkMode AttendanceWorkMode  @default(OFFICE)
+  geoFenceRequired   Boolean             @default(false)
+  faceRequired       Boolean             @default(false)
+  userId             String
+  organizationId     String
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@unique([userId, organizationId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum AttendanceMethod {
+  WEB
+  MOBILE
+  GEO
+  BIOMETRIC
+  FACE
+}
+
+enum AttendanceDayStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  ON_LEAVE
+  HOLIDAY
+}
+
+enum AttendanceWorkMode {
+  OFFICE
+  FIELD
+  HYBRID
+}
+
+enum LeaveType {
+  CASUAL
+  SICK
+  EARNED
+  UNPAID
+  COMP_OFF
+}
+
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum PayrollRunStatus {
+  DRAFT
+  PROCESSING
+  COMPLETED
+}
+
+enum FieldVisitStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum CandidateStage {
+  APPLIED
+  SCREENING
+  INTERVIEW
+  OFFER
+  HIRED
+  REJECTED
+}
+
+model WorkspaceHrSettings {
+  organizationId       String       @id
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  officeLat            Float?
+  officeLng            Float?
+  geoFenceRadiusM      Int          @default(200)
+  workStartTime        String       @default("09:30")
+  workEndTime          String       @default("18:30")
+  faceRecognitionEnabled Boolean    @default(false)
+  fieldTrackingEnabled Boolean      @default(true)
+  updatedAt            DateTime     @updatedAt
+}
+
+model AttendanceRecord {
+  id              String              @id @default(cuid())
+  organizationId  String
+  organization    Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User                @relation("AttendanceUser", fields: [userId], references: [id], onDelete: Cascade)
+  workDate        DateTime            @db.Date
+  checkInAt       DateTime?
+  checkOutAt      DateTime?
+  status          AttendanceDayStatus @default(PRESENT)
+  method          AttendanceMethod    @default(WEB)
+  geoLat          Float?
+  geoLng          Float?
+  geoFenceOk      Boolean?
+  faceVerified    Boolean             @default(false)
+  notes           String?
+  markedById      String?
+  markedBy        User?               @relation("AttendanceMarker", fields: [markedById], references: [id], onDelete: SetNull)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@unique([organizationId, userId, workDate])
+  @@index([organizationId, workDate])
+}
+
+model LeaveBalance {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  leaveType      LeaveType
+  balanceDays    Float        @default(0)
+  usedDays       Float        @default(0)
+  year           Int
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, userId, leaveType, year])
+}
+
+model LeaveRequest {
+  id             String             @id @default(cuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User               @relation("LeaveRequester", fields: [userId], references: [id], onDelete: Cascade)
+  leaveType      LeaveType
+  startDate      DateTime           @db.Date
+  endDate        DateTime           @db.Date
+  days           Float
+  reason         String?
+  status         LeaveRequestStatus @default(PENDING)
+  reviewedById   String?
+  reviewedBy     User?              @relation("LeaveReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt     DateTime?
+  reviewNotes    String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([organizationId, status])
+  @@index([organizationId, userId])
+}
+
+model PayrollRun {
+  id             String           @id @default(cuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  periodStart    DateTime         @db.Date
+  periodEnd      DateTime         @db.Date
+  status         PayrollRunStatus @default(DRAFT)
+  employeeCount  Int              @default(0)
+  notes          String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([organizationId, periodStart])
+}
+
+model FieldVisit {
+  id             String           @id @default(cuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assigneeUserId String
+  assignee       User             @relation("FieldVisitAssignee", fields: [assigneeUserId], references: [id], onDelete: Cascade)
+  clientName     String
+  locationLabel  String?
+  plannedAt      DateTime?
+  status         FieldVisitStatus @default(PLANNED)
+  purpose        String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  checkIns       FieldCheckIn[]
+
+  @@index([organizationId, assigneeUserId])
+}
+
+model FieldCheckIn {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  visitId        String?
+  visit          FieldVisit?  @relation(fields: [visitId], references: [id], onDelete: SetNull)
+  checkedInAt    DateTime     @default(now())
+  geoLat         Float
+  geoLng         Float
+  accuracyM      Float?
+  clientName     String?
+  activityNote   String?
+  photoUrl       String?
+
+  @@index([organizationId, userId, checkedInAt])
+}
+
+model JobOpening {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title          String
+  department     TaskDepartment?
+  location       String?
+  description    String?
+  isOpen         Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  candidates     Candidate[]
+
+  @@index([organizationId, isOpen])
+}
+
+model Candidate {
+  id             String         @id @default(cuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  jobOpeningId   String?
+  jobOpening     JobOpening?    @relation(fields: [jobOpeningId], references: [id], onDelete: SetNull)
+  fullName       String
+  email          String?
+  phone          String?
+  stage          CandidateStage @default(APPLIED)
+  source         String?
+  notes          String?
+  ownerUserId    String?
+  owner          User?          @relation("CandidateOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  documents      CandidateDocument[]
+
+  @@index([organizationId, stage])
+}
+
+model CandidateDocument {
+  id          String    @id @default(cuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  label       String
+  fileUrl     String?
+  uploadedAt  DateTime  @default(now())
+
+  @@index([candidateId])
+}

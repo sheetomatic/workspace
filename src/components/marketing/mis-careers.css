@@ -1,0 +1,160 @@
+.mis-careers-band {
+  padding: 56px 0;
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0f9ff 45%, #ffffff 100%);
+  border-top: 1px solid #a7f3d0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.mis-careers-inner {
+  display: grid;
+  gap: 28px;
+}
+
+@media (min-width: 1024px) {
+  .mis-careers-inner {
+    grid-template-columns: 1.05fr 0.95fr;
+    align-items: start;
+  }
+}
+
+.mis-careers-kicker {
+  margin: 0;
+  font-size: var(--text-kicker);
+  font-weight: var(--weight-heading);
+  letter-spacing: var(--tracking-kicker);
+  text-transform: uppercase;
+  color: #047857;
+}
+
+.mis-careers-title {
+  margin: 10px 0 14px;
+  font-family: var(--font-heading);
+  font-size: var(--text-section);
+  font-weight: var(--weight-heading);
+  line-height: var(--leading-tight);
+  color: #0f172a;
+}
+
+.mis-careers-lead {
+  margin: 0;
+  font-size: var(--text-lead);
+  font-weight: var(--weight-body);
+  line-height: var(--leading-body);
+  color: #475569;
+}
+
+.mis-careers-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.mis-careers-note {
+  margin: 14px 0 0;
+  font-size: var(--text-caption);
+  font-weight: var(--weight-body);
+  line-height: var(--leading-body);
+  color: #64748b;
+}
+
+.mis-careers-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.mis-careers-card {
+  padding: 18px 20px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.06);
+}
+
+.mis-careers-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.mis-careers-card h3 {
+  margin: 0;
+  font-size: var(--text-kicker);
+  font-weight: var(--weight-heading);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #334155;
+}
+
+.mis-careers-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mis-careers-list li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-body);
+  line-height: var(--leading-body);
+  color: #475569;
+}
+
+.mis-careers-list li:last-child {
+  margin-bottom: 0;
+}
+
+.mis-careers-list svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #059669;
+}
+
+.mis-careers-steps {
+  display: grid;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+@media (min-width: 640px) {
+  .mis-careers-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.mis-careers-step {
+  padding: 16px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid #d1fae5;
+}
+
+.mis-careers-step span {
+  display: inline-block;
+  margin-bottom: 8px;
+  font-size: var(--text-tag);
+  font-weight: var(--weight-heading);
+  letter-spacing: 0.12em;
+  color: #047857;
+}
+
+.mis-careers-step strong {
+  display: block;
+  margin-bottom: 6px;
+  font-family: var(--font-heading);
+  font-size: var(--text-card-title);
+  font-weight: var(--weight-heading);
+  color: #0f172a;
+}
+
+.mis-careers-step p {
+  margin: 0;
+  font-size: var(--text-caption);
+  font-weight: var(--weight-body);
+  line-height: var(--leading-body);
+  color: #64748b;
+}

@@ -1,0 +1,1 @@
+ALTER TYPE "WaLeadCaptureStep" ADD VALUE IF NOT EXISTS 'FORM';
