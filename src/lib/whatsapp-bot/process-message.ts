@@ -36,9 +36,10 @@ import {
   type WaCustomerMenuActionId,
 } from "@/lib/whatsapp-bot/knowledge-menu";
 import {
-  delegationMenuText,
+  delegationMenuFallbackText,
   delegateTaskPromptText,
   helpText,
+  myTasksCompactFallbackText,
   taskCreatedReply,
   teamListText,
 } from "@/lib/whatsapp-bot/menu";
@@ -57,10 +58,22 @@ import {
 } from "@/lib/whatsapp-bot/lead-capture";
 import {
   listMemberHints,
-  resolveDelegatorByPhone,
   resolveOrganizationByPhoneNumberId,
-  type ResolvedWhatsAppDelegator,
+  resolveTeamMemberByPhone,
+  type ResolvedWhatsAppTeamMember,
 } from "@/lib/whatsapp-bot/resolve-org";
+import {
+  buildMyTasksList,
+  buildTaskActionButtons,
+  findTaskForMember,
+  getPerformanceForMember,
+  listActiveTasksForMember,
+  parseTaskActionButtonId,
+  parseTaskTextCommand,
+  runTaskActionForMember,
+  type WhatsAppTeamMember,
+} from "@/lib/whatsapp-bot/task-user";
+import { hasMinimumRole } from "@/lib/permissions";
 import {
   sendWhatsAppInteractiveWithFallback,
   sendWhatsAppText,
@@ -170,6 +183,7 @@ async function sendMainMenu(
   org: { id: string; name: string },
   toPhone: string,
   userName: string,
+  role: import("@prisma/client").Role,
 ) {
   const items = sortKnowledgeMenuItems(await getKnowledgeMenuItems(org.id)).slice(
     0,
@@ -179,9 +193,163 @@ async function sendMainMenu(
   await sendWhatsAppInteractiveWithFallback({
     organizationId: org.id,
     toPhone,
-    interactive: wrapInteractive(buildMainMenuList(userName, items)),
-    fallbackText: delegationMenuText(userName, items),
+    interactive: wrapInteractive(buildMainMenuList(userName, items, role)),
+    fallbackText: delegationMenuFallbackText(userName, role),
   });
+}
+
+async function sendMyTasksMenu(
+  member: WhatsAppTeamMember,
+  toPhone: string,
+) {
+  const tasks = await listActiveTasksForMember(member);
+  const fallback = myTasksCompactFallbackText(member.role, tasks);
+
+  if (tasks.length === 0) {
+    await replyText(member.organizationId, toPhone, fallback);
+    return;
+  }
+
+  if (tasks.length === 1) {
+    const task = tasks[0];
+    await sendWhatsAppInteractiveWithFallback({
+      organizationId: member.organizationId,
+      toPhone,
+      interactive: wrapInteractive(buildTaskActionButtons(task.id, task.title)),
+      fallbackText: fallback,
+    });
+    return;
+  }
+
+  const list = buildMyTasksList(member, tasks);
+  if (list) {
+    await sendWhatsAppInteractiveWithFallback({
+      organizationId: member.organizationId,
+      toPhone,
+      interactive: wrapInteractive(list),
+      fallbackText: fallback,
+    });
+    return;
+  }
+
+  await replyText(member.organizationId, toPhone, fallback);
+}
+
+async function sendPerformanceSummary(member: WhatsAppTeamMember, toPhone: string) {
+  const text = await getPerformanceForMember(member);
+  await replyText(member.organizationId, toPhone, text);
+}
+
+async function handleTaskButtonAction(
+  member: WhatsAppTeamMember,
+  action: ReturnType<typeof parseTaskActionButtonId>,
+  ctx: {
+    fromPhone: string;
+    externalId: string;
+    messageType: string;
+  },
+) {
+  if (!action) {
+    return false;
+  }
+
+  if (action.action === "pick") {
+    const task = await findTaskForMember(member, action.taskId);
+    if (!task) {
+      await replyText(
+        member.organizationId,
+        ctx.fromPhone,
+        "Task not found. Reply *my tasks* to see active work.",
+      );
+      return true;
+    }
+
+    await sendWhatsAppInteractiveWithFallback({
+      organizationId: member.organizationId,
+      toPhone: ctx.fromPhone,
+      interactive: wrapInteractive(buildTaskActionButtons(task.id, task.title)),
+      fallbackText: `Reply: start ${task.id.slice(0, 8)} | done ${task.id.slice(0, 8)} | help ${task.id.slice(0, 8)}`,
+    });
+    await markEvent(ctx.externalId, {
+      organizationId: member.organizationId,
+      fromPhone: ctx.fromPhone,
+      messageType: ctx.messageType,
+      status: "task_pick_sent",
+      taskId: task.id,
+    });
+    return true;
+  }
+
+  const result = await runTaskActionForMember(
+    member,
+    action.action,
+    action.taskId,
+  );
+
+  await markEvent(ctx.externalId, {
+    organizationId: member.organizationId,
+    fromPhone: ctx.fromPhone,
+    messageType: ctx.messageType,
+    status: result.ok ? `task_${action.action}` : "task_action_failed",
+    taskId: action.taskId,
+    error: result.ok ? undefined : result.message,
+  });
+
+  await replyText(member.organizationId, ctx.fromPhone, result.message);
+  return true;
+}
+
+async function handleTaskTextCommand(
+  member: WhatsAppTeamMember,
+  command: ReturnType<typeof parseTaskTextCommand>,
+  ctx: {
+    fromPhone: string;
+    externalId: string;
+    messageType: string;
+  },
+) {
+  if (!command) {
+    return false;
+  }
+
+  if (command.kind === "my_tasks") {
+    await markEvent(ctx.externalId, {
+      organizationId: member.organizationId,
+      fromPhone: ctx.fromPhone,
+      messageType: ctx.messageType,
+      status: "my_tasks_sent",
+    });
+    await sendMyTasksMenu(member, ctx.fromPhone);
+    return true;
+  }
+
+  if (command.kind === "performance") {
+    await markEvent(ctx.externalId, {
+      organizationId: member.organizationId,
+      fromPhone: ctx.fromPhone,
+      messageType: ctx.messageType,
+      status: "performance_sent",
+    });
+    await sendPerformanceSummary(member, ctx.fromPhone);
+    return true;
+  }
+
+  const result = await runTaskActionForMember(
+    member,
+    command.action,
+    command.shortId,
+    command.note,
+  );
+
+  await markEvent(ctx.externalId, {
+    organizationId: member.organizationId,
+    fromPhone: ctx.fromPhone,
+    messageType: ctx.messageType,
+    status: result.ok ? `task_${command.action}` : "task_action_failed",
+    error: result.ok ? undefined : result.message,
+  });
+  await replyText(member.organizationId, ctx.fromPhone, result.message);
+  return true;
 }
 
 async function sendDelegatePrompt(organizationId: string, toPhone: string) {
@@ -271,16 +439,36 @@ async function handleMenuAction(
   ctx: {
     organizationId: string;
     organizationName: string;
+    organizationSlug: string;
     fromPhone: string;
     userName: string;
+    userId: string;
+    role: import("@prisma/client").Role;
     externalId: string;
     messageType: string;
   },
 ) {
   const org = { id: ctx.organizationId, name: ctx.organizationName };
+  const member: WhatsAppTeamMember = {
+    organizationId: ctx.organizationId,
+    organizationName: ctx.organizationName,
+    organizationSlug: ctx.organizationSlug,
+    userId: ctx.userId,
+    userName: ctx.userName,
+    role: ctx.role,
+    phone: ctx.fromPhone,
+  };
 
   switch (actionId) {
     case WA_MENU.DELEGATE_TASK:
+      if (!hasMinimumRole(ctx.role, "MANAGER")) {
+        await replyText(
+          ctx.organizationId,
+          ctx.fromPhone,
+          "Only managers can assign tasks. Reply *my tasks* to see your work.",
+        );
+        return;
+      }
       await markEvent(ctx.externalId, {
         organizationId: ctx.organizationId,
         fromPhone: ctx.fromPhone,
@@ -289,7 +477,29 @@ async function handleMenuAction(
       });
       await sendDelegatePrompt(ctx.organizationId, ctx.fromPhone);
       return;
+    case WA_MENU.MY_TASKS:
+      await markEvent(ctx.externalId, {
+        organizationId: ctx.organizationId,
+        fromPhone: ctx.fromPhone,
+        messageType: ctx.messageType,
+        status: "my_tasks_sent",
+      });
+      await sendMyTasksMenu(member, ctx.fromPhone);
+      return;
+    case WA_MENU.TEAM_PERFORMANCE:
+      await markEvent(ctx.externalId, {
+        organizationId: ctx.organizationId,
+        fromPhone: ctx.fromPhone,
+        messageType: ctx.messageType,
+        status: "performance_sent",
+      });
+      await sendPerformanceSummary(member, ctx.fromPhone);
+      return;
     case WA_MENU.TEAM_LIST:
+      if (!hasMinimumRole(ctx.role, "MANAGER")) {
+        await replyText(ctx.organizationId, ctx.fromPhone, "Reply *my tasks* to see your assigned work.");
+        return;
+      }
       await markEvent(ctx.externalId, {
         organizationId: ctx.organizationId,
         fromPhone: ctx.fromPhone,
@@ -305,7 +515,7 @@ async function handleMenuAction(
         messageType: ctx.messageType,
         status: "help_sent",
       });
-      await replyText(ctx.organizationId, ctx.fromPhone, helpText());
+      await replyText(ctx.organizationId, ctx.fromPhone, helpText(ctx.role));
       return;
     case WA_MENU.BROWSE_TOPICS:
       await markEvent(ctx.externalId, {
@@ -323,7 +533,7 @@ async function handleMenuAction(
         messageType: ctx.messageType,
         status: "menu_sent",
       });
-      await sendMainMenu(org, ctx.fromPhone, ctx.userName);
+      await sendMainMenu(org, ctx.fromPhone, ctx.userName, ctx.role);
       return;
     default:
       await replyText(
@@ -345,6 +555,8 @@ function parseMenuAction(message: MetaMessage): WaMenuActionId | null {
 
   if (
     id === WA_MENU.DELEGATE_TASK ||
+    id === WA_MENU.MY_TASKS ||
+    id === WA_MENU.TEAM_PERFORMANCE ||
     id === WA_MENU.TEAM_LIST ||
     id === WA_MENU.HELP ||
     id === WA_MENU.MAIN_MENU ||
@@ -356,7 +568,20 @@ function parseMenuAction(message: MetaMessage): WaMenuActionId | null {
   return null;
 }
 
-function mapTextShortcut(command: string): WaMenuActionId | null {
+function parseInteractiveTaskAction(message: MetaMessage) {
+  if (message.type !== "interactive" || !message.interactive) {
+    return null;
+  }
+
+  const reply =
+    message.interactive.button_reply ?? message.interactive.list_reply;
+  return parseTaskActionButtonId(reply?.id);
+}
+
+function mapTextShortcut(
+  command: string,
+  role: import("@prisma/client").Role,
+): WaMenuActionId | null {
   if (
     command === "menu" ||
     command === "hi" ||
@@ -365,18 +590,43 @@ function mapTextShortcut(command: string): WaMenuActionId | null {
   ) {
     return WA_MENU.MAIN_MENU;
   }
-  if (command === "1" || command === "delegate" || command === "task") {
-    return WA_MENU.DELEGATE_TASK;
+
+  const isManager = hasMinimumRole(role, "MANAGER");
+
+  if (isManager) {
+    if (command === "1" || command === "delegate" || command === "assign" || command === "task") {
+      return WA_MENU.DELEGATE_TASK;
+    }
+    if (command === "2" || command === "my tasks" || command === "tasks" || command === "mytasks") {
+      return WA_MENU.MY_TASKS;
+    }
+    if (command === "3" || command === "performance" || command === "stats" || command === "report") {
+      return WA_MENU.TEAM_PERFORMANCE;
+    }
+    if (command === "4" || command === "team" || command === "members") {
+      return WA_MENU.TEAM_LIST;
+    }
+    if (command === "5" || command === "help") {
+      return WA_MENU.HELP;
+    }
+    if (command === "6" || command === "topics" || command === "videos") {
+      return WA_MENU.BROWSE_TOPICS;
+    }
+  } else {
+    if (command === "1" || command === "my tasks" || command === "tasks" || command === "mytasks") {
+      return WA_MENU.MY_TASKS;
+    }
+    if (command === "2" || command === "performance" || command === "stats" || command === "report") {
+      return WA_MENU.TEAM_PERFORMANCE;
+    }
+    if (command === "3" || command === "help") {
+      return WA_MENU.HELP;
+    }
+    if (command === "4" || command === "topics" || command === "videos") {
+      return WA_MENU.BROWSE_TOPICS;
+    }
   }
-  if (command === "2" || command === "team" || command === "members") {
-    return WA_MENU.TEAM_LIST;
-  }
-  if (command === "3" || command === "help") {
-    return WA_MENU.HELP;
-  }
-  if (command === "4" || command === "topics" || command === "videos") {
-    return WA_MENU.BROWSE_TOPICS;
-  }
+
   return null;
 }
 
@@ -955,18 +1205,18 @@ async function processSingleMessage(
 
   await touchInboundActivity(org.id);
 
-  const delegator = await resolveDelegatorByPhone(org.id, message.from);
+  const delegator = await resolveTeamMemberByPhone(org.id, message.from);
   if (!delegator) {
     await handleCustomerMessage(org, message);
     return;
   }
 
-  await handleTeamDelegatorMessage(org, delegator, message);
+  await handleTeamMemberMessage(org, delegator, message);
 }
 
-async function handleTeamDelegatorMessage(
+async function handleTeamMemberMessage(
   org: { id: string; name: string },
-  delegator: ResolvedWhatsAppDelegator,
+  member: ResolvedWhatsAppTeamMember,
   message: MetaMessage,
 ) {
   if (message.type !== "audio" && message.type !== "voice") {
@@ -979,13 +1229,26 @@ async function handleTeamDelegatorMessage(
     return;
   }
 
+  const taskAction = parseInteractiveTaskAction(message);
+  if (taskAction) {
+    await handleTaskButtonAction(member, taskAction, {
+      fromPhone: message.from,
+      externalId: message.id,
+      messageType: message.type,
+    });
+    return;
+  }
+
   const menuAction = parseMenuAction(message);
   if (menuAction) {
     await handleMenuAction(menuAction, {
       organizationId: org.id,
       organizationName: org.name,
+      organizationSlug: member.organizationSlug,
       fromPhone: message.from,
-      userName: delegator.userName,
+      userName: member.userName,
+      userId: member.userId,
+      role: member.role,
       externalId: message.id,
       messageType: message.type,
     });
@@ -993,18 +1256,48 @@ async function handleTeamDelegatorMessage(
   }
 
   if (message.type === "text" && message.text?.body) {
-    const command = normalizeCommand(message.text.body);
-    const shortcut = mapTextShortcut(command);
+    const rawText = message.text.body.trim();
+    const command = normalizeCommand(rawText);
+    const taskCommand = parseTaskTextCommand(rawText);
+    if (
+      await handleTaskTextCommand(member, taskCommand, {
+        fromPhone: message.from,
+        externalId: message.id,
+        messageType: message.type,
+      })
+    ) {
+      return;
+    }
+
+    const shortcut = mapTextShortcut(command, member.role);
 
     if (shortcut) {
       await handleMenuAction(shortcut, {
         organizationId: org.id,
         organizationName: org.name,
+        organizationSlug: member.organizationSlug,
         fromPhone: message.from,
-        userName: delegator.userName,
+        userName: member.userName,
+        userId: member.userId,
+        role: member.role,
         externalId: message.id,
         messageType: message.type,
       });
+      return;
+    }
+
+    if (!hasMinimumRole(member.role, "MANAGER")) {
+      await markEvent(message.id, {
+        organizationId: org.id,
+        fromPhone: message.from,
+        messageType: message.type,
+        status: "staff_hint",
+      });
+      await replyText(
+        org.id,
+        message.from,
+        "Reply *my tasks*, *performance*, or *menu*. Update with: start/done/help <task-id>",
+      );
       return;
     }
 
@@ -1018,16 +1311,16 @@ async function handleTeamDelegatorMessage(
       await replyText(
         org.id,
         message.from,
-        "Add a few more words describing the task, send a voice note, or tap *Open menu*.",
+        "Add a few more words to assign a task, send a voice note, or reply *menu*.",
       );
       return;
     }
 
-    await runTaskPipeline(delegator, {
+    await runTaskPipeline(member, {
       fromPhone: message.from,
       externalId: message.id,
       messageType: message.type,
-      instruction: message.text.body.trim(),
+      instruction: rawText,
     });
     return;
   }
@@ -1038,6 +1331,15 @@ async function handleTeamDelegatorMessage(
     message.audio?.id ||
     message.voice?.id
   ) {
+    if (!hasMinimumRole(member.role, "MANAGER")) {
+      await replyText(
+        org.id,
+        message.from,
+        "Voice assignment is for managers. Reply *my tasks* to update your work.",
+      );
+      return;
+    }
+
     const mediaId = message.audio?.id ?? message.voice?.id;
     const mimeType =
       message.audio?.mime_type ?? message.voice?.mime_type ?? "audio/ogg";
@@ -1099,7 +1401,7 @@ async function handleTeamDelegatorMessage(
       intent: "Team",
     });
 
-    await runTaskPipeline(delegator, {
+    await runTaskPipeline(member, {
       fromPhone: message.from,
       externalId: message.id,
       messageType: message.type,
@@ -1118,12 +1420,14 @@ async function handleTeamDelegatorMessage(
   await replyText(
     org.id,
     message.from,
-    "Send a voice note or text to delegate a task. Reply *menu* for the action list.",
+    hasMinimumRole(member.role, "MANAGER")
+      ? "Send a voice note or text to assign a task. Reply *menu* for all options."
+      : "Reply *my tasks*, *performance*, or *menu* to manage your work.",
   );
 }
 
 async function runTaskPipeline(
-  delegator: ResolvedWhatsAppDelegator,
+  delegator: ResolvedWhatsAppTeamMember,
   params: {
     fromPhone: string;
     externalId: string;

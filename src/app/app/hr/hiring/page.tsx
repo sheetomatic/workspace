@@ -13,7 +13,7 @@ import {
 import { hrHiringModule } from "@/app/hr-module-content";
 
 export default async function HrHiringPage() {
-  const user = await requireSession();
+  const user = await requireSession(undefined, { module: "HR" });
   const isAdmin = hasMinimumRole(user.role, "ADMIN");
   const [openings, candidates] = await Promise.all([
     listJobOpenings(user.organizationId),

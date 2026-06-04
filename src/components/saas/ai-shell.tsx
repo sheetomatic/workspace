@@ -23,6 +23,7 @@ import { AiCrmTopbar } from "@/components/saas/ai-crm-topbar";
 import { OrganizationSwitcher } from "@/components/saas/organization-switcher";
 import type { OrganizationOption } from "@/components/saas/organization-switcher";
 import type { SessionUser } from "@/lib/auth";
+import { AI_APP_MIN_ROLE } from "@/lib/ai-auth-links";
 import { ROLE_LABELS } from "@/lib/permissions";
 import { siteBrand } from "@/app/site-content";
 
@@ -36,10 +37,10 @@ type NavItem = {
 };
 
 const mainNavItems: NavItem[] = [
-  { href: "/ai/app", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/ai/app/inbox", label: "Chats", icon: MessageCircle, minRole: "VIEWER" },
-  { href: "/ai/app/contacts", label: "Contacts", icon: Users, minRole: "VIEWER" },
-  { href: "/ai/app/tickets", label: "Tickets", icon: Ticket, minRole: "VIEWER" },
+  { href: "/ai/app", label: "Dashboard", icon: LayoutDashboard, minRole: AI_APP_MIN_ROLE },
+  { href: "/ai/app/inbox", label: "Chats", icon: MessageCircle, minRole: AI_APP_MIN_ROLE },
+  { href: "/ai/app/contacts", label: "Contacts", icon: Users, minRole: AI_APP_MIN_ROLE },
+  { href: "/ai/app/tickets", label: "Tickets", icon: Ticket, minRole: AI_APP_MIN_ROLE },
   {
     href: "/ai/app/campaign",
     label: "Campaign",
@@ -112,11 +113,13 @@ function NavLink({
 export function AiShell({
   user,
   organizations,
+  showWallet = false,
   walletPoints,
   children,
 }: {
   user: SessionUser;
   organizations: OrganizationOption[];
+  showWallet?: boolean;
   walletPoints?: number | null;
   children: React.ReactNode;
 }) {
@@ -184,7 +187,7 @@ export function AiShell({
 
       <div className="ai-crm-main">
         {!isOnboarding ? (
-          <AiCrmTopbar user={user} walletPoints={walletPoints} />
+          <AiCrmTopbar showWallet={showWallet} user={user} walletPoints={walletPoints} />
         ) : null}
         <div className="ai-crm-content">{children}</div>
       </div>

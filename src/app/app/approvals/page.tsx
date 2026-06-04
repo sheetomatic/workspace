@@ -5,7 +5,7 @@ import { syncApprovalsFromGoogleSheets } from "@/lib/integrations/sync-sheets-to
 import { listWorkspaceApprovals } from "@/lib/workspace-data";
 
 export default async function ApprovalsPage() {
-  const user = await requireSession("MANAGER");
+  const user = await requireSession("MANAGER", { module: "APPROVALS" });
 
   try {
     await syncApprovalsFromGoogleSheets(user.organizationId);

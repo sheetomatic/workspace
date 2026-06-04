@@ -16,7 +16,6 @@ import {
   setInboxHumanTakeover,
 } from "@/app/ai/app/inbox/actions";
 import { formatWhatsAppPhone } from "@/lib/phone";
-import { parseContactTags } from "@/lib/wa-inbox-store";
 
 export type InboxConversationRow = {
   id: string;

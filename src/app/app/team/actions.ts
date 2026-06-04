@@ -7,12 +7,26 @@ import bcrypt from "bcryptjs";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { normalizeWhatsAppPhone } from "@/lib/phone";
-import { hasMinimumRole } from "@/lib/permissions";
+import { hasMinimumRole, ROLE_LABELS } from "@/lib/permissions";
+import {
+  emailStatusMessage,
+  sendTeamPasswordResetEmail,
+  sendTeamWelcomeEmail,
+  sendTeamWorkspaceAccessEmail,
+} from "@/lib/integrations/email";
 import { assertOrganizationAccess } from "@/lib/workspace";
+import {
+  modulesFromRoleDefault,
+  parseModulesFromForm,
+  resolveMemberModules,
+} from "@/lib/workspace-modules";
 
 export type TeamActionState = {
   ok: boolean;
   message: string;
+  loginEmail?: string;
+  tempPassword?: string;
+  emailSent?: boolean;
 };
 
 const ASSIGNABLE_ROLES: Role[] = ["VIEWER", "STAFF", "MANAGER", "ADMIN"];
@@ -56,6 +70,8 @@ export async function inviteTeamMember(
   const department = parseDepartment(formData.get("department")?.toString());
   const whatsappRaw = formData.get("whatsapp")?.toString() ?? "";
   const phone = normalizeWhatsAppPhone(whatsappRaw);
+  const initialPasswordRaw = formData.get("initialPassword")?.toString() ?? "";
+  const initialPassword = initialPasswordRaw.trim();
 
   if (!email.includes("@")) {
     return { ok: false, message: "Enter a valid email." };
@@ -80,12 +96,24 @@ export async function inviteTeamMember(
     };
   }
 
+  if (initialPassword && initialPassword.length < 8) {
+    return {
+      ok: false,
+      message: "Initial password must be at least 8 characters, or leave blank to auto-generate.",
+    };
+  }
+
   if (!ASSIGNABLE_ROLES.includes(role) && role !== "OWNER") {
     return { ok: false, message: "Invalid role." };
   }
 
   if (role === "OWNER" && user.role !== "OWNER") {
     return { ok: false, message: "Only owners can assign the Owner role." };
+  }
+
+  let modules = parseModulesFromForm(formData);
+  if (modules.length === 0) {
+    modules = modulesFromRoleDefault(role);
   }
 
   await assertOrganizationAccess(user.organizationId, user.id);
@@ -123,44 +151,82 @@ export async function inviteTeamMember(
         role,
         department,
         designation,
-      },
-    });
-  } else {
-    const tempPassword = randomBytes(12).toString("base64url");
-    memberUser = await prisma.user.create({
-      data: {
-        email,
-        name,
-        phone,
-        passwordHash: await bcrypt.hash(tempPassword, 10),
-        memberships: {
-          create: {
-            organizationId: user.organizationId,
-            role,
-            department,
-            designation,
-          },
-        },
+        modules,
       },
     });
 
-    await prisma.invitation.create({
-      data: {
-        email,
-        role,
-        organizationId: user.organizationId,
-        invitedById: user.id,
-        token: randomBytes(24).toString("hex"),
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        acceptedAt: new Date(),
-      },
+    const emailResult = await sendTeamWorkspaceAccessEmail({
+      toEmail: email,
+      memberName: name,
+      organizationName: user.organizationName,
+      roleLabel: ROLE_LABELS[role],
+      invitedByName: user.name ?? user.email,
     });
+
+    revalidatePath("/app/team");
+    return {
+      ok: true,
+      message: emailStatusMessage(
+        email,
+        emailResult,
+        `${name} added to ${user.organizationName}. They sign in with their existing Sheetomatic password.`,
+      ),
+      loginEmail: email,
+      emailSent: emailResult.sent,
+    };
   }
+
+  const tempPassword = initialPassword || randomBytes(12).toString("base64url");
+  memberUser = await prisma.user.create({
+    data: {
+      email,
+      name,
+      phone,
+      passwordHash: await bcrypt.hash(tempPassword, 10),
+      memberships: {
+        create: {
+          organizationId: user.organizationId,
+          role,
+          department,
+          designation,
+          modules,
+        },
+      },
+    },
+  });
+
+  await prisma.invitation.create({
+    data: {
+      email,
+      role,
+      organizationId: user.organizationId,
+      invitedById: user.id,
+      token: randomBytes(24).toString("hex"),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      acceptedAt: new Date(),
+    },
+  });
+
+  const emailResult = await sendTeamWelcomeEmail({
+    toEmail: email,
+    memberName: name,
+    organizationName: user.organizationName,
+    roleLabel: ROLE_LABELS[role],
+    tempPassword,
+    invitedByName: user.name ?? user.email,
+  });
 
   revalidatePath("/app/team");
   return {
     ok: true,
-    message: `${name} added to ${user.organizationName}.`,
+    message: emailStatusMessage(
+      email,
+      emailResult,
+      `${name} added to ${user.organizationName}.`,
+    ),
+    loginEmail: email,
+    tempPassword: emailResult.sent ? undefined : tempPassword,
+    emailSent: emailResult.sent,
   };
 }
 
@@ -215,6 +281,11 @@ export async function updateTeamMemberDetails(
     return { ok: false, message: "Only owners can assign the Owner role." };
   }
 
+  let modules = parseModulesFromForm(formData);
+  if (modules.length === 0) {
+    modules = resolveMemberModules(role, membership.modules);
+  }
+
   await prisma.user.update({
     where: { id: membership.userId },
     data: {
@@ -232,6 +303,7 @@ export async function updateTeamMemberDetails(
       attendanceWorkMode,
       geoFenceRequired,
       faceRequired,
+      modules,
     },
   });
 
@@ -311,4 +383,58 @@ export async function removeTeamMember(
   await prisma.membership.delete({ where: { id: membershipId } });
   revalidatePath("/app/team");
   return { ok: true, message: "Member removed from workspace." };
+}
+
+export async function resetTeamMemberPassword(
+  membershipId: string,
+): Promise<TeamActionState> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Only admins can reset passwords." };
+  }
+
+  const membership = await prisma.membership.findFirst({
+    where: { id: membershipId, organizationId: user.organizationId },
+    include: { user: true },
+  });
+
+  if (!membership) {
+    return { ok: false, message: "Member not found." };
+  }
+
+  if (membership.userId === user.id) {
+    return {
+      ok: false,
+      message: "Use Settings to change your own password.",
+    };
+  }
+
+  const tempPassword = randomBytes(12).toString("base64url");
+
+  await prisma.user.update({
+    where: { id: membership.userId },
+    data: {
+      passwordHash: await bcrypt.hash(tempPassword, 10),
+    },
+  });
+
+  const emailResult = await sendTeamPasswordResetEmail({
+    toEmail: membership.user.email,
+    memberName: membership.user.name ?? membership.user.email,
+    organizationName: user.organizationName,
+    tempPassword,
+  });
+
+  revalidatePath("/app/team");
+  return {
+    ok: true,
+    message: emailStatusMessage(
+      membership.user.email,
+      emailResult,
+      `New temporary password created for ${membership.user.name ?? membership.user.email}.`,
+    ),
+    loginEmail: membership.user.email,
+    tempPassword: emailResult.sent ? undefined : tempPassword,
+    emailSent: emailResult.sent,
+  };
 }

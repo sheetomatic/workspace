@@ -3,10 +3,25 @@
  * @see https://wa.redlava.in/Integrations/ApiDocumentation
  */
 
+import { normalizeWhatsAppPhone } from "@/lib/phone";
+
 export type RedlavaCredentials = {
   apiKey?: string | null;
   phoneId?: string | null;
 };
+
+export type WhatsAppSendResult =
+  | { sent: true; messageId?: string }
+  | {
+      sent: false;
+      reason:
+        | "invalid_phone"
+        | "not_configured"
+        | "phone_id_required"
+        | "api_error"
+        | "session_required";
+      detail?: string;
+    };
 
 export const REDLAVA_DEFAULT_SEND_ENDPOINT = "/whatsapp/meta/sendMessage";
 export const REDLAVA_DEFAULT_TEMPLATE_LIST_ENDPOINT =
@@ -16,15 +31,251 @@ export const REDLAVA_DEFAULT_TEMPLATE_SUBMIT_ENDPOINT =
 export const REDLAVA_DEFAULT_TEMPLATE_SYNC_ENDPOINT =
   "/whatsapp/syncTemplatesFromMeta";
 
-function normalizePhone(phone: string) {
-  const digits = phone.replace(/\D/g, "");
-  if (digits.length < 10) {
-    return null;
+export type ParseWhatsAppSendOptions = {
+  /** Outbound message type (text, interactive, template, …). */
+  messageType?: string;
+  /** Template language.code sent to the provider (included in error detail). */
+  templateLanguageCode?: string;
+};
+
+/** Meta-approved task assignment template — RedLava only accepts language `en`. */
+export const ASSIGN_TASK_NEW_TEMPLATE_NAME = "assign_task_new";
+export const ASSIGN_TASK_NEW_TEMPLATE_LANGUAGE = "en";
+
+function withTemplateLanguageDetail(
+  detail: string | undefined,
+  languageCode?: string,
+): string | undefined {
+  if (!languageCode) {
+    return detail?.slice(0, 300);
   }
-  if (digits.length === 10) {
-    return `91${digits}`;
+  const prefix = `[lang=${languageCode}] `;
+  const body = detail?.slice(0, Math.max(0, 300 - prefix.length)) ?? "";
+  return `${prefix}${body}`;
+}
+
+/** Static-header templates must not include a header component (causes Meta 400). */
+function stripStaticHeaderComponents(
+  components?: Array<Record<string, unknown>>,
+): Array<Record<string, unknown>> | undefined {
+  if (!components?.length) {
+    return components;
   }
-  return digits;
+  const filtered = components.filter((component) => component.type !== "header");
+  return filtered.length > 0 ? filtered : undefined;
+}
+
+/** Belt-and-suspenders: force `en` and drop header components for assign_task_new. */
+export function enforceRedlavaTemplateLanguage(
+  template: RedlavaWhatsAppTemplatePayload,
+): RedlavaWhatsAppTemplatePayload {
+  if (template.name !== ASSIGN_TASK_NEW_TEMPLATE_NAME) {
+    return template;
+  }
+
+  return {
+    ...template,
+    language: { code: ASSIGN_TASK_NEW_TEMPLATE_LANGUAGE },
+    components: stripStaticHeaderComponents(template.components),
+  };
+}
+
+function isImplicitWhatsAppSendSuccess(body: Record<string, unknown>): boolean {
+  if (body.success === true) {
+    return true;
+  }
+
+  const statusValues = [body.status];
+  const data = body.data;
+  if (data && typeof data === "object") {
+    statusValues.push((data as { status?: unknown }).status);
+  }
+
+  for (const status of statusValues) {
+    if (typeof status !== "string") {
+      continue;
+    }
+    const normalized = status.toLowerCase();
+    if (
+      normalized === "sent" ||
+      normalized === "success" ||
+      normalized === "ok" ||
+      normalized === "queued" ||
+      normalized === "accepted"
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function inferMessageTypeFromBody(body: Record<string, unknown>): string | undefined {
+  if (typeof body.type === "string") {
+    return body.type;
+  }
+
+  const message = body.message;
+  if (message && typeof message === "object") {
+    const nestedType = (message as { type?: unknown }).type;
+    if (typeof nestedType === "string") {
+      return nestedType;
+    }
+  }
+
+  return undefined;
+}
+
+export function parseWhatsAppSendResponse(
+  response: Response,
+  raw: string,
+  options?: ParseWhatsAppSendOptions,
+): WhatsAppSendResult {
+  if (!response.ok) {
+    if (response.status === 400 && raw.includes("UNSPECIFIED_PHONE_NUMBER")) {
+      return {
+        sent: false,
+        reason: "phone_id_required",
+        detail: raw.slice(0, 300),
+      };
+    }
+
+    return {
+      sent: false,
+      reason: isWhatsAppSessionRequiredError(raw) ? "session_required" : "api_error",
+      detail: withTemplateLanguageDetail(raw, options?.templateLanguageCode),
+    };
+  }
+
+  let body: Record<string, unknown> = {};
+  try {
+    body = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+  } catch {
+    body = { raw };
+  }
+
+  if (body.error) {
+    const detail = withTemplateLanguageDetail(
+      JSON.stringify(body.error),
+      options?.templateLanguageCode,
+    );
+    return {
+      sent: false,
+      reason: isWhatsAppSessionRequiredError(detail ?? "") ? "session_required" : "api_error",
+      detail,
+    };
+  }
+
+  if (body.success === false) {
+    const detail = withTemplateLanguageDetail(
+      (typeof body.message === "string" && body.message) ||
+        raw.slice(0, 300) ||
+        "Send rejected",
+      options?.templateLanguageCode,
+    );
+    return {
+      sent: false,
+      reason: isWhatsAppSessionRequiredError(detail ?? "") ? "session_required" : "api_error",
+      detail,
+    };
+  }
+
+  const messageId = extractWhatsAppMessageId(body);
+  if (messageId) {
+    return { sent: true, messageId };
+  }
+
+  const messageType = options?.messageType ?? inferMessageTypeFromBody(body);
+
+  // Free-text outside the 24h window may be accepted without a wamid — treat as failure
+  // so task assignment can fall back to an approved template.
+  if (messageType === "text") {
+    return {
+      sent: false,
+      reason: isWhatsAppSessionRequiredError(raw) ? "session_required" : "api_error",
+      detail: withTemplateLanguageDetail(
+        raw.slice(0, 300) || "Text send accepted without delivery id",
+        options?.templateLanguageCode,
+      ),
+    };
+  }
+
+  if (isImplicitWhatsAppSendSuccess(body) || messageType === "interactive") {
+    return { sent: true };
+  }
+
+  if (messageType === "template" && response.ok) {
+    return {
+      sent: true,
+      messageId: undefined,
+    };
+  }
+
+  return {
+    sent: false,
+    reason: "api_error",
+    detail: withTemplateLanguageDetail(
+      raw.slice(0, 300) || "No WhatsApp message id in provider response",
+      options?.templateLanguageCode,
+    ),
+  };
+}
+
+function extractWhatsAppMessageId(body: Record<string, unknown>): string | null {
+  const topMessages = body.messages;
+  if (Array.isArray(topMessages)) {
+    const id = (topMessages[0] as { id?: string } | undefined)?.id;
+    if (id) {
+      return id;
+    }
+  }
+
+  const data = body.data;
+  if (data && typeof data === "object") {
+    const nested = data as Record<string, unknown>;
+    const nestedMessages = nested.messages;
+    if (Array.isArray(nestedMessages)) {
+      const id = (nestedMessages[0] as { id?: string } | undefined)?.id;
+      if (id) {
+        return id;
+      }
+    }
+    if (typeof nested.waMessageId === "string" && nested.waMessageId) {
+      return nested.waMessageId;
+    }
+    if (typeof nested.id === "string" && nested.id) {
+      return nested.id;
+    }
+  }
+
+  if (typeof body.messageId === "string" && body.messageId) {
+    return body.messageId;
+  }
+  if (typeof body.wamid === "string" && body.wamid) {
+    return body.wamid;
+  }
+  if (typeof body.waMessageId === "string" && body.waMessageId) {
+    return body.waMessageId;
+  }
+  if (typeof body.id === "string" && body.id) {
+    return body.id;
+  }
+
+  return null;
+}
+
+export function isWhatsAppSessionRequiredError(detail: string) {
+  const haystack = detail.toLowerCase();
+  return (
+    haystack.includes("131047") ||
+    haystack.includes("131026") ||
+    haystack.includes("470") ||
+    haystack.includes("re-engagement") ||
+    haystack.includes("24 hour") ||
+    haystack.includes("24-hour") ||
+    haystack.includes("outside the allowed window") ||
+    (haystack.includes("session") && !haystack.includes("template name"))
+  );
 }
 
 function redlavaBaseUrl() {
@@ -217,21 +468,61 @@ export async function sendRedlavaTextMessage(
   );
 }
 
+/** Meta Cloud API template object (RedLava `/whatsapp/meta/sendMessage` expects this inside `message`). */
+export type RedlavaWhatsAppTemplatePayload = {
+  name: string;
+  language: { code: string };
+  components?: Array<Record<string, unknown>>;
+};
+
+/**
+ * Send an approved WhatsApp template via RedLava's Meta proxy (`type: "template"`).
+ * Same shape as RedLava UI → Template tab → send.
+ */
+export async function sendRedlavaTemplateMessage(
+  params: {
+    toPhone: string;
+    template: RedlavaWhatsAppTemplatePayload;
+  },
+  credentials?: RedlavaCredentials | null,
+): Promise<WhatsAppSendResult> {
+  return sendRedlavaWhatsAppMessage(
+    {
+      toPhone: params.toPhone,
+      message: {
+        type: "template",
+        template: params.template,
+      },
+    },
+    credentials,
+  );
+}
+
 export async function sendRedlavaWhatsAppMessage(
   params: {
     toPhone: string;
     message: Record<string, unknown>;
   },
   credentials?: RedlavaCredentials | null,
-) {
+): Promise<WhatsAppSendResult> {
   const resolved = resolveRedlavaCredentials(credentials);
   if (!resolved?.apiKey) {
-    return { sent: false, reason: "not_configured" as const };
+    return { sent: false, reason: "not_configured" };
   }
 
-  const to = normalizePhone(params.toPhone);
+  const to = normalizeWhatsAppPhone(params.toPhone);
   if (!to) {
-    return { sent: false, reason: "invalid_phone" as const };
+    return { sent: false, reason: "invalid_phone" };
+  }
+
+  const message = { ...params.message };
+  let templateLanguageCode: string | undefined;
+  if (message.type === "template" && message.template) {
+    const normalized = enforceRedlavaTemplateLanguage(
+      message.template as RedlavaWhatsAppTemplatePayload,
+    );
+    message.template = normalized;
+    templateLanguageCode = normalized.language.code;
   }
 
   const headers: Record<string, string> = {
@@ -248,25 +539,15 @@ export async function sendRedlavaWhatsAppMessage(
     headers,
     body: JSON.stringify({
       to,
-      message: params.message,
+      message,
     }),
   });
 
   const raw = await response.text();
-  if (!response.ok) {
-    if (response.status === 400 && raw.includes("UNSPECIFIED_PHONE_NUMBER")) {
-      return {
-        sent: false,
-        reason: "phone_id_required" as const,
-        detail: raw.slice(0, 300),
-      };
-    }
-    return {
-      sent: false,
-      reason: "api_error" as const,
-      detail: raw.slice(0, 300),
-    };
-  }
-
-  return { sent: true as const };
+  const messageType =
+    typeof message.type === "string" ? message.type : undefined;
+  return parseWhatsAppSendResponse(response, raw, {
+    messageType,
+    templateLanguageCode,
+  });
 }

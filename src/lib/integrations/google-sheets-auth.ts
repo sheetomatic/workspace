@@ -32,6 +32,18 @@ export function isGoogleSheetsAuthConfigured() {
 }
 
 export function createGoogleSheetsClient() {
+  return createGoogleSheetsClientWithScope([
+    "https://www.googleapis.com/auth/spreadsheets.readonly",
+  ]);
+}
+
+export function createGoogleSheetsWriteClient() {
+  return createGoogleSheetsClientWithScope([
+    "https://www.googleapis.com/auth/spreadsheets",
+  ]);
+}
+
+function createGoogleSheetsClientWithScope(scopes: string[]) {
   const credentials = getGoogleSheetsCredentials();
   if (!credentials) {
     return null;
@@ -39,7 +51,7 @@ export function createGoogleSheetsClient() {
 
   const auth = new google.auth.GoogleAuth({
     credentials,
-    scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
+    scopes,
   });
 
   return google.sheets({ version: "v4", auth });

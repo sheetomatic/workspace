@@ -20,10 +20,24 @@ export function humanizeReminderSummary(summary: string): string {
         case "WA not configured":
           return "WA skipped (not set up)";
         case "WhatsApp failed":
-          return "WA could not be sent";
+          return "WA could not be sent (check Channels settings or assignee must message your WA number first)";
+        case "WhatsApp session required":
+          return "WA could not be sent (assignee must message your business number once, or add an approved task template in Channels)";
         case "WhatsApp: no phone":
-          return "WA skipped (no phone on assignee)";
+          return "WA skipped (add WhatsApp number in Team for assignee)";
+        case "WhatsApp invalid phone":
+          return "WA skipped (invalid phone number on assignee)";
         default:
+          if (part.startsWith("WhatsApp failed:")) {
+            const detail = part.replace(/^WhatsApp failed:\s*/, "");
+            if (detail.includes('"status":500') || detail.includes("Internal Server Error")) {
+              return "WA error: RedLava server error — template language must be en for assign_task_new";
+            }
+            return `WA error: ${detail}`;
+          }
+          if (part.startsWith("email failed:")) {
+            return part.replace(/^email failed:\s*/, "Email error: ");
+          }
           return part;
       }
     })

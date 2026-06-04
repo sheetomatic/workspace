@@ -2896,7 +2896,7 @@ strong {
 .site-brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   color: #0f172a;
   min-width: 0;
 }
@@ -2904,6 +2904,7 @@ strong {
 .site-brand-text {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 2px;
   min-width: 0;
 }
@@ -3052,8 +3053,9 @@ strong {
   }
 
   .site-header-saas .logo-mark {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
   }
 
   .site-header-actions {
@@ -3086,15 +3088,16 @@ strong {
   .site-header-actions {
     width: 100%;
     margin-left: 0;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-wrap: wrap;
     gap: 8px;
   }
 
   .site-header-actions .ab-header-workspace,
   .site-header-actions .header-cta,
   .site-header-actions .btn-cta {
-    width: 100%;
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
     justify-content: center;
     text-align: center;
   }

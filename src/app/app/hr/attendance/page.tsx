@@ -6,7 +6,7 @@ import { listTodayAttendance } from "@/lib/hr/hr-store";
 import { attendanceLeaveModule } from "@/app/hr-module-content";
 
 export default async function HrAttendancePage() {
-  const user = await requireSession();
+  const user = await requireSession(undefined, { module: "HR" });
   const records = await listTodayAttendance(user.organizationId);
   const myRecord = records.find((r) => r.userId === user.id);
 

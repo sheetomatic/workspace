@@ -6,7 +6,7 @@ import { getHrDashboardStats } from "@/lib/hr/hr-store";
 import { hrModuleOverview } from "@/app/hr-module-content";
 
 export default async function HrOverviewPage() {
-  const user = await requireSession();
+  const user = await requireSession(undefined, { module: "HR" });
   const stats = await getHrDashboardStats(user.organizationId);
 
   return (

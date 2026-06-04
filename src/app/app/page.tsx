@@ -1,10 +1,17 @@
+import { redirect } from "next/navigation";
 import { UserDashboard } from "@/components/saas/user-dashboard";
 import { prisma } from "@/lib/db";
 import { requireSession } from "@/lib/require-session";
+import { hasWorkspaceModule, resolveWorkspaceHomeHref } from "@/lib/workspace-modules";
 import { getUserDashboard } from "@/lib/workspace-data";
 
 export default async function AppDashboardPage() {
   const user = await requireSession();
+
+  if (hasWorkspaceModule(user, "TASKS")) {
+    redirect(resolveWorkspaceHomeHref(user));
+  }
+
   const displayName = user.name ?? user.email.split("@")[0];
 
   let dashboard;

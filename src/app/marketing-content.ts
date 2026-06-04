@@ -353,21 +353,23 @@ export const outcomeStories = outcomesSection.items.map((item) => ({
 }));
 
 export const misTalentCareers = {
-  kicker: "Join our MIS bench",
-  title: "Have MIS skills but no job? Join Sheetomatic.",
+  kicker: "Join our AI + MIS bench",
+  title: "Have MIS or AI tools skills? Join Sheetomatic.",
   lead:
-    "We hire capable people on Sheetomatic Payroll and place them as off-site MIS support for Indian MSMEs. You work on sheets, dashboards, and reporting - we handle payroll routing and client delivery structure.",
+    "We hire on Sheetomatic Payroll and place you with MSME clients on sheets, dashboards, WhatsApp workflows, and AI-assisted reporting. Work off-site or at a client office when the role needs it - we handle payroll and delivery structure.",
   fitTitle: "You are a good fit if",
   fitPoints: [
     "You are strong in Google Sheets, Excel, or MIS reporting",
-    "You are willing to learn AppSheet, dashboards, or Apps Script",
-    "You are reliable, detail-oriented, and fine with remote work",
+    "You are curious about AI tools - ChatGPT, automation, and practical MSME use cases",
+    "You can learn WhatsApp workflows, AppSheet, dashboards, or Apps Script",
+    "You are reliable, detail-oriented, and open to off-site or client-office placement",
     "You want steady client work instead of chasing freelance gigs",
   ],
   perksTitle: "Why join Sheetomatic",
   perks: [
     "Employment on Sheetomatic Payroll",
-    "Off-site work - no client office commute",
+    "Off-site or client office - placement matched to each role",
+    "Hands-on AI tools and WhatsApp automation knowledge",
     "Real MSME systems, not dummy practice files",
     "Mentorship from the implementation team",
   ],
@@ -375,12 +377,12 @@ export const misTalentCareers = {
     {
       step: "01",
       title: "Reach out",
-      text: "WhatsApp us with your skills, city, and experience.",
+      text: "WhatsApp us with your skills, city, experience, and interest in AI or WhatsApp tools.",
     },
     {
       step: "02",
       title: "Practical check",
-      text: "Short sheet task or sample of your past MIS work - no long exams.",
+      text: "Short sheet or AI-assisted task, or a sample of your past MIS work - no long exams.",
     },
     {
       step: "03",
@@ -389,7 +391,7 @@ export const misTalentCareers = {
     },
   ],
   ctaNote:
-    "Mention MIS talent in your WhatsApp message. We are building the bench for owners who hire off-site MIS through us.",
+    "Mention MIS or AI talent in your WhatsApp message. We are building the bench for MSME clients who hire through Sheetomatic Payroll.",
   whatsappApplyMessage:
-    "Hi Sheetomatic, I have MIS skills and would like to join your payroll team.",
+    "Hi Sheetomatic, I have MIS / AI tools skills and would like to join your payroll team.",
 };

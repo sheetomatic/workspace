@@ -8,7 +8,8 @@ import { getRedlavaResellerWallet } from "@/lib/integrations/redlava-reseller";
 import { listOrganizationsForUser } from "@/lib/auth-orgs";
 import { shouldSkipAiOnboarding } from "@/lib/ai-onboarding";
 import { prisma } from "@/lib/db";
-import { requireSession } from "@/lib/require-session";
+import { canAccessAiApp } from "@/lib/ai-auth-links";
+import { requireAiSession } from "@/lib/require-session";
 import {
   getWorkspaceWhatsAppSettings,
   resolveWorkspaceWhatsAppCredentials,
@@ -25,7 +26,8 @@ export default async function SheetomaticAiAppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const sessionUser = await requireSession();
+  const sessionUser = await requireAiSession();
+  const showWallet = canAccessAiApp(sessionUser);
   const [organization, organizations, credentials, savedSettings, wallet, skipOnboarding] =
     await Promise.all([
       prisma.organization.findUnique({
@@ -34,7 +36,7 @@ export default async function SheetomaticAiAppLayout({
       listOrganizationsForUser(sessionUser.id),
       resolveWorkspaceWhatsAppCredentials(sessionUser.organizationId),
       getWorkspaceWhatsAppSettings(sessionUser.organizationId),
-      getRedlavaResellerWallet(),
+      showWallet ? getRedlavaResellerWallet() : Promise.resolve({ ok: false as const }),
       shouldSkipAiOnboarding(sessionUser.organizationId),
     ]);
 
@@ -61,6 +63,7 @@ export default async function SheetomaticAiAppLayout({
     <AuthSessionProvider>
       <AiShell
         organizations={organizations}
+        showWallet={showWallet}
         user={user}
         walletPoints={walletPoints}
       >

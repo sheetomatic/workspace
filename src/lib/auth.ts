@@ -1,11 +1,12 @@
 import "./auth-types";
 import { cache } from "react";
-import type { Organization, Role } from "@prisma/client";
+import type { Organization, Role, WorkspaceModule } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@/lib/db";
 import { PRIMARY_ORG_SLUG } from "@/lib/platform";
+import { allWorkspaceModules, resolveMemberModules } from "@/lib/workspace-modules";
 
 export type SessionUser = {
   id: string;
@@ -16,6 +17,7 @@ export type SessionUser = {
   organizationName: string;
   organizationSlug: string;
   isSuperAdmin: boolean;
+  modules: WorkspaceModule[];
 };
 
 type ResolvedMembership = {
@@ -193,7 +195,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     session: async ({ session, token }) => {
       if (token.id && token.role && token.organizationId) {
-        const user: SessionUser = {
+        session.user = {
+          ...session.user,
           id: token.id as string,
           email: session.user?.email ?? "",
           name: session.user?.name ?? null,
@@ -202,8 +205,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           organizationName: (token.organizationName as string) ?? "",
           organizationSlug: (token.organizationSlug as string) ?? "",
           isSuperAdmin: Boolean(token.isSuperAdmin),
+          modules: [],
         };
-        session.user = user as typeof session.user;
       }
       return session;
     },
@@ -231,6 +234,32 @@ export const getSessionUser = cache(async function getSessionUser() {
     select: { isSuperAdmin: true },
   });
 
+  const isSuperAdmin = dbUser?.isSuperAdmin ?? false;
+
+  if (isSuperAdmin) {
+    return {
+      id: tokenUser.id,
+      email: tokenUser.email,
+      name: tokenUser.name,
+      role: membership.role,
+      organizationId: membership.organizationId,
+      organizationName: membership.organization.name,
+      organizationSlug: membership.organization.slug,
+      isSuperAdmin: true,
+      modules: allWorkspaceModules(),
+    };
+  }
+
+  const membershipRecord = await prisma.membership.findUnique({
+    where: {
+      userId_organizationId: {
+        userId: tokenUser.id,
+        organizationId: membership.organizationId,
+      },
+    },
+    select: { modules: true, role: true },
+  });
+
   return {
     id: tokenUser.id,
     email: tokenUser.email,
@@ -239,6 +268,10 @@ export const getSessionUser = cache(async function getSessionUser() {
     organizationId: membership.organizationId,
     organizationName: membership.organization.name,
     organizationSlug: membership.organization.slug,
-    isSuperAdmin: dbUser?.isSuperAdmin ?? false,
+    isSuperAdmin: false,
+    modules: resolveMemberModules(
+      membershipRecord?.role ?? membership.role,
+      membershipRecord?.modules,
+    ),
   };
 });

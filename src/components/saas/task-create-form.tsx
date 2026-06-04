@@ -23,6 +23,7 @@ type Member = {
   id: string;
   name: string;
   email: string;
+  phone: string | null;
 };
 
 function defaultDueLocal() {
@@ -66,8 +67,12 @@ export function TaskCreateForm({ members }: { members: Member[] }) {
     initMonthDayFromDue(defaultDueLocal()),
   );
   const [remindViaEmail, setRemindViaEmail] = useState(false);
-  const [remindViaWhatsApp, setRemindViaWhatsApp] = useState(false);
+  const [remindViaWhatsApp, setRemindViaWhatsApp] = useState(true);
   const searchParams = useSearchParams();
+
+  const assigneesMissingPhone = members
+    .filter((member) => assigneeUserIds.includes(member.id))
+    .filter((member) => !member.phone?.trim());
 
   function resetForm() {
     setTitle("");
@@ -83,7 +88,7 @@ export function TaskCreateForm({ members }: { members: Member[] }) {
     setWeeklyDays(initWeeklyDaysFromDue(due));
     setMonthDay(initMonthDayFromDue(due));
     setRemindViaEmail(false);
-    setRemindViaWhatsApp(false);
+    setRemindViaWhatsApp(true);
   }
 
   useEffect(() => {
@@ -310,6 +315,13 @@ export function TaskCreateForm({ members }: { members: Member[] }) {
                 WhatsApp
               </label>
             </div>
+            {remindViaWhatsApp && assigneesMissingPhone.length > 0 ? (
+              <p className="ws-task-reminder-warning">
+                {assigneesMissingPhone.map((member) => member.name).join(", ")}{" "}
+                {assigneesMissingPhone.length === 1 ? "has" : "have"} no WhatsApp
+                number in Team — add it under Team settings or WA will not send.
+              </p>
+            ) : null}
           </div>
 
           <button

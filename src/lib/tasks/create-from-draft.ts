@@ -122,7 +122,9 @@ export async function createDelegatedTaskFromDraft(params: {
 
   if (params.notifyAssignee !== false && (remindViaWhatsApp || remindViaEmail)) {
     const reminders = await dispatchTaskReminders({
+      taskId: task.id,
       taskTitle: task.title,
+      taskDescription: task.instructions,
       priority: task.priority,
       dueAt: alignedDueAt,
       frequency,

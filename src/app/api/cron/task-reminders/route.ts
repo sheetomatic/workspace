@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { SCALE } from "@/lib/scale";
 import { dispatchTaskReminders } from "@/lib/task-reminders";
+import { ACTIVE_TASK_STATUSES } from "@/lib/tasks";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -23,7 +24,7 @@ export async function GET(request: Request) {
   while (batches < SCALE.CRON_REMINDER_MAX_BATCHES) {
     const dueTasks = await prisma.delegatedTask.findMany({
       where: {
-        status: { in: ["PENDING", "IN_PROGRESS"] },
+        status: { in: ACTIVE_TASK_STATUSES },
         dueAt: { lte: now },
         OR: [
           {
@@ -52,7 +53,9 @@ export async function GET(request: Request) {
 
     for (const task of dueTasks) {
       const reminders = await dispatchTaskReminders({
+        taskId: task.id,
         taskTitle: task.title,
+        taskDescription: task.instructions,
         priority: task.priority,
         dueAt: task.dueAt,
         frequency: task.frequency,

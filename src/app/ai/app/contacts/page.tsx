@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/saas/page-header";
-import { requireSession } from "@/lib/require-session";
+import { requireAiSession } from "@/lib/require-session";
 import { formatWhatsAppPhone } from "@/lib/phone";
 import { listWaContacts, parseContactTags } from "@/lib/wa-inbox-store";
 
@@ -13,7 +13,7 @@ const STAGE_LABELS: Record<string, string> = {
 };
 
 export default async function SheetomaticAiContactsPage() {
-  const user = await requireSession("VIEWER", { redirectTo: "/ai/app" });
+  const user = await requireAiSession();
   const contacts = await listWaContacts(user.organizationId);
 
   return (

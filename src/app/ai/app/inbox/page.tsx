@@ -1,5 +1,5 @@
 import { LiveInboxPanel } from "@/components/saas/live-inbox-panel";
-import { requireSession } from "@/lib/require-session";
+import { requireAiSession } from "@/lib/require-session";
 import { formatWhatsAppPhone } from "@/lib/phone";
 import {
   getWaConversation,
@@ -18,7 +18,7 @@ export default async function SheetomaticAiInboxPage({
 }: {
   searchParams: Promise<{ c?: string }>;
 }) {
-  const user = await requireSession("VIEWER", { redirectTo: "/ai/app" });
+  const user = await requireAiSession();
   const { c: selectedId } = await searchParams;
   const [conversations, credentials, settings] = await Promise.all([
     listWaConversations(user.organizationId),
@@ -29,7 +29,7 @@ export default async function SheetomaticAiInboxPage({
   const rows = conversations.map((conversation) => ({
     id: conversation.id,
     preview: conversation.preview,
-    lastMessageAt: conversation.lastMessageAt?.toISOString() ?? null,
+    lastMessageAt: conversation.lastMessageAt ?? null,
     aiHandled: conversation.aiHandled,
     contact: {
       id: conversation.contact.id,

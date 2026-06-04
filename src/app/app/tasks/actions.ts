@@ -21,6 +21,7 @@ import {
 } from "@/lib/task-reminders";
 import type { TaskActionState } from "@/lib/task-action-state";
 import { isNextRedirect } from "@/lib/next-redirect";
+import { isTaskActiveStatus } from "@/lib/task-due-urgency";
 import {
   canCreateTasks,
   canUpdateTask,
@@ -184,7 +185,9 @@ async function createDelegatedTaskInner(
 
     if (remindViaEmail || remindViaWhatsApp) {
       const reminders = await dispatchTaskReminders({
+        taskId: task.id,
         taskTitle: title,
+        taskDescription: instructions || null,
         priority,
         dueAt,
         frequency,
@@ -318,7 +321,9 @@ async function updateTaskStatusInner(
 
       if (task.remindViaEmail || task.remindViaWhatsApp) {
         const reminders = await dispatchTaskReminders({
+          taskId: nextTask.id,
           taskTitle: task.title,
+          taskDescription: task.instructions,
           priority: task.priority,
           dueAt: nextDue,
           frequency: task.frequency,
@@ -382,8 +387,8 @@ export async function updateDelegatedTask(
   const title = formData.get("title")?.toString().trim() ?? task.title;
   const instructions =
     formData.get("instructions")?.toString().trim() ?? task.instructions ?? "";
-  const assigneeUserId =
-    formData.get("assigneeUserId")?.toString() ?? task.assigneeUserId;
+  const assigneeRaw = formData.get("assigneeUserId")?.toString().trim() ?? "";
+  const assigneeUserId = assigneeRaw || task.assigneeUserId;
   const priority = (formData.get("priority")?.toString() ??
     task.priority) as TaskPriority;
   const department = (formData.get("department")?.toString() ??
@@ -393,18 +398,21 @@ export async function updateDelegatedTask(
   const dueAtRaw = formData.get("dueAt")?.toString() ?? "";
   const dueAt = dueAtRaw ? new Date(dueAtRaw) : task.dueAt;
   const statusRaw = formData.get("status")?.toString() ?? task.status;
-  const status = statusRaw as "PENDING" | "IN_PROGRESS" | "COMPLETED";
+  const allowedStatuses = [
+    "PENDING",
+    "IN_PROGRESS",
+    "COMPLETED",
+    "REVISION_REQUESTED",
+    "EXTENSION_REQUESTED",
+    "HELP_REQUESTED",
+  ] as const;
+  if (!allowedStatuses.includes(statusRaw as (typeof allowedStatuses)[number])) {
+    return { ok: false, message: "Invalid status." };
+  }
+  const status = statusRaw as (typeof allowedStatuses)[number];
 
   if (title.length < 3) {
     return { ok: false, message: "Task title is required." };
-  }
-
-  if (
-    status !== "PENDING" &&
-    status !== "IN_PROGRESS" &&
-    status !== "COMPLETED"
-  ) {
-    return { ok: false, message: "Invalid status." };
   }
 
   if (Number.isNaN(dueAt.getTime())) {
@@ -425,26 +433,44 @@ export async function updateDelegatedTask(
   }
 
   const dueAtChanged = dueAt.getTime() !== task.dueAt.getTime();
+  const reopeningToActive =
+    isTaskActiveStatus(status) && task.status === "COMPLETED";
 
-  const updated = await prisma.delegatedTask.updateMany({
-    where: { id: taskId, organizationId: user.organizationId },
-    data: {
-      title,
-      instructions: instructions || null,
-      assigneeUserId,
-      priority,
-      department,
-      category,
-      dueAt,
-      status,
-      completedAt: status === "COMPLETED" ? task.completedAt ?? new Date() : null,
-      ...(dueAtChanged
-        ? {
-            emailReminderSentAt: null,
-            whatsappReminderSentAt: null,
-          }
-        : {}),
-    },
+  const updated = await prisma.$transaction(async (tx) => {
+    const result = await tx.delegatedTask.updateMany({
+      where: { id: taskId, organizationId: user.organizationId },
+      data: {
+        title,
+        instructions: instructions || null,
+        assigneeUserId,
+        priority,
+        department,
+        category,
+        dueAt,
+        status,
+        completedAt: status === "COMPLETED" ? task.completedAt ?? new Date() : null,
+        ...(dueAtChanged
+          ? {
+              emailReminderSentAt: null,
+              whatsappReminderSentAt: null,
+            }
+          : {}),
+      },
+    });
+
+    if (result.count > 0 && reopeningToActive) {
+      await tx.taskRequest.updateMany({
+        where: { taskId, status: "OPEN" },
+        data: {
+          status: "RESOLVED",
+          resolvedAt: new Date(),
+          resolvedById: user.id,
+          resolutionNote: "Task reopened by manager",
+        },
+      });
+    }
+
+    return result;
   });
 
   if (updated.count === 0) {
@@ -483,4 +509,66 @@ export async function deleteDelegatedTask(
   revalidatePath("/app");
   revalidatePath("/app/tasks");
   return { ok: true, message: "Task deleted." };
+}
+
+export async function resendTaskAssignmentReminders(
+  taskId: string,
+): Promise<TaskActionState> {
+  const user = await getSessionUser();
+  if (!user || !canCreateTasks(user.role)) {
+    return { ok: false, message: "You cannot resend task notifications." };
+  }
+
+  const task = await prisma.delegatedTask.findFirst({
+    where: { id: taskId, organizationId: user.organizationId },
+    include: {
+      assignee: { select: { name: true, email: true, phone: true } },
+    },
+  });
+
+  if (!task) {
+    return { ok: false, message: "Task not found." };
+  }
+
+  if (!task.remindViaEmail && !task.remindViaWhatsApp) {
+    return {
+      ok: false,
+      message: "This task has no email or WhatsApp reminders enabled.",
+    };
+  }
+
+  const reminders = await dispatchTaskReminders({
+    taskId: task.id,
+    taskTitle: task.title,
+    taskDescription: task.instructions,
+    priority: task.priority,
+    dueAt: task.dueAt,
+    frequency: task.frequency,
+    isRecurring: task.isRecurring,
+    assignee: task.assignee,
+    organizationName: user.organizationName,
+    organizationId: user.organizationId,
+    remindViaEmail: task.remindViaEmail,
+    remindViaWhatsApp: task.remindViaWhatsApp,
+  });
+
+  await prisma.delegatedTask.update({
+    where: { id: task.id },
+    data: {
+      emailAssignmentSentAt: reminders.emailSent
+        ? new Date()
+        : task.emailAssignmentSentAt,
+      whatsappAssignmentSentAt: reminders.whatsappSent
+        ? new Date()
+        : task.whatsappAssignmentSentAt,
+    },
+  });
+
+  revalidatePath("/app/tasks");
+
+  const base = "Notification resend attempted.";
+  return {
+    ok: reminders.emailSent || reminders.whatsappSent,
+    message: formatReminderSuccessMessage(base, reminders.summary),
+  };
 }

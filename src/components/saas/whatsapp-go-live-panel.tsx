@@ -41,9 +41,11 @@ function CopyField({ label, value }: { label: string; value: string }) {
 
 export function WhatsAppGoLivePanel({ status }: { status: WhatsAppGoLiveStatus }) {
   const [pending, startTransition] = useTransition();
-  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(
-    null,
-  );
+  const [message, setMessage] = useState<{
+    ok: boolean;
+    text: string;
+    messageId?: string;
+  } | null>(null);
 
   const steps = [
     {
@@ -82,14 +84,18 @@ export function WhatsAppGoLivePanel({ status }: { status: WhatsAppGoLiveStatus }
   function runTest() {
     startTransition(async () => {
       const result = await sendWhatsAppConnectionTest();
-      setMessage({ ok: result.ok, text: result.message });
+      setMessage({
+        ok: result.ok,
+        text: result.message,
+        messageId: result.messageId,
+      });
     });
   }
 
   function runGoLive(enable: boolean) {
     startTransition(async () => {
       const result = await toggleWhatsAppBotLive(enable);
-      setMessage({ ok: result.ok, text: result.message });
+      setMessage({ ok: result.ok, text: result.message, messageId: undefined });
     });
   }
 
@@ -156,12 +162,6 @@ export function WhatsAppGoLivePanel({ status }: { status: WhatsAppGoLiveStatus }
         </ul>
       ) : null}
 
-      {message ? (
-        <p className={`saas-form-message ${message.ok ? "ok" : "error"}`}>
-          {message.text}
-        </p>
-      ) : null}
-
       <div className="ws-go-live-actions">
         <button
           className="btn-cta btn-secondary"
@@ -202,6 +202,27 @@ export function WhatsAppGoLivePanel({ status }: { status: WhatsAppGoLiveStatus }
           </button>
         )}
       </div>
+
+      {message ? (
+        message.ok ? (
+          <div className="ws-go-live-feedback ok" role="status">
+            <CheckCircle2 size={18} aria-hidden />
+            <div className="ws-go-live-feedback-body">
+              <p>{message.text}</p>
+              {message.messageId ? (
+                <details className="ws-go-live-feedback-details">
+                  <summary>Message ID</summary>
+                  <CopyField label="WhatsApp message ID" value={message.messageId} />
+                </details>
+              ) : null}
+            </div>
+          </div>
+        ) : (
+          <p className="saas-form-message error" role="alert">
+            {message.text}
+          </p>
+        )
+      ) : null}
     </section>
   );
 }

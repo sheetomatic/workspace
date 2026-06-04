@@ -1,14 +1,19 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { Mail, Pencil, Trash2 } from "lucide-react";
-import type { AttendanceWorkMode, Role, TaskDepartment } from "@prisma/client";
+import { KeyRound, Mail, Pencil, Trash2 } from "lucide-react";
+import type { AttendanceWorkMode, Role, TaskDepartment, WorkspaceModule } from "@prisma/client";
 import {
   inviteTeamMember,
   removeTeamMember,
+  resetTeamMemberPassword,
   updateTeamMemberDetails,
   type TeamActionState,
 } from "@/app/app/team/actions";
+import {
+  WorkspaceModuleFields,
+  WorkspaceModulePills,
+} from "@/components/saas/workspace-module-fields";
 import { formatWhatsAppPhone } from "@/lib/phone";
 import { ROLE_LABELS } from "@/lib/permissions";
 import { TASK_DEPARTMENT_LABELS } from "@/lib/tasks";
@@ -35,6 +40,7 @@ export type TeamMemberRow = {
   attendanceWorkMode: AttendanceWorkMode;
   geoFenceRequired: boolean;
   faceRequired: boolean;
+  modules: WorkspaceModule[];
   joinedAt: Date;
   user: {
     id: string;
@@ -131,6 +137,65 @@ function memberInitials(name: string | null, email: string) {
   return source.slice(0, 2).toUpperCase();
 }
 
+function TeamLoginCredentials({
+  email,
+  password,
+  emailSent,
+}: {
+  email?: string;
+  password?: string;
+  emailSent?: boolean;
+}) {
+  if (!email) {
+    return null;
+  }
+
+  if (emailSent && !password) {
+    return (
+      <div className="saas-team-credentials saas-team-credentials-sent">
+        <p className="saas-team-credentials-title">Email sent</p>
+        <p className="saas-team-credentials-note">
+          Login instructions were emailed to <strong>{email}</strong>. Ask them
+          to check inbox and spam, then sign in at sheetomatic.com/login.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="saas-team-credentials">
+      <p className="saas-team-credentials-title">Login details to share</p>
+      <dl>
+        <div>
+          <dt>Sign-in URL</dt>
+          <dd>
+            <code>sheetomatic.com/login</code>
+          </dd>
+        </div>
+        <div>
+          <dt>Email</dt>
+          <dd>
+            <code>{email}</code>
+          </dd>
+        </div>
+        {password ? (
+          <div>
+            <dt>Temporary password</dt>
+            <dd>
+              <code>{password}</code>
+            </dd>
+          </div>
+        ) : null}
+      </dl>
+      <p className="saas-team-credentials-note">
+        Email could not be sent automatically. Share these once over WhatsApp or
+        email. Use the key icon on their card to reset if they forget the
+        password.
+      </p>
+    </div>
+  );
+}
+
 function MemberEditForm({
   member,
   onCancel,
@@ -142,6 +207,7 @@ function MemberEditForm({
     updateTeamMemberDetails,
     initialState,
   );
+  const [editRole, setEditRole] = useState(member.role);
 
   return (
     <form action={action} className="saas-team-edit-form">
@@ -201,7 +267,12 @@ function MemberEditForm({
         </label>
         <label>
           Role
-          <select defaultValue={member.role} name="role" required>
+          <select
+            defaultValue={member.role}
+            name="role"
+            required
+            onChange={(event) => setEditRole(event.target.value as Role)}
+          >
             {roleOptions.map((role) => (
               <option key={role} value={role}>
                 {ROLE_LABELS[role]}
@@ -210,6 +281,12 @@ function MemberEditForm({
           </select>
         </label>
       </div>
+
+      <WorkspaceModuleFields
+        defaultModules={member.modules}
+        lockSelection
+        role={editRole}
+      />
 
       <fieldset className="ws-member-hr-settings">
         <legend>Attendance settings</legend>
@@ -231,22 +308,24 @@ function MemberEditForm({
             </select>
           </label>
         </div>
-        <label className="ws-hr-checkbox">
-          <input
-            defaultChecked={member.geoFenceRequired}
-            name="geoFenceRequired"
-            type="checkbox"
-          />
-          Require geo-fenced check-in for this member
-        </label>
-        <label className="ws-hr-checkbox">
-          <input
-            defaultChecked={member.faceRequired}
-            name="faceRequired"
-            type="checkbox"
-          />
-          Require face verification for this member
-        </label>
+        <div className="ws-attendance-checklist">
+          <label className="ws-attendance-check">
+            <input
+              defaultChecked={member.geoFenceRequired}
+              name="geoFenceRequired"
+              type="checkbox"
+            />
+            <span>Require geo-fenced check-in for this member</span>
+          </label>
+          <label className="ws-attendance-check">
+            <input
+              defaultChecked={member.faceRequired}
+              name="faceRequired"
+              type="checkbox"
+            />
+            <span>Require face verification for this member</span>
+          </label>
+        </div>
       </fieldset>
 
       <div className="form-actions">
@@ -277,6 +356,8 @@ export function TeamManagementPanel({
     inviteTeamMember,
     initialState,
   );
+  const [resetState, setResetState] = useState<TeamActionState | null>(null);
+  const [inviteRole, setInviteRole] = useState<Role>("STAFF");
   const [pending, startTransition] = useTransition();
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -289,13 +370,21 @@ export function TeamManagementPanel({
     });
   }
 
+  function resetPassword(membershipId: string) {
+    startTransition(async () => {
+      const result = await resetTeamMemberPassword(membershipId);
+      setResetState(result);
+    });
+  }
+
   return (
     <div className="saas-team-panel">
       <form action={inviteAction} className="saas-settings-form saas-team-invite saas-form-panel">
         <h3>Add team member</h3>
         <p className="saas-team-invite-lead">
-          Department, designation, role, email, and WhatsApp are used for task
-          assignments and notifications.
+          Creates a login for new people, or links an existing Sheetomatic account
+          to your workspace. Login details are emailed automatically when Resend is
+          configured.
         </p>
         <div className="form-grid-premium">
           <label>
@@ -341,7 +430,14 @@ export function TeamManagementPanel({
           </label>
           <label>
             Role
-            <select defaultValue="STAFF" name="role" required>
+            <select
+              defaultValue="STAFF"
+              name="role"
+              required
+              onChange={(event) =>
+                setInviteRole(event.target.value as Role)
+              }
+            >
               {roleOptions.map((role) => (
                 <option key={role} value={role}>
                   {ROLE_LABELS[role]}
@@ -349,7 +445,19 @@ export function TeamManagementPanel({
               ))}
             </select>
           </label>
+          <label className="form-field-full">
+            Initial password
+            <input
+              autoComplete="new-password"
+              minLength={8}
+              name="initialPassword"
+              placeholder="Leave blank to auto-generate"
+              type="text"
+            />
+          </label>
         </div>
+
+        <WorkspaceModuleFields role={inviteRole} />
         <div className="form-actions">
           <button
             className="btn-cta btn-primary"
@@ -368,7 +476,33 @@ export function TeamManagementPanel({
             {inviteState.message}
           </p>
         ) : null}
+        {inviteState.ok && (inviteState.emailSent || inviteState.tempPassword) ? (
+          <TeamLoginCredentials
+            email={inviteState.loginEmail}
+            emailSent={inviteState.emailSent}
+            password={inviteState.tempPassword}
+          />
+        ) : null}
       </form>
+
+      {resetState?.message ? (
+        <div className="saas-form-panel saas-team-reset-panel">
+          <p
+            className={
+              resetState.ok ? "saas-form-message ok" : "saas-form-message error"
+            }
+          >
+            {resetState.message}
+          </p>
+          {resetState.ok ? (
+            <TeamLoginCredentials
+              email={resetState.loginEmail}
+              emailSent={resetState.emailSent}
+              password={resetState.tempPassword}
+            />
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="saas-team-cards-wrap">
         <div className="saas-team-cards">
@@ -419,6 +553,7 @@ export function TeamManagementPanel({
                           {metaParts.join(META_SEPARATOR)}
                         </p>
                       ) : null}
+                      <WorkspaceModulePills modules={member.modules} />
                     </div>
                   </div>
                   <span className={`saas-role-pill role-${member.role.toLowerCase()}`}>
@@ -443,6 +578,16 @@ export function TeamManagementPanel({
                           onClick={() => setEditingId(member.id)}
                         >
                           <Pencil aria-hidden size={15} strokeWidth={2.25} />
+                        </button>
+                        <button
+                          aria-label={`Reset password for ${displayName}`}
+                          className="btn-icon btn-icon-reset"
+                          disabled={pending}
+                          title="Reset password"
+                          type="button"
+                          onClick={() => resetPassword(member.id)}
+                        >
+                          <KeyRound aria-hidden size={15} strokeWidth={2.25} />
                         </button>
                         <button
                           aria-label={`Remove ${displayName}`}

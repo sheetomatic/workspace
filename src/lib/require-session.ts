@@ -1,11 +1,13 @@
-import type { Role } from "@prisma/client";
+import type { Role, WorkspaceModule } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
+import { AI_APP_MIN_ROLE } from "@/lib/ai-auth-links";
 import { hasMinimumRole } from "@/lib/permissions";
+import { hasWorkspaceModule } from "@/lib/workspace-modules";
 
 export async function requireSession(
   minRole?: Role,
-  options?: { redirectTo?: string },
+  options?: { redirectTo?: string; module?: WorkspaceModule },
 ) {
   const user = await getSessionUser();
 
@@ -20,5 +22,18 @@ export async function requireSession(
     redirect(options?.redirectTo ?? "/app");
   }
 
+  if (
+    options?.module &&
+    !hasWorkspaceModule(user, options.module)
+  ) {
+    redirect(options?.redirectTo ?? "/app");
+  }
+
   return user;
+}
+
+export async function requireAiSession(options?: { redirectTo?: string }) {
+  return requireSession(AI_APP_MIN_ROLE, {
+    redirectTo: options?.redirectTo ?? "/app",
+  });
 }

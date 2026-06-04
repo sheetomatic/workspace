@@ -147,6 +147,35 @@ export const testimonials = [
   },
 ];
 
+export const pricingEnquireIncludes = [
+  "WhatsApp voice and text task delegation",
+  "Assignee alerts and status updates on WhatsApp",
+  "Web task board for managers and staff",
+  "Team onboarding and go-live support",
+  "Official WhatsApp Business API via RedLava",
+];
+
+export const pricingEnquireFaqs = [
+  {
+    q: "How do I get a quote?",
+    a: "Tap Chat on WhatsApp and tell us your team size and how you want to use tasks. We reply with a simple plan breakdown, usually within one business day.",
+  },
+  {
+    q: "Is there a setup fee?",
+    a: "Most teams have a one-time onboarding package for WhatsApp connection and training. We share exact numbers on the call, with no hidden lines on the invoice.",
+  },
+  {
+    q: "Do I need a developer?",
+    a: "No. We configure WhatsApp, set up your workspace, and show your team how to assign and complete work from their phones.",
+  },
+  {
+    q: "Are WhatsApp message charges included?",
+    a: "WhatsApp API usage (RedLava / Meta) is billed separately based on volume. We help you estimate that when we share your quote.",
+  },
+];
+
+export const pricingPageFaqs = pricingEnquireFaqs;
+
 export const productFaqs = [
   {
     q: "Do I need a developer to set this up?",
@@ -233,18 +262,18 @@ export function formatInr(amount: number) {
 
 export const pricingSection = {
   eyebrow: "Pricing",
-  title: "Two plans — pick your WhatsApp lane",
+  title: "Pricing that fits your team",
   subcopy:
-    "Task + WhatsApp Messages for delegation only, or Tasks + WhatsApp AI full access when customers also message you on WhatsApp.",
+    "Tell us about your team on WhatsApp and we will share a clear quote with setup, onboarding, and support included.",
 };
 
 export const pricingTiers = {
   taskWhatsapp: {
     id: "task-whatsapp" as const,
     kicker: "Task + WhatsApp Messages",
-    title: "Delegate work on WhatsApp — no customer AI",
+    title: "Delegation on WhatsApp",
     subcopy:
-      "Owners and managers assign tasks by voice or text. Team gets WhatsApp alerts. Includes web task board and workspace — ideal if you do not need AI replies to customers.",
+      "Voice or text assignment, assignee alerts, and web task board. Enquire for a quote tailored to your team.",
     anchor: "task-whatsapp",
   },
   aiFull: {
@@ -274,11 +303,9 @@ export const aiEnterpriseContact = {
 };
 
 export const pricingFootnotes = [
-  "Prices exclude 18% GST.",
+  "Final pricing is shared after a short enquiry — tailored to team size and scope.",
   "WhatsApp API message charges (RedLava / Meta) are billed separately based on usage.",
-  "Task plans: one-time setup covers WhatsApp connection, team onboarding, and go-live.",
-  "AI full-access pricing is shared after a short call — contact us for enterprise plans.",
-  "Paid plans are activated after a quick setup call — online billing is rolling out during pilot.",
+  "GST applies as per Indian tax rules on your invoice.",
 ];
 
 /** Task + WhatsApp Messages — delegation lane (competitive with task-only bots) */
@@ -302,35 +329,13 @@ export const taskWhatsappPlans: PricingPlan[] = [
       "Manager+ roles on WhatsApp numbers",
       "No customer AI or CRM inbox",
     ],
-    cta: "Get Task plan on WhatsApp",
+    cta: "Enquire on WhatsApp",
     ctaType: "whatsapp",
     whatsappMessage:
-      "Hi Sheetomatic, I want Task + WhatsApp Messages (₹25,000 setup + ₹2,500/user/year). Please share onboarding steps.",
-  },
-  {
-    tier: "task-whatsapp",
-    name: "Task Team",
-    monthlyInr: null,
-    annualInr: null,
-    perUserAnnualInr: 2200,
-    setupFeeInr: 25000,
-    description: "Same delegation product for larger teams — minimum 10 users.",
-    featured: false,
-    limits: [
-      "Everything in Task on WhatsApp",
-      "Minimum 10 users",
-      "Priority setup within 5 business days",
-      "Team training call included",
-      "Annual billing only",
-    ],
-    cta: "Enquire Task Team",
-    ctaType: "whatsapp",
-    whatsappMessage:
-      "Hi Sheetomatic, I want Task Team pricing (10+ users, ₹2,200/user/year + setup).",
+      "Hi Sheetomatic, I would like to know about pricing for Task + WhatsApp Messages for my team. Please share plan options.",
   },
 ];
 
-/** Tasks + WhatsApp AI — full access lane */
 export const aiFullAccessPlans: PricingPlan[] = [
   {
     tier: "ai-full",
@@ -444,8 +449,6 @@ export const footerProductLinks = [
   { href: "/courses", label: "Courses & training" },
   { href: "/ai#features", label: "AI features" },
   { href: "/ai/pricing", label: "AI pricing" },
-  { href: AI_LOGIN_HREF, label: "Log in" },
-  { href: AI_START_FREE_HREF, label: "Start Free" },
 ];
 
 export const footerIndustryLinks = industryUseCases.map((item) => ({

@@ -1,10 +1,10 @@
 import { Ticket } from "lucide-react";
 import { AiModuleHub } from "@/components/saas/ai-module-hub";
-import { requireSession } from "@/lib/require-session";
+import { requireAiSession } from "@/lib/require-session";
 import { getAiDashboardStats } from "@/lib/ai-dashboard-stats";
 
 export default async function SheetomaticAiTicketsPage() {
-  const user = await requireSession("VIEWER", { redirectTo: "/ai/app" });
+  const user = await requireAiSession();
   const stats = await getAiDashboardStats(user.organizationId);
 
   return (

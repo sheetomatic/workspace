@@ -3,7 +3,7 @@ import { sendTaskAssignmentEmail } from "@/lib/integrations/email";
 import { sendTaskAssignmentWhatsApp } from "@/lib/integrations/whatsapp";
 import { TASK_FREQUENCY_LABELS } from "@/lib/task-schedule";
 import { buildAssignSuccessMessage } from "@/lib/task-assign-feedback";
-import { formatTaskDue } from "@/lib/tasks";
+import { formatTaskDue, resolveTaskDescription } from "@/lib/tasks";
 
 type Assignee = {
   name: string | null;
@@ -12,7 +12,9 @@ type Assignee = {
 };
 
 export async function dispatchTaskReminders(params: {
+  taskId: string;
   taskTitle: string;
+  taskDescription?: string | null;
   priority: TaskPriority;
   dueAt: Date;
   frequency: TaskFrequency;
@@ -27,10 +29,16 @@ export async function dispatchTaskReminders(params: {
     params.assignee.name ?? params.assignee.email.split("@")[0];
   const dueLabel = formatTaskDue(params.dueAt);
   const frequencyLabel = TASK_FREQUENCY_LABELS[params.frequency];
+  const taskDescription = resolveTaskDescription(
+    params.taskTitle,
+    params.taskDescription,
+  );
 
   const parts: string[] = [];
   let emailSent = false;
   let whatsappSent = false;
+  let whatsappDetail: string | undefined;
+  let emailDetail: string | undefined;
 
   if (params.remindViaEmail) {
     const email = await sendTaskAssignmentEmail({
@@ -49,7 +57,8 @@ export async function dispatchTaskReminders(params: {
     } else if (email.reason === "not_configured") {
       parts.push("email not configured");
     } else {
-      parts.push("email failed");
+      emailDetail = email.detail;
+      parts.push(email.detail ? `email failed: ${email.detail.slice(0, 160)}` : "email failed");
     }
   }
 
@@ -63,7 +72,9 @@ export async function dispatchTaskReminders(params: {
     } else {
       const wa = await sendTaskAssignmentWhatsApp({
         toPhone: phone,
+        taskId: params.taskId,
         taskTitle: params.taskTitle,
+        taskDescription,
         assigneeName,
         priority: params.priority,
         dueAt: params.dueAt,
@@ -77,10 +88,27 @@ export async function dispatchTaskReminders(params: {
         parts.push("WhatsApp");
       } else if (wa.reason === "phone_id_required") {
         parts.push("WA not configured");
+        console.error("[task-reminders] WhatsApp phone_id_required", wa.detail);
       } else if (wa.reason === "not_configured") {
         parts.push("WhatsApp not configured");
+      } else if (wa.reason === "invalid_phone") {
+        parts.push("WhatsApp invalid phone");
+      } else if (wa.reason === "session_required") {
+        parts.push("WhatsApp session required");
+        console.error("[task-reminders] WhatsApp session/template required", wa.detail);
       } else {
-        parts.push("WhatsApp failed");
+        whatsappDetail = wa.detail;
+        parts.push(
+          wa.detail
+            ? `WhatsApp failed: ${wa.detail.slice(0, 160)}`
+            : "WhatsApp failed",
+        );
+        console.error(
+          "[task-reminders] WhatsApp send failed",
+          wa.reason,
+          wa.detail,
+          { taskId: params.taskId, phone },
+        );
       }
     }
   }
@@ -89,6 +117,8 @@ export async function dispatchTaskReminders(params: {
     emailSent,
     whatsappSent,
     summary: parts.length ? parts.join(", ") : "",
+    whatsappDetail,
+    emailDetail,
   };
 }
 

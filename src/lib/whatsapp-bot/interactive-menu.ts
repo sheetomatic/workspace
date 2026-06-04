@@ -5,9 +5,13 @@ import {
   sortKnowledgeMenuItems,
   type KnowledgeMenuItem,
 } from "@/lib/whatsapp-bot/knowledge-menu";
+import type { Role } from "@prisma/client";
+import { hasMinimumRole } from "@/lib/permissions";
 
 export const WA_MENU = {
   DELEGATE_TASK: "delegate_task",
+  MY_TASKS: "my_tasks",
+  TEAM_PERFORMANCE: "team_performance",
   TEAM_LIST: "team_list",
   HELP: "help",
   MAIN_MENU: "main_menu",
@@ -19,20 +23,40 @@ export type WaMenuActionId = (typeof WA_MENU)[keyof typeof WA_MENU];
 export function buildMainMenuList(
   userName: string,
   knowledgeItems: KnowledgeMenuItem[] = [],
+  role: Role = "STAFF",
 ) {
   const firstName = userName.split(/\s+/)[0] || userName;
+  const isManager = hasMinimumRole(role, "MANAGER");
 
   const actionRows = [
+    ...(isManager
+      ? [
+          {
+            id: WA_MENU.DELEGATE_TASK,
+            title: "Assign a task",
+            description: "Voice note or text to delegate",
+          },
+        ]
+      : []),
     {
-      id: WA_MENU.DELEGATE_TASK,
-      title: "Delegate a task",
-      description: "Send voice note or text to assign",
+      id: WA_MENU.MY_TASKS,
+      title: isManager ? "Team tasks" : "My tasks",
+      description: "View and update active tasks",
     },
     {
-      id: WA_MENU.TEAM_LIST,
-      title: "Team members",
-      description: "See who you can assign work to",
+      id: WA_MENU.TEAM_PERFORMANCE,
+      title: isManager ? "Team performance" : "My performance",
+      description: "Pending, done today, overdue stats",
     },
+    ...(isManager
+      ? [
+          {
+            id: WA_MENU.TEAM_LIST,
+            title: "Team members",
+            description: "See who you can assign work to",
+          },
+        ]
+      : []),
     {
       id: WA_MENU.BROWSE_TOPICS,
       title: "Browse topics",
@@ -67,7 +91,7 @@ export function buildMainMenuList(
     body: {
       text: `Hi ${firstName}! Choose what you want to do next.`,
     },
-    footer: { text: "Task delegation and AI topics" },
+    footer: { text: "Tasks, updates, and performance" },
     action: {
       button: "Open menu",
       sections,
@@ -85,15 +109,15 @@ export function buildPostTaskButtons() {
       buttons: [
         {
           type: "reply" as const,
-          reply: { id: WA_MENU.DELEGATE_TASK, title: "Delegate another" },
+          reply: { id: WA_MENU.DELEGATE_TASK, title: "Assign another" },
+        },
+        {
+          type: "reply" as const,
+          reply: { id: WA_MENU.MY_TASKS, title: "View tasks" },
         },
         {
           type: "reply" as const,
           reply: { id: WA_MENU.MAIN_MENU, title: "Main menu" },
-        },
-        {
-          type: "reply" as const,
-          reply: { id: WA_MENU.TEAM_LIST, title: "Team list" },
         },
       ],
     },
@@ -141,7 +165,9 @@ export type WhatsAppInteractivePayload = {
       >
     | ReturnType<
         typeof import("@/lib/whatsapp-bot/knowledge-menu").buildCustomerFollowUpButtons
-      >;
+      >
+    | ReturnType<typeof import("@/lib/whatsapp-bot/task-user").buildMyTasksList>
+    | ReturnType<typeof import("@/lib/whatsapp-bot/task-user").buildTaskActionButtons>;
 };
 
 export function wrapInteractive(

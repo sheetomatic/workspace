@@ -12,7 +12,6 @@ import {
   whatsappDisplayNumber,
 } from "./site-content";
 import { footerIndustryLinks, footerProductLinks } from "./product-content";
-import { AI_LOGIN_HREF, AI_START_FREE_HREF } from "@/lib/ai-auth-links";
 
 export function SiteBrand({
   variant = "header",
@@ -64,12 +63,6 @@ export function SiteHeader() {
             ))}
           </nav>
           <div className="site-header-actions">
-            <Link className="ab-header-workspace" href={AI_LOGIN_HREF}>
-              Log in
-            </Link>
-            <Link className="ab-header-workspace" href={AI_START_FREE_HREF}>
-              Start Free
-            </Link>
             <Link className="ab-header-workspace" href="/login">
               Workspace
             </Link>
@@ -114,8 +107,6 @@ export function SiteFooter() {
               </Link>
             ))}
             <Link href="/login">Workspace</Link>
-            <Link href={AI_LOGIN_HREF}>Log in to AI</Link>
-            <Link href={AI_START_FREE_HREF}>Start free</Link>
           </div>
           <div>
             <h4>Industries</h4>

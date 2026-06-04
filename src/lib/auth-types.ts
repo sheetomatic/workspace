@@ -1,4 +1,4 @@
-import type { Role } from "@prisma/client";
+import type { Role, WorkspaceModule } from "@prisma/client";
 
 declare module "next-auth" {
   interface User {
@@ -19,6 +19,7 @@ declare module "next-auth" {
       organizationName: string;
       organizationSlug: string;
       isSuperAdmin?: boolean;
+      modules?: WorkspaceModule[];
     };
   }
 }

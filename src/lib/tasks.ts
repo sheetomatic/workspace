@@ -10,11 +10,23 @@ import { prisma } from "@/lib/db";
 import type { SessionUser } from "@/lib/auth";
 import { SCALE } from "@/lib/scale";
 import { hasMinimumRole } from "@/lib/permissions";
+import { isTaskActiveStatus } from "@/lib/task-due-urgency";
+
+export const ACTIVE_TASK_STATUSES: TaskStatus[] = [
+  "PENDING",
+  "IN_PROGRESS",
+  "REVISION_REQUESTED",
+  "EXTENSION_REQUESTED",
+  "HELP_REQUESTED",
+];
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   PENDING: "Pending",
   IN_PROGRESS: "In progress",
   COMPLETED: "Completed",
+  REVISION_REQUESTED: "Revision requested",
+  EXTENSION_REQUESTED: "Extension requested",
+  HELP_REQUESTED: "Help requested",
 };
 
 export const TASK_PRIORITY_LABELS: Record<TaskPriority, string> = {
@@ -41,12 +53,27 @@ export function taskVisibilityFilter(user: SessionUser) {
   };
 }
 
+/** Managers+ may filter by assignee; staff always see only their own tasks. */
+export function taskAssigneeListFilter(
+  user: SessionUser,
+  assigneeUserId?: string,
+) {
+  if (
+    !assigneeUserId ||
+    (!hasMinimumRole(user.role, "MANAGER") && user.role !== "VIEWER")
+  ) {
+    return {};
+  }
+  return { assigneeUserId };
+}
+
 export async function listDelegatedTasks(
   user: SessionUser,
   filter?: {
     status?: import("@prisma/client").TaskStatus;
     assigneeUserId?: string;
     overdueOnly?: boolean;
+    completedTodayOnly?: boolean;
     includeCompleted?: boolean;
   },
   pagination?: {
@@ -60,27 +87,51 @@ export async function listDelegatedTasks(
 
   const where = {
     ...taskVisibilityFilter(user),
-    ...(filter?.overdueOnly
+    ...(filter?.completedTodayOnly
       ? {
-          status: { in: ["PENDING", "IN_PROGRESS"] as TaskStatus[] },
-          dueAt: { lt: new Date() },
+          status: "COMPLETED" as TaskStatus,
+          completedAt: { gte: startOfToday() },
         }
-      : filter?.status
-        ? { status: filter.status }
-        : filter?.includeCompleted
-          ? {}
-          : { status: { in: ["PENDING", "IN_PROGRESS"] as TaskStatus[] } }),
-    ...(filter?.assigneeUserId ? { assigneeUserId: filter.assigneeUserId } : {}),
+      : filter?.overdueOnly
+        ? {
+            status: { in: ACTIVE_TASK_STATUSES },
+            dueAt: { lt: new Date() },
+          }
+        : filter?.status
+          ? { status: filter.status }
+          : filter?.includeCompleted
+            ? {}
+            : { status: { in: ACTIVE_TASK_STATUSES } }),
+    ...taskAssigneeListFilter(user, filter?.assigneeUserId),
   };
 
   const [items, total] = await Promise.all([
     prisma.delegatedTask.findMany({
       where,
       include: {
-        assignee: { select: { id: true, name: true, email: true } },
+        assignee: {
+          select: { id: true, name: true, email: true, phone: true },
+        },
         createdBy: { select: { id: true, name: true, email: true } },
+        attachments: {
+          select: {
+            id: true,
+            fileName: true,
+            mimeType: true,
+            fileSize: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: "desc" },
+        },
+        requests: {
+          where: { status: "OPEN" },
+          include: {
+            requestedBy: { select: { id: true, name: true, email: true } },
+          },
+          orderBy: { createdAt: "desc" },
+        },
       },
-      orderBy: [{ status: "asc" }, { dueAt: "asc" }],
+      orderBy: [{ createdAt: "desc" }],
       skip,
       take: pageSize,
     }),
@@ -115,13 +166,123 @@ export async function getTaskStats(user: SessionUser) {
     prisma.delegatedTask.count({
       where: {
         ...where,
-        status: { in: ["PENDING", "IN_PROGRESS"] },
+        status: { in: ACTIVE_TASK_STATUSES },
         dueAt: { lt: new Date() },
       },
     }),
   ]);
 
   return { pending, inProgress, completedToday, overdue };
+}
+
+export type TaskChartData = {
+  statusBreakdown: Array<{ name: string; value: number; color: string }>;
+  departmentBreakdown: Array<{ name: string; value: number }>;
+  weeklyCompleted: Array<{ label: string; completed: number }>;
+};
+
+const TASK_STATUS_CHART_COLORS: Record<TaskStatus, string> = {
+  PENDING: "#f97316",
+  IN_PROGRESS: "#2563eb",
+  COMPLETED: "#16a34a",
+  REVISION_REQUESTED: "#7c3aed",
+  EXTENSION_REQUESTED: "#9333ea",
+  HELP_REQUESTED: "#c026d3",
+};
+
+export async function getTaskChartData(user: SessionUser): Promise<TaskChartData> {
+  const where = taskVisibilityFilter(user);
+
+  const [statusGroups, departmentGroups, recentCompleted] = await Promise.all([
+    prisma.delegatedTask.groupBy({
+      by: ["status"],
+      where,
+      _count: { _all: true },
+    }),
+    prisma.delegatedTask.groupBy({
+      by: ["department"],
+      where,
+      _count: { _all: true },
+    }),
+    prisma.delegatedTask.findMany({
+      where: {
+        ...where,
+        status: "COMPLETED",
+        completedAt: { gte: startOfDaysAgo(6) },
+      },
+      select: { completedAt: true },
+    }),
+  ]);
+
+  const statusBreakdown = statusGroups
+    .map((row) => ({
+      name: TASK_STATUS_LABELS[row.status],
+      value: row._count._all,
+      color: TASK_STATUS_CHART_COLORS[row.status],
+    }))
+    .filter((row) => row.value > 0)
+    .sort((a, b) => b.value - a.value);
+
+  const departmentBreakdown = departmentGroups
+    .map((row) => ({
+      name: TASK_DEPARTMENT_LABELS[row.department],
+      value: row._count._all,
+    }))
+    .filter((row) => row.value > 0)
+    .sort((a, b) => b.value - a.value);
+
+  const weeklyCompleted = buildWeeklyCompletedSeries(recentCompleted);
+
+  return { statusBreakdown, departmentBreakdown, weeklyCompleted };
+}
+
+function startOfDaysAgo(days: number) {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - days);
+  return d;
+}
+
+function buildWeeklyCompletedSeries(
+  tasks: Array<{ completedAt: Date | null }>,
+) {
+  const buckets = new Map<string, number>();
+  for (let i = 6; i >= 0; i -= 1) {
+    const day = new Date();
+    day.setHours(0, 0, 0, 0);
+    day.setDate(day.getDate() - i);
+    buckets.set(day.toDateString(), 0);
+  }
+
+  for (const task of tasks) {
+    if (!task.completedAt) {
+      continue;
+    }
+    const key = new Date(task.completedAt).toDateString();
+    if (buckets.has(key)) {
+      buckets.set(key, (buckets.get(key) ?? 0) + 1);
+    }
+  }
+
+  return [...buckets.entries()].map(([dateKey, completed]) => ({
+    label: new Date(dateKey).toLocaleDateString("en-IN", {
+      weekday: "short",
+      day: "numeric",
+    }),
+    completed,
+  }));
+}
+
+export async function listTasksForExport(user: SessionUser) {
+  return prisma.delegatedTask.findMany({
+    where: taskVisibilityFilter(user),
+    include: {
+      assignee: { select: { name: true, email: true } },
+      createdBy: { select: { name: true, email: true } },
+    },
+    orderBy: [{ dueAt: "desc" }, { createdAt: "desc" }],
+    take: 5000,
+  });
 }
 
 function startOfToday() {
@@ -137,7 +298,7 @@ export async function listAssignableMembers(organizationId: string) {
       role: { in: ["STAFF", "MANAGER", "ADMIN", "OWNER"] },
     },
     include: {
-      user: { select: { id: true, name: true, email: true } },
+      user: { select: { id: true, name: true, email: true, phone: true } },
     },
     orderBy: { createdAt: "asc" },
   });
@@ -146,6 +307,7 @@ export async function listAssignableMembers(organizationId: string) {
     id: m.user.id,
     name: m.user.name ?? m.user.email.split("@")[0],
     email: m.user.email,
+    phone: m.user.phone,
     role: m.role,
   }));
 }
@@ -154,7 +316,22 @@ export function isTaskOverdue(dueAt: Date, status: TaskStatus) {
   if (status === "COMPLETED") {
     return false;
   }
+  if (!isTaskActiveStatus(status)) {
+    return false;
+  }
   return dueAt.getTime() < Date.now();
+}
+
+/** WhatsApp + reminders: AI instructions, or title when instructions are empty. */
+export function resolveTaskDescription(
+  title: string,
+  instructions?: string | null,
+) {
+  const detail = instructions?.trim();
+  if (detail) {
+    return detail;
+  }
+  return title.trim();
 }
 
 export function formatTaskDue(dueAt: Date) {
@@ -171,6 +348,27 @@ export function formatTaskDue(dueAt: Date) {
   return dueAt.toLocaleDateString("en-IN", {
     day: "numeric",
     month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+export function formatTaskAssignedDate(createdAt: Date) {
+  const now = new Date();
+  const isToday = createdAt.toDateString() === now.toDateString();
+  const time = createdAt.toLocaleTimeString("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+  if (isToday) {
+    return `Today, ${time}`;
+  }
+  return createdAt.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: createdAt.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
@@ -239,5 +437,16 @@ export function canUpdateTask(
   if (hasMinimumRole(user.role, "MANAGER")) {
     return true;
   }
+  return isTaskAssignee(user, task);
+}
+
+export function canManageTaskRequests(role: Role) {
+  return hasMinimumRole(role, "MANAGER");
+}
+
+export function isTaskAssignee(
+  user: SessionUser,
+  task: { assigneeUserId: string },
+) {
   return task.assigneeUserId === user.id;
 }

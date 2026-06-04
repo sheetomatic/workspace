@@ -1,29 +1,53 @@
 "use client";
 
-import { useEffect, useTransition } from "react";
+import { useTransition } from "react";
 import {
   CalendarClock,
   CheckCircle2,
+  FileText,
   FolderKanban,
   Mail,
   MessageCircle,
-  Play,
+  Paperclip,
   Repeat2,
   Trash2,
   UserRound,
 } from "lucide-react";
-import { deleteDelegatedTask, updateTaskStatus } from "@/app/app/tasks/actions";
+import { deleteDelegatedTask } from "@/app/app/tasks/actions";
 import { TaskEditButton } from "@/components/saas/task-edit-panel";
+import { TaskManagerRequestPanel } from "@/components/saas/task-manager-request-panel";
+import { TaskUserActions } from "@/components/saas/task-user-actions";
 import { formatRecurrenceSummary } from "@/lib/task-schedule";
+import {
+  getTaskDueUrgency,
+  taskUrgencyClass,
+  taskUrgencyLabel,
+  wasCompletedOnTime,
+} from "@/lib/task-due-urgency";
 import {
   TASK_DEPARTMENT_LABELS,
   TASK_PRIORITY_LABELS,
   TASK_STATUS_LABELS,
   assigneeInitials,
   formatTaskDueLabel,
-  isTaskOverdue,
 } from "@/lib/tasks";
-import type { TaskFrequency, TaskPriority, TaskStatus } from "@prisma/client";
+import type { TaskFrequency, TaskPriority, TaskRequestType, TaskStatus } from "@prisma/client";
+
+export type TaskOpenRequest = {
+  id: string;
+  type: TaskRequestType;
+  label: string;
+  message: string | null;
+  proposedDueAt: Date | null;
+};
+
+export type TaskAttachmentRow = {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+  createdAt: Date;
+};
 
 export type TaskRow = {
   id: string;
@@ -46,10 +70,20 @@ export type TaskRow = {
   whatsappReminderSentAt: Date | null;
   nextOccurrenceAt: Date | null;
   dueAt: Date;
-  assignee: { id: string; name: string | null; email: string };
+  createdAt: Date;
+  completedAt: Date | null;
+  assignee: {
+    id: string;
+    name: string | null;
+    email: string;
+    phone?: string | null;
+  };
   createdBy: { id: string; name: string | null; email: string };
+  attachments: TaskAttachmentRow[];
+  openRequest: TaskOpenRequest | null;
   canAct: boolean;
   canManage?: boolean;
+  isAssignee?: boolean;
 };
 
 type MemberOption = {
@@ -76,12 +110,6 @@ export function TaskList({
     });
   }
 
-  function setStatus(taskId: string, status: TaskStatus) {
-    startTransition(() => {
-      void updateTaskStatus(taskId, status);
-    });
-  }
-
   if (tasks.length === 0) {
     return (
       <div className="ws-empty-state ws-task-empty">
@@ -95,19 +123,29 @@ export function TaskList({
   return (
     <ul className={`ws-task-list ${pending ? "is-updating" : ""}`}>
       {tasks.map((task) => {
-        const overdue = isTaskOverdue(task.dueAt, task.status);
+        const urgency = getTaskDueUrgency({
+          dueAt: task.dueAt,
+          status: task.status,
+          completedAt: task.completedAt,
+        });
+        const urgencyClass = taskUrgencyClass(urgency);
         const assigneeName =
           task.assignee.name ?? task.assignee.email.split("@")[0];
+        const assignerName =
+          task.createdBy.name ?? task.createdBy.email.split("@")[0];
         const dueLabel = formatTaskDueLabel(task.dueAt, task.status);
+        const onTime =
+          task.status === "COMPLETED" &&
+          wasCompletedOnTime(task.dueAt, task.completedAt);
 
         return (
           <li
-            className={`ws-task-card status-${task.status.toLowerCase()}${overdue ? " is-overdue" : ""}`}
+            className={`ws-task-card status-${task.status.toLowerCase()} ${urgencyClass}`}
             key={task.id}
           >
             <div
               aria-hidden
-              className={`ws-task-status-rail status-${task.status.toLowerCase()}`}
+              className={`ws-task-status-rail ${urgencyClass}`}
             />
 
             <div className="ws-task-card-body">
@@ -119,6 +157,9 @@ export function TaskList({
                     >
                       {TASK_STATUS_LABELS[task.status]}
                     </span>
+                    <span className={`ws-task-urgency-pill ${urgencyClass}`}>
+                      {taskUrgencyLabel(urgency)}
+                    </span>
                     <span
                       className={`ws-priority priority-${task.priority.toLowerCase()}`}
                     >
@@ -126,9 +167,6 @@ export function TaskList({
                     </span>
                     {task.category ? (
                       <span className="ws-task-category-chip">{task.category}</span>
-                    ) : null}
-                    {overdue ? (
-                      <span className="ws-task-overdue-tag">Overdue</span>
                     ) : null}
                   </div>
 
@@ -143,14 +181,17 @@ export function TaskList({
                     {assigneeInitials(task.assignee.name, task.assignee.email)}
                   </span>
                   <div className="ws-task-assignee-text">
-                    <span className="ws-task-assignee-label">Owner</span>
+                    <span className="ws-task-assignee-label">Assignee</span>
                     <strong>{assigneeName}</strong>
+                    <span className="ws-task-assigner-label">
+                      From {assignerName}
+                    </span>
                   </div>
                 </div>
               </div>
 
               <div className="ws-task-meta-inline">
-                <span className={overdue ? "is-overdue" : ""}>
+                <span className={urgencyClass}>
                   <CalendarClock size={14} aria-hidden />
                   {dueLabel}
                 </span>
@@ -179,66 +220,74 @@ export function TaskList({
                 ) : null}
                 {task.remindViaWhatsApp ? (
                   <span
-                    className={`ws-task-meta-chip${task.whatsappAssignmentSentAt ? " is-sent" : ""}`}
+                    className={`ws-task-meta-chip${
+                      task.whatsappAssignmentSentAt ? " is-sent" : " is-warning"
+                    }`}
                   >
                     <MessageCircle size={13} aria-hidden />
-                    WhatsApp{task.whatsappAssignmentSentAt ? " sent" : ""}
-                  </span>
-                ) : null}
-                {task.emailReminderSentAt ? (
-                  <span className="ws-task-meta-chip is-sent">
-                    Due email sent
+                    {task.whatsappAssignmentSentAt
+                      ? "WhatsApp sent"
+                      : "WhatsApp not sent"}
                   </span>
                 ) : null}
               </div>
 
-              {task.status !== "COMPLETED" && task.canAct ? (
-                <div className="ws-task-actions">
-                  {task.status === "PENDING" ? (
-                    <button
-                      className="ws-task-action-btn"
-                      type="button"
-                      onClick={() => setStatus(task.id, "IN_PROGRESS")}
-                    >
-                      <Play size={15} aria-hidden />
-                      Start
-                    </button>
-                  ) : null}
-                  <button
-                    className="ws-task-action-btn ws-task-action-primary"
-                    type="button"
-                    onClick={() => setStatus(task.id, "COMPLETED")}
-                  >
-                    <CheckCircle2 size={15} aria-hidden />
-                    Complete
-                  </button>
-                  {task.canManage ? (
-                    <>
-                      <TaskEditButton members={members} task={task} />
-                      <button
-                        className="ws-task-action-btn ws-task-action-danger"
-                        type="button"
-                        onClick={() => removeTask(task.id)}
-                      >
-                        <Trash2 size={15} aria-hidden />
-                        Delete
-                      </button>
-                    </>
-                  ) : null}
-                  {task.isRecurring ? (
-                    <p className="ws-task-recurring-hint">
-                      Completing schedules the next occurrence.
-                    </p>
-                  ) : null}
+              {task.attachments.length > 0 ? (
+                <div className="ws-task-proof-list">
+                  <span className="ws-task-proof-label">
+                    <Paperclip size={14} aria-hidden />
+                    Proof uploaded
+                  </span>
+                  <ul>
+                    {task.attachments.map((file) => (
+                      <li key={file.id}>
+                        <a
+                          href={`/api/tasks/attachments/${file.id}`}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          <FileText size={14} aria-hidden />
+                          {file.fileName}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              ) : task.status === "COMPLETED" ? (
-                <p className="ws-task-done">
+              ) : null}
+
+              <TaskManagerRequestPanel task={task} />
+
+              {task.isAssignee ? <TaskUserActions task={task} /> : null}
+
+              {task.canManage ? (
+                <div className="ws-task-actions ws-task-manager-actions">
+                  <TaskEditButton members={members} task={task} />
+                  <button
+                    className="ws-task-action-btn ws-task-action-danger"
+                    type="button"
+                    onClick={() => removeTask(task.id)}
+                  >
+                    <Trash2 size={15} aria-hidden />
+                    Delete
+                  </button>
+                </div>
+              ) : null}
+
+              {task.status === "COMPLETED" ? (
+                <p className={`ws-task-done ${onTime ? "is-on-time" : "is-late"}`}>
                   <CheckCircle2 size={14} aria-hidden />
-                  Completed
+                  {onTime ? "Completed on time" : "Completed after due date"}
+                  {task.completedAt
+                    ? ` · ${task.completedAt.toLocaleString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true,
+                      })}`
+                    : ""}
                 </p>
-              ) : (
-                <p className="ws-task-readonly">View only</p>
-              )}
+              ) : null}
             </div>
           </li>
         );

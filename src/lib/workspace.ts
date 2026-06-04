@@ -2,6 +2,7 @@ import type { Role, WorkspaceLinkType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import type { SessionUser } from "@/lib/auth";
 import { hasMinimumRole, roleRank } from "@/lib/permissions";
+import { resolveMemberModules } from "@/lib/workspace-modules";
 
 export const WORKSPACE_LINK_LABELS: Record<WorkspaceLinkType, string> = {
   GOOGLE_SHEET: "Google Sheet",
@@ -50,6 +51,10 @@ export async function assertOrganizationAccess(
       organizationId,
       department: null,
       designation: "Super Admin",
+      attendanceWorkMode: "OFFICE" as const,
+      geoFenceRequired: false,
+      faceRequired: false,
+      modules: [],
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -115,6 +120,7 @@ export async function listWorkspaceMembers(organizationId: string) {
     attendanceWorkMode: membership.attendanceWorkMode,
     geoFenceRequired: membership.geoFenceRequired,
     faceRequired: membership.faceRequired,
+    modules: resolveMemberModules(membership.role, membership.modules),
     joinedAt: membership.createdAt,
     user: membership.user,
   }));

@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 import { createPayrollRunAction } from "@/lib/hr/hr-actions";
 
 export default async function HrPayrollPage() {
-  const user = await requireSession();
+  const user = await requireSession(undefined, { module: "HR" });
   const isAdmin = hasMinimumRole(user.role, "ADMIN");
 
   const runs = await prisma.payrollRun.findMany({

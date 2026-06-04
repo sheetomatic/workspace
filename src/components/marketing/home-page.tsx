@@ -1,6 +1,7 @@
 import {
   ArrowRight,
   BookOpen,
+  Briefcase,
   LayoutDashboard,
   MessageCircle,
   Package,
@@ -25,6 +26,7 @@ const linkIcons = {
   Products: Package,
   Courses: BookOpen,
   About: UserRound,
+  Careers: Briefcase,
   Contact: Phone,
 } as const;
 
@@ -35,6 +37,7 @@ const linkTones = {
   Products: "tone-indigo",
   Courses: "tone-rose",
   About: "tone-indigo",
+  Careers: "tone-emerald",
   Contact: "tone-violet",
 } as const;
 

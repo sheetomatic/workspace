@@ -255,8 +255,9 @@ export async function recordWaOutboundMessage(params: {
   return { contactId: contact.id, conversationId: conversation.id };
 }
 
+/** Cache-safe rows: unstable_cache JSON round-trip turns Date into string. */
 async function listWaConversationsRaw(organizationId: string) {
-  return prisma.waConversation.findMany({
+  const rows = await prisma.waConversation.findMany({
     where: { organizationId, status: "OPEN" },
     include: {
       contact: {
@@ -268,6 +269,19 @@ async function listWaConversationsRaw(organizationId: string) {
     orderBy: { lastMessageAt: "desc" },
     take: 100,
   });
+
+  return rows.map((conversation) => ({
+    ...conversation,
+    lastMessageAt: conversation.lastMessageAt?.toISOString() ?? null,
+    createdAt: conversation.createdAt.toISOString(),
+    updatedAt: conversation.updatedAt.toISOString(),
+    contact: {
+      ...conversation.contact,
+      lastMessageAt: conversation.contact.lastMessageAt?.toISOString() ?? null,
+      createdAt: conversation.contact.createdAt.toISOString(),
+      updatedAt: conversation.contact.updatedAt.toISOString(),
+    },
+  }));
 }
 
 export async function listWaConversations(organizationId: string) {

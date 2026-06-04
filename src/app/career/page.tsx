@@ -16,7 +16,7 @@ import "@/components/marketing/mis-careers.css";
 export const metadata: Metadata = marketingMetadata({
   title: "Careers",
   description:
-    "Join the Sheetomatic MIS bench — remote-friendly roles for reporting, automation, and Google Workspace specialists.",
+    "Join the Sheetomatic payroll bench - MIS, AI tools, WhatsApp automation, and Google Workspace roles on Sheetomatic Payroll.",
   path: "/career",
 });
 
@@ -39,6 +39,8 @@ export default function CareerPage() {
                 <Briefcase size={16} />
                 {content.kicker}
               </p>
+              <h2 className="mis-careers-title">{content.title}</h2>
+              <p className="mis-careers-lead">{content.lead}</p>
               <div className="mis-careers-actions">
                 <WhatsAppButton
                   label="Apply on WhatsApp"

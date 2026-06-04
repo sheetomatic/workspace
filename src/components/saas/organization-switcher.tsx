@@ -33,7 +33,7 @@ export function OrganizationSwitcher({
 
     startTransition(async () => {
       await update({ organizationSlug: slug });
-      router.push("/app");
+      router.push("/app/tasks");
       router.refresh();
     });
   }

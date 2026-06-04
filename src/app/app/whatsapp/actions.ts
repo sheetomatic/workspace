@@ -526,5 +526,6 @@ export async function sendWhatsAppConnectionTest(): Promise<WhatsAppTemplateActi
   return {
     ok: true,
     message: `Test message sent to ${target.name}. Check WhatsApp on that phone.`,
+    messageId: result.messageId,
   };
 }

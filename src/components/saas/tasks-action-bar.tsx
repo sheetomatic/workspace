@@ -1,15 +1,44 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Plus, X } from "lucide-react";
 import { TaskCreateForm } from "@/components/saas/task-create-form";
 import { TaskFilters } from "@/components/saas/task-filters";
+
+export function NewTaskTrigger({ className }: { className?: string }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  if (searchParams.get("new") === "1") {
+    return null;
+  }
+
+  function openCreate() {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("new", "1");
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
+  }
+
+  return (
+    <button
+      className={className ?? "btn-cta btn-primary ws-new-task-trigger"}
+      type="button"
+      onClick={openCreate}
+    >
+      <Plus aria-hidden size={18} strokeWidth={2.25} />
+      New task
+    </button>
+  );
+}
 
 type Member = {
   id: string;
   name: string;
   email: string;
+  phone: string | null;
 };
 
 export function TasksActionBar({
@@ -17,6 +46,8 @@ export function TasksActionBar({
   filterMembers,
   current,
   showCreate,
+  showAssigneeFilter = true,
+  filtersInOverview = false,
 }: {
   members: Member[];
   filterMembers: Array<{ id: string; name: string }>;
@@ -24,9 +55,14 @@ export function TasksActionBar({
     status?: string;
     assignee?: string;
     overdue?: string;
+    doneToday?: string;
   };
   showCreate: boolean;
+  showAssigneeFilter?: boolean;
+  filtersInOverview?: boolean;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
 
@@ -39,27 +75,43 @@ export function TasksActionBar({
   useEffect(() => {
     if (searchParams.get("new") === "1") {
       setOpen(true);
+    } else if (searchParams.get("new") !== "1") {
+      setOpen(false);
     }
   }, [searchParams]);
 
+  function closeCreate() {
+    setOpen(false);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("new");
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
+  }
+
+  const showToolbar = !filtersInOverview;
+  const showPanel = showCreate && open;
+
+  if (!showToolbar && !showPanel) {
+    return null;
+  }
+
   return (
-    <div className="ws-tasks-controls">
-      <div className="ws-task-toolbar">
-        <TaskFilters current={current} members={filterMembers} />
+    <div
+      className={`ws-tasks-controls${filtersInOverview ? " ws-tasks-controls-compact" : ""}`}
+    >
+      {showToolbar ? (
+        <div className="ws-task-toolbar">
+          <TaskFilters
+            current={current}
+            members={filterMembers}
+            showAssigneeFilter={showAssigneeFilter}
+          />
 
-        {showCreate && !open ? (
-          <button
-            className="btn-cta btn-primary ws-new-task-trigger"
-            type="button"
-            onClick={() => setOpen(true)}
-          >
-            <Plus aria-hidden size={18} strokeWidth={2.25} />
-            New task
-          </button>
-        ) : null}
-      </div>
+          {showCreate && !open ? <NewTaskTrigger /> : null}
+        </div>
+      ) : null}
 
-      {showCreate && open ? (
+      {showPanel ? (
         <section className="ws-new-task-panel">
           <header className="ws-new-task-panel-head">
             <div>
@@ -70,7 +122,7 @@ export function TasksActionBar({
               aria-label="Close create task"
               className="ws-new-task-close"
               type="button"
-              onClick={() => setOpen(false)}
+              onClick={closeCreate}
             >
               <X size={18} />
             </button>

@@ -30,7 +30,7 @@ export const founderVideo: MarketingVideo = {
   youtubeId: "",
 };
 
-/** Services hero stack & USP  YouTube demos (Sheetomatic Videos) */
+/** Services hero stack & USP � -  YouTube demos (Sheetomatic Videos) */
 export const servicesDemoVideos = {
   fms: {
     href: "https://youtu.be/bXYleWCg200",

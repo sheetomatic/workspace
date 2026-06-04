@@ -7,9 +7,14 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Link from "next/link";
 import {
   registerSheetomaticAiAccount,
+  registerWorkspaceAccount,
   type RegisterActionState,
 } from "@/app/login/actions";
 import { AI_LOGIN_HREF, AI_START_FREE_HREF, aiAppEntryHref } from "@/lib/ai-auth-links";
+import {
+  WORKSPACE_LOGIN_HREF,
+  WORKSPACE_SIGNUP_HREF,
+} from "@/lib/workspace-auth-links";
 
 const showDemoAccounts = process.env.NODE_ENV === "development";
 
@@ -38,13 +43,17 @@ export function LoginForm() {
   const isAiProduct = product === "ai";
   const isAiLogin = isAiProduct && intent === "login";
   const isAiSignup = isAiProduct && intent === "start";
+  const isWorkspaceSignup = !isAiProduct && intent === "start";
+  const isSignup = isAiSignup || isWorkspaceSignup;
   const callbackUrl = safeCallbackUrl(
     searchParams.get("callbackUrl"),
     isAiProduct
       ? isAiSignup
         ? "/ai/app/onboarding"
         : aiAppEntryHref(intent)
-      : "/app",
+      : isWorkspaceSignup
+        ? "/app/tasks"
+        : "/app/tasks",
   );
 
   const [email, setEmail] = useState("");
@@ -65,7 +74,7 @@ export function LoginForm() {
   );
   const [loading, setLoading] = useState(false);
   const [registerState, registerAction, registerPending] = useActionState(
-    registerSheetomaticAiAccount,
+    isAiProduct ? registerSheetomaticAiAccount : registerWorkspaceAccount,
     registerInitialState,
   );
 
@@ -101,7 +110,6 @@ export function LoginForm() {
       return;
     }
 
-    // Full navigation so the session cookie is sent on the first HR/workspace request.
     window.location.assign(callbackUrl);
   }
 
@@ -122,7 +130,7 @@ export function LoginForm() {
       const result = await signIn("credentials", {
         email: email.trim().toLowerCase(),
         password,
-        callbackUrl: "/ai/app/onboarding",
+        callbackUrl,
         redirect: false,
       });
 
@@ -139,7 +147,7 @@ export function LoginForm() {
         return;
       }
 
-      window.location.assign("/ai/app/onboarding");
+      window.location.assign(callbackUrl);
     }
 
     void finishSignup();
@@ -147,7 +155,7 @@ export function LoginForm() {
     return () => {
       cancelled = true;
     };
-  }, [email, password, registerPending, registerState]);
+  }, [callbackUrl, email, password, registerPending, registerState]);
 
   function fillDemo(accountEmail: string) {
     setEmail(accountEmail);
@@ -155,26 +163,34 @@ export function LoginForm() {
     setError(null);
   }
 
+  const signupTitle = isAiProduct
+    ? "Start free with Sheetomatic AI"
+    : "Create your workspace";
+
+  const signupLead = isAiProduct
+    ? "Create your workspace with email and password. No credit card required."
+    : "Create your company workspace with email and password. Add team logins from Team after sign-up.";
+
   return (
     <div className="login-card">
       <div className="login-card-head">
         <h2>
-          {isAiProduct
-            ? isAiLogin
+          {isSignup
+            ? signupTitle
+            : isAiProduct
               ? "Log in to Sheetomatic AI"
-              : "Start free with Sheetomatic AI"
-            : "Sign in"}
+              : "Sign in to Workspace"}
         </h2>
         <p>
-          {isAiSignup
-            ? "Create your workspace with email and password. No credit card required."
+          {isSignup
+            ? signupLead
             : isAiProduct
               ? "Enter your email and password to continue."
-              : "Enter your email and password to open your workspace."}
+              : "Use the email and password your admin shared, or sign in as the workspace owner."}
         </p>
       </div>
 
-      {isAiSignup ? (
+      {isSignup ? (
         <form action={registerAction} className="login-form form-grid-premium">
           <label>
             Business name
@@ -266,7 +282,7 @@ export function LoginForm() {
                   <span>Creating account...</span>
                 </>
               ) : (
-                <span>Create free account</span>
+                <span>{isAiProduct ? "Create free account" : "Create workspace"}</span>
               )}
             </button>
           </div>
@@ -343,6 +359,27 @@ export function LoginForm() {
               <Link href={AI_LOGIN_HREF}>Log in</Link>
             </>
           )}
+        </p>
+      ) : (
+        <p className="login-switch-mode form-field-full">
+          {isWorkspaceSignup ? (
+            <>
+              Already have access?{" "}
+              <Link href={WORKSPACE_LOGIN_HREF}>Sign in</Link>
+            </>
+          ) : (
+            <>
+              New company workspace?{" "}
+              <Link href={WORKSPACE_SIGNUP_HREF}>Sign up</Link>
+            </>
+          )}
+        </p>
+      )}
+
+      {!isSignup && !isAiProduct ? (
+        <p className="login-team-hint form-field-full">
+          Team member? Ask your admin for login email and password, then sign in
+          here.
         </p>
       ) : null}
 

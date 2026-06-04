@@ -16,7 +16,7 @@ function lookerEmbedUrl(url: string) {
 }
 
 export default async function ReportsPage() {
-  const user = await requireSession("VIEWER");
+  const user = await requireSession("VIEWER", { module: "REPORTS" });
   const links = await listWorkspaceLinks(user.organizationId);
   const reportLinks = links.filter(
     (link) =>

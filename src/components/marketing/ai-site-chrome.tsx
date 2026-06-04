@@ -45,15 +45,15 @@ export function AiSiteHeader() {
               </Link>
             ))}
           </nav>
-          <div className="site-header-actions">
+          <div className="site-header-actions ai-header-actions">
             <Link className="ab-header-workspace" href="/">
               {siteBrand.name}
             </Link>
-            <Link className="ab-header-workspace" href={AI_LOGIN_HREF}>
-              Log in
+            <Link className="ai-header-signin" href={AI_LOGIN_HREF}>
+              Sign in
             </Link>
-            <Link className="header-cta wa-btn-primary" href={AI_START_FREE_HREF}>
-              Start Free
+            <Link className="wa-btn-primary ai-header-start" href={AI_START_FREE_HREF}>
+              Start free
             </Link>
           </div>
         </div>
@@ -106,13 +106,14 @@ export function AiSiteFooter() {
             <Link href="/ai/chatbot">AI Chatbot</Link>
             <Link href="/ai/crm">CRM & Inbox</Link>
             <Link href="/ai/pricing">Pricing</Link>
-            <Link href={AI_LOGIN_HREF}>Log in</Link>
             <Link href={AI_START_FREE_HREF}>Start free</Link>
+            <Link href={AI_LOGIN_HREF}>Sign in</Link>
           </div>
           <div>
             <h4>Sheetomatic</h4>
             <Link href="/">Main website</Link>
             <Link href="/services">Services</Link>
+            <Link href="/career">Careers</Link>
             <Link href="/contact">Contact</Link>
             <WhatsAppButton
               className="footer-inline-btn footer-whatsapp-btn mt-3"

@@ -10,9 +10,11 @@ import { ROLE_LABELS } from "@/lib/permissions";
 
 export function AiCrmTopbar({
   user,
+  showWallet = false,
   walletPoints,
 }: {
   user: SessionUser;
+  showWallet?: boolean;
   walletPoints?: number | null;
 }) {
   const pathname = usePathname();
@@ -72,16 +74,18 @@ export function AiCrmTopbar({
       </div>
 
       <div className="ai-crm-topbar-actions">
-        <Link
-          className="ai-crm-credits-pill is-link"
-          href="/ai/app/settings#wallet"
-          title="RedLava wallet balance"
-        >
-          <Wallet size={14} aria-hidden />
-          {walletPoints != null
-            ? walletPoints.toLocaleString()
-            : "Wallet"}
-        </Link>
+        {showWallet ? (
+          <Link
+            className="ai-crm-credits-pill is-link"
+            href="/ai/app/settings#wallet"
+            title="RedLava wallet balance"
+          >
+            <Wallet size={14} aria-hidden />
+            {walletPoints != null
+              ? walletPoints.toLocaleString()
+              : "Wallet"}
+          </Link>
+        ) : null}
 
         <div className="ai-crm-account-menu" ref={menuRef}>
           <button
@@ -110,10 +114,12 @@ export function AiCrmTopbar({
                 <User size={15} aria-hidden />
                 Account
               </Link>
-              <Link href="/ai/app/settings#wallet" onClick={() => setMenuOpen(false)}>
-                <Wallet size={15} aria-hidden />
-                Wallet
-              </Link>
+              {showWallet ? (
+                <Link href="/ai/app/settings#wallet" onClick={() => setMenuOpen(false)}>
+                  <Wallet size={15} aria-hidden />
+                  Wallet
+                </Link>
+              ) : null}
               <button
                 type="button"
                 onClick={() => signOut({ callbackUrl: "/ai" })}

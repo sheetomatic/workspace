@@ -20,6 +20,8 @@ export default async function LoginPage({
   const isAiProduct = product === "ai";
   const isAiLogin = isAiProduct && intent === "login";
   const isAiSignup = isAiProduct && intent === "start";
+  const isWorkspaceSignup = !isAiProduct && intent === "start";
+  const isSignup = isAiSignup || isWorkspaceSignup;
 
   return (
     <main className="login-page workspace-login">
@@ -43,20 +45,24 @@ export default async function LoginPage({
           <h1>
             {isAiLogin
               ? "Welcome back"
-              : isAiSignup
-                ? "Start free on Sheetomatic AI"
+              : isSignup
+                ? isAiProduct
+                  ? "Start free on Sheetomatic AI"
+                  : "Create your company workspace"
                 : isAiProduct
                   ? "Automate WhatsApp with AI"
-                  : "Sign in to see your numbers"}
+                  : "Sign in to your workspace"}
           </h1>
           <p>
             {isAiLogin
               ? "Enter your email and password to open Chats, Campaign, and AI settings."
-              : isAiProduct && intent === "start"
+              : isAiSignup
                 ? "Create a free workspace, connect WhatsApp, and train your AI in minutes."
-                : isAiProduct
-                  ? "Sign in with your email and password to connect WhatsApp and go live."
-                  : "Enter your email and password. Your workspace opens automatically after sign-in."}
+                : isWorkspaceSignup
+                  ? "Sign up as the owner, then add team members with login credentials from Team."
+                  : isAiProduct
+                    ? "Sign in with your email and password to connect WhatsApp and go live."
+                    : "Owners sign in with the email they registered. Team members use credentials from their admin."}
           </p>
         </div>
         <ul className="login-trust-list">
@@ -69,6 +75,17 @@ export default async function LoginPage({
               <li>
                 <CheckCircle2 size={18} />
                 Official WhatsApp Business API via RedLava
+              </li>
+            </>
+          ) : isWorkspaceSignup ? (
+            <>
+              <li>
+                <CheckCircle2 size={18} />
+                One owner account creates the workspace
+              </li>
+              <li>
+                <CheckCircle2 size={18} />
+                Admins add staff logins from Team settings
               </li>
             </>
           ) : (

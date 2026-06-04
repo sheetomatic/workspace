@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { AI_APP_MIN_ROLE } from "@/lib/ai-auth-links";
 import { getSessionUser } from "@/lib/auth";
 import { hasMinimumRole } from "@/lib/permissions";
 import { sendWhatsAppText } from "@/lib/whatsapp-bot/send";
@@ -18,7 +19,7 @@ export async function sendInboxReply(
   body: string,
 ): Promise<InboxActionState> {
   const user = await getSessionUser();
-  if (!user || !hasMinimumRole(user.role, "STAFF")) {
+  if (!user || !hasMinimumRole(user.role, AI_APP_MIN_ROLE)) {
     return { ok: false, message: "You cannot send replies." };
   }
 
@@ -69,7 +70,7 @@ export async function setInboxHumanTakeover(
   humanTakeover: boolean,
 ): Promise<InboxActionState> {
   const user = await getSessionUser();
-  if (!user || !hasMinimumRole(user.role, "STAFF")) {
+  if (!user || !hasMinimumRole(user.role, AI_APP_MIN_ROLE)) {
     return { ok: false, message: "You cannot change AI settings." };
   }
 
@@ -97,7 +98,7 @@ export async function markInboxConversationRead(
   conversationId: string,
 ): Promise<void> {
   const user = await getSessionUser();
-  if (!user) {
+  if (!user || !hasMinimumRole(user.role, AI_APP_MIN_ROLE)) {
     return;
   }
 

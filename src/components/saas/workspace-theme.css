@@ -73,6 +73,18 @@
   text-decoration: underline;
 }
 
+.workspace-login .login-team-hint {
+  margin: 0.75rem 0 0;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: #64748b;
+  text-align: center;
+}
+
 .workspace-login .login-form input:focus {
   outline: none;
   border-color: #2563eb;
@@ -947,6 +959,266 @@
   color: #2563eb;
 }
 
+.workspace-app .ws-task-overview {
+  margin-bottom: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+}
+
+.workspace-app .ws-task-overview .ws-task-charts-grid {
+  gap: 0;
+  margin-bottom: 0;
+  max-width: none;
+}
+
+.workspace-app .ws-tasks-page .ws-page-header {
+  margin-bottom: 12px;
+}
+
+.workspace-app .ws-tasks-page .ws-page-header p {
+  display: none;
+}
+
+.workspace-app .ws-task-overview-top {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) 1fr;
+  align-items: stretch;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.workspace-app .ws-task-overview-top .ws-task-charts-grid {
+  max-width: 300px;
+  min-width: 0;
+}
+
+.workspace-app .ws-task-overview-top .ws-task-chart-card {
+  border-right: none;
+  border-bottom: none;
+}
+
+.workspace-app .ws-task-overview-side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-left: 1px solid #e2e8f0;
+  background: #fafbfd;
+  min-width: 0;
+}
+
+.workspace-app .ws-task-overview-side .ws-task-filter-bar {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.workspace-app .ws-task-overview-side-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.workspace-app .ws-task-overview-side-actions .ws-task-export-compact {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.workspace-app .ws-task-overview-side-actions .ws-new-task-trigger {
+  flex-shrink: 0;
+}
+
+.workspace-app .ws-task-overview-chart-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.workspace-app .ws-task-overview-chart-row .ws-task-charts-grid {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.workspace-app .ws-task-overview-chart-row .ws-task-export-compact {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 14px;
+  border-left: 1px solid #e2e8f0;
+  background: #fafbfd;
+  min-width: 148px;
+}
+
+.workspace-app .ws-task-export-compact-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.workspace-app .ws-task-export-divider {
+  color: #cbd5e1;
+  font-size: 0.875rem;
+  font-weight: 300;
+  user-select: none;
+}
+
+.workspace-app .ws-task-export-btn-compact {
+  padding: 7px 10px;
+  font-size: 0.75rem;
+  border-radius: 8px;
+}
+
+.workspace-app .ws-task-export-link-compact {
+  font-size: 0.6875rem;
+}
+
+.workspace-app .ws-task-export-message-compact {
+  flex: none;
+  font-size: 0.6875rem;
+  line-height: 1.35;
+  max-width: 160px;
+}
+
+.workspace-app .ws-task-filter-bar-compact {
+  padding: 10px 12px;
+}
+
+.workspace-app .ws-filter-layout-compact {
+  gap: 10px 12px;
+}
+
+.workspace-app .ws-filter-overdue-compact {
+  padding: 7px 12px;
+  font-size: 0.75rem;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.workspace-app .ws-filter-clear-inline {
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.workspace-app .ws-filter-clear-inline:hover {
+  color: #0f172a;
+  text-decoration: underline;
+}
+
+.workspace-app .ws-filter-done-today-hint {
+  margin: 0;
+  padding: 0 12px 10px;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.workspace-app .ws-task-overview-chart-row .ws-task-chart-card {
+  border-right: none;
+  border-bottom: none;
+}
+
+.workspace-app .ws-task-overview .ws-task-chart-card:nth-child(2n) {
+  border-right: none;
+}
+
+.workspace-app .ws-task-overview .ws-task-chart-card-wide {
+  grid-column: 1 / -1;
+  border-right: none;
+}
+
+.workspace-app .ws-task-overview .ws-task-chart-head {
+  padding: 10px 12px 0;
+}
+
+.workspace-app .ws-task-overview .ws-task-chart-head h2 {
+  font-size: 0.8125rem;
+}
+
+.workspace-app .ws-task-overview .ws-task-chart-head p {
+  margin-top: 2px;
+  font-size: 0.6875rem;
+}
+
+.workspace-app .ws-task-overview .ws-task-chart-body {
+  padding: 2px 6px 6px;
+}
+
+.workspace-app .ws-task-overview .ws-task-chart-body-pie {
+  min-height: 118px;
+}
+
+.workspace-app .ws-task-overview .ws-task-stats {
+  gap: 6px;
+  margin-bottom: 0;
+  padding: 8px 12px;
+  background: #f8fafc;
+}
+
+.workspace-app .ws-task-overview .ws-stat-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.workspace-app .ws-task-overview .ws-stat-card span:first-of-type {
+  margin-bottom: 0;
+  font-size: 0.6875rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.workspace-app .ws-task-overview .ws-stat-card strong {
+  font-size: 1.125rem;
+  flex-shrink: 0;
+}
+
+.workspace-app .ws-task-overview .ws-stat-card-hint {
+  display: none;
+  flex-basis: 100%;
+  margin-top: 0;
+  font-size: 0.5625rem;
+}
+
+.workspace-app .ws-task-overview .ws-task-export-bar {
+  margin-bottom: 0;
+  padding: 10px 12px;
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  border-radius: 0;
+  background: #fff;
+}
+
+.workspace-app .ws-task-overview .ws-task-export-copy strong {
+  font-size: 0.8125rem;
+}
+
+.workspace-app .ws-task-overview .ws-task-export-copy p {
+  margin-top: 2px;
+  font-size: 0.6875rem;
+}
+
 .workspace-app .ws-task-stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -993,6 +1265,176 @@
   line-height: 1;
 }
 
+.workspace-app .ws-stat-card-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+.workspace-app .ws-stat-card-link:hover {
+  border-color: #94a3b8;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.workspace-app .ws-stat-card-link.is-active {
+  border-color: #1565c0;
+  box-shadow: 0 0 0 2px rgba(21, 101, 192, 0.15);
+}
+
+.workspace-app .ws-stat-card-hint {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.workspace-app .ws-task-charts-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.workspace-app .ws-task-charts-grid.ws-task-charts-single {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 420px;
+}
+
+.workspace-app .ws-task-chart-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+}
+
+.workspace-app .ws-task-chart-card-wide {
+  grid-column: 1 / -1;
+}
+
+.workspace-app .ws-task-chart-head {
+  padding: 14px 16px 0;
+}
+
+.workspace-app .ws-task-chart-head h2 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.workspace-app .ws-task-chart-head p {
+  margin: 4px 0 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.workspace-app .ws-task-chart-body {
+  padding: 8px 8px 12px;
+}
+
+.workspace-app .ws-task-chart-body-pie {
+  min-height: 150px;
+}
+
+.workspace-app .ws-task-export-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
+}
+
+.workspace-app .ws-task-export-copy strong {
+  display: block;
+  font-size: 0.875rem;
+  color: #0f172a;
+}
+
+.workspace-app .ws-task-export-copy p {
+  margin: 4px 0 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.workspace-app .ws-task-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.workspace-app .ws-task-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+}
+
+.workspace-app .ws-task-export-btn-primary {
+  border-color: #1565c0;
+  background: #1565c0;
+  color: #fff;
+}
+
+.workspace-app .ws-task-export-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.workspace-app .ws-task-export-link {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1565c0;
+  text-decoration: none;
+}
+
+.workspace-app .ws-task-export-message {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.workspace-app .ws-task-stats.is-loading {
+  min-height: 88px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  animation: ws-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes ws-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
 .workspace-app .ws-stat-pending::before {
   background: #f97316;
 }
@@ -1027,6 +1469,15 @@
   flex-direction: column;
   gap: 14px;
   margin-bottom: 18px;
+}
+
+.workspace-app .ws-tasks-controls-compact {
+  gap: 0;
+  margin-bottom: 12px;
+}
+
+.workspace-app .ws-tasks-controls-compact:empty {
+  display: none;
 }
 
 .workspace-app .ws-tasks-controls.is-loading {
@@ -1214,6 +1665,423 @@
   font-weight: 700;
   color: #b91c1c;
   background: #fee2e2;
+}
+
+/* Task due-date urgency (assignee view) */
+.workspace-app .ws-task-card.urgency-due-overdue {
+  border-color: #fca5a5;
+  background: #fff5f5;
+}
+
+.workspace-app .ws-task-card.urgency-due-today {
+  border-color: #fdba74;
+  background: #fffbeb;
+}
+
+.workspace-app .ws-task-card.urgency-completed-on-time {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.workspace-app .ws-task-card.urgency-completed-late {
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+
+.workspace-app .ws-task-status-rail.urgency-due-overdue {
+  background: #dc2626;
+}
+
+.workspace-app .ws-task-status-rail.urgency-due-today {
+  background: #ea580c;
+}
+
+.workspace-app .ws-task-status-rail.urgency-due-soon {
+  background: #f59e0b;
+}
+
+.workspace-app .ws-task-status-rail.urgency-completed-on-time {
+  background: #16a34a;
+}
+
+.workspace-app .ws-task-status-rail.urgency-completed-late {
+  background: #ca8a04;
+}
+
+.workspace-app .ws-task-status-rail.urgency-waiting-revision,
+.workspace-app .ws-task-status-rail.urgency-waiting-extension,
+.workspace-app .ws-task-status-rail.urgency-waiting-help {
+  background: #7c3aed;
+}
+
+.workspace-app .ws-task-urgency-pill {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.workspace-app .ws-task-urgency-pill.urgency-due-overdue {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.workspace-app .ws-task-urgency-pill.urgency-due-today {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.workspace-app .ws-task-urgency-pill.urgency-due-soon {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.workspace-app .ws-task-urgency-pill.urgency-completed-on-time {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.workspace-app .ws-task-urgency-pill.urgency-completed-late {
+  background: #fef9c3;
+  color: #a16207;
+}
+
+.workspace-app .ws-task-urgency-pill.urgency-waiting-revision,
+.workspace-app .ws-task-urgency-pill.urgency-waiting-extension,
+.workspace-app .ws-task-urgency-pill.urgency-waiting-help {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.workspace-app .ws-task-meta-inline > span.urgency-due-overdue {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.workspace-app .ws-task-meta-inline > span.urgency-due-today {
+  color: #c2410c;
+  font-weight: 700;
+}
+
+.workspace-app .ws-task-status-pill.status-revision_requested,
+.workspace-app .ws-task-status-pill.status-extension_requested,
+.workspace-app .ws-task-status-pill.status-help_requested {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.workspace-app .ws-task-done.is-on-time {
+  color: #15803d;
+}
+
+.workspace-app .ws-task-done.is-late {
+  color: #a16207;
+}
+
+.workspace-app .ws-task-proof-list {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.workspace-app .ws-task-proof-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.workspace-app .ws-task-proof-list ul {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.workspace-app .ws-task-proof-list a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1565c0;
+  text-decoration: none;
+}
+
+.workspace-app .ws-task-request-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd6fe;
+  background: #f5f3ff;
+  color: #5b21b6;
+}
+
+.workspace-app .ws-task-request-banner p {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
+  color: #6d28d9;
+}
+
+.workspace-app .ws-task-action-btn.ws-task-action-warning {
+  border-color: #fdba74;
+  color: #c2410c;
+}
+
+.workspace-app .ws-task-dialog-lead {
+  margin: 0 0 14px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #64748b;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.workspace-app .ws-task-dialog-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.workspace-app .ws-task-dialog-head-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.workspace-app .ws-task-user-dialog-head .ws-task-edit-sub {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.workspace-app .ws-task-user-dialog-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.workspace-app .ws-task-user-dialog-body {
+  padding-top: 4px;
+  padding-bottom: 12px;
+  gap: 12px;
+}
+
+.workspace-app .ws-task-dialog-error {
+  margin-top: 4px;
+}
+
+.workspace-app .ws-file-upload-field > span:first-child {
+  display: block;
+}
+
+.workspace-app .ws-file-upload-zone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 22px 16px;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.workspace-app .ws-file-upload-zone:hover,
+.workspace-app .ws-file-upload-zone.is-dragover {
+  border-color: #60a5fa;
+  background: #eff6ff;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 0.08);
+}
+
+.workspace-app .ws-file-upload-zone.is-full {
+  opacity: 0.72;
+  cursor: default;
+}
+
+.workspace-app .ws-file-upload-zone.is-full .ws-file-upload-input {
+  pointer-events: none;
+}
+
+.workspace-app .ws-file-upload-zone svg {
+  color: #3b82f6;
+}
+
+.workspace-app .ws-file-upload-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: inherit;
+  opacity: 0;
+  cursor: pointer;
+  min-height: 0;
+  font-size: 0;
+}
+
+.workspace-app .ws-file-upload-title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  color: #0f172a;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.workspace-app .ws-file-upload-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  color: #64748b;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.workspace-app .ws-file-upload-list {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.workspace-app .ws-file-upload-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.workspace-app .ws-file-upload-list li svg {
+  flex-shrink: 0;
+  color: #64748b;
+}
+
+.workspace-app .ws-file-upload-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-app .ws-file-upload-size {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.workspace-app .ws-file-upload-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-left: 2px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #64748b;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.workspace-app .ws-file-upload-remove:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.workspace-app .ws-task-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.workspace-app .ws-form-error {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #b91c1c;
+}
+
+.workspace-app .ws-task-manager-request {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px dashed #cbd5e1;
+  background: #f8fafc;
+}
+
+.workspace-app .ws-task-manager-request p {
+  margin: 6px 0 0;
+  font-size: 0.8125rem;
+  color: #475569;
+}
+
+.workspace-app .ws-task-manager-request-due {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.workspace-app .ws-task-manager-request-form {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.workspace-app .ws-task-assigner-label {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.workspace-app .ws-task-manager-actions {
+  margin-top: 10px;
 }
 
 .workspace-app .ws-task-delegate {
@@ -1645,6 +2513,360 @@
 
 .workspace-app .ws-task-queue {
   margin-top: 4px;
+  scroll-margin-top: 12px;
+}
+
+.workspace-app .ws-task-table-card {
+  margin-top: 0;
+}
+
+.workspace-app .ws-task-table-card.is-updating {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.workspace-app .ws-task-table-row {
+  cursor: pointer;
+}
+
+.workspace-app .ws-task-table-row.is-completed .cell-strong {
+  color: #64748b;
+  text-decoration: line-through;
+  text-decoration-color: #cbd5e1;
+}
+
+.workspace-app .ws-task-table-expand-col {
+  width: 36px;
+  padding-left: 12px !important;
+  padding-right: 8px !important;
+}
+
+.workspace-app .ws-task-table-chevron {
+  color: #94a3b8;
+  transition: transform 0.15s ease;
+}
+
+.workspace-app .ws-task-table-chevron.is-open {
+  transform: rotate(180deg);
+}
+
+.workspace-app .ws-task-table-title {
+  min-width: 220px;
+  max-width: 360px;
+}
+
+.workspace-app .ws-task-table-title > span:first-child {
+  display: block;
+}
+
+.workspace-app .ws-task-table-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.workspace-app .ws-task-table-flag {
+  display: inline-flex;
+  margin-left: 8px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: #9a3412;
+  background: #ffedd5;
+  vertical-align: middle;
+}
+
+.workspace-app .ws-task-table-assignee {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.workspace-app .ws-task-avatar-sm {
+  width: 24px;
+  height: 24px;
+  font-size: 0.625rem;
+}
+
+.workspace-app .ws-task-table-due {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.workspace-app .ws-task-table-actions-col {
+  width: 120px;
+  white-space: nowrap;
+}
+
+.workspace-app .ws-task-table-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.workspace-app .ws-task-table-icon-btn {
+  padding: 6px 8px;
+}
+
+.workspace-app .ws-task-table-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.workspace-app .ws-task-table-detail-row td {
+  padding: 0 !important;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.workspace-app .ws-task-table-detail {
+  padding: 14px 16px 16px 52px;
+}
+
+.workspace-app .ws-task-table-detail .ws-task-instructions {
+  margin: 12px 0;
+}
+
+.workspace-app .ws-task-reminder-status {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.workspace-app .ws-task-reminder-status.is-loading {
+  opacity: 0.7;
+}
+
+.workspace-app .ws-task-reminder-status-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.workspace-app .ws-task-reminder-status-head h4 {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.workspace-app .ws-task-reminder-resend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #eff6ff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1d4ed8;
+  cursor: pointer;
+}
+
+.workspace-app .ws-task-reminder-resend:hover:not(:disabled) {
+  background: #dbeafe;
+}
+
+.workspace-app .ws-task-reminder-resend:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.workspace-app .ws-task-reminder-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  margin: 0;
+}
+
+.workspace-app .ws-task-reminder-status-item {
+  min-width: 0;
+}
+
+.workspace-app .ws-task-reminder-status-item dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.workspace-app .ws-task-reminder-status-item dd {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.workspace-app .ws-task-reminder-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.workspace-app .ws-task-reminder-pill.tone-sent {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+
+.workspace-app .ws-task-reminder-pill.tone-failed {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #c2410c;
+}
+
+.workspace-app .ws-task-reminder-pill.tone-muted {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+}
+
+.workspace-app .ws-task-reminder-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.workspace-app .ws-task-reminder-hint-warn {
+  color: #c2410c;
+}
+
+.workspace-app .ws-task-reminder-feedback {
+  margin: 10px 0 0;
+  font-size: 0.8125rem;
+  color: #334155;
+}
+
+@media (max-width: 720px) {
+  .workspace-app .ws-task-reminder-status-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.workspace-app .ws-task-table-assigned {
+  white-space: nowrap;
+  color: #64748b;
+  font-size: 0.8125rem;
+}
+
+.workspace-app .ws-task-table-status {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+.workspace-app .ws-task-table-status.status-pending {
+  color: #ea580c;
+}
+
+.workspace-app .ws-task-table-status.status-in_progress {
+  color: #2563eb;
+}
+
+.workspace-app .ws-task-table-status.status-completed {
+  color: #16a34a;
+}
+
+.workspace-app .ws-task-table-status.status-revision_requested,
+.workspace-app .ws-task-table-status.status-extension_requested,
+.workspace-app .ws-task-table-status.status-help_requested {
+  color: #c2410c;
+}
+
+.workspace-app .ws-task-table tr.row-urgency-overdue {
+  background: #fef2f2;
+}
+
+.workspace-app .ws-task-table tr.row-urgency-overdue td {
+  color: #334155;
+}
+
+.workspace-app .ws-task-table tr.row-urgency-overdue .cell-strong,
+.workspace-app .ws-task-table tr.row-urgency-overdue .ws-task-table-assigned,
+.workspace-app .ws-task-table tr.row-urgency-overdue .ws-task-table-dept {
+  color: #991b1b;
+}
+
+.workspace-app .ws-task-table tr.row-urgency-overdue .ws-task-table-due {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.workspace-app .ws-task-table tr.row-urgency-due_today {
+  background: #fffbeb;
+}
+
+.workspace-app .ws-task-table tr.row-urgency-due_today .cell-strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.workspace-app .ws-task-table tr.row-urgency-due_today .ws-task-table-assigned,
+.workspace-app .ws-task-table tr.row-urgency-due_today .ws-task-table-dept,
+.workspace-app .ws-task-table tr.row-urgency-due_today .ws-task-table-due {
+  color: #64748b;
+}
+
+.workspace-app .ws-task-table tr.row-urgency-due_soon {
+  background: #fffbeb;
+}
+
+.workspace-app .ws-task-table .ws-task-table-due .urgency-due-overdue {
+  color: #dc2626;
+}
+
+.workspace-app .ws-task-table .ws-task-table-due .urgency-due-today,
+.workspace-app .ws-task-table .ws-task-table-due .urgency-due-soon {
+  color: inherit;
+}
+
+@media (max-width: 960px) {
+  .workspace-app .ws-task-table .ws-task-table-actions-col,
+  .workspace-app .ws-task-table th:nth-child(8),
+  .workspace-app .ws-task-table td:nth-child(8) {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .workspace-app .ws-task-table th:nth-child(7),
+  .workspace-app .ws-task-table td:nth-child(7) {
+    display: none;
+  }
 }
 
 .workspace-app .ws-task-list {
@@ -1854,6 +3076,23 @@
   color: #15803d;
 }
 
+.workspace-app .ws-task-meta-chip.is-warning {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #c2410c;
+}
+
+.workspace-app .ws-task-reminder-warning {
+  margin: 0.65rem 0 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #9a3412;
+}
+
 .workspace-app .ws-task-badges {
   display: flex;
   flex-wrap: wrap;
@@ -1947,6 +3186,74 @@
   gap: 8px;
   padding-top: 12px;
   border-top: 1px solid #f1f5f9;
+}
+
+.workspace-app .ws-task-actions-assignee {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.workspace-app .ws-task-actions-assignee .ws-task-action-btn {
+  justify-content: center;
+  flex: 1 1 calc(50% - 4px);
+  min-width: 0;
+}
+
+.workspace-app .ws-task-actions-assignee .ws-task-action-complete {
+  flex: 0 1 auto;
+  width: auto;
+  max-width: 100%;
+  justify-content: flex-start;
+  padding: 7px 12px;
+  font-size: 0.8125rem;
+  background: #f8fafc;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.25;
+}
+
+.workspace-app .ws-task-actions-assignee .ws-task-action-complete:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+.workspace-app .ws-task-actions-assignee .ws-task-recurring-hint {
+  flex: 1 1 100%;
+}
+
+.workspace-app .ws-task-edit-actions .btn-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.workspace-app .ws-task-user-dialog-actions .btn-ghost,
+.workspace-app .ws-task-user-dialog-actions .btn-cta {
+  min-height: 2.5rem;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.8125rem;
+  border-radius: 0.625rem;
+  white-space: nowrap;
+}
+
+.workspace-app .ws-task-user-dialog-actions .btn-cta svg {
+  flex-shrink: 0;
+}
+
+.workspace-app .form-grid-premium input[type="file"] {
+  padding: 0.5rem 0.625rem;
+  min-height: auto;
+  font-size: 0.8125rem;
+}
+
+.workspace-app .ws-task-manager-request {
+  margin-top: 0;
 }
 
 .workspace-app .ws-task-action-btn {
@@ -2464,7 +3771,7 @@
 .workspace-app .hs-data-table tr.row-urgency-overdue {
   background: #fef2f2;
 }
-.workspace-app .hs-data-table tr.row-urgency-overdue td {
+.workspace-app .hs-data-table:not(.ws-task-table) tr.row-urgency-overdue td {
   color: #991b1b;
 }
 
@@ -2535,44 +3842,417 @@
   gap: 12px;
 }
 
+.workspace-app .ws-mobile-shell-header,
+.workspace-app .ws-mobile-shell-nav {
+  display: none;
+}
+
+.workspace-app .ws-mobile-shell-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  padding-top: calc(10px + env(safe-area-inset-top, 0px));
+  background: linear-gradient(180deg, #1565c0 0%, #0d47a1 100%);
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(13, 71, 161, 0.2);
+}
+
+.workspace-app .ws-mobile-shell-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.workspace-app .ws-mobile-shell-brand .logo-mark {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.workspace-app .ws-mobile-shell-brand .logo-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.workspace-app .ws-mobile-shell-brand-text {
+  min-width: 0;
+}
+
+.workspace-app .ws-mobile-shell-brand-text strong {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.workspace-app .ws-mobile-shell-brand-text span {
+  display: block;
+  margin-top: 1px;
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.78);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-app .ws-mobile-shell-profile {
+  display: none;
+}
+
+.workspace-app .ws-mobile-shell-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.workspace-app .ws-mobile-shell-ai {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+}
+
+.workspace-app .ws-mobile-shell-signout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  cursor: pointer;
+}
+
+.workspace-app .ws-mobile-shell-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  align-items: stretch;
+  justify-content: space-around;
+  gap: 2px;
+  padding: 6px 8px;
+  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+  background: #fff;
+  border-top: 1px solid #e2e8f0;
+  box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.08);
+}
+
+.workspace-app .ws-mobile-nav-link {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  min-height: 52px;
+  padding: 4px 2px;
+  border-radius: 10px;
+  color: #64748b;
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+  text-decoration: none;
+}
+
+.workspace-app .ws-mobile-nav-link span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.workspace-app .ws-mobile-nav-link.active {
+  color: #1565c0;
+  background: #eff6ff;
+}
+
 @media (max-width: 768px) {
   .workspace-app.saas-app {
     grid-template-columns: 1fr;
   }
 
-  .workspace-app .saas-sidebar {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    padding: 12px 16px;
+  .workspace-app .ws-shell-desktop {
+    display: none;
   }
 
-  .workspace-app .saas-nav {
+  .workspace-app .ws-mobile-shell-header,
+  .workspace-app .ws-mobile-shell-nav {
     display: flex;
-    flex-wrap: wrap;
-    width: 100%;
-    order: 3;
-    flex-direction: row;
-    padding: 4px 0;
-    gap: 6px;
   }
 
-  .workspace-app .saas-nav-link {
-    width: auto;
-    flex: 1 1 auto;
-    min-width: fit-content;
-  }
-
-  .workspace-app .saas-sidebar-footer {
-    margin-left: auto;
-    border: none;
-    padding: 0;
-    flex-direction: row;
-    align-items: center;
+  .workspace-app .saas-main {
+    min-height: 100vh;
+    padding-top: calc(56px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
   }
 
   .workspace-app .saas-content {
-    padding: 20px 16px 32px;
+    padding: 16px 14px 24px;
+  }
+
+  .workspace-app .hs-dashboard-eyebrow,
+  .workspace-app .hs-dashboard-sub,
+  .workspace-app .hs-topbar-user {
+    display: none;
+  }
+
+  .workspace-app .hs-dashboard-topbar h1 {
+    font-size: 1.25rem;
+  }
+
+  .workspace-app .hs-dashboard-tools {
+    width: 100%;
+  }
+
+  .workspace-app .hs-dashboard-foot {
+    padding-bottom: 8px;
+  }
+
+  .workspace-app .ws-tasks-page .ws-page-header {
+    margin-bottom: 12px;
+  }
+
+  .workspace-app .ws-tasks-page .ws-task-overview-top {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-app .ws-tasks-page .ws-task-overview-top .ws-task-charts-grid {
+    max-width: none;
+  }
+
+  .workspace-app .ws-tasks-page .ws-task-overview-side {
+    border-left: none;
+    border-top: 1px solid #e2e8f0;
+    padding: 10px 12px;
+  }
+
+  .workspace-app .ws-tasks-page .ws-task-overview-side .ws-task-filter-bar {
+    width: 100%;
+  }
+
+  .workspace-app .ws-tasks-page .ws-task-overview-side-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .workspace-app .ws-tasks-page .ws-task-overview .ws-stat-card-hint {
+    display: block;
+  }
+
+  .workspace-app .ws-tasks-page .ws-page-header h1 {
+    font-size: 1.25rem;
+  }
+
+  .workspace-app .ws-tasks-page .ws-page-header p {
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+
+  .workspace-app .ws-tasks-page .ws-task-overview {
+    margin-bottom: 12px;
+  }
+
+  .workspace-app .ws-tasks-page .ws-task-overview .ws-task-charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-app .ws-tasks-page .ws-task-overview .ws-task-chart-card {
+    border-right: none;
+  }
+
+  .workspace-app .ws-tasks-page .ws-task-overview .ws-task-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .workspace-app .ws-tasks-page .ws-task-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .workspace-app .ws-tasks-page .ws-stat-card {
+    padding: 11px 12px;
+    border-radius: 10px;
+  }
+
+  .workspace-app .ws-tasks-page .ws-stat-card span {
+    font-size: 0.6875rem;
+    margin-bottom: 4px;
+  }
+
+  .workspace-app .ws-tasks-page .ws-stat-card strong {
+    font-size: 1.375rem;
+  }
+
+  .workspace-app .ws-tasks-page .ws-stat-card-hint {
+    display: none;
+  }
+
+  .workspace-app .ws-tasks-page .ws-task-overview .ws-stat-card-hint {
+    display: block;
+  }
+
+  .workspace-app .ws-tasks-page .ws-task-charts-grid {
+    grid-template-columns: 1fr;
+    margin-bottom: 12px;
+  }
+
+  .workspace-app .ws-tasks-page .ws-task-export-bar {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 12px;
+  }
+
+  .workspace-app .ws-tasks-page .ws-task-export-actions {
+    width: 100%;
+  }
+
+  .workspace-app .ws-tasks-page .ws-task-export-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .workspace-app .ws-tasks-page .ws-tasks-controls {
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .workspace-app .ws-tasks-page .ws-task-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 0;
+  }
+
+  .workspace-app .ws-tasks-page .ws-task-filter-bar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .workspace-app .ws-tasks-page .ws-filter-layout {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .workspace-app .ws-tasks-page .ws-filter-status-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .workspace-app .ws-tasks-page .ws-filter-pills-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin: 0 -12px;
+    padding: 0 12px;
+  }
+
+  .workspace-app .ws-tasks-page .ws-filter-pills-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .workspace-app .ws-tasks-page .ws-filter-pills {
+    flex-wrap: nowrap;
+    width: max-content;
+    max-width: none;
+  }
+
+  .workspace-app .ws-tasks-page .ws-filter-pill {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    font-size: 0.78125rem;
+  }
+
+  .workspace-app .ws-tasks-page .ws-filter-secondary-row {
+    margin-left: 0;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .workspace-app .ws-tasks-page .ws-filter-group-assignee {
+    flex: 1;
+    min-width: 0;
+    margin-left: 0;
+  }
+
+  .workspace-app .ws-tasks-page .ws-filter-select-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .workspace-app .ws-tasks-page .ws-filter-select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .workspace-app .ws-tasks-page .ws-filter-overdue {
+    flex-shrink: 0;
+  }
+
+  .workspace-app .ws-tasks-page .ws-filter-active {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding-top: 8px;
+  }
+
+  .workspace-app .ws-tasks-page .ws-filter-active-chips {
+    width: 100%;
+  }
+
+  .workspace-app .ws-tasks-page .ws-filter-clear {
+    margin-left: 0;
+  }
+
+  .workspace-app .ws-tasks-page .ws-task-queue {
+    margin-top: 0;
+  }
+
+  .workspace-app .ws-tasks-page .ws-queue-head {
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+  }
+
+  .workspace-app .ws-tasks-page .ws-queue-title {
+    font-size: 1rem;
+  }
+
+  .workspace-app .ws-tasks-page .ws-queue-sub {
+    font-size: 0.78125rem;
   }
 
   .workspace-app .ws-task-stats {
@@ -2596,11 +4276,6 @@
 
   .workspace-app .ws-filter-select {
     width: 100%;
-  }
-
-  .workspace-app .ws-filter-row {
-    flex-direction: column;
-    align-items: stretch;
   }
 
   .workspace-app .ws-member-picker-list {
@@ -2786,6 +4461,213 @@
   font-size: 0.8125rem;
   color: var(--muted-text, #64748b);
   line-height: 1.45;
+}
+
+.workspace-app .saas-team-credentials-sent {
+  border-color: #86efac;
+  background: #ecfdf5;
+}
+
+.workspace-app .saas-team-credentials-sent .saas-team-credentials-title {
+  color: #166534;
+}
+
+.workspace-app .saas-team-credentials {
+  margin-top: 0.85rem;
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+}
+
+.workspace-app .saas-team-credentials-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #1e40af;
+}
+
+.workspace-app .saas-team-credentials dl {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+}
+
+.workspace-app .saas-team-credentials dt {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.workspace-app .saas-team-credentials dd {
+  margin: 0.15rem 0 0;
+}
+
+.workspace-app .saas-team-credentials code {
+  display: inline-block;
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+  background: #fff;
+  border: 1px solid #dbeafe;
+  font-size: 0.8125rem;
+  color: #0f172a;
+  word-break: break-all;
+}
+
+.workspace-app .saas-team-credentials-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: #475569;
+}
+
+.workspace-app .ws-member-module-settings {
+  margin-top: 1.25rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f8fafc 0%, #eff6ff 100%);
+}
+
+.workspace-app .ws-member-module-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #0f172a;
+}
+
+.workspace-app .ws-member-module-lead {
+  margin: 0 0 0.85rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.workspace-app .ws-member-module-grid {
+  display: grid;
+  gap: 10px;
+}
+
+@media (min-width: 640px) {
+  .workspace-app .ws-member-module-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.workspace-app .ws-module-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.workspace-app .ws-module-option:hover {
+  border-color: #93c5fd;
+}
+
+.workspace-app .ws-module-option.is-selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.15);
+}
+
+.workspace-app .ws-module-option input {
+  margin-top: 2px;
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  accent-color: #2563eb;
+}
+
+.workspace-app .ws-module-option-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #334155;
+}
+
+.workspace-app .ws-member-module-warning {
+  margin: 0.65rem 0 0;
+  font-size: 0.75rem;
+  color: #b45309;
+}
+
+.workspace-app .saas-team-module-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 0.5rem;
+}
+
+.workspace-app .saas-team-module-pill {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #1e40af;
+  background: #dbeafe;
+  border: 1px solid #bfdbfe;
+}
+
+.workspace-app .ws-attendance-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 0.75rem;
+}
+
+.workspace-app .ws-attendance-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #334155;
+  cursor: pointer;
+}
+
+.workspace-app .ws-attendance-check input {
+  margin-top: 3px;
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  accent-color: #2563eb;
+}
+
+.workspace-app .ws-attendance-check span {
+  flex: 1;
+}
+
+.workspace-app .saas-team-card-edit .ws-member-module-settings {
+  margin-top: 1rem;
+}
+
+.workspace-app .saas-team-card-edit .ws-member-hr-settings {
+  margin-top: 1.25rem;
+  padding: 1rem 0 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.workspace-app .saas-team-invite .ws-member-module-settings {
+  margin-top: 1rem;
+}
+
+.workspace-app .saas-team-reset-panel {
+  margin-top: 1rem;
 }
 
 .workspace-app .saas-team-edit-form {
@@ -3129,6 +5011,16 @@
   color: #b91c1c;
 }
 
+.workspace-app .btn-icon-reset {
+  color: #7c3aed;
+}
+
+.workspace-app .btn-icon-reset:hover:not(:disabled) {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+  color: #6d28d9;
+}
+
 .workspace-app .btn-cta.btn-compact {
   min-height: 1.75rem;
   padding: 0.25rem 0.55rem;
@@ -3189,11 +5081,33 @@
   opacity: 0.65;
 }
 
-.workspace-app .ws-filter-row {
+.workspace-app .ws-filter-layout {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 14px 18px;
+}
+
+.workspace-app .ws-filter-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.workspace-app .ws-filter-pills-scroll {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.workspace-app .ws-filter-secondary-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .workspace-app .ws-filter-group {
@@ -5362,6 +7276,50 @@
   font-size: 0.875rem;
 }
 
+.workspace-app .ws-go-live-feedback {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+}
+
+.workspace-app .ws-go-live-feedback.ok {
+  background: #ecfdf5;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+}
+
+.workspace-app .ws-go-live-feedback.ok svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.workspace-app .ws-go-live-feedback-body {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.workspace-app .ws-go-live-feedback-body p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.workspace-app .ws-go-live-feedback-details summary {
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #047857;
+  user-select: none;
+}
+
+.workspace-app .ws-go-live-feedback-details[open] summary {
+  margin-bottom: 8px;
+}
+
 .workspace-app .ws-inbox-empty,
 .workspace-app .ws-contacts-empty {
   display: grid;
@@ -5546,9 +7504,24 @@
 }
 
 .workspace-app .ws-hr-checkbox {
+  display: flex;
   flex-direction: row;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 0.65rem 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #334155;
+  cursor: pointer;
+}
+
+.workspace-app .ws-hr-checkbox input {
+  margin-top: 3px;
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  accent-color: #2563eb;
 }
 
 .workspace-app .ws-hr-meta,
@@ -5713,7 +7686,7 @@
 
 .workspace-app .ws-member-hr-settings {
   margin: 0;
-  padding: 14px 0 0;
+  padding: 1rem 0 0;
   border: 0;
   border-top: 1px solid #e2e8f0;
 }
@@ -5752,25 +7725,46 @@
   place-items: center;
   padding: 16px;
   background: rgb(15 23 42 / 0.45);
+  backdrop-filter: blur(2px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.workspace-app.ws-task-edit-portal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+
+.workspace-app.ws-task-edit-portal > .ws-task-edit-overlay {
+  pointer-events: auto;
 }
 
 .workspace-app .ws-task-edit-panel {
-  width: min(100%, 560px);
-  max-height: min(90vh, 720px);
-  overflow: auto;
-  padding: 20px;
-  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 580px);
+  max-width: 100%;
+  min-width: 0;
+  max-height: min(92vh, 760px);
+  border-radius: 16px;
   border: 1px solid #e2e8f0;
   background: #fff;
   box-shadow: 0 24px 48px rgb(15 23 42 / 0.18);
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .workspace-app .ws-task-edit-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 16px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
 }
 
 .workspace-app .ws-task-edit-head h3 {
@@ -5778,7 +7772,326 @@
   align-items: center;
   gap: 8px;
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.workspace-app .ws-task-edit-sub {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #64748b;
+  max-width: 28rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-app .ws-task-edit-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px 20px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.workspace-app .ws-task-edit-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.workspace-app .ws-task-edit-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.workspace-app .ws-task-edit-meta-chip.is-success {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.workspace-app .ws-task-edit-meta-chip.is-warning {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #a16207;
+}
+
+.workspace-app .ws-task-edit-proof {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.workspace-app .ws-task-edit-proof h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.workspace-app .ws-task-edit-proof ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.workspace-app .ws-task-edit-proof a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1565c0;
+  text-decoration: none;
+}
+
+.workspace-app .ws-task-edit-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Task edit / user-action modals: labels stacked above inputs */
+.workspace-app .ws-task-edit-panel .form-grid-premium label,
+.workspace-app .ws-task-user-dialog .form-grid-premium label {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  min-width: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.workspace-app .ws-task-edit-panel .form-grid-premium label > span:first-child,
+.workspace-app .ws-task-user-dialog .form-grid-premium label > span:first-child {
+  display: block;
+  line-height: 1.3;
+}
+
+.workspace-app .ws-task-edit-panel .form-grid-premium input,
+.workspace-app .ws-task-edit-panel .form-grid-premium select,
+.workspace-app .ws-task-edit-panel .form-grid-premium textarea,
+.workspace-app .ws-task-user-dialog .form-grid-premium input,
+.workspace-app .ws-task-user-dialog .form-grid-premium select,
+.workspace-app .ws-task-user-dialog .form-grid-premium textarea {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.625rem;
+  background: #fff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  color: #0f172a;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.workspace-app .ws-task-edit-panel .form-grid-premium input[type="datetime-local"],
+.workspace-app .ws-task-user-dialog .form-grid-premium input[type="datetime-local"] {
+  color-scheme: light;
+  min-height: 2.625rem;
+}
+
+.workspace-app .ws-task-edit-panel .form-grid-premium input::placeholder,
+.workspace-app .ws-task-edit-panel .form-grid-premium textarea::placeholder,
+.workspace-app .ws-task-user-dialog .form-grid-premium input::placeholder,
+.workspace-app .ws-task-user-dialog .form-grid-premium textarea::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.workspace-app .ws-task-edit-panel .form-grid-premium input:focus,
+.workspace-app .ws-task-edit-panel .form-grid-premium select:focus,
+.workspace-app .ws-task-edit-panel .form-grid-premium textarea:focus,
+.workspace-app .ws-task-user-dialog .form-grid-premium input:focus,
+.workspace-app .ws-task-user-dialog .form-grid-premium select:focus,
+.workspace-app .ws-task-user-dialog .form-grid-premium textarea:focus {
+  outline: none;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.workspace-app .ws-task-edit-panel .form-grid-premium textarea,
+.workspace-app .ws-task-user-dialog .form-grid-premium textarea {
+  min-height: 5rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.workspace-app .ws-task-user-dialog .ws-field-textarea-lg {
+  min-height: 6.5rem;
+}
+
+.workspace-app .ws-task-edit-panel .ws-form-section {
+  margin: 0;
+  padding: 0;
+  border: none;
+  gap: 12px;
+}
+
+.workspace-app .ws-task-edit-panel .ws-form-section + .ws-form-section {
+  padding-top: 4px;
+  border-top: 1px solid #f1f5f9;
+  margin-top: 2px;
+}
+
+.workspace-app .ws-task-edit-panel .ws-form-section-title {
+  margin-bottom: 2px;
+}
+
+.workspace-app .ws-task-due-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+}
+
+.workspace-app .ws-task-due-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: normal;
+  text-transform: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.workspace-app .ws-task-due-hint.urgency-due-overdue {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.workspace-app .ws-task-due-hint.urgency-due-today {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.workspace-app .ws-task-due-hint.urgency-due-soon {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.workspace-app .ws-task-due-hint.urgency-completed-on-time {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.workspace-app .ws-task-due-hint.urgency-completed-late {
+  background: #fef9c3;
+  color: #a16207;
+}
+
+.workspace-app .ws-task-due-field.urgency-due-overdue input {
+  border-color: #fca5a5;
+  background: #fffbfb;
+}
+
+.workspace-app .ws-task-due-field.urgency-due-today input {
+  border-color: #fdba74;
+  background: #fffbeb;
+}
+
+.workspace-app .ws-task-edit-panel .ws-field,
+.workspace-app .ws-task-user-dialog .ws-field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  min-width: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.workspace-app .ws-task-edit-panel .ws-field > span:first-child,
+.workspace-app .ws-task-user-dialog .ws-field > span:first-child {
+  display: block;
+  line-height: 1.3;
+}
+
+.workspace-app .ws-task-edit-panel .ws-field input,
+.workspace-app .ws-task-edit-panel .ws-field textarea,
+.workspace-app .ws-task-edit-panel .ws-field select,
+.workspace-app .ws-task-user-dialog .ws-field input,
+.workspace-app .ws-task-user-dialog .ws-field textarea,
+.workspace-app .ws-task-user-dialog .ws-field select {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.625rem;
+  background: #fff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  color: #0f172a;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.workspace-app .ws-task-edit-panel .ws-field input:focus,
+.workspace-app .ws-task-edit-panel .ws-field textarea:focus,
+.workspace-app .ws-task-edit-panel .ws-field select:focus,
+.workspace-app .ws-task-user-dialog .ws-field input:focus,
+.workspace-app .ws-task-user-dialog .ws-field textarea:focus,
+.workspace-app .ws-task-user-dialog .ws-field select:focus {
+  outline: none;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.workspace-app .ws-task-edit-panel .ws-field input[type="datetime-local"],
+.workspace-app .ws-task-user-dialog .ws-field input[type="datetime-local"] {
+  color-scheme: light;
+  min-height: 2.625rem;
+}
+
+.workspace-app .ws-task-edit-panel .ws-field textarea,
+.workspace-app .ws-task-user-dialog .ws-field textarea {
+  min-height: 5rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.workspace-app .ws-task-edit-panel .ws-field input::placeholder,
+.workspace-app .ws-task-edit-panel .ws-field textarea::placeholder,
+.workspace-app .ws-task-user-dialog .ws-field input::placeholder,
+.workspace-app .ws-task-user-dialog .ws-field textarea::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
 }
 
 .workspace-app .ws-task-edit-close {
@@ -5791,6 +8104,13 @@
   border-radius: 10px;
   background: #fff;
   color: #64748b;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.workspace-app .ws-task-edit-close:hover {
+  background: #f8fafc;
+  color: #0f172a;
 }
 
 .workspace-app .ws-task-edit-grid {
@@ -5807,7 +8127,90 @@
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 16px;
-  padding-top: 14px;
+  padding: 14px 20px 18px;
   border-top: 1px solid #e2e8f0;
+  background: #fff;
 }
+
+.workspace-app .ws-task-user-dialog {
+  width: min(100%, 480px);
+  max-width: min(100%, 480px);
+}
+
+.workspace-app .ws-task-user-dialog .ws-task-edit-form-grid {
+  gap: 1.125rem;
+  grid-template-columns: 1fr;
+  min-width: 0;
+}
+
+.workspace-app .ws-task-user-dialog .ws-task-edit-head h3 svg {
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .workspace-app .ws-task-edit-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-app .ws-task-edit-overlay {
+    padding: 0;
+    align-items: flex-end;
+    width: 100%;
+    max-width: 100vw;
+  }
+
+  .workspace-app .ws-task-edit-panel,
+  .workspace-app .ws-task-user-dialog {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    max-height: min(94vh, 94dvh);
+    border-radius: 16px 16px 0 0;
+    overflow-x: hidden;
+  }
+
+  .workspace-app .ws-task-user-dialog .ws-task-edit-head,
+  .workspace-app .ws-task-user-dialog .ws-task-edit-body,
+  .workspace-app .ws-task-user-dialog .ws-task-edit-actions {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+
+  .workspace-app .ws-task-edit-body {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .workspace-app .ws-task-edit-head h3 {
+    flex-wrap: wrap;
+    font-size: 1rem;
+  }
+
+  .workspace-app .ws-task-edit-actions,
+  .workspace-app .ws-task-user-dialog-actions {
+    flex-wrap: wrap;
+    justify-content: stretch;
+    gap: 8px;
+    padding-bottom: max(18px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .workspace-app .ws-task-user-dialog-actions .btn-ghost,
+  .workspace-app .ws-task-user-dialog-actions .btn-cta {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+    max-width: 100%;
+    justify-content: center;
+  }
+
+  .workspace-app .ws-file-upload-zone {
+    padding: 16px 12px;
+  }
+
+  .workspace-app .ws-task-actions-assignee .ws-task-action-complete {
+    flex: 1 1 100%;
+    justify-content: center;
+    text-align: center;
+  }
+}
+

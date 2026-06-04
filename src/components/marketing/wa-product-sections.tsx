@@ -17,6 +17,7 @@ import {
   pricingSection,
   pricingTiers,
   productFaqs,
+  pricingPageFaqs,
   productFeatures,
   productHome,
   taskWhatsappPlans,
@@ -130,7 +131,7 @@ export function WaChatPreview({ compact = false }: { compact?: boolean }) {
         <span className="wa-chat-ai-tag">
           <Bot size={10} aria-hidden /> AI - 96% confidence
         </span>
-        Hello! Task plans start at {getTaskPlanPriceLabel()} plus setup. For AI full
+        Hello! Message us for Task plan pricing. For AI full
         access, contact us for enterprise plans.
       </div>
       {!compact ? (
@@ -247,16 +248,22 @@ export function WaTestimonialsSection() {
   );
 }
 
-export function WaFaqSection() {
+export function WaFaqSection({
+  faqs = productFaqs,
+  title = "Common questions",
+}: {
+  faqs?: Array<{ q: string; a: string }>;
+  title?: string;
+}) {
   return (
     <section className="wa-section" id="faq">
       <div className="wa-product-container">
         <div className="wa-section-head">
           <span className="wa-product-kicker">FAQ</span>
-          <h2>Common questions</h2>
+          <h2>{title}</h2>
         </div>
         <div className="wa-faq-list">
-          {productFaqs.map((item) => (
+          {faqs.map((item) => (
             <article className="wa-faq-item" key={item.q}>
               <h3>{item.q}</h3>
               <p>{item.a}</p>
@@ -372,8 +379,9 @@ export function WaPricingFootnotes() {
 }
 
 export function WaPricingGrid({ plans }: { plans: PricingPlan[] }) {
+  const single = plans.length === 1;
   return (
-    <div className="wa-pricing-grid">
+    <div className={`wa-pricing-grid${single ? " is-single" : ""}`}>
       {plans.map((plan) => (
         <article
           className={`wa-pricing-card${plan.featured ? " featured" : ""}`}
@@ -454,32 +462,28 @@ function WaPricingTierBlock({
 export function WaPricingSection({
   title = pricingSection.title,
   subcopy = pricingSection.subcopy,
+  showSectionHead = true,
 }: {
   title?: string;
   subcopy?: string;
+  showSectionHead?: boolean;
 }) {
   return (
     <section className="wa-section" id="pricing">
       <div className="wa-product-container">
-        <div className="wa-section-head">
-          <span className="wa-product-kicker">{pricingSection.eyebrow}</span>
-          <h2>{title}</h2>
-          <p>{subcopy}</p>
-        </div>
+        {showSectionHead ? (
+          <div className="wa-section-head">
+            <span className="wa-product-kicker">{pricingSection.eyebrow}</span>
+            <h2>{title}</h2>
+            <p>{subcopy}</p>
+          </div>
+        ) : null}
         <WaPricingTierBlock
           anchor={pricingTiers.taskWhatsapp.anchor}
           kicker={pricingTiers.taskWhatsapp.kicker}
           plans={taskWhatsappPlans}
           subcopy={pricingTiers.taskWhatsapp.subcopy}
           title={pricingTiers.taskWhatsapp.title}
-        />
-        <WaPricingTierBlock
-          anchor={pricingTiers.aiFull.anchor}
-          contactOnly
-          kicker={pricingTiers.aiFull.kicker}
-          plans={aiFullAccessPlans}
-          subcopy={pricingTiers.aiFull.subcopy}
-          title={pricingTiers.aiFull.title}
         />
         <WaPricingFootnotes />
       </div>

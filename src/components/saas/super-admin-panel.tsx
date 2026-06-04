@@ -33,8 +33,8 @@ export function SuperAdminPanel({
             Platform super admins
           </h3>
           <p>
-            Manage who can access every client workspace and create new super
-            admin accounts. Only available in Sheetomatic Technologies.
+            Grant platform super admin to an existing user. First add them in
+            Team with email and password, then grant access here.
           </p>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import type { RedlavaCredentials } from "@/lib/integrations/redlava";
 import {
   isRedlavaConfigured,
+  parseWhatsAppSendResponse,
   sendRedlavaWhatsAppMessage,
 } from "@/lib/integrations/redlava";
 import { resolveWorkspaceWhatsAppCredentials } from "@/lib/whatsapp-settings";
@@ -8,10 +9,15 @@ import { normalizeWhatsAppPhone } from "@/lib/phone";
 import type { WhatsAppInteractivePayload } from "@/lib/whatsapp-bot/interactive-menu";
 
 type SendResult =
-  | { sent: true }
+  | { sent: true; messageId?: string }
   | {
       sent: false;
-      reason: "invalid_phone" | "not_configured" | "phone_id_required" | "api_error";
+      reason:
+        | "invalid_phone"
+        | "not_configured"
+        | "phone_id_required"
+        | "api_error"
+        | "session_required";
       detail?: string;
     };
 
@@ -59,16 +65,10 @@ async function sendViaMetaCloud(params: {
     },
   );
 
-  if (!response.ok) {
-    const detail = await response.text();
-    return {
-      sent: false,
-      reason: "api_error",
-      detail: detail.slice(0, 300),
-    };
-  }
-
-  return { sent: true };
+  const raw = await response.text();
+  const messageType =
+    typeof params.payload.type === "string" ? params.payload.type : undefined;
+  return parseWhatsAppSendResponse(response, raw, { messageType });
 }
 
 async function deliverMessage(

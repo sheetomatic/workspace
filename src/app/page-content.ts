@@ -13,6 +13,7 @@ export const mainNav = [
   { href: "/products", label: "Products" },
   { href: "/courses", label: "Courses" },
   { href: "/about", label: "About" },
+  { href: "/career", label: "Careers" },
   { href: "/contact", label: "Contact" },
 ];
 
@@ -59,6 +60,12 @@ export const homeQuickLinks = [
     href: "/about",
     label: "About",
     description: "Founder-led consultancy for Indian MSME operations.",
+  },
+  {
+    href: "/career",
+    label: "Careers",
+    description:
+      "Join the Sheetomatic payroll bench - MIS, AI tools, WhatsApp automation, and Google Workspace roles.",
   },
   {
     href: "/contact",
@@ -196,10 +203,12 @@ export const servicesPage = {
   ],
   deliveryTitle: "Pick your starting point",
   deliveryLead:
-    "Most clients begin with WhatsApp AI or MIS. We connect the rest of the stack once the first win sticks.",
+    "Most clients begin with WhatsApp AI or MIS. We connect HR, inventory, and flow once the first win sticks.",
   processTitle: "End to end. Three phases.",
   processLead:
     "One partner from discovery to daily use - with AI wired in throughout, not added later.",
+  processCtaLead:
+    "Tell us where attendance, field teams, or follow-ups break today - we will map the first win on WhatsApp.",
   processSteps: [
     {
       step: "01",
@@ -239,8 +248,8 @@ export const serviceProblemSolutions: ServiceProblemSolution[] = [
     solution: "AI task delegation",
     solutionDetail:
       "End-to-end task system with voice/text capture, smart assignment, priorities, and WhatsApp reminders from your workspace.",
-    href: "/login",
-    cta: "Open workspace",
+    href: "/services/tasks",
+    cta: "Explore tasks service",
   },
   {
     problem: "No reliable attendance or leave visibility",
@@ -249,8 +258,8 @@ export const serviceProblemSolutions: ServiceProblemSolution[] = [
     solution: "Attendance & leave system",
     solutionDetail:
       "Geo-fenced check-in, leave approvals, payroll-ready attendance, and facial recognition policy - in Sheetomatic workspace.",
-    href: "/login?callbackUrl=%2Fapp%2Fhr",
-    cta: "Open HR workspace",
+    href: "/services/hr/attendance-leave",
+    cta: "View attendance module",
   },
   {
     problem: "Field teams are invisible until end of day",
@@ -259,8 +268,8 @@ export const serviceProblemSolutions: ServiceProblemSolution[] = [
     solution: "Field executive tracking",
     solutionDetail:
       "Separate module for client geo check-ins, visit plans, and manager dashboards - not mixed with office punch.",
-    href: "/login?callbackUrl=%2Fapp%2Fhr%2Ffield",
-    cta: "Open field module",
+    href: "/services/hr/field-tracking",
+    cta: "View field tracking",
   },
   {
     problem: "Leads and customers scattered across chats",
@@ -269,8 +278,8 @@ export const serviceProblemSolutions: ServiceProblemSolution[] = [
     solution: "AI-powered CRM",
     solutionDetail:
       "Lead tracking, pipeline, and customer records linked to WhatsApp conversations and team inbox - one end-to-end CRM.",
-    href: "/ai",
-    cta: "Explore Sheetomatic AI",
+    href: "/services/crm",
+    cta: "Explore CRM service",
   },
   {
     problem: "Night-time WhatsApp leads go unanswered",
@@ -279,8 +288,8 @@ export const serviceProblemSolutions: ServiceProblemSolution[] = [
     solution: "WhatsApp AI chatbot",
     solutionDetail:
       "AI replies, qualification, order updates, team inbox, and human handoff - official API, built and tuned for your business.",
-    href: "/ai",
-    cta: "Explore Sheetomatic AI",
+    href: "/services/whatsapp-ai",
+    cta: "Explore WhatsApp AI",
   },
   {
     problem: "Owner numbers arrive too late to act",
@@ -289,8 +298,8 @@ export const serviceProblemSolutions: ServiceProblemSolution[] = [
     solution: "AI-assisted MIS",
     solutionDetail:
       "Daily dashboards, monthly MIS, and Looker views with AI-flagged exceptions when collections or KPIs drift.",
-    href: "/products",
-    cta: "See products",
+    href: "/services/mis",
+    cta: "Explore MIS service",
   },
   {
     problem: "Stock on paper does not match reality",
@@ -299,8 +308,8 @@ export const serviceProblemSolutions: ServiceProblemSolution[] = [
     solution: "Inventory management",
     solutionDetail:
       "End-to-end stock in/out, locations, reorder signals, and alerts - tied to the same data your team uses daily.",
-    href: "/products",
-    cta: "See products",
+    href: "/services/inventory",
+    cta: "Explore inventory service",
   },
   {
     problem: "Orders stall between enquiry and closure",
@@ -309,8 +318,8 @@ export const serviceProblemSolutions: ServiceProblemSolution[] = [
     solution: "Flow monitoring",
     solutionDetail:
       "Stage-based visibility with named owners and AI nudges when a step sits too long - enquiry to closure.",
-    href: "/services",
-    cta: "Consult today",
+    href: "/services/flow",
+    cta: "Explore flow service",
   },
   {
     problem: "Manual copy-paste eats the week",
@@ -319,8 +328,8 @@ export const serviceProblemSolutions: ServiceProblemSolution[] = [
     solution: "Workflow automation",
     solutionDetail:
       "End-to-end automations across Sheets, WhatsApp, workspace, and AI - replacing repetitive reporting and follow-up.",
-    href: "/services",
-    cta: "Consult today",
+    href: "/services/automation",
+    cta: "Explore automation service",
   },
 ];
 
@@ -456,9 +465,9 @@ export const aboutPage = {
 
 export const careerPage = {
   eyebrow: "Career",
-  title: "Join the Sheetomatic MIS bench.",
+  title: "Join the Sheetomatic AI + MIS bench.",
   lead:
-    "We hire capable people on Sheetomatic Payroll and place them as off-site MIS support for MSME clients.",
+    "We hire on Sheetomatic Payroll for MIS, Google Workspace, AI tools, and WhatsApp automation roles - off-site or at client office when the placement requires it.",
 };
 
 export const coursesPage = {

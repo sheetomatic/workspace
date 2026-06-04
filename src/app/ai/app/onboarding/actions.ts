@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { AI_APP_MIN_ROLE } from "@/lib/ai-auth-links";
 import { getSessionUser } from "@/lib/auth";
 import { hasMinimumRole } from "@/lib/permissions";
 
@@ -10,7 +11,7 @@ export async function completeAiOnboarding(input: {
   industry: string;
 }) {
   const user = await getSessionUser();
-  if (!user || !hasMinimumRole(user.role, "MANAGER")) {
+  if (!user || !hasMinimumRole(user.role, AI_APP_MIN_ROLE)) {
     return { ok: false as const, message: "You do not have permission to finish setup." };
   }
 

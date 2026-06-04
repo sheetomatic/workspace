@@ -3,7 +3,6 @@
 import {
   BarChart3,
   ClipboardCheck,
-  LayoutDashboard,
   ListTodo,
   LogOut,
   MapPin,
@@ -14,10 +13,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import type { WorkspaceModule } from "@prisma/client";
 import { OrganizationSwitcher } from "@/components/saas/organization-switcher";
 import type { OrganizationOption } from "@/components/saas/organization-switcher";
 import type { SessionUser } from "@/lib/auth";
 import { ROLE_LABELS } from "@/lib/permissions";
+import { hasWorkspaceModule } from "@/lib/workspace-modules";
 import { siteBrand } from "@/app/site-content";
 
 const ROLE_ORDER = ["VIEWER", "STAFF", "MANAGER", "ADMIN", "OWNER"] as const;
@@ -25,25 +26,66 @@ const ROLE_ORDER = ["VIEWER", "STAFF", "MANAGER", "ADMIN", "OWNER"] as const;
 type NavItem = {
   href: string;
   label: string;
-  icon: typeof LayoutDashboard;
+  icon: typeof ListTodo;
   minRole?: (typeof ROLE_ORDER)[number];
+  module?: WorkspaceModule;
 };
 
 const navItems: NavItem[] = [
-  { href: "/app", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/app/tasks", label: "Tasks", icon: ListTodo, minRole: "VIEWER" },
-  { href: "/app/hr", label: "HR", icon: MapPin, minRole: "VIEWER" },
-  { href: "/app/approvals", label: "Approvals", icon: ClipboardCheck, minRole: "MANAGER" },
-  { href: "/app/reports", label: "Reports", icon: BarChart3, minRole: "VIEWER" },
+  {
+    href: "/app/tasks",
+    label: "Tasks",
+    icon: ListTodo,
+    minRole: "VIEWER",
+    module: "TASKS",
+  },
+  { href: "/app/hr", label: "HR", icon: MapPin, minRole: "VIEWER", module: "HR" },
+  {
+    href: "/app/approvals",
+    label: "Approvals",
+    icon: ClipboardCheck,
+    minRole: "MANAGER",
+    module: "APPROVALS",
+  },
+  {
+    href: "/app/reports",
+    label: "Reports",
+    icon: BarChart3,
+    minRole: "VIEWER",
+    module: "REPORTS",
+  },
   { href: "/app/team", label: "Team", icon: Users, minRole: "ADMIN" },
   { href: "/app/settings", label: "Settings", icon: Settings, minRole: "ADMIN" },
 ];
 
-function canAccess(userRole: SessionUser["role"], minRole?: NavItem["minRole"]) {
+function canAccessRole(userRole: SessionUser["role"], minRole?: NavItem["minRole"]) {
   if (!minRole) {
     return true;
   }
   return ROLE_ORDER.indexOf(userRole) >= ROLE_ORDER.indexOf(minRole);
+}
+
+function canAccessNav(user: SessionUser, item: NavItem) {
+  if (!canAccessRole(user.role, item.minRole)) {
+    return false;
+  }
+  if (!item.module) {
+    return true;
+  }
+  return hasWorkspaceModule(user, item.module);
+}
+
+function navIsActive(pathname: string, href: string) {
+  return href === "/app" ? pathname === "/app" : pathname.startsWith(href);
+}
+
+function userInitials(user: SessionUser) {
+  return (user.name ?? user.email)
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 }
 
 export function SaasShell({
@@ -56,10 +98,65 @@ export function SaasShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const visibleNav = navItems.filter((item) => canAccessNav(user, item));
+  const roleLabel = user.isSuperAdmin ? "Super Admin" : ROLE_LABELS[user.role];
 
   return (
     <div className="saas-app workspace-app">
-      <aside className="saas-sidebar">
+      <header className="ws-mobile-shell-header">
+        <div className="ws-mobile-shell-brand">
+          <span className="logo-mark">
+            <Image
+              src={siteBrand.logoSrc}
+              alt={siteBrand.logoAlt}
+              width={28}
+              height={28}
+            />
+          </span>
+          <div className="ws-mobile-shell-brand-text">
+            <strong>Sheetomatic</strong>
+            <span>{user.organizationName}</span>
+          </div>
+        </div>
+        <div className="ws-mobile-shell-profile" title={`${user.name ?? user.email} · ${roleLabel}`}>
+          <span className="crm-avatar sm" aria-hidden>
+            {userInitials(user)}
+          </span>
+          <div className="ws-mobile-shell-profile-text">
+            <strong>{user.name ?? user.email.split("@")[0]}</strong>
+            <span>{roleLabel}</span>
+          </div>
+        </div>
+        <div className="ws-mobile-shell-actions">
+          <button
+            aria-label="Sign out"
+            className="ws-mobile-shell-signout"
+            type="button"
+            onClick={() => signOut({ callbackUrl: "/" })}
+          >
+            <LogOut size={18} />
+          </button>
+        </div>
+      </header>
+
+      <nav className="ws-mobile-shell-nav" aria-label="Workspace navigation">
+        {visibleNav.map(({ href, label, icon: Icon }) => {
+          const active = navIsActive(pathname, href);
+          return (
+            <Link
+              key={href}
+              aria-current={active ? "page" : undefined}
+              className={active ? "ws-mobile-nav-link active" : "ws-mobile-nav-link"}
+              href={href}
+            >
+              <Icon size={20} strokeWidth={2} />
+              <span>{label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      <aside className="saas-sidebar ws-shell-desktop">
         <div className="crm-sidebar-head">
           <div className="saas-sidebar-brand">
             <span className="logo-mark">
@@ -79,12 +176,7 @@ export function SaasShell({
 
         <div className="crm-sidebar-profile">
           <span className="crm-avatar" aria-hidden>
-            {(user.name ?? user.email)
-              .split(" ")
-              .map((part) => part[0])
-              .join("")
-              .slice(0, 2)
-              .toUpperCase()}
+            {userInitials(user)}
           </span>
           <div className="crm-sidebar-profile-text">
             <strong title={user.name ?? user.email}>
@@ -102,30 +194,22 @@ export function SaasShell({
         />
 
         <nav className="saas-nav" aria-label="Workspace">
-          {navItems
-            .filter((item) => canAccess(user.role, item.minRole))
-            .map(({ href, label, icon: Icon }) => {
-              const active =
-                href === "/app"
-                  ? pathname === "/app"
-                  : pathname.startsWith(href);
-              return (
-                <Link
-                  key={href}
-                  className={active ? "saas-nav-link active" : "saas-nav-link"}
-                  href={href}
-                >
-                  <Icon size={18} strokeWidth={2} />
-                  {label}
-                </Link>
-              );
-            })}
+          {visibleNav.map(({ href, label, icon: Icon }) => {
+            const active = navIsActive(pathname, href);
+            return (
+              <Link
+                key={href}
+                className={active ? "saas-nav-link active" : "saas-nav-link"}
+                href={href}
+              >
+                <Icon size={18} strokeWidth={2} />
+                {label}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="saas-sidebar-footer">
-          <Link className="ai-workspace-link" href="/ai/app">
-            Open Sheetomatic AI
-          </Link>
           <p className="crm-sidebar-email" title={user.email}>
             {user.email}
           </p>

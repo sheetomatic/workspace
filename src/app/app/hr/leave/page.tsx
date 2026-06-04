@@ -9,7 +9,7 @@ import {
 } from "@/lib/hr/hr-actions";
 
 export default async function HrLeavePage() {
-  const user = await requireSession();
+  const user = await requireSession(undefined, { module: "HR" });
   const isManager = hasMinimumRole(user.role, "MANAGER");
   const requests = await listLeaveRequests(
     user.organizationId,

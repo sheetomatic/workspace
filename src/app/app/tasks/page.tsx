@@ -1,15 +1,32 @@
 import { Suspense } from "react";
 import type { TaskStatus } from "@prisma/client";
 import { PageHeader } from "@/components/saas/page-header";
+import { TaskChartsPanel } from "@/components/saas/task-charts-panel";
+import { TaskExportBar } from "@/components/saas/task-export-bar";
 import { TaskFeedbackToast } from "@/components/saas/task-feedback-toast";
-import { TasksActionBar } from "@/components/saas/tasks-action-bar";
-import { TaskList } from "@/components/saas/task-list";
+import { TaskFilters } from "@/components/saas/task-filters";
+import { TaskStatsBar } from "@/components/saas/task-stats-bar";
+import {
+  NewTaskTrigger,
+  TasksActionBar,
+} from "@/components/saas/tasks-action-bar";
 import { TaskPagination } from "@/components/saas/task-pagination";
+import { TaskTable } from "@/components/saas/task-table";
+import {
+  hasQuickTaskFilter,
+  taskFilterLabel,
+} from "@/lib/task-filter-label";
+import {
+  getGoogleSheetsConnectionStatus,
+  getSpreadsheetIdForOrganization,
+} from "@/lib/integrations/google-sheets-dashboard";
 import { requireSession } from "@/lib/require-session";
+import { hasMinimumRole } from "@/lib/permissions";
 import { taskPageFromSearchParam } from "@/lib/scale";
 import {
   canCreateTasks,
   canUpdateTask,
+  getTaskChartData,
   getTaskStats,
   listAssignableMembers,
   listDelegatedTasks,
@@ -20,13 +37,14 @@ type TasksPageProps = {
     status?: string;
     assignee?: string;
     overdue?: string;
+    doneToday?: string;
     page?: string;
     all?: string;
   }>;
 };
 
 export default async function TasksPage({ searchParams }: TasksPageProps) {
-  const user = await requireSession();
+  const user = await requireSession(undefined, { module: "TASKS" });
   const params = await searchParams;
   const page = taskPageFromSearchParam(params.page);
 
@@ -37,57 +55,106 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
         : undefined,
     assigneeUserId: params.assignee || undefined,
     overdueOnly: params.overdue === "1",
+    completedTodayOnly: params.doneToday === "1",
     includeCompleted: params.status === "COMPLETED" || params.all === "1",
   };
 
   const taskPage = await listDelegatedTasks(user, filter, { page });
-  const tasks = taskPage.items.map((task) => ({
-    ...task,
-    canAct: canUpdateTask(user, task),
-    canManage: canCreateTasks(user.role),
-  }));
-  const [stats, members] = await Promise.all([
+  const tasks = taskPage.items.map((task) => {
+    const open = task.requests[0];
+    return {
+      ...task,
+      canAct: canUpdateTask(user, task),
+      canManage: canCreateTasks(user.role),
+      isAssignee: task.assigneeUserId === user.id,
+      openRequest: open
+        ? {
+            id: open.id,
+            type: open.type,
+            label:
+              open.type === "REVISION"
+                ? "Revision requested"
+                : open.type === "EXTENSION"
+                  ? "Extension requested"
+                  : "Help requested",
+            message: open.message,
+            proposedDueAt: open.proposedDueAt,
+          }
+        : null,
+    };
+  });
+  const [stats, chartData, members, spreadsheetId] = await Promise.all([
     getTaskStats(user),
+    getTaskChartData(user),
     canCreateTasks(user.role)
       ? listAssignableMembers(user.organizationId)
       : Promise.resolve([]),
+    getSpreadsheetIdForOrganization(user.organizationId),
   ]);
+  const sheetsConnection = getGoogleSheetsConnectionStatus(spreadsheetId);
 
   const showCreate = canCreateTasks(user.role);
+  const showAssigneeFilter =
+    hasMinimumRole(user.role, "MANAGER") || user.role === "VIEWER";
   const filterMembers = members.map((member) => ({
     id: member.id,
     name: member.name,
   }));
 
+  const filterParams = {
+    status: params.status,
+    assignee: params.assignee,
+    overdue: params.overdue,
+    doneToday: params.doneToday,
+    all: params.all,
+  };
+  const quickFilterActive = hasQuickTaskFilter(filterParams);
+  const activeFilterLabel = taskFilterLabel(filterParams);
+
   return (
     <div className="saas-page ws-tasks-page">
-      <PageHeader
-        title="Tasks"
-        description="Delegate, track, and complete work with clear owners, due dates, and reminders."
-      />
+      <PageHeader title="Tasks" />
 
       <Suspense fallback={null}>
         <TaskFeedbackToast />
       </Suspense>
 
-      <div className="ws-task-stats">
-        <div className="ws-stat-card ws-stat-pending">
-          <span>Pending</span>
-          <strong>{stats.pending}</strong>
-        </div>
-        <div className="ws-stat-card ws-stat-progress">
-          <span>In progress</span>
-          <strong>{stats.inProgress}</strong>
-        </div>
-        <div className="ws-stat-card ws-stat-done">
-          <span>Done today</span>
-          <strong>{stats.completedToday}</strong>
-        </div>
-        <div className="ws-stat-card ws-stat-overdue">
-          <span>Overdue</span>
-          <strong>{stats.overdue}</strong>
-        </div>
-      </div>
+      <section aria-label="Task overview" className="ws-task-overview">
+        {!quickFilterActive ? (
+          <div className="ws-task-overview-top">
+            <TaskChartsPanel charts={chartData} />
+            <aside className="ws-task-overview-side">
+              <Suspense fallback={null}>
+                <TaskFilters
+                  current={{
+                    status: params.status,
+                    assignee: params.assignee,
+                    overdue: params.overdue,
+                    doneToday: params.doneToday,
+                  }}
+                  members={filterMembers}
+                  showAssigneeFilter={showAssigneeFilter}
+                />
+              </Suspense>
+              <div className="ws-task-overview-side-actions">
+                <TaskExportBar
+                  compact
+                  sheetsReady={sheetsConnection.ready}
+                  spreadsheetUrl={sheetsConnection.spreadsheetUrl}
+                />
+                {showCreate ? (
+                  <Suspense fallback={null}>
+                    <NewTaskTrigger />
+                  </Suspense>
+                ) : null}
+              </div>
+            </aside>
+          </div>
+        ) : null}
+        <Suspense fallback={<div className="ws-task-stats is-loading" />}>
+          <TaskStatsBar stats={stats} />
+        </Suspense>
+      </section>
 
       <Suspense fallback={<div className="ws-tasks-controls is-loading" />}>
         <TasksActionBar
@@ -95,9 +162,12 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
             status: params.status,
             assignee: params.assignee,
             overdue: params.overdue,
+            doneToday: params.doneToday,
           }}
           filterMembers={filterMembers}
+          filtersInOverview={!quickFilterActive}
           members={members}
+          showAssigneeFilter={showAssigneeFilter}
           showCreate={showCreate}
         />
       </Suspense>
@@ -105,28 +175,27 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
       <section className="ws-task-queue" id="execution-queue">
         <div className="ws-queue-head">
           <div>
-            <h2 className="ws-queue-title">Task board</h2>
+            <h2 className="ws-queue-title">
+              {activeFilterLabel ? `${activeFilterLabel} tasks` : "All Tasks"}
+            </h2>
             <p className="ws-queue-sub">
-              {taskPage.total} task{taskPage.total === 1 ? "" : "s"} total
+              {taskPage.total} task{taskPage.total === 1 ? "" : "s"}
+              {activeFilterLabel ? ` in ${activeFilterLabel.toLowerCase()}` : ""}
               {taskPage.totalPages > 1
-                ? ` · showing ${tasks.length} on page ${page}`
+                ? ` · page ${page} of ${taskPage.totalPages}`
                 : ""}
             </p>
           </div>
         </div>
-        <TaskList members={members} tasks={tasks} />
+        <TaskTable members={members} tasks={tasks} />
         <TaskPagination
           page={page}
-          searchParams={{
-            status: params.status,
-            assignee: params.assignee,
-            overdue: params.overdue,
-            all: params.all,
-          }}
+          searchParams={filterParams}
           total={taskPage.total}
           totalPages={taskPage.totalPages}
         />
       </section>
+
     </div>
   );
 }

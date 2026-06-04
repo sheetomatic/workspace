@@ -15,7 +15,7 @@ import {
 import { fieldTrackingModule } from "@/app/hr-module-content";
 
 export default async function HrFieldPage() {
-  const user = await requireSession();
+  const user = await requireSession(undefined, { module: "HR" });
   const isManager = hasMinimumRole(user.role, "MANAGER");
   const [checkIns, visits, members] = await Promise.all([
     listFieldCheckIns(user.organizationId),

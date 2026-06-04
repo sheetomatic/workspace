@@ -7,6 +7,7 @@ import type { WhatsAppTemplateVariable } from "@/lib/whatsapp-templates";
 export type WhatsAppTemplateActionState = {
   ok: boolean;
   message: string;
+  messageId?: string;
 };
 
 export const whatsAppTemplateInitialState: WhatsAppTemplateActionState = {

@@ -11,7 +11,7 @@ import {
 import type { DashboardDataSource, DashboardPayload } from "@/lib/dashboard-types";
 import type { SessionUser } from "@/lib/auth";
 import { hasMinimumRole, roleRank, ROLE_LABELS } from "@/lib/permissions";
-import { taskVisibilityFilter } from "@/lib/tasks";
+import { ACTIVE_TASK_STATUSES, taskVisibilityFilter } from "@/lib/tasks";
 import { prisma } from "@/lib/db";
 
 export type DashboardSourceRows = {
@@ -235,10 +235,7 @@ export async function buildDashboardPayload(
     ) {
       completedToday += 1;
     }
-    if (
-      (task.status === "PENDING" || task.status === "IN_PROGRESS") &&
-      task.dueAt.getTime() < now
-    ) {
+    if (ACTIVE_TASK_STATUSES.includes(task.status) && task.dueAt.getTime() < now) {
       overdue += 1;
     }
   }

@@ -16,6 +16,13 @@ enum Role {
   VIEWER
 }
 
+enum WorkspaceModule {
+  TASKS
+  HR
+  APPROVALS
+  REPORTS
+}
+
 enum OrganizationStatus {
   ONBOARDING
   ACTIVE
@@ -131,6 +138,8 @@ model DelegatedTask {
   completedAt            DateTime?
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @updatedAt
+  attachments            TaskAttachment[]
+  requests               TaskRequest[]
 
   @@index([organizationId, status])
   @@index([organizationId, assigneeUserId])
@@ -405,6 +414,9 @@ enum TaskStatus {
   PENDING
   IN_PROGRESS
   COMPLETED
+  REVISION_REQUESTED
+  EXTENSION_REQUESTED
+  HELP_REQUESTED
 }
 
 enum TaskPriority {
@@ -426,6 +438,56 @@ enum TaskFrequency {
   DAILY
   WEEKLY
   MONTHLY
+}
+
+model TaskAttachment {
+  id           String   @id @default(cuid())
+  taskId       String
+  task         DelegatedTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploadedById String
+  uploadedBy   User     @relation("TaskAttachmentUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+  fileName     String
+  mimeType     String
+  fileSize     Int
+  data         Bytes
+  createdAt    DateTime @default(now())
+
+  @@index([taskId])
+}
+
+enum TaskRequestType {
+  REVISION
+  EXTENSION
+  HELP
+}
+
+enum TaskRequestStatus {
+  OPEN
+  APPROVED
+  REJECTED
+  RESOLVED
+}
+
+model TaskRequest {
+  id             String            @id @default(cuid())
+  organizationId String
+  taskId         String
+  task           DelegatedTask     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  type           TaskRequestType
+  status         TaskRequestStatus @default(OPEN)
+  message        String?
+  proposedDueAt  DateTime?
+  requestedById  String
+  requestedBy    User              @relation("TaskRequestRequester", fields: [requestedById], references: [id], onDelete: Cascade)
+  resolvedById   String?
+  resolvedBy     User?             @relation("TaskRequestResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+  resolvedAt     DateTime?
+  resolutionNote String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([organizationId, status])
+  @@index([taskId, status])
 }
 
 model WorkspaceApproval {
@@ -481,6 +543,9 @@ model User {
   assignedFollowUps    WorkspaceFollowUp[]      @relation("FollowUpAssignee")
   assignedTasks        DelegatedTask[]          @relation("TaskAssignee")
   createdTasks         DelegatedTask[]          @relation("TaskCreator")
+  taskAttachments      TaskAttachment[]         @relation("TaskAttachmentUploader")
+  taskRequestsMade     TaskRequest[]            @relation("TaskRequestRequester")
+  taskRequestsResolved TaskRequest[]            @relation("TaskRequestResolver")
   whatsappTemplates    WhatsAppTemplate[]       @relation("WhatsAppTemplateCreator")
   assignedWaContacts   WaContact[]              @relation("WaContactAssignee")
   waMessagesSent       WaMessage[]              @relation("WaMessageSender")
@@ -521,6 +586,7 @@ model Membership {
   attendanceWorkMode AttendanceWorkMode  @default(OFFICE)
   geoFenceRequired   Boolean             @default(false)
   faceRequired       Boolean             @default(false)
+  modules            WorkspaceModule[]   @default([])
   userId             String
   organizationId     String
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)

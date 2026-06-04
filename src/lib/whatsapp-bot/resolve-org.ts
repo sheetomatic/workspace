@@ -13,6 +13,8 @@ export type ResolvedWhatsAppDelegator = {
   phone: string;
 };
 
+export type ResolvedWhatsAppTeamMember = ResolvedWhatsAppDelegator;
+
 export async function resolveOrganizationByPhoneNumberId(phoneNumberId: string) {
   const settings = await prisma.workspaceWhatsAppSettings.findFirst({
     where: { redlavaPhoneId: phoneNumberId },
@@ -55,6 +57,17 @@ export async function resolveDelegatorByPhone(
   organizationId: string,
   fromPhone: string,
 ): Promise<ResolvedWhatsAppDelegator | null> {
+  const member = await resolveTeamMemberByPhone(organizationId, fromPhone);
+  if (!member || !hasMinimumRole(member.role, "MANAGER")) {
+    return null;
+  }
+  return member;
+}
+
+export async function resolveTeamMemberByPhone(
+  organizationId: string,
+  fromPhone: string,
+): Promise<ResolvedWhatsAppTeamMember | null> {
   const memberships = await prisma.membership.findMany({
     where: { organizationId },
     include: {
@@ -65,9 +78,6 @@ export async function resolveDelegatorByPhone(
 
   for (const membership of memberships) {
     if (!phonesMatch(membership.user.phone, fromPhone)) {
-      continue;
-    }
-    if (!hasMinimumRole(membership.role, "MANAGER")) {
       continue;
     }
 

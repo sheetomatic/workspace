@@ -1,5 +1,5 @@
 import { PageHeader } from "@/components/saas/page-header";
-import { requireSession } from "@/lib/require-session";
+import { requireAiSession } from "@/lib/require-session";
 import { getAiAnalyticsMetrics } from "@/lib/ai-analytics";
 
 function formatMetric(value: number | null, suffix = "") {
@@ -10,7 +10,7 @@ function formatMetric(value: number | null, suffix = "") {
 }
 
 export default async function SheetomaticAiAnalyticsPage() {
-  const user = await requireSession("VIEWER", { redirectTo: "/ai/app" });
+  const user = await requireAiSession();
   const stats = await getAiAnalyticsMetrics(user.organizationId);
 
   const metrics = [

@@ -2,26 +2,32 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useTransition } from "react";
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import type { TaskStatus } from "@prisma/client";
 
 const statuses: Array<{ value: TaskStatus | "ALL"; label: string }> = [
   { value: "ALL", label: "All" },
   { value: "PENDING", label: "Pending" },
   { value: "IN_PROGRESS", label: "In progress" },
+  { value: "REVISION_REQUESTED", label: "Revision" },
+  { value: "EXTENSION_REQUESTED", label: "Extension" },
+  { value: "HELP_REQUESTED", label: "Help" },
   { value: "COMPLETED", label: "Completed" },
 ];
 
 export function TaskFilters({
   members,
   current,
+  showAssigneeFilter = true,
 }: {
   members: Array<{ id: string; name: string }>;
   current: {
     status?: string;
     assignee?: string;
     overdue?: string;
+    doneToday?: string;
   };
+  showAssigneeFilter?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -33,10 +39,21 @@ export function TaskFilters({
     : "ALL";
   const activeAssignee = current.assignee ?? "";
   const overdueOnly = current.overdue === "1";
+  const doneTodayOnly = current.doneToday === "1";
 
   const pushFilters = useCallback(
-    (next: { status?: string; assignee?: string; overdue?: string }) => {
+    (next: {
+      status?: string;
+      assignee?: string;
+      overdue?: string;
+      clearQuick?: boolean;
+    }) => {
       const params = new URLSearchParams(searchParams.toString());
+
+      if (next.clearQuick) {
+        params.delete("doneToday");
+        params.delete("overdue");
+      }
 
       if (next.status === undefined) {
         /* keep */
@@ -44,6 +61,8 @@ export function TaskFilters({
         params.delete("status");
       } else {
         params.set("status", next.status);
+        params.delete("doneToday");
+        params.delete("overdue");
       }
 
       if (next.assignee === undefined) {
@@ -64,16 +83,26 @@ export function TaskFilters({
 
       const query = params.toString();
       startTransition(() => {
-        router.push(query ? `${pathname}?${query}` : pathname);
+        router.push(
+          query ? `${pathname}?${query}#execution-queue` : `${pathname}#execution-queue`,
+          { scroll: false },
+        );
+        window.requestAnimationFrame(() => {
+          document.getElementById("execution-queue")?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        });
       });
     },
     [pathname, router, searchParams],
   );
 
   const hasActiveFilters =
-    activeStatus !== "ALL" || Boolean(activeAssignee) || overdueOnly;
-
-  const assigneeName = members.find((member) => member.id === activeAssignee)?.name;
+    activeStatus !== "ALL" ||
+    (showAssigneeFilter && Boolean(activeAssignee)) ||
+    overdueOnly ||
+    doneTodayOnly;
 
   function clearAll() {
     startTransition(() => {
@@ -82,41 +111,22 @@ export function TaskFilters({
   }
 
   return (
-    <div className={`ws-task-filter-bar${pending ? " is-loading" : ""}`}>
-      <div className="ws-filter-row">
+    <div className={`ws-task-filter-bar ws-task-filter-bar-compact${pending ? " is-loading" : ""}`}>
+      <div className="ws-filter-layout ws-filter-layout-compact">
         <div className="ws-filter-group">
           <span className="ws-filter-group-label">Status</span>
-          <div className="ws-filter-pills" role="tablist" aria-label="Filter by status">
-            {statuses.map((status) => (
-              <button
-                aria-selected={activeStatus === status.value}
-                className={`ws-filter-pill${activeStatus === status.value ? " is-active" : ""}`}
-                key={status.value}
-                role="tab"
-                type="button"
-                onClick={() => pushFilters({ status: status.value })}
-              >
-                {status.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="ws-filter-group ws-filter-group-assignee">
-          <span className="ws-filter-group-label">Assignee</span>
           <div className="ws-filter-select-wrap">
             <select
-              aria-label="Filter by assignee"
+              aria-label="Filter by status"
               className="ws-filter-select"
-              value={activeAssignee}
+              value={activeStatus}
               onChange={(event) =>
-                pushFilters({ assignee: event.target.value })
+                pushFilters({ status: event.target.value, clearQuick: true })
               }
             >
-              <option value="">Everyone</option>
-              {members.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.name}
+              {statuses.map((status) => (
+                <option key={status.value} value={status.value}>
+                  {status.label}
                 </option>
               ))}
             </select>
@@ -124,55 +134,81 @@ export function TaskFilters({
           </div>
         </div>
 
+        {showAssigneeFilter ? (
+          <div className="ws-filter-group ws-filter-group-assignee">
+            <span className="ws-filter-group-label">Assignee</span>
+            <div className="ws-filter-select-wrap">
+              <select
+                aria-label="Filter by assignee"
+                className="ws-filter-select"
+                value={activeAssignee}
+                onChange={(event) =>
+                  pushFilters({ assignee: event.target.value })
+                }
+              >
+                <option value="">Everyone</option>
+                {members.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown aria-hidden className="ws-filter-select-icon" size={16} />
+            </div>
+          </div>
+        ) : null}
+
         <button
           aria-pressed={overdueOnly}
-          className={`ws-filter-pill ws-filter-overdue${overdueOnly ? " is-active" : ""}`}
+          className={`ws-filter-pill ws-filter-overdue ws-filter-overdue-compact${overdueOnly ? " is-active" : ""}`}
           type="button"
-          onClick={() => pushFilters({ overdue: overdueOnly ? "" : "1" })}
+          onClick={() => {
+            const params = new URLSearchParams(searchParams.toString());
+            if (overdueOnly) {
+              params.delete("overdue");
+            } else {
+              params.set("overdue", "1");
+              params.delete("doneToday");
+              params.delete("status");
+            }
+            const query = params.toString();
+            startTransition(() => {
+              router.push(
+                query ? `${pathname}?${query}#execution-queue` : `${pathname}#execution-queue`,
+                { scroll: false },
+              );
+            });
+          }}
         >
           Overdue
         </button>
+
+        {hasActiveFilters ? (
+          <button className="ws-filter-clear ws-filter-clear-inline" type="button" onClick={clearAll}>
+            Clear
+          </button>
+        ) : null}
       </div>
 
-      {hasActiveFilters ? (
-        <div className="ws-filter-active">
-          <span className="ws-filter-active-label">Active filters</span>
-          <div className="ws-filter-active-chips">
-            {activeStatus !== "ALL" ? (
-              <button
-                className="ws-filter-chip"
-                type="button"
-                onClick={() => pushFilters({ status: "ALL" })}
-              >
-                {statuses.find((status) => status.value === activeStatus)?.label}
-                <X aria-hidden size={12} />
-              </button>
-            ) : null}
-            {assigneeName ? (
-              <button
-                className="ws-filter-chip"
-                type="button"
-                onClick={() => pushFilters({ assignee: "" })}
-              >
-                {assigneeName}
-                <X aria-hidden size={12} />
-              </button>
-            ) : null}
-            {overdueOnly ? (
-              <button
-                className="ws-filter-chip"
-                type="button"
-                onClick={() => pushFilters({ overdue: "" })}
-              >
-                Overdue
-                <X aria-hidden size={12} />
-              </button>
-            ) : null}
-          </div>
-          <button className="ws-filter-clear" type="button" onClick={clearAll}>
-            Clear all
+      {doneTodayOnly ? (
+        <p className="ws-filter-done-today-hint">
+          Showing tasks completed today.{" "}
+          <button
+            className="ws-filter-clear ws-filter-clear-inline"
+            type="button"
+            onClick={() => {
+              const params = new URLSearchParams(searchParams.toString());
+              params.delete("doneToday");
+              startTransition(() => {
+                router.push(
+                  params.toString() ? `${pathname}?${params.toString()}` : pathname,
+                );
+              });
+            }}
+          >
+            Clear
           </button>
-        </div>
+        </p>
       ) : null}
     </div>
   );
