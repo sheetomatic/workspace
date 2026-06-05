@@ -550,6 +550,7 @@ export async function resendTaskAssignmentReminders(
     organizationId: user.organizationId,
     remindViaEmail: task.remindViaEmail,
     remindViaWhatsApp: task.remindViaWhatsApp,
+    kind: "assignment",
   });
 
   await prisma.delegatedTask.update({
@@ -567,6 +568,69 @@ export async function resendTaskAssignmentReminders(
   revalidatePath("/app/tasks");
 
   const base = "Notification resend attempted.";
+  return {
+    ok: reminders.emailSent || reminders.whatsappSent,
+    message: formatReminderSuccessMessage(base, reminders.summary),
+  };
+}
+
+export async function resendTaskDueReminders(
+  taskId: string,
+): Promise<TaskActionState> {
+  const user = await getSessionUser();
+  if (!user || !canCreateTasks(user.role)) {
+    return { ok: false, message: "You cannot resend due reminders." };
+  }
+
+  const task = await prisma.delegatedTask.findFirst({
+    where: { id: taskId, organizationId: user.organizationId },
+    include: {
+      assignee: { select: { name: true, email: true, phone: true } },
+    },
+  });
+
+  if (!task) {
+    return { ok: false, message: "Task not found." };
+  }
+
+  if (!task.remindViaEmail && !task.remindViaWhatsApp) {
+    return {
+      ok: false,
+      message: "This task has no email or WhatsApp reminders enabled.",
+    };
+  }
+
+  const reminders = await dispatchTaskReminders({
+    taskId: task.id,
+    taskTitle: task.title,
+    taskDescription: task.instructions,
+    priority: task.priority,
+    dueAt: task.dueAt,
+    frequency: task.frequency,
+    isRecurring: task.isRecurring,
+    assignee: task.assignee,
+    organizationName: user.organizationName,
+    organizationId: user.organizationId,
+    remindViaEmail: task.remindViaEmail,
+    remindViaWhatsApp: task.remindViaWhatsApp,
+    kind: "due",
+  });
+
+  await prisma.delegatedTask.update({
+    where: { id: task.id },
+    data: {
+      emailReminderSentAt: reminders.emailSent
+        ? new Date()
+        : task.emailReminderSentAt,
+      whatsappReminderSentAt: reminders.whatsappSent
+        ? new Date()
+        : task.whatsappReminderSentAt,
+    },
+  });
+
+  revalidatePath("/app/tasks");
+
+  const base = "Due reminder resend attempted.";
   return {
     ok: reminders.emailSent || reminders.whatsappSent,
     message: formatReminderSuccessMessage(base, reminders.summary),

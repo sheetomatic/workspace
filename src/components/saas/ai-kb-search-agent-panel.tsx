@@ -32,9 +32,9 @@ export function AiKbSearchAgentPanel({
             {isLive ? "Live" : "Draft"}
           </span>
         </div>
-        <button className="ai-joyz-draft-btn" type="button">
-          Save as draft
-        </button>
+        <Link className="ai-joyz-draft-btn" href="/ai/app/knowledge">
+          Edit training
+        </Link>
       </div>
 
       <section className="ai-joyz-agent-section">

@@ -7,6 +7,7 @@ import { canManageSuperAdmins } from "@/lib/platform";
 import { requireSession } from "@/lib/require-session";
 import { getOrCreateHrSettings } from "@/lib/hr/hr-store";
 import { listWorkspaceMembers } from "@/lib/workspace";
+import { tenantPortalOrigin } from "@/lib/workspace-auth-links";
 
 export default async function TeamPage() {
   const user = await requireSession("ADMIN");
@@ -23,6 +24,12 @@ export default async function TeamPage() {
         title="Team"
         description="Manage people, departments, designations, roles, WhatsApp numbers, and attendance settings per member."
       />
+      <p className="ws-tenant-portal-hint">
+        Company workspace URL:{" "}
+        <a href={tenantPortalOrigin(user.organizationSlug)}>
+          {user.organizationSlug}.sheetomatic.com
+        </a>
+      </p>
       {showSuperAdminPanel ? (
         <SuperAdminPanel
           currentUserId={user.id}

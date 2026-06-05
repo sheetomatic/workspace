@@ -26,12 +26,8 @@ async function resolveOrgCredentials(organizationId: string) {
   const redlava: RedlavaCredentials | null = creds.redlavaApiKey
     ? { apiKey: creds.redlavaApiKey, phoneId: creds.redlavaPhoneId }
     : null;
-  const metaToken =
-    creds.metaAccessToken || process.env.WHATSAPP_ACCESS_TOKEN?.trim() || "";
-  const phoneNumberId =
-    creds.redlavaPhoneId ||
-    process.env.WHATSAPP_PHONE_NUMBER_ID?.trim() ||
-    "";
+  const metaToken = creds.metaAccessToken || "";
+  const phoneNumberId = creds.redlavaPhoneId || "";
 
   return { redlava, metaToken, phoneNumberId };
 }

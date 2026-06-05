@@ -45,7 +45,15 @@ function dueLocalFromIso(iso: string) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function TaskCreateForm({ members }: { members: Member[] }) {
+export function TaskCreateForm({
+  members,
+  emailConfigured = true,
+  whatsappConfigured = true,
+}: {
+  members: Member[];
+  emailConfigured?: boolean;
+  whatsappConfigured?: boolean;
+}) {
   const [state, action, pending] = useActionState(
     createDelegatedTask,
     taskActionInitialState,
@@ -90,6 +98,18 @@ export function TaskCreateForm({ members }: { members: Member[] }) {
     setRemindViaEmail(false);
     setRemindViaWhatsApp(true);
   }
+
+  useEffect(() => {
+    if (!emailConfigured) {
+      setRemindViaEmail(false);
+    }
+  }, [emailConfigured]);
+
+  useEffect(() => {
+    if (!whatsappConfigured) {
+      setRemindViaWhatsApp(false);
+    }
+  }, [whatsappConfigured]);
 
   useEffect(() => {
     if (searchParams.get("assigned") === "1") {
@@ -294,9 +314,17 @@ export function TaskCreateForm({ members }: { members: Member[] }) {
           <div className="ws-form-section ws-form-section-inline">
             <h4 className="ws-form-section-title">Reminders</h4>
             <div className="ws-task-reminder-options" aria-label="Send reminders">
-              <label className="ws-task-reminder-opt">
+              <label
+                className={`ws-task-reminder-opt${!emailConfigured ? " is-disabled" : ""}`}
+                title={
+                  emailConfigured
+                    ? undefined
+                    : "Email is not configured on the server (Resend)."
+                }
+              >
                 <input
-                  checked={remindViaEmail}
+                  checked={remindViaEmail && emailConfigured}
+                  disabled={!emailConfigured}
                   name="remindViaEmail"
                   type="checkbox"
                   value="1"
@@ -304,9 +332,17 @@ export function TaskCreateForm({ members }: { members: Member[] }) {
                 />
                 Email
               </label>
-              <label className="ws-task-reminder-opt">
+              <label
+                className={`ws-task-reminder-opt${!whatsappConfigured ? " is-disabled" : ""}`}
+                title={
+                  whatsappConfigured
+                    ? undefined
+                    : "Connect WhatsApp in AI Settings first."
+                }
+              >
                 <input
-                  checked={remindViaWhatsApp}
+                  checked={remindViaWhatsApp && whatsappConfigured}
+                  disabled={!whatsappConfigured}
                   name="remindViaWhatsApp"
                   type="checkbox"
                   value="1"
@@ -315,6 +351,17 @@ export function TaskCreateForm({ members }: { members: Member[] }) {
                 WhatsApp
               </label>
             </div>
+            {!emailConfigured ? (
+              <p className="ws-task-reminder-warning">
+                Email reminders are off — Resend is not configured on the server.
+              </p>
+            ) : null}
+            {!whatsappConfigured ? (
+              <p className="ws-task-reminder-warning">
+                WhatsApp reminders are off — connect your RedLava API key in{" "}
+                <a href="/ai/app/settings">AI Settings</a>.
+              </p>
+            ) : null}
             {remindViaWhatsApp && assigneesMissingPhone.length > 0 ? (
               <p className="ws-task-reminder-warning">
                 {assigneesMissingPhone.map((member) => member.name).join(", ")}{" "}

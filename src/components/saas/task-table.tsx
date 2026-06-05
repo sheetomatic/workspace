@@ -49,9 +49,11 @@ function tableRowClass(urgency: TaskDueUrgency) {
 export function TaskTable({
   tasks,
   members = [],
+  whatsappConfigured = true,
 }: {
   tasks: TaskRow[];
   members?: MemberOption[];
+  whatsappConfigured?: boolean;
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -209,6 +211,7 @@ export function TaskTable({
                           <TaskReminderStatus
                             showResend={Boolean(task.canManage)}
                             task={task}
+                            whatsappConfigured={whatsappConfigured}
                           />
                           {task.instructions ? (
                             <p className="ws-task-instructions">{task.instructions}</p>

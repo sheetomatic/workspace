@@ -1,4 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  apexOrigin,
+  isAiAppPath,
+  isApiPath,
+  isStaticAssetPath,
+  isWorkspacePath,
+  parseHost,
+} from "@/lib/subdomain";
+
+const TENANT_SLUG_HEADER = "x-tenant-slug";
 
 function hasSessionCookie(request: NextRequest) {
   return Boolean(
@@ -7,9 +17,42 @@ function hasSessionCookie(request: NextRequest) {
   );
 }
 
-export function middleware(request: NextRequest) {
+function withTenantHeader(response: NextResponse, tenantSlug: string) {
+  response.headers.set(TENANT_SLUG_HEADER, tenantSlug);
+  return response;
+}
+
+function redirectToApexMarketing(request: NextRequest, pathname: string) {
+  const target = new URL(pathname + request.nextUrl.search, apexOrigin());
+  return NextResponse.redirect(target);
+}
+
+function workspaceLoginUrl(request: NextRequest, options?: { org?: string }) {
+  const loginUrl = request.nextUrl.clone();
+  loginUrl.pathname = "/login";
+  loginUrl.search = "";
+
+  if (options?.org) {
+    loginUrl.searchParams.set("org", options.org);
+  }
+
+  return loginUrl;
+}
+
+function aiLoginUrl(request: NextRequest, options?: { intent?: string }) {
+  const loginUrl = request.nextUrl.clone();
+  loginUrl.pathname = "/login";
+  loginUrl.search = "";
+  loginUrl.searchParams.set("product", "ai");
+  loginUrl.searchParams.set(
+    "intent",
+    options?.intent ?? "login",
+  );
+  return loginUrl;
+}
+
+function handleProtectedAppRoutes(request: NextRequest, isLoggedIn: boolean) {
   const { pathname } = request.nextUrl;
-  const isLoggedIn = hasSessionCookie(request);
   const isAppRoute = pathname.startsWith("/app");
   const isAiAppRoute = pathname.startsWith("/ai/app");
   const isLoginRoute = pathname === "/login";
@@ -75,9 +118,141 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(appUrl);
   }
 
+  return null;
+}
+
+function handleWorkspacePortalHost(request: NextRequest, isLoggedIn: boolean) {
+  const { pathname } = request.nextUrl;
+
+  if (isApiPath(pathname) || isStaticAssetPath(pathname)) {
+    return NextResponse.next();
+  }
+
+  if (pathname === "/") {
+    return NextResponse.redirect(workspaceLoginUrl(request));
+  }
+
+  if (pathname.startsWith("/ai/app")) {
+    const aiHost = request.nextUrl.clone();
+    aiHost.hostname = `ai.${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "sheetomatic.com"}`;
+    aiHost.pathname = pathname;
+    return NextResponse.redirect(aiHost);
+  }
+
+  if (!isWorkspacePath(pathname)) {
+    return redirectToApexMarketing(request, pathname);
+  }
+
+  const protectedResponse = handleProtectedAppRoutes(request, isLoggedIn);
+  return protectedResponse ?? NextResponse.next();
+}
+
+function handleAiPortalHost(request: NextRequest, isLoggedIn: boolean) {
+  const { pathname } = request.nextUrl;
+
+  if (isApiPath(pathname) || isStaticAssetPath(pathname)) {
+    return NextResponse.next();
+  }
+
+  if (pathname === "/") {
+    if (isLoggedIn) {
+      const appUrl = request.nextUrl.clone();
+      appUrl.pathname = "/ai/app";
+      appUrl.search = "";
+      return NextResponse.redirect(appUrl);
+    }
+    return NextResponse.redirect(aiLoginUrl(request));
+  }
+
+  if (pathname.startsWith("/app")) {
+    const workspaceHost = request.nextUrl.clone();
+    workspaceHost.hostname = `app.${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "sheetomatic.com"}`;
+    workspaceHost.pathname = pathname;
+    return NextResponse.redirect(workspaceHost);
+  }
+
+  if (!isAiAppPath(pathname) && pathname !== "/ai") {
+    return redirectToApexMarketing(request, pathname);
+  }
+
+  const protectedResponse = handleProtectedAppRoutes(request, isLoggedIn);
+  return protectedResponse ?? NextResponse.next();
+}
+
+function handleTenantHost(
+  request: NextRequest,
+  tenantSlug: string,
+  isLoggedIn: boolean,
+) {
+  const { pathname } = request.nextUrl;
+
+  if (isApiPath(pathname) || isStaticAssetPath(pathname)) {
+    return withTenantHeader(NextResponse.next(), tenantSlug);
+  }
+
+  if (pathname === "/") {
+    return NextResponse.redirect(
+      workspaceLoginUrl(request, { org: tenantSlug }),
+    );
+  }
+
+  if (pathname.startsWith("/ai/app") || pathname === "/ai") {
+    const aiHost = request.nextUrl.clone();
+    aiHost.hostname = `ai.${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "sheetomatic.com"}`;
+    aiHost.pathname = pathname;
+    return NextResponse.redirect(aiHost);
+  }
+
+  if (!isWorkspacePath(pathname)) {
+    return redirectToApexMarketing(request, pathname);
+  }
+
+  if (pathname === "/login" && !request.nextUrl.searchParams.has("org")) {
+    const loginUrl = workspaceLoginUrl(request, { org: tenantSlug });
+    const callbackUrl = request.nextUrl.searchParams.get("callbackUrl");
+    if (callbackUrl) {
+      loginUrl.searchParams.set("callbackUrl", callbackUrl);
+    }
+    return NextResponse.redirect(loginUrl);
+  }
+
+  const protectedResponse = handleProtectedAppRoutes(request, isLoggedIn);
+  if (protectedResponse) {
+    return protectedResponse;
+  }
+
+  const rewriteUrl = request.nextUrl.clone();
+  const response = NextResponse.rewrite(rewriteUrl);
+  return withTenantHeader(response, tenantSlug);
+}
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const isLoggedIn = hasSessionCookie(request);
+  const parsedHost = parseHost(request.headers.get("host"));
+
+  if (parsedHost.kind === "workspace") {
+    return handleWorkspacePortalHost(request, isLoggedIn);
+  }
+
+  if (parsedHost.kind === "ai") {
+    return handleAiPortalHost(request, isLoggedIn);
+  }
+
+  if (parsedHost.kind === "tenant" && parsedHost.tenantSlug) {
+    return handleTenantHost(request, parsedHost.tenantSlug, isLoggedIn);
+  }
+
+  const protectedResponse = handleProtectedAppRoutes(request, isLoggedIn);
+  if (protectedResponse) {
+    return protectedResponse;
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/app/:path*", "/ai/app/:path*", "/login"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|eot)$).*)",
+  ],
 };

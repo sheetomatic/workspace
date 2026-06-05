@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTransition } from "react";
 
 export type OrganizationOption = {
@@ -20,6 +20,7 @@ export function OrganizationSwitcher({
 }) {
   const { update } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
   const [pending, startTransition] = useTransition();
 
   if (organizations.length <= 1) {
@@ -33,7 +34,7 @@ export function OrganizationSwitcher({
 
     startTransition(async () => {
       await update({ organizationSlug: slug });
-      router.push("/app/tasks");
+      router.push(pathname.startsWith("/ai/app") ? "/ai/app" : "/app/tasks");
       router.refresh();
     });
   }

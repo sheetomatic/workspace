@@ -9,11 +9,11 @@ export const maxDuration = 60;
 function verifyMetaSignature(rawBody: string, signatureHeader: string | null) {
   const appSecret = process.env.META_APP_SECRET?.trim();
   if (!appSecret) {
-    return true;
+    return process.env.NODE_ENV !== "production";
   }
 
   if (!signatureHeader?.startsWith("sha256=")) {
-    return true;
+    return false;
   }
 
   const expected = createHmac("sha256", appSecret)

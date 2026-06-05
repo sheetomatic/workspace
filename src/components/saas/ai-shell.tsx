@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  BarChart3,
   Bot,
   BookOpen,
   ChevronDown,
@@ -39,8 +40,14 @@ type NavItem = {
 const mainNavItems: NavItem[] = [
   { href: "/ai/app", label: "Dashboard", icon: LayoutDashboard, minRole: AI_APP_MIN_ROLE },
   { href: "/ai/app/inbox", label: "Chats", icon: MessageCircle, minRole: AI_APP_MIN_ROLE },
-  { href: "/ai/app/contacts", label: "Contacts", icon: Users, minRole: AI_APP_MIN_ROLE },
-  { href: "/ai/app/tickets", label: "Tickets", icon: Ticket, minRole: AI_APP_MIN_ROLE },
+  { href: "/ai/app/contacts", label: "CRM", icon: Users, minRole: AI_APP_MIN_ROLE },
+  { href: "/ai/app/tickets", label: "Support hub", icon: Ticket, minRole: AI_APP_MIN_ROLE },
+  {
+    href: "/ai/app/analytics",
+    label: "Analytics",
+    icon: BarChart3,
+    minRole: AI_APP_MIN_ROLE,
+  },
   {
     href: "/ai/app/campaign",
     label: "Campaign",

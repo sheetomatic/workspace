@@ -395,11 +395,7 @@ async function isBotLive(organizationId: string) {
     select: { botLiveAt: true },
   });
 
-  if (!settings) {
-    return Boolean(process.env.REDLAVA_API_KEY?.trim());
-  }
-
-  return Boolean(settings.botLiveAt);
+  return Boolean(settings?.botLiveAt);
 }
 
 async function markEvent(

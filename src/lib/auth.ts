@@ -85,6 +85,8 @@ async function resolveMembership(
         organization: match.organization,
       };
     }
+    // Tenant subdomain login must match this workspace — do not fall back to another org.
+    return null;
   }
 
   const preferred =
@@ -117,9 +119,20 @@ function toAuthUser(
   };
 }
 
+const authCookieDomain = process.env.AUTH_COOKIE_DOMAIN?.trim() || undefined;
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 7 },
+  cookies: authCookieDomain
+    ? {
+        sessionToken: {
+          options: {
+            domain: authCookieDomain,
+          },
+        },
+      }
+    : undefined,
   pages: {
     signIn: "/login",
   },

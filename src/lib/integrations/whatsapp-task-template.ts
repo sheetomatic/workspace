@@ -326,9 +326,8 @@ async function sendViaMetaTemplateWithLanguage(
   template: ResolvedTemplate,
   languageCode: string,
 ): Promise<WhatsAppSendResult> {
-  const token = params.metaToken?.trim() || process.env.WHATSAPP_ACCESS_TOKEN?.trim();
-  const phoneNumberId =
-    params.metaPhoneId?.trim() || process.env.WHATSAPP_PHONE_NUMBER_ID?.trim();
+  const token = params.metaToken?.trim();
+  const phoneNumberId = params.metaPhoneId?.trim();
   if (!token || !phoneNumberId) {
     return { sent: false, reason: "not_configured" };
   }

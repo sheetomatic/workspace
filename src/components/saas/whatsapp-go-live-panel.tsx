@@ -56,17 +56,19 @@ export function WhatsAppGoLivePanel({ status }: { status: WhatsAppGoLiveStatus }
       done: status.credentialsReady,
       note: status.phoneId
         ? `Phone ID ${status.phoneId}${status.businessPhone ? ` - ${status.businessPhone}` : ""}`
-        : "Use Phone ID 1102997926228862 for +91 96857 88980",
+        : "Save your RedLava API key and Phone ID in Settings",
     },
     {
       id: "webhook",
       title: "Register webhook",
       description:
         "In RedLava or Meta WhatsApp settings, point inbound messages to Sheetomatic (not the wchatter URL).",
-      done: status.webhookReceived || status.verifyTokenConfigured,
+      done: status.webhookReceived,
       note: status.webhookReceived
         ? "Inbound webhook received"
-        : status.verifyTokenHint,
+        : status.verifyTokenConfigured
+          ? "Point RedLava to the callback URL below — waiting for first message"
+          : status.verifyTokenHint,
     },
     {
       id: "team",

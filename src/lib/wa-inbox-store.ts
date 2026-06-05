@@ -373,12 +373,7 @@ export async function setWaContactAiEnabled(
   return updated.count > 0;
 }
 
-export function parseContactTags(raw: unknown): string[] {
-  if (!Array.isArray(raw)) {
-    return [];
-  }
-  return raw.filter((item): item is string => typeof item === "string");
-}
+export { parseContactTags } from "@/lib/wa-crm-shared";
 
 export function parseAiSourceTitles(raw: unknown): string[] {
   if (!Array.isArray(raw)) {

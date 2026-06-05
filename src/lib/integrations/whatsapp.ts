@@ -142,6 +142,8 @@ type DeliverTaskMessageParams = {
   organizationName: string;
   frequencyLabel?: string;
   isRecurring?: boolean;
+  /** Due reminders use text within an active session — not the assignment template. */
+  skipTemplate?: boolean;
 };
 
 async function sendTaskTemplate(params: DeliverTaskMessageParams & {
@@ -181,10 +183,7 @@ async function deliverTaskMessage(params: DeliverTaskMessageParams) {
       };
     }
     metaToken = workspace.metaAccessToken;
-    metaPhoneId =
-      workspace.redlavaPhoneId?.trim() ||
-      process.env.WHATSAPP_PHONE_NUMBER_ID?.trim() ||
-      null;
+    metaPhoneId = workspace.redlavaPhoneId?.trim() || null;
   }
 
   const sendParams = {
@@ -197,7 +196,7 @@ async function deliverTaskMessage(params: DeliverTaskMessageParams) {
   const templateParams = { ...params, ...sendParams };
 
   // Template-first: assign_task_new works outside the 24h window for new assignees.
-  if (params.organizationId) {
+  if (params.organizationId && !params.skipTemplate) {
     const templateResult = await sendTaskTemplate(templateParams);
     if (templateResult.sent || templateResult.reason === "phone_id_required") {
       return templateResult;
@@ -256,20 +255,33 @@ export async function sendTaskAssignmentWhatsApp(params: {
   organizationId?: string;
   frequencyLabel?: string;
   isRecurring?: boolean;
+  reminderKind?: "assignment" | "due";
 }) {
   const taskDescription = resolveTaskDescription(
     params.taskTitle,
     params.taskDescription,
   );
-  const body = buildTaskMessageBody({
-    taskTitle: params.taskTitle,
-    taskDescription,
-    assigneeName: params.assigneeName,
-    priority: params.priority,
-    dueAt: params.dueAt,
-    frequencyLabel: params.frequencyLabel,
-    isRecurring: params.isRecurring,
-  });
+  const isDueReminder = params.reminderKind === "due";
+  const body = isDueReminder
+    ? [
+        `*Task reminder*`,
+        ``,
+        `*${params.taskTitle}*`,
+        ``,
+        `Hi ${params.assigneeName}, this task is due ${formatTaskDue(params.dueAt)}.`,
+        `Priority: ${params.priority}`,
+        ``,
+        `Reply on WhatsApp or open Sheetomatic to update status.`,
+      ].join("\n")
+    : buildTaskMessageBody({
+        taskTitle: params.taskTitle,
+        taskDescription,
+        assigneeName: params.assigneeName,
+        priority: params.priority,
+        dueAt: params.dueAt,
+        frequencyLabel: params.frequencyLabel,
+        isRecurring: params.isRecurring,
+      });
 
   return deliverTaskMessage({
     toPhone: params.toPhone,
@@ -284,5 +296,6 @@ export async function sendTaskAssignmentWhatsApp(params: {
     organizationName: params.organizationName,
     frequencyLabel: params.frequencyLabel,
     isRecurring: params.isRecurring,
+    skipTemplate: isDueReminder,
   });
 }

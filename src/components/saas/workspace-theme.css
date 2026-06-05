@@ -787,6 +787,22 @@
   display: none;
 }
 
+.workspace-app .ws-tenant-portal-hint {
+  margin: -8px 0 20px;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.workspace-app .ws-tenant-portal-hint a {
+  font-weight: 600;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.workspace-app .ws-tenant-portal-hint a:hover {
+  text-decoration: underline;
+}
+
 .workspace-app .saas-workspace-overview {
   display: none;
 }
@@ -2764,6 +2780,62 @@
   margin: 10px 0 0;
   font-size: 0.8125rem;
   color: #334155;
+}
+
+.workspace-app .ws-task-reminder-section-label {
+  margin: 12px 0 6px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.workspace-app .ws-task-reminder-section-label:first-of-type {
+  margin-top: 0;
+}
+
+.workspace-app .ws-task-reminder-hint a,
+.workspace-app .ws-task-reminder-hint-warn a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.workspace-app .ws-task-reminder-opt.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.workspace-app .ws-task-integration-banner {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+}
+
+.workspace-app .ws-task-integration-banner ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 0.875rem;
+}
+
+.workspace-app .ws-task-integration-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: #b45309;
+  text-decoration: none;
+}
+
+.workspace-app .ws-task-integration-link:hover {
+  text-decoration: underline;
 }
 
 @media (max-width: 720px) {

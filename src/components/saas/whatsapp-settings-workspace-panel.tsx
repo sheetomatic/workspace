@@ -20,6 +20,7 @@ export function WhatsAppSettingsWorkspacePanel({
   hasSavedSecrets,
   resellerPhones = [],
   resellerWalletPoints = null,
+  showResellerWallet = false,
   goLiveStatus,
   userName,
   userEmail,
@@ -31,6 +32,7 @@ export function WhatsAppSettingsWorkspacePanel({
   hasSavedSecrets: { redlavaApiKey: boolean };
   resellerPhones?: RedlavaResellerPhone[];
   resellerWalletPoints?: number | null;
+  showResellerWallet?: boolean;
   goLiveStatus: WhatsAppGoLiveStatus;
   userName: string;
   userEmail: string;
@@ -56,25 +58,27 @@ export function WhatsAppSettingsWorkspacePanel({
         </dl>
       </section>
 
-      <section className="saas-panel ws-settings-account-card" id="wallet">
-        <h2>RedLava wallet</h2>
-        <p className="ws-go-live-hint">
-          Reseller wallet balance used for WhatsApp message credits on RedLava.
-        </p>
-        <p className="ws-settings-wallet-balance">
-          {resellerWalletPoints != null
-            ? `${resellerWalletPoints.toLocaleString()} points`
-            : "Wallet unavailable - add REDLAVA_RESELLER_API_KEY on the server."}
-        </p>
-        <a
-          className="ws-product-module-cta inline"
-          href="https://wa.redlava.in"
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          Open RedLava dashboard
-        </a>
-      </section>
+      {showResellerWallet ? (
+        <section className="saas-panel ws-settings-account-card" id="wallet">
+          <h2>RedLava wallet</h2>
+          <p className="ws-go-live-hint">
+            Reseller wallet balance used for WhatsApp message credits on RedLava.
+          </p>
+          <p className="ws-settings-wallet-balance">
+            {resellerWalletPoints != null
+              ? `${resellerWalletPoints.toLocaleString()} points`
+              : "Wallet unavailable - add REDLAVA_RESELLER_API_KEY on the server."}
+          </p>
+          <a
+            className="ws-product-module-cta inline"
+            href="https://wa.redlava.in"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Open RedLava dashboard
+          </a>
+        </section>
+      ) : null}
 
       <section className="saas-panel ws-settings-account-card">
         <h2>WhatsApp connection</h2>

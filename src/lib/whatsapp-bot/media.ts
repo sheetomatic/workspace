@@ -58,8 +58,7 @@ export async function downloadWhatsAppMedia(params: {
     }
   }
 
-  const token =
-    creds.metaAccessToken || process.env.WHATSAPP_ACCESS_TOKEN?.trim() || "";
+  const token = creds.metaAccessToken || "";
   if (token) {
     return downloadViaMetaGraph(token, params.mediaId);
   }

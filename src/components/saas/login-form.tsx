@@ -40,10 +40,11 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const product = searchParams.get("product");
   const intent = searchParams.get("intent");
+  const orgSlug = searchParams.get("org")?.trim() || undefined;
   const isAiProduct = product === "ai";
   const isAiLogin = isAiProduct && intent === "login";
   const isAiSignup = isAiProduct && intent === "start";
-  const isWorkspaceSignup = !isAiProduct && intent === "start";
+  const isWorkspaceSignup = !isAiProduct && intent === "start" && !orgSlug;
   const isSignup = isAiSignup || isWorkspaceSignup;
   const callbackUrl = safeCallbackUrl(
     searchParams.get("callbackUrl"),
@@ -99,6 +100,7 @@ export function LoginForm() {
     const result = await signIn("credentials", {
       email: normalizedEmail,
       password,
+      organization: orgSlug,
       callbackUrl,
       redirect: false,
     });
@@ -130,6 +132,7 @@ export function LoginForm() {
       const result = await signIn("credentials", {
         email: email.trim().toLowerCase(),
         password,
+        organization: orgSlug,
         callbackUrl,
         redirect: false,
       });
@@ -155,7 +158,7 @@ export function LoginForm() {
     return () => {
       cancelled = true;
     };
-  }, [callbackUrl, email, password, registerPending, registerState]);
+  }, [callbackUrl, email, orgSlug, password, registerPending, registerState]);
 
   function fillDemo(accountEmail: string) {
     setEmail(accountEmail);

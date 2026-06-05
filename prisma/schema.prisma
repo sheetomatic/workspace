@@ -59,6 +59,7 @@ model Organization {
   whatsappSettings  WorkspaceWhatsAppSettings?
   whatsappInboundEvents WhatsAppInboundEvent[]
   waContacts        WaContact[]
+  waContactFollowUps WaContactFollowUp[]
   waConversations   WaConversation[]
   waMessages        WaMessage[]
   aiKnowledgeItems  AiKnowledgeItem[]
@@ -270,16 +271,42 @@ model WaContact {
   notes                  String?
   assignedToId   String?
   assignedTo     User?           @relation("WaContactAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  nextFollowUpAt DateTime?
   lastMessageAt  DateTime?
   unreadCount    Int             @default(0)
   aiEnabled      Boolean         @default(true)
   conversations  WaConversation[]
+  followUps      WaContactFollowUp[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
   @@unique([organizationId, phone])
   @@index([organizationId, lastMessageAt])
   @@index([organizationId, pipelineStage])
+  @@index([organizationId, assignedToId])
+  @@index([organizationId, nextFollowUpAt])
+}
+
+model WaContactFollowUp {
+  id              String       @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contactId       String
+  contact         WaContact    @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  assigneeUserId  String?
+  assignee        User?        @relation("WaFollowUpAssignee", fields: [assigneeUserId], references: [id], onDelete: SetNull)
+  scheduledAt     DateTime
+  completedAt     DateTime?
+  notes           String?
+  reminderNote    String?
+  createdByUserId String?
+  createdBy       User?        @relation("WaFollowUpCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([organizationId, scheduledAt])
+  @@index([contactId])
+  @@index([assigneeUserId, scheduledAt])
 }
 
 model WaConversation {
@@ -548,6 +575,8 @@ model User {
   taskRequestsResolved TaskRequest[]            @relation("TaskRequestResolver")
   whatsappTemplates    WhatsAppTemplate[]       @relation("WhatsAppTemplateCreator")
   assignedWaContacts   WaContact[]              @relation("WaContactAssignee")
+  assignedWaFollowUps  WaContactFollowUp[]      @relation("WaFollowUpAssignee")
+  createdWaFollowUps   WaContactFollowUp[]      @relation("WaFollowUpCreator")
   waMessagesSent       WaMessage[]              @relation("WaMessageSender")
   aiKnowledgeCreated   AiKnowledgeItem[]        @relation("AiKnowledgeCreator")
   attendanceRecords    AttendanceRecord[]       @relation("AttendanceUser")

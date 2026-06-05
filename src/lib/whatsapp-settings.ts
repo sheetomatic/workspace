@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { formatWhatsAppPhone, normalizeWhatsAppPhone } from "@/lib/phone";
+import { canUsePlatformWhatsAppEnv } from "@/lib/platform";
 
 export type WorkspaceWhatsAppCredentials = {
   businessPhone: string | null;
@@ -27,30 +28,43 @@ export async function getWorkspaceWhatsAppSettings(organizationId: string) {
 export async function resolveWorkspaceWhatsAppCredentials(
   organizationId: string,
 ): Promise<WorkspaceWhatsAppCredentials> {
-  const saved = await getWorkspaceWhatsAppSettings(organizationId);
+  const [saved, usePlatformEnv] = await Promise.all([
+    getWorkspaceWhatsAppSettings(organizationId),
+    canUsePlatformWhatsAppEnv(organizationId),
+  ]);
+
+  const envBusinessPhone = usePlatformEnv
+    ? normalizeWhatsAppPhone(process.env.WHATSAPP_FALLBACK_PHONE ?? "")
+    : null;
+  const envRedlavaApiKey = usePlatformEnv
+    ? process.env.REDLAVA_API_KEY?.trim() || null
+    : null;
+  const envRedlavaPhoneId = usePlatformEnv
+    ? process.env.REDLAVA_PHONE_ID?.trim() || null
+    : null;
+  const envMetaAccessToken = usePlatformEnv
+    ? process.env.WHATSAPP_ACCESS_TOKEN?.trim() || null
+    : null;
+  const envMetaWabaId = usePlatformEnv
+    ? process.env.WHATSAPP_BUSINESS_ACCOUNT_ID?.trim() ||
+      process.env.WHATSAPP_WABA_ID?.trim() ||
+      null
+    : null;
+  const envMetaBusinessId = usePlatformEnv
+    ? process.env.WHATSAPP_BUSINESS_ID?.trim() || null
+    : null;
 
   const businessPhone =
-    normalizeWhatsAppPhone(saved?.businessPhone ?? "") ??
-    normalizeWhatsAppPhone(process.env.WHATSAPP_FALLBACK_PHONE ?? "") ??
-    null;
+    normalizeWhatsAppPhone(saved?.businessPhone ?? "") ?? envBusinessPhone ?? null;
 
-  const redlavaApiKey =
-    saved?.redlavaApiKey?.trim() || process.env.REDLAVA_API_KEY?.trim() || null;
+  const redlavaApiKey = saved?.redlavaApiKey?.trim() || envRedlavaApiKey || null;
   const redlavaPhoneId =
-    saved?.redlavaPhoneId?.trim() || process.env.REDLAVA_PHONE_ID?.trim() || null;
+    saved?.redlavaPhoneId?.trim() || envRedlavaPhoneId || null;
   const metaAccessToken =
-    saved?.metaAccessToken?.trim() ||
-    process.env.WHATSAPP_ACCESS_TOKEN?.trim() ||
-    null;
-  const metaWabaId =
-    saved?.metaWabaId?.trim() ||
-    process.env.WHATSAPP_BUSINESS_ACCOUNT_ID?.trim() ||
-    process.env.WHATSAPP_WABA_ID?.trim() ||
-    null;
+    saved?.metaAccessToken?.trim() || envMetaAccessToken || null;
+  const metaWabaId = saved?.metaWabaId?.trim() || envMetaWabaId || null;
   const metaBusinessId =
-    saved?.metaBusinessId?.trim() ||
-    process.env.WHATSAPP_BUSINESS_ID?.trim() ||
-    null;
+    saved?.metaBusinessId?.trim() || envMetaBusinessId || null;
 
   const hasWorkspace =
     Boolean(saved?.redlavaApiKey) ||
@@ -59,9 +73,10 @@ export async function resolveWorkspaceWhatsAppCredentials(
     Boolean(saved?.metaWabaId) ||
     Boolean(saved?.businessPhone);
   const hasEnv =
-    Boolean(process.env.REDLAVA_API_KEY) ||
-    Boolean(process.env.WHATSAPP_ACCESS_TOKEN) ||
-    Boolean(process.env.WHATSAPP_BUSINESS_ACCOUNT_ID);
+    usePlatformEnv &&
+    (Boolean(envRedlavaApiKey) ||
+      Boolean(envMetaAccessToken) ||
+      Boolean(envMetaWabaId));
 
   return {
     businessPhone,
@@ -70,7 +85,7 @@ export async function resolveWorkspaceWhatsAppCredentials(
     metaAccessToken,
     metaWabaId,
     metaBusinessId,
-    source: hasWorkspace && hasEnv ? "mixed" : hasWorkspace ? "workspace" : "environment",
+    source: hasWorkspace && hasEnv ? "mixed" : hasWorkspace ? "workspace" : hasEnv ? "environment" : "workspace",
   };
 }
 
@@ -85,7 +100,7 @@ export function toWhatsAppSettingsFormValues(
         ? formatWhatsAppPhone(credentials.businessPhone) ?? credentials.businessPhone
         : "",
     redlavaApiKey: saved?.redlavaApiKey ?? "",
-    redlavaPhoneId: saved?.redlavaPhoneId ?? credentials.redlavaPhoneId ?? "",
+    redlavaPhoneId: saved?.redlavaPhoneId ?? "",
   };
 }
 

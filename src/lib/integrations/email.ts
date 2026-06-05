@@ -95,6 +95,32 @@ export async function sendTaskAssignmentEmail(params: {
   return sendPlainEmail({ toEmail: params.toEmail, subject, text });
 }
 
+export async function sendTaskDueReminderEmail(params: {
+  toEmail: string;
+  assigneeName: string;
+  taskTitle: string;
+  organizationName: string;
+  priority: string;
+  dueLabel: string;
+}) {
+  const subject = `[${params.organizationName}] Reminder — due: ${params.taskTitle}`;
+  const text = [
+    `Hello ${params.assigneeName},`,
+    ``,
+    `This is a reminder that your task in ${params.organizationName} is due:`,
+    ``,
+    params.taskTitle,
+    ``,
+    `Priority: ${params.priority}`,
+    `Due: ${params.dueLabel}`,
+    ``,
+    `Open Sheetomatic to update status or request help.`,
+    ``,
+    `_Sheetomatic Task Reminder_`,
+  ].join("\n");
+  return sendPlainEmail({ toEmail: params.toEmail, subject, text });
+}
+
 export async function sendTeamWelcomeEmail(params: {
   toEmail: string;
   memberName: string;

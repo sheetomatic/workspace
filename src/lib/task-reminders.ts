@@ -1,5 +1,8 @@
 import type { TaskFrequency, TaskPriority } from "@prisma/client";
-import { sendTaskAssignmentEmail } from "@/lib/integrations/email";
+import {
+  sendTaskAssignmentEmail,
+  sendTaskDueReminderEmail,
+} from "@/lib/integrations/email";
 import { sendTaskAssignmentWhatsApp } from "@/lib/integrations/whatsapp";
 import { TASK_FREQUENCY_LABELS } from "@/lib/task-schedule";
 import { buildAssignSuccessMessage } from "@/lib/task-assign-feedback";
@@ -10,6 +13,8 @@ type Assignee = {
   email: string;
   phone: string | null;
 };
+
+export type TaskReminderKind = "assignment" | "due";
 
 export async function dispatchTaskReminders(params: {
   taskId: string;
@@ -24,7 +29,9 @@ export async function dispatchTaskReminders(params: {
   organizationId: string;
   remindViaEmail: boolean;
   remindViaWhatsApp: boolean;
+  kind?: TaskReminderKind;
 }) {
+  const kind = params.kind ?? "assignment";
   const assigneeName =
     params.assignee.name ?? params.assignee.email.split("@")[0];
   const dueLabel = formatTaskDue(params.dueAt);
@@ -41,16 +48,26 @@ export async function dispatchTaskReminders(params: {
   let emailDetail: string | undefined;
 
   if (params.remindViaEmail) {
-    const email = await sendTaskAssignmentEmail({
-      toEmail: params.assignee.email,
-      assigneeName,
-      taskTitle: params.taskTitle,
-      organizationName: params.organizationName,
-      priority: params.priority,
-      dueLabel,
-      frequencyLabel,
-      isRecurring: params.isRecurring,
-    });
+    const email =
+      kind === "due"
+        ? await sendTaskDueReminderEmail({
+            toEmail: params.assignee.email,
+            assigneeName,
+            taskTitle: params.taskTitle,
+            organizationName: params.organizationName,
+            priority: params.priority,
+            dueLabel,
+          })
+        : await sendTaskAssignmentEmail({
+            toEmail: params.assignee.email,
+            assigneeName,
+            taskTitle: params.taskTitle,
+            organizationName: params.organizationName,
+            priority: params.priority,
+            dueLabel,
+            frequencyLabel,
+            isRecurring: params.isRecurring,
+          });
     if (email.sent) {
       emailSent = true;
       parts.push("email");
@@ -63,10 +80,7 @@ export async function dispatchTaskReminders(params: {
   }
 
   if (params.remindViaWhatsApp) {
-    const phone =
-      params.assignee.phone?.trim() ||
-      process.env.WHATSAPP_FALLBACK_PHONE?.trim() ||
-      "";
+    const phone = params.assignee.phone?.trim() || "";
     if (!phone) {
       parts.push("WhatsApp: no phone");
     } else {
@@ -82,6 +96,7 @@ export async function dispatchTaskReminders(params: {
         organizationId: params.organizationId,
         frequencyLabel,
         isRecurring: params.isRecurring,
+        reminderKind: kind,
       });
       if (wa.sent) {
         whatsappSent = true;
@@ -94,7 +109,11 @@ export async function dispatchTaskReminders(params: {
       } else if (wa.reason === "invalid_phone") {
         parts.push("WhatsApp invalid phone");
       } else if (wa.reason === "session_required") {
-        parts.push("WhatsApp session required");
+        parts.push(
+          kind === "due"
+            ? "WhatsApp due reminder needs an active chat session"
+            : "WhatsApp session required",
+        );
         console.error("[task-reminders] WhatsApp session/template required", wa.detail);
       } else {
         whatsappDetail = wa.detail;
@@ -107,7 +126,7 @@ export async function dispatchTaskReminders(params: {
           "[task-reminders] WhatsApp send failed",
           wa.reason,
           wa.detail,
-          { taskId: params.taskId, phone },
+          { taskId: params.taskId, phone, kind },
         );
       }
     }

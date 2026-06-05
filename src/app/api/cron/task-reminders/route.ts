@@ -65,6 +65,7 @@ export async function GET(request: Request) {
         organizationId: task.organizationId,
         remindViaEmail: task.remindViaEmail,
         remindViaWhatsApp: task.remindViaWhatsApp,
+        kind: "due",
       });
 
       if (reminders.emailSent || reminders.whatsappSent) {

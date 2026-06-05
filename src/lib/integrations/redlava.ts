@@ -319,14 +319,21 @@ function redlavaUrl(endpoint: string) {
 export function resolveRedlavaCredentials(
   input?: RedlavaCredentials | null,
 ): RedlavaCredentials | null {
-  const apiKey = input?.apiKey?.trim() || process.env.REDLAVA_API_KEY?.trim();
+  // When org/workspace creds are passed, never merge platform env (tenant isolation).
+  const allowEnvFallback = input == null;
+  const apiKey =
+    input?.apiKey?.trim() ||
+    (allowEnvFallback ? process.env.REDLAVA_API_KEY?.trim() : null);
   if (!apiKey) {
     return null;
   }
 
   return {
     apiKey,
-    phoneId: input?.phoneId?.trim() || process.env.REDLAVA_PHONE_ID?.trim() || null,
+    phoneId:
+      input?.phoneId?.trim() ||
+      (allowEnvFallback ? process.env.REDLAVA_PHONE_ID?.trim() : null) ||
+      null,
   };
 }
 

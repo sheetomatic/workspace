@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/saas/page-header";
 import { TaskChartsPanel } from "@/components/saas/task-charts-panel";
 import { TaskExportBar } from "@/components/saas/task-export-bar";
 import { TaskFeedbackToast } from "@/components/saas/task-feedback-toast";
+import { TaskIntegrationBanner } from "@/components/saas/task-integration-banner";
 import { TaskFilters } from "@/components/saas/task-filters";
 import { TaskStatsBar } from "@/components/saas/task-stats-bar";
 import {
@@ -23,6 +24,7 @@ import {
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import { taskPageFromSearchParam } from "@/lib/scale";
+import { getWorkspaceIntegrationStatus } from "@/lib/workspace-integration-status";
 import {
   canCreateTasks,
   canUpdateTask,
@@ -83,13 +85,15 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
         : null,
     };
   });
-  const [stats, chartData, members, spreadsheetId] = await Promise.all([
+  const [stats, chartData, members, spreadsheetId, integrationStatus] =
+    await Promise.all([
     getTaskStats(user),
     getTaskChartData(user),
     canCreateTasks(user.role)
       ? listAssignableMembers(user.organizationId)
       : Promise.resolve([]),
     getSpreadsheetIdForOrganization(user.organizationId),
+    getWorkspaceIntegrationStatus(user.organizationId),
   ]);
   const sheetsConnection = getGoogleSheetsConnectionStatus(spreadsheetId);
 
@@ -118,6 +122,12 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
       <Suspense fallback={null}>
         <TaskFeedbackToast />
       </Suspense>
+
+      {showCreate &&
+      (!integrationStatus.whatsappConfigured ||
+        !integrationStatus.emailConfigured) ? (
+        <TaskIntegrationBanner status={integrationStatus} />
+      ) : null}
 
       <section aria-label="Task overview" className="ws-task-overview">
         {!quickFilterActive ? (
@@ -166,6 +176,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
           }}
           filterMembers={filterMembers}
           filtersInOverview={!quickFilterActive}
+          integrationStatus={integrationStatus}
           members={members}
           showAssigneeFilter={showAssigneeFilter}
           showCreate={showCreate}
@@ -187,7 +198,11 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
             </p>
           </div>
         </div>
-        <TaskTable members={members} tasks={tasks} />
+        <TaskTable
+          members={members}
+          tasks={tasks}
+          whatsappConfigured={integrationStatus.whatsappConfigured}
+        />
         <TaskPagination
           page={page}
           searchParams={filterParams}

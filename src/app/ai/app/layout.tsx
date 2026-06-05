@@ -8,7 +8,7 @@ import { getRedlavaResellerWallet } from "@/lib/integrations/redlava-reseller";
 import { listOrganizationsForUser } from "@/lib/auth-orgs";
 import { shouldSkipAiOnboarding } from "@/lib/ai-onboarding";
 import { prisma } from "@/lib/db";
-import { canAccessAiApp } from "@/lib/ai-auth-links";
+import { canViewPlatformResellerData } from "@/lib/platform";
 import { requireAiSession } from "@/lib/require-session";
 import {
   getWorkspaceWhatsAppSettings,
@@ -27,7 +27,7 @@ export default async function SheetomaticAiAppLayout({
   children: React.ReactNode;
 }) {
   const sessionUser = await requireAiSession();
-  const showWallet = canAccessAiApp(sessionUser);
+  const showWallet = canViewPlatformResellerData(sessionUser);
   const [organization, organizations, credentials, savedSettings, wallet, skipOnboarding] =
     await Promise.all([
       prisma.organization.findUnique({

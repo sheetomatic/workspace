@@ -41,6 +41,8 @@ type Member = {
   phone: string | null;
 };
 
+import type { WorkspaceIntegrationStatus } from "@/lib/workspace-integration-status";
+
 export function TasksActionBar({
   members,
   filterMembers,
@@ -48,6 +50,7 @@ export function TasksActionBar({
   showCreate,
   showAssigneeFilter = true,
   filtersInOverview = false,
+  integrationStatus,
 }: {
   members: Member[];
   filterMembers: Array<{ id: string; name: string }>;
@@ -60,6 +63,7 @@ export function TasksActionBar({
   showCreate: boolean;
   showAssigneeFilter?: boolean;
   filtersInOverview?: boolean;
+  integrationStatus?: WorkspaceIntegrationStatus;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -129,7 +133,11 @@ export function TasksActionBar({
           </header>
 
           <Suspense fallback={<p className="ws-task-ai-lead">Loading form...</p>}>
-            <TaskCreateForm members={members} />
+            <TaskCreateForm
+              emailConfigured={integrationStatus?.emailConfigured ?? true}
+              members={members}
+              whatsappConfigured={integrationStatus?.whatsappConfigured ?? true}
+            />
           </Suspense>
         </section>
       ) : null}
