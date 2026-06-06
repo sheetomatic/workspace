@@ -705,6 +705,61 @@ async function seedSheetomaticTechnologies(
   });
 }
 
+async function seedTeamHierarchy() {
+  const acme = await prisma.organization.findUnique({
+    where: { slug: "acme-manufacturing" },
+  });
+
+  if (!acme) {
+    return;
+  }
+
+  const memberships = await prisma.membership.findMany({
+    where: { organizationId: acme.id },
+    include: { user: { select: { email: true } } },
+  });
+
+  const byEmail = new Map(
+    memberships.map((membership) => [membership.user.email, membership]),
+  );
+
+  const owner = byEmail.get("owner@acme.demo");
+  const manager = byEmail.get("manager@acme.demo");
+  const staff = byEmail.get("staff@acme.demo");
+  const viewer = byEmail.get("viewer@acme.demo");
+
+  if (owner) {
+    await prisma.membership.update({
+      where: { id: owner.id },
+      data: { isDepartmentHead: true },
+    });
+  }
+
+  if (manager && owner) {
+    await prisma.membership.update({
+      where: { id: manager.id },
+      data: {
+        reportingManagerId: owner.id,
+        isDepartmentHead: true,
+      },
+    });
+  }
+
+  if (staff && manager) {
+    await prisma.membership.update({
+      where: { id: staff.id },
+      data: { reportingManagerId: manager.id },
+    });
+  }
+
+  if (viewer && manager) {
+    await prisma.membership.update({
+      where: { id: viewer.id },
+      data: { reportingManagerId: manager.id },
+    });
+  }
+}
+
 async function main() {
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
   const userIds: Record<string, string> = {};
@@ -782,6 +837,8 @@ async function main() {
       },
     });
   }
+
+  await seedTeamHierarchy();
 
   for (const org of organizations) {
     const organization = await prisma.organization.findUniqueOrThrow({

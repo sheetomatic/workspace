@@ -17,6 +17,7 @@ export type SessionUser = {
   organizationName: string;
   organizationSlug: string;
   isSuperAdmin: boolean;
+  isDepartmentHead: boolean;
   modules: WorkspaceModule[];
 };
 
@@ -259,6 +260,7 @@ export const getSessionUser = cache(async function getSessionUser() {
       organizationName: membership.organization.name,
       organizationSlug: membership.organization.slug,
       isSuperAdmin: true,
+      isDepartmentHead: false,
       modules: allWorkspaceModules(),
     };
   }
@@ -270,7 +272,7 @@ export const getSessionUser = cache(async function getSessionUser() {
         organizationId: membership.organizationId,
       },
     },
-    select: { modules: true, role: true },
+    select: { modules: true, role: true, isDepartmentHead: true },
   });
 
   return {
@@ -282,6 +284,7 @@ export const getSessionUser = cache(async function getSessionUser() {
     organizationName: membership.organization.name,
     organizationSlug: membership.organization.slug,
     isSuperAdmin: false,
+    isDepartmentHead: membershipRecord?.isDepartmentHead ?? false,
     modules: resolveMemberModules(
       membershipRecord?.role ?? membership.role,
       membershipRecord?.modules,

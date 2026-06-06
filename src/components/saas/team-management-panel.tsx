@@ -37,6 +37,16 @@ export type TeamMemberRow = {
   role: Role;
   department: TaskDepartment | null;
   designation: string | null;
+  isDepartmentHead: boolean;
+  reportingManagerId: string | null;
+  reportingManager: {
+    id: string;
+    user: {
+      id: string;
+      name: string | null;
+      email: string;
+    };
+  } | null;
   attendanceWorkMode: AttendanceWorkMode;
   geoFenceRequired: boolean;
   faceRequired: boolean;
@@ -49,6 +59,19 @@ export type TeamMemberRow = {
     phone: string | null;
   };
 };
+
+function managerOptionsForMember(
+  members: TeamMemberRow[],
+  excludeMembershipId?: string,
+) {
+  return members
+    .filter((member) => member.id !== excludeMembershipId)
+    .sort((a, b) => {
+      const nameA = a.user.name ?? a.user.email;
+      const nameB = b.user.name ?? b.user.email;
+      return nameA.localeCompare(nameB);
+    });
+}
 
 function whatsappInputValue(phone: string | null | undefined) {
   if (!phone) {
@@ -198,9 +221,11 @@ function TeamLoginCredentials({
 
 function MemberEditForm({
   member,
+  members,
   onCancel,
 }: {
   member: TeamMemberRow;
+  members: TeamMemberRow[];
   onCancel: () => void;
 }) {
   const [state, action, pending] = useActionState(
@@ -208,6 +233,8 @@ function MemberEditForm({
     initialState,
   );
   const [editRole, setEditRole] = useState(member.role);
+  const managerOptions = managerOptionsForMember(members, member.id);
+  const reportingRequired = editRole !== "OWNER";
 
   return (
     <form action={action} className="saas-team-edit-form">
@@ -279,6 +306,32 @@ function MemberEditForm({
               </option>
             ))}
           </select>
+        </label>
+        <label>
+          Reporting manager
+          <select
+            defaultValue={member.reportingManagerId ?? ""}
+            name="reportingManagerId"
+            required={reportingRequired}
+          >
+            {!reportingRequired ? <option value="">None (owner)</option> : null}
+            <option disabled={reportingRequired} value="">
+              {reportingRequired ? "Select reporting manager" : "None"}
+            </option>
+            {managerOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.user.name ?? option.user.email} · {option.user.email}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="form-field-full ws-attendance-check">
+          <input
+            defaultChecked={member.isDepartmentHead}
+            name="isDepartmentHead"
+            type="checkbox"
+          />
+          <span>Department head (can view this department&apos;s team)</span>
         </label>
       </div>
 
@@ -360,6 +413,8 @@ export function TeamManagementPanel({
   const [inviteRole, setInviteRole] = useState<Role>("STAFF");
   const [pending, startTransition] = useTransition();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const inviteReportingRequired = inviteRole !== "OWNER";
+  const managerOptions = managerOptionsForMember(members);
 
   function removeMember(membershipId: string) {
     startTransition(async () => {
@@ -445,6 +500,28 @@ export function TeamManagementPanel({
               ))}
             </select>
           </label>
+          <label>
+            Reporting manager
+            <select
+              defaultValue=""
+              name="reportingManagerId"
+              required={inviteReportingRequired}
+            >
+              {!inviteReportingRequired ? <option value="">None (owner)</option> : null}
+              <option disabled={inviteReportingRequired} value="">
+                {inviteReportingRequired ? "Select reporting manager" : "None"}
+              </option>
+              {managerOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.user.name ?? option.user.email} · {option.user.email}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="form-field-full ws-attendance-check">
+            <input name="isDepartmentHead" type="checkbox" />
+            <span>Department head (can view this department&apos;s team)</span>
+          </label>
           <label className="form-field-full">
             Initial password
             <input
@@ -515,6 +592,10 @@ export function TeamManagementPanel({
             const metaParts = [
               deptLabel,
               member.designation,
+              member.reportingManager
+                ? `Reports to ${member.reportingManager.user.name ?? member.reportingManager.user.email.split("@")[0]}`
+                : null,
+              member.isDepartmentHead ? "Department head" : null,
               ATTENDANCE_WORK_MODE_LABELS[member.attendanceWorkMode],
             ].filter(Boolean);
             const displayName =
@@ -530,6 +611,7 @@ export function TeamManagementPanel({
                 <article className="saas-team-card saas-team-card-edit" key={member.id}>
                   <MemberEditForm
                     member={member}
+                    members={members}
                     onCancel={() => setEditingId(null)}
                   />
                 </article>
@@ -553,6 +635,7 @@ export function TeamManagementPanel({
                           {metaParts.join(META_SEPARATOR)}
                         </p>
                       ) : null}
+                      <p className="saas-team-card-email">{member.user.email}</p>
                       <WorkspaceModulePills modules={member.modules} />
                     </div>
                   </div>

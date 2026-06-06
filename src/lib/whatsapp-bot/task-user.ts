@@ -41,6 +41,7 @@ function toSessionUser(member: WhatsAppTeamMember): SessionUser {
     organizationName: member.organizationName,
     organizationSlug: member.organizationSlug,
     isSuperAdmin: false,
+    isDepartmentHead: false,
     modules: [],
   };
 }

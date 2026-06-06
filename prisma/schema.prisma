@@ -612,6 +612,10 @@ model Membership {
   role               Role                @default(STAFF)
   department         TaskDepartment?
   designation        String?
+  isDepartmentHead   Boolean             @default(false)
+  reportingManagerId String?
+  reportingManager   Membership?         @relation("MembershipReportsTo", fields: [reportingManagerId], references: [id], onDelete: SetNull)
+  directReports      Membership[]        @relation("MembershipReportsTo")
   attendanceWorkMode AttendanceWorkMode  @default(OFFICE)
   geoFenceRequired   Boolean             @default(false)
   faceRequired       Boolean             @default(false)
@@ -624,6 +628,8 @@ model Membership {
   updatedAt      DateTime        @updatedAt
 
   @@unique([userId, organizationId])
+  @@index([organizationId, isDepartmentHead])
+  @@index([reportingManagerId])
 }
 
 model Account {

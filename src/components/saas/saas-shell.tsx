@@ -29,6 +29,7 @@ type NavItem = {
   icon: typeof ListTodo;
   minRole?: (typeof ROLE_ORDER)[number];
   module?: WorkspaceModule;
+  allowDepartmentHead?: boolean;
 };
 
 const navItems: NavItem[] = [
@@ -54,7 +55,13 @@ const navItems: NavItem[] = [
     minRole: "VIEWER",
     module: "REPORTS",
   },
-  { href: "/app/team", label: "Team", icon: Users, minRole: "ADMIN" },
+  {
+    href: "/app/team",
+    label: "Team",
+    icon: Users,
+    minRole: "ADMIN",
+    allowDepartmentHead: true,
+  },
   { href: "/app/settings", label: "Settings", icon: Settings, minRole: "ADMIN" },
 ];
 
@@ -66,7 +73,8 @@ function canAccessRole(userRole: SessionUser["role"], minRole?: NavItem["minRole
 }
 
 function canAccessNav(user: SessionUser, item: NavItem) {
-  if (!canAccessRole(user.role, item.minRole)) {
+  const roleAllowed = canAccessRole(user.role, item.minRole);
+  if (!roleAllowed && !(item.allowDepartmentHead && user.isDepartmentHead)) {
     return false;
   }
   if (!item.module) {

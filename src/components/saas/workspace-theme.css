@@ -4847,6 +4847,142 @@
   line-height: 1.35;
 }
 
+.workspace-app .saas-team-card-email {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #334155;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.workspace-app .saas-team-hierarchy {
+  display: grid;
+  gap: 1rem;
+}
+
+.workspace-app .saas-team-hierarchy-head h3,
+.workspace-app .saas-team-hierarchy-dept-head h4 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.workspace-app .saas-team-hierarchy-groups {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.workspace-app .saas-team-hierarchy-dept {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.875rem;
+  overflow: hidden;
+  background: #fff;
+}
+
+.workspace-app .saas-team-hierarchy-dept-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.workspace-app .saas-team-hierarchy-dept-meta {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.workspace-app .saas-team-hierarchy-dept-meta a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.workspace-app .saas-team-hierarchy-dept-meta a:hover {
+  text-decoration: underline;
+}
+
+.workspace-app .saas-hierarchy-count {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.workspace-app .saas-hierarchy-list .saas-member-row {
+  min-height: 3rem;
+}
+
+.workspace-app .saas-hierarchy-member-leading {
+  align-items: flex-start;
+}
+
+.workspace-app .saas-hierarchy-avatar {
+  margin-top: 0.1rem;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.625rem;
+  font-weight: 800;
+}
+
+.workspace-app .saas-hierarchy-member-copy {
+  min-width: 0;
+}
+
+.workspace-app .saas-hierarchy-member-email {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.2rem 0 0;
+  font-size: 0.75rem;
+  color: #475569;
+}
+
+.workspace-app .saas-hierarchy-member-email a {
+  color: #2563eb;
+  text-decoration: none;
+  word-break: break-word;
+}
+
+.workspace-app .saas-hierarchy-member-email a:hover {
+  text-decoration: underline;
+}
+
+.workspace-app .saas-hierarchy-dept-head-badge,
+.workspace-app .saas-hierarchy-manager-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #0369a1;
+}
+
+.workspace-app .saas-hierarchy-manager-block + .saas-hierarchy-manager-block {
+  border-top: 1px solid #f1f5f9;
+}
+
+.workspace-app .saas-hierarchy-unassigned {
+  border-top: 1px solid #f1f5f9;
+}
+
+.workspace-app .saas-hierarchy-unassigned-label {
+  margin: 0;
+  padding: 0.55rem 0.85rem 0.15rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.workspace-app .saas-hierarchy-warning {
+  color: #b45309;
+}
+
 .workspace-app .saas-team-card-top .saas-role-pill {
   flex-shrink: 0;
   margin-top: 0.1rem;

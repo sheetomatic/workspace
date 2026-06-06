@@ -51,6 +51,8 @@ export async function assertOrganizationAccess(
       organizationId,
       department: null,
       designation: "Super Admin",
+      isDepartmentHead: false,
+      reportingManagerId: null,
       attendanceWorkMode: "OFFICE" as const,
       geoFenceRequired: false,
       faceRequired: false,
@@ -104,6 +106,18 @@ export async function listWorkspaceMembers(organizationId: string) {
           phone: true,
         },
       },
+      reportingManager: {
+        select: {
+          id: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      },
     },
     orderBy: { createdAt: "asc" },
   });
@@ -117,6 +131,9 @@ export async function listWorkspaceMembers(organizationId: string) {
     role: membership.role,
     department: membership.department,
     designation: membership.designation,
+    isDepartmentHead: membership.isDepartmentHead,
+    reportingManagerId: membership.reportingManagerId,
+    reportingManager: membership.reportingManager,
     attendanceWorkMode: membership.attendanceWorkMode,
     geoFenceRequired: membership.geoFenceRequired,
     faceRequired: membership.faceRequired,
@@ -124,6 +141,22 @@ export async function listWorkspaceMembers(organizationId: string) {
     joinedAt: membership.createdAt,
     user: membership.user,
   }));
+}
+
+export async function getViewerMembership(userId: string, organizationId: string) {
+  return prisma.membership.findUnique({
+    where: {
+      userId_organizationId: {
+        userId,
+        organizationId,
+      },
+    },
+    select: {
+      id: true,
+      department: true,
+      isDepartmentHead: true,
+    },
+  });
 }
 
 export async function listWorkspaceLinks(organizationId: string) {

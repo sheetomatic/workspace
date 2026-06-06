@@ -54,6 +54,65 @@ function parseDepartment(raw: string | null | undefined): TaskDepartment | null 
     : null;
 }
 
+function parseReportingManagerId(raw: string | null | undefined) {
+  const value = raw?.toString().trim() ?? "";
+  return value || null;
+}
+
+async function validateReportingManager(input: {
+  organizationId: string;
+  role: Role;
+  reportingManagerId: string | null;
+  membershipId?: string;
+}) {
+  if (input.role === "OWNER") {
+    return null;
+  }
+
+  if (!input.reportingManagerId) {
+    return "Reporting manager is required.";
+  }
+
+  if (input.membershipId && input.reportingManagerId === input.membershipId) {
+    return "A member cannot report to themselves.";
+  }
+
+  const manager = await prisma.membership.findFirst({
+    where: {
+      id: input.reportingManagerId,
+      organizationId: input.organizationId,
+    },
+    select: { id: true, reportingManagerId: true },
+  });
+
+  if (!manager) {
+    return "Reporting manager must be a member of this workspace.";
+  }
+
+  if (input.membershipId) {
+    let current: string | null = manager.reportingManagerId;
+    const visited = new Set<string>([manager.id]);
+
+    while (current) {
+      if (current === input.membershipId) {
+        return "Reporting manager assignment would create a circular hierarchy.";
+      }
+      if (visited.has(current)) {
+        break;
+      }
+      visited.add(current);
+
+      const next = await prisma.membership.findUnique({
+        where: { id: current },
+        select: { reportingManagerId: true },
+      });
+      current = next?.reportingManagerId ?? null;
+    }
+  }
+
+  return null;
+}
+
 export async function inviteTeamMember(
   _prev: TeamActionState,
   formData: FormData,
@@ -72,6 +131,10 @@ export async function inviteTeamMember(
   const phone = normalizeWhatsAppPhone(whatsappRaw);
   const initialPasswordRaw = formData.get("initialPassword")?.toString() ?? "";
   const initialPassword = initialPasswordRaw.trim();
+  const reportingManagerId = parseReportingManagerId(
+    formData.get("reportingManagerId")?.toString(),
+  );
+  const isDepartmentHead = formData.get("isDepartmentHead") === "on";
 
   if (!email.includes("@")) {
     return { ok: false, message: "Enter a valid email." };
@@ -109,6 +172,15 @@ export async function inviteTeamMember(
 
   if (role === "OWNER" && user.role !== "OWNER") {
     return { ok: false, message: "Only owners can assign the Owner role." };
+  }
+
+  const reportingManagerError = await validateReportingManager({
+    organizationId: user.organizationId,
+    role,
+    reportingManagerId,
+  });
+  if (reportingManagerError) {
+    return { ok: false, message: reportingManagerError };
   }
 
   let modules = parseModulesFromForm(formData);
@@ -151,6 +223,8 @@ export async function inviteTeamMember(
         role,
         department,
         designation,
+        reportingManagerId,
+        isDepartmentHead,
         modules,
       },
     });
@@ -189,6 +263,8 @@ export async function inviteTeamMember(
           role,
           department,
           designation,
+          reportingManagerId,
+          isDepartmentHead,
           modules,
         },
       },
@@ -251,6 +327,10 @@ export async function updateTeamMemberDetails(
   const faceRequired = formData.get("faceRequired") === "on";
   const whatsappRaw = formData.get("whatsapp")?.toString() ?? "";
   const phone = normalizeWhatsAppPhone(whatsappRaw);
+  const reportingManagerId = parseReportingManagerId(
+    formData.get("reportingManagerId")?.toString(),
+  );
+  const isDepartmentHead = formData.get("isDepartmentHead") === "on";
 
   if (!membershipId) {
     return { ok: false, message: "Member not found." };
@@ -281,6 +361,16 @@ export async function updateTeamMemberDetails(
     return { ok: false, message: "Only owners can assign the Owner role." };
   }
 
+  const reportingManagerError = await validateReportingManager({
+    organizationId: user.organizationId,
+    role,
+    reportingManagerId,
+    membershipId,
+  });
+  if (reportingManagerError) {
+    return { ok: false, message: reportingManagerError };
+  }
+
   let modules = parseModulesFromForm(formData);
   if (modules.length === 0) {
     modules = resolveMemberModules(role, membership.modules);
@@ -300,6 +390,8 @@ export async function updateTeamMemberDetails(
       role,
       department,
       designation,
+      reportingManagerId: role === "OWNER" ? null : reportingManagerId,
+      isDepartmentHead,
       attendanceWorkMode,
       geoFenceRequired,
       faceRequired,
