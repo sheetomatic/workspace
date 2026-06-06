@@ -19,6 +19,7 @@ export function TaskFilters({
   members,
   current,
   showAssigneeFilter = true,
+  inListHeader = false,
 }: {
   members: Array<{ id: string; name: string }>;
   current: {
@@ -28,6 +29,7 @@ export function TaskFilters({
     doneToday?: string;
   };
   showAssigneeFilter?: boolean;
+  inListHeader?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -111,8 +113,10 @@ export function TaskFilters({
   }
 
   return (
-    <div className={`ws-task-filter-bar ws-task-filter-bar-compact${pending ? " is-loading" : ""}`}>
-      <div className="ws-filter-layout ws-filter-layout-compact">
+    <div
+      className={`ws-task-filter-bar ws-task-filter-bar-compact${inListHeader ? " ws-sf-list-filters" : ""}${pending ? " is-loading" : ""}`}
+    >
+      <div className={`ws-filter-layout ws-filter-layout-compact${inListHeader ? " ws-sf-filter-layout" : ""}`}>
         <div className="ws-filter-group">
           <span className="ws-filter-group-label">Status</span>
           <div className="ws-filter-select-wrap">
@@ -158,30 +162,9 @@ export function TaskFilters({
           </div>
         ) : null}
 
-        <button
-          aria-pressed={overdueOnly}
-          className={`ws-filter-pill ws-filter-overdue ws-filter-overdue-compact${overdueOnly ? " is-active" : ""}`}
-          type="button"
-          onClick={() => {
-            const params = new URLSearchParams(searchParams.toString());
-            if (overdueOnly) {
-              params.delete("overdue");
-            } else {
-              params.set("overdue", "1");
-              params.delete("doneToday");
-              params.delete("status");
-            }
-            const query = params.toString();
-            startTransition(() => {
-              router.push(
-                query ? `${pathname}?${query}#execution-queue` : `${pathname}#execution-queue`,
-                { scroll: false },
-              );
-            });
-          }}
-        >
-          Overdue
-        </button>
+        {overdueOnly ? (
+          <span className="ws-filter-active-chip">Overdue filter on</span>
+        ) : null}
 
         {hasActiveFilters ? (
           <button className="ws-filter-clear ws-filter-clear-inline" type="button" onClick={clearAll}>

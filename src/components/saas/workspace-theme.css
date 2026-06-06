@@ -8286,3 +8286,1047 @@
   }
 }
 
+/* Tasks v2 — CRM-style dashboard + compact table */
+.workspace-app .ws-task-overview-v2 {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.workspace-app .ws-task-overview-v2 .ws-task-stats {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.workspace-app .ws-task-overview-v2 .ws-stat-overdue strong {
+  color: #b91c1c;
+}
+
+.workspace-app .ws-task-team-dashboard {
+  padding: 12px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fbff;
+}
+
+.workspace-app .ws-task-team-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.workspace-app .ws-task-team-head h2 {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1e3a8a;
+}
+
+.workspace-app .ws-task-team-head span {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.workspace-app .ws-task-team-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.workspace-app .ws-task-team-card {
+  flex: 0 0 auto;
+  min-width: 148px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto auto auto;
+  gap: 2px 8px;
+  padding: 10px 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  background: #fff;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.workspace-app .ws-task-team-card:hover {
+  border-color: #93c5fd;
+}
+
+.workspace-app .ws-task-team-card.is-active {
+  border-color: #1d4ed8;
+  background: #eff6ff;
+  box-shadow: 0 0 0 1px rgba(29, 78, 216, 0.12);
+}
+
+.workspace-app .ws-task-team-card.has-overdue {
+  border-color: rgba(185, 28, 28, 0.35);
+}
+
+.workspace-app .ws-task-team-avatar {
+  grid-row: 1 / span 3;
+  align-self: start;
+  width: 32px;
+  height: 32px;
+  font-size: 0.7rem;
+}
+
+.workspace-app .ws-task-team-name {
+  grid-column: 2;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workspace-app .ws-task-team-card strong {
+  grid-column: 2;
+  font-size: 1.25rem;
+  line-height: 1.1;
+  color: #1e3a8a;
+}
+
+.workspace-app .ws-task-team-label {
+  grid-column: 2;
+  font-size: 0.65rem;
+  color: #64748b;
+}
+
+.workspace-app .ws-task-team-badges {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.workspace-app .ws-task-team-badges span {
+  font-size: 0.62rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 999px;
+}
+
+.workspace-app .ws-task-team-badges .tone-pending {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.workspace-app .ws-task-team-badges .tone-progress {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.workspace-app .ws-task-team-badges .tone-overdue {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.workspace-app .ws-task-overview-chart-compact {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.workspace-app .ws-task-overview-chart-compact .ws-task-charts-grid {
+  max-width: 280px;
+}
+
+.workspace-app .ws-task-overview-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #fafbfd;
+}
+
+.workspace-app .ws-task-overview-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.workspace-app .ws-filter-active-chip {
+  align-self: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+.workspace-app .ws-task-table-v2 {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.workspace-app .ws-task-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.workspace-app .ws-task-table-v2 .ws-task-col-task {
+  width: 36%;
+}
+
+.workspace-app .ws-task-table-v2 .ws-task-col-due {
+  width: 18%;
+}
+
+.workspace-app .ws-task-table-v2 .ws-task-col-status {
+  width: 14%;
+}
+
+.workspace-app .ws-task-table-v2 .ws-task-col-assignee {
+  width: 18%;
+}
+
+.workspace-app .ws-task-table-v2 .ws-task-table-actions-col {
+  width: 110px;
+}
+
+.workspace-app .ws-task-table-v2 .ws-task-table-title {
+  min-width: 0;
+  max-width: none;
+}
+
+.workspace-app .ws-task-table-title-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-app .ws-task-table-meta {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: #64748b;
+}
+
+.workspace-app .ws-task-assignee-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+}
+
+.workspace-app .ws-task-table-hint {
+  font-size: 0.65rem;
+  color: #64748b;
+}
+
+.workspace-app .ws-task-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 10px;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.workspace-app .ws-task-table-detail {
+  padding: 14px 16px;
+  max-width: 100%;
+  overflow-x: auto;
+  box-sizing: border-box;
+}
+
+.workspace-app .ws-task-table-v2 .ws-task-table-status {
+  font-size: 0.7rem;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.workspace-app .ws-task-table tr.row-urgency-overdue .cell-strong,
+.workspace-app .ws-task-table tr.row-urgency-overdue .ws-task-table-meta {
+  color: #0f172a;
+}
+
+.workspace-app .ws-task-table tr.row-urgency-overdue .ws-task-table-due {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.workspace-app .ws-task-table tr.row-urgency-overdue td {
+  background: #fff7f7;
+}
+
+@media (max-width: 900px) {
+  .workspace-app .ws-task-table-v2 .ws-task-col-assignee {
+    display: none;
+  }
+
+  .workspace-app .ws-task-table-v2 thead .ws-task-col-assignee,
+  .workspace-app .ws-task-table-v2 tbody .ws-task-col-assignee {
+    display: none;
+  }
+
+  .workspace-app .ws-task-table-v2 .ws-task-col-task {
+    width: 42%;
+  }
+
+  .workspace-app .ws-task-table-detail-row td {
+    padding: 0 !important;
+  }
+}
+
+/* Tasks — Salesforce Lightning inspired (scoped) */
+.workspace-app .ws-tasks-sf {
+  --sf-brand: #0176d3;
+  --sf-brand-hover: #014486;
+  --sf-page-bg: #f3f3f3;
+  --sf-card-border: #dddbda;
+  --sf-text: #181818;
+  --sf-text-secondary: #706e6b;
+  --sf-header-bg: #f3f3f3;
+  --sf-row-hover: #f3f3f3;
+  margin: -28px -32px -48px;
+  padding: 20px 32px 48px;
+  background: var(--sf-page-bg);
+  color: var(--sf-text);
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-page-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--sf-card-border);
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-page-toolbar h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--sf-text);
+  letter-spacing: -0.01em;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-page-toolbar p {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-page-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-btn-primary,
+.workspace-app .ws-tasks-sf .ws-new-task-trigger.ws-sf-btn-primary {
+  background: var(--sf-brand);
+  border-color: var(--sf-brand);
+  color: #fff;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0 16px;
+  min-height: 32px;
+  box-shadow: none;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-btn-primary:hover,
+.workspace-app .ws-tasks-sf .ws-new-task-trigger.ws-sf-btn-primary:hover {
+  background: var(--sf-brand-hover);
+  border-color: var(--sf-brand-hover);
+}
+
+.workspace-app .ws-tasks-sf .ws-task-export-compact {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.workspace-app .ws-tasks-sf .ws-task-export-btn-compact {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--sf-card-border);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--sf-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.workspace-app .ws-tasks-sf .ws-task-export-btn-primary {
+  background: #fff;
+  border-color: var(--sf-brand);
+  color: var(--sf-brand);
+}
+
+.workspace-app .ws-tasks-sf .ws-task-export-btn-primary:hover:not(:disabled) {
+  background: #eef4ff;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-metric-tile {
+  padding: 12px 14px;
+  border: 1px solid var(--sf-card-border);
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.05);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-metric-tile::before {
+  display: none;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-metric-tile span:first-of-type {
+  margin-bottom: 4px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-metric-tile strong {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--sf-text);
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-metric-tile .ws-stat-card-hint {
+  margin-top: 4px;
+  font-size: 0.625rem;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-metric-tile:hover {
+  border-color: #c9c7c5;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  transform: none;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-metric-tile.is-active {
+  border-color: var(--sf-brand);
+  box-shadow: 0 0 0 1px var(--sf-brand);
+}
+
+.workspace-app .ws-tasks-sf .ws-stat-overdue strong {
+  color: #c23934;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-related-list {
+  margin-bottom: 16px;
+  border: 1px solid var(--sf-card-border);
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-related-list-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--sf-card-border);
+  background: #fafaf9;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-related-list-header h2 {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--sf-text);
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-related-list-header span {
+  font-size: 0.75rem;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-related-list-body {
+  padding: 10px 12px;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-related-list-scroll {
+  gap: 10px;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-related-card {
+  min-width: 160px;
+  padding: 10px 12px;
+  border: 1px solid var(--sf-card-border);
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-related-card:hover {
+  border-color: #c9c7c5;
+  background: #fafaf9;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-related-card.is-active {
+  border-color: var(--sf-brand);
+  background: #eef4ff;
+  box-shadow: 0 0 0 1px var(--sf-brand);
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-related-card strong {
+  color: var(--sf-brand);
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-related-card .ws-task-team-name {
+  color: var(--sf-text);
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-related-card .ws-task-team-label {
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-chart-compact {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--sf-card-border);
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.05);
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-chart-compact .ws-task-charts-grid {
+  max-width: 300px;
+  margin-bottom: 0;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-list-view {
+  border: 1px solid var(--sf-card-border);
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.05);
+  overflow: visible;
+  scroll-margin-top: 16px;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-list-view-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--sf-card-border);
+  background: #fafaf9;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-list-view-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-list-view-title h2 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--sf-text);
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-list-view-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--sf-text-secondary);
+  white-space: nowrap;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-list-filters {
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-filter-layout {
+  gap: 8px;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-list-filters .ws-filter-group-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-list-filters .ws-filter-select {
+  min-height: 30px;
+  padding: 4px 28px 4px 10px;
+  border: 1px solid var(--sf-card-border);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--sf-text);
+  font-size: 0.8125rem;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-list-filters .ws-filter-clear-inline {
+  color: var(--sf-brand);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-list-filters .ws-filter-active-chip {
+  font-size: 0.6875rem;
+  color: #c23934;
+  background: #fef1ee;
+  border: 1px solid #f9cfc9;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-table-wrap {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  margin-top: 0;
+  overflow: hidden;
+}
+
+.workspace-app .ws-tasks-sf .ws-task-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 2px;
+}
+
+.workspace-app .ws-tasks-sf .ws-task-table-v2.ws-sf-data-table {
+  font-size: 0.8125rem;
+  table-layout: auto;
+  width: 100%;
+  min-width: 860px;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-data-table th {
+  padding: 8px 12px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sf-text-secondary);
+  background: var(--sf-header-bg);
+  border-bottom: 1px solid var(--sf-card-border);
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-data-table td {
+  padding: 10px 12px;
+  color: var(--sf-text);
+  border-bottom: 1px solid #ecebea;
+  vertical-align: middle;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-data-table tbody tr:hover td {
+  background: var(--sf-row-hover);
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-data-table tbody tr.is-expanded td {
+  background: #fafaf9;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-record-link {
+  display: block;
+  font-weight: 600;
+  color: var(--sf-brand);
+  cursor: pointer;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-record-link:hover {
+  color: var(--sf-brand-hover);
+  text-decoration: underline;
+}
+
+.workspace-app .ws-tasks-sf .ws-task-table-meta {
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-badge-neutral,
+.workspace-app .ws-tasks-sf .ws-task-table-status.status-pending {
+  color: #3e3e3c;
+  background: #ecebea;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-badge-info,
+.workspace-app .ws-tasks-sf .ws-task-table-status.status-in_progress {
+  color: #014486;
+  background: #d8edff;
+}
+
+.workspace-app .ws-tasks-sf .ws-task-table-status.status-completed {
+  color: #2e844a;
+  background: #d9f0e3;
+}
+
+.workspace-app .ws-tasks-sf .ws-task-table-status.status-revision_requested,
+.workspace-app .ws-tasks-sf .ws-task-table-status.status-extension_requested,
+.workspace-app .ws-tasks-sf .ws-task-table-status.status-help_requested,
+.workspace-app .ws-tasks-sf .ws-sf-badge-warning {
+  color: #8c4b02;
+  background: #fef3e0;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-badge-danger,
+.workspace-app .ws-tasks-sf .ws-sf-overdue-badge {
+  color: #8a1f11;
+  background: #fef1ee;
+  border: 1px solid #f9cfc9;
+}
+
+.workspace-app .ws-tasks-sf .ws-task-table-due {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-tasks-sf .ws-task-table-due .urgency-due-overdue {
+  color: #c23934;
+  font-weight: 600;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-data-table tr.row-urgency-overdue td {
+  background: #fff;
+  color: var(--sf-text);
+  border-left: none;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-data-table tr.row-urgency-overdue {
+  box-shadow: inset 3px 0 0 #c23934;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-data-table tr.row-urgency-overdue:hover td {
+  background: #fef8f7;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-data-table tr.row-urgency-overdue .ws-sf-record-link {
+  color: var(--sf-brand);
+}
+
+.workspace-app .ws-tasks-sf .ws-task-table-row.is-completed .ws-sf-record-link {
+  color: var(--sf-text-secondary);
+  text-decoration: line-through;
+  text-decoration-color: #c9c7c5;
+}
+
+.workspace-app .ws-tasks-sf .ws-task-assignee-name {
+  color: var(--sf-text);
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-data-table .ws-task-col-task {
+  width: auto;
+  min-width: 200px;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-data-table .ws-task-col-due {
+  width: auto;
+  min-width: 140px;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-data-table .ws-task-col-status {
+  width: auto;
+  min-width: 110px;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-data-table .ws-task-col-assignee {
+  width: auto;
+  min-width: 130px;
+}
+
+.workspace-app .ws-tasks-sf .ws-task-table-v2 .ws-task-table-actions-col {
+  width: 200px;
+  min-width: 200px;
+  max-width: none;
+  white-space: nowrap;
+  padding-right: 14px !important;
+}
+
+.workspace-app .ws-tasks-sf .ws-task-table-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.workspace-app .ws-tasks-sf .ws-task-table-actions .ws-task-action-btn {
+  min-height: 32px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: 1px solid var(--sf-card-border);
+  background: #fff;
+  color: var(--sf-text);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.workspace-app .ws-tasks-sf .ws-task-table-actions .ws-task-action-btn:hover {
+  background: #f3f3f3;
+  border-color: #c9c7c5;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-btn-delete {
+  color: #fff !important;
+  background: #c23934 !important;
+  border-color: #c23934 !important;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-btn-delete:hover {
+  background: #8a1f11 !important;
+  border-color: #8a1f11 !important;
+}
+
+.workspace-app .ws-tasks-sf .ws-task-table-detail {
+  padding: 12px 14px 14px 14px;
+  background: #fafaf9;
+  border-top: 1px solid #ecebea;
+}
+
+.workspace-app .ws-tasks-sf .ws-task-table-detail-row td {
+  padding: 0 !important;
+  border-bottom: none;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-empty-state {
+  padding: 32px 20px;
+  border-top: 1px solid var(--sf-card-border);
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--sf-card-border);
+  background: #fafaf9;
+  font-size: 0.8125rem;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-pagination .btn-cta {
+  min-height: 30px;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+}
+
+.workspace-app .ws-tasks-sf .ws-sf-pagination .btn-secondary {
+  border-color: var(--sf-card-border);
+  color: var(--sf-brand);
+  background: #fff;
+}
+
+.workspace-app .ws-tasks-sf .ws-task-integration-banner,
+.workspace-app .ws-tasks-sf .ws-new-task-panel {
+  border: 1px solid var(--sf-card-border);
+  border-radius: 4px;
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 900px) {
+  .workspace-app .ws-tasks-sf {
+    margin: -20px -16px -32px;
+    padding: 16px 16px 32px;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-page-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-page-toolbar-actions {
+    justify-content: flex-start;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-list-view-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 520px) {
+  .workspace-app .ws-tasks-sf .ws-sf-metrics {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* SF tasks table — keep actions visible (override legacy hide rules) */
+.workspace-app .ws-tasks-sf .ws-task-table .ws-task-table-actions-col {
+  display: table-cell !important;
+}
+
+@media (max-width: 640px) {
+  .workspace-app .ws-tasks-sf .ws-task-table-scroll {
+    overflow: visible;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-data-table {
+    display: block;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-data-table thead {
+    display: none;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-data-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px 12px 12px;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-data-table tbody tr.ws-task-table-row {
+    display: block;
+    border: 1px solid var(--sf-card-border);
+    border-radius: 4px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-data-table tbody tr.ws-task-table-row.is-expanded {
+    border-color: #c9c7c5;
+    border-radius: 4px 4px 0 0;
+    border-bottom: none;
+    box-shadow: none;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-data-table tbody tr.ws-task-table-row.is-expanded + tr.ws-task-table-detail-row {
+    margin-top: 0;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-data-table tbody tr.ws-task-table-row td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 12px;
+    border-bottom: 1px solid #ecebea;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-data-table tbody tr.ws-task-table-row td:last-child {
+    border-bottom: none;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-data-table tbody tr.ws-task-table-row td::before {
+    content: attr(data-label);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--sf-text-secondary);
+    flex-shrink: 0;
+    min-width: 72px;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-data-table tbody tr.ws-task-table-row .ws-task-col-task {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding-top: 12px;
+    border-bottom: 1px solid #ecebea;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-data-table tbody tr.ws-task-table-row .ws-task-col-task::before {
+    display: none;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-data-table tbody tr.ws-task-table-row .ws-task-col-assignee {
+    display: flex !important;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-data-table tbody tr.ws-task-table-row .ws-task-table-actions-col {
+    flex-direction: column;
+    align-items: stretch;
+    width: auto;
+    min-width: 0;
+    white-space: normal;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-data-table tbody tr.ws-task-table-row .ws-task-table-actions-col::before {
+    align-self: flex-start;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-data-table tbody tr.ws-task-table-row .ws-task-table-actions {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-data-table tbody tr.ws-task-table-row .ws-task-table-actions .ws-task-action-btn {
+    flex: 1 1 0;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-data-table tbody tr.ws-task-table-detail-row {
+    display: block;
+    margin-top: -10px;
+    margin-bottom: 4px;
+    border: 1px solid var(--sf-card-border);
+    border-top: 1px solid #ecebea;
+    border-radius: 0 0 4px 4px;
+    background: #fafaf9;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-data-table tbody tr.ws-task-table-detail-row td {
+    display: block;
+    padding: 0 !important;
+    border: none;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-data-table tr.row-urgency-overdue {
+    box-shadow: inset 3px 0 0 #c23934;
+  }
+}
+

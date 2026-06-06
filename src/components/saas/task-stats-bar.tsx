@@ -108,6 +108,12 @@ export function TaskStatsBar({ stats }: { stats: TaskStatsSummary }) {
       className: "ws-stat-pending",
     },
     {
+      key: "overdue" as const,
+      label: "Overdue",
+      value: stats.overdue,
+      className: "ws-stat-overdue",
+    },
+    {
       key: "progress" as const,
       label: "In progress",
       value: stats.inProgress,
@@ -119,23 +125,17 @@ export function TaskStatsBar({ stats }: { stats: TaskStatsSummary }) {
       value: stats.completedToday,
       className: "ws-stat-done",
     },
-    {
-      key: "overdue" as const,
-      label: "Overdue",
-      value: stats.overdue,
-      className: "ws-stat-overdue",
-    },
   ];
 
   return (
-    <div className="ws-task-stats" role="group" aria-label="Task summary filters">
+    <div className="ws-task-stats ws-sf-metrics" role="group" aria-label="Task summary filters">
       {cards.map((card) => {
         const active = isStatActive(card.key, searchParams);
         return (
           <Link
             key={card.key}
             aria-current={active ? "true" : undefined}
-            className={`ws-stat-card ws-stat-card-link ${card.className}${active ? " is-active" : ""}`}
+            className={`ws-stat-card ws-stat-card-link ws-sf-metric-tile ${card.className}${active ? " is-active" : ""}`}
             href={statHref(card.key, searchParams, active)}
             onClick={(event) => {
               event.preventDefault();

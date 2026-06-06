@@ -1,12 +1,7 @@
 "use client";
 
 import { Fragment, useState, useTransition } from "react";
-import {
-  CalendarClock,
-  ChevronDown,
-  FolderKanban,
-  Trash2,
-} from "lucide-react";
+import { CalendarClock, FolderKanban, Trash2 } from "lucide-react";
 import { deleteDelegatedTask } from "@/app/app/tasks/actions";
 import { TaskEditButton } from "@/components/saas/task-edit-panel";
 import { TaskManagerRequestPanel } from "@/components/saas/task-manager-request-panel";
@@ -73,30 +68,26 @@ export function TaskTable({
 
   if (tasks.length === 0) {
     return (
-      <div className="ws-empty-state ws-task-empty">
+      <div className="ws-empty-state ws-task-empty ws-sf-empty-state">
         <FolderKanban aria-hidden size={28} strokeWidth={1.75} />
         <strong>No tasks match your filters</strong>
-        <p>Tap a stat card above or adjust filters to see tasks here.</p>
+        <p>Tap a metric tile above or adjust list filters to see tasks here.</p>
       </div>
     );
   }
 
   return (
     <article
-      className={`hs-table-card ws-task-table-card${pending ? " is-updating" : ""}`}
+      className={`hs-table-card ws-task-table-card ws-sf-table-wrap${pending ? " is-updating" : ""}`}
     >
-      <div className="hs-table-scroll">
-        <table className="hs-data-table ws-task-table">
+      <div className="hs-table-scroll ws-task-table-scroll">
+        <table className="hs-data-table ws-task-table ws-task-table-v2 ws-sf-data-table">
           <thead>
             <tr>
-              <th aria-hidden className="ws-task-table-expand-col" />
-              <th>Task</th>
-              <th>Assigned</th>
-              <th>Status</th>
-              <th>Assignee</th>
-              <th>Due</th>
-              <th>Priority</th>
-              <th>Dept</th>
+              <th className="ws-task-col-task">Task Name</th>
+              <th className="ws-task-col-due">Due Date</th>
+              <th className="ws-task-col-status">Status</th>
+              <th className="ws-task-col-assignee">Assignee</th>
               <th className="ws-task-table-actions-col">Actions</th>
             </tr>
           </thead>
@@ -126,61 +117,49 @@ export function TaskTable({
                     className={`ws-task-table-row ${rowClass}`.trim()}
                     onClick={() => toggleRow(task.id)}
                   >
-                    <td className="ws-task-table-expand-col">
-                      <ChevronDown
-                        aria-hidden
-                        className={`ws-task-table-chevron${expanded ? " is-open" : ""}`}
-                        size={16}
-                      />
-                    </td>
-                    <td className="cell-strong ws-task-table-title">
-                      <span>{task.title}</span>
+                    <td className="ws-task-table-title ws-task-col-task" data-label="Task">
+                      <span className="ws-sf-record-link ws-task-table-title-text">
+                        {task.title}
+                      </span>
                       {task.openRequest ? (
-                        <span className="ws-task-table-flag">{task.openRequest.label}</span>
-                      ) : null}
-                      {task.instructions ? (
-                        <span className="ws-task-table-sub">
-                          {task.instructions.slice(0, 80)}
-                          {task.instructions.length > 80 ? "..." : ""}
+                        <span className="ws-task-table-flag ws-sf-badge ws-sf-badge-warning">
+                          {task.openRequest.label}
                         </span>
                       ) : null}
-                    </td>
-                    <td className="ws-task-table-assigned">
-                      {formatTaskAssignedDate(task.createdAt)}
-                    </td>
-                    <td>
-                      <span
-                        className={`ws-task-table-status status-${task.status.toLowerCase()}`}
-                      >
-                        {TASK_STATUS_LABELS[task.status].toUpperCase()}
+                      <span className="ws-task-table-meta">
+                        {TASK_PRIORITY_LABELS[task.priority]} ·{" "}
+                        {TASK_DEPARTMENT_LABELS[task.department]}
                       </span>
                     </td>
-                    <td>
-                      <span className="ws-task-table-assignee">
-                        <span className="ws-task-avatar ws-task-avatar-sm">
-                          {assigneeInitials(task.assignee.name, task.assignee.email)}
-                        </span>
-                        {assigneeName}
-                      </span>
-                    </td>
-                    <td>
+                    <td className="ws-task-col-due" data-label="Due Date">
                       <span className={`ws-task-table-due ${urgencyClass}`}>
+                        {urgency === "due-overdue" ? (
+                          <span className="ws-sf-badge ws-sf-badge-danger ws-sf-overdue-badge">
+                            Overdue
+                          </span>
+                        ) : null}
                         <CalendarClock aria-hidden size={13} />
                         {dueLabel}
                       </span>
                     </td>
-                    <td>
+                    <td className="ws-task-col-status" data-label="Status">
                       <span
-                        className={`ws-priority priority-${task.priority.toLowerCase()}`}
+                        className={`ws-task-table-status ws-sf-badge status-${task.status.toLowerCase()}`}
                       >
-                        {TASK_PRIORITY_LABELS[task.priority]}
+                        {TASK_STATUS_LABELS[task.status]}
                       </span>
                     </td>
-                    <td className="ws-task-table-dept">
-                      {TASK_DEPARTMENT_LABELS[task.department]}
+                    <td className="ws-task-col-assignee" data-label="Assignee">
+                      <span className="ws-task-table-assignee">
+                        <span className="ws-task-avatar ws-task-avatar-sm">
+                          {assigneeInitials(task.assignee.name, task.assignee.email)}
+                        </span>
+                        <span className="ws-task-assignee-name">{assigneeName}</span>
+                      </span>
                     </td>
                     <td
                       className="ws-task-table-actions-col"
+                      data-label="Actions"
                       onClick={(event) => event.stopPropagation()}
                     >
                       <div className="ws-task-table-actions">
@@ -189,25 +168,32 @@ export function TaskTable({
                             <TaskEditButton members={members} task={task} />
                             <button
                               aria-label={`Delete ${task.title}`}
-                              className="ws-task-action-btn ws-task-action-danger ws-task-table-icon-btn"
+                              className="ws-task-action-btn ws-task-action-danger ws-sf-btn-delete"
                               type="button"
                               onClick={() => removeTask(task.id)}
                             >
                               <Trash2 size={15} aria-hidden />
+                              Delete
                             </button>
                           </>
-                        ) : (
-                          <span className="ws-task-table-id">
-                            {task.id.slice(0, 8)}
-                          </span>
-                        )}
+                        ) : null}
+                        {task.isAssignee && !task.canManage ? (
+                          <span className="ws-task-table-hint">Tap row for actions</span>
+                        ) : null}
                       </div>
                     </td>
                   </tr>
                   {expanded ? (
                     <tr className="ws-task-table-detail-row">
-                      <td colSpan={9}>
+                      <td colSpan={5}>
                         <div className="ws-task-table-detail">
+                          <div className="ws-task-detail-meta">
+                            <span>
+                              Assigned {formatTaskAssignedDate(task.createdAt)}
+                            </span>
+                            <span>{TASK_PRIORITY_LABELS[task.priority]} priority</span>
+                            <span>{TASK_DEPARTMENT_LABELS[task.department]}</span>
+                          </div>
                           <TaskReminderStatus
                             showResend={Boolean(task.canManage)}
                             task={task}

@@ -30,7 +30,7 @@ export function TaskPagination({
   }
 
   return (
-    <nav aria-label="Task pages" className="ws-task-pagination">
+    <nav aria-label="Task pages" className="ws-task-pagination ws-sf-pagination">
       <span>
         Page {page} of {totalPages} ({total} tasks)
       </span>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   CalendarClock,
@@ -75,19 +76,20 @@ export function TaskEditPanel({
     });
   }
 
-  return (
-    <div className="ws-task-edit-overlay" role="presentation" onClick={onClose}>
-      <form
-        key={`${task.id}-${task.assignee.id}-${task.status}`}
-        className="ws-task-edit-panel"
-        role="dialog"
-        aria-labelledby={`edit-task-${task.id}`}
-        onClick={(event) => event.stopPropagation()}
-        onSubmit={(event) => {
-          event.preventDefault();
-          submit(new FormData(event.currentTarget));
-        }}
-      >
+  const panel = (
+    <div className="workspace-app ws-task-edit-portal">
+      <div className="ws-task-edit-overlay" role="presentation" onClick={onClose}>
+        <form
+          key={`${task.id}-${task.assignee.id}-${task.status}`}
+          className="ws-task-edit-panel"
+          role="dialog"
+          aria-labelledby={`edit-task-${task.id}`}
+          onClick={(event) => event.stopPropagation()}
+          onSubmit={(event) => {
+            event.preventDefault();
+            submit(new FormData(event.currentTarget));
+          }}
+        >
         <header className="ws-task-edit-head">
           <div>
             <h3 id={`edit-task-${task.id}`}>
@@ -269,9 +271,14 @@ export function TaskEditPanel({
             {pending ? "Saving..." : "Save changes"}
           </button>
         </footer>
-      </form>
+        </form>
+      </div>
     </div>
   );
+
+  return typeof document !== "undefined"
+    ? createPortal(panel, document.body)
+    : panel;
 }
 
 export function TaskEditButton({

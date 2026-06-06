@@ -175,6 +175,91 @@ export async function getTaskStats(user: SessionUser) {
   return { pending, inProgress, completedToday, overdue };
 }
 
+export type TaskAssigneeWorkloadRow = {
+  userId: string;
+  name: string;
+  pending: number;
+  inProgress: number;
+  overdue: number;
+  completed: number;
+  total: number;
+};
+
+export async function getTaskAssigneeWorkload(
+  user: SessionUser,
+): Promise<TaskAssigneeWorkloadRow[]> {
+  const where = taskVisibilityFilter(user);
+  const now = new Date();
+
+  const [tasks, members] = await Promise.all([
+    prisma.delegatedTask.findMany({
+      where,
+      select: {
+        assigneeUserId: true,
+        status: true,
+        dueAt: true,
+      },
+    }),
+    listAssignableMembers(user.organizationId),
+  ]);
+
+  const byUser = new Map<
+    string,
+    { pending: number; inProgress: number; overdue: number; completed: number }
+  >();
+
+  function ensure(userId: string) {
+    if (!byUser.has(userId)) {
+      byUser.set(userId, {
+        pending: 0,
+        inProgress: 0,
+        overdue: 0,
+        completed: 0,
+      });
+    }
+    return byUser.get(userId)!;
+  }
+
+  for (const member of members) {
+    ensure(member.id);
+  }
+
+  for (const task of tasks) {
+    const bucket = ensure(task.assigneeUserId);
+    if (task.status === "PENDING") {
+      bucket.pending += 1;
+    } else if (task.status === "IN_PROGRESS") {
+      bucket.inProgress += 1;
+    } else if (task.status === "COMPLETED") {
+      bucket.completed += 1;
+    }
+
+    if (
+      isTaskActiveStatus(task.status) &&
+      task.dueAt.getTime() < now.getTime()
+    ) {
+      bucket.overdue += 1;
+    }
+  }
+
+  const nameById = new Map(
+    members.map((member) => [
+      member.id,
+      member.name ?? member.email.split("@")[0],
+    ]),
+  );
+
+  return [...byUser.entries()]
+    .map(([userId, counts]) => ({
+      userId,
+      name: nameById.get(userId) ?? "Team member",
+      ...counts,
+      total: counts.pending + counts.inProgress + counts.overdue,
+    }))
+    .filter((row) => row.total > 0 || row.completed > 0)
+    .sort((a, b) => b.overdue - a.overdue || b.total - a.total);
+}
+
 export type TaskChartData = {
   statusBreakdown: Array<{ name: string; value: number; color: string }>;
   departmentBreakdown: Array<{ name: string; value: number }>;

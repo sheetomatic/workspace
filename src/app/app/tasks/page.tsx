@@ -1,11 +1,12 @@
 import { Suspense } from "react";
 import type { TaskStatus } from "@prisma/client";
-import { PageHeader } from "@/components/saas/page-header";
+import { TaskAssigneeDashboard } from "@/components/saas/task-assignee-dashboard";
 import { TaskChartsPanel } from "@/components/saas/task-charts-panel";
 import { TaskExportBar } from "@/components/saas/task-export-bar";
 import { TaskFeedbackToast } from "@/components/saas/task-feedback-toast";
 import { TaskIntegrationBanner } from "@/components/saas/task-integration-banner";
 import { TaskFilters } from "@/components/saas/task-filters";
+import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { TaskStatsBar } from "@/components/saas/task-stats-bar";
 import {
   NewTaskTrigger,
@@ -28,6 +29,7 @@ import { getWorkspaceIntegrationStatus } from "@/lib/workspace-integration-statu
 import {
   canCreateTasks,
   canUpdateTask,
+  getTaskAssigneeWorkload,
   getTaskChartData,
   getTaskStats,
   listAssignableMembers,
@@ -85,21 +87,24 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
         : null,
     };
   });
-  const [stats, chartData, members, spreadsheetId, integrationStatus] =
+  const showCreate = canCreateTasks(user.role);
+  const showAssigneeFilter =
+    hasMinimumRole(user.role, "MANAGER") || user.role === "VIEWER";
+
+  const [stats, chartData, members, assigneeWorkload, spreadsheetId, integrationStatus] =
     await Promise.all([
     getTaskStats(user),
     getTaskChartData(user),
     canCreateTasks(user.role)
       ? listAssignableMembers(user.organizationId)
       : Promise.resolve([]),
+    showAssigneeFilter
+      ? getTaskAssigneeWorkload(user)
+      : Promise.resolve([]),
     getSpreadsheetIdForOrganization(user.organizationId),
     getWorkspaceIntegrationStatus(user.organizationId),
   ]);
   const sheetsConnection = getGoogleSheetsConnectionStatus(spreadsheetId);
-
-  const showCreate = canCreateTasks(user.role);
-  const showAssigneeFilter =
-    hasMinimumRole(user.role, "MANAGER") || user.role === "VIEWER";
   const filterMembers = members.map((member) => ({
     id: member.id,
     name: member.name,
@@ -114,10 +119,27 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
   };
   const quickFilterActive = hasQuickTaskFilter(filterParams);
   const activeFilterLabel = taskFilterLabel(filterParams);
+  const listTitle = activeFilterLabel ? `${activeFilterLabel} Tasks` : "All Tasks";
 
   return (
-    <div className="saas-page ws-tasks-page">
-      <PageHeader title="Tasks" />
+    <div className="saas-page ws-tasks-page ws-tasks-sf">
+      <TaskPageToolbar
+        title="Tasks"
+        actions={
+          <>
+            <TaskExportBar
+              compact
+              sheetsReady={sheetsConnection.ready}
+              spreadsheetUrl={sheetsConnection.spreadsheetUrl}
+            />
+            {showCreate ? (
+              <Suspense fallback={null}>
+                <NewTaskTrigger className="btn-cta btn-primary ws-sf-btn-primary ws-new-task-trigger" />
+              </Suspense>
+            ) : null}
+          </>
+        }
+      />
 
       <Suspense fallback={null}>
         <TaskFeedbackToast />
@@ -129,75 +151,43 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
         <TaskIntegrationBanner status={integrationStatus} />
       ) : null}
 
-      <section aria-label="Task overview" className="ws-task-overview">
-        {!quickFilterActive ? (
-          <div className="ws-task-overview-top">
-            <TaskChartsPanel charts={chartData} />
-            <aside className="ws-task-overview-side">
-              <Suspense fallback={null}>
-                <TaskFilters
-                  current={{
-                    status: params.status,
-                    assignee: params.assignee,
-                    overdue: params.overdue,
-                    doneToday: params.doneToday,
-                  }}
-                  members={filterMembers}
-                  showAssigneeFilter={showAssigneeFilter}
-                />
-              </Suspense>
-              <div className="ws-task-overview-side-actions">
-                <TaskExportBar
-                  compact
-                  sheetsReady={sheetsConnection.ready}
-                  spreadsheetUrl={sheetsConnection.spreadsheetUrl}
-                />
-                {showCreate ? (
-                  <Suspense fallback={null}>
-                    <NewTaskTrigger />
-                  </Suspense>
-                ) : null}
-              </div>
-            </aside>
-          </div>
-        ) : null}
-        <Suspense fallback={<div className="ws-task-stats is-loading" />}>
-          <TaskStatsBar stats={stats} />
-        </Suspense>
-      </section>
-
-      <Suspense fallback={<div className="ws-tasks-controls is-loading" />}>
-        <TasksActionBar
-          current={{
-            status: params.status,
-            assignee: params.assignee,
-            overdue: params.overdue,
-            doneToday: params.doneToday,
-          }}
-          filterMembers={filterMembers}
-          filtersInOverview={!quickFilterActive}
-          integrationStatus={integrationStatus}
-          members={members}
-          showAssigneeFilter={showAssigneeFilter}
-          showCreate={showCreate}
-        />
+      <Suspense fallback={<div className="ws-sf-metrics is-loading" />}>
+        <TaskStatsBar stats={stats} />
       </Suspense>
 
-      <section className="ws-task-queue" id="execution-queue">
-        <div className="ws-queue-head">
-          <div>
-            <h2 className="ws-queue-title">
-              {activeFilterLabel ? `${activeFilterLabel} tasks` : "All Tasks"}
-            </h2>
-            <p className="ws-queue-sub">
-              {taskPage.total} task{taskPage.total === 1 ? "" : "s"}
-              {activeFilterLabel ? ` in ${activeFilterLabel.toLowerCase()}` : ""}
-              {taskPage.totalPages > 1
-                ? ` · page ${page} of ${taskPage.totalPages}`
-                : ""}
-            </p>
-          </div>
+      <Suspense fallback={null}>
+        <TaskAssigneeDashboard rows={assigneeWorkload} showTeam={showAssigneeFilter} />
+      </Suspense>
+
+      {!quickFilterActive && chartData.statusBreakdown.length > 0 ? (
+        <div className="ws-sf-chart-compact">
+          <TaskChartsPanel charts={chartData} />
         </div>
+      ) : null}
+
+      <section className="ws-sf-list-view" id="execution-queue" aria-label="Task list">
+        <header className="ws-sf-list-view-header">
+          <div className="ws-sf-list-view-title">
+            <h2>{listTitle}</h2>
+            <span className="ws-sf-list-view-count">
+              {taskPage.total} item{taskPage.total === 1 ? "" : "s"}
+            </span>
+          </div>
+          <Suspense fallback={null}>
+            <TaskFilters
+              current={{
+                status: params.status,
+                assignee: params.assignee,
+                overdue: params.overdue,
+                doneToday: params.doneToday,
+              }}
+              inListHeader
+              members={filterMembers}
+              showAssigneeFilter={showAssigneeFilter}
+            />
+          </Suspense>
+        </header>
+
         <TaskTable
           members={members}
           tasks={tasks}
@@ -211,6 +201,22 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
         />
       </section>
 
+      <Suspense fallback={<div className="ws-tasks-controls is-loading" />}>
+        <TasksActionBar
+          current={{
+            status: params.status,
+            assignee: params.assignee,
+            overdue: params.overdue,
+            doneToday: params.doneToday,
+          }}
+          filterMembers={filterMembers}
+          filtersInOverview
+          integrationStatus={integrationStatus}
+          members={members}
+          showAssigneeFilter={showAssigneeFilter}
+          showCreate={showCreate}
+        />
+      </Suspense>
     </div>
   );
 }
