@@ -212,7 +212,9 @@ function firstNameFrom(value: string | undefined) {
   return value?.split(/\s+/)[0]?.replace(/[,.!?;:]+$/g, "") ?? undefined;
 }
 
-function parseLabeledLine(line: string) {
+function parseLabeledLine(
+  line: string,
+): { key: keyof LeadFormFields; value: string } | null {
   const patterns: Array<{ key: keyof LeadFormFields; regex: RegExp }> = [
     { key: "name", regex: /^(?:\d+[.)]\s*)?(?:\*?name\*?|full name)\s*[:.\-]\s*(.+)$/i },
     {
@@ -267,7 +269,13 @@ function assignValidatedField(
   if (key === "requirement" && !looksLikeRequirement(cleaned)) {
     return {};
   }
-  return { [key]: key === "email" ? cleaned.toLowerCase() : cleaned };
+  if (key === "name") {
+    return { name: cleaned };
+  }
+  if (key === "city") {
+    return { city: cleaned };
+  }
+  return { requirement: cleaned };
 }
 
 function parseDelimitedLine(line: string) {
