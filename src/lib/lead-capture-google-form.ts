@@ -30,7 +30,7 @@ export function leadCaptureGoogleFormWelcomeText(
   return [
     `Hi! Welcome to *${organizationName}*.`,
     "",
-    "Please share your details using this quick form — responses go straight to our team sheet:",
+    "Please share your details using this quick form - responses go straight to our team sheet:",
     "",
     formUrl,
     "",

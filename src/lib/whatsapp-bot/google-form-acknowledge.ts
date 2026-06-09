@@ -15,7 +15,7 @@ export function googleFormAcknowledgmentText(name: string, organizationName: str
     "",
     `Our team at *${organizationName}* will review your request and get back to you soon.`,
     "",
-    "Feel free to ask any questions here ÿ pricing, product demos, or how we can help.",
+    "Feel free to ask any questions here - pricing, product demos, or how we can help.",
     "",
     "Reply *menu* to browse FAQs and videos.",
   ].join("\n");

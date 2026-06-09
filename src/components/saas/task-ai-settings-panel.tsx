@@ -58,8 +58,8 @@ export function TaskAiSettingsPanel({
         <div>
           <dt>Breakdown</dt>
           <dd>
-            Parse {summary.parseToday.toLocaleString()} · Voice{" "}
-            {summary.transcribeToday.toLocaleString()} · Tokens{" "}
+            Parse {summary.parseToday.toLocaleString()} | Voice{" "}
+            {summary.transcribeToday.toLocaleString()} | Tokens{" "}
             {summary.tokensToday.toLocaleString()}
           </dd>
         </div>
@@ -86,7 +86,7 @@ export function TaskAiSettingsPanel({
             Allow Task AI for this workspace
           </label>
           <button className="btn-secondary" disabled={pending} type="submit">
-            {pending ? "Saving…" : "Save Task AI limits"}
+            {pending ? "Saving..." : "Save Task AI limits"}
           </button>
           {state.message ? (
             <p
