@@ -220,7 +220,7 @@ export function WhatsAppGoLivePanel({ status }: { status: WhatsAppGoLiveStatus }
             </div>
           </div>
         ) : (
-          <p className="saas-form-message error" role="alert">
+          <p className="saas-form-message error ws-go-live-error" role="alert">
             {message.text}
           </p>
         )

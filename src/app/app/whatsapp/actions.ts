@@ -505,6 +505,9 @@ export async function sendWhatsAppConnectionTest(): Promise<WhatsAppTemplateActi
   }
 
   const { sendWhatsAppText } = await import("@/lib/whatsapp-bot/send");
+  const { formatWhatsAppSendFailureMessage } = await import(
+    "@/lib/integrations/redlava"
+  );
   const result = await sendWhatsAppText({
     organizationId: user.organizationId,
     toPhone: target.phone,
@@ -519,7 +522,7 @@ export async function sendWhatsAppConnectionTest(): Promise<WhatsAppTemplateActi
   if (!result.sent) {
     return {
       ok: false,
-      message: result.detail ?? "Could not send test message. Check RedLava settings.",
+      message: formatWhatsAppSendFailureMessage(result.detail, "text"),
     };
   }
 

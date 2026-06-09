@@ -7583,6 +7583,10 @@
   margin-bottom: 8px;
 }
 
+.workspace-app .ws-go-live-error {
+  white-space: pre-wrap;
+}
+
 .workspace-app .ws-inbox-empty,
 .workspace-app .ws-contacts-empty {
   display: grid;

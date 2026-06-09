@@ -47,11 +47,91 @@ function withTemplateLanguageDetail(
   languageCode?: string,
 ): string | undefined {
   if (!languageCode) {
-    return detail?.slice(0, 300);
+    return detail?.slice(0, 500);
   }
   const prefix = `[lang=${languageCode}] `;
-  const body = detail?.slice(0, Math.max(0, 300 - prefix.length)) ?? "";
+  const body = detail?.slice(0, Math.max(0, 500 - prefix.length)) ?? "";
   return `${prefix}${body}`;
+}
+
+/** Turn RedLava / Meta JSON errors into a short operator-facing message. */
+export function formatWhatsAppApiErrorDetail(
+  raw: string,
+  messageType?: string,
+): string {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return "WhatsApp send failed with no error detail from the provider.";
+  }
+
+  let parsed: Record<string, unknown> | null = null;
+  try {
+    parsed = JSON.parse(trimmed) as Record<string, unknown>;
+  } catch {
+    return trimmed.slice(0, 500);
+  }
+
+  const title = typeof parsed.title === "string" ? parsed.title : "";
+  const detail = typeof parsed.detail === "string" ? parsed.detail : "";
+  const error =
+    parsed.error && typeof parsed.error === "object"
+      ? (parsed.error as Record<string, unknown>)
+      : parsed;
+  const errorMessage =
+    typeof error.message === "string"
+      ? error.message
+      : typeof parsed.message === "string"
+        ? parsed.message
+        : "";
+  const errorCode = error.code ?? parsed.code;
+  const errorData =
+    error.error_data && typeof error.error_data === "object"
+      ? (error.error_data as Record<string, unknown>)
+      : null;
+  const errorDetails =
+    typeof errorData?.details === "string" ? errorData.details : "";
+
+  const parts = [
+    title || errorMessage || "WhatsApp send failed",
+    detail,
+    errorDetails,
+    errorCode != null ? `(code ${errorCode})` : "",
+  ].filter(Boolean);
+
+  let message = parts.join(" — ").slice(0, 500);
+
+  const haystack = `${message} ${trimmed}`.toLowerCase();
+  const isText = messageType === "text" || !messageType;
+
+  if (
+    isText &&
+    (haystack.includes("(#100)") ||
+      haystack.includes('"code":100') ||
+      haystack.includes("invalid parameter"))
+  ) {
+    message += [
+      "",
+      "Tip: Free-text tests only work within 24 hours after that phone messages your business number.",
+      "From the test phone, send hi to your business WhatsApp first, then retry — or confirm Go Live using inbound replies only.",
+      "Also verify Settings → Phone ID matches the Meta Phone Number ID in RedLava Connected Accounts (not the WABA ID).",
+    ].join("\n");
+  }
+
+  if (haystack.includes("unspecified_phone_number") || haystack.includes("phone_id")) {
+    message += "\nTip: Add the correct RedLava Phone ID in AI Settings.";
+  }
+
+  return message.slice(0, 900);
+}
+
+export function formatWhatsAppSendFailureMessage(
+  detail: string | undefined,
+  messageType?: string,
+): string {
+  if (!detail?.trim()) {
+    return "Could not send WhatsApp message. Check RedLava API key and Phone ID in Settings.";
+  }
+  return formatWhatsAppApiErrorDetail(detail, messageType);
 }
 
 /** Static-header templates must not include a header component (causes Meta 400). */
@@ -142,8 +222,13 @@ export function parseWhatsAppSendResponse(
 
     return {
       sent: false,
-      reason: isWhatsAppSessionRequiredError(raw) ? "session_required" : "api_error",
-      detail: withTemplateLanguageDetail(raw, options?.templateLanguageCode),
+      reason: isWhatsAppSessionRequiredError(raw, options?.messageType)
+        ? "session_required"
+        : "api_error",
+      detail: withTemplateLanguageDetail(
+        formatWhatsAppApiErrorDetail(raw, options?.messageType),
+        options?.templateLanguageCode,
+      ),
     };
   }
 
@@ -156,26 +241,33 @@ export function parseWhatsAppSendResponse(
 
   if (body.error) {
     const detail = withTemplateLanguageDetail(
-      JSON.stringify(body.error),
+      formatWhatsAppApiErrorDetail(JSON.stringify(body.error), options?.messageType),
       options?.templateLanguageCode,
     );
     return {
       sent: false,
-      reason: isWhatsAppSessionRequiredError(detail ?? "") ? "session_required" : "api_error",
+      reason: isWhatsAppSessionRequiredError(detail ?? "", options?.messageType)
+        ? "session_required"
+        : "api_error",
       detail,
     };
   }
 
   if (body.success === false) {
     const detail = withTemplateLanguageDetail(
-      (typeof body.message === "string" && body.message) ||
-        raw.slice(0, 300) ||
+      formatWhatsAppApiErrorDetail(
+        (typeof body.message === "string" && body.message) || raw,
+        options?.messageType,
+      ) ||
+        raw.slice(0, 500) ||
         "Send rejected",
       options?.templateLanguageCode,
     );
     return {
       sent: false,
-      reason: isWhatsAppSessionRequiredError(detail ?? "") ? "session_required" : "api_error",
+      reason: isWhatsAppSessionRequiredError(detail ?? "", options?.messageType)
+        ? "session_required"
+        : "api_error",
       detail,
     };
   }
@@ -192,9 +284,14 @@ export function parseWhatsAppSendResponse(
   if (messageType === "text") {
     return {
       sent: false,
-      reason: isWhatsAppSessionRequiredError(raw) ? "session_required" : "api_error",
+      reason: isWhatsAppSessionRequiredError(raw, messageType)
+        ? "session_required"
+        : "api_error",
       detail: withTemplateLanguageDetail(
-        raw.slice(0, 300) || "Text send accepted without delivery id",
+        formatWhatsAppApiErrorDetail(
+          raw || "Text send accepted without delivery id",
+          messageType,
+        ),
         options?.templateLanguageCode,
       ),
     };
@@ -264,8 +361,19 @@ function extractWhatsAppMessageId(body: Record<string, unknown>): string | null 
   return null;
 }
 
-export function isWhatsAppSessionRequiredError(detail: string) {
+export function isWhatsAppSessionRequiredError(
+  detail: string,
+  messageType?: string,
+) {
   const haystack = detail.toLowerCase();
+  if (
+    messageType === "text" &&
+    (haystack.includes("(#100)") ||
+      haystack.includes('"code":100') ||
+      haystack.includes("invalid parameter"))
+  ) {
+    return true;
+  }
   return (
     haystack.includes("131047") ||
     haystack.includes("131026") ||
