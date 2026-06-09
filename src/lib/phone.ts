@@ -21,6 +21,18 @@ export function normalizeWhatsAppPhone(raw: string): string | null {
   return digits;
 }
 
+export function whatsAppPhonesEqual(
+  left: string | null | undefined,
+  right: string | null | undefined,
+) {
+  const normalizedLeft = normalizeWhatsAppPhone(left ?? "");
+  const normalizedRight = normalizeWhatsAppPhone(right ?? "");
+  if (!normalizedLeft || !normalizedRight) {
+    return false;
+  }
+  return normalizedLeft === normalizedRight;
+}
+
 export function formatWhatsAppPhone(phone: string | null | undefined) {
   if (!phone) {
     return "-";

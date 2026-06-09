@@ -111,9 +111,9 @@ export function formatWhatsAppApiErrorDetail(
   ) {
     message += [
       "",
-      "Tip: Free-text tests only work within 24 hours after that phone messages your business number.",
-      "From the test phone, send hi to your business WhatsApp first, then retry — or confirm Go Live using inbound replies only.",
-      "Also verify Settings → Phone ID matches the Meta Phone Number ID in RedLava Connected Accounts (not the WABA ID).",
+      "Tip: You cannot send API messages to your own business WhatsApp number — use a different personal mobile in Settings for tests.",
+      "Free-text also needs the recipient to message your business line within 24 hours.",
+      "Verify Settings → Phone ID is the Meta Phone Number ID from RedLava Connected Accounts.",
     ].join("\n");
   }
 

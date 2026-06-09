@@ -491,13 +491,54 @@ export async function sendWhatsAppConnectionTest(): Promise<WhatsAppTemplateActi
   }
 
   const members = await listWhatsAppMembers(user.organizationId);
+  const credentials = await resolveWorkspaceWhatsAppCredentials(user.organizationId);
+  const { normalizeWhatsAppPhone, whatsAppPhonesEqual, formatWhatsAppPhone } =
+    await import("@/lib/phone");
+
+  const eligible = members.filter((member) => {
+    const phone = member.phone?.trim();
+    if (!phone) {
+      return false;
+    }
+    if (
+      credentials.businessPhone &&
+      whatsAppPhonesEqual(phone, credentials.businessPhone)
+    ) {
+      return false;
+    }
+    return Boolean(normalizeWhatsAppPhone(phone));
+  });
+
   const target =
-    members.find(
-      (member) =>
-        hasMinimumRole(member.role, "MANAGER") && member.phone?.trim(),
-    ) ?? members.find((member) => member.phone?.trim());
+    eligible.find((member) => hasMinimumRole(member.role, "MANAGER")) ??
+    eligible[0];
 
   if (!target?.phone) {
+    const businessFormatted = credentials.businessPhone
+      ? formatWhatsAppPhone(credentials.businessPhone)
+      : null;
+    if (
+      members.some(
+        (member) =>
+          member.phone?.trim() &&
+          credentials.businessPhone &&
+          whatsAppPhonesEqual(member.phone, credentials.businessPhone),
+      )
+    ) {
+      return {
+        ok: false,
+        message: [
+          "Your team WhatsApp number is the same as the business line",
+          businessFormatted ? `(${businessFormatted})` : "",
+          "— Meta cannot deliver API messages to your own business number.",
+          "",
+          "In Settings, add a personal mobile for a manager (different from the business line), then retry Send test message.",
+        ]
+          .filter(Boolean)
+          .join(" "),
+      };
+    }
+
     return {
       ok: false,
       message: "Add a team WhatsApp number in Settings before testing.",

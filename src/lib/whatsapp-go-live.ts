@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { hasMinimumRole } from "@/lib/permissions";
+import { formatWhatsAppPhone, whatsAppPhonesEqual } from "@/lib/phone";
 import {
   listWhatsAppMembers,
   resolveWorkspaceWhatsAppCredentials,
@@ -53,6 +54,13 @@ export async function getWhatsAppGoLiveStatus(
     (member) => hasMinimumRole(member.role, "MANAGER") && member.phone,
   ).length;
 
+  const teamUsesBusinessLine = members.some(
+    (member) =>
+      member.phone &&
+      credentials.businessPhone &&
+      whatsAppPhonesEqual(member.phone, credentials.businessPhone),
+  );
+
   const credentialsReady = Boolean(
     credentials.redlavaApiKey && credentials.redlavaPhoneId,
   );
@@ -65,6 +73,11 @@ export async function getWhatsAppGoLiveStatus(
   }
   if (delegatorCount === 0) {
     blockers.push("Add at least one Manager+ team WhatsApp number in Settings.");
+  }
+  if (teamUsesBusinessLine) {
+    blockers.push(
+      `Team WhatsApp must be a personal mobile — not the business line (${formatWhatsAppPhone(credentials.businessPhone)}). Meta cannot API-message your own business number.`,
+    );
   }
   if (!verifyTokenConfigured) {
     blockers.push(
