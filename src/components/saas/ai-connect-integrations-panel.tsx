@@ -60,10 +60,13 @@ export function AiConnectIntegrationsPanel({
     {
       id: "mis",
       title: "Connect MIS Workspace",
-      description: "Sync Google Sheets workflows into your operations hub",
+      description:
+        "Link Google Sheets for dashboard data and export WhatsApp CRM leads to a WA CRM tab",
       icon: Building2,
       href: "/app/settings",
       primaryLabel: "Connect",
+      secondaryHref: "/ai/app/contacts",
+      secondaryLabel: "Sync CRM",
     },
   ];
 

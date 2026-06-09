@@ -8,7 +8,10 @@ import { getUserDashboard } from "@/lib/workspace-data";
 export default async function AppDashboardPage() {
   const user = await requireSession();
 
-  if (hasWorkspaceModule(user, "TASKS")) {
+  if (
+    hasWorkspaceModule(user, "CASES") ||
+    hasWorkspaceModule(user, "TASKS")
+  ) {
     redirect(resolveWorkspaceHomeHref(user));
   }
 

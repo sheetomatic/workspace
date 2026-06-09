@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { AttendanceWorkMode, Role, TaskDepartment } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { getSessionUser } from "@/lib/auth";
+import { normalizeStaffCode } from "@/lib/legal-cases/access";
 import { prisma } from "@/lib/db";
 import { normalizeWhatsAppPhone } from "@/lib/phone";
 import { hasMinimumRole, ROLE_LABELS } from "@/lib/permissions";
@@ -135,6 +136,8 @@ export async function inviteTeamMember(
     formData.get("reportingManagerId")?.toString(),
   );
   const isDepartmentHead = formData.get("isDepartmentHead") === "on";
+  const staffCode =
+    normalizeStaffCode(formData.get("staffCode")?.toString()) || null;
 
   if (!email.includes("@")) {
     return { ok: false, message: "Enter a valid email." };
@@ -226,6 +229,7 @@ export async function inviteTeamMember(
         reportingManagerId,
         isDepartmentHead,
         modules,
+        staffCode,
       },
     });
 
@@ -266,6 +270,7 @@ export async function inviteTeamMember(
           reportingManagerId,
           isDepartmentHead,
           modules,
+          staffCode,
         },
       },
     },

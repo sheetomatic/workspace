@@ -3,6 +3,7 @@ import type { SessionUser } from "@/lib/auth";
 import { hasMinimumRole } from "@/lib/permissions";
 
 export const WORKSPACE_MODULES: WorkspaceModule[] = [
+  "CASES",
   "TASKS",
   "HR",
   "APPROVALS",
@@ -10,6 +11,7 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
 ];
 
 export const WORKSPACE_MODULE_LABELS: Record<WorkspaceModule, string> = {
+  CASES: "Cases",
   TASKS: "Tasks",
   HR: "HR (attendance, field, hiring)",
   APPROVALS: "Approvals",
@@ -17,6 +19,7 @@ export const WORKSPACE_MODULE_LABELS: Record<WorkspaceModule, string> = {
 };
 
 export const WORKSPACE_MODULE_HREFS: Partial<Record<WorkspaceModule, string>> = {
+  CASES: "/app/cases",
   TASKS: "/app/tasks",
   HR: "/app/hr",
   APPROVALS: "/app/approvals",
@@ -71,7 +74,7 @@ export function formatModuleList(modules: WorkspaceModule[]) {
   return modules.map((module) => WORKSPACE_MODULE_LABELS[module]).join(", ");
 }
 
-/** Default landing route after workspace login (Tasks first). */
+/** Default landing route after workspace login (Cases first when enabled). */
 export function resolveWorkspaceHomeHref(
   user: Pick<SessionUser, "modules" | "isSuperAdmin">,
 ) {
@@ -86,7 +89,19 @@ export function resolveWorkspaceHomeHref(
   return "/app/tasks";
 }
 
+export function isCasesOnlyWorkspace(
+  user: Pick<SessionUser, "modules" | "isSuperAdmin">,
+) {
+  if (user.isSuperAdmin) {
+    return false;
+  }
+  return user.modules.length === 1 && user.modules[0] === "CASES";
+}
+
 export function pathnameRequiresModule(pathname: string): WorkspaceModule | null {
+  if (pathname.startsWith("/app/cases")) {
+    return "CASES";
+  }
   if (pathname.startsWith("/app/hr")) {
     return "HR";
   }

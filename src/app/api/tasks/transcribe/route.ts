@@ -8,6 +8,10 @@ import {
 import { getIntegrationStatus } from "@/lib/integrations/status";
 import { hasMinimumRole } from "@/lib/permissions";
 import { checkRateLimit } from "@/lib/rate-limit";
+import {
+  checkTaskAiOrgQuota,
+  recordTaskAiUsage,
+} from "@/lib/integrations/task-ai-settings";
 
 const MAX_AUDIO_BYTES = 12 * 1024 * 1024;
 
@@ -27,6 +31,11 @@ export async function POST(request: Request) {
       { error: `Rate limit exceeded. Retry in ${rate.retryAfterSec}s.` },
       { status: 429 },
     );
+  }
+
+  const orgQuota = await checkTaskAiOrgQuota(user.organizationId);
+  if (!orgQuota.allowed) {
+    return NextResponse.json({ error: orgQuota.message }, { status: 429 });
   }
 
   const status = getIntegrationStatus();
@@ -49,6 +58,12 @@ export async function POST(request: Request) {
 
   try {
     const text = await transcribeAudioBuffer(buffer, mimeType);
+    await recordTaskAiUsage({
+      organizationId: user.organizationId,
+      userId: user.id,
+      route: "transcribe",
+      usage: { audioBytes: buffer.length },
+    });
     return NextResponse.json({ text });
   } catch (error) {
     const raw =

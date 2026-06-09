@@ -187,6 +187,42 @@ export async function listOverdueWaFollowUps(organizationId: string) {
   });
 }
 
+export async function listWaCrmContactsForSheetExport(organizationId: string) {
+  const contacts = await prisma.waContact.findMany({
+    where: { organizationId },
+    include: {
+      assignedTo: { select: { name: true, email: true } },
+      conversations: {
+        orderBy: { lastMessageAt: "desc" },
+        take: 1,
+        select: { preview: true },
+      },
+    },
+    orderBy: [{ lastMessageAt: "desc" }, { createdAt: "desc" }],
+  });
+
+  return contacts.map((contact) => ({
+    id: contact.id,
+    phone: contact.phone,
+    name: contact.name,
+    email: contact.email,
+    city: contact.city,
+    requirementDescription: contact.requirementDescription,
+    intent: contact.intent,
+    source: contact.source,
+    pipelineStage: contact.pipelineStage,
+    notes: contact.notes,
+    tags: contact.tags,
+    leadCaptureComplete: contact.leadCaptureComplete,
+    lastMessageAt: contact.lastMessageAt,
+    nextFollowUpAt: contact.nextFollowUpAt,
+    createdAt: contact.createdAt,
+    updatedAt: contact.updatedAt,
+    assignedTo: contact.assignedTo,
+    lastMessagePreview: contact.conversations[0]?.preview ?? null,
+  }));
+}
+
 export async function syncContactNextFollowUp(
   organizationId: string,
   contactId: string,

@@ -10,6 +10,7 @@ export type LeadCaptureContact = {
   requirementDescription: string | null;
   leadCaptureStep: WaLeadCaptureStep;
   leadCaptureComplete: boolean;
+  googleFormAckSentAt?: Date | null;
 };
 
 export type LeadFormFields = {
@@ -44,6 +45,33 @@ const GREETING_WORDS = new Set([
 const REQUIREMENT_KEYWORDS =
   /\b(api|whatsapp|whats\s*app|automation|excel|sheet|sheets|crm|bot|chatbot|integration|dashboard|appsheet|google|mis|training|software|website|app|digital|marketing|course|consult|support|help|service|business|workflow|invoice|inventory|erp|pos)\b/i;
 
+const INQUIRY_KEYWORDS =
+  /\b(price|pricing|cost|rate|rates|charges?|fees?|quote|quotation|kitna|kya\s+price|how\s+much|what\s+is\s+the\s+price)\b/i;
+
+const INQUIRY_START =
+  /^(how|what|when|where|why|which|can|could|do|does|is|are|will|would|tell\s+me|please\s+tell)\b/i;
+
+const SENTENCE_FRAGMENT =
+  /\b(i am saying|i'm saying|as i said|you know|i mean|please tell|tell me|i said)\b/i;
+
+const NOT_NAME_WORDS = new Set([
+  "price",
+  "pricing",
+  "cost",
+  "rate",
+  "rates",
+  "quote",
+  "email",
+  "mail",
+  "city",
+  "name",
+  "hello",
+  "hi",
+  "hey",
+  "product",
+  "products",
+]);
+
 const FIELD_ORDER: Array<keyof LeadFormFields> = [
   "name",
   "email",
@@ -59,8 +87,26 @@ function cleanFieldValue(value: string, max: number) {
   return value.replace(/^\*|\*$/g, "").trim().slice(0, max);
 }
 
+export function isLeadCaptureInquiry(text: string) {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return false;
+  }
+  if (INQUIRY_KEYWORDS.test(trimmed)) {
+    return true;
+  }
+  if (INQUIRY_START.test(trimmed)) {
+    return true;
+  }
+  if (/\?\s*$/.test(trimmed) || trimmed.includes("?")) {
+    return true;
+  }
+  return false;
+}
+
 function extractEmail(text: string) {
-  const match = text.match(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/i);
+  const normalized = text.replace(/\be\s*mail\b/gi, "email");
+  const match = normalized.match(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/i);
   return match?.[0]?.toLowerCase() ?? null;
 }
 
@@ -94,7 +140,10 @@ function looksLikeRequirement(value: string) {
   if (REQUIREMENT_KEYWORDS.test(trimmed)) {
     return true;
   }
-  return trimmed.length >= 12;
+  if (isLeadCaptureInquiry(trimmed)) {
+    return trimmed.length >= 12;
+  }
+  return trimmed.length >= 20 && trimmed.split(/\s+/).length >= 4;
 }
 
 function looksLikePersonName(value: string) {
@@ -126,6 +175,39 @@ function looksLikeCity(value: string) {
   return /^[\p{L}\s'.-]+$/u.test(trimmed);
 }
 
+function isPlausibleName(value: string) {
+  const trimmed = value.trim();
+  if (!looksLikePersonName(trimmed)) {
+    return false;
+  }
+  if (isLeadCaptureInquiry(trimmed) || SENTENCE_FRAGMENT.test(trimmed)) {
+    return false;
+  }
+  const words = trimmed.toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length > 5) {
+    return false;
+  }
+  if (words.length === 1 && NOT_NAME_WORDS.has(words[0])) {
+    return false;
+  }
+  return true;
+}
+
+function isPlausibleCity(value: string) {
+  const trimmed = value.trim();
+  if (!looksLikeCity(trimmed)) {
+    return false;
+  }
+  if (isLeadCaptureInquiry(trimmed) || SENTENCE_FRAGMENT.test(trimmed)) {
+    return false;
+  }
+  const words = trimmed.toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length > 4) {
+    return false;
+  }
+  return true;
+}
+
 function firstNameFrom(value: string | undefined) {
   return value?.split(/\s+/)[0]?.replace(/[,.!?;:]+$/g, "") ?? undefined;
 }
@@ -133,7 +215,11 @@ function firstNameFrom(value: string | undefined) {
 function parseLabeledLine(line: string) {
   const patterns: Array<{ key: keyof LeadFormFields; regex: RegExp }> = [
     { key: "name", regex: /^(?:\d+[.)]\s*)?(?:\*?name\*?|full name)\s*[:.\-]\s*(.+)$/i },
-    { key: "email", regex: /^(?:\d+[.)]\s*)?(?:\*?email\*?|e-mail)\s*[:.\-]\s*(.+)$/i },
+    {
+      key: "email",
+      regex:
+        /^(?:\d+[.)]\s*)?(?:\*?email\*?|\*?e[\s-]?mail\*?|mail\s*id|email\s*id)\s*[:.\-]?\s*(.+)$/i,
+    },
     { key: "city", regex: /^(?:\d+[.)]\s*)?(?:\*?city\*?|location)\s*[:.\-]\s*(.+)$/i },
     {
       key: "requirement",
@@ -145,11 +231,43 @@ function parseLabeledLine(line: string) {
   for (const pattern of patterns) {
     const match = line.match(pattern.regex);
     if (match?.[1]) {
-      return { key: pattern.key, value: cleanFieldValue(match[1], 2000) };
+      const rawValue = cleanFieldValue(match[1], 2000);
+      if (pattern.key === "email") {
+        const email = extractEmail(rawValue) ?? extractEmail(line);
+        if (email) {
+          return { key: "email", value: email };
+        }
+        continue;
+      }
+      return { key: pattern.key, value: rawValue };
     }
   }
 
   return null;
+}
+
+function assignValidatedField(
+  key: keyof LeadFormFields,
+  value: string,
+): Partial<LeadFormFields> {
+  const cleaned = cleanFieldValue(
+    value,
+    key === "requirement" ? 2000 : key === "email" ? 160 : 120,
+  );
+  if (key === "name" && !isPlausibleName(cleaned)) {
+    return {};
+  }
+  if (key === "city" && !isPlausibleCity(cleaned)) {
+    return {};
+  }
+  if (key === "email") {
+    const email = extractEmail(cleaned);
+    return email ? { email } : {};
+  }
+  if (key === "requirement" && !looksLikeRequirement(cleaned)) {
+    return {};
+  }
+  return { [key]: key === "email" ? cleaned.toLowerCase() : cleaned };
 }
 
 function parseDelimitedLine(line: string) {
@@ -286,28 +404,28 @@ function parseMultilineStack(lines: string[]) {
 
   if (unassigned.length === 1) {
     const [only] = unassigned;
-    if (!parsed.name && looksLikePersonName(only)) {
+    if (!parsed.name && isPlausibleName(only)) {
       parsed.name = cleanFieldValue(only, 120);
-    } else if (!parsed.city && looksLikeCity(only)) {
+    } else if (!parsed.city && isPlausibleCity(only)) {
       parsed.city = cleanFieldValue(only, 120);
-    } else if (!parsed.requirement) {
+    } else if (!parsed.requirement && looksLikeRequirement(only)) {
       parsed.requirement = cleanFieldValue(only, 2000);
     }
   } else if (unassigned.length === 2) {
-    if (!parsed.name) {
+    if (!parsed.name && isPlausibleName(unassigned[0])) {
       parsed.name = cleanFieldValue(unassigned[0], 120);
     }
-    if (!parsed.city) {
+    if (!parsed.city && isPlausibleCity(unassigned[1])) {
       parsed.city = cleanFieldValue(unassigned[1], 120);
     }
   } else if (unassigned.length >= 3) {
-    if (!parsed.name) {
+    if (!parsed.name && isPlausibleName(unassigned[0])) {
       parsed.name = cleanFieldValue(unassigned[0], 120);
     }
-    if (!parsed.city) {
+    if (!parsed.city && isPlausibleCity(unassigned[1])) {
       parsed.city = cleanFieldValue(unassigned[1], 120);
     }
-    if (!parsed.requirement) {
+    if (!parsed.requirement && looksLikeRequirement(unassigned.slice(2).join(", "))) {
       parsed.requirement = cleanFieldValue(unassigned.slice(2).join(", "), 2000);
     }
   }
@@ -338,18 +456,26 @@ function parseContextualReply(
     return {};
   }
 
+  const result: Partial<LeadFormFields> = {};
+  const email = extractEmail(trimmed);
+  if (email && missingKeys.includes("email")) {
+    result.email = email;
+  }
+
+  const labeled = parseLabeledLine(trimmed);
+  if (labeled) {
+    Object.assign(result, assignValidatedField(labeled.key, labeled.value));
+    if (Object.keys(result).length > 0) {
+      return result;
+    }
+  }
+
   if (missingKeys.length === 1) {
     const key = missingKeys[0];
     if (key === "email") {
-      const email = extractEmail(trimmed);
       return email ? { email } : {};
     }
-    return {
-      [key]: cleanFieldValue(
-        trimmed,
-        key === "requirement" ? 2000 : 120,
-      ),
-    };
+    return assignValidatedField(key, trimmed);
   }
 
   if (/[,|]/.test(trimmed)) {
@@ -358,37 +484,44 @@ function parseContextualReply(
       .map((part) => part.trim())
       .filter(Boolean);
     if (parts.length >= 2) {
-      const result: Partial<LeadFormFields> = {};
-      result[missingKeys[0]] = cleanFieldValue(
-        parts[0],
-        missingKeys[0] === "requirement" ? 2000 : 120,
-      );
-      result[missingKeys[1]] = cleanFieldValue(
+      const splitResult: Partial<LeadFormFields> = { ...result };
+      const first = assignValidatedField(missingKeys[0], parts[0]);
+      const second = assignValidatedField(
+        missingKeys[1],
         parts.slice(1).join(", "),
-        missingKeys[1] === "requirement" ? 2000 : 120,
       );
-      return result;
+      Object.assign(splitResult, first, second);
+      if (Object.keys(splitResult).length > 0) {
+        return splitResult;
+      }
     }
   }
 
   const delimited = parseDelimitedLine(trimmed);
   if (delimited) {
-    const result: Partial<LeadFormFields> = {};
+    const delimitedResult: Partial<LeadFormFields> = { ...result };
     for (const key of missingKeys) {
       if (delimited[key]) {
-        result[key] = delimited[key];
+        Object.assign(delimitedResult, assignValidatedField(key, delimited[key]));
       }
     }
-    if (Object.keys(result).length > 0) {
-      return result;
+    if (Object.keys(delimitedResult).length > 0) {
+      return delimitedResult;
     }
+  }
+
+  if (isLeadCaptureInquiry(trimmed)) {
+    if (missingKeys.includes("requirement") && looksLikeRequirement(trimmed)) {
+      return { ...result, requirement: cleanFieldValue(trimmed, 2000) };
+    }
+    return Object.keys(result).length > 0 ? result : {};
   }
 
   if (missingKeys.includes("requirement") && looksLikeRequirement(trimmed)) {
-    return { requirement: cleanFieldValue(trimmed, 2000) };
+    return { ...result, requirement: cleanFieldValue(trimmed, 2000) };
   }
 
-  return {};
+  return Object.keys(result).length > 0 ? result : {};
 }
 
 function inferSingleValue(
@@ -420,15 +553,22 @@ function inferSingleValue(
     return { requirement: cleanFieldValue(trimmed, 2000) };
   }
 
-  if (!effectiveKnown.name && looksLikePersonName(trimmed)) {
+  if (isLeadCaptureInquiry(trimmed)) {
+    if (!effectiveKnown.requirement && looksLikeRequirement(trimmed)) {
+      return { requirement: cleanFieldValue(trimmed, 2000) };
+    }
+    return email ? { email } : {};
+  }
+
+  if (!effectiveKnown.name && isPlausibleName(trimmed)) {
     return { name: cleanFieldValue(trimmed, 120) };
   }
 
-  if (!effectiveKnown.city && looksLikeCity(trimmed)) {
+  if (!effectiveKnown.city && isPlausibleCity(trimmed)) {
     return { city: cleanFieldValue(trimmed, 120) };
   }
 
-  if (!effectiveKnown.requirement && trimmed.length >= 8) {
+  if (!effectiveKnown.requirement && looksLikeRequirement(trimmed)) {
     return { requirement: cleanFieldValue(trimmed, 2000) };
   }
 
@@ -465,7 +605,7 @@ export function parseLeadFormMessage(
     .filter(Boolean);
   const missingKeys = options.missingKeys ?? [];
 
-  if (missingKeys.length > 0 && missingKeys.length <= 2 && lines.length === 1) {
+  if (missingKeys.length > 0 && lines.length === 1) {
     Object.assign(parsed, parseContextualReply(lines[0], missingKeys));
     if (Object.keys(parsed).length > 0) {
       return parsed;
@@ -554,7 +694,8 @@ function validateField(
         trimmed.length < 2 ||
         /^\d+$/.test(trimmed) ||
         isPhoneLikeName(trimmed) ||
-        GREETING_WORDS.has(trimmed.toLowerCase())
+        GREETING_WORDS.has(trimmed.toLowerCase()) ||
+        !isPlausibleName(trimmed)
       ) {
         return { ok: false, key };
       }
@@ -565,7 +706,12 @@ function validateField(
       }
       return { ok: true, value: trimmed.toLowerCase().slice(0, 160) };
     case "city":
-      if (trimmed.length < 2 || isValidEmail(trimmed) || looksLikeRequirement(trimmed)) {
+      if (
+        trimmed.length < 2 ||
+        isValidEmail(trimmed) ||
+        looksLikeRequirement(trimmed) ||
+        !isPlausibleCity(trimmed)
+      ) {
         return { ok: false, key };
       }
       return { ok: true, value: trimmed.slice(0, 120) };

@@ -1,6 +1,7 @@
 import { unstable_cache, revalidateTag } from "next/cache";
 import { prisma } from "@/lib/db";
 import type { WaLeadCaptureStep } from "@prisma/client";
+import { triggerWaCrmSheetSync } from "@/lib/integrations/google-sheets-wa-crm";
 import { formatWhatsAppPhone, normalizeWhatsAppPhone } from "@/lib/phone";
 import { SCALE } from "@/lib/scale";
 
@@ -135,6 +136,7 @@ export async function getWaContactByPhone(
       requirementDescription: true,
       leadCaptureStep: true,
       leadCaptureComplete: true,
+      googleFormAckSentAt: true,
       aiEnabled: true,
     },
   });
@@ -152,7 +154,7 @@ export async function updateWaContactLeadCapture(params: {
     requirementDescription?: string;
   };
 }) {
-  return prisma.waContact.updateMany({
+  const result = await prisma.waContact.updateMany({
     where: {
       id: params.contactId,
       organizationId: params.organizationId,
@@ -176,6 +178,53 @@ export async function updateWaContactLeadCapture(params: {
         : {}),
     },
   });
+
+  if (
+    result.count > 0 &&
+    (params.complete || params.data !== undefined)
+  ) {
+    triggerWaCrmSheetSync(params.organizationId);
+  }
+
+  return result;
+}
+
+export async function updateWaContactFromFormResponse(params: {
+  contactId: string;
+  organizationId: string;
+  data: {
+    name?: string;
+    email?: string;
+    city?: string;
+    requirementDescription?: string;
+  };
+}) {
+  const result = await prisma.waContact.updateMany({
+    where: {
+      id: params.contactId,
+      organizationId: params.organizationId,
+      googleFormAckSentAt: null,
+    },
+    data: {
+      ...(params.data.name ? { name: params.data.name } : {}),
+      ...(params.data.email ? { email: params.data.email } : {}),
+      ...(params.data.city ? { city: params.data.city } : {}),
+      ...(params.data.requirementDescription
+        ? { requirementDescription: params.data.requirementDescription }
+        : {}),
+      googleFormAckSentAt: new Date(),
+      leadCaptureComplete: true,
+      leadCaptureStep: "COMPLETE",
+      pipelineStage: "QUALIFIED",
+      intent: "Lead",
+    },
+  });
+
+  if (result.count > 0) {
+    triggerWaCrmSheetSync(params.organizationId);
+  }
+
+  return result;
 }
 
 export async function recordWaOutboundMessage(params: {

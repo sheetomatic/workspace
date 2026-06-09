@@ -19,6 +19,7 @@ export type SessionUser = {
   isSuperAdmin: boolean;
   isDepartmentHead: boolean;
   modules: WorkspaceModule[];
+  staffCode: string | null;
 };
 
 type ResolvedMembership = {
@@ -262,6 +263,7 @@ export const getSessionUser = cache(async function getSessionUser() {
       isSuperAdmin: true,
       isDepartmentHead: false,
       modules: allWorkspaceModules(),
+      staffCode: null,
     };
   }
 
@@ -272,7 +274,12 @@ export const getSessionUser = cache(async function getSessionUser() {
         organizationId: membership.organizationId,
       },
     },
-    select: { modules: true, role: true, isDepartmentHead: true },
+    select: {
+      modules: true,
+      role: true,
+      isDepartmentHead: true,
+      staffCode: true,
+    },
   });
 
   return {
@@ -289,5 +296,6 @@ export const getSessionUser = cache(async function getSessionUser() {
       membershipRecord?.role ?? membership.role,
       membershipRecord?.modules,
     ),
+    staffCode: membershipRecord?.staffCode?.trim() || null,
   };
 });

@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/task-reminders",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/due-date-alerts",
+      "schedule": "30 4 * * *"
     }
   ],
   "functions": {
@@ -14,6 +18,9 @@
       "maxDuration": 60
     },
     "src/app/api/cron/task-reminders/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/cron/due-date-alerts/route.ts": {
       "maxDuration": 60
     }
   }

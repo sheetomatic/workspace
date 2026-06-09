@@ -1,6 +1,7 @@
 import type { Role, WorkspaceLinkType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import type { SessionUser } from "@/lib/auth";
+import { extractSpreadsheetId, extractSheetGid } from "@/lib/integrations/resolve-sheet-id";
 import { hasMinimumRole, roleRank } from "@/lib/permissions";
 import { resolveMemberModules } from "@/lib/workspace-modules";
 
@@ -129,6 +130,7 @@ export async function listWorkspaceMembers(organizationId: string) {
   return sorted.map((membership) => ({
     id: membership.id,
     role: membership.role,
+    staffCode: membership.staffCode,
     department: membership.department,
     designation: membership.designation,
     isDepartmentHead: membership.isDepartmentHead,
@@ -197,11 +199,26 @@ export async function updateWorkspaceGoogleSheet(
 
   await assertOrganizationAccess(user.organizationId, user.id);
 
-  const googleSheetId = input.googleSheetId.trim();
+  const raw = input.googleSheetId.trim();
+  if (!raw) {
+    return prisma.organization.update({
+      where: { id: user.organizationId },
+      data: { googleSheetId: null },
+    });
+  }
+
+  const googleSheetId = extractSpreadsheetId(raw);
+  if (!googleSheetId) {
+    throw new Error(
+      "Enter a valid Google Sheets URL or spreadsheet ID (from docs.google.com/spreadsheets/d/...).",
+    );
+  }
+
+  const googleSheetGid = extractSheetGid(raw);
 
   return prisma.organization.update({
     where: { id: user.organizationId },
-    data: { googleSheetId: googleSheetId || null },
+    data: { googleSheetId, googleSheetGid },
   });
 }
 

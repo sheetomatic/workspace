@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MessageCircle, Settings } from "lucide-react";
+import { Bot, MessageCircle, Settings } from "lucide-react";
 import type { WorkspaceIntegrationStatus } from "@/lib/workspace-integration-status";
 
 export function TaskIntegrationBanner({
@@ -9,38 +9,59 @@ export function TaskIntegrationBanner({
   status: WorkspaceIntegrationStatus;
   showWhatsAppLink?: boolean;
 }) {
-  const issues: string[] = [];
+  const aiIssues: string[] = [];
+  const reminderIssues: string[] = [];
 
+  if (!status.openaiConfigured) {
+    aiIssues.push("Voice and AI task parsing need OPENAI_API_KEY on the server");
+  }
   if (!status.whatsappConfigured) {
-    issues.push("WhatsApp is not connected for this workspace");
+    reminderIssues.push("WhatsApp is not connected for this workspace");
   }
   if (!status.emailConfigured) {
-    issues.push("Email reminders are not configured on the server");
+    reminderIssues.push("Email reminders are not configured on the server");
   }
 
-  if (issues.length === 0) {
+  if (aiIssues.length === 0 && reminderIssues.length === 0) {
     return null;
   }
 
   return (
-    <div className="saas-form-message ws-task-integration-banner" role="status">
-      <MessageCircle aria-hidden size={18} />
-      <div>
-        <strong>Reminder delivery</strong>
-        <ul>
-          {issues.map((issue) => (
-            <li key={issue}>{issue}</li>
-          ))}
-        </ul>
-        {showWhatsAppLink && !status.whatsappConfigured ? (
-          <p>
-            <Link className="ws-task-integration-link" href="/ai/app/settings">
-              <Settings aria-hidden size={14} />
-              Connect WhatsApp in AI Settings
-            </Link>
-          </p>
-        ) : null}
-      </div>
+    <div className="ws-task-integration-banners" role="status">
+      {aiIssues.length > 0 ? (
+        <div className="saas-form-message ws-task-integration-banner ws-task-integration-banner-ai">
+          <Bot aria-hidden size={18} />
+          <div>
+            <strong>Task AI</strong>
+            <ul>
+              {aiIssues.map((issue) => (
+                <li key={issue}>{issue}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ) : null}
+      {reminderIssues.length > 0 ? (
+        <div className="saas-form-message ws-task-integration-banner">
+          <MessageCircle aria-hidden size={18} />
+          <div>
+            <strong>Reminder delivery</strong>
+            <ul>
+              {reminderIssues.map((issue) => (
+                <li key={issue}>{issue}</li>
+              ))}
+            </ul>
+            {showWhatsAppLink && !status.whatsappConfigured ? (
+              <p>
+                <Link className="ws-task-integration-link" href="/ai/app/settings">
+                  <Settings aria-hidden size={14} />
+                  Connect WhatsApp in AI Settings
+                </Link>
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

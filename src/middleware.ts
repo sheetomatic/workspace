@@ -207,13 +207,22 @@ function handleTenantHost(
     return redirectToApexMarketing(request, pathname);
   }
 
-  if (pathname === "/login" && !request.nextUrl.searchParams.has("org")) {
-    const loginUrl = workspaceLoginUrl(request, { org: tenantSlug });
-    const callbackUrl = request.nextUrl.searchParams.get("callbackUrl");
-    if (callbackUrl) {
-      loginUrl.searchParams.set("callbackUrl", callbackUrl);
+  if (
+    (pathname === "/login" || pathname.startsWith("/login/")) &&
+    !request.nextUrl.searchParams.has("org")
+  ) {
+    if (pathname === "/login") {
+      const loginUrl = workspaceLoginUrl(request, { org: tenantSlug });
+      const callbackUrl = request.nextUrl.searchParams.get("callbackUrl");
+      if (callbackUrl) {
+        loginUrl.searchParams.set("callbackUrl", callbackUrl);
+      }
+      return NextResponse.redirect(loginUrl);
     }
-    return NextResponse.redirect(loginUrl);
+
+    const loginSubpathUrl = request.nextUrl.clone();
+    loginSubpathUrl.searchParams.set("org", tenantSlug);
+    return NextResponse.redirect(loginSubpathUrl);
   }
 
   const protectedResponse = handleProtectedAppRoutes(request, isLoggedIn);

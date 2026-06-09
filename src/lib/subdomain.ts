@@ -74,12 +74,16 @@ export function apexOrigin(protocol = "https") {
   return `${protocol}://${ROOT_DOMAIN}`;
 }
 
+export function isLoginPath(pathname: string) {
+  return pathname === "/login" || pathname.startsWith("/login/");
+}
+
 export function isWorkspacePath(pathname: string) {
-  return pathname === "/login" || pathname.startsWith("/app");
+  return isLoginPath(pathname) || pathname.startsWith("/app");
 }
 
 export function isAiAppPath(pathname: string) {
-  return pathname === "/login" || pathname.startsWith("/ai/app");
+  return isLoginPath(pathname) || pathname.startsWith("/ai/app");
 }
 
 export function isApiPath(pathname: string) {
@@ -87,7 +91,7 @@ export function isApiPath(pathname: string) {
 }
 
 export function isStaticAssetPath(pathname: string) {
-  return /\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|eot|css|js|map)$/i.test(
+  return /\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|eot|css|js|map|webmanifest)$/i.test(
     pathname,
   );
 }

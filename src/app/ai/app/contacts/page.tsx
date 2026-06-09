@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { WaCrmDashboard } from "@/components/saas/wa-crm-dashboard";
+import { WaCrmSheetSyncButton } from "@/components/saas/wa-crm-sheet-sync-button";
+import { hasMinimumRole } from "@/lib/permissions";
 import { requireAiSession } from "@/lib/require-session";
 import {
   getWaCrmStats,
@@ -11,6 +13,9 @@ import { listWorkspaceMembers } from "@/lib/workspace";
 
 export default async function SheetomaticAiContactsPage() {
   const user = await requireAiSession();
+  const canSyncSheet =
+    user.isSuperAdmin || hasMinimumRole(user.role, "ADMIN");
+
   const [stats, leads, todayFollowUps, overdueFollowUps, teamMembers] =
     await Promise.all([
       getWaCrmStats(user.organizationId, user.id),
@@ -30,9 +35,12 @@ export default async function SheetomaticAiContactsPage() {
             sales pipeline.
           </p>
         </div>
-        <Link className="wa-crm-head-link wa-crm-btn-wa" href="/ai/app/inbox">
-          Open Chats
-        </Link>
+        <div className="wa-crm-page-head-actions">
+          {canSyncSheet ? <WaCrmSheetSyncButton /> : null}
+          <Link className="wa-crm-head-link wa-crm-btn-wa" href="/ai/app/inbox">
+            Open Chats
+          </Link>
+        </div>
       </header>
 
       {leads.length === 0 ? (

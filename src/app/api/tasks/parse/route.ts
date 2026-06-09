@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { parseTaskFromInstruction } from "@/lib/integrations/openai";
 import {
+  checkTaskAiOrgQuota,
+  recordTaskAiUsage,
+} from "@/lib/integrations/task-ai-settings";
+import {
   AI_PARSE_UNAVAILABLE,
   mapOpenAiServiceError,
 } from "@/lib/integrations/openai-messages";
@@ -26,6 +30,11 @@ export async function POST(request: Request) {
       { error: `Rate limit exceeded. Retry in ${rate.retryAfterSec}s.` },
       { status: 429 },
     );
+  }
+
+  const orgQuota = await checkTaskAiOrgQuota(user.organizationId);
+  if (!orgQuota.allowed) {
+    return NextResponse.json({ error: orgQuota.message }, { status: 429 });
   }
 
   const status = getIntegrationStatus();
@@ -56,7 +65,17 @@ export async function POST(request: Request) {
   }));
 
   try {
-    const draft = await parseTaskFromInstruction(instruction, hints);
+    const { draft, usage } = await parseTaskFromInstruction(instruction, hints);
+    await recordTaskAiUsage({
+      organizationId: user.organizationId,
+      userId: user.id,
+      route: "parse",
+      usage: {
+        promptTokens: usage.promptTokens,
+        completionTokens: usage.completionTokens,
+        totalTokens: usage.totalTokens,
+      },
+    });
     return NextResponse.json({ draft });
   } catch (error) {
     const raw =

@@ -2807,16 +2807,71 @@
   cursor: not-allowed;
 }
 
+.workspace-app .ws-task-integration-banners {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
 .workspace-app .ws-task-integration-banner {
   display: flex;
   gap: 12px;
   align-items: flex-start;
-  margin-bottom: 16px;
+  margin-bottom: 0;
   padding: 14px 16px;
   border-radius: 12px;
   background: #fffbeb;
   border: 1px solid #fde68a;
   color: #92400e;
+}
+
+.workspace-app .ws-task-integration-banner-ai {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
+
+.workspace-app .saas-task-ai-meter {
+  height: 8px;
+  margin: 12px 0 16px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.workspace-app .saas-task-ai-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
+}
+
+.workspace-app .saas-task-ai-form {
+  display: grid;
+  gap: 12px;
+  max-width: 320px;
+}
+
+.workspace-app .saas-task-ai-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.workspace-app .saas-task-ai-form input[type="number"] {
+  min-height: 38px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.45rem 0.65rem;
+}
+
+.workspace-app .saas-checkbox-row {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
 }
 
 .workspace-app .ws-task-integration-banner ul {
@@ -9466,3 +9521,122 @@
   }
 }
 
+.workspace-app .ws-pwa-install-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #bfdbfe;
+  background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
+}
+
+.workspace-app .ws-pwa-install-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.workspace-app .ws-pwa-install-banner-text strong {
+  font-size: 0.95rem;
+  color: #1e3a8a;
+}
+
+.workspace-app .ws-pwa-install-banner-text span {
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.workspace-app .ws-pwa-install-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.workspace-app .ws-pwa-install-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.workspace-app .ws-pwa-install-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.workspace-app .ws-notification-settings .ws-notification-fieldset {
+  margin: 0 0 16px;
+  padding: 0;
+  border: none;
+}
+
+.workspace-app .ws-notification-settings .ws-notification-fieldset legend {
+  margin: 0 0 8px;
+  padding: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.workspace-app .ws-notification-settings select {
+  width: 100%;
+  max-width: 220px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+}
+
+.workspace-login .login-forgot-link {
+  margin: -0.2rem 0 0.15rem;
+  text-align: right;
+  font-size: 0.82rem;
+}
+
+.workspace-login .login-forgot-link a {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.workspace-login .login-forgot-link a:hover {
+  text-decoration: underline;
+}
+
+.workspace-app .ws-password-settings .login-password-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.workspace-app .ws-password-settings .login-password-wrap input {
+  flex: 1;
+}
+
+.workspace-app .legal-team-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.72rem;
+}
+
+.workspace-app .legal-team-reset-msg {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.68rem;
+  max-width: 12rem;
+}

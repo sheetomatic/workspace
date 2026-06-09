@@ -4,6 +4,11 @@ import { TeamHierarchyPanel } from "@/components/saas/team-hierarchy-panel";
 import { SuperAdminPanel } from "@/components/saas/super-admin-panel";
 import { WorkplaceHrSettingsPanel } from "@/components/saas/workplace-hr-settings-panel";
 import { PageHeader } from "@/components/saas/page-header";
+import {
+  LegalTeamInvitePanel,
+  LegalTeamPageActions,
+} from "@/components/legal/legal-team-invite-panel";
+import { LegalTeamPanel } from "@/components/legal/legal-team-panel";
 import { listSuperAdmins } from "@/app/app/team/platform-actions";
 import { canManageSuperAdmins } from "@/lib/platform";
 import { requireSession } from "@/lib/require-session";
@@ -13,8 +18,15 @@ import {
   canViewTeamPage,
   filterMembersForViewer,
 } from "@/lib/team-hierarchy";
+import { getLegalDashboardStats } from "@/lib/legal-cases/queries";
 import { getViewerMembership, listWorkspaceMembers } from "@/lib/workspace";
+import { prisma } from "@/lib/db";
+import {
+  hasWorkspaceModule,
+  isCasesOnlyWorkspace,
+} from "@/lib/workspace-modules";
 import { tenantPortalOrigin } from "@/lib/workspace-auth-links";
+import "@/components/legal/legal-cases.css";
 
 export default async function TeamPage() {
   const user = await requireSession();
@@ -27,6 +39,46 @@ export default async function TeamPage() {
     !canViewTeamPage(user, viewerMembership?.isDepartmentHead ?? false)
   ) {
     redirect("/app");
+  }
+
+  if (isCasesOnlyWorkspace(user) && hasWorkspaceModule(user, "CASES")) {
+    const canManage = canManageTeam(user);
+    const [members, stats, inviterMembership] = await Promise.all([
+      listWorkspaceMembers(user.organizationId),
+      getLegalDashboardStats(user),
+      prisma.membership.findUnique({
+        where: {
+          userId_organizationId: {
+            userId: user.id,
+            organizationId: user.organizationId,
+          },
+        },
+        select: { id: true },
+      }),
+    ]);
+
+    return (
+      <div className="saas-page">
+        <div className="legal-page-toolbar">
+          <PageHeader
+            description="Staff codes and case assignment counts."
+            title="Team"
+          />
+          {canManage ? <LegalTeamPageActions /> : null}
+        </div>
+        {canManage ? (
+          <LegalTeamInvitePanel
+            reportingManagerId={inviterMembership?.id ?? null}
+          />
+        ) : null}
+        <LegalTeamPanel
+          assigneeBreakdown={stats.assigneeBreakdown}
+          canManage={canManage}
+          currentUserId={user.id}
+          members={members}
+        />
+      </div>
+    );
   }
 
   const canManage = canManageTeam(user);

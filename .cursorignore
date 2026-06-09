@@ -1,0 +1,28 @@
+# Build and dependencies
+node_modules/
+.next/
+out/
+.vercel/
+dist/
+build/
+coverage/
+
+# Generated / cache
+*.tsbuildinfo
+next-env.d.ts
+
+# Local database
+prisma/dev.db
+prisma/dev.db-journal
+
+# Large static assets (not needed for code context)
+public/**/*.png
+public/**/*.jpg
+public/**/*.jpeg
+public/**/*.webp
+tasks-ui-preview.png
+
+# Env and secrets
+.env
+.env.*
+!.env.example

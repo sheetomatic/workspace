@@ -37,10 +37,10 @@ export function GoogleSheetsSettingsPanel({
   return (
     <div className="saas-sheets-panel">
       <p className="saas-sheets-lead">
-        Dashboard KPIs, today&apos;s follow-ups, pending payments, and approvals
-        read from your Google Sheet tabs <strong>Metrics</strong>,{" "}
-        <strong>FollowUps</strong>, <strong>Payments</strong>, and{" "}
-        <strong>Approvals</strong>.
+        Dashboard KPIs, follow-ups, payments, and approvals read from your
+        Google Sheet. Legal case sync uses the tab in your URL (e.g.{" "}
+        <code>?gid=1228012786</code>). WhatsApp CRM exports to a separate{" "}
+        <strong>WA CRM</strong> tab in the same spreadsheet.
       </p>
 
       <dl className="saas-settings-list saas-settings-list-meta">
@@ -86,7 +86,7 @@ export function GoogleSheetsSettingsPanel({
               <input
                 defaultValue={initialSheetId}
                 name="googleSheetId"
-                placeholder="https://docs.google.com/spreadsheets/d/..."
+                placeholder="https://docs.google.com/spreadsheets/d/.../edit?gid=1228012786"
                 type="text"
               />
             </label>

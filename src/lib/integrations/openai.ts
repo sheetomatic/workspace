@@ -145,10 +145,19 @@ function normalizeDraft(
   };
 }
 
+export type TaskParseResult = {
+  draft: ParsedTaskDraft;
+  usage: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+};
+
 export async function parseTaskFromInstruction(
   instruction: string,
   members: TaskMemberHint[],
-): Promise<ParsedTaskDraft> {
+): Promise<TaskParseResult> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) {
     throw new Error("OPENAI_NOT_CONFIGURED");
@@ -211,6 +220,11 @@ ${memberList}`,
 
   const payload = (await response.json()) as {
     choices?: { message?: { content?: string } }[];
+    usage?: {
+      prompt_tokens?: number;
+      completion_tokens?: number;
+      total_tokens?: number;
+    };
   };
   const content = payload.choices?.[0]?.message?.content;
   if (!content) {
@@ -218,7 +232,14 @@ ${memberList}`,
   }
 
   const parsed = JSON.parse(content) as Record<string, unknown>;
-  return normalizeDraft(parsed, members);
+  return {
+    draft: normalizeDraft(parsed, members),
+    usage: {
+      promptTokens: payload.usage?.prompt_tokens ?? 0,
+      completionTokens: payload.usage?.completion_tokens ?? 0,
+      totalTokens: payload.usage?.total_tokens ?? 0,
+    },
+  };
 }
 
 function extensionForMime(mimeType: string) {

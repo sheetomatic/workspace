@@ -1,0 +1,1640 @@
+.workspace-app .legal-kpi-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.workspace-app .legal-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 5.5rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.workspace-app .legal-kpi span {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.workspace-app .legal-kpi strong {
+  font-size: 1.05rem;
+  line-height: 1.2;
+  color: #0f172a;
+}
+
+.workspace-app .legal-kpi-primary strong {
+  color: #2563eb;
+}
+
+.workspace-app .legal-kpi-clickable .legal-count-link-stat {
+  margin-top: 0;
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+
+.workspace-app .legal-kpi-action {
+  margin-left: auto;
+  text-decoration: none;
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.workspace-app .legal-kpi-action strong {
+  color: #2563eb;
+}
+
+.workspace-app .legal-layout {
+  display: grid;
+  grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.workspace-app .legal-sidebar {
+  position: sticky;
+  top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  max-height: calc(100vh - 7rem);
+  overflow: hidden;
+  padding: 0.65rem 0.7rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.workspace-app .legal-sidebar-blocks {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.55rem;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.workspace-app .legal-sidebar-head h3 {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.workspace-app .legal-sidebar-head p {
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.workspace-app .legal-sidebar-block h4 {
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.workspace-app .legal-sidebar-block h4 em {
+  font-style: normal;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.workspace-app .legal-sidebar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.workspace-app .legal-sidebar-list.legal-sidebar-scroll {
+  max-height: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 0.15rem;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.workspace-app .legal-sidebar-block {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.workspace-app .legal-sidebar-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+}
+
+.workspace-app .legal-sidebar-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #334155;
+}
+
+.workspace-app .legal-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.workspace-app .legal-panel-compact {
+  padding: 0.65rem 0.75rem;
+}
+
+.workspace-app .legal-panel-meta {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.workspace-app .legal-table-scroll {
+  overflow: auto;
+  max-height: 28rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  scrollbar-width: thin;
+}
+
+.workspace-app .legal-table-scroll-short {
+  max-height: 14rem;
+}
+
+.workspace-app .legal-table-compact th,
+.workspace-app .legal-table-compact td {
+  padding: 0.35rem 0.45rem !important;
+  font-size: 0.78rem !important;
+  white-space: nowrap;
+}
+
+.workspace-app .legal-table-compact thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f1f5f9;
+}
+
+.workspace-app .legal-cell-truncate {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workspace-app .legal-count-link {
+  min-width: 1.5rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 6px;
+  font-size: 0.76rem;
+}
+
+.workspace-app .legal-dashboard-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin-bottom: 1.5rem;
+}
+
+.workspace-app .legal-panel {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+}
+
+.workspace-app .legal-panel h3 {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.workspace-app .legal-stat-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1rem;
+}
+
+.workspace-app .legal-stat-card span {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.workspace-app .legal-stat-card strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 1.6rem;
+  line-height: 1.1;
+  color: #0f172a;
+}
+
+.workspace-app .legal-stat-card.tone-primary strong {
+  color: #2563eb;
+}
+
+.workspace-app .legal-stat-card.tone-warning strong {
+  color: #d97706;
+}
+
+.workspace-app .legal-stat-card.tone-success strong {
+  color: #059669;
+}
+
+.workspace-app .legal-list-section-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.workspace-app .legal-list-section-nav-shell {
+  min-height: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.workspace-app .legal-list-section-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.55rem 0.25rem 0.6rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  line-height: 1.2;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.workspace-app .legal-list-section-chip:hover {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.workspace-app .legal-list-section-chip.is-active {
+  border-color: #16a34a;
+  background: #16a34a;
+  color: #fff;
+}
+
+.workspace-app .legal-list-section-chip.is-active .legal-list-section-chip-label,
+.workspace-app .legal-list-section-chip.is-active .legal-list-section-chip-count {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.workspace-app .legal-list-section-chip.is-disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.workspace-app .legal-list-section-chip-code {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.workspace-app .legal-list-section-chip-label {
+  max-width: 7.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.workspace-app .legal-list-section-chip-count {
+  margin-left: 0.1rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.workspace-app .legal-list-section-chip.is-active .legal-list-section-chip-count {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.workspace-app .legal-list-assignee-nav {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #fed7aa;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.workspace-app .legal-list-assignee-nav-shell {
+  min-height: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.workspace-app .legal-list-assignee-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  min-height: 2rem;
+  padding: 0.25rem 0.55rem 0.25rem 0.6rem;
+  border: 1px solid #fdba74;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  line-height: 1.2;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.workspace-app .legal-list-assignee-chip:hover {
+  border-color: #fb923c;
+  background: #fff7ed;
+}
+
+.workspace-app .legal-list-assignee-chip.is-active {
+  border-color: #ea580c;
+  background: #ea580c;
+  color: #fff;
+}
+
+.workspace-app .legal-list-assignee-chip.is-active .legal-list-assignee-chip-label,
+.workspace-app .legal-list-assignee-chip.is-active .legal-list-assignee-chip-count {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.workspace-app .legal-list-assignee-chip.is-disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.workspace-app .legal-list-assignee-chip-code {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.workspace-app .legal-list-assignee-chip-label {
+  color: #64748b;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.workspace-app .legal-list-assignee-chip-count {
+  margin-left: 0.1rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: #ffedd5;
+  color: #c2410c;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.workspace-app .legal-list-assignee-chip.is-active .legal-list-assignee-chip-count {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.workspace-app .legal-card-assignees .legal-list-assignee-nav {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.workspace-app .legal-search-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.65rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.65rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.workspace-app .legal-search-bar-fields {
+  display: flex;
+  flex: 1 1 320px;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.workspace-app .legal-search-bar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.workspace-app .legal-search-bar input,
+.workspace-app .legal-search-bar select {
+  min-height: 32px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.8rem;
+  background: #fff;
+}
+
+.workspace-app .legal-search-bar .legal-search-input {
+  flex: 1 1 200px;
+  min-width: 10rem;
+}
+
+.workspace-app .legal-search-bar select {
+  min-width: 7.5rem;
+}
+
+.workspace-app .legal-search-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.2rem 0.45rem;
+  border-radius: 7px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  user-select: none;
+}
+
+.workspace-app .legal-search-checkbox input {
+  width: 0.95rem;
+  height: 0.95rem;
+  margin: 0;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+.workspace-app .legal-search-submit {
+  min-height: 32px;
+  padding: 0.3rem 0.85rem;
+  border: 1px solid #2563eb;
+  border-radius: 7px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.workspace-app .legal-search-submit:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.workspace-app .legal-search-clear {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.workspace-app .legal-search-clear:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.workspace-app .legal-case-link {
+  color: #2563eb;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.workspace-app .legal-case-link:hover {
+  text-decoration: underline;
+}
+
+.workspace-app .legal-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.workspace-app .legal-badge.status-running {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.workspace-app .legal-badge.status-closed {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.workspace-app .legal-badge.status-order {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.workspace-app .legal-badge.status-appeal {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.workspace-app .legal-badge.status-default {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.workspace-app .legal-section-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+}
+
+.workspace-app .legal-section-tab {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.workspace-app .legal-section-tab.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.workspace-app .legal-section-tab.readonly {
+  opacity: 0.72;
+}
+
+.workspace-app .legal-field-grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.workspace-app .legal-field {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.7rem 0.8rem;
+  background: #f8fafc;
+}
+
+.workspace-app .legal-field span {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.workspace-app .legal-field strong,
+.workspace-app .legal-field p {
+  display: block;
+  margin: 0.35rem 0 0;
+  font-size: 0.92rem;
+  color: #0f172a;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.workspace-app .legal-doc-category {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.85rem;
+  margin-bottom: 0.85rem;
+}
+
+.workspace-app .legal-doc-category-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.workspace-app .legal-doc-category-head h4 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.workspace-app .legal-doc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.workspace-app .legal-doc-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 0.85rem;
+}
+
+.workspace-app .legal-upload-form {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.workspace-app .legal-upload-form input[type="text"],
+.workspace-app .legal-upload-form input[type="file"] {
+  width: 100%;
+  min-height: 40px;
+}
+
+.workspace-app .legal-upload-form button {
+  justify-self: start;
+  border: none;
+  border-radius: 10px;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 700;
+  padding: 0.55rem 0.9rem;
+  cursor: pointer;
+}
+
+.workspace-app .legal-upload-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.workspace-app .legal-breakdown-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.workspace-app .legal-breakdown-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.86rem;
+}
+
+.workspace-app .legal-filter-hint {
+  margin: -0.35rem 0 0.75rem;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.workspace-app .legal-count-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 8px;
+  font-weight: 700;
+  color: #2563eb;
+  text-decoration: none;
+  background: #eff6ff;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.workspace-app .legal-count-link:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.workspace-app .legal-count-link.is-active {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.workspace-app .legal-count-muted {
+  color: #94a3b8;
+}
+
+.workspace-app .legal-assignee-table td:not(:first-child),
+.workspace-app .legal-assignee-table th:not(:first-child) {
+  text-align: center;
+}
+
+.workspace-app .legal-assignee-table td:first-child,
+.workspace-app .legal-assignee-table th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: #fff;
+  max-width: 5.5rem;
+}
+
+.workspace-app .legal-assignee-table thead th:first-child {
+  background: #f1f5f9;
+  z-index: 2;
+}
+
+.workspace-app .legal-assignee-table td:first-child strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 5rem;
+}
+
+.workspace-app .legal-active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.55rem;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.workspace-app .legal-active-filters-label {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.workspace-app .legal-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.45rem 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.workspace-app .legal-filter-chip:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.workspace-app .legal-filter-chip-x {
+  font-size: 0.9rem;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.workspace-app .legal-assignee-pill-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  max-width: 8rem;
+}
+
+.workspace-app .legal-assignee-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.08rem 0.35rem;
+  border-radius: 999px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.workspace-app .legal-assignee-pill-section {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.workspace-app .legal-filter-clear {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.workspace-app .legal-filter-clear:hover {
+  text-decoration: underline;
+}
+
+.workspace-app .legal-count-link-stat {
+  display: block;
+  margin-top: 0.35rem;
+  min-width: 0;
+  padding: 0;
+  font-size: 1.6rem;
+  line-height: 1.1;
+  background: transparent;
+  border-color: transparent;
+}
+
+.workspace-app .legal-stat-card.tone-primary .legal-count-link-stat {
+  color: #2563eb;
+}
+
+.workspace-app .legal-stat-card.tone-warning .legal-count-link-stat {
+  color: #d97706;
+}
+
+.workspace-app .legal-stat-card.tone-success .legal-count-link-stat {
+  color: #059669;
+}
+
+.workspace-app .legal-stat-card.is-clickable {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.workspace-app .legal-stat-card.is-clickable:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+}
+
+.workspace-app .legal-stat-card.is-clickable .legal-count-link-stat:hover {
+  background: transparent;
+  text-decoration: underline;
+}
+
+.workspace-app .legal-stat-card.is-clickable .legal-count-link-stat.is-active {
+  background: #2563eb;
+  color: #fff;
+  border-radius: 8px;
+  padding: 0.1rem 0.35rem;
+}
+
+.workspace-app .legal-back-link {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.workspace-app .legal-back-link:hover {
+  text-decoration: underline;
+}
+
+.workspace-app .legal-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  font-size: 0.88rem;
+}
+
+.workspace-app .legal-dashboard-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.workspace-app .legal-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.workspace-app .legal-panel-head h3 {
+  margin: 0;
+}
+
+.workspace-app .legal-panel-link {
+  color: #2563eb;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.workspace-app .legal-panel-link:hover {
+  text-decoration: underline;
+}
+
+.workspace-app .legal-list-toolbar,
+.workspace-app .legal-page-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+  margin-bottom: 0.65rem;
+}
+
+.workspace-app .legal-list-toolbar-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.workspace-app .legal-list-toolbar .ws-page-header,
+.workspace-app .legal-page-toolbar .ws-page-header {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.workspace-app .legal-list-toolbar .legal-back-link,
+.workspace-app .legal-list-toolbar-left .legal-back-link {
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.workspace-app .legal-assignee-scroll {
+  max-height: 32rem;
+}
+
+.workspace-app .legal-list-table-wrap {
+  max-height: calc(100vh - 14rem);
+  overflow: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  scrollbar-width: thin;
+}
+
+.workspace-app .legal-list-table-wrap table {
+  margin: 0;
+}
+
+.workspace-app .legal-list-table th,
+.workspace-app .legal-list-table td {
+  padding: 0.3rem 0.4rem !important;
+  font-size: 0.76rem !important;
+}
+
+.workspace-app .legal-list-table .legal-cell-truncate {
+  max-width: 7rem;
+}
+
+.workspace-app .legal-list-table-wrap .legal-table-compact thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f1f5f9;
+}
+
+.workspace-app .legal-kpi-clickable:hover {
+  border-color: #93c5fd;
+}
+
+@media (max-width: 900px) {
+  .workspace-app .legal-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-app .legal-sidebar {
+    position: static;
+    max-height: none;
+  }
+
+  .workspace-app .legal-sidebar-blocks {
+    grid-template-rows: auto auto;
+  }
+
+  .workspace-app .legal-sidebar-list.legal-sidebar-scroll {
+    max-height: 12rem;
+  }
+
+  .workspace-app .legal-kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .workspace-app .legal-kpi-action {
+    margin-left: 0;
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .workspace-app .legal-kpi-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.workspace-app .legal-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.workspace-app .legal-dash-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.workspace-app .legal-dash-summary {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #475569;
+}
+
+.workspace-app .legal-dash-summary strong {
+  color: #0f172a;
+  font-size: 0.92rem;
+}
+
+.workspace-app .legal-dash-dot {
+  margin: 0 0.35rem;
+  color: #cbd5e1;
+}
+
+.workspace-app .legal-dash-open-list {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #2563eb;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.workspace-app .legal-dash-open-list:hover {
+  text-decoration: underline;
+}
+
+.workspace-app .legal-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.workspace-app .legal-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  background: #fff;
+}
+
+.workspace-app .legal-card-status {
+  background: #f8fbff;
+  border-color: #bfdbfe;
+}
+
+.workspace-app .legal-card-stage {
+  background: #faf8ff;
+  border-color: #ddd6fe;
+}
+
+.workspace-app .legal-card-sections {
+  background: #f6fdf9;
+  border-color: #bbf7d0;
+}
+
+.workspace-app .legal-card-assignees {
+  background: #fffaf5;
+  border-color: #fed7aa;
+}
+
+.workspace-app .legal-card-recent {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.workspace-app .legal-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+
+.workspace-app .legal-card-head h3 {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.workspace-app .legal-card-total,
+.workspace-app .legal-card-meta {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.workspace-app .legal-chart-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.28rem;
+  max-height: 15rem;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+.workspace-app .legal-chart-empty {
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.workspace-app .legal-chart-row-link {
+  display: grid;
+  grid-template-columns: minmax(4.5rem, 28%) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.22rem 0.35rem;
+  border-radius: 7px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.12s ease;
+}
+
+.workspace-app .legal-chart-row-link:hover {
+  background: rgba(37, 99, 235, 0.06);
+}
+
+.workspace-app .legal-chart-row-link.is-active {
+  background: rgba(37, 99, 235, 0.12);
+}
+
+.workspace-app .legal-chart-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.74rem;
+  color: #334155;
+}
+
+.workspace-app .legal-chart-track {
+  height: 0.45rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.workspace-app .legal-card-status .legal-chart-bar {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #60a5fa, #2563eb);
+}
+
+.workspace-app .legal-card-stage .legal-chart-bar {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #a78bfa, #7c3aed);
+}
+
+.workspace-app .legal-chart-count {
+  min-width: 2rem;
+  text-align: right;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.workspace-app .legal-card-stage .legal-chart-count {
+  color: #7c3aed;
+}
+
+.workspace-app .legal-section-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.4rem;
+}
+
+.workspace-app .legal-section-tile {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.4rem 0.45rem;
+  border: 1px solid rgba(22, 163, 74, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.workspace-app .legal-section-tile-code {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #166534;
+}
+
+.workspace-app .legal-section-tile-label {
+  font-size: 0.68rem;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-app .legal-section-tile-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  padding: 0.08rem 0.35rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #166534;
+  background: #dcfce7;
+}
+
+.workspace-app .legal-section-tile-link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.workspace-app .legal-section-tile-link:hover {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.workspace-app .legal-section-tile.is-disabled {
+  opacity: 0.55;
+}
+
+.workspace-app .legal-filter-chip-section {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.workspace-app .legal-assignee-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+  max-height: 22rem;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+.workspace-app .legal-assignee-item {
+  padding: 0.4rem 0.45rem;
+  border: 1px solid rgba(251, 146, 60, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.workspace-app .legal-assignee-main {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.workspace-app .legal-assignee-code {
+  min-width: 2.5rem;
+  font-size: 0.78rem;
+  color: #9a3412;
+}
+
+.workspace-app .legal-assignee-suffix {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.workspace-app .legal-assignee-sections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+}
+
+.workspace-app .legal-section-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.08rem 0.25rem 0.08rem 0.35rem;
+  border-radius: 999px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+}
+
+.workspace-app .legal-section-pill-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #9a3412;
+}
+
+.workspace-app .legal-section-pill .legal-section-pill-count {
+  min-width: 1.25rem;
+  padding: 0.05rem 0.3rem;
+  font-size: 0.68rem;
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.workspace-app .legal-section-pill .legal-section-pill-count.is-active {
+  background: #ea580c;
+  color: #fff;
+}
+
+.workspace-app .legal-team-panel .legal-card-head h3 {
+  text-transform: none;
+  font-size: 0.88rem;
+  color: #0f172a;
+}
+
+@media (max-width: 900px) {
+  .workspace-app .legal-chart-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.workspace-app .legal-page-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.workspace-app .legal-page-actions-shell {
+  min-width: 14rem;
+  min-height: 2.25rem;
+}
+
+.workspace-app .legal-sync-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.workspace-app .legal-sync-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.workspace-app .legal-sync-btn {
+  font-size: 0.78rem;
+  padding: 0.4rem 0.7rem;
+}
+
+.workspace-app .legal-new-case-trigger,
+.workspace-app .legal-new-team-trigger {
+  font-size: 0.82rem;
+}
+
+.workspace-app .legal-create-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background: rgba(15, 23, 42, 0.45);
+  overflow-y: auto;
+}
+
+.workspace-app .legal-create-dialog {
+  position: relative;
+  width: min(720px, 100%);
+  max-height: calc(100vh - 4rem);
+  overflow: auto;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+}
+
+.workspace-app .legal-create-close {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  border: none;
+  background: #f1f5f9;
+  border-radius: 999px;
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #475569;
+}
+
+.workspace-app .legal-create-form,
+.workspace-app .legal-team-invite-form {
+  padding: 1rem 1rem 1.1rem;
+}
+
+.workspace-app .legal-create-form h3,
+.workspace-app .legal-team-invite-form h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.workspace-app .legal-create-lead {
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.workspace-app .legal-list-toolbar-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.workspace-app .legal-list-toolbar-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: min(100%, 24rem);
+}
+
+.workspace-app .legal-list-toolbar-main .ws-page-header,
+.workspace-app .legal-list-toolbar-main .ws-page-header h1,
+.workspace-app .legal-list-toolbar-main .ws-page-header p {
+  min-width: 0;
+  max-width: none;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.workspace-app .legal-views-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 0.75rem;
+}
+
+.workspace-app .legal-view-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #fff;
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.workspace-app .legal-view-tab.is-active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.workspace-app .legal-view-tab-count {
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  font-size: 0.68rem;
+}
+
+.workspace-app .legal-running-insights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+}
+
+.workspace-app .legal-insight-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 6rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.workspace-app .legal-insight-card.is-primary {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.workspace-app .legal-insight-card span {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.workspace-app .legal-insight-card strong {
+  font-size: 1.05rem;
+  color: #0f172a;
+}
+
+.workspace-app .legal-category-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.workspace-app .legal-category-filter select {
+  max-width: 14rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.workspace-app .legal-view-table-wrap {
+  max-height: calc(100vh - 16rem);
+  overflow: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.workspace-app .legal-view-table th,
+.workspace-app .legal-view-table td {
+  white-space: nowrap;
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workspace-app .legal-view-empty {
+  margin: 0;
+  padding: 1rem;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.workspace-app .legal-pagination-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+@media (max-width: 720px) {
+  .workspace-app .legal-list-toolbar,
+  .workspace-app .legal-page-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .workspace-app .legal-page-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}

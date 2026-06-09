@@ -44,8 +44,15 @@ import {
   teamListText,
 } from "@/lib/whatsapp-bot/menu";
 import {
+  getLeadCaptureGoogleFormUrl,
+  leadCaptureGoogleFormReminderText,
+  leadCaptureGoogleFormWelcomeText,
+} from "@/lib/lead-capture-google-form";
+import { maybeAcknowledgeGoogleFormSubmission } from "@/lib/whatsapp-bot/google-form-acknowledge";
+import {
   buildKnownLeadFields,
   isLeadCaptureFormStep,
+  isLeadCaptureInquiry,
   leadCaptureBlockedMenuText,
   leadCaptureCompleteText,
   leadCaptureFollowUpText,
@@ -678,8 +685,20 @@ async function promptIncompleteLeadCapture(
   toPhone: string,
   contact: LeadCaptureContact,
 ) {
-  const text = leadCaptureBlockedMenuText(org.name, contact.phone, contact);
+  const formUrl = await getLeadCaptureGoogleFormUrl(org.id);
+  const text = formUrl
+    ? leadCaptureGoogleFormReminderText(formUrl)
+    : leadCaptureBlockedMenuText(org.name, contact.phone, contact);
   await replyText(org.id, toPhone, text);
+  if (formUrl) {
+    await updateWaContactLeadCapture({
+      contactId: contact.id,
+      organizationId: org.id,
+      step: "COMPLETE",
+      complete: true,
+    });
+    return;
+  }
   if (contact.leadCaptureStep === "PENDING") {
     await updateWaContactLeadCapture({
       contactId: contact.id,
@@ -707,6 +726,68 @@ async function savePartialLeadForm(
   });
 }
 
+async function maybeLeadCaptureKnowledgePrefix(
+  org: { id: string; name: string },
+  customerMessage: string,
+  contactName: string | null | undefined,
+  parsedFieldCount: number,
+): Promise<string> {
+  if (parsedFieldCount > 0 || !isLeadCaptureInquiry(customerMessage)) {
+    return "";
+  }
+  if (!(await isBotLive(org.id))) {
+    return "";
+  }
+
+  try {
+    const reply = await generateKnowledgeReply({
+      organizationId: org.id,
+      organizationName: org.name,
+      customerMessage: customerMessage.trim(),
+      customerName: contactName,
+    });
+    return `${reply.text.trim()}\n\n`;
+  } catch {
+    return "";
+  }
+}
+
+async function maybeAcknowledgeFormResponse(
+  org: { id: string; name: string },
+  message: MetaMessage,
+  contact: LeadCaptureContact | null,
+  customerMessage: string | null,
+): Promise<boolean> {
+  if (!contact?.leadCaptureComplete || contact.googleFormAckSentAt) {
+    return false;
+  }
+
+  const acked = await maybeAcknowledgeGoogleFormSubmission({
+    organizationId: org.id,
+    organizationName: org.name,
+    fromPhone: message.from,
+    contactId: contact.id,
+    sendReply: (text) => replyText(org.id, message.from, text),
+  });
+
+  if (!acked) {
+    return false;
+  }
+
+  await markEvent(message.id, {
+    organizationId: org.id,
+    fromPhone: message.from,
+    messageType: message.type,
+    status: "google_form_ack_sent",
+  });
+
+  if (customerMessage?.trim() && isLeadCaptureInquiry(customerMessage)) {
+    return false;
+  }
+
+  return true;
+}
+
 async function maybeHandleLeadCapture(
   org: { id: string; name: string },
   message: MetaMessage,
@@ -715,6 +796,44 @@ async function maybeHandleLeadCapture(
 ): Promise<boolean> {
   if (!shouldRunLeadCapture(contact)) {
     return false;
+  }
+
+  const formUrl = await getLeadCaptureGoogleFormUrl(org.id);
+  if (formUrl) {
+    const isFirstPrompt = contact.leadCaptureStep === "PENDING";
+    const formText = isFirstPrompt
+      ? leadCaptureGoogleFormWelcomeText(org.name, contact.phone, formUrl)
+      : leadCaptureGoogleFormReminderText(formUrl);
+    const knowledgePrefix = customerMessage?.trim()
+      ? await maybeLeadCaptureKnowledgePrefix(
+          org,
+          customerMessage,
+          contact.name,
+          0,
+        )
+      : "";
+
+    await replyText(
+      org.id,
+      message.from,
+      knowledgePrefix ? `${knowledgePrefix}${formText}` : formText,
+      knowledgePrefix ? { aiGenerated: true, aiSourceTitles: [] } : undefined,
+    );
+    await updateWaContactLeadCapture({
+      contactId: contact.id,
+      organizationId: org.id,
+      step: "COMPLETE",
+      complete: true,
+    });
+    await markEvent(message.id, {
+      organizationId: org.id,
+      fromPhone: message.from,
+      messageType: message.type,
+      status: isFirstPrompt
+        ? "lead_capture_google_form_sent"
+        : "lead_capture_google_form_reminder",
+    });
+    return true;
   }
 
   if (contact.leadCaptureStep === "PENDING") {
@@ -757,6 +876,12 @@ async function maybeHandleLeadCapture(
   });
   const merged = mergeLeadFormFields(contact, parsed);
   const { validated, missingKeys } = validateLeadFormFields(merged);
+  const knowledgePrefix = await maybeLeadCaptureKnowledgePrefix(
+    org,
+    customerMessage,
+    validated.name ?? contact.name,
+    Object.keys(parsed).length,
+  );
 
   if (missingKeys.length > 0) {
     await savePartialLeadForm(org.id, contact, {
@@ -768,7 +893,8 @@ async function maybeHandleLeadCapture(
     await replyText(
       org.id,
       message.from,
-      leadCaptureFollowUpText(validated, missingKeys, org.name),
+      knowledgePrefix + leadCaptureFollowUpText(validated, missingKeys, org.name),
+      knowledgePrefix ? { aiGenerated: true, aiSourceTitles: [] } : undefined,
     );
     await markEvent(message.id, {
       organizationId: org.id,
@@ -930,6 +1056,13 @@ async function handleCustomerMessage(
       }
     }
 
+    contact = phone ? await loadLeadCaptureContact(org.id, message.from) : contact;
+    if (
+      await maybeAcknowledgeFormResponse(org, message, contact, extractInboundBody(message))
+    ) {
+      return;
+    }
+
     await markEvent(message.id, {
       organizationId: org.id,
       fromPhone: message.from,
@@ -1040,6 +1173,13 @@ async function handleCustomerMessage(
     if (handled) {
       return;
     }
+  }
+
+  contact = phone ? await loadLeadCaptureContact(org.id, message.from) : contact;
+  if (
+    await maybeAcknowledgeFormResponse(org, message, contact, customerMessage)
+  ) {
+    return;
   }
 
   const waContact = phone
@@ -1435,7 +1575,7 @@ async function runTaskPipeline(
 
   let draft;
   try {
-    draft = await parseTaskFromInstruction(params.instruction, members);
+    ({ draft } = await parseTaskFromInstruction(params.instruction, members));
   } catch (error) {
     const raw = error instanceof Error ? error.message : "Parse failed";
     await markEvent(params.externalId, {

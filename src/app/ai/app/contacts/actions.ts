@@ -4,6 +4,10 @@ import type { WaPipelineStage } from "@prisma/client";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { requireSession } from "@/lib/require-session";
 import { prisma } from "@/lib/db";
+import {
+  exportWaCrmToGoogleSheet,
+  triggerWaCrmSheetSync,
+} from "@/lib/integrations/google-sheets-wa-crm";
 import { syncContactNextFollowUp } from "@/lib/wa-crm";
 import { waInboxListTag } from "@/lib/wa-inbox-store";
 
@@ -16,6 +20,10 @@ async function requireCrmAdmin() {
 function revalidateCrm(organizationId: string) {
   revalidatePath("/ai/app/contacts");
   revalidateTag(waInboxListTag(organizationId), { expire: 0 });
+}
+
+function scheduleCrmSheetSync(organizationId: string) {
+  triggerWaCrmSheetSync(organizationId);
 }
 
 export async function assignWaLead(
@@ -34,6 +42,7 @@ export async function assignWaLead(
   }
 
   revalidateCrm(user.organizationId);
+  scheduleCrmSheetSync(user.organizationId);
   return { ok: true, message: assigneeUserId ? "Lead assigned." : "Lead unassigned." };
 }
 
@@ -53,6 +62,7 @@ export async function updateWaLeadStage(
   }
 
   revalidateCrm(user.organizationId);
+  scheduleCrmSheetSync(user.organizationId);
   return { ok: true, message: "Stage updated." };
 }
 
@@ -72,6 +82,7 @@ export async function updateWaLeadNotes(
   }
 
   revalidateCrm(user.organizationId);
+  scheduleCrmSheetSync(user.organizationId);
   return { ok: true, message: "Notes saved." };
 }
 
@@ -116,6 +127,7 @@ export async function scheduleWaFollowUp(params: {
 
   await syncContactNextFollowUp(user.organizationId, contact.id);
   revalidateCrm(user.organizationId);
+  scheduleCrmSheetSync(user.organizationId);
   return { ok: true, message: "Follow-up scheduled." };
 }
 
@@ -140,5 +152,20 @@ export async function completeWaFollowUp(
 
   await syncContactNextFollowUp(user.organizationId, followUp.contactId);
   revalidateCrm(user.organizationId);
+  scheduleCrmSheetSync(user.organizationId);
   return { ok: true, message: "Follow-up marked done." };
+}
+
+export async function exportWaCrmToGoogleSheetAction(): Promise<WaCrmActionResult> {
+  const user = await requireCrmAdmin();
+  const result = await exportWaCrmToGoogleSheet(user.organizationId);
+
+  if (!result.ok) {
+    return { ok: false, message: result.message };
+  }
+
+  return {
+    ok: true,
+    message: `${result.message} Open: ${result.spreadsheetUrl}`,
+  };
 }

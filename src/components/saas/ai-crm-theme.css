@@ -1566,6 +1566,44 @@
   max-width: 36rem;
 }
 
+.wa-crm-page-head-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.wa-crm-sheet-sync {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  max-width: 20rem;
+}
+
+.wa-crm-sheet-sync .wa-crm-head-link {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: var(--wa-crm-blue-dark);
+  cursor: pointer;
+}
+
+.wa-crm-sheet-sync .wa-crm-head-link:hover:not(:disabled) {
+  border-color: var(--wa-crm-blue);
+  color: var(--wa-crm-blue);
+}
+
+.wa-crm-sheet-sync .wa-crm-head-link:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.wa-crm-sheet-sync-msg {
+  margin: 0;
+  font-size: 0.78rem;
+  text-align: right;
+}
+
 .wa-crm-head-link {
   font-size: 0.875rem;
   font-weight: 600;

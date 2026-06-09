@@ -43,6 +43,7 @@ function toSessionUser(member: WhatsAppTeamMember): SessionUser {
     isSuperAdmin: false,
     isDepartmentHead: false,
     modules: [],
+    staffCode: null,
   };
 }
 

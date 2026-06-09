@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSessionUser } from "@/lib/auth";
 import { syncWorkspaceDashboardFromGoogleSheets } from "@/lib/integrations/sync-sheets-to-db";
 import { hasMinimumRole } from "@/lib/permissions";
+import { updateTaskAiSettings } from "@/lib/integrations/task-ai-settings";
 import { updateWorkspaceGoogleSheet, updateWorkspaceProfile } from "@/lib/workspace";
 
 export type WorkspaceSettingsState = {
@@ -47,9 +48,10 @@ export async function saveGoogleSheetId(
 
   try {
     await updateWorkspaceGoogleSheet(user, { googleSheetId });
-    revalidatePath("/app");
     revalidatePath("/app/settings");
-    return { ok: true, message: "Google Sheet ID saved." };
+    revalidatePath("/app/cases");
+    revalidatePath("/app/cases/list");
+    return { ok: true, message: "Google Sheet link saved." };
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Could not save sheet ID.";
@@ -86,6 +88,41 @@ export async function syncDashboardFromSheets(): Promise<WorkspaceSettingsState>
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Could not sync from Google Sheets.";
+    return { ok: false, message };
+  }
+}
+
+export async function saveTaskAiSettings(
+  _prev: WorkspaceSettingsState,
+  formData: FormData,
+): Promise<WorkspaceSettingsState> {
+  const user = await getSessionUser();
+  if (!user) {
+    return { ok: false, message: "You must be signed in." };
+  }
+
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Only admins can change Task AI limits." };
+  }
+
+  const dailyLimit = Number(formData.get("dailyLimit")?.toString() ?? "200");
+  const enabled = formData.get("enabled") === "on";
+
+  if (!Number.isFinite(dailyLimit) || dailyLimit < 1) {
+    return { ok: false, message: "Daily limit must be at least 1." };
+  }
+
+  try {
+    await updateTaskAiSettings(user.organizationId, {
+      dailyLimit,
+      enabled,
+    });
+    revalidatePath("/app/settings");
+    revalidatePath("/app/tasks");
+    return { ok: true, message: "Task AI limits saved." };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not save Task AI settings.";
     return { ok: false, message };
   }
 }

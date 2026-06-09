@@ -18,6 +18,9 @@ const REQUIRED_DELEGATES = [
   "workspaceApproval",
   "workspaceLink",
   "rateLimitBucket",
+  "userNotificationSettings",
+  "legalCase",
+  "legalCaseDocument",
 ] as const;
 
 function createPrismaClient() {

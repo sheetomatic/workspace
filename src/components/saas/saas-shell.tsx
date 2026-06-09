@@ -2,6 +2,7 @@
 
 import {
   BarChart3,
+  Briefcase,
   ClipboardCheck,
   ListTodo,
   LogOut,
@@ -34,6 +35,13 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   {
+    href: "/app/cases",
+    label: "Cases",
+    icon: Briefcase,
+    minRole: "VIEWER",
+    module: "CASES",
+  },
+  {
     href: "/app/tasks",
     label: "Tasks",
     icon: ListTodo,
@@ -62,7 +70,7 @@ const navItems: NavItem[] = [
     minRole: "ADMIN",
     allowDepartmentHead: true,
   },
-  { href: "/app/settings", label: "Settings", icon: Settings, minRole: "ADMIN" },
+  { href: "/app/settings", label: "Settings", icon: Settings, minRole: "VIEWER" },
 ];
 
 function canAccessRole(userRole: SessionUser["role"], minRole?: NavItem["minRole"]) {

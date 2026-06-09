@@ -1,3 +1,5 @@
+import { getLoginBaseUrl } from "@/lib/integrations/email-base-url";
+
 export type EmailSendResult =
   | { sent: true }
   | { sent: false; reason: "not_configured" | "api_error"; detail?: string };
@@ -5,14 +7,6 @@ export type EmailSendResult =
 export function isEmailConfigured() {
   return Boolean(
     process.env.RESEND_API_KEY?.trim() && process.env.TASK_EMAIL_FROM?.trim(),
-  );
-}
-
-function getLoginBaseUrl() {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, "") ||
-    process.env.NEXTAUTH_URL?.trim().replace(/\/+$/, "") ||
-    "https://sheetomatic.com"
   );
 }
 
@@ -197,6 +191,27 @@ export async function sendTeamPasswordResetEmail(params: {
     `If you did not request this, contact your workspace admin immediately.`,
     ``,
     `— Sheetomatic Workspace`,
+  ].join("\n");
+
+  return sendPlainEmail({ toEmail: params.toEmail, subject, text });
+}
+
+export async function sendPasswordResetLinkEmail(params: {
+  toEmail: string;
+  resetUrl: string;
+}) {
+  const subject = "Reset your Sheetomatic password";
+  const text = [
+    "Hello,",
+    "",
+    "We received a request to reset your Sheetomatic password.",
+    "",
+    "Open this link to choose a new password (valid for 1 hour):",
+    params.resetUrl,
+    "",
+    "If you did not request this, you can ignore this email.",
+    "",
+    "— Sheetomatic",
   ].join("\n");
 
   return sendPlainEmail({ toEmail: params.toEmail, subject, text });

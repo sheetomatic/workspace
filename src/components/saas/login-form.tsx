@@ -328,6 +328,18 @@ export function LoginForm() {
             </span>
           </label>
 
+          <p className="login-forgot-link form-field-full">
+            <Link
+              href={
+                orgSlug
+                  ? `/login/forgot-password?org=${encodeURIComponent(orgSlug)}`
+                  : "/login/forgot-password"
+              }
+            >
+              Forgot password?
+            </Link>
+          </p>
+
           {error ? <p className="login-error form-field-full">{error}</p> : null}
 
           <div className="form-actions form-field-full">

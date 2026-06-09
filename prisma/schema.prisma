@@ -21,6 +21,7 @@ enum WorkspaceModule {
   HR
   APPROVALS
   REPORTS
+  CASES
 }
 
 enum OrganizationStatus {
@@ -43,6 +44,7 @@ model Organization {
   slug            String                   @unique
   industry        String?
   googleSheetId   String?
+  googleSheetGid  String?
   status          OrganizationStatus       @default(ONBOARDING)
   isPrimary       Boolean                  @default(false)
   memberships     Membership[]
@@ -72,8 +74,75 @@ model Organization {
   fieldVisits       FieldVisit[]
   jobOpenings       JobOpening[]
   candidates        Candidate[]
+  legalCases        LegalCase[]
+  legalCaseDocuments LegalCaseDocument[]
+  notificationSettings UserNotificationSettings[]
+  taskAiSettings    WorkspaceTaskAiSettings?
+  taskAiUsageEvents TaskAiUsageEvent[]
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
+}
+
+model LegalCase {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  fileNumber     String
+  mccNumber      String?
+  caseRef        String
+  applicant      String?
+  nonApplicant   String?
+  category       String?
+  caseStage      String?
+  fileStatus     String?
+  court          String?
+  company        String?
+  coAdvocate     String?
+  prevDate       String?
+  nextDate       String?
+  remarks        String?
+  amdCcStatus    String?
+  fNo            String?
+  clientAdvance  String?
+  caseFiled      String?
+  signingDate    String?
+  s2Responsible  String?
+  s3Responsible  String?
+  s4Responsible  String?
+  s5Responsible  String?
+  s6Responsible  String?
+  s7Responsible  String?
+  sectionData    Json         @default("{}")
+  documents      LegalCaseDocument[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, caseRef])
+  @@index([organizationId, fileNumber])
+  @@index([organizationId, fileStatus])
+  @@index([organizationId, caseStage])
+  @@index([organizationId, applicant])
+}
+
+model LegalCaseDocument {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  caseId         String
+  legalCase      LegalCase    @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  section        Int
+  category       String
+  displayName    String
+  fileName       String
+  mimeType       String
+  fileSize       Int
+  data           Bytes
+  uploadedById   String
+  uploadedBy     User         @relation("LegalCaseDocumentUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@index([caseId, section, category])
+  @@index([organizationId])
 }
 
 enum AiKnowledgeType {
@@ -209,6 +278,36 @@ model WorkspaceWhatsAppSettings {
   updatedAt       DateTime     @updatedAt
 }
 
+enum TaskAiRoute {
+  PARSE
+  TRANSCRIBE
+}
+
+model WorkspaceTaskAiSettings {
+  organizationId String       @id
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  dailyLimit     Int          @default(200)
+  enabled        Boolean      @default(true)
+  updatedAt      DateTime     @updatedAt
+}
+
+model TaskAiUsageEvent {
+  id               String       @id @default(cuid())
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  route            TaskAiRoute
+  promptTokens     Int          @default(0)
+  completionTokens Int          @default(0)
+  totalTokens      Int          @default(0)
+  audioBytes       Int          @default(0)
+  createdAt        DateTime     @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([userId, createdAt])
+}
+
 model WhatsAppInboundEvent {
   id             String        @id @default(cuid())
   organizationId String?
@@ -267,6 +366,7 @@ model WaContact {
   pipelineStage          WaPipelineStage    @default(NEW)
   leadCaptureStep        WaLeadCaptureStep  @default(PENDING)
   leadCaptureComplete    Boolean            @default(false)
+  googleFormAckSentAt    DateTime?
   tags                   Json               @default("[]")
   notes                  String?
   assignedToId   String?
@@ -586,8 +686,31 @@ model User {
   fieldCheckIns        FieldCheckIn[]
   fieldVisitsAssigned  FieldVisit[]             @relation("FieldVisitAssignee")
   candidatesOwned      Candidate[]              @relation("CandidateOwner")
+  legalCaseDocuments   LegalCaseDocument[]      @relation("LegalCaseDocumentUploader")
+  notificationSettings UserNotificationSettings[]
+  taskAiUsageEvents    TaskAiUsageEvent[]
   createdAt            DateTime                 @default(now())
   updatedAt            DateTime                 @updatedAt
+}
+
+model UserNotificationSettings {
+  id                 String       @id @default(cuid())
+  userId             String
+  organizationId     String
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  caseDueDateAlert   Boolean      @default(true)
+  caseOverdueAlert   Boolean      @default(true)
+  taskDueDateAlert   Boolean      @default(true)
+  taskOverdueAlert   Boolean      @default(true)
+  alertDaysBefore    Int          @default(1)
+  alertViaEmail      Boolean      @default(true)
+  alertViaWhatsApp   Boolean      @default(false)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
 }
 
 model Invitation {
@@ -619,6 +742,7 @@ model Membership {
   attendanceWorkMode AttendanceWorkMode  @default(OFFICE)
   geoFenceRequired   Boolean             @default(false)
   faceRequired       Boolean             @default(false)
+  staffCode          String?
   modules            WorkspaceModule[]   @default([])
   userId             String
   organizationId     String

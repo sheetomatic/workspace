@@ -9,8 +9,10 @@ import {
   TaskPriority,
   TaskStatus,
   WorkspaceLinkType,
+  WorkspaceModule,
 } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { seedHingoraniCases } from "./seed-hingorani";
 
 const prisma = new PrismaClient();
 
@@ -27,6 +29,8 @@ type SeedUser = {
   name: string;
   role: Role;
   orgSlug: string;
+  staffCode?: string;
+  modules?: WorkspaceModule[];
 };
 
 const demoPhones: Record<string, string> = {
@@ -54,6 +58,26 @@ const memberProfiles: Record<
   "owner@bakery.demo": {
     department: TaskDepartment.ADMIN,
     designation: "Bakery Owner",
+  },
+  "admin@hingorani.demo": {
+    department: TaskDepartment.ADMIN,
+    designation: "Firm Admin",
+  },
+  "manager@hingorani.demo": {
+    department: TaskDepartment.OPERATIONS,
+    designation: "Operations Manager",
+  },
+  "shyam@hingorani.demo": {
+    department: TaskDepartment.OPERATIONS,
+    designation: "Court desk",
+  },
+  "mt@hingorani.demo": {
+    department: TaskDepartment.OPERATIONS,
+    designation: "Section 2 doer",
+  },
+  "rp@hingorani.demo": {
+    department: TaskDepartment.OPERATIONS,
+    designation: "Medical desk",
   },
 };
 
@@ -88,6 +112,44 @@ const seedUsers: SeedUser[] = [
     role: Role.OWNER,
     orgSlug: "sunrise-bakery",
   },
+  {
+    email: "admin@hingorani.demo",
+    name: "Hingorani Admin",
+    role: Role.ADMIN,
+    orgSlug: "hingorani",
+    modules: [WorkspaceModule.CASES],
+  },
+  {
+    email: "manager@hingorani.demo",
+    name: "Office Manager",
+    role: Role.MANAGER,
+    orgSlug: "hingorani",
+    modules: [WorkspaceModule.CASES],
+  },
+  {
+    email: "shyam@hingorani.demo",
+    name: "Shyam Kumar",
+    role: Role.STAFF,
+    orgSlug: "hingorani",
+    staffCode: "SHYAM",
+    modules: [WorkspaceModule.CASES],
+  },
+  {
+    email: "mt@hingorani.demo",
+    name: "MT Desk",
+    role: Role.STAFF,
+    orgSlug: "hingorani",
+    staffCode: "MT",
+    modules: [WorkspaceModule.CASES],
+  },
+  {
+    email: "rp@hingorani.demo",
+    name: "RP Desk",
+    role: Role.STAFF,
+    orgSlug: "hingorani",
+    staffCode: "RP",
+    modules: [WorkspaceModule.CASES],
+  },
 ];
 
 const organizations = [
@@ -110,6 +172,13 @@ const organizations = [
     slug: "sunrise-bakery",
     industry: "Food & retail",
     status: OrganizationStatus.ONBOARDING,
+    isPrimary: false,
+  },
+  {
+    name: "Hingorani Law Firm",
+    slug: "hingorani",
+    industry: "Law firm — MACT operations",
+    status: OrganizationStatus.ACTIVE,
     isPrimary: false,
   },
 ];
@@ -170,6 +239,12 @@ const workspaceLinks: Record<
       label: "Client portfolio dashboard",
       url: "https://lookerstudio.google.com/",
       sortOrder: 1,
+    },
+    {
+      type: WorkspaceLinkType.GOOGLE_FORM,
+      label: "Lead capture form",
+      url: "https://forms.gle/KWSDZty3x4vkgbwX6",
+      sortOrder: 2,
     },
   ],
 };
@@ -824,6 +899,8 @@ async function main() {
       },
       update: {
         role: entry.role,
+        staffCode: entry.staffCode ?? null,
+        modules: entry.modules ?? [],
         ...(profile
           ? { department: profile.department, designation: profile.designation }
           : {}),
@@ -832,6 +909,8 @@ async function main() {
         userId: user.id,
         organizationId: organization.id,
         role: entry.role,
+        staffCode: entry.staffCode ?? null,
+        modules: entry.modules ?? [],
         department: profile?.department ?? TaskDepartment.GENERAL,
         designation: profile?.designation ?? entry.role,
       },
@@ -895,8 +974,17 @@ async function main() {
 
   await seedSheetomaticTechnologies(primaryOrganization.id, superAdminUser.id);
 
+  const hingorani = await prisma.organization.findUnique({
+    where: { slug: "hingorani" },
+  });
+  if (hingorani) {
+    await seedHingoraniCases(prisma, hingorani.id);
+  }
+
   console.log("Seed complete. Demo password for all accounts:", DEMO_PASSWORD);
   console.log("Super admin:", SUPER_ADMIN.email, "@ sheetomatic-technologies");
+  console.log("Hingorani cases workspace: admin@hingorani.demo @ hingorani");
+  console.log("Hingorani doers: shyam@hingorani.demo (SHYAM), mt@hingorani.demo (MT)");
   console.log("Accounts:");
   for (const entry of seedUsers) {
     console.log(`  ${entry.email} (${entry.role} @ ${entry.orgSlug})`);
