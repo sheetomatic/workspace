@@ -4,12 +4,12 @@ import { redirect } from "next/navigation";
 import { AuthSessionProvider } from "@/components/providers/session-provider";
 import { AiShell } from "@/components/saas/ai-shell";
 import { AiOnboardingGuard } from "@/components/saas/ai-onboarding-guard";
-import { getRedlavaResellerWallet } from "@/lib/integrations/redlava-reseller";
+import { formatRedlavaWalletAmount } from "@/lib/integrations/redlava";
 import { listOrganizationsForUser } from "@/lib/auth-orgs";
 import { shouldSkipAiOnboarding } from "@/lib/ai-onboarding";
 import { prisma } from "@/lib/db";
-import { canViewPlatformResellerData } from "@/lib/platform";
 import { requireAiSession } from "@/lib/require-session";
+import { getWorkspaceTenantWallets } from "@/lib/whatsapp-wallet";
 import {
   getWorkspaceWhatsAppSettings,
   resolveWorkspaceWhatsAppCredentials,
@@ -27,8 +27,7 @@ export default async function SheetomaticAiAppLayout({
   children: React.ReactNode;
 }) {
   const sessionUser = await requireAiSession();
-  const showWallet = canViewPlatformResellerData(sessionUser);
-  const [organization, organizations, credentials, savedSettings, wallet, skipOnboarding] =
+  const [organization, organizations, credentials, savedSettings, tenantWallets, skipOnboarding] =
     await Promise.all([
       prisma.organization.findUnique({
         where: { id: sessionUser.organizationId },
@@ -36,7 +35,7 @@ export default async function SheetomaticAiAppLayout({
       listOrganizationsForUser(sessionUser.id),
       resolveWorkspaceWhatsAppCredentials(sessionUser.organizationId),
       getWorkspaceWhatsAppSettings(sessionUser.organizationId),
-      showWallet ? getRedlavaResellerWallet() : Promise.resolve({ ok: false as const }),
+      getWorkspaceTenantWallets(sessionUser.organizationId),
       shouldSkipAiOnboarding(sessionUser.organizationId),
     ]);
 
@@ -56,16 +55,21 @@ export default async function SheetomaticAiAppLayout({
     credentials.redlavaApiKey && (credentials.redlavaPhoneId || savedSettings?.redlavaPhoneId),
   );
 
-  const walletPoints =
-    wallet.ok && wallet.currentPoints != null ? wallet.currentPoints : null;
+  const walletLabel =
+    tenantWallets?.ok
+      ? formatRedlavaWalletAmount(
+          tenantWallets.wa.balance,
+          tenantWallets.wa.currency,
+        )
+      : null;
 
   return (
     <AuthSessionProvider>
       <AiShell
         organizations={organizations}
-        showWallet={showWallet}
+        showWallet={integrationsConnected}
         user={user}
-        walletPoints={walletPoints}
+        walletLabel={walletLabel}
       >
         <AiOnboardingGuard skipOnboarding={skipOnboarding}>
           {children}

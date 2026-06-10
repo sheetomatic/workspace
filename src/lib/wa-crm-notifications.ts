@@ -1,11 +1,21 @@
 import { sendWhatsAppText } from "@/lib/whatsapp-bot/send";
 import { formatWhatsAppPhone } from "@/lib/phone";
+import { aiPortalOrigin } from "@/lib/workspace-auth-links";
 import { prisma } from "@/lib/db";
 
 type LeadSummary = {
   name: string | null;
   phone: string;
 };
+
+function formatLeadLine(lead: LeadSummary) {
+  const formattedPhone = formatWhatsAppPhone(lead.phone);
+  const name = lead.name?.trim();
+  if (!name || name === formattedPhone) {
+    return `- ${formattedPhone}`;
+  }
+  return `- ${name} (${formattedPhone})`;
+}
 
 export async function notifyWaLeadAssignment(params: {
   organizationId: string;
@@ -27,21 +37,19 @@ export async function notifyWaLeadAssignment(params: {
   }
 
   const assigneeName = assignee?.name?.trim() || "there";
-  const leadLines = params.leads.slice(0, 10).map((lead) => {
-    const label = lead.name?.trim() || formatWhatsAppPhone(lead.phone);
-    return `- ${label} (${formatWhatsAppPhone(lead.phone)})`;
-  });
+  const leadLines = params.leads.slice(0, 10).map(formatLeadLine);
   const overflow =
     params.leads.length > 10
       ? `...and ${params.leads.length - 10} more`
       : "";
+  const crmUrl = `${aiPortalOrigin()}/ai/app/contacts`;
 
   const bodyParts = [
     `*New lead${params.leads.length > 1 ? "s" : ""} assigned*`,
     `Hi ${assigneeName},`,
     ...leadLines,
     overflow,
-    "Open CRM in Sheetomatic to follow up.",
+    `Open CRM: ${crmUrl}`,
   ].filter(Boolean);
 
   const body = bodyParts.join("\n\n");

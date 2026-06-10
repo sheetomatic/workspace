@@ -121,13 +121,13 @@ export function AiShell({
   user,
   organizations,
   showWallet = false,
-  walletPoints,
+  walletLabel,
   children,
 }: {
   user: SessionUser;
   organizations: OrganizationOption[];
   showWallet?: boolean;
-  walletPoints?: number | null;
+  walletLabel?: string | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -194,7 +194,7 @@ export function AiShell({
 
       <div className="ai-crm-main">
         {!isOnboarding ? (
-          <AiCrmTopbar showWallet={showWallet} user={user} walletPoints={walletPoints} />
+          <AiCrmTopbar showWallet={showWallet} user={user} walletLabel={walletLabel} />
         ) : null}
         <div className="ai-crm-content">{children}</div>
       </div>

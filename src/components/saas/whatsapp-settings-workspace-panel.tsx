@@ -21,6 +21,8 @@ export function WhatsAppSettingsWorkspacePanel({
   resellerPhones = [],
   resellerWalletPoints = null,
   showResellerWallet = false,
+  tenantWaWalletLabel = null,
+  tenantAiWalletLabel = null,
   goLiveStatus,
   userName,
   userEmail,
@@ -33,6 +35,8 @@ export function WhatsAppSettingsWorkspacePanel({
   resellerPhones?: RedlavaResellerPhone[];
   resellerWalletPoints?: number | null;
   showResellerWallet?: boolean;
+  tenantWaWalletLabel?: string | null;
+  tenantAiWalletLabel?: string | null;
   goLiveStatus: WhatsAppGoLiveStatus;
   userName: string;
   userEmail: string;
@@ -58,25 +62,47 @@ export function WhatsAppSettingsWorkspacePanel({
         </dl>
       </section>
 
+      <section className="saas-panel ws-settings-account-card" id="wallet">
+        <h2>Wallet</h2>
+        <p className="ws-go-live-hint">
+          Balances for your connected WhatsApp account (tenant wallet), not the
+          platform reseller account.
+        </p>
+        <dl className="ws-settings-account-grid">
+          <div>
+            <dt>WhatsApp messages</dt>
+            <dd className="ws-settings-wallet-balance">
+              {tenantWaWalletLabel ?? "Connect RedLava API key to load balance."}
+            </dd>
+          </div>
+          <div>
+            <dt>AI credits</dt>
+            <dd className="ws-settings-wallet-balance">
+              {tenantAiWalletLabel ?? "Connect RedLava API key to load balance."}
+            </dd>
+          </div>
+        </dl>
+        <a
+          className="ws-product-module-cta inline"
+          href="https://wa.redlava.in"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          Open RedLava dashboard
+        </a>
+      </section>
+
       {showResellerWallet ? (
-        <section className="saas-panel ws-settings-account-card" id="wallet">
-          <h2>RedLava wallet</h2>
+        <section className="saas-panel ws-settings-account-card" id="reseller-wallet">
+          <h2>Reseller wallet (platform)</h2>
           <p className="ws-go-live-hint">
-            Reseller wallet balance used for WhatsApp message credits on RedLava.
+            Super-admin view of the Sheetomatic reseller account on RedLava.
           </p>
           <p className="ws-settings-wallet-balance">
             {resellerWalletPoints != null
               ? `${resellerWalletPoints.toLocaleString()} points`
               : "Wallet unavailable - add REDLAVA_RESELLER_API_KEY on the server."}
           </p>
-          <a
-            className="ws-product-module-cta inline"
-            href="https://wa.redlava.in"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            Open RedLava dashboard
-          </a>
         </section>
       ) : null}
 
@@ -94,7 +120,7 @@ export function WhatsAppSettingsWorkspacePanel({
           initialValues={initialValues}
           members={members}
           resellerPhones={resellerPhones}
-          resellerWalletPoints={resellerWalletPoints}
+          resellerWalletPoints={null}
         />
       </section>
 

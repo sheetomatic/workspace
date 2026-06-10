@@ -1,8 +1,10 @@
 import { PageHeader } from "@/components/saas/page-header";
 import { WhatsAppSettingsWorkspacePanel } from "@/components/saas/whatsapp-settings-workspace-panel";
 import { requireSession } from "@/lib/require-session";
+import { formatRedlavaWalletAmount } from "@/lib/integrations/redlava";
 import { loadSettingsResellerData } from "@/lib/settings-reseller-data";
 import { canViewPlatformResellerData } from "@/lib/platform";
+import { getWorkspaceTenantWallets } from "@/lib/whatsapp-wallet";
 import {
   getWorkspaceWhatsAppSettings,
   listWhatsAppMembers,
@@ -14,12 +16,13 @@ import { getWhatsAppGoLiveStatus } from "@/lib/whatsapp-go-live";
 export default async function SheetomaticAiSettingsPage() {
   const user = await requireSession("ADMIN", { redirectTo: "/ai/app" });
   const showResellerData = canViewPlatformResellerData(user);
-  const [savedSettings, members, credentials, goLiveStatus, resellerData] =
+  const [savedSettings, members, credentials, goLiveStatus, tenantWallets, resellerData] =
     await Promise.all([
       getWorkspaceWhatsAppSettings(user.organizationId),
       listWhatsAppMembers(user.organizationId),
       resolveWorkspaceWhatsAppCredentials(user.organizationId),
       getWhatsAppGoLiveStatus(user.organizationId),
+      getWorkspaceTenantWallets(user.organizationId),
       showResellerData
         ? loadSettingsResellerData()
         : Promise.resolve({
@@ -77,6 +80,24 @@ export default async function SheetomaticAiSettingsPage() {
           resellerData.wallet.currentPoints != null
             ? resellerData.wallet.currentPoints
             : null
+        }
+        tenantAiWalletLabel={
+          tenantWallets?.ok
+            ? formatRedlavaWalletAmount(
+                tenantWallets.ai.balance,
+                tenantWallets.ai.currency,
+              )
+            : null
+        }
+        tenantWaWalletLabel={
+          tenantWallets?.ok
+            ? formatRedlavaWalletAmount(
+                tenantWallets.wa.balance,
+                tenantWallets.wa.currency,
+              )
+            : tenantWallets && !tenantWallets.ok
+              ? tenantWallets.error
+              : null
         }
         userEmail={user.email}
         userName={user.name ?? user.email.split("@")[0]}

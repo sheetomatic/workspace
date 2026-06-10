@@ -11,11 +11,11 @@ import { ROLE_LABELS } from "@/lib/permissions";
 export function AiCrmTopbar({
   user,
   showWallet = false,
-  walletPoints,
+  walletLabel,
 }: {
   user: SessionUser;
   showWallet?: boolean;
-  walletPoints?: number | null;
+  walletLabel?: string | null;
 }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -78,12 +78,10 @@ export function AiCrmTopbar({
           <Link
             className="ai-crm-credits-pill is-link"
             href="/ai/app/settings#wallet"
-            title="RedLava wallet balance"
+            title="WhatsApp wallet balance"
           >
             <Wallet size={14} aria-hidden />
-            {walletPoints != null
-              ? walletPoints.toLocaleString()
-              : "Wallet"}
+            {walletLabel ?? "Wallet"}
           </Link>
         ) : null}
 

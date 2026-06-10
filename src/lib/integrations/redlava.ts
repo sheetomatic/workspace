@@ -520,6 +520,85 @@ export function isRedlavaConfigured(credentials?: RedlavaCredentials | null) {
   return Boolean(resolveRedlavaCredentials(credentials)?.apiKey);
 }
 
+export type RedlavaTenantWallet = {
+  balance: number;
+  currency: string;
+  phoneNumberId: string | null;
+};
+
+function parseRedlavaWalletBody(body: Record<string, unknown>): RedlavaTenantWallet | null {
+  if (typeof body.balance !== "number") {
+    return null;
+  }
+
+  return {
+    balance: body.balance,
+    currency: typeof body.currency === "string" ? body.currency : "INR",
+    phoneNumberId:
+      typeof body.phoneNumberId === "string" ? body.phoneNumberId : null,
+  };
+}
+
+export function formatRedlavaWalletAmount(amount: number, currency = "INR") {
+  if (currency === "INR") {
+    return `₹${amount.toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  }
+
+  return `${amount.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })} ${currency}`;
+}
+
+/** Tenant WhatsApp message wallet (per connected phone). */
+export async function getRedlavaWaWallet(credentials?: RedlavaCredentials | null) {
+  const result = await redlavaRequest(
+    "/whatsapp/waWallet",
+    { method: "GET" },
+    credentials,
+  );
+  if (!result.ok) {
+    return result;
+  }
+
+  const wallet = parseRedlavaWalletBody(result.body);
+  if (!wallet) {
+    return {
+      ok: false as const,
+      error: "RedLava wallet response was missing balance.",
+      body: result.body,
+    };
+  }
+
+  return { ok: true as const, wallet };
+}
+
+/** Tenant AI wallet credits (separate from WhatsApp message balance). */
+export async function getRedlavaAiWallet(credentials?: RedlavaCredentials | null) {
+  const result = await redlavaRequest(
+    "/whatsapp/aiWallet",
+    { method: "GET" },
+    credentials,
+  );
+  if (!result.ok) {
+    return result;
+  }
+
+  const wallet = parseRedlavaWalletBody(result.body);
+  if (!wallet) {
+    return {
+      ok: false as const,
+      error: "RedLava AI wallet response was missing balance.",
+      body: result.body,
+    };
+  }
+
+  return { ok: true as const, wallet };
+}
+
 /** Download inbound WhatsApp media (voice notes, images) via RedLava's Meta proxy. */
 export async function downloadRedlavaWhatsAppMedia(
   mediaId: string,
