@@ -16,6 +16,7 @@ import {
 } from "@/app/ai/app/campaign/actions";
 import { AiKnowledgeInstructionPanel } from "@/components/saas/ai-knowledge-instruction-panel";
 import type { KnowledgeInstructionBlock } from "@/lib/ai-knowledge-instructions";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown,
@@ -59,15 +60,33 @@ const TABS: Array<{ id: TabId; label: string; enabled: boolean }> = [
   { id: "retarget", label: "Re-Targeting", enabled: false },
 ];
 
+const fieldClass =
+  "w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500";
+const secondaryBtnClass =
+  "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50";
+const submitBtnClass =
+  "inline-flex min-w-[140px] items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50";
+
 function templateKey(template: RedlavaSendTemplateOption) {
   return `${template.name}:${template.language}`;
 }
 
-export function CampaignBulkSendPanel({ connected }: { connected: boolean }) {
+export function CampaignBulkSendPanel({
+  connected,
+  initialTemplates = [],
+  templatesError: initialTemplatesError = null,
+  setupHint = null,
+}: {
+  connected: boolean;
+  initialTemplates?: RedlavaSendTemplateOption[];
+  templatesError?: string | null;
+  setupHint?: string | null;
+}) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<TabId>("csv");
-  const [templates, setTemplates] = useState<RedlavaSendTemplateOption[]>([]);
+  const [templates, setTemplates] = useState(initialTemplates);
+  const [templatesError, setTemplatesError] = useState(initialTemplatesError);
   const [templateKeyValue, setTemplateKeyValue] = useState("");
   const [templateDetail, setTemplateDetail] = useState<RedlavaSendTemplateDetail | null>(
     null,
@@ -80,6 +99,13 @@ export function CampaignBulkSendPanel({ connected }: { connected: boolean }) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  const formDisabled = !connected || pending;
+
+  useEffect(() => {
+    setTemplates(initialTemplates);
+    setTemplatesError(initialTemplatesError);
+  }, [initialTemplates, initialTemplatesError]);
 
   const selectedTemplate = useMemo(
     () => templates.find((item) => templateKey(item) === templateKeyValue) ?? null,
@@ -101,23 +127,26 @@ export function CampaignBulkSendPanel({ connected }: { connected: boolean }) {
     );
   }, [templateDetail, variableColumns]);
 
-  const loadTemplates = useCallback(() => {
+  const refreshTemplates = useCallback(() => {
+    if (!connected) {
+      return;
+    }
     startTransition(async () => {
-      setLoadError(null);
+      setTemplatesError(null);
       const result = await loadBulkSendTemplatesAction();
       if (!result.ok) {
-        setLoadError(result.error ?? "Could not load templates.");
+        setTemplates([]);
+        setTemplatesError(result.error ?? "Could not load templates.");
         return;
       }
       setTemplates(result.templates);
+      if (result.templates.length === 0) {
+        setTemplatesError(
+          "No sendable templates found. Sync approved templates in Templates.",
+        );
+      }
     });
-  }, []);
-
-  useEffect(() => {
-    if (connected) {
-      loadTemplates();
-    }
-  }, [connected, loadTemplates]);
+  }, [connected]);
 
   useEffect(() => {
     if (!selectedTemplate) {
@@ -155,6 +184,10 @@ export function CampaignBulkSendPanel({ connected }: { connected: boolean }) {
   }
 
   function submitCampaign() {
+    if (!connected) {
+      setSubmitError("Connect RedLava in Settings before submitting.");
+      return;
+    }
     if (!selectedTemplate || !templateDetail) {
       setSubmitError("Select a template first.");
       return;
@@ -226,23 +259,21 @@ export function CampaignBulkSendPanel({ connected }: { connected: boolean }) {
     });
   }
 
-  if (!connected) {
-    return (
-      <section className="ai-campaign-bulk-send">
-        <header className="ai-campaign-bulk-send-head">
-          <h2>Send bulk messages</h2>
-          <p>Connect RedLava in Settings to create CSV campaigns from Sheetomatic.</p>
-        </header>
-      </section>
-    );
-  }
-
   return (
     <section className="ai-campaign-bulk-send">
       <header className="ai-campaign-bulk-send-head">
         <h2>Send bulk messages</h2>
         <p>Create WhatsApp CSV campaigns with template, upload, and optional schedule.</p>
       </header>
+
+      {!connected && setupHint ? (
+        <div className="saas-form-message error">
+          {setupHint}{" "}
+          <Link className="underline" href="/ai/app/settings">
+            Open Settings
+          </Link>
+        </div>
+      ) : null}
 
       <div className="ai-campaign-bulk-tabs" role="tablist" aria-label="Bulk send methods">
         {TABS.map((item) => (
@@ -270,6 +301,23 @@ export function CampaignBulkSendPanel({ connected }: { connected: boolean }) {
               defaultOpen={false}
             />
 
+            {templatesError ? (
+              <p className="saas-form-message error">
+                {templatesError}{" "}
+                <button
+                  className="underline"
+                  disabled={!connected || pending}
+                  type="button"
+                  onClick={refreshTemplates}
+                >
+                  Retry
+                </button>
+                {" · "}
+                <Link className="underline" href="/ai/app/templates">
+                  Templates
+                </Link>
+              </p>
+            ) : null}
             {loadError ? <p className="saas-form-message error">{loadError}</p> : null}
             {submitError ? <p className="saas-form-message error">{submitError}</p> : null}
             {successMessage ? (
@@ -277,10 +325,12 @@ export function CampaignBulkSendPanel({ connected }: { connected: boolean }) {
             ) : null}
 
             <label className="ai-campaign-bulk-field">
-              <span>
-                Campaign name <strong>*</strong>
+              <span className="text-sm font-semibold text-slate-700">
+                Campaign name <span className="text-red-600">*</span>
               </span>
               <input
+                className={fieldClass}
+                disabled={formDisabled}
                 placeholder="Campaign Name"
                 type="text"
                 value={campaignName}
@@ -289,16 +339,21 @@ export function CampaignBulkSendPanel({ connected }: { connected: boolean }) {
             </label>
 
             <label className="ai-campaign-bulk-field">
-              <span>
-                Select template <strong>*</strong>
+              <span className="text-sm font-semibold text-slate-700">
+                Select template <span className="text-red-600">*</span>
               </span>
-              <div className="ai-campaign-bulk-select-wrap">
+              <div className="relative">
                 <select
-                  disabled={pending && templates.length === 0}
+                  className={`${fieldClass} appearance-none pr-9`}
+                  disabled={formDisabled}
                   value={templateKeyValue}
                   onChange={(event) => setTemplateKeyValue(event.target.value)}
                 >
-                  <option value="">Select a template</option>
+                  <option value="">
+                    {templates.length === 0
+                      ? "No templates available"
+                      : "Select a template"}
+                  </option>
                   {templates.map((template) => (
                     <option key={templateKey(template)} value={templateKey(template)}>
                       {template.name} ({template.language}
@@ -306,14 +361,23 @@ export function CampaignBulkSendPanel({ connected }: { connected: boolean }) {
                     </option>
                   ))}
                 </select>
-                <ChevronDown aria-hidden size={16} />
+                <ChevronDown
+                  aria-hidden
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={16}
+                />
               </div>
+              {connected && templates.length === 0 && !templatesError ? (
+                <p className="mt-1 text-xs text-slate-500">
+                  Loading templates from RedLava…
+                </p>
+              ) : null}
             </label>
 
-            <div className="ai-campaign-bulk-csv-actions">
+            <div className="flex flex-wrap gap-2.5">
               <button
-                className="ai-campaign-bulk-secondary-btn"
-                disabled={!templateDetail || pending}
+                className={secondaryBtnClass}
+                disabled={formDisabled || !templateDetail}
                 type="button"
                 onClick={downloadSampleCsv}
               >
@@ -321,8 +385,8 @@ export function CampaignBulkSendPanel({ connected }: { connected: boolean }) {
                 Download Sample CSV
               </button>
               <button
-                className="ai-campaign-bulk-secondary-btn"
-                disabled={!templateDetail || pending}
+                className={secondaryBtnClass}
+                disabled={formDisabled || !templateDetail}
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
               >
@@ -333,39 +397,45 @@ export function CampaignBulkSendPanel({ connected }: { connected: boolean }) {
                 ref={fileInputRef}
                 accept=".csv,text/csv"
                 className="sr-only"
+                disabled={formDisabled}
                 type="file"
                 onChange={(event) => onCsvSelected(event.target.files?.[0] ?? null)}
               />
             </div>
 
             {csvFile ? (
-              <p className="ai-campaign-bulk-file-name">
+              <p className="text-sm text-slate-600">
                 Uploaded: <strong>{csvFile.name}</strong>
               </p>
             ) : null}
 
             {variableColumns.length > 0 ? (
-              <p className="ai-campaign-bulk-columns">
-                CSV columns: <code>receiverNumber</code>
+              <p className="text-sm text-slate-600">
+                CSV columns: <code className="text-blue-700">receiverNumber</code>
                 {variableColumns.map((column) => (
-                  <code key={column}>, {column}</code>
+                  <code className="text-blue-700" key={column}>
+                    , {column}
+                  </code>
                 ))}
               </p>
             ) : null}
 
-            <label className="ai-campaign-bulk-toggle">
+            <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
               <input
                 checked={scheduleEnabled}
+                disabled={formDisabled}
                 type="checkbox"
                 onChange={(event) => setScheduleEnabled(event.target.checked)}
               />
-              <span>Schedule</span>
+              Schedule
             </label>
 
             {scheduleEnabled ? (
               <label className="ai-campaign-bulk-field">
-                <span>Send at</span>
+                <span className="text-sm font-semibold text-slate-700">Send at</span>
                 <input
+                  className={fieldClass}
+                  disabled={formDisabled}
                   type="datetime-local"
                   value={scheduleAt}
                   onChange={(event) => setScheduleAt(event.target.value)}
@@ -373,10 +443,15 @@ export function CampaignBulkSendPanel({ connected }: { connected: boolean }) {
               </label>
             ) : null}
 
-            <div className="ai-campaign-bulk-submit-wrap">
+            <div className="flex justify-center pt-1">
               <button
-                className="ai-campaign-bulk-submit-btn"
-                disabled={pending || !csvFile || !templateDetail || !campaignName.trim()}
+                className={submitBtnClass}
+                disabled={
+                  formDisabled ||
+                  !csvFile ||
+                  !templateDetail ||
+                  !campaignName.trim()
+                }
                 type="button"
                 onClick={submitCampaign}
               >

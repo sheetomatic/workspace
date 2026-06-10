@@ -8,6 +8,7 @@ import { requireSession } from "@/lib/require-session";
 import { getCampaignRelatedSetup } from "@/lib/ai-module-data";
 import { getWhatsAppGoLiveStatus } from "@/lib/whatsapp-go-live";
 import { listRedlavaCsvCampaigns, type RedlavaCsvCampaign } from "@/lib/integrations/redlava-campaigns";
+import { listRedlavaSendTemplates } from "@/lib/integrations/redlava-bulk-send";
 import { resolveWorkspaceWhatsAppCredentials } from "@/lib/whatsapp-settings";
 
 export default async function SheetomaticAiCampaignPage() {
@@ -20,19 +21,39 @@ export default async function SheetomaticAiCampaignPage() {
   ]);
 
   const connected = Boolean(credentials.redlavaApiKey && credentials.redlavaPhoneId);
+  const redlavaCreds = {
+    apiKey: credentials.redlavaApiKey,
+    phoneId: credentials.redlavaPhoneId,
+  };
 
   let campaigns: RedlavaCsvCampaign[] = [];
   let campaignError: string | null = null;
+  let bulkSendTemplates: Awaited<
+    ReturnType<typeof listRedlavaSendTemplates>
+  >["templates"] = [];
+  let bulkSendTemplatesError: string | null = null;
 
   if (connected) {
-    const result = await listRedlavaCsvCampaigns({
-      apiKey: credentials.redlavaApiKey,
-      phoneId: credentials.redlavaPhoneId,
-    });
-    if (result.ok) {
-      campaigns = result.campaigns;
+    const [campaignResult, templateResult] = await Promise.all([
+      listRedlavaCsvCampaigns(redlavaCreds),
+      listRedlavaSendTemplates(redlavaCreds),
+    ]);
+
+    if (campaignResult.ok) {
+      campaigns = campaignResult.campaigns;
     } else {
-      campaignError = result.error ?? "Could not load campaigns from RedLava.";
+      campaignError = campaignResult.error ?? "Could not load campaigns from RedLava.";
+    }
+
+    if (templateResult.ok) {
+      bulkSendTemplates = templateResult.templates;
+      if (bulkSendTemplates.length === 0) {
+        bulkSendTemplatesError =
+          "No sendable templates found. Sync approved templates in Templates.";
+      }
+    } else {
+      bulkSendTemplatesError =
+        templateResult.error ?? "Could not load templates from RedLava.";
     }
   }
 
@@ -49,7 +70,17 @@ export default async function SheetomaticAiCampaignPage() {
         </div>
       ) : null}
 
-      <CampaignBulkSendPanel connected={connected} />
+      <CampaignBulkSendPanel
+        connected={connected}
+        initialTemplates={bulkSendTemplates}
+        templatesError={bulkSendTemplatesError}
+        setupHint={
+          !connected
+            ? setup.setupHint ??
+              "Add your RedLava API key and Phone ID in Settings to send bulk campaigns."
+            : null
+        }
+      />
 
       <CampaignInsightsPanel
         campaigns={campaigns}

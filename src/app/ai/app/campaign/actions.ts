@@ -24,7 +24,7 @@ async function requireCampaignAccess() {
   }
 
   const credentials = await resolveWorkspaceWhatsAppCredentials(user.organizationId);
-  if (!credentials.redlavaApiKey) {
+  if (!credentials.redlavaApiKey || !credentials.redlavaPhoneId) {
     return null;
   }
 
