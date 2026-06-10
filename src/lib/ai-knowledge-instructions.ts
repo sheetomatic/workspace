@@ -141,6 +141,25 @@ export const AI_KNOWLEDGE_ADD_INSTRUCTIONS: Record<
   },
 };
 
+export const AI_CAMPAIGN_INSTRUCTIONS: KnowledgeInstructionBlock = {
+  title: "How to use Campaign insights",
+  summary:
+    "View bulk WhatsApp CSV campaign delivery stats from RedLava — same metrics and tables as the RedLava reporting panel, inside Sheetomatic.",
+  steps: [
+    "Connect RedLava API key and Phone ID in Settings, then sync approved templates.",
+    "Create CSV campaigns in RedLava (upload contacts, pick template, schedule send).",
+    "Return here and click Refresh campaigns to pull the latest list from RedLava.",
+    "Pick a campaign from the dropdown to load CSV file status, Meta delivery metrics, and row tables.",
+    "Use Campaign table for upload/acceptance results per contact; Message table for delivery statuses.",
+    "Click a metric card to filter the active table; use Download CSV to export all rows.",
+  ],
+  tips: [
+    "Hard-refresh if metrics look stale after a send completes in RedLava.",
+    "Rejected rows usually mean invalid numbers or template variable mismatches in the CSV.",
+    "Go Live from this page activates your AI knowledge menu on WhatsApp.",
+  ],
+};
+
 export const AI_KNOWLEDGE_ADD_MENU_HINTS: Record<
   "faq" | "document" | "website" | "youtube",
   string

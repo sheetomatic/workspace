@@ -93,6 +93,7 @@ export async function loadCampaignDetailsAction(input: {
   fileUploadId: string;
   page: number;
   pageSize?: number;
+  resultFilter?: string;
 }) {
   const access = await requireCampaignAccess();
   if (!access) {
@@ -100,10 +101,14 @@ export async function loadCampaignDetailsAction(input: {
   }
 
   const pageSize = input.pageSize ?? 25;
+  const search = input.resultFilter
+    ? [{ fieldName: "result", value: [input.resultFilter] }]
+    : [];
   const result = await listRedlavaCampaignDetails(
     input.fileUploadId,
     access.credentials,
     { current: input.page, pageSize },
+    search,
   );
 
   if (!result.ok) {
@@ -126,6 +131,7 @@ export async function loadCampaignMessagesAction(input: {
   campaignId: string;
   page: number;
   pageSize?: number;
+  statusFilter?: string;
 }) {
   const access = await requireCampaignAccess();
   if (!access) {
@@ -137,6 +143,7 @@ export async function loadCampaignMessagesAction(input: {
     input.campaignId,
     access.credentials,
     { current: input.page, pageSize },
+    input.statusFilter,
   );
 
   if (!result.ok) {

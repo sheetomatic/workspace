@@ -61,10 +61,23 @@ export type RedlavaMessageReportRow = {
   error?: { message?: string; title?: string };
 };
 
+export type RedlavaListSearch = Array<{
+  fieldName: string;
+  value: string[];
+  operator?: string;
+}>;
+
 type ListBody = {
-  search?: Array<{ fieldName: string; value: string[]; operator?: string }>;
+  search?: RedlavaListSearch;
   pagination?: { current: number; pageSize: number };
   order?: Array<{ fieldName: string; dir: "asc" | "desc" }>;
+};
+
+export type CampaignStatusTone = "success" | "error" | "info" | "neutral";
+
+export type CampaignStatusLabel = {
+  label: string;
+  tone: CampaignStatusTone;
 };
 
 function parseCampaignList(body: Record<string, unknown>) {
@@ -200,6 +213,7 @@ export async function listRedlavaCampaignDetails(
   fileUploadId: string,
   credentials: RedlavaCredentials,
   pagination: { current: number; pageSize: number },
+  search: RedlavaListSearch = [],
 ) {
   const result = await redlavaRequest(
     `/whatsapp/csvCampaignDetails/${encodeURIComponent(fileUploadId)}`,
@@ -208,7 +222,7 @@ export async function listRedlavaCampaignDetails(
       body: {
         pagination,
         order: [{ fieldName: "creationTime", dir: "desc" }],
-        search: [],
+        search,
       },
     },
     credentials,
@@ -247,13 +261,21 @@ export async function listRedlavaCampaignMessages(
   campaignId: string,
   credentials: RedlavaCredentials,
   pagination: { current: number; pageSize: number },
+  statusFilter?: string,
 ) {
+  const search: RedlavaListSearch = [
+    { fieldName: "campaignId", value: [campaignId] },
+  ];
+  if (statusFilter) {
+    search.push({ fieldName: "status", value: [statusFilter] });
+  }
+
   const result = await redlavaRequest(
     "/whatsapp/report/messageSentReport",
     {
       method: "POST",
       body: {
-        search: [{ fieldName: "campaignId", value: [campaignId] }],
+        search,
         pagination,
         order: [{ fieldName: "creationTime", dir: "desc" }],
       },
@@ -326,4 +348,68 @@ export function campaignScheduleLabel(campaign: RedlavaCsvCampaign) {
     }
   }
   return formatRedlavaEpoch(campaign.creationTime);
+}
+
+export function deriveCampaignStatus(
+  campaign: RedlavaCsvCampaign,
+  uploadMetrics: { total: number; accepted: number; rejected: number } | null,
+  deliveryMetrics: {
+    total: number;
+    accepted: number;
+    sent: number;
+    delivered: number;
+    read: number;
+    failed: number;
+  } | null,
+): CampaignStatusLabel {
+  const scheduleMs = Number(campaign.schedule?.exactDateTime ?? 0);
+  if (scheduleMs > Date.now() + 60_000) {
+    return { label: "Scheduled", tone: "info" };
+  }
+
+  if (!uploadMetrics) {
+    return { label: "Loading", tone: "neutral" };
+  }
+
+  if (uploadMetrics.total === 0) {
+    return { label: "Empty CSV", tone: "neutral" };
+  }
+
+  if (deliveryMetrics) {
+    const inFlight =
+      deliveryMetrics.accepted -
+      deliveryMetrics.sent -
+      deliveryMetrics.failed;
+    if (inFlight > 0) {
+      return { label: "Processing", tone: "info" };
+    }
+
+    if (
+      deliveryMetrics.failed > 0 &&
+      deliveryMetrics.delivered === 0 &&
+      deliveryMetrics.read === 0 &&
+      deliveryMetrics.sent === 0
+    ) {
+      return { label: "Failed", tone: "error" };
+    }
+  }
+
+  if (uploadMetrics.rejected > 0 && uploadMetrics.accepted === 0) {
+    return { label: "Rejected", tone: "error" };
+  }
+
+  return { label: "Processed", tone: "success" };
+}
+
+export function displayCampaignRowNumber(
+  row: RedlavaCampaignDetailRow,
+  index: number,
+  page: number,
+  pageSize: number,
+  total: number,
+) {
+  if (row.rowNumber > 0) {
+    return row.rowNumber;
+  }
+  return Math.max(1, total - (page - 1) * pageSize - index);
 }
