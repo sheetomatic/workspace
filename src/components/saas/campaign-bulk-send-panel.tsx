@@ -36,7 +36,7 @@ import {
 const BULK_SEND_INSTRUCTIONS: KnowledgeInstructionBlock = {
   title: "How to use CSV Upload?",
   summary:
-    "Send a WhatsApp template to many contacts at once by uploading a CSV  -  same flow as RedLava Bulk Message.",
+    "Send a WhatsApp template to many contacts at once by uploading a CSV - same flow as RedLava Bulk Message.",
   steps: [
     "Enter a campaign name and select an approved template.",
     "Download the sample CSV  -  first column must be receiverNumber, then template variable columns.",
@@ -312,7 +312,7 @@ export function CampaignBulkSendPanel({
                 >
                   Retry
                 </button>
-                {" · "}
+                {" - "}
                 <Link className="underline" href="/ai/app/templates">
                   Templates
                 </Link>
@@ -357,7 +357,7 @@ export function CampaignBulkSendPanel({
                   {templates.map((template) => (
                     <option key={templateKey(template)} value={templateKey(template)}>
                       {template.name} ({template.language}
-                      {template.category ? ` · ${template.category}` : ""})
+                      {template.category ? ` - ${template.category}` : ""})
                     </option>
                   ))}
                 </select>
@@ -369,7 +369,7 @@ export function CampaignBulkSendPanel({
               </div>
               {connected && templates.length === 0 && !templatesError ? (
                 <p className="mt-1 text-xs text-slate-500">
-                  Loading templates from RedLava…
+                  Loading templates from RedLava...
                 </p>
               ) : null}
             </label>
@@ -458,7 +458,7 @@ export function CampaignBulkSendPanel({
                 {pending ? (
                   <>
                     <Loader2 aria-hidden className="spin" size={16} />
-                    Submitting…
+                    Submitting...
                   </>
                 ) : (
                   "Submit"
