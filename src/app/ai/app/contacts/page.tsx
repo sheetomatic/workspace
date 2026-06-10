@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { WaCrmDashboard } from "@/components/saas/wa-crm-dashboard";
-import { WaCrmSheetSyncButton } from "@/components/saas/wa-crm-sheet-sync-button";
+import { WaCrmExportButton } from "@/components/saas/wa-crm-export-button";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireAiSession } from "@/lib/require-session";
 import {
@@ -13,7 +13,7 @@ import { listWorkspaceMembers } from "@/lib/workspace";
 
 export default async function SheetomaticAiContactsPage() {
   const user = await requireAiSession();
-  const canSyncSheet =
+  const canExportCrm =
     user.isSuperAdmin || hasMinimumRole(user.role, "ADMIN");
 
   const [stats, leads, todayFollowUps, overdueFollowUps, teamMembers] =
@@ -36,7 +36,7 @@ export default async function SheetomaticAiContactsPage() {
           </p>
         </div>
         <div className="wa-crm-page-head-actions">
-          {canSyncSheet ? <WaCrmSheetSyncButton /> : null}
+          {canExportCrm ? <WaCrmExportButton /> : null}
           <Link className="wa-crm-head-link wa-crm-btn-wa" href="/ai/app/inbox">
             Open Chats
           </Link>
@@ -56,6 +56,7 @@ export default async function SheetomaticAiContactsPage() {
         </section>
       ) : (
         <WaCrmDashboard
+          canManageLeads={canExportCrm}
           currentUserId={user.id}
           leads={leads}
           overdueFollowUps={overdueFollowUps}

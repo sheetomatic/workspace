@@ -11,6 +11,7 @@ import {
 import type { WaPipelineStage } from "@prisma/client";
 import {
   assignWaLead,
+  bulkAssignWaLeads,
   completeWaFollowUp,
   scheduleWaFollowUp,
   updateWaLeadNotes,
@@ -100,6 +101,7 @@ export function WaCrmDashboard({
   overdueFollowUps,
   teamMembers,
   currentUserId,
+  canManageLeads = false,
 }: {
   stats: {
     totalLeads: number;
@@ -116,8 +118,11 @@ export function WaCrmDashboard({
   overdueFollowUps: FollowUpRow[];
   teamMembers: TeamMember[];
   currentUserId: string;
+  canManageLeads?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkAssigneeId, setBulkAssigneeId] = useState("");
   const [filter, setFilter] = useState<"all" | "mine" | "unassigned" | "hot">(
     "all",
   );
@@ -228,6 +233,56 @@ export function WaCrmDashboard({
     startTransition(async () => {
       const result = await action();
       setFeedback(result.message);
+    });
+  }
+
+  const visibleLeadIds = useMemo(
+    () => filteredLeads.map((lead) => lead.id),
+    [filteredLeads],
+  );
+  const allVisibleSelected =
+    visibleLeadIds.length > 0 &&
+    visibleLeadIds.every((id) => selectedIds.has(id));
+
+  function toggleLeadSelection(leadId: string) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(leadId)) {
+        next.delete(leadId);
+      } else {
+        next.add(leadId);
+      }
+      return next;
+    });
+  }
+
+  function toggleSelectAllVisible() {
+    setSelectedIds((current) => {
+      if (allVisibleSelected) {
+        const next = new Set(current);
+        visibleLeadIds.forEach((id) => next.delete(id));
+        return next;
+      }
+      const next = new Set(current);
+      visibleLeadIds.forEach((id) => next.add(id));
+      return next;
+    });
+  }
+
+  function runBulkAssign() {
+    if (!bulkAssigneeId) {
+      setFeedback("Choose an assignee for bulk assign.");
+      return;
+    }
+    run(async () => {
+      const result = await bulkAssignWaLeads(
+        [...selectedIds],
+        bulkAssigneeId,
+      );
+      if (result.ok) {
+        setSelectedIds(new Set());
+      }
+      return result;
     });
   }
 
@@ -347,6 +402,42 @@ export function WaCrmDashboard({
             </label>
           </header>
 
+          {canManageLeads && selectedIds.size > 0 ? (
+            <div className="wa-crm-bulk-bar">
+              <span>
+                {selectedIds.size} selected
+              </span>
+              <label>
+                Assign to
+                <select
+                  value={bulkAssigneeId}
+                  onChange={(e) => setBulkAssigneeId(e.target.value)}
+                >
+                  <option value="">Choose assignee</option>
+                  {teamMembers.map((member) => (
+                    <option key={member.user.id} value={member.user.id}>
+                      {member.user.name ?? member.user.email}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                className="wa-crm-btn-save"
+                disabled={pending || !bulkAssigneeId}
+                type="button"
+                onClick={runBulkAssign}
+              >
+                Bulk assign
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedIds(new Set())}
+              >
+                Clear
+              </button>
+            </div>
+          ) : null}
+
           {filteredLeads.length === 0 ? (
             <p className="wa-crm-empty">No leads match this filter.</p>
           ) : (
@@ -354,6 +445,16 @@ export function WaCrmDashboard({
               <table className="wa-crm-table">
                 <thead>
                   <tr>
+                    {canManageLeads ? (
+                      <th className="wa-crm-check-col">
+                        <input
+                          aria-label="Select all visible leads"
+                          checked={allVisibleSelected}
+                          type="checkbox"
+                          onChange={toggleSelectAllVisible}
+                        />
+                      </th>
+                    ) : null}
                     <th>Lead</th>
                     <th>Stage</th>
                     <th>Assignee</th>
@@ -374,6 +475,16 @@ export function WaCrmDashboard({
                             lead.unreadCount > 0 ? "row-hot" : undefined
                           }
                         >
+                          {canManageLeads ? (
+                            <td className="wa-crm-check-col">
+                              <input
+                                aria-label={`Select ${lead.name ?? lead.phone}`}
+                                checked={selectedIds.has(lead.id)}
+                                type="checkbox"
+                                onChange={() => toggleLeadSelection(lead.id)}
+                              />
+                            </td>
+                          ) : null}
                           <td>
                             <button
                               className="wa-crm-lead-name"
@@ -477,7 +588,7 @@ export function WaCrmDashboard({
                         </tr>
                         {expanded ? (
                           <tr className="wa-crm-detail-row" key={`${lead.id}-detail`}>
-                            <td colSpan={5}>
+                            <td colSpan={canManageLeads ? 6 : 5}>
                               <div className="wa-crm-detail">
                                 <p>
                                   <strong>Requirement:</strong>{" "}
@@ -504,7 +615,7 @@ export function WaCrmDashboard({
                         ) : null}
                         {scheduleFor === lead.id ? (
                           <tr className="wa-crm-schedule-row" key={`${lead.id}-schedule`}>
-                            <td colSpan={5}>
+                            <td colSpan={canManageLeads ? 6 : 5}>
                               <form
                                 className="wa-crm-schedule-form"
                                 onSubmit={(e) => {

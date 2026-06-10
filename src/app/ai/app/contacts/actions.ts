@@ -9,6 +9,7 @@ import {
   triggerWaCrmSheetSync,
 } from "@/lib/integrations/google-sheets-wa-crm";
 import { syncContactNextFollowUp } from "@/lib/wa-crm";
+import { notifyWaLeadAssignment } from "@/lib/wa-crm-notifications";
 import { waInboxListTag } from "@/lib/wa-inbox-store";
 
 export type WaCrmActionResult = { ok: boolean; message: string };
@@ -26,24 +27,115 @@ function scheduleCrmSheetSync(organizationId: string) {
   triggerWaCrmSheetSync(organizationId);
 }
 
+function assignmentMessage(base: string, waSent: boolean, waDetail?: string) {
+  if (waSent) {
+    return `${base} WhatsApp notification sent.`;
+  }
+  if (waDetail === "assignee_has_no_phone") {
+    return `${base} Add assignee phone in Team to enable WhatsApp alerts.`;
+  }
+  if (waDetail) {
+    return `${base} WhatsApp not sent (${waDetail}).`;
+  }
+  return base;
+}
+
 export async function assignWaLead(
   contactId: string,
   assigneeUserId: string | null,
 ): Promise<WaCrmActionResult> {
   const user = await requireCrmAdmin();
 
-  const updated = await prisma.waContact.updateMany({
+  const contact = await prisma.waContact.findFirst({
     where: { id: contactId, organizationId: user.organizationId },
+    select: { id: true, name: true, phone: true },
+  });
+
+  if (!contact) {
+    return { ok: false, message: "Lead not found." };
+  }
+
+  await prisma.waContact.update({
+    where: { id: contact.id },
     data: { assignedToId: assigneeUserId || null },
   });
 
-  if (updated.count === 0) {
-    return { ok: false, message: "Lead not found." };
+  let waDetail: string | undefined;
+  let waSent = false;
+  if (assigneeUserId) {
+    const notify = await notifyWaLeadAssignment({
+      organizationId: user.organizationId,
+      assigneeUserId,
+      leads: [{ name: contact.name, phone: contact.phone }],
+    });
+    waSent = notify.sent;
+    if (!notify.sent && "detail" in notify) {
+      waDetail = notify.detail;
+    }
   }
 
   revalidateCrm(user.organizationId);
   scheduleCrmSheetSync(user.organizationId);
-  return { ok: true, message: assigneeUserId ? "Lead assigned." : "Lead unassigned." };
+  return {
+    ok: true,
+    message: assigneeUserId
+      ? assignmentMessage("Lead assigned.", waSent, waDetail)
+      : "Lead unassigned.",
+  };
+}
+
+export async function bulkAssignWaLeads(
+  contactIds: string[],
+  assigneeUserId: string,
+): Promise<WaCrmActionResult> {
+  const user = await requireCrmAdmin();
+  const uniqueIds = [...new Set(contactIds.map((id) => id.trim()).filter(Boolean))];
+
+  if (uniqueIds.length === 0) {
+    return { ok: false, message: "Select at least one lead." };
+  }
+  if (!assigneeUserId.trim()) {
+    return { ok: false, message: "Choose an assignee." };
+  }
+
+  const contacts = await prisma.waContact.findMany({
+    where: {
+      organizationId: user.organizationId,
+      id: { in: uniqueIds },
+    },
+    select: { id: true, name: true, phone: true },
+  });
+
+  if (contacts.length === 0) {
+    return { ok: false, message: "No matching leads found." };
+  }
+
+  await prisma.waContact.updateMany({
+    where: {
+      organizationId: user.organizationId,
+      id: { in: contacts.map((contact) => contact.id) },
+    },
+    data: { assignedToId: assigneeUserId },
+  });
+
+  const notify = await notifyWaLeadAssignment({
+    organizationId: user.organizationId,
+    assigneeUserId,
+    leads: contacts,
+  });
+
+  revalidateCrm(user.organizationId);
+  scheduleCrmSheetSync(user.organizationId);
+
+  const base = `Assigned ${contacts.length} lead${contacts.length === 1 ? "" : "s"}.`;
+  if (notify.sent) {
+    return { ok: true, message: `${base} WhatsApp notification sent.` };
+  }
+  const detail = !notify.sent && "detail" in notify ? notify.detail : undefined;
+  return {
+    ok: true,
+    message: assignmentMessage(base, false, detail),
+  };
 }
 
 export async function updateWaLeadStage(
