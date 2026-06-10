@@ -36,18 +36,18 @@ import {
 const BULK_SEND_INSTRUCTIONS: KnowledgeInstructionBlock = {
   title: "How to use CSV Upload?",
   summary:
-    "Send a WhatsApp template to many contacts at once by uploading a CSV — same flow as RedLava Bulk Message.",
+    "Send a WhatsApp template to many contacts at once by uploading a CSV  -  same flow as RedLava Bulk Message.",
   steps: [
     "Enter a campaign name and select an approved template.",
-    "Download the sample CSV — first column must be receiverNumber, then template variable columns.",
+    "Download the sample CSV  -  first column must be receiverNumber, then template variable columns.",
     "Fill your contacts in the CSV and upload it here.",
     "Optionally turn on Schedule to send at a specific date and time.",
-    "Click Submit — the campaign is created in RedLava and appears in Campaign insights below.",
+    "Click Submit - the campaign is created in RedLava and appears in Campaign insights below.",
   ],
   tips: [
     "Use country code in phone numbers (e.g. +919876543210 or 919876543210).",
     "Duplicate numbers in the CSV use the last row only.",
-    "Marketing templates need opt-in compliance — use UTILITY templates for operational alerts.",
+    "Marketing templates need opt-in compliance  -  use UTILITY templates for operational alerts.",
   ],
 };
 
@@ -246,7 +246,7 @@ export function CampaignBulkSendPanel({
       }
 
       setSuccessMessage(
-        `${body.campaignName ?? campaignName} — campaign created successfully.`,
+        `${body.campaignName ?? campaignName} - campaign created successfully.`,
       );
       setCampaignName("");
       setCsvFile(null);
