@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/saas/page-header";
+import { CampaignBulkSendPanel } from "@/components/saas/campaign-bulk-send-panel";
 import { CampaignInsightsPanel } from "@/components/saas/campaign-insights-panel";
 import { CampaignRelatedSetup } from "@/components/saas/campaign-related-setup";
 import { WhatsAppGoLivePanel } from "@/components/saas/whatsapp-go-live-panel";
@@ -39,7 +40,7 @@ export default async function SheetomaticAiCampaignPage() {
     <div className="saas-page ws-wa-page-shell">
       <PageHeader
         title="Campaign"
-        description="WhatsApp bulk campaign insights, Go Live, and RedLava connection."
+        description="Send bulk CSV campaigns, view delivery insights, and manage Go Live."
       />
 
       {setup.setupHint ? (
@@ -47,6 +48,8 @@ export default async function SheetomaticAiCampaignPage() {
           {setup.setupHint}
         </div>
       ) : null}
+
+      <CampaignBulkSendPanel connected={connected} />
 
       <CampaignInsightsPanel
         campaigns={campaigns}

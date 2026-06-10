@@ -386,7 +386,7 @@ export function isWhatsAppSessionRequiredError(
   );
 }
 
-function redlavaBaseUrl() {
+export function redlavaBaseUrl() {
   return (
     process.env.REDLAVA_API_BASE_URL?.trim().replace(/\/+$/, "") ||
     "https://wa.redlava.in/api/v1"

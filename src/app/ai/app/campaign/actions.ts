@@ -11,6 +11,10 @@ import {
   listRedlavaCsvCampaigns,
   type RedlavaCsvCampaign,
 } from "@/lib/integrations/redlava-campaigns";
+import {
+  getRedlavaSendTemplateDetail,
+  listRedlavaSendTemplates,
+} from "@/lib/integrations/redlava-bulk-send";
 import { resolveWorkspaceWhatsAppCredentials } from "@/lib/whatsapp-settings";
 
 async function requireCampaignAccess() {
@@ -160,4 +164,47 @@ export async function loadCampaignMessagesAction(input: {
     page: input.page,
     pageSize,
   };
+}
+
+export async function loadBulkSendTemplatesAction() {
+  const access = await requireCampaignAccess();
+  if (!access) {
+    return { ok: false as const, error: "WhatsApp is not connected.", templates: [] };
+  }
+
+  const result = await listRedlavaSendTemplates(access.credentials);
+  if (!result.ok) {
+    return {
+      ok: false as const,
+      error: result.error ?? "Could not load templates.",
+      templates: [],
+    };
+  }
+
+  return { ok: true as const, templates: result.templates };
+}
+
+export async function loadBulkSendTemplateDetailAction(input: {
+  name: string;
+  language: string;
+}) {
+  const access = await requireCampaignAccess();
+  if (!access) {
+    return { ok: false as const, error: "WhatsApp is not connected." };
+  }
+
+  const result = await getRedlavaSendTemplateDetail(
+    input.name,
+    input.language,
+    access.credentials,
+  );
+
+  if (!result.ok) {
+    return {
+      ok: false as const,
+      error: result.error ?? "Could not load template details.",
+    };
+  }
+
+  return { ok: true as const, detail: result.detail };
 }
