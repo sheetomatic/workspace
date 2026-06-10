@@ -14,13 +14,13 @@ export function WaCrmExportButton() {
 
   return (
     <button
-      className="wa-crm-head-link"
+      className="ai-export-btn wa-crm-export-btn"
       disabled={exporting}
       type="button"
       onClick={runExport}
     >
-      <Download aria-hidden size={15} />
-      {exporting ? "Exporting..." : "Download CSV"}
+      <Download aria-hidden size={16} strokeWidth={2.25} />
+      <span>{exporting ? "Exporting..." : "Download CSV"}</span>
     </button>
   );
 }

@@ -1568,7 +1568,7 @@
 
 .wa-crm-page-head-actions {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
 }
@@ -2645,34 +2645,66 @@
 
 .ai-campaign-table-toolbar {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
   flex-wrap: wrap;
 }
 
-.ai-campaign-export-btn {
+.ai-export-btn {
   display: inline-flex;
+  flex-direction: row;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 0.85rem;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2.25rem;
+  padding: 0.5rem 0.95rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
   background: #fff;
-  color: #111827;
+  color: #1e3a5f;
   font-size: 0.8125rem;
   font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.ai-campaign-export-btn:hover:not(:disabled) {
-  border-color: #9ca3af;
-  background: #f9fafb;
+.ai-export-btn svg {
+  flex: 0 0 auto;
+  display: block;
 }
 
-.ai-campaign-export-btn:disabled {
+.ai-export-btn span {
+  display: inline-block;
+  line-height: 1.2;
+}
+
+.ai-export-btn:hover:not(:disabled) {
+  border-color: #60a5fa;
+  background: #eff6ff;
+  color: #1d4ed8;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.12);
+}
+
+.ai-export-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.ai-export-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+  box-shadow: none;
+}
+
+.ai-campaign-export-btn {
+  margin-bottom: 0.15rem;
 }
 
 .ai-campaign-tabs {

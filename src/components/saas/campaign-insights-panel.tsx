@@ -415,7 +415,7 @@ export function CampaignInsightsPanel({
               </button>
             </div>
             <button
-              className="ai-campaign-export-btn"
+              className="ai-export-btn ai-campaign-export-btn"
               disabled={
                 exporting ||
                 pending ||
@@ -425,8 +425,8 @@ export function CampaignInsightsPanel({
               type="button"
               onClick={exportCsv}
             >
-              <Download aria-hidden size={16} />
-              {exporting ? "Exporting..." : "Download CSV"}
+              <Download aria-hidden size={16} strokeWidth={2.25} />
+              <span>{exporting ? "Exporting..." : "Download CSV"}</span>
             </button>
           </div>
 
