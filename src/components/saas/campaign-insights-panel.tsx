@@ -3,11 +3,11 @@
 import {
   CheckCircle2,
   ChevronDown,
-  Download,
   Loader2,
   MinusCircle,
   XCircle,
 } from "lucide-react";
+import { AiCsvExportButton } from "@/components/saas/ai-csv-export-button";
 import { useCallback, useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import {
   loadCampaignDetailsAction,
@@ -414,20 +414,17 @@ export function CampaignInsightsPanel({
                 Message table
               </button>
             </div>
-            <button
-              className="ai-export-btn ai-campaign-export-btn"
+            <AiCsvExportButton
+              className="mb-0.5"
               disabled={
                 exporting ||
                 pending ||
                 !selected ||
                 (tab === "campaign" && !selected.fileUploadId)
               }
-              type="button"
+              pending={exporting}
               onClick={exportCsv}
-            >
-              <Download aria-hidden size={16} strokeWidth={2.25} />
-              <span>{exporting ? "Exporting..." : "Download CSV"}</span>
-            </button>
+            />
           </div>
 
           {tableError ? <p className="saas-form-message error">{tableError}</p> : null}

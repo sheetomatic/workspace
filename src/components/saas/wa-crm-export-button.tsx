@@ -1,7 +1,7 @@
 "use client";
 
-import { Download } from "lucide-react";
 import { useState } from "react";
+import { AiCsvExportButton } from "@/components/saas/ai-csv-export-button";
 
 export function WaCrmExportButton() {
   const [exporting, setExporting] = useState(false);
@@ -13,14 +13,6 @@ export function WaCrmExportButton() {
   }
 
   return (
-    <button
-      className="ai-export-btn wa-crm-export-btn"
-      disabled={exporting}
-      type="button"
-      onClick={runExport}
-    >
-      <Download aria-hidden size={16} strokeWidth={2.25} />
-      <span>{exporting ? "Exporting..." : "Download CSV"}</span>
-    </button>
+    <AiCsvExportButton disabled={exporting} pending={exporting} onClick={runExport} />
   );
 }
