@@ -1,4 +1,5 @@
 import "./auth-types";
+import { headers } from "next/headers";
 import { cache } from "react";
 import type { Organization, Role, WorkspaceModule } from "@prisma/client";
 import bcrypt from "bcryptjs";
@@ -123,6 +124,30 @@ function toAuthUser(
 
 const authCookieDomain = process.env.AUTH_COOKIE_DOMAIN?.trim() || undefined;
 
+/** Keep redirects on the same host (ai., app., tenant.) instead of AUTH_URL apex. */
+async function resolveAuthRedirectUrl(url: string, baseUrl: string) {
+  const headerList = await headers();
+  const host = headerList.get("x-forwarded-host") ?? headerList.get("host");
+  const proto = headerList.get("x-forwarded-proto") ?? "https";
+
+  if (!host) {
+    return url.startsWith("/") ? `${baseUrl}${url}` : url;
+  }
+
+  const origin = `${proto}://${host.split(",")[0]?.trim() ?? host}`;
+
+  try {
+    if (url.startsWith("/")) {
+      return `${origin}${url}`;
+    }
+
+    const target = new URL(url);
+    return `${origin}${target.pathname}${target.search}${target.hash}`;
+  } catch {
+    return url;
+  }
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 7 },
@@ -183,6 +208,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    redirect: async ({ url, baseUrl }) => resolveAuthRedirectUrl(url, baseUrl),
     jwt: async ({ token, user, trigger, session }) => {
       if (user) {
         token.id = user.id;

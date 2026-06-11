@@ -1,13 +1,15 @@
 "use client";
 
-import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Link from "next/link";
 import {
+  loginWithCredentialsAction,
+  loginWithCredentialsFormAction,
   registerSheetomaticAiAccount,
   registerWorkspaceAccount,
+  type LoginActionState,
   type RegisterActionState,
 } from "@/app/login/actions";
 import { AI_LOGIN_HREF, AI_START_FREE_HREF, aiAppEntryHref } from "@/lib/ai-auth-links";
@@ -25,6 +27,11 @@ const demoAccounts = [
 ];
 
 const registerInitialState: RegisterActionState = {
+  ok: false,
+  message: "",
+};
+
+const loginInitialState: LoginActionState = {
   ok: false,
   message: "",
 };
@@ -74,13 +81,20 @@ export function LoginForm() {
         : null,
   );
   const [loading, setLoading] = useState(false);
+  const [loginState, loginAction, loginPending] = useActionState(
+    loginWithCredentialsFormAction,
+    loginInitialState,
+  );
   const [registerState, registerAction, registerPending] = useActionState(
     isAiProduct ? registerSheetomaticAiAccount : registerWorkspaceAccount,
     registerInitialState,
   );
 
   const canSubmitLogin =
-    !loading && !registerPending && email.trim().length > 0 && password.length > 0;
+    !loginPending &&
+    !registerPending &&
+    email.trim().length > 0 &&
+    password.length > 0;
 
   const canSubmitSignup =
     !loading &&
@@ -90,30 +104,11 @@ export function LoginForm() {
     password.length >= 8 &&
     confirmPassword.length >= 8;
 
-  async function handleLoginSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    const normalizedEmail = email.trim().toLowerCase();
-
-    const result = await signIn("credentials", {
-      email: normalizedEmail,
-      password,
-      organization: orgSlug,
-      callbackUrl,
-      redirect: false,
-    });
-
-    setLoading(false);
-
-    if (!result?.ok || result?.error) {
-      setError("Email or password did not match. Try again.");
-      return;
+  useEffect(() => {
+    if (loginState.message && !loginState.ok) {
+      setError(loginState.message);
     }
-
-    window.location.assign(callbackUrl);
-  }
+  }, [loginState]);
 
   useEffect(() => {
     if (!registerState.ok || registerPending) {
@@ -129,28 +124,26 @@ export function LoginForm() {
       setLoading(true);
       setError(null);
 
-      const result = await signIn("credentials", {
+      const result = await loginWithCredentialsAction({
         email: email.trim().toLowerCase(),
         password,
         organization: orgSlug,
         callbackUrl,
-        redirect: false,
       });
 
       if (cancelled) {
         return;
       }
 
-      setLoading(false);
-
-      if (!result?.ok || result?.error) {
-        setError(
-          "Account created, but sign-in failed. Try logging in with your new password.",
-        );
+      if (!result) {
         return;
       }
 
-      window.location.assign(callbackUrl);
+      setLoading(false);
+      setError(
+        result.message ||
+          "Account created, but sign-in failed. Try logging in with your new password.",
+      );
     }
 
     void finishSignup();
@@ -291,7 +284,12 @@ export function LoginForm() {
           </div>
         </form>
       ) : (
-        <form className="login-form form-grid-premium" onSubmit={handleLoginSubmit}>
+        <form action={loginAction} className="login-form form-grid-premium">
+          <input name="callbackUrl" type="hidden" value={callbackUrl} />
+          {orgSlug ? (
+            <input name="organization" type="hidden" value={orgSlug} />
+          ) : null}
+
           <label>
             Email
             <input
@@ -348,7 +346,7 @@ export function LoginForm() {
               disabled={!canSubmitLogin}
               type="submit"
             >
-              {loading ? (
+              {loginPending ? (
                 <>
                   <Loader2 className="animate-spin" size={18} aria-hidden />
                   <span>Signing in...</span>
