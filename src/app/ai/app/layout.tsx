@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AuthSessionProvider } from "@/components/providers/session-provider";
 import { AiShell } from "@/components/saas/ai-shell";
 import { AiOnboardingGuard } from "@/components/saas/ai-onboarding-guard";
+import { WorkspacePendingApproval } from "@/components/saas/workspace-pending-approval";
 import { formatRedlavaWalletAmount } from "@/lib/integrations/redlava";
 import { listOrganizationsForUser } from "@/lib/auth-orgs";
 import { shouldSkipAiOnboarding } from "@/lib/ai-onboarding";
@@ -44,6 +45,10 @@ export default async function SheetomaticAiAppLayout({
       "/api/auth/signout?callbackUrl=" +
         encodeURIComponent("/login?error=workspace&product=ai"),
     );
+  }
+
+  if (organization.status !== "ACTIVE" && !sessionUser.isSuperAdmin) {
+    return <WorkspacePendingApproval organizationName={organization.name} />;
   }
 
   const user = {

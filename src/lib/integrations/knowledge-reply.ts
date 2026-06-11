@@ -1,5 +1,14 @@
 import { formatOpenAiError } from "@/lib/integrations/openai-errors";
 import { getActiveKnowledgeContext } from "@/lib/ai-knowledge-store";
+import { checkRateLimit } from "@/lib/rate-limit";
+
+const AI_REPLY_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/** Daily cap on AI-generated WhatsApp replies per organization (cost guard). */
+function aiReplyDailyOrgLimit() {
+  const raw = Number(process.env.AI_REPLY_DAILY_ORG_LIMIT ?? "300");
+  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 300;
+}
 
 export type KnowledgeReplyResult = {
   text: string;
@@ -33,6 +42,23 @@ export async function generateKnowledgeReply(params: {
 }): Promise<KnowledgeReplyResult> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) {
+    return {
+      text: "Thanks for your message. Our team will reply shortly.",
+      confidence: 0,
+      sourceTitles: [],
+      handoff: true,
+    };
+  }
+
+  const rate = await checkRateLimit(
+    `ai-reply:${params.organizationId}`,
+    aiReplyDailyOrgLimit(),
+    AI_REPLY_WINDOW_MS,
+  );
+  if (!rate.allowed) {
+    console.warn(
+      `[knowledge-reply] daily AI reply cap reached for org ${params.organizationId}`,
+    );
     return {
       text: "Thanks for your message. Our team will reply shortly.",
       confidence: 0,

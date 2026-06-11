@@ -1,5 +1,7 @@
 import { PageHeader } from "@/components/saas/page-header";
 import { WhatsAppSettingsWorkspacePanel } from "@/components/saas/whatsapp-settings-workspace-panel";
+import { WorkspaceActivationPanel } from "@/components/saas/workspace-activation-panel";
+import { prisma } from "@/lib/db";
 import { requireSession } from "@/lib/require-session";
 import { formatRedlavaWalletAmount } from "@/lib/integrations/redlava";
 import { loadSettingsResellerData } from "@/lib/settings-reseller-data";
@@ -16,6 +18,12 @@ import { getWhatsAppGoLiveStatus } from "@/lib/whatsapp-go-live";
 export default async function SheetomaticAiSettingsPage() {
   const user = await requireSession("ADMIN", { redirectTo: "/ai/app" });
   const showResellerData = canViewPlatformResellerData(user);
+  const organization = user.isSuperAdmin
+    ? await prisma.organization.findUnique({
+        where: { id: user.organizationId },
+        select: { name: true, status: true },
+      })
+    : null;
   const [savedSettings, members, credentials, goLiveStatus, tenantWallets, resellerData] =
     await Promise.all([
       getWorkspaceWhatsAppSettings(user.organizationId),
@@ -103,6 +111,13 @@ export default async function SheetomaticAiSettingsPage() {
         userName={user.name ?? user.email.split("@")[0]}
         userRole={user.isSuperAdmin ? "Super Admin" : user.role}
       />
+
+      {organization ? (
+        <WorkspaceActivationPanel
+          organizationName={organization.name}
+          status={organization.status}
+        />
+      ) : null}
     </div>
   );
 }

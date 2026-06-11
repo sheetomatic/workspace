@@ -5,6 +5,7 @@ import { AuthSessionProvider } from "@/components/providers/session-provider";
 import { SaasShell } from "@/components/saas/saas-shell";
 import { WorkspacePwaInstallBanner } from "@/components/saas/workspace-pwa-install-banner";
 import { WorkspacePwaRegister } from "@/components/saas/workspace-pwa-register";
+import { WorkspacePendingApproval } from "@/components/saas/workspace-pending-approval";
 import { listOrganizationsForUser } from "@/lib/auth-orgs";
 import { prisma } from "@/lib/db";
 import { requireSession } from "@/lib/require-session";
@@ -48,6 +49,10 @@ export default async function AppLayout({
       "/api/auth/signout?callbackUrl=" +
         encodeURIComponent("/login?error=workspace"),
     );
+  }
+
+  if (organization.status !== "ACTIVE" && !sessionUser.isSuperAdmin) {
+    return <WorkspacePendingApproval organizationName={organization.name} />;
   }
 
   const user = {
