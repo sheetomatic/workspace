@@ -6,19 +6,46 @@ export const DEFAULT_LEAD_CAPTURE_GOOGLE_FORM_URL =
   process.env.DEFAULT_LEAD_CAPTURE_GOOGLE_FORM_URL?.trim() ||
   "https://forms.gle/KWSDZty3x4vkgbwX6";
 
-export async function getLeadCaptureGoogleFormUrl(organizationId: string) {
+/** Per-org Google Form link (not the platform default). */
+export async function getOrgLeadCaptureFormUrl(organizationId: string) {
   const link = await prisma.workspaceLink.findFirst({
     where: { organizationId, type: WorkspaceLinkType.GOOGLE_FORM },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     select: { url: true },
   });
+  return link?.url?.trim() || null;
+}
 
-  const configured = link?.url?.trim();
+/** Primary org may use platform default; all others need their own form. */
+export async function isLeadCaptureFormConfigured(organizationId: string) {
+  const orgForm = await getOrgLeadCaptureFormUrl(organizationId);
+  if (orgForm) {
+    return true;
+  }
+
+  const org = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: { isPrimary: true },
+  });
+
+  return Boolean(org?.isPrimary && DEFAULT_LEAD_CAPTURE_GOOGLE_FORM_URL);
+}
+
+export async function getLeadCaptureGoogleFormUrl(organizationId: string) {
+  const configured = await getOrgLeadCaptureFormUrl(organizationId);
   if (configured) {
     return configured;
   }
 
-  return DEFAULT_LEAD_CAPTURE_GOOGLE_FORM_URL || null;
+  const org = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: { isPrimary: true },
+  });
+  if (org?.isPrimary && DEFAULT_LEAD_CAPTURE_GOOGLE_FORM_URL) {
+    return DEFAULT_LEAD_CAPTURE_GOOGLE_FORM_URL;
+  }
+
+  return null;
 }
 
 export function leadCaptureGoogleFormWelcomeText(
