@@ -430,7 +430,7 @@ export async function linkMasPhoneWithOtp(
       return {
         ok: true as const,
         message:
-          pickString(result.body.message) ?? "Link request accepted. Checking statusÿ",
+          pickString(result.body.message) ?? "Link request accepted. Checking status.",
         status,
       };
     }

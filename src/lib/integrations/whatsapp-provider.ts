@@ -1,5 +1,5 @@
 /**
- * Unified WhatsApp provider layer — Sheetomatic WhatsApp (Meta Cloud via RedLava)
+ * Unified WhatsApp provider layer - Sheetomatic WhatsApp (Meta Cloud via RedLava)
  * and Message Auto Sender (WhatsApp Web automation).
  */
 

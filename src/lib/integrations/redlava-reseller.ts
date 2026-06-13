@@ -1,5 +1,5 @@
 /**
- * RedLava Reseller API (wa.redlava.in/ApiDocumentation)
+ * Sheetomatic WhatsApp Reseller API (wa.sheetomatic.com/ApiDocumentation)
  * Used for customer/phone discovery and wallet - not for sending messages.
  * Messaging still uses the Integration API key (Integrations/ListApikey).
  */
@@ -21,10 +21,11 @@ export type RedlavaResellerCustomer = {
 };
 
 function resellerBaseUrl() {
-  return (
-    process.env.REDLAVA_API_BASE_URL?.trim().replace(/\/+$/, "") ||
-    "https://wa.redlava.in/api/v1"
-  );
+  const configured = process.env.REDLAVA_API_BASE_URL?.trim().replace(/\/+$/, "");
+  if (configured && !/redlava\.in/i.test(configured)) {
+    return configured;
+  }
+  return "https://wa.sheetomatic.com/api/v1";
 }
 
 function resellerApiKey() {

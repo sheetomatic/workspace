@@ -146,7 +146,7 @@ export function MasWhatsAppConnectPanel({
               <img alt="WhatsApp QR code" className="ws-mas-qr-image" src={qrImageUrl} />
             ) : (
               <div className="ws-mas-qr-placeholder">
-                {pending ? "Loading QR…" : "QR not loaded yet"}
+                {pending ? "Loading QR..." : "QR not loaded yet"}
               </div>
             )}
           </div>
@@ -174,7 +174,7 @@ export function MasWhatsAppConnectPanel({
       ) : (
         <div className="ws-mas-connect-panel">
           <p className="ws-wa-settings-lead">
-            Enter your WhatsApp number. We will send an OTP — enter it here to
+            Enter your WhatsApp number. We will send an OTP; enter it here to
             link your account.
           </p>
           <label>
