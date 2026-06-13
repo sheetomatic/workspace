@@ -7,12 +7,20 @@ import {
   type RedlavaCredentials,
   type WhatsAppSendResult,
 } from "@/lib/integrations/redlava";
+import {
+  deliverWhatsAppMessage,
+  resolveWhatsAppProviderKind,
+  sheetomaticCredentialsFromWorkspace,
+} from "@/lib/integrations/whatsapp-provider";
 import { sendTaskAssignmentTemplate } from "@/lib/integrations/whatsapp-task-template";
 import { normalizeWhatsAppPhone } from "@/lib/phone";
 import { hasActiveWhatsAppSession } from "@/lib/whatsapp-session";
 import { resolveWorkspaceWhatsAppCredentials } from "@/lib/whatsapp-settings";
 import { buildTaskActionButtons } from "@/lib/whatsapp-bot/task-user";
 import { wrapInteractive } from "@/lib/whatsapp-bot/interactive-menu";
+import { redlavaPortalBrandName } from "@/lib/integrations/redlava-portal";
+
+const PORTAL_BRAND = redlavaPortalBrandName();
 
 function buildTaskMessageBody(params: {
   taskTitle: string;
@@ -92,10 +100,19 @@ async function sendViaMetaCloud(params: {
 async function sendWhatsAppPayload(params: {
   toPhone: string;
   message: Record<string, unknown>;
+  organizationId?: string;
   redlavaCreds: RedlavaCredentials | null;
   metaToken: string | null;
   metaPhoneId: string | null;
 }): Promise<WhatsAppSendResult> {
+  if (params.organizationId) {
+    return deliverWhatsAppMessage({
+      organizationId: params.organizationId,
+      toPhone: params.toPhone,
+      message: params.message,
+    });
+  }
+
   if (isRedlavaConfigured(params.redlavaCreds)) {
     const result = await sendRedlavaWhatsAppMessage(
       { toPhone: params.toPhone, message: params.message },
@@ -173,30 +190,39 @@ async function deliverTaskMessage(params: DeliverTaskMessageParams) {
   let redlavaCreds: RedlavaCredentials | null = null;
   let metaToken: string | null = null;
   let metaPhoneId: string | null = null;
+  let providerKind = "sheetomatic" as ReturnType<typeof resolveWhatsAppProviderKind>;
 
   if (params.organizationId) {
     const workspace = await resolveWorkspaceWhatsAppCredentials(params.organizationId);
-    if (workspace.redlavaApiKey) {
-      redlavaCreds = {
-        apiKey: workspace.redlavaApiKey,
-        phoneId: workspace.redlavaPhoneId,
-      };
-    }
-    metaToken = workspace.metaAccessToken;
-    metaPhoneId = workspace.redlavaPhoneId?.trim() || null;
+    providerKind = resolveWhatsAppProviderKind(workspace);
+    const sheetomatic = sheetomaticCredentialsFromWorkspace(workspace);
+    redlavaCreds = sheetomatic.redlava;
+    metaToken = sheetomatic.metaToken;
+    metaPhoneId = sheetomatic.metaPhoneId;
   }
 
   const sendParams = {
+    toPhone: params.toPhone,
+    organizationId: params.organizationId,
+    redlavaCreds,
+    metaToken,
+    metaPhoneId,
+  };
+
+  const templateParams = {
+    ...params,
     toPhone: params.toPhone,
     redlavaCreds,
     metaToken,
     metaPhoneId,
   };
 
-  const templateParams = { ...params, ...sendParams };
-
-  // Template-first: assign_task_new works outside the 24h window for new assignees.
-  if (params.organizationId && !params.skipTemplate) {
+  // Template-first: assign_task_new works outside the 24h window for new assignees (Sheetomatic only).
+  if (
+    params.organizationId &&
+    !params.skipTemplate &&
+    providerKind === "sheetomatic"
+  ) {
     const templateResult = await sendTaskTemplate(templateParams);
     if (templateResult.sent || templateResult.reason === "phone_id_required") {
       return templateResult;
@@ -213,15 +239,16 @@ async function deliverTaskMessage(params: DeliverTaskMessageParams) {
   }
 
   const hasSession = params.organizationId
-    ? await hasActiveWhatsAppSession(params.organizationId, params.toPhone)
+    ? providerKind === "messageautosender" ||
+      (await hasActiveWhatsAppSession(params.organizationId, params.toPhone))
     : false;
 
-  if (params.organizationId && !hasSession) {
+  if (params.organizationId && !hasSession && providerKind === "sheetomatic") {
     return {
       sent: false,
       reason: "session_required",
       detail:
-        "Could not deliver task assignment. Confirm assign_task_new is approved (language en) in Meta/RedLava.",
+        `Could not deliver task assignment. Confirm assign_task_new is approved (language en) in Meta / ${PORTAL_BRAND}.`,
     };
   }
 

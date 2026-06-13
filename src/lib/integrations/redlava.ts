@@ -1,9 +1,17 @@
 /**
- * RedLava WhatsApp API (wa.redlava.in)
- * @see https://wa.redlava.in/Integrations/ApiDocumentation
+ * RedLava WhatsApp API (Sheetomatic white-label: wa.sheetomatic.com)
+ * @see https://wa.sheetomatic.com/Integrations/ApiDocumentation
  */
 
 import { normalizeWhatsAppPhone } from "@/lib/phone";
+import { redlavaPortalBrandName } from "@/lib/integrations/redlava-portal";
+
+export {
+  redlavaDashboardPath,
+  redlavaDashboardUrl,
+} from "@/lib/integrations/redlava-portal";
+
+const PORTAL_BRAND = redlavaPortalBrandName();
 
 export type RedlavaCredentials = {
   apiKey?: string | null;
@@ -41,6 +49,15 @@ export type ParseWhatsAppSendOptions = {
 /** Meta-approved task assignment template — RedLava only accepts language `en`. */
 export const ASSIGN_TASK_NEW_TEMPLATE_NAME = "assign_task_new";
 export const ASSIGN_TASK_NEW_TEMPLATE_LANGUAGE = "en";
+
+/** Meta-approved CRM lead assignment template — RedLava only accepts language `en`. */
+export const ASSIGN_CRM_LEAD_TEMPLATE_NAME = "assign_crm_lead";
+export const ASSIGN_CRM_LEAD_TEMPLATE_LANGUAGE = "en";
+
+const REDLAVA_EN_ONLY_TEMPLATES = new Set([
+  ASSIGN_TASK_NEW_TEMPLATE_NAME,
+  ASSIGN_CRM_LEAD_TEMPLATE_NAME,
+]);
 
 function withTemplateLanguageDetail(
   detail: string | undefined,
@@ -113,12 +130,12 @@ export function formatWhatsAppApiErrorDetail(
       "",
       "Tip: You cannot send API messages to your own business WhatsApp number — use a different personal mobile in Settings for tests.",
       "Free-text also needs the recipient to message your business line within 24 hours.",
-      "Verify Settings → Phone ID is the Meta Phone Number ID from RedLava Connected Accounts.",
+      `Verify Settings → Phone ID is the Meta Phone Number ID from ${PORTAL_BRAND} Connected Accounts.`,
     ].join("\n");
   }
 
   if (haystack.includes("unspecified_phone_number") || haystack.includes("phone_id")) {
-    message += "\nTip: Add the correct RedLava Phone ID in AI Settings.";
+    message += `\nTip: Add the correct ${PORTAL_BRAND} Phone ID in AI Settings.`;
   }
 
   return message.slice(0, 900);
@@ -129,7 +146,7 @@ export function formatWhatsAppSendFailureMessage(
   messageType?: string,
 ): string {
   if (!detail?.trim()) {
-    return "Could not send WhatsApp message. Check RedLava API key and Phone ID in Settings.";
+    return `Could not send WhatsApp message. Check ${PORTAL_BRAND} API key and Phone ID in Settings.`;
   }
   return formatWhatsAppApiErrorDetail(detail, messageType);
 }
@@ -145,17 +162,22 @@ function stripStaticHeaderComponents(
   return filtered.length > 0 ? filtered : undefined;
 }
 
-/** Belt-and-suspenders: force `en` and drop header components for assign_task_new. */
+/** Belt-and-suspenders: force `en` and drop header components for known templates. */
 export function enforceRedlavaTemplateLanguage(
   template: RedlavaWhatsAppTemplatePayload,
 ): RedlavaWhatsAppTemplatePayload {
-  if (template.name !== ASSIGN_TASK_NEW_TEMPLATE_NAME) {
+  if (!REDLAVA_EN_ONLY_TEMPLATES.has(template.name)) {
     return template;
   }
 
+  const languageCode =
+    template.name === ASSIGN_CRM_LEAD_TEMPLATE_NAME
+      ? ASSIGN_CRM_LEAD_TEMPLATE_LANGUAGE
+      : ASSIGN_TASK_NEW_TEMPLATE_LANGUAGE;
+
   return {
     ...template,
-    language: { code: ASSIGN_TASK_NEW_TEMPLATE_LANGUAGE },
+    language: { code: languageCode },
     components: stripStaticHeaderComponents(template.components),
   };
 }
@@ -389,7 +411,7 @@ export function isWhatsAppSessionRequiredError(
 export function redlavaBaseUrl() {
   return (
     process.env.REDLAVA_API_BASE_URL?.trim().replace(/\/+$/, "") ||
-    "https://wa.redlava.in/api/v1"
+    "https://wa.sheetomatic.com/api/v1"
   );
 }
 
@@ -476,7 +498,7 @@ export async function redlavaRequest(
       status: 0,
       body: {},
       raw: "",
-      error: "RedLava is not configured. Add your API key in WhatsApp Settings.",
+      error: `${PORTAL_BRAND} is not configured. Add your API key in WhatsApp Settings.`,
     };
   }
 
@@ -504,7 +526,7 @@ export async function redlavaRequest(
       status: response.status,
       body,
       raw,
-      error: detail || `RedLava request failed (${response.status}).`,
+      error: detail || `${PORTAL_BRAND} request failed (${response.status}).`,
     };
   }
 
@@ -568,7 +590,7 @@ export async function getRedlavaWaWallet(credentials?: RedlavaCredentials | null
   if (!wallet) {
     return {
       ok: false as const,
-      error: "RedLava wallet response was missing balance.",
+      error: `${PORTAL_BRAND} wallet response was missing balance.`,
       body: result.body,
     };
   }
@@ -591,7 +613,7 @@ export async function getRedlavaAiWallet(credentials?: RedlavaCredentials | null
   if (!wallet) {
     return {
       ok: false as const,
-      error: "RedLava AI wallet response was missing balance.",
+      error: `${PORTAL_BRAND} AI wallet response was missing balance.`,
       body: result.body,
     };
   }

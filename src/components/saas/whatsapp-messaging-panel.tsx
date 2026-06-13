@@ -12,7 +12,6 @@ import { WhatsAppTemplatesList } from "@/components/saas/whatsapp-templates-list
 import type { WhatsAppTemplateRow } from "@/lib/whatsapp-template-types";
 import type { WhatsAppGoLiveStatus } from "@/lib/whatsapp-go-live";
 import type { WhatsAppSettingsFormValues } from "@/lib/whatsapp-settings-form";
-import type { RedlavaResellerPhone } from "@/lib/integrations/redlava-reseller";
 
 type Tab = "submit" | "approved";
 
@@ -29,29 +28,24 @@ export function WhatsAppMessagingPanel({
   templates,
   canSend,
   canManageTemplates,
-  providerLabel,
   setupHint,
   settingsInitialValues,
   members,
-  credentialsSource,
+  credentialsReady,
   hasSavedSecrets,
-  resellerPhones,
-  resellerWalletPoints,
   goLiveStatus,
 }: {
   templates: WhatsAppTemplateRow[];
   canSend: boolean;
   canManageTemplates: boolean;
-  providerLabel: string | null;
   setupHint: string | null;
   settingsInitialValues: WhatsAppSettingsFormValues;
   members: WhatsAppMember[];
-  credentialsSource: string;
+  credentialsReady: boolean;
   hasSavedSecrets: {
     redlavaApiKey: boolean;
+    masPassword: boolean;
   };
-  resellerPhones?: RedlavaResellerPhone[];
-  resellerWalletPoints?: number | null;
   goLiveStatus: WhatsAppGoLiveStatus;
 }) {
   const [tab, setTab] = useState<Tab>("submit");
@@ -97,23 +91,12 @@ export function WhatsAppMessagingPanel({
 
       {settingsOpen ? (
         <WhatsAppSettingsPanel
-          credentialsSource={credentialsSource}
+          credentialsReady={credentialsReady}
           hasSavedSecrets={hasSavedSecrets}
           initialValues={settingsInitialValues}
           members={members}
           onClose={() => setSettingsOpen(false)}
-          resellerPhones={resellerPhones ?? []}
-          resellerWalletPoints={resellerWalletPoints ?? null}
         />
-      ) : null}
-
-      {providerLabel ? (
-        <p className="ws-wa-provider-note">
-          {canSend ? `Connected via ${providerLabel}.` : null}{" "}
-          {canManageTemplates
-            ? "Templates are submitted via RedLava for WhatsApp approval."
-            : "Open Settings to add your RedLava API key and team WhatsApp numbers."}
-        </p>
       ) : null}
 
       {setupHint ? (
@@ -125,9 +108,8 @@ export function WhatsAppMessagingPanel({
           <div className="ws-wa-panel-head">
             <h2>Submit template for approval</h2>
             <p>
-              Create a WhatsApp template with variables and category. RedLava
-              submits it for WhatsApp approval - usually within minutes to 24
-              hours.
+              Create a WhatsApp template with variables and category for Meta
+              approval — usually within minutes to 24 hours.
             </p>
           </div>
           <WhatsAppTemplateSubmitForm disabled={!canManageTemplates} />

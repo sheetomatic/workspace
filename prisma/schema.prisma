@@ -45,6 +45,9 @@ model Organization {
   industry        String?
   googleSheetId   String?
   googleSheetGid  String?
+  legalSheetTab   String?
+  legalSheetHeaderRow Int @default(2)
+  legalSheetDataStartRow Int @default(3)
   status          OrganizationStatus       @default(ONBOARDING)
   isPrimary       Boolean                  @default(false)
   memberships     Membership[]
@@ -76,9 +79,12 @@ model Organization {
   candidates        Candidate[]
   legalCases        LegalCase[]
   legalCaseDocuments LegalCaseDocument[]
+  legalCaseImportBackup LegalCaseImportBackup?
   notificationSettings UserNotificationSettings[]
   taskAiSettings    WorkspaceTaskAiSettings?
   taskAiUsageEvents TaskAiUsageEvent[]
+  aiReplySettings   WorkspaceAiReplySettings?
+  aiReplyUsageEvents AiReplyUsageEvent[]
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
 }
@@ -122,6 +128,15 @@ model LegalCase {
   @@index([organizationId, fileStatus])
   @@index([organizationId, caseStage])
   @@index([organizationId, applicant])
+}
+
+model LegalCaseImportBackup {
+  organizationId   String       @id
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  caseCount        Int
+  sourceFilename   String?
+  payload          Bytes
+  createdAt        DateTime     @default(now())
 }
 
 model LegalCaseDocument {
@@ -198,6 +213,7 @@ model DelegatedTask {
   remindViaWhatsApp      Boolean        @default(false)
   emailAssignmentSentAt  DateTime?
   whatsappAssignmentSentAt DateTime?
+  whatsappAssignmentError  String?
   emailReminderSentAt    DateTime?
   whatsappReminderSentAt DateTime?
   dueAt                  DateTime
@@ -264,18 +280,26 @@ model WhatsAppTemplate {
   @@index([organizationId, status])
 }
 
+enum WhatsAppProvider {
+  SHEETOMATIC
+  MESSAGEAUTOSENDER
+}
+
 model WorkspaceWhatsAppSettings {
-  organizationId  String       @id
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  businessPhone   String?
-  redlavaApiKey   String?
-  redlavaPhoneId  String?
-  metaAccessToken String?
-  metaWabaId      String?
-  metaBusinessId  String?
-  botLiveAt       DateTime?
-  lastInboundAt   DateTime?
-  updatedAt       DateTime     @updatedAt
+  organizationId    String             @id
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  businessPhone     String?
+  whatsappProvider  WhatsAppProvider   @default(SHEETOMATIC)
+  redlavaApiKey     String?
+  redlavaPhoneId    String?            @unique
+  masUsername       String?
+  masPassword       String?
+  metaAccessToken   String?
+  metaWabaId        String?
+  metaBusinessId    String?
+  botLiveAt         DateTime?
+  lastInboundAt     DateTime?
+  updatedAt         DateTime           @updatedAt
 }
 
 enum TaskAiRoute {
@@ -306,6 +330,27 @@ model TaskAiUsageEvent {
 
   @@index([organizationId, createdAt])
   @@index([userId, createdAt])
+}
+
+model WorkspaceAiReplySettings {
+  organizationId String       @id
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  dailyLimit     Int          @default(300)
+  enabled        Boolean      @default(true)
+  updatedAt      DateTime     @updatedAt
+}
+
+model AiReplyUsageEvent {
+  id               String       @id @default(cuid())
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  promptTokens     Int          @default(0)
+  completionTokens Int          @default(0)
+  totalTokens      Int          @default(0)
+  handoff          Boolean      @default(false)
+  createdAt        DateTime     @default(now())
+
+  @@index([organizationId, createdAt])
 }
 
 model WhatsAppInboundEvent {

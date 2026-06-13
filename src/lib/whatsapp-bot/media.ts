@@ -48,6 +48,10 @@ export async function downloadWhatsAppMedia(params: {
 }): Promise<{ buffer: Buffer; mimeType: string } | null> {
   const creds = await resolveWorkspaceWhatsAppCredentials(params.organizationId);
 
+  if (creds.whatsappProvider === "messageautosender") {
+    return null;
+  }
+
   if (creds.redlavaApiKey) {
     const fromRedlava = await downloadRedlavaWhatsAppMedia(params.mediaId, {
       apiKey: creds.redlavaApiKey,

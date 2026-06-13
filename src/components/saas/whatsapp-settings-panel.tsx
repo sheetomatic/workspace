@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Settings, UserPlus, X } from "lucide-react";
@@ -11,7 +11,8 @@ import {
 import { whatsAppTemplateInitialState } from "@/lib/whatsapp-template-types";
 import type { WhatsAppSettingsFormValues } from "@/lib/whatsapp-settings-form";
 import { maskSecret } from "@/lib/whatsapp-settings-form";
-import type { RedlavaResellerPhone } from "@/lib/integrations/redlava-reseller";
+import { MasWhatsAppConnectPanel } from "@/components/saas/mas-whatsapp-connect-panel";
+import type { MasPhoneConnectionStatus } from "@/lib/integrations/messageautosender";
 
 type WhatsAppMember = {
   membershipId: string;
@@ -45,25 +46,25 @@ export function WhatsAppSettingsTrigger({
 export function WhatsAppSettingsPanel({
   initialValues,
   members,
-  credentialsSource,
+  credentialsReady,
   hasSavedSecrets,
+  masLinkStatus = null,
   onClose,
-  resellerPhones = [],
-  resellerWalletPoints = null,
   embedded = false,
 }: {
   initialValues: WhatsAppSettingsFormValues;
   members: WhatsAppMember[];
-  credentialsSource: string;
+  credentialsReady: boolean;
   hasSavedSecrets: {
     redlavaApiKey: boolean;
+    masPassword: boolean;
   };
+  masLinkStatus?: MasPhoneConnectionStatus | null;
   onClose?: () => void;
-  resellerPhones?: RedlavaResellerPhone[];
-  resellerWalletPoints?: number | null;
   embedded?: boolean;
 }) {
   const router = useRouter();
+  const [provider, setProvider] = useState(initialValues.whatsappProvider);
   const [settingsState, settingsAction, settingsPending] = useActionState(
     saveWhatsAppSettings,
     whatsAppTemplateInitialState,
@@ -87,17 +88,16 @@ export function WhatsAppSettingsPanel({
 
   const missingPhone = members.filter((member) => !member.phone);
   const readyCount = members.length - missingPhone.length;
+  const masCredentialsSaved =
+    hasSavedSecrets.masPassword && Boolean(initialValues.masUsername);
 
   return (
     <section className={`saas-panel ws-wa-settings-panel${embedded ? " is-embedded" : ""}`}>
       {!embedded ? (
         <header className="ws-wa-settings-head">
           <div>
-            <h2>WhatsApp settings</h2>
-            <p>
-              Connect RedLava using your API key and Phone ID, then add WhatsApp
-              numbers for team members who should receive messages.
-            </p>
+            <h2>Settings</h2>
+            <p>Choose how WhatsApp connects, save credentials, and add team numbers.</p>
           </div>
           <button
             aria-label="Close settings"
@@ -112,39 +112,35 @@ export function WhatsAppSettingsPanel({
 
       <div className="ws-wa-settings-grid">
         <article className="ws-wa-settings-card">
-          <h3>Connection</h3>
+          <h3>Provider</h3>
           <p className="ws-wa-settings-lead">
-            Credentials source: <strong>{credentialsSource}</strong>.
-            {resellerWalletPoints != null ? (
-              <>
-                {" "}
-                Reseller wallet: <strong>{resellerWalletPoints.toLocaleString()}</strong>{" "}
-                points.
-              </>
-            ) : null}
-          </p>
-          <p className="ws-wa-settings-lead">
-            Use the <strong>Integration API key</strong> for sending and templates (
-            <a
-              href="https://wa.redlava.in/Integrations/ApiDocumentation"
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              Integrations docs
-            </a>
-            ). The <strong>Reseller API key</strong> is configured in server env for
-            phone discovery (
-            <a
-              href="https://wa.redlava.in/ApiDocumentation"
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              Reseller docs
-            </a>
-            ).
+            {credentialsReady
+              ? "Credentials saved. Leave secret fields blank to keep current values."
+              : "Pick a connection type and enter the credentials you received."}
           </p>
 
           <form action={settingsAction} className="ws-wa-settings-form">
+            <label>
+              Connection type
+              <select
+                name="whatsappProvider"
+                value={provider}
+                onChange={(event) =>
+                  setProvider(
+                    event.target.value === "messageautosender"
+                      ? "messageautosender"
+                      : "sheetomatic",
+                  )
+                }
+              >
+                <option value="sheetomatic">WhatsApp API</option>
+                <option value="messageautosender">WhatsApp Link</option>
+              </select>
+              <span className="ws-field-hint">
+                API = official Meta messaging. Link = connect your phone with QR or OTP.
+              </span>
+            </label>
+
             <label>
               Business WhatsApp number
               <input
@@ -155,57 +151,68 @@ export function WhatsAppSettingsPanel({
               />
             </label>
 
-            <label>
-              RedLava API key
-              <input
-                name="redlavaApiKey"
-                placeholder={
-                  hasSavedSecrets.redlavaApiKey
-                    ? maskSecret("saved-secret-key")
-                    : "Paste API key"
-                }
-                type="password"
-                autoComplete="off"
-              />
-              <span className="ws-field-hint">
-                From wa.redlava.in - Integrations - API Keys (customer account, not
-                reseller key). Leave blank to keep the current key.
-              </span>
-            </label>
-
-            <label>
-              RedLava Phone ID
-              <input
-                defaultValue={initialValues.redlavaPhoneId}
-                list="redlava-phone-options"
-                name="redlavaPhoneId"
-                placeholder="1102997926228862"
-                type="text"
-              />
-              {resellerPhones.length > 0 ? (
-                <datalist id="redlava-phone-options">
-                  {resellerPhones.map((phone) => (
-                    <option
-                      key={`${phone.customerId}-${phone.phoneNumberId}`}
-                      value={phone.phoneNumberId}
-                    >
-                      {phone.displayPhoneNumber} ({phone.customerUsername})
-                    </option>
-                  ))}
-                </datalist>
-              ) : null}
-              <span className="ws-field-hint">
-                From Connected Account, or pick from the dropdown when your
-                reseller key is configured on the server.
-              </span>
-            </label>
+            {provider === "messageautosender" ? (
+              <>
+                <label>
+                  Username
+                  <input
+                    defaultValue={initialValues.masUsername}
+                    name="masUsername"
+                    placeholder="Your account username"
+                    type="text"
+                    autoComplete="username"
+                  />
+                </label>
+                <label>
+                  Password
+                  <input
+                    name="masPassword"
+                    placeholder={
+                      hasSavedSecrets.masPassword
+                        ? maskSecret("saved-secret-key")
+                        : "Your account password"
+                    }
+                    type="password"
+                    autoComplete="current-password"
+                  />
+                </label>
+              </>
+            ) : (
+              <>
+                <label>
+                  API key
+                  <input
+                    name="redlavaApiKey"
+                    placeholder={
+                      hasSavedSecrets.redlavaApiKey
+                        ? maskSecret("saved-secret-key")
+                        : "Paste API key"
+                    }
+                    type="password"
+                    autoComplete="off"
+                  />
+                </label>
+                <label>
+                  Phone ID
+                  <input
+                    defaultValue={initialValues.redlavaPhoneId}
+                    name="redlavaPhoneId"
+                    placeholder="1102997926228862"
+                    type="text"
+                  />
+                  <span className="ws-field-hint">
+                    From your WhatsApp API connected account.
+                  </span>
+                </label>
+              </>
+            )}
 
             <button
               className="btn-cta btn-primary"
               disabled={settingsPending}
               type="submit"
             >
-              {settingsPending ? "Saving..." : "Save connection"}
+              {settingsPending ? "Saving..." : "Save"}
             </button>
 
             {settingsState.message ? (
@@ -216,6 +223,13 @@ export function WhatsAppSettingsPanel({
               </p>
             ) : null}
           </form>
+
+          {provider === "messageautosender" ? (
+            <MasWhatsAppConnectPanel
+              credentialsSaved={masCredentialsSaved}
+              initialStatus={masLinkStatus}
+            />
+          ) : null}
         </article>
 
         <article className="ws-wa-settings-card">

@@ -25,6 +25,26 @@ export async function resolveOrganizationByPhoneNumberId(phoneNumberId: string) 
     return settings.organization;
   }
 
+  const masSettings = await prisma.workspaceWhatsAppSettings.findFirst({
+    where: {
+      whatsappProvider: "MESSAGEAUTOSENDER",
+      masUsername: phoneNumberId,
+    },
+    include: { organization: { select: { id: true, name: true, slug: true } } },
+  });
+
+  if (masSettings) {
+    return masSettings.organization;
+  }
+
+  if (phoneNumberId === "mas") {
+    return prisma.workspaceWhatsAppSettings.findFirst({
+      where: { whatsappProvider: "MESSAGEAUTOSENDER" },
+      include: { organization: { select: { id: true, name: true, slug: true } } },
+      orderBy: { updatedAt: "desc" },
+    }).then((row) => row?.organization ?? null);
+  }
+
   const envPhoneId = process.env.WHATSAPP_PHONE_NUMBER_ID?.trim();
   if (envPhoneId && envPhoneId === phoneNumberId) {
     const slug = process.env.WHATSAPP_DEFAULT_ORG_SLUG?.trim();

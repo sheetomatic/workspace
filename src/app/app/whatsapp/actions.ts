@@ -1,7 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { WhatsAppTemplateCategory } from "@prisma/client";
+import { redlavaPortalBrandName } from "@/lib/integrations/redlava-portal";
+import { canUsePlatformWhatsAppEnv } from "@/lib/platform";
+
+const PORTAL_BRAND = redlavaPortalBrandName();
+import type { WhatsAppTemplateCategory, WhatsAppProvider } from "@prisma/client";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { hasMinimumRole } from "@/lib/permissions";
@@ -21,6 +25,7 @@ import {
   listWhatsAppMembers,
   resolveWorkspaceWhatsAppCredentials,
 } from "@/lib/whatsapp-settings";
+import { parseWhatsAppProviderField } from "@/lib/whatsapp-settings-form";
 import type { WhatsAppTemplateActionState } from "@/lib/whatsapp-template-types";
 
 function parseVariables(formData: FormData) {
@@ -242,7 +247,7 @@ export async function syncWhatsAppTemplates(): Promise<WhatsAppTemplateActionSta
     return {
       ok: true,
       message:
-        "No templates found in RedLava. Create templates in your RedLava dashboard first.",
+        `No templates found in ${PORTAL_BRAND}. Create templates in your WhatsApp portal dashboard first.`,
     };
   }
 
@@ -266,7 +271,7 @@ export async function syncWhatsAppTemplates(): Promise<WhatsAppTemplateActionSta
 
   return {
     ok: true,
-    message: `Synced ${synced} template${synced === 1 ? "" : "s"} from RedLava (${approved} approved).`,
+    message: `Synced ${synced} template${synced === 1 ? "" : "s"} from ${PORTAL_BRAND} (${approved} approved).`,
   };
 }
 
@@ -339,28 +344,90 @@ export async function saveWhatsAppSettings(
     return { ok: false, message: "Business WhatsApp number must be at least 10 digits." };
   }
 
+  const providerKind = parseWhatsAppProviderField(formData.get("whatsappProvider"));
+  const whatsappProvider: WhatsAppProvider =
+    providerKind === "messageautosender" ? "MESSAGEAUTOSENDER" : "SHEETOMATIC";
+
+  const masUsername =
+    formData.get("masUsername")?.toString().trim() ||
+    existing?.masUsername ||
+    null;
+  const masPassword = pickSecretField(
+    formData.get("masPassword")?.toString() ?? "",
+    existing?.masPassword,
+  );
+
+  const usePlatformEnv = await canUsePlatformWhatsAppEnv(user.organizationId);
+  const envPhoneId = usePlatformEnv
+    ? process.env.REDLAVA_PHONE_ID?.trim() || null
+    : null;
+
+  const nextPhoneId =
+    formData.get("redlavaPhoneId")?.toString().trim() ||
+    existing?.redlavaPhoneId ||
+    envPhoneId ||
+    null;
+
+  if (whatsappProvider === "MESSAGEAUTOSENDER") {
+    if (!masUsername || !masPassword) {
+      return {
+        ok: false,
+        message: "Username and password are required for WhatsApp Link.",
+      };
+    }
+  } else {
+    const nextApiKey = pickSecretField(
+      formData.get("redlavaApiKey")?.toString() ?? "",
+      existing?.redlavaApiKey,
+    );
+    if (!nextApiKey || !nextPhoneId) {
+      return {
+        ok: false,
+        message: "API key and Phone ID are required for WhatsApp API.",
+      };
+    }
+  }
+
+  if (whatsappProvider === "SHEETOMATIC" && nextPhoneId) {
+    const duplicate = await prisma.workspaceWhatsAppSettings.findFirst({
+      where: {
+        redlavaPhoneId: nextPhoneId,
+        organizationId: { not: user.organizationId },
+      },
+      select: { organization: { select: { name: true, slug: true } } },
+    });
+    if (duplicate) {
+      return {
+        ok: false,
+        message: `This Phone ID is already linked to ${duplicate.organization.name}. Each workspace needs its own Meta Phone Number ID.`,
+      };
+    }
+  }
+
   await prisma.workspaceWhatsAppSettings.upsert({
     where: { organizationId: user.organizationId },
     create: {
       organizationId: user.organizationId,
       businessPhone,
+      whatsappProvider,
       redlavaApiKey: pickSecretField(
         formData.get("redlavaApiKey")?.toString() ?? "",
         null,
       ),
-      redlavaPhoneId:
-        formData.get("redlavaPhoneId")?.toString().trim() || null,
+      redlavaPhoneId: nextPhoneId,
+      masUsername,
+      masPassword,
     },
     update: {
       businessPhone,
+      whatsappProvider,
       redlavaApiKey: pickSecretField(
         formData.get("redlavaApiKey")?.toString() ?? "",
         existing?.redlavaApiKey,
       ),
-      redlavaPhoneId:
-        formData.get("redlavaPhoneId")?.toString().trim() ||
-        existing?.redlavaPhoneId ||
-        null,
+      redlavaPhoneId: nextPhoneId,
+      masUsername,
+      masPassword,
     },
   });
 
@@ -426,16 +493,38 @@ export async function updateMemberWhatsAppPhone(
   };
 }
 
-export async function getWhatsAppPageSetup(organizationId: string) {
-  const credentials = await resolveWorkspaceWhatsAppCredentials(organizationId);
-  const redlava = {
-    apiKey: credentials.redlavaApiKey,
-    phoneId: credentials.redlavaPhoneId,
-  };
-  const setup = getWhatsAppTemplateSetup(redlava);
+export async function getWhatsAppPageSetup() {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "ADMIN")) {
+    return {
+      hasApiKey: false,
+      phoneId: null as string | null,
+      canSend: false,
+      canManageTemplates: false,
+      setupHint: "Admin access required to manage WhatsApp.",
+    };
+  }
+
+  const credentials = await resolveWorkspaceWhatsAppCredentials(
+    user.organizationId,
+  );
+  const setup = getWhatsAppTemplateSetup(
+    {
+      apiKey: credentials.redlavaApiKey,
+      phoneId: credentials.redlavaPhoneId,
+    },
+    {
+      provider: credentials.whatsappProvider,
+      masCredentials: {
+        username: credentials.masUsername,
+        password: credentials.masPassword,
+      },
+    },
+  );
 
   return {
-    credentials,
+    hasApiKey: Boolean(credentials.redlavaApiKey),
+    phoneId: credentials.redlavaPhoneId,
     canSend: setup.canSend,
     canManageTemplates: setup.canManageTemplates,
     setupHint: setup.setupHint,
@@ -555,7 +644,7 @@ export async function sendWhatsAppConnectionTest(): Promise<WhatsAppTemplateActi
     body: [
       "Sheetomatic AI connection test",
       "",
-      "If you received this, outbound WhatsApp via RedLava is working.",
+      `If you received this, outbound WhatsApp via ${PORTAL_BRAND} is working.`,
       "Reply hi on the business number to test inbound task delegation.",
     ].join("\n"),
   });

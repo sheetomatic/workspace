@@ -1,6 +1,6 @@
 /**
- * WhatsApp template management via RedLava API.
- * @see https://wa.redlava.in/Integrations/ApiDocumentation
+ * WhatsApp template management via Sheetomatic WhatsApp portal API.
+ * @see https://wa.sheetomatic.com/Integrations/ApiDocumentation
  */
 
 import type { WhatsAppTemplateCategory } from "@prisma/client";
@@ -10,6 +10,7 @@ import {
   type WhatsAppTemplateVariable,
 } from "@/lib/whatsapp-templates";
 import type { RedlavaCredentials } from "@/lib/integrations/redlava";
+import { isMasConfigured } from "@/lib/integrations/messageautosender";
 import {
   isRedlavaConfigured,
   redlavaRequest,
@@ -17,6 +18,12 @@ import {
   redlavaTemplateSubmitEndpoint,
   redlavaTemplateSyncEndpoint,
 } from "@/lib/integrations/redlava";
+import {
+  redlavaDashboardUrl,
+  redlavaPortalBrandName,
+} from "@/lib/integrations/redlava-portal";
+
+const PORTAL_BRAND = redlavaPortalBrandName();
 
 export type RemoteWhatsAppTemplate = {
   id?: string;
@@ -31,7 +38,7 @@ export type RemoteWhatsAppTemplate = {
 export type WhatsAppTemplateSetup = {
   canSend: boolean;
   canManageTemplates: boolean;
-  provider: "redlava" | null;
+  provider: "sheetomatic" | "messageautosender" | null;
   setupHint: string | null;
 };
 
@@ -98,16 +105,34 @@ function extractTemplateList(payload: Record<string, unknown>) {
 
 export function getWhatsAppTemplateSetup(
   credentials?: RedlavaCredentials | null,
+  options?: {
+    provider?: "sheetomatic" | "messageautosender";
+    masCredentials?: { username?: string | null; password?: string | null } | null;
+  },
 ): WhatsAppTemplateSetup {
+  const provider = options?.provider ?? "sheetomatic";
+
+  if (provider === "messageautosender") {
+    const configured = isMasConfigured(options?.masCredentials);
+    return {
+      canSend: configured,
+      canManageTemplates: false,
+      provider: configured ? "messageautosender" : null,
+      setupHint: configured
+        ? "WhatsApp templates are only available with WhatsApp API."
+        : "Add username and password in Settings.",
+    };
+  }
+
   const configured = isRedlavaConfigured(credentials);
 
   return {
     canSend: configured,
     canManageTemplates: configured,
-    provider: configured ? "redlava" : null,
+    provider: configured ? "sheetomatic" : null,
     setupHint: configured
       ? null
-      : "Add your RedLava API key and Phone ID in Settings. Get them from wa.redlava.in.",
+      : `Add your ${PORTAL_BRAND} API key and Phone ID in Settings. Get them from ${redlavaDashboardUrl()}.`,
   };
 }
 
@@ -121,7 +146,7 @@ export async function syncTemplatesFromRedlavaMeta(
   credentials?: RedlavaCredentials | null,
 ) {
   if (!isRedlavaConfigured(credentials)) {
-    return { ok: false as const, message: "RedLava is not configured." };
+    return { ok: false as const, message: `${PORTAL_BRAND} is not configured.` };
   }
 
   const result = await redlavaRequest(
@@ -133,7 +158,7 @@ export async function syncTemplatesFromRedlavaMeta(
   if (!result.ok && result.status !== 200) {
     return {
       ok: false as const,
-      message: result.error || "Could not sync templates from Meta via RedLava.",
+      message: result.error || `Could not sync templates from Meta via ${PORTAL_BRAND}.`,
     };
   }
 
@@ -154,7 +179,7 @@ export async function submitWhatsAppTemplateForApproval(
     return {
       ok: false as const,
       message:
-        "RedLava is not configured. Add your API key in WhatsApp Settings.",
+        `${PORTAL_BRAND} is not configured. Add your API key in WhatsApp Settings.`,
     };
   }
 
@@ -176,7 +201,7 @@ export async function submitWhatsAppTemplateForApproval(
       result.error;
     return {
       ok: false as const,
-      message: detail || "RedLava template submission failed.",
+      message: detail || `${PORTAL_BRAND} template submission failed.`,
     };
   }
 
@@ -197,7 +222,7 @@ export async function submitWhatsAppTemplateForApproval(
     detail:
       typeof body.message === "string"
         ? body.message
-        : "Submitted to RedLava for WhatsApp approval.",
+        : `Submitted to ${PORTAL_BRAND} for WhatsApp approval.`,
   };
 }
 
@@ -208,7 +233,7 @@ export async function listRemoteWhatsAppTemplates(
     return {
       ok: false as const,
       message:
-        "RedLava is not configured. Add your API key in WhatsApp Settings.",
+        `${PORTAL_BRAND} is not configured. Add your API key in WhatsApp Settings.`,
       templates: [] as RemoteWhatsAppTemplate[],
     };
   }
@@ -237,7 +262,7 @@ export async function listRemoteWhatsAppTemplates(
     if (!result.ok) {
       return {
         ok: false as const,
-        message: result.error || "Could not load templates from RedLava.",
+        message: result.error || `Could not load templates from ${PORTAL_BRAND}.`,
         templates: [] as RemoteWhatsAppTemplate[],
       };
     }
@@ -277,7 +302,7 @@ export async function syncWhatsAppTemplateStatuses(
       ok: true as const,
       provider: remote.provider,
       updates: [],
-      message: `Found ${remote.templates.length} template(s) in RedLava. Use Import approved to add them here.`,
+      message: `Found ${remote.templates.length} template(s) in ${PORTAL_BRAND}. Use Import approved to add them here.`,
     };
   }
 
@@ -313,7 +338,7 @@ export async function syncWhatsAppTemplateStatuses(
       provider: remote.provider,
       updates,
       message:
-        "No matching templates found in RedLava. Try Import approved to pull templates from your RedLava account.",
+        `No matching templates found in ${PORTAL_BRAND}. Try Import approved to pull templates from your WhatsApp portal account.`,
     };
   }
 

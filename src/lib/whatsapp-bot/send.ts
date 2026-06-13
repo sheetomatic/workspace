@@ -1,103 +1,22 @@
 import type { RedlavaCredentials } from "@/lib/integrations/redlava";
-import {
-  isRedlavaConfigured,
-  parseWhatsAppSendResponse,
-  sendRedlavaWhatsAppMessage,
-} from "@/lib/integrations/redlava";
+import { deliverWhatsAppMessage } from "@/lib/integrations/whatsapp-provider";
 import { resolveWorkspaceWhatsAppCredentials } from "@/lib/whatsapp-settings";
-import { normalizeWhatsAppPhone } from "@/lib/phone";
 import type { WhatsAppInteractivePayload } from "@/lib/whatsapp-bot/interactive-menu";
 
-type SendResult =
-  | { sent: true; messageId?: string }
-  | {
-      sent: false;
-      reason:
-        | "invalid_phone"
-        | "not_configured"
-        | "phone_id_required"
-        | "api_error"
-        | "session_required";
-      detail?: string;
-    };
-
-async function resolveOrgCredentials(organizationId: string) {
-  const creds = await resolveWorkspaceWhatsAppCredentials(organizationId);
-  const redlava: RedlavaCredentials | null = creds.redlavaApiKey
-    ? { apiKey: creds.redlavaApiKey, phoneId: creds.redlavaPhoneId }
-    : null;
-  const metaToken = creds.metaAccessToken || "";
-  const phoneNumberId = creds.redlavaPhoneId || "";
-
-  return { redlava, metaToken, phoneNumberId };
-}
-
-async function sendViaMetaCloud(params: {
-  toPhone: string;
-  payload: Record<string, unknown>;
-  accessToken: string;
-  phoneNumberId: string;
-}): Promise<SendResult> {
-  const to = normalizeWhatsAppPhone(params.toPhone);
-  if (!to) {
-    return { sent: false, reason: "invalid_phone" };
-  }
-
-  const version = process.env.WHATSAPP_API_VERSION ?? "v21.0";
-  const response = await fetch(
-    `https://graph.facebook.com/${version}/${params.phoneNumberId}/messages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${params.accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        recipient_type: "individual",
-        to,
-        ...params.payload,
-      }),
-    },
-  );
-
-  const raw = await response.text();
-  const messageType =
-    typeof params.payload.type === "string" ? params.payload.type : undefined;
-  return parseWhatsAppSendResponse(response, raw, { messageType });
-}
+type SendResult = Awaited<ReturnType<typeof deliverWhatsAppMessage>>;
 
 async function deliverMessage(
   organizationId: string,
   toPhone: string,
   payload: Record<string, unknown>,
 ): Promise<SendResult> {
-  const { redlava, metaToken, phoneNumberId } =
-    await resolveOrgCredentials(organizationId);
-
-  if (isRedlavaConfigured(redlava)) {
-    const result = await sendRedlavaWhatsAppMessage(
-      { toPhone, message: payload },
-      redlava,
-    );
-    if (result.sent || result.reason === "phone_id_required") {
-      return result;
-    }
-    if (result.reason !== "not_configured") {
-      return result;
-    }
-  }
-
-  if (metaToken && phoneNumberId) {
-    return sendViaMetaCloud({
-      toPhone,
-      payload,
-      accessToken: metaToken,
-      phoneNumberId,
-    });
-  }
-
-  return { sent: false, reason: "not_configured" };
+  const credentials = await resolveWorkspaceWhatsAppCredentials(organizationId);
+  return deliverWhatsAppMessage({
+    organizationId,
+    toPhone,
+    message: payload,
+    credentials,
+  });
 }
 
 export async function sendWhatsAppText(params: {
@@ -142,3 +61,6 @@ export async function sendWhatsAppInteractiveWithFallback(params: {
     body: params.fallbackText,
   });
 }
+
+/** @deprecated Use deliverWhatsAppMessage — kept for template modules that pass pre-resolved creds. */
+export type { RedlavaCredentials };

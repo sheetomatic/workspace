@@ -865,6 +865,168 @@
   gap: 16px;
 }
 
+.workspace-app .saas-settings-page {
+  max-width: 44rem;
+}
+
+.workspace-app .saas-settings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0 0 1rem;
+  padding: 0.35rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.workspace-app .saas-settings-tab {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.08rem;
+  padding: 0.42rem 0.8rem;
+  border-radius: 999px;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.workspace-app .saas-settings-tab-scope {
+  font-size: 0.64rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.workspace-app .saas-settings-tab.is-active .saas-settings-tab-scope {
+  color: #60a5fa;
+}
+
+.workspace-app .saas-settings-scope-banner,
+.workspace-app .saas-settings-scope-label {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.workspace-app .saas-settings-scope-banner {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 500;
+}
+
+.workspace-app .saas-module-settings-links {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.workspace-app .saas-module-settings-head h3 {
+  margin: 0;
+}
+
+.workspace-app .saas-module-settings-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.workspace-app .saas-module-settings-link {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.workspace-app .saas-module-settings-link:hover {
+  border-color: #93c5fd;
+  background: #f8fbff;
+}
+
+.workspace-app .saas-module-settings-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  flex-shrink: 0;
+}
+
+.workspace-app .saas-module-settings-copy {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.workspace-app .saas-module-settings-copy strong {
+  color: #0f172a;
+  font-size: 0.92rem;
+}
+
+.workspace-app .saas-module-settings-copy span {
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.workspace-app .saas-settings-tab:hover {
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.workspace-app .saas-settings-tab.is-active {
+  color: #1d4ed8;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.workspace-app .saas-settings-content {
+  display: grid;
+  gap: 16px;
+}
+
+.workspace-app .saas-settings-shortcut {
+  display: grid;
+  gap: 0.85rem;
+  border-color: #bfdbfe;
+  background: linear-gradient(180deg, #fff 0%, #f8fbff 100%);
+}
+
+.workspace-app .saas-settings-shortcut-head {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  color: #1e3a8a;
+}
+
+.workspace-app .saas-settings-shortcut-head h3 {
+  margin: 0;
+}
+
+.workspace-app .saas-settings-shortcut-head .saas-panel-lead {
+  margin: 0.25rem 0 0;
+}
+
 .workspace-app .saas-panel h3 {
   margin: 0 0 12px;
   font-size: 1rem;
@@ -2813,6 +2975,125 @@
   margin-bottom: 16px;
 }
 
+.workspace-app .ws-task-live-panel {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+}
+
+.workspace-app .ws-task-live-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.workspace-app .ws-task-live-kicker {
+  margin: 0 0 4px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.workspace-app .ws-task-live-head h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.workspace-app .ws-task-live-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  border: 1px solid #fed7aa;
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.workspace-app .ws-task-live-status.is-ready {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.workspace-app .ws-task-live-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.workspace-app .ws-task-live-item {
+  display: flex;
+  gap: 10px;
+  min-height: 96px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.workspace-app .ws-task-live-item.is-ready {
+  border-color: #dcfce7;
+  background: #f7fef9;
+}
+
+.workspace-app .ws-task-live-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 10px;
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.workspace-app .ws-task-live-item.is-ready .ws-task-live-icon {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.workspace-app .ws-task-live-item strong {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 0.86rem;
+  color: #0f172a;
+}
+
+.workspace-app .ws-task-live-item p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.workspace-app .ws-task-live-item a {
+  display: inline-flex;
+  margin-top: 8px;
+  color: #2563eb;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.workspace-app .ws-task-live-item a:hover {
+  text-decoration: underline;
+}
+
 .workspace-app .ws-task-integration-banner {
   display: flex;
   gap: 12px;
@@ -2894,6 +3175,18 @@
 }
 
 @media (max-width: 720px) {
+  .workspace-app .ws-task-live-head {
+    flex-direction: column;
+  }
+
+  .workspace-app .ws-task-live-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-app .ws-task-live-item {
+    min-height: 0;
+  }
+
   .workspace-app .ws-task-reminder-status-grid {
     grid-template-columns: 1fr;
   }
@@ -6547,6 +6840,62 @@
   line-height: 1.5;
 }
 
+.workspace-app .ws-wa-connect-signup-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
+}
+
+.workspace-app .ws-wa-settings-grid > .ws-wa-connect-signup-banner {
+  grid-column: 1 / -1;
+}
+
+.workspace-app .ws-wa-connect-signup-copy {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.workspace-app .ws-wa-connect-signup-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #2563eb;
+}
+
+.workspace-app .ws-wa-connect-signup-copy strong {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.workspace-app .ws-wa-connect-signup-copy p {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.workspace-app .ws-wa-connect-signup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.workspace-app .ws-go-live-signup-cta {
+  margin-top: 10px;
+  width: fit-content;
+}
+
 .workspace-app .ws-wa-settings-form {
   display: flex;
   flex-direction: column;
@@ -7349,6 +7698,40 @@
     min-height: 0;
   }
 
+  .workspace-app .ws-inbox-shell.is-mobile-chat .ws-inbox-list {
+    display: none;
+  }
+
+  .workspace-app .ws-inbox-shell.is-mobile-chat .ws-inbox-chat {
+    display: flex;
+    min-height: calc(100dvh - 180px);
+  }
+
+  .workspace-app .ws-inbox-shell.is-mobile-list .ws-inbox-chat {
+    display: none;
+  }
+
+  .workspace-app .ws-inbox-shell.is-mobile-list .ws-inbox-list {
+    display: flex;
+    flex-direction: column;
+    max-height: none;
+  }
+
+  .workspace-app .ws-inbox-mobile-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 8px;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #fff;
+    color: #334155;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
   .workspace-app .ws-inbox-list {
     max-height: 280px;
   }
@@ -7627,37 +8010,398 @@
 
 .workspace-app .ws-settings-workspace {
   display: grid;
-  gap: 16px;
-}
-
-.workspace-app .ws-settings-account-card h2 {
-  margin: 0 0 10px;
-}
-
-.workspace-app .ws-settings-account-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
-.workspace-app .ws-settings-account-grid dt {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #64748b;
+.workspace-app .ws-settings-section-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 0 8px;
 }
 
-.workspace-app .ws-settings-wallet-balance {
-  font-size: 1.5rem;
+.workspace-app .ws-settings-section-nav a {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.workspace-app .ws-settings-section-nav a:hover {
+  border-color: #93c5fd;
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.workspace-app .ws-settings-overview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.workspace-app .ws-settings-account-card,
+.workspace-app .ws-settings-wallet-card,
+.workspace-app .ws-settings-connection-card,
+.workspace-app .ws-settings-webhook-card,
+.workspace-app .ws-settings-reseller-card {
+  padding: 14px 16px;
+}
+
+.workspace-app .ws-settings-account-card h2,
+.workspace-app .ws-settings-wallet-card h2,
+.workspace-app .ws-settings-connection-card h2,
+.workspace-app .ws-settings-webhook-card h2,
+.workspace-app .ws-settings-reseller-card h2 {
+  margin: 0 0 8px;
+  font-size: 0.875rem;
   font-weight: 700;
-  margin: 8px 0 12px;
+  color: #0f172a;
+}
+
+.workspace-app .ws-settings-meta-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin: 0;
+}
+
+.workspace-app .ws-settings-meta-row dt {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.workspace-app .ws-settings-meta-row dd {
+  margin: 2px 0 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #0f172a;
+  word-break: break-word;
+}
+
+.workspace-app .ws-settings-wallet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.workspace-app .ws-settings-wallet-head h2 {
+  margin: 0;
+}
+
+.workspace-app .ws-settings-wallet-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.workspace-app .ws-settings-wallet-stat {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.workspace-app .ws-settings-wallet-stat span {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.workspace-app .ws-settings-wallet-stat strong {
+  display: block;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.workspace-app .ws-settings-wallet-empty {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px dashed #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 0.8125rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.workspace-app .ws-settings-reseller-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.workspace-app .ws-settings-reseller-balance {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.workspace-app .ws-settings-connection-head {
+  margin-bottom: 10px;
+}
+
+.workspace-app .ws-settings-connection-head h2 {
+  margin-bottom: 4px;
+}
+
+.workspace-app .ws-settings-connection-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.workspace-app .ws-settings-connection-hint a {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.workspace-app .ws-settings-webhook-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin: 0;
+}
+
+.workspace-app .ws-settings-webhook-meta dt {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.workspace-app .ws-settings-webhook-meta dd {
+  margin: 2px 0 0;
+  font-size: 0.8125rem;
+  color: #334155;
+  word-break: break-all;
+}
+
+.workspace-app .ws-settings-webhook-meta code {
+  font-size: 0.75rem;
+}
+
+.workspace-app .ws-settings-status-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.workspace-app .ws-settings-status-pill.is-live {
+  background: #dcfce7;
+  color: #15803d;
 }
 
 .workspace-app .ws-wa-settings-panel.is-embedded {
   border: none;
   box-shadow: none;
   padding: 0;
+  margin: 0;
   background: transparent;
+}
+
+.workspace-app .ws-wa-settings-panel.is-embedded .ws-wa-settings-grid {
+  padding: 0;
+  gap: 10px;
+}
+
+.workspace-app .ws-wa-settings-panel.is-embedded .ws-wa-settings-card {
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.workspace-app .ws-wa-settings-panel.is-embedded .ws-wa-settings-card h3 {
+  font-size: 0.8125rem;
+  margin-bottom: 4px;
+}
+
+.workspace-app .ws-wa-settings-lead.is-compact {
+  margin-bottom: 10px;
+  font-size: 0.75rem;
+}
+
+.workspace-app .ws-wa-settings-panel.is-embedded .ws-wa-settings-form {
+  gap: 8px;
+}
+
+.workspace-app .ws-wa-settings-panel.is-embedded .ws-wa-settings-form label {
+  gap: 4px;
+  font-size: 0.75rem;
+}
+
+.workspace-app .ws-wa-settings-panel.is-embedded .ws-field-hint {
+  font-size: 0.6875rem;
+}
+
+.workspace-app .ws-mas-connect {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.workspace-app .ws-mas-connect-muted {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  color: #64748b;
+  font-size: 0.8125rem;
+}
+
+.workspace-app .ws-mas-connect-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.workspace-app .ws-mas-connect-head h4 {
+  margin: 0 0 4px;
+  font-size: 0.9375rem;
+  color: #0f172a;
+}
+
+.workspace-app .ws-mas-connect-head p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.workspace-app .ws-mas-connect-pill {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+}
+
+.workspace-app .ws-mas-connect-pill.is-connected {
+  color: #15803d;
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.workspace-app .ws-mas-connect-phone {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #334155;
+}
+
+.workspace-app .ws-mas-connect-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.workspace-app .ws-mas-connect-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+}
+
+.workspace-app .ws-mas-connect-tab.is-active {
+  color: #1d4ed8;
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.workspace-app .ws-mas-connect-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.workspace-app .ws-mas-qr-frame {
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  padding: 16px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.workspace-app .ws-mas-qr-image {
+  width: min(220px, 100%);
+  height: auto;
+  border-radius: 8px;
+}
+
+.workspace-app .ws-mas-qr-placeholder {
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.workspace-app .ws-mas-connect-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .workspace-app .ws-settings-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-app .ws-settings-meta-row,
+  .workspace-app .ws-settings-webhook-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-app .ws-settings-wallet-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-app .ws-wa-connect-signup-banner {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 .workspace-app .ws-go-live-links ul {
@@ -9580,6 +10324,237 @@
   cursor: pointer;
 }
 
+.workspace-app .ws-notification-settings {
+  padding: 1.1rem 1.25rem;
+}
+
+.workspace-app .ws-notification-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 1rem;
+}
+
+.workspace-app .ws-notification-head h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.workspace-app .ws-notification-lead {
+  margin: 0;
+  max-width: 36rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.workspace-app .ws-notification-callout {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.workspace-app .ws-notification-callout strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.8125rem;
+}
+
+.workspace-app .ws-notification-callout p {
+  margin: 0;
+  color: inherit;
+}
+
+.workspace-app .ws-notification-callout-warn {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+}
+
+.workspace-app .ws-notification-callout code {
+  font-size: 0.75rem;
+}
+
+.workspace-app .ws-notification-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.workspace-app .ws-notification-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.workspace-app .ws-notification-card {
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.workspace-app .ws-notification-card-wide {
+  grid-column: 1 / -1;
+}
+
+.workspace-app .ws-notification-card h4 {
+  margin: 0 0 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.workspace-app .ws-notification-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 8px 0;
+  cursor: pointer;
+}
+
+.workspace-app .ws-notification-toggle + .ws-notification-toggle {
+  border-top: 1px solid #e2e8f0;
+}
+
+.workspace-app .ws-notification-toggle input {
+  margin-top: 3px;
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  accent-color: #2563eb;
+}
+
+.workspace-app .ws-notification-toggle span {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.workspace-app .ws-notification-toggle strong {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.workspace-app .ws-notification-toggle small {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: #64748b;
+}
+
+.workspace-app .ws-notification-delivery-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+}
+
+.workspace-app .ws-notification-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.workspace-app .ws-notification-field select {
+  min-width: 160px;
+  padding: 7px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.workspace-app .ws-notification-channels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.workspace-app .ws-notification-channel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+}
+
+.workspace-app .ws-notification-channel input {
+  margin: 0;
+  accent-color: #2563eb;
+}
+
+.workspace-app .ws-notification-channel.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.workspace-app .ws-notification-schedule {
+  margin: 10px 0 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.workspace-app .ws-notification-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  padding-top: 4px;
+}
+
+.workspace-app .ws-notification-test-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.workspace-app .ws-notification-test-result {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.workspace-app .ws-notification-test-result.is-ok {
+  color: #15803d;
+}
+
+.workspace-app .ws-notification-test-result.is-error {
+  color: #b91c1c;
+}
+
+@media (max-width: 720px) {
+  .workspace-app .ws-notification-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-app .ws-notification-head {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
 .workspace-app .ws-notification-settings .ws-notification-fieldset {
   margin: 0 0 16px;
   padding: 0;
@@ -9602,6 +10577,32 @@
   border-radius: 8px;
   border: 1px solid #cbd5e1;
   background: #fff;
+}
+
+.workspace-app .ws-notification-email-status {
+  margin: 0 0 16px;
+}
+
+.workspace-app .ws-notification-email-status p {
+  margin: 0.35rem 0 0;
+  font-size: 0.88rem;
+}
+
+.workspace-app .ws-notification-test-email {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.workspace-app .ws-notification-test-hint {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.workspace-app .ws-hr-checkbox.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .workspace-login .login-forgot-link {

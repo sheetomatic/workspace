@@ -60,7 +60,8 @@ function wrapMetaPayload(
 }
 
 /**
- * Accept Meta Cloud API webhooks and common RedLava / partner wrapper shapes.
+ * Accept Meta Cloud API webhooks, Sheetomatic WhatsApp partner wrappers,
+ * and Message Auto Sender inbound payloads.
  */
 export function normalizeWhatsAppWebhookPayload(
   payload: unknown,
@@ -107,6 +108,35 @@ export function normalizeWhatsAppWebhookPayload(
     (isRecord(payload.message) ? [payload.message] : null);
 
   if (!phoneNumberId || !rawMessages?.length) {
+    const masSender =
+      pickString(payload.senderMobileNo) ??
+      pickString(payload.sender) ??
+      pickString(payload.from);
+    const masMessage =
+      pickString(payload.message) ??
+      pickString(payload.messageText) ??
+      pickString(payload.text);
+    const masId =
+      pickString(payload.id) ??
+      pickString(payload.messageId) ??
+      `mas-${Date.now()}`;
+    const masAccountId =
+      pickString(payload.accountId) ??
+      pickString(payload.username) ??
+      pickString(payload.accountUsername) ??
+      "mas";
+
+    if (masSender && masMessage) {
+      return wrapMetaPayload(masAccountId, [
+        {
+          id: masId,
+          from: masSender.replace(/\D/g, ""),
+          type: "text",
+          text: { body: masMessage },
+        },
+      ]);
+    }
+
     return null;
   }
 

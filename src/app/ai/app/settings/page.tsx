@@ -1,18 +1,24 @@
+import { AiReplySettingsPanel } from "@/components/saas/ai-reply-settings-panel";
 import { PageHeader } from "@/components/saas/page-header";
+import { PendingWorkspacesPanel } from "@/components/saas/pending-workspaces-panel";
 import { WhatsAppSettingsWorkspacePanel } from "@/components/saas/whatsapp-settings-workspace-panel";
 import { WorkspaceActivationPanel } from "@/components/saas/workspace-activation-panel";
+import { getAiReplyUsageSummary } from "@/lib/integrations/ai-reply-settings";
 import { prisma } from "@/lib/db";
+import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { formatRedlavaWalletAmount } from "@/lib/integrations/redlava";
 import { loadSettingsResellerData } from "@/lib/settings-reseller-data";
 import { canViewPlatformResellerData } from "@/lib/platform";
 import { getWorkspaceTenantWallets } from "@/lib/whatsapp-wallet";
+import { isWhatsAppProviderConfigured } from "@/lib/integrations/whatsapp-provider";
 import {
   getWorkspaceWhatsAppSettings,
   listWhatsAppMembers,
   resolveWorkspaceWhatsAppCredentials,
   toWhatsAppSettingsFormValues,
 } from "@/lib/whatsapp-settings";
+import { loadMasWhatsAppLinkStatusForSettings } from "@/app/app/whatsapp/mas-actions";
 import { getWhatsAppGoLiveStatus } from "@/lib/whatsapp-go-live";
 
 export default async function SheetomaticAiSettingsPage() {
@@ -24,26 +30,57 @@ export default async function SheetomaticAiSettingsPage() {
         select: { name: true, status: true },
       })
     : null;
-  const [savedSettings, members, credentials, goLiveStatus, tenantWallets, resellerData] =
-    await Promise.all([
-      getWorkspaceWhatsAppSettings(user.organizationId),
-      listWhatsAppMembers(user.organizationId),
-      resolveWorkspaceWhatsAppCredentials(user.organizationId),
-      getWhatsAppGoLiveStatus(user.organizationId),
-      getWorkspaceTenantWallets(user.organizationId),
-      showResellerData
-        ? loadSettingsResellerData()
-        : Promise.resolve({
-            reseller: {
-              ok: false as const,
-              error: "Reseller API unavailable.",
-              body: {},
-              phones: [],
-              customers: [],
+  const canEditAiReplyLimits =
+    hasMinimumRole(user.role, "ADMIN") || user.isSuperAdmin;
+
+  const [
+    savedSettings,
+    members,
+    credentials,
+    goLiveStatus,
+    tenantWallets,
+    resellerData,
+    aiReplySummary,
+    pendingWorkspaces,
+    masLinkStatus,
+  ] = await Promise.all([
+    getWorkspaceWhatsAppSettings(user.organizationId),
+    listWhatsAppMembers(user.organizationId),
+    resolveWorkspaceWhatsAppCredentials(user.organizationId),
+    getWhatsAppGoLiveStatus(user.organizationId),
+    getWorkspaceTenantWallets(user.organizationId),
+    showResellerData
+      ? loadSettingsResellerData()
+      : Promise.resolve({
+          reseller: {
+            ok: false as const,
+            error: "Reseller API unavailable.",
+            body: {},
+            phones: [],
+            customers: [],
+          },
+          wallet: { ok: false as const, error: "Wallet unavailable.", body: {} },
+        }),
+    getAiReplyUsageSummary(user.organizationId),
+    user.isSuperAdmin
+      ? prisma.organization.findMany({
+          where: { status: "ONBOARDING" },
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            createdAt: true,
+            memberships: {
+              where: { role: "OWNER" },
+              take: 1,
+              select: { user: { select: { email: true } } },
             },
-            wallet: { ok: false as const, error: "Wallet unavailable.", body: {} },
-          }),
-    ]);
+          },
+        })
+      : Promise.resolve([]),
+    loadMasWhatsAppLinkStatusForSettings(),
+  ]);
 
   const settingsInitialValues = toWhatsAppSettingsFormValues(
     savedSettings,
@@ -60,8 +97,8 @@ export default async function SheetomaticAiSettingsPage() {
       {!goLiveStatus.webhookReceived && goLiveStatus.isLive ? (
         <div className="saas-form-message error ws-wa-config-banner">
           WhatsApp is live but no inbound webhook has reached Sheetomatic yet.
-          Set your RedLava / Meta webhook callback to{" "}
-          <code>{goLiveStatus.webhookUrl}</code>
+          Set your Sheetomatic WhatsApp / Meta webhook callback to{" "}
+          <code>{goLiveStatus.webhookUrlWithToken}</code>
           {goLiveStatus.verifyTokenConfigured
             ? ` (${goLiveStatus.verifyTokenHint.toLowerCase()}).`
             : `. ${goLiveStatus.verifyTokenHint}`}
@@ -69,19 +106,17 @@ export default async function SheetomaticAiSettingsPage() {
       ) : null}
 
       <WhatsAppSettingsWorkspacePanel
+        credentialsReady={isWhatsAppProviderConfigured(credentials)}
         credentialsSource={credentials.source}
         goLiveStatus={goLiveStatus}
         hasSavedSecrets={{
           redlavaApiKey: Boolean(savedSettings?.redlavaApiKey),
+          masPassword: Boolean(savedSettings?.masPassword),
         }}
         initialValues={settingsInitialValues}
+        masLinkStatus={masLinkStatus}
         members={members}
         showResellerWallet={showResellerData}
-        resellerPhones={
-          showResellerData && resellerData.reseller.ok
-            ? resellerData.reseller.phones
-            : []
-        }
         resellerWalletPoints={
           showResellerData &&
           resellerData.wallet.ok &&
@@ -112,10 +147,31 @@ export default async function SheetomaticAiSettingsPage() {
         userRole={user.isSuperAdmin ? "Super Admin" : user.role}
       />
 
+      <AiReplySettingsPanel
+        canEdit={canEditAiReplyLimits}
+        openaiConfigured={Boolean(process.env.OPENAI_API_KEY)}
+        summary={aiReplySummary}
+      />
+
       {organization ? (
         <WorkspaceActivationPanel
           organizationName={organization.name}
           status={organization.status}
+        />
+      ) : null}
+
+      {user.isSuperAdmin ? (
+        <PendingWorkspacesPanel
+          workspaces={pendingWorkspaces.map((workspace) => ({
+            id: workspace.id,
+            name: workspace.name,
+            slug: workspace.slug,
+            ownerEmail: workspace.memberships[0]?.user.email ?? null,
+            createdAt: workspace.createdAt.toLocaleDateString("en-IN", {
+              timeZone: "Asia/Kolkata",
+              dateStyle: "medium",
+            }),
+          }))}
         />
       ) : null}
     </div>

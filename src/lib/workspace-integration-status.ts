@@ -1,11 +1,13 @@
 import { isEmailConfigured } from "@/lib/integrations/email";
 import { getIntegrationStatus } from "@/lib/integrations/status";
+import { isWhatsAppProviderConfigured } from "@/lib/integrations/whatsapp-provider";
 import { resolveWorkspaceWhatsAppCredentials } from "@/lib/whatsapp-settings";
 
 export type WorkspaceIntegrationStatus = {
   emailConfigured: boolean;
   whatsappConfigured: boolean;
   openaiConfigured: boolean;
+  whatsappProvider: "sheetomatic" | "messageautosender";
 };
 
 export async function getWorkspaceIntegrationStatus(
@@ -15,9 +17,8 @@ export async function getWorkspaceIntegrationStatus(
   const platform = getIntegrationStatus();
   return {
     emailConfigured: isEmailConfigured(),
-    whatsappConfigured: Boolean(
-      credentials.redlavaApiKey?.trim() && credentials.redlavaPhoneId?.trim(),
-    ),
+    whatsappConfigured: isWhatsAppProviderConfigured(credentials),
     openaiConfigured: platform.openai,
+    whatsappProvider: credentials.whatsappProvider,
   };
 }
