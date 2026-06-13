@@ -1,0 +1,4 @@
+ALTER TABLE "Organization"
+ADD COLUMN "legalSheetTab" TEXT,
+ADD COLUMN "legalSheetHeaderRow" INTEGER NOT NULL DEFAULT 2,
+ADD COLUMN "legalSheetDataStartRow" INTEGER NOT NULL DEFAULT 3;

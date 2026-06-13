@@ -409,10 +409,11 @@ export function isWhatsAppSessionRequiredError(
 }
 
 export function redlavaBaseUrl() {
-  return (
-    process.env.REDLAVA_API_BASE_URL?.trim().replace(/\/+$/, "") ||
-    "https://wa.sheetomatic.com/api/v1"
-  );
+  const configured = process.env.REDLAVA_API_BASE_URL?.trim().replace(/\/+$/, "");
+  if (configured && !/redlava\.in/i.test(configured)) {
+    return configured;
+  }
+  return "https://wa.sheetomatic.com/api/v1";
 }
 
 function redlavaSendUrl() {

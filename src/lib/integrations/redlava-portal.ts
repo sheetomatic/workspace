@@ -1,3 +1,6 @@
+/** Sheetomatic WhatsApp customer portal (always wa.sheetomatic.com). */
+export const SHEETOMATIC_WHATSAPP_PORTAL_URL = "https://wa.sheetomatic.com";
+
 export const REDLAVA_PORTAL_DEFAULT_SIGNUP_ACCOUNT_ID =
   "69ba66e24e68ba4764253829";
 
@@ -5,13 +8,8 @@ export function redlavaPortalBrandName() {
   return "Sheetomatic WhatsApp";
 }
 
-/** Customer portal base (Sheetomatic WhatsApp / RedLava). */
 export function redlavaDashboardUrl() {
-  return (
-    process.env.NEXT_PUBLIC_REDLAVA_DASHBOARD_URL?.trim().replace(/\/+$/, "") ||
-    process.env.REDLAVA_DASHBOARD_URL?.trim().replace(/\/+$/, "") ||
-    "https://wa.sheetomatic.com"
-  );
+  return SHEETOMATIC_WHATSAPP_PORTAL_URL;
 }
 
 export function redlavaDashboardPath(path: string) {
