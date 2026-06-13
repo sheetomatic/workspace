@@ -14,7 +14,7 @@ import { resolveWorkspaceWhatsAppCredentials } from "@/lib/whatsapp-settings";
 export default async function SheetomaticAiCampaignPage() {
   const user = await requireSession("ADMIN", { redirectTo: "/ai/app" });
   const [setup, goLiveStatus, relatedSetup, credentials] = await Promise.all([
-    getWhatsAppPageSetup(user.organizationId),
+    getWhatsAppPageSetup(),
     getWhatsAppGoLiveStatus(user.organizationId),
     getCampaignRelatedSetup(user.organizationId),
     resolveWorkspaceWhatsAppCredentials(user.organizationId),

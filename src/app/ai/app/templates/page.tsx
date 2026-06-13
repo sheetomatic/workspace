@@ -8,7 +8,7 @@ export default async function SheetomaticAiTemplatesPage() {
   const user = await requireSession("ADMIN", { redirectTo: "/ai/app" });
   const [templates, setup] = await Promise.all([
     listOrganizationWhatsAppTemplates(user.organizationId),
-    getWhatsAppPageSetup(user.organizationId),
+    getWhatsAppPageSetup(),
   ]);
 
   const rows = templates.map((template) => ({
