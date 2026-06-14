@@ -45,6 +45,7 @@ export function WhatsAppMessagingPanel({
   hasSavedSecrets: {
     redlavaApiKey: boolean;
     masPassword: boolean;
+    masApiKey: boolean;
   };
   goLiveStatus: WhatsAppGoLiveStatus;
 }) {
