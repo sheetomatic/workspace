@@ -1,19 +1,26 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, X } from "lucide-react";
+import { LogIn, RefreshCw, Settings, X } from "lucide-react";
 import { saveWhatsAppSettings } from "@/app/app/whatsapp/actions";
+import {
+  connectMasWebAccount,
+  type MasConnectActionState,
+} from "@/app/app/whatsapp/mas-actions";
 import { whatsAppTemplateInitialState } from "@/lib/whatsapp-template-types";
 import type { WhatsAppSettingsFormValues } from "@/lib/whatsapp-settings-form";
 import { maskSecret } from "@/lib/whatsapp-settings-form";
 import { MasWhatsAppConnectPanel } from "@/components/saas/mas-whatsapp-connect-panel";
+import { masPortalUrl } from "@/lib/integrations/messageautosender";
 import type {
   MasAccountDashboard,
   MasPhoneConnectionStatus,
 } from "@/lib/integrations/messageautosender";
 
 export type WhatsAppProviderTab = "sheetomatic" | "messageautosender";
+
+const connectInitialState: MasConnectActionState = { ok: false, message: "" };
 
 export function WhatsAppSettingsTrigger({
   open,
@@ -59,16 +66,21 @@ export function WhatsAppSettingsPanel({
   embedded?: boolean;
 }) {
   const router = useRouter();
+  const [connectMode, setConnectMode] = useState<"qr" | "login">("qr");
   const [settingsState, settingsAction, settingsPending] = useActionState(
     saveWhatsAppSettings,
     whatsAppTemplateInitialState,
   );
+  const [connectState, connectAction, connectPending] = useActionState(
+    connectMasWebAccount,
+    connectInitialState,
+  );
 
   useEffect(() => {
-    if (settingsState.ok) {
+    if (settingsState.ok || connectState.ok) {
       router.refresh();
     }
-  }, [settingsState, router]);
+  }, [settingsState, connectState, router]);
 
   const masCredentialsSaved =
     hasSavedSecrets.masPassword &&
@@ -76,6 +88,7 @@ export function WhatsAppSettingsPanel({
     Boolean(initialValues.masUsername);
 
   const isOfficial = provider === "sheetomatic";
+  const pending = settingsPending || connectPending;
 
   return (
     <section className={`saas-panel ws-wa-settings-panel${embedded ? " is-embedded" : ""}`}>
@@ -96,7 +109,11 @@ export function WhatsAppSettingsPanel({
         </header>
       ) : null}
 
-      <form action={settingsAction} className="ws-wa-provider-form">
+      <form
+        action={settingsAction}
+        className="ws-wa-provider-form"
+        id="mas-web-connect-form"
+      >
         <input name="whatsappProvider" type="hidden" value={provider} />
 
         <label className="ws-wa-side-phone">
@@ -136,6 +153,27 @@ export function WhatsAppSettingsPanel({
           </div>
         ) : (
           <>
+            <div className="ws-web-api-connect-tabs" role="tablist">
+              <button
+                aria-selected={connectMode === "qr"}
+                className={`ws-web-api-connect-tab${connectMode === "qr" ? " is-active" : ""}`}
+                role="tab"
+                type="button"
+                onClick={() => setConnectMode("qr")}
+              >
+                Scan QR
+              </button>
+              <button
+                aria-selected={connectMode === "login"}
+                className={`ws-web-api-connect-tab${connectMode === "login" ? " is-active" : ""}`}
+                role="tab"
+                type="button"
+                onClick={() => setConnectMode("login")}
+              >
+                Login
+              </button>
+            </div>
+
             <div className="ws-wa-side-fields">
               <label>
                 Username
@@ -145,6 +183,7 @@ export function WhatsAppSettingsPanel({
                   placeholder="Account username"
                   type="text"
                   autoComplete="username"
+                  required={connectMode === "login"}
                 />
               </label>
               <label>
@@ -158,6 +197,7 @@ export function WhatsAppSettingsPanel({
                   }
                   type="password"
                   autoComplete="current-password"
+                  required={connectMode === "login" && !hasSavedSecrets.masPassword}
                 />
               </label>
               <label>
@@ -171,16 +211,49 @@ export function WhatsAppSettingsPanel({
                   }
                   type="password"
                   autoComplete="off"
+                  required={connectMode === "login" && !hasSavedSecrets.masApiKey}
                 />
               </label>
             </div>
 
-            <MasWhatsAppConnectPanel
-              compact
-              credentialsSaved={masCredentialsSaved || settingsState.ok}
-              initialDashboard={masAccountDashboard}
-              initialStatus={masLinkStatus}
-            />
+            {connectMode === "login" ? (
+              <div className="ws-web-api-login-panel">
+                <p>
+                  QR not loading? Login with your Web Based API username and
+                  password. We save credentials and load your channel.
+                </p>
+                <div className="ws-web-api-login-actions">
+                  <button
+                    className="btn-cta btn-primary"
+                    disabled={pending}
+                    formAction={connectAction}
+                    type="submit"
+                  >
+                    <LogIn size={14} aria-hidden />
+                    {connectPending ? "Logging in..." : "Login & connect"}
+                  </button>
+                  <a
+                    className="btn-cta btn-secondary"
+                    href={masPortalUrl()}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Open web portal
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <MasWhatsAppConnectPanel
+                compact
+                connectMessage={connectState.message}
+                connectOk={connectState.ok}
+                credentialsSaved={masCredentialsSaved || settingsState.ok || connectState.ok}
+                initialDashboard={masAccountDashboard}
+                initialQrImageUrl={connectState.qrImageUrl ?? null}
+                initialStatus={masLinkStatus}
+                onUseLogin={() => setConnectMode("login")}
+              />
+            )}
           </>
         )}
 
@@ -188,11 +261,13 @@ export function WhatsAppSettingsPanel({
           <p className="ws-wa-settings-lead is-compact">
             {credentialsReady
               ? "Credentials saved. Leave secret fields blank to keep current values."
-              : "Save to activate this connection type."}
+              : isOfficial
+                ? "Save to activate Official API."
+                : "Save credentials, or use Login when QR does not load."}
           </p>
           <button
             className="btn-cta btn-primary"
-            disabled={settingsPending}
+            disabled={pending}
             type="submit"
           >
             {settingsPending ? "Saving..." : "Save connection"}
@@ -205,6 +280,22 @@ export function WhatsAppSettingsPanel({
           >
             {settingsState.message}
           </p>
+        ) : null}
+        {connectState.message && connectMode === "login" ? (
+          <p
+            className={`saas-form-message ${connectState.ok ? "ok" : "error"}`}
+          >
+            {connectState.message}
+          </p>
+        ) : null}
+        {connectState.ok && connectState.qrImageUrl && connectMode === "login" ? (
+          <MasWhatsAppConnectPanel
+            compact
+            connectOk
+            credentialsSaved
+            initialQrImageUrl={connectState.qrImageUrl}
+            initialStatus={masLinkStatus}
+          />
         ) : null}
       </form>
     </section>

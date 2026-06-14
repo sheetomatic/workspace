@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { RefreshCw } from "lucide-react";
+import { LogIn, RefreshCw } from "lucide-react";
 import {
   fetchMasAccountDashboard,
   fetchMasWhatsAppQr,
 } from "@/app/app/whatsapp/mas-actions";
+import { masPortalUrl } from "@/lib/integrations/messageautosender";
 import type {
   MasAccountDashboard,
   MasPhoneConnectionStatus,
@@ -21,7 +22,7 @@ function channelStatusLabel(status: string, connected: boolean) {
 }
 
 function qrHelperMessage(dashboard: MasAccountDashboard | null, compact: boolean) {
-  if (!dashboard) return compact ? "Save credentials to load QR." : "Loading...";
+  if (!dashboard) return compact ? "Save or login to load QR." : "Loading...";
   if (dashboard.connected) return "WhatsApp linked.";
   if (dashboard.channelStatus === "TRYING_TO_REACH_PHONE") return "Connecting - keep WhatsApp open.";
   if (dashboard.channelStatus === "USE_HERE") return "Tap Use here on your phone.";
@@ -33,12 +34,20 @@ export function MasWhatsAppConnectPanel({
   credentialsSaved,
   initialStatus,
   initialDashboard = null,
+  initialQrImageUrl = null,
   compact = false,
+  connectOk = false,
+  connectMessage = null,
+  onUseLogin,
 }: {
   credentialsSaved: boolean;
   initialStatus: MasPhoneConnectionStatus | null;
   initialDashboard?: MasAccountDashboard | null;
+  initialQrImageUrl?: string | null;
   compact?: boolean;
+  connectOk?: boolean;
+  connectMessage?: string | null;
+  onUseLogin?: () => void;
 }) {
   const [dashboard, setDashboard] = useState<MasAccountDashboard | null>(
     initialDashboard ??
@@ -55,9 +64,17 @@ export function MasWhatsAppConnectPanel({
           }
         : null),
   );
-  const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [qrImageUrl, setQrImageUrl] = useState<string | null>(initialQrImageUrl);
+  const [error, setError] = useState<string | null>(
+    connectOk ? null : connectMessage,
+  );
   const [pending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (initialQrImageUrl) {
+      setQrImageUrl(initialQrImageUrl);
+    }
+  }, [initialQrImageUrl]);
 
   const refreshDashboard = useCallback(() => {
     if (!credentialsSaved) return;
@@ -97,23 +114,35 @@ export function MasWhatsAppConnectPanel({
   }, [credentialsSaved, refreshDashboard]);
 
   useEffect(() => {
-    if (!credentialsSaved || dashboard?.connected) return;
+    if (!credentialsSaved || dashboard?.connected || qrImageUrl) return;
     loadQr();
     const interval = window.setInterval(refreshDashboard, 5000);
     return () => window.clearInterval(interval);
-  }, [credentialsSaved, dashboard?.connected, loadQr, refreshDashboard]);
+  }, [credentialsSaved, dashboard?.connected, loadQr, qrImageUrl, refreshDashboard]);
 
   const statusLabel = channelStatusLabel(
     dashboard?.channelStatus ?? "",
     dashboard?.connected ?? false,
   );
 
+  const showLoginFallback = Boolean(error && !qrImageUrl && !dashboard?.connected);
+
   if (!credentialsSaved) {
     return (
       <div className={`ws-web-api-qr-block${compact ? " is-compact" : ""}`}>
         <div className="ws-web-api-qr-frame is-placeholder">
           <span className="ws-web-api-qr-placeholder-text">QR code</span>
-          <p>Save Web Based API credentials, then scan here.</p>
+          <p>Enter credentials above, then Save or switch to Login.</p>
+          {onUseLogin ? (
+            <button
+              className="btn-cta btn-secondary btn-sm"
+              type="button"
+              onClick={onUseLogin}
+            >
+              <LogIn size={13} aria-hidden />
+              Login with account
+            </button>
+          ) : null}
         </div>
       </div>
     );
@@ -166,7 +195,7 @@ export function MasWhatsAppConnectPanel({
               />
             ) : (
               <div className="ws-web-api-qr-placeholder">
-                {pending ? "Loading..." : "No QR yet"}
+                {pending ? "Loading..." : error ?? "No QR yet"}
               </div>
             )}
           </div>
@@ -196,9 +225,37 @@ export function MasWhatsAppConnectPanel({
             </div>
           ) : null}
         </div>
+
+        {showLoginFallback ? (
+          <div className="ws-web-api-login-fallback">
+            <p>{error}</p>
+            <div className="ws-web-api-login-actions">
+              {onUseLogin ? (
+                <button
+                  className="btn-cta btn-primary btn-sm"
+                  type="button"
+                  onClick={onUseLogin}
+                >
+                  <LogIn size={13} aria-hidden />
+                  Login with username & password
+                </button>
+              ) : null}
+              <a
+                className="btn-cta btn-secondary btn-sm"
+                href={masPortalUrl()}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                Open web portal
+              </a>
+            </div>
+          </div>
+        ) : null}
       </div>
 
-      {error ? <p className="saas-form-message error">{error}</p> : null}
+      {error && !showLoginFallback ? (
+        <p className="saas-form-message error">{error}</p>
+      ) : null}
     </section>
   );
 }

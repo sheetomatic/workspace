@@ -41,6 +41,7 @@ export type MasPhoneQrResult = {
   qrText: string | null;
   message: string | null;
   raw?: string;
+  error?: string;
 };
 
 type MasChannelStatus =
@@ -101,6 +102,33 @@ export function masBaseUrl() {
     process.env.MAS_API_BASE_URL?.trim().replace(/\/+$/, "") ||
     "https://app.messageautosender.com/api/v1"
   );
+}
+
+export function masPortalUrl() {
+  return "https://app.messageautosender.com/";
+}
+
+export async function verifyMasCustomerLogin(
+  credentials?: MasCredentials | null,
+): Promise<
+  | { ok: true; dashboard: MasAccountDashboard; qr: MasPhoneQrResult }
+  | { ok: false; error: string }
+> {
+  const resolved = resolveMasCredentials(credentials);
+  if (!resolved?.username || !resolved.password || !resolved.apiKey) {
+    return {
+      ok: false,
+      error: "Enter username, password, and API key to login.",
+    };
+  }
+
+  const dashboardResult = await getMasAccountDashboard(resolved);
+  if (!dashboardResult.ok) {
+    return { ok: false, error: dashboardResult.error };
+  }
+
+  const qr = await getMasPhoneQr(resolved);
+  return { ok: true, dashboard: dashboardResult.dashboard, qr };
 }
 
 function masResellerApiKey() {
@@ -171,10 +199,33 @@ function masImageToDataUrl(image: string) {
   return `data:image/png;base64,${trimmed}`;
 }
 
+function pickImageFromSources(sources: Record<string, unknown>[]) {
+  const keys = [
+    "image",
+    "qrCode",
+    "qrImage",
+    "qr",
+    "base64Image",
+    "imageBase64",
+    "channelImage",
+    "loginImage",
+  ];
+  for (const source of sources) {
+    for (const key of keys) {
+      const value = pickString(source[key]);
+      if (value) {
+        return value;
+      }
+    }
+  }
+  return null;
+}
+
 function parseChannelLoginResult(body: Record<string, unknown>) {
   const result = unwrapMasResult(body);
-  const channelStatus = (pickString(result.channelStatus) ?? "") as MasChannelStatus;
-  const image = pickString(result.image);
+  const sources = [result, body];
+  const channelStatus = (pickString(result.channelStatus) ?? pickString(body.channelStatus) ?? "") as MasChannelStatus;
+  const image = pickImageFromSources(sources);
   const connected = channelStatus === "SUCCESS";
   const statusMessage =
     pickString(body.message) ??
@@ -405,7 +456,10 @@ async function masChannelLoginRequest(
 
   if (!resellerKey && lastStatus === 403) {
     lastError =
-      "Scan QR needs platform reseller access (MAS_RESELLER_API_KEY). Save credentials and ask Sheetomatic to enable linking.";
+      "QR scan needs MAS_RESELLER_API_KEY on the server. Contact Sheetomatic support to enable Web Based API linking.";
+  } else if (!resellerKey && !lastRaw) {
+    lastError =
+      "QR scan needs platform reseller access. Save credentials, then contact Sheetomatic support.";
   }
 
   return { ok: false, error: lastError, status: lastStatus, raw: lastRaw };
