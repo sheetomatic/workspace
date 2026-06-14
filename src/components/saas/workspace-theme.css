@@ -8798,7 +8798,39 @@
   }
 }
 
-/* Sidebar-based Official / Web Based API */
+.workspace-app .ws-wa-provider-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.workspace-app .ws-settings-wallet-toggle {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.workspace-app .ws-settings-wallet-toggle-btn {
+  padding: 5px 12px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.workspace-app .ws-settings-wallet-toggle-btn.is-active {
+  background: #fff;
+  color: #1d4ed8;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+/* Sidebar-based Official / Web (inner - legacy) */
 .workspace-app .ws-wa-side-layout {
   display: grid;
   grid-template-columns: 196px minmax(0, 1fr);

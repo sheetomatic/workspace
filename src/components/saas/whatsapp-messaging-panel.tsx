@@ -84,6 +84,7 @@ export function WhatsAppMessagingPanel({
           credentialsReady={credentialsReady}
           hasSavedSecrets={hasSavedSecrets}
           initialValues={settingsInitialValues}
+          provider={settingsInitialValues.whatsappProvider}
           onClose={() => setSettingsOpen(false)}
         />
       ) : null}
