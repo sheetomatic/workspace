@@ -158,7 +158,7 @@ export function WhatsAppSettingsPanel({
               <Globe aria-hidden size={16} />
               <span>
                 <strong>Web Based API</strong>
-                <small>Scan QR or OTP phone link</small>
+                <small>Scan QR to link your phone</small>
               </span>
             </button>
           </div>
@@ -183,8 +183,8 @@ export function WhatsAppSettingsPanel({
                 role="tabpanel"
               >
                 <p className="ws-wa-settings-lead is-compact" id="ws-wa-web-tab-label">
-                  Sign in with your web account, save, then scan QR or use OTP to
-                  link your phone.
+                  Sign in with your web account, save, then scan QR to link your
+                  phone.
                 </p>
                 <label>
                   Username
