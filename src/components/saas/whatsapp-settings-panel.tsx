@@ -258,14 +258,14 @@ export function WhatsAppSettingsPanel({
             {settingsState.message}
           </p>
         ) : null}
-        {connectState.message && connectMode === "login" ? (
+        {connectState.message ? (
           <p
             className={`saas-form-message ${connectState.ok ? "ok" : "error"}`}
           >
             {connectState.message}
           </p>
         ) : null}
-        {connectState.ok && connectState.qrImageUrl && connectMode === "login" ? (
+        {connectState.ok && connectState.qrImageUrl ? (
           <MasWhatsAppConnectPanel
             compact
             connectOk
