@@ -86,13 +86,17 @@ export function WhatsAppSettingsPanel({
     hasSavedSecrets.masApiKey &&
     Boolean(initialValues.masUsername);
 
+  const selectProvider = (next: WhatsAppProviderTab) => {
+    setProvider(next);
+  };
+
   return (
     <section className={`saas-panel ws-wa-settings-panel${embedded ? " is-embedded" : ""}`}>
       {!embedded ? (
         <header className="ws-wa-settings-head">
           <div>
             <h2>Settings</h2>
-            <p>Configure Official API or Web Based API side by side.</p>
+            <p>Pick a connection type from the sidebar and save.</p>
           </div>
           <button
             aria-label="Close settings"
@@ -105,11 +109,38 @@ export function WhatsAppSettingsPanel({
         </header>
       ) : null}
 
-      <form action={settingsAction} className="ws-wa-dual-connect-form">
+      <form action={settingsAction} className="ws-wa-side-layout">
         <input name="whatsappProvider" type="hidden" value={provider} />
 
-        <div className="ws-wa-dual-connect-top">
-          <label className="ws-wa-dual-phone">
+        <aside aria-label="Connection type" className="ws-wa-side-nav">
+          <button
+            aria-current={provider === "sheetomatic" ? "true" : undefined}
+            className={`ws-wa-side-nav-item${provider === "sheetomatic" ? " is-active" : ""}`}
+            type="button"
+            onClick={() => selectProvider("sheetomatic")}
+          >
+            <KeyRound size={16} aria-hidden />
+            <span>
+              <strong>Official API</strong>
+              <small>Meta key + Phone ID</small>
+            </span>
+          </button>
+          <button
+            aria-current={provider === "messageautosender" ? "true" : undefined}
+            className={`ws-wa-side-nav-item${provider === "messageautosender" ? " is-active" : ""}`}
+            type="button"
+            onClick={() => selectProvider("messageautosender")}
+          >
+            <Globe size={16} aria-hidden />
+            <span>
+              <strong>Web Based API</strong>
+              <small>Login + scan QR</small>
+            </span>
+          </button>
+        </aside>
+
+        <div className="ws-wa-side-main">
+          <label className="ws-wa-side-phone">
             <span>Business WhatsApp number</span>
             <input
               defaultValue={initialValues.businessPhone}
@@ -119,154 +150,116 @@ export function WhatsAppSettingsPanel({
             />
           </label>
 
-          <fieldset className="ws-wa-active-provider">
-            <legend>Active connection</legend>
-            <label
-              className={`ws-wa-active-option${provider === "sheetomatic" ? " is-active" : ""}`}
-            >
-              <input
-                checked={provider === "sheetomatic"}
-                name="whatsappProviderRadio"
-                type="radio"
-                value="sheetomatic"
-                onChange={() => setProvider("sheetomatic")}
-              />
-              Official API
-            </label>
-            <label
-              className={`ws-wa-active-option${provider === "messageautosender" ? " is-active" : ""}`}
-            >
-              <input
-                checked={provider === "messageautosender"}
-                name="whatsappProviderRadio"
-                type="radio"
-                value="messageautosender"
-                onChange={() => setProvider("messageautosender")}
-              />
-              Web Based API
-            </label>
-          </fieldset>
-        </div>
-
-        <div className="ws-wa-dual-connect-grid">
-          <article
-            className={`ws-wa-dual-column ws-wa-dual-official${provider === "sheetomatic" ? " is-selected" : ""}`}
-          >
-            <header className="ws-wa-dual-column-head">
-              <KeyRound size={16} aria-hidden />
-              <div>
+          {provider === "sheetomatic" ? (
+            <div className="ws-wa-side-panel">
+              <header className="ws-wa-side-panel-head">
                 <h3>Official API</h3>
-                <p>Meta Cloud API key + Phone ID</p>
-              </div>
-            </header>
-            <div className="ws-wa-dual-fields">
-              <label>
-                API key
-                <input
-                  name="redlavaApiKey"
-                  placeholder={
-                    hasSavedSecrets.redlavaApiKey
-                      ? maskSecret("saved-secret-key")
-                      : "Paste API key"
-                  }
-                  type="password"
-                  autoComplete="off"
-                />
-              </label>
-              <label>
-                Phone ID
-                <input
-                  defaultValue={initialValues.redlavaPhoneId}
-                  name="redlavaPhoneId"
-                  placeholder="1102997926228862"
-                  type="text"
-                />
-              </label>
-            </div>
-          </article>
-
-          <article
-            className={`ws-wa-dual-column ws-wa-dual-web${provider === "messageautosender" ? " is-selected" : ""}`}
-          >
-            <header className="ws-wa-dual-column-head">
-              <Globe size={16} aria-hidden />
-              <div>
-                <h3>Web Based API</h3>
-                <p>Account login + scan QR</p>
-              </div>
-            </header>
-            <div className="ws-wa-dual-web-body">
-              <div className="ws-wa-dual-fields">
-                <label>
-                  Username
-                  <input
-                    defaultValue={initialValues.masUsername}
-                    name="masUsername"
-                    placeholder="Account username"
-                    type="text"
-                    autoComplete="username"
-                  />
-                </label>
-                <label>
-                  Password
-                  <input
-                    name="masPassword"
-                    placeholder={
-                      hasSavedSecrets.masPassword
-                        ? maskSecret("saved-secret-key")
-                        : "Password"
-                    }
-                    type="password"
-                    autoComplete="current-password"
-                  />
-                </label>
+                <p>Use the API key and Phone ID from your WhatsApp Business account.</p>
+              </header>
+              <div className="ws-wa-side-fields">
                 <label>
                   API key
                   <input
-                    name="masApiKey"
+                    name="redlavaApiKey"
                     placeholder={
-                      hasSavedSecrets.masApiKey
+                      hasSavedSecrets.redlavaApiKey
                         ? maskSecret("saved-secret-key")
-                        : "API key"
+                        : "Paste API key"
                     }
                     type="password"
                     autoComplete="off"
                   />
                 </label>
+                <label>
+                  Phone ID
+                  <input
+                    defaultValue={initialValues.redlavaPhoneId}
+                    name="redlavaPhoneId"
+                    placeholder="1102997926228862"
+                    type="text"
+                  />
+                </label>
               </div>
-
-              <MasWhatsAppConnectPanel
-                compact
-                credentialsSaved={masCredentialsSaved || settingsState.ok}
-                initialDashboard={masAccountDashboard}
-                initialStatus={masLinkStatus}
-              />
             </div>
-          </article>
-        </div>
+          ) : (
+            <div className="ws-wa-side-panel">
+              <header className="ws-wa-side-panel-head">
+                <h3>Web Based API</h3>
+                <p>Save account credentials, then scan the QR code to link WhatsApp.</p>
+              </header>
+              <div className="ws-wa-side-web-grid">
+                <div className="ws-wa-side-fields">
+                  <label>
+                    Username
+                    <input
+                      defaultValue={initialValues.masUsername}
+                      name="masUsername"
+                      placeholder="Account username"
+                      type="text"
+                      autoComplete="username"
+                    />
+                  </label>
+                  <label>
+                    Password
+                    <input
+                      name="masPassword"
+                      placeholder={
+                        hasSavedSecrets.masPassword
+                          ? maskSecret("saved-secret-key")
+                          : "Password"
+                      }
+                      type="password"
+                      autoComplete="current-password"
+                    />
+                  </label>
+                  <label>
+                    API key
+                    <input
+                      name="masApiKey"
+                      placeholder={
+                        hasSavedSecrets.masApiKey
+                          ? maskSecret("saved-secret-key")
+                          : "API key"
+                      }
+                      type="password"
+                      autoComplete="off"
+                    />
+                  </label>
+                </div>
 
-        <div className="ws-wa-dual-connect-foot">
-          <p className="ws-wa-settings-lead is-compact">
-            {credentialsReady
-              ? "Credentials saved. Leave secret fields blank to keep current values."
-              : "Fill either column and choose which connection is active."}
-          </p>
-          <button
-            className="btn-cta btn-primary"
-            disabled={settingsPending}
-            type="submit"
-          >
-            {settingsPending ? "Saving..." : "Save connection"}
-          </button>
-        </div>
+                <MasWhatsAppConnectPanel
+                  compact
+                  credentialsSaved={masCredentialsSaved || settingsState.ok}
+                  initialDashboard={masAccountDashboard}
+                  initialStatus={masLinkStatus}
+                />
+              </div>
+            </div>
+          )}
 
-        {settingsState.message ? (
-          <p
-            className={`saas-form-message ${settingsState.ok ? "ok" : "error"}`}
-          >
-            {settingsState.message}
-          </p>
-        ) : null}
+          <div className="ws-wa-side-foot">
+            <p className="ws-wa-settings-lead is-compact">
+              {credentialsReady
+                ? "Credentials saved. Leave secret fields blank to keep current values."
+                : "Save to activate the selected connection type."}
+            </p>
+            <button
+              className="btn-cta btn-primary"
+              disabled={settingsPending}
+              type="submit"
+            >
+              {settingsPending ? "Saving..." : "Save connection"}
+            </button>
+          </div>
+
+          {settingsState.message ? (
+            <p
+              className={`saas-form-message ${settingsState.ok ? "ok" : "error"}`}
+            >
+              {settingsState.message}
+            </p>
+          ) : null}
+        </div>
       </form>
     </section>
   );
