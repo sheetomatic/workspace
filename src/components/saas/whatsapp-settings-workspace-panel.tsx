@@ -26,6 +26,7 @@ export function WhatsAppSettingsWorkspacePanel({
   showResellerWallet = false,
   tenantWaWalletLabel = null,
   tenantAiWalletLabel = null,
+  tenantPendingCreditsLabel = null,
   goLiveStatus,
   masLinkStatus = null,
   userName,
@@ -36,11 +37,12 @@ export function WhatsAppSettingsWorkspacePanel({
   members: WhatsAppMember[];
   credentialsReady: boolean;
   credentialsSource: string;
-  hasSavedSecrets: { redlavaApiKey: boolean; masPassword: boolean };
+  hasSavedSecrets: { redlavaApiKey: boolean; masPassword: boolean; masApiKey: boolean };
   resellerWalletPoints?: number | null;
   showResellerWallet?: boolean;
   tenantWaWalletLabel?: string | null;
   tenantAiWalletLabel?: string | null;
+  tenantPendingCreditsLabel?: string | null;
   goLiveStatus: WhatsAppGoLiveStatus;
   masLinkStatus?: MasPhoneConnectionStatus | null;
   userName: string;
@@ -98,6 +100,10 @@ export function WhatsAppSettingsWorkspacePanel({
               <div className="ws-settings-wallet-stat">
                 <span>AI credits</span>
                 <strong>{tenantAiWalletLabel}</strong>
+              </div>
+              <div className="ws-settings-wallet-stat">
+                <span>Credits pending</span>
+                <strong>{tenantPendingCreditsLabel ?? "₹0.00"}</strong>
               </div>
             </div>
           ) : walletHasError ? (

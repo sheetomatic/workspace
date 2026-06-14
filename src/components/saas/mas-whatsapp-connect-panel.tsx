@@ -86,7 +86,10 @@ export function MasWhatsAppConnectPanel({
   if (!credentialsSaved) {
     return (
       <div className="ws-mas-connect ws-mas-connect-muted">
-        <p>Save username and password above, then link your WhatsApp here.</p>
+        <p>
+          Save username, password, and API key above - the Scan QR panel appears
+          here automatically.
+        </p>
       </div>
     );
   }
@@ -95,8 +98,8 @@ export function MasWhatsAppConnectPanel({
     <section className="ws-mas-connect">
       <div className="ws-mas-connect-head">
         <div>
-          <h4>Link WhatsApp</h4>
-          <p>Connect your phone so Sheetomatic can send messages.</p>
+          <h4>Scan to link WhatsApp</h4>
+          <p>After saving credentials, scan the QR code with your phone.</p>
         </div>
         <span
           className={`ws-mas-connect-pill${status?.connected ? " is-connected" : ""}`}
@@ -137,8 +140,7 @@ export function MasWhatsAppConnectPanel({
       {mode === "qr" ? (
         <div className="ws-mas-connect-panel">
           <p className="ws-wa-settings-lead">
-            Open WhatsApp on your phone ? Linked devices ? Link a device ? Scan
-            this code.
+            Open WhatsApp ? Linked devices ? Link a device ? Scan this code.
           </p>
           <div className="ws-mas-qr-frame">
             {qrImageUrl ? (

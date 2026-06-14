@@ -76,6 +76,7 @@ export function isWhatsAppProviderConfigured(
     return isMasConfigured({
       username: credentials.masUsername,
       password: credentials.masPassword,
+      apiKey: credentials.masApiKey,
     });
   }
 
@@ -158,6 +159,7 @@ export async function deliverWhatsAppMessage(
       {
         username: credentials.masUsername,
         password: credentials.masPassword,
+        apiKey: credentials.masApiKey,
       },
     );
   }
@@ -230,11 +232,12 @@ export function sheetomaticCredentialsFromWorkspace(
 export function masCredentialsFromWorkspace(
   credentials: WorkspaceWhatsAppCredentials,
 ): MasCredentials | null {
-  if (!credentials.masUsername && !credentials.masPassword) {
+  if (!credentials.masUsername && !credentials.masPassword && !credentials.masApiKey) {
     return null;
   }
   return {
     username: credentials.masUsername,
     password: credentials.masPassword,
+    apiKey: credentials.masApiKey,
   };
 }

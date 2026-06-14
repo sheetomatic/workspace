@@ -107,7 +107,11 @@ export function getWhatsAppTemplateSetup(
   credentials?: RedlavaCredentials | null,
   options?: {
     provider?: "sheetomatic" | "messageautosender";
-    masCredentials?: { username?: string | null; password?: string | null } | null;
+    masCredentials?: {
+      username?: string | null;
+      password?: string | null;
+      apiKey?: string | null;
+    } | null;
   },
 ): WhatsAppTemplateSetup {
   const provider = options?.provider ?? "sheetomatic";

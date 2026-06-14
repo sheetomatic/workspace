@@ -10,6 +10,7 @@ export type WorkspaceTenantWallets = {
   ok: true;
   wa: RedlavaTenantWallet;
   ai: RedlavaTenantWallet;
+  pendingTotal: number;
 } | {
   ok: false;
   error: string;
@@ -49,5 +50,10 @@ export async function getWorkspaceTenantWallets(
     return { ok: false, error: ai.error ?? "Could not load AI wallet." };
   }
 
-  return { ok: true, wa: wa.wallet, ai: ai.wallet };
+  return {
+    ok: true,
+    wa: wa.wallet,
+    ai: ai.wallet,
+    pendingTotal: wa.wallet.pendingBalance + ai.wallet.pendingBalance,
+  };
 }

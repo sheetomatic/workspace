@@ -3,6 +3,9 @@
 .ai-crm-app {
   grid-template-columns: 220px 1fr !important;
   background: #f3f4f6;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
 }
 
 .ai-crm-app.ai-app:has(.ai-onboarding-page) {
@@ -12,11 +15,15 @@
 .ai-crm-sidebar {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  padding: 16px 12px;
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  padding: 14px 12px;
   background: #fff;
   border-right: 1px solid #e5e7eb;
   color: #111827;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .ai-crm-brand-row {
@@ -131,8 +138,10 @@
 .ai-crm-main {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  min-width: 0;
+  min-height: 0;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
 }
 
 .ai-crm-topbar {
@@ -140,9 +149,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 24px;
+  padding: 10px 18px;
   background: #fff;
   border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
 }
 
 .ai-crm-breadcrumb {
@@ -204,8 +214,10 @@
 
 .ai-crm-content {
   flex: 1;
-  padding: 24px;
-  overflow: auto;
+  min-height: 0;
+  padding: 14px 18px 18px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* Onboarding questionnaire */

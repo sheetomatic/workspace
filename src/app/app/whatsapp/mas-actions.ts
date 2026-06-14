@@ -20,14 +20,14 @@ async function requireMasCredentials() {
   if (credentials.whatsappProvider !== "messageautosender") {
     return {
       ok: false as const,
-      error: "Switch to WhatsApp Link in Settings before linking a phone.",
+      error: "Switch to Web Based API in Settings before linking a phone.",
     };
   }
 
-  if (!credentials.masUsername || !credentials.masPassword) {
+  if (!credentials.masUsername || !credentials.masPassword || !credentials.masApiKey) {
     return {
       ok: false as const,
-      error: "Save username and password in Settings first.",
+      error: "Save username, password, and API key in Settings first.",
     };
   }
 
@@ -36,6 +36,7 @@ async function requireMasCredentials() {
     mas: {
       username: credentials.masUsername,
       password: credentials.masPassword,
+      apiKey: credentials.masApiKey,
     },
   };
 }
@@ -103,7 +104,8 @@ export async function loadMasWhatsAppLinkStatusForSettings() {
   if (
     credentials.whatsappProvider !== "messageautosender" ||
     !credentials.masUsername ||
-    !credentials.masPassword
+    !credentials.masPassword ||
+    !credentials.masApiKey
   ) {
     return null;
   }
@@ -111,6 +113,7 @@ export async function loadMasWhatsAppLinkStatusForSettings() {
   const result = await getMasPhoneConnectionStatus({
     username: credentials.masUsername,
     password: credentials.masPassword,
+    apiKey: credentials.masApiKey,
   });
 
   return result.ok ? result.status : null;

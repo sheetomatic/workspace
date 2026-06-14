@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Settings, UserPlus, X } from "lucide-react";
+import { Globe, KeyRound, Settings, UserPlus, X } from "lucide-react";
 import {
   saveWhatsAppSettings,
   updateMemberWhatsAppPhone,
@@ -13,6 +13,8 @@ import type { WhatsAppSettingsFormValues } from "@/lib/whatsapp-settings-form";
 import { maskSecret } from "@/lib/whatsapp-settings-form";
 import { MasWhatsAppConnectPanel } from "@/components/saas/mas-whatsapp-connect-panel";
 import type { MasPhoneConnectionStatus } from "@/lib/integrations/messageautosender";
+
+type WhatsAppProviderTab = "sheetomatic" | "messageautosender";
 
 type WhatsAppMember = {
   membershipId: string;
@@ -58,13 +60,16 @@ export function WhatsAppSettingsPanel({
   hasSavedSecrets: {
     redlavaApiKey: boolean;
     masPassword: boolean;
+    masApiKey: boolean;
   };
   masLinkStatus?: MasPhoneConnectionStatus | null;
   onClose?: () => void;
   embedded?: boolean;
 }) {
   const router = useRouter();
-  const [provider, setProvider] = useState(initialValues.whatsappProvider);
+  const [provider, setProvider] = useState<WhatsAppProviderTab>(
+    initialValues.whatsappProvider,
+  );
   const [settingsState, settingsAction, settingsPending] = useActionState(
     saveWhatsAppSettings,
     whatsAppTemplateInitialState,
@@ -73,6 +78,10 @@ export function WhatsAppSettingsPanel({
     updateMemberWhatsAppPhone,
     whatsAppTemplateInitialState,
   );
+
+  useEffect(() => {
+    setProvider(initialValues.whatsappProvider);
+  }, [initialValues.whatsappProvider]);
 
   useEffect(() => {
     if (settingsState.ok) {
@@ -89,7 +98,9 @@ export function WhatsAppSettingsPanel({
   const missingPhone = members.filter((member) => !member.phone);
   const readyCount = members.length - missingPhone.length;
   const masCredentialsSaved =
-    hasSavedSecrets.masPassword && Boolean(initialValues.masUsername);
+    hasSavedSecrets.masPassword &&
+    hasSavedSecrets.masApiKey &&
+    Boolean(initialValues.masUsername);
 
   return (
     <section className={`saas-panel ws-wa-settings-panel${embedded ? " is-embedded" : ""}`}>
@@ -112,34 +123,48 @@ export function WhatsAppSettingsPanel({
 
       <div className="ws-wa-settings-grid">
         <article className="ws-wa-settings-card">
-          <h3>Provider</h3>
+          <h3>Connection</h3>
           <p className="ws-wa-settings-lead">
             {credentialsReady
               ? "Credentials saved. Leave secret fields blank to keep current values."
-              : "Pick a connection type and enter the credentials you received."}
+              : "Choose Official API or Web Based API, then save your credentials."}
           </p>
 
-          <form action={settingsAction} className="ws-wa-settings-form">
-            <label>
-              Connection type
-              <select
-                name="whatsappProvider"
-                value={provider}
-                onChange={(event) =>
-                  setProvider(
-                    event.target.value === "messageautosender"
-                      ? "messageautosender"
-                      : "sheetomatic",
-                  )
-                }
-              >
-                <option value="sheetomatic">WhatsApp API</option>
-                <option value="messageautosender">WhatsApp Link</option>
-              </select>
-              <span className="ws-field-hint">
-                API = official Meta messaging. Link = connect your phone with QR or OTP.
+          <div
+            aria-label="WhatsApp connection type"
+            className="ws-wa-provider-tabs"
+            role="tablist"
+          >
+            <button
+              aria-selected={provider === "sheetomatic"}
+              className={`ws-wa-provider-tab${provider === "sheetomatic" ? " is-active" : ""}`}
+              role="tab"
+              type="button"
+              onClick={() => setProvider("sheetomatic")}
+            >
+              <KeyRound aria-hidden size={16} />
+              <span>
+                <strong>Official API</strong>
+                <small>Meta Cloud API key + Phone ID</small>
               </span>
-            </label>
+            </button>
+            <button
+              aria-selected={provider === "messageautosender"}
+              className={`ws-wa-provider-tab${provider === "messageautosender" ? " is-active" : ""}`}
+              role="tab"
+              type="button"
+              onClick={() => setProvider("messageautosender")}
+            >
+              <Globe aria-hidden size={16} />
+              <span>
+                <strong>Web Based API</strong>
+                <small>Scan QR or OTP phone link</small>
+              </span>
+            </button>
+          </div>
+
+          <form action={settingsAction} className="ws-wa-settings-form">
+            <input name="whatsappProvider" type="hidden" value={provider} />
 
             <label>
               Business WhatsApp number
@@ -152,7 +177,15 @@ export function WhatsAppSettingsPanel({
             </label>
 
             {provider === "messageautosender" ? (
-              <>
+              <div
+                aria-labelledby="ws-wa-web-tab-label"
+                className="ws-wa-provider-panel"
+                role="tabpanel"
+              >
+                <p className="ws-wa-settings-lead is-compact" id="ws-wa-web-tab-label">
+                  Sign in with your web account, save, then scan QR or use OTP to
+                  link your phone.
+                </p>
                 <label>
                   Username
                   <input
@@ -176,9 +209,33 @@ export function WhatsAppSettingsPanel({
                     autoComplete="current-password"
                   />
                 </label>
-              </>
+                <label>
+                  API key
+                  <input
+                    name="masApiKey"
+                    placeholder={
+                      hasSavedSecrets.masApiKey
+                        ? maskSecret("saved-secret-key")
+                        : "Paste API key from your web account"
+                    }
+                    type="password"
+                    autoComplete="off"
+                  />
+                  <span className="ws-field-hint">
+                    Used to send messages and load the Scan QR panel after you save.
+                  </span>
+                </label>
+              </div>
             ) : (
-              <>
+              <div
+                aria-labelledby="ws-wa-official-tab-label"
+                className="ws-wa-provider-panel"
+                role="tabpanel"
+              >
+                <p className="ws-wa-settings-lead is-compact" id="ws-wa-official-tab-label">
+                  Use the API key and Phone ID from your WhatsApp Business
+                  connected account.
+                </p>
                 <label>
                   API key
                   <input
@@ -200,11 +257,8 @@ export function WhatsAppSettingsPanel({
                     placeholder="1102997926228862"
                     type="text"
                   />
-                  <span className="ws-field-hint">
-                    From your WhatsApp API connected account.
-                  </span>
                 </label>
-              </>
+              </div>
             )}
 
             <button
@@ -212,7 +266,7 @@ export function WhatsAppSettingsPanel({
               disabled={settingsPending}
               type="submit"
             >
-              {settingsPending ? "Saving..." : "Save"}
+              {settingsPending ? "Saving..." : "Save connection"}
             </button>
 
             {settingsState.message ? (
@@ -226,7 +280,7 @@ export function WhatsAppSettingsPanel({
 
           {provider === "messageautosender" ? (
             <MasWhatsAppConnectPanel
-              credentialsSaved={masCredentialsSaved}
+              credentialsSaved={masCredentialsSaved || settingsState.ok}
               initialStatus={masLinkStatus}
             />
           ) : null}

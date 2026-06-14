@@ -1,5 +1,6 @@
 /**
  * Message Auto Sender (MAS) WhatsApp Web automation API.
+ * @see https://app.messageautosender.com/swagger-ui/4.1.3/index.html
  */
 
 import { normalizeWhatsAppPhone } from "@/lib/phone";
@@ -11,6 +12,8 @@ import {
 export type MasCredentials = {
   username?: string | null;
   password?: string | null;
+  apiKey?: string | null;
+  channelId?: number | null;
 };
 
 export type MasPhoneConnectionStatus = {
@@ -28,6 +31,14 @@ export type MasPhoneQrResult = {
   raw?: string;
 };
 
+type MasChannelStatus =
+  | "IMAGE_VISIBLE"
+  | "SUCCESS"
+  | "USE_HERE"
+  | "RETRY"
+  | "TRYING_TO_REACH_PHONE"
+  | string;
+
 function pickString(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
@@ -37,6 +48,10 @@ export function masBaseUrl() {
     process.env.MAS_API_BASE_URL?.trim().replace(/\/+$/, "") ||
     "https://app.messageautosender.com/api/v1"
   );
+}
+
+function masResellerApiKey() {
+  return process.env.MAS_RESELLER_API_KEY?.trim() || null;
 }
 
 export function resolveMasCredentials(
@@ -49,12 +64,20 @@ export function resolveMasCredentials(
   const password =
     input?.password?.trim() ||
     (allowEnvFallback ? process.env.MAS_PASSWORD?.trim() : null);
+  const apiKey =
+    input?.apiKey?.trim() ||
+    (allowEnvFallback ? process.env.MAS_API_KEY?.trim() : null);
 
-  if (!username || !password) {
+  if (!username || !password || !apiKey) {
     return null;
   }
 
-  return { username, password };
+  return {
+    username,
+    password,
+    apiKey,
+    channelId: input?.channelId ?? null,
+  };
 }
 
 export function isMasConfigured(credentials?: MasCredentials | null) {
@@ -77,141 +100,215 @@ function parseMasBody(raw: string): Record<string, unknown> {
   }
 }
 
-function parseMasConnectionStatus(body: Record<string, unknown>): MasPhoneConnectionStatus {
-  const statusRaw = pickString(body.status) ?? pickString(body.phoneStatus) ?? "";
-  const status = statusRaw.toLowerCase();
-  const connected =
-    body.connected === true ||
-    body.isConnected === true ||
-    body.linked === true ||
-    ["connected", "linked", "online", "active", "ready", "success"].includes(status);
+function unwrapMasResult(body: Record<string, unknown>) {
+  const nested = body.result;
+  return nested && typeof nested === "object"
+    ? (nested as Record<string, unknown>)
+    : body;
+}
 
-  const phoneNumber =
-    pickString(body.phoneNumber) ??
-    pickString(body.mobileNo) ??
-    pickString(body.phone) ??
-    pickString(body.linkedNumber) ??
-    pickString(body.receiverMobileNo);
+function masImageToDataUrl(image: string) {
+  const trimmed = image.trim();
+  if (trimmed.startsWith("data:image")) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("http")) {
+    return trimmed;
+  }
+  return `data:image/png;base64,${trimmed}`;
+}
+
+function parseChannelLoginResult(body: Record<string, unknown>) {
+  const result = unwrapMasResult(body);
+  const channelStatus = (pickString(result.channelStatus) ?? "") as MasChannelStatus;
+  const image = pickString(result.image);
+  const connected = channelStatus === "SUCCESS";
+  const statusMessage =
+    pickString(body.message) ??
+    pickString(result.message) ??
+    (channelStatus === "IMAGE_VISIBLE"
+      ? "Scan this QR code with WhatsApp on your phone."
+      : channelStatus === "SUCCESS"
+        ? "WhatsApp is linked and ready."
+        : channelStatus === "TRYING_TO_REACH_PHONE"
+          ? "Waiting for your phone - keep WhatsApp open."
+          : channelStatus === "USE_HERE"
+            ? "Tap Use here on your phone, then refresh."
+            : channelStatus === "RETRY"
+              ? "Link expired - refresh the QR code."
+              : "Checking connection status.");
 
   return {
+    channelStatus,
+    image,
     connected,
-    status: statusRaw || (connected ? "connected" : "disconnected"),
-    phoneNumber,
-    message:
-      pickString(body.message) ??
-      pickString(body.detail) ??
-      (typeof body.raw === "string" ? body.raw.slice(0, 200) : null),
+    statusMessage,
   };
 }
 
-function extractQrFromBody(body: Record<string, unknown>, raw: string): MasPhoneQrResult {
-  const qrText =
-    pickString(body.qr) ??
-    pickString(body.qrCode) ??
-    pickString(body.qrText) ??
-    pickString(body.code);
+function parseMasConnectionStatus(body: Record<string, unknown>): MasPhoneConnectionStatus {
+  const parsed = parseChannelLoginResult(body);
+  return {
+    connected: parsed.connected,
+    status: parsed.channelStatus || (parsed.connected ? "connected" : "disconnected"),
+    phoneNumber: null,
+    message: parsed.statusMessage,
+  };
+}
 
-  const imageCandidate =
-    pickString(body.qrImage) ??
-    pickString(body.image) ??
-    pickString(body.imageUrl) ??
-    pickString(body.qrImageUrl) ??
-    pickString(body.data);
+function extractQrFromChannelBody(body: Record<string, unknown>, raw: string): MasPhoneQrResult {
+  const parsed = parseChannelLoginResult(body);
 
-  let qrImageUrl: string | null = null;
-  if (imageCandidate) {
-    if (imageCandidate.startsWith("data:image")) {
-      qrImageUrl = imageCandidate;
-    } else if (imageCandidate.startsWith("http")) {
-      qrImageUrl = imageCandidate;
-    } else {
-      qrImageUrl = `data:image/png;base64,${imageCandidate}`;
-    }
-  } else if (raw.trim().startsWith("data:image")) {
-    qrImageUrl = raw.trim();
-  } else if (/^[A-Za-z0-9+/=]{100,}$/.test(raw.trim())) {
-    qrImageUrl = `data:image/png;base64,${raw.trim()}`;
+  if (parsed.image) {
+    return {
+      ok: true,
+      qrImageUrl: masImageToDataUrl(parsed.image),
+      qrText: null,
+      message: parsed.statusMessage,
+      raw,
+    };
+  }
+
+  if (parsed.channelStatus === "SUCCESS") {
+    return {
+      ok: false,
+      qrImageUrl: null,
+      qrText: null,
+      message: "WhatsApp is already linked.",
+      raw,
+    };
   }
 
   return {
-    ok: Boolean(qrImageUrl || qrText),
-    qrImageUrl,
-    qrText,
-    message:
-      pickString(body.message) ??
-      (qrImageUrl || qrText
-        ? "Scan this QR code with WhatsApp on your phone."
-        : "QR code not available yet. Try again or use OTP link."),
+    ok: false,
+    qrImageUrl: null,
+    qrText: null,
+    message: parsed.statusMessage,
     raw,
   };
 }
 
-async function masAuthorizedRequest(
-  endpoint: string,
-  init?: {
-    method?: string;
-    fields?: Record<string, string>;
-  },
+async function masChannelLoginRequest(
   credentials?: MasCredentials | null,
-) {
+): Promise<
+  | { ok: true; status: number; raw: string; body: Record<string, unknown> }
+  | { ok: false; error: string; status: number; raw: string }
+> {
   const resolved = resolveMasCredentials(credentials);
-  if (!resolved?.username || !resolved.password) {
+  if (!resolved?.username) {
     return {
-      ok: false as const,
+      ok: false,
+      error: "Save username, password, and API key first.",
       status: 0,
       raw: "",
-      body: {} as Record<string, unknown>,
-      error: "Save username and password first.",
     };
   }
 
-  const method = init?.method ?? "POST";
-  const fields = {
-    username: resolved.username,
-    password: resolved.password,
-    ...(init?.fields ?? {}),
+  const payload: Record<string, unknown> = {
+    customerUsername: resolved.username,
   };
-
-  const headers: Record<string, string> = {
-    Accept: "application/json, text/plain, image/*, */*",
-    Authorization: `Basic ${Buffer.from(`${resolved.username}:${resolved.password}`).toString("base64")}`,
-  };
-
-  let body: string | undefined;
-  if (method !== "GET") {
-    headers["Content-Type"] = "application/x-www-form-urlencoded";
-    body = new URLSearchParams(fields).toString();
+  if (resolved.channelId != null) {
+    payload.channelId = resolved.channelId;
   }
 
-  const url =
-    method === "GET"
-      ? `${masUrl(endpoint)}?${new URLSearchParams(fields).toString()}`
-      : masUrl(endpoint);
+  const resellerKey = masResellerApiKey();
+  const attempts: Array<{
+    label: string;
+    init: RequestInit;
+  }> = [];
 
-  const response = await fetch(url, { method, headers, body });
-  const raw = await response.text();
-  const parsed = parseMasBody(raw);
+  if (resellerKey) {
+    attempts.push({
+      label: "reseller-json",
+      init: {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "x-api-key": resellerKey,
+        },
+        body: JSON.stringify(payload),
+      },
+    });
+  }
 
-  if (!response.ok) {
+  if (resolved.username && resolved.password && resolved.apiKey) {
+    const form = new URLSearchParams({
+      username: resolved.username,
+      password: resolved.password,
+      apiKey: resolved.apiKey,
+      customerUsername: resolved.username,
+    });
+    if (resolved.channelId != null) {
+      form.set("channelId", String(resolved.channelId));
+    }
+
+    attempts.push({
+      label: "customer-form",
+      init: {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: form.toString(),
+      },
+    });
+
+    attempts.push({
+      label: "customer-json",
+      init: {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: resolved.username,
+          password: resolved.password,
+          apiKey: resolved.apiKey,
+          ...payload,
+        }),
+      },
+    });
+  }
+
+  let lastError = "Could not load WhatsApp link status.";
+  let lastStatus = 0;
+  let lastRaw = "";
+
+  for (const attempt of attempts) {
+    const response = await fetch(masUrl("/reseller/customer/channel/status"), attempt.init);
+    const raw = await response.text();
+    lastStatus = response.status;
+    lastRaw = raw;
+
+    if (!response.ok) {
+      const parsed = parseMasBody(raw);
+      lastError =
+        pickString(parsed.message) ??
+        (response.status === 403
+          ? "QR linking is not enabled for this account. Contact Sheetomatic support."
+          : response.status === 401
+            ? "Invalid Web Based API credentials."
+            : raw.slice(0, 200) || `Request failed (${response.status}).`);
+      continue;
+    }
+
     return {
-      ok: false as const,
+      ok: true,
       status: response.status,
       raw,
-      body: parsed,
-      error:
-        (pickString(parsed.message) ??
-          pickString(parsed.error as string) ??
-          raw.slice(0, 300)) ||
-        `Request failed (${response.status}).`,
+      body: parseMasBody(raw),
     };
   }
 
-  return {
-    ok: true as const,
-    status: response.status,
-    raw,
-    body: parsed,
-  };
+  if (!resellerKey && lastStatus === 403) {
+    lastError =
+      "Scan QR needs platform reseller access (MAS_RESELLER_API_KEY). Save credentials and ask Sheetomatic to enable linking.";
+  }
+
+  return { ok: false, error: lastError, status: lastStatus, raw: lastRaw };
 }
 
 async function masFormRequest(
@@ -220,19 +317,20 @@ async function masFormRequest(
   credentials: MasCredentials,
 ) {
   const resolved = resolveMasCredentials(credentials);
-  if (!resolved?.username || !resolved.password) {
+  if (!resolved?.username || !resolved.password || !resolved.apiKey) {
     return {
       ok: false as const,
       status: 0,
       raw: "",
       body: {} as Record<string, unknown>,
-      error: "Save username and password first.",
+      error: "Save username, password, and API key first.",
     };
   }
 
   const body = new URLSearchParams({
     username: resolved.username,
     password: resolved.password,
+    apiKey: resolved.apiKey,
     ...fields,
   });
 
@@ -307,22 +405,9 @@ export async function getMasPhoneConnectionStatus(
   | { ok: true; status: MasPhoneConnectionStatus }
   | { ok: false; error: string }
 > {
-  const result = await masAuthorizedRequest(
-    "/phone/status",
-    { method: "POST" },
-    credentials,
-  );
-
+  const result = await masChannelLoginRequest(credentials);
   if (!result.ok) {
-    const fallback = await masAuthorizedRequest(
-      "/phone/status",
-      { method: "GET" },
-      credentials,
-    );
-    if (!fallback.ok) {
-      return { ok: false, error: result.error ?? "Could not read phone status." };
-    }
-    return { ok: true, status: parseMasConnectionStatus(fallback.body) };
+    return { ok: false, error: result.error };
   }
 
   return { ok: true, status: parseMasConnectionStatus(result.body) };
@@ -331,29 +416,64 @@ export async function getMasPhoneConnectionStatus(
 export async function getMasPhoneQr(
   credentials?: MasCredentials | null,
 ): Promise<MasPhoneQrResult & { error?: string }> {
-  const attempts = [
-    () => masAuthorizedRequest("/phone/qr", { method: "POST" }, credentials),
-    () => masAuthorizedRequest("/phone/qr", { method: "GET" }, credentials),
-    () => masAuthorizedRequest("/phone/connect", { method: "POST", fields: { mode: "qr" } }, credentials),
-  ];
+  const result = await masChannelLoginRequest(credentials);
+  if (!result.ok) {
+    return {
+      ok: false,
+      qrImageUrl: null,
+      qrText: null,
+      message: result.error,
+      error: result.error,
+    };
+  }
 
-  for (const attempt of attempts) {
-    const result = await attempt();
-    if (result.ok) {
-      const parsed = extractQrFromBody(result.body, result.raw);
-      if (parsed.ok) {
-        return parsed;
-      }
-    }
+  const parsed = extractQrFromChannelBody(result.body, result.raw);
+  if (parsed.ok) {
+    return parsed;
   }
 
   return {
-    ok: false,
-    qrImageUrl: null,
-    qrText: null,
-    message: "Could not load QR code. Try OTP link instead.",
-    error: "QR unavailable",
+    ...parsed,
+    error: parsed.message ?? "QR unavailable",
   };
+}
+
+export async function resetMasPhoneLink(credentials?: MasCredentials | null) {
+  const resolved = resolveMasCredentials(credentials);
+  if (!resolved?.username) {
+    return { ok: false as const, error: "Save credentials first." };
+  }
+
+  const payload = {
+    customerUsername: resolved.username,
+    action: "reset",
+    ...(resolved.channelId != null ? { channelId: resolved.channelId } : {}),
+  };
+
+  const resellerKey = masResellerApiKey();
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  };
+  if (resellerKey) {
+    headers["x-api-key"] = resellerKey;
+  }
+
+  const response = await fetch(masUrl("/reseller/customer/channel/operation"), {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload),
+  });
+
+  const raw = await response.text();
+  if (!response.ok) {
+    return {
+      ok: false as const,
+      error: raw.slice(0, 200) || `Reset failed (${response.status}).`,
+    };
+  }
+
+  return { ok: true as const, message: "Link reset. Refresh the QR code." };
 }
 
 export async function sendMasPhoneOtp(
@@ -365,35 +485,10 @@ export async function sendMasPhoneOtp(
     return { ok: false as const, error: "Enter a valid WhatsApp number." };
   }
 
-  const otpFieldVariants: Array<Record<string, string>> = [
-    { mobileNo: mobile },
-    { phone: mobile },
-    { receiverMobileNo: mobile },
-  ];
-
-  const endpoints = ["/phone/otp", "/whatsapp/otp"];
-
-  for (const endpoint of endpoints) {
-    for (const fields of otpFieldVariants) {
-      const result = await masAuthorizedRequest(
-        endpoint,
-        { method: "POST", fields },
-        credentials,
-      );
-      if (result.ok) {
-        return {
-          ok: true as const,
-          message:
-            pickString(result.body.message) ??
-            "OTP sent. Check WhatsApp on that number and enter the code below.",
-        };
-      }
-    }
-  }
-
   return {
     ok: false as const,
-    error: "Could not send OTP. Confirm the number and try again.",
+    error:
+      "OTP linking is not available on this API. Use Scan QR on the Web Based API tab.",
   };
 }
 
@@ -401,44 +496,12 @@ export async function linkMasPhoneWithOtp(
   params: { mobile: string; otp: string },
   credentials?: MasCredentials | null,
 ) {
-  const mobile = normalizeWhatsAppPhone(params.mobile);
-  const otp = params.otp.trim();
-  if (!mobile) {
-    return { ok: false as const, error: "Enter a valid WhatsApp number." };
-  }
-  if (!otp) {
-    return { ok: false as const, error: "Enter the OTP code." };
-  }
-
-  const linkAttempts: Array<{ endpoint: string; fields: Record<string, string> }> = [
-    { endpoint: "/phone/link", fields: { mobileNo: mobile, otp, code: otp } },
-    { endpoint: "/phone/connect", fields: { mobileNo: mobile, otp, code: otp } },
-    { endpoint: "/whatsapp/link", fields: { mobileNo: mobile, otp, code: otp } },
-  ];
-
-  for (const attempt of linkAttempts) {
-    const result = await masAuthorizedRequest(
-      attempt.endpoint,
-      { method: "POST", fields: attempt.fields },
-      credentials,
-    );
-    if (result.ok) {
-      const status = parseMasConnectionStatus(result.body);
-      if (status.connected) {
-        return { ok: true as const, message: "WhatsApp linked successfully.", status };
-      }
-      return {
-        ok: true as const,
-        message:
-          pickString(result.body.message) ?? "Link request accepted. Checking status.",
-        status,
-      };
-    }
-  }
-
+  void params;
+  void credentials;
   return {
     ok: false as const,
-    error: "Invalid or expired OTP. Request a new code and try again.",
+    error:
+      "OTP linking is not available on this API. Use Scan QR on the Web Based API tab.",
   };
 }
 
@@ -512,7 +575,7 @@ export async function sendMasWhatsAppMessage(
       return {
         sent: false,
         reason: "api_error",
-        detail: "Templates are not supported on WhatsApp Link. Use WhatsApp API instead.",
+        detail: "Templates are not supported on Web Based API. Use Official API instead.",
       };
     }
     return sendMasTextMessage({ toPhone: params.toPhone, body: text }, credentials);

@@ -88,10 +88,10 @@ export default async function SheetomaticAiSettingsPage() {
   );
 
   return (
-    <div className="saas-page ws-wa-page-shell">
+    <div className="saas-page ws-wa-page-shell ws-settings-page">
       <PageHeader
         title="Settings"
-        description="WhatsApp API connection, team numbers, wallet, and workspace preferences."
+        description="Account, wallet, WhatsApp connection, and AI limits."
       />
 
       {!goLiveStatus.webhookReceived && goLiveStatus.isLive ? (
@@ -112,6 +112,7 @@ export default async function SheetomaticAiSettingsPage() {
         hasSavedSecrets={{
           redlavaApiKey: Boolean(savedSettings?.redlavaApiKey),
           masPassword: Boolean(savedSettings?.masPassword),
+          masApiKey: Boolean(savedSettings?.masApiKey),
         }}
         initialValues={settingsInitialValues}
         masLinkStatus={masLinkStatus}
@@ -129,6 +130,14 @@ export default async function SheetomaticAiSettingsPage() {
             ? formatRedlavaWalletAmount(
                 tenantWallets.ai.balance,
                 tenantWallets.ai.currency,
+              )
+            : null
+        }
+        tenantPendingCreditsLabel={
+          tenantWallets?.ok
+            ? formatRedlavaWalletAmount(
+                tenantWallets.pendingTotal,
+                tenantWallets.wa.currency,
               )
             : null
         }

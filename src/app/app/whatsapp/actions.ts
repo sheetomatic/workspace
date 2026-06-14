@@ -356,6 +356,10 @@ export async function saveWhatsAppSettings(
     formData.get("masPassword")?.toString() ?? "",
     existing?.masPassword,
   );
+  const masApiKey = pickSecretField(
+    formData.get("masApiKey")?.toString() ?? "",
+    existing?.masApiKey,
+  );
 
   const usePlatformEnv = await canUsePlatformWhatsAppEnv(user.organizationId);
   const envPhoneId = usePlatformEnv
@@ -369,10 +373,10 @@ export async function saveWhatsAppSettings(
     null;
 
   if (whatsappProvider === "MESSAGEAUTOSENDER") {
-    if (!masUsername || !masPassword) {
+    if (!masUsername || !masPassword || !masApiKey) {
       return {
         ok: false,
-        message: "Username and password are required for WhatsApp Link.",
+        message: "Username, password, and API key are required for Web Based API.",
       };
     }
   } else {
@@ -417,6 +421,7 @@ export async function saveWhatsAppSettings(
       redlavaPhoneId: nextPhoneId,
       masUsername,
       masPassword,
+      masApiKey,
     },
     update: {
       businessPhone,
@@ -428,6 +433,7 @@ export async function saveWhatsAppSettings(
       redlavaPhoneId: nextPhoneId,
       masUsername,
       masPassword,
+      masApiKey,
     },
   });
 
@@ -518,6 +524,7 @@ export async function getWhatsAppPageSetup() {
       masCredentials: {
         username: credentials.masUsername,
         password: credentials.masPassword,
+        apiKey: credentials.masApiKey,
       },
     },
   );

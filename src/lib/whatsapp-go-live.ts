@@ -89,10 +89,11 @@ export async function getWhatsAppGoLiveStatus(
 
   let phoneLinked = true;
   if (credentials.whatsappProvider === "messageautosender") {
-    if (credentials.masUsername && credentials.masPassword) {
+    if (credentials.masUsername && credentials.masPassword && credentials.masApiKey) {
       const masStatus = await getMasPhoneConnectionStatus({
         username: credentials.masUsername,
         password: credentials.masPassword,
+        apiKey: credentials.masApiKey,
       });
       phoneLinked = masStatus.ok ? masStatus.status.connected : false;
     } else {

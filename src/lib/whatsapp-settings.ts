@@ -10,6 +10,7 @@ export type WorkspaceWhatsAppCredentials = {
   redlavaPhoneId: string | null;
   masUsername: string | null;
   masPassword: string | null;
+  masApiKey: string | null;
   metaAccessToken: string | null;
   metaWabaId: string | null;
   metaBusinessId: string | null;
@@ -23,6 +24,7 @@ export type WhatsAppSettingsFormValues = {
   redlavaPhoneId: string;
   masUsername: string;
   masPassword: string;
+  masApiKey: string;
 };
 
 export { maskSecret } from "@/lib/whatsapp-settings-form";
@@ -78,6 +80,9 @@ export async function resolveWorkspaceWhatsAppCredentials(
   const envMasPassword = usePlatformEnv
     ? process.env.MAS_PASSWORD?.trim() || null
     : null;
+  const envMasApiKey = usePlatformEnv
+    ? process.env.MAS_API_KEY?.trim() || null
+    : null;
   const envMetaAccessToken = usePlatformEnv
     ? process.env.WHATSAPP_ACCESS_TOKEN?.trim() || null
     : null;
@@ -102,6 +107,7 @@ export async function resolveWorkspaceWhatsAppCredentials(
     saved?.redlavaPhoneId?.trim() || envRedlavaPhoneId || null;
   const masUsername = saved?.masUsername?.trim() || envMasUsername || null;
   const masPassword = saved?.masPassword?.trim() || envMasPassword || null;
+  const masApiKey = saved?.masApiKey?.trim() || envMasApiKey || null;
   const metaAccessToken =
     saved?.metaAccessToken?.trim() || envMetaAccessToken || null;
   const metaWabaId = saved?.metaWabaId?.trim() || envMetaWabaId || null;
@@ -113,6 +119,7 @@ export async function resolveWorkspaceWhatsAppCredentials(
     Boolean(saved?.redlavaPhoneId) ||
     Boolean(saved?.masUsername) ||
     Boolean(saved?.masPassword) ||
+    Boolean(saved?.masApiKey) ||
     Boolean(saved?.metaAccessToken) ||
     Boolean(saved?.metaWabaId) ||
     Boolean(saved?.businessPhone);
@@ -130,6 +137,7 @@ export async function resolveWorkspaceWhatsAppCredentials(
     redlavaPhoneId,
     masUsername,
     masPassword,
+    masApiKey,
     metaAccessToken,
     metaWabaId,
     metaBusinessId,
@@ -152,6 +160,7 @@ export function toWhatsAppSettingsFormValues(
     redlavaPhoneId: saved?.redlavaPhoneId ?? "",
     masUsername: saved?.masUsername ?? credentials.masUsername ?? "",
     masPassword: "",
+    masApiKey: "",
   };
 }
 

@@ -545,17 +545,57 @@ export function isRedlavaConfigured(credentials?: RedlavaCredentials | null) {
 
 export type RedlavaTenantWallet = {
   balance: number;
+  pendingBalance: number;
   currency: string;
   phoneNumberId: string | null;
 };
 
+function parseWalletNumber(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function parsePendingBalance(body: Record<string, unknown>) {
+  const candidates = [
+    body.pendingBalance,
+    body.pendingCredits,
+    body.pendingAmount,
+    body.holdBalance,
+    body.reservedBalance,
+    body.blockedBalance,
+    body.creditsPending,
+  ];
+
+  for (const candidate of candidates) {
+    const parsed = parseWalletNumber(candidate);
+    if (parsed != null) {
+      return parsed;
+    }
+  }
+
+  const nested = body.result;
+  if (nested && typeof nested === "object") {
+    return parsePendingBalance(nested as Record<string, unknown>);
+  }
+
+  return 0;
+}
+
 function parseRedlavaWalletBody(body: Record<string, unknown>): RedlavaTenantWallet | null {
-  if (typeof body.balance !== "number") {
+  const balance = parseWalletNumber(body.balance);
+  if (balance == null) {
     return null;
   }
 
   return {
-    balance: body.balance,
+    balance,
+    pendingBalance: parsePendingBalance(body),
     currency: typeof body.currency === "string" ? body.currency : "INR",
     phoneNumberId:
       typeof body.phoneNumberId === "string" ? body.phoneNumberId : null,

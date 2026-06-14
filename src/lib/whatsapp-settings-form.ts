@@ -5,6 +5,7 @@ export type WhatsAppSettingsFormValues = {
   redlavaPhoneId: string;
   masUsername: string;
   masPassword: string;
+  masApiKey: string;
 };
 
 export function maskSecret(value: string | null | undefined) {
@@ -28,5 +29,5 @@ export function parseWhatsAppProviderField(
 export function whatsAppProviderLabel(
   provider: WhatsAppSettingsFormValues["whatsappProvider"],
 ) {
-  return provider === "messageautosender" ? "WhatsApp Link" : "WhatsApp API";
+  return provider === "messageautosender" ? "Web Based API" : "Official API";
 }

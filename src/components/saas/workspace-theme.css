@@ -6034,7 +6034,89 @@
 .workspace-app .ws-wa-page-shell {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
+}
+
+.workspace-app .ws-settings-page.ws-wa-page-shell {
+  gap: 10px;
+}
+
+.workspace-app .ws-settings-page .ws-page-header {
+  margin-bottom: 0;
+}
+
+.workspace-app .ws-settings-page .ws-page-header h1 {
+  font-size: 1.25rem;
+  margin-bottom: 2px;
+}
+
+.workspace-app .ws-settings-page .ws-page-header p {
+  font-size: 0.8125rem;
+  margin: 0;
+}
+
+.workspace-app .ws-settings-section-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 0 4px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: linear-gradient(180deg, #f3f4f6 80%, transparent);
+}
+
+.workspace-app .ws-settings-section-nav a {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.workspace-app .ws-settings-section-nav a:hover {
+  border-color: #93c5fd;
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.workspace-app .ws-settings-overview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.workspace-app .ws-settings-account-card,
+.workspace-app .ws-settings-wallet-card,
+.workspace-app .ws-settings-connection-card,
+.workspace-app .ws-settings-webhook-card,
+.workspace-app .ws-settings-reseller-card {
+  padding: 12px 14px;
+}
+
+.workspace-app .ws-settings-connection-head {
+  margin-bottom: 6px;
+}
+
+.workspace-app .ws-settings-connection-hint {
+  margin: 0;
+  font-size: 0.75rem;
+}
+
+.workspace-app .ws-wa-settings-panel.is-embedded .ws-wa-settings-grid {
+  gap: 10px;
+}
+
+.workspace-app .ws-wa-settings-panel.is-embedded .ws-wa-settings-card {
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
 }
 
 .workspace-app .ws-wa-stats-row {
@@ -8010,47 +8092,7 @@
 
 .workspace-app .ws-settings-workspace {
   display: grid;
-  gap: 12px;
-}
-
-.workspace-app .ws-settings-section-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 4px 0 8px;
-}
-
-.workspace-app .ws-settings-section-nav a {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-  border: 1px solid #cbd5e1;
-  background: #fff;
-  color: #334155;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.workspace-app .ws-settings-section-nav a:hover {
-  border-color: #93c5fd;
-  color: #1d4ed8;
-  background: #eff6ff;
-}
-
-.workspace-app .ws-settings-overview {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.workspace-app .ws-settings-account-card,
-.workspace-app .ws-settings-wallet-card,
-.workspace-app .ws-settings-connection-card,
-.workspace-app .ws-settings-webhook-card,
-.workspace-app .ws-settings-reseller-card {
-  padding: 14px 16px;
+  gap: 10px;
 }
 
 .workspace-app .ws-settings-account-card h2,
@@ -8101,12 +8143,12 @@
 
 .workspace-app .ws-settings-wallet-stats {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
 .workspace-app .ws-settings-wallet-stat {
-  padding: 10px 12px;
+  padding: 8px 10px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #f8fafc;
@@ -8124,7 +8166,7 @@
 
 .workspace-app .ws-settings-wallet-stat strong {
   display: block;
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 700;
   color: #0f172a;
   letter-spacing: -0.01em;
@@ -8260,6 +8302,72 @@
 
 .workspace-app .ws-wa-settings-panel.is-embedded .ws-field-hint {
   font-size: 0.6875rem;
+}
+
+.workspace-app .ws-wa-provider-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+}
+
+.workspace-app .ws-wa-provider-tab {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: #475569;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.workspace-app .ws-wa-provider-tab strong {
+  display: block;
+  font-size: 0.875rem;
+  color: #0f172a;
+}
+
+.workspace-app .ws-wa-provider-tab small {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: #64748b;
+}
+
+.workspace-app .ws-wa-provider-tab.is-active {
+  background: #fff;
+  border-color: #bfdbfe;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  color: #1d4ed8;
+}
+
+.workspace-app .ws-wa-provider-tab.is-active strong {
+  color: #1d4ed8;
+}
+
+.workspace-app .ws-wa-provider-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .workspace-app .ws-wa-provider-tabs {
+    grid-template-columns: 1fr;
+  }
 }
 
 .workspace-app .ws-mas-connect {

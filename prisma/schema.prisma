@@ -294,6 +294,7 @@ model WorkspaceWhatsAppSettings {
   redlavaPhoneId    String?            @unique
   masUsername       String?
   masPassword       String?
+  masApiKey         String?
   metaAccessToken   String?
   metaWabaId        String?
   metaBusinessId    String?
