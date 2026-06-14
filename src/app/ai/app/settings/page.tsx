@@ -1,8 +1,5 @@
-import { AiReplySettingsPanel } from "@/components/saas/ai-reply-settings-panel";
 import { PageHeader } from "@/components/saas/page-header";
-import { PendingWorkspacesPanel } from "@/components/saas/pending-workspaces-panel";
 import { WhatsAppSettingsWorkspacePanel } from "@/components/saas/whatsapp-settings-workspace-panel";
-import { WorkspaceActivationPanel } from "@/components/saas/workspace-activation-panel";
 import { getAiReplyUsageSummary } from "@/lib/integrations/ai-reply-settings";
 import { prisma } from "@/lib/db";
 import { hasMinimumRole } from "@/lib/permissions";
@@ -17,7 +14,10 @@ import {
   resolveWorkspaceWhatsAppCredentials,
   toWhatsAppSettingsFormValues,
 } from "@/lib/whatsapp-settings";
-import { loadMasAccountDashboardForSettings, loadMasWhatsAppLinkStatusForSettings } from "@/app/app/whatsapp/mas-actions";
+import {
+  loadMasAccountDashboardForSettings,
+  loadMasWhatsAppLinkStatusForSettings,
+} from "@/app/app/whatsapp/mas-actions";
 import { getWhatsAppGoLiveStatus } from "@/lib/whatsapp-go-live";
 
 export default async function SheetomaticAiSettingsPage() {
@@ -90,7 +90,7 @@ export default async function SheetomaticAiSettingsPage() {
     <div className="saas-page ws-wa-page-shell ws-settings-page">
       <PageHeader
         title="Settings"
-        description="Account, wallet, WhatsApp connection, and AI limits."
+        description="Manage account, billing, WhatsApp, and AI limits."
       />
 
       {!goLiveStatus.webhookReceived && goLiveStatus.isLive ? (
@@ -105,6 +105,8 @@ export default async function SheetomaticAiSettingsPage() {
       ) : null}
 
       <WhatsAppSettingsWorkspacePanel
+        aiReplySummary={aiReplySummary}
+        canEditAiReplyLimits={canEditAiReplyLimits}
         credentialsReady={isWhatsAppProviderConfigured(credentials)}
         credentialsSource={credentials.source}
         goLiveStatus={goLiveStatus}
@@ -116,6 +118,20 @@ export default async function SheetomaticAiSettingsPage() {
         initialValues={settingsInitialValues}
         masAccountDashboard={masAccountDashboard}
         masLinkStatus={masLinkStatus}
+        openaiConfigured={Boolean(process.env.OPENAI_API_KEY)}
+        organizationName={organization?.name ?? null}
+        organizationStatus={organization?.status ?? null}
+        pendingWorkspaces={pendingWorkspaces.map((workspace) => ({
+          id: workspace.id,
+          name: workspace.name,
+          slug: workspace.slug,
+          ownerEmail: workspace.memberships[0]?.user.email ?? null,
+          createdAt: workspace.createdAt.toLocaleDateString("en-IN", {
+            timeZone: "Asia/Kolkata",
+            dateStyle: "medium",
+          }),
+        }))}
+        showAdminPanels={user.isSuperAdmin}
         showResellerWallet={showResellerData}
         resellerWalletPoints={
           showResellerData &&
@@ -154,34 +170,6 @@ export default async function SheetomaticAiSettingsPage() {
         userName={user.name ?? user.email.split("@")[0]}
         userRole={user.isSuperAdmin ? "Super Admin" : user.role}
       />
-
-      <AiReplySettingsPanel
-        canEdit={canEditAiReplyLimits}
-        openaiConfigured={Boolean(process.env.OPENAI_API_KEY)}
-        summary={aiReplySummary}
-      />
-
-      {organization ? (
-        <WorkspaceActivationPanel
-          organizationName={organization.name}
-          status={organization.status}
-        />
-      ) : null}
-
-      {user.isSuperAdmin ? (
-        <PendingWorkspacesPanel
-          workspaces={pendingWorkspaces.map((workspace) => ({
-            id: workspace.id,
-            name: workspace.name,
-            slug: workspace.slug,
-            ownerEmail: workspace.memberships[0]?.user.email ?? null,
-            createdAt: workspace.createdAt.toLocaleDateString("en-IN", {
-              timeZone: "Asia/Kolkata",
-              dateStyle: "medium",
-            }),
-          }))}
-        />
-      ) : null}
     </div>
   );
 }

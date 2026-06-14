@@ -1,10 +1,15 @@
-import { WhatsAppSettingsWorkspaceClient } from "@/components/saas/whatsapp-settings-workspace-client";
+import { AiReplySettingsPanel } from "@/components/saas/ai-reply-settings-panel";
+import { PendingWorkspacesPanel } from "@/components/saas/pending-workspaces-panel";
+import { SettingsPageShell } from "@/components/saas/settings-page-shell";
+import { WorkspaceActivationPanel } from "@/components/saas/workspace-activation-panel";
+import type { AiReplyUsageSummary } from "@/lib/integrations/ai-reply-settings";
 import type { WhatsAppGoLiveStatus } from "@/lib/whatsapp-go-live";
 import type { WhatsAppSettingsFormValues } from "@/lib/whatsapp-settings-form";
 import type {
   MasAccountDashboard,
   MasPhoneConnectionStatus,
 } from "@/lib/integrations/messageautosender";
+import type { PendingWorkspaceRow } from "@/components/saas/pending-workspaces-panel";
 
 export function WhatsAppSettingsWorkspacePanel({
   initialValues,
@@ -22,6 +27,13 @@ export function WhatsAppSettingsWorkspacePanel({
   userName,
   userEmail,
   userRole,
+  canEditAiReplyLimits,
+  openaiConfigured,
+  aiReplySummary,
+  organizationName = null,
+  organizationStatus = null,
+  pendingWorkspaces = [],
+  showAdminPanels = false,
 }: {
   initialValues: WhatsAppSettingsFormValues;
   credentialsReady: boolean;
@@ -38,9 +50,36 @@ export function WhatsAppSettingsWorkspacePanel({
   userName: string;
   userEmail: string;
   userRole: string;
+  canEditAiReplyLimits: boolean;
+  openaiConfigured: boolean;
+  aiReplySummary: AiReplyUsageSummary;
+  organizationName?: string | null;
+  organizationStatus?: "ONBOARDING" | "ACTIVE" | null;
+  pendingWorkspaces?: PendingWorkspaceRow[];
+  showAdminPanels?: boolean;
 }) {
+  const adminSlot = showAdminPanels ? (
+    <>
+      {organizationName && organizationStatus ? (
+        <WorkspaceActivationPanel
+          organizationName={organizationName}
+          status={organizationStatus}
+        />
+      ) : null}
+      <PendingWorkspacesPanel workspaces={pendingWorkspaces} />
+    </>
+  ) : null;
+
   return (
-    <WhatsAppSettingsWorkspaceClient
+    <SettingsPageShell
+      adminSlot={adminSlot}
+      aiLimitsSlot={
+        <AiReplySettingsPanel
+          canEdit={canEditAiReplyLimits}
+          openaiConfigured={openaiConfigured}
+          summary={aiReplySummary}
+        />
+      }
       credentialsReady={credentialsReady}
       credentialsSource={credentialsSource}
       goLiveStatus={goLiveStatus}
