@@ -77,6 +77,7 @@ export function SettingsPageShell({
   userRole,
   aiLimitsSlot,
   adminSlot = null,
+  showWebBasedApi = false,
 }: {
   initialValues: WhatsAppSettingsFormValues;
   credentialsReady: boolean;
@@ -95,18 +96,25 @@ export function SettingsPageShell({
   userRole: string;
   aiLimitsSlot: ReactNode;
   adminSlot?: ReactNode;
+  showWebBasedApi?: boolean;
 }) {
   const [activeTab, setActiveTab] = useState<SettingsTab>("account");
 
   useEffect(() => {
     const syncFromHash = () => {
       const tab = hashToTab(window.location.hash);
-      if (tab) setActiveTab(tab);
+      if (!tab) return;
+      if (tab === "web-api" && !showWebBasedApi) {
+        setActiveTab("official-api");
+        window.history.replaceState(null, "", "#official-api");
+        return;
+      }
+      setActiveTab(tab);
     };
     syncFromHash();
     window.addEventListener("hashchange", syncFromHash);
     return () => window.removeEventListener("hashchange", syncFromHash);
-  }, []);
+  }, [showWebBasedApi]);
 
   const goToTab = useCallback((tab: SettingsTab) => {
     setActiveTab(tab);
@@ -147,21 +155,17 @@ export function SettingsPageShell({
     { id: "ai", label: "AI limits", icon: Bot },
   ];
 
-  const optionalNavItems: Array<{
-    id: SettingsTab;
-    label: string;
-    icon: typeof Globe;
-    hint?: string;
-    badge?: boolean;
-  }> = [
-    {
-      id: "web-api",
-      label: "Web Based API",
-      icon: Globe,
-      hint: webConnected ? "Live" : "Optional",
-      badge: webConfigured && !webConnected,
-    },
-  ];
+  const optionalNavItems = showWebBasedApi
+    ? [
+        {
+          id: "web-api" as const,
+          label: "Web Based API",
+          icon: Globe,
+          hint: webConnected ? "Live" : "Optional",
+          badge: webConfigured && !webConnected,
+        },
+      ]
+    : [];
 
   return (
     <div className="ws-settings-pro">
@@ -197,29 +201,31 @@ export function SettingsPageShell({
           ))}
         </nav>
 
-        <nav
-          aria-label="Optional integrations"
-          className="ws-settings-pro-nav ws-settings-pro-nav-optional"
-        >
-          <p className="ws-settings-pro-nav-label">Optional</p>
-          {optionalNavItems.map(({ id, label, icon: Icon, hint, badge }) => (
-            <button
-              key={id}
-              aria-current={activeTab === id ? "page" : undefined}
-              className={`ws-settings-pro-nav-item ws-settings-pro-nav-item-optional${activeTab === id ? " is-active" : ""}`}
-              type="button"
-              onClick={() => goToTab(id)}
-            >
-              <Icon size={17} aria-hidden />
-              <span>{label}</span>
-              {badge ? (
-                <span className="ws-settings-pro-nav-badge">!</span>
-              ) : hint ? (
-                <span className="ws-settings-pro-nav-hint">{hint}</span>
-              ) : null}
-            </button>
-          ))}
-        </nav>
+        {optionalNavItems.length > 0 ? (
+          <nav
+            aria-label="Optional integrations"
+            className="ws-settings-pro-nav ws-settings-pro-nav-optional"
+          >
+            <p className="ws-settings-pro-nav-label">Optional</p>
+            {optionalNavItems.map(({ id, label, icon: Icon, hint, badge }) => (
+              <button
+                key={id}
+                aria-current={activeTab === id ? "page" : undefined}
+                className={`ws-settings-pro-nav-item ws-settings-pro-nav-item-optional${activeTab === id ? " is-active" : ""}`}
+                type="button"
+                onClick={() => goToTab(id)}
+              >
+                <Icon size={17} aria-hidden />
+                <span>{label}</span>
+                {badge ? (
+                  <span className="ws-settings-pro-nav-badge">!</span>
+                ) : hint ? (
+                  <span className="ws-settings-pro-nav-hint">{hint}</span>
+                ) : null}
+              </button>
+            ))}
+          </nav>
+        ) : null}
 
         <div className="ws-settings-pro-sidebar-foot">
           <div
@@ -236,15 +242,17 @@ export function SettingsPageShell({
                 : "Official WhatsApp not live"}
             </span>
           </div>
-          {webConnected ? (
-            <p className="ws-settings-pro-optional-note is-connected">
-              Web Based API connected
-            </p>
-          ) : (
-            <p className="ws-settings-pro-optional-note">
-              Need phone scan? Use Optional &rarr; Web Based API.
-            </p>
-          )}
+          {showWebBasedApi ? (
+            webConnected ? (
+              <p className="ws-settings-pro-optional-note is-connected">
+                Web Based API connected
+              </p>
+            ) : (
+              <p className="ws-settings-pro-optional-note">
+                Need phone scan? Use Optional &rarr; Web Based API.
+              </p>
+            )
+          ) : null}
         </div>
       </aside>
 
@@ -408,7 +416,7 @@ export function SettingsPageShell({
           </section>
         ) : null}
 
-        {activeTab === "web-api" ? (
+        {showWebBasedApi && activeTab === "web-api" ? (
           <section className="ws-settings-pro-panel">
             <header className="ws-settings-pro-panel-head">
               <div>

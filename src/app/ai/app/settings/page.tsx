@@ -19,9 +19,11 @@ import {
   loadMasWhatsAppLinkStatusForSettings,
 } from "@/app/app/whatsapp/mas-actions";
 import { getWhatsAppGoLiveStatus } from "@/lib/whatsapp-go-live";
+import { isWebBasedApiUiEnabled } from "@/lib/web-based-api-ui";
 
 export default async function SheetomaticAiSettingsPage() {
   const user = await requireSession("ADMIN", { redirectTo: "/ai/app" });
+  const showWebBasedApi = isWebBasedApiUiEnabled();
   const showResellerData = canViewPlatformResellerData(user);
   const organization = user.isSuperAdmin
     ? await prisma.organization.findUnique({
@@ -77,8 +79,12 @@ export default async function SheetomaticAiSettingsPage() {
           },
         })
       : Promise.resolve([]),
-    loadMasWhatsAppLinkStatusForSettings(),
-    loadMasAccountDashboardForSettings(),
+    showWebBasedApi
+      ? loadMasWhatsAppLinkStatusForSettings()
+      : Promise.resolve(null),
+    showWebBasedApi
+      ? loadMasAccountDashboardForSettings()
+      : Promise.resolve(null),
   ]);
 
   const settingsInitialValues = toWhatsAppSettingsFormValues(
@@ -132,6 +138,7 @@ export default async function SheetomaticAiSettingsPage() {
           }),
         }))}
         showAdminPanels={user.isSuperAdmin}
+        showWebBasedApi={showWebBasedApi}
         showResellerWallet={showResellerData}
         resellerWalletPoints={
           showResellerData &&

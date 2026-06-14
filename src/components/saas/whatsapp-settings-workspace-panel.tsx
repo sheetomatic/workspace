@@ -9,6 +9,7 @@ import type {
   MasAccountDashboard,
   MasPhoneConnectionStatus,
 } from "@/lib/integrations/messageautosender";
+import { isWebBasedApiUiEnabled } from "@/lib/web-based-api-ui";
 import type { PendingWorkspaceRow } from "@/components/saas/pending-workspaces-panel";
 
 export function WhatsAppSettingsWorkspacePanel({
@@ -34,6 +35,7 @@ export function WhatsAppSettingsWorkspacePanel({
   organizationStatus = null,
   pendingWorkspaces = [],
   showAdminPanels = false,
+  showWebBasedApi = isWebBasedApiUiEnabled(),
 }: {
   initialValues: WhatsAppSettingsFormValues;
   credentialsReady: boolean;
@@ -57,6 +59,7 @@ export function WhatsAppSettingsWorkspacePanel({
   organizationStatus?: "ONBOARDING" | "ACTIVE" | null;
   pendingWorkspaces?: PendingWorkspaceRow[];
   showAdminPanels?: boolean;
+  showWebBasedApi?: boolean;
 }) {
   const adminSlot = showAdminPanels ? (
     <>
@@ -87,6 +90,7 @@ export function WhatsAppSettingsWorkspacePanel({
       initialValues={initialValues}
       masAccountDashboard={masAccountDashboard}
       masLinkStatus={masLinkStatus}
+      showWebBasedApi={showWebBasedApi}
       resellerWalletPoints={resellerWalletPoints}
       showResellerWallet={showResellerWallet}
       tenantAiWalletLabel={tenantAiWalletLabel}
