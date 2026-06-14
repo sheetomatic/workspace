@@ -1,39 +1,98 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { QrCode, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import {
+  fetchMasAccountDashboard,
   fetchMasWhatsAppQr,
-  refreshMasWhatsAppStatus,
 } from "@/app/app/whatsapp/mas-actions";
-import type { MasPhoneConnectionStatus } from "@/lib/integrations/messageautosender";
+import type {
+  MasAccountDashboard,
+  MasPhoneConnectionStatus,
+} from "@/lib/integrations/messageautosender";
+
+function channelStatusLabel(status: string, connected: boolean) {
+  if (connected || status === "SUCCESS") {
+    return "Connected";
+  }
+  if (status === "IMAGE_VISIBLE") {
+    return "Scan QR";
+  }
+  if (status === "TRYING_TO_REACH_PHONE") {
+    return "Connecting";
+  }
+  if (status === "USE_HERE") {
+    return "Confirm on phone";
+  }
+  if (status === "RETRY") {
+    return "Retry";
+  }
+  return "Not connected";
+}
+
+function qrHelperMessage(dashboard: MasAccountDashboard | null) {
+  if (!dashboard) {
+    return "Loading connection status...";
+  }
+  if (dashboard.connected) {
+    return "WhatsApp is linked and ready to send messages.";
+  }
+  if (dashboard.channelStatus === "TRYING_TO_REACH_PHONE") {
+    return "Connecting to your phone - keep WhatsApp open.";
+  }
+  if (dashboard.channelStatus === "USE_HERE") {
+    return "Tap Use here on your phone, then refresh.";
+  }
+  if (dashboard.channelStatus === "RETRY") {
+    return "Link expired - refresh the QR code.";
+  }
+  return "Please scan below image with WhatsApp Linked devices.";
+}
+
+function formatDashboardValue(value: string | number | null | undefined) {
+  if (value == null || value === "") {
+    return "-";
+  }
+  return String(value);
+}
 
 export function MasWhatsAppConnectPanel({
   credentialsSaved,
   initialStatus,
+  initialDashboard = null,
 }: {
   credentialsSaved: boolean;
   initialStatus: MasPhoneConnectionStatus | null;
+  initialDashboard?: MasAccountDashboard | null;
 }) {
-  const [status, setStatus] = useState<MasPhoneConnectionStatus | null>(initialStatus);
+  const [dashboard, setDashboard] = useState<MasAccountDashboard | null>(
+    initialDashboard ??
+      (initialStatus
+        ? {
+            channelId: initialStatus.channelId,
+            accountType: null,
+            validUntil: null,
+            creditCount: null,
+            channelStatus: initialStatus.status,
+            connected: initialStatus.connected,
+            statusMessage: initialStatus.message,
+            phoneNumber: initialStatus.phoneNumber,
+          }
+        : null),
+  );
   const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
-  const [qrMessage, setQrMessage] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const refreshStatus = useCallback(() => {
+  const refreshDashboard = useCallback(() => {
     if (!credentialsSaved) {
       return;
     }
     startTransition(async () => {
-      const result = await refreshMasWhatsAppStatus();
+      const result = await fetchMasAccountDashboard();
       if (result.ok) {
-        setStatus(result.status);
-        if (result.status.connected) {
-          setError(null);
-          setFeedback("WhatsApp is linked and ready to send messages.");
-        }
+        setDashboard(result.dashboard);
+        setError(null);
       } else {
         setError(result.error);
       }
@@ -53,7 +112,13 @@ export function MasWhatsAppConnectPanel({
         return;
       }
       setQrImageUrl(result.qrImageUrl);
-      setQrMessage(result.message);
+      if (result.message) {
+        setDashboard((current) =>
+          current
+            ? { ...current, statusMessage: result.message }
+            : current,
+        );
+      }
     });
   }, [credentialsSaved]);
 
@@ -61,90 +126,112 @@ export function MasWhatsAppConnectPanel({
     if (!credentialsSaved) {
       return;
     }
-    refreshStatus();
-  }, [credentialsSaved, refreshStatus]);
+    refreshDashboard();
+  }, [credentialsSaved, refreshDashboard]);
 
   useEffect(() => {
-    if (!credentialsSaved) {
+    if (!credentialsSaved || dashboard?.connected) {
       return;
     }
     loadQr();
     const interval = window.setInterval(() => {
-      refreshStatus();
+      refreshDashboard();
     }, 5000);
     return () => window.clearInterval(interval);
-  }, [credentialsSaved, loadQr, refreshStatus]);
+  }, [credentialsSaved, dashboard?.connected, loadQr, refreshDashboard]);
 
   if (!credentialsSaved) {
     return (
-      <div className="ws-mas-connect ws-mas-connect-muted">
+      <div className="ws-web-api-dashboard ws-web-api-dashboard-muted">
         <p>
-          Save username, password, and API key above - the Scan QR panel appears
-          here automatically.
+          Save username, password, and API key above - your account dashboard
+          and QR code appear here automatically.
         </p>
       </div>
     );
   }
 
+  const channelLabel =
+    dashboard?.channelId != null ? String(dashboard.channelId) : "-";
+  const statusLabel = channelStatusLabel(
+    dashboard?.channelStatus ?? "",
+    dashboard?.connected ?? false,
+  );
+
   return (
-    <section className="ws-mas-connect">
-      <div className="ws-mas-connect-head">
+    <section className="ws-web-api-dashboard">
+      <header className="ws-web-api-dashboard-head">
         <div>
-          <h4>Scan to link WhatsApp</h4>
-          <p>After saving credentials, scan the QR code with your phone.</p>
+          <h4>Status for channel: {channelLabel}</h4>
+          <p>{qrHelperMessage(dashboard)}</p>
         </div>
         <span
-          className={`ws-mas-connect-pill${status?.connected ? " is-connected" : ""}`}
+          className={`ws-web-api-status-pill${dashboard?.connected ? " is-connected" : ""}`}
         >
-          {status?.connected ? "Connected" : "Not connected"}
+          {statusLabel}
         </span>
-      </div>
+      </header>
 
-      {status?.phoneNumber ? (
-        <p className="ws-mas-connect-phone">
-          Linked number: <strong>{status.phoneNumber}</strong>
+      {dashboard?.phoneNumber ? (
+        <p className="ws-web-api-linked-phone">
+          Linked number: <strong>{dashboard.phoneNumber}</strong>
         </p>
       ) : null}
 
-      <div className="ws-mas-connect-panel">
-        <p className="ws-wa-settings-lead">
-          <QrCode size={15} aria-hidden className="inline-icon" /> Open WhatsApp
-          on your phone, go to Linked devices, tap Link a device, then scan this
-          code.
-        </p>
-        <div className="ws-mas-qr-frame">
-          {qrImageUrl ? (
+      <div className="ws-web-api-qr-panel">
+        <div className="ws-web-api-qr-frame">
+          {dashboard?.connected ? (
+            <div className="ws-web-api-qr-connected">
+              WhatsApp linked
+            </div>
+          ) : qrImageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img alt="WhatsApp QR code" className="ws-mas-qr-image" src={qrImageUrl} />
+            <img
+              alt="WhatsApp QR code"
+              className="ws-web-api-qr-image"
+              src={qrImageUrl}
+            />
           ) : (
-            <div className="ws-mas-qr-placeholder">
+            <div className="ws-web-api-qr-placeholder">
               {pending ? "Loading QR..." : "QR not loaded yet"}
             </div>
           )}
         </div>
-        {qrMessage ? <p className="ws-field-hint">{qrMessage}</p> : null}
-        <div className="ws-mas-connect-actions">
-          <button
-            className="btn-cta btn-secondary"
-            disabled={pending}
-            type="button"
-            onClick={loadQr}
-          >
-            <RefreshCw size={14} aria-hidden />
-            Refresh QR
-          </button>
-          <button
-            className="btn-cta btn-secondary"
-            disabled={pending}
-            type="button"
-            onClick={refreshStatus}
-          >
-            Check status
-          </button>
+        {dashboard?.statusMessage && !dashboard.connected ? (
+          <p className="ws-field-hint">{dashboard.statusMessage}</p>
+        ) : null}
+      </div>
+
+      <div className="ws-web-api-account-stats">
+        <div className="ws-web-api-account-stat">
+          <span>Account Type</span>
+          <strong>{formatDashboardValue(dashboard?.accountType)}</strong>
+        </div>
+        <div className="ws-web-api-account-stat">
+          <span>Valid Upto</span>
+          <strong>{formatDashboardValue(dashboard?.validUntil)}</strong>
+        </div>
+        <div className="ws-web-api-account-stat">
+          <span>Credit Count</span>
+          <strong>{formatDashboardValue(dashboard?.creditCount)}</strong>
         </div>
       </div>
 
-      {feedback ? <p className="saas-form-message ok">{feedback}</p> : null}
+      <div className="ws-web-api-dashboard-actions">
+        <button
+          className="btn-cta btn-secondary"
+          disabled={pending}
+          type="button"
+          onClick={() => {
+            loadQr();
+            refreshDashboard();
+          }}
+        >
+          <RefreshCw size={14} aria-hidden />
+          Refresh
+        </button>
+      </div>
+
       {error ? <p className="saas-form-message error">{error}</p> : null}
     </section>
   );

@@ -15,22 +15,12 @@ import type { WhatsAppSettingsFormValues } from "@/lib/whatsapp-settings-form";
 
 type Tab = "submit" | "approved";
 
-type WhatsAppMember = {
-  membershipId: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  phoneFormatted: string | null;
-  role: string;
-};
-
 export function WhatsAppMessagingPanel({
   templates,
   canSend,
   canManageTemplates,
   setupHint,
   settingsInitialValues,
-  members,
   credentialsReady,
   hasSavedSecrets,
   goLiveStatus,
@@ -40,7 +30,6 @@ export function WhatsAppMessagingPanel({
   canManageTemplates: boolean;
   setupHint: string | null;
   settingsInitialValues: WhatsAppSettingsFormValues;
-  members: WhatsAppMember[];
   credentialsReady: boolean;
   hasSavedSecrets: {
     redlavaApiKey: boolean;
@@ -95,7 +84,6 @@ export function WhatsAppMessagingPanel({
           credentialsReady={credentialsReady}
           hasSavedSecrets={hasSavedSecrets}
           initialValues={settingsInitialValues}
-          members={members}
           onClose={() => setSettingsOpen(false)}
         />
       ) : null}

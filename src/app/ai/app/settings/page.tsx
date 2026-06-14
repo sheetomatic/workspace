@@ -14,11 +14,10 @@ import { getWorkspaceTenantWallets } from "@/lib/whatsapp-wallet";
 import { isWhatsAppProviderConfigured } from "@/lib/integrations/whatsapp-provider";
 import {
   getWorkspaceWhatsAppSettings,
-  listWhatsAppMembers,
   resolveWorkspaceWhatsAppCredentials,
   toWhatsAppSettingsFormValues,
 } from "@/lib/whatsapp-settings";
-import { loadMasWhatsAppLinkStatusForSettings } from "@/app/app/whatsapp/mas-actions";
+import { loadMasAccountDashboardForSettings, loadMasWhatsAppLinkStatusForSettings } from "@/app/app/whatsapp/mas-actions";
 import { getWhatsAppGoLiveStatus } from "@/lib/whatsapp-go-live";
 
 export default async function SheetomaticAiSettingsPage() {
@@ -35,7 +34,6 @@ export default async function SheetomaticAiSettingsPage() {
 
   const [
     savedSettings,
-    members,
     credentials,
     goLiveStatus,
     tenantWallets,
@@ -43,9 +41,9 @@ export default async function SheetomaticAiSettingsPage() {
     aiReplySummary,
     pendingWorkspaces,
     masLinkStatus,
+    masAccountDashboard,
   ] = await Promise.all([
     getWorkspaceWhatsAppSettings(user.organizationId),
-    listWhatsAppMembers(user.organizationId),
     resolveWorkspaceWhatsAppCredentials(user.organizationId),
     getWhatsAppGoLiveStatus(user.organizationId),
     getWorkspaceTenantWallets(user.organizationId),
@@ -80,6 +78,7 @@ export default async function SheetomaticAiSettingsPage() {
         })
       : Promise.resolve([]),
     loadMasWhatsAppLinkStatusForSettings(),
+    loadMasAccountDashboardForSettings(),
   ]);
 
   const settingsInitialValues = toWhatsAppSettingsFormValues(
@@ -115,8 +114,8 @@ export default async function SheetomaticAiSettingsPage() {
           masApiKey: Boolean(savedSettings?.masApiKey),
         }}
         initialValues={settingsInitialValues}
+        masAccountDashboard={masAccountDashboard}
         masLinkStatus={masLinkStatus}
-        members={members}
         showResellerWallet={showResellerData}
         resellerWalletPoints={
           showResellerData &&

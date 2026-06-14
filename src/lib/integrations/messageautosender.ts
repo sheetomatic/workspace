@@ -21,6 +21,18 @@ export type MasPhoneConnectionStatus = {
   status: string;
   phoneNumber: string | null;
   message: string | null;
+  channelId: number | null;
+};
+
+export type MasAccountDashboard = {
+  channelId: number | null;
+  accountType: string | null;
+  validUntil: string | null;
+  creditCount: number | null;
+  channelStatus: string;
+  connected: boolean;
+  statusMessage: string | null;
+  phoneNumber: string | null;
 };
 
 export type MasPhoneQrResult = {
@@ -41,6 +53,47 @@ type MasChannelStatus =
 
 function pickString(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function pickNumber(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function pickFirstString(
+  sources: Record<string, unknown>[],
+  keys: string[],
+) {
+  for (const source of sources) {
+    for (const key of keys) {
+      const value = pickString(source[key]);
+      if (value) {
+        return value;
+      }
+    }
+  }
+  return null;
+}
+
+function pickFirstNumber(
+  sources: Record<string, unknown>[],
+  keys: string[],
+) {
+  for (const source of sources) {
+    for (const key of keys) {
+      const value = pickNumber(source[key]);
+      if (value != null) {
+        return value;
+      }
+    }
+  }
+  return null;
 }
 
 export function masBaseUrl() {
@@ -146,13 +199,60 @@ function parseChannelLoginResult(body: Record<string, unknown>) {
   };
 }
 
-function parseMasConnectionStatus(body: Record<string, unknown>): MasPhoneConnectionStatus {
+function parseMasAccountDashboard(body: Record<string, unknown>): MasAccountDashboard {
+  const result = unwrapMasResult(body);
   const parsed = parseChannelLoginResult(body);
+  const sources = [result, body];
+
   return {
+    channelId: pickFirstNumber(sources, ["channelId", "id", "channel_id"]),
+    accountType: pickFirstString(sources, [
+      "accountType",
+      "userType",
+      "planType",
+      "subscriptionType",
+      "accountPlan",
+      "type",
+    ]),
+    validUntil: pickFirstString(sources, [
+      "validUpto",
+      "validUntil",
+      "validTill",
+      "expiryDate",
+      "expirationDate",
+      "validTo",
+    ]),
+    creditCount: pickFirstNumber(sources, [
+      "creditCount",
+      "credits",
+      "remainingCredits",
+      "messageCredits",
+      "creditBalance",
+      "balance",
+    ]),
+    channelStatus: parsed.channelStatus,
     connected: parsed.connected,
-    status: parsed.channelStatus || (parsed.connected ? "connected" : "disconnected"),
-    phoneNumber: null,
-    message: parsed.statusMessage,
+    statusMessage: parsed.statusMessage,
+    phoneNumber: pickFirstString(sources, [
+      "phoneNumber",
+      "mobileNumber",
+      "linkedPhone",
+      "whatsappNumber",
+      "receiverMobileNo",
+    ]),
+  };
+}
+
+function parseMasConnectionStatus(body: Record<string, unknown>): MasPhoneConnectionStatus {
+  const dashboard = parseMasAccountDashboard(body);
+  return {
+    connected: dashboard.connected,
+    status:
+      dashboard.channelStatus ||
+      (dashboard.connected ? "connected" : "disconnected"),
+    phoneNumber: dashboard.phoneNumber,
+    message: dashboard.statusMessage,
+    channelId: dashboard.channelId,
   };
 }
 
@@ -411,6 +511,20 @@ export async function getMasPhoneConnectionStatus(
   }
 
   return { ok: true, status: parseMasConnectionStatus(result.body) };
+}
+
+export async function getMasAccountDashboard(
+  credentials?: MasCredentials | null,
+): Promise<
+  | { ok: true; dashboard: MasAccountDashboard }
+  | { ok: false; error: string }
+> {
+  const result = await masChannelLoginRequest(credentials);
+  if (!result.ok) {
+    return { ok: false, error: result.error };
+  }
+
+  return { ok: true, dashboard: parseMasAccountDashboard(result.body) };
 }
 
 export async function getMasPhoneQr(

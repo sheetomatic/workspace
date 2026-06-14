@@ -1,29 +1,19 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Globe, KeyRound, Settings, UserPlus, X } from "lucide-react";
-import {
-  saveWhatsAppSettings,
-  updateMemberWhatsAppPhone,
-} from "@/app/app/whatsapp/actions";
+import { Globe, KeyRound, Settings, X } from "lucide-react";
+import { saveWhatsAppSettings } from "@/app/app/whatsapp/actions";
 import { whatsAppTemplateInitialState } from "@/lib/whatsapp-template-types";
 import type { WhatsAppSettingsFormValues } from "@/lib/whatsapp-settings-form";
 import { maskSecret } from "@/lib/whatsapp-settings-form";
 import { MasWhatsAppConnectPanel } from "@/components/saas/mas-whatsapp-connect-panel";
-import type { MasPhoneConnectionStatus } from "@/lib/integrations/messageautosender";
+import type {
+  MasAccountDashboard,
+  MasPhoneConnectionStatus,
+} from "@/lib/integrations/messageautosender";
 
 type WhatsAppProviderTab = "sheetomatic" | "messageautosender";
-
-type WhatsAppMember = {
-  membershipId: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  phoneFormatted: string | null;
-  role: string;
-};
 
 export function WhatsAppSettingsTrigger({
   open,
@@ -47,15 +37,15 @@ export function WhatsAppSettingsTrigger({
 
 export function WhatsAppSettingsPanel({
   initialValues,
-  members,
   credentialsReady,
   hasSavedSecrets,
   masLinkStatus = null,
+  masAccountDashboard = null,
+  onProviderChange,
   onClose,
   embedded = false,
 }: {
   initialValues: WhatsAppSettingsFormValues;
-  members: WhatsAppMember[];
   credentialsReady: boolean;
   hasSavedSecrets: {
     redlavaApiKey: boolean;
@@ -63,6 +53,8 @@ export function WhatsAppSettingsPanel({
     masApiKey: boolean;
   };
   masLinkStatus?: MasPhoneConnectionStatus | null;
+  masAccountDashboard?: MasAccountDashboard | null;
+  onProviderChange?: (provider: WhatsAppProviderTab) => void;
   onClose?: () => void;
   embedded?: boolean;
 }) {
@@ -74,14 +66,14 @@ export function WhatsAppSettingsPanel({
     saveWhatsAppSettings,
     whatsAppTemplateInitialState,
   );
-  const [phoneState, phoneAction, phonePending] = useActionState(
-    updateMemberWhatsAppPhone,
-    whatsAppTemplateInitialState,
-  );
 
   useEffect(() => {
     setProvider(initialValues.whatsappProvider);
   }, [initialValues.whatsappProvider]);
+
+  useEffect(() => {
+    onProviderChange?.(provider);
+  }, [onProviderChange, provider]);
 
   useEffect(() => {
     if (settingsState.ok) {
@@ -89,14 +81,6 @@ export function WhatsAppSettingsPanel({
     }
   }, [settingsState, router]);
 
-  useEffect(() => {
-    if (phoneState.ok) {
-      router.refresh();
-    }
-  }, [phoneState, router]);
-
-  const missingPhone = members.filter((member) => !member.phone);
-  const readyCount = members.length - missingPhone.length;
   const masCredentialsSaved =
     hasSavedSecrets.masPassword &&
     hasSavedSecrets.masApiKey &&
@@ -108,7 +92,7 @@ export function WhatsAppSettingsPanel({
         <header className="ws-wa-settings-head">
           <div>
             <h2>Settings</h2>
-            <p>Choose how WhatsApp connects, save credentials, and add team numbers.</p>
+            <p>Choose how WhatsApp connects and save your credentials.</p>
           </div>
           <button
             aria-label="Close settings"
@@ -222,7 +206,7 @@ export function WhatsAppSettingsPanel({
                     autoComplete="off"
                   />
                   <span className="ws-field-hint">
-                    Used to send messages and load the Scan QR panel after you save.
+                    Used to send messages and load the QR dashboard after you save.
                   </span>
                 </label>
               </div>
@@ -281,73 +265,10 @@ export function WhatsAppSettingsPanel({
           {provider === "messageautosender" ? (
             <MasWhatsAppConnectPanel
               credentialsSaved={masCredentialsSaved || settingsState.ok}
+              initialDashboard={masAccountDashboard}
               initialStatus={masLinkStatus}
             />
           ) : null}
-        </article>
-
-        <article className="ws-wa-settings-card">
-          <h3>Add users for WhatsApp</h3>
-          <p className="ws-wa-settings-lead">
-            {readyCount} of {members.length} members have a WhatsApp number.
-            {missingPhone.length > 0
-              ? ` Add numbers for the ${missingPhone.length} remaining below.`
-              : " Everyone is ready to receive messages."}
-          </p>
-
-          {missingPhone.length > 0 ? (
-            <ul className="ws-wa-member-add-list">
-              {missingPhone.map((member) => (
-                <li key={member.membershipId}>
-                  <form action={phoneAction} className="ws-wa-member-add-row">
-                    <input
-                      name="membershipId"
-                      type="hidden"
-                      value={member.membershipId}
-                    />
-                    <div className="ws-wa-member-add-meta">
-                      <strong>{member.name}</strong>
-                      <span>{member.email}</span>
-                      <span className="ws-wa-member-role">{member.role}</span>
-                    </div>
-                    <label>
-                      WhatsApp number
-                      <input
-                        name="whatsapp"
-                        placeholder="9685788980"
-                        required
-                        type="tel"
-                      />
-                    </label>
-                    <button
-                      className="btn-cta btn-secondary"
-                      disabled={phonePending}
-                      type="submit"
-                    >
-                      <UserPlus size={15} aria-hidden />
-                      Add
-                    </button>
-                  </form>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="ws-wa-settings-done">
-              All workspace members have WhatsApp numbers on file.
-            </div>
-          )}
-
-          {phoneState.message ? (
-            <p className={`saas-form-message ${phoneState.ok ? "ok" : "error"}`}>
-              {phoneState.message}
-            </p>
-          ) : null}
-
-          <p className="ws-wa-settings-foot">
-            Need to invite someone new?{" "}
-            <Link href="/app/team">Add them on the Team page</Link> with their
-            WhatsApp number.
-          </p>
         </article>
       </div>
     </section>

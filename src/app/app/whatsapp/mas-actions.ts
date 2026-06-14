@@ -3,10 +3,12 @@
 import { getSessionUser } from "@/lib/auth";
 import { hasMinimumRole } from "@/lib/permissions";
 import {
+  getMasAccountDashboard,
   getMasPhoneConnectionStatus,
   getMasPhoneQr,
   linkMasPhoneWithOtp,
   sendMasPhoneOtp,
+  type MasAccountDashboard,
 } from "@/lib/integrations/messageautosender";
 import { resolveWorkspaceWhatsAppCredentials } from "@/lib/whatsapp-settings";
 
@@ -53,6 +55,18 @@ export async function refreshMasWhatsAppStatus() {
   }
 
   return { ok: true as const, status: result.status };
+}
+
+export async function fetchMasAccountDashboard(): Promise<
+  | { ok: true; dashboard: MasAccountDashboard }
+  | { ok: false; error: string }
+> {
+  const auth = await requireMasCredentials();
+  if (!auth.ok) {
+    return auth;
+  }
+
+  return getMasAccountDashboard(auth.mas);
 }
 
 export async function fetchMasWhatsAppQr() {
@@ -117,4 +131,29 @@ export async function loadMasWhatsAppLinkStatusForSettings() {
   });
 
   return result.ok ? result.status : null;
+}
+
+export async function loadMasAccountDashboardForSettings() {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "ADMIN")) {
+    return null;
+  }
+
+  const credentials = await resolveWorkspaceWhatsAppCredentials(user.organizationId);
+  if (
+    credentials.whatsappProvider !== "messageautosender" ||
+    !credentials.masUsername ||
+    !credentials.masPassword ||
+    !credentials.masApiKey
+  ) {
+    return null;
+  }
+
+  const result = await getMasAccountDashboard({
+    username: credentials.masUsername,
+    password: credentials.masPassword,
+    apiKey: credentials.masApiKey,
+  });
+
+  return result.ok ? result.dashboard : null;
 }
