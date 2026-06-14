@@ -1,16 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { Link2, QrCode, RefreshCw, Smartphone } from "lucide-react";
+import { QrCode, RefreshCw } from "lucide-react";
 import {
-  confirmMasWhatsAppOtp,
   fetchMasWhatsAppQr,
   refreshMasWhatsAppStatus,
-  sendMasWhatsAppOtp,
 } from "@/app/app/whatsapp/mas-actions";
 import type { MasPhoneConnectionStatus } from "@/lib/integrations/messageautosender";
-
-type LinkMode = "qr" | "otp";
 
 export function MasWhatsAppConnectPanel({
   credentialsSaved,
@@ -19,13 +15,9 @@ export function MasWhatsAppConnectPanel({
   credentialsSaved: boolean;
   initialStatus: MasPhoneConnectionStatus | null;
 }) {
-  const [mode, setMode] = useState<LinkMode>("qr");
   const [status, setStatus] = useState<MasPhoneConnectionStatus | null>(initialStatus);
   const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
   const [qrMessage, setQrMessage] = useState<string | null>(null);
-  const [mobile, setMobile] = useState("");
-  const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -73,7 +65,7 @@ export function MasWhatsAppConnectPanel({
   }, [credentialsSaved, refreshStatus]);
 
   useEffect(() => {
-    if (!credentialsSaved || mode !== "qr") {
+    if (!credentialsSaved) {
       return;
     }
     loadQr();
@@ -81,7 +73,7 @@ export function MasWhatsAppConnectPanel({
       refreshStatus();
     }, 5000);
     return () => window.clearInterval(interval);
-  }, [credentialsSaved, mode, loadQr, refreshStatus]);
+  }, [credentialsSaved, loadQr, refreshStatus]);
 
   if (!credentialsSaved) {
     return (
@@ -114,157 +106,43 @@ export function MasWhatsAppConnectPanel({
         </p>
       ) : null}
 
-      <div className="ws-mas-connect-tabs" role="tablist" aria-label="Link method">
-        <button
-          className={`ws-mas-connect-tab${mode === "qr" ? " is-active" : ""}`}
-          role="tab"
-          type="button"
-          aria-selected={mode === "qr"}
-          onClick={() => setMode("qr")}
-        >
-          <QrCode size={15} aria-hidden />
-          Scan QR
-        </button>
-        <button
-          className={`ws-mas-connect-tab${mode === "otp" ? " is-active" : ""}`}
-          role="tab"
-          type="button"
-          aria-selected={mode === "otp"}
-          onClick={() => setMode("otp")}
-        >
-          <Smartphone size={15} aria-hidden />
-          OTP link
-        </button>
-      </div>
-
-      {mode === "qr" ? (
-        <div className="ws-mas-connect-panel">
-          <p className="ws-wa-settings-lead">
-            Open WhatsApp ? Linked devices ? Link a device ? Scan this code.
-          </p>
-          <div className="ws-mas-qr-frame">
-            {qrImageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img alt="WhatsApp QR code" className="ws-mas-qr-image" src={qrImageUrl} />
-            ) : (
-              <div className="ws-mas-qr-placeholder">
-                {pending ? "Loading QR..." : "QR not loaded yet"}
-              </div>
-            )}
-          </div>
-          {qrMessage ? <p className="ws-field-hint">{qrMessage}</p> : null}
-          <div className="ws-mas-connect-actions">
-            <button
-              className="btn-cta btn-secondary"
-              disabled={pending}
-              type="button"
-              onClick={loadQr}
-            >
-              <RefreshCw size={14} aria-hidden />
-              Refresh QR
-            </button>
-            <button
-              className="btn-cta btn-secondary"
-              disabled={pending}
-              type="button"
-              onClick={refreshStatus}
-            >
-              Check status
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="ws-mas-connect-panel">
-          <p className="ws-wa-settings-lead">
-            Enter your WhatsApp number. We will send an OTP; enter it here to
-            link your account.
-          </p>
-          <label>
-            WhatsApp number
-            <input
-              inputMode="tel"
-              placeholder="9685788980"
-              type="tel"
-              value={mobile}
-              onChange={(event) => setMobile(event.target.value)}
-            />
-          </label>
-          {!otpSent ? (
-            <button
-              className="btn-cta btn-secondary"
-              disabled={pending || !mobile.trim()}
-              type="button"
-              onClick={() =>
-                startTransition(async () => {
-                  setError(null);
-                  setFeedback(null);
-                  const result = await sendMasWhatsAppOtp(mobile);
-                  if (!result.ok) {
-                    setError(result.error);
-                    return;
-                  }
-                  setOtpSent(true);
-                  setFeedback(result.message);
-                })
-              }
-            >
-              <Link2 size={14} aria-hidden />
-              Send OTP
-            </button>
+      <div className="ws-mas-connect-panel">
+        <p className="ws-wa-settings-lead">
+          <QrCode size={15} aria-hidden className="inline-icon" /> Open WhatsApp
+          on your phone, go to Linked devices, tap Link a device, then scan this
+          code.
+        </p>
+        <div className="ws-mas-qr-frame">
+          {qrImageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img alt="WhatsApp QR code" className="ws-mas-qr-image" src={qrImageUrl} />
           ) : (
-            <>
-              <label>
-                OTP code
-                <input
-                  inputMode="numeric"
-                  placeholder="6-digit code"
-                  type="text"
-                  value={otp}
-                  onChange={(event) => setOtp(event.target.value)}
-                />
-              </label>
-              <div className="ws-mas-connect-actions">
-                <button
-                  className="btn-cta btn-primary"
-                  disabled={pending || !otp.trim()}
-                  type="button"
-                  onClick={() =>
-                    startTransition(async () => {
-                      setError(null);
-                      setFeedback(null);
-                      const result = await confirmMasWhatsAppOtp(mobile, otp);
-                      if (!result.ok) {
-                        setError(result.error);
-                        return;
-                      }
-                      setFeedback(result.message);
-                      if (result.status) {
-                        setStatus(result.status);
-                      } else {
-                        refreshStatus();
-                      }
-                    })
-                  }
-                >
-                  Link WhatsApp
-                </button>
-                <button
-                  className="btn-cta btn-secondary"
-                  disabled={pending}
-                  type="button"
-                  onClick={() => {
-                    setOtpSent(false);
-                    setOtp("");
-                    setFeedback(null);
-                  }}
-                >
-                  Resend OTP
-                </button>
-              </div>
-            </>
+            <div className="ws-mas-qr-placeholder">
+              {pending ? "Loading QR..." : "QR not loaded yet"}
+            </div>
           )}
         </div>
-      )}
+        {qrMessage ? <p className="ws-field-hint">{qrMessage}</p> : null}
+        <div className="ws-mas-connect-actions">
+          <button
+            className="btn-cta btn-secondary"
+            disabled={pending}
+            type="button"
+            onClick={loadQr}
+          >
+            <RefreshCw size={14} aria-hidden />
+            Refresh QR
+          </button>
+          <button
+            className="btn-cta btn-secondary"
+            disabled={pending}
+            type="button"
+            onClick={refreshStatus}
+          >
+            Check status
+          </button>
+        </div>
+      </div>
 
       {feedback ? <p className="saas-form-message ok">{feedback}</p> : null}
       {error ? <p className="saas-form-message error">{error}</p> : null}
