@@ -21,7 +21,6 @@ import type {
 } from "@/lib/integrations/messageautosender";
 
 type SettingsTab = "account" | "wallet" | "official-api" | "web-api" | "ai";
-type WhatsAppProviderTab = "sheetomatic" | "messageautosender";
 
 const TAB_HASH: Record<SettingsTab, string> = {
   account: "account",
@@ -98,22 +97,11 @@ export function SettingsPageShell({
   adminSlot?: ReactNode;
 }) {
   const [activeTab, setActiveTab] = useState<SettingsTab>("account");
-  const [walletView, setWalletView] = useState<WhatsAppProviderTab>(
-    initialValues.whatsappProvider,
-  );
-
-  useEffect(() => {
-    setWalletView(initialValues.whatsappProvider);
-  }, [initialValues.whatsappProvider]);
 
   useEffect(() => {
     const syncFromHash = () => {
       const tab = hashToTab(window.location.hash);
-      if (tab) {
-        setActiveTab(tab);
-        if (tab === "official-api") setWalletView("sheetomatic");
-        if (tab === "web-api") setWalletView("messageautosender");
-      }
+      if (tab) setActiveTab(tab);
     };
     syncFromHash();
     window.addEventListener("hashchange", syncFromHash);
@@ -122,13 +110,10 @@ export function SettingsPageShell({
 
   const goToTab = useCallback((tab: SettingsTab) => {
     setActiveTab(tab);
-    if (tab === "official-api") setWalletView("sheetomatic");
-    if (tab === "web-api") setWalletView("messageautosender");
     window.history.replaceState(null, "", `#${TAB_HASH[tab]}`);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
-  const isWebProvider = walletView === "messageautosender";
   const officialConnected = credentialsReady && goLiveStatus.isLive;
   const webConnected = Boolean(
     masAccountDashboard?.connected || masLinkStatus?.connected,
@@ -138,13 +123,12 @@ export function SettingsPageShell({
       hasSavedSecrets.masApiKey &&
       initialValues.masUsername,
   );
-  const waConnected = isWebProvider ? webConnected : officialConnected;
 
   const walletLoaded = Boolean(tenantWaWalletLabel && tenantAiWalletLabel);
   const walletHasError = Boolean(tenantWaWalletLabel && !tenantAiWalletLabel);
   const webApiDashboardReady = Boolean(masAccountDashboard || masLinkStatus);
 
-  const navItems: Array<{
+  const mainNavItems: Array<{
     id: SettingsTab;
     label: string;
     icon: typeof UserRound;
@@ -155,19 +139,28 @@ export function SettingsPageShell({
     { id: "wallet", label: "Wallet", icon: CreditCard },
     {
       id: "official-api",
-      label: "Official API",
+      label: "WhatsApp",
       icon: KeyRound,
       hint: officialConnected ? "Live" : undefined,
-      badge: !officialConnected && initialValues.whatsappProvider === "sheetomatic",
+      badge: !officialConnected,
     },
+    { id: "ai", label: "AI limits", icon: Bot },
+  ];
+
+  const optionalNavItems: Array<{
+    id: SettingsTab;
+    label: string;
+    icon: typeof Globe;
+    hint?: string;
+    badge?: boolean;
+  }> = [
     {
       id: "web-api",
       label: "Web Based API",
       icon: Globe,
-      hint: webConnected ? "Live" : undefined,
-      badge: !webConnected,
+      hint: webConnected ? "Live" : "Optional",
+      badge: webConfigured && !webConnected,
     },
-    { id: "ai", label: "AI limits", icon: Bot },
   ];
 
   return (
@@ -184,7 +177,8 @@ export function SettingsPageShell({
         </div>
 
         <nav className="ws-settings-pro-nav">
-          {navItems.map(({ id, label, icon: Icon, hint, badge }) => (
+          <p className="ws-settings-pro-nav-label">Settings</p>
+          {mainNavItems.map(({ id, label, icon: Icon, hint, badge }) => (
             <button
               key={id}
               aria-current={activeTab === id ? "page" : undefined}
@@ -203,26 +197,54 @@ export function SettingsPageShell({
           ))}
         </nav>
 
+        <nav
+          aria-label="Optional integrations"
+          className="ws-settings-pro-nav ws-settings-pro-nav-optional"
+        >
+          <p className="ws-settings-pro-nav-label">Optional</p>
+          {optionalNavItems.map(({ id, label, icon: Icon, hint, badge }) => (
+            <button
+              key={id}
+              aria-current={activeTab === id ? "page" : undefined}
+              className={`ws-settings-pro-nav-item ws-settings-pro-nav-item-optional${activeTab === id ? " is-active" : ""}`}
+              type="button"
+              onClick={() => goToTab(id)}
+            >
+              <Icon size={17} aria-hidden />
+              <span>{label}</span>
+              {badge ? (
+                <span className="ws-settings-pro-nav-badge">!</span>
+              ) : hint ? (
+                <span className="ws-settings-pro-nav-hint">{hint}</span>
+              ) : null}
+            </button>
+          ))}
+        </nav>
+
         <div className="ws-settings-pro-sidebar-foot">
           <div
-            className={`ws-settings-pro-connection${waConnected ? " is-connected" : ""}`}
+            className={`ws-settings-pro-connection${officialConnected ? " is-connected" : ""}`}
           >
-            {waConnected ? (
+            {officialConnected ? (
               <Wifi size={15} aria-hidden />
             ) : (
               <WifiOff size={15} aria-hidden />
             )}
-            <span>{waConnected ? "WhatsApp connected" : "WhatsApp not connected"}</span>
+            <span>
+              {officialConnected
+                ? "Official WhatsApp live"
+                : "Official WhatsApp not live"}
+            </span>
           </div>
-          {!webConnected ? (
-            <button
-              className="btn-cta btn-primary ws-settings-connect-wa"
-              type="button"
-              onClick={() => goToTab("web-api")}
-            >
-              Connect WA
-            </button>
-          ) : null}
+          {webConnected ? (
+            <p className="ws-settings-pro-optional-note is-connected">
+              Web Based API connected
+            </p>
+          ) : (
+            <p className="ws-settings-pro-optional-note">
+              Need phone scan? Use Optional &rarr; Web Based API.
+            </p>
+          )}
         </div>
       </aside>
 
@@ -261,70 +283,20 @@ export function SettingsPageShell({
           <section className="ws-settings-pro-panel">
             <header className="ws-settings-pro-panel-head">
               <div>
-                <h2>{isWebProvider ? "Web Based API credits" : "Official API wallet"}</h2>
-                <p>
-                  {isWebProvider
-                    ? "Account balance and connection status for Web Based API."
-                    : "Message and AI credit balances for Official API."}
-                </p>
+                <h2>Wallet</h2>
+                <p>Official API message and AI credit balances.</p>
               </div>
-              <div className="ws-settings-wallet-toggle">
-                <button
-                  className={`ws-settings-wallet-toggle-btn${!isWebProvider ? " is-active" : ""}`}
-                  type="button"
-                  onClick={() => setWalletView("sheetomatic")}
-                >
-                  Official
-                </button>
-                <button
-                  className={`ws-settings-wallet-toggle-btn${isWebProvider ? " is-active" : ""}`}
-                  type="button"
-                  onClick={() => setWalletView("messageautosender")}
-                >
-                  Web
-                </button>
-              </div>
+              <a
+                className="btn-cta btn-secondary"
+                href={redlavaDashboardUrl()}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                Open portal
+              </a>
             </header>
 
-            {isWebProvider ? (
-              !webConnected ? (
-                <div className="ws-settings-pro-empty">
-                  <Globe size={28} aria-hidden />
-                  <h3>
-                    {webConfigured
-                      ? "Scan QR to connect WhatsApp"
-                      : "Set up Web Based API"}
-                  </h3>
-                  <p>
-                    {webConfigured
-                      ? "Open Web Based API in the sidebar and scan the QR code."
-                      : "Save credentials on the Web Based API tab first."}
-                  </p>
-                  <button
-                    className="btn-cta btn-primary"
-                    type="button"
-                    onClick={() => goToTab("web-api")}
-                  >
-                    Connect WA
-                  </button>
-                </div>
-              ) : webApiDashboardReady ? (
-                <div className="ws-settings-pro-stat-grid">
-                  <article className="ws-settings-pro-stat">
-                    <span>Account type</span>
-                    <strong>{formatDashboardValue(masAccountDashboard?.accountType)}</strong>
-                  </article>
-                  <article className="ws-settings-pro-stat">
-                    <span>Valid until</span>
-                    <strong>{formatDashboardValue(masAccountDashboard?.validUntil)}</strong>
-                  </article>
-                  <article className="ws-settings-pro-stat">
-                    <span>Credit count</span>
-                    <strong>{formatDashboardValue(masAccountDashboard?.creditCount)}</strong>
-                  </article>
-                </div>
-              ) : null
-            ) : walletLoaded ? (
+            {walletLoaded ? (
               <div className="ws-settings-pro-stat-grid">
                 <article className="ws-settings-pro-stat">
                   <span>WhatsApp messages</span>
@@ -347,27 +319,16 @@ export function SettingsPageShell({
               <div className="ws-settings-pro-empty">
                 <CreditCard size={28} aria-hidden />
                 <h3>No wallet data yet</h3>
-                <p>Save your Official API key to view balances.</p>
+                <p>Save your WhatsApp Official API key to view balances.</p>
                 <button
                   className="btn-cta btn-primary"
                   type="button"
                   onClick={() => goToTab("official-api")}
                 >
-                  Set up Official API
+                  Set up WhatsApp
                 </button>
               </div>
             )}
-
-            {!isWebProvider ? (
-              <a
-                className="btn-cta btn-secondary"
-                href={redlavaDashboardUrl()}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                Open portal
-              </a>
-            ) : null}
 
             {showResellerWallet ? (
               <article className="ws-settings-pro-card ws-settings-pro-reseller">
@@ -389,9 +350,9 @@ export function SettingsPageShell({
           <section className="ws-settings-pro-panel">
             <header className="ws-settings-pro-panel-head">
               <div>
-                <h2>Official API</h2>
+                <h2>WhatsApp</h2>
                 <p>
-                  Meta Cloud API key + Phone ID. Source:{" "}
+                  Official Meta Cloud API (recommended). Source:{" "}
                   <strong>{credentialsSource}</strong> &middot; Go Live on{" "}
                   <Link href="/ai/app/campaign">Campaign</Link> after saving.
                 </p>
@@ -452,7 +413,10 @@ export function SettingsPageShell({
             <header className="ws-settings-pro-panel-head">
               <div>
                 <h2>Web Based API</h2>
-                <p>Account login and QR scan to link WhatsApp on your phone.</p>
+                <p>
+                  Optional alternative to Official API. Login with your web
+                  account or scan QR to link WhatsApp on your phone.
+                </p>
               </div>
               <span
                 className={`ws-web-api-status-pill${webConnected ? " is-connected" : ""}`}
@@ -464,6 +428,23 @@ export function SettingsPageShell({
                     : "Not set up"}
               </span>
             </header>
+
+            {webApiDashboardReady && (webConnected || masAccountDashboard?.creditCount != null) ? (
+              <div className="ws-settings-pro-stat-grid">
+                <article className="ws-settings-pro-stat">
+                  <span>Account type</span>
+                  <strong>{formatDashboardValue(masAccountDashboard?.accountType)}</strong>
+                </article>
+                <article className="ws-settings-pro-stat">
+                  <span>Valid until</span>
+                  <strong>{formatDashboardValue(masAccountDashboard?.validUntil)}</strong>
+                </article>
+                <article className="ws-settings-pro-stat">
+                  <span>Credit count</span>
+                  <strong>{formatDashboardValue(masAccountDashboard?.creditCount)}</strong>
+                </article>
+              </div>
+            ) : null}
 
             <div className="ws-settings-pro-card ws-settings-pro-wa-card">
               <WhatsAppSettingsPanel

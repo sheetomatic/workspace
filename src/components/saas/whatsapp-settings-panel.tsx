@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { LogIn, RefreshCw, Settings, X } from "lucide-react";
 import { saveWhatsAppSettings } from "@/app/app/whatsapp/actions";
@@ -66,7 +66,6 @@ export function WhatsAppSettingsPanel({
   embedded?: boolean;
 }) {
   const router = useRouter();
-  const [connectMode, setConnectMode] = useState<"qr" | "login">("qr");
   const [settingsState, settingsAction, settingsPending] = useActionState(
     saveWhatsAppSettings,
     whatsAppTemplateInitialState,
@@ -153,27 +152,6 @@ export function WhatsAppSettingsPanel({
           </div>
         ) : (
           <>
-            <div className="ws-web-api-connect-tabs" role="tablist">
-              <button
-                aria-selected={connectMode === "qr"}
-                className={`ws-web-api-connect-tab${connectMode === "qr" ? " is-active" : ""}`}
-                role="tab"
-                type="button"
-                onClick={() => setConnectMode("qr")}
-              >
-                Scan QR
-              </button>
-              <button
-                aria-selected={connectMode === "login"}
-                className={`ws-web-api-connect-tab${connectMode === "login" ? " is-active" : ""}`}
-                role="tab"
-                type="button"
-                onClick={() => setConnectMode("login")}
-              >
-                Login
-              </button>
-            </div>
-
             <div className="ws-wa-side-fields">
               <label>
                 Username
@@ -183,7 +161,6 @@ export function WhatsAppSettingsPanel({
                   placeholder="Account username"
                   type="text"
                   autoComplete="username"
-                  required={connectMode === "login"}
                 />
               </label>
               <label>
@@ -197,7 +174,6 @@ export function WhatsAppSettingsPanel({
                   }
                   type="password"
                   autoComplete="current-password"
-                  required={connectMode === "login" && !hasSavedSecrets.masPassword}
                 />
               </label>
               <label>
@@ -211,49 +187,50 @@ export function WhatsAppSettingsPanel({
                   }
                   type="password"
                   autoComplete="off"
-                  required={connectMode === "login" && !hasSavedSecrets.masApiKey}
                 />
               </label>
             </div>
 
-            {connectMode === "login" ? (
-              <div className="ws-web-api-login-panel">
-                <p>
-                  QR not loading? Login with your Web Based API username and
-                  password. We save credentials and load your channel.
-                </p>
-                <div className="ws-web-api-login-actions">
-                  <button
-                    className="btn-cta btn-primary"
-                    disabled={pending}
-                    formAction={connectAction}
-                    type="submit"
-                  >
-                    <LogIn size={14} aria-hidden />
-                    {connectPending ? "Logging in..." : "Login & connect"}
-                  </button>
-                  <a
-                    className="btn-cta btn-secondary"
-                    href={masPortalUrl()}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    Open web portal
-                  </a>
+            {masCredentialsSaved || settingsState.ok || connectState.ok ? (
+              <>
+                <MasWhatsAppConnectPanel
+                  compact
+                  connectMessage={connectState.message}
+                  connectOk={connectState.ok}
+                  credentialsSaved={
+                    masCredentialsSaved || settingsState.ok || connectState.ok
+                  }
+                  initialDashboard={masAccountDashboard}
+                  initialQrImageUrl={connectState.qrImageUrl ?? null}
+                  initialStatus={masLinkStatus}
+                />
+                <div className="ws-web-api-login-panel">
+                  <p>
+                    QR not loading? Use Login &amp; connect with the credentials
+                    above.
+                  </p>
+                  <div className="ws-web-api-login-actions">
+                    <button
+                      className="btn-cta btn-secondary"
+                      disabled={pending}
+                      formAction={connectAction}
+                      type="submit"
+                    >
+                      <LogIn size={14} aria-hidden />
+                      {connectPending ? "Logging in..." : "Login & connect"}
+                    </button>
+                    <a
+                      className="btn-cta btn-secondary"
+                      href={masPortalUrl()}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      Open web portal
+                    </a>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <MasWhatsAppConnectPanel
-                compact
-                connectMessage={connectState.message}
-                connectOk={connectState.ok}
-                credentialsSaved={masCredentialsSaved || settingsState.ok || connectState.ok}
-                initialDashboard={masAccountDashboard}
-                initialQrImageUrl={connectState.qrImageUrl ?? null}
-                initialStatus={masLinkStatus}
-                onUseLogin={() => setConnectMode("login")}
-              />
-            )}
+              </>
+            ) : null}
           </>
         )}
 
@@ -263,7 +240,7 @@ export function WhatsAppSettingsPanel({
               ? "Credentials saved. Leave secret fields blank to keep current values."
               : isOfficial
                 ? "Save to activate Official API."
-                : "Save credentials, or use Login when QR does not load."}
+                : "Save credentials first, then scan QR or use Login & connect."}
           </p>
           <button
             className="btn-cta btn-primary"

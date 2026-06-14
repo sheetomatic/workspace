@@ -132,7 +132,7 @@ export function MasWhatsAppConnectPanel({
       <div className={`ws-web-api-qr-block${compact ? " is-compact" : ""}`}>
         <div className="ws-web-api-qr-frame is-placeholder">
           <span className="ws-web-api-qr-placeholder-text">QR code</span>
-          <p>Enter credentials above, then Save or switch to Login.</p>
+          <p>Enter credentials above, then Save to load QR.</p>
           {onUseLogin ? (
             <button
               className="btn-cta btn-secondary btn-sm"
