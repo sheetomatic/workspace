@@ -176,7 +176,7 @@ export function SettingsPageShell({
           </span>
           <div>
             <strong>{userName}</strong>
-            <span>{userRole}</span>
+            <span className="ws-settings-pro-role">{userRole}</span>
           </div>
         </div>
 

@@ -6079,13 +6079,15 @@
 .workspace-app .ws-settings-pro-avatar {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
   background: linear-gradient(135deg, #2563eb, #0ea5e9);
   color: #fff;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
   flex-shrink: 0;
 }
 
@@ -6096,7 +6098,7 @@
   line-height: 1.25;
 }
 
-.workspace-app .ws-settings-pro-profile span {
+.workspace-app .ws-settings-pro-profile .ws-settings-pro-role {
   display: block;
   font-size: 0.6875rem;
   color: #64748b;
