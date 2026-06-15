@@ -384,6 +384,17 @@ export function SettingsPageShell({
               />
             </div>
 
+            <article className="ws-settings-pro-card ws-settings-reply-guide">
+              <h3>Reply to customers</h3>
+              <p>
+                When someone messages your Official WhatsApp number, open{" "}
+                <Link href="/ai/app/inbox">Chats</Link> in the sidebar. Select the
+                conversation, type your reply, and press Send — it goes out on Official
+                WhatsApp. AI auto-replies until you send manually or pause AI for that
+                chat.
+              </p>
+            </article>
+
             <article className="ws-settings-pro-card">
               <h3>Webhook reference</h3>
               <dl className="ws-settings-pro-webhook">

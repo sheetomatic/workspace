@@ -11,6 +11,7 @@ import {
   recordWaOutboundMessage,
   setWaContactAiEnabled,
 } from "@/lib/wa-inbox-store";
+import { hasActiveWhatsAppSession } from "@/lib/whatsapp-session";
 
 export type InboxActionState = { ok: boolean; message: string };
 
@@ -31,6 +32,18 @@ export async function sendInboxReply(
   const conversation = await getWaConversation(user.organizationId, conversationId);
   if (!conversation) {
     return { ok: false, message: "Conversation not found." };
+  }
+
+  const sessionActive = await hasActiveWhatsAppSession(
+    user.organizationId,
+    conversation.contact.phone,
+  );
+  if (!sessionActive) {
+    return {
+      ok: false,
+      message:
+        "24-hour reply window closed. Ask the customer to message you again, or send an approved template from Templates.",
+    };
   }
 
   const result = await sendWhatsAppText({

@@ -28,7 +28,7 @@ export default async function SheetomaticAiAppLayout({
   children: React.ReactNode;
 }) {
   const sessionUser = await requireAiSession();
-  const [organization, organizations, credentials, savedSettings, tenantWallets, skipOnboarding] =
+  const [organization, organizations, credentials, savedSettings, tenantWallets, skipOnboarding, unreadAgg] =
     await Promise.all([
       prisma.organization.findUnique({
         where: { id: sessionUser.organizationId },
@@ -38,6 +38,10 @@ export default async function SheetomaticAiAppLayout({
       getWorkspaceWhatsAppSettings(sessionUser.organizationId),
       getWorkspaceTenantWallets(sessionUser.organizationId),
       shouldSkipAiOnboarding(sessionUser.organizationId),
+      prisma.waContact.aggregate({
+        where: { organizationId: sessionUser.organizationId },
+        _sum: { unreadCount: true },
+      }),
     ]);
 
   if (!organization) {
@@ -71,6 +75,7 @@ export default async function SheetomaticAiAppLayout({
   return (
     <AuthSessionProvider>
       <AiShell
+        inboxUnreadCount={unreadAgg._sum.unreadCount ?? 0}
         organizations={organizations}
         showWallet={integrationsConnected}
         user={user}

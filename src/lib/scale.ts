@@ -9,6 +9,8 @@ export const SCALE = {
   CRON_REMINDER_MAX_BATCHES: 10,
   /** Inbox conversation list cache (seconds) */
   INBOX_LIST_REVALIDATE_SEC: 8,
+  /** Client poll interval on Chats page (ms) */
+  INBOX_CLIENT_POLL_MS: 10_000,
   /** AI parse/transcribe requests per user per minute */
   AI_ROUTE_LIMIT_PER_MIN: 30,
 } as const;

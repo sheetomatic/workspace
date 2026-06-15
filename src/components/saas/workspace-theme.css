@@ -7547,14 +7547,17 @@
 
 .workspace-app .ws-inbox-page {
   padding: 0;
-  height: calc(100vh - 0px);
   min-height: 640px;
+}
+
+.workspace-app .ws-inbox-page .ws-inbox-shell {
+  height: calc(100vh - 180px);
+  min-height: 560px;
 }
 
 .workspace-app .ws-inbox-shell {
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr) 280px;
-  height: calc(100vh - 24px);
   min-height: 620px;
   background: #fff;
   border: 1px solid #e2e8f0;
@@ -7595,6 +7598,33 @@
   margin: 4px 0 0;
   font-size: 0.75rem;
   color: #64748b;
+}
+
+.workspace-app .ws-inbox-list-hint {
+  margin: 0 14px 10px;
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.workspace-app .ws-inbox-alert {
+  margin: 0 16px 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.workspace-app .ws-inbox-alert.is-warning {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+}
+
+.workspace-app .ws-inbox-alert a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
 }
 
 .workspace-app .ws-inbox-search {
@@ -8526,6 +8556,25 @@
   gap: 12px;
   padding: 48px 24px;
   text-align: center;
+}
+
+.workspace-app .ws-inbox-empty-note {
+  margin: 0;
+  max-width: 420px;
+  font-size: 0.8125rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.workspace-app .ws-settings-reply-guide p {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: #475569;
+}
+
+.workspace-app .ws-settings-reply-guide a {
+  font-weight: 600;
 }
 
 .workspace-app .ws-contacts-table {
@@ -9671,6 +9720,11 @@
   margin: 0;
   font-size: 0.8125rem;
   color: #64748b;
+}
+
+.workspace-app .ws-inbox-feedback.is-ok {
+  color: #15803d;
+  font-weight: 600;
 }
 
 .workspace-app .ws-go-live-actions {

@@ -10,12 +10,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, type KeyboardEvent } from "react";
 import {
   sendInboxReply,
   setInboxHumanTakeover,
 } from "@/app/ai/app/inbox/actions";
 import { formatWhatsAppPhone } from "@/lib/phone";
+import { SCALE } from "@/lib/scale";
 
 export type InboxConversationRow = {
   id: string;
@@ -56,16 +57,22 @@ export function LiveInboxPanel({
   activeConversationId,
   messages,
   emptyHint,
+  webhookReceived = true,
+  sessionActive = true,
+  whatsAppLive = false,
 }: {
   conversations: InboxConversationRow[];
   activeConversationId: string | null;
   messages: InboxMessageRow[];
   emptyHint?: string;
+  webhookReceived?: boolean;
+  sessionActive?: boolean;
+  whatsAppLive?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [draft, setDraft] = useState("");
-  const [humanTakeover, setHumanTakeover] = useState(false);
+  const [pauseAi, setPauseAi] = useState(false);
   const [query, setQuery] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -87,9 +94,12 @@ export function LiveInboxPanel({
     null;
 
   useEffect(() => {
-    const timer = window.setInterval(() => {
-      router.refresh();
-    }, 45_000);
+    const poll = () => {
+      if (document.visibilityState === "visible") {
+        router.refresh();
+      }
+    };
+    const timer = window.setInterval(poll, SCALE.INBOX_CLIENT_POLL_MS);
     return () => window.clearInterval(timer);
   }, [router]);
 
@@ -97,7 +107,7 @@ export function LiveInboxPanel({
     if (!active) {
       return;
     }
-    setHumanTakeover(!active.contact.aiEnabled);
+    setPauseAi(!active.contact.aiEnabled);
     setFeedback(null);
   }, [active?.id, active?.contact.aiEnabled]);
 
@@ -118,7 +128,7 @@ export function LiveInboxPanel({
   }
 
   function sendReply() {
-    if (!active || !draft.trim() || !humanTakeover) {
+    if (!active || !draft.trim()) {
       return;
     }
 
@@ -127,26 +137,34 @@ export function LiveInboxPanel({
       setFeedback(result.message);
       if (result.ok) {
         setDraft("");
+        setPauseAi(true);
         router.refresh();
       }
     });
   }
 
-  function toggleHumanTakeover(checked: boolean) {
+  function togglePauseAi(checked: boolean) {
     if (!active) {
       return;
     }
 
-    setHumanTakeover(checked);
+    setPauseAi(checked);
     startTransition(async () => {
       const result = await setInboxHumanTakeover(active.contact.id, checked);
       setFeedback(result.message);
       if (result.ok) {
         router.refresh();
       } else {
-        setHumanTakeover(!checked);
+        setPauseAi(!checked);
       }
     });
+  }
+
+  function handleComposeKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      sendReply();
+    }
   }
 
   if (conversations.length === 0) {
@@ -156,8 +174,15 @@ export function LiveInboxPanel({
         <h2>No WhatsApp chats yet</h2>
         <p>
           {emptyHint ??
-            "When customers or your team message your business number, conversations appear here in real time."}
+            "When customers message your Official WhatsApp number, conversations appear here. You can reply from this inbox."}
         </p>
+        {!webhookReceived ? (
+          <p className="ws-inbox-empty-note">
+            Register the webhook in{" "}
+            <Link href="/ai/app/settings#official-api">Settings</Link> and send a
+            test message to your business number.
+          </p>
+        ) : null}
         <Link className="btn-cta btn-primary" href="/ai/app/campaign">
           Open Campaign setup
         </Link>
@@ -183,6 +208,10 @@ export function LiveInboxPanel({
             <p>{filtered.length} live conversation{filtered.length === 1 ? "" : "s"}</p>
           </div>
         </div>
+        <p className="ws-inbox-list-hint">
+          Customer messages on your Official WhatsApp appear here. Type a reply below
+          {whatsAppLive ? " — AI auto-replies until you send manually." : "."}
+        </p>
         <label className="ws-inbox-search">
           <Search size={16} aria-hidden />
           <input
@@ -245,10 +274,26 @@ export function LiveInboxPanel({
               <div className="ws-inbox-chat-actions">
                 <span className="ws-inbox-status-pill live">
                   <MessageCircle size={12} aria-hidden />
-                  WhatsApp
+                  Official WhatsApp
                 </span>
               </div>
             </header>
+
+            {!webhookReceived ? (
+              <p className="ws-inbox-alert is-warning">
+                Waiting for first inbound webhook. Point Meta/RedLava to your callback URL in{" "}
+                <Link href="/ai/app/settings#official-api">Settings</Link>, then send a test
+                message.
+              </p>
+            ) : null}
+
+            {!sessionActive ? (
+              <p className="ws-inbox-alert is-warning">
+                The 24-hour reply window may be closed. Free-text replies work only after the
+                customer messages you again, or use an approved template from{" "}
+                <Link href="/ai/app/templates">Templates</Link>.
+              </p>
+            ) : null}
 
             <div className="ws-inbox-messages">
               {messages.map((message) => {
@@ -290,32 +335,33 @@ export function LiveInboxPanel({
               <div className="ws-inbox-compose-tools">
                 <label className="ws-inbox-toggle">
                   <input
-                    checked={humanTakeover}
+                    checked={pauseAi}
                     type="checkbox"
                     disabled={pending}
-                    onChange={(event) =>
-                      toggleHumanTakeover(event.target.checked)
-                    }
+                    onChange={(event) => togglePauseAi(event.target.checked)}
                   />
-                  <span>Human takeover</span>
+                  <span>Pause AI for this chat</span>
                 </label>
               </div>
-              {feedback ? <p className="ws-inbox-feedback">{feedback}</p> : null}
+              {feedback ? (
+                <p
+                  className={`ws-inbox-feedback${feedback.includes("sent") ? " is-ok" : ""}`}
+                >
+                  {feedback}
+                </p>
+              ) : null}
               <div className="ws-inbox-compose-row">
                 <textarea
-                  placeholder={
-                    humanTakeover
-                      ? "Reply on WhatsApp..."
-                      : "Enable human takeover to reply manually."
-                  }
+                  placeholder="Type your reply — sent on Official WhatsApp (Enter to send)"
                   rows={2}
                   value={draft}
-                  disabled={!humanTakeover || pending}
+                  disabled={pending}
                   onChange={(event) => setDraft(event.target.value)}
+                  onKeyDown={handleComposeKeyDown}
                 />
                 <button
                   className="ws-inbox-send"
-                  disabled={!humanTakeover || !draft.trim() || pending}
+                  disabled={!draft.trim() || pending}
                   type="button"
                   onClick={sendReply}
                 >
@@ -378,7 +424,7 @@ export function LiveInboxPanel({
                 </div>
                 <div>
                   <dt>AI status</dt>
-                  <dd>{active.contact.aiEnabled ? "AI enabled" : "Human only"}</dd>
+                  <dd>{active.contact.aiEnabled ? "AI replying" : "Manual replies only"}</dd>
                 </div>
               </dl>
             </div>

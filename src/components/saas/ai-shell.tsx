@@ -35,6 +35,7 @@ type NavItem = {
   label: string;
   icon: typeof LayoutDashboard;
   minRole?: (typeof ROLE_ORDER)[number];
+  badgeCount?: number;
 };
 
 const mainNavItems: NavItem[] = [
@@ -102,6 +103,7 @@ function NavLink({
   label,
   icon: Icon,
   pathname,
+  badgeCount = 0,
 }: NavItem & { pathname: string }) {
   const active =
     href === "/ai/app" ? pathname === "/ai/app" : pathname.startsWith(href);
@@ -113,6 +115,11 @@ function NavLink({
     >
       <Icon size={17} strokeWidth={2} />
       {label}
+      {badgeCount > 0 ? (
+        <span className="ai-crm-nav-badge" aria-label={`${badgeCount} unread`}>
+          {badgeCount > 99 ? "99+" : badgeCount}
+        </span>
+      ) : null}
     </Link>
   );
 }
@@ -122,16 +129,24 @@ export function AiShell({
   organizations,
   showWallet = false,
   walletLabel,
+  inboxUnreadCount = 0,
   children,
 }: {
   user: SessionUser;
   organizations: OrganizationOption[];
   showWallet?: boolean;
   walletLabel?: string | null;
+  inboxUnreadCount?: number;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
   const isOnboarding = pathname.startsWith("/ai/app/onboarding");
+
+  const navItems = mainNavItems.map((item) =>
+    item.href === "/ai/app/inbox"
+      ? { ...item, badgeCount: inboxUnreadCount }
+      : item,
+  );
 
   return (
     <div className="saas-app workspace-app ai-app ai-crm-app">
@@ -158,7 +173,7 @@ export function AiShell({
           />
 
           <nav className="ai-crm-nav" aria-label="Sheetomatic AI">
-            {mainNavItems
+            {navItems
               .filter((item) => canAccess(user.role, item.minRole))
               .map((item) => (
                 <NavLink key={item.href} pathname={pathname} {...item} />
