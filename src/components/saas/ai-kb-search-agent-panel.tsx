@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, CircleHelp } from "lucide-react";
 import { useState } from "react";
 import { AiKnowledgeInstructionPanel } from "@/components/saas/ai-knowledge-instruction-panel";
+import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
 import { AI_KNOWLEDGE_OVERVIEW } from "@/lib/ai-knowledge-instructions";
 
 type AgentTab = "tasks" | "access" | "behaviour" | "ai-config";
@@ -26,7 +27,10 @@ export function AiKbSearchAgentPanel({
           <ArrowLeft size={18} aria-hidden />
         </Link>
         <div className="ai-joyz-agent-title-wrap">
-          <h1>Kb Search Agent (System default)</h1>
+          <h1>
+            <SheetomaticAiMark size={20} />
+            Kb Search Agent (System default)
+          </h1>
           <span className={`ai-joyz-live-badge${isLive ? " is-live" : ""}`}>
             <span aria-hidden className="ai-joyz-live-dot" />
             {isLive ? "Live" : "Draft"}

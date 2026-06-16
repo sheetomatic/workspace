@@ -11,7 +11,6 @@ import {
   RefreshCw,
   Search,
   SlidersHorizontal,
-  Sparkles,
   Trash2,
   Upload,
   Video,
@@ -43,6 +42,7 @@ import {
   AI_KNOWLEDGE_TAB_INSTRUCTIONS,
 } from "@/lib/ai-knowledge-instructions";
 import { AiKnowledgeInstructionPanel } from "@/components/saas/ai-knowledge-instruction-panel";
+import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
 import { AiWhatsappMenuPreview } from "@/components/saas/ai-whatsapp-menu-preview";
 import {
   AI_KNOWLEDGE_TYPE_LABELS,
@@ -546,7 +546,7 @@ export function AiTrainingDataPanel({
                             type="button"
                             onClick={() => runGenerateFaqs(item.id)}
                           >
-                            <Sparkles size={15} aria-hidden />
+                            <SheetomaticAiMark size={15} />
                           </button>
                         ) : null}
                         {item.type === "WEBSITE" || item.type === "YOUTUBE_CHANNEL" ? (

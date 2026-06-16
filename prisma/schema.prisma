@@ -22,6 +22,53 @@ enum WorkspaceModule {
   APPROVALS
   REPORTS
   CASES
+  FMS
+}
+
+enum FmsFormFieldType {
+  TEXT
+  TEXTAREA
+  NUMBER
+  ENUM
+  ENUM_LIST
+  DATE
+  DATETIME
+  EMAIL
+  PHONE
+  FILE
+}
+
+enum FmsFormStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum FmsTemplateStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum FmsInstanceStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum FmsStepStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  SKIPPED
+}
+
+enum FmsSlaType {
+  NONE
+  TAT_CALENDAR_DAYS
+  TAT_WORKING_HOURS
+  SPECIFIC_TIME
+  LEAD_TIME_MINUS
 }
 
 enum OrganizationStatus {
@@ -85,6 +132,10 @@ model Organization {
   taskAiUsageEvents TaskAiUsageEvent[]
   aiReplySettings   WorkspaceAiReplySettings?
   aiReplyUsageEvents AiReplyUsageEvent[]
+  fmsForms          FmsForm[]
+  fmsTemplates      FmsTemplate[]
+  fmsInstances      FmsInstance[]
+  fmsFormSubmissions FmsFormSubmission[]
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
 }
@@ -735,6 +786,13 @@ model User {
   legalCaseDocuments   LegalCaseDocument[]      @relation("LegalCaseDocumentUploader")
   notificationSettings UserNotificationSettings[]
   taskAiUsageEvents    TaskAiUsageEvent[]
+  fmsFormsCreated      FmsForm[]                @relation("FmsFormCreator")
+  fmsTemplatesCreated  FmsTemplate[]            @relation("FmsTemplateCreator")
+  fmsFormSubmissions   FmsFormSubmission[]      @relation("FmsFormSubmitter")
+  fmsStepsOwned        FmsStepState[]           @relation("FmsStepOwner")
+  fmsStepsCompleted    FmsStepState[]           @relation("FmsStepCompleter")
+  fmsStepDefaultOwner  FmsTemplateStep[]        @relation("FmsStepDefaultOwner")
+  fmsStepAttachments   FmsStepAttachment[]      @relation("FmsStepAttachmentUploader")
   createdAt            DateTime                 @default(now())
   updatedAt            DateTime                 @updatedAt
 }
@@ -1071,4 +1129,149 @@ model CandidateDocument {
   uploadedAt  DateTime  @default(now())
 
   @@index([candidateId])
+}
+
+model FmsForm {
+  id             String           @id @default(cuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  status         FmsFormStatus    @default(DRAFT)
+  createdById    String
+  createdBy      User             @relation("FmsFormCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  fields         FmsFormField[]
+  template       FmsTemplate?
+  submissions    FmsFormSubmission[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([organizationId, status])
+}
+
+model FmsFormField {
+  id          String           @id @default(cuid())
+  formId      String
+  form        FmsForm          @relation(fields: [formId], references: [id], onDelete: Cascade)
+  sortOrder   Int              @default(0)
+  label       String
+  fieldKey    String
+  fieldType   FmsFormFieldType
+  required    Boolean          @default(false)
+  options     Json             @default("[]")
+  placeholder String?
+  helpText    String?
+
+  @@unique([formId, fieldKey])
+  @@index([formId, sortOrder])
+}
+
+model FmsTemplate {
+  id             String            @id @default(cuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  formId         String            @unique
+  form           FmsForm           @relation(fields: [formId], references: [id], onDelete: Cascade)
+  name           String
+  status         FmsTemplateStatus @default(DRAFT)
+  createdById    String
+  createdBy      User              @relation("FmsTemplateCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  steps          FmsTemplateStep[]
+  instances      FmsInstance[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([organizationId, status])
+}
+
+model FmsTemplateStep {
+  id                 String        @id @default(cuid())
+  templateId         String
+  template           FmsTemplate   @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  sortOrder          Int           @default(0)
+  stepName           String
+  roleLabel          String?
+  defaultOwnerUserId String?
+  defaultOwner       User?         @relation("FmsStepDefaultOwner", fields: [defaultOwnerUserId], references: [id], onDelete: SetNull)
+  slaType            FmsSlaType    @default(NONE)
+  slaConfig          Json          @default("{}")
+  allowMarkDone      Boolean       @default(true)
+  allowUpload        Boolean       @default(false)
+  allowNotes         Boolean       @default(true)
+  captureFields      Json          @default("[]")
+  stepStates         FmsStepState[]
+
+  @@index([templateId, sortOrder])
+}
+
+model FmsFormSubmission {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  formId         String
+  form           FmsForm      @relation(fields: [formId], references: [id], onDelete: Cascade)
+  submittedById  String
+  submittedBy    User         @relation("FmsFormSubmitter", fields: [submittedById], references: [id], onDelete: Cascade)
+  values         Json         @default("{}")
+  instance       FmsInstance?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, formId])
+  @@index([formId, createdAt])
+}
+
+model FmsInstance {
+  id             String            @id @default(cuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  templateId     String
+  template       FmsTemplate       @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  submissionId   String?           @unique
+  submission     FmsFormSubmission?  @relation(fields: [submissionId], references: [id], onDelete: SetNull)
+  referenceLabel String?
+  status         FmsInstanceStatus @default(ACTIVE)
+  stepStates     FmsStepState[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([organizationId, status])
+  @@index([templateId, createdAt])
+}
+
+model FmsStepState {
+  id                String            @id @default(cuid())
+  instanceId        String
+  instance          FmsInstance       @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  stepId            String
+  step              FmsTemplateStep   @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  ownerUserId       String?
+  owner             User?             @relation("FmsStepOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  plannedAt         DateTime?
+  actualAt          DateTime?
+  status            FmsStepStatus     @default(PENDING)
+  delayMinutes      Int?
+  completedByUserId String?
+  completedBy       User?             @relation("FmsStepCompleter", fields: [completedByUserId], references: [id], onDelete: SetNull)
+  notes             String?
+  completionValues  Json              @default("{}")
+  attachments       FmsStepAttachment[]
+
+  @@unique([instanceId, stepId])
+  @@index([instanceId, status])
+  @@index([ownerUserId, status])
+}
+
+model FmsStepAttachment {
+  id           String       @id @default(cuid())
+  stepStateId  String
+  stepState    FmsStepState @relation(fields: [stepStateId], references: [id], onDelete: Cascade)
+  uploadedById String
+  uploadedBy   User         @relation("FmsStepAttachmentUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+  fileName     String
+  mimeType     String
+  fileSize     Int
+  data         Bytes
+  createdAt    DateTime     @default(now())
+
+  @@index([stepStateId])
 }

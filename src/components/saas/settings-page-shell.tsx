@@ -12,6 +12,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import { WhatsAppSettingsPanel } from "@/components/saas/whatsapp-settings-panel";
+import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
 import type { WhatsAppGoLiveStatus } from "@/lib/whatsapp-go-live";
 import type { WhatsAppSettingsFormValues } from "@/lib/whatsapp-settings-form";
 import { redlavaDashboardUrl } from "@/lib/integrations/redlava-portal";
@@ -483,7 +484,10 @@ export function SettingsPageShell({
           <section className="ws-settings-pro-panel">
             <header className="ws-settings-pro-panel-head">
               <div>
-                <h2>AI limits</h2>
+                <h2>
+                  <SheetomaticAiMark size={20} />
+                  AI limits
+                </h2>
                 <p>Control OpenAI usage for inbound WhatsApp knowledge replies.</p>
               </div>
             </header>

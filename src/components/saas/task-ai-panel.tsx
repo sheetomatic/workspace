@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ParsedTaskDraft } from "@/lib/integrations/openai";
-import { Bot, Mic, MicOff, Sparkles } from "lucide-react";
+import { Mic, MicOff } from "lucide-react";
+import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
 
 type Props = {
   onDraft: (draft: ParsedTaskDraft) => void;
@@ -180,7 +181,7 @@ export function TaskAiPanel({ onDraft, compact = false }: Props) {
     >
       <div className="ws-task-ai-head">
         <h3>
-          <Sparkles size={16} aria-hidden />
+          <SheetomaticAiMark size={18} />
           AI input
         </h3>
       </div>
@@ -208,7 +209,7 @@ export function TaskAiPanel({ onDraft, compact = false }: Props) {
           type="button"
           onClick={() => void handleParseClick()}
         >
-          <Bot size={16} aria-hidden />
+          <SheetomaticAiMark size={16} />
           {busy && !recording ? "Parsing..." : "Parse with AI"}
         </button>
         {recording ? (

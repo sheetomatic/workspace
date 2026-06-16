@@ -12,6 +12,7 @@ import {
   getSpreadsheetIdForOrganization,
 } from "@/lib/integrations/google-sheets-dashboard";
 import { PageHeader } from "@/components/saas/page-header";
+import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
 import { ROLE_LABELS } from "@/lib/permissions";
 import { hasMinimumRole } from "@/lib/permissions";
 import { getOrCreateNotificationSettings } from "@/lib/notification-settings";
@@ -113,7 +114,10 @@ export default async function SettingsPage() {
         ) : null}
         {canViewTaskAi && taskAiSummary ? (
           <article className="saas-panel">
-            <h3>Task AI usage</h3>
+            <h3>
+              <SheetomaticAiMark size={18} />
+              Task AI usage
+            </h3>
             <TaskAiSettingsPanel
               canEdit={canManageAdmin}
               openaiConfigured={platformStatus.openai}

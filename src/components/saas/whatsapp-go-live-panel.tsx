@@ -6,7 +6,6 @@ import {
   Circle,
   Copy,
   Loader2,
-  Radio,
   Send,
   Zap,
 } from "lucide-react";
@@ -14,6 +13,7 @@ import {
   sendWhatsAppConnectionTest,
   toggleWhatsAppBotLive,
 } from "@/app/app/whatsapp/actions";
+import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
 import type { WhatsAppGoLiveStatus } from "@/lib/whatsapp-go-live";
 
 function CopyField({ label, value }: { label: string; value: string }) {
@@ -118,7 +118,7 @@ export function WhatsAppGoLivePanel({ status }: { status: WhatsAppGoLiveStatus }
         <span
           className={`ws-go-live-badge${status.isLive ? " is-live" : ""}`}
         >
-          <Radio size={14} aria-hidden />
+          <SheetomaticAiMark size={14} />
           {status.isLive ? "AI Live" : "Not live"}
         </span>
       </header>

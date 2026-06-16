@@ -7,6 +7,7 @@ import {
   type AiSettingsActionState,
 } from "@/app/ai/app/settings/actions";
 import type { AiReplyUsageSummary } from "@/lib/integrations/ai-reply-settings";
+import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
 
 const initialState: AiSettingsActionState = { ok: false, message: "" };
 
@@ -31,6 +32,7 @@ export function AiReplySettingsPanel({
   return (
     <section className="ws-settings-pro-ai-card" id="ai-reply-limits">
       <h2 className="ws-settings-pro-ai-title">
+        <SheetomaticAiMark size={20} />
         WhatsApp AI reply limits
       </h2>
       <p className="mt-2 text-sm text-slate-600">

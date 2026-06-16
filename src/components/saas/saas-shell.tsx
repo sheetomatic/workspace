@@ -4,6 +4,7 @@ import {
   BarChart3,
   Briefcase,
   ClipboardCheck,
+  GitBranch,
   ListTodo,
   LogOut,
   MapPin,
@@ -47,6 +48,13 @@ const navItems: NavItem[] = [
     icon: ListTodo,
     minRole: "VIEWER",
     module: "TASKS",
+  },
+  {
+    href: "/app/fms",
+    label: "FMS",
+    icon: GitBranch,
+    minRole: "VIEWER",
+    module: "FMS",
   },
   { href: "/app/hr", label: "HR", icon: MapPin, minRole: "VIEWER", module: "HR" },
   {

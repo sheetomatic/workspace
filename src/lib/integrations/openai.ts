@@ -1,4 +1,5 @@
 import type {
+  FmsFormFieldType,
   TaskDepartment,
   TaskFrequency,
   TaskPriority,
@@ -260,6 +261,212 @@ function extensionForMime(mimeType: string) {
     return "mp3";
   }
   return "webm";
+}
+
+export type ParsedFmsFormFieldDraft = {
+  label: string;
+  fieldType: FmsFormFieldType;
+  required: boolean;
+  options?: string[];
+  placeholder?: string;
+  helpText?: string;
+};
+
+export type ParsedFmsFormDraft = {
+  name: string;
+  description: string;
+  fields: ParsedFmsFormFieldDraft[];
+};
+
+const FMS_AI_TIMEOUT_MS = 45_000;
+
+function fmsOpenAiModel() {
+  return process.env.OPENAI_FMS_MODEL ?? process.env.OPENAI_TASK_MODEL ?? "gpt-4o-mini";
+}
+
+async function requestFmsOpenAiJson(
+  systemPrompt: string,
+  userContent: string,
+): Promise<{
+  content: string;
+  usage: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+}> {
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) {
+    throw new Error("OPENAI_NOT_CONFIGURED");
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FMS_AI_TIMEOUT_MS);
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: fmsOpenAiModel(),
+        temperature: 0.2,
+        max_tokens: 1800,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userContent },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(
+        `OPENAI_ERROR:${formatOpenAiError(response.status, detail)}`,
+      );
+    }
+
+    const payload = (await response.json()) as {
+      choices?: { message?: { content?: string } }[];
+      usage?: {
+        prompt_tokens?: number;
+        completion_tokens?: number;
+        total_tokens?: number;
+      };
+    };
+    const content = payload.choices?.[0]?.message?.content;
+    if (!content) {
+      throw new Error("OPENAI_EMPTY");
+    }
+
+    return {
+      content,
+      usage: {
+        promptTokens: payload.usage?.prompt_tokens ?? 0,
+        completionTokens: payload.usage?.completion_tokens ?? 0,
+        totalTokens: payload.usage?.total_tokens ?? 0,
+      },
+    };
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("OPENAI_TIMEOUT");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+const FMS_FIELD_TYPES: FmsFormFieldType[] = [
+  "TEXT",
+  "TEXTAREA",
+  "EMAIL",
+  "PHONE",
+  "NUMBER",
+  "ENUM",
+  "ENUM_LIST",
+  "DATE",
+  "DATETIME",
+  "FILE",
+];
+
+function normalizeFmsField(raw: Record<string, unknown>): ParsedFmsFormFieldDraft | null {
+  const label =
+    typeof raw.label === "string" && raw.label.trim() ? raw.label.trim() : "";
+  if (!label) {
+    return null;
+  }
+
+  const fieldType = FMS_FIELD_TYPES.includes(raw.fieldType as FmsFormFieldType)
+    ? (raw.fieldType as FmsFormFieldType)
+    : "TEXT";
+
+  let options: string[] = [];
+  if (Array.isArray(raw.options)) {
+    options = (raw.options as unknown[])
+      .map(String)
+      .map((option) => option.trim())
+      .filter(Boolean);
+  } else if (typeof raw.options === "string") {
+    options = raw.options
+      .split("\n")
+      .map((option) => option.trim())
+      .filter(Boolean);
+  }
+
+  return {
+    label,
+    fieldType,
+    required: Boolean(raw.required),
+    options: fieldType === "ENUM" || fieldType === "ENUM_LIST" ? options : undefined,
+    placeholder:
+      typeof raw.placeholder === "string" && raw.placeholder.trim()
+        ? raw.placeholder.trim()
+        : undefined,
+    helpText:
+      typeof raw.helpText === "string" && raw.helpText.trim()
+        ? raw.helpText.trim()
+        : undefined,
+  };
+}
+
+function normalizeFmsFormDraft(raw: Record<string, unknown>): ParsedFmsFormDraft {
+  const name =
+    typeof raw.name === "string" && raw.name.trim().length >= 2
+      ? raw.name.trim()
+      : "New intake form";
+  const description =
+    typeof raw.description === "string" ? raw.description.trim() : "";
+
+  const fieldsRaw = Array.isArray(raw.fields) ? raw.fields : [];
+  const fields = fieldsRaw
+    .map((field) =>
+      normalizeFmsField(
+        typeof field === "object" && field !== null
+          ? (field as Record<string, unknown>)
+          : {},
+      ),
+    )
+    .filter((field): field is ParsedFmsFormFieldDraft => field !== null);
+
+  return { name, description, fields };
+}
+
+export type FmsFormParseResult = {
+  draft: ParsedFmsFormDraft;
+  usage: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+};
+
+export async function parseFmsFormFromDescription(
+  description: string,
+  existingDraft?: ParsedFmsFormDraft,
+): Promise<FmsFormParseResult> {
+  const isRefine = Boolean(existingDraft?.fields?.length);
+  const fieldSchema =
+    "fields: [{label, fieldType: TEXT|TEXTAREA|EMAIL|PHONE|NUMBER|ENUM|ENUM_LIST|DATE|DATETIME|FILE, required, options?, placeholder?, helpText?}]";
+  const systemPrompt = isRefine
+    ? `Refine an FMS intake form JSON. Input may be any language; output English JSON only with keys name, description, ${fieldSchema}. Apply requested edits; keep other fields unless asked to change.`
+    : `Design an FMS intake form JSON from a description. Input may be any language; output English JSON only with keys name, description, ${fieldSchema}. Map dropdown to ENUM, checkboxes to ENUM_LIST, uploads to FILE. Prefer 4-12 fields.`;
+
+  const userContent = isRefine
+    ? `Current form JSON:\n${JSON.stringify(existingDraft)}\n\nChange:\n${description}`
+    : description;
+
+  const { content, usage } = await requestFmsOpenAiJson(systemPrompt, userContent);
+  const parsed = JSON.parse(content) as Record<string, unknown>;
+
+  return {
+    draft: normalizeFmsFormDraft(parsed),
+    usage,
+  };
 }
 
 export async function transcribeAudioBuffer(

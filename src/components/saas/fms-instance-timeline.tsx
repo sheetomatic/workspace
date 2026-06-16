@@ -1,0 +1,108 @@
+import type { FmsStepStatus } from "@prisma/client";
+import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
+
+type TimelineStep = {
+  id: string;
+  status: FmsStepStatus;
+  plannedAt: Date | null;
+  actualAt: Date | null;
+  delayMinutes: number | null;
+  notes: string | null;
+  step: {
+    stepName: string;
+    roleLabel: string | null;
+  };
+  owner: { name: string | null; email: string } | null;
+  completedBy: { name: string | null } | null;
+  attachments: { id: string; fileName: string; fileSize: number }[];
+};
+
+function formatDate(value: Date | null) {
+  if (!value) {
+    return "-";
+  }
+  return new Intl.DateTimeFormat("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(value);
+}
+
+function statusClass(status: FmsStepStatus, delayMinutes: number | null) {
+  if (status === "DONE") {
+    return delayMinutes && delayMinutes > 0 ? "is-late" : "is-done";
+  }
+  if (status === "IN_PROGRESS") {
+    return delayMinutes && delayMinutes > 0 ? "is-overdue" : "is-active";
+  }
+  return "is-pending";
+}
+
+export function FmsInstanceTimeline({ steps }: { steps: TimelineStep[] }) {
+  return (
+    <div className="ws-fms-timeline">
+      {steps.map((step, index) => {
+        const ownerName =
+          step.owner?.name ?? step.owner?.email.split("@")[0] ?? "Unassigned";
+        const delayLabel =
+          step.delayMinutes && step.delayMinutes > 0
+            ? `${Math.round(step.delayMinutes / 60)}h late`
+            : null;
+        const stepClass = statusClass(step.status, step.delayMinutes);
+
+        return (
+          <article
+            key={step.id}
+            className={`ws-fms-timeline-step ${stepClass}`}
+          >
+            <div className="ws-fms-timeline-marker" aria-hidden>
+              {index + 1}
+            </div>
+            <div className="ws-fms-timeline-body">
+              <header>
+                <div className="ws-fms-timeline-title">
+                  <h4>{step.step.stepName}</h4>
+                  {step.step.roleLabel ? (
+                    <span className="ws-fms-muted">{step.step.roleLabel}</span>
+                  ) : null}
+                </div>
+                <div className="ws-fms-timeline-badges">
+                  <FmsStatusBadge status={step.status} />
+                  {delayLabel ? (
+                    <span className="ws-sf-badge ws-sf-badge-danger">{delayLabel}</span>
+                  ) : null}
+                </div>
+              </header>
+              <dl className="ws-fms-timeline-meta">
+                <div>
+                  <dt>Owner</dt>
+                  <dd>{ownerName}</dd>
+                </div>
+                <div>
+                  <dt>Planned</dt>
+                  <dd>{formatDate(step.plannedAt)}</dd>
+                </div>
+                <div>
+                  <dt>Actual</dt>
+                  <dd>{formatDate(step.actualAt)}</dd>
+                </div>
+              </dl>
+              {step.notes ? <p className="ws-fms-notes">{step.notes}</p> : null}
+              {step.completedBy?.name ? (
+                <p className="ws-fms-muted">Completed by {step.completedBy.name}</p>
+              ) : null}
+              {step.attachments.length > 0 ? (
+                <ul className="ws-fms-attachments">
+                  {step.attachments.map((file) => (
+                    <li key={file.id}>
+                      {file.fileName} ({Math.round(file.fileSize / 1024)} KB)
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}

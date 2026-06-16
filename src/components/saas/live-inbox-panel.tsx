@@ -1,13 +1,13 @@
 "use client";
 
 import {
-  Bot,
   MessageCircle,
   Search,
   Send,
   Tag,
   User,
 } from "lucide-react";
+import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition, type KeyboardEvent } from "react";
@@ -308,7 +308,7 @@ export function LiveInboxPanel({
                   <article className={`ws-inbox-bubble ${bubbleClass}`} key={message.id}>
                     {message.aiGenerated ? (
                       <span className="ws-inbox-ai-tag">
-                        <Bot size={12} aria-hidden />
+                        <SheetomaticAiMark size={12} />
                         AI reply
                         {message.aiConfidence
                           ? ` - ${Math.round(message.aiConfidence * 100)}% confidence`

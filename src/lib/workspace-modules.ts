@@ -5,6 +5,7 @@ import { hasMinimumRole } from "@/lib/permissions";
 export const WORKSPACE_MODULES: WorkspaceModule[] = [
   "CASES",
   "TASKS",
+  "FMS",
   "HR",
   "APPROVALS",
   "REPORTS",
@@ -13,6 +14,7 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
 export const WORKSPACE_MODULE_LABELS: Record<WorkspaceModule, string> = {
   CASES: "Cases",
   TASKS: "Tasks",
+  FMS: "FMS",
   HR: "HR (attendance, field, hiring)",
   APPROVALS: "Approvals",
   REPORTS: "Reports & MIS",
@@ -21,6 +23,7 @@ export const WORKSPACE_MODULE_LABELS: Record<WorkspaceModule, string> = {
 export const WORKSPACE_MODULE_HREFS: Partial<Record<WorkspaceModule, string>> = {
   CASES: "/app/cases",
   TASKS: "/app/tasks",
+  FMS: "/app/fms",
   HR: "/app/hr",
   APPROVALS: "/app/approvals",
   REPORTS: "/app/reports",
@@ -32,9 +35,12 @@ export function defaultModulesForRole(role: Role): WorkspaceModule[] {
     return [...WORKSPACE_MODULES];
   }
   if (role === "MANAGER") {
-    return ["TASKS", "APPROVALS", "REPORTS"];
+    return ["TASKS", "FMS", "APPROVALS", "REPORTS"];
   }
-  return ["TASKS"];
+  if (role === "STAFF") {
+    return ["TASKS", "FMS"];
+  }
+  return ["TASKS", "FMS"];
 }
 
 export function resolveMemberModules(
@@ -113,6 +119,9 @@ export function pathnameRequiresModule(pathname: string): WorkspaceModule | null
   }
   if (pathname.startsWith("/app/tasks")) {
     return "TASKS";
+  }
+  if (pathname.startsWith("/app/fms")) {
+    return "FMS";
   }
   return null;
 }

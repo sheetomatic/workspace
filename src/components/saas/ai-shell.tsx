@@ -16,17 +16,16 @@ import {
   Users,
   Workflow,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { AiCrmTopbar } from "@/components/saas/ai-crm-topbar";
 import { OrganizationSwitcher } from "@/components/saas/organization-switcher";
+import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
 import type { OrganizationOption } from "@/components/saas/organization-switcher";
 import type { SessionUser } from "@/lib/auth";
 import { AI_APP_MIN_ROLE } from "@/lib/ai-auth-links";
 import { ROLE_LABELS } from "@/lib/permissions";
-import { siteBrand } from "@/app/site-content";
 
 const ROLE_ORDER = ["VIEWER", "STAFF", "MANAGER", "ADMIN", "OWNER"] as const;
 
@@ -155,13 +154,7 @@ export function AiShell({
           <div className="ai-crm-brand-row">
             <Link className="ai-crm-brand" href="/ai/app">
               <span className="logo-mark">
-                <Image
-                  src={siteBrand.logoSrc}
-                  alt={siteBrand.logoAlt}
-                  width={36}
-                  height={36}
-                  priority
-                />
+                <SheetomaticAiMark size={36} />
               </span>
               <strong>Sheetomatic AI</strong>
               <ChevronDown aria-hidden size={14} />

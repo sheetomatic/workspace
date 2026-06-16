@@ -6,6 +6,7 @@ import {
   type WorkspaceSettingsState,
 } from "@/app/app/settings/actions";
 import type { TaskAiUsageSummary } from "@/lib/integrations/task-ai-settings";
+import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
 
 const initialState: WorkspaceSettingsState = { ok: false, message: "" };
 
@@ -26,6 +27,9 @@ export function TaskAiSettingsPanel({
 
   return (
     <div className="saas-task-ai-panel">
+      <div className="ws-task-ai-head">
+        <SheetomaticAiMark size={20} showLabel />
+      </div>
       <p className="saas-panel-lead">
         Voice and text task parsing on the Tasks page. Limits reset at midnight
         India time ({summary.dayLabel}).

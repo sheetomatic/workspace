@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Bot, ChevronRight, ClipboardList, MessageSquare } from "lucide-react";
+import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
 import type { getAiAgentsOverview } from "@/lib/ai-module-data";
 
 type AgentsData = Awaited<ReturnType<typeof getAiAgentsOverview>>;
@@ -51,7 +52,7 @@ export function AiAgentsPanel({ data }: { data: AgentsData }) {
     <div className="ai-agents-page">
       <header className="ai-agents-head">
         <span className="ai-agents-head-icon" aria-hidden>
-          <Bot size={22} strokeWidth={1.75} />
+          <SheetomaticAiMark size={22} />
         </span>
         <div>
           <h1>AI Agents</h1>

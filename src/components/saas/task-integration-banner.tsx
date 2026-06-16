@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Bot, MessageCircle, Settings } from "lucide-react";
+import { MessageCircle, Settings } from "lucide-react";
+import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
 import type { WorkspaceIntegrationStatus } from "@/lib/workspace-integration-status";
 
 export function TaskIntegrationBanner({
@@ -30,7 +31,7 @@ export function TaskIntegrationBanner({
     <div className="ws-task-integration-banners" role="status">
       {aiIssues.length > 0 ? (
         <div className="saas-form-message ws-task-integration-banner ws-task-integration-banner-ai">
-          <Bot aria-hidden size={18} />
+          <SheetomaticAiMark size={18} />
           <div>
             <strong>Task AI</strong>
             <ul>
