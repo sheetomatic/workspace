@@ -1,5 +1,10 @@
 import type { FmsStepStatus } from "@prisma/client";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
+import {
+  formatDelayLabel,
+  isStepOverdue,
+  liveDelayMinutes,
+} from "@/lib/fms/step-display";
 
 type TimelineStep = {
   id: string;
@@ -27,12 +32,12 @@ function formatDate(value: Date | null) {
   }).format(value);
 }
 
-function statusClass(status: FmsStepStatus, delayMinutes: number | null) {
+function statusClass(status: FmsStepStatus, overdue: boolean, doneLate: boolean) {
   if (status === "DONE") {
-    return delayMinutes && delayMinutes > 0 ? "is-late" : "is-done";
+    return doneLate ? "is-late" : "is-done";
   }
   if (status === "IN_PROGRESS") {
-    return delayMinutes && delayMinutes > 0 ? "is-overdue" : "is-active";
+    return overdue ? "is-overdue" : "is-active";
   }
   return "is-pending";
 }
@@ -43,11 +48,20 @@ export function FmsInstanceTimeline({ steps }: { steps: TimelineStep[] }) {
       {steps.map((step, index) => {
         const ownerName =
           step.owner?.name ?? step.owner?.email.split("@")[0] ?? "Unassigned";
-        const delayLabel =
-          step.delayMinutes && step.delayMinutes > 0
-            ? `${Math.round(step.delayMinutes / 60)}h late`
-            : null;
-        const stepClass = statusClass(step.status, step.delayMinutes);
+        const delay = liveDelayMinutes(
+          step.plannedAt,
+          step.actualAt,
+          step.delayMinutes,
+        );
+        const delayLabel = formatDelayLabel(delay);
+        const overdue = isStepOverdue(
+          step.status,
+          step.plannedAt,
+          step.actualAt,
+          step.delayMinutes,
+        );
+        const doneLate = step.status === "DONE" && Boolean(delay && delay > 0);
+        const stepClass = statusClass(step.status, overdue, doneLate);
 
         return (
           <article
@@ -67,8 +81,13 @@ export function FmsInstanceTimeline({ steps }: { steps: TimelineStep[] }) {
                 </div>
                 <div className="ws-fms-timeline-badges">
                   <FmsStatusBadge status={step.status} />
-                  {delayLabel ? (
+                  {delayLabel && (overdue || doneLate) ? (
                     <span className="ws-sf-badge ws-sf-badge-danger">{delayLabel}</span>
+                  ) : null}
+                  {step.status === "IN_PROGRESS" &&
+                  step.plannedAt &&
+                  !overdue ? (
+                    <span className="ws-sf-badge ws-sf-badge-info">On track</span>
                   ) : null}
                 </div>
               </header>
@@ -84,6 +103,10 @@ export function FmsInstanceTimeline({ steps }: { steps: TimelineStep[] }) {
                 <div>
                   <dt>Actual</dt>
                   <dd>{formatDate(step.actualAt)}</dd>
+                </div>
+                <div>
+                  <dt>Delay</dt>
+                  <dd>{delayLabel ?? (step.status === "PENDING" ? "-" : "None")}</dd>
                 </div>
               </dl>
               {step.notes ? <p className="ws-fms-notes">{step.notes}</p> : null}

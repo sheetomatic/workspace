@@ -3,20 +3,38 @@ import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
 import { canManageFms } from "@/lib/fms/access";
-import { listFmsForms, listFmsInstances } from "@/lib/fms/queries";
+import { listFmsForms, listFmsInstances, listMyFmsSteps } from "@/lib/fms/queries";
+import {
+  formatDelayLabel,
+  isStepOverdue,
+  liveDelayMinutes,
+} from "@/lib/fms/step-display";
 
 export default async function FmsPage() {
   const user = await requireSession(undefined, { module: "FMS" });
   const isAdmin = canManageFms(user.role);
 
-  const [forms, instances] = await Promise.all([
+  const [forms, instances, mySteps] = await Promise.all([
     listFmsForms(user.organizationId),
     listFmsInstances(user.organizationId),
+    listMyFmsSteps(user.organizationId, user.id),
   ]);
 
   const activeJobs = instances.filter((job) => job.status === "ACTIVE");
   const liveForms = forms.filter((form) => form.status === "ACTIVE");
   const totalSubmissions = forms.reduce((sum, form) => sum + form._count.submissions, 0);
+  const overdueJobs = activeJobs.filter((job) => {
+    const current = job.stepStates.find((s) => s.status === "IN_PROGRESS");
+    if (!current) {
+      return false;
+    }
+    return isStepOverdue(
+      current.status,
+      current.plannedAt,
+      current.actualAt,
+      current.delayMinutes,
+    );
+  });
 
   return (
     <div className="saas-page ws-fms-page ws-fms-sf">
@@ -41,7 +59,16 @@ export default async function FmsPage() {
         <div className="ws-sf-metric-tile">
           <span>Active jobs</span>
           <strong>{activeJobs.length}</strong>
-          <span className="ws-stat-card-hint">In pipeline</span>
+          <span className="ws-stat-card-hint">
+            {overdueJobs.length > 0
+              ? `${overdueJobs.length} overdue`
+              : "In pipeline"}
+          </span>
+        </div>
+        <div className="ws-sf-metric-tile">
+          <span>My steps</span>
+          <strong>{mySteps.length}</strong>
+          <span className="ws-stat-card-hint">Awaiting you</span>
         </div>
         <div className="ws-sf-metric-tile">
           <span>Submissions</span>
@@ -50,75 +77,85 @@ export default async function FmsPage() {
         </div>
       </div>
 
-      <div className="ws-fms-dashboard-grid">
-        <section className="ws-sf-list-view" aria-label="Forms">
-          <header className="ws-sf-list-view-header">
-            <div className="ws-sf-list-view-title">
-              <h2>Forms</h2>
-              <span className="ws-sf-list-view-count">
-                {forms.length} item{forms.length === 1 ? "" : "s"}
-              </span>
-            </div>
-          </header>
+      <div className="ws-fms-dashboard-grid ws-fms-dashboard-grid-wide">
+        {mySteps.length > 0 ? (
+          <section className="ws-sf-list-view ws-fms-my-steps" aria-label="My steps">
+            <header className="ws-sf-list-view-header">
+              <div className="ws-sf-list-view-title">
+                <h2>My steps</h2>
+                <span className="ws-sf-list-view-count">
+                  {mySteps.length} item{mySteps.length === 1 ? "" : "s"}
+                </span>
+              </div>
+            </header>
 
-          {forms.length === 0 ? (
-            <div className="ws-empty-state ws-fms-empty-state">
-              <p>No forms yet. Create an intake form, then attach a workflow with steps and owners.</p>
-              {isAdmin ? (
-                <Link href="/app/fms/forms/new" className="btn-primary btn-sm ws-sf-btn-primary">
-                  Create first form
-                </Link>
-              ) : null}
-            </div>
-          ) : (
             <div className="ws-sf-table-wrap">
               <div className="ws-fms-table-scroll">
                 <table className="ws-fms-data-table ws-sf-data-table">
                   <thead>
                     <tr>
-                      <th>Form</th>
+                      <th>Job</th>
+                      <th>Step</th>
+                      <th>Planned</th>
                       <th>Status</th>
-                      <th>Workflow</th>
-                      <th>Submissions</th>
-                      <th aria-label="Actions" />
                     </tr>
                   </thead>
                   <tbody>
-                    {forms.map((form) => (
-                      <tr key={form.id}>
-                        <td>
-                          <Link
-                            href={`/app/fms/forms/${form.id}`}
-                            className="ws-sf-record-link"
-                          >
-                            {form.name}
-                          </Link>
-                        </td>
-                        <td>
-                          <FmsStatusBadge status={form.status} />
-                        </td>
-                        <td className="ws-fms-table-meta">
-                          {form.template ? form.template.name : "No FMS yet"}
-                        </td>
-                        <td className="ws-fms-table-meta">{form._count.submissions}</td>
-                        <td className="ws-fms-table-actions">
-                          {form.status === "ACTIVE" ? (
+                    {mySteps.map((stepState) => {
+                      const delay = liveDelayMinutes(
+                        stepState.plannedAt,
+                        stepState.actualAt,
+                        stepState.delayMinutes,
+                      );
+                      const delayLabel = formatDelayLabel(delay);
+                      const overdue = isStepOverdue(
+                        stepState.status,
+                        stepState.plannedAt,
+                        stepState.actualAt,
+                        stepState.delayMinutes,
+                      );
+
+                      return (
+                        <tr
+                          key={stepState.id}
+                          className={overdue ? "ws-fms-row-overdue" : undefined}
+                        >
+                          <td>
                             <Link
-                              href={`/app/fms/forms/${form.id}/submit`}
-                              className="btn-secondary btn-sm"
+                              href={`/app/fms/instances/${stepState.instanceId}`}
+                              className="ws-sf-record-link"
                             >
-                              Submit
+                              {stepState.instance.referenceLabel ??
+                                stepState.instance.template.name}
                             </Link>
-                          ) : null}
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td>{stepState.step.stepName}</td>
+                          <td className="ws-fms-table-meta">
+                            {stepState.plannedAt
+                              ? new Intl.DateTimeFormat("en-IN", {
+                                  dateStyle: "medium",
+                                  timeStyle: "short",
+                                }).format(stepState.plannedAt)
+                              : "-"}
+                          </td>
+                          <td>
+                            {overdue && delayLabel ? (
+                              <span className="ws-sf-badge ws-sf-badge-danger">
+                                {delayLabel}
+                              </span>
+                            ) : (
+                              <FmsStatusBadge status={stepState.status} />
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             </div>
-          )}
-        </section>
+          </section>
+        ) : null}
 
         <section className="ws-sf-list-view" aria-label="Active jobs">
           <header className="ws-sf-list-view-header">
@@ -141,16 +178,43 @@ export default async function FmsPage() {
                   <thead>
                     <tr>
                       <th>Job</th>
+                      <th>Form</th>
                       <th>Workflow</th>
                       <th>Current step</th>
+                      <th>Owner</th>
                       <th>Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {activeJobs.map((job) => {
-                      const current = job.stepStates.find((s) => s.status === "IN_PROGRESS");
+                      const current = job.stepStates.find(
+                        (s) => s.status === "IN_PROGRESS",
+                      );
+                      const delay = current
+                        ? liveDelayMinutes(
+                            current.plannedAt,
+                            current.actualAt,
+                            current.delayMinutes,
+                          )
+                        : null;
+                      const delayLabel = formatDelayLabel(delay);
+                      const overdue = current
+                        ? isStepOverdue(
+                            current.status,
+                            current.plannedAt,
+                            current.actualAt,
+                            current.delayMinutes,
+                          )
+                        : false;
+                      const ownerName = current?.owner?.name ??
+                        current?.owner?.email.split("@")[0] ??
+                        "Unassigned";
+
                       return (
-                        <tr key={job.id}>
+                        <tr
+                          key={job.id}
+                          className={overdue ? "ws-fms-row-overdue" : undefined}
+                        >
                           <td>
                             <Link
                               href={`/app/fms/instances/${job.id}`}
@@ -159,16 +223,111 @@ export default async function FmsPage() {
                               {job.referenceLabel ?? job.template.name}
                             </Link>
                           </td>
+                          <td className="ws-fms-table-meta">
+                            {job.template.form ? (
+                              <Link
+                                href={`/app/fms/forms/${job.template.form.id}`}
+                                className="ws-sf-record-link"
+                              >
+                                {job.template.form.name}
+                              </Link>
+                            ) : (
+                              "-"
+                            )}
+                          </td>
                           <td className="ws-fms-table-meta">{job.template.name}</td>
                           <td className="ws-fms-table-meta">
                             {current ? current.step.stepName : "Awaiting next step"}
                           </td>
+                          <td className="ws-fms-table-meta">{ownerName}</td>
                           <td>
-                            <FmsStatusBadge status={job.status} />
+                            {overdue && delayLabel ? (
+                              <span className="ws-sf-badge ws-sf-badge-danger">
+                                {delayLabel}
+                              </span>
+                            ) : (
+                              <FmsStatusBadge status={job.status} />
+                            )}
                           </td>
                         </tr>
                       );
                     })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className="ws-sf-list-view" aria-label="Forms">
+          <header className="ws-sf-list-view-header">
+            <div className="ws-sf-list-view-title">
+              <h2>Forms & workflows</h2>
+              <span className="ws-sf-list-view-count">
+                {forms.length} item{forms.length === 1 ? "" : "s"}
+              </span>
+            </div>
+          </header>
+
+          {forms.length === 0 ? (
+            <div className="ws-empty-state ws-fms-empty-state">
+              <p>No forms yet. Create an intake form, then attach a workflow with steps and owners.</p>
+              {isAdmin ? (
+                <Link href="/app/fms/forms/new" className="btn-primary btn-sm ws-sf-btn-primary">
+                  Create first form
+                </Link>
+              ) : null}
+            </div>
+          ) : (
+            <div className="ws-sf-table-wrap">
+              <div className="ws-fms-table-scroll">
+                <table className="ws-fms-data-table ws-sf-data-table">
+                  <thead>
+                    <tr>
+                      <th>Form</th>
+                      <th>Form status</th>
+                      <th>Workflow</th>
+                      <th>Submissions</th>
+                      <th aria-label="Actions" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {forms.map((form) => (
+                      <tr key={form.id}>
+                        <td>
+                          <Link
+                            href={`/app/fms/forms/${form.id}`}
+                            className="ws-sf-record-link"
+                          >
+                            {form.name}
+                          </Link>
+                        </td>
+                        <td>
+                          <FmsStatusBadge status={form.status} />
+                        </td>
+                        <td>
+                          {form.template ? (
+                            <span className="ws-fms-workflow-cell">
+                              <span>{form.template.name}</span>
+                              <FmsStatusBadge status={form.template.status} />
+                            </span>
+                          ) : (
+                            <span className="ws-fms-muted">No workflow</span>
+                          )}
+                        </td>
+                        <td className="ws-fms-table-meta">{form._count.submissions}</td>
+                        <td className="ws-fms-table-actions">
+                          {form.status === "ACTIVE" ? (
+                            <Link
+                              href={`/app/fms/forms/${form.id}/submit`}
+                              className="btn-secondary btn-sm"
+                            >
+                              Submit
+                            </Link>
+                          ) : null}
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>

@@ -7,6 +7,11 @@ import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
 import { canManageFms } from "@/lib/fms/access";
 import { getFmsInstance } from "@/lib/fms/queries";
+import {
+  formatDelayLabel,
+  isStepOverdue,
+  liveDelayMinutes,
+} from "@/lib/fms/step-display";
 
 type PageProps = {
   params: Promise<{ instanceId: string }>;
@@ -29,15 +34,34 @@ export default async function FmsInstancePage({ params }: PageProps) {
       activeStep?.ownerUserId === user.id ||
       activeStep?.ownerUserId === null);
 
+  const activeDelay = activeStep
+    ? liveDelayMinutes(
+        activeStep.plannedAt,
+        activeStep.actualAt,
+        activeStep.delayMinutes,
+      )
+    : null;
+  const activeDelayLabel = formatDelayLabel(activeDelay);
+  const activeOverdue = activeStep
+    ? isStepOverdue(
+        activeStep.status,
+        activeStep.plannedAt,
+        activeStep.actualAt,
+        activeStep.delayMinutes,
+      )
+    : false;
+
   const submissionValues = instance.submission?.values as
     | Record<string, unknown>
     | undefined;
+
+  const completedCount = instance.stepStates.filter((s) => s.status === "DONE").length;
 
   return (
     <div className="saas-page ws-fms-page ws-fms-sf">
       <TaskPageToolbar
         title={instance.referenceLabel ?? instance.template.name}
-        description={`${instance.template.name} / Job pipeline`}
+        description={`${instance.template.name} · ${completedCount}/${instance.stepStates.length} steps done`}
         actions={
           <Link href="/app/fms" className="btn-secondary btn-sm">
             Back to FMS
@@ -48,9 +72,25 @@ export default async function FmsInstancePage({ params }: PageProps) {
       <div className="ws-fms-detail-meta">
         <FmsStatusBadge status={instance.status} />
         {activeStep ? (
-          <span className="ws-fms-muted">
-            Current step: <strong>{activeStep.step.stepName}</strong>
-          </span>
+          <>
+            <span className="ws-fms-muted">
+              Current step: <strong>{activeStep.step.stepName}</strong>
+            </span>
+            {activeStep.plannedAt ? (
+              <span className="ws-fms-muted">
+                Due{" "}
+                {new Intl.DateTimeFormat("en-IN", {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                }).format(activeStep.plannedAt)}
+              </span>
+            ) : null}
+            {activeOverdue && activeDelayLabel ? (
+              <span className="ws-sf-badge ws-sf-badge-danger">{activeDelayLabel}</span>
+            ) : activeStep.plannedAt ? (
+              <span className="ws-sf-badge ws-sf-badge-info">On track</span>
+            ) : null}
+          </>
         ) : (
           <span className="ws-fms-muted">No step in progress</span>
         )}

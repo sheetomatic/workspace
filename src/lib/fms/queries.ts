@@ -29,14 +29,42 @@ export async function listFmsInstances(organizationId: string) {
   return prisma.fmsInstance.findMany({
     where: { organizationId },
     include: {
-      template: { select: { name: true } },
+      template: {
+        select: {
+          name: true,
+          form: { select: { id: true, name: true } },
+        },
+      },
       stepStates: {
-        include: { step: true },
+        include: {
+          step: true,
+          owner: { select: { id: true, name: true, email: true } },
+        },
         orderBy: { step: { sortOrder: "asc" } },
       },
     },
     orderBy: { createdAt: "desc" },
     take: 100,
+  });
+}
+
+export async function listMyFmsSteps(organizationId: string, userId: string) {
+  return prisma.fmsStepState.findMany({
+    where: {
+      ownerUserId: userId,
+      status: "IN_PROGRESS",
+      instance: { organizationId, status: "ACTIVE" },
+    },
+    include: {
+      step: true,
+      instance: {
+        include: {
+          template: { select: { name: true } },
+        },
+      },
+    },
+    orderBy: { plannedAt: "asc" },
+    take: 50,
   });
 }
 

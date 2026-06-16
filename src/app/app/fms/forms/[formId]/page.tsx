@@ -25,6 +25,8 @@ export default async function FmsFormDetailPage({ params }: PageProps) {
   const members = isAdmin
     ? await listAssignableMembers(user.organizationId)
     : [];
+  const hasWorkflow = Boolean(form.template);
+  const workflowLive = form.template?.status === "ACTIVE";
 
   return (
     <div className="saas-page ws-fms-page ws-fms-sf ws-fms-jotform-page">
@@ -34,6 +36,9 @@ export default async function FmsFormDetailPage({ params }: PageProps) {
         </Link>
         <div className="ws-fms-jf-page-meta">
           <FmsStatusBadge status={form.status} />
+          {hasWorkflow ? (
+            <FmsStatusBadge status={form.template!.status} />
+          ) : null}
           {form.status === "ACTIVE" ? (
             <Link
               href={`/app/fms/forms/${form.id}/submit`}
@@ -47,64 +52,82 @@ export default async function FmsFormDetailPage({ params }: PageProps) {
 
       {isAdmin ? (
         <>
-          <FmsFormBuilder
-            formId={form.id}
-            initialName={form.name}
-            initialDescription={form.description ?? ""}
-            initialFields={form.fields}
-            mode="edit"
-          />
+          <section className="ws-fms-jf-section">
+            <header className="ws-fms-jf-section-head">
+              <h2>Intake form</h2>
+              <p>Fields collected when someone starts a job.</p>
+            </header>
+            <FmsFormBuilder
+              formId={form.id}
+              initialName={form.name}
+              initialDescription={form.description ?? ""}
+              initialFields={form.fields}
+              mode="edit"
+            />
+          </section>
 
           <section className="ws-fms-section ws-fms-jf-workflow">
-            {form.template ? (
-              <>
-                <div className="ws-sf-card ws-fms-summary">
-                  <div className="ws-fms-summary-header">
-                    <strong>{form.template.name}</strong>
-                    <FmsStatusBadge status={form.template.status} />
-                  </div>
-                  <p className="ws-fms-muted">
-                    {form.template.steps.length} step
-                    {form.template.steps.length === 1 ? "" : "s"} configured
-                  </p>
-                  <ol className="ws-fms-step-summary">
-                    {form.template.steps.map((step, index) => (
-                      <li key={step.id}>
-                        <span className="ws-fms-step-index">{index + 1}</span>
-                        <span>
-                          {step.stepName}
-                          {step.roleLabel ? ` (${step.roleLabel})` : ""}
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
+            <header className="ws-fms-jf-section-head">
+              <div>
+                <h2>FMS workflow</h2>
+                <p>
+                  {hasWorkflow
+                    ? workflowLive
+                      ? "Live workflow — form submissions spawn jobs through these steps."
+                      : "Draft workflow — go live to start jobs on form submit."
+                    : "No workflow yet — add steps with owners and TAT to turn submissions into jobs."}
+                </p>
+              </div>
+              {hasWorkflow ? (
+                <div className="ws-fms-jf-workflow-badges">
+                  <span className="ws-fms-muted">
+                    {form.template!.steps.length} step
+                    {form.template!.steps.length === 1 ? "" : "s"}
+                  </span>
                 </div>
-                <FmsTemplateBuilder
-                  formId={form.id}
-                  templateId={form.template.id}
-                  initialName={form.template.name}
-                  initialSteps={form.template.steps}
-                  members={members}
-                  mode="edit"
-                />
-              </>
-            ) : (
-              <>
-                <FmsTemplateBuilder formId={form.id} members={members} mode="create" />
-              </>
-            )}
+              ) : null}
+            </header>
+
+            <FmsTemplateBuilder
+              formId={form.id}
+              templateId={form.template?.id}
+              initialName={form.template?.name ?? `${form.name} workflow`}
+              initialSteps={form.template?.steps ?? []}
+              members={members}
+              mode={hasWorkflow ? "edit" : "create"}
+              templateStatus={form.template?.status}
+            />
           </section>
         </>
       ) : (
         <section className="ws-sf-list-view ws-fms-readonly-view">
           <header className="ws-sf-list-view-header">
             <div className="ws-sf-list-view-title">
-              <h2>Form fields</h2>
+              <h2>{form.name}</h2>
               <span className="ws-sf-list-view-count">
                 {form.fields.length} field{form.fields.length === 1 ? "" : "s"}
               </span>
             </div>
           </header>
+          {form.template ? (
+            <div className="ws-sf-card ws-fms-summary ws-fms-readonly-workflow">
+              <div className="ws-fms-summary-header">
+                <strong>{form.template.name}</strong>
+                <FmsStatusBadge status={form.template.status} />
+              </div>
+              <ol className="ws-fms-step-summary">
+                {form.template.steps.map((step, index) => (
+                  <li key={step.id}>
+                    <span className="ws-fms-step-index">{index + 1}</span>
+                    <span>
+                      {step.stepName}
+                      {step.roleLabel ? ` (${step.roleLabel})` : ""}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : null}
           <div className="ws-sf-table-wrap">
             <table className="ws-fms-data-table ws-sf-data-table">
               <thead>
