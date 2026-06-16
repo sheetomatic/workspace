@@ -1,7 +1,10 @@
 # Local WIP (not on main) - exclude from CLI deploy uploads
-src/app/api/legal-cases/export
-src/app/app/cases/file-cover
-src/app/app/cases/settings
+**/file-cover/**
+src/app/app/cases/file-cover-actions.ts
+src/app/app/cases/settings-actions.ts
+src/app/app/cases/settings-types.ts
+src/app/api/legal-cases/export/**
+src/app/app/cases/settings/**
 src/lib/legal-cases/file-import-export.ts
 src/lib/legal-cases/file-cover.ts
 src/lib/legal-cases/export-template.ts

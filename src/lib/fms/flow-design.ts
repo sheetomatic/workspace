@@ -26,14 +26,14 @@ export function parseFlowchartSteps(raw: unknown): FmsFlowchartStep[] {
   if (!Array.isArray(raw)) {
     return [];
   }
-  return raw
-    .map((item) => {
-      if (!item || typeof item !== "object") {
-        return null;
-      }
-      const record = item as Record<string, unknown>;
-      const tatUnit = record.tatUnit === "hours" ? "hours" : "days";
-      return {
+  return raw.flatMap((item) => {
+    if (!item || typeof item !== "object") {
+      return [];
+    }
+    const record = item as Record<string, unknown>;
+    const tatUnit = record.tatUnit === "hours" ? "hours" : "days";
+    return [
+      {
         id: typeof record.id === "string" ? record.id : crypto.randomUUID(),
         stepName: String(record.stepName ?? "").trim(),
         ownerUserId: String(record.ownerUserId ?? "").trim(),
@@ -44,9 +44,9 @@ export function parseFlowchartSteps(raw: unknown): FmsFlowchartStep[] {
         howInstructions: String(record.howInstructions ?? "").trim(),
         tatValue: String(record.tatValue ?? "1").trim() || "1",
         tatUnit,
-      } satisfies FmsFlowchartStep;
-    })
-    .filter((step): step is FmsFlowchartStep => step !== null);
+      } satisfies FmsFlowchartStep,
+    ];
+  });
 }
 
 export function validateFlowchartSteps(steps: FmsFlowchartStep[]) {
