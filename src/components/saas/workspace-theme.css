@@ -13194,7 +13194,11 @@
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   padding: 28px 32px 24px;
-  min-height: 360px;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .workspace-app .ws-fms-jf-header {
@@ -13752,8 +13756,9 @@
 /* FMS 2-column field grid (JotForm style) */
 .workspace-app .ws-fms-jf-fields-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 20px;
+  grid-template-columns: repeat(2, minmax(280px, 1fr));
+  gap: 0 24px;
+  align-content: start;
 }
 
 .workspace-app .ws-fms-jf-field.is-full-width {
@@ -13776,10 +13781,28 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  max-width: min(1040px, 100%);
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   width: 100%;
   overflow: hidden;
+}
+
+.workspace-app .ws-fms-form-builder {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.workspace-app .ws-fms-form-builder-form {
+  flex: 1;
+  min-height: 0;
+}
+
+.workspace-app .ws-fms-form-ai {
+  flex-shrink: 0;
 }
 
 .workspace-app .ws-fms-jotform-page .ws-fms-jf-page-bar {
@@ -13888,7 +13911,8 @@
 }
 
 .workspace-app .ws-fms-editor-panel > .ws-fms-jf-scroll-shell,
-.workspace-app .ws-fms-editor-panel > form.ws-fms-jf-scroll-shell {
+.workspace-app .ws-fms-editor-panel > form.ws-fms-jf-scroll-shell,
+.workspace-app .ws-fms-editor-panel > .ws-fms-form-builder {
   flex: 1;
   min-height: 0;
 }
@@ -13902,12 +13926,13 @@
 
 .workspace-app .ws-fms-jf-props-panel {
   flex-shrink: 0;
-  width: min(100%, 300px);
+  width: min(100%, 320px);
   border-left: 1px solid #e8e8e8;
   background: #fafafa;
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
 }
 
 .workspace-app .ws-fms-jf-props-panel.ws-fms-jf-props-empty {

@@ -14,11 +14,17 @@ import {
   flowStepToTemplateStep,
   parseFlowchartSteps,
   validateFlowchartSteps,
+  type FmsFlowchartStep,
 } from "@/lib/fms/flow-design";
+import {
+  aiFormDraftToFieldCreates,
+  buildDesignIntakeAiPrompt,
+} from "@/lib/fms/form-ai";
 import { type FmsActionState, type FmsFlowAiGenerateResult } from "@/lib/fms-action-state";
 import { isNextRedirect } from "@/lib/next-redirect";
 import {
   parseFmsFlowchartFromDescription,
+  parseFmsFormFromDescription,
   type ParsedFmsFlowDraft,
 } from "@/lib/integrations/openai";
 import {
@@ -198,6 +204,73 @@ export async function submitFmsFlowDesignForApproval(
   }
 }
 
+async function buildIntakeFieldsForDesign(
+  design: {
+    name: string;
+    description: string | null;
+    organizationId: string;
+  },
+  steps: import("@/lib/fms/flow-design").FmsFlowchartStep[],
+  approverId: string,
+) {
+  const fallback = [
+    {
+      sortOrder: 0,
+      label: "Request title",
+      fieldKey: "request_title",
+      fieldType: "TEXT" as const,
+      required: true,
+      options: [],
+      placeholder: "Brief subject for this request",
+      helpText: null,
+    },
+    {
+      sortOrder: 1,
+      label: "Submission timestamp",
+      fieldKey: "submission_timestamp",
+      fieldType: "DATETIME" as const,
+      required: false,
+      options: [],
+      placeholder: null,
+      helpText: "Filled automatically on submit",
+    },
+  ];
+
+  const status = getIntegrationStatus();
+  if (!status.openai) {
+    return fallback;
+  }
+
+  try {
+    const orgQuota = await checkTaskAiOrgQuota(design.organizationId);
+    if (!orgQuota.allowed) {
+      return fallback;
+    }
+
+    const prompt = buildDesignIntakeAiPrompt({
+      name: design.name,
+      description: design.description,
+      steps,
+    });
+    const { draft, usage } = await parseFmsFormFromDescription(prompt);
+    if (draft.fields.length === 0) {
+      return fallback;
+    }
+
+    await recordTaskAiUsage({
+      organizationId: design.organizationId,
+      userId: approverId,
+      route: "parse",
+      usage,
+    });
+
+    return aiFormDraftToFieldCreates(draft);
+  } catch (error) {
+    console.error("buildIntakeFieldsForDesign", error);
+    return fallback;
+  }
+}
+
 async function provisionFmsFromDesign(
   design: {
     id: string;
@@ -220,6 +293,8 @@ async function provisionFmsFromDesign(
   const holidayDates = parseHolidayDates(design.holidayDates);
   const alertConfig = parseAlertConfig(design.alertConfig);
 
+  const aiFields = await buildIntakeFieldsForDesign(design, validation.steps, approverId);
+
   return prisma.$transaction(async (tx) => {
     const form = await tx.fmsForm.create({
       data: {
@@ -227,30 +302,11 @@ async function provisionFmsFromDesign(
         name: design.name,
         description:
           design.description ??
-          "Auto-created intake form. Add fields anytime from the form editor.",
+          "Auto-created intake form. Refine fields anytime with AI in the form editor.",
         status: "ACTIVE",
         createdById: approverId,
         fields: {
-          create: [
-            {
-              sortOrder: 0,
-              label: "Request title",
-              fieldKey: "request_title",
-              fieldType: "TEXT",
-              required: true,
-              options: [],
-              placeholder: "Brief subject for this request",
-            },
-            {
-              sortOrder: 1,
-              label: "Submission timestamp",
-              fieldKey: "submission_timestamp",
-              fieldType: "DATETIME",
-              required: false,
-              options: [],
-              helpText: "Filled automatically on submit",
-            },
-          ],
+          create: aiFields,
         },
       },
     });

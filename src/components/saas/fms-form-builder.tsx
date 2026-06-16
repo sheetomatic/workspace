@@ -2,12 +2,11 @@
 
 import { useActionState, useMemo, useRef, useState } from "react";
 import { Plus, Settings2, Trash2 } from "lucide-react";
-import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
+import { FmsFormAiBar } from "@/components/saas/fms-form-ai-bar";
 import { FmsFieldSettingsPanel } from "@/components/saas/fms-field-settings-panel";
 import type { FmsFormFieldType } from "@prisma/client";
 import {
   createFmsForm,
-  generateFmsFormFromAiAction,
   updateFmsForm,
 } from "@/app/app/fms/actions";
 import { fmsInitialState } from "@/lib/fms-action-state";
@@ -135,23 +134,6 @@ function draftFromAi(draft: ParsedFmsFormDraft): {
       };
     }),
   };
-}
-
-function isAiErrorMessage(message: string) {
-  const lower = message.toLowerCase();
-  return (
-    lower.includes("unavailable") ||
-    lower.includes("limit") ||
-    lower.includes("quota") ||
-    lower.includes("error") ||
-    lower.includes("failed") ||
-    lower.includes("too long") ||
-    lower.includes("empty") ||
-    lower.includes("describe") ||
-    lower.includes("refinement") ||
-    lower.includes("words") ||
-    lower.includes("network")
-  );
 }
 
 function parseOptionTags(options: string) {
@@ -362,9 +344,6 @@ export function FmsFormBuilder({
   const [fields, setFields] = useState(() => toDraft(initialFields));
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
-  const [aiPrompt, setAiPrompt] = useState("");
-  const [aiMessage, setAiMessage] = useState("");
-  const [aiBusy, setAiBusy] = useState(false);
   const fieldsJsonRef = useRef<HTMLInputElement>(null);
 
   const validFields = fields.filter((field) => field.label.trim());
@@ -423,50 +402,6 @@ export function FmsFormBuilder({
     setDescription(mapped.description);
     setFields(mapped.fields);
     setSelectedId(mapped.fields[0]?.id ?? null);
-    setAiMessage("Form generated. Review fields before saving.");
-  }
-
-  async function handleAiGenerate() {
-    const trimmed = aiPrompt.trim();
-    const isRefine = validFields.length > 0;
-
-    if (isRefine && trimmed.length < 4) {
-      setAiMessage("Type a short refinement, e.g. add phone field.");
-      return;
-    }
-    if (!isRefine && trimmed.length < 8) {
-      setAiMessage("Add a few more words describing your form.");
-      return;
-    }
-
-    setAiBusy(true);
-    setAiMessage("");
-    try {
-      const result = await generateFmsFormFromAiAction(
-        isRefine
-          ? { description: trimmed, existingDraft: currentAiDraft }
-          : { description: trimmed },
-      );
-
-      if (!result.ok) {
-        setAiMessage(result.message);
-        return;
-      }
-
-      applyAiDraft(result.draft);
-      setAiPrompt("");
-      setAiMessage(
-        isRefine
-          ? "Form updated. Review changes before saving."
-          : "Form generated. Review fields before saving.",
-      );
-    } catch {
-      setAiMessage(
-        "Network error while generating form. Try again or add fields manually.",
-      );
-    } finally {
-      setAiBusy(false);
-    }
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -512,11 +447,20 @@ export function FmsFormBuilder({
   const selectedField = fields.find((field) => field.id === selectedId) ?? null;
 
   return (
-    <form
-      action={formAction}
-      className="ws-fms-form-builder ws-fms-jotform ws-fms-jf-scroll-shell"
-      onSubmit={handleSubmit}
-    >
+    <div className="ws-fms-form-builder">
+      <FmsFormAiBar
+        formName={name}
+        formDescription={description}
+        existingDraft={currentAiDraft}
+        onReady={applyAiDraft}
+        compact={fields.length > 0}
+      />
+
+      <form
+        action={formAction}
+        className="ws-fms-form-builder-form ws-fms-jotform ws-fms-jf-scroll-shell"
+        onSubmit={handleSubmit}
+      >
       {formId ? <input type="hidden" name="formId" value={formId} /> : null}
       <input
         ref={fieldsJsonRef}
@@ -549,47 +493,6 @@ export function FmsFormBuilder({
               placeholder="Optional description"
             />
           </label>
-          <div className="ws-fms-jf-ai-row ws-fms-jf-ai-row-in-canvas">
-            <SheetomaticAiMark variant="icon" sizes="lg" className="ws-fms-jf-ai-icon" />
-            <div className="ws-fms-jf-ai">
-              <input
-                type="text"
-                value={aiPrompt}
-                onChange={(event) => setAiPrompt(event.target.value)}
-                placeholder={
-                  fields.length === 0
-                    ? "Describe your form, e.g. trademark intake with applicant name and document upload"
-                    : "Refine with AI, e.g. add phone field or make all required"
-                }
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    void handleAiGenerate();
-                  }
-                }}
-              />
-              <button
-                type="button"
-                className="ws-fms-jf-ai-btn"
-                disabled={aiBusy}
-                onClick={() => void handleAiGenerate()}
-              >
-                {aiBusy ? "Generating..." : "Generate"}
-              </button>
-            </div>
-          </div>
-          {aiMessage ? (
-            <p
-              className={
-                isAiErrorMessage(aiMessage)
-                  ? "ws-fms-jf-ai-message saas-form-message error"
-                  : "ws-fms-jf-ai-message saas-form-message ok"
-              }
-              role="status"
-            >
-              {aiMessage}
-            </p>
-          ) : null}
         </header>
 
         <div className="ws-fms-jf-divider" aria-hidden />
@@ -628,11 +531,7 @@ export function FmsFormBuilder({
               onRemove={() => removeField(selectedField.id)}
               onClose={() => setSelectedId(null)}
             />
-          ) : (
-            <aside className="ws-fms-jf-props-panel ws-fms-jf-props-empty">
-              <p>Select a field and tap the gear icon to edit type, choices, and width.</p>
-            </aside>
-          )}
+          ) : null}
         </div>
 
         <div className="ws-fms-jf-add-wrap ws-fms-jf-canvas-footer">
@@ -692,5 +591,6 @@ export function FmsFormBuilder({
         </button>
       </div>
     </form>
+    </div>
   );
 }

@@ -11,6 +11,10 @@ import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { canManageFms } from "@/lib/fms/access";
 import {
+  buildStubFormAiPrompt,
+  isStubFmsForm,
+} from "@/lib/fms/form-ai";
+import {
   slugifyFieldKey,
   applySubmissionTimestamp,
   parseHolidayDates,
@@ -83,9 +87,16 @@ export async function generateFmsFormFromAiAction(input: {
       return { ok: false, message: FMS_AI_PARSE_UNAVAILABLE };
     }
 
+    const isStub =
+      input.existingDraft && isStubFmsForm(input.existingDraft);
+    const prompt =
+      isStub && input.existingDraft
+        ? buildStubFormAiPrompt(input.existingDraft, description)
+        : description;
+
     const { draft, usage } = await parseFmsFormFromDescription(
-      description,
-      input.existingDraft,
+      prompt,
+      isStub ? undefined : input.existingDraft,
     );
 
     if (draft.fields.length === 0) {
