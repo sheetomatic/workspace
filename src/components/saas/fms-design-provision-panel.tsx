@@ -21,9 +21,9 @@ export function FmsDesignProvisionPanel({
     <section className="ws-fms-design-card ws-fms-design-provision" aria-label="Create live FMS">
       <div className="ws-fms-design-card-head">
         <div>
-          <h2>Approved — create live FMS</h2>
+          <h2>Approved - create live FMS</h2>
           <p className="ws-fms-muted">
-            &ldquo;{designName}&rdquo; is approved but the intake form and workflow are not live yet.
+            {designName} is approved but the intake form and workflow are not live yet.
             Create them now, then refine the form with AI.
           </p>
         </div>
@@ -36,7 +36,7 @@ export function FmsDesignProvisionPanel({
           disabled={pending}
         >
           <FileText size={14} aria-hidden />
-          {pending ? "Creating..." : "Create form & workflow"}
+          {pending ? "Creating..." : "Create form and workflow"}
         </button>
         <span className="ws-fms-design-action-hint ws-fms-muted">
           <Play size={12} aria-hidden />

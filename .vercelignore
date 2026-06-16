@@ -1,0 +1,18 @@
+# Local WIP (not on main) - exclude from CLI deploy uploads
+src/app/api/legal-cases/export
+src/app/app/cases/file-cover
+src/app/app/cases/settings
+src/lib/legal-cases/file-import-export.ts
+src/lib/legal-cases/file-cover.ts
+src/lib/legal-cases/export-template.ts
+src/lib/legal-cases/header-aliases.ts
+src/lib/legal-cases/import-backup.ts
+src/lib/legal-cases/process-diary.ts
+src/lib/legal-cases/sheet-row-sync.ts
+src/components/legal/file-cover-print-toolbar.tsx
+src/components/legal/file-cover-print-view.tsx
+src/components/legal/file-cover-wizard.tsx
+src/components/legal/legal-case-edit-form.tsx
+src/components/legal/legal-cases-settings-panel.tsx
+src/components/legal/process-diary-panel.tsx
+tasks-ui-preview.png

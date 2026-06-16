@@ -277,5 +277,5 @@ export function memberRoleLabel(member: FmsAssignableMember) {
       : null,
     member.designation?.trim() || null,
   ].filter(Boolean);
-  return parts.join(" ù ");
+  return parts.join(" | ");
 }

@@ -45,7 +45,7 @@ export function FmsFlowOwnerAssignPanel({
             Confirm step owners
           </h3>
           <p className="ws-fms-muted">
-            AI built the workflow. Assign a different owner per step — like
+            AI built the workflow. Assign a different owner per step - like
             Pipefy/Kissflow approval chains.
           </p>
         </div>

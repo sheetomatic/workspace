@@ -21,7 +21,7 @@ export function FmsDesignLaunchPanel({
     <section className="ws-fms-design-card ws-fms-design-launch" aria-label="Next steps after approval">
       <div className="ws-fms-design-card-head">
         <div>
-          <h2>{justApproved ? "Live FMS created" : "Live FMS — next steps"}</h2>
+          <h2>{justApproved ? "Live FMS created" : "Live FMS - next steps"}</h2>
           <p className="ws-fms-muted">
             {formNeedsSetup
               ? "Generate intake fields with AI, then submit the first job."
@@ -37,8 +37,8 @@ export function FmsDesignLaunchPanel({
             <strong>Create intake form</strong>
             <p className="ws-fms-muted">
               {formNeedsSetup
-                ? `AI builds fields for "${formName}".`
-                : "Form fields are ready — open to review or refine."}
+                ? `AI builds fields for ${formName}.`
+                : "Form fields are ready - open to review or refine."}
             </p>
             <Link href={formHref} className="ws-fms-btn-quiet is-primary">
               <FileText size={14} aria-hidden />
@@ -53,7 +53,7 @@ export function FmsDesignLaunchPanel({
           <div>
             <strong>Start flow</strong>
             <p className="ws-fms-muted">
-              Submit the first request — it runs through every workflow step.
+              Submit the first request - it runs through every workflow step.
             </p>
             {formNeedsSetup ? (
               <span className="ws-fms-btn-quiet is-disabled" aria-disabled="true">
