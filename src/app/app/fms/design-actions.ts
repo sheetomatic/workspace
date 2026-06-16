@@ -352,6 +352,51 @@ async function provisionFmsFromDesign(
   });
 }
 
+export async function provisionApprovedFmsDesign(
+  _prev: FmsActionState,
+  formData: FormData,
+): Promise<FmsActionState> {
+  try {
+    const user = await getSessionUser();
+    if (!user || (!canApproveFmsFlow(user.role) && !canSubmitFmsFlow(user.role))) {
+      return { ok: false, message: "You cannot create live FMS for this design." };
+    }
+
+    const designId = formData.get("designId")?.toString() ?? "";
+    const design = await prisma.fmsFlowDesign.findFirst({
+      where: {
+        id: designId,
+        organizationId: user.organizationId,
+        status: "APPROVED",
+        formId: null,
+      },
+    });
+    if (!design) {
+      return {
+        ok: false,
+        message: "Approved design not found or live FMS already exists.",
+      };
+    }
+
+    const formId = await provisionFmsFromDesign(design, user.id);
+
+    revalidatePath("/app/fms");
+    revalidatePath(`/app/fms/design/${designId}`);
+    revalidatePath(`/app/fms/forms/${formId}`);
+    redirect(`/app/fms/design/${designId}?approved=1`);
+  } catch (error) {
+    if (isNextRedirect(error)) {
+      throw error;
+    }
+    console.error("provisionApprovedFmsDesign", error);
+    return {
+      ok: false,
+      message:
+        error instanceof Error ? error.message : "Could not create form and workflow.",
+    };
+  }
+}
+
 export async function approveFmsFlowDesign(
   _prev: FmsActionState,
   formData: FormData,

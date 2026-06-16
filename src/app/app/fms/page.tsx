@@ -410,12 +410,30 @@ export default async function FmsPage() {
                           )}
                         </td>
                         <td className="ws-fms-table-actions">
-                          <Link
-                            href={`/app/fms/design/${design.id}`}
-                            className="btn-secondary btn-sm"
-                          >
-                            Open
-                          </Link>
+                          <div className="ws-fms-table-action-group">
+                            <Link
+                              href={`/app/fms/design/${design.id}`}
+                              className="ws-fms-btn-quiet"
+                            >
+                              Open
+                            </Link>
+                            {design.status === "APPROVED" && !design.form ? (
+                              <Link
+                                href={`/app/fms/design/${design.id}`}
+                                className="ws-fms-btn-quiet is-primary"
+                              >
+                                Create form
+                              </Link>
+                            ) : null}
+                            {design.status === "REJECTED" && canDesign ? (
+                              <Link
+                                href={`/app/fms/design/${design.id}`}
+                                className="ws-fms-btn-quiet"
+                              >
+                                Edit
+                              </Link>
+                            ) : null}
+                          </div>
                         </td>
                       </tr>
                     ))}

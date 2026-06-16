@@ -29,6 +29,7 @@ export function FmsN8nFlowView({
   onAssignOwners,
   selectedStepId,
   onSelectStep,
+  hideToolbar = false,
 }: {
   steps: FmsFlowchartStep[];
   members: Member[];
@@ -38,6 +39,7 @@ export function FmsN8nFlowView({
   onAssignOwners?: () => void;
   selectedStepId?: string | null;
   onSelectStep?: (id: string) => void;
+  hideToolbar?: boolean;
 }) {
   if (steps.length === 0) {
     return null;
@@ -45,31 +47,35 @@ export function FmsN8nFlowView({
 
   return (
     <div className="ws-fms-n8n-wrap">
-      <div className="ws-fms-n8n-toolbar">
-        <span className="ws-fms-muted">Workflow preview</span>
-        <div className="ws-fms-n8n-toolbar-actions">
-          {!readOnly && onAssignOwners ? (
-            <button
-              type="button"
-              className="ws-fms-n8n-edit-btn"
-              onClick={onAssignOwners}
-            >
-              <UserRound size={14} aria-hidden />
-              Assign owners
-            </button>
-          ) : null}
-          {!readOnly && onToggleEdit ? (
-            <button
-              type="button"
-              className={`ws-fms-n8n-edit-btn${editMode ? " is-active" : ""}`}
-              onClick={onToggleEdit}
-            >
-              <Pencil size={14} aria-hidden />
-              {editMode ? "Done editing" : "Edit steps"}
-            </button>
-          ) : null}
+      {!hideToolbar ? (
+        <div className="ws-fms-n8n-toolbar">
+          <span className="ws-fms-muted">Workflow preview</span>
+          <div className="ws-fms-n8n-toolbar-actions">
+            {!readOnly && onAssignOwners ? (
+              <button
+                type="button"
+                className="ws-fms-n8n-edit-btn"
+                onClick={onAssignOwners}
+              >
+                <UserRound size={14} aria-hidden />
+                Assign owners
+              </button>
+            ) : null}
+            {!readOnly && onToggleEdit ? (
+              <button
+                type="button"
+                className={`ws-fms-n8n-edit-btn${editMode ? " is-active" : ""}`}
+                onClick={onToggleEdit}
+              >
+                <Pencil size={14} aria-hidden />
+                {editMode ? "Done editing" : "Edit steps"}
+              </button>
+            ) : null}
+          </div>
         </div>
-      </div>
+      ) : (
+        <h2 className="ws-fms-design-card-title">Workflow preview</h2>
+      )}
 
       <div className="ws-fms-n8n-canvas-shell">
         <div className="ws-fms-n8n-canvas" role="list" aria-label="Workflow steps">
