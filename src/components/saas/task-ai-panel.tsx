@@ -181,7 +181,7 @@ export function TaskAiPanel({ onDraft, compact = false }: Props) {
     >
       <div className="ws-task-ai-head">
         <h3>
-          <SheetomaticAiMark size={18} />
+          <SheetomaticAiMark sizes="md" />
           AI input
         </h3>
       </div>
@@ -209,7 +209,7 @@ export function TaskAiPanel({ onDraft, compact = false }: Props) {
           type="button"
           onClick={() => void handleParseClick()}
         >
-          <SheetomaticAiMark size={16} />
+          <SheetomaticAiMark sizes="sm" />
           {busy && !recording ? "Parsing..." : "Parse with AI"}
         </button>
         {recording ? (

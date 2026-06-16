@@ -109,7 +109,7 @@ export function TaskLiveReadinessPanel({
             >
               <span className="ws-task-live-icon" aria-hidden>
                 {item.useAiMark ? (
-                  <SheetomaticAiMark size={16} />
+                  <SheetomaticAiMark sizes="sm" />
                 ) : Icon ? (
                   <Icon size={16} />
                 ) : null}

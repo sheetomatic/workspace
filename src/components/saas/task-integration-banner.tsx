@@ -31,7 +31,7 @@ export function TaskIntegrationBanner({
     <div className="ws-task-integration-banners" role="status">
       {aiIssues.length > 0 ? (
         <div className="saas-form-message ws-task-integration-banner ws-task-integration-banner-ai">
-          <SheetomaticAiMark size={18} />
+          <SheetomaticAiMark sizes="md" />
           <div>
             <strong>Task AI</strong>
             <ul>

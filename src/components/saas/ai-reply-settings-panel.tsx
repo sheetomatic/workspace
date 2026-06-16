@@ -32,7 +32,7 @@ export function AiReplySettingsPanel({
   return (
     <section className="ws-settings-pro-ai-card" id="ai-reply-limits">
       <h2 className="ws-settings-pro-ai-title">
-        <SheetomaticAiMark size={20} />
+        <SheetomaticAiMark sizes="sm" />
         WhatsApp AI reply limits
       </h2>
       <p className="mt-2 text-sm text-slate-600">

@@ -154,7 +154,7 @@ export function AiShell({
           <div className="ai-crm-brand-row">
             <Link className="ai-crm-brand" href="/ai/app">
               <span className="logo-mark">
-                <SheetomaticAiMark size={36} />
+                <SheetomaticAiMark sizes="lg" />
               </span>
               <strong>Sheetomatic AI</strong>
               <ChevronDown aria-hidden size={14} />

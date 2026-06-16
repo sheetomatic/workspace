@@ -546,7 +546,7 @@ export function AiTrainingDataPanel({
                             type="button"
                             onClick={() => runGenerateFaqs(item.id)}
                           >
-                            <SheetomaticAiMark size={15} />
+                            <SheetomaticAiMark sizes="sm" />
                           </button>
                         ) : null}
                         {item.type === "WEBSITE" || item.type === "YOUTUBE_CHANNEL" ? (

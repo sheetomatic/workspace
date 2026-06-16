@@ -115,7 +115,7 @@ export default async function SettingsPage() {
         {canViewTaskAi && taskAiSummary ? (
           <article className="saas-panel">
             <h3>
-              <SheetomaticAiMark size={18} />
+              <SheetomaticAiMark sizes="sm" />
               Task AI usage
             </h3>
             <TaskAiSettingsPanel

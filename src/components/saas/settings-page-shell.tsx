@@ -485,7 +485,7 @@ export function SettingsPageShell({
             <header className="ws-settings-pro-panel-head">
               <div>
                 <h2>
-                  <SheetomaticAiMark size={20} />
+                  <SheetomaticAiMark sizes="sm" />
                   AI limits
                 </h2>
                 <p>Control OpenAI usage for inbound WhatsApp knowledge replies.</p>

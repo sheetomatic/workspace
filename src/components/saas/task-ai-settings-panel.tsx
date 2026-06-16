@@ -28,7 +28,7 @@ export function TaskAiSettingsPanel({
   return (
     <div className="saas-task-ai-panel">
       <div className="ws-task-ai-head">
-        <SheetomaticAiMark size={20} showLabel />
+        <SheetomaticAiMark sizes="sm" showLabel />
       </div>
       <p className="saas-panel-lead">
         Voice and text task parsing on the Tasks page. Limits reset at midnight

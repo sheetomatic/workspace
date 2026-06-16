@@ -492,32 +492,34 @@ export function FmsFormBuilder({
         readOnly
       />
 
-      <div className="ws-fms-jf-ai">
-        <SheetomaticAiMark size={18} className="ws-fms-jf-ai-icon" />
-        <input
-          type="text"
-          value={aiPrompt}
-          onChange={(event) => setAiPrompt(event.target.value)}
-          placeholder={
-            fields.length === 0
-              ? "Describe your form, e.g. trademark intake with applicant name and document upload"
-              : "Refine with AI, e.g. add phone field or make all required"
-          }
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              void handleAiGenerate();
+      <div className="ws-fms-jf-ai-row">
+        <SheetomaticAiMark sizes="md" className="ws-fms-jf-ai-icon" />
+        <div className="ws-fms-jf-ai">
+          <input
+            type="text"
+            value={aiPrompt}
+            onChange={(event) => setAiPrompt(event.target.value)}
+            placeholder={
+              fields.length === 0
+                ? "Describe your form, e.g. trademark intake with applicant name and document upload"
+                : "Refine with AI, e.g. add phone field or make all required"
             }
-          }}
-        />
-        <button
-          type="button"
-          className="ws-fms-jf-ai-btn"
-          disabled={aiBusy}
-          onClick={() => void handleAiGenerate()}
-        >
-          {aiBusy ? "Generating..." : "Generate"}
-        </button>
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                void handleAiGenerate();
+              }
+            }}
+          />
+          <button
+            type="button"
+            className="ws-fms-jf-ai-btn"
+            disabled={aiBusy}
+            onClick={() => void handleAiGenerate()}
+          >
+            {aiBusy ? "Generating..." : "Generate"}
+          </button>
+        </div>
       </div>
       {aiMessage ? (
         <p

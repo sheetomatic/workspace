@@ -28,7 +28,7 @@ export function AiKbSearchAgentPanel({
         </Link>
         <div className="ai-joyz-agent-title-wrap">
           <h1>
-            <SheetomaticAiMark size={20} />
+            <SheetomaticAiMark sizes="sm" />
             Kb Search Agent (System default)
           </h1>
           <span className={`ai-joyz-live-badge${isLive ? " is-live" : ""}`}>

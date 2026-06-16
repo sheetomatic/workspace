@@ -118,7 +118,7 @@ export function WhatsAppGoLivePanel({ status }: { status: WhatsAppGoLiveStatus }
         <span
           className={`ws-go-live-badge${status.isLive ? " is-live" : ""}`}
         >
-          <SheetomaticAiMark size={14} />
+          <SheetomaticAiMark sizes="sm" />
           {status.isLive ? "AI Live" : "Not live"}
         </span>
       </header>

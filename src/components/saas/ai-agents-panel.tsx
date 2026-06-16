@@ -52,7 +52,7 @@ export function AiAgentsPanel({ data }: { data: AgentsData }) {
     <div className="ai-agents-page">
       <header className="ai-agents-head">
         <span className="ai-agents-head-icon" aria-hidden>
-          <SheetomaticAiMark size={22} />
+          <SheetomaticAiMark sizes="md" />
         </span>
         <div>
           <h1>AI Agents</h1>

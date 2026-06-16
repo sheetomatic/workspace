@@ -13124,10 +13124,18 @@
   gap: 12px;
 }
 
-.workspace-app .ws-fms-jf-ai {
+.workspace-app .ws-fms-jf-ai-row {
   display: flex;
   align-items: center;
+  gap: 10px;
+}
+
+.workspace-app .ws-fms-jf-ai {
+  display: flex;
+  flex: 1;
+  align-items: center;
   gap: 8px;
+  min-width: 0;
   padding: 8px 12px;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
@@ -13135,8 +13143,8 @@
 }
 
 .workspace-app .ws-fms-jf-ai-icon {
-  color: #64748b;
   flex-shrink: 0;
+  align-self: center;
 }
 
 .workspace-app .ws-fms-jf-ai input {
@@ -13766,10 +13774,17 @@
   gap: 6px;
   flex-shrink: 0;
   vertical-align: middle;
+  line-height: 0;
 }
 
 .sheetomatic-ai-mark-logo {
   display: block;
+  flex-shrink: 0;
+  width: var(--sheetomatic-ai-mark-width, 42px);
+  height: var(--sheetomatic-ai-mark-height, 28px);
+  min-width: var(--sheetomatic-ai-mark-width, 42px);
+  min-height: var(--sheetomatic-ai-mark-height, 28px);
+  max-width: none;
   border-radius: 4px;
   object-fit: contain;
 }
