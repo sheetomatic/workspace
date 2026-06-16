@@ -83,13 +83,22 @@ export function FmsN8nFlowView({
             <div className="ws-fms-n8n-edge" aria-hidden>
               <ArrowRight size={18} />
             </div>
-            <button
-              type="button"
+            <div
+              role={editMode && !readOnly ? "button" : undefined}
+              tabIndex={editMode && !readOnly ? 0 : undefined}
               className={`ws-fms-n8n-node ws-fms-n8n-step${
                 selectedStepId === step.id ? " is-selected" : ""
-              }${editMode ? " is-editable" : ""}`}
-              onClick={() => editMode && onSelectStep?.(step.id)}
-              disabled={!editMode || readOnly}
+              }${editMode && !readOnly ? " is-editable" : ""}`}
+              onClick={() => editMode && !readOnly && onSelectStep?.(step.id)}
+              onKeyDown={(event) => {
+                if (!editMode || readOnly) {
+                  return;
+                }
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSelectStep?.(step.id);
+                }
+              }}
             >
               <span className="ws-fms-n8n-node-badge">Step {index + 1}</span>
               <strong>{step.stepName.trim() || `Step ${index + 1}`}</strong>
@@ -109,7 +118,7 @@ export function FmsN8nFlowView({
               {step.howInstructions ? (
                 <p className="ws-fms-n8n-how">{step.howInstructions}</p>
               ) : null}
-            </button>
+            </div>
           </div>
         ))}
 

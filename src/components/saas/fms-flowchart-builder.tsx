@@ -259,48 +259,50 @@ export function FmsFlowchartBuilder({
         <input type="hidden" name="holidayDatesJson" value={holidayDatesJson} readOnly />
         <input type="hidden" name="alertConfigJson" value={alertConfigJson} readOnly />
 
-        <div className="ws-fms-flow-layout">
-          <div className="ws-fms-flow-main">
-            {hasFlow ? (
-              <>
-                <header className="ws-fms-flow-header">
-                  <input
-                    name="name"
-                    required
-                    className="ws-fms-jf-title"
-                    value={name}
-                    readOnly={readOnly}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="FMS flow name"
-                  />
-                  <input
-                    name="description"
-                    className="ws-fms-jf-desc"
-                    value={description}
-                    readOnly={readOnly}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="What does this process handle?"
-                  />
-                </header>
+        {hasFlow ? (
+          <>
+            <header className="ws-fms-flow-header ws-fms-flow-header-card">
+              <input
+                name="name"
+                required
+                className="ws-fms-jf-title"
+                value={name}
+                readOnly={readOnly}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="FMS flow name"
+              />
+              <input
+                name="description"
+                className="ws-fms-jf-desc"
+                value={description}
+                readOnly={readOnly}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="What does this process handle?"
+              />
+            </header>
 
-                <FmsN8nFlowView
-                  steps={steps}
-                  members={members}
-                  readOnly={readOnly}
-                  editMode={editMode}
-                  selectedStepId={selectedStepId}
-                  onToggleEdit={() => {
-                    setEditMode((v) => !v);
-                    if (editMode) {
-                      setSelectedStepId(null);
-                    }
-                  }}
-                  onAssignOwners={() => setOwnerReviewOpen(true)}
-                  onSelectStep={setSelectedStepId}
-                />
+            <div className="ws-fms-flow-preview">
+              <FmsN8nFlowView
+                steps={steps}
+                members={members}
+                readOnly={readOnly}
+                editMode={editMode}
+                selectedStepId={selectedStepId}
+                onToggleEdit={() => {
+                  setEditMode((v) => !v);
+                  if (editMode) {
+                    setSelectedStepId(null);
+                  }
+                }}
+                onAssignOwners={() => setOwnerReviewOpen(true)}
+                onSelectStep={setSelectedStepId}
+              />
+            </div>
 
-                {editMode && !readOnly ? (
-                  <div className="ws-fms-flow-manual-editor" ref={editorRef}>
+            {editMode && !readOnly ? (
+              <div className="ws-fms-flow-layout">
+                <div className="ws-fms-flow-main" ref={editorRef}>
+                  <div className="ws-fms-flow-manual-editor">
                     <p className="ws-fms-flow-manual-label">Edit step details</p>
                     {steps.map((step, index) => (
                       <div
@@ -332,26 +334,26 @@ export function FmsFlowchartBuilder({
                       Add step
                     </button>
                   </div>
-                ) : null}
-              </>
-            ) : !readOnly ? (
-              <div className="ws-fms-flow-empty">
-                <p>
-                  Use voice or text above and AI will build your flowchart in seconds.
-                </p>
-                <button
-                  type="button"
-                  className="btn-secondary btn-sm"
-                  onClick={startManualEdit}
-                >
-                  Build manually instead
-                </button>
+                </div>
               </div>
-            ) : (
-              <p className="ws-fms-muted">No steps in this design.</p>
-            )}
+            ) : null}
+          </>
+        ) : !readOnly ? (
+          <div className="ws-fms-flow-empty ws-fms-flow-empty-card">
+            <p>
+              Use voice or text above and AI will build your flowchart in seconds.
+            </p>
+            <button
+              type="button"
+              className="btn-secondary btn-sm"
+              onClick={startManualEdit}
+            >
+              Build manually instead
+            </button>
           </div>
-        </div>
+        ) : (
+          <p className="ws-fms-muted">No steps in this design.</p>
+        )}
 
         {statusMessage ? (
           <p

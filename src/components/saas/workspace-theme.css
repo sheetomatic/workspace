@@ -14680,6 +14680,33 @@
   overflow: hidden;
 }
 
+/* Flow design pages scroll naturally instead of trapping the preview */
+.workspace-app .saas-content:has(.ws-fms-flow-design-page) {
+  height: auto;
+  max-height: none;
+  min-height: calc(100dvh - 56px);
+  overflow: auto;
+}
+
+.workspace-app .ws-fms-flow-design-page {
+  overflow: visible;
+  flex: none;
+  min-height: auto;
+  padding-bottom: 24px;
+}
+
+.workspace-app .ws-fms-flow-design-page .ws-fms-flowchart-builder {
+  overflow: visible;
+  min-height: auto;
+  flex: none;
+}
+
+.workspace-app .ws-fms-flow-design-page .ws-fms-flow-form {
+  overflow: visible;
+  flex: none;
+  min-height: auto;
+}
+
 .workspace-app .ws-fms-jotform-page .ws-fms-flowchart-builder {
   flex: 1;
   min-height: 0;
@@ -14745,12 +14772,34 @@
 .workspace-app .ws-fms-flow-layout {
   display: flex;
   gap: 0;
-  flex: 1;
-  min-height: 0;
+  flex: none;
+  max-height: min(520px, 50vh);
   background: #fff;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   overflow: hidden;
+}
+
+.workspace-app .ws-fms-flow-header-card,
+.workspace-app .ws-fms-flow-preview,
+.workspace-app .ws-fms-flow-empty-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.workspace-app .ws-fms-flow-header-card {
+  padding: 20px 24px 16px;
+}
+
+.workspace-app .ws-fms-flow-preview {
+  padding: 16px 20px 20px;
+  overflow: visible;
+}
+
+.workspace-app .ws-fms-flow-empty-card {
+  padding: 32px 24px;
+  text-align: center;
 }
 
 .workspace-app .ws-fms-flow-main {
@@ -14790,7 +14839,7 @@
 .workspace-app .ws-fms-flow-header {
   display: grid;
   gap: 6px;
-  margin-bottom: 20px;
+  margin-bottom: 0;
 }
 
 .workspace-app .ws-fms-flowchart {
@@ -15070,7 +15119,7 @@
 
 /* n8n-style horizontal flow */
 .workspace-app .ws-fms-n8n-wrap {
-  margin: 16px 0;
+  margin: 0;
 }
 
 .workspace-app .ws-fms-n8n-toolbar {
@@ -15078,12 +15127,15 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 12px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .workspace-app .ws-fms-n8n-toolbar-actions {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .workspace-app .ws-fms-n8n-edit-btn {
@@ -15107,11 +15159,11 @@
 
 .workspace-app .ws-fms-n8n-canvas {
   display: flex;
-  align-items: stretch;
+  align-items: flex-start;
   gap: 0;
   overflow-x: auto;
-  padding: 16px 8px 24px;
-  min-height: 180px;
+  overflow-y: visible;
+  padding: 8px 4px 12px;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -15126,22 +15178,27 @@
   align-items: center;
   justify-content: center;
   width: 36px;
+  min-height: 48px;
   color: #94a3b8;
   flex-shrink: 0;
+  align-self: center;
 }
 
 .workspace-app .ws-fms-n8n-node {
-  width: 200px;
-  min-height: 120px;
-  padding: 12px 14px;
+  width: 240px;
+  min-height: auto;
+  padding: 14px 16px;
   border: 2px solid #e2e8f0;
   border-radius: 10px;
   background: #fff;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   text-align: left;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
 .workspace-app .ws-fms-n8n-node.is-editable {
@@ -15181,7 +15238,8 @@
 
 .workspace-app .ws-fms-n8n-node strong {
   font-size: 0.875rem;
-  line-height: 1.3;
+  line-height: 1.35;
+  word-break: break-word;
 }
 
 .workspace-app .ws-fms-n8n-node-sub {
@@ -15207,17 +15265,14 @@
   margin: 0;
   font-size: 0.6875rem;
   color: var(--sf-text-secondary);
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  line-height: 1.45;
+  word-break: break-word;
 }
 
 .workspace-app .ws-fms-flow-manual-editor {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px dashed #e2e8f0;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
   display: grid;
   gap: 12px;
 }

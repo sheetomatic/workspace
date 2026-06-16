@@ -39,7 +39,7 @@ export default async function FmsFlowDesignPage({ params, searchParams }: PagePr
   }
 
   return (
-    <div className="saas-page ws-fms-page ws-fms-sf ws-fms-jotform-page">
+    <div className="saas-page ws-fms-page ws-fms-sf ws-fms-jotform-page ws-fms-flow-design-page">
       <div className="ws-fms-jf-page-bar">
         <Link href="/app/fms" className="ws-fms-jf-back">
           Back to FMS
