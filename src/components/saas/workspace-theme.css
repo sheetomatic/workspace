@@ -15040,6 +15040,12 @@
   margin-bottom: 12px;
 }
 
+.workspace-app .ws-fms-n8n-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .workspace-app .ws-fms-n8n-edit-btn {
   display: inline-flex;
   align-items: center;
@@ -15185,4 +15191,154 @@
 
 .workspace-app .ws-fms-flow-step-collapsed {
   opacity: 0.45;
+}
+
+.workspace-app .ws-fms-n8n-node-role {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: #6366f1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.workspace-app .ws-fms-flow-role-hint {
+  display: block;
+  margin: 2px 0 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #6366f1;
+}
+
+/* Step owner confirmation (post-AI) */
+.workspace-app .ws-fms-flow-owner-panel {
+  padding: 16px 18px;
+  border: 1px solid #c7d2fe;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #fafaff 0%, #eef2ff 100%);
+  flex-shrink: 0;
+}
+
+.workspace-app .ws-fms-flow-owner-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.workspace-app .ws-fms-flow-owner-head h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  font-size: 0.9375rem;
+}
+
+.workspace-app .ws-fms-flow-owner-dismiss {
+  border: none;
+  background: transparent;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--sf-text-secondary);
+  cursor: pointer;
+}
+
+.workspace-app .ws-fms-flow-owner-alert {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.workspace-app .ws-fms-flow-owner-alert.is-warning {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.workspace-app .ws-fms-flow-owner-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.workspace-app .ws-fms-flow-owner-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(180px, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.workspace-app .ws-fms-flow-owner-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.workspace-app .ws-fms-flow-owner-index {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #e0e7ff;
+  color: #3730a3;
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.workspace-app .ws-fms-flow-owner-step strong {
+  display: block;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+}
+
+.workspace-app .ws-fms-flow-owner-role {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #6366f1;
+}
+
+.workspace-app .ws-fms-flow-owner-pick select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  background: #fff;
+}
+
+.workspace-app .ws-fms-flow-owner-current {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--sf-text-secondary);
+  white-space: nowrap;
+}
+
+.workspace-app .ws-fms-flow-owner-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .workspace-app .ws-fms-flow-owner-row {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-app .ws-fms-flow-owner-current {
+    display: none;
+  }
 }

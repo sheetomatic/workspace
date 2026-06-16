@@ -17,6 +17,9 @@ export type TaskMemberHint = {
   id: string;
   name: string;
   email: string;
+  role?: string;
+  department?: string | null;
+  designation?: string | null;
 };
 
 export type ParsedTaskDraft = {
@@ -577,6 +580,7 @@ export async function transcribeAudioBuffer(
 export type ParsedFmsFlowStepDraft = {
   stepName: string;
   ownerHint: string | null;
+  ownerRole: string | null;
   howInstructions: string;
   tatValue: number;
   tatUnit: "hours" | "days";
@@ -630,9 +634,14 @@ function normalizeFlowStep(raw: Record<string, unknown>): ParsedFmsFlowStepDraft
     typeof raw.ownerHint === "string" && raw.ownerHint.trim()
       ? raw.ownerHint.trim()
       : null;
+  const ownerRole =
+    typeof raw.ownerRole === "string" && raw.ownerRole.trim()
+      ? raw.ownerRole.trim()
+      : null;
   return {
     stepName,
     ownerHint,
+    ownerRole,
     howInstructions,
     tatValue,
     tatUnit,
@@ -668,29 +677,38 @@ export async function parseFmsFlowchartFromDescription(
 ): Promise<FmsFlowchartParseResult> {
   const members = options?.members ?? [];
   const memberList = members
-    .map((m) => `- ${m.name} (${m.email})`)
+    .map((m) => {
+      const parts = [`${m.name} (${m.email})`];
+      if (m.role) parts.push(`org role: ${m.role}`);
+      if (m.department) parts.push(`dept: ${m.department}`);
+      if (m.designation) parts.push(`title: ${m.designation}`);
+      return `- ${parts.join(" | ")}`;
+    })
     .join("\n");
   const isRefine = Boolean(options?.existingDraft?.steps?.length);
 
-  const systemPrompt = `You design FMS workflow flowcharts for Indian MSME teams. Input may be any language; output English JSON only.
+  const systemPrompt = `You are an auto workflow designer for Indian MSME teams (like Kissflow/Pipefy approval chains). Input may be any language; output English JSON only.
 
 Return JSON with keys:
 - status: "ready" OR "needs_clarification"
-- questions: string[] (1-3 short questions ONLY when status is needs_clarification — e.g. missing process type, unclear owners, or vague steps)
+- questions: string[] (1-3 short questions ONLY when status is needs_clarification)
 - name: workflow title
 - description: one-line summary
-- steps: [{ stepName, ownerHint, howInstructions, tatValue, tatUnit: "hours"|"days" }]
+- steps: [{ stepName, ownerRole, ownerHint, howInstructions, tatValue, tatUnit: "hours"|"days" }]
 
-Rules:
-- Use status "needs_clarification" when the request is too vague to build at least 2 meaningful steps (single word, no process described, no hint of who does what).
-- When ready, produce 2-8 linear steps in execution order after form submit.
-- ownerHint: assign a team member name from the list, or a role like "Accounts team" if no match.
-- howInstructions: concrete action the owner performs (1-2 sentences).
-- tatValue/tatUnit: realistic turnaround; use hours for same-day tasks, days for multi-day (Mon-Sat working days).
-- Prefer ready over asking questions when reasonable defaults exist.
+Workflow design rules:
+- Use status "needs_clarification" only when too vague for 2+ steps (single word, no process, no actors).
+- When ready, produce 2-8 sequential approval/action stages after form submit (linear chain).
+- Each step is a distinct stage with its own responsible role — NEVER assign the same generic owner to every step.
+- ownerRole: functional role for this step ONLY (e.g. "Purchase analyst", "Accounts payable", "Founder approval", "Warehouse receipt"). Must differ across steps when the process involves different functions.
+- ownerHint: best-matching team member FULL NAME from the list below, OR a specific role phrase (e.g. "Accounts head", "Ops manager") that maps to one person. Different steps should usually map to different people when the team has multiple members.
+- howInstructions: concrete action that owner performs (1-2 sentences).
+- tatValue/tatUnit: realistic SLA; hours for same-day, days for multi-day (Mon-Sat working days).
+- Infer sensible defaults from process type (PO, leave, expense, trademark, vendor onboarding) rather than asking questions.
+- Prefer ready over clarification when reasonable defaults exist.
 
-Team members:
-${memberList || "(none listed — use role labels)"}`;
+Team (assign each step to the best match — spread work across people when roles differ):
+${memberList || "(none listed — use distinct ownerRole labels per step)"}`;
 
   let userContent = description;
   if (options?.clarificationAnswers?.trim()) {

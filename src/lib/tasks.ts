@@ -394,6 +394,8 @@ export async function listAssignableMembers(organizationId: string) {
     email: m.user.email,
     phone: m.user.phone,
     role: m.role,
+    department: m.department,
+    designation: m.designation,
   }));
 }
 

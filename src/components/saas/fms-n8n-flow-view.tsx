@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Clock, Pencil, User } from "lucide-react";
+import { ArrowRight, Clock, Pencil, User, UserRound } from "lucide-react";
 import type { FmsFlowchartStep } from "@/lib/fms/flow-design";
 
 type Member = { id: string; name: string; email: string };
@@ -26,6 +26,7 @@ export function FmsN8nFlowView({
   readOnly,
   editMode,
   onToggleEdit,
+  onAssignOwners,
   selectedStepId,
   onSelectStep,
 }: {
@@ -34,6 +35,7 @@ export function FmsN8nFlowView({
   readOnly: boolean;
   editMode: boolean;
   onToggleEdit?: () => void;
+  onAssignOwners?: () => void;
   selectedStepId?: string | null;
   onSelectStep?: (id: string) => void;
 }) {
@@ -45,16 +47,28 @@ export function FmsN8nFlowView({
     <div className="ws-fms-n8n-wrap">
       <div className="ws-fms-n8n-toolbar">
         <span className="ws-fms-muted">Workflow preview</span>
-        {!readOnly && onToggleEdit ? (
-          <button
-            type="button"
-            className={`ws-fms-n8n-edit-btn${editMode ? " is-active" : ""}`}
-            onClick={onToggleEdit}
-          >
-            <Pencil size={14} aria-hidden />
-            {editMode ? "Done editing" : "Edit steps"}
-          </button>
-        ) : null}
+        <div className="ws-fms-n8n-toolbar-actions">
+          {!readOnly && onAssignOwners ? (
+            <button
+              type="button"
+              className="ws-fms-n8n-edit-btn"
+              onClick={onAssignOwners}
+            >
+              <UserRound size={14} aria-hidden />
+              Assign owners
+            </button>
+          ) : null}
+          {!readOnly && onToggleEdit ? (
+            <button
+              type="button"
+              className={`ws-fms-n8n-edit-btn${editMode ? " is-active" : ""}`}
+              onClick={onToggleEdit}
+            >
+              <Pencil size={14} aria-hidden />
+              {editMode ? "Done editing" : "Edit steps"}
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className="ws-fms-n8n-canvas">
@@ -79,6 +93,9 @@ export function FmsN8nFlowView({
             >
               <span className="ws-fms-n8n-node-badge">Step {index + 1}</span>
               <strong>{step.stepName.trim() || `Step ${index + 1}`}</strong>
+              {step.ownerRoleLabel ? (
+                <span className="ws-fms-n8n-node-role">{step.ownerRoleLabel}</span>
+              ) : null}
               <div className="ws-fms-n8n-meta">
                 <span>
                   <User size={12} aria-hidden />

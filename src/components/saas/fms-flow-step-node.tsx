@@ -49,6 +49,9 @@ export function FlowStepNode({
       <div className="ws-fms-flow-node-grid">
         <label className="ws-fms-flow-field">
           <span className="ws-fms-flow-label">WHO</span>
+          {step.ownerRoleLabel ? (
+            <span className="ws-fms-flow-role-hint">{step.ownerRoleLabel}</span>
+          ) : null}
           <select
             value={step.ownerUserId}
             disabled={readOnly}

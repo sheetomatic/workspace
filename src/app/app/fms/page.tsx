@@ -47,7 +47,7 @@ export default async function FmsPage() {
     <div className="saas-page ws-fms-page ws-fms-sf">
       <TaskPageToolbar
         title="FMS"
-        description="Describe your process by voice or text. AI builds the flowchart in seconds — edit only if you want."
+        description="Auto workflow designer: describe your process, AI builds steps, you confirm each step owner."
         actions={
           canDesign ? (
             <div className="ws-fms-toolbar-actions">

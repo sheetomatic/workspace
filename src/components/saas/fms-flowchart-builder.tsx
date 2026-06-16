@@ -8,6 +8,7 @@ import {
   submitFmsFlowDesignForApproval,
   updateFmsFlowDesign,
 } from "@/app/app/fms/design-actions";
+import { FmsFlowOwnerAssignPanel } from "@/components/saas/fms-flow-owner-assign-panel";
 import { FmsFlowAiBar } from "@/components/saas/fms-flow-ai-bar";
 import { FmsN8nFlowView } from "@/components/saas/fms-n8n-flow-view";
 import { FmsNotificationsSettingsPanel } from "@/components/saas/fms-notifications-settings-panel";
@@ -27,11 +28,12 @@ import {
   parseFlowchartSteps,
   type FmsFlowchartStep,
 } from "@/lib/fms/flow-design";
+import type { FmsAssignableMember } from "@/lib/fms/flow-owner-resolve";
 import type { ParsedFmsFlowDraft } from "@/lib/integrations/openai";
 import type { FmsDesignStatus } from "@prisma/client";
 import { FlowStepNode } from "@/components/saas/fms-flow-step-node";
 
-type Member = { id: string; name: string; email: string };
+type Member = FmsAssignableMember;
 
 export function FmsFlowchartBuilder({
   designId,
@@ -86,6 +88,7 @@ export function FmsFlowchartBuilder({
   );
   const [notifyOpen, setNotifyOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [ownerReviewOpen, setOwnerReviewOpen] = useState(false);
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const pendingScrollToStepId = useRef<string | null>(null);
@@ -105,6 +108,7 @@ export function FmsFlowchartBuilder({
           stepName: s.stepName,
           ownerHint:
             members.find((m) => m.id === s.ownerUserId)?.name ?? null,
+          ownerRole: s.ownerRoleLabel ?? null,
           howInstructions: s.howInstructions,
           tatValue: Number(s.tatValue) || 1,
           tatUnit: s.tatUnit,
@@ -113,11 +117,13 @@ export function FmsFlowchartBuilder({
     : undefined;
 
   function applyAiDraft(draft: ParsedFmsFlowDraft) {
+    const mapped = mapAiFlowToSteps(draft, members);
     setName(draft.name);
     setDescription(draft.description);
-    setSteps(mapAiFlowToSteps(draft, members));
+    setSteps(mapped);
     setEditMode(false);
     setSelectedStepId(null);
+    setOwnerReviewOpen(mapped.length > 0);
   }
 
   function updateStep(id: string, patch: Partial<FmsFlowchartStep>) {
@@ -215,6 +221,16 @@ export function FmsFlowchartBuilder({
         />
       ) : null}
 
+      {!readOnly && ownerReviewOpen && hasFlow ? (
+        <FmsFlowOwnerAssignPanel
+          steps={steps}
+          members={members}
+          onUpdateStep={(stepId, ownerUserId) => updateStep(stepId, { ownerUserId })}
+          onConfirm={() => setOwnerReviewOpen(false)}
+          onDismiss={() => setOwnerReviewOpen(false)}
+        />
+      ) : null}
+
       {notifyOpen && !readOnly ? (
         <FmsNotificationsSettingsPanel
           alertConfig={alertConfig}
@@ -267,6 +283,7 @@ export function FmsFlowchartBuilder({
                       setSelectedStepId(null);
                     }
                   }}
+                  onAssignOwners={() => setOwnerReviewOpen(true)}
                   onSelectStep={setSelectedStepId}
                 />
 

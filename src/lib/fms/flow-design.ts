@@ -5,6 +5,7 @@ export type FmsFlowchartStep = {
   id: string;
   stepName: string;
   ownerUserId: string;
+  ownerRoleLabel?: string;
   howInstructions: string;
   tatValue: string;
   tatUnit: "hours" | "days";
@@ -36,6 +37,10 @@ export function parseFlowchartSteps(raw: unknown): FmsFlowchartStep[] {
         id: typeof record.id === "string" ? record.id : crypto.randomUUID(),
         stepName: String(record.stepName ?? "").trim(),
         ownerUserId: String(record.ownerUserId ?? "").trim(),
+        ownerRoleLabel:
+          typeof record.ownerRoleLabel === "string"
+            ? record.ownerRoleLabel.trim()
+            : undefined,
         howInstructions: String(record.howInstructions ?? "").trim(),
         tatValue: String(record.tatValue ?? "1").trim() || "1",
         tatUnit,
@@ -71,42 +76,44 @@ export function validateFlowchartSteps(steps: FmsFlowchartStep[]) {
   return { ok: true as const, steps: valid };
 }
 
+import {
+  resolveFlowOwnersBatch,
+  type FmsAssignableMember,
+} from "@/lib/fms/flow-owner-resolve";
+
 export function resolveFlowOwner(
   ownerHint: string | null | undefined,
-  members: { id: string; name: string; email: string }[],
+  members: FmsAssignableMember[],
 ) {
   if (!ownerHint?.trim() || members.length === 0) {
-    return members[0]?.id ?? "";
+    return "";
   }
-  const q = ownerHint.trim().toLowerCase();
-  const byEmail = members.find((m) => m.email.toLowerCase() === q);
-  if (byEmail) {
-    return byEmail.id;
-  }
-  const byName = members.find(
-    (m) =>
-      m.name.toLowerCase() === q ||
-      m.name.toLowerCase().includes(q) ||
-      q.includes(m.name.toLowerCase()),
+  const [id] = resolveFlowOwnersBatch(
+    [
+      {
+        stepName: "",
+        ownerHint,
+        ownerRole: ownerHint,
+        howInstructions: "",
+        tatValue: 1,
+        tatUnit: "days",
+      },
+    ],
+    members,
   );
-  if (byName) {
-    return byName.id;
-  }
-  const firstName = q.split(/\s+/)[0];
-  const byFirst = members.find((m) =>
-    m.name.toLowerCase().startsWith(firstName),
-  );
-  return byFirst?.id ?? members[0]?.id ?? "";
+  return id;
 }
 
 export function mapAiFlowToSteps(
   draft: import("@/lib/integrations/openai").ParsedFmsFlowDraft,
-  members: { id: string; name: string; email: string }[],
+  members: FmsAssignableMember[],
 ): FmsFlowchartStep[] {
-  return draft.steps.map((step) => ({
+  const ownerIds = resolveFlowOwnersBatch(draft.steps, members);
+  return draft.steps.map((step, index) => ({
     id: crypto.randomUUID(),
     stepName: step.stepName,
-    ownerUserId: resolveFlowOwner(step.ownerHint, members),
+    ownerUserId: ownerIds[index] ?? "",
+    ownerRoleLabel: step.ownerRole ?? step.ownerHint ?? undefined,
     howInstructions: step.howInstructions,
     tatValue: String(step.tatValue),
     tatUnit: step.tatUnit,
@@ -130,7 +137,7 @@ export function flowStepToTemplateStep(step: FmsFlowchartStep) {
     stepName: step.stepName.trim(),
     defaultOwnerUserId: step.ownerUserId.trim(),
     instructions: step.howInstructions.trim(),
-    roleLabel: null,
+    roleLabel: step.ownerRoleLabel?.trim() || null,
     slaType,
     slaConfig,
     allowMarkDone: true,

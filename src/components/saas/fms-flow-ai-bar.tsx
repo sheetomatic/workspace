@@ -78,7 +78,7 @@ export function FmsFlowAiBar({
       setClarifyAnswer("");
       onReady(result.draft);
       setPrompt("");
-      setMessage("Flowchart ready. Review below or edit if needed.");
+      setMessage("Workflow ready. Confirm owner for each step below.");
     } catch {
       setMessage("Network error. Try again.");
     } finally {
@@ -188,11 +188,11 @@ export function FmsFlowAiBar({
       <div className="ws-fms-flow-ai-head">
         <SheetomaticAiMark variant="icon" sizes="lg" />
         <div>
-          <h3>Describe your process</h3>
+          <h3>Auto workflow designer</h3>
           <p className="ws-fms-muted">
             {compact
               ? "Refine with voice or text"
-              : "Speak or type in any language. AI builds WHO, HOW, and WHEN for each step."}
+              : "Describe the process — AI builds steps, then you confirm each step owner."}
           </p>
         </div>
       </div>
@@ -230,7 +230,7 @@ export function FmsFlowAiBar({
               className="ws-fms-flow-ai-prompt"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="e.g. Purchase order flow: founder approves vendor, accounts pays within 2 days, ops receives goods..."
+              placeholder="e.g. PO flow: sourcing shortlists vendor, founder approves, accounts pays in 2 days, warehouse receives goods..."
               rows={compact ? 2 : 3}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
