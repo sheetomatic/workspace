@@ -92,6 +92,7 @@ function scoreMemberForContext(
   member: FmsAssignableMember,
   context: string,
   stepIndex: number,
+  ownerRole?: string | null,
 ) {
   let score = 0;
   const ctx = normalizeText(context);
@@ -116,6 +117,33 @@ function scoreMemberForContext(
       }
       if (member.role === "ADMIN") {
         score += 25;
+      }
+    }
+  }
+
+  if (ownerRole) {
+    const role = normalizeText(ownerRole);
+    const memberDesignation = normalizeText(member.designation ?? "");
+    const dept = member.department ? normalizeText(member.department) : "";
+    if (role && (memberDesignation.includes(role) || role.includes(memberDesignation))) {
+      score += 80;
+    }
+    if (role && dept && role.includes(dept)) {
+      score += 50;
+    }
+    for (const keyword of DEPT_KEYWORDS.ACCOUNTS) {
+      if (role.includes(keyword) && member.department === "ACCOUNTS") {
+        score += 45;
+      }
+    }
+    for (const keyword of DEPT_KEYWORDS.OPERATIONS) {
+      if (role.includes(keyword) && member.department === "OPERATIONS") {
+        score += 45;
+      }
+    }
+    for (const keyword of DEPT_KEYWORDS.SALES) {
+      if (role.includes(keyword) && member.department === "SALES") {
+        score += 45;
       }
     }
   }
@@ -205,8 +233,8 @@ export function resolveFlowOwnersBatch(
     let bestScore = 0;
 
     for (const member of members) {
-      const score = scoreMemberForContext(member, context, index);
-      const usedPenalty = (usedCounts.get(member.id) ?? 0) * 12;
+      const score = scoreMemberForContext(member, context, index, step.ownerRole);
+      const usedPenalty = (usedCounts.get(member.id) ?? 0) * 28;
       const adjusted = score - usedPenalty;
       if (adjusted > bestScore) {
         bestScore = adjusted;
@@ -249,5 +277,5 @@ export function memberRoleLabel(member: FmsAssignableMember) {
       : null,
     member.designation?.trim() || null,
   ].filter(Boolean);
-  return parts.join(" ∑ ");
+  return parts.join(" ù ");
 }

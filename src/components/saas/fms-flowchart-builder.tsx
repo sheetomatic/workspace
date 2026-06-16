@@ -281,23 +281,21 @@ export function FmsFlowchartBuilder({
               />
             </header>
 
-            <div className="ws-fms-flow-preview">
-              <FmsN8nFlowView
-                steps={steps}
-                members={members}
-                readOnly={readOnly}
-                editMode={editMode}
-                selectedStepId={selectedStepId}
-                onToggleEdit={() => {
-                  setEditMode((v) => !v);
-                  if (editMode) {
-                    setSelectedStepId(null);
-                  }
-                }}
-                onAssignOwners={() => setOwnerReviewOpen(true)}
-                onSelectStep={setSelectedStepId}
-              />
-            </div>
+            <FmsN8nFlowView
+              steps={steps}
+              members={members}
+              readOnly={readOnly}
+              editMode={editMode}
+              selectedStepId={selectedStepId}
+              onToggleEdit={() => {
+                setEditMode((v) => !v);
+                if (editMode) {
+                  setSelectedStepId(null);
+                }
+              }}
+              onAssignOwners={() => setOwnerReviewOpen(true)}
+              onSelectStep={setSelectedStepId}
+            />
 
             {editMode && !readOnly ? (
               <div className="ws-fms-flow-layout">

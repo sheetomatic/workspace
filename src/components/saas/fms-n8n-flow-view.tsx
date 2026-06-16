@@ -71,64 +71,70 @@ export function FmsN8nFlowView({
         </div>
       </div>
 
-      <div className="ws-fms-n8n-canvas">
-        <div className="ws-fms-n8n-node ws-fms-n8n-trigger">
-          <span className="ws-fms-n8n-node-badge">Trigger</span>
-          <strong>Form submitted</strong>
-          <span className="ws-fms-n8n-node-sub">Starts the job</span>
-        </div>
+      <div className="ws-fms-n8n-canvas-shell">
+        <div className="ws-fms-n8n-canvas" role="list" aria-label="Workflow steps">
+          <div className="ws-fms-n8n-node ws-fms-n8n-trigger" role="listitem">
+            <span className="ws-fms-n8n-node-badge">Trigger</span>
+            <strong>Form submitted</strong>
+            <span className="ws-fms-n8n-node-sub">Starts the job</span>
+          </div>
 
-        {steps.map((step, index) => (
-          <div key={step.id} className="ws-fms-n8n-segment">
+          {steps.map((step, index) => (
+            <div key={step.id} className="ws-fms-n8n-segment" role="listitem">
+              <div className="ws-fms-n8n-edge" aria-hidden>
+                <ArrowRight size={18} />
+              </div>
+              <div
+                role={editMode && !readOnly ? "button" : undefined}
+                tabIndex={editMode && !readOnly ? 0 : undefined}
+                className={`ws-fms-n8n-node ws-fms-n8n-step${
+                  selectedStepId === step.id ? " is-selected" : ""
+                }${editMode && !readOnly ? " is-editable" : ""}`}
+                onClick={() => editMode && !readOnly && onSelectStep?.(step.id)}
+                onKeyDown={(event) => {
+                  if (!editMode || readOnly) {
+                    return;
+                  }
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onSelectStep?.(step.id);
+                  }
+                }}
+              >
+                <div className="ws-fms-n8n-node-top">
+                  <span className="ws-fms-n8n-node-badge">Step {index + 1}</span>
+                  <strong>{step.stepName.trim() || `Step ${index + 1}`}</strong>
+                  {step.ownerRoleLabel ? (
+                    <span className="ws-fms-n8n-node-role">{step.ownerRoleLabel}</span>
+                  ) : null}
+                </div>
+                <div className="ws-fms-n8n-meta">
+                  <span>
+                    <User size={12} aria-hidden />
+                    {ownerName(step, members)}
+                  </span>
+                  <span>
+                    <Clock size={12} aria-hidden />
+                    {tatLabel(step)}
+                  </span>
+                </div>
+                {step.howInstructions ? (
+                  <p className="ws-fms-n8n-how" title={step.howInstructions}>
+                    {step.howInstructions}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          ))}
+
+          <div className="ws-fms-n8n-segment" role="listitem">
             <div className="ws-fms-n8n-edge" aria-hidden>
               <ArrowRight size={18} />
             </div>
-            <div
-              role={editMode && !readOnly ? "button" : undefined}
-              tabIndex={editMode && !readOnly ? 0 : undefined}
-              className={`ws-fms-n8n-node ws-fms-n8n-step${
-                selectedStepId === step.id ? " is-selected" : ""
-              }${editMode && !readOnly ? " is-editable" : ""}`}
-              onClick={() => editMode && !readOnly && onSelectStep?.(step.id)}
-              onKeyDown={(event) => {
-                if (!editMode || readOnly) {
-                  return;
-                }
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  onSelectStep?.(step.id);
-                }
-              }}
-            >
-              <span className="ws-fms-n8n-node-badge">Step {index + 1}</span>
-              <strong>{step.stepName.trim() || `Step ${index + 1}`}</strong>
-              {step.ownerRoleLabel ? (
-                <span className="ws-fms-n8n-node-role">{step.ownerRoleLabel}</span>
-              ) : null}
-              <div className="ws-fms-n8n-meta">
-                <span>
-                  <User size={12} aria-hidden />
-                  {ownerName(step, members)}
-                </span>
-                <span>
-                  <Clock size={12} aria-hidden />
-                  {tatLabel(step)}
-                </span>
-              </div>
-              {step.howInstructions ? (
-                <p className="ws-fms-n8n-how">{step.howInstructions}</p>
-              ) : null}
+            <div className="ws-fms-n8n-node ws-fms-n8n-end">
+              <span className="ws-fms-n8n-node-badge is-end">End</span>
+              <strong>Job complete</strong>
             </div>
-          </div>
-        ))}
-
-        <div className="ws-fms-n8n-segment">
-          <div className="ws-fms-n8n-edge" aria-hidden>
-            <ArrowRight size={18} />
-          </div>
-          <div className="ws-fms-n8n-node ws-fms-n8n-end">
-            <span className="ws-fms-n8n-node-badge is-end">End</span>
-            <strong>Job complete</strong>
           </div>
         </div>
       </div>
