@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowDown, Plus, Settings2, Trash2 } from "lucide-react";
 import {
@@ -182,6 +182,8 @@ export function FmsFlowchartBuilder({
     parseAlertConfig(initialAlertConfig ?? DEFAULT_FMS_ALERT_CONFIG),
   );
   const [notifyOpen, setNotifyOpen] = useState(false);
+  const flowMainRef = useRef<HTMLDivElement>(null);
+  const pendingScrollToStepId = useRef<string | null>(null);
 
   const stepsJson = JSON.stringify(steps);
   const holidayDatesJson = JSON.stringify(holidayDates);
@@ -196,8 +198,24 @@ export function FmsFlowchartBuilder({
   }
 
   function addStep() {
-    setSteps((prev) => [...prev, newFlowchartStep("")]);
+    const step = newFlowchartStep("");
+    pendingScrollToStepId.current = step.id;
+    setSteps((prev) => [...prev, step]);
   }
+
+  useEffect(() => {
+    const stepId = pendingScrollToStepId.current;
+    if (!stepId || !flowMainRef.current) {
+      return;
+    }
+    pendingScrollToStepId.current = null;
+    const node = flowMainRef.current.querySelector(
+      `[data-flow-step-id="${stepId}"]`,
+    );
+    if (node instanceof HTMLElement) {
+      node.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [steps]);
 
   function removeStep(id: string) {
     setSteps((prev) => {
@@ -253,7 +271,7 @@ export function FmsFlowchartBuilder({
         <input type="hidden" name="alertConfigJson" value={alertConfigJson} readOnly />
 
         <div className={`ws-fms-flow-layout${notifyOpen ? " has-notify" : ""}`}>
-          <div className="ws-fms-flow-main">
+          <div className="ws-fms-flow-main" ref={flowMainRef}>
             <header className="ws-fms-flow-header">
               <input
                 name="name"
@@ -285,7 +303,11 @@ export function FmsFlowchartBuilder({
               </div>
 
               {steps.map((step, index) => (
-                <div key={step.id} className="ws-fms-flow-step-wrap">
+                <div
+                  key={step.id}
+                  className="ws-fms-flow-step-wrap"
+                  data-flow-step-id={step.id}
+                >
                   <FlowStepNode
                     step={step}
                     index={index}
