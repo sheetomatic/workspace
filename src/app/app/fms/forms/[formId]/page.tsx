@@ -75,9 +75,9 @@ export default async function FmsFormDetailPage({ params }: PageProps) {
                 <p>
                   {hasWorkflow
                     ? workflowLive
-                      ? "Live workflow ù form submissions spawn jobs through these steps."
-                      : "Draft workflow ù go live to start jobs on form submit."
-                    : "No workflow yet ù add steps with owners and TAT to turn submissions into jobs."}
+                      ? "Live workflow ‚Äì form submissions spawn jobs through these steps."
+                      : "Draft workflow ‚Äì go live to start jobs on form submit."
+                    : "No workflow yet ‚Äì add steps with owners and TAT to turn submissions into jobs."}
                 </p>
               </div>
               {hasWorkflow ? (

@@ -108,7 +108,7 @@ export type FmsSlaConfig = {
 };
 
 export type FmsWorkingDaysConfig = {
-  /** India MSME default: skip Sunday only (MonSat working). */
+  /** India MSME default: skip Sunday only (Monâ€“Sat working). */
   skipSaturday?: boolean;
   holidayDates?: string[];
 };

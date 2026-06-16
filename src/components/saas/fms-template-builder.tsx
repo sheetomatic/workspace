@@ -193,8 +193,8 @@ function StepEditor({
 
       <div className="ws-fms-jf-step-preview">
         <span className="ws-fms-jf-preview-muted">
-          {ownerLabel(step, members)} ù {tatLabel}
-          {toggles.length > 0 ? ` ù ${toggles.join(", ")}` : ""}
+          {ownerLabel(step, members)} ‚Äì {tatLabel}
+          {toggles.length > 0 ? ` ‚Äì ${toggles.join(", ")}` : ""}
         </span>
       </div>
 
@@ -231,7 +231,7 @@ function StepEditor({
           {(step.slaType === "TAT_CALENDAR_DAYS" ||
             step.slaType === "SPECIFIC_TIME") && (
             <label className="ws-fms-jf-option-field">
-              Working days (MonùSat, excludes Sun + holidays)
+              Working days (Mon‚ÄìSat, excludes Sun + holidays)
               <input
                 type="number"
                 min={0}
@@ -463,7 +463,7 @@ export function FmsTemplateBuilder({
           <li>Click <strong>Add step</strong> below</li>
           <li>Name the step (e.g. Filing, Review)</li>
           <li>Assign an owner from your team</li>
-          <li>Set TAT in working days (MonùSat, excludes Sun + holidays)</li>
+          <li>Set TAT in working days (Mon‚ÄìSat, excludes Sun + holidays)</li>
           <li>Save &amp; go live when ready</li>
         </ol>
         {mode === "create" && validSteps.length <= 1 && !validSteps[0]?.stepName ? (
@@ -496,7 +496,7 @@ export function FmsTemplateBuilder({
           </label>
           {mode === "edit" && templateStatus ? (
             <p className="ws-fms-jf-workflow-meta">
-              {validSteps.length} step{validSteps.length === 1 ? "" : "s"} ù{" "}
+              {validSteps.length} step{validSteps.length === 1 ? "" : "s"} ‚Äì{" "}
               {templateStatus === "ACTIVE" ? "Live" : "Draft"}
             </p>
           ) : (

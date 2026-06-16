@@ -94,7 +94,7 @@ export function slaSummary(
   }
   if (slaType === "TAT_CALENDAR_DAYS") {
     const days = slaConfig.days ?? 1;
-    return `${days} working day${days === 1 ? "" : "s"} (MonùSat)`;
+    return `${days} working day${days === 1 ? "" : "s"} (Mon‚ÄìSat)`;
   }
   if (slaType === "TAT_WORKING_HOURS") {
     const hours = slaConfig.hours ?? 24;
