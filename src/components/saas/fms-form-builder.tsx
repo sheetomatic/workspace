@@ -12,6 +12,7 @@ import {
 import { fmsInitialState } from "@/lib/fms-action-state";
 import { FmsFieldTypePopover } from "@/components/saas/fms-form-add-modal";
 import { FMS_FIELD_TYPE_LABELS, defaultFieldWidth, isHalfWidthFieldType, parseFieldOptions, type FmsFieldWidth } from "@/lib/fms/constants";
+import { countMeaningfulFormFields } from "@/lib/fms/form-ai";
 import type { ParsedFmsFormDraft } from "@/lib/integrations/openai";
 
 export type FormFieldDraft = {
@@ -329,12 +330,14 @@ export function FmsFormBuilder({
   initialName = "",
   initialDescription = "",
   initialFields = [],
+  workflowHint = "",
   mode = "create",
 }: {
   formId?: string;
   initialName?: string;
   initialDescription?: string;
   initialFields?: Parameters<typeof toDraft>[0];
+  workflowHint?: string;
   mode?: "create" | "edit";
 }) {
   const action = mode === "create" ? createFmsForm : updateFmsForm;
@@ -397,6 +400,9 @@ export function FmsFormBuilder({
   }
 
   function applyAiDraft(draft: ParsedFmsFormDraft) {
+    if (countMeaningfulFormFields(draft) === 0) {
+      return;
+    }
     const mapped = draftFromAi(draft);
     setName(mapped.name);
     setDescription(mapped.description);
@@ -451,6 +457,7 @@ export function FmsFormBuilder({
       <FmsFormAiBar
         formName={name}
         formDescription={description}
+        workflowHint={workflowHint}
         existingDraft={currentAiDraft}
         onReady={applyAiDraft}
         compact={fields.length > 0}

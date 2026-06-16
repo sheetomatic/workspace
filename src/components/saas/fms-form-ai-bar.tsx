@@ -6,6 +6,7 @@ import { generateFmsFormFromAiAction } from "@/app/app/fms/actions";
 import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
 import {
   buildStubFormAiPrompt,
+  countMeaningfulFormFields,
   isStubFmsForm,
 } from "@/lib/fms/form-ai";
 import type { ParsedFmsFormDraft } from "@/lib/integrations/openai";
@@ -27,12 +28,14 @@ function isErrorMessage(message: string) {
 export function FmsFormAiBar({
   formName,
   formDescription,
+  workflowHint = "",
   existingDraft,
   onReady,
   compact = false,
 }: {
   formName: string;
   formDescription: string;
+  workflowHint?: string;
   existingDraft?: ParsedFmsFormDraft;
   onReady: (draft: ParsedFmsFormDraft) => void;
   compact?: boolean;
@@ -45,7 +48,6 @@ export function FmsFormAiBar({
   const chunksRef = useRef<Blob[]>([]);
 
   const isStub = existingDraft ? isStubFmsForm(existingDraft) : true;
-  const hasFields = Boolean(existingDraft?.fields.length);
 
   const stopTracks = useCallback(() => {
     mediaRecorderRef.current?.stream?.getTracks().forEach((t) => t.stop());
@@ -57,14 +59,16 @@ export function FmsFormAiBar({
     const trimmed = text.trim();
     const contextPrompt =
       isStub && existingDraft
-        ? buildStubFormAiPrompt(existingDraft, trimmed)
+        ? buildStubFormAiPrompt(existingDraft, trimmed, workflowHint)
         : trimmed;
 
-    if (contextPrompt.length < 8) {
+    if (!isStub && contextPrompt.length < 8) {
+      setMessage("Add a few more words describing your form.");
+      return;
+    }
+    if (isStub && contextPrompt.length < 12) {
       setMessage(
-        isStub
-          ? "Say or type what to collect, e.g. vendor name, PO amount, delivery date."
-          : "Add a few more words describing your form.",
+        "Add a form name or description first, or type what to collect.",
       );
       return;
     }
@@ -74,8 +78,8 @@ export function FmsFormAiBar({
     try {
       const result = await generateFmsFormFromAiAction({
         description: contextPrompt,
-        existingDraft:
-          hasFields && !isStub ? existingDraft : undefined,
+        workflowHint: isStub ? workflowHint : undefined,
+        existingDraft: isStub ? undefined : existingDraft,
       });
 
       if (!result.ok) {
@@ -83,11 +87,18 @@ export function FmsFormAiBar({
         return;
       }
 
+      if (countMeaningfulFormFields(result.draft) === 0) {
+        setMessage(
+          "AI returned no usable fields. Tap Build again or describe vendor, amount, and dates.",
+        );
+        return;
+      }
+
       onReady(result.draft);
       setPrompt("");
       setMessage(
-        isStub || !hasFields
-          ? "Form generated. Review fields before saving."
+        isStub
+          ? `Form generated with ${countMeaningfulFormFields(result.draft)} fields. Review before saving.`
           : "Form updated. Review changes before saving.",
       );
     } catch {
@@ -257,7 +268,7 @@ export function FmsFormAiBar({
           {busy && !recording
             ? "Building..."
             : isStub
-              ? "Build form with AI"
+              ? "Auto-generate fields"
               : "Apply with AI"}
         </button>
       </div>

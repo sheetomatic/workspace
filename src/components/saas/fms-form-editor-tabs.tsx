@@ -50,21 +50,27 @@ export function FmsFormEditorTabs({
       </div>
 
       <div className="ws-fms-editor-tabpanels">
-        {tab === "form" ? (
-          <div role="tabpanel" className="ws-fms-editor-panel">
-            {formSection}
-          </div>
-        ) : null}
-        {tab === "workflow" ? (
-          <div role="tabpanel" className="ws-fms-editor-panel">
-            {workflowSection}
-          </div>
-        ) : null}
-        {tab === "danger" ? (
-          <div role="tabpanel" className="ws-fms-editor-panel">
-            {dangerSection}
-          </div>
-        ) : null}
+        <div
+          role="tabpanel"
+          className="ws-fms-editor-panel"
+          hidden={tab !== "form"}
+        >
+          {formSection}
+        </div>
+        <div
+          role="tabpanel"
+          className="ws-fms-editor-panel"
+          hidden={tab !== "workflow"}
+        >
+          {workflowSection}
+        </div>
+        <div
+          role="tabpanel"
+          className="ws-fms-editor-panel"
+          hidden={tab !== "danger"}
+        >
+          {dangerSection}
+        </div>
       </div>
     </div>
   );

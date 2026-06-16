@@ -62,6 +62,11 @@ export default async function FmsFormDetailPage({ params }: PageProps) {
               initialName={form.name}
               initialDescription={form.description ?? ""}
               initialFields={form.fields}
+              workflowHint={
+                form.template?.steps.length
+                  ? `Linked workflow steps: ${form.template.steps.map((s) => s.stepName).join("; ")}.`
+                  : ""
+              }
               mode="edit"
             />
           }

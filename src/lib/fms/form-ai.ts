@@ -34,26 +34,26 @@ function isTitleLikeField(field: ParsedFmsFormFieldDraft) {
 
 /** Auto-created or nearly empty forms that should be rebuilt by AI, not lightly refined. */
 export function isStubFmsForm(draft: ParsedFmsFormDraft) {
-  if (draft.fields.length === 0) {
-    return true;
-  }
-  if (draft.fields.length <= 2) {
-    return true;
-  }
-  const nonMeta = draft.fields.filter(
+  return countMeaningfulFormFields(draft) === 0;
+}
+
+export function countMeaningfulFormFields(draft: ParsedFmsFormDraft) {
+  return draft.fields.filter(
     (field) => !isTimestampField(field) && !isTitleLikeField(field),
-  );
-  return nonMeta.length === 0;
+  ).length;
 }
 
 export function buildStubFormAiPrompt(
   draft: ParsedFmsFormDraft,
   userPrompt: string,
+  workflowHint?: string,
 ) {
   const parts = [
     `Build a complete intake form for: ${draft.name.trim() || "this process"}.`,
     draft.description.trim(),
+    workflowHint?.trim(),
     userPrompt.trim(),
+    "Include 4-12 practical fields the submitter fills in (not just title and timestamp).",
   ].filter(Boolean);
   return parts.join(" ");
 }

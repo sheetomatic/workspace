@@ -312,9 +312,10 @@ export function FmsTemplateBuilder({
   const selectedStep = steps.find((step) => step.id === selectedId) ?? null;
 
   return (
+    <div className="ws-fms-form-builder ws-fms-template-builder-wrap">
     <form
       action={formAction}
-      className="ws-fms-template-builder ws-fms-jotform ws-fms-jf-workflow ws-fms-jf-scroll-shell"
+      className="ws-fms-form-builder-form ws-fms-template-builder ws-fms-jotform ws-fms-jf-workflow ws-fms-jf-scroll-shell"
     >
       <input type="hidden" name="formId" value={formId} />
       {templateId ? (
@@ -557,14 +558,7 @@ export function FmsTemplateBuilder({
               onClose={() => setSelectedId(null)}
               canRemove={steps.length > 1}
             />
-          ) : (
-            <aside className="ws-fms-jf-props-panel ws-fms-jf-props-empty">
-              <p>
-                Select a step and tap the gear icon to set TAT, role label, and
-                completion options.
-              </p>
-            </aside>
-          )}
+          ) : null}
         </div>
 
         <div className="ws-fms-jf-add-wrap ws-fms-jf-canvas-footer">
@@ -616,5 +610,6 @@ export function FmsTemplateBuilder({
         </button>
       </div>
     </form>
+    </div>
   );
 }

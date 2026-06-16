@@ -13935,12 +13935,40 @@
   overflow: hidden;
 }
 
-.workspace-app .ws-fms-editor-panel {
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
+.workspace-app .ws-fms-editor-panel[hidden] {
+  display: none !important;
+}
+
+.workspace-app .ws-fms-editor-panel:not([hidden]) {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.workspace-app .ws-fms-template-builder-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.workspace-app .ws-fms-jf-workflow-canvas .ws-fms-jf-builder-split {
+  flex: 1;
+  min-height: 0;
+}
+
+.workspace-app .ws-fms-jf-workflow-canvas .ws-fms-jf-fields-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.workspace-app .ws-fms-jf-workflow-canvas .ws-fms-jf-fields {
+  display: grid;
+  gap: 0;
 }
 
 .workspace-app .ws-fms-editor-panel > .ws-fms-jf-scroll-shell,

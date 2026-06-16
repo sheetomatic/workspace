@@ -12,6 +12,7 @@ import { prisma } from "@/lib/db";
 import { canManageFms } from "@/lib/fms/access";
 import {
   buildStubFormAiPrompt,
+  countMeaningfulFormFields,
   isStubFmsForm,
 } from "@/lib/fms/form-ai";
 import {
@@ -53,6 +54,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 export async function generateFmsFormFromAiAction(input: {
   description: string;
   existingDraft?: ParsedFmsFormDraft;
+  workflowHint?: string;
 }): Promise<FmsAiGenerateResult> {
   try {
     const user = await requireFmsAdmin();
@@ -91,7 +93,11 @@ export async function generateFmsFormFromAiAction(input: {
       input.existingDraft && isStubFmsForm(input.existingDraft);
     const prompt =
       isStub && input.existingDraft
-        ? buildStubFormAiPrompt(input.existingDraft, description)
+        ? buildStubFormAiPrompt(
+            input.existingDraft,
+            description,
+            input.workflowHint,
+          )
         : description;
 
     const { draft, usage } = await parseFmsFormFromDescription(
@@ -99,10 +105,11 @@ export async function generateFmsFormFromAiAction(input: {
       isStub ? undefined : input.existingDraft,
     );
 
-    if (draft.fields.length === 0) {
+    if (countMeaningfulFormFields(draft) === 0) {
       return {
         ok: false,
-        message: "AI did not suggest any fields. Try a more specific description.",
+        message:
+          "AI did not suggest enough fields. Try again or describe vendor name, amount, dates, and documents.",
       };
     }
 
