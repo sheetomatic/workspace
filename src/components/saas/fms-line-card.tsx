@@ -71,7 +71,7 @@ export function FmsLineCard({
             {title}
           </Link>
           <p className="ws-fms-muted">
-            {workflowName} · {doneCount}/{stepStates.length} stops passed
+            {workflowName} | {doneCount}/{stepStates.length} stops passed
           </p>
         </div>
         <div className="ws-fms-line-card-badges">
@@ -98,7 +98,7 @@ export function FmsLineCard({
         </footer>
       ) : status === "COMPLETED" ? (
         <footer className="ws-fms-line-card-footer">
-          <span className="ws-fms-muted">Journey complete — reached destination</span>
+          <span className="ws-fms-muted">Journey complete - reached destination</span>
         </footer>
       ) : null}
     </article>

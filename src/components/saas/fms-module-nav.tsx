@@ -46,7 +46,7 @@ export function FmsModuleNav({ user }: { user: SessionUser }) {
       label: "All lines",
       icon: LayoutDashboard,
       visible: isManager,
-      description: "Owner control tower — every route",
+      description: "Owner control tower - every route",
     },
     {
       href: "/app/fms/scores",

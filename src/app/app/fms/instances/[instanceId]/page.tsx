@@ -75,7 +75,7 @@ export default async function FmsInstancePage({ params }: PageProps) {
     <div className="saas-page ws-fms-page ws-fms-sf">
       <TaskPageToolbar
         title={instance.referenceLabel ?? instance.template.name}
-        description={`${instance.template.name} · ${completedCount}/${instance.stepStates.length} stops passed`}
+        description={`${instance.template.name} | ${completedCount}/${instance.stepStates.length} stops passed`}
         actions={
           <Link href="/app/fms/lines" className="btn-secondary btn-sm">
             Back to lines

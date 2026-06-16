@@ -48,7 +48,7 @@ export default async function FmsMyStopsPage() {
             >
               {isMyTurn ? (
                 <p className="ws-fms-my-turn-banner">
-                  Train is at your stop — action needed
+                  Train is at your stop - action needed
                 </p>
               ) : null}
               <FmsLineCard

@@ -98,7 +98,7 @@ export function FmsTrainTrack({
                   />
                 ) : stop.status === "DONE" ? (
                   <span className="ws-fms-train-check" aria-hidden>
-                    ?
+                    OK
                   </span>
                 ) : (
                   <span className="ws-fms-train-stop-num" aria-hidden>
