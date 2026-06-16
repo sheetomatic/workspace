@@ -13145,6 +13145,7 @@
 .workspace-app .ws-fms-jf-ai-icon {
   flex-shrink: 0;
   align-self: center;
+  line-height: 0;
 }
 
 .workspace-app .ws-fms-jf-ai input {
@@ -13162,7 +13163,7 @@
 }
 
 .workspace-app .ws-fms-jf-ai input::placeholder {
-  color: #94a3b8;
+  color: #64748b;
 }
 
 .workspace-app .ws-fms-jf-ai-btn {
@@ -13785,8 +13786,15 @@
   min-width: var(--sheetomatic-ai-mark-width, 42px);
   min-height: var(--sheetomatic-ai-mark-height, 28px);
   max-width: none;
-  border-radius: 4px;
   object-fit: contain;
+}
+
+.sheetomatic-ai-mark--icon .sheetomatic-ai-mark-logo {
+  border-radius: 6px;
+}
+
+.sheetomatic-ai-mark--lockup .sheetomatic-ai-mark-logo {
+  border-radius: 4px;
 }
 
 .sheetomatic-ai-mark-label {

@@ -1,43 +1,63 @@
 import type { CSSProperties } from "react";
 import Image from "next/image";
 
-const LOGO_PATH = "/brand/sheetomatic-ai-logo.png";
-/** Natural logo aspect ratio (1536x1024). */
-const LOGO_ASPECT = 1.5;
+const LOCKUP_PATH = "/brand/sheetomatic-ai-logo.png";
+const ICON_PATH = "/brand/sheetomatic-ai-icon.png";
+/** Natural lockup aspect ratio (1536x1024). */
+const LOCKUP_ASPECT = 1.5;
 
 export type SheetomaticAiMarkSize = "sm" | "md" | "lg";
 
-const SIZE_MAP: Record<SheetomaticAiMarkSize, number> = {
+const LOCKUP_SIZE_MAP: Record<SheetomaticAiMarkSize, number> = {
   sm: 20,
   md: 28,
   lg: 32,
 };
 
+const ICON_SIZE_MAP: Record<SheetomaticAiMarkSize, number> = {
+  sm: 20,
+  md: 28,
+  lg: 36,
+};
+
 type Props = {
-  /** Preset size for common contexts. Defaults to `md` (28px height). */
+  /** `icon` = square mark for inline bars; `lockup` = full logo with optional label. */
+  variant?: "icon" | "lockup";
   sizes?: SheetomaticAiMarkSize;
-  /** Explicit height in px; overrides `sizes` when set. */
   size?: number;
   showLabel?: boolean;
   className?: string;
 };
 
-function resolveHeight(sizes: SheetomaticAiMarkSize | undefined, size: number | undefined) {
+function resolveHeight(
+  variant: "icon" | "lockup",
+  sizes: SheetomaticAiMarkSize | undefined,
+  size: number | undefined,
+) {
   if (size !== undefined) {
     return size;
   }
-  return SIZE_MAP[sizes ?? "md"];
+  const map = variant === "icon" ? ICON_SIZE_MAP : LOCKUP_SIZE_MAP;
+  return map[sizes ?? "md"];
 }
 
 export function SheetomaticAiMark({
+  variant = "lockup",
   sizes,
   size,
   showLabel = false,
   className,
 }: Props) {
-  const height = resolveHeight(sizes, size);
-  const width = Math.round(height * LOGO_ASPECT);
-  const rootClass = ["sheetomatic-ai-mark", className].filter(Boolean).join(" ");
+  const height = resolveHeight(variant, sizes, size);
+  const width =
+    variant === "icon" ? height : Math.round(height * LOCKUP_ASPECT);
+  const rootClass = [
+    "sheetomatic-ai-mark",
+    variant === "icon" ? "sheetomatic-ai-mark--icon" : "sheetomatic-ai-mark--lockup",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <span
@@ -48,18 +68,21 @@ export function SheetomaticAiMark({
           "--sheetomatic-ai-mark-width": `${width}px`,
         } as CSSProperties
       }
-      role={showLabel ? undefined : "img"}
-      aria-label={showLabel ? undefined : "Sheetomatic AI"}
+      role="img"
+      aria-label="Sheetomatic AI"
+      title="Sheetomatic AI"
     >
       <Image
-        src={LOGO_PATH}
+        src={variant === "icon" ? ICON_PATH : LOCKUP_PATH}
         alt=""
         width={width}
         height={height}
         className="sheetomatic-ai-mark-logo"
         aria-hidden
       />
-      {showLabel ? <span className="sheetomatic-ai-mark-label">Sheetomatic AI</span> : null}
+      {showLabel && variant === "lockup" ? (
+        <span className="sheetomatic-ai-mark-label">Sheetomatic AI</span>
+      ) : null}
     </span>
   );
 }

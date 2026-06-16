@@ -308,7 +308,7 @@ export function LiveInboxPanel({
                   <article className={`ws-inbox-bubble ${bubbleClass}`} key={message.id}>
                     {message.aiGenerated ? (
                       <span className="ws-inbox-ai-tag">
-                        <SheetomaticAiMark size={12} />
+                        <SheetomaticAiMark variant="icon" size={14} />
                         AI reply
                         {message.aiConfidence
                           ? ` - ${Math.round(message.aiConfidence * 100)}% confidence`

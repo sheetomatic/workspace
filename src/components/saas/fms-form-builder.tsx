@@ -493,7 +493,7 @@ export function FmsFormBuilder({
       />
 
       <div className="ws-fms-jf-ai-row">
-        <SheetomaticAiMark sizes="md" className="ws-fms-jf-ai-icon" />
+        <SheetomaticAiMark variant="icon" sizes="lg" className="ws-fms-jf-ai-icon" />
         <div className="ws-fms-jf-ai">
           <input
             type="text"
