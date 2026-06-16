@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FmsDescribeProcessLink } from "@/components/saas/fms-describe-process-link";
 import { FmsPipelineStatusBadge } from "@/components/saas/fms-pipeline-status-badge";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
@@ -37,9 +38,7 @@ export default async function FmsSetupPage() {
         actions={
           canDesign ? (
             <div className="ws-fms-toolbar-actions">
-              <Link href="/app/fms/design/new" className="btn-primary ws-sf-btn-primary">
-                + Describe process (AI)
-              </Link>
+              <FmsDescribeProcessLink />
               <Link href="/app/fms/forms/new" className="btn-secondary btn-sm">
                 Legacy form builder
               </Link>
@@ -121,7 +120,7 @@ export default async function FmsSetupPage() {
         </section>
       ) : null}
 
-      <div className="ws-fms-dashboard-grid">
+      <div className="ws-fms-setup-stack">
         <section className="ws-sf-list-view" aria-label="Flow designs">
           <header className="ws-sf-list-view-header">
             <div className="ws-sf-list-view-title">
@@ -136,9 +135,7 @@ export default async function FmsSetupPage() {
             <div className="ws-empty-state ws-fms-empty-state">
               <p>No flowcharts yet. Describe your process and AI builds the route.</p>
               {canDesign ? (
-                <Link href="/app/fms/design/new" className="btn-primary btn-sm ws-sf-btn-primary">
-                  Build with AI
-                </Link>
+                <FmsDescribeProcessLink className="btn-sm" />
               ) : null}
             </div>
           ) : (
@@ -190,7 +187,7 @@ export default async function FmsSetupPage() {
           )}
         </section>
 
-        <section className="ws-sf-list-view ws-fms-dash-span-full" aria-label="Forms">
+        <section className="ws-sf-list-view" aria-label="Forms">
           <header className="ws-sf-list-view-header">
             <div className="ws-sf-list-view-title">
               <h2>Forms & workflows</h2>

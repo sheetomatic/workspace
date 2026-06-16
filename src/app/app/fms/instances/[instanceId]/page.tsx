@@ -78,7 +78,7 @@ export default async function FmsInstancePage({ params }: PageProps) {
         description={`${instance.template.name} | ${completedCount}/${instance.stepStates.length} stops passed`}
         actions={
           <Link href="/app/fms/lines" className="btn-secondary btn-sm">
-            Back to lines
+            Back to pipelines
           </Link>
         }
       />
@@ -91,7 +91,7 @@ export default async function FmsInstancePage({ params }: PageProps) {
               {activeStep
                 ? `Stopped at: ${activeStep.step.stepName}`
                 : instance.status === "COMPLETED"
-                  ? "Journey complete"
+                  ? "Completed"
                   : "Awaiting next stop"}
             </h2>
           </div>

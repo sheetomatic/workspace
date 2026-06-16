@@ -36,17 +36,17 @@ export function FmsModuleNav({ user }: { user: SessionUser }) {
   const items: NavItem[] = [
     {
       href: "/app/fms/my-stops",
-      label: "My stops",
+      label: "My queue",
       icon: TrainFront,
       visible: true,
-      description: "Where the train waits for you",
+      description: "Work waiting for you",
     },
     {
       href: "/app/fms/lines",
-      label: "All lines",
+      label: "Live pipelines",
       icon: LayoutDashboard,
       visible: isManager,
-      description: "Owner control tower - every route",
+      description: "All active workflows",
     },
     {
       href: "/app/fms/scores",

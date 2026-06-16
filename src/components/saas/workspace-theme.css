@@ -12081,6 +12081,28 @@
   .workspace-app .ws-fms-sf .ws-fms-dash-span-full {
     grid-column: 1 / -1;
   }
+
+  .workspace-app .ws-fms-sf .ws-fms-setup-sections {
+    grid-template-columns: 1fr;
+  }
+}
+
+.workspace-app .ws-fms-setup-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.workspace-app .ws-fms-setup-stack .ws-sf-list-view {
+  width: 100%;
+  max-width: none;
+}
+
+.workspace-app .ws-fms-ai-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .workspace-app .ws-sf-badge-live {

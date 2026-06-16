@@ -31,8 +31,8 @@ export default async function FmsMyStopsPage() {
   return (
     <div className="saas-page ws-fms-page ws-fms-sf">
       <TaskPageToolbar
-        title="My stops"
-        description="Your station on each route. When the train is at your stop, open the line to complete your work and send it forward."
+        title="My queue"
+        description="Tasks on workflows assigned to you. Open a pipeline when it needs your action."
       />
 
       {lineCards.length === 0 ? (
@@ -48,7 +48,7 @@ export default async function FmsMyStopsPage() {
             >
               {isMyTurn ? (
                 <p className="ws-fms-my-turn-banner">
-                  Train is at your stop - action needed
+                  Train is here - action needed
                 </p>
               ) : null}
               <FmsLineCard

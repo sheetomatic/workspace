@@ -98,7 +98,7 @@ export function FmsLineCard({
         </footer>
       ) : status === "COMPLETED" ? (
         <footer className="ws-fms-line-card-footer">
-          <span className="ws-fms-muted">Journey complete - reached destination</span>
+          <span className="ws-fms-muted">Completed</span>
         </footer>
       ) : null}
     </article>

@@ -35,8 +35,8 @@ export default async function FmsLinesPage() {
   return (
     <div className="saas-page ws-fms-page ws-fms-sf">
       <TaskPageToolbar
-        title="All lines"
-        description="Control tower: every active route from start to finish. The train icon shows where each job is stopped right now."
+        title="Live pipelines"
+        description="See every active workflow and where it is in the route right now."
       />
 
       <div className="ws-sf-metrics ws-fms-metrics">
