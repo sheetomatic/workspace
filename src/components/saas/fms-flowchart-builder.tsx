@@ -2,12 +2,14 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowDown, Plus, Settings2, Trash2 } from "lucide-react";
+import { Plus, Settings2 } from "lucide-react";
 import {
   createFmsFlowDesign,
   submitFmsFlowDesignForApproval,
   updateFmsFlowDesign,
 } from "@/app/app/fms/design-actions";
+import { FmsFlowAiBar } from "@/components/saas/fms-flow-ai-bar";
+import { FmsN8nFlowView } from "@/components/saas/fms-n8n-flow-view";
 import { FmsNotificationsSettingsPanel } from "@/components/saas/fms-notifications-settings-panel";
 import { FmsDesignApprovalPanel } from "@/components/saas/fms-design-approval-panel";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
@@ -20,115 +22,16 @@ import {
 } from "@/lib/fms/constants";
 import {
   FMS_DESIGN_STATUS_LABELS,
+  mapAiFlowToSteps,
   newFlowchartStep,
   parseFlowchartSteps,
   type FmsFlowchartStep,
 } from "@/lib/fms/flow-design";
+import type { ParsedFmsFlowDraft } from "@/lib/integrations/openai";
 import type { FmsDesignStatus } from "@prisma/client";
+import { FlowStepNode } from "@/components/saas/fms-flow-step-node";
 
 type Member = { id: string; name: string; email: string };
-
-function FlowStepNode({
-  step,
-  index,
-  members,
-  readOnly,
-  onUpdate,
-  onRemove,
-  canRemove,
-}: {
-  step: FmsFlowchartStep;
-  index: number;
-  members: Member[];
-  readOnly: boolean;
-  onUpdate: (patch: Partial<FmsFlowchartStep>) => void;
-  onRemove: () => void;
-  canRemove: boolean;
-}) {
-  return (
-    <div className="ws-fms-flow-node">
-      <div className="ws-fms-flow-node-head">
-        <span className="ws-fms-flow-node-index">{index + 1}</span>
-        <input
-          className="ws-fms-flow-node-title"
-          value={step.stepName}
-          readOnly={readOnly}
-          onChange={(event) => onUpdate({ stepName: event.target.value })}
-          placeholder={`Step ${index + 1} name`}
-          aria-label={`Step ${index + 1} name`}
-        />
-        {!readOnly && canRemove ? (
-          <button
-            type="button"
-            className="ws-fms-jf-gear ws-fms-jf-trash"
-            aria-label="Remove step"
-            onClick={onRemove}
-          >
-            <Trash2 size={16} aria-hidden />
-          </button>
-        ) : null}
-      </div>
-
-      <div className="ws-fms-flow-node-grid">
-        <label className="ws-fms-flow-field">
-          <span className="ws-fms-flow-label">WHO</span>
-          <select
-            value={step.ownerUserId}
-            disabled={readOnly}
-            onChange={(event) => onUpdate({ ownerUserId: event.target.value })}
-          >
-            <option value="">Select owner...</option>
-            {members.map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.name}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="ws-fms-flow-field ws-fms-flow-field-wide">
-          <span className="ws-fms-flow-label">HOW</span>
-          <textarea
-            rows={2}
-            value={step.howInstructions}
-            readOnly={readOnly}
-            onChange={(event) =>
-              onUpdate({ howInstructions: event.target.value })
-            }
-            placeholder="What should the owner do in this step?"
-          />
-        </label>
-
-        <label className="ws-fms-flow-field">
-          <span className="ws-fms-flow-label">WHEN (TAT)</span>
-          <div className="ws-fms-flow-tat-row">
-            <input
-              type="number"
-              min={1}
-              value={step.tatValue}
-              readOnly={readOnly}
-              onChange={(event) => onUpdate({ tatValue: event.target.value })}
-              aria-label="TAT value"
-            />
-            <select
-              value={step.tatUnit}
-              disabled={readOnly}
-              onChange={(event) =>
-                onUpdate({
-                  tatUnit: event.target.value as "hours" | "days",
-                })
-              }
-              aria-label="TAT unit"
-            >
-              <option value="days">Days</option>
-              <option value="hours">Hours</option>
-            </select>
-          </div>
-        </label>
-      </div>
-    </div>
-  );
-}
 
 export function FmsFlowchartBuilder({
   designId,
@@ -173,7 +76,7 @@ export function FmsFlowchartBuilder({
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription ?? "");
   const [steps, setSteps] = useState<FmsFlowchartStep[]>(() =>
-    initialSteps.length > 0 ? initialSteps : [newFlowchartStep("")],
+    initialSteps.length > 0 ? initialSteps : [],
   );
   const [holidayDates] = useState<string[]>(() =>
     parseHolidayDates(initialHolidayDates),
@@ -182,14 +85,40 @@ export function FmsFlowchartBuilder({
     parseAlertConfig(initialAlertConfig ?? DEFAULT_FMS_ALERT_CONFIG),
   );
   const [notifyOpen, setNotifyOpen] = useState(false);
-  const flowMainRef = useRef<HTMLDivElement>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   const pendingScrollToStepId = useRef<string | null>(null);
 
+  const hasFlow = steps.length > 0;
   const stepsJson = JSON.stringify(steps);
   const holidayDatesJson = JSON.stringify(holidayDates);
   const alertConfigJson = JSON.stringify(alertConfig);
   const statusMessage = submitState.message || saveState.message;
   const statusOk = submitState.message ? submitState.ok : saveState.ok;
+
+  const aiExistingDraft: ParsedFmsFlowDraft | undefined = hasFlow
+    ? {
+        name: name.trim() || "Untitled workflow",
+        description: description.trim(),
+        steps: steps.map((s) => ({
+          stepName: s.stepName,
+          ownerHint:
+            members.find((m) => m.id === s.ownerUserId)?.name ?? null,
+          howInstructions: s.howInstructions,
+          tatValue: Number(s.tatValue) || 1,
+          tatUnit: s.tatUnit,
+        })),
+      }
+    : undefined;
+
+  function applyAiDraft(draft: ParsedFmsFlowDraft) {
+    setName(draft.name);
+    setDescription(draft.description);
+    setSteps(mapAiFlowToSteps(draft, members));
+    setEditMode(false);
+    setSelectedStepId(null);
+  }
 
   function updateStep(id: string, patch: Partial<FmsFlowchartStep>) {
     setSteps((prev) =>
@@ -201,15 +130,26 @@ export function FmsFlowchartBuilder({
     const step = newFlowchartStep("");
     pendingScrollToStepId.current = step.id;
     setSteps((prev) => [...prev, step]);
+    setEditMode(true);
+    setSelectedStepId(step.id);
+  }
+
+  function startManualEdit() {
+    if (steps.length === 0) {
+      const step = newFlowchartStep("");
+      setSteps([step]);
+      setSelectedStepId(step.id);
+    }
+    setEditMode(true);
   }
 
   useEffect(() => {
     const stepId = pendingScrollToStepId.current;
-    if (!stepId || !flowMainRef.current) {
+    if (!stepId || !editorRef.current) {
       return;
     }
     pendingScrollToStepId.current = null;
-    const node = flowMainRef.current.querySelector(
+    const node = editorRef.current.querySelector(
       `[data-flow-step-id="${stepId}"]`,
     );
     if (node instanceof HTMLElement) {
@@ -224,6 +164,9 @@ export function FmsFlowchartBuilder({
       }
       return prev.filter((step) => step.id !== id);
     });
+    if (selectedStepId === id) {
+      setSelectedStepId(null);
+    }
   }
 
   return (
@@ -264,94 +207,121 @@ export function FmsFlowchartBuilder({
         <FmsDesignApprovalPanel designId={designId} />
       ) : null}
 
+      {!readOnly ? (
+        <FmsFlowAiBar
+          onReady={applyAiDraft}
+          existingDraft={aiExistingDraft}
+          compact={hasFlow}
+        />
+      ) : null}
+
+      {notifyOpen && !readOnly ? (
+        <FmsNotificationsSettingsPanel
+          alertConfig={alertConfig}
+          onUpdate={(patch) =>
+            setAlertConfig((prev) => ({ ...prev, ...patch }))
+          }
+          onClose={() => setNotifyOpen(false)}
+        />
+      ) : null}
+
       <form action={saveFormAction} className="ws-fms-flow-form">
         {designId ? <input type="hidden" name="designId" value={designId} /> : null}
         <input type="hidden" name="stepsJson" value={stepsJson} readOnly />
         <input type="hidden" name="holidayDatesJson" value={holidayDatesJson} readOnly />
         <input type="hidden" name="alertConfigJson" value={alertConfigJson} readOnly />
 
-        <div className={`ws-fms-flow-layout${notifyOpen ? " has-notify" : ""}`}>
-          <div className="ws-fms-flow-main" ref={flowMainRef}>
-            <header className="ws-fms-flow-header">
-              <input
-                name="name"
-                required
-                className="ws-fms-jf-title"
-                value={name}
-                readOnly={readOnly}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="FMS flow name"
-              />
-              <input
-                name="description"
-                className="ws-fms-jf-desc"
-                value={description}
-                readOnly={readOnly}
-                onChange={(event) => setDescription(event.target.value)}
-                placeholder="What does this process handle?"
-              />
-            </header>
-
-            <div className="ws-fms-flowchart">
-              <div className="ws-fms-flow-start">
-                <span className="ws-fms-flow-pill">Start</span>
-                <p>Form submitted</p>
-              </div>
-
-              <div className="ws-fms-flow-connector" aria-hidden>
-                <ArrowDown size={16} />
-              </div>
-
-              {steps.map((step, index) => (
-                <div
-                  key={step.id}
-                  className="ws-fms-flow-step-wrap"
-                  data-flow-step-id={step.id}
-                >
-                  <FlowStepNode
-                    step={step}
-                    index={index}
-                    members={members}
+        <div className="ws-fms-flow-layout">
+          <div className="ws-fms-flow-main">
+            {hasFlow ? (
+              <>
+                <header className="ws-fms-flow-header">
+                  <input
+                    name="name"
+                    required
+                    className="ws-fms-jf-title"
+                    value={name}
                     readOnly={readOnly}
-                    onUpdate={(patch) => updateStep(step.id, patch)}
-                    onRemove={() => removeStep(step.id)}
-                    canRemove={steps.length > 1}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="FMS flow name"
                   />
-                  {index < steps.length - 1 ? (
-                    <div className="ws-fms-flow-connector" aria-hidden>
-                      <ArrowDown size={16} />
-                    </div>
-                  ) : null}
-                </div>
-              ))}
+                  <input
+                    name="description"
+                    className="ws-fms-jf-desc"
+                    value={description}
+                    readOnly={readOnly}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="What does this process handle?"
+                  />
+                </header>
 
-              {!readOnly ? (
-                <button type="button" className="ws-fms-jf-add ws-fms-flow-add" onClick={addStep}>
-                  <Plus size={14} aria-hidden />
-                  Add step
+                <FmsN8nFlowView
+                  steps={steps}
+                  members={members}
+                  readOnly={readOnly}
+                  editMode={editMode}
+                  selectedStepId={selectedStepId}
+                  onToggleEdit={() => {
+                    setEditMode((v) => !v);
+                    if (editMode) {
+                      setSelectedStepId(null);
+                    }
+                  }}
+                  onSelectStep={setSelectedStepId}
+                />
+
+                {editMode && !readOnly ? (
+                  <div className="ws-fms-flow-manual-editor" ref={editorRef}>
+                    <p className="ws-fms-flow-manual-label">Edit step details</p>
+                    {steps.map((step, index) => (
+                      <div
+                        key={step.id}
+                        data-flow-step-id={step.id}
+                        className={
+                          selectedStepId && selectedStepId !== step.id
+                            ? "ws-fms-flow-step-collapsed"
+                            : undefined
+                        }
+                      >
+                        <FlowStepNode
+                          step={step}
+                          index={index}
+                          members={members}
+                          readOnly={readOnly}
+                          onUpdate={(patch) => updateStep(step.id, patch)}
+                          onRemove={() => removeStep(step.id)}
+                          canRemove={steps.length > 1}
+                        />
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      className="ws-fms-jf-add ws-fms-flow-add"
+                      onClick={addStep}
+                    >
+                      <Plus size={14} aria-hidden />
+                      Add step
+                    </button>
+                  </div>
+                ) : null}
+              </>
+            ) : !readOnly ? (
+              <div className="ws-fms-flow-empty">
+                <p>
+                  Use voice or text above and AI will build your flowchart in seconds.
+                </p>
+                <button
+                  type="button"
+                  className="btn-secondary btn-sm"
+                  onClick={startManualEdit}
+                >
+                  Build manually instead
                 </button>
-              ) : null}
-
-              <div className="ws-fms-flow-connector" aria-hidden>
-                <ArrowDown size={16} />
               </div>
-
-              <div className="ws-fms-flow-end">
-                <span className="ws-fms-flow-pill is-end">End</span>
-                <p>Job complete</p>
-              </div>
-            </div>
+            ) : (
+              <p className="ws-fms-muted">No steps in this design.</p>
+            )}
           </div>
-
-          {notifyOpen && !readOnly ? (
-            <FmsNotificationsSettingsPanel
-              alertConfig={alertConfig}
-              onUpdate={(patch) =>
-                setAlertConfig((prev) => ({ ...prev, ...patch }))
-              }
-              onClose={() => setNotifyOpen(false)}
-            />
-          ) : null}
         </div>
 
         {statusMessage ? (
@@ -363,7 +333,7 @@ export function FmsFlowchartBuilder({
           </p>
         ) : null}
 
-        {!readOnly ? (
+        {!readOnly && hasFlow ? (
           <div className="form-actions ws-fms-jf-actions">
             <button
               type="submit"
@@ -380,7 +350,7 @@ export function FmsFlowchartBuilder({
         ) : null}
       </form>
 
-      {!readOnly && mode === "edit" && designId ? (
+      {!readOnly && mode === "edit" && designId && hasFlow ? (
         <form action={submitFormAction} className="ws-fms-flow-submit-form">
           <input type="hidden" name="designId" value={designId} />
           <input type="hidden" name="name" value={name} readOnly />

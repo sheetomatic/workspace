@@ -573,3 +573,159 @@ export async function transcribeAudioBuffer(
   }
   return text;
 }
+
+export type ParsedFmsFlowStepDraft = {
+  stepName: string;
+  ownerHint: string | null;
+  howInstructions: string;
+  tatValue: number;
+  tatUnit: "hours" | "days";
+};
+
+export type ParsedFmsFlowDraft = {
+  name: string;
+  description: string;
+  steps: ParsedFmsFlowStepDraft[];
+};
+
+export type FmsFlowchartParseResult =
+  | {
+      status: "ready";
+      draft: ParsedFmsFlowDraft;
+      usage: {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+      };
+    }
+  | {
+      status: "needs_clarification";
+      questions: string[];
+      usage: {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+      };
+    };
+
+function normalizeFlowStep(raw: Record<string, unknown>): ParsedFmsFlowStepDraft | null {
+  const stepName =
+    typeof raw.stepName === "string" && raw.stepName.trim()
+      ? raw.stepName.trim()
+      : "";
+  if (!stepName) {
+    return null;
+  }
+  const howInstructions =
+    typeof raw.howInstructions === "string" ? raw.howInstructions.trim() : "";
+  if (!howInstructions) {
+    return null;
+  }
+  const tatUnit = raw.tatUnit === "hours" ? "hours" : "days";
+  const tatValue =
+    typeof raw.tatValue === "number" && raw.tatValue > 0
+      ? Math.round(raw.tatValue)
+      : 1;
+  const ownerHint =
+    typeof raw.ownerHint === "string" && raw.ownerHint.trim()
+      ? raw.ownerHint.trim()
+      : null;
+  return {
+    stepName,
+    ownerHint,
+    howInstructions,
+    tatValue,
+    tatUnit,
+  };
+}
+
+function normalizeFlowDraft(raw: Record<string, unknown>): ParsedFmsFlowDraft {
+  const name =
+    typeof raw.name === "string" && raw.name.trim()
+      ? raw.name.trim()
+      : "Untitled workflow";
+  const description =
+    typeof raw.description === "string" ? raw.description.trim() : "";
+  const steps = Array.isArray(raw.steps)
+    ? raw.steps
+        .map((item) =>
+          item && typeof item === "object"
+            ? normalizeFlowStep(item as Record<string, unknown>)
+            : null,
+        )
+        .filter((step): step is ParsedFmsFlowStepDraft => step !== null)
+    : [];
+  return { name, description, steps };
+}
+
+export async function parseFmsFlowchartFromDescription(
+  description: string,
+  options?: {
+    members?: TaskMemberHint[];
+    existingDraft?: ParsedFmsFlowDraft;
+    clarificationAnswers?: string;
+  },
+): Promise<FmsFlowchartParseResult> {
+  const members = options?.members ?? [];
+  const memberList = members
+    .map((m) => `- ${m.name} (${m.email})`)
+    .join("\n");
+  const isRefine = Boolean(options?.existingDraft?.steps?.length);
+
+  const systemPrompt = `You design FMS workflow flowcharts for Indian MSME teams. Input may be any language; output English JSON only.
+
+Return JSON with keys:
+- status: "ready" OR "needs_clarification"
+- questions: string[] (1-3 short questions ONLY when status is needs_clarification — e.g. missing process type, unclear owners, or vague steps)
+- name: workflow title
+- description: one-line summary
+- steps: [{ stepName, ownerHint, howInstructions, tatValue, tatUnit: "hours"|"days" }]
+
+Rules:
+- Use status "needs_clarification" when the request is too vague to build at least 2 meaningful steps (single word, no process described, no hint of who does what).
+- When ready, produce 2-8 linear steps in execution order after form submit.
+- ownerHint: assign a team member name from the list, or a role like "Accounts team" if no match.
+- howInstructions: concrete action the owner performs (1-2 sentences).
+- tatValue/tatUnit: realistic turnaround; use hours for same-day tasks, days for multi-day (Mon-Sat working days).
+- Prefer ready over asking questions when reasonable defaults exist.
+
+Team members:
+${memberList || "(none listed — use role labels)"}`;
+
+  let userContent = description;
+  if (options?.clarificationAnswers?.trim()) {
+    userContent = `${description}\n\nUser clarifications:\n${options.clarificationAnswers.trim()}`;
+  }
+  if (isRefine && options?.existingDraft) {
+    userContent = `Current flow JSON:\n${JSON.stringify(options.existingDraft)}\n\nChange or refine:\n${userContent}`;
+  }
+
+  const { content, usage } = await requestFmsOpenAiJson(systemPrompt, userContent);
+  const parsed = JSON.parse(content) as Record<string, unknown>;
+
+  if (parsed.status === "needs_clarification") {
+    const questions = Array.isArray(parsed.questions)
+      ? parsed.questions
+          .filter((q): q is string => typeof q === "string" && q.trim().length > 0)
+          .slice(0, 3)
+      : [];
+    if (questions.length === 0) {
+      questions.push("What process should this workflow handle?");
+    }
+    return { status: "needs_clarification", questions, usage };
+  }
+
+  const draft = normalizeFlowDraft(parsed);
+  if (draft.steps.length === 0) {
+    return {
+      status: "needs_clarification",
+      questions: [
+        "Which steps should happen after the form is submitted?",
+        "Who owns each step on your team?",
+      ],
+      usage,
+    };
+  }
+
+  return { status: "ready", draft, usage };
+}

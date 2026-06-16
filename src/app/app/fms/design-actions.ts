@@ -15,8 +15,23 @@ import {
   parseFlowchartSteps,
   validateFlowchartSteps,
 } from "@/lib/fms/flow-design";
-import { type FmsActionState } from "@/lib/fms-action-state";
+import { type FmsActionState, type FmsFlowAiGenerateResult } from "@/lib/fms-action-state";
 import { isNextRedirect } from "@/lib/next-redirect";
+import {
+  parseFmsFlowchartFromDescription,
+  type ParsedFmsFlowDraft,
+} from "@/lib/integrations/openai";
+import {
+  checkTaskAiOrgQuota,
+  recordTaskAiUsage,
+} from "@/lib/integrations/task-ai-settings";
+import {
+  FMS_AI_PARSE_UNAVAILABLE,
+  mapFmsOpenAiServiceError,
+} from "@/lib/integrations/openai-messages";
+import { getIntegrationStatus } from "@/lib/integrations/status";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { listAssignableMembers } from "@/lib/tasks";
 
 async function requireFmsDesigner() {
   const user = await getSessionUser();
@@ -391,5 +406,89 @@ export async function deleteFmsFlowDesign(
     }
     console.error("deleteFmsFlowDesign", error);
     return { ok: false, message: "Could not delete design." };
+  }
+}
+
+export async function generateFmsFlowchartFromAiAction(input: {
+  description: string;
+  clarificationAnswers?: string;
+  existingDraft?: ParsedFmsFlowDraft;
+}): Promise<FmsFlowAiGenerateResult> {
+  try {
+    const user = await requireFmsDesigner();
+    const description = input.description?.trim() ?? "";
+
+    if (description.length < 6) {
+      return {
+        ok: false,
+        message: "Describe your workflow in a few words, or use voice.",
+      };
+    }
+
+    const rate = await checkRateLimit(
+      `fms-flow-ai:${user.organizationId}:${user.id}`,
+      30,
+      60_000,
+    );
+    if (!rate.allowed) {
+      return {
+        ok: false,
+        message: `Rate limit exceeded. Retry in ${rate.retryAfterSec}s.`,
+      };
+    }
+
+    const orgQuota = await checkTaskAiOrgQuota(user.organizationId);
+    if (!orgQuota.allowed) {
+      return { ok: false, message: orgQuota.message };
+    }
+
+    const status = getIntegrationStatus();
+    if (!status.openai) {
+      return { ok: false, message: FMS_AI_PARSE_UNAVAILABLE };
+    }
+
+    const members = await listAssignableMembers(user.organizationId);
+    const result = await parseFmsFlowchartFromDescription(description, {
+      members,
+      existingDraft: input.existingDraft,
+      clarificationAnswers: input.clarificationAnswers,
+    });
+
+    await recordTaskAiUsage({
+      organizationId: user.organizationId,
+      userId: user.id,
+      route: "parse",
+      usage: result.usage,
+    });
+
+    if (result.status === "needs_clarification") {
+      return {
+        ok: true,
+        needsClarification: true,
+        questions: result.questions,
+      };
+    }
+
+    return {
+      ok: true,
+      needsClarification: false,
+      draft: result.draft,
+    };
+  } catch (error) {
+    const raw =
+      error instanceof Error ? error.message : "Failed to generate flowchart.";
+    if (raw === "OPENAI_NOT_CONFIGURED") {
+      return { ok: false, message: FMS_AI_PARSE_UNAVAILABLE };
+    }
+    if (raw.startsWith("OPENAI_ERROR:")) {
+      return {
+        ok: false,
+        message: mapFmsOpenAiServiceError(
+          raw.replace(/^OPENAI_ERROR:/, ""),
+        ),
+      };
+    }
+    console.error("generateFmsFlowchartFromAiAction", error);
+    return { ok: false, message: mapFmsOpenAiServiceError(raw) };
   }
 }

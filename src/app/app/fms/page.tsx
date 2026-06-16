@@ -46,12 +46,12 @@ export default async function FmsPage() {
     <div className="saas-page ws-fms-page ws-fms-sf">
       <TaskPageToolbar
         title="FMS"
-        description="Design a flowchart with WHO, HOW, and WHEN. Owner approves it, then Sheetomatic auto-creates the intake form and live workflow."
+        description="Describe your process by voice or text. AI builds the flowchart in seconds — edit only if you want."
         actions={
           canDesign ? (
             <div className="ws-fms-toolbar-actions">
               <Link href="/app/fms/design/new" className="btn-primary ws-sf-btn-primary">
-                + Design FMS flowchart
+                + Describe process (AI)
               </Link>
               <Link href="/app/fms/forms/new" className="btn-secondary btn-sm">
                 Legacy form builder
@@ -363,10 +363,10 @@ export default async function FmsPage() {
 
           {flowDesigns.length === 0 ? (
             <div className="ws-empty-state ws-fms-empty-state">
-              <p>No flowcharts yet. Start with WHO, HOW, and WHEN for each step.</p>
+              <p>No flowcharts yet. Describe your process by voice or text and AI builds it in seconds.</p>
               {canDesign ? (
                 <Link href="/app/fms/design/new" className="btn-primary btn-sm ws-sf-btn-primary">
-                  Design first flowchart
+                  Build with AI
                 </Link>
               ) : null}
             </div>
@@ -437,10 +437,10 @@ export default async function FmsPage() {
 
           {forms.length === 0 ? (
             <div className="ws-empty-state ws-fms-empty-state">
-              <p>No forms yet. Design a flowchart first, or use the legacy form builder.</p>
+              <p>No forms yet. AI builds the flowchart first, then the form and workflow go live on owner approval.</p>
               {canDesign ? (
                 <Link href="/app/fms/design/new" className="btn-primary btn-sm ws-sf-btn-primary">
-                  Design flowchart
+                  Build with AI
                 </Link>
               ) : null}
             </div>
