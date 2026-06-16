@@ -114,3 +114,43 @@ export function currentStepForUser(
       (s.ownerUserId === user.id || s.ownerUserId === null),
   );
 }
+
+export async function listFmsFlowDesigns(organizationId: string) {
+  return prisma.fmsFlowDesign.findMany({
+    where: { organizationId },
+    include: {
+      createdBy: { select: { id: true, name: true, email: true } },
+      approvedBy: { select: { id: true, name: true, email: true } },
+      form: { select: { id: true, name: true, status: true } },
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+}
+
+export async function getFmsFlowDesign(designId: string, organizationId: string) {
+  return prisma.fmsFlowDesign.findFirst({
+    where: { id: designId, organizationId },
+    include: {
+      createdBy: { select: { id: true, name: true, email: true } },
+      approvedBy: { select: { id: true, name: true, email: true } },
+      form: {
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          template: { select: { id: true, status: true } },
+        },
+      },
+    },
+  });
+}
+
+export async function listPendingFmsFlowDesigns(organizationId: string) {
+  return prisma.fmsFlowDesign.findMany({
+    where: { organizationId, status: "PENDING_APPROVAL" },
+    include: {
+      createdBy: { select: { id: true, name: true, email: true } },
+    },
+    orderBy: { submittedAt: "asc" },
+  });
+}

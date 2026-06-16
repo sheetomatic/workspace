@@ -1,8 +1,9 @@
 "use client";
 
 import { useActionState, useMemo, useRef, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Settings2, Trash2 } from "lucide-react";
 import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
+import { FmsFieldSettingsPanel } from "@/components/saas/fms-field-settings-panel";
 import type { FmsFormFieldType } from "@prisma/client";
 import {
   createFmsForm,
@@ -11,7 +12,7 @@ import {
 } from "@/app/app/fms/actions";
 import { fmsInitialState } from "@/lib/fms-action-state";
 import { FmsFieldTypePopover } from "@/components/saas/fms-form-add-modal";
-import { FMS_FIELD_TYPE_LABELS, defaultFieldWidth, isHalfWidthFieldType, parseFieldOptions, slugifyFieldKey, type FmsFieldWidth } from "@/lib/fms/constants";
+import { FMS_FIELD_TYPE_LABELS, defaultFieldWidth, isHalfWidthFieldType, parseFieldOptions, type FmsFieldWidth } from "@/lib/fms/constants";
 import type { ParsedFmsFormDraft } from "@/lib/integrations/openai";
 
 export type FormFieldDraft = {
@@ -27,19 +28,6 @@ export type FormFieldDraft = {
   dependsOn: string;
   choicesByParentText: string;
 };
-
-const FIELD_TYPES: FmsFormFieldType[] = [
-  "TEXT",
-  "TEXTAREA",
-  "EMAIL",
-  "PHONE",
-  "NUMBER",
-  "ENUM",
-  "ENUM_LIST",
-  "DATE",
-  "DATETIME",
-  "FILE",
-];
 
 const DEFAULT_LABELS: Partial<Record<FmsFormFieldType, string>> = {
   TEXT: "Short text",
@@ -209,10 +197,6 @@ function parseDependentMatrix(text: string) {
   };
 }
 
-async function readUploadText(file: File) {
-  return file.text();
-}
-
 function isEnumType(fieldType: FmsFormFieldType) {
   return fieldType === "ENUM" || fieldType === "ENUM_LIST";
 }
@@ -300,243 +284,60 @@ function FieldPreviewStub({
 
 function EditorField({
   field,
-  allFields,
-  expanded,
-  onToggle,
+  selected,
+  onSelect,
   onUpdate,
   onRemove,
 }: {
   field: FormFieldDraft;
-  allFields: FormFieldDraft[];
-  expanded: boolean;
-  onToggle: () => void;
+  selected: boolean;
+  onSelect: () => void;
   onUpdate: (patch: Partial<FormFieldDraft>) => void;
   onRemove: () => void;
 }) {
-  const showPlaceholder =
-    field.fieldType !== "FILE" && !isEnumType(field.fieldType);
-  const showOptions = isEnumType(field.fieldType);
   const canSetWidth = isHalfWidthFieldType(field.fieldType);
   const isFullWidth = !canSetWidth || field.width === "full";
-  const fieldKey = slugifyFieldKey(field.label.trim() || "field");
-  const parentCandidates = allFields.filter(
-    (candidate) =>
-      candidate.id !== field.id &&
-      isEnumType(candidate.fieldType) &&
-      slugifyFieldKey(candidate.label.trim() || "field"),
-  );
-
-  async function handleChoicesUpload(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-    const text = await readUploadText(file);
-    onUpdate({ options: parseLinesFromUpload(text).join("\n") });
-    event.target.value = "";
-  }
-
-  async function handleDependentUpload(
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-    const text = await readUploadText(file);
-    onUpdate({ choicesByParentText: text });
-    event.target.value = "";
-  }
 
   return (
     <div
-      className={`ws-fms-jf-field${expanded ? " is-expanded" : ""}${isFullWidth ? " is-full-width" : " is-half-width"}`}
-      onClick={onToggle}
+      className={`ws-fms-jf-field${selected ? " is-selected" : ""}${isFullWidth ? " is-full-width" : " is-half-width"}`}
     >
-      <div
-        className="ws-fms-jf-field-toolbar"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <input
-          className="ws-fms-jf-field-label"
-          value={field.label}
-          onChange={(event) => onUpdate({ label: event.target.value })}
-          placeholder="Field label"
-          aria-label="Field label"
-        />
-        {field.required ? <span className="ws-fms-jf-req">*</span> : null}
-        <select
-          className="ws-fms-jf-field-type"
-          value={field.fieldType}
-          onChange={(event) => {
-            const fieldType = event.target.value as FmsFormFieldType;
-            onUpdate({
-              fieldType,
-              width: defaultFieldWidth(fieldType),
-            });
-          }}
-          aria-label="Field type"
-        >
-          {FIELD_TYPES.map((type) => (
-            <option key={type} value={type}>
-              {FMS_FIELD_TYPE_LABELS[type]}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <FieldPreviewStub field={field} editorMode />
-
-      {expanded ? (
-        <div
-          className="ws-fms-jf-field-options"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <label className="ws-fms-jf-option-check">
-            <input
-              type="checkbox"
-              checked={field.required}
-              onChange={(event) => onUpdate({ required: event.target.checked })}
-            />
-            Required
-          </label>
-
-          {canSetWidth ? (
-            <label className="ws-fms-jf-option-field">
-              Field width
-              <select
-                value={field.width}
-                onChange={(event) =>
-                  onUpdate({ width: event.target.value as FmsFieldWidth })
-                }
-              >
-                <option value="half">Half (side by side)</option>
-                <option value="full">Full width</option>
-              </select>
-            </label>
-          ) : null}
-
-          {showOptions ? (
-            <>
-              <label className="ws-fms-jf-option-check">
-                <input
-                  type="checkbox"
-                  checked={field.dependsOnEnabled}
-                  onChange={(event) =>
-                    onUpdate({
-                      dependsOnEnabled: event.target.checked,
-                      dependsOn: event.target.checked
-                        ? field.dependsOn ||
-                          slugifyFieldKey(
-                            parentCandidates[0]?.label.trim() || "",
-                          )
-                        : "",
-                    })
-                  }
-                />
-                Depends on another field
-              </label>
-
-              {field.dependsOnEnabled ? (
-                <>
-                  <label className="ws-fms-jf-option-field">
-                    Parent field
-                    <select
-                      value={field.dependsOn}
-                      onChange={(event) =>
-                        onUpdate({ dependsOn: event.target.value })
-                      }
-                    >
-                      <option value="">Select parent...</option>
-                      {parentCandidates.map((candidate) => {
-                        const key = slugifyFieldKey(
-                          candidate.label.trim() || "field",
-                        );
-                        return (
-                          <option key={candidate.id} value={key}>
-                            {candidate.label.trim() || key}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </label>
-                  <label className="ws-fms-jf-option-field">
-                    Parent / child pairs (one per line: Category,Product)
-                    <textarea
-                      rows={4}
-                      value={field.choicesByParentText}
-                      onChange={(event) =>
-                        onUpdate({ choicesByParentText: event.target.value })
-                      }
-                      placeholder={"Cat A,Product 1\nCat A,Product 2\nCat B,Product X"}
-                    />
-                  </label>
-                  <label className="ws-fms-jf-option-field ws-fms-jf-upload-field">
-                    Or upload CSV (parent,child columns)
-                    <input
-                      type="file"
-                      accept=".csv,.txt,text/csv,text/plain"
-                      onChange={(event) => void handleDependentUpload(event)}
-                    />
-                  </label>
-                </>
-              ) : (
-                <>
-                  <label className="ws-fms-jf-option-field">
-                    Choices (one per line)
-                    <textarea
-                      rows={3}
-                      value={field.options}
-                      onChange={(event) => onUpdate({ options: event.target.value })}
-                      placeholder={"Option A\nOption B"}
-                    />
-                  </label>
-                  <label className="ws-fms-jf-option-field ws-fms-jf-upload-field">
-                    Or upload CSV / text (one value per line)
-                    <input
-                      type="file"
-                      accept=".csv,.txt,text/csv,text/plain"
-                      onChange={(event) => void handleChoicesUpload(event)}
-                    />
-                  </label>
-                </>
-              )}
-              <p className="ws-fms-jf-field-key-hint ws-fms-muted">
-                Field key: {fieldKey}
-              </p>
-            </>
-          ) : null}
-
-          {showPlaceholder ? (
-            <label className="ws-fms-jf-option-field">
-              Placeholder
-              <input
-                value={field.placeholder}
-                onChange={(event) => onUpdate({ placeholder: event.target.value })}
-                placeholder="Hint text inside the input"
-              />
-            </label>
-          ) : null}
-
-          <label className="ws-fms-jf-option-field">
-            Help text
-            <input
-              value={field.helpText}
-              onChange={(event) => onUpdate({ helpText: event.target.value })}
-              placeholder="Shown below the label"
-            />
-          </label>
-
+      <div className="ws-fms-jf-field-row">
+        <div className="ws-fms-jf-field-main">
+          <input
+            className="ws-fms-jf-field-label"
+            value={field.label}
+            onChange={(event) => onUpdate({ label: event.target.value })}
+            placeholder="Field label"
+            aria-label="Field label"
+          />
+          {field.required ? <span className="ws-fms-jf-req">*</span> : null}
+          <span className="ws-fms-jf-field-type-pill">
+            {FMS_FIELD_TYPE_LABELS[field.fieldType]}
+          </span>
+          <FieldPreviewStub field={field} editorMode />
+        </div>
+        <div className="ws-fms-jf-field-actions">
           <button
             type="button"
-            className="ws-fms-jf-remove"
+            className={`ws-fms-jf-gear${selected ? " is-active" : ""}`}
+            aria-label="Field settings"
+            title="Field settings"
+            onClick={onSelect}
+          >
+            <Settings2 size={16} aria-hidden />
+          </button>
+          <button
+            type="button"
+            className="ws-fms-jf-gear ws-fms-jf-trash"
+            aria-label="Remove field"
+            title="Remove field"
             onClick={onRemove}
           >
-            <Trash2 size={14} aria-hidden />
-            Remove field
+            <Trash2 size={16} aria-hidden />
           </button>
         </div>
-      ) : null}
+      </div>
     </div>
   );
 }
@@ -559,9 +360,7 @@ export function FmsFormBuilder({
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
   const [fields, setFields] = useState(() => toDraft(initialFields));
-  const [selectedId, setSelectedId] = useState<string | null>(
-    () => toDraft(initialFields)[0]?.id ?? null,
-  );
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiMessage, setAiMessage] = useState("");
@@ -710,6 +509,8 @@ export function FmsFormBuilder({
     }),
   );
 
+  const selectedField = fields.find((field) => field.id === selectedId) ?? null;
+
   return (
     <form
       action={formAction}
@@ -724,48 +525,6 @@ export function FmsFormBuilder({
         defaultValue={fieldsJson}
         readOnly
       />
-
-      <div className="ws-fms-jf-ai-row">
-        <SheetomaticAiMark variant="icon" sizes="lg" className="ws-fms-jf-ai-icon" />
-        <div className="ws-fms-jf-ai">
-          <input
-            type="text"
-            value={aiPrompt}
-            onChange={(event) => setAiPrompt(event.target.value)}
-            placeholder={
-              fields.length === 0
-                ? "Describe your form, e.g. trademark intake with applicant name and document upload"
-                : "Refine with AI, e.g. add phone field or make all required"
-            }
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                void handleAiGenerate();
-              }
-            }}
-          />
-          <button
-            type="button"
-            className="ws-fms-jf-ai-btn"
-            disabled={aiBusy}
-            onClick={() => void handleAiGenerate()}
-          >
-            {aiBusy ? "Generating..." : "Generate"}
-          </button>
-        </div>
-      </div>
-      {aiMessage ? (
-        <p
-          className={
-            isAiErrorMessage(aiMessage)
-              ? "ws-fms-jf-ai-message saas-form-message error"
-              : "ws-fms-jf-ai-message saas-form-message ok"
-          }
-          role="status"
-        >
-          {aiMessage}
-        </p>
-      ) : null}
 
       <div className="ws-fms-jf-canvas">
         <header className="ws-fms-jf-header ws-fms-jf-sticky-header">
@@ -790,34 +549,90 @@ export function FmsFormBuilder({
               placeholder="Optional description"
             />
           </label>
+          <div className="ws-fms-jf-ai-row ws-fms-jf-ai-row-in-canvas">
+            <SheetomaticAiMark variant="icon" sizes="lg" className="ws-fms-jf-ai-icon" />
+            <div className="ws-fms-jf-ai">
+              <input
+                type="text"
+                value={aiPrompt}
+                onChange={(event) => setAiPrompt(event.target.value)}
+                placeholder={
+                  fields.length === 0
+                    ? "Describe your form, e.g. trademark intake with applicant name and document upload"
+                    : "Refine with AI, e.g. add phone field or make all required"
+                }
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    void handleAiGenerate();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="ws-fms-jf-ai-btn"
+                disabled={aiBusy}
+                onClick={() => void handleAiGenerate()}
+              >
+                {aiBusy ? "Generating..." : "Generate"}
+              </button>
+            </div>
+          </div>
+          {aiMessage ? (
+            <p
+              className={
+                isAiErrorMessage(aiMessage)
+                  ? "ws-fms-jf-ai-message saas-form-message error"
+                  : "ws-fms-jf-ai-message saas-form-message ok"
+              }
+              role="status"
+            >
+              {aiMessage}
+            </p>
+          ) : null}
         </header>
 
         <div className="ws-fms-jf-divider" aria-hidden />
 
-        <div className="ws-fms-jf-fields-scroll">
-          <div className="ws-fms-jf-fields ws-fms-jf-fields-grid">
-            {fields.length === 0 ? (
-              <p className="ws-fms-jf-empty ws-fms-jf-empty-full">
-                Add fields below or describe your form with AI above.
-              </p>
-            ) : (
-              fields.map((field) => (
-                <EditorField
-                  key={field.id}
-                  field={field}
-                  allFields={fields}
-                  expanded={field.id === selectedId}
-                  onToggle={() =>
-                    setSelectedId((prev) =>
-                      prev === field.id ? null : field.id,
-                    )
-                  }
-                  onUpdate={(patch) => updateField(field.id, patch)}
-                  onRemove={() => removeField(field.id)}
-                />
-              ))
-            )}
+        <div className="ws-fms-jf-builder-split">
+          <div className="ws-fms-jf-fields-scroll">
+            <div className="ws-fms-jf-fields ws-fms-jf-fields-grid">
+              {fields.length === 0 ? (
+                <p className="ws-fms-jf-empty ws-fms-jf-empty-full">
+                  Click Add field below or use AI above to generate your intake form.
+                </p>
+              ) : (
+                fields.map((field) => (
+                  <EditorField
+                    key={field.id}
+                    field={field}
+                    selected={field.id === selectedId}
+                    onSelect={() =>
+                      setSelectedId((prev) =>
+                        prev === field.id ? null : field.id,
+                      )
+                    }
+                    onUpdate={(patch) => updateField(field.id, patch)}
+                    onRemove={() => removeField(field.id)}
+                  />
+                ))
+              )}
+            </div>
           </div>
+
+          {selectedField ? (
+            <FmsFieldSettingsPanel
+              field={selectedField}
+              allFields={fields}
+              onUpdate={(patch) => updateField(selectedField.id, patch)}
+              onRemove={() => removeField(selectedField.id)}
+              onClose={() => setSelectedId(null)}
+            />
+          ) : (
+            <aside className="ws-fms-jf-props-panel ws-fms-jf-props-empty">
+              <p>Select a field and tap the gear icon to edit type, choices, and width.</p>
+            </aside>
+          )}
         </div>
 
         <div className="ws-fms-jf-add-wrap ws-fms-jf-canvas-footer">

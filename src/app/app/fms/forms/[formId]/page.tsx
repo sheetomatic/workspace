@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FmsFormBuilder } from "@/components/saas/fms-form-builder";
 import { FmsFormDeletePanel } from "@/components/saas/fms-form-delete-panel";
+import { FmsFormEditorTabs } from "@/components/saas/fms-form-editor-tabs";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
 import { FmsTemplateBuilder } from "@/components/saas/fms-template-builder";
 import { requireSession } from "@/lib/require-session";
@@ -28,7 +29,6 @@ export default async function FmsFormDetailPage({ params }: PageProps) {
     ? await listAssignableMembers(user.organizationId)
     : [];
   const hasWorkflow = Boolean(form.template);
-  const workflowLive = form.template?.status === "ACTIVE";
 
   return (
     <div className="saas-page ws-fms-page ws-fms-sf ws-fms-jotform-page">
@@ -53,12 +53,9 @@ export default async function FmsFormDetailPage({ params }: PageProps) {
       </div>
 
       {isAdmin ? (
-        <>
-          <section className="ws-fms-jf-section">
-            <header className="ws-fms-jf-section-head">
-              <h2>Intake form</h2>
-              <p>Fields collected when someone starts a job.</p>
-            </header>
+        <FmsFormEditorTabs
+          hasWorkflow={hasWorkflow}
+          formSection={
             <FmsFormBuilder
               formId={form.id}
               initialName={form.name}
@@ -66,56 +63,40 @@ export default async function FmsFormDetailPage({ params }: PageProps) {
               initialFields={form.fields}
               mode="edit"
             />
-          </section>
-
-          <section className="ws-fms-section ws-fms-jf-workflow">
-            <header className="ws-fms-jf-section-head">
-              <div>
-                <h2>FMS workflow</h2>
-                <p>
-                  {hasWorkflow
-                    ? workflowLive
-                      ? "Live workflow – form submissions spawn jobs through these steps."
-                      : "Draft workflow – go live to start jobs on form submit."
-                    : "No workflow yet – add steps with owners and TAT to turn submissions into jobs."}
-                </p>
-              </div>
-              {hasWorkflow ? (
-                <div className="ws-fms-jf-workflow-badges">
-                  <span className="ws-fms-muted">
-                    {form.template!.steps.length} step
-                    {form.template!.steps.length === 1 ? "" : "s"}
-                  </span>
-                </div>
-              ) : null}
-            </header>
-
+          }
+          workflowSection={
             <FmsTemplateBuilder
               formId={form.id}
               templateId={form.template?.id}
               initialName={form.template?.name ?? `${form.name} workflow`}
               initialSteps={form.template?.steps ?? []}
               initialHolidayDates={form.template?.holidayDates ?? []}
-              initialAlertConfig={form.template?.alertConfig ?? DEFAULT_FMS_ALERT_CONFIG}
+              initialAlertConfig={
+                form.template?.alertConfig ?? DEFAULT_FMS_ALERT_CONFIG
+              }
               members={members}
               mode={hasWorkflow ? "edit" : "create"}
               templateStatus={form.template?.status}
             />
-          </section>
-
-          <section className="ws-fms-jf-section ws-fms-danger-zone">
-            <header className="ws-fms-jf-section-head">
-              <h2>Danger zone</h2>
-              <p>Permanently remove this form, workflow, submissions, and active jobs.</p>
-            </header>
-            <FmsFormDeletePanel
-              formId={form.id}
-              formName={form.name}
-              submissionCount={form._count.submissions}
-              hasWorkflow={hasWorkflow}
-            />
-          </section>
-        </>
+          }
+          dangerSection={
+            <>
+              <header className="ws-fms-jf-section-head">
+                <h2>Delete form</h2>
+                <p>
+                  Permanently remove this form, workflow, submissions, and active
+                  jobs.
+                </p>
+              </header>
+              <FmsFormDeletePanel
+                formId={form.id}
+                formName={form.name}
+                submissionCount={form._count.submissions}
+                hasWorkflow={hasWorkflow}
+              />
+            </>
+          }
+        />
       ) : (
         <section className="ws-sf-list-view ws-fms-readonly-view">
           <header className="ws-sf-list-view-header">
@@ -169,7 +150,10 @@ export default async function FmsFormDetailPage({ params }: PageProps) {
           </div>
           {form.status === "ACTIVE" ? (
             <div className="ws-fms-readonly-actions">
-              <Link href={`/app/fms/forms/${form.id}/submit`} className="btn-primary ws-sf-btn-primary">
+              <Link
+                href={`/app/fms/forms/${form.id}/submit`}
+                className="btn-primary ws-sf-btn-primary"
+              >
                 Submit this form
               </Link>
             </div>

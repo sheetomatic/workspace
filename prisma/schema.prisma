@@ -50,6 +50,13 @@ enum FmsTemplateStatus {
   ARCHIVED
 }
 
+enum FmsDesignStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
 enum FmsInstanceStatus {
   ACTIVE
   COMPLETED
@@ -134,6 +141,7 @@ model Organization {
   aiReplyUsageEvents AiReplyUsageEvent[]
   fmsForms          FmsForm[]
   fmsTemplates      FmsTemplate[]
+  fmsFlowDesigns    FmsFlowDesign[]
   fmsInstances      FmsInstance[]
   fmsFormSubmissions FmsFormSubmission[]
   createdAt       DateTime                 @default(now())
@@ -793,6 +801,8 @@ model User {
   fmsStepsCompleted    FmsStepState[]           @relation("FmsStepCompleter")
   fmsStepDefaultOwner  FmsTemplateStep[]        @relation("FmsStepDefaultOwner")
   fmsStepAttachments   FmsStepAttachment[]      @relation("FmsStepAttachmentUploader")
+  fmsFlowDesignsCreated FmsFlowDesign[]         @relation("FmsFlowDesignCreator")
+  fmsFlowDesignsApproved FmsFlowDesign[]        @relation("FmsFlowDesignApprover")
   createdAt            DateTime                 @default(now())
   updatedAt            DateTime                 @updatedAt
 }
@@ -1142,9 +1152,35 @@ model FmsForm {
   createdBy      User             @relation("FmsFormCreator", fields: [createdById], references: [id], onDelete: Cascade)
   fields         FmsFormField[]
   template       FmsTemplate?
+  flowDesign     FmsFlowDesign?
   submissions    FmsFormSubmission[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
+
+  @@index([organizationId, status])
+}
+
+model FmsFlowDesign {
+  id             String          @id @default(cuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  status         FmsDesignStatus @default(DRAFT)
+  steps          Json            @default("[]")
+  alertConfig    Json            @default("{}")
+  holidayDates   Json            @default("[]")
+  formId         String?         @unique
+  form           FmsForm?        @relation(fields: [formId], references: [id], onDelete: SetNull)
+  createdById    String
+  createdBy      User            @relation("FmsFlowDesignCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  submittedAt    DateTime?
+  approvedById   String?
+  approvedBy     User?           @relation("FmsFlowDesignApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedAt     DateTime?
+  reviewNote     String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@index([organizationId, status])
 }
@@ -1193,6 +1229,7 @@ model FmsTemplateStep {
   sortOrder          Int           @default(0)
   stepName           String
   roleLabel          String?
+  instructions       String?
   defaultOwnerUserId String?
   defaultOwner       User?         @relation("FmsStepDefaultOwner", fields: [defaultOwnerUserId], references: [id], onDelete: SetNull)
   slaType            FmsSlaType    @default(NONE)

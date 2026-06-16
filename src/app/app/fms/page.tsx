@@ -3,8 +3,8 @@ import { Clock } from "lucide-react";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
-import { canManageFms } from "@/lib/fms/access";
-import { listFmsForms, listFmsInstances, listMyFmsSteps } from "@/lib/fms/queries";
+import { canApproveFmsFlow, canSubmitFmsFlow } from "@/lib/fms/access";
+import { listFmsForms, listFmsInstances, listMyFmsSteps, listFmsFlowDesigns, listPendingFmsFlowDesigns } from "@/lib/fms/queries";
 import {
   computeStepUrgency,
   formatDelayLabel,
@@ -15,12 +15,15 @@ import {
 
 export default async function FmsPage() {
   const user = await requireSession(undefined, { module: "FMS" });
-  const isAdmin = canManageFms(user.role);
+  const canDesign = canSubmitFmsFlow(user.role);
+  const isOwner = canApproveFmsFlow(user.role);
 
-  const [forms, instances, mySteps] = await Promise.all([
+  const [forms, instances, mySteps, flowDesigns, pendingDesigns] = await Promise.all([
     listFmsForms(user.organizationId),
     listFmsInstances(user.organizationId),
     listMyFmsSteps(user.organizationId, user.id),
+    canDesign || isOwner ? listFmsFlowDesigns(user.organizationId) : Promise.resolve([]),
+    isOwner ? listPendingFmsFlowDesigns(user.organizationId) : Promise.resolve([]),
   ]);
 
   const activeJobs = instances.filter((job) => job.status === "ACTIVE");
@@ -43,15 +46,78 @@ export default async function FmsPage() {
     <div className="saas-page ws-fms-page ws-fms-sf">
       <TaskPageToolbar
         title="FMS"
-        description="Build intake forms, link workflow steps with owners and TAT, and track jobs from submission to completion."
+        description="Design a flowchart with WHO, HOW, and WHEN. Owner approves it, then Sheetomatic auto-creates the intake form and live workflow."
         actions={
-          isAdmin ? (
-            <Link href="/app/fms/forms/new" className="btn-primary ws-sf-btn-primary">
-              + New form
-            </Link>
+          canDesign ? (
+            <div className="ws-fms-toolbar-actions">
+              <Link href="/app/fms/design/new" className="btn-primary ws-sf-btn-primary">
+                + Design FMS flowchart
+              </Link>
+              <Link href="/app/fms/forms/new" className="btn-secondary btn-sm">
+                Legacy form builder
+              </Link>
+            </div>
           ) : undefined
         }
       />
+
+      {isOwner && pendingDesigns.length > 0 ? (
+        <section className="ws-sf-list-view ws-fms-pending-designs" aria-label="Pending flowchart approvals">
+          <header className="ws-sf-list-view-header">
+            <div className="ws-sf-list-view-title">
+              <h2>Pending flowchart approvals</h2>
+              <span className="ws-sf-list-view-count">
+                {pendingDesigns.length} item{pendingDesigns.length === 1 ? "" : "s"}
+              </span>
+            </div>
+          </header>
+          <div className="ws-sf-table-wrap">
+            <table className="ws-fms-data-table ws-sf-data-table">
+              <thead>
+                <tr>
+                  <th>Flow</th>
+                  <th>Submitted by</th>
+                  <th>Submitted</th>
+                  <th aria-label="Actions" />
+                </tr>
+              </thead>
+              <tbody>
+                {pendingDesigns.map((design) => (
+                  <tr key={design.id}>
+                    <td>
+                      <Link
+                        href={`/app/fms/design/${design.id}`}
+                        className="ws-sf-record-link"
+                      >
+                        {design.name}
+                      </Link>
+                    </td>
+                    <td className="ws-fms-table-meta">
+                      {design.createdBy.name ?? design.createdBy.email}
+                    </td>
+                    <td className="ws-fms-table-meta">
+                      {design.submittedAt
+                        ? new Intl.DateTimeFormat("en-IN", {
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                          }).format(design.submittedAt)
+                        : "-"}
+                    </td>
+                    <td className="ws-fms-table-actions">
+                      <Link
+                        href={`/app/fms/design/${design.id}`}
+                        className="btn-primary btn-sm ws-sf-btn-primary"
+                      >
+                        Review
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
 
       <div className="ws-sf-metrics ws-fms-metrics">
         <div className="ws-sf-metric-tile">
@@ -285,6 +351,80 @@ export default async function FmsPage() {
           )}
         </section>
 
+        <section className="ws-sf-list-view" aria-label="Flow designs">
+          <header className="ws-sf-list-view-header">
+            <div className="ws-sf-list-view-title">
+              <h2>Flowchart designs</h2>
+              <span className="ws-sf-list-view-count">
+                {flowDesigns.length} item{flowDesigns.length === 1 ? "" : "s"}
+              </span>
+            </div>
+          </header>
+
+          {flowDesigns.length === 0 ? (
+            <div className="ws-empty-state ws-fms-empty-state">
+              <p>No flowcharts yet. Start with WHO, HOW, and WHEN for each step.</p>
+              {canDesign ? (
+                <Link href="/app/fms/design/new" className="btn-primary btn-sm ws-sf-btn-primary">
+                  Design first flowchart
+                </Link>
+              ) : null}
+            </div>
+          ) : (
+            <div className="ws-sf-table-wrap">
+              <div className="ws-fms-table-scroll">
+                <table className="ws-fms-data-table ws-sf-data-table">
+                  <thead>
+                    <tr>
+                      <th>Flow</th>
+                      <th>Status</th>
+                      <th>Live FMS</th>
+                      <th aria-label="Actions" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {flowDesigns.map((design) => (
+                      <tr key={design.id}>
+                        <td>
+                          <Link
+                            href={`/app/fms/design/${design.id}`}
+                            className="ws-sf-record-link"
+                          >
+                            {design.name}
+                          </Link>
+                        </td>
+                        <td>
+                          <FmsStatusBadge status={design.status} />
+                        </td>
+                        <td className="ws-fms-table-meta">
+                          {design.form ? (
+                            <Link
+                              href={`/app/fms/forms/${design.form.id}`}
+                              className="ws-sf-record-link"
+                            >
+                              {design.form.name}
+                            </Link>
+                          ) : (
+                            <span className="ws-fms-muted">Not created yet</span>
+                          )}
+                        </td>
+                        <td className="ws-fms-table-actions">
+                          <Link
+                            href={`/app/fms/design/${design.id}`}
+                            className="btn-secondary btn-sm"
+                          >
+                            Open
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </section>
+
         <section className="ws-sf-list-view" aria-label="Forms">
           <header className="ws-sf-list-view-header">
             <div className="ws-sf-list-view-title">
@@ -297,10 +437,10 @@ export default async function FmsPage() {
 
           {forms.length === 0 ? (
             <div className="ws-empty-state ws-fms-empty-state">
-              <p>No forms yet. Create an intake form, then attach a workflow with steps and owners.</p>
-              {isAdmin ? (
-                <Link href="/app/fms/forms/new" className="btn-primary btn-sm ws-sf-btn-primary">
-                  Create first form
+              <p>No forms yet. Design a flowchart first, or use the legacy form builder.</p>
+              {canDesign ? (
+                <Link href="/app/fms/design/new" className="btn-primary btn-sm ws-sf-btn-primary">
+                  Design flowchart
                 </Link>
               ) : null}
             </div>

@@ -5,6 +5,9 @@ type FmsBadgeStatus =
   | "COMPLETED"
   | "CANCELLED"
   | "PENDING"
+  | "PENDING_APPROVAL"
+  | "APPROVED"
+  | "REJECTED"
   | "IN_PROGRESS"
   | "DONE"
   | "SKIPPED";
@@ -16,6 +19,9 @@ const BADGE_CLASS: Record<FmsBadgeStatus, string> = {
   COMPLETED: "ws-sf-badge status-completed",
   CANCELLED: "ws-sf-badge ws-sf-badge-danger",
   PENDING: "ws-sf-badge ws-sf-badge-neutral",
+  PENDING_APPROVAL: "ws-sf-badge ws-sf-badge-warning",
+  APPROVED: "ws-sf-badge status-completed",
+  REJECTED: "ws-sf-badge ws-sf-badge-danger",
   IN_PROGRESS: "ws-sf-badge ws-sf-badge-info",
   DONE: "ws-sf-badge status-completed",
   SKIPPED: "ws-sf-badge ws-sf-badge-warning",
@@ -28,6 +34,9 @@ const BADGE_LABEL: Record<FmsBadgeStatus, string> = {
   COMPLETED: "Completed",
   CANCELLED: "Cancelled",
   PENDING: "Pending",
+  PENDING_APPROVAL: "Pending approval",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
   IN_PROGRESS: "In progress",
   DONE: "Done",
   SKIPPED: "Skipped",
