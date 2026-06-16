@@ -376,7 +376,7 @@ export async function approveFmsFlowDesign(
     revalidatePath("/app/fms");
     revalidatePath(`/app/fms/design/${designId}`);
     revalidatePath(`/app/fms/forms/${formId}`);
-    redirect(`/app/fms/forms/${formId}`);
+    redirect(`/app/fms/design/${designId}?approved=1`);
   } catch (error) {
     if (isNextRedirect(error)) {
       throw error;

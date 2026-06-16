@@ -15381,4 +15381,113 @@
   .workspace-app .ws-fms-flow-owner-current {
     display: none;
   }
+
+  .workspace-app .ws-fms-launch-steps {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Post-approval launch panel */
+.workspace-app .ws-fms-launch-panel {
+  padding: 18px 20px;
+  border: 1px solid #86efac;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  flex-shrink: 0;
+}
+
+.workspace-app .ws-fms-launch-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.workspace-app .ws-fms-launch-head h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.workspace-app .ws-fms-launch-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.workspace-app .ws-fms-launch-step {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.workspace-app .ws-fms-launch-step.is-active {
+  border-color: #1565c0;
+  box-shadow: 0 0 0 2px rgba(21, 101, 192, 0.12);
+}
+
+.workspace-app .ws-fms-launch-step.is-done {
+  opacity: 0.85;
+}
+
+.workspace-app .ws-fms-launch-step-num {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #e0e7ff;
+  color: #3730a3;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.workspace-app .ws-fms-launch-step.is-active .ws-fms-launch-step-num {
+  background: #1565c0;
+  color: #fff;
+}
+
+.workspace-app .ws-fms-launch-step.is-done .ws-fms-launch-step-num {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.workspace-app .ws-fms-launch-step-body strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.875rem;
+}
+
+.workspace-app .ws-fms-launch-step-body p {
+  margin: 0 0 10px;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.workspace-app .ws-fms-launch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.workspace-app .ws-fms-launch-hint {
+  margin: 8px 0 0;
+  font-size: 0.75rem;
+}
+
+.workspace-app .ws-fms-setup-banner {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  font-size: 0.8125rem;
+  color: #1e40af;
 }

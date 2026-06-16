@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { FmsDesignLaunchPanel } from "@/components/saas/fms-design-launch-panel";
 import { FmsFlowchartBuilder } from "@/components/saas/fms-flowchart-builder";
 import { requireSession } from "@/lib/require-session";
 import { canApproveFmsFlow, canSubmitFmsFlow } from "@/lib/fms/access";
@@ -9,11 +10,13 @@ import { listAssignableMembers } from "@/lib/tasks";
 
 type PageProps = {
   params: Promise<{ designId: string }>;
+  searchParams: Promise<{ approved?: string }>;
 };
 
-export default async function FmsFlowDesignPage({ params }: PageProps) {
+export default async function FmsFlowDesignPage({ params, searchParams }: PageProps) {
   const user = await requireSession(undefined, { module: "FMS" });
   const { designId } = await params;
+  const { approved } = await searchParams;
   const design = await getFmsFlowDesign(designId, user.organizationId);
 
   if (!design) {
@@ -55,6 +58,9 @@ export default async function FmsFlowDesignPage({ params }: PageProps) {
         canApprove={canApprove}
         reviewNote={design.reviewNote}
         linkedFormId={design.formId}
+        linkedFormName={design.form?.name}
+        formNeedsSetup={(design.form?._count.fields ?? 0) < 3}
+        justApproved={approved === "1"}
       />
     </div>
   );

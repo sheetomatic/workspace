@@ -8,6 +8,7 @@ import {
   submitFmsFlowDesignForApproval,
   updateFmsFlowDesign,
 } from "@/app/app/fms/design-actions";
+import { FmsDesignLaunchPanel } from "@/components/saas/fms-design-launch-panel";
 import { FmsFlowOwnerAssignPanel } from "@/components/saas/fms-flow-owner-assign-panel";
 import { FmsFlowAiBar } from "@/components/saas/fms-flow-ai-bar";
 import { FmsN8nFlowView } from "@/components/saas/fms-n8n-flow-view";
@@ -22,7 +23,6 @@ import {
   type FmsAlertConfig,
 } from "@/lib/fms/constants";
 import {
-  FMS_DESIGN_STATUS_LABELS,
   mapAiFlowToSteps,
   newFlowchartStep,
   parseFlowchartSteps,
@@ -48,6 +48,9 @@ export function FmsFlowchartBuilder({
   canApprove = false,
   reviewNote,
   linkedFormId,
+  linkedFormName,
+  formNeedsSetup = false,
+  justApproved = false,
 }: {
   designId?: string;
   initialName?: string;
@@ -61,6 +64,9 @@ export function FmsFlowchartBuilder({
   canApprove?: boolean;
   reviewNote?: string | null;
   linkedFormId?: string | null;
+  linkedFormName?: string | null;
+  formNeedsSetup?: boolean;
+  justApproved?: boolean;
 }) {
   const saveAction = mode === "create" ? createFmsFlowDesign : updateFmsFlowDesign;
   const [saveState, saveFormAction, savePending] = useActionState(
@@ -180,10 +186,7 @@ export function FmsFlowchartBuilder({
       <div className="ws-fms-flow-toolbar">
         <div className="ws-fms-flow-toolbar-main">
           <FmsStatusBadge status={initialStatus} />
-          <span className="ws-fms-muted">
-            {FMS_DESIGN_STATUS_LABELS[initialStatus]}
-          </span>
-          {linkedFormId ? (
+          {linkedFormId && initialStatus !== "APPROVED" ? (
             <Link href={`/app/fms/forms/${linkedFormId}`} className="ws-sf-record-link">
               Open live FMS
             </Link>
@@ -211,6 +214,15 @@ export function FmsFlowchartBuilder({
 
       {canApprove && initialStatus === "PENDING_APPROVAL" && designId ? (
         <FmsDesignApprovalPanel designId={designId} />
+      ) : null}
+
+      {initialStatus === "APPROVED" && linkedFormId ? (
+        <FmsDesignLaunchPanel
+          formId={linkedFormId}
+          formName={linkedFormName ?? name}
+          formNeedsSetup={formNeedsSetup}
+          justApproved={justApproved}
+        />
       ) : null}
 
       {!readOnly ? (

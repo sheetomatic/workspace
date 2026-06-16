@@ -14,11 +14,13 @@ import { listAssignableMembers } from "@/lib/tasks";
 
 type PageProps = {
   params: Promise<{ formId: string }>;
+  searchParams: Promise<{ setup?: string }>;
 };
 
-export default async function FmsFormDetailPage({ params }: PageProps) {
+export default async function FmsFormDetailPage({ params, searchParams }: PageProps) {
   const user = await requireSession(undefined, { module: "FMS" });
   const { formId } = await params;
+  const { setup } = await searchParams;
   const form = await getFmsForm(formId, user.organizationId);
 
   if (!form) {
@@ -54,6 +56,12 @@ export default async function FmsFormDetailPage({ params }: PageProps) {
       </div>
 
       {isAdmin ? (
+        <>
+          {setup === "form" ? (
+            <p className="ws-fms-setup-banner" role="status">
+              Step 1 of 2 — use <strong>Auto-generate fields</strong> below, then save and submit your first job to start the flow.
+            </p>
+          ) : null}
         <FmsFormEditorTabs
           hasWorkflow={hasWorkflow}
           formSection={
@@ -103,6 +111,7 @@ export default async function FmsFormDetailPage({ params }: PageProps) {
             </>
           }
         />
+        </>
       ) : (
         <section className="ws-sf-list-view ws-fms-readonly-view">
           <header className="ws-sf-list-view-header">

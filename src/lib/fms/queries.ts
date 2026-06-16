@@ -138,6 +138,7 @@ export async function getFmsFlowDesign(designId: string, organizationId: string)
           id: true,
           name: true,
           status: true,
+          _count: { select: { fields: true } },
           template: { select: { id: true, status: true } },
         },
       },

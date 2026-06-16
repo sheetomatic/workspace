@@ -24,7 +24,7 @@ export function FmsDesignApprovalPanel({ designId }: { designId: string }) {
     <section className="ws-fms-approval-panel">
       <h3>Owner approval required</h3>
       <p className="ws-fms-muted">
-        Review the flowchart below. On approval, Sheetomatic will auto-create the intake form and live FMS workflow.
+        Review the flowchart below. On approval, the workflow goes live and you will be guided to create the intake form and start the first job.
       </p>
 
       {message ? (
@@ -41,7 +41,7 @@ export function FmsDesignApprovalPanel({ designId }: { designId: string }) {
             className="btn-cta btn-primary"
             disabled={approvePending || rejectPending}
           >
-            {approvePending ? "Approving..." : "Approve and create FMS"}
+            {approvePending ? "Approving..." : "Approve workflow"}
           </button>
         </form>
 
