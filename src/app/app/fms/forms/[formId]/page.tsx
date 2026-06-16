@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { FmsFormBuilder } from "@/components/saas/fms-form-builder";
 import { FmsFormDeletePanel } from "@/components/saas/fms-form-delete-panel";
 import { FmsFormEditorTabs } from "@/components/saas/fms-form-editor-tabs";
+import { FmsPipelineStatusBadge } from "@/components/saas/fms-pipeline-status-badge";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
 import { FmsTemplateBuilder } from "@/components/saas/fms-template-builder";
 import { requireSession } from "@/lib/require-session";
@@ -37,10 +38,10 @@ export default async function FmsFormDetailPage({ params }: PageProps) {
           Back to FMS
         </Link>
         <div className="ws-fms-jf-page-meta">
-          <FmsStatusBadge status={form.status} />
-          {hasWorkflow ? (
-            <FmsStatusBadge status={form.template!.status} />
-          ) : null}
+          <FmsPipelineStatusBadge
+            formStatus={form.status}
+            workflowStatus={form.template?.status}
+          />
           {form.status === "ACTIVE" ? (
             <Link
               href={`/app/fms/forms/${form.id}/submit`}

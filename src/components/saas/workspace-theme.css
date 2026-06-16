@@ -12069,8 +12069,45 @@
 
 .workspace-app .ws-fms-sf .ws-fms-dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  grid-template-columns: 1fr;
   gap: 16px;
+}
+
+@media (min-width: 1100px) {
+  .workspace-app .ws-fms-sf .ws-fms-dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workspace-app .ws-fms-sf .ws-fms-dash-span-full {
+    grid-column: 1 / -1;
+  }
+}
+
+.workspace-app .ws-sf-badge-live {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.workspace-app .ws-fms-pipeline-status {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+}
+
+.workspace-app .ws-fms-pipeline-status-part {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.workspace-app .ws-fms-pipeline-status-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sf-text-secondary);
 }
 
 .workspace-app .ws-fms-sf .ws-sf-list-view {
@@ -13601,10 +13638,6 @@
   gap: 12px 16px;
 }
 
-.workspace-app .ws-fms-dashboard-grid-wide {
-  grid-template-columns: 1fr;
-}
-
 .workspace-app .ws-fms-sf .ws-fms-row-overdue td {
   background: #fef2f2;
 }
@@ -14056,6 +14089,19 @@
 
 .workspace-app .ws-fms-jf-empty-full {
   grid-column: 1 / -1;
+  text-align: center;
+  padding: 48px 24px;
+  border: 1px dashed #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.workspace-app .ws-fms-jf-empty-full p {
+  margin: 0 0 6px;
+}
+
+.workspace-app .ws-fms-jf-empty-full .ws-fms-muted {
+  font-size: 0.8125rem;
 }
 
 .workspace-app .ws-fms-submit-form .form-grid-premium.ws-fms-submit-grid {

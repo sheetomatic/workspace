@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Clock } from "lucide-react";
+import { FmsPipelineStatusBadge } from "@/components/saas/fms-pipeline-status-badge";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
@@ -146,9 +147,9 @@ export default async function FmsPage() {
         </div>
       </div>
 
-      <div className="ws-fms-dashboard-grid ws-fms-dashboard-grid-wide">
+      <div className="ws-fms-dashboard-grid">
         {mySteps.length > 0 ? (
-          <section className="ws-sf-list-view ws-fms-my-steps" aria-label="My steps">
+          <section className="ws-sf-list-view ws-fms-my-steps ws-fms-dash-span-full" aria-label="My steps">
             <header className="ws-sf-list-view-header">
               <div className="ws-sf-list-view-title">
                 <h2>My steps</h2>
@@ -425,7 +426,7 @@ export default async function FmsPage() {
           )}
         </section>
 
-        <section className="ws-sf-list-view" aria-label="Forms">
+        <section className="ws-sf-list-view ws-fms-dash-span-full" aria-label="Forms">
           <header className="ws-sf-list-view-header">
             <div className="ws-sf-list-view-title">
               <h2>Forms & workflows</h2>
@@ -451,7 +452,7 @@ export default async function FmsPage() {
                   <thead>
                     <tr>
                       <th>Form</th>
-                      <th>Form status</th>
+                      <th>Status</th>
                       <th>Workflow</th>
                       <th>Submissions</th>
                       <th aria-label="Actions" />
@@ -469,14 +470,14 @@ export default async function FmsPage() {
                           </Link>
                         </td>
                         <td>
-                          <FmsStatusBadge status={form.status} />
+                          <FmsPipelineStatusBadge
+                            formStatus={form.status}
+                            workflowStatus={form.template?.status}
+                          />
                         </td>
-                        <td>
+                        <td className="ws-fms-table-meta">
                           {form.template ? (
-                            <span className="ws-fms-workflow-cell">
-                              <span>{form.template.name}</span>
-                              <FmsStatusBadge status={form.template.status} />
-                            </span>
+                            form.template.name
                           ) : (
                             <span className="ws-fms-muted">No workflow</span>
                           )}

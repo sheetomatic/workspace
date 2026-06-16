@@ -501,9 +501,12 @@ export function FmsFormBuilder({
           <div className="ws-fms-jf-fields-scroll">
             <div className="ws-fms-jf-fields ws-fms-jf-fields-grid">
               {fields.length === 0 ? (
-                <p className="ws-fms-jf-empty ws-fms-jf-empty-full">
-                  Click Add field below or use AI above to generate your intake form.
-                </p>
+                <div className="ws-fms-jf-empty ws-fms-jf-empty-full">
+                  <p>No fields yet.</p>
+                  <p className="ws-fms-muted">
+                    Tap <strong>Build form with AI</strong> above — voice or text works.
+                  </p>
+                </div>
               ) : (
                 fields.map((field) => (
                   <EditorField
