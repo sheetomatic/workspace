@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import type { TaskStatus } from "@prisma/client";
 import { TaskAssigneeDashboard } from "@/components/saas/task-assignee-dashboard";
 import { TaskChartsPanel } from "@/components/saas/task-charts-panel";
@@ -49,6 +50,11 @@ type TasksPageProps = {
 
 export default async function TasksPage({ searchParams }: TasksPageProps) {
   const user = await requireSession(undefined, { module: "TASKS" });
+
+  if (!canCreateTasks(user.role) && user.role !== "VIEWER") {
+    redirect("/app/tasks/my-work");
+  }
+
   const params = await searchParams;
   const page = taskPageFromSearchParam(params.page);
 
@@ -124,7 +130,8 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
   return (
     <div className="saas-page ws-tasks-page ws-tasks-sf">
       <TaskPageToolbar
-        title="Tasks"
+        title="Team board"
+        description="All team tasks, workload, and filters."
         actions={
           <>
             <TaskExportBar

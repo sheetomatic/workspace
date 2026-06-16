@@ -80,19 +80,29 @@ export function formatModuleList(modules: WorkspaceModule[]) {
   return modules.map((module) => WORKSPACE_MODULE_LABELS[module]).join(", ");
 }
 
-/** Default landing route after workspace login (Cases first when enabled). */
+/** Default landing: staff → my work, managers → team board / lines. */
 export function resolveWorkspaceHomeHref(
-  user: Pick<SessionUser, "modules" | "isSuperAdmin">,
+  user: Pick<SessionUser, "modules" | "isSuperAdmin" | "role">,
 ) {
   for (const module of WORKSPACE_MODULES) {
     if (hasWorkspaceModule(user, module)) {
+      if (module === "TASKS") {
+        return hasMinimumRole(user.role, "MANAGER") || user.role === "VIEWER"
+          ? "/app/tasks"
+          : "/app/tasks/my-work";
+      }
+      if (module === "FMS") {
+        return hasMinimumRole(user.role, "MANAGER")
+          ? "/app/fms/lines"
+          : "/app/fms/my-stops";
+      }
       const href = WORKSPACE_MODULE_HREFS[module];
       if (href) {
         return href;
       }
     }
   }
-  return "/app/tasks";
+  return "/app/tasks/my-work";
 }
 
 export function isCasesOnlyWorkspace(

@@ -44,11 +44,12 @@ export function FmsStepCompletePanel({
     return (
       <div className="ws-sf-card ws-fms-step-panel is-readonly">
         <header className="ws-fms-step-panel-header">
-          <h3>{stepState.step.stepName}</h3>
-          <span className="ws-sf-badge ws-sf-badge-info">In progress</span>
+          <h3>Stop: {stepState.step.stepName}</h3>
+          <span className="ws-sf-badge ws-sf-badge-info">Train waiting here</span>
         </header>
         <p className="ws-fms-muted">
-          This step is in progress. Only the assigned owner can mark it done.
+          The train is stopped at this station. Only the assigned owner can release it to
+          the next stop.
         </p>
       </div>
     );
@@ -73,9 +74,13 @@ export function FmsStepCompletePanel({
       />
 
       <header className="ws-fms-step-panel-header">
-        <h3>Complete: {stepState.step.stepName}</h3>
-        <span className="ws-sf-badge ws-sf-badge-info">Action required</span>
+        <h3>Your stop: {stepState.step.stepName}</h3>
+        <span className="ws-sf-badge ws-sf-badge-info">Release train</span>
       </header>
+      <p className="ws-fms-step-panel-intro">
+        Complete your work at this station, then release the train to move to the next
+        stop on the route.
+      </p>
 
       {captureFields.length > 0 ? (
         <div className="form-grid-premium">
@@ -141,7 +146,7 @@ export function FmsStepCompletePanel({
 
       <div className="form-actions ws-fms-form-actions">
         <button type="submit" className="btn-primary ws-sf-btn-primary" disabled={pending}>
-          {pending ? "Saving..." : "Mark step done"}
+          {pending ? "Releasing..." : "Complete stop & move forward"}
         </button>
       </div>
     </form>

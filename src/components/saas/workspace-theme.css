@@ -15770,3 +15770,539 @@
   font-size: 0.8125rem;
   color: #1e40af;
 }
+
+/* Module sub-navigation (FMS / Tasks role views) */
+.workspace-app .ws-module-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 0;
+  min-height: calc(100vh - 56px);
+  margin: -16px -20px -24px;
+}
+
+.workspace-app .ws-module-subnav {
+  border-right: 1px solid var(--sf-card-border);
+  background: #fafaf9;
+  padding: 16px 12px;
+  position: sticky;
+  top: 56px;
+  align-self: start;
+  height: calc(100vh - 56px);
+  overflow-y: auto;
+}
+
+.workspace-app .ws-module-subnav-brand {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px 16px;
+  border-bottom: 1px solid var(--sf-card-border);
+  margin-bottom: 12px;
+  color: var(--sf-text);
+}
+
+.workspace-app .ws-module-subnav-brand strong {
+  display: block;
+  font-size: 0.9375rem;
+}
+
+.workspace-app .ws-module-subnav-brand span {
+  display: block;
+  font-size: 0.6875rem;
+  color: var(--sf-text-secondary);
+  margin-top: 2px;
+}
+
+.workspace-app .ws-module-subnav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.workspace-app .ws-module-subnav-link {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  color: var(--sf-text-secondary);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s;
+}
+
+.workspace-app .ws-module-subnav-link small {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--sf-text-secondary);
+  margin-top: 2px;
+  line-height: 1.3;
+}
+
+.workspace-app .ws-module-subnav-link:hover {
+  background: #ecebea;
+  color: var(--sf-text);
+}
+
+.workspace-app .ws-module-subnav-link.is-active {
+  background: #d8edff;
+  color: #014486;
+}
+
+.workspace-app .ws-module-subnav-link.is-active small {
+  color: #014486;
+  opacity: 0.85;
+}
+
+.workspace-app .ws-module-layout-main {
+  min-width: 0;
+  padding: 16px 20px 24px;
+}
+
+/* FMS train track */
+.workspace-app .ws-fms-train-track {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  overflow-x: auto;
+  padding: 8px 4px 12px;
+  scrollbar-width: thin;
+}
+
+.workspace-app .ws-fms-train-origin,
+.workspace-app .ws-fms-train-destination {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 56px;
+  padding-top: 18px;
+}
+
+.workspace-app .ws-fms-train-station-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #c9c7c5;
+}
+
+.workspace-app .ws-fms-train-station-dot.is-origin {
+  background: #2e844a;
+}
+
+.workspace-app .ws-fms-train-station-dot.is-destination.is-reached {
+  background: #2e844a;
+}
+
+.workspace-app .ws-fms-train-station-name {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sf-text-secondary);
+  text-align: center;
+}
+
+.workspace-app .ws-fms-train-rail {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.workspace-app .ws-fms-train-stop {
+  flex: 1 1 0;
+  min-width: 88px;
+  max-width: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  padding: 0 4px;
+}
+
+.workspace-app .ws-fms-train-segment {
+  position: absolute;
+  top: 22px;
+  left: -50%;
+  right: 50%;
+  height: 3px;
+  background: #dddbda;
+  z-index: 0;
+}
+
+.workspace-app .ws-fms-train-stop:first-child .ws-fms-train-segment {
+  left: 0;
+}
+
+.workspace-app .ws-fms-train-stop.is-done .ws-fms-train-segment,
+.workspace-app .ws-fms-train-stop.is-done-late .ws-fms-train-segment {
+  background: #2e844a;
+}
+
+.workspace-app .ws-fms-train-stop.is-current .ws-fms-train-segment {
+  background: linear-gradient(90deg, #2e844a 0%, #0176d3 100%);
+}
+
+.workspace-app .ws-fms-train-stop-marker {
+  position: relative;
+  z-index: 1;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 2px solid #dddbda;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-fms-train-stop.is-done .ws-fms-train-stop-marker,
+.workspace-app .ws-fms-train-stop.is-done-late .ws-fms-train-stop-marker {
+  border-color: #2e844a;
+  background: #d9f0e3;
+  color: #2e844a;
+}
+
+.workspace-app .ws-fms-train-stop.is-current .ws-fms-train-stop-marker {
+  border-color: #0176d3;
+  background: #d8edff;
+  color: #014486;
+  box-shadow: 0 0 0 4px rgba(1, 118, 211, 0.15);
+}
+
+.workspace-app .ws-fms-train-stop.is-current.is-overdue .ws-fms-train-stop-marker {
+  border-color: #ea001e;
+  background: #fef1ee;
+  color: #8c1d18;
+  box-shadow: 0 0 0 4px rgba(234, 0, 30, 0.12);
+}
+
+.workspace-app .ws-fms-train-icon {
+  animation: ws-fms-train-pulse 2s ease-in-out infinite;
+}
+
+@keyframes ws-fms-train-pulse {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(2px);
+  }
+}
+
+.workspace-app .ws-fms-train-stop-label {
+  margin-top: 8px;
+  text-align: center;
+  width: 100%;
+}
+
+.workspace-app .ws-fms-train-stop-name {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--sf-text);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.workspace-app .ws-fms-train-stop-owner {
+  display: block;
+  font-size: 0.625rem;
+  color: var(--sf-text-secondary);
+  margin-top: 2px;
+}
+
+.workspace-app .ws-fms-train-now-badge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: #d8edff;
+  color: #014486;
+}
+
+.workspace-app .ws-fms-train-stop.is-current.is-overdue .ws-fms-train-now-badge {
+  background: #fef1ee;
+  color: #8c1d18;
+}
+
+.workspace-app .ws-fms-train-track.is-compact .ws-fms-train-stop-marker {
+  width: 36px;
+  height: 36px;
+}
+
+.workspace-app .ws-fms-train-track.is-compact .ws-fms-train-stop {
+  min-width: 72px;
+  max-width: 120px;
+}
+
+/* FMS line cards (control tower) */
+.workspace-app .ws-fms-lines-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.workspace-app .ws-fms-line-card {
+  border: 1px solid var(--sf-card-border);
+  border-radius: 8px;
+  background: #fff;
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.workspace-app .ws-fms-line-card.is-overdue {
+  border-color: #f9cfc9;
+  background: linear-gradient(180deg, #fff5f5 0%, #fff 40%);
+}
+
+.workspace-app .ws-fms-line-card-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.workspace-app .ws-fms-line-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--sf-text);
+  text-decoration: none;
+}
+
+.workspace-app .ws-fms-line-card-title:hover {
+  color: #0176d3;
+}
+
+.workspace-app .ws-fms-line-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.workspace-app .ws-fms-line-card-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--sf-card-border);
+  font-size: 0.8125rem;
+}
+
+.workspace-app .ws-fms-my-stop-wrap.is-my-turn {
+  border-radius: 10px;
+  outline: 2px solid #0176d3;
+  outline-offset: 2px;
+}
+
+.workspace-app .ws-fms-my-turn-banner {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #d8edff;
+  color: #014486;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.workspace-app .ws-fms-journey-hero {
+  margin-bottom: 16px;
+  padding: 20px;
+}
+
+.workspace-app .ws-fms-journey-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.workspace-app .ws-fms-journey-eyebrow {
+  margin: 0 0 4px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-fms-journey-header h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.workspace-app .ws-fms-journey-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.workspace-app .ws-fms-journey-due {
+  margin: 12px 0 0;
+  font-size: 0.8125rem;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-fms-step-panel-intro {
+  margin: 0 0 14px;
+  font-size: 0.8125rem;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-fms-my-stop-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.workspace-app .ws-fms-my-stop-link {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--sf-card-border);
+  border-radius: 6px;
+  text-decoration: none;
+  color: var(--sf-text);
+  background: #fff;
+}
+
+.workspace-app .ws-fms-my-stop-link:hover {
+  border-color: #0176d3;
+  background: #f3f9ff;
+}
+
+/* MIS score badge */
+.workspace-app .ws-mis-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.workspace-app .ws-mis-score strong {
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+
+.workspace-app .ws-mis-score.is-compact {
+  padding: 2px 8px;
+}
+
+.workspace-app .ws-mis-score.is-compact strong {
+  font-size: 0.8125rem;
+}
+
+.workspace-app .ws-mis-score.is-excellent {
+  background: #d9f0e3;
+  color: #2e844a;
+  border-color: #91db8b;
+}
+
+.workspace-app .ws-mis-score.is-good {
+  background: #d8edff;
+  color: #014486;
+  border-color: #90caf9;
+}
+
+.workspace-app .ws-mis-score.is-fair {
+  background: #fef7e5;
+  color: #8c4b02;
+  border-color: #f9e3b4;
+}
+
+.workspace-app .ws-mis-score.is-poor {
+  background: #fef1ee;
+  color: #8c1d18;
+  border-color: #f9cfc9;
+}
+
+.workspace-app .ws-mis-score-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.workspace-app .ws-mis-score-footnote {
+  margin-top: 16px;
+  font-size: 0.75rem;
+}
+
+.workspace-app .ws-mis-task-score-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 16px 12px;
+}
+
+.workspace-app .ws-mis-task-score-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--sf-card-border);
+  background: #fafaf9;
+  font-size: 0.75rem;
+}
+
+.workspace-app .ws-mis-task-score-title {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .workspace-app .ws-module-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-app .ws-module-subnav {
+    position: static;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--sf-card-border);
+    padding: 12px;
+  }
+
+  .workspace-app .ws-module-subnav-list {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+
+  .workspace-app .ws-module-subnav-link small {
+    display: none;
+  }
+
+  .workspace-app .ws-module-layout-main {
+    padding: 12px 16px 20px;
+  }
+}

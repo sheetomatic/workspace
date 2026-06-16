@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { FmsInstanceTimeline } from "@/components/saas/fms-instance-timeline";
+import { FmsTrainTrack } from "@/components/saas/fms-train-track";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
 import { FmsStepCompletePanel } from "@/components/saas/fms-step-complete-panel";
+import { MisScoreBadge } from "@/components/saas/mis-score-badge";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
 import { canManageFms } from "@/lib/fms/access";
 import { getFmsInstance } from "@/lib/fms/queries";
+import { fmsJobMisScore, fmsStepMisScore } from "@/lib/mis/score";
 import {
   formatDelayLabel,
   isStepOverdue,
@@ -56,52 +58,79 @@ export default async function FmsInstancePage({ params }: PageProps) {
     | undefined;
 
   const completedCount = instance.stepStates.filter((s) => s.status === "DONE").length;
+  const jobScore = fmsJobMisScore(instance.stepStates);
+  const currentScore = activeStep ? fmsStepMisScore(activeStep) : null;
+
+  const trainStops = instance.stepStates.map((s) => ({
+    id: s.id,
+    name: s.step.stepName,
+    status: s.status,
+    plannedAt: s.plannedAt,
+    actualAt: s.actualAt,
+    delayMinutes: s.delayMinutes,
+    ownerName: s.owner?.name ?? s.owner?.email.split("@")[0] ?? null,
+  }));
 
   return (
     <div className="saas-page ws-fms-page ws-fms-sf">
       <TaskPageToolbar
         title={instance.referenceLabel ?? instance.template.name}
-        description={`${instance.template.name} · ${completedCount}/${instance.stepStates.length} steps done`}
+        description={`${instance.template.name} · ${completedCount}/${instance.stepStates.length} stops passed`}
         actions={
-          <Link href="/app/fms" className="btn-secondary btn-sm">
-            Back to FMS
+          <Link href="/app/fms/lines" className="btn-secondary btn-sm">
+            Back to lines
           </Link>
         }
       />
 
-      <div className="ws-fms-detail-meta">
-        <FmsStatusBadge status={instance.status} />
-        {activeStep ? (
-          <>
-            <span className="ws-fms-muted">
-              Current step: <strong>{activeStep.step.stepName}</strong>
-            </span>
-            {activeStep.plannedAt ? (
-              <span className="ws-fms-muted">
-                Due{" "}
-                {new Intl.DateTimeFormat("en-IN", {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                }).format(activeStep.plannedAt)}
-              </span>
-            ) : null}
+      <section className="ws-sf-card ws-fms-journey-hero">
+        <header className="ws-fms-journey-header">
+          <div>
+            <p className="ws-fms-journey-eyebrow">Live route</p>
+            <h2>
+              {activeStep
+                ? `Stopped at: ${activeStep.step.stepName}`
+                : instance.status === "COMPLETED"
+                  ? "Journey complete"
+                  : "Awaiting next stop"}
+            </h2>
+          </div>
+          <div className="ws-fms-journey-badges">
+            <MisScoreBadge score={jobScore} />
+            {currentScore ? <MisScoreBadge score={currentScore} compact /> : null}
+            <FmsStatusBadge status={instance.status} />
             {activeOverdue && activeDelayLabel ? (
               <span className="ws-sf-badge ws-sf-badge-danger">{activeDelayLabel}</span>
-            ) : activeStep.plannedAt ? (
+            ) : activeStep?.plannedAt ? (
               <span className="ws-sf-badge ws-sf-badge-info">On track</span>
             ) : null}
-          </>
-        ) : (
-          <span className="ws-fms-muted">No step in progress</span>
-        )}
-      </div>
+          </div>
+        </header>
+
+        <FmsTrainTrack
+          stops={trainStops}
+          startLabel="Form submitted"
+          endLabel="Complete"
+          showOwner
+        />
+
+        {activeStep?.plannedAt ? (
+          <p className="ws-fms-journey-due">
+            Due at this stop:{" "}
+            {new Intl.DateTimeFormat("en-IN", {
+              dateStyle: "medium",
+              timeStyle: "short",
+            }).format(activeStep.plannedAt)}
+          </p>
+        ) : null}
+      </section>
 
       <div className="ws-fms-instance-layout">
         {submissionValues && Object.keys(submissionValues).length > 0 ? (
           <section className="ws-sf-card ws-fms-section">
             <header className="ws-fms-section-heading">
               <h2>Form submission</h2>
-              <p>Values captured when this job was started.</p>
+              <p>Values captured when this journey started.</p>
             </header>
             <dl className="ws-fms-submission-grid">
               {instance.template.form.fields.map((field) => {
@@ -125,14 +154,6 @@ export default async function FmsInstancePage({ params }: PageProps) {
         {activeStep ? (
           <FmsStepCompletePanel stepState={activeStep} canComplete={canComplete} />
         ) : null}
-
-        <section className="ws-fms-section">
-          <header className="ws-fms-section-heading">
-            <h2>Pipeline timeline</h2>
-            <p>Planned vs actual completion with delay indicators.</p>
-          </header>
-          <FmsInstanceTimeline steps={instance.stepStates} />
-        </section>
       </div>
     </div>
   );
