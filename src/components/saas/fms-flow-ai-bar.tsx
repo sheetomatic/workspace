@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Sparkles } from "lucide-react";
+import { Mic, MicOff } from "lucide-react";
 import { generateFmsFlowchartFromAiAction } from "@/app/app/fms/design-actions";
 import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
 import type { ParsedFmsFlowDraft } from "@/lib/integrations/openai";
@@ -219,7 +219,7 @@ export function FmsFlowAiBar({
             disabled={busy}
             onClick={() => void handleClarifySubmit()}
           >
-            <Sparkles size={16} aria-hidden />
+            <SheetomaticAiMark variant="icon" sizes="sm" className="ws-fms-ai-btn-mark" />
             {busy ? "Building..." : "Build flowchart"}
           </button>
         </div>
@@ -267,7 +267,7 @@ export function FmsFlowAiBar({
               disabled={busy || recording}
               onClick={() => void handleGenerateClick()}
             >
-              <Sparkles size={16} aria-hidden />
+              <SheetomaticAiMark variant="icon" sizes="sm" className="ws-fms-ai-btn-mark" />
               {busy && !recording ? "Building..." : "Build with AI"}
             </button>
           </div>

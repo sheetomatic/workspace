@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Sparkles } from "lucide-react";
+import { Mic, MicOff } from "lucide-react";
 import { generateFmsFormFromAiAction } from "@/app/app/fms/actions";
 import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
 import {
@@ -253,7 +253,7 @@ export function FmsFormAiBar({
           disabled={busy || recording}
           onClick={() => void runGenerate(prompt)}
         >
-          <Sparkles size={16} aria-hidden />
+          <SheetomaticAiMark variant="icon" sizes="sm" className="ws-fms-ai-btn-mark" />
           {busy && !recording
             ? "Building..."
             : isStub

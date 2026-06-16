@@ -14619,6 +14619,18 @@
   gap: 8px;
 }
 
+.workspace-app .ws-fms-ai-btn-mark {
+  --sheetomatic-ai-mark-height: 18px;
+  --sheetomatic-ai-mark-width: 18px;
+}
+
+.workspace-app .btn-cta .ws-fms-ai-btn-mark .sheetomatic-ai-mark-logo {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+}
+
 /* FMS flowchart-first builder */
 .workspace-app .ws-fms-toolbar-actions {
   display: flex;
