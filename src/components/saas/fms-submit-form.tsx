@@ -1,9 +1,14 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import type { FmsFormFieldType } from "@prisma/client";
 import { submitFmsForm } from "@/app/app/fms/actions";
 import { fmsInitialState } from "@/lib/fms-action-state";
+import {
+  isHalfWidthFieldType,
+  isTimestampField,
+  parseFieldOptions,
+} from "@/lib/fms/constants";
 
 type FormField = {
   fieldKey: string;
@@ -14,6 +19,33 @@ type FormField = {
   placeholder: string | null;
   helpText: string | null;
 };
+
+function fieldLayoutClass(field: FormField) {
+  if (
+    field.fieldType === "TEXTAREA" ||
+    field.fieldType === "FILE" ||
+    field.fieldType === "ENUM_LIST"
+  ) {
+    return "form-field-full";
+  }
+  const { width } = parseFieldOptions(field.options);
+  if (isHalfWidthFieldType(field.fieldType) && width === "half") {
+    return undefined;
+  }
+  return "form-field-full";
+}
+
+function resolveEnumChoices(field: FormField, values: Record<string, unknown>) {
+  const parsed = parseFieldOptions(field.options);
+  if (parsed.dependsOn && parsed.choicesByParent) {
+    const parentValue = String(values[parsed.dependsOn] ?? "").trim();
+    if (parentValue && parsed.choicesByParent[parentValue]) {
+      return parsed.choicesByParent[parentValue];
+    }
+    return [];
+  }
+  return parsed.choices;
+}
 
 export function FmsSubmitForm({
   formId,
@@ -27,8 +59,37 @@ export function FmsSubmitForm({
   const [state, formAction, pending] = useActionState(submitFmsForm, fmsInitialState);
   const [values, setValues] = useState<Record<string, unknown>>({});
 
+  const visibleFields = useMemo(
+    () => fields.filter((field) => !isTimestampField(field)),
+    [fields],
+  );
+
+  const dependentChildren = useMemo(() => {
+    const map = new Map<string, FormField[]>();
+    for (const field of visibleFields) {
+      const parsed = parseFieldOptions(field.options);
+      if (parsed.dependsOn) {
+        const list = map.get(parsed.dependsOn) ?? [];
+        list.push(field);
+        map.set(parsed.dependsOn, list);
+      }
+    }
+    return map;
+  }, [visibleFields]);
+
   function setValue(key: string, value: unknown) {
-    setValues((prev) => ({ ...prev, [key]: value }));
+    setValues((prev) => {
+      const next = { ...prev, [key]: value };
+      const children = dependentChildren.get(key) ?? [];
+      for (const child of children) {
+        const childChoices = resolveEnumChoices(child, next);
+        const current = String(next[child.fieldKey] ?? "");
+        if (current && !childChoices.includes(current)) {
+          next[child.fieldKey] = "";
+        }
+      }
+      return next;
+    });
   }
 
   function toggleEnumList(key: string, option: string) {
@@ -58,18 +119,19 @@ export function FmsSubmitForm({
         </p>
       </header>
 
-      <div className="form-grid-premium">
-        {fields.map((field) => {
-          const options = Array.isArray(field.options)
-            ? (field.options as string[])
-            : [];
+      <div className="form-grid-premium ws-fms-submit-grid">
+        {visibleFields.map((field) => {
+          const options = resolveEnumChoices(field, values);
+          const parsed = parseFieldOptions(field.options);
+          const layoutClass = fieldLayoutClass(field);
+          const parentMissing =
+            parsed.dependsOn &&
+            !String(values[parsed.dependsOn] ?? "").trim();
 
           return (
             <label
               key={field.fieldKey}
-              className={
-                field.fieldType === "TEXTAREA" ? "form-field-full" : undefined
-              }
+              className={layoutClass}
             >
               <span>
                 {field.label}
@@ -77,6 +139,11 @@ export function FmsSubmitForm({
               </span>
               {field.helpText ? (
                 <small className="ws-fms-help">{field.helpText}</small>
+              ) : null}
+              {parentMissing ? (
+                <small className="ws-fms-help">
+                  Select the parent field first.
+                </small>
               ) : null}
 
               {field.fieldType === "TEXT" ||
@@ -138,10 +205,13 @@ export function FmsSubmitForm({
               {field.fieldType === "ENUM" ? (
                 <select
                   required={field.required}
+                  disabled={Boolean(parentMissing)}
                   value={(values[field.fieldKey] as string) ?? ""}
                   onChange={(e) => setValue(field.fieldKey, e.target.value)}
                 >
-                  <option value="">Select...</option>
+                  <option value="">
+                    {parentMissing ? "Select parent first..." : "Select..."}
+                  </option>
                   {options.map((option) => (
                     <option key={option} value={option}>
                       {option}
@@ -161,6 +231,7 @@ export function FmsSubmitForm({
                         <input
                           type="checkbox"
                           checked={selected}
+                          disabled={Boolean(parentMissing)}
                           onChange={() => toggleEnumList(field.fieldKey, option)}
                         />
                         <span>{option}</span>

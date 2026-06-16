@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FmsFormBuilder } from "@/components/saas/fms-form-builder";
+import { FmsFormDeletePanel } from "@/components/saas/fms-form-delete-panel";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
 import { FmsTemplateBuilder } from "@/components/saas/fms-template-builder";
 import { requireSession } from "@/lib/require-session";
 import { canManageFms } from "@/lib/fms/access";
+import { DEFAULT_FMS_ALERT_CONFIG } from "@/lib/fms/constants";
 import { getFmsForm } from "@/lib/fms/queries";
 import { listAssignableMembers } from "@/lib/tasks";
 
@@ -73,9 +75,9 @@ export default async function FmsFormDetailPage({ params }: PageProps) {
                 <p>
                   {hasWorkflow
                     ? workflowLive
-                      ? "Live workflow ó form submissions spawn jobs through these steps."
-                      : "Draft workflow ó go live to start jobs on form submit."
-                    : "No workflow yet ó add steps with owners and TAT to turn submissions into jobs."}
+                      ? "Live workflow ù form submissions spawn jobs through these steps."
+                      : "Draft workflow ù go live to start jobs on form submit."
+                    : "No workflow yet ù add steps with owners and TAT to turn submissions into jobs."}
                 </p>
               </div>
               {hasWorkflow ? (
@@ -93,9 +95,24 @@ export default async function FmsFormDetailPage({ params }: PageProps) {
               templateId={form.template?.id}
               initialName={form.template?.name ?? `${form.name} workflow`}
               initialSteps={form.template?.steps ?? []}
+              initialHolidayDates={form.template?.holidayDates ?? []}
+              initialAlertConfig={form.template?.alertConfig ?? DEFAULT_FMS_ALERT_CONFIG}
               members={members}
               mode={hasWorkflow ? "edit" : "create"}
               templateStatus={form.template?.status}
+            />
+          </section>
+
+          <section className="ws-fms-jf-section ws-fms-danger-zone">
+            <header className="ws-fms-jf-section-head">
+              <h2>Danger zone</h2>
+              <p>Permanently remove this form, workflow, submissions, and active jobs.</p>
+            </header>
+            <FmsFormDeletePanel
+              formId={form.id}
+              formName={form.name}
+              submissionCount={form._count.submissions}
+              hasWorkflow={hasWorkflow}
             />
           </section>
         </>

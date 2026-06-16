@@ -1,13 +1,31 @@
 import type { FmsSlaType } from "@prisma/client";
-import type { FmsSlaConfig } from "@/lib/fms/constants";
+import type { FmsSlaConfig, FmsWorkingDaysConfig } from "@/lib/fms/constants";
+import { parseHolidayDates } from "@/lib/fms/constants";
 
-function addWorkingDays(from: Date, days: number) {
+/** India MSME default: Mon–Sat working, Sunday off. Optionally skip Saturday. */
+export function isWorkingDay(date: Date, config: FmsWorkingDaysConfig = {}) {
+  const dow = date.getDay();
+  if (dow === 0) {
+    return false;
+  }
+  if (config.skipSaturday && dow === 6) {
+    return false;
+  }
+  const holidays = parseHolidayDates(config.holidayDates);
+  const iso = date.toISOString().slice(0, 10);
+  return !holidays.includes(iso);
+}
+
+export function addWorkingDays(
+  from: Date,
+  days: number,
+  config: FmsWorkingDaysConfig = {},
+) {
   const result = new Date(from);
   let added = 0;
   while (added < days) {
     result.setDate(result.getDate() + 1);
-    const dow = result.getDay();
-    if (dow !== 0) {
+    if (isWorkingDay(result, config)) {
       added += 1;
     }
   }
@@ -18,6 +36,7 @@ export function computePlannedAt(
   slaType: FmsSlaType,
   slaConfig: FmsSlaConfig,
   anchor: Date,
+  workingDays: FmsWorkingDaysConfig = {},
 ): Date | null {
   if (slaType === "NONE") {
     return null;
@@ -25,7 +44,7 @@ export function computePlannedAt(
 
   if (slaType === "TAT_CALENDAR_DAYS") {
     const days = slaConfig.days ?? 1;
-    const planned = addWorkingDays(anchor, days);
+    const planned = addWorkingDays(anchor, days, workingDays);
     planned.setHours(anchor.getHours(), anchor.getMinutes(), 0, 0);
     return planned;
   }
@@ -37,7 +56,7 @@ export function computePlannedAt(
 
   if (slaType === "SPECIFIC_TIME") {
     const daysAfter = slaConfig.days ?? 0;
-    const planned = addWorkingDays(anchor, daysAfter);
+    const planned = addWorkingDays(anchor, daysAfter, workingDays);
     const hour = slaConfig.atHour ?? 18;
     const minute = slaConfig.atMinute ?? 0;
     planned.setHours(hour, minute, 0, 0);

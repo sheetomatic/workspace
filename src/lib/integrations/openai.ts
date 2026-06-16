@@ -11,6 +11,7 @@ import {
   serializeWeeklyDays,
 } from "@/lib/task-schedule";
 import { formatOpenAiError } from "@/lib/integrations/openai-errors";
+import { slugifyFieldKey } from "@/lib/fms/constants";
 
 export type TaskMemberHint = {
   id: string;
@@ -268,6 +269,8 @@ export type ParsedFmsFormFieldDraft = {
   fieldType: FmsFormFieldType;
   required: boolean;
   options?: string[];
+  dependsOn?: string;
+  choicesByParent?: Record<string, string[]>;
   placeholder?: string;
   helpText?: string;
 };
@@ -386,6 +389,9 @@ function normalizeFmsField(raw: Record<string, unknown>): ParsedFmsFormFieldDraf
     : "TEXT";
 
   let options: string[] = [];
+  let dependsOn: string | undefined;
+  let choicesByParent: Record<string, string[]> | undefined;
+
   if (Array.isArray(raw.options)) {
     options = (raw.options as unknown[])
       .map(String)
@@ -398,11 +404,33 @@ function normalizeFmsField(raw: Record<string, unknown>): ParsedFmsFormFieldDraf
       .filter(Boolean);
   }
 
+  if (typeof raw.dependsOn === "string" && raw.dependsOn.trim()) {
+    dependsOn = raw.dependsOn.trim();
+  }
+  if (raw.choicesByParent && typeof raw.choicesByParent === "object") {
+    choicesByParent = {};
+    for (const [key, value] of Object.entries(
+      raw.choicesByParent as Record<string, unknown>,
+    )) {
+      if (Array.isArray(value)) {
+        choicesByParent[key] = value.map(String).filter(Boolean);
+      }
+    }
+  }
+
   return {
     label,
     fieldType,
     required: Boolean(raw.required),
     options: fieldType === "ENUM" || fieldType === "ENUM_LIST" ? options : undefined,
+    dependsOn:
+      fieldType === "ENUM" && dependsOn && choicesByParent
+        ? dependsOn
+        : undefined,
+    choicesByParent:
+      fieldType === "ENUM" && dependsOn && choicesByParent
+        ? choicesByParent
+        : undefined,
     placeholder:
       typeof raw.placeholder === "string" && raw.placeholder.trim()
         ? raw.placeholder.trim()
@@ -414,6 +442,29 @@ function normalizeFmsField(raw: Record<string, unknown>): ParsedFmsFormFieldDraf
   };
 }
 
+function ensureTimestampField(
+  fields: ParsedFmsFormFieldDraft[],
+): ParsedFmsFormFieldDraft[] {
+  const hasTimestamp = fields.some(
+    (field) =>
+      field.fieldType === "DATETIME" &&
+      (/timestamp/i.test(field.label) ||
+        /^(submission_)?timestamp$/i.test(slugifyFieldKey(field.label))),
+  );
+  if (hasTimestamp) {
+    return fields;
+  }
+  return [
+    ...fields,
+    {
+      label: "Submission timestamp",
+      fieldType: "DATETIME",
+      required: false,
+      helpText: "Auto-filled when the form is submitted.",
+    },
+  ];
+}
+
 function normalizeFmsFormDraft(raw: Record<string, unknown>): ParsedFmsFormDraft {
   const name =
     typeof raw.name === "string" && raw.name.trim().length >= 2
@@ -423,15 +474,17 @@ function normalizeFmsFormDraft(raw: Record<string, unknown>): ParsedFmsFormDraft
     typeof raw.description === "string" ? raw.description.trim() : "";
 
   const fieldsRaw = Array.isArray(raw.fields) ? raw.fields : [];
-  const fields = fieldsRaw
-    .map((field) =>
-      normalizeFmsField(
-        typeof field === "object" && field !== null
-          ? (field as Record<string, unknown>)
-          : {},
-      ),
-    )
-    .filter((field): field is ParsedFmsFormFieldDraft => field !== null);
+  const fields = ensureTimestampField(
+    fieldsRaw
+      .map((field) =>
+        normalizeFmsField(
+          typeof field === "object" && field !== null
+            ? (field as Record<string, unknown>)
+            : {},
+        ),
+      )
+      .filter((field): field is ParsedFmsFormFieldDraft => field !== null),
+  );
 
   return { name, description, fields };
 }
@@ -451,10 +504,10 @@ export async function parseFmsFormFromDescription(
 ): Promise<FmsFormParseResult> {
   const isRefine = Boolean(existingDraft?.fields?.length);
   const fieldSchema =
-    "fields: [{label, fieldType: TEXT|TEXTAREA|EMAIL|PHONE|NUMBER|ENUM|ENUM_LIST|DATE|DATETIME|FILE, required, options?, placeholder?, helpText?}]";
+    "fields: [{label, fieldType: TEXT|TEXTAREA|EMAIL|PHONE|NUMBER|ENUM|ENUM_LIST|DATE|DATETIME|FILE, required, options?, dependsOn?, choicesByParent?, placeholder?, helpText?}]";
   const systemPrompt = isRefine
-    ? `Refine an FMS intake form JSON. Input may be any language; output English JSON only with keys name, description, ${fieldSchema}. Apply requested edits; keep other fields unless asked to change.`
-    : `Design an FMS intake form JSON from a description. Input may be any language; output English JSON only with keys name, description, ${fieldSchema}. Map dropdown to ENUM, checkboxes to ENUM_LIST, uploads to FILE. Prefer 4-12 fields.`;
+    ? `Refine an FMS intake form JSON. Input may be any language; output English JSON only with keys name, description, ${fieldSchema}. Apply requested edits; keep other fields unless asked to change. ALWAYS include a DATETIME field labeled "Submission timestamp" (or "Timestamp") — auto-filled on submit; add it if missing. For category/product patterns use ENUM parent + dependent ENUM child with dependsOn (parent field key slug) and choicesByParent map.`
+    : `Design an FMS intake form JSON from a description. Input may be any language; output English JSON only with keys name, description, ${fieldSchema}. Map dropdown to ENUM, checkboxes to ENUM_LIST, uploads to FILE. Prefer 4-12 fields. MUST include a DATETIME field labeled "Submission timestamp" (auto-filled on submit, not user-entered). Use half-width pairs for short fields like first name + last name, email + phone when appropriate. When the user describes category then product (or similar parent-child dropdowns), add a parent ENUM and child ENUM with dependsOn set to the parent field key slug and choicesByParent mapping parent values to child option arrays.`;
 
   const userContent = isRefine
     ? `Current form JSON:\n${JSON.stringify(existingDraft)}\n\nChange:\n${description}`

@@ -11,7 +11,7 @@ import {
 } from "@/app/app/fms/actions";
 import { fmsInitialState } from "@/lib/fms-action-state";
 import { FmsFieldTypePopover } from "@/components/saas/fms-form-add-modal";
-import { FMS_FIELD_TYPE_LABELS } from "@/lib/fms/constants";
+import { FMS_FIELD_TYPE_LABELS, defaultFieldWidth, isHalfWidthFieldType, parseFieldOptions, slugifyFieldKey, type FmsFieldWidth } from "@/lib/fms/constants";
 import type { ParsedFmsFormDraft } from "@/lib/integrations/openai";
 
 export type FormFieldDraft = {
@@ -22,6 +22,10 @@ export type FormFieldDraft = {
   options: string;
   placeholder: string;
   helpText: string;
+  width: FmsFieldWidth;
+  dependsOnEnabled: boolean;
+  dependsOn: string;
+  choicesByParentText: string;
 };
 
 const FIELD_TYPES: FmsFormFieldType[] = [
@@ -67,6 +71,10 @@ function newField(type: FmsFormFieldType = "TEXT"): FormFieldDraft {
     options: type === "ENUM" || type === "ENUM_LIST" ? "Option A\nOption B" : "",
     placeholder: DEFAULT_PLACEHOLDERS[type] ?? "",
     helpText: "",
+    width: defaultFieldWidth(type),
+    dependsOnEnabled: false,
+    dependsOn: "",
+    choicesByParentText: "",
   };
 }
 
@@ -80,17 +88,29 @@ function toDraft(
     helpText: string | null;
   }[],
 ): FormFieldDraft[] {
-  return fields.map((field) => ({
-    id: crypto.randomUUID(),
-    label: field.label,
-    fieldType: field.fieldType,
-    required: field.required,
-    options: Array.isArray(field.options)
-      ? (field.options as string[]).join("\n")
-      : "",
-    placeholder: field.placeholder ?? "",
-    helpText: field.helpText ?? "",
-  }));
+  return fields.map((field) => {
+    const parsed = parseFieldOptions(field.options);
+    const choicesByParentText = parsed.choicesByParent
+      ? Object.entries(parsed.choicesByParent)
+          .flatMap(([parent, children]) =>
+            children.map((child) => `${parent},${child}`),
+          )
+          .join("\n")
+      : "";
+    return {
+      id: crypto.randomUUID(),
+      label: field.label,
+      fieldType: field.fieldType,
+      required: field.required,
+      options: parsed.choices.join("\n"),
+      placeholder: field.placeholder ?? "",
+      helpText: field.helpText ?? "",
+      width: isHalfWidthFieldType(field.fieldType) ? parsed.width : "full",
+      dependsOnEnabled: Boolean(parsed.dependsOn && parsed.choicesByParent),
+      dependsOn: parsed.dependsOn ?? "",
+      choicesByParentText,
+    };
+  });
 }
 
 function draftFromAi(draft: ParsedFmsFormDraft): {
@@ -101,18 +121,31 @@ function draftFromAi(draft: ParsedFmsFormDraft): {
   return {
     name: draft.name,
     description: draft.description,
-    fields: draft.fields.map((field) => ({
-      id: crypto.randomUUID(),
-      label: field.label,
-      fieldType: field.fieldType,
-      required: field.required,
-      options:
-        field.fieldType === "ENUM" || field.fieldType === "ENUM_LIST"
-          ? (field.options ?? []).join("\n")
-          : "",
-      placeholder: field.placeholder ?? DEFAULT_PLACEHOLDERS[field.fieldType] ?? "",
-      helpText: field.helpText ?? "",
-    })),
+    fields: draft.fields.map((field) => {
+      const choicesByParentText = field.choicesByParent
+        ? Object.entries(field.choicesByParent)
+            .flatMap(([parent, children]) =>
+              children.map((child) => `${parent},${child}`),
+            )
+            .join("\n")
+        : "";
+      return {
+        id: crypto.randomUUID(),
+        label: field.label,
+        fieldType: field.fieldType,
+        required: field.required,
+        options:
+          field.fieldType === "ENUM" || field.fieldType === "ENUM_LIST"
+            ? (field.options ?? []).join("\n")
+            : "",
+        placeholder: field.placeholder ?? DEFAULT_PLACEHOLDERS[field.fieldType] ?? "",
+        helpText: field.helpText ?? "",
+        width: defaultFieldWidth(field.fieldType),
+        dependsOnEnabled: Boolean(field.dependsOn && field.choicesByParent),
+        dependsOn: field.dependsOn ?? "",
+        choicesByParentText,
+      };
+    }),
   };
 }
 
@@ -138,6 +171,46 @@ function parseOptionTags(options: string) {
     .split("\n")
     .map((option) => option.trim())
     .filter(Boolean);
+}
+
+function parseLinesFromUpload(text: string) {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function parseDependentMatrix(text: string) {
+  const choicesByParent: Record<string, string[]> = {};
+  const parentSet = new Set<string>();
+
+  for (const line of parseLinesFromUpload(text)) {
+    const parts = line.split(",").map((part) => part.trim());
+    if (parts.length < 2) {
+      continue;
+    }
+    const parent = parts[0];
+    const child = parts.slice(1).join(",").trim();
+    if (!parent || !child) {
+      continue;
+    }
+    parentSet.add(parent);
+    if (!choicesByParent[parent]) {
+      choicesByParent[parent] = [];
+    }
+    if (!choicesByParent[parent].includes(child)) {
+      choicesByParent[parent].push(child);
+    }
+  }
+
+  return {
+    parentOptions: [...parentSet],
+    choicesByParent,
+  };
+}
+
+async function readUploadText(file: File) {
+  return file.text();
 }
 
 function isEnumType(fieldType: FmsFormFieldType) {
@@ -227,12 +300,14 @@ function FieldPreviewStub({
 
 function EditorField({
   field,
+  allFields,
   expanded,
   onToggle,
   onUpdate,
   onRemove,
 }: {
   field: FormFieldDraft;
+  allFields: FormFieldDraft[];
   expanded: boolean;
   onToggle: () => void;
   onUpdate: (patch: Partial<FormFieldDraft>) => void;
@@ -241,10 +316,41 @@ function EditorField({
   const showPlaceholder =
     field.fieldType !== "FILE" && !isEnumType(field.fieldType);
   const showOptions = isEnumType(field.fieldType);
+  const canSetWidth = isHalfWidthFieldType(field.fieldType);
+  const isFullWidth = !canSetWidth || field.width === "full";
+  const fieldKey = slugifyFieldKey(field.label.trim() || "field");
+  const parentCandidates = allFields.filter(
+    (candidate) =>
+      candidate.id !== field.id &&
+      isEnumType(candidate.fieldType) &&
+      slugifyFieldKey(candidate.label.trim() || "field"),
+  );
+
+  async function handleChoicesUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    const text = await readUploadText(file);
+    onUpdate({ options: parseLinesFromUpload(text).join("\n") });
+    event.target.value = "";
+  }
+
+  async function handleDependentUpload(
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    const text = await readUploadText(file);
+    onUpdate({ choicesByParentText: text });
+    event.target.value = "";
+  }
 
   return (
     <div
-      className={`ws-fms-jf-field${expanded ? " is-expanded" : ""}`}
+      className={`ws-fms-jf-field${expanded ? " is-expanded" : ""}${isFullWidth ? " is-full-width" : " is-half-width"}`}
       onClick={onToggle}
     >
       <div
@@ -262,9 +368,13 @@ function EditorField({
         <select
           className="ws-fms-jf-field-type"
           value={field.fieldType}
-          onChange={(event) =>
-            onUpdate({ fieldType: event.target.value as FmsFormFieldType })
-          }
+          onChange={(event) => {
+            const fieldType = event.target.value as FmsFormFieldType;
+            onUpdate({
+              fieldType,
+              width: defaultFieldWidth(fieldType),
+            });
+          }}
           aria-label="Field type"
         >
           {FIELD_TYPES.map((type) => (
@@ -291,16 +401,110 @@ function EditorField({
             Required
           </label>
 
-          {showOptions ? (
+          {canSetWidth ? (
             <label className="ws-fms-jf-option-field">
-              Choices (one per line)
-              <textarea
-                rows={3}
-                value={field.options}
-                onChange={(event) => onUpdate({ options: event.target.value })}
-                placeholder={"Option A\nOption B"}
-              />
+              Field width
+              <select
+                value={field.width}
+                onChange={(event) =>
+                  onUpdate({ width: event.target.value as FmsFieldWidth })
+                }
+              >
+                <option value="half">Half (side by side)</option>
+                <option value="full">Full width</option>
+              </select>
             </label>
+          ) : null}
+
+          {showOptions ? (
+            <>
+              <label className="ws-fms-jf-option-check">
+                <input
+                  type="checkbox"
+                  checked={field.dependsOnEnabled}
+                  onChange={(event) =>
+                    onUpdate({
+                      dependsOnEnabled: event.target.checked,
+                      dependsOn: event.target.checked
+                        ? field.dependsOn ||
+                          slugifyFieldKey(
+                            parentCandidates[0]?.label.trim() || "",
+                          )
+                        : "",
+                    })
+                  }
+                />
+                Depends on another field
+              </label>
+
+              {field.dependsOnEnabled ? (
+                <>
+                  <label className="ws-fms-jf-option-field">
+                    Parent field
+                    <select
+                      value={field.dependsOn}
+                      onChange={(event) =>
+                        onUpdate({ dependsOn: event.target.value })
+                      }
+                    >
+                      <option value="">Select parent...</option>
+                      {parentCandidates.map((candidate) => {
+                        const key = slugifyFieldKey(
+                          candidate.label.trim() || "field",
+                        );
+                        return (
+                          <option key={candidate.id} value={key}>
+                            {candidate.label.trim() || key}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </label>
+                  <label className="ws-fms-jf-option-field">
+                    Parent / child pairs (one per line: Category,Product)
+                    <textarea
+                      rows={4}
+                      value={field.choicesByParentText}
+                      onChange={(event) =>
+                        onUpdate({ choicesByParentText: event.target.value })
+                      }
+                      placeholder={"Cat A,Product 1\nCat A,Product 2\nCat B,Product X"}
+                    />
+                  </label>
+                  <label className="ws-fms-jf-option-field ws-fms-jf-upload-field">
+                    Or upload CSV (parent,child columns)
+                    <input
+                      type="file"
+                      accept=".csv,.txt,text/csv,text/plain"
+                      onChange={(event) => void handleDependentUpload(event)}
+                    />
+                  </label>
+                </>
+              ) : (
+                <>
+                  <label className="ws-fms-jf-option-field">
+                    Choices (one per line)
+                    <textarea
+                      rows={3}
+                      value={field.options}
+                      onChange={(event) => onUpdate({ options: event.target.value })}
+                      placeholder={"Option A\nOption B"}
+                    />
+                  </label>
+                  <label className="ws-fms-jf-option-field ws-fms-jf-upload-field">
+                    Or upload CSV / text (one value per line)
+                    <input
+                      type="file"
+                      accept=".csv,.txt,text/csv,text/plain"
+                      onChange={(event) => void handleChoicesUpload(event)}
+                    />
+                  </label>
+                </>
+              )}
+              <p className="ws-fms-jf-field-key-hint ws-fms-muted">
+                Field key: {fieldKey}
+              </p>
+            </>
           ) : null}
 
           {showPlaceholder ? (
@@ -375,9 +579,17 @@ export function FmsFormBuilder({
         label: field.label.trim(),
         fieldType: field.fieldType,
         required: field.required,
-        options: isEnumType(field.fieldType)
+        options: isEnumType(field.fieldType) && !field.dependsOnEnabled
           ? parseOptionTags(field.options)
           : undefined,
+        dependsOn:
+          field.dependsOnEnabled && field.dependsOn.trim()
+            ? field.dependsOn.trim()
+            : undefined,
+        choicesByParent:
+          field.dependsOnEnabled && field.dependsOn.trim()
+            ? parseDependentMatrix(field.choicesByParentText).choicesByParent
+            : undefined,
         placeholder: field.placeholder.trim() || undefined,
         helpText: field.helpText.trim() || undefined,
       })),
@@ -465,22 +677,43 @@ export function FmsFormBuilder({
   }
 
   const fieldsJson = JSON.stringify(
-    validFields.map((field) => ({
-      label: field.label.trim(),
-      fieldType: field.fieldType,
-      required: field.required,
-      options: isEnumType(field.fieldType)
-        ? parseOptionTags(field.options)
-        : [],
-      placeholder: field.placeholder.trim() || undefined,
-      helpText: field.helpText.trim() || undefined,
-    })),
+    validFields.map((field) => {
+      const base = {
+        label: field.label.trim(),
+        fieldType: field.fieldType,
+        required: field.required,
+        placeholder: field.placeholder.trim() || undefined,
+        helpText: field.helpText.trim() || undefined,
+        width: isHalfWidthFieldType(field.fieldType) ? field.width : "full",
+      };
+
+      if (!isEnumType(field.fieldType)) {
+        return { ...base, options: [] };
+      }
+
+      if (field.dependsOnEnabled && field.dependsOn.trim()) {
+        const { choicesByParent } = parseDependentMatrix(
+          field.choicesByParentText,
+        );
+        return {
+          ...base,
+          dependsOn: field.dependsOn.trim(),
+          choicesByParent,
+          options: [],
+        };
+      }
+
+      return {
+        ...base,
+        options: parseOptionTags(field.options),
+      };
+    }),
   );
 
   return (
     <form
       action={formAction}
-      className="ws-fms-form-builder ws-fms-jotform"
+      className="ws-fms-form-builder ws-fms-jotform ws-fms-jf-scroll-shell"
       onSubmit={handleSubmit}
     >
       {formId ? <input type="hidden" name="formId" value={formId} /> : null}
@@ -535,7 +768,7 @@ export function FmsFormBuilder({
       ) : null}
 
       <div className="ws-fms-jf-canvas">
-        <header className="ws-fms-jf-header">
+        <header className="ws-fms-jf-header ws-fms-jf-sticky-header">
           <label className="ws-fms-jf-title-wrap">
             <span className="sr-only">Form name</span>
             <input
@@ -561,30 +794,33 @@ export function FmsFormBuilder({
 
         <div className="ws-fms-jf-divider" aria-hidden />
 
-        <div className="ws-fms-jf-fields">
-          {fields.length === 0 ? (
-            <p className="ws-fms-jf-empty">
-              Add fields below or describe your form with AI above.
-            </p>
-          ) : (
-            fields.map((field) => (
-              <EditorField
-                key={field.id}
-                field={field}
-                expanded={field.id === selectedId}
-                onToggle={() =>
-                  setSelectedId((prev) =>
-                    prev === field.id ? null : field.id,
-                  )
-                }
-                onUpdate={(patch) => updateField(field.id, patch)}
-                onRemove={() => removeField(field.id)}
-              />
-            ))
-          )}
+        <div className="ws-fms-jf-fields-scroll">
+          <div className="ws-fms-jf-fields ws-fms-jf-fields-grid">
+            {fields.length === 0 ? (
+              <p className="ws-fms-jf-empty ws-fms-jf-empty-full">
+                Add fields below or describe your form with AI above.
+              </p>
+            ) : (
+              fields.map((field) => (
+                <EditorField
+                  key={field.id}
+                  field={field}
+                  allFields={fields}
+                  expanded={field.id === selectedId}
+                  onToggle={() =>
+                    setSelectedId((prev) =>
+                      prev === field.id ? null : field.id,
+                    )
+                  }
+                  onUpdate={(patch) => updateField(field.id, patch)}
+                  onRemove={() => removeField(field.id)}
+                />
+              ))
+            )}
+          </div>
         </div>
 
-        <div className="ws-fms-jf-add-wrap">
+        <div className="ws-fms-jf-add-wrap ws-fms-jf-canvas-footer">
           <button
             type="button"
             className="ws-fms-jf-add"
@@ -613,7 +849,7 @@ export function FmsFormBuilder({
         </p>
       ) : null}
 
-      <div className="form-actions ws-fms-jf-actions">
+      <div className="form-actions ws-fms-jf-actions ws-fms-jf-sticky-actions">
         {!canSubmit && validFields.length > 0 && !name.trim() ? (
           <p className="ws-fms-jf-save-hint">Enter a form name to save.</p>
         ) : null}

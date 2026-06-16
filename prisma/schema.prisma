@@ -1174,6 +1174,8 @@ model FmsTemplate {
   form           FmsForm           @relation(fields: [formId], references: [id], onDelete: Cascade)
   name           String
   status         FmsTemplateStatus @default(DRAFT)
+  holidayDates   Json              @default("[]")
+  alertConfig    Json              @default("{}")
   createdById    String
   createdBy      User              @relation("FmsTemplateCreator", fields: [createdById], references: [id], onDelete: Cascade)
   steps          FmsTemplateStep[]
@@ -1254,6 +1256,10 @@ model FmsStepState {
   completedBy       User?             @relation("FmsStepCompleter", fields: [completedByUserId], references: [id], onDelete: SetNull)
   notes             String?
   completionValues  Json              @default("{}")
+  whatsappAssignSentAt    DateTime?
+  whatsappDueSoonSentAt   DateTime?
+  whatsappSameDaySentAt   DateTime?
+  whatsappOverdueSentAt   DateTime?
   attachments       FmsStepAttachment[]
 
   @@unique([instanceId, stepId])

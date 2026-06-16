@@ -12,6 +12,14 @@
       "path": "/api/cron/due-date-alerts",
       "schedule": "30 4 * * *"
     }
+    {
+      "path": "/api/cron/fms-step-reminders",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/fms-step-reminders",
+      "schedule": "0 10 * * *"
+    }
   ],
   "functions": {
     "src/app/api/webhooks/whatsapp/route.ts": {
@@ -21,6 +29,9 @@
       "maxDuration": 60
     },
     "src/app/api/cron/due-date-alerts/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/cron/fms-step-reminders/route.ts": {
       "maxDuration": 60
     }
   }

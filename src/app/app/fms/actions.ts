@@ -12,7 +12,13 @@ import { prisma } from "@/lib/db";
 import { canManageFms } from "@/lib/fms/access";
 import {
   slugifyFieldKey,
+  applySubmissionTimestamp,
+  parseHolidayDates,
+  parseAlertConfig,
+  serializeFieldOptions,
   type FmsCaptureField,
+  type FmsFieldWidth,
+  type FmsFieldOptionsInput,
   type FmsSlaConfig,
 } from "@/lib/fms/constants";
 import {
@@ -132,19 +138,39 @@ function parseFieldsJson(raw: string) {
     label: string;
     fieldType: FmsFormFieldType;
     required?: boolean;
-    options?: string[];
+    options?: string[] | FmsFieldOptionsInput;
     placeholder?: string;
     helpText?: string;
+    width?: FmsFieldWidth;
+    dependsOn?: string;
+    choicesByParent?: Record<string, string[]>;
   }[];
   return parsed.map((field, index) => {
     const fieldKey = slugifyFieldKey(field.label);
+    const width = field.width ?? "full";
+    let optionsInput: FmsFieldOptionsInput;
+
+    if (field.dependsOn && field.choicesByParent) {
+      optionsInput = {
+        dependsOn: field.dependsOn,
+        choicesByParent: field.choicesByParent,
+        width,
+      };
+    } else if (Array.isArray(field.options)) {
+      optionsInput = { choices: field.options, width };
+    } else if (field.options && typeof field.options === "object") {
+      optionsInput = { ...field.options, width: field.options.width ?? width };
+    } else {
+      optionsInput = { choices: [], width };
+    }
+
     return {
       sortOrder: index,
       label: field.label.trim(),
       fieldKey,
       fieldType: field.fieldType,
       required: Boolean(field.required),
-      options: field.options ?? [],
+      options: serializeFieldOptions(field.fieldType, optionsInput, width),
       placeholder: field.placeholder?.trim() || null,
       helpText: field.helpText?.trim() || null,
     };
@@ -269,6 +295,10 @@ export async function createFmsTemplate(
     const name = formData.get("name")?.toString().trim() ?? "";
     const stepsRaw = formData.get("stepsJson")?.toString() ?? "[]";
     const activate = formData.get("activate") === "1";
+    const holidayDatesRaw = formData.get("holidayDatesJson")?.toString() ?? "[]";
+    const holidayDates = parseHolidayDates(JSON.parse(holidayDatesRaw));
+    const alertConfigRaw = formData.get("alertConfigJson")?.toString() ?? "{}";
+    const alertConfig = parseAlertConfig(JSON.parse(alertConfigRaw));
 
     if (!name) {
       return { ok: false, message: "FMS name is required." };
@@ -301,6 +331,8 @@ export async function createFmsTemplate(
         formId,
         name,
         status: activate ? "ACTIVE" : "DRAFT",
+        holidayDates,
+        alertConfig,
         createdById: user.id,
         steps: {
           create: steps.map((step, index) => ({
@@ -341,6 +373,10 @@ export async function updateFmsTemplate(
     const name = formData.get("name")?.toString().trim() ?? "";
     const stepsRaw = formData.get("stepsJson")?.toString() ?? "[]";
     const activate = formData.get("activate") === "1";
+    const holidayDatesRaw = formData.get("holidayDatesJson")?.toString() ?? "[]";
+    const holidayDates = parseHolidayDates(JSON.parse(holidayDatesRaw));
+    const alertConfigRaw = formData.get("alertConfigJson")?.toString() ?? "{}";
+    const alertConfig = parseAlertConfig(JSON.parse(alertConfigRaw));
 
     const template = await prisma.fmsTemplate.findFirst({
       where: { id: templateId, organizationId: user.organizationId },
@@ -361,6 +397,8 @@ export async function updateFmsTemplate(
         data: {
           name,
           status: activate ? "ACTIVE" : template.status,
+          holidayDates,
+          alertConfig,
           steps: {
             create: steps.map((step, index) => ({
               sortOrder: index,
@@ -400,7 +438,7 @@ export async function submitFmsForm(
 
     const formId = formData.get("formId")?.toString() ?? "";
     const valuesRaw = formData.get("valuesJson")?.toString() ?? "{}";
-    const values = JSON.parse(valuesRaw) as Record<string, unknown>;
+    let values = JSON.parse(valuesRaw) as Record<string, unknown>;
 
     const form = await prisma.fmsForm.findFirst({
       where: {
@@ -417,6 +455,8 @@ export async function submitFmsForm(
     if (!form) {
       return { ok: false, message: "Form not found or not active." };
     }
+
+    values = applySubmissionTimestamp(values, form.fields);
 
     for (const field of form.fields) {
       if (!field.required) {
@@ -535,5 +575,51 @@ export async function completeFmsStepAction(
   } catch (error) {
     console.error("completeFmsStepAction", error);
     return { ok: false, message: "Could not complete step." };
+  }
+}
+
+export async function deleteFmsFormAction(
+  _prev: FmsActionState,
+  formData: FormData,
+): Promise<FmsActionState> {
+  try {
+    const user = await requireFmsAdmin();
+    const formId = formData.get("formId")?.toString() ?? "";
+    const confirmName = formData.get("confirmName")?.toString().trim() ?? "";
+
+    if (!formId) {
+      return { ok: false, message: "Form not found." };
+    }
+
+    const form = await prisma.fmsForm.findFirst({
+      where: { id: formId, organizationId: user.organizationId },
+      include: {
+        template: { select: { id: true } },
+        _count: { select: { submissions: true } },
+      },
+    });
+
+    if (!form) {
+      return { ok: false, message: "Form not found." };
+    }
+
+    if (confirmName !== form.name) {
+      return {
+        ok: false,
+        message:
+          "Type the exact form name to confirm delete. This removes the workflow, submissions, and active jobs.",
+      };
+    }
+
+    await prisma.fmsForm.delete({ where: { id: formId } });
+
+    revalidatePath("/app/fms");
+    redirect("/app/fms");
+  } catch (error) {
+    if (isNextRedirect(error)) {
+      throw error;
+    }
+    console.error("deleteFmsFormAction", error);
+    return { ok: false, message: "Could not delete form." };
   }
 }

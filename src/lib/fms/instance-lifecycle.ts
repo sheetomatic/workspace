@@ -1,9 +1,21 @@
 import type { FmsTemplate, FmsTemplateStep, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { notifyFmsStepAssigned } from "@/lib/fms/notify-step-assigned";
 import { computePlannedAt, computeDelayMinutes } from "@/lib/fms/sla";
-import type { FmsSlaConfig } from "@/lib/fms/constants";
+import {
+  parseHolidayDates,
+  type FmsSlaConfig,
+  type FmsWorkingDaysConfig,
+} from "@/lib/fms/constants";
 
 type StepWithConfig = FmsTemplateStep;
+
+function workingDaysFromTemplate(template: FmsTemplate): FmsWorkingDaysConfig {
+  return {
+    skipSaturday: false,
+    holidayDates: parseHolidayDates(template.holidayDates),
+  };
+}
 
 export function buildReferenceLabel(
   values: Record<string, unknown>,
@@ -27,6 +39,7 @@ export async function createFmsInstanceFromSubmission(params: {
   const { organizationId, template, submissionId, referenceLabel } = params;
   const sortedSteps = [...template.steps].sort((a, b) => a.sortOrder - b.sortOrder);
   const startedAt = new Date();
+  const workingDays = workingDaysFromTemplate(template);
 
   const instance = await prisma.fmsInstance.create({
     data: {
@@ -44,6 +57,7 @@ export async function createFmsInstanceFromSubmission(params: {
                   step.slaType,
                   step.slaConfig as FmsSlaConfig,
                   anchor,
+                  workingDays,
                 )
               : null;
 
@@ -60,6 +74,13 @@ export async function createFmsInstanceFromSubmission(params: {
       stepStates: { include: { step: true }, orderBy: { step: { sortOrder: "asc" } } },
     },
   });
+
+  const firstInProgress = instance.stepStates.find(
+    (s) => s.status === "IN_PROGRESS",
+  );
+  if (firstInProgress) {
+    void notifyFmsStepAssigned(firstInProgress.id);
+  }
 
   return instance;
 }
@@ -114,10 +135,12 @@ export async function completeFmsStep(params: {
   const nextStep = stepState.instance.template.steps[currentIndex + 1];
 
   if (nextStep) {
+    const workingDays = workingDaysFromTemplate(stepState.instance.template);
     const plannedAt = computePlannedAt(
       nextStep.slaType,
       nextStep.slaConfig as FmsSlaConfig,
       now,
+      workingDays,
     );
     const nextState = stepState.instance.stepStates.find(
       (s) => s.stepId === nextStep.id,
@@ -129,8 +152,13 @@ export async function completeFmsStep(params: {
           status: "IN_PROGRESS",
           plannedAt,
           ownerUserId: nextState.ownerUserId ?? nextStep.defaultOwnerUserId,
+          whatsappAssignSentAt: null,
+          whatsappDueSoonSentAt: null,
+          whatsappSameDaySentAt: null,
+          whatsappOverdueSentAt: null,
         },
       });
+      void notifyFmsStepAssigned(nextState.id);
     }
   } else {
     await prisma.fmsInstance.update({

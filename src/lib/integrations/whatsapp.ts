@@ -270,6 +270,50 @@ async function deliverTaskMessage(params: DeliverTaskMessageParams) {
   return textResult;
 }
 
+export async function sendFmsStepReminderWhatsApp(params: {
+  toPhone: string;
+  organizationId: string;
+  body: string;
+  stepStateId: string;
+}): Promise<WhatsAppSendResult> {
+  let redlavaCreds: RedlavaCredentials | null = null;
+  let metaToken: string | null = null;
+  let metaPhoneId: string | null = null;
+
+  const workspace = await resolveWorkspaceWhatsAppCredentials(params.organizationId);
+  const providerKind = resolveWhatsAppProviderKind(workspace);
+  const sheetomatic = sheetomaticCredentialsFromWorkspace(workspace);
+  redlavaCreds = sheetomatic.redlava;
+  metaToken = sheetomatic.metaToken;
+  metaPhoneId = sheetomatic.metaPhoneId;
+
+  const sendParams = {
+    toPhone: params.toPhone,
+    organizationId: params.organizationId,
+    redlavaCreds,
+    metaToken,
+    metaPhoneId,
+  };
+
+  const hasSession =
+    providerKind === "messageautosender" ||
+    (await hasActiveWhatsAppSession(params.organizationId, params.toPhone));
+
+  if (!hasSession && providerKind === "sheetomatic") {
+    return {
+      sent: false,
+      reason: "session_required",
+      detail:
+        "FMS step reminder needs an active WhatsApp chat session with this user.",
+    };
+  }
+
+  return sendWhatsAppPayload({
+    ...sendParams,
+    message: { type: "text", text: { body: params.body.slice(0, 4096) } },
+  });
+}
+
 export async function sendTaskAssignmentWhatsApp(params: {
   toPhone: string;
   taskId: string;

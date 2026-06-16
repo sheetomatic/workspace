@@ -1,9 +1,12 @@
 import type { FmsStepStatus } from "@prisma/client";
+import { Clock } from "lucide-react";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
 import {
+  computeStepUrgency,
   formatDelayLabel,
   isStepOverdue,
   liveDelayMinutes,
+  urgencyClassName,
 } from "@/lib/fms/step-display";
 
 type TimelineStep = {
@@ -61,7 +64,15 @@ export function FmsInstanceTimeline({ steps }: { steps: TimelineStep[] }) {
           step.delayMinutes,
         );
         const doneLate = step.status === "DONE" && Boolean(delay && delay > 0);
-        const stepClass = statusClass(step.status, overdue, doneLate);
+        const urgency = computeStepUrgency(step.status, step.plannedAt);
+        const urgencyClass = urgencyClassName(urgency);
+        const stepClass = [statusClass(step.status, overdue, doneLate), urgencyClass]
+          .filter(Boolean)
+          .join(" ");
+        const showClock =
+          step.status === "IN_PROGRESS" &&
+          step.plannedAt &&
+          (urgency === "same-day" || urgency === "overdue");
 
         return (
           <article
@@ -69,7 +80,14 @@ export function FmsInstanceTimeline({ steps }: { steps: TimelineStep[] }) {
             className={`ws-fms-timeline-step ${stepClass}`}
           >
             <div className="ws-fms-timeline-marker" aria-hidden>
-              {index + 1}
+              {showClock ? (
+                <Clock
+                  size={16}
+                  className={`ws-fms-urgency-clock${urgency === "overdue" ? " is-pulsing" : ""}`}
+                />
+              ) : (
+                index + 1
+              )}
             </div>
             <div className="ws-fms-timeline-body">
               <header>

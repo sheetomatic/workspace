@@ -1,13 +1,16 @@
 import Link from "next/link";
+import { Clock } from "lucide-react";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
 import { canManageFms } from "@/lib/fms/access";
 import { listFmsForms, listFmsInstances, listMyFmsSteps } from "@/lib/fms/queries";
 import {
+  computeStepUrgency,
   formatDelayLabel,
   isStepOverdue,
   liveDelayMinutes,
+  urgencyClassName,
 } from "@/lib/fms/step-display";
 
 export default async function FmsPage() {
@@ -114,12 +117,24 @@ export default async function FmsPage() {
                         stepState.actualAt,
                         stepState.delayMinutes,
                       );
+                      const urgency = computeStepUrgency(
+                        stepState.status,
+                        stepState.plannedAt,
+                      );
+                      const urgencyClass = urgencyClassName(urgency);
+                      const rowClass = [
+                        overdue || urgency !== "normal" ? urgencyClass : "",
+                        overdue ? "ws-fms-row-overdue" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ");
+                      const showClock =
+                        stepState.status === "IN_PROGRESS" &&
+                        stepState.plannedAt &&
+                        urgency !== "normal";
 
                       return (
-                        <tr
-                          key={stepState.id}
-                          className={overdue ? "ws-fms-row-overdue" : undefined}
-                        >
+                        <tr key={stepState.id} className={rowClass || undefined}>
                           <td>
                             <Link
                               href={`/app/fms/instances/${stepState.instanceId}`}
@@ -129,7 +144,18 @@ export default async function FmsPage() {
                                 stepState.instance.template.name}
                             </Link>
                           </td>
-                          <td>{stepState.step.stepName}</td>
+                          <td>
+                            <span className="ws-fms-step-cell">
+                              {showClock ? (
+                                <Clock
+                                  size={14}
+                                  className={`ws-fms-urgency-clock${urgency === "overdue" ? " is-pulsing" : ""}`}
+                                  aria-hidden
+                                />
+                              ) : null}
+                              {stepState.step.stepName}
+                            </span>
+                          </td>
                           <td className="ws-fms-table-meta">
                             {stepState.plannedAt
                               ? new Intl.DateTimeFormat("en-IN", {

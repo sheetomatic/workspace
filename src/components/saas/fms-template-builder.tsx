@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 import type { FmsSlaType } from "@prisma/client";
 import {
   createFmsTemplate,
@@ -11,6 +11,10 @@ import { fmsInitialState } from "@/lib/fms-action-state";
 import {
   FMS_SLA_TYPES,
   FMS_SLA_TYPE_LABELS,
+  parseHolidayDates,
+  parseAlertConfig,
+  DEFAULT_FMS_ALERT_CONFIG,
+  type FmsAlertConfig,
   type FmsCaptureField,
   type FmsSlaConfig,
 } from "@/lib/fms/constants";
@@ -34,6 +38,8 @@ export type FmsStepDraft = {
   allowNotes: boolean;
   captureFields: FmsCaptureField[];
 };
+
+const EXAMPLE_STEPS = ["Filing", "Examination", "Registration"];
 
 function newStep(): FmsStepDraft {
   return {
@@ -113,6 +119,16 @@ function ownerLabel(step: FmsStepDraft, members: Member[]) {
   return member?.name ?? member?.email.split("@")[0] ?? "Assigned";
 }
 
+function formatHolidayLabel(isoDate: string) {
+  const date = new Date(`${isoDate}T12:00:00`);
+  return new Intl.DateTimeFormat("en-IN", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
 function StepEditor({
   step,
   index,
@@ -177,8 +193,8 @@ function StepEditor({
 
       <div className="ws-fms-jf-step-preview">
         <span className="ws-fms-jf-preview-muted">
-          {ownerLabel(step, members)} ˇ {tatLabel}
-          {toggles.length > 0 ? ` ˇ ${toggles.join(", ")}` : ""}
+          {ownerLabel(step, members)} ù {tatLabel}
+          {toggles.length > 0 ? ` ù ${toggles.join(", ")}` : ""}
         </span>
       </div>
 
@@ -215,7 +231,7 @@ function StepEditor({
           {(step.slaType === "TAT_CALENDAR_DAYS" ||
             step.slaType === "SPECIFIC_TIME") && (
             <label className="ws-fms-jf-option-field">
-              Working days
+              Working days (MonùSat, excludes Sun + holidays)
               <input
                 type="number"
                 min={0}
@@ -329,6 +345,8 @@ export function FmsTemplateBuilder({
   templateId,
   initialName = "",
   initialSteps = [],
+  initialHolidayDates = [],
+  initialAlertConfig,
   members,
   mode = "create",
   templateStatus,
@@ -337,6 +355,8 @@ export function FmsTemplateBuilder({
   templateId?: string;
   initialName?: string;
   initialSteps?: Parameters<typeof stepToDraft>[0][];
+  initialHolidayDates?: unknown;
+  initialAlertConfig?: unknown;
   members: Member[];
   mode?: "create" | "edit";
   templateStatus?: "DRAFT" | "ACTIVE" | "ARCHIVED";
@@ -350,11 +370,48 @@ export function FmsTemplateBuilder({
   const [selectedId, setSelectedId] = useState<string | null>(
     () => steps[0]?.id ?? null,
   );
+  const [holidayDates, setHolidayDates] = useState<string[]>(() =>
+    parseHolidayDates(initialHolidayDates),
+  );
+  const [holidayInput, setHolidayInput] = useState("");
+  const [alertConfig, setAlertConfig] = useState<FmsAlertConfig>(() =>
+    parseAlertConfig(initialAlertConfig),
+  );
+
+  function updateAlertConfig(patch: Partial<FmsAlertConfig>) {
+    setAlertConfig((prev) => ({ ...prev, ...patch }));
+  }
 
   function updateStep(id: string, patch: Partial<FmsStepDraft>) {
     setSteps((prev) =>
       prev.map((step) => (step.id === id ? { ...step, ...patch } : step)),
     );
+  }
+
+  function addHoliday() {
+    const value = holidayInput.trim();
+    if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return;
+    }
+    setHolidayDates((prev) =>
+      prev.includes(value) ? prev : [...prev, value].sort(),
+    );
+    setHolidayInput("");
+  }
+
+  function removeHoliday(date: string) {
+    setHolidayDates((prev) => prev.filter((item) => item !== date));
+  }
+
+  function loadExampleSteps() {
+    setSteps(
+      EXAMPLE_STEPS.map((stepName) => ({
+        ...newStep(),
+        stepName,
+        slaDays: "3",
+      })),
+    );
+    setSelectedId(null);
   }
 
   const validSteps = steps.filter((s) => s.stepName.trim());
@@ -374,19 +431,58 @@ export function FmsTemplateBuilder({
     })),
   );
 
+  const holidayDatesJson = JSON.stringify(holidayDates);
+  const alertConfigJson = JSON.stringify(alertConfig);
+
   return (
     <form
       action={formAction}
-      className="ws-fms-template-builder ws-fms-jotform ws-fms-jf-workflow"
+      className="ws-fms-template-builder ws-fms-jotform ws-fms-jf-workflow ws-fms-jf-scroll-shell"
     >
       <input type="hidden" name="formId" value={formId} />
       {templateId ? (
         <input type="hidden" name="templateId" value={templateId} />
       ) : null}
       <input type="hidden" name="stepsJson" value={stepsJson} readOnly />
+      <input
+        type="hidden"
+        name="holidayDatesJson"
+        value={holidayDatesJson}
+        readOnly
+      />
+      <input
+        type="hidden"
+        name="alertConfigJson"
+        value={alertConfigJson}
+        readOnly
+      />
+
+      <aside className="ws-fms-jf-workflow-guide">
+        <h3>How to add steps</h3>
+        <ol>
+          <li>Click <strong>Add step</strong> below</li>
+          <li>Name the step (e.g. Filing, Review)</li>
+          <li>Assign an owner from your team</li>
+          <li>Set TAT in working days (MonùSat, excludes Sun + holidays)</li>
+          <li>Save &amp; go live when ready</li>
+        </ol>
+        {mode === "create" && validSteps.length <= 1 && !validSteps[0]?.stepName ? (
+          <div className="ws-fms-jf-workflow-example">
+            <p className="ws-fms-muted">Example (Trademark):</p>
+            <p>{EXAMPLE_STEPS.join(" ? ")}</p>
+            <button
+              type="button"
+              className="btn-secondary btn-sm"
+              onClick={loadExampleSteps}
+            >
+              Use example steps
+            </button>
+          </div>
+        ) : null}
+      </aside>
 
       <div className="ws-fms-jf-canvas ws-fms-jf-workflow-canvas">
-        <header className="ws-fms-jf-header">
+        <header className="ws-fms-jf-header ws-fms-jf-sticky-header">
           <label className="ws-fms-jf-title-wrap">
             <span className="sr-only">Workflow name</span>
             <input
@@ -400,7 +496,7 @@ export function FmsTemplateBuilder({
           </label>
           {mode === "edit" && templateStatus ? (
             <p className="ws-fms-jf-workflow-meta">
-              {validSteps.length} step{validSteps.length === 1 ? "" : "s"} ˇ{" "}
+              {validSteps.length} step{validSteps.length === 1 ? "" : "s"} ù{" "}
               {templateStatus === "ACTIVE" ? "Live" : "Draft"}
             </p>
           ) : (
@@ -413,47 +509,175 @@ export function FmsTemplateBuilder({
 
         <div className="ws-fms-jf-divider" aria-hidden />
 
-        <div className="ws-fms-jf-fields">
-          {steps.length === 0 ? (
-            <p className="ws-fms-jf-empty">Add your first workflow step below.</p>
-          ) : (
-            steps.map((step, index) => (
-              <StepEditor
-                key={step.id}
-                step={step}
-                index={index}
-                members={members}
-                expanded={step.id === selectedId}
-                onToggle={() =>
-                  setSelectedId((prev) =>
-                    prev === step.id ? null : step.id,
-                  )
-                }
-                onUpdate={(patch) => updateStep(step.id, patch)}
-                onRemove={() => {
-                  setSteps((prev) => {
-                    const next =
-                      prev.length <= 1
-                        ? prev
-                        : prev.filter((s) => s.id !== step.id);
-                    if (selectedId === step.id) {
-                      setSelectedId(next[0]?.id ?? null);
-                    }
-                    return next;
-                  });
-                }}
-                canRemove={steps.length > 1}
+        <div className="ws-fms-jf-fields-scroll">
+          <div className="ws-fms-jf-fields">
+            {steps.length === 0 ? (
+              <p className="ws-fms-jf-empty">Add your first workflow step below.</p>
+            ) : (
+              steps.map((step, index) => (
+                <StepEditor
+                  key={step.id}
+                  step={step}
+                  index={index}
+                  members={members}
+                  expanded={step.id === selectedId}
+                  onToggle={() =>
+                    setSelectedId((prev) =>
+                      prev === step.id ? null : step.id,
+                    )
+                  }
+                  onUpdate={(patch) => updateStep(step.id, patch)}
+                  onRemove={() => {
+                    setSteps((prev) => {
+                      const next =
+                        prev.length <= 1
+                          ? prev
+                          : prev.filter((s) => s.id !== step.id);
+                      if (selectedId === step.id) {
+                        setSelectedId(next[0]?.id ?? null);
+                      }
+                      return next;
+                    });
+                  }}
+                  canRemove={steps.length > 1}
+                />
+              ))
+            )}
+          </div>
+
+          <section className="ws-fms-jf-holidays">
+            <h3>Holidays</h3>
+            <p className="ws-fms-muted">
+              TAT skips Sundays and these dates. Add public holidays or office
+              closures for your team.
+            </p>
+            <div className="ws-fms-jf-holiday-add">
+              <input
+                type="date"
+                value={holidayInput}
+                onChange={(event) => setHolidayInput(event.target.value)}
+                aria-label="Holiday date"
               />
-            ))
-          )}
+              <button
+                type="button"
+                className="btn-secondary btn-sm"
+                onClick={addHoliday}
+                disabled={!holidayInput}
+              >
+                Add holiday
+              </button>
+            </div>
+            {holidayDates.length > 0 ? (
+              <ul className="ws-fms-jf-holiday-list">
+                {holidayDates.map((date) => (
+                  <li key={date}>
+                    <span>{formatHolidayLabel(date)}</span>
+                    <button
+                      type="button"
+                      className="ws-fms-jf-holiday-remove"
+                      onClick={() => removeHoliday(date)}
+                      aria-label={`Remove ${date}`}
+                    >
+                      <X size={14} aria-hidden />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="ws-fms-jf-holiday-empty ws-fms-muted">
+                No holidays added yet.
+              </p>
+            )}
+          </section>
+
+          <section className="ws-fms-jf-alerts">
+            <h3>WhatsApp alerts</h3>
+            <p className="ws-fms-muted">
+              Notify step owners on WhatsApp when steps are assigned or due.
+              Uses your workspace WhatsApp settings.
+            </p>
+            <div className="ws-fms-jf-step-checks">
+              <label className="ws-fms-jf-option-check">
+                <input
+                  type="checkbox"
+                  checked={alertConfig.whatsappEnabled}
+                  onChange={(event) =>
+                    updateAlertConfig({ whatsappEnabled: event.target.checked })
+                  }
+                />
+                Enable WhatsApp alerts
+              </label>
+              <label className="ws-fms-jf-option-check">
+                <input
+                  type="checkbox"
+                  checked={alertConfig.onAssign}
+                  disabled={!alertConfig.whatsappEnabled}
+                  onChange={(event) =>
+                    updateAlertConfig({ onAssign: event.target.checked })
+                  }
+                />
+                When step is assigned
+              </label>
+              <label className="ws-fms-jf-option-check">
+                <input
+                  type="checkbox"
+                  checked={alertConfig.onDueComing}
+                  disabled={!alertConfig.whatsappEnabled}
+                  onChange={(event) =>
+                    updateAlertConfig({ onDueComing: event.target.checked })
+                  }
+                />
+                Due date coming
+              </label>
+              <label className="ws-fms-jf-option-field ws-fms-jf-alert-days">
+                Days before due date
+                <input
+                  type="number"
+                  min={0}
+                  max={30}
+                  disabled={
+                    !alertConfig.whatsappEnabled || !alertConfig.onDueComing
+                  }
+                  value={alertConfig.dueComingDaysBefore}
+                  onChange={(event) =>
+                    updateAlertConfig({
+                      dueComingDaysBefore: Number(event.target.value) || 0,
+                    })
+                  }
+                />
+              </label>
+              <label className="ws-fms-jf-option-check">
+                <input
+                  type="checkbox"
+                  checked={alertConfig.onSameDay}
+                  disabled={!alertConfig.whatsappEnabled}
+                  onChange={(event) =>
+                    updateAlertConfig({ onSameDay: event.target.checked })
+                  }
+                />
+                Same day reminder
+              </label>
+              <label className="ws-fms-jf-option-check">
+                <input
+                  type="checkbox"
+                  checked={alertConfig.onOverdue}
+                  disabled={!alertConfig.whatsappEnabled}
+                  onChange={(event) =>
+                    updateAlertConfig({ onOverdue: event.target.checked })
+                  }
+                />
+                Overdue alert
+              </label>
+            </div>
+          </section>
         </div>
 
-        <div className="ws-fms-jf-add-wrap">
+        <div className="ws-fms-jf-add-wrap ws-fms-jf-canvas-footer">
           <button
             type="button"
             className="ws-fms-jf-add"
             onClick={() => {
-              const step = newStep(steps.length);
+              const step = newStep();
               setSteps((prev) => [...prev, step]);
               setSelectedId(step.id);
             }}
@@ -475,7 +699,7 @@ export function FmsTemplateBuilder({
         </p>
       ) : null}
 
-      <div className="form-actions ws-fms-jf-actions">
+      <div className="form-actions ws-fms-jf-actions ws-fms-jf-sticky-actions">
         {!canSubmit && validSteps.length > 0 && !name.trim() ? (
           <p className="ws-fms-jf-save-hint">Enter a workflow name to save.</p>
         ) : null}
@@ -484,11 +708,7 @@ export function FmsTemplateBuilder({
           className="btn-cta btn-primary"
           disabled={pending || !canSubmit}
         >
-          {pending
-            ? "Saving..."
-            : mode === "create"
-              ? "Save workflow"
-              : "Save workflow"}
+          {pending ? "Saving..." : "Save workflow"}
         </button>
         <button
           type="submit"
@@ -497,7 +717,7 @@ export function FmsTemplateBuilder({
           className="btn-secondary"
           disabled={pending || !canSubmit}
         >
-          {mode === "create" ? "Save & go live" : "Save & go live"}
+          Save & go live
         </button>
       </div>
     </form>

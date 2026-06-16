@@ -21,6 +21,7 @@ export async function getFmsForm(formId: string, organizationId: string) {
       template: {
         include: { steps: { orderBy: { sortOrder: "asc" } } },
       },
+      _count: { select: { submissions: true } },
     },
   });
 }

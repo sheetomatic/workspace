@@ -42,6 +42,49 @@ export function isStepOverdue(
   return status === "IN_PROGRESS" || status === "DONE";
 }
 
+export type StepUrgencyTier = "normal" | "same-day" | "overdue";
+
+export function computeStepUrgency(
+  status: string,
+  plannedAt: Date | null,
+  now = new Date(),
+): StepUrgencyTier {
+  if (status !== "IN_PROGRESS" || !plannedAt) {
+    return "normal";
+  }
+
+  const msUntilDue = plannedAt.getTime() - now.getTime();
+  if (msUntilDue < 0) {
+    return "overdue";
+  }
+
+  const dayStart = new Date(now);
+  dayStart.setHours(0, 0, 0, 0);
+  const plannedDayStart = new Date(plannedAt);
+  plannedDayStart.setHours(0, 0, 0, 0);
+
+  if (plannedDayStart.getTime() === dayStart.getTime()) {
+    return "same-day";
+  }
+
+  const hoursUntilDue = msUntilDue / (1000 * 60 * 60);
+  if (hoursUntilDue <= 24) {
+    return "same-day";
+  }
+
+  return "normal";
+}
+
+export function urgencyClassName(tier: StepUrgencyTier) {
+  if (tier === "overdue") {
+    return "ws-fms-urgency-overdue";
+  }
+  if (tier === "same-day") {
+    return "ws-fms-urgency-same-day";
+  }
+  return "";
+}
+
 export function slaSummary(
   slaType: string,
   slaConfig: { days?: number; hours?: number; atHour?: number; atMinute?: number; minusDays?: number },
@@ -51,7 +94,7 @@ export function slaSummary(
   }
   if (slaType === "TAT_CALENDAR_DAYS") {
     const days = slaConfig.days ?? 1;
-    return `${days} working day${days === 1 ? "" : "s"}`;
+    return `${days} working day${days === 1 ? "" : "s"} (MonSat)`;
   }
   if (slaType === "TAT_WORKING_HOURS") {
     const hours = slaConfig.hours ?? 24;
