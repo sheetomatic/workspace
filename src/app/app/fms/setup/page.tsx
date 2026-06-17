@@ -185,7 +185,7 @@ export default async function FmsSetupPage() {
                     form.status === "ACTIVE" ? (
                       <Link
                         href={`/app/fms/forms/${form.id}/submit`}
-                        className="btn-secondary btn-sm"
+                        className="btn-secondary btn-sm ws-fms-setup-submit"
                       >
                         Submit
                       </Link>

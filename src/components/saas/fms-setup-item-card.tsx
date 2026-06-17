@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 
 export function FmsSetupItemCard({
@@ -16,21 +17,38 @@ export function FmsSetupItemCard({
   trailing?: ReactNode;
   secondaryAction?: ReactNode;
 }) {
+  const showChevron = !trailing && !secondaryAction;
+
   return (
     <li className="ws-fms-setup-item">
-      <Link href={href} className="ws-fms-setup-item-card">
-        <div className="ws-fms-setup-item-body">
-          <strong className="ws-fms-setup-item-title">{title}</strong>
-          {subtitle ? <div className="ws-fms-setup-item-sub">{subtitle}</div> : null}
-        </div>
-        <div className="ws-fms-setup-item-end">
+      <div className="ws-fms-setup-item-card">
+        <Link href={href} className="ws-fms-setup-item-main">
+          <div className="ws-fms-setup-item-body">
+            <strong className="ws-fms-setup-item-title">{title}</strong>
+            {subtitle ? (
+              <div className="ws-fms-setup-item-sub">{subtitle}</div>
+            ) : null}
+          </div>
+          {trailing ? (
+            <div className="ws-fms-setup-item-trailing">{trailing}</div>
+          ) : null}
+        </Link>
+        <div className="ws-fms-setup-item-rail">
           {badges}
-          {trailing ?? <span className="ws-fms-setup-item-open">Open</span>}
+          {secondaryAction ? (
+            <div className="ws-fms-setup-item-action">{secondaryAction}</div>
+          ) : null}
+          {showChevron ? (
+            <Link
+              href={href}
+              className="ws-fms-setup-item-chevron"
+              aria-label={`Open ${title}`}
+            >
+              <ChevronRight size={18} aria-hidden />
+            </Link>
+          ) : null}
         </div>
-      </Link>
-      {secondaryAction ? (
-        <div className="ws-fms-setup-item-secondary">{secondaryAction}</div>
-      ) : null}
+      </div>
     </li>
   );
 }

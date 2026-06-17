@@ -40,8 +40,9 @@ export function FmsRecentActivity({ events }: { events: AuditRow[] }) {
                 <strong>{FMS_AUDIT_LABELS[event.action] ?? event.action}</strong>
                 <p>{event.summary}</p>
               </div>
-              <span className="ws-fms-muted">
-                {actor} | {formatWhen(event.createdAt)}
+              <span className="ws-fms-audit-row-meta ws-fms-muted">
+                <span className="ws-fms-audit-row-actor">{actor}</span>
+                <span className="ws-fms-audit-row-when">{formatWhen(event.createdAt)}</span>
               </span>
             </li>
           );

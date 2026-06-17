@@ -50,18 +50,26 @@ export default async function FmsOpsPage({ searchParams }: PageProps) {
         <div className="ws-sf-metric-tile">
           <span>Active lines</span>
           <strong>{ops.activeCount}</strong>
+          <span className="ws-stat-card-hint">Running now</span>
         </div>
         <div className="ws-sf-metric-tile">
           <span>Overdue stops</span>
           <strong>{ops.overdueTotal}</strong>
+          <span className="ws-stat-card-hint">
+            {ops.overdueTotal > 0 ? "Needs attention" : "All on track"}
+          </span>
         </div>
         <div className="ws-sf-metric-tile">
           <span>Unassigned stops</span>
           <strong>{ops.unassignedTotal}</strong>
+          <span className="ws-stat-card-hint">
+            {ops.unassignedTotal > 0 ? "Needs owner" : "Fully assigned"}
+          </span>
         </div>
       </div>
 
       <div className="ws-fms-ops-stack">
+        <div className="ws-fms-ops-grid">
         <section className="ws-sf-list-view" aria-label="Overdue stops">
           <header className="ws-sf-list-view-header">
             <div className="ws-sf-list-view-title">
@@ -72,7 +80,7 @@ export default async function FmsOpsPage({ searchParams }: PageProps) {
             </div>
           </header>
           {ops.overdue.length === 0 ? (
-            <div className="ws-empty-state ws-fms-empty-state">
+            <div className="ws-empty-state ws-fms-empty-state is-positive">
               <p>All active stops are on track.</p>
             </div>
           ) : (
@@ -150,7 +158,7 @@ export default async function FmsOpsPage({ searchParams }: PageProps) {
             </div>
           </header>
           {ops.unassigned.length === 0 ? (
-            <div className="ws-empty-state ws-fms-empty-state">
+            <div className="ws-empty-state ws-fms-empty-state is-positive">
               <p>Every active stop has an owner.</p>
             </div>
           ) : (
@@ -220,6 +228,7 @@ export default async function FmsOpsPage({ searchParams }: PageProps) {
             </>
           )}
         </section>
+        </div>
 
         <FmsRecentActivity events={recentActivity} />
       </div>
