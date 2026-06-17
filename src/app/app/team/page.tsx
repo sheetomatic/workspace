@@ -16,7 +16,6 @@ import { getOrCreateHrSettings } from "@/lib/hr/hr-store";
 import {
   canManageTeam,
   canViewTeamPage,
-  filterMembersForViewer,
 } from "@/lib/team-hierarchy";
 import { getLegalDashboardStats } from "@/lib/legal-cases/queries";
 import { getViewerMembership, listWorkspaceMembers } from "@/lib/workspace";
@@ -110,10 +109,13 @@ export default async function TeamPage() {
     listWorkspaceMembers(user.organizationId),
     canManage ? getOrCreateHrSettings(user.organizationId) : Promise.resolve(null),
   ]);
-  const members = filterMembersForViewer(allMembers, {
-    canManage,
-    viewerDepartment: viewerMembership?.department ?? null,
-  });
+  const visibleMembers = canManage
+    ? allMembers
+    : viewerMembership?.department
+      ? allMembers.filter(
+          (member) => member.department === viewerMembership.department,
+        )
+      : [];
   const showSuperAdminPanel =
     canManage && canManageSuperAdmins(user, user.organizationSlug);
   const superAdmins = showSuperAdminPanel ? await listSuperAdmins() : [];
@@ -159,7 +161,7 @@ export default async function TeamPage() {
         <TeamManagementPanel
           canManage={canManage}
           currentUserId={user.id}
-          members={canManage ? allMembers : members}
+          members={visibleMembers}
         />
       </div>
     </div>
