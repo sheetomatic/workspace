@@ -74,13 +74,13 @@ export default async function TasksMyWorkPage() {
         <TaskFeedbackToast />
       </Suspense>
 
-      <div className="ws-sf-metrics ws-fms-metrics">
-        <div className="ws-sf-metric-tile">
+      <div className="ws-sf-metrics ws-my-work-metrics">
+        <div className="ws-stat-card ws-sf-metric-tile">
           <span>Your tasks</span>
           <strong>{tasks.length}</strong>
           <span className="ws-stat-card-hint">Active queue</span>
         </div>
-        <div className="ws-sf-metric-tile">
+        <div className="ws-stat-card ws-sf-metric-tile">
           <span>Your MIS score</span>
           <strong>{avgScore}</strong>
           <span className="ws-stat-card-hint">Queue average</span>

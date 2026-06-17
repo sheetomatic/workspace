@@ -11036,7 +11036,16 @@ body:has(.workspace-app.saas-app) {
   margin-bottom: 16px;
 }
 
+.workspace-app .ws-tasks-sf .ws-sf-metrics.ws-my-work-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  max-width: 420px;
+}
+
 .workspace-app .ws-tasks-sf .ws-sf-metric-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
   padding: 12px 14px;
   border: 1px solid var(--sf-card-border);
   border-radius: 4px;
@@ -11052,6 +11061,8 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .ws-tasks-sf .ws-sf-metric-tile span:first-of-type {
+  display: block;
+  width: 100%;
   margin-bottom: 4px;
   font-size: 0.6875rem;
   font-weight: 700;
@@ -11061,12 +11072,18 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .ws-tasks-sf .ws-sf-metric-tile strong {
+  display: block;
+  width: 100%;
+  margin-top: 0;
   font-size: 1.5rem;
   font-weight: 700;
+  line-height: 1.1;
   color: var(--sf-text);
 }
 
 .workspace-app .ws-tasks-sf .ws-sf-metric-tile .ws-stat-card-hint {
+  display: block;
+  width: 100%;
   margin-top: 4px;
   font-size: 0.625rem;
   text-transform: none;
