@@ -42,9 +42,14 @@ function resolveDatabaseUrl() {
   if (base.includes("connection_limit=")) {
     return base;
   }
-  const limit = process.env.DATABASE_CONNECTION_LIMIT ?? "1";
+
+  const isDev = process.env.NODE_ENV === "development";
+  const limit =
+    process.env.DATABASE_CONNECTION_LIMIT ?? (isDev ? "10" : "1");
+  const poolTimeout =
+    process.env.DATABASE_POOL_TIMEOUT ?? (isDev ? "30" : "15");
   const separator = base.includes("?") ? "&" : "?";
-  return `${base}${separator}connection_limit=${limit}&pool_timeout=15`;
+  return `${base}${separator}connection_limit=${limit}&pool_timeout=${poolTimeout}`;
 }
 
 function isStalePrismaClient(client: PrismaClient) {
@@ -97,12 +102,26 @@ function isConnectionError(error: unknown) {
     return false;
   }
 
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof (error as { code?: string }).code === "string"
+  ) {
+    const code = (error as { code: string }).code;
+    if (code === "P2024" || code === "P1001" || code === "P1017") {
+      return true;
+    }
+  }
+
   const message = error.message.toLowerCase();
   return (
     message.includes("closed") ||
     message.includes("connection") ||
+    message.includes("pool timeout") ||
     message.includes("p1001") ||
     message.includes("p1017") ||
+    message.includes("p2024") ||
     message.includes("econnreset") ||
     message.includes("socket")
   );

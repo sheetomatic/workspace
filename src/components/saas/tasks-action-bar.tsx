@@ -1,36 +1,20 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Plus, X } from "lucide-react";
-import { TaskCreateForm } from "@/components/saas/task-create-form";
+import { Suspense, useEffect } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Plus } from "lucide-react";
 import { TaskFilters } from "@/components/saas/task-filters";
 
 export function NewTaskTrigger({ className }: { className?: string }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  if (searchParams.get("new") === "1") {
-    return null;
-  }
-
-  function openCreate() {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("new", "1");
-    const query = params.toString();
-    router.push(query ? `${pathname}?${query}` : pathname);
-  }
-
   return (
-    <button
+    <Link
       className={className ?? "btn-cta btn-primary ws-new-task-trigger"}
-      type="button"
-      onClick={openCreate}
+      href="/app/tasks/create"
     >
       <Plus aria-hidden size={18} strokeWidth={2.25} />
       New task
-    </button>
+    </Link>
   );
 }
 
@@ -44,13 +28,13 @@ type Member = {
 import type { WorkspaceIntegrationStatus } from "@/lib/workspace-integration-status";
 
 export function TasksActionBar({
-  members,
+  members: _members,
   filterMembers,
   current,
   showCreate,
   showAssigneeFilter = true,
   filtersInOverview = false,
-  integrationStatus,
+  integrationStatus: _integrationStatus,
 }: {
   members: Member[];
   filterMembers: Array<{ id: string; name: string }>;
@@ -66,36 +50,17 @@ export function TasksActionBar({
   integrationStatus?: WorkspaceIntegrationStatus;
 }) {
   const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (searchParams.get("assigned") === "1") {
-      setOpen(false);
-    }
-  }, [searchParams]);
 
   useEffect(() => {
     if (searchParams.get("new") === "1") {
-      setOpen(true);
-    } else if (searchParams.get("new") !== "1") {
-      setOpen(false);
+      router.replace("/app/tasks/create");
     }
-  }, [searchParams]);
-
-  function closeCreate() {
-    setOpen(false);
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("new");
-    const query = params.toString();
-    router.push(query ? `${pathname}?${query}` : pathname);
-  }
+  }, [router, searchParams]);
 
   const showToolbar = !filtersInOverview;
-  const showPanel = showCreate && open;
 
-  if (!showToolbar && !showPanel) {
+  if (!showToolbar) {
     return null;
   }
 
@@ -103,44 +68,17 @@ export function TasksActionBar({
     <div
       className={`ws-tasks-controls${filtersInOverview ? " ws-tasks-controls-compact" : ""}`}
     >
-      {showToolbar ? (
-        <div className="ws-task-toolbar">
+      <div className="ws-task-toolbar">
+        <Suspense fallback={null}>
           <TaskFilters
             current={current}
             members={filterMembers}
             showAssigneeFilter={showAssigneeFilter}
           />
+        </Suspense>
 
-          {showCreate && !open ? <NewTaskTrigger /> : null}
-        </div>
-      ) : null}
-
-      {showPanel ? (
-        <section className="ws-new-task-panel">
-          <header className="ws-new-task-panel-head">
-            <div>
-              <h2>Create task</h2>
-              <p>Assign to one or more team members with schedule and reminders.</p>
-            </div>
-            <button
-              aria-label="Close create task"
-              className="ws-new-task-close"
-              type="button"
-              onClick={closeCreate}
-            >
-              <X size={18} />
-            </button>
-          </header>
-
-          <Suspense fallback={<p className="ws-task-ai-lead">Loading form...</p>}>
-            <TaskCreateForm
-              emailConfigured={integrationStatus?.emailConfigured ?? true}
-              members={members}
-              whatsappConfigured={integrationStatus?.whatsappConfigured ?? true}
-            />
-          </Suspense>
-        </section>
-      ) : null}
+        {showCreate ? <NewTaskTrigger /> : null}
+      </div>
     </div>
   );
 }

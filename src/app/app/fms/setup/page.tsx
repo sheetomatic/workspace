@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FmsSetupItemCard } from "@/components/saas/fms-setup-item-card";
 import { FmsDescribeProcessLink } from "@/components/saas/fms-describe-process-link";
 import { FmsOnboardingChecklist } from "@/components/saas/fms-onboarding-checklist";
 import { FmsPipelineStatusBadge } from "@/components/saas/fms-pipeline-status-badge";
@@ -73,48 +74,32 @@ export default async function FmsSetupPage() {
               </span>
             </div>
           </header>
-          <div className="ws-sf-table-wrap">
-            <table className="ws-fms-data-table ws-sf-data-table">
-              <thead>
-                <tr>
-                  <th>Flow</th>
-                  <th>Submitted by</th>
-                  <th>Submitted</th>
-                  <th aria-label="Actions" />
-                </tr>
-              </thead>
-              <tbody>
-                {pendingDesigns.map((design) => (
-                  <tr key={design.id}>
-                    <td>
-                      <Link href={`/app/fms/design/${design.id}`} className="ws-sf-record-link">
-                        {design.name}
-                      </Link>
-                    </td>
-                    <td className="ws-fms-table-meta">
-                      {design.createdBy.name ?? design.createdBy.email}
-                    </td>
-                    <td className="ws-fms-table-meta">
-                      {design.submittedAt
-                        ? new Intl.DateTimeFormat("en-IN", {
-                            dateStyle: "medium",
-                            timeStyle: "short",
-                          }).format(design.submittedAt)
-                        : "-"}
-                    </td>
-                    <td className="ws-fms-table-actions">
-                      <Link
-                        href={`/app/fms/design/${design.id}`}
-                        className="btn-primary btn-sm ws-sf-btn-primary"
-                      >
-                        Review
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ul className="ws-fms-setup-list">
+            {pendingDesigns.map((design) => (
+              <FmsSetupItemCard
+                key={design.id}
+                href={`/app/fms/design/${design.id}`}
+                title={design.name}
+                subtitle={
+                  <>
+                    Submitted by {design.createdBy.name ?? design.createdBy.email}
+                    {" · "}
+                    {design.submittedAt
+                      ? new Intl.DateTimeFormat("en-IN", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        }).format(design.submittedAt)
+                      : "-"}
+                  </>
+                }
+                trailing={
+                  <span className="btn-primary btn-sm ws-sf-btn-primary">
+                    Review
+                  </span>
+                }
+              />
+            ))}
+          </ul>
         </section>
       ) : null}
 
@@ -137,51 +122,25 @@ export default async function FmsSetupPage() {
               ) : null}
             </div>
           ) : (
-            <div className="ws-sf-table-wrap">
-              <div className="ws-fms-table-scroll">
-                <table className="ws-fms-data-table ws-sf-data-table">
-                  <thead>
-                    <tr>
-                      <th>Flow</th>
-                      <th>Status</th>
-                      <th>Live FMS</th>
-                      <th aria-label="Actions" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {flowDesigns.map((design) => (
-                      <tr key={design.id}>
-                        <td>
-                          <Link href={`/app/fms/design/${design.id}`} className="ws-sf-record-link">
-                            {design.name}
-                          </Link>
-                        </td>
-                        <td>
-                          <FmsStatusBadge status={design.status} />
-                        </td>
-                        <td className="ws-fms-table-meta">
-                          {design.form ? (
-                            <Link
-                              href={`/app/fms/forms/${design.form.id}`}
-                              className="ws-sf-record-link"
-                            >
-                              {design.form.name}
-                            </Link>
-                          ) : (
-                            <span className="ws-fms-muted">Not created yet</span>
-                          )}
-                        </td>
-                        <td className="ws-fms-table-actions">
-                          <Link href={`/app/fms/design/${design.id}`} className="ws-fms-btn-quiet">
-                            Open
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <ul className="ws-fms-setup-list">
+              {flowDesigns.map((design) => (
+                <FmsSetupItemCard
+                  key={design.id}
+                  href={`/app/fms/design/${design.id}`}
+                  title={design.name}
+                  subtitle={
+                    design.form ? (
+                      <>
+                        Live FMS: {design.form.name}
+                      </>
+                    ) : (
+                      <span className="ws-fms-muted">Not created yet</span>
+                    )
+                  }
+                  badges={<FmsStatusBadge status={design.status} />}
+                />
+              ))}
+            </ul>
           )}
         </section>
 
@@ -200,54 +159,41 @@ export default async function FmsSetupPage() {
               <p>No forms yet. Build a flowchart first, then the form goes live on owner approval.</p>
             </div>
           ) : (
-            <div className="ws-sf-table-wrap">
-              <div className="ws-fms-table-scroll">
-                <table className="ws-fms-data-table ws-sf-data-table">
-                  <thead>
-                    <tr>
-                      <th>Form</th>
-                      <th>Status</th>
-                      <th>Workflow</th>
-                      <th>Submissions</th>
-                      <th aria-label="Actions" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {forms.map((form) => (
-                      <tr key={form.id}>
-                        <td>
-                          <Link href={`/app/fms/forms/${form.id}`} className="ws-sf-record-link">
-                            {form.name}
-                          </Link>
-                        </td>
-                        <td>
-                          <FmsPipelineStatusBadge
-                            formStatus={form.status}
-                            workflowStatus={form.template?.status}
-                          />
-                        </td>
-                        <td className="ws-fms-table-meta">
-                          {form.template ? form.template.name : (
-                            <span className="ws-fms-muted">No workflow</span>
-                          )}
-                        </td>
-                        <td className="ws-fms-table-meta">{form._count.submissions}</td>
-                        <td className="ws-fms-table-actions">
-                          {form.status === "ACTIVE" ? (
-                            <Link
-                              href={`/app/fms/forms/${form.id}/submit`}
-                              className="btn-secondary btn-sm"
-                            >
-                              Submit
-                            </Link>
-                          ) : null}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <ul className="ws-fms-setup-list">
+              {forms.map((form) => (
+                <FmsSetupItemCard
+                  key={form.id}
+                  href={`/app/fms/forms/${form.id}`}
+                  title={form.name}
+                  subtitle={
+                    <>
+                      {form.template ? form.template.name : (
+                        <span className="ws-fms-muted">No workflow</span>
+                      )}
+                      {" · "}
+                      {form._count.submissions} submission
+                      {form._count.submissions === 1 ? "" : "s"}
+                    </>
+                  }
+                  badges={
+                    <FmsPipelineStatusBadge
+                      formStatus={form.status}
+                      workflowStatus={form.template?.status}
+                    />
+                  }
+                  secondaryAction={
+                    form.status === "ACTIVE" ? (
+                      <Link
+                        href={`/app/fms/forms/${form.id}/submit`}
+                        className="btn-secondary btn-sm"
+                      >
+                        Submit
+                      </Link>
+                    ) : undefined
+                  }
+                />
+              ))}
+            </ul>
           )}
         </section>
       </div>

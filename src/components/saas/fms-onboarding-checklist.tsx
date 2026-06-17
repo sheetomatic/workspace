@@ -62,18 +62,26 @@ export function FmsOnboardingChecklist({ status }: { status: OnboardingStatus })
         {STEPS.map((step) => {
           const done = status[step.key];
           const Icon = done ? CheckCircle2 : Circle;
-          return (
-            <li key={step.key} className={done ? "is-done" : undefined}>
+          const content = (
+            <>
               <Icon size={18} aria-hidden className="ws-fms-onboarding-icon" />
               <div>
                 <strong>{step.title}</strong>
                 <span>{step.detail}</span>
               </div>
+              {!done ? <span className="ws-fms-onboarding-cta">Start</span> : null}
+            </>
+          );
+
+          return (
+            <li key={step.key} className={done ? "is-done" : undefined}>
               {!done && step.href ? (
-                <Link href={step.href} className="btn-secondary btn-sm">
-                  Start
+                <Link href={step.href} className="ws-fms-onboarding-item-link">
+                  {content}
                 </Link>
-              ) : null}
+              ) : (
+                <div className="ws-fms-onboarding-item">{content}</div>
+              )}
             </li>
           );
         })}

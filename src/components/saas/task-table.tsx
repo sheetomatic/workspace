@@ -1,17 +1,16 @@
 "use client";
 
 import { Fragment, useState, useTransition } from "react";
-import { CalendarClock, FolderKanban, Trash2 } from "lucide-react";
+import { CalendarClock, ChevronRight, FolderKanban, Trash2 } from "lucide-react";
 import { deleteDelegatedTask } from "@/app/app/tasks/actions";
-import { TaskEditButton } from "@/components/saas/task-edit-panel";
+import { TaskEditButton, TaskEditPanel } from "@/components/saas/task-edit-panel";
 import { TaskManagerRequestPanel } from "@/components/saas/task-manager-request-panel";
 import type { TaskRow } from "@/components/saas/task-list";
 import { TaskReminderStatus } from "@/components/saas/task-reminder-status";
 import { TaskUserActions } from "@/components/saas/task-user-actions";
 import {
-  getTaskDueUrgency,
-  taskUrgencyClass,
   type TaskDueUrgency,
+  taskUrgencyClass,
 } from "@/lib/task-due-urgency";
 import {
   TASK_DEPARTMENT_LABELS,
@@ -19,7 +18,6 @@ import {
   TASK_STATUS_LABELS,
   assigneeInitials,
   formatTaskAssignedDate,
-  formatTaskDueLabel,
 } from "@/lib/tasks";
 
 type MemberOption = {
@@ -51,6 +49,7 @@ export function TaskTable({
   whatsappConfigured?: boolean;
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editingTask, setEditingTask] = useState<TaskRow | null>(null);
   const [pending, startTransition] = useTransition();
 
   function removeTask(taskId: string) {
@@ -66,6 +65,14 @@ export function TaskTable({
     setExpandedId((current) => (current === taskId ? null : taskId));
   }
 
+  function handleRowClick(task: TaskRow) {
+    if (task.canManage) {
+      setEditingTask(task);
+      return;
+    }
+    toggleRow(task.id);
+  }
+
   if (tasks.length === 0) {
     return (
       <div className="ws-empty-state ws-task-empty ws-sf-empty-state">
@@ -77,6 +84,7 @@ export function TaskTable({
   }
 
   return (
+    <>
     <article
       className={`hs-table-card ws-task-table-card ws-sf-table-wrap${pending ? " is-updating" : ""}`}
     >
@@ -84,6 +92,7 @@ export function TaskTable({
         <table className="hs-data-table ws-task-table ws-task-table-v2 ws-sf-data-table">
           <thead>
             <tr>
+              <th className="ws-task-table-expand-col" aria-hidden />
               <th className="ws-task-col-task">Task Name</th>
               <th className="ws-task-col-due">Due Date</th>
               <th className="ws-task-col-status">Status</th>
@@ -93,15 +102,11 @@ export function TaskTable({
           </thead>
           <tbody>
             {tasks.map((task) => {
-              const urgency = getTaskDueUrgency({
-                dueAt: task.dueAt,
-                status: task.status,
-                completedAt: task.completedAt,
-              });
+              const urgency = task.urgency;
               const urgencyClass = taskUrgencyClass(urgency);
               const assigneeName =
                 task.assignee.name ?? task.assignee.email.split("@")[0];
-              const dueLabel = formatTaskDueLabel(task.dueAt, task.status);
+              const dueLabel = task.dueLabel;
               const expanded = expandedId === task.id;
               const rowClass = [
                 tableRowClass(urgency),
@@ -115,10 +120,37 @@ export function TaskTable({
                 <Fragment key={task.id}>
                   <tr
                     className={`ws-task-table-row ${rowClass}`.trim()}
-                    onClick={() => toggleRow(task.id)}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={
+                      task.canManage
+                        ? `Edit task ${task.title}`
+                        : `Open task ${task.title}`
+                    }
+                    onClick={() => handleRowClick(task)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        handleRowClick(task);
+                      }
+                    }}
                   >
+                    <td
+                      className="ws-task-table-expand-col"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        toggleRow(task.id);
+                      }}
+                    >
+                      <span
+                        className={`ws-task-table-chevron${expanded ? " is-open" : ""}`}
+                        aria-hidden
+                      >
+                        <ChevronRight size={16} />
+                      </span>
+                    </td>
                     <td className="ws-task-table-title ws-task-col-task" data-label="Task">
-                      <span className="ws-sf-record-link ws-task-table-title-text">
+                      <span className="ws-task-table-title-text">
                         {task.title}
                       </span>
                       {task.openRequest ? (
@@ -178,14 +210,16 @@ export function TaskTable({
                           </>
                         ) : null}
                         {task.isAssignee && !task.canManage ? (
-                          <span className="ws-task-table-hint">Tap row for actions</span>
+                          <span className="ws-task-table-hint">Tap row to act</span>
+                        ) : task.canManage ? (
+                          <span className="ws-task-table-hint">Tap row to edit</span>
                         ) : null}
                       </div>
                     </td>
                   </tr>
                   {expanded ? (
                     <tr className="ws-task-table-detail-row">
-                      <td colSpan={5}>
+                      <td colSpan={6}>
                         <div className="ws-task-table-detail">
                           <div className="ws-task-detail-meta">
                             <span>
@@ -215,5 +249,13 @@ export function TaskTable({
         </table>
       </div>
     </article>
+    {editingTask ? (
+      <TaskEditPanel
+        members={members}
+        task={editingTask}
+        onClose={() => setEditingTask(null)}
+      />
+    ) : null}
+    </>
   );
 }

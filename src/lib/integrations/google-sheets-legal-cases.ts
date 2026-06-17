@@ -209,3 +209,13 @@ export async function syncLegalCasesTwoWay(organizationId: string) {
     sheetTitle,
   };
 }
+
+export async function upsertLegalCaseToGoogleSheet(
+  organizationId: string,
+  _legalCase: { id: string },
+) {
+  if (!isGoogleSheetsAuthConfigured()) {
+    return;
+  }
+  await exportLegalCasesToGoogleSheet(organizationId);
+}

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   ClipboardList,
+  PlusCircle,
   ListTodo,
   Users,
 } from "lucide-react";
@@ -44,6 +45,13 @@ export function TasksModuleNav({ user }: { user: SessionUser }) {
       icon: Users,
       visible: isManager,
       description: "All team tasks & workload",
+    },
+    {
+      href: "/app/tasks/create",
+      label: "Create task",
+      icon: PlusCircle,
+      visible: isManager,
+      description: "New task only",
     },
     {
       href: "/app/tasks/scores",

@@ -284,6 +284,25 @@ function EditorField({
   return (
     <div
       className={`ws-fms-jf-field${selected ? " is-selected" : ""}${isFullWidth ? " is-full-width" : " is-half-width"}`}
+      onClick={(event) => {
+        const target = event.target as HTMLElement;
+        if (target.closest("button, input, select, textarea, label, a")) {
+          return;
+        }
+        onSelect();
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          const target = event.target as HTMLElement;
+          if (target.closest("button, input, select, textarea, label, a")) {
+            return;
+          }
+          event.preventDefault();
+          onSelect();
+        }
+      }}
+      role="button"
+      tabIndex={0}
     >
       <div className="ws-fms-jf-field-row">
         <div className="ws-fms-jf-field-main">

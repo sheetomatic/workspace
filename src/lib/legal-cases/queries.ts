@@ -203,6 +203,13 @@ export async function listLegalCases(
   };
 }
 
+export async function listLegalCasesForExport(organizationId: string) {
+  return prisma.legalCase.findMany({
+    where: { organizationId },
+    orderBy: [{ fileNumber: "asc" }, { mccNumber: "asc" }],
+  });
+}
+
 export async function getLegalCaseForUser(user: SessionUser, caseId: string) {
   const legalCase = await prisma.legalCase.findFirst({
     where: { id: caseId, organizationId: user.organizationId },

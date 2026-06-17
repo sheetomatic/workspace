@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import type { ReactNode } from "react";
 import { TeamManagementPanel } from "@/components/saas/team-management-panel";
 import { TeamHierarchyPanel } from "@/components/saas/team-hierarchy-panel";
 import { SuperAdminPanel } from "@/components/saas/super-admin-panel";
@@ -27,6 +28,30 @@ import {
 } from "@/lib/workspace-modules";
 import { tenantPortalOrigin } from "@/lib/workspace-auth-links";
 import "@/components/legal/legal-cases.css";
+
+function TeamCollapsibleSection({
+  title,
+  description,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  description: string;
+  defaultOpen?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <details className="ws-team-collapsible-section" open={defaultOpen}>
+      <summary>
+        <span>
+          <strong>{title}</strong>
+          <small>{description}</small>
+        </span>
+      </summary>
+      <div className="ws-team-collapsible-body">{children}</div>
+    </details>
+  );
+}
 
 export default async function TeamPage() {
   const user = await requireSession();
@@ -112,22 +137,45 @@ export default async function TeamPage() {
           </a>
         </p>
       ) : null}
-      {showSuperAdminPanel ? (
-        <SuperAdminPanel
-          currentUserId={user.id}
-          superAdmins={superAdmins}
-        />
-      ) : null}
-      {canManage && hrSettings ? (
-        <WorkplaceHrSettingsPanel settings={hrSettings} />
-      ) : null}
-      <TeamHierarchyPanel canManage={canManage} members={members} />
-      {canManage ? (
-        <TeamManagementPanel
-          currentUserId={user.id}
-          members={allMembers}
-        />
-      ) : null}
+      <div className="ws-team-section-stack">
+        {showSuperAdminPanel ? (
+          <TeamCollapsibleSection
+            title="Platform super admins"
+            description="Grant or revoke platform admin access."
+          >
+            <SuperAdminPanel
+              currentUserId={user.id}
+              superAdmins={superAdmins}
+            />
+          </TeamCollapsibleSection>
+        ) : null}
+        {canManage && hrSettings ? (
+          <TeamCollapsibleSection
+            title="Workplace attendance settings"
+            description="Office geo-fence and face recognition policy."
+          >
+            <WorkplaceHrSettingsPanel settings={hrSettings} />
+          </TeamCollapsibleSection>
+        ) : null}
+        <TeamCollapsibleSection
+          defaultOpen
+          title="Organization hierarchy"
+          description="Departments, reporting managers, and member visibility."
+        >
+          <TeamHierarchyPanel canManage={canManage} members={members} />
+        </TeamCollapsibleSection>
+        {canManage ? (
+          <TeamCollapsibleSection
+            title="Manage people"
+            description="Add, edit, reset passwords, and remove team members."
+          >
+            <TeamManagementPanel
+              currentUserId={user.id}
+              members={allMembers}
+            />
+          </TeamCollapsibleSection>
+        ) : null}
+      </div>
     </div>
   );
 }

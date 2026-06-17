@@ -19,7 +19,6 @@ import { TaskManagerRequestPanel } from "@/components/saas/task-manager-request-
 import { TaskUserActions } from "@/components/saas/task-user-actions";
 import { formatRecurrenceSummary } from "@/lib/task-schedule";
 import {
-  getTaskDueUrgency,
   taskUrgencyClass,
   taskUrgencyLabel,
   wasCompletedOnTime,
@@ -29,7 +28,6 @@ import {
   TASK_PRIORITY_LABELS,
   TASK_STATUS_LABELS,
   assigneeInitials,
-  formatTaskDueLabel,
 } from "@/lib/tasks";
 import type { TaskFrequency, TaskPriority, TaskRequestType, TaskStatus } from "@prisma/client";
 
@@ -48,6 +46,8 @@ export type TaskAttachmentRow = {
   fileSize: number;
   createdAt: Date;
 };
+
+import type { TaskDueUrgency } from "@/lib/task-due-urgency";
 
 export type TaskRow = {
   id: string;
@@ -84,6 +84,8 @@ export type TaskRow = {
   canAct: boolean;
   canManage?: boolean;
   isAssignee?: boolean;
+  dueLabel: string;
+  urgency: TaskDueUrgency;
 };
 
 type MemberOption = {
@@ -123,17 +125,13 @@ export function TaskList({
   return (
     <ul className={`ws-task-list ${pending ? "is-updating" : ""}`}>
       {tasks.map((task) => {
-        const urgency = getTaskDueUrgency({
-          dueAt: task.dueAt,
-          status: task.status,
-          completedAt: task.completedAt,
-        });
+        const urgency = task.urgency;
         const urgencyClass = taskUrgencyClass(urgency);
         const assigneeName =
           task.assignee.name ?? task.assignee.email.split("@")[0];
         const assignerName =
           task.createdBy.name ?? task.createdBy.email.split("@")[0];
-        const dueLabel = formatTaskDueLabel(task.dueAt, task.status);
+        const dueLabel = task.dueLabel;
         const onTime =
           task.status === "COMPLETED" &&
           wasCompletedOnTime(task.dueAt, task.completedAt);

@@ -157,6 +157,25 @@ function StepEditor({
   return (
     <div
       className={`ws-fms-jf-field ws-fms-jf-step${selected ? " is-selected" : ""}`}
+      onClick={(event) => {
+        const target = event.target as HTMLElement;
+        if (target.closest("button, input, select, textarea, label, a")) {
+          return;
+        }
+        onSelect();
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          const target = event.target as HTMLElement;
+          if (target.closest("button, input, select, textarea, label, a")) {
+            return;
+          }
+          event.preventDefault();
+          onSelect();
+        }
+      }}
+      role="button"
+      tabIndex={0}
     >
       <div className="ws-fms-jf-field-row ws-fms-jf-step-row">
         <span className="ws-fms-jf-step-index" aria-hidden>

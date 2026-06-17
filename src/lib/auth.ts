@@ -5,7 +5,7 @@ import type { Organization, Role, WorkspaceModule } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { prisma } from "@/lib/db";
+import { prisma, withDbRetry } from "@/lib/db";
 import { PRIMARY_ORG_SLUG } from "@/lib/platform";
 import { allWorkspaceModules, resolveMemberModules } from "@/lib/workspace-modules";
 
@@ -32,78 +32,81 @@ type ResolvedMembership = {
 async function resolveSuperAdminMembership(
   organizationSlug?: string,
 ): Promise<ResolvedMembership | null> {
-  const organization = organizationSlug
-    ? await prisma.organization.findUnique({ where: { slug: organizationSlug } })
-    : (await prisma.organization.findFirst({
-        where: { isPrimary: true },
-        orderBy: { createdAt: "asc" },
-      })) ??
-      (await prisma.organization.findUnique({
-        where: { slug: PRIMARY_ORG_SLUG },
-      })) ??
-      (await prisma.organization.findFirst({ orderBy: { createdAt: "asc" } }));
+  return withDbRetry(async (db) => {
+    const organization = organizationSlug
+      ? await db.organization.findUnique({ where: { slug: organizationSlug } })
+      : (await db.organization.findFirst({
+          where: { isPrimary: true },
+          orderBy: { createdAt: "asc" },
+        })) ??
+        (await db.organization.findUnique({
+          where: { slug: PRIMARY_ORG_SLUG },
+        })) ??
+        (await db.organization.findFirst({ orderBy: { createdAt: "asc" } }));
 
-  if (!organization) {
-    return null;
-  }
+    if (!organization) {
+      return null;
+    }
 
-  return {
-    role: "OWNER",
-    organizationId: organization.id,
-    organization,
-  };
+    return {
+      role: "OWNER",
+      organizationId: organization.id,
+      organization,
+    };
+  });
 }
 
 async function resolveMembership(
   userId: string,
   organizationSlug?: string,
 ): Promise<ResolvedMembership | null> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { isSuperAdmin: true },
-  });
+  return withDbRetry(async (db) => {
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { isSuperAdmin: true },
+    });
 
-  if (user?.isSuperAdmin) {
-    return resolveSuperAdminMembership(organizationSlug);
-  }
-
-  const memberships = await prisma.membership.findMany({
-    where: { userId },
-    include: { organization: true },
-    orderBy: { createdAt: "asc" },
-  });
-
-  if (memberships.length === 0) {
-    return null;
-  }
-
-  if (organizationSlug) {
-    const match = memberships.find(
-      (item) => item.organization.slug === organizationSlug,
-    );
-    if (match) {
-      return {
-        role: match.role,
-        organizationId: match.organizationId,
-        organization: match.organization,
-      };
+    if (user?.isSuperAdmin) {
+      return resolveSuperAdminMembership(organizationSlug);
     }
-    // Tenant subdomain login must match this workspace — do not fall back to another org.
-    return null;
-  }
 
-  const preferred =
-    memberships.find(
-      (item) => item.organization.slug === PRIMARY_ORG_SLUG,
-    ) ??
-    memberships.find((item) => item.organization.isPrimary) ??
-    memberships[0];
+    const memberships = await db.membership.findMany({
+      where: { userId },
+      include: { organization: true },
+      orderBy: { createdAt: "asc" },
+    });
 
-  return {
-    role: preferred.role,
-    organizationId: preferred.organizationId,
-    organization: preferred.organization,
-  };
+    if (memberships.length === 0) {
+      return null;
+    }
+
+    if (organizationSlug) {
+      const match = memberships.find(
+        (item) => item.organization.slug === organizationSlug,
+      );
+      if (match) {
+        return {
+          role: match.role,
+          organizationId: match.organizationId,
+          organization: match.organization,
+        };
+      }
+      return null;
+    }
+
+    const preferred =
+      memberships.find(
+        (item) => item.organization.slug === PRIMARY_ORG_SLUG,
+      ) ??
+      memberships.find((item) => item.organization.isPrimary) ??
+      memberships[0];
+
+    return {
+      role: preferred.role,
+      organizationId: preferred.organizationId,
+      organization: preferred.organization,
+    };
+  });
 }
 
 function toAuthUser(
@@ -261,23 +264,55 @@ export const getSessionUser = cache(async function getSessionUser() {
   }
 
   const tokenUser = session.user as SessionUser;
-  const membership = await resolveMembership(
-    tokenUser.id,
-    tokenUser.organizationSlug,
-  );
 
-  if (!membership) {
-    return null;
-  }
+  return withDbRetry(async (db) => {
+    const membership = await resolveMembership(
+      tokenUser.id,
+      tokenUser.organizationSlug,
+    );
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: tokenUser.id },
-    select: { isSuperAdmin: true },
-  });
+    if (!membership) {
+      return null;
+    }
 
-  const isSuperAdmin = dbUser?.isSuperAdmin ?? false;
+    const dbUser = await db.user.findUnique({
+      where: { id: tokenUser.id },
+      select: { isSuperAdmin: true },
+    });
 
-  if (isSuperAdmin) {
+    const isSuperAdmin = dbUser?.isSuperAdmin ?? false;
+
+    if (isSuperAdmin) {
+      return {
+        id: tokenUser.id,
+        email: tokenUser.email,
+        name: tokenUser.name,
+        role: membership.role,
+        organizationId: membership.organizationId,
+        organizationName: membership.organization.name,
+        organizationSlug: membership.organization.slug,
+        isSuperAdmin: true,
+        isDepartmentHead: false,
+        modules: allWorkspaceModules(),
+        staffCode: null,
+      };
+    }
+
+    const membershipRecord = await db.membership.findUnique({
+      where: {
+        userId_organizationId: {
+          userId: tokenUser.id,
+          organizationId: membership.organizationId,
+        },
+      },
+      select: {
+        modules: true,
+        role: true,
+        isDepartmentHead: true,
+        staffCode: true,
+      },
+    });
+
     return {
       id: tokenUser.id,
       email: tokenUser.email,
@@ -286,42 +321,13 @@ export const getSessionUser = cache(async function getSessionUser() {
       organizationId: membership.organizationId,
       organizationName: membership.organization.name,
       organizationSlug: membership.organization.slug,
-      isSuperAdmin: true,
-      isDepartmentHead: false,
-      modules: allWorkspaceModules(),
-      staffCode: null,
+      isSuperAdmin: false,
+      isDepartmentHead: membershipRecord?.isDepartmentHead ?? false,
+      modules: resolveMemberModules(
+        membershipRecord?.role ?? membership.role,
+        membershipRecord?.modules,
+      ),
+      staffCode: membershipRecord?.staffCode?.trim() || null,
     };
-  }
-
-  const membershipRecord = await prisma.membership.findUnique({
-    where: {
-      userId_organizationId: {
-        userId: tokenUser.id,
-        organizationId: membership.organizationId,
-      },
-    },
-    select: {
-      modules: true,
-      role: true,
-      isDepartmentHead: true,
-      staffCode: true,
-    },
   });
-
-  return {
-    id: tokenUser.id,
-    email: tokenUser.email,
-    name: tokenUser.name,
-    role: membership.role,
-    organizationId: membership.organizationId,
-    organizationName: membership.organization.name,
-    organizationSlug: membership.organization.slug,
-    isSuperAdmin: false,
-    isDepartmentHead: membershipRecord?.isDepartmentHead ?? false,
-    modules: resolveMemberModules(
-      membershipRecord?.role ?? membership.role,
-      membershipRecord?.modules,
-    ),
-    staffCode: membershipRecord?.staffCode?.trim() || null,
-  };
 });

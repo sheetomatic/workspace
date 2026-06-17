@@ -5,7 +5,8 @@ import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { TaskTable } from "@/components/saas/task-table";
 import { requireSession } from "@/lib/require-session";
 import { checklistMisScore, taskMisScore } from "@/lib/mis/score";
-import { canUpdateTask, listDelegatedTasks } from "@/lib/tasks";
+import { getTaskDueUrgency } from "@/lib/task-due-urgency";
+import { canUpdateTask, formatTaskDueLabel, listDelegatedTasks } from "@/lib/tasks";
 import { getWorkspaceIntegrationStatus } from "@/lib/workspace-integration-status";
 
 export default async function TasksMyWorkPage() {
@@ -28,6 +29,12 @@ export default async function TasksMyWorkPage() {
       canAct: canUpdateTask(user, task),
       canManage: false,
       isAssignee: true,
+      dueLabel: formatTaskDueLabel(task.dueAt, task.status),
+      urgency: getTaskDueUrgency({
+        dueAt: task.dueAt,
+        status: task.status,
+        completedAt: task.completedAt,
+      }),
       openRequest: open
         ? {
             id: open.id,

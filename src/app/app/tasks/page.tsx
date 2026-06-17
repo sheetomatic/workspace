@@ -9,27 +9,22 @@ import { TaskIntegrationBanner } from "@/components/saas/task-integration-banner
 import { TaskFilters } from "@/components/saas/task-filters";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { TaskStatsBar } from "@/components/saas/task-stats-bar";
-import {
-  NewTaskTrigger,
-  TasksActionBar,
-} from "@/components/saas/tasks-action-bar";
+import { NewTaskTrigger } from "@/components/saas/tasks-action-bar";
 import { TaskPagination } from "@/components/saas/task-pagination";
 import { TaskTable } from "@/components/saas/task-table";
 import {
   hasQuickTaskFilter,
   taskFilterLabel,
 } from "@/lib/task-filter-label";
-import {
-  getGoogleSheetsConnectionStatus,
-  getSpreadsheetIdForOrganization,
-} from "@/lib/integrations/google-sheets-dashboard";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import { taskPageFromSearchParam } from "@/lib/scale";
+import { getTaskDueUrgency } from "@/lib/task-due-urgency";
 import { getWorkspaceIntegrationStatus } from "@/lib/workspace-integration-status";
 import {
   canCreateTasks,
   canUpdateTask,
+  formatTaskDueLabel,
   getTaskAssigneeWorkload,
   getTaskChartData,
   getTaskStats,
@@ -77,6 +72,12 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
       canAct: canUpdateTask(user, task),
       canManage: canCreateTasks(user.role),
       isAssignee: task.assigneeUserId === user.id,
+      dueLabel: formatTaskDueLabel(task.dueAt, task.status),
+      urgency: getTaskDueUrgency({
+        dueAt: task.dueAt,
+        status: task.status,
+        completedAt: task.completedAt,
+      }),
       openRequest: open
         ? {
             id: open.id,
@@ -97,7 +98,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
   const showAssigneeFilter =
     hasMinimumRole(user.role, "MANAGER") || user.role === "VIEWER";
 
-  const [stats, chartData, members, assigneeWorkload, spreadsheetId, integrationStatus] =
+  const [stats, chartData, members, assigneeWorkload, integrationStatus] =
     await Promise.all([
     getTaskStats(user),
     getTaskChartData(user),
@@ -107,10 +108,8 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
     showAssigneeFilter
       ? getTaskAssigneeWorkload(user)
       : Promise.resolve([]),
-    getSpreadsheetIdForOrganization(user.organizationId),
     getWorkspaceIntegrationStatus(user.organizationId),
   ]);
-  const sheetsConnection = getGoogleSheetsConnectionStatus(spreadsheetId);
   const filterMembers = members.map((member) => ({
     id: member.id,
     name: member.name,
@@ -136,8 +135,8 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
           <>
             <TaskExportBar
               compact
-              sheetsReady={sheetsConnection.ready}
-              spreadsheetUrl={sheetsConnection.spreadsheetUrl}
+              sheetsReady={false}
+              spreadsheetUrl={null}
             />
             {showCreate ? (
               <Suspense fallback={null}>
@@ -208,22 +207,6 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
         />
       </section>
 
-      <Suspense fallback={<div className="ws-tasks-controls is-loading" />}>
-        <TasksActionBar
-          current={{
-            status: params.status,
-            assignee: params.assignee,
-            overdue: params.overdue,
-            doneToday: params.doneToday,
-          }}
-          filterMembers={filterMembers}
-          filtersInOverview
-          integrationStatus={integrationStatus}
-          members={members}
-          showAssigneeFilter={showAssigneeFilter}
-          showCreate={showCreate}
-        />
-      </Suspense>
     </div>
   );
 }

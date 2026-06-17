@@ -64,12 +64,15 @@ export function FmsLineCard({
   }));
 
   return (
-    <article className={`ws-fms-line-card${overdue ? " is-overdue" : ""}`}>
+    <Link
+      href={linkHref}
+      className={`ws-fms-line-card ws-fms-line-card-link${overdue ? " is-overdue" : ""}`}
+    >
       <header className="ws-fms-line-card-header">
         <div>
-          <Link href={linkHref} className="ws-fms-line-card-title">
+          <span className="ws-fms-line-card-title">
             {title}
-          </Link>
+          </span>
           <p className="ws-fms-muted">
             {workflowName} | {doneCount}/{stepStates.length} stops passed
           </p>
@@ -101,6 +104,6 @@ export function FmsLineCard({
           <span className="ws-fms-muted">Completed</span>
         </footer>
       ) : null}
-    </article>
+    </Link>
   );
 }
