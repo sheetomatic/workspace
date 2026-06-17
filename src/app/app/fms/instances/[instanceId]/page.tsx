@@ -5,7 +5,6 @@ import { FmsInstanceAttachments } from "@/components/saas/fms-instance-attachmen
 import { FmsInstanceControlPanel } from "@/components/saas/fms-instance-control-panel";
 import { FmsTrainTrack } from "@/components/saas/fms-train-track";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
-import { FmsStepCompletePanel } from "@/components/saas/fms-step-complete-panel";
 import { MisScoreBadge } from "@/components/saas/mis-score-badge";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
@@ -208,19 +207,31 @@ export default async function FmsInstancePage({ params }: PageProps) {
           </section>
         ) : null}
 
-        {activeStep && instance.status === "ACTIVE" ? (
-          <FmsStepCompletePanel
-            stepState={{
-              ...activeStep,
-              ownerUserId: activeStep.ownerUserId,
-            }}
-            canComplete={canComplete}
-          />
-        ) : null}
-
         <FmsInstanceAttachments rows={attachmentRows} />
 
-        <FmsInstanceActivity steps={instance.stepStates} auditEvents={auditEvents} />
+        <FmsInstanceActivity
+          auditEvents={auditEvents}
+          completePanel={
+            activeStep && instance.status === "ACTIVE"
+              ? {
+                  canComplete,
+                  stepState: {
+                    id: activeStep.id,
+                    status: activeStep.status,
+                    ownerUserId: activeStep.ownerUserId,
+                    step: {
+                      stepName: activeStep.step.stepName,
+                      allowMarkDone: activeStep.step.allowMarkDone,
+                      allowUpload: activeStep.step.allowUpload,
+                      allowNotes: activeStep.step.allowNotes,
+                      captureFields: activeStep.step.captureFields,
+                    },
+                  },
+                }
+              : null
+          }
+          steps={instance.stepStates}
+        />
       </div>
     </div>
   );

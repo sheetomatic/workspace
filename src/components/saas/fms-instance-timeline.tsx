@@ -1,6 +1,13 @@
+"use client";
+
+import { useState } from "react";
 import type { FmsStepStatus } from "@prisma/client";
-import { Clock } from "lucide-react";
+import { CheckCircle2, Clock } from "lucide-react";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
+import {
+  FmsStepCompletePanel,
+  type FmsStepCompleteState,
+} from "@/components/saas/fms-step-complete-panel";
 import {
   computeStepUrgency,
   formatDelayLabel,
@@ -9,7 +16,7 @@ import {
   urgencyClassName,
 } from "@/lib/fms/step-display";
 
-type TimelineStep = {
+export type TimelineStep = {
   id: string;
   status: FmsStepStatus;
   plannedAt: Date | null;
@@ -40,12 +47,23 @@ function statusClass(status: FmsStepStatus, overdue: boolean, doneLate: boolean)
     return doneLate ? "is-late" : "is-done";
   }
   if (status === "IN_PROGRESS") {
-    return overdue ? "is-overdue" : "is-active";
+    return overdue ? "is-overdue is-stuck" : "is-active is-stuck";
   }
   return "is-pending";
 }
 
-export function FmsInstanceTimeline({ steps }: { steps: TimelineStep[] }) {
+export function FmsInstanceTimeline({
+  steps,
+  completePanel,
+}: {
+  steps: TimelineStep[];
+  completePanel?: {
+    stepState: FmsStepCompleteState;
+    canComplete: boolean;
+  } | null;
+}) {
+  const [formOpenForStepId, setFormOpenForStepId] = useState<string | null>(null);
+
   return (
     <div className="ws-fms-timeline">
       {steps.map((step, index) => {
@@ -73,6 +91,10 @@ export function FmsInstanceTimeline({ steps }: { steps: TimelineStep[] }) {
           step.status === "IN_PROGRESS" &&
           step.plannedAt &&
           (urgency === "same-day" || urgency === "overdue");
+        const isStuck = step.status === "IN_PROGRESS";
+        const showCompleteForm =
+          formOpenForStepId === step.id &&
+          completePanel?.stepState.id === step.id;
 
         return (
           <article
@@ -90,6 +112,9 @@ export function FmsInstanceTimeline({ steps }: { steps: TimelineStep[] }) {
               )}
             </div>
             <div className="ws-fms-timeline-body">
+              {isStuck ? (
+                <p className="ws-fms-timeline-stuck-label">Stopped here</p>
+              ) : null}
               <header>
                 <div className="ws-fms-timeline-title">
                   <h4>{step.step.stepName}</h4>
@@ -102,16 +127,14 @@ export function FmsInstanceTimeline({ steps }: { steps: TimelineStep[] }) {
                   {delayLabel && (overdue || doneLate) ? (
                     <span className="ws-sf-badge ws-sf-badge-danger">{delayLabel}</span>
                   ) : null}
-                  {step.status === "IN_PROGRESS" &&
-                  step.plannedAt &&
-                  !overdue ? (
+                  {step.status === "IN_PROGRESS" && step.plannedAt && !overdue ? (
                     <span className="ws-sf-badge ws-sf-badge-info">On track</span>
                   ) : null}
                 </div>
               </header>
               <dl className="ws-fms-timeline-meta">
                 <div>
-                  <dt>Owner</dt>
+                  <dt>Doer</dt>
                   <dd>{ownerName}</dd>
                 </div>
                 <div>
@@ -139,6 +162,37 @@ export function FmsInstanceTimeline({ steps }: { steps: TimelineStep[] }) {
                     </li>
                   ))}
                 </ul>
+              ) : null}
+
+              {isStuck && completePanel?.stepState.id === step.id ? (
+                <div className="ws-fms-timeline-actions">
+                  {!showCompleteForm && completePanel.canComplete ? (
+                    <button
+                      className="btn-primary ws-sf-btn-primary ws-fms-mark-done-btn"
+                      type="button"
+                      onClick={() => setFormOpenForStepId(step.id)}
+                    >
+                      <CheckCircle2 aria-hidden size={16} />
+                      Mark done
+                    </button>
+                  ) : null}
+                  {!showCompleteForm && !completePanel.canComplete ? (
+                    <p className="ws-fms-muted ws-fms-timeline-wait-msg">
+                      {!completePanel.stepState.ownerUserId
+                        ? "No doer assigned. Ask a manager to reassign this stop."
+                        : "Only the assigned doer can mark this stop done."}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {showCompleteForm && completePanel ? (
+                <FmsStepCompletePanel
+                  canComplete={completePanel.canComplete}
+                  mode="form"
+                  stepState={completePanel.stepState}
+                  onCancel={() => setFormOpenForStepId(null)}
+                />
               ) : null}
             </div>
           </article>
