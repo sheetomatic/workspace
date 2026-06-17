@@ -216,7 +216,6 @@ function StepEditor({
             type="button"
             className={`ws-fms-jf-gear${selected ? " is-active" : ""}`}
             aria-label="Step settings"
-            title="Step settings"
             onClick={onSelect}
           >
             <Settings2 size={16} aria-hidden />

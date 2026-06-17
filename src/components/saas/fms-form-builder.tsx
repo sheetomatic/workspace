@@ -324,7 +324,6 @@ function EditorField({
             type="button"
             className={`ws-fms-jf-gear${selected ? " is-active" : ""}`}
             aria-label="Field settings"
-            title="Field settings"
             onClick={onSelect}
           >
             <Settings2 size={16} aria-hidden />

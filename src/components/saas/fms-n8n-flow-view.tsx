@@ -74,7 +74,10 @@ export function FmsN8nFlowView({
           </div>
         </div>
       ) : (
-        <h2 className="ws-fms-design-card-title">Workflow preview</h2>
+        <div className="ws-fms-n8n-head">
+          <h2 className="ws-fms-design-card-title">Workflow preview</h2>
+          <p className="ws-fms-n8n-head-hint">Scroll horizontally to review every step.</p>
+        </div>
       )}
 
       <div className="ws-fms-n8n-canvas-shell">
