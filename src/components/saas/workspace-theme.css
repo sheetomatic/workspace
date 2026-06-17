@@ -13392,10 +13392,10 @@ body:has(.workspace-app.saas-app) {
   border-radius: 8px;
   padding: 20px 8px 16px;
   min-height: 0;
-  flex: 1;
+  flex: none;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .workspace-app .ws-fms-jf-header {
@@ -13913,27 +13913,27 @@ body:has(.workspace-app.saas-app) {
   margin-bottom: 16px;
 }
 
-/* FMS scroll shell — canvas scrolls internally, header/actions stay put */
+/* FMS scroll shell — natural document flow inside jotform editor */
 .workspace-app .ws-fms-jf-scroll-shell {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: min(72vh, 820px);
-  min-height: 420px;
+  min-height: 0;
 }
 
 .workspace-app .ws-fms-jf-scroll-shell .ws-fms-jf-canvas {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex: none;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
   padding: 0;
 }
 
 .workspace-app .ws-fms-jf-sticky-header {
   flex-shrink: 0;
   padding: 0 16px;
+  position: static;
 }
 
 .workspace-app .ws-fms-jf-scroll-shell .ws-fms-jf-divider {
@@ -13945,7 +13945,7 @@ body:has(.workspace-app.saas-app) {
   flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
-  overflow-y: auto;
+  overflow: visible;
   padding: 0 16px 12px;
 }
 
@@ -13957,18 +13957,14 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-fms-jf-sticky-actions {
   flex-shrink: 0;
-  position: sticky;
-  bottom: 0;
-  background: var(--sf-page-bg, #f8fafc);
+  position: static;
+  background: transparent;
   padding-top: 4px;
-  z-index: 2;
 }
 
 .workspace-app .ws-fms-jf-page-bar {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  background: var(--sf-page-bg, #f8fafc);
+  position: static;
+  background: transparent;
   padding-bottom: 8px;
 }
 
@@ -14027,23 +14023,7 @@ body:has(.workspace-app.saas-app) {
   box-sizing: border-box;
 }
 
-.workspace-app .ws-fms-jotform-page {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  flex: none;
-  min-height: min-content;
-  height: auto;
-  max-height: none;
-  max-width: none;
-  margin: 0;
-  width: 100%;
-  overflow: visible;
-  padding: 16px 20px 32px;
-  box-sizing: border-box;
-}
-
-/* Intake form + FMS workflow: one scroll surface for the whole panel */
+/* Intake form + FMS workflow: single scroll on module panel only */
 .workspace-app .ws-module-layout-main:has(.ws-fms-jotform-page) {
   overflow-x: hidden;
   overflow-y: auto;
@@ -14051,91 +14031,92 @@ body:has(.workspace-app.saas-app) {
   scrollbar-gutter: stable;
 }
 
+.workspace-app .ws-fms-jotform-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 16px 20px 32px;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
 .workspace-app .ws-fms-jotform-page .ws-fms-editor-tabs,
 .workspace-app .ws-fms-jotform-page .ws-fms-editor-tabpanels,
 .workspace-app .ws-fms-jotform-page .ws-fms-editor-panel:not([hidden]),
 .workspace-app .ws-fms-jotform-page .ws-fms-form-builder,
-.workspace-app .ws-fms-jotform-page .ws-fms-template-builder-wrap {
-  flex: none;
-  overflow: visible;
-}
-
-.workspace-app .ws-fms-jotform-page .ws-fms-editor-panel:not([hidden]) {
-  display: block;
-}
-
-.workspace-app .ws-fms-jotform-page .ws-fms-jf-scroll-shell {
-  flex: none;
-  max-height: none;
-  min-height: 0;
-  height: auto;
-  overflow: visible;
-  display: block;
-}
-
-.workspace-app .ws-fms-jotform-page .ws-fms-jf-scroll-shell .ws-fms-jf-canvas {
-  overflow: visible;
-  display: block;
-}
-
-.workspace-app .ws-fms-jotform-page .ws-fms-jf-builder-split {
-  display: block;
-  overflow: visible;
-}
-
+.workspace-app .ws-fms-jotform-page .ws-fms-template-builder-wrap,
+.workspace-app .ws-fms-jotform-page .ws-fms-form-builder-form,
+.workspace-app .ws-fms-jotform-page .ws-fms-jf-scroll-shell,
+.workspace-app .ws-fms-jotform-page .ws-fms-jf-canvas,
+.workspace-app .ws-fms-jotform-page .ws-fms-jf-builder-split,
 .workspace-app .ws-fms-jotform-page .ws-fms-jf-fields-scroll {
   flex: none;
-  overflow: visible;
+  height: auto;
   min-height: 0;
+  overflow: visible;
 }
 
-.workspace-app .ws-fms-jotform-page .ws-fms-jf-props-panel {
-  position: sticky;
-  top: 12px;
-}
-
-.workspace-app .ws-fms-form-builder {
+.workspace-app .ws-fms-jotform-page .ws-fms-editor-tabs,
+.workspace-app .ws-fms-jotform-page .ws-fms-editor-tabpanels,
+.workspace-app .ws-fms-jotform-page .ws-fms-editor-panel:not([hidden]),
+.workspace-app .ws-fms-jotform-page .ws-fms-form-builder {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
   gap: 12px;
-  overflow: hidden;
-}
-
-.workspace-app .ws-fms-form-builder-form {
-  flex: 1;
-  min-height: 0;
-}
-
-.workspace-app .ws-fms-form-ai {
-  flex-shrink: 0;
-}
-
-.workspace-app .ws-fms-jotform-page .ws-fms-form-builder {
-  flex: none;
-  overflow: visible;
-}
-
-.workspace-app .ws-fms-jotform-page .ws-fms-form-builder-form {
-  flex: none;
-  min-height: 0;
-}
-
-.workspace-app .ws-fms-jotform-page .ws-fms-jf-page-bar {
-  flex-shrink: 0;
 }
 
 .workspace-app .ws-fms-jotform-page .ws-fms-jf-builder-split {
   display: flex;
+  flex-direction: row;
   align-items: flex-start;
-  gap: 0;
-  min-height: 0;
+  gap: 12px;
+  flex-wrap: nowrap;
 }
 
 .workspace-app .ws-fms-jotform-page .ws-fms-jf-fields-scroll {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+.workspace-app .ws-fms-jotform-page .ws-fms-jf-props-panel {
+  position: static;
+  top: auto;
+  flex: 0 0 280px;
+  width: 280px;
+  max-width: 34%;
+  align-self: flex-start;
+}
+
+@container fms-builder (max-width: 920px) {
+  .workspace-app .ws-fms-jotform-page .ws-fms-jf-builder-split {
+    flex-direction: column;
+  }
+
+  .workspace-app .ws-fms-jotform-page .ws-fms-jf-props-panel {
+    width: 100%;
+    max-width: none;
+    flex: none;
+    border-left: none;
+    border-top: 1px solid #e8e8e8;
+  }
+}
+
+.workspace-app .ws-fms-form-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.workspace-app .ws-fms-form-builder-form {
+  min-height: 0;
+}
+
+.workspace-app .ws-fms-form-ai {
+  flex-shrink: 0;
 }
 
 .workspace-app .ws-fms-jf-workflow-intro {
@@ -14187,9 +14168,8 @@ body:has(.workspace-app.saas-app) {
 .workspace-app .ws-fms-editor-tabs {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  gap: 12px;
   min-height: 0;
-  overflow: hidden;
 }
 
 .workspace-app .ws-fms-editor-tablist {
@@ -14219,29 +14199,18 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .ws-fms-editor-tabpanels {
-  flex: 1;
   min-height: 0;
-  overflow: hidden;
 }
 
 .workspace-app .ws-fms-editor-panel[hidden] {
   display: none !important;
 }
 
-.workspace-app .ws-fms-editor-panel:not([hidden]) {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
 .workspace-app .ws-fms-template-builder-wrap {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  gap: 12px;
   min-height: 0;
-  overflow: hidden;
 }
 
 .workspace-app .ws-fms-jf-workflow-canvas .ws-fms-jf-builder-split {
@@ -14252,7 +14221,7 @@ body:has(.workspace-app.saas-app) {
 .workspace-app .ws-fms-jf-workflow-canvas .ws-fms-jf-fields-scroll {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow: visible;
 }
 
 .workspace-app .ws-fms-jf-workflow-canvas .ws-fms-jf-fields {
@@ -14263,17 +14232,18 @@ body:has(.workspace-app.saas-app) {
 .workspace-app .ws-fms-editor-panel > .ws-fms-jf-scroll-shell,
 .workspace-app .ws-fms-editor-panel > form.ws-fms-jf-scroll-shell,
 .workspace-app .ws-fms-editor-panel > .ws-fms-form-builder {
-  flex: 1;
+  flex: none;
   min-height: 0;
 }
 
 .workspace-app .ws-fms-jf-builder-split {
   display: flex;
-  flex: 1;
+  flex: none;
   min-height: 0;
   min-width: 0;
-  overflow: hidden;
-  align-items: stretch;
+  overflow: visible;
+  align-items: flex-start;
+  gap: 12px;
   container-type: inline-size;
   container-name: fms-builder;
 }
