@@ -16682,6 +16682,97 @@ body:has(.workspace-app.saas-app) {
   color: var(--sf-text-secondary);
 }
 
+.workspace-app .ws-fms-step-panel-collapsible {
+  overflow: hidden;
+}
+
+.workspace-app .ws-fms-step-panel-collapsible > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.workspace-app .ws-fms-step-panel-collapsible > summary::-webkit-details-marker {
+  display: none;
+}
+
+.workspace-app .ws-fms-step-panel-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0;
+}
+
+.workspace-app .ws-fms-step-panel-summary-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.workspace-app .ws-fms-step-panel-summary-copy strong {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--sf-text);
+}
+
+.workspace-app .ws-fms-step-panel-summary-copy small {
+  font-size: 0.75rem;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-fms-step-panel-chevron {
+  flex-shrink: 0;
+  color: #0176d3;
+  transition: transform 0.15s ease;
+}
+
+.workspace-app .ws-fms-step-panel-collapsible[open] .ws-fms-step-panel-chevron {
+  transform: rotate(180deg);
+}
+
+.workspace-app .ws-fms-step-panel-body {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--sf-card-border);
+  display: grid;
+  gap: 14px;
+}
+
+.workspace-app .ws-fms-step-option {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--sf-card-border);
+  border-radius: 6px;
+  background: #fafbfc;
+}
+
+.workspace-app .ws-fms-step-option-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--sf-text);
+}
+
+.workspace-app .ws-fms-step-mark-done {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--sf-text);
+}
+
+.workspace-app .ws-fms-step-mark-done input {
+  margin-top: 2px;
+}
+
+.workspace-app .ws-fms-my-stop-wrap .ws-fms-step-panel-collapsible {
+  margin-top: 10px;
+}
+
 .workspace-app .ws-fms-my-stop-list {
   list-style: none;
   margin: 0;

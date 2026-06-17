@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FmsLineCard } from "@/components/saas/fms-line-card";
+import { FmsStepCompletePanel } from "@/components/saas/fms-step-complete-panel";
 import { FmsPagination } from "@/components/saas/fms-pagination";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
@@ -25,6 +26,7 @@ export default async function FmsMyStopsPage({ searchParams }: PageProps) {
   ]);
 
   const myInstanceIds = new Set(mySteps.map((s) => s.instanceId));
+  const myStepByInstance = new Map(mySteps.map((step) => [step.instanceId, step]));
   const lineCards = queuePage.items.map((job) => ({
     job,
     isMyTurn: myInstanceIds.has(job.id),
@@ -44,14 +46,17 @@ export default async function FmsMyStopsPage({ searchParams }: PageProps) {
       ) : (
         <>
           <section className="ws-fms-lines-grid" aria-label="Your workflow stops">
-            {lineCards.map(({ job, isMyTurn }) => (
+            {lineCards.map(({ job, isMyTurn }) => {
+              const myStep = myStepByInstance.get(job.id);
+
+              return (
               <div
                 key={job.id}
                 className={`ws-fms-my-stop-wrap${isMyTurn ? " is-my-turn" : ""}`}
               >
                 {isMyTurn ? (
                   <p className="ws-fms-my-turn-banner">
-                    Train is here - action needed
+                    Your action is needed at this stop
                   </p>
                 ) : null}
                 <FmsLineCard
@@ -61,8 +66,26 @@ export default async function FmsMyStopsPage({ searchParams }: PageProps) {
                   status={job.status}
                   stepStates={job.stepStates}
                 />
+                {isMyTurn && myStep ? (
+                  <FmsStepCompletePanel
+                    canComplete
+                    stepState={{
+                      id: myStep.id,
+                      status: myStep.status,
+                      ownerUserId: myStep.ownerUserId,
+                      step: {
+                        stepName: myStep.step.stepName,
+                        allowMarkDone: myStep.step.allowMarkDone,
+                        allowUpload: myStep.step.allowUpload,
+                        allowNotes: myStep.step.allowNotes,
+                        captureFields: myStep.step.captureFields,
+                      },
+                    }}
+                  />
+                ) : null}
               </div>
-            ))}
+            );
+            })}
           </section>
           <FmsPagination
             page={queuePage.page}
@@ -78,8 +101,8 @@ export default async function FmsMyStopsPage({ searchParams }: PageProps) {
       {mySteps.length > 0 ? (
         <section className="ws-fms-my-stop-actions" aria-label="Quick actions">
           <header className="ws-fms-section-heading">
-            <h2>Ready to release</h2>
-            <p>Open the line below to complete your stop and move the train forward.</p>
+            <h2>Your active stops</h2>
+            <p>Expand a stop above to mark done, add notes, or upload proof.</p>
           </header>
           <ul className="ws-fms-my-stop-list">
             {mySteps.map((step) => (

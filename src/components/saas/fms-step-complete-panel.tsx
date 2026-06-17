@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { CheckCircle2, ChevronDown, Paperclip, StickyNote } from "lucide-react";
 import type { FmsStepStatus } from "@prisma/client";
 import { completeFmsStepAction } from "@/app/app/fms/actions";
 import { fmsInitialState } from "@/lib/fms-action-state";
@@ -22,9 +23,11 @@ type StepState = {
 export function FmsStepCompletePanel({
   stepState,
   canComplete,
+  defaultExpanded = false,
 }: {
   stepState: StepState;
   canComplete: boolean;
+  defaultExpanded?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(
     completeFmsStepAction,
@@ -36,6 +39,14 @@ export function FmsStepCompletePanel({
   const [completionValues, setCompletionValues] = useState<Record<string, string>>(
     {},
   );
+  const [expanded, setExpanded] = useState(defaultExpanded);
+  const [markedDone, setMarkedDone] = useState(false);
+
+  useEffect(() => {
+    if (state.message) {
+      setExpanded(true);
+    }
+  }, [state.message]);
 
   if (stepState.status === "DONE") {
     return null;
@@ -49,13 +60,18 @@ export function FmsStepCompletePanel({
         : "Only the assigned owner can complete this step.";
 
     return (
-      <div className="ws-sf-card ws-fms-step-panel is-readonly">
-        <header className="ws-fms-step-panel-header">
-          <h3>Stop: {stepState.step.stepName}</h3>
-          <span className="ws-sf-badge ws-sf-badge-info">Waiting</span>
-        </header>
-        <p className="ws-fms-muted">{message}</p>
-      </div>
+      <details className="ws-fms-step-panel-collapsible ws-sf-card ws-fms-step-panel is-readonly">
+        <summary className="ws-fms-step-panel-summary">
+          <span className="ws-fms-step-panel-summary-copy">
+            <strong>Stop: {stepState.step.stepName}</strong>
+            <small>{message}</small>
+          </span>
+          <ChevronDown aria-hidden className="ws-fms-step-panel-chevron" size={18} />
+        </summary>
+        <div className="ws-fms-step-panel-body">
+          <p className="ws-fms-muted">{message}</p>
+        </div>
+      </details>
     );
   }
 
@@ -64,94 +80,144 @@ export function FmsStepCompletePanel({
   }
 
   return (
-    <form
-      action={formAction}
-      className="ws-sf-card ws-fms-step-panel"
-      encType="multipart/form-data"
+    <details
+      className="ws-fms-step-panel-collapsible ws-sf-card ws-fms-step-panel"
+      open={expanded}
+      onToggle={(event) => setExpanded(event.currentTarget.open)}
     >
-      <input type="hidden" name="stepStateId" value={stepState.id} />
-      <input
-        type="hidden"
-        name="completionValuesJson"
-        value={JSON.stringify(completionValues)}
-        readOnly
-      />
+      <summary className="ws-fms-step-panel-summary">
+        <span className="ws-fms-step-panel-summary-copy">
+          <strong>Your stop: {stepState.step.stepName}</strong>
+          <small>Mark done, add notes, or upload proof</small>
+        </span>
+        <ChevronDown aria-hidden className="ws-fms-step-panel-chevron" size={18} />
+      </summary>
 
-      <header className="ws-fms-step-panel-header">
-        <h3>Your stop: {stepState.step.stepName}</h3>
-      </header>
-      <p className="ws-fms-step-panel-intro">
-        Complete your work for this step, then continue to the next step in the
-        workflow.
-      </p>
+      <form
+        action={formAction}
+        className="ws-fms-step-panel-body"
+        encType="multipart/form-data"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <input type="hidden" name="stepStateId" value={stepState.id} />
+        <input
+          type="hidden"
+          name="completionValuesJson"
+          value={JSON.stringify(completionValues)}
+          readOnly
+        />
 
-      {captureFields.length > 0 ? (
-        <div className="form-grid-premium">
-          {captureFields.map((field) => (
-            <label key={field.key}>
-              <span>
-                {field.label}
-                {field.required ? " *" : ""}
-              </span>
-              {field.type === "TEXT" ? (
-                <input
-                  required={field.required}
-                  value={completionValues[field.key] ?? ""}
-                  onChange={(e) => setCaptureValue(field.key, e.target.value)}
-                />
-              ) : null}
-              {field.type === "NUMBER" ? (
-                <input
-                  type="number"
-                  required={field.required}
-                  value={completionValues[field.key] ?? ""}
-                  onChange={(e) => setCaptureValue(field.key, e.target.value)}
-                />
-              ) : null}
-              {field.type === "DATE" ? (
-                <input
-                  type="date"
-                  required={field.required}
-                  value={completionValues[field.key] ?? ""}
-                  onChange={(e) => setCaptureValue(field.key, e.target.value)}
-                />
-              ) : null}
-              {field.type === "DATETIME" ? (
-                <input
-                  type="datetime-local"
-                  required={field.required}
-                  value={completionValues[field.key] ?? ""}
-                  onChange={(e) => setCaptureValue(field.key, e.target.value)}
-                />
-              ) : null}
+        <section className="ws-fms-step-option ws-fms-step-option-mark">
+          <div className="ws-fms-step-option-head">
+            <CheckCircle2 aria-hidden size={16} />
+            <strong>Mark done</strong>
+          </div>
+          <label className="ws-fms-step-mark-done">
+            <input
+              checked={markedDone}
+              name="markDoneAck"
+              type="checkbox"
+              onChange={(event) => setMarkedDone(event.target.checked)}
+            />
+            <span>I have completed my work at this stop</span>
+          </label>
+        </section>
+
+        {stepState.step.allowNotes ? (
+          <section className="ws-fms-step-option">
+            <div className="ws-fms-step-option-head">
+              <StickyNote aria-hidden size={16} />
+              <strong>Notes</strong>
+            </div>
+            <label className="form-field-full">
+              <span className="sr-only">Notes / remarks</span>
+              <textarea
+                name="notes"
+                placeholder="Optional remarks"
+                rows={3}
+              />
             </label>
-          ))}
+          </section>
+        ) : null}
+
+        {stepState.step.allowUpload ? (
+          <section className="ws-fms-step-option">
+            <div className="ws-fms-step-option-head">
+              <Paperclip aria-hidden size={16} />
+              <strong>Upload</strong>
+            </div>
+            <label className="form-field-full">
+              <span className="sr-only">Attachment</span>
+              <input name="attachment" type="file" />
+            </label>
+          </section>
+        ) : null}
+
+        {captureFields.length > 0 ? (
+          <section className="ws-fms-step-option">
+            <div className="ws-fms-step-option-head">
+              <strong>Step fields</strong>
+            </div>
+            <div className="form-grid-premium">
+              {captureFields.map((field) => (
+                <label key={field.key}>
+                  <span>
+                    {field.label}
+                    {field.required ? " *" : ""}
+                  </span>
+                  {field.type === "TEXT" ? (
+                    <input
+                      required={field.required}
+                      value={completionValues[field.key] ?? ""}
+                      onChange={(e) => setCaptureValue(field.key, e.target.value)}
+                    />
+                  ) : null}
+                  {field.type === "NUMBER" ? (
+                    <input
+                      type="number"
+                      required={field.required}
+                      value={completionValues[field.key] ?? ""}
+                      onChange={(e) => setCaptureValue(field.key, e.target.value)}
+                    />
+                  ) : null}
+                  {field.type === "DATE" ? (
+                    <input
+                      type="date"
+                      required={field.required}
+                      value={completionValues[field.key] ?? ""}
+                      onChange={(e) => setCaptureValue(field.key, e.target.value)}
+                    />
+                  ) : null}
+                  {field.type === "DATETIME" ? (
+                    <input
+                      type="datetime-local"
+                      required={field.required}
+                      value={completionValues[field.key] ?? ""}
+                      onChange={(e) => setCaptureValue(field.key, e.target.value)}
+                    />
+                  ) : null}
+                </label>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {state.message ? (
+          <p className={state.ok ? "ws-form-success" : "ws-form-error"}>
+            {state.message}
+          </p>
+        ) : null}
+
+        <div className="form-actions ws-fms-form-actions">
+          <button
+            className="btn-primary ws-sf-btn-primary"
+            disabled={pending || !markedDone}
+            type="submit"
+          >
+            {pending ? "Completing..." : "Complete step"}
+          </button>
         </div>
-      ) : null}
-
-      {stepState.step.allowNotes ? (
-        <label className="form-field-full">
-          <span>Notes / remarks</span>
-          <textarea name="notes" rows={3} placeholder="Optional remarks" />
-        </label>
-      ) : null}
-
-      {stepState.step.allowUpload ? (
-        <label className="form-field-full">
-          <span>Attachment</span>
-          <input type="file" name="attachment" />
-        </label>
-      ) : null}
-
-      {state.message ? (
-        <p className={state.ok ? "ws-form-success" : "ws-form-error"}>{state.message}</p>
-      ) : null}
-
-      <div className="form-actions ws-fms-form-actions">
-        <button type="submit" className="btn-primary ws-sf-btn-primary" disabled={pending}>
-          {pending ? "Completing..." : "Complete step"}
-        </button>
-      </div>
-    </form>
+      </form>
+    </details>
   );
 }
