@@ -663,7 +663,7 @@ export async function completeFmsStepAction(
       fileSize: number;
     } | null = null;
 
-    if (file instanceof File && file.size > 0 && stepState.step.allowUpload) {
+    if (file instanceof File && file.size > 0) {
       const fileCheck = validateFmsAttachmentFile(file);
       if (!fileCheck.ok) {
         return { ok: false, message: fileCheck.message };

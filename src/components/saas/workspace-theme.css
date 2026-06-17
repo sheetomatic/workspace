@@ -16769,6 +16769,12 @@ body:has(.workspace-app.saas-app) {
   margin-top: 2px;
 }
 
+.workspace-app .ws-fms-step-option-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--sf-text-secondary);
+}
+
 .workspace-app .ws-fms-my-stop-wrap .ws-fms-step-panel-collapsible {
   margin-top: 10px;
 }

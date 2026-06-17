@@ -123,35 +123,32 @@ export function FmsStepCompletePanel({
           </label>
         </section>
 
-        {stepState.step.allowNotes ? (
-          <section className="ws-fms-step-option">
-            <div className="ws-fms-step-option-head">
-              <StickyNote aria-hidden size={16} />
-              <strong>Notes</strong>
-            </div>
-            <label className="form-field-full">
-              <span className="sr-only">Notes / remarks</span>
-              <textarea
-                name="notes"
-                placeholder="Optional remarks"
-                rows={3}
-              />
-            </label>
-          </section>
-        ) : null}
+        <section className="ws-fms-step-option">
+          <div className="ws-fms-step-option-head">
+            <StickyNote aria-hidden size={16} />
+            <strong>Notes</strong>
+          </div>
+          <label className="form-field-full">
+            <span className="sr-only">Notes / remarks</span>
+            <textarea
+              name="notes"
+              placeholder="Optional remarks"
+              rows={3}
+            />
+          </label>
+        </section>
 
-        {stepState.step.allowUpload ? (
-          <section className="ws-fms-step-option">
-            <div className="ws-fms-step-option-head">
-              <Paperclip aria-hidden size={16} />
-              <strong>Upload</strong>
-            </div>
-            <label className="form-field-full">
-              <span className="sr-only">Attachment</span>
-              <input name="attachment" type="file" />
-            </label>
-          </section>
-        ) : null}
+        <section className="ws-fms-step-option">
+          <div className="ws-fms-step-option-head">
+            <Paperclip aria-hidden size={16} />
+            <strong>Upload</strong>
+          </div>
+          <label className="form-field-full">
+            <span className="sr-only">Attachment</span>
+            <input accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" name="attachment" type="file" />
+          </label>
+          <p className="ws-fms-step-option-hint">Optional proof or supporting file</p>
+        </section>
 
         {captureFields.length > 0 ? (
           <section className="ws-fms-step-option">
