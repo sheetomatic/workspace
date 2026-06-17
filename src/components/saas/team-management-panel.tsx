@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { KeyRound, Mail, Pencil, Trash2 } from "lucide-react";
 import type { AttendanceWorkMode, Role, TaskDepartment, WorkspaceModule } from "@prisma/client";
 import {
@@ -228,6 +228,7 @@ function MemberEditForm({
   members: TeamMemberRow[];
   onCancel: () => void;
 }) {
+  const formRef = useRef<HTMLFormElement>(null);
   const [state, action, pending] = useActionState(
     updateTeamMemberDetails,
     initialState,
@@ -236,8 +237,18 @@ function MemberEditForm({
   const managerOptions = managerOptionsForMember(members, member.id);
   const reportingRequired = editRole !== "OWNER";
 
+  useEffect(() => {
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, []);
+
+  useEffect(() => {
+    if (state.ok) {
+      onCancel();
+    }
+  }, [state.ok, onCancel]);
+
   return (
-    <form action={action} className="saas-team-edit-form">
+    <form action={action} className="saas-team-edit-form" ref={formRef}>
       <input name="membershipId" type="hidden" value={member.id} />
       <div className="form-grid-premium">
         <label>
@@ -401,9 +412,11 @@ function MemberEditForm({
 export function TeamManagementPanel({
   members,
   currentUserId,
+  canManage = true,
 }: {
   members: TeamMemberRow[];
   currentUserId: string;
+  canManage?: boolean;
 }) {
   const [inviteState, inviteAction, invitePending] = useActionState(
     inviteTeamMember,
@@ -432,8 +445,13 @@ export function TeamManagementPanel({
     });
   }
 
+  function openEdit(membershipId: string) {
+    setEditingId((current) => (current === membershipId ? null : membershipId));
+  }
+
   return (
     <div className="saas-team-panel">
+      {canManage ? (
       <form action={inviteAction} className="saas-settings-form saas-team-invite saas-form-panel">
         <h3>Add team member</h3>
         <p className="saas-team-invite-lead">
@@ -561,8 +579,9 @@ export function TeamManagementPanel({
           />
         ) : null}
       </form>
+      ) : null}
 
-      {resetState?.message ? (
+      {canManage && resetState?.message ? (
         <div className="saas-form-panel saas-team-reset-panel">
           <p
             className={
@@ -618,8 +637,30 @@ export function TeamManagementPanel({
               );
             }
 
+            const canEditMember = canManage && !isSelf;
+
             return (
-              <article className="saas-team-card" key={member.id}>
+              <article
+                className={`saas-team-card${canEditMember ? " saas-team-card-editable" : ""}`}
+                key={member.id}
+                onClick={
+                  canEditMember
+                    ? () => openEdit(member.id)
+                    : undefined
+                }
+                onKeyDown={
+                  canEditMember
+                    ? (event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          openEdit(member.id);
+                        }
+                      }
+                    : undefined
+                }
+                role={canEditMember ? "button" : undefined}
+                tabIndex={canEditMember ? 0 : undefined}
+              >
                 <div className="saas-team-card-top">
                   <div className="saas-team-card-identity">
                     <span aria-hidden className="crm-avatar sm saas-team-card-avatar">
@@ -644,21 +685,27 @@ export function TeamManagementPanel({
                   </span>
                 </div>
 
-                <div className="saas-team-card-footer">
+                <div
+                  className="saas-team-card-footer"
+                  onClick={(event) => event.stopPropagation()}
+                >
                   <span className="saas-team-card-joined">Joined {joinedLabel}</span>
                   <div className="saas-member-tools">
                     <MemberContactLinks
                       email={member.user.email}
                       phone={member.user.phone}
                     />
-                    {!isSelf ? (
+                    {canEditMember ? (
                       <>
                         <button
                           aria-label={`Edit ${displayName}`}
                           className="btn-icon btn-icon-edit"
-                          title="Edit"
+                          title="Edit member"
                           type="button"
-                          onClick={() => setEditingId(member.id)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openEdit(member.id);
+                          }}
                         >
                           <Pencil aria-hidden size={15} strokeWidth={2.25} />
                         </button>
@@ -668,7 +715,10 @@ export function TeamManagementPanel({
                           disabled={pending}
                           title="Reset password"
                           type="button"
-                          onClick={() => resetPassword(member.id)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            resetPassword(member.id);
+                          }}
                         >
                           <KeyRound aria-hidden size={15} strokeWidth={2.25} />
                         </button>
@@ -676,9 +726,12 @@ export function TeamManagementPanel({
                           aria-label={`Remove ${displayName}`}
                           className="btn-icon btn-icon-remove"
                           disabled={pending}
-                          title="Remove"
+                          title="Remove member"
                           type="button"
-                          onClick={() => removeMember(member.id)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            removeMember(member.id);
+                          }}
                         >
                           <Trash2 aria-hidden size={15} strokeWidth={2.25} />
                         </button>

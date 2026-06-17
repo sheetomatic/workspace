@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { TeamManagementPanel } from "@/components/saas/team-management-panel";
-import { TeamHierarchyPanel } from "@/components/saas/team-hierarchy-panel";
 import { SuperAdminPanel } from "@/components/saas/super-admin-panel";
 import { WorkplaceHrSettingsPanel } from "@/components/saas/workplace-hr-settings-panel";
 import { PageHeader } from "@/components/saas/page-header";
@@ -125,8 +124,8 @@ export default async function TeamPage() {
         title="Team"
         description={
           canManage
-            ? "Manage people, departments, reporting lines, and attendance settings per member."
-            : "View your department team, reporting structure, and member emails."
+            ? "Add, edit, and manage team members, roles, and attendance settings."
+            : "View your department team and member contact details."
         }
       />
       {canManage ? (
@@ -157,24 +156,11 @@ export default async function TeamPage() {
             <WorkplaceHrSettingsPanel settings={hrSettings} />
           </TeamCollapsibleSection>
         ) : null}
-        <TeamCollapsibleSection
-          defaultOpen
-          title="Organization hierarchy"
-          description="Departments, reporting managers, and member visibility."
-        >
-          <TeamHierarchyPanel canManage={canManage} members={members} />
-        </TeamCollapsibleSection>
-        {canManage ? (
-          <TeamCollapsibleSection
-            title="Manage people"
-            description="Add, edit, reset passwords, and remove team members."
-          >
-            <TeamManagementPanel
-              currentUserId={user.id}
-              members={allMembers}
-            />
-          </TeamCollapsibleSection>
-        ) : null}
+        <TeamManagementPanel
+          canManage={canManage}
+          currentUserId={user.id}
+          members={canManage ? allMembers : members}
+        />
       </div>
     </div>
   );
