@@ -2,20 +2,9 @@
 
 import { useEffect, useRef } from "react";
 import type { FmsFormFieldType } from "@prisma/client";
-import { FMS_FIELD_TYPE_LABELS } from "@/lib/fms/constants";
+import { FMS_FIELD_TYPE_LABELS, FMS_FORM_FIELD_TYPES } from "@/lib/fms/constants";
 
-const FIELD_PICKER: FmsFormFieldType[] = [
-  "TEXT",
-  "TEXTAREA",
-  "EMAIL",
-  "PHONE",
-  "NUMBER",
-  "ENUM",
-  "ENUM_LIST",
-  "DATE",
-  "DATETIME",
-  "FILE",
-];
+const FIELD_PICKER = FMS_FORM_FIELD_TYPES;
 
 type Props = {
   open: boolean;

@@ -4,6 +4,7 @@ export type FmsFieldWidth = "half" | "full";
 
 export type FmsAlertConfig = {
   whatsappEnabled: boolean;
+  emailEnabled: boolean;
   onAssign: boolean;
   onDueComing: boolean;
   dueComingDaysBefore: number;
@@ -13,6 +14,7 @@ export type FmsAlertConfig = {
 
 export const DEFAULT_FMS_ALERT_CONFIG: FmsAlertConfig = {
   whatsappEnabled: true,
+  emailEnabled: true,
   onAssign: true,
   onDueComing: true,
   dueComingDaysBefore: 1,
@@ -27,6 +29,7 @@ export function parseAlertConfig(raw: unknown): FmsAlertConfig {
   const record = raw as Record<string, unknown>;
   return {
     whatsappEnabled: record.whatsappEnabled !== false,
+    emailEnabled: record.emailEnabled !== false,
     onAssign: record.onAssign !== false,
     onDueComing: record.onDueComing !== false,
     dueComingDaysBefore:
@@ -80,6 +83,11 @@ export const FMS_SLA_TYPE_LABELS: Record<FmsSlaType, string> = {
 export const FMS_FIELD_TYPES = Object.keys(
   FMS_FIELD_TYPE_LABELS,
 ) as FmsFormFieldType[];
+
+/** Form builder + submit UI (file upload not supported yet). */
+export const FMS_FORM_FIELD_TYPES = FMS_FIELD_TYPES.filter(
+  (type) => type !== "FILE",
+);
 
 export const FMS_SLA_TYPES = Object.keys(FMS_SLA_TYPE_LABELS) as FmsSlaType[];
 

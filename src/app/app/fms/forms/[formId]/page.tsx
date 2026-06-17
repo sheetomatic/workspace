@@ -7,7 +7,7 @@ import { FmsPipelineStatusBadge } from "@/components/saas/fms-pipeline-status-ba
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
 import { FmsTemplateBuilder } from "@/components/saas/fms-template-builder";
 import { requireSession } from "@/lib/require-session";
-import { canManageFms } from "@/lib/fms/access";
+import { canManageFms, canSubmitFmsForm } from "@/lib/fms/access";
 import { DEFAULT_FMS_ALERT_CONFIG } from "@/lib/fms/constants";
 import { getFmsForm } from "@/lib/fms/queries";
 import { listAssignableMembers } from "@/lib/tasks";
@@ -28,6 +28,7 @@ export default async function FmsFormDetailPage({ params, searchParams }: PagePr
   }
 
   const isAdmin = canManageFms(user.role);
+  const canSubmit = canSubmitFmsForm(user);
   const members = isAdmin
     ? await listAssignableMembers(user.organizationId)
     : [];
@@ -44,7 +45,7 @@ export default async function FmsFormDetailPage({ params, searchParams }: PagePr
             formStatus={form.status}
             workflowStatus={form.template?.status}
           />
-          {form.status === "ACTIVE" ? (
+          {form.status === "ACTIVE" && canSubmit ? (
             <Link
               href={`/app/fms/forms/${form.id}/submit`}
               className="btn-primary btn-sm ws-sf-btn-primary"
@@ -163,7 +164,7 @@ export default async function FmsFormDetailPage({ params, searchParams }: PagePr
               </tbody>
             </table>
           </div>
-          {form.status === "ACTIVE" ? (
+          {form.status === "ACTIVE" && canSubmit ? (
             <div className="ws-fms-readonly-actions">
               <Link
                 href={`/app/fms/forms/${form.id}/submit`}

@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { FmsSubmitForm } from "@/components/saas/fms-submit-form";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
+import { canSubmitFmsForm } from "@/lib/fms/access";
 import { getFmsForm } from "@/lib/fms/queries";
 
 type PageProps = {
@@ -19,6 +20,10 @@ export default async function FmsFormSubmitPage({ params }: PageProps) {
   }
 
   if (form.status !== "ACTIVE") {
+    redirect(`/app/fms/forms/${form.id}`);
+  }
+
+  if (!canSubmitFmsForm(user)) {
     redirect(`/app/fms/forms/${form.id}`);
   }
 

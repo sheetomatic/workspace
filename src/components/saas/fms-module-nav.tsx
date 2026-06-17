@@ -6,6 +6,7 @@ import {
   GitBranch,
   LayoutDashboard,
   ListChecks,
+  Radar,
   Settings2,
   TrainFront,
 } from "lucide-react";
@@ -47,6 +48,13 @@ export function FmsModuleNav({ user }: { user: SessionUser }) {
       icon: LayoutDashboard,
       visible: isManager,
       description: "All active workflows",
+    },
+    {
+      href: "/app/fms/ops",
+      label: "Ops monitor",
+      icon: Radar,
+      visible: isManager,
+      description: "Overdue and unassigned",
     },
     {
       href: "/app/fms/scores",

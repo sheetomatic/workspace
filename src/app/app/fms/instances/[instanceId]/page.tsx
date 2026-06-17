@@ -1,14 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { FmsInstanceActivity } from "@/components/saas/fms-instance-activity";
+import { FmsInstanceAttachments } from "@/components/saas/fms-instance-attachments";
+import { FmsInstanceControlPanel } from "@/components/saas/fms-instance-control-panel";
 import { FmsTrainTrack } from "@/components/saas/fms-train-track";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
 import { FmsStepCompletePanel } from "@/components/saas/fms-step-complete-panel";
 import { MisScoreBadge } from "@/components/saas/mis-score-badge";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
-import { canManageFms } from "@/lib/fms/access";
+import { canControlFmsPipeline, canCompleteFmsStep } from "@/lib/fms/access";
 import { getFmsInstance } from "@/lib/fms/queries";
+import { listFmsAuditForInstance } from "@/lib/fms/audit";
 import { fmsJobMisScore, fmsStepMisScore } from "@/lib/mis/score";
+import { listAssignableMembers } from "@/lib/tasks";
 import {
   formatDelayLabel,
   isStepOverdue,
@@ -28,13 +33,18 @@ export default async function FmsInstancePage({ params }: PageProps) {
     notFound();
   }
 
-  const isAdmin = canManageFms(user.role);
+  const auditEvents = await listFmsAuditForInstance(instanceId, user.organizationId);
+
+  const canControl = canControlFmsPipeline(user.role);
   const activeStep = instance.stepStates.find((s) => s.status === "IN_PROGRESS");
   const canComplete =
     Boolean(activeStep) &&
-    (isAdmin ||
-      activeStep?.ownerUserId === user.id ||
-      activeStep?.ownerUserId === null);
+    instance.status === "ACTIVE" &&
+    canCompleteFmsStep(user, activeStep ?? { ownerUserId: null });
+
+  const members = canControl
+    ? await listAssignableMembers(user.organizationId)
+    : [];
 
   const activeDelay = activeStep
     ? liveDelayMinutes(
@@ -70,6 +80,15 @@ export default async function FmsInstancePage({ params }: PageProps) {
     delayMinutes: s.delayMinutes,
     ownerName: s.owner?.name ?? s.owner?.email.split("@")[0] ?? null,
   }));
+
+  const attachmentRows = instance.stepStates.flatMap((stepState) =>
+    stepState.attachments.map((file) => ({
+      id: file.id,
+      fileName: file.fileName,
+      fileSize: file.fileSize,
+      stepName: stepState.step.stepName,
+    })),
+  );
 
   return (
     <div className="saas-page ws-fms-page ws-fms-sf">
@@ -151,9 +170,28 @@ export default async function FmsInstancePage({ params }: PageProps) {
           </section>
         ) : null}
 
-        {activeStep ? (
-          <FmsStepCompletePanel stepState={activeStep} canComplete={canComplete} />
+        {activeStep && instance.status === "ACTIVE" ? (
+          <FmsStepCompletePanel
+            stepState={{
+              ...activeStep,
+              ownerUserId: activeStep.ownerUserId,
+            }}
+            canComplete={canComplete}
+          />
         ) : null}
+
+        {canControl ? (
+          <FmsInstanceControlPanel
+            instanceId={instance.id}
+            instanceStatus={instance.status}
+            activeStep={activeStep ?? null}
+            members={members}
+          />
+        ) : null}
+
+        <FmsInstanceAttachments rows={attachmentRows} />
+
+        <FmsInstanceActivity steps={instance.stepStates} auditEvents={auditEvents} />
       </div>
     </div>
   );

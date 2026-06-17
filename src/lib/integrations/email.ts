@@ -47,6 +47,54 @@ export async function sendPlainEmail(params: {
   return { sent: true };
 }
 
+export async function sendFmsStepReminderEmail(params: {
+  toEmail: string;
+  kind: "assign" | "due_coming" | "same_day" | "overdue";
+  assigneeName: string;
+  referenceLabel: string;
+  stepName: string;
+  plannedLabel: string;
+  organizationName: string;
+  instanceUrl: string;
+  dueComingDaysBefore?: number;
+}): Promise<EmailSendResult> {
+  const subjectByKind = {
+    assign: `FMS step assigned: ${params.stepName}`,
+    due_coming: `FMS step due soon: ${params.stepName}`,
+    same_day: `FMS step due today: ${params.stepName}`,
+    overdue: `FMS step overdue: ${params.stepName}`,
+  } as const;
+
+  const introByKind = {
+    assign: "A workflow step has been assigned to you.",
+    due_coming: `This step is due in ${params.dueComingDaysBefore ?? 1} day(s).`,
+    same_day: "This step is due today.",
+    overdue: "This step is past its planned date.",
+  } as const;
+
+  const text = [
+    `Hello ${params.assigneeName},`,
+    ``,
+    introByKind[params.kind],
+    ``,
+    `Job: ${params.referenceLabel}`,
+    `Step: ${params.stepName}`,
+    `Planned: ${params.plannedLabel}`,
+    `Team: ${params.organizationName}`,
+    ``,
+    `Open in Sheetomatic:`,
+    params.instanceUrl,
+    ``,
+    `- Sheetomatic FMS`,
+  ].join("\n");
+
+  return sendPlainEmail({
+    toEmail: params.toEmail,
+    subject: subjectByKind[params.kind],
+    text,
+  });
+}
+
 function buildTaskEmailBody(params: {
   assigneeName: string;
   taskTitle: string;

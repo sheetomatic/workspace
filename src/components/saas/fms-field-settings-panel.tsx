@@ -4,6 +4,7 @@ import { Trash2 } from "lucide-react";
 import type { FmsFormFieldType } from "@prisma/client";
 import {
   FMS_FIELD_TYPE_LABELS,
+  FMS_FORM_FIELD_TYPES,
   defaultFieldWidth,
   isHalfWidthFieldType,
   slugifyFieldKey,
@@ -11,18 +12,7 @@ import {
 } from "@/lib/fms/constants";
 import type { FormFieldDraft } from "@/components/saas/fms-form-builder";
 
-const FIELD_TYPES: FmsFormFieldType[] = [
-  "TEXT",
-  "TEXTAREA",
-  "EMAIL",
-  "PHONE",
-  "NUMBER",
-  "ENUM",
-  "ENUM_LIST",
-  "DATE",
-  "DATETIME",
-  "FILE",
-];
+const FIELD_TYPES = FMS_FORM_FIELD_TYPES;
 
 function parseOptionTags(options: string) {
   return options

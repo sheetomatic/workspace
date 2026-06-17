@@ -1,29 +1,31 @@
 import Link from "next/link";
 import { FmsLineCard } from "@/components/saas/fms-line-card";
+import { FmsPagination } from "@/components/saas/fms-pagination";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
-import { listMyFmsSteps, listFmsInstances } from "@/lib/fms/queries";
+import { listMyFmsSteps, listFmsInstancesPage } from "@/lib/fms/queries";
+import { fmsPageFromSearchParam } from "@/lib/scale";
 
-export default async function FmsMyStopsPage() {
+type PageProps = {
+  searchParams: Promise<{ page?: string }>;
+};
+
+export default async function FmsMyStopsPage({ searchParams }: PageProps) {
   const user = await requireSession(undefined, { module: "FMS" });
+  const params = await searchParams;
+  const page = fmsPageFromSearchParam(params.page);
 
-  const [mySteps, instances] = await Promise.all([
+  const [mySteps, queuePage] = await Promise.all([
     listMyFmsSteps(user.organizationId, user.id),
-    listFmsInstances(user.organizationId),
+    listFmsInstancesPage(user.organizationId, {
+      status: "ACTIVE",
+      page,
+      assigneeUserId: user.id,
+    }),
   ]);
 
   const myInstanceIds = new Set(mySteps.map((s) => s.instanceId));
-  const watchingInstances = instances.filter(
-    (job) =>
-      job.status === "ACTIVE" &&
-      job.stepStates.some(
-        (s) =>
-          s.ownerUserId === user.id &&
-          (s.status === "IN_PROGRESS" || s.status === "PENDING"),
-      ),
-  );
-
-  const lineCards = watchingInstances.map((job) => ({
+  const lineCards = queuePage.items.map((job) => ({
     job,
     isMyTurn: myInstanceIds.has(job.id),
   }));
@@ -40,27 +42,37 @@ export default async function FmsMyStopsPage() {
           <p>No stops assigned to you right now. When a workflow reaches your step, it will appear here.</p>
         </div>
       ) : (
-        <section className="ws-fms-lines-grid" aria-label="Your workflow stops">
-          {lineCards.map(({ job, isMyTurn }) => (
-            <div
-              key={job.id}
-              className={`ws-fms-my-stop-wrap${isMyTurn ? " is-my-turn" : ""}`}
-            >
-              {isMyTurn ? (
-                <p className="ws-fms-my-turn-banner">
-                  Train is here - action needed
-                </p>
-              ) : null}
-              <FmsLineCard
-                instanceId={job.id}
-                title={job.referenceLabel ?? job.template.name}
-                workflowName={job.template.name}
-                status={job.status}
-                stepStates={job.stepStates}
-              />
-            </div>
-          ))}
-        </section>
+        <>
+          <section className="ws-fms-lines-grid" aria-label="Your workflow stops">
+            {lineCards.map(({ job, isMyTurn }) => (
+              <div
+                key={job.id}
+                className={`ws-fms-my-stop-wrap${isMyTurn ? " is-my-turn" : ""}`}
+              >
+                {isMyTurn ? (
+                  <p className="ws-fms-my-turn-banner">
+                    Train is here - action needed
+                  </p>
+                ) : null}
+                <FmsLineCard
+                  instanceId={job.id}
+                  title={job.referenceLabel ?? job.template.name}
+                  workflowName={job.template.name}
+                  status={job.status}
+                  stepStates={job.stepStates}
+                />
+              </div>
+            ))}
+          </section>
+          <FmsPagination
+            page={queuePage.page}
+            totalPages={queuePage.totalPages}
+            total={queuePage.total}
+            searchParams={params}
+            basePath="/app/fms/my-stops"
+            label="assigned lines"
+          />
+        </>
       )}
 
       {mySteps.length > 0 ? (

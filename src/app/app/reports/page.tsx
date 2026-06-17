@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/saas/page-header";
+import { FmsReportsMisPanel } from "@/components/saas/fms-reports-mis-panel";
 import { requireSession } from "@/lib/require-session";
+import { getFmsMisSummary } from "@/lib/fms/queries";
+import { hasWorkspaceModule } from "@/lib/workspace-modules";
 import { listWorkspaceLinks, WORKSPACE_LINK_LABELS } from "@/lib/workspace";
 import { getGoogleSheetsConnectionStatus } from "@/lib/integrations/google-sheets-dashboard";
 import { getSpreadsheetIdForOrganization } from "@/lib/integrations/google-sheets-dashboard";
@@ -27,6 +30,8 @@ export default async function ReportsPage() {
 
   const spreadsheetId = await getSpreadsheetIdForOrganization(user.organizationId);
   const sheetsStatus = getGoogleSheetsConnectionStatus(spreadsheetId);
+  const fmsEnabled = hasWorkspaceModule(user, "FMS");
+  const fmsMis = fmsEnabled ? await getFmsMisSummary(user.organizationId) : null;
 
   return (
     <div className="saas-page">
@@ -34,6 +39,8 @@ export default async function ReportsPage() {
         title="Reports"
         description="MIS dashboards and sheet sources connected to your workspace."
       />
+
+      {fmsMis ? <FmsReportsMisPanel summary={fmsMis} /> : null}
 
       {sheetsStatus.ready ? (
         <article className="saas-panel saas-reports-panel">

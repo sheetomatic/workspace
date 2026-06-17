@@ -80,8 +80,10 @@ export function buildDesignIntakeAiPrompt(input: {
 }
 
 export function aiFormDraftToFieldCreates(draft: ParsedFmsFormDraft) {
-  return draft.fields.map((field, index) => {
-    const fieldKey = slugifyFieldKey(field.label);
+  return draft.fields
+    .filter((field) => field.fieldType !== "FILE")
+    .map((field, index) => {
+      const fieldKey = slugifyFieldKey(field.label);
     const width: FmsFieldWidth = defaultFieldWidth(field.fieldType);
     let optionsInput: FmsFieldOptionsInput;
 

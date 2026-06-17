@@ -26,6 +26,11 @@ function result(score: number, label: string): MisScoreResult {
   return { score: clamped, tier: tierFromScore(clamped), label };
 }
 
+/** Static score for dashboards when only a numeric average is available. */
+export function misScoreFromPoints(score: number, label = "Average"): MisScoreResult {
+  return result(score, label);
+}
+
 /** Step completed on time = 100; penalize ~2 pts per hour late. */
 export function fmsStepMisScore(input: {
   plannedAt: Date | null;

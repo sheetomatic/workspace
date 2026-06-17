@@ -9,6 +9,7 @@ import type { FmsCaptureField } from "@/lib/fms/constants";
 type StepState = {
   id: string;
   status: FmsStepStatus;
+  ownerUserId?: string | null;
   step: {
     stepName: string;
     allowMarkDone: boolean;
@@ -41,16 +42,19 @@ export function FmsStepCompletePanel({
   }
 
   if (!canComplete || !stepState.step.allowMarkDone) {
+    const message = !stepState.step.allowMarkDone
+      ? "This step is tracked for visibility only."
+      : !stepState.ownerUserId
+        ? "This step has no owner assigned. A manager must reassign before work can continue."
+        : "Only the assigned owner can complete this step.";
+
     return (
       <div className="ws-sf-card ws-fms-step-panel is-readonly">
         <header className="ws-fms-step-panel-header">
           <h3>Stop: {stepState.step.stepName}</h3>
-          <span className="ws-sf-badge ws-sf-badge-info">Train waiting here</span>
+          <span className="ws-sf-badge ws-sf-badge-info">Waiting</span>
         </header>
-        <p className="ws-fms-muted">
-          The train is stopped at this station. Only the assigned owner can release it to
-          the next stop.
-        </p>
+        <p className="ws-fms-muted">{message}</p>
       </div>
     );
   }

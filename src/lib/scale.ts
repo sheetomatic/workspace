@@ -5,6 +5,8 @@ export const SCALE = {
   TASK_PAGE_SIZE: 50,
   /** Max due reminders processed per cron batch */
   CRON_REMINDER_BATCH: 100,
+  /** Max FMS pipeline rows per page */
+  FMS_PAGE_SIZE: 25,
   /** Max cron batches per run (100 x 10 = 1000 reminders/run) */
   CRON_REMINDER_MAX_BATCHES: 10,
   /** Inbox conversation list cache (seconds) */
@@ -21,4 +23,12 @@ export function taskPageFromSearchParam(raw: string | undefined) {
     return 1;
   }
   return Math.min(Math.floor(page), 500);
+}
+
+export function fmsPageFromSearchParam(raw: string | undefined) {
+  const page = Number(raw ?? "1");
+  if (!Number.isFinite(page) || page < 1) {
+    return 1;
+  }
+  return Math.min(Math.floor(page), 200);
 }

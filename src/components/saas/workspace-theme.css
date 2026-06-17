@@ -12105,6 +12105,65 @@
   gap: 8px;
 }
 
+.workspace-app .ws-fms-control-panel {
+  padding: 16px;
+}
+
+.workspace-app .ws-fms-control-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--sf-card-border);
+}
+
+.workspace-app .ws-fms-control-form label span {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-fms-control-form select,
+.workspace-app .ws-fms-control-form input[type="text"] {
+  width: 100%;
+  max-width: 360px;
+}
+
+.workspace-app .ws-fms-control-form.is-danger {
+  border-top-color: #f9cfc9;
+}
+
+.workspace-app .ws-fms-btn-danger {
+  border-color: #f9cfc9;
+  color: #8c1d18;
+}
+
+.workspace-app .ws-fms-attachments-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 16px 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.workspace-app .ws-fms-attachments-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--sf-card-border);
+  border-radius: 6px;
+  background: #fafaf9;
+}
+
+.workspace-app .ws-fms-train-stop.is-skipped .ws-fms-train-stop-marker {
+  border-color: #c9c7c5;
+  background: #f3f2f2;
+  color: var(--sf-text-secondary);
+}
+
 .workspace-app .ws-sf-badge-live {
   background: #dcfce7;
   color: #166534;
@@ -16327,4 +16386,159 @@
   .workspace-app .ws-module-layout-main {
     padding: 12px 16px 20px;
   }
+
+  .workspace-app .ws-fms-train-track {
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    padding-bottom: 16px;
+  }
+
+  .workspace-app .ws-fms-train-stop {
+    min-width: 72px;
+    max-width: 112px;
+    scroll-snap-align: center;
+  }
+
+  .workspace-app .ws-fms-train-stop-marker {
+    width: 36px;
+    height: 36px;
+    font-size: 0.75rem;
+  }
+
+  .workspace-app .ws-fms-train-stop-name {
+    font-size: 0.6875rem;
+    line-height: 1.2;
+    max-height: 2.4em;
+    overflow: hidden;
+  }
+
+  .workspace-app .ws-fms-template-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-app .ws-fms-onboarding-list li {
+    flex-wrap: wrap;
+  }
+
+  .workspace-app .ws-fms-ops-stack {
+    gap: 16px;
+  }
+}
+
+/* FMS Day 3-5 additions */
+.workspace-app .ws-fms-template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.workspace-app .ws-fms-template-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--sf-card-border);
+  background: #fff;
+  text-decoration: none;
+  color: inherit;
+  min-height: 100%;
+}
+
+.workspace-app .ws-fms-template-card:hover {
+  border-color: #0176d3;
+  box-shadow: 0 2px 8px rgba(1, 118, 211, 0.12);
+}
+
+.workspace-app .ws-fms-onboarding-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.workspace-app .ws-fms-onboarding-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--sf-card-border);
+  background: #fafaf9;
+}
+
+.workspace-app .ws-fms-onboarding-list li.is-done {
+  background: #f3f9f4;
+  border-color: #c9efd4;
+}
+
+.workspace-app .ws-fms-onboarding-list li.is-done .ws-fms-onboarding-icon {
+  color: #2e844a;
+}
+
+.workspace-app .ws-fms-onboarding-list li div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.workspace-app .ws-fms-onboarding-list li span {
+  font-size: 0.8125rem;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-fms-audit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.workspace-app .ws-fms-audit-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--sf-card-border);
+}
+
+.workspace-app .ws-fms-audit-row:last-child {
+  border-bottom: none;
+}
+
+.workspace-app .ws-fms-audit-row p {
+  margin: 4px 0 0;
+  font-size: 0.875rem;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-fms-activity-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.workspace-app .ws-fms-ops-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.workspace-app .ws-fms-reports-panel .ws-fms-reports-metrics {
+  margin: 12px 0 16px;
+}
+
+.workspace-app .ws-fms-reports-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
 }

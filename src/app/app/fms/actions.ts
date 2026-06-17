@@ -7,9 +7,10 @@ import type {
   FmsSlaType,
   Prisma,
 } from "@prisma/client";
-import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { canManageFms } from "@/lib/fms/access";
+import { canManageFms, canSubmitFmsForm, canCompleteFmsStep } from "@/lib/fms/access";
+import { getFmsActor } from "@/lib/fms/session";
+import { recordFmsAudit } from "@/lib/fms/audit";
 import {
   buildStubFormAiPrompt,
   countMeaningfulFormFields,
@@ -31,6 +32,15 @@ import {
   completeFmsStep,
   createFmsInstanceFromSubmission,
 } from "@/lib/fms/instance-lifecycle";
+import {
+  parseCaptureFields,
+  validateCaptureFields,
+} from "@/lib/fms/capture-fields";
+import { validateFmsAttachmentFile } from "@/lib/fms/attachment-limits";
+import {
+  fmsTemplateStepsFingerprint,
+  fmsTemplateStepsLockedMessage,
+} from "@/lib/fms/template-guard";
 import { isNextRedirect } from "@/lib/next-redirect";
 import {
   type FmsActionState,
@@ -210,11 +220,14 @@ function parseStepsJson(raw: string) {
 }
 
 async function requireFmsAdmin() {
-  const user = await getSessionUser();
-  if (!user || !canManageFms(user.role)) {
+  const actor = await getFmsActor();
+  if (!actor.ok) {
+    throw new Error(actor.message);
+  }
+  if (!canManageFms(actor.user.role)) {
     throw new Error("You cannot manage forms or FMS.");
   }
-  return user;
+  return actor.user;
 }
 
 export async function createFmsForm(
@@ -398,6 +411,7 @@ export async function updateFmsTemplate(
 
     const template = await prisma.fmsTemplate.findFirst({
       where: { id: templateId, organizationId: user.organizationId },
+      include: { steps: { orderBy: { sortOrder: "asc" } } },
     });
     if (!template) {
       return { ok: false, message: "FMS workflow not found." };
@@ -406,6 +420,52 @@ export async function updateFmsTemplate(
     const steps = parseStepsJson(stepsRaw);
     if (steps.length === 0) {
       return { ok: false, message: "Add at least one step." };
+    }
+
+    const linkedJobCount = await prisma.fmsInstance.count({
+      where: { templateId },
+    });
+
+    const existingFingerprint = fmsTemplateStepsFingerprint(
+      template.steps.map((step) => ({
+        stepName: step.stepName,
+        roleLabel: step.roleLabel ?? undefined,
+        defaultOwnerUserId: step.defaultOwnerUserId ?? undefined,
+        slaType: step.slaType,
+        slaConfig: step.slaConfig as FmsSlaConfig,
+        allowMarkDone: step.allowMarkDone,
+        allowUpload: step.allowUpload,
+        allowNotes: step.allowNotes,
+        captureFields: step.captureFields as FmsCaptureField[],
+      })),
+    );
+    const nextFingerprint = fmsTemplateStepsFingerprint(steps);
+
+    if (linkedJobCount > 0) {
+      if (existingFingerprint !== nextFingerprint) {
+        return {
+          ok: false,
+          message: fmsTemplateStepsLockedMessage(linkedJobCount),
+        };
+      }
+
+      await prisma.fmsTemplate.update({
+        where: { id: templateId },
+        data: {
+          name,
+          status: activate ? "ACTIVE" : template.status,
+          holidayDates,
+          alertConfig,
+        },
+      });
+
+      revalidatePath("/app/fms");
+      revalidatePath(`/app/fms/forms/${template.formId}`);
+      return {
+        ok: true,
+        message:
+          "Workflow name and notification settings saved. Stop structure is locked while jobs are active.",
+      };
     }
 
     await prisma.$transaction([
@@ -449,9 +509,14 @@ export async function submitFmsForm(
   formData: FormData,
 ): Promise<FmsActionState> {
   try {
-    const user = await getSessionUser();
-    if (!user) {
-      return { ok: false, message: "Sign in required." };
+    const actor = await getFmsActor();
+    if (!actor.ok) {
+      return { ok: false, message: actor.message };
+    }
+    const user = actor.user;
+
+    if (!canSubmitFmsForm(user)) {
+      return { ok: false, message: "You cannot submit FMS forms." };
     }
 
     const formId = formData.get("formId")?.toString() ?? "";
@@ -477,6 +542,9 @@ export async function submitFmsForm(
     values = applySubmissionTimestamp(values, form.fields);
 
     for (const field of form.fields) {
+      if (field.fieldType === "FILE") {
+        continue;
+      }
       if (!field.required) {
         continue;
       }
@@ -508,6 +576,14 @@ export async function submitFmsForm(
         submissionId: submission.id,
         referenceLabel,
       });
+      await recordFmsAudit({
+        organizationId: user.organizationId,
+        userId: user.id,
+        action: "FORM_SUBMITTED",
+        instanceId: instance.id,
+        summary: `Form "${form.name}" submitted; pipeline started.`,
+        metadata: { formId: form.id, referenceLabel },
+      });
       revalidatePath("/app/fms");
       redirect(`/app/fms/instances/${instance.id}`);
     }
@@ -528,10 +604,11 @@ export async function completeFmsStepAction(
   formData: FormData,
 ): Promise<FmsActionState> {
   try {
-    const user = await getSessionUser();
-    if (!user) {
-      return { ok: false, message: "Sign in required." };
+    const actor = await getFmsActor();
+    if (!actor.ok) {
+      return { ok: false, message: actor.message };
     }
+    const user = actor.user;
 
     const stepStateId = formData.get("stepStateId")?.toString() ?? "";
     const notes = formData.get("notes")?.toString() ?? "";
@@ -558,10 +635,46 @@ export async function completeFmsStepAction(
       return { ok: false, message: "Step already completed." };
     }
 
-    const isOwner = stepState.ownerUserId === user.id;
-    const isAdmin = canManageFms(user.role);
-    if (!isOwner && !isAdmin) {
-      return { ok: false, message: "You are not the owner of this step." };
+    if (stepState.status !== "IN_PROGRESS") {
+      return { ok: false, message: "This step is not active." };
+    }
+
+    if (!canCompleteFmsStep(user, stepState)) {
+      if (!stepState.ownerUserId) {
+        return {
+          ok: false,
+          message: "This step has no owner. Ask a manager to assign someone first.",
+        };
+      }
+      return { ok: false, message: "You are not allowed to complete this step." };
+    }
+
+    const captureFields = parseCaptureFields(stepState.step.captureFields);
+    const captureCheck = validateCaptureFields(captureFields, completionValues);
+    if (!captureCheck.ok) {
+      return { ok: false, message: captureCheck.message };
+    }
+
+    const file = formData.get("attachment");
+    let attachmentBuffer: Buffer | null = null;
+    let attachmentMeta: {
+      fileName: string;
+      mimeType: string;
+      fileSize: number;
+    } | null = null;
+
+    if (file instanceof File && file.size > 0 && stepState.step.allowUpload) {
+      const fileCheck = validateFmsAttachmentFile(file);
+      if (!fileCheck.ok) {
+        return { ok: false, message: fileCheck.message };
+      }
+
+      attachmentBuffer = Buffer.from(await file.arrayBuffer());
+      attachmentMeta = {
+        fileName: file.name,
+        mimeType: file.type || "application/octet-stream",
+        fileSize: file.size,
+      };
     }
 
     await completeFmsStep({
@@ -572,17 +685,24 @@ export async function completeFmsStepAction(
       completionValues,
     });
 
-    const file = formData.get("attachment");
-    if (file instanceof File && file.size > 0 && stepState.step.allowUpload) {
-      const buffer = Buffer.from(await file.arrayBuffer());
+    await recordFmsAudit({
+      organizationId: user.organizationId,
+      userId: user.id,
+      action: "STEP_COMPLETED",
+      instanceId: stepState.instanceId,
+      summary: `Completed "${stepState.step.stepName}".`,
+      metadata: { stepStateId, notes: notes || null },
+    });
+
+    if (attachmentBuffer && attachmentMeta) {
       await prisma.fmsStepAttachment.create({
         data: {
           stepStateId,
           uploadedById: user.id,
-          fileName: file.name,
-          mimeType: file.type || "application/octet-stream",
-          fileSize: file.size,
-          data: buffer,
+          fileName: attachmentMeta.fileName,
+          mimeType: attachmentMeta.mimeType,
+          fileSize: attachmentMeta.fileSize,
+          data: new Uint8Array(attachmentBuffer),
         },
       });
     }

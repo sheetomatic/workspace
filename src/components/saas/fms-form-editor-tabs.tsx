@@ -9,13 +9,15 @@ export function FmsFormEditorTabs({
   formSection,
   workflowSection,
   dangerSection,
+  defaultTab = "form",
 }: {
   hasWorkflow: boolean;
   formSection: React.ReactNode;
   workflowSection: React.ReactNode;
   dangerSection: React.ReactNode;
+  defaultTab?: Tab;
 }) {
-  const [tab, setTab] = useState<Tab>("form");
+  const [tab, setTab] = useState<Tab>(defaultTab);
 
   return (
     <div className="ws-fms-editor-tabs">

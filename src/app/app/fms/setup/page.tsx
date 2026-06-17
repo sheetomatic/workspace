@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FmsDescribeProcessLink } from "@/components/saas/fms-describe-process-link";
+import { FmsOnboardingChecklist } from "@/components/saas/fms-onboarding-checklist";
 import { FmsPipelineStatusBadge } from "@/components/saas/fms-pipeline-status-badge";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
@@ -9,6 +10,7 @@ import {
   listFmsForms,
   listFmsFlowDesigns,
   listPendingFmsFlowDesigns,
+  getFmsOnboardingStatus,
 } from "@/lib/fms/queries";
 import { redirect } from "next/navigation";
 
@@ -21,10 +23,11 @@ export default async function FmsSetupPage() {
     redirect("/app/fms/my-stops");
   }
 
-  const [forms, flowDesigns, pendingDesigns] = await Promise.all([
+  const [forms, flowDesigns, pendingDesigns, onboarding] = await Promise.all([
     listFmsForms(user.organizationId),
     listFmsFlowDesigns(user.organizationId),
     isOwner ? listPendingFmsFlowDesigns(user.organizationId) : Promise.resolve([]),
+    getFmsOnboardingStatus(user.organizationId),
   ]);
 
   const liveForms = forms.filter((form) => form.status === "ACTIVE");
@@ -36,16 +39,11 @@ export default async function FmsSetupPage() {
         title="Setup"
         description="Design routes, create forms, and launch workflows."
         actions={
-          canDesign ? (
-            <div className="ws-fms-toolbar-actions">
-              <FmsDescribeProcessLink />
-              <Link href="/app/fms/forms/new" className="btn-secondary btn-sm">
-                Legacy form builder
-              </Link>
-            </div>
-          ) : undefined
+          canDesign ? <FmsDescribeProcessLink /> : undefined
         }
       />
+
+      <FmsOnboardingChecklist status={onboarding} />
 
       <div className="ws-sf-metrics ws-fms-metrics">
         <div className="ws-sf-metric-tile">

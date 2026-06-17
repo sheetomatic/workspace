@@ -60,7 +60,10 @@ export function FmsSubmitForm({
   const [values, setValues] = useState<Record<string, unknown>>({});
 
   const visibleFields = useMemo(
-    () => fields.filter((field) => !isTimestampField(field)),
+    () =>
+      fields.filter(
+        (field) => !isTimestampField(field) && field.fieldType !== "FILE",
+      ),
     [fields],
   );
 

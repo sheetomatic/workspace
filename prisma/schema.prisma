@@ -144,6 +144,7 @@ model Organization {
   fmsFlowDesigns    FmsFlowDesign[]
   fmsInstances      FmsInstance[]
   fmsFormSubmissions FmsFormSubmission[]
+  fmsAuditEvents    FmsAuditEvent[]
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
 }
@@ -803,6 +804,7 @@ model User {
   fmsStepAttachments   FmsStepAttachment[]      @relation("FmsStepAttachmentUploader")
   fmsFlowDesignsCreated FmsFlowDesign[]         @relation("FmsFlowDesignCreator")
   fmsFlowDesignsApproved FmsFlowDesign[]        @relation("FmsFlowDesignApprover")
+  fmsAuditEvents         FmsAuditEvent[]        @relation("FmsAuditActor")
   createdAt            DateTime                 @default(now())
   updatedAt            DateTime                 @updatedAt
 }
@@ -1317,4 +1319,31 @@ model FmsStepAttachment {
   createdAt    DateTime     @default(now())
 
   @@index([stepStateId])
+}
+
+enum FmsAuditAction {
+  FORM_SUBMITTED
+  STEP_COMPLETED
+  STEP_SKIPPED
+  STEP_REASSIGNED
+  INSTANCE_CANCELLED
+  DESIGN_APPROVED
+  DESIGN_REJECTED
+  DESIGN_SUBMITTED
+}
+
+model FmsAuditEvent {
+  id             String         @id @default(cuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  instanceId     String?
+  userId         String
+  user           User           @relation("FmsAuditActor", fields: [userId], references: [id], onDelete: Cascade)
+  action         FmsAuditAction
+  summary        String
+  metadata       Json           @default("{}")
+  createdAt      DateTime       @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([instanceId, createdAt])
 }

@@ -2,13 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import {
   canApproveFmsFlow,
   canManageFms,
   canSubmitFmsFlow,
 } from "@/lib/fms/access";
+import { getFmsActor } from "@/lib/fms/session";
+import { recordFmsAudit } from "@/lib/fms/audit";
 import { parseHolidayDates, parseAlertConfig } from "@/lib/fms/constants";
 import {
   flowStepToTemplateStep,
@@ -40,19 +41,25 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { listAssignableMembers } from "@/lib/tasks";
 
 async function requireFmsDesigner() {
-  const user = await getSessionUser();
-  if (!user || !canSubmitFmsFlow(user.role)) {
+  const actor = await getFmsActor();
+  if (!actor.ok) {
+    throw new Error(actor.message);
+  }
+  if (!canSubmitFmsFlow(actor.user.role)) {
     throw new Error("You cannot design FMS workflows.");
   }
-  return user;
+  return actor.user;
 }
 
 async function requireFmsOwner() {
-  const user = await getSessionUser();
-  if (!user || !canApproveFmsFlow(user.role)) {
+  const actor = await getFmsActor();
+  if (!actor.ok) {
+    throw new Error(actor.message);
+  }
+  if (!canApproveFmsFlow(actor.user.role)) {
     throw new Error("Only the workspace owner can approve FMS designs.");
   }
-  return user;
+  return actor.user;
 }
 
 function parseDesignForm(formData: FormData) {
@@ -190,6 +197,14 @@ export async function submitFmsFlowDesignForApproval(
         submittedAt: new Date(),
         reviewNote: null,
       },
+    });
+
+    await recordFmsAudit({
+      organizationId: user.organizationId,
+      userId: user.id,
+      action: "DESIGN_SUBMITTED",
+      summary: `Flow "${name}" submitted for approval.`,
+      metadata: { designId },
     });
 
     revalidatePath("/app/fms");
@@ -357,8 +372,12 @@ export async function provisionApprovedFmsDesign(
   formData: FormData,
 ): Promise<FmsActionState> {
   try {
-    const user = await getSessionUser();
-    if (!user || (!canApproveFmsFlow(user.role) && !canSubmitFmsFlow(user.role))) {
+    const actor = await getFmsActor();
+    if (!actor.ok) {
+      return { ok: false, message: actor.message };
+    }
+    const user = actor.user;
+    if (!canApproveFmsFlow(user.role) && !canSubmitFmsFlow(user.role)) {
       return { ok: false, message: "You cannot create live FMS for this design." };
     }
 
@@ -418,6 +437,14 @@ export async function approveFmsFlowDesign(
 
     const formId = await provisionFmsFromDesign(design, user.id);
 
+    await recordFmsAudit({
+      organizationId: user.organizationId,
+      userId: user.id,
+      action: "DESIGN_APPROVED",
+      summary: `Approved flow "${design.name}" and created live form.`,
+      metadata: { designId, formId },
+    });
+
     revalidatePath("/app/fms");
     revalidatePath(`/app/fms/design/${designId}`);
     revalidatePath(`/app/fms/forms/${formId}`);
@@ -465,6 +492,14 @@ export async function rejectFmsFlowDesign(
       },
     });
 
+    await recordFmsAudit({
+      organizationId: user.organizationId,
+      userId: user.id,
+      action: "DESIGN_REJECTED",
+      summary: `Rejected flow "${design.name}"${reviewNote ? `: ${reviewNote}` : "."}`,
+      metadata: { designId, reviewNote },
+    });
+
     revalidatePath("/app/fms");
     revalidatePath(`/app/fms/design/${designId}`);
     return { ok: true, message: "Design rejected. Admin can revise and resubmit." };
@@ -479,8 +514,12 @@ export async function deleteFmsFlowDesign(
   formData: FormData,
 ): Promise<FmsActionState> {
   try {
-    const user = await getSessionUser();
-    if (!user || !canManageFms(user.role)) {
+    const actor = await getFmsActor();
+    if (!actor.ok) {
+      return { ok: false, message: actor.message };
+    }
+    const user = actor.user;
+    if (!canManageFms(user.role)) {
       return { ok: false, message: "You cannot delete this design." };
     }
 

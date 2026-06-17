@@ -39,6 +39,7 @@ export async function GET(request: Request) {
         status: "IN_PROGRESS",
         plannedAt: { not: null },
         ownerUserId: { not: null },
+        instance: { status: "ACTIVE" },
         OR: [
           { whatsappDueSoonSentAt: null },
           { whatsappSameDaySentAt: null },
@@ -71,7 +72,7 @@ export async function GET(request: Request) {
       }
 
       const config = parseAlertConfig(stepState.instance.template.alertConfig);
-      if (!config.whatsappEnabled) {
+      if (!config.whatsappEnabled && !config.emailEnabled) {
         continue;
       }
 
@@ -86,6 +87,7 @@ export async function GET(request: Request) {
 
       const baseParams = {
         stepStateId: stepState.id,
+        instanceId: stepState.instanceId,
         referenceLabel,
         stepName: stepState.step.stepName,
         plannedAt,
@@ -110,7 +112,7 @@ export async function GET(request: Request) {
             kind: "due_coming",
             dueComingDaysBefore: config.dueComingDaysBefore,
           });
-          if (result.whatsappSent) {
+          if (result.whatsappSent || result.emailSent) {
             update.whatsappDueSoonSentAt = new Date();
             anySent = true;
           }
@@ -127,7 +129,7 @@ export async function GET(request: Request) {
           ...baseParams,
           kind: "same_day",
         });
-        if (result.whatsappSent) {
+        if (result.whatsappSent || result.emailSent) {
           update.whatsappSameDaySentAt = new Date();
           anySent = true;
         }
@@ -142,7 +144,7 @@ export async function GET(request: Request) {
           ...baseParams,
           kind: "overdue",
         });
-        if (result.whatsappSent) {
+        if (result.whatsappSent || result.emailSent) {
           update.whatsappOverdueSentAt = new Date();
           anySent = true;
         }

@@ -1,4 +1,6 @@
 import { sendFmsStepReminderWhatsApp } from "@/lib/integrations/whatsapp";
+import { sendFmsStepReminderEmail } from "@/lib/integrations/email";
+import { getLoginBaseUrl } from "@/lib/integrations/email-base-url";
 import { parseAlertConfig, type FmsAlertConfig } from "@/lib/fms/constants";
 
 export type FmsReminderKind =
@@ -20,6 +22,10 @@ function formatPlannedDate(plannedAt: Date) {
   }).format(plannedAt);
 }
 
+function fmsInstanceUrl(instanceId: string) {
+  return `${getLoginBaseUrl()}/app/fms/instances/${instanceId}`;
+}
+
 function buildMessageBody(params: {
   kind: FmsReminderKind;
   referenceLabel: string;
@@ -27,6 +33,7 @@ function buildMessageBody(params: {
   plannedAt: Date | null;
   assigneeName: string;
   organizationName: string;
+  instanceUrl: string;
   dueComingDaysBefore?: number;
 }) {
   const plannedLabel = params.plannedAt
@@ -61,12 +68,13 @@ function buildMessageBody(params: {
     `*Planned:* ${plannedLabel}`,
     `*Team:* ${params.organizationName}`,
     ``,
-    `Open Sheetomatic FMS to complete this step.`,
+    `Open: ${params.instanceUrl}`,
   ].join("\n");
 }
 
 export async function dispatchFmsStepReminder(params: {
   stepStateId: string;
+  instanceId: string;
   kind: FmsReminderKind;
   referenceLabel: string;
   stepName: string;
@@ -80,11 +88,8 @@ export async function dispatchFmsStepReminder(params: {
   const config = parseAlertConfig(params.alertConfig);
   const parts: string[] = [];
   let whatsappSent = false;
+  let emailSent = false;
   let whatsappDetail: string | undefined;
-
-  if (!config.whatsappEnabled) {
-    return { whatsappSent: false, summary: "WhatsApp alerts disabled" };
-  }
 
   const kindEnabled =
     (params.kind === "assign" && config.onAssign) ||
@@ -93,62 +98,109 @@ export async function dispatchFmsStepReminder(params: {
     (params.kind === "overdue" && config.onOverdue);
 
   if (!kindEnabled) {
-    return { whatsappSent: false, summary: "Alert type disabled" };
+    return { whatsappSent: false, emailSent: false, summary: "Alert type disabled" };
   }
 
   const assigneeName =
     params.assignee.name ?? params.assignee.email.split("@")[0];
-  const phone = params.assignee.phone?.trim() || "";
+  const instanceUrl = fmsInstanceUrl(params.instanceId);
+  const plannedLabel = params.plannedAt
+    ? formatPlannedDate(params.plannedAt)
+    : "Not set";
 
-  if (!phone) {
-    return { whatsappSent: false, summary: "WhatsApp: no phone" };
+  if (config.whatsappEnabled) {
+    const phone = params.assignee.phone?.trim() || "";
+
+    if (phone) {
+      const body = buildMessageBody({
+        kind: params.kind,
+        referenceLabel: params.referenceLabel,
+        stepName: params.stepName,
+        plannedAt: params.plannedAt,
+        assigneeName,
+        organizationName: params.organizationName,
+        instanceUrl,
+        dueComingDaysBefore:
+          params.dueComingDaysBefore ?? config.dueComingDaysBefore,
+      });
+
+      const wa = await sendFmsStepReminderWhatsApp({
+        toPhone: phone,
+        organizationId: params.organizationId,
+        body,
+        stepStateId: params.stepStateId,
+      });
+
+      if (wa.sent) {
+        whatsappSent = true;
+        parts.push("WhatsApp");
+      } else if (wa.reason === "phone_id_required") {
+        parts.push("WA not configured");
+      } else if (wa.reason === "not_configured") {
+        parts.push("WhatsApp not configured");
+      } else if (wa.reason === "invalid_phone") {
+        parts.push("WhatsApp invalid phone");
+      } else if (wa.reason === "session_required") {
+        parts.push("WhatsApp session required");
+      } else {
+        whatsappDetail = wa.detail;
+        parts.push(
+          wa.detail
+            ? `WhatsApp failed: ${wa.detail.slice(0, 160)}`
+            : "WhatsApp failed",
+        );
+        console.error(
+          "[fms-reminders] WhatsApp send failed",
+          wa.reason,
+          wa.detail,
+          { stepStateId: params.stepStateId, kind: params.kind },
+        );
+      }
+    } else {
+      parts.push("WhatsApp: no phone");
+    }
   }
 
-  const body = buildMessageBody({
-    kind: params.kind,
-    referenceLabel: params.referenceLabel,
-    stepName: params.stepName,
-    plannedAt: params.plannedAt,
-    assigneeName,
-    organizationName: params.organizationName,
-    dueComingDaysBefore:
-      params.dueComingDaysBefore ?? config.dueComingDaysBefore,
-  });
+  if (config.emailEnabled && params.assignee.email) {
+    const email = await sendFmsStepReminderEmail({
+      toEmail: params.assignee.email,
+      kind: params.kind,
+      assigneeName,
+      referenceLabel: params.referenceLabel,
+      stepName: params.stepName,
+      plannedLabel,
+      organizationName: params.organizationName,
+      instanceUrl,
+      dueComingDaysBefore:
+        params.dueComingDaysBefore ?? config.dueComingDaysBefore,
+    });
 
-  const wa = await sendFmsStepReminderWhatsApp({
-    toPhone: phone,
-    organizationId: params.organizationId,
-    body,
-    stepStateId: params.stepStateId,
-  });
-
-  if (wa.sent) {
-    whatsappSent = true;
-    parts.push("WhatsApp");
-  } else if (wa.reason === "phone_id_required") {
-    parts.push("WA not configured");
-  } else if (wa.reason === "not_configured") {
-    parts.push("WhatsApp not configured");
-  } else if (wa.reason === "invalid_phone") {
-    parts.push("WhatsApp invalid phone");
-  } else if (wa.reason === "session_required") {
-    parts.push("WhatsApp session required");
-  } else {
-    whatsappDetail = wa.detail;
-    parts.push(
-      wa.detail
-        ? `WhatsApp failed: ${wa.detail.slice(0, 160)}`
-        : "WhatsApp failed",
-    );
-    console.error(
-      "[fms-reminders] WhatsApp send failed",
-      wa.reason,
-      wa.detail,
-      { stepStateId: params.stepStateId, kind: params.kind },
-    );
+    if (email.sent) {
+      emailSent = true;
+      parts.push("Email");
+    } else if (email.reason === "not_configured") {
+      if (!whatsappSent) {
+        parts.push("Email not configured");
+      }
+    } else {
+      parts.push("Email failed");
+      console.error("[fms-reminders] Email send failed", email.detail, {
+        stepStateId: params.stepStateId,
+        kind: params.kind,
+      });
+    }
   }
 
-  return { whatsappSent, summary: parts.join(", "), whatsappDetail };
+  if (parts.length === 0) {
+    return { whatsappSent, emailSent, summary: "No channels enabled" };
+  }
+
+  return {
+    whatsappSent,
+    emailSent,
+    summary: parts.join(", "),
+    whatsappDetail,
+  };
 }
 
 export function startOfLocalDay(date: Date) {

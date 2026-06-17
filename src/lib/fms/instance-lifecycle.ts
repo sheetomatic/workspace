@@ -10,6 +10,18 @@ import {
 
 type StepWithConfig = FmsTemplateStep;
 
+type InstanceWithPipeline = {
+  id: string;
+  status: string;
+  template: FmsTemplate & { steps: StepWithConfig[] };
+  stepStates: Array<{
+    id: string;
+    stepId: string;
+    ownerUserId: string | null;
+    status: string;
+  }>;
+};
+
 function workingDaysFromTemplate(template: FmsTemplate): FmsWorkingDaysConfig {
   return {
     skipSaturday: false,
@@ -28,6 +40,69 @@ export function buildReferenceLabel(
     }
   }
   return `Job ${new Date().toLocaleString("en-IN")}`;
+}
+
+async function advancePipelineAfterStep(params: {
+  instance: InstanceWithPipeline;
+  currentStepId: string;
+  completedAt: Date;
+}) {
+  const { instance, currentStepId, completedAt } = params;
+  const currentIndex = instance.template.steps.findIndex(
+    (s) => s.id === currentStepId,
+  );
+  const nextStep = instance.template.steps[currentIndex + 1];
+
+  if (nextStep) {
+    const workingDays = workingDaysFromTemplate(instance.template);
+    const plannedAt = computePlannedAt(
+      nextStep.slaType,
+      nextStep.slaConfig as FmsSlaConfig,
+      completedAt,
+      workingDays,
+    );
+    const nextState = instance.stepStates.find((s) => s.stepId === nextStep.id);
+    if (nextState) {
+      await prisma.fmsStepState.update({
+        where: { id: nextState.id },
+        data: {
+          status: "IN_PROGRESS",
+          plannedAt,
+          ownerUserId: nextState.ownerUserId ?? nextStep.defaultOwnerUserId,
+          whatsappAssignSentAt: null,
+          whatsappDueSoonSentAt: null,
+          whatsappSameDaySentAt: null,
+          whatsappOverdueSentAt: null,
+        },
+      });
+      void notifyFmsStepAssigned(nextState.id);
+    }
+  } else {
+    await prisma.fmsInstance.update({
+      where: { id: instance.id },
+      data: { status: "COMPLETED" },
+    });
+  }
+}
+
+async function loadInstancePipeline(stepStateId: string, organizationId: string) {
+  return prisma.fmsStepState.findFirst({
+    where: {
+      id: stepStateId,
+      instance: { organizationId, status: "ACTIVE" },
+    },
+    include: {
+      step: true,
+      instance: {
+        include: {
+          template: {
+            include: { steps: { orderBy: { sortOrder: "asc" } } },
+          },
+          stepStates: { include: { step: true } },
+        },
+      },
+    },
+  });
 }
 
 export async function createFmsInstanceFromSubmission(params: {
@@ -92,26 +167,17 @@ export async function completeFmsStep(params: {
   notes?: string;
   completionValues?: Record<string, unknown>;
 }) {
-  const stepState = await prisma.fmsStepState.findFirst({
-    where: {
-      id: params.stepStateId,
-      instance: { organizationId: params.organizationId },
-    },
-    include: {
-      step: true,
-      instance: {
-        include: {
-          template: {
-            include: { steps: { orderBy: { sortOrder: "asc" } } },
-          },
-          stepStates: { include: { step: true } },
-        },
-      },
-    },
-  });
+  const stepState = await loadInstancePipeline(
+    params.stepStateId,
+    params.organizationId,
+  );
 
   if (!stepState) {
     throw new Error("Step not found");
+  }
+
+  if (stepState.status !== "IN_PROGRESS") {
+    throw new Error("Only the active step can be completed.");
   }
 
   const now = new Date();
@@ -129,41 +195,113 @@ export async function completeFmsStep(params: {
     },
   });
 
-  const currentIndex = stepState.instance.template.steps.findIndex(
-    (s) => s.id === stepState.stepId,
-  );
-  const nextStep = stepState.instance.template.steps[currentIndex + 1];
+  await advancePipelineAfterStep({
+    instance: stepState.instance,
+    currentStepId: stepState.stepId,
+    completedAt: now,
+  });
+}
 
-  if (nextStep) {
-    const workingDays = workingDaysFromTemplate(stepState.instance.template);
-    const plannedAt = computePlannedAt(
-      nextStep.slaType,
-      nextStep.slaConfig as FmsSlaConfig,
-      now,
-      workingDays,
-    );
-    const nextState = stepState.instance.stepStates.find(
-      (s) => s.stepId === nextStep.id,
-    );
-    if (nextState) {
-      await prisma.fmsStepState.update({
-        where: { id: nextState.id },
-        data: {
-          status: "IN_PROGRESS",
-          plannedAt,
-          ownerUserId: nextState.ownerUserId ?? nextStep.defaultOwnerUserId,
-          whatsappAssignSentAt: null,
-          whatsappDueSoonSentAt: null,
-          whatsappSameDaySentAt: null,
-          whatsappOverdueSentAt: null,
-        },
-      });
-      void notifyFmsStepAssigned(nextState.id);
-    }
-  } else {
-    await prisma.fmsInstance.update({
-      where: { id: stepState.instanceId },
-      data: { status: "COMPLETED" },
-    });
+export async function skipFmsStep(params: {
+  stepStateId: string;
+  organizationId: string;
+  userId: string;
+  reason?: string;
+}) {
+  const stepState = await loadInstancePipeline(
+    params.stepStateId,
+    params.organizationId,
+  );
+
+  if (!stepState) {
+    throw new Error("Step not found");
   }
+
+  if (stepState.status !== "IN_PROGRESS") {
+    throw new Error("Only the active step can be skipped.");
+  }
+
+  const now = new Date();
+
+  await prisma.fmsStepState.update({
+    where: { id: stepState.id },
+    data: {
+      status: "SKIPPED",
+      actualAt: now,
+      delayMinutes: null,
+      completedByUserId: params.userId,
+      notes: params.reason?.trim() || "Skipped by manager",
+    },
+  });
+
+  await advancePipelineAfterStep({
+    instance: stepState.instance,
+    currentStepId: stepState.stepId,
+    completedAt: now,
+  });
+}
+
+export async function cancelFmsInstance(params: {
+  instanceId: string;
+  organizationId: string;
+  reason?: string;
+}) {
+  const instance = await prisma.fmsInstance.findFirst({
+    where: {
+      id: params.instanceId,
+      organizationId: params.organizationId,
+      status: "ACTIVE",
+    },
+  });
+
+  if (!instance) {
+    throw new Error("Active job not found");
+  }
+
+  await prisma.fmsInstance.update({
+    where: { id: instance.id },
+    data: { status: "CANCELLED" },
+  });
+}
+
+export async function reassignFmsStepOwner(params: {
+  stepStateId: string;
+  organizationId: string;
+  newOwnerUserId: string;
+}) {
+  const stepState = await prisma.fmsStepState.findFirst({
+    where: {
+      id: params.stepStateId,
+      status: "IN_PROGRESS",
+      instance: { organizationId: params.organizationId, status: "ACTIVE" },
+    },
+  });
+
+  if (!stepState) {
+    throw new Error("Active step not found");
+  }
+
+  const member = await prisma.membership.findFirst({
+    where: {
+      organizationId: params.organizationId,
+      userId: params.newOwnerUserId,
+    },
+  });
+
+  if (!member) {
+    throw new Error("New owner must be a member of this workspace");
+  }
+
+  await prisma.fmsStepState.update({
+    where: { id: stepState.id },
+    data: {
+      ownerUserId: params.newOwnerUserId,
+      whatsappAssignSentAt: null,
+      whatsappDueSoonSentAt: null,
+      whatsappSameDaySentAt: null,
+      whatsappOverdueSentAt: null,
+    },
+  });
+
+  void notifyFmsStepAssigned(stepState.id);
 }

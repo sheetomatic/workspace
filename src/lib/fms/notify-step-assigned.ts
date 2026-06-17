@@ -28,6 +28,7 @@ export async function notifyFmsStepAssigned(stepStateId: string) {
 
   const result = await dispatchFmsStepReminder({
     stepStateId: stepState.id,
+    instanceId: stepState.instanceId,
     kind: "assign",
     referenceLabel:
       stepState.instance.referenceLabel ?? stepState.instance.template.name,
@@ -39,7 +40,7 @@ export async function notifyFmsStepAssigned(stepStateId: string) {
     alertConfig: stepState.instance.template.alertConfig,
   });
 
-  if (result.whatsappSent) {
+  if (result.whatsappSent || result.emailSent) {
     await prisma.fmsStepState.update({
       where: { id: stepState.id },
       data: { whatsappAssignSentAt: new Date() },
