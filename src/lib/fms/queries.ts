@@ -3,6 +3,7 @@ import type { SessionUser } from "@/lib/auth";
 import type { FmsInstanceStatus, FmsStepStatus } from "@prisma/client";
 import { SCALE } from "@/lib/scale";
 import { isStepOverdue } from "@/lib/fms/step-display";
+import { computeFmsPipelineCounts } from "@/lib/fms/pipeline-counts";
 import { fmsJobMisScore } from "@/lib/mis/score";
 
 export async function listFmsForms(organizationId: string) {
@@ -236,6 +237,24 @@ export async function getFmsMisSummary(organizationId: string) {
   );
 
   return { avgScore, lineCount: active.length, overdueCount, lines };
+}
+
+export async function getFmsPipelineCounts(organizationId: string) {
+  const active = await prisma.fmsInstance.findMany({
+    where: { organizationId, status: "ACTIVE" },
+    select: {
+      stepStates: {
+        select: {
+          status: true,
+          plannedAt: true,
+          actualAt: true,
+          delayMinutes: true,
+        },
+      },
+    },
+  });
+
+  return computeFmsPipelineCounts(active);
 }
 
 export async function listMyFmsSteps(organizationId: string, userId: string) {

@@ -16953,6 +16953,60 @@ body:has(.workspace-app.saas-app) {
   font-size: 0.75rem;
 }
 
+.workspace-app .ws-fms-pipeline-count-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.workspace-app .ws-fms-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.workspace-app .ws-fms-count-badge strong {
+  font-size: 0.875rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.workspace-app .ws-fms-count-badge-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.workspace-app .ws-fms-count-badge.is-neutral {
+  background: #f3f3f3;
+  color: #444;
+  border-color: #dddbda;
+}
+
+.workspace-app .ws-fms-count-badge.is-ok {
+  background: #d8edff;
+  color: #014486;
+  border-color: #90caf9;
+}
+
+.workspace-app .ws-fms-count-badge.is-danger {
+  background: #fef1ee;
+  color: #8c1d18;
+  border-color: #f9cfc9;
+}
+
+.workspace-app .ws-fms-count-badge.is-pending {
+  background: #fef7e5;
+  color: #8c4b02;
+  border-color: #f9e3b4;
+}
+
 .workspace-app .ws-mis-task-score-strip {
   display: flex;
   flex-wrap: wrap;

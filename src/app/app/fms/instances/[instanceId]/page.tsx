@@ -3,15 +3,13 @@ import { notFound } from "next/navigation";
 import { FmsInstanceActivity } from "@/components/saas/fms-instance-activity";
 import { FmsInstanceAttachments } from "@/components/saas/fms-instance-attachments";
 import { FmsInstanceControlPanel } from "@/components/saas/fms-instance-control-panel";
+import { FmsPipelineCountBadges } from "@/components/saas/fms-pipeline-count-badges";
 import { FmsTrainTrack } from "@/components/saas/fms-train-track";
-import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
-import { MisScoreBadge } from "@/components/saas/mis-score-badge";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
 import { canControlFmsPipeline, canCompleteFmsStep } from "@/lib/fms/access";
-import { getFmsInstance } from "@/lib/fms/queries";
+import { getFmsInstance, getFmsPipelineCounts } from "@/lib/fms/queries";
 import { listFmsAuditForInstance } from "@/lib/fms/audit";
-import { fmsJobMisScore, fmsStepMisScore } from "@/lib/mis/score";
 import { listAssignableMembers } from "@/lib/tasks";
 import {
   formatDelayLabel,
@@ -32,7 +30,10 @@ export default async function FmsInstancePage({ params }: PageProps) {
     notFound();
   }
 
-  const auditEvents = await listFmsAuditForInstance(instanceId, user.organizationId);
+  const [auditEvents, pipelineCounts] = await Promise.all([
+    listFmsAuditForInstance(instanceId, user.organizationId),
+    getFmsPipelineCounts(user.organizationId),
+  ]);
 
   const canControl = canControlFmsPipeline(user.role);
   const activeStep = instance.stepStates.find((s) => s.status === "IN_PROGRESS");
@@ -67,8 +68,6 @@ export default async function FmsInstancePage({ params }: PageProps) {
     | undefined;
 
   const completedCount = instance.stepStates.filter((s) => s.status === "DONE").length;
-  const jobScore = fmsJobMisScore(instance.stepStates);
-  const currentScore = activeStep ? fmsStepMisScore(activeStep) : null;
 
   const trainStops = instance.stepStates.map((s) => ({
     id: s.id,
@@ -114,14 +113,7 @@ export default async function FmsInstancePage({ params }: PageProps) {
             </h2>
           </div>
           <div className="ws-fms-journey-badges">
-            <MisScoreBadge score={jobScore} />
-            {currentScore ? <MisScoreBadge score={currentScore} compact /> : null}
-            <FmsStatusBadge status={instance.status} />
-            {activeOverdue && activeDelayLabel ? (
-              <span className="ws-sf-badge ws-sf-badge-danger">{activeDelayLabel}</span>
-            ) : activeStep?.plannedAt ? (
-              <span className="ws-sf-badge ws-sf-badge-info">On track</span>
-            ) : null}
+            <FmsPipelineCountBadges counts={pipelineCounts} />
           </div>
         </header>
 
