@@ -79,11 +79,10 @@ export function FmsStepCompletePanel({
 
       <header className="ws-fms-step-panel-header">
         <h3>Your stop: {stepState.step.stepName}</h3>
-        <span className="ws-sf-badge ws-sf-badge-info">Release train</span>
       </header>
       <p className="ws-fms-step-panel-intro">
-        Complete your work at this station, then release the train to move to the next
-        stop on the route.
+        Complete your work for this step, then continue to the next step in the
+        workflow.
       </p>
 
       {captureFields.length > 0 ? (
@@ -150,7 +149,7 @@ export function FmsStepCompletePanel({
 
       <div className="form-actions ws-fms-form-actions">
         <button type="submit" className="btn-primary ws-sf-btn-primary" disabled={pending}>
-          {pending ? "Releasing..." : "Complete stop & move forward"}
+          {pending ? "Completing..." : "Complete step"}
         </button>
       </div>
     </form>
