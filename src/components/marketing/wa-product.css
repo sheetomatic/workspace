@@ -810,7 +810,7 @@
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
-.wa-product-footer-grid h4 {
+.wa-product-footer-grid .site-footer-col-label {
   margin: 0 0 0.75rem;
   font-size: 0.8125rem;
   text-transform: uppercase;

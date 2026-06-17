@@ -100,7 +100,7 @@ export function SiteFooter() {
             <WhatsAppButton className="btn-footer-cta" label={whatsappDisplayNumber} />
           </div>
           <div>
-            <h4>Product</h4>
+            <p className="site-footer-col-label">Product</p>
             {footerProductLinks.map((item) => (
               <Link href={item.href} key={item.href}>
                 {item.label}
@@ -109,7 +109,7 @@ export function SiteFooter() {
             <Link href="/login">Workspace</Link>
           </div>
           <div>
-            <h4>Industries</h4>
+            <p className="site-footer-col-label">Industries</p>
             {footerIndustryLinks.map((item) => (
               <Link href={item.href} key={item.label}>
                 {item.label}
@@ -117,7 +117,7 @@ export function SiteFooter() {
             ))}
           </div>
           <div>
-            <h4>Company</h4>
+            <p className="site-footer-col-label">Company</p>
             {footerCompanyLinks.map((item) => (
               <Link href={item.href} key={item.href}>
                 {item.label}
@@ -126,7 +126,7 @@ export function SiteFooter() {
             <Link href="/login">Sign in</Link>
           </div>
           <div className="site-footer-reach">
-            <h4>Reach us</h4>
+            <p className="site-footer-col-label">Reach us</p>
             <div className="footer-reach-stack">
               <WhatsAppButton
                 className="footer-inline-btn footer-whatsapp-btn"

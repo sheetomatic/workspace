@@ -3854,7 +3854,7 @@ strong {
   background: #0284c7;
 }
 
-.site-footer-grid h4 {
+.site-footer-grid .site-footer-col-label {
   margin: 0 0 12px;
   font-size: 13px;
   font-weight: 900;

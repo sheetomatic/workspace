@@ -102,7 +102,7 @@ export function AiSiteFooter() {
             </p>
           </div>
           <div>
-            <h4>Product</h4>
+            <p className="site-footer-col-label">Product</p>
             <Link href="/ai/chatbot">AI Chatbot</Link>
             <Link href="/ai/crm">CRM & Inbox</Link>
             <Link href="/ai/pricing">Pricing</Link>
@@ -110,7 +110,7 @@ export function AiSiteFooter() {
             <Link href={AI_LOGIN_HREF}>Sign in</Link>
           </div>
           <div>
-            <h4>Sheetomatic</h4>
+            <p className="site-footer-col-label">Sheetomatic</p>
             <Link href="/">Main website</Link>
             <Link href="/services">Services</Link>
             <Link href="/career">Careers</Link>
