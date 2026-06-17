@@ -133,6 +133,35 @@ export default async function FmsInstancePage({ params }: PageProps) {
           showOwner
         />
 
+        {activeStep ? (
+          <dl className="ws-fms-journey-active-meta">
+            <div>
+              <dt>Doer</dt>
+              <dd>
+                {activeStep.owner?.name ??
+                  activeStep.owner?.email.split("@")[0] ??
+                  "Unassigned"}
+              </dd>
+            </div>
+            <div>
+              <dt>Delay status</dt>
+              <dd>
+                {activeOverdue && activeDelayLabel ? (
+                  <span className="ws-fms-train-delay-badge is-late">
+                    {activeDelayLabel}
+                  </span>
+                ) : activeStep.plannedAt ? (
+                  <span className="ws-fms-train-delay-badge is-ok">On track</span>
+                ) : (
+                  <span className="ws-fms-train-delay-badge is-neutral">
+                    In progress
+                  </span>
+                )}
+              </dd>
+            </div>
+          </dl>
+        ) : null}
+
         {activeStep?.plannedAt ? (
           <p className="ws-fms-journey-due">
             Due at this stop:{" "}
@@ -141,6 +170,15 @@ export default async function FmsInstancePage({ params }: PageProps) {
               timeStyle: "short",
             }).format(activeStep.plannedAt)}
           </p>
+        ) : null}
+
+        {canControl ? (
+          <FmsInstanceControlPanel
+            instanceId={instance.id}
+            instanceStatus={instance.status}
+            activeStep={activeStep ?? null}
+            members={members}
+          />
         ) : null}
       </section>
 
@@ -177,15 +215,6 @@ export default async function FmsInstancePage({ params }: PageProps) {
               ownerUserId: activeStep.ownerUserId,
             }}
             canComplete={canComplete}
-          />
-        ) : null}
-
-        {canControl ? (
-          <FmsInstanceControlPanel
-            instanceId={instance.id}
-            instanceStatus={instance.status}
-            activeStep={activeStep ?? null}
-            members={members}
           />
         ) : null}
 

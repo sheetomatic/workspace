@@ -16407,6 +16407,45 @@ body:has(.workspace-app.saas-app) {
   margin-top: 2px;
 }
 
+.workspace-app .ws-fms-train-stop-doer {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-fms-train-delay-badge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.workspace-app .ws-fms-train-delay-badge.is-ok {
+  background: #e3fcef;
+  color: #1b7f4b;
+}
+
+.workspace-app .ws-fms-train-delay-badge.is-late {
+  background: #fef1ee;
+  color: #8c1d18;
+}
+
+.workspace-app .ws-fms-train-delay-badge.is-neutral {
+  background: #f3f3f3;
+  color: #5c5c5c;
+}
+
+.workspace-app .ws-fms-train-delay-badge.is-skipped {
+  background: #fff4e5;
+  color: #8a6116;
+}
+
 .workspace-app .ws-fms-train-now-badge {
   display: inline-block;
   margin-top: 4px;
@@ -16546,6 +16585,95 @@ body:has(.workspace-app.saas-app) {
   margin: 12px 0 0;
   font-size: 0.8125rem;
   color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-fms-journey-active-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--sf-card-border);
+}
+
+.workspace-app .ws-fms-journey-active-meta div {
+  display: grid;
+  gap: 2px;
+}
+
+.workspace-app .ws-fms-journey-active-meta dt {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-fms-journey-active-meta dd {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--sf-text);
+}
+
+.workspace-app .ws-fms-flow-controls {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--sf-card-border);
+}
+
+.workspace-app .ws-fms-journey-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--sf-card-border);
+  border-radius: 6px;
+  background: #fff;
+  color: #014486;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.workspace-app .ws-fms-journey-edit-btn:hover,
+.workspace-app .ws-fms-journey-edit-btn.is-active {
+  border-color: #0176d3;
+  background: #eef4ff;
+}
+
+.workspace-app .ws-fms-flow-controls .ws-fms-control-panel {
+  margin-top: 12px;
+}
+
+.workspace-app .ws-fms-control-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px 16px;
+  margin: 0 0 4px;
+}
+
+.workspace-app .ws-fms-control-summary div {
+  display: grid;
+  gap: 2px;
+}
+
+.workspace-app .ws-fms-control-summary dt {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-fms-control-summary dd {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--sf-text);
 }
 
 .workspace-app .ws-fms-step-panel-intro {

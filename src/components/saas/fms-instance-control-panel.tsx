@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { Pencil } from "lucide-react";
 import type { FmsInstanceStatus, FmsStepStatus } from "@prisma/client";
 import {
   cancelFmsInstanceAction,
@@ -46,6 +47,13 @@ export function FmsInstanceControlPanel({
     reassignFmsStepAction,
     fmsInitialState,
   );
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (skipState.message || cancelState.message || reassignState.message) {
+      setOpen(true);
+    }
+  }, [skipState.message, cancelState.message, reassignState.message]);
 
   if (instanceStatus !== "ACTIVE") {
     return null;
@@ -54,7 +62,23 @@ export function FmsInstanceControlPanel({
   const ownerLabel = (member: MemberOption) =>
     member.name ?? member.email.split("@")[0];
 
+  const activeOwnerName = activeStep?.owner
+    ? activeStep.owner.name ?? activeStep.owner.email.split("@")[0]
+    : "Unassigned";
+
   return (
+    <div className="ws-fms-flow-controls">
+      <button
+        aria-expanded={open}
+        className={`ws-fms-journey-edit-btn${open ? " is-active" : ""}`}
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+      >
+        <Pencil aria-hidden size={15} strokeWidth={2.25} />
+        {open ? "Hide pipeline controls" : "Edit pipeline"}
+      </button>
+
+      {open ? (
     <section className="ws-sf-card ws-fms-control-panel">
       <header className="ws-fms-section-heading">
         <h2>Pipeline controls</h2>
@@ -63,12 +87,16 @@ export function FmsInstanceControlPanel({
 
       {activeStep ? (
         <>
-          <p className="ws-fms-muted">
-            Active step: <strong>{activeStep.step.stepName}</strong>
-            {activeStep.owner
-              ? ` | Owner: ${activeStep.owner.name ?? activeStep.owner.email.split("@")[0]}`
-              : " | Unassigned"}
-          </p>
+          <dl className="ws-fms-control-summary">
+            <div>
+              <dt>Active step</dt>
+              <dd>{activeStep.step.stepName}</dd>
+            </div>
+            <div>
+              <dt>Doer</dt>
+              <dd>{activeOwnerName}</dd>
+            </div>
+          </dl>
 
           <form action={reassignAction} className="ws-fms-control-form">
             <input type="hidden" name="instanceId" value={instanceId} />
@@ -161,5 +189,7 @@ export function FmsInstanceControlPanel({
         ) : null}
       </form>
     </section>
+      ) : null}
+    </div>
   );
 }

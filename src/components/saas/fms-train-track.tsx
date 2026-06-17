@@ -2,6 +2,7 @@ import type { FmsStepStatus } from "@prisma/client";
 import { TrainFront } from "lucide-react";
 import {
   computeStepUrgency,
+  formatDelayLabel,
   isStepOverdue,
   liveDelayMinutes,
 } from "@/lib/fms/step-display";
@@ -43,6 +44,42 @@ function stopStateClass(
   return "is-upcoming";
 }
 
+function stepDelayStatus(stop: TrainTrackStop): {
+  label: string;
+  tone: "ok" | "late" | "neutral" | "skipped";
+} | null {
+  if (stop.status === "SKIPPED") {
+    return { label: "Skipped", tone: "skipped" };
+  }
+
+  if (stop.status === "PENDING") {
+    return { label: "Waiting", tone: "neutral" };
+  }
+
+  const delay = liveDelayMinutes(
+    stop.plannedAt ?? null,
+    stop.actualAt ?? null,
+    stop.delayMinutes ?? null,
+  );
+  const delayLabel = formatDelayLabel(delay);
+
+  if (delayLabel) {
+    return { label: delayLabel, tone: "late" };
+  }
+
+  if (stop.status === "IN_PROGRESS") {
+    return stop.plannedAt
+      ? { label: "On track", tone: "ok" }
+      : { label: "In progress", tone: "neutral" };
+  }
+
+  if (stop.status === "DONE") {
+    return { label: "On time", tone: "ok" };
+  }
+
+  return null;
+}
+
 type FmsTrainTrackProps = {
   stops: TrainTrackStop[];
   startLabel?: string;
@@ -81,6 +118,7 @@ export function FmsTrainTrack({
             isCurrent && stop.plannedAt
               ? computeStepUrgency(stop.status, stop.plannedAt)
               : "normal";
+          const delayStatus = stepDelayStatus(stop);
 
           return (
             <div
@@ -110,8 +148,17 @@ export function FmsTrainTrack({
                 <span className="ws-fms-train-stop-name" title={stop.name}>
                   {stop.name}
                 </span>
-                {showOwner && stop.ownerName ? (
-                  <span className="ws-fms-train-stop-owner">{stop.ownerName}</span>
+                {showOwner ? (
+                  <span className="ws-fms-train-stop-doer">
+                    Doer: {stop.ownerName ?? "Unassigned"}
+                  </span>
+                ) : null}
+                {delayStatus ? (
+                  <span
+                    className={`ws-fms-train-delay-badge is-${delayStatus.tone}`}
+                  >
+                    {delayStatus.label}
+                  </span>
                 ) : null}
                 {isCurrent ? (
                   <span className="ws-fms-train-now-badge">Stopped here</span>
