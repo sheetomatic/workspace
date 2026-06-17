@@ -17,7 +17,7 @@ export function TaskVerificationPanel({ task }: { task: TaskRow }) {
 
   return (
     <div className="ws-task-verification-panel">
-      <strong>Proof submitted — verify to complete</strong>
+      <strong>Proof submitted - verify to complete</strong>
       <p className="ws-task-verification-lead">
         Review the assignee&apos;s proof files. Verify when the work is acceptable,
         or send it back with feedback.
