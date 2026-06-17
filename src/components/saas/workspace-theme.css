@@ -5204,6 +5204,10 @@ body:has(.workspace-app.saas-app) {
   margin-top: 0.25rem;
 }
 
+.workspace-app .saas-team-invite-collapsible {
+  margin-top: 0.75rem;
+}
+
 .workspace-app .saas-team-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(17.5rem, 1fr));

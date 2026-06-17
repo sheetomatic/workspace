@@ -426,6 +426,7 @@ export function TeamManagementPanel({
   const [inviteRole, setInviteRole] = useState<Role>("STAFF");
   const [pending, startTransition] = useTransition();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const inviteReportingRequired = inviteRole !== "OWNER";
   const managerOptions = managerOptionsForMember(members);
 
@@ -449,138 +450,14 @@ export function TeamManagementPanel({
     setEditingId((current) => (current === membershipId ? null : membershipId));
   }
 
+  useEffect(() => {
+    if (inviteState.message) {
+      setInviteOpen(true);
+    }
+  }, [inviteState.message]);
+
   return (
     <div className="saas-team-panel">
-      {canManage ? (
-      <form action={inviteAction} className="saas-settings-form saas-team-invite saas-form-panel">
-        <h3>Add team member</h3>
-        <p className="saas-team-invite-lead">
-          Creates a login for new people, or links an existing Sheetomatic account
-          to your workspace. Login details are emailed automatically when Resend is
-          configured.
-        </p>
-        <div className="form-grid-premium">
-          <label>
-            Name
-            <input name="name" placeholder="Full name" required type="text" />
-          </label>
-          <label>
-            Email
-            <input
-              name="email"
-              placeholder="name@company.com"
-              required
-              type="email"
-            />
-          </label>
-          <label>
-            WhatsApp
-            <input
-              inputMode="tel"
-              name="whatsapp"
-              placeholder="9685788980"
-              type="tel"
-            />
-          </label>
-          <label>
-            Department
-            <select defaultValue="GENERAL" name="department" required>
-              {departmentOptions.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Designation
-            <input
-              name="designation"
-              placeholder="e.g. Sales Manager"
-              required
-              type="text"
-            />
-          </label>
-          <label>
-            Role
-            <select
-              defaultValue="STAFF"
-              name="role"
-              required
-              onChange={(event) =>
-                setInviteRole(event.target.value as Role)
-              }
-            >
-              {roleOptions.map((role) => (
-                <option key={role} value={role}>
-                  {ROLE_LABELS[role]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Reporting manager
-            <select
-              defaultValue=""
-              name="reportingManagerId"
-              required={inviteReportingRequired}
-            >
-              {!inviteReportingRequired ? <option value="">None (owner)</option> : null}
-              <option disabled={inviteReportingRequired} value="">
-                {inviteReportingRequired ? "Select reporting manager" : "None"}
-              </option>
-              {managerOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.user.name ?? option.user.email} · {option.user.email}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="form-field-full ws-attendance-check">
-            <input name="isDepartmentHead" type="checkbox" />
-            <span>Department head (can view this department&apos;s team)</span>
-          </label>
-          <label className="form-field-full">
-            Initial password
-            <input
-              autoComplete="new-password"
-              minLength={8}
-              name="initialPassword"
-              placeholder="Leave blank to auto-generate"
-              type="text"
-            />
-          </label>
-        </div>
-
-        <WorkspaceModuleFields role={inviteRole} />
-        <div className="form-actions">
-          <button
-            className="btn-cta btn-primary"
-            disabled={invitePending || pending}
-            type="submit"
-          >
-            {invitePending ? "Adding..." : "Add to workspace"}
-          </button>
-        </div>
-        {inviteState.message ? (
-          <p
-            className={
-              inviteState.ok ? "saas-form-message ok" : "saas-form-message error"
-            }
-          >
-            {inviteState.message}
-          </p>
-        ) : null}
-        {inviteState.ok && (inviteState.emailSent || inviteState.tempPassword) ? (
-          <TeamLoginCredentials
-            email={inviteState.loginEmail}
-            emailSent={inviteState.emailSent}
-            password={inviteState.tempPassword}
-          />
-        ) : null}
-      </form>
-      ) : null}
-
       {canManage && resetState?.message ? (
         <div className="saas-form-panel saas-team-reset-panel">
           <p
@@ -744,6 +621,164 @@ export function TeamManagementPanel({
           })}
         </div>
       </div>
+
+      {canManage ? (
+        <details
+          className="ws-team-collapsible-section saas-team-invite-collapsible"
+          open={inviteOpen}
+          onToggle={(event) => setInviteOpen(event.currentTarget.open)}
+        >
+          <summary>
+            <span>
+              <strong>Add team member</strong>
+              <small>
+                Creates a login or links an existing Sheetomatic account to your
+                workspace.
+              </small>
+            </span>
+          </summary>
+          <div className="ws-team-collapsible-body">
+            <form
+              action={inviteAction}
+              className="saas-settings-form saas-team-invite saas-form-panel"
+            >
+              <h3>Add team member</h3>
+              <p className="saas-team-invite-lead">
+                Login details are emailed automatically when Resend is configured.
+              </p>
+              <div className="form-grid-premium">
+                <label>
+                  Name
+                  <input name="name" placeholder="Full name" required type="text" />
+                </label>
+                <label>
+                  Email
+                  <input
+                    name="email"
+                    placeholder="name@company.com"
+                    required
+                    type="email"
+                  />
+                </label>
+                <label>
+                  WhatsApp
+                  <input
+                    inputMode="tel"
+                    name="whatsapp"
+                    placeholder="9685788980"
+                    type="tel"
+                  />
+                </label>
+                <label>
+                  Department
+                  <select defaultValue="GENERAL" name="department" required>
+                    {departmentOptions.map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Designation
+                  <input
+                    name="designation"
+                    placeholder="e.g. Sales Manager"
+                    required
+                    type="text"
+                  />
+                </label>
+                <label>
+                  Role
+                  <select
+                    defaultValue="STAFF"
+                    name="role"
+                    required
+                    onChange={(event) =>
+                      setInviteRole(event.target.value as Role)
+                    }
+                  >
+                    {roleOptions.map((role) => (
+                      <option key={role} value={role}>
+                        {ROLE_LABELS[role]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Reporting manager
+                  <select
+                    defaultValue=""
+                    name="reportingManagerId"
+                    required={inviteReportingRequired}
+                  >
+                    {!inviteReportingRequired ? (
+                      <option value="">None (owner)</option>
+                    ) : null}
+                    <option disabled={inviteReportingRequired} value="">
+                      {inviteReportingRequired
+                        ? "Select reporting manager"
+                        : "None"}
+                    </option>
+                    {managerOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.user.name ?? option.user.email} ·{" "}
+                        {option.user.email}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="form-field-full ws-attendance-check">
+                  <input name="isDepartmentHead" type="checkbox" />
+                  <span>
+                    Department head (can view this department&apos;s team)
+                  </span>
+                </label>
+                <label className="form-field-full">
+                  Initial password
+                  <input
+                    autoComplete="new-password"
+                    minLength={8}
+                    name="initialPassword"
+                    placeholder="Leave blank to auto-generate"
+                    type="text"
+                  />
+                </label>
+              </div>
+
+              <WorkspaceModuleFields role={inviteRole} />
+              <div className="form-actions">
+                <button
+                  className="btn-cta btn-primary"
+                  disabled={invitePending || pending}
+                  type="submit"
+                >
+                  {invitePending ? "Adding..." : "Add to workspace"}
+                </button>
+              </div>
+              {inviteState.message ? (
+                <p
+                  className={
+                    inviteState.ok
+                      ? "saas-form-message ok"
+                      : "saas-form-message error"
+                  }
+                >
+                  {inviteState.message}
+                </p>
+              ) : null}
+              {inviteState.ok &&
+              (inviteState.emailSent || inviteState.tempPassword) ? (
+                <TeamLoginCredentials
+                  email={inviteState.loginEmail}
+                  emailSent={inviteState.emailSent}
+                  password={inviteState.tempPassword}
+                />
+              ) : null}
+            </form>
+          </div>
+        </details>
+      ) : null}
     </div>
   );
 }
