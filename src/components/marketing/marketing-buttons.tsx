@@ -1,5 +1,11 @@
-import { CalendarCheck, Globe, Mail, MessageCircle, Phone } from "lucide-react";
 import Link from "next/link";
+import {
+  CalendarCheckIcon,
+  GlobeIcon,
+  MailIcon,
+  MessageCircleIcon,
+  PhoneIcon,
+} from "@/components/marketing/marketing-icons";
 import {
   buildWhatsAppUrl,
   consultationUrl,
@@ -37,7 +43,7 @@ export function ConsultTodayButton({
       rel="noopener noreferrer"
     >
       <span className="btn-cta-icon-wrap" aria-hidden>
-        <CalendarCheck className="btn-cta-icon" size={18} strokeWidth={2.25} />
+        <CalendarCheckIcon className="btn-cta-icon" size={18} strokeWidth={2.25} />
       </span>
       <span>{label}</span>
     </a>
@@ -56,7 +62,7 @@ export function CallButton({
   return (
     <a className={marketingButtonClass("secondary", className)} href={`tel:${tel}`}>
       <span className="btn-cta-icon-wrap" aria-hidden>
-        <Phone className="btn-cta-icon" size={18} strokeWidth={2.25} />
+        <PhoneIcon className="btn-cta-icon" size={18} strokeWidth={2.25} />
       </span>
       <span>{label}</span>
     </a>
@@ -78,7 +84,7 @@ export function EmailButton({
       href={`mailto:${email}`}
     >
       <span className="btn-cta-icon-wrap" aria-hidden>
-        <Mail className="btn-cta-icon" size={18} strokeWidth={2.25} />
+        <MailIcon className="btn-cta-icon" size={18} strokeWidth={2.25} />
       </span>
       <span>{label ?? email}</span>
     </a>
@@ -102,7 +108,7 @@ export function WebsiteButton({
       rel="noopener noreferrer"
     >
       <span className="btn-cta-icon-wrap" aria-hidden>
-        <Globe className="btn-cta-icon" size={18} strokeWidth={2.25} />
+        <GlobeIcon className="btn-cta-icon" size={18} strokeWidth={2.25} />
       </span>
       <span>{label}</span>
     </a>
@@ -128,7 +134,7 @@ export function WhatsAppButton({
       rel="noopener noreferrer"
     >
       <span className="btn-cta-icon-wrap" aria-hidden>
-        <MessageCircle className="btn-cta-icon" size={18} strokeWidth={2.25} />
+        <MessageCircleIcon className="btn-cta-icon" size={18} strokeWidth={2.25} />
       </span>
       <span>{label}</span>
     </a>
@@ -148,7 +154,7 @@ export function ContactLinkButton({
       href="/contact"
     >
       <span className="btn-cta-icon-wrap" aria-hidden>
-        <Phone className="btn-cta-icon" size={18} strokeWidth={2.25} />
+        <PhoneIcon className="btn-cta-icon" size={18} strokeWidth={2.25} />
       </span>
       <span>{label}</span>
     </Link>

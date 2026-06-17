@@ -40,14 +40,20 @@ export const metadata: Metadata = {
 
 const inter = Inter({
   subsets: ["latin"],
+  weight: ["400", "600", "700"],
   variable: "--font-inter",
   display: "swap",
+  preload: true,
+  adjustFontFallback: true,
 });
 
 const manrope = Manrope({
   subsets: ["latin"],
+  weight: ["700", "800"],
   variable: "--font-manrope",
   display: "swap",
+  preload: true,
+  adjustFontFallback: true,
 });
 
 export default function RootLayout({

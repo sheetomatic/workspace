@@ -1,33 +1,32 @@
-import {
-  ArrowRight,
-  BookOpen,
-  Briefcase,
-  LayoutDashboard,
-  MessageCircle,
-  Package,
-  Phone,
-  UserRound,
-  Wrench,
-} from "lucide-react";
 import Link from "next/link";
 import { FinalCta, SiteFooter, SiteHeader } from "@/app/components";
 import { homePage, homeQuickLinks } from "@/app/page-content";
+import {
+  ArrowRightIcon,
+  BookOpenIcon,
+  BriefcaseIcon,
+  LayoutDashboardIcon,
+  MessageCircleIcon,
+  PackageIcon,
+  PhoneIcon,
+  UserRoundIcon,
+  WrenchIcon,
+} from "@/components/marketing/marketing-icons";
 import {
   MarketingLinkButton,
   WhatsAppButton,
 } from "./marketing-buttons";
 import { whatsappDisplayNumber } from "@/app/site-content";
-import "./minimal-premium.css";
 
 const linkIcons = {
-  Workspace: LayoutDashboard,
-  "Sheetomatic AI": MessageCircle,
-  Services: Wrench,
-  Products: Package,
-  Courses: BookOpen,
-  About: UserRound,
-  Careers: Briefcase,
-  Contact: Phone,
+  Workspace: LayoutDashboardIcon,
+  "Sheetomatic AI": MessageCircleIcon,
+  Services: WrenchIcon,
+  Products: PackageIcon,
+  Courses: BookOpenIcon,
+  About: UserRoundIcon,
+  Careers: BriefcaseIcon,
+  Contact: PhoneIcon,
 } as const;
 
 const linkTones = {
@@ -63,7 +62,7 @@ export function HomePage() {
           <div className="minimal-link-grid home-links">
             {homeQuickLinks.map((item) => {
               const Icon =
-                linkIcons[item.label as keyof typeof linkIcons] ?? LayoutDashboard;
+                linkIcons[item.label as keyof typeof linkIcons] ?? LayoutDashboardIcon;
               const tone =
                 linkTones[item.label as keyof typeof linkTones] ?? "tone-sky";
               return (
@@ -91,19 +90,19 @@ export function HomePage() {
           <div className="cta-stack mx-auto mt-8 flex flex-wrap items-center justify-center gap-3">
             <MarketingLinkButton href="/login" variant="secondary">
               <span>Sign in to Workspace</span>
-              <ArrowRight size={18} aria-hidden />
+              <ArrowRightIcon size={18} />
             </MarketingLinkButton>
             <MarketingLinkButton href="/ai" variant="secondary">
               <span>Explore Sheetomatic AI</span>
-              <ArrowRight size={18} aria-hidden />
+              <ArrowRightIcon size={18} />
             </MarketingLinkButton>
             <MarketingLinkButton href="/products" variant="secondary">
               <span>Browse products</span>
-              <ArrowRight size={18} aria-hidden />
+              <ArrowRightIcon size={18} />
             </MarketingLinkButton>
             <MarketingLinkButton href="/courses" variant="secondary">
               <span>Free courses</span>
-              <ArrowRight size={18} aria-hidden />
+              <ArrowRightIcon size={18} />
             </MarketingLinkButton>
           </div>
         </div>

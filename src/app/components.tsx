@@ -5,13 +5,18 @@ import {
   WhatsAppButton,
 } from "@/components/marketing/marketing-buttons";
 import { SocialLinks } from "@/components/marketing/social-links";
-import { contactDetails, footerCompanyLinks, mainNav } from "./page-content";
+import {
+  contactDetails,
+  footerCompanyLinks,
+  footerIndustryLinks,
+  footerProductLinks,
+  mainNav,
+} from "./page-content";
 import {
   finalCtaContent,
   siteBrand,
   whatsappDisplayNumber,
 } from "./site-content";
-import { footerIndustryLinks, footerProductLinks } from "./product-content";
 
 export function SiteBrand({
   variant = "header",

@@ -26,6 +26,24 @@ export const footerCompanyLinks = [
   { href: "/contact", label: "Contact" },
 ];
 
+export const footerProductLinks = [
+  { href: "/ai", label: "Sheetomatic AI" },
+  { href: "/products", label: "Workspace products" },
+  { href: "/courses", label: "Courses & training" },
+  { href: "/ai#features", label: "AI features" },
+  { href: "/ai/pricing", label: "AI pricing" },
+];
+
+export const footerIndustryLinks = [
+  { href: "/ai#features", label: "Ecommerce" },
+  { href: "/ai#features", label: "Real Estate" },
+  { href: "/ai#features", label: "Healthcare" },
+  { href: "/ai#features", label: "Travel" },
+  { href: "/ai#features", label: "Education" },
+  { href: "/ai#features", label: "SaaS" },
+  { href: "/ai#features", label: "Logistics" },
+];
+
 export const homeQuickLinks = [
   {
     href: "/login",

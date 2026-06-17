@@ -443,19 +443,6 @@ export function getAiProPlanPriceLabel() {
   return "enterprise plans on request";
 }
 
-export const footerProductLinks = [
-  { href: "/ai", label: "Sheetomatic AI" },
-  { href: "/products", label: "Workspace products" },
-  { href: "/courses", label: "Courses & training" },
-  { href: "/ai#features", label: "AI features" },
-  { href: "/ai/pricing", label: "AI pricing" },
-];
-
-export const footerIndustryLinks = industryUseCases.map((item) => ({
-  href: "/ai#features",
-  label: item.name,
-}));
-
 export const dashboardNavPreview = [
   { label: "Dashboard", href: "/ai/app" },
   { label: "Inbox", href: "/ai/app/inbox" },

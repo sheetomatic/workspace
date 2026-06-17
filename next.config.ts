@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
     root: __dirname,
   },
   experimental: {
+    optimizePackageImports: ["lucide-react"],
     serverActions: {
       // Keep aligned with AI_KNOWLEDGE_MAX_UPLOAD_BYTES in src/lib/ai-knowledge-limits.ts
       bodySizeLimit: "5mb",
