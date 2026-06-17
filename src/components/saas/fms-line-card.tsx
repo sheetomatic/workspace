@@ -1,14 +1,9 @@
 import Link from "next/link";
 import type { FmsInstanceStatus } from "@prisma/client";
 import { FmsTrainTrack, type TrainTrackStop } from "@/components/saas/fms-train-track";
-import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
-import { MisScoreBadge } from "@/components/saas/mis-score-badge";
-import { fmsJobMisScore } from "@/lib/mis/score";
-import {
-  formatDelayLabel,
-  isStepOverdue,
-  liveDelayMinutes,
-} from "@/lib/fms/step-display";
+import { FmsPipelineCountBadges } from "@/components/saas/fms-pipeline-count-badges";
+import { computeStopCounts } from "@/lib/fms/pipeline-counts";
+import { isStepOverdue } from "@/lib/fms/step-display";
 
 type StepState = {
   id: string;
@@ -37,13 +32,9 @@ export function FmsLineCard({
 }) {
   const current = stepStates.find((s) => s.status === "IN_PROGRESS");
   const doneCount = stepStates.filter((s) => s.status === "DONE").length;
-  const misScore = fmsJobMisScore(stepStates);
+  const stopCounts = computeStopCounts(stepStates);
   const linkHref = href ?? `/app/fms/instances/${instanceId}`;
 
-  const delay = current
-    ? liveDelayMinutes(current.plannedAt, current.actualAt, current.delayMinutes)
-    : null;
-  const delayLabel = formatDelayLabel(delay);
   const overdue = current
     ? isStepOverdue(
         current.status,
@@ -78,11 +69,7 @@ export function FmsLineCard({
           </p>
         </div>
         <div className="ws-fms-line-card-badges">
-          <MisScoreBadge score={misScore} compact />
-          <FmsStatusBadge status={status} />
-          {overdue && delayLabel ? (
-            <span className="ws-sf-badge ws-sf-badge-danger">{delayLabel}</span>
-          ) : null}
+          <FmsPipelineCountBadges counts={stopCounts} />
         </div>
       </header>
 

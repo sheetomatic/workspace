@@ -4,8 +4,7 @@ import { FmsPagination } from "@/components/saas/fms-pagination";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
-import { listFmsInstancesPage } from "@/lib/fms/queries";
-import { isStepOverdue } from "@/lib/fms/step-display";
+import { getFmsPipelineCounts, listFmsInstancesPage } from "@/lib/fms/queries";
 import { fmsPageFromSearchParam } from "@/lib/scale";
 import { redirect } from "next/navigation";
 
@@ -23,28 +22,17 @@ export default async function FmsLinesPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const page = fmsPageFromSearchParam(params.page);
   const completedPageNum = fmsPageFromSearchParam(params.completedPage);
-  const [activePage, completedPage] = await Promise.all([
+  const [activePage, completedPage, pipelineCounts] = await Promise.all([
     listFmsInstancesPage(user.organizationId, { status: "ACTIVE", page }),
     listFmsInstancesPage(user.organizationId, {
       status: "COMPLETED",
       page: completedPageNum,
     }),
+    getFmsPipelineCounts(user.organizationId),
   ]);
 
   const activeJobs = activePage.items;
   const completedJobs = completedPage.items;
-  const overdueCount = activeJobs.filter((job) => {
-    const current = job.stepStates.find((s) => s.status === "IN_PROGRESS");
-    if (!current) {
-      return false;
-    }
-    return isStepOverdue(
-      current.status,
-      current.plannedAt,
-      current.actualAt,
-      current.delayMinutes,
-    );
-  }).length;
 
   return (
     <div className="saas-page ws-fms-page ws-fms-sf">
@@ -60,21 +48,26 @@ export default async function FmsLinesPage({ searchParams }: PageProps) {
 
       <div className="ws-sf-metrics ws-fms-metrics">
         <div className="ws-sf-metric-tile">
-          <span>Active lines</span>
-          <strong>{activePage.total}</strong>
+          <span>Active FMS</span>
+          <strong>{pipelineCounts.active}</strong>
           <span className="ws-stat-card-hint">Running now</span>
         </div>
         <div className="ws-sf-metric-tile">
-          <span>Overdue stops</span>
-          <strong>{overdueCount}</strong>
+          <span>On track</span>
+          <strong>{pipelineCounts.onTrack}</strong>
+          <span className="ws-stat-card-hint">Current stop on time</span>
+        </div>
+        <div className="ws-sf-metric-tile">
+          <span>Delayed</span>
+          <strong>{pipelineCounts.delayed}</strong>
           <span className="ws-stat-card-hint">
-            {overdueCount > 0 ? "Needs attention" : "All on track"}
+            {pipelineCounts.delayed > 0 ? "Needs attention" : "None overdue"}
           </span>
         </div>
         <div className="ws-sf-metric-tile">
-          <span>Completed</span>
-          <strong>{completedPage.total}</strong>
-          <span className="ws-stat-card-hint">All time</span>
+          <span>Pending</span>
+          <strong>{pipelineCounts.pending}</strong>
+          <span className="ws-stat-card-hint">Awaiting next stop</span>
         </div>
       </div>
 

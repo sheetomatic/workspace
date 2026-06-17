@@ -4,7 +4,7 @@ import { FmsRecentActivity } from "@/components/saas/fms-recent-activity";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
-import { getFmsOpsPage } from "@/lib/fms/queries";
+import { getFmsOpsPage, getFmsPipelineCounts } from "@/lib/fms/queries";
 import { listRecentFmsAudit } from "@/lib/fms/audit";
 import {
   formatDelayLabel,
@@ -29,9 +29,10 @@ export default async function FmsOpsPage({ searchParams }: PageProps) {
   const overduePage = fmsPageFromSearchParam(params.overduePage);
   const unassignedPage = fmsPageFromSearchParam(params.unassignedPage);
 
-  const [ops, recentActivity] = await Promise.all([
+  const [ops, recentActivity, pipelineCounts] = await Promise.all([
     getFmsOpsPage(user.organizationId, { overduePage, unassignedPage }),
     listRecentFmsAudit(user.organizationId, 15),
+    getFmsPipelineCounts(user.organizationId),
   ]);
 
   return (
@@ -48,23 +49,28 @@ export default async function FmsOpsPage({ searchParams }: PageProps) {
 
       <div className="ws-sf-metrics ws-fms-metrics">
         <div className="ws-sf-metric-tile">
-          <span>Active lines</span>
-          <strong>{ops.activeCount}</strong>
+          <span>Active FMS</span>
+          <strong>{pipelineCounts.active}</strong>
           <span className="ws-stat-card-hint">Running now</span>
         </div>
         <div className="ws-sf-metric-tile">
-          <span>Overdue stops</span>
-          <strong>{ops.overdueTotal}</strong>
+          <span>On track</span>
+          <strong>{pipelineCounts.onTrack}</strong>
           <span className="ws-stat-card-hint">
-            {ops.overdueTotal > 0 ? "Needs attention" : "All on track"}
+            {pipelineCounts.onTrack > 0 ? "On time" : "None yet"}
           </span>
         </div>
         <div className="ws-sf-metric-tile">
-          <span>Unassigned stops</span>
-          <strong>{ops.unassignedTotal}</strong>
+          <span>Delayed</span>
+          <strong>{pipelineCounts.delayed}</strong>
           <span className="ws-stat-card-hint">
-            {ops.unassignedTotal > 0 ? "Needs owner" : "Fully assigned"}
+            {pipelineCounts.delayed > 0 ? "Needs attention" : "None overdue"}
           </span>
+        </div>
+        <div className="ws-sf-metric-tile">
+          <span>Pending</span>
+          <strong>{pipelineCounts.pending}</strong>
+          <span className="ws-stat-card-hint">Awaiting next stop</span>
         </div>
       </div>
 
