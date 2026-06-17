@@ -113,6 +113,9 @@ export function taskMisScore(input: {
   ) {
     return result(55, "Blocked");
   }
+  if (input.status === "AWAITING_VERIFICATION") {
+    return result(80, "Awaiting verification");
+  }
   if (input.status === "IN_PROGRESS") {
     if (!input.dueAt) {
       return result(85, "In progress");

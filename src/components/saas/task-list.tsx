@@ -16,6 +16,7 @@ import {
 import { deleteDelegatedTask } from "@/app/app/tasks/actions";
 import { TaskEditButton } from "@/components/saas/task-edit-panel";
 import { TaskManagerRequestPanel } from "@/components/saas/task-manager-request-panel";
+import { TaskVerificationPanel } from "@/components/saas/task-verification-panel";
 import { TaskUserActions } from "@/components/saas/task-user-actions";
 import { formatRecurrenceSummary } from "@/lib/task-schedule";
 import {
@@ -72,6 +73,7 @@ export type TaskRow = {
   dueAt: Date;
   createdAt: Date;
   completedAt: Date | null;
+  proofSubmittedAt?: Date | null;
   assignee: {
     id: string;
     name: string | null;
@@ -83,6 +85,7 @@ export type TaskRow = {
   openRequest: TaskOpenRequest | null;
   canAct: boolean;
   canManage?: boolean;
+  canVerify?: boolean;
   isAssignee?: boolean;
   dueLabel: string;
   urgency: TaskDueUrgency;
@@ -254,6 +257,7 @@ export function TaskList({
               ) : null}
 
               <TaskManagerRequestPanel task={task} />
+              <TaskVerificationPanel task={task} />
 
               {task.isAssignee ? <TaskUserActions task={task} /> : null}
 

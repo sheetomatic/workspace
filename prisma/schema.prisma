@@ -282,6 +282,10 @@ model DelegatedTask {
   createdById            String
   createdBy              User           @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
   completedAt            DateTime?
+  proofSubmittedAt       DateTime?
+  verifiedAt             DateTime?
+  verifiedById           String?
+  verifiedBy             User?          @relation("TaskVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @updatedAt
   attachments            TaskAttachment[]
@@ -646,6 +650,7 @@ enum ApprovalStatus {
 enum TaskStatus {
   PENDING
   IN_PROGRESS
+  AWAITING_VERIFICATION
   COMPLETED
   REVISION_REQUESTED
   EXTENSION_REQUESTED
@@ -776,6 +781,7 @@ model User {
   assignedFollowUps    WorkspaceFollowUp[]      @relation("FollowUpAssignee")
   assignedTasks        DelegatedTask[]          @relation("TaskAssignee")
   createdTasks         DelegatedTask[]          @relation("TaskCreator")
+  verifiedTasks        DelegatedTask[]          @relation("TaskVerifier")
   taskAttachments      TaskAttachment[]         @relation("TaskAttachmentUploader")
   taskRequestsMade     TaskRequest[]            @relation("TaskRequestRequester")
   taskRequestsResolved TaskRequest[]            @relation("TaskRequestResolver")

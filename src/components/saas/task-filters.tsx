@@ -9,6 +9,7 @@ const statuses: Array<{ value: TaskStatus | "ALL"; label: string }> = [
   { value: "ALL", label: "All" },
   { value: "PENDING", label: "Pending" },
   { value: "IN_PROGRESS", label: "In progress" },
+  { value: "AWAITING_VERIFICATION", label: "Awaiting verification" },
   { value: "REVISION_REQUESTED", label: "Revision" },
   { value: "EXTENSION_REQUESTED", label: "Extension" },
   { value: "HELP_REQUESTED", label: "Help" },

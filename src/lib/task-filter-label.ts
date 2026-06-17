@@ -27,6 +27,9 @@ export function taskFilterLabel(params: TaskPageFilterParams) {
   if (params.status === "IN_PROGRESS") {
     return "In progress";
   }
+  if (params.status === "AWAITING_VERIFICATION") {
+    return "Awaiting verification";
+  }
   if (params.status === "COMPLETED") {
     return "Completed";
   }

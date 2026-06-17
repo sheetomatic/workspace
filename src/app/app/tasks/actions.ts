@@ -401,6 +401,7 @@ export async function updateDelegatedTask(
   const allowedStatuses = [
     "PENDING",
     "IN_PROGRESS",
+    "AWAITING_VERIFICATION",
     "COMPLETED",
     "REVISION_REQUESTED",
     "EXTENSION_REQUESTED",

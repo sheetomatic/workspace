@@ -11,10 +11,12 @@ import type { SessionUser } from "@/lib/auth";
 import { SCALE } from "@/lib/scale";
 import { hasMinimumRole } from "@/lib/permissions";
 import { isTaskActiveStatus } from "@/lib/task-due-urgency";
+import { buildTaskVisibilityWhere } from "@/lib/task-verification";
 
 export const ACTIVE_TASK_STATUSES: TaskStatus[] = [
   "PENDING",
   "IN_PROGRESS",
+  "AWAITING_VERIFICATION",
   "REVISION_REQUESTED",
   "EXTENSION_REQUESTED",
   "HELP_REQUESTED",
@@ -23,6 +25,7 @@ export const ACTIVE_TASK_STATUSES: TaskStatus[] = [
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   PENDING: "Pending",
   IN_PROGRESS: "In progress",
+  AWAITING_VERIFICATION: "Awaiting verification",
   COMPLETED: "Completed",
   REVISION_REQUESTED: "Revision requested",
   EXTENSION_REQUESTED: "Extension requested",
@@ -85,8 +88,10 @@ export async function listDelegatedTasks(
   const page = Math.max(1, pagination?.page ?? 1);
   const skip = (page - 1) * pageSize;
 
+  const visibility = await buildTaskVisibilityWhere(user);
+
   const where = {
-    ...taskVisibilityFilter(user),
+    ...visibility,
     ...(filter?.completedTodayOnly
       ? {
           status: "COMPLETED" as TaskStatus,
@@ -148,7 +153,7 @@ export async function listDelegatedTasks(
 }
 
 export async function getTaskStats(user: SessionUser) {
-  const where = taskVisibilityFilter(user);
+  const where = await buildTaskVisibilityWhere(user);
   const [pending, inProgress, completedToday, overdue] = await Promise.all([
     prisma.delegatedTask.count({
       where: { ...where, status: "PENDING" },
@@ -188,7 +193,7 @@ export type TaskAssigneeWorkloadRow = {
 export async function getTaskAssigneeWorkload(
   user: SessionUser,
 ): Promise<TaskAssigneeWorkloadRow[]> {
-  const where = taskVisibilityFilter(user);
+  const where = await buildTaskVisibilityWhere(user);
   const now = new Date();
 
   const [tasks, members] = await Promise.all([
@@ -230,6 +235,8 @@ export async function getTaskAssigneeWorkload(
       bucket.pending += 1;
     } else if (task.status === "IN_PROGRESS") {
       bucket.inProgress += 1;
+    } else if (task.status === "AWAITING_VERIFICATION") {
+      bucket.inProgress += 1;
     } else if (task.status === "COMPLETED") {
       bucket.completed += 1;
     }
@@ -269,6 +276,7 @@ export type TaskChartData = {
 const TASK_STATUS_CHART_COLORS: Record<TaskStatus, string> = {
   PENDING: "#f97316",
   IN_PROGRESS: "#2563eb",
+  AWAITING_VERIFICATION: "#0d9488",
   COMPLETED: "#16a34a",
   REVISION_REQUESTED: "#7c3aed",
   EXTENSION_REQUESTED: "#9333ea",
@@ -276,7 +284,7 @@ const TASK_STATUS_CHART_COLORS: Record<TaskStatus, string> = {
 };
 
 export async function getTaskChartData(user: SessionUser): Promise<TaskChartData> {
-  const where = taskVisibilityFilter(user);
+  const where = await buildTaskVisibilityWhere(user);
 
   const [statusGroups, departmentGroups, recentCompleted] = await Promise.all([
     prisma.delegatedTask.groupBy({
@@ -359,8 +367,9 @@ function buildWeeklyCompletedSeries(
 }
 
 export async function listTasksForExport(user: SessionUser) {
+  const where = await buildTaskVisibilityWhere(user);
   return prisma.delegatedTask.findMany({
-    where: taskVisibilityFilter(user),
+    where,
     include: {
       assignee: { select: { name: true, email: true } },
       createdBy: { select: { name: true, email: true } },

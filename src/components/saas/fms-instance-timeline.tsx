@@ -101,15 +101,33 @@ export function FmsInstanceTimeline({
             key={step.id}
             className={`ws-fms-timeline-step ${stepClass}`}
           >
-            <div className="ws-fms-timeline-marker" aria-hidden>
-              {showClock ? (
-                <Clock
-                  size={16}
-                  className={`ws-fms-urgency-clock${urgency === "overdue" ? " is-pulsing" : ""}`}
+            <div className="ws-fms-timeline-rail">
+              <div className="ws-fms-timeline-marker" aria-hidden>
+                {showClock ? (
+                  <Clock
+                    size={16}
+                    className={`ws-fms-urgency-clock${urgency === "overdue" ? " is-pulsing" : ""}`}
+                  />
+                ) : (
+                  index + 1
+                )}
+              </div>
+              {index < steps.length - 1 ? (
+                <span
+                  className={`ws-fms-timeline-wire${
+                    step.status === "DONE"
+                      ? doneLate
+                        ? " is-late"
+                        : " is-done"
+                      : step.status === "IN_PROGRESS"
+                        ? isStuck
+                          ? " is-stuck"
+                          : " is-active"
+                        : " is-pending"
+                  }`}
+                  aria-hidden
                 />
-              ) : (
-                index + 1
-              )}
+              ) : null}
             </div>
             <div className="ws-fms-timeline-body">
               {isStuck ? (

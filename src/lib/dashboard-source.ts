@@ -11,7 +11,8 @@ import {
 import type { DashboardDataSource, DashboardPayload } from "@/lib/dashboard-types";
 import type { SessionUser } from "@/lib/auth";
 import { hasMinimumRole, roleRank, ROLE_LABELS } from "@/lib/permissions";
-import { ACTIVE_TASK_STATUSES, taskVisibilityFilter } from "@/lib/tasks";
+import { ACTIVE_TASK_STATUSES } from "@/lib/tasks";
+import { buildTaskVisibilityWhere } from "@/lib/task-verification";
 import { prisma } from "@/lib/db";
 
 export type DashboardSourceRows = {
@@ -145,7 +146,7 @@ export async function buildDashboardPayload(
     spreadsheetId?: string | null;
   },
 ): Promise<DashboardPayload> {
-  const taskWhere = taskVisibilityFilter(user);
+  const taskWhere = await buildTaskVisibilityWhere(user);
   const roleScope =
     hasMinimumRole(user.role, "MANAGER") || user.role === "VIEWER"
       ? "organization"

@@ -147,8 +147,8 @@ const DIALOG_COPY: Record<
   { title: string; lead?: string }
 > = {
   complete: {
-    title: "Complete task",
-    lead: `Upload proof (PDF, image, or document). Up to ${TASK_PROOF_MAX_FILES} files, max ${formatTaskProofMaxSize()} each.`,
+    title: "Submit proof for verification",
+    lead: `Upload proof for your reporting manager to review. Up to ${TASK_PROOF_MAX_FILES} files, max ${formatTaskProofMaxSize()} each.`,
   },
   revision: {
     title: "Request revision",
@@ -198,7 +198,8 @@ export function TaskUserActions({ task }: { task: TaskRow }) {
   const isWaiting =
     task.status === "REVISION_REQUESTED" ||
     task.status === "EXTENSION_REQUESTED" ||
-    task.status === "HELP_REQUESTED";
+    task.status === "HELP_REQUESTED" ||
+    task.status === "AWAITING_VERIFICATION";
 
   function submitAction(
     action: (taskId: string, formData: FormData) => Promise<{ ok: boolean; message: string }>,
@@ -217,6 +218,18 @@ export function TaskUserActions({ task }: { task: TaskRow }) {
 
   if (!task.canAct || task.status === "COMPLETED") {
     return null;
+  }
+
+  if (task.status === "AWAITING_VERIFICATION" && task.isAssignee) {
+    return (
+      <div className="ws-task-request-banner">
+        <AlertCircle size={15} aria-hidden />
+        <div>
+          <strong>Proof submitted — awaiting verification</strong>
+          <p>Your reporting manager will review the proof and mark the task complete.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -258,7 +271,7 @@ export function TaskUserActions({ task }: { task: TaskRow }) {
               }}
             >
               <CheckCircle2 size={14} aria-hidden />
-              Complete with proof
+              Submit proof
             </button>
             <button
               className="ws-task-action-btn"
@@ -301,7 +314,7 @@ export function TaskUserActions({ task }: { task: TaskRow }) {
 
         {task.isRecurring ? (
           <p className="ws-task-recurring-hint">
-            Completing schedules the next occurrence.
+            After verification, the next occurrence is scheduled automatically.
           </p>
         ) : null}
       </div>

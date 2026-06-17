@@ -5,6 +5,7 @@ import { CalendarClock, ChevronRight, FolderKanban, Trash2 } from "lucide-react"
 import { deleteDelegatedTask } from "@/app/app/tasks/actions";
 import { TaskEditButton, TaskEditPanel } from "@/components/saas/task-edit-panel";
 import { TaskManagerRequestPanel } from "@/components/saas/task-manager-request-panel";
+import { TaskVerificationPanel } from "@/components/saas/task-verification-panel";
 import type { TaskRow } from "@/components/saas/task-list";
 import { TaskReminderStatus } from "@/components/saas/task-reminder-status";
 import { TaskUserActions } from "@/components/saas/task-user-actions";
@@ -157,6 +158,10 @@ export function TaskTable({
                         <span className="ws-task-table-flag ws-sf-badge ws-sf-badge-warning">
                           {task.openRequest.label}
                         </span>
+                      ) : task.status === "AWAITING_VERIFICATION" ? (
+                        <span className="ws-task-table-flag ws-sf-badge ws-sf-badge-info">
+                          Proof submitted
+                        </span>
                       ) : null}
                       <span className="ws-task-table-meta">
                         {TASK_PRIORITY_LABELS[task.priority]} ·{" "}
@@ -237,6 +242,7 @@ export function TaskTable({
                             <p className="ws-task-instructions">{task.instructions}</p>
                           ) : null}
                           <TaskManagerRequestPanel task={task} />
+                          <TaskVerificationPanel task={task} />
                           {task.isAssignee ? <TaskUserActions task={task} /> : null}
                         </div>
                       </td>

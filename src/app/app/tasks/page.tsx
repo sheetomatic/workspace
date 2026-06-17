@@ -31,6 +31,10 @@ import {
   listAssignableMembers,
   listDelegatedTasks,
 } from "@/lib/tasks";
+import {
+  buildTaskVerifierIndex,
+  canVerifyTask,
+} from "@/lib/task-verification";
 
 type TasksPageProps = {
   searchParams: Promise<{
@@ -65,12 +69,25 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
   };
 
   const taskPage = await listDelegatedTasks(user, filter, { page });
+  const verifierByAssignee = await buildTaskVerifierIndex(
+    user.organizationId,
+    [...new Set(taskPage.items.map((task) => task.assigneeUserId))],
+  );
   const tasks = taskPage.items.map((task) => {
     const open = task.requests[0];
     return {
       ...task,
       canAct: canUpdateTask(user, task),
       canManage: canCreateTasks(user.role),
+      canVerify: canVerifyTask(
+        user,
+        {
+          assigneeUserId: task.assigneeUserId,
+          createdById: task.createdById,
+          status: task.status,
+        },
+        verifierByAssignee,
+      ),
       isAssignee: task.assigneeUserId === user.id,
       dueLabel: formatTaskDueLabel(task.dueAt, task.status),
       urgency: getTaskDueUrgency({

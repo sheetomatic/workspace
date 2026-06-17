@@ -8,6 +8,10 @@ import { checklistMisScore, taskMisScore } from "@/lib/mis/score";
 import { getTaskDueUrgency } from "@/lib/task-due-urgency";
 import { canUpdateTask, formatTaskDueLabel, listDelegatedTasks } from "@/lib/tasks";
 import { getWorkspaceIntegrationStatus } from "@/lib/workspace-integration-status";
+import {
+  buildTaskVerifierIndex,
+  canVerifyTask,
+} from "@/lib/task-verification";
 
 export default async function TasksMyWorkPage() {
   const user = await requireSession(undefined, { module: "TASKS" });
@@ -19,15 +23,33 @@ export default async function TasksMyWorkPage() {
     { page: 1, pageSize: 50 },
   );
 
+  const verifierByAssignee = await buildTaskVerifierIndex(
+    user.organizationId,
+    [...new Set(taskPage.items.map((task) => task.assigneeUserId))],
+  );
+
   const tasks = taskPage.items.map((task) => {
     const open = task.requests[0];
     const checklistDone =
-      task.attachments.length > 0 || task.status === "COMPLETED" ? 1 : 0;
+      task.status === "AWAITING_VERIFICATION" ||
+      task.status === "COMPLETED" ||
+      task.attachments.length > 0
+        ? 1
+        : 0;
 
     return {
       ...task,
       canAct: canUpdateTask(user, task),
       canManage: false,
+      canVerify: canVerifyTask(
+        user,
+        {
+          assigneeUserId: task.assigneeUserId,
+          createdById: task.createdById,
+          status: task.status,
+        },
+        verifierByAssignee,
+      ),
       isAssignee: true,
       dueLabel: formatTaskDueLabel(task.dueAt, task.status),
       urgency: getTaskDueUrgency({
@@ -67,7 +89,7 @@ export default async function TasksMyWorkPage() {
     <div className="saas-page ws-tasks-page ws-tasks-sf">
       <TaskPageToolbar
         title="My work"
-        description="Tasks assigned to you. Complete proof checklist items to keep your MIS score high."
+        description="Tasks assigned to you. Submit proof when done; your reporting manager verifies before completion."
       />
 
       <Suspense fallback={null}>

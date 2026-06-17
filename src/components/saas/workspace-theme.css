@@ -2292,6 +2292,25 @@ body:has(.workspace-app.saas-app) {
   gap: 10px;
 }
 
+.workspace-app .ws-task-verification-panel {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #99f6e4;
+  background: #f0fdfa;
+}
+
+.workspace-app .ws-task-verification-lead {
+  margin: 6px 0 0;
+  font-size: 0.8125rem;
+  color: #475569;
+}
+
+.workspace-app .ws-task-verification-meta {
+  margin: 8px 0 0;
+  font-size: 0.75rem;
+}
+
 .workspace-app .ws-task-assigner-label {
   display: block;
   margin-top: 2px;
@@ -11363,6 +11382,11 @@ body:has(.workspace-app.saas-app) {
   background: #d8edff;
 }
 
+.workspace-app .ws-tasks-sf .ws-task-table-status.status-awaiting_verification {
+  color: #0f766e;
+  background: #ccfbf1;
+}
+
 .workspace-app .ws-tasks-sf .ws-task-table-status.status-completed {
   color: #2e844a;
   background: #d9f0e3;
@@ -12808,17 +12832,67 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .ws-fms-sf .ws-fms-timeline {
-  display: grid;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 .workspace-app .ws-fms-sf .ws-fms-timeline-step {
   display: grid;
-  grid-template-columns: 2.5rem 1fr;
+  grid-template-columns: 3.25rem 1fr;
   gap: 12px;
+  padding: 0 0 10px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.workspace-app .ws-fms-sf .ws-fms-timeline-step:last-child {
+  padding-bottom: 0;
+}
+
+.workspace-app .ws-fms-timeline-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100%;
+  padding-top: 2px;
+}
+
+.workspace-app .ws-fms-timeline-wire {
+  flex: 1 1 auto;
+  width: 3px;
+  min-height: 18px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: #dddbda;
+}
+
+.workspace-app .ws-fms-timeline-wire.is-done {
+  background: linear-gradient(180deg, #2e844a 0%, #91db8b 100%);
+}
+
+.workspace-app .ws-fms-timeline-wire.is-late {
+  background: linear-gradient(180deg, #c23934 0%, #f9cfc9 100%);
+}
+
+.workspace-app .ws-fms-timeline-wire.is-active {
+  background: linear-gradient(180deg, #0176d3 0%, #dddbda 100%);
+}
+
+.workspace-app .ws-fms-timeline-wire.is-stuck {
+  background: linear-gradient(180deg, #ef4444 0%, #fecaca 45%, #ecebea 100%);
+}
+
+.workspace-app .ws-fms-timeline-wire.is-pending {
+  background: #ecebea;
+}
+
+.workspace-app .ws-fms-sf .ws-fms-timeline-body {
   padding: 14px;
   border: 1px solid var(--sf-card-border);
-  border-radius: 4px;
+  border-radius: 6px;
   background: #fff;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
@@ -12833,19 +12907,55 @@ body:has(.workspace-app.saas-app) {
   font-weight: 700;
   background: #ecebea;
   color: var(--sf-text-secondary);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #ecebea;
+  flex-shrink: 0;
+  z-index: 1;
 }
 
 .workspace-app .ws-fms-sf .ws-fms-timeline-step.is-active .ws-fms-timeline-marker {
   background: #d8edff;
   color: #014486;
+  box-shadow: 0 0 0 2px #90caf9;
 }
 
-.workspace-app .ws-fms-sf .ws-fms-timeline-step.is-stuck {
-  border-color: #0176d3;
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
-  box-shadow:
-    0 0 0 2px rgba(1, 118, 211, 0.12),
-    0 2px 8px rgba(1, 118, 211, 0.08);
+.workspace-app .ws-fms-sf .ws-fms-timeline-step.is-stuck .ws-fms-timeline-body {
+  border-color: #fca5a5;
+  background: #fff1f2;
+  animation: ws-fms-stuck-blink 1.5s ease-in-out infinite;
+}
+
+.workspace-app .ws-fms-sf .ws-fms-timeline-step.is-stuck .ws-fms-timeline-marker {
+  background: #fecaca;
+  color: #991b1b;
+  box-shadow: 0 0 0 2px #f87171;
+  animation: ws-fms-stuck-marker-blink 1.5s ease-in-out infinite;
+}
+
+@keyframes ws-fms-stuck-blink {
+  0%,
+  100% {
+    background: #fff1f2;
+    border-color: #fca5a5;
+    box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.15);
+  }
+  50% {
+    background: #ffe4e6;
+    border-color: #f87171;
+    box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.28);
+  }
+}
+
+@keyframes ws-fms-stuck-marker-blink {
+  0%,
+  100% {
+    background: #fecaca;
+    box-shadow: 0 0 0 2px #f87171;
+  }
+  50% {
+    background: #fda4af;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.35);
+  }
 }
 
 .workspace-app .ws-fms-timeline-stuck-label {
@@ -12854,7 +12964,18 @@ body:has(.workspace-app.saas-app) {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #0176d3;
+  color: #b91c1c;
+  animation: ws-fms-stuck-label-blink 1.5s ease-in-out infinite;
+}
+
+@keyframes ws-fms-stuck-label-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
 }
 
 .workspace-app .ws-fms-timeline-actions {
@@ -12919,16 +13040,18 @@ body:has(.workspace-app.saas-app) {
 .workspace-app .ws-fms-sf .ws-fms-timeline-step.is-done .ws-fms-timeline-marker {
   background: #d9f0e3;
   color: #2e844a;
+  box-shadow: 0 0 0 2px #91db8b;
 }
 
 .workspace-app .ws-fms-sf .ws-fms-timeline-step.is-overdue .ws-fms-timeline-marker,
 .workspace-app .ws-fms-sf .ws-fms-timeline-step.is-late .ws-fms-timeline-marker {
   background: #fef1ee;
   color: #8c1d18;
+  box-shadow: 0 0 0 2px #f9cfc9;
 }
 
-.workspace-app .ws-fms-sf .ws-fms-timeline-step.is-overdue,
-.workspace-app .ws-fms-sf .ws-fms-timeline-step.is-late {
+.workspace-app .ws-fms-sf .ws-fms-timeline-step.is-overdue .ws-fms-timeline-body,
+.workspace-app .ws-fms-sf .ws-fms-timeline-step.is-late .ws-fms-timeline-body {
   border-color: #f9cfc9;
 }
 
@@ -13961,7 +14084,7 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .ws-fms-sf .ws-fms-urgency-same-day td,
-.workspace-app .ws-fms-sf .ws-fms-timeline-step.ws-fms-urgency-same-day {
+.workspace-app .ws-fms-sf .ws-fms-timeline-step.ws-fms-urgency-same-day .ws-fms-timeline-body {
   background: linear-gradient(90deg, #fff5f5 0%, #fff 100%);
   border-color: #fecaca;
 }
@@ -13971,7 +14094,7 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .ws-fms-sf .ws-fms-urgency-overdue td,
-.workspace-app .ws-fms-sf .ws-fms-timeline-step.ws-fms-urgency-overdue {
+.workspace-app .ws-fms-sf .ws-fms-timeline-step.ws-fms-urgency-overdue .ws-fms-timeline-body {
   background: linear-gradient(90deg, #fee2e2 0%, #fecaca 100%);
   border-color: #f87171;
 }
@@ -14970,8 +15093,12 @@ body:has(.workspace-app.saas-app) {
   }
 
   .workspace-app .ws-fms-sf .ws-fms-timeline-step {
-    grid-template-columns: 2rem 1fr;
+    grid-template-columns: 2.75rem 1fr;
     gap: 10px;
+    padding-bottom: 8px;
+  }
+
+  .workspace-app .ws-fms-sf .ws-fms-timeline-body {
     padding: 12px;
   }
 

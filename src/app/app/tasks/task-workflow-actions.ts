@@ -19,6 +19,10 @@ import {
   canUpdateTask,
   isTaskAssignee,
 } from "@/lib/tasks";
+import {
+  canVerifyTask,
+  loadReportingManagerContact,
+} from "@/lib/task-verification";
 
 function redirectWithToast(message: string): never {
   const toast = encodeURIComponent(message);
@@ -33,6 +37,65 @@ async function loadTaskForUser(taskId: string, organizationId: string) {
       createdBy: { select: { id: true, name: true, email: true } },
     },
   });
+}
+
+async function loadVerifierMap(organizationId: string, assigneeUserId: string) {
+  const membership = await prisma.membership.findFirst({
+    where: { organizationId, userId: assigneeUserId },
+    select: { reportingManager: { select: { userId: true } } },
+  });
+  return new Map<string, string | null>([
+    [assigneeUserId, membership?.reportingManager?.userId ?? null],
+  ]);
+}
+
+async function spawnNextRecurringTask(
+  task: NonNullable<Awaited<ReturnType<typeof loadTaskForUser>>>,
+) {
+  if (!task.isRecurring || !isRecurringFrequency(task.frequency)) {
+    return null;
+  }
+
+  const recurrenceOptions = {
+    weeklyDays:
+      task.frequency === "WEEKLY"
+        ? parseWeeklyDaysFromForm(task.recurrenceWeeklyDays)
+        : undefined,
+    monthDay:
+      task.frequency === "MONTHLY"
+        ? (task.recurrenceMonthDay ?? task.dueAt.getDate())
+        : undefined,
+  };
+  const nextDue = computeNextDueAt(task.frequency, task.dueAt, recurrenceOptions);
+  if (!nextDue) {
+    return null;
+  }
+
+  await prisma.delegatedTask.create({
+    data: {
+      organizationId: task.organizationId,
+      title: task.title,
+      instructions: task.instructions,
+      assigneeUserId: task.assigneeUserId,
+      createdById: task.createdById,
+      priority: task.priority,
+      department: task.department,
+      category: task.category,
+      frequency: task.frequency,
+      recurrenceWeeklyDays: task.recurrenceWeeklyDays,
+      recurrenceMonthDay: task.recurrenceMonthDay,
+      isRecurring: true,
+      seriesId: task.seriesId ?? task.id,
+      occurrenceNumber: task.occurrenceNumber + 1,
+      nextOccurrenceAt: computeNextDueAt(task.frequency, nextDue, recurrenceOptions),
+      remindViaEmail: task.remindViaEmail,
+      remindViaWhatsApp: task.remindViaWhatsApp,
+      dueAt: nextDue,
+      status: "PENDING",
+    },
+  });
+
+  return nextDue;
 }
 
 export async function completeTaskWithProof(
@@ -54,13 +117,17 @@ export async function completeTaskWithProof(
       return { ok: false, message: "Only the assignee can submit completion proof." };
     }
 
+    if (task.status === "AWAITING_VERIFICATION") {
+      return { ok: false, message: "Proof is already awaiting manager verification." };
+    }
+
     const parsed = parseProofFilesFromForm(formData);
     if (!parsed.ok) {
       return { ok: false, message: parsed.message };
     }
 
     const note = formData.get("completionNote")?.toString().trim() || null;
-    const completedAt = new Date();
+    const submittedAt = new Date();
 
     await prisma.$transaction(async (tx) => {
       for (const { file, mimeType } of parsed.files) {
@@ -80,8 +147,11 @@ export async function completeTaskWithProof(
       await tx.delegatedTask.update({
         where: { id: task.id },
         data: {
-          status: "COMPLETED",
-          completedAt,
+          status: "AWAITING_VERIFICATION",
+          proofSubmittedAt: submittedAt,
+          completedAt: null,
+          verifiedAt: null,
+          verifiedById: null,
           instructions: note
             ? [task.instructions, `Completion note: ${note}`]
                 .filter(Boolean)
@@ -94,56 +164,100 @@ export async function completeTaskWithProof(
         where: { taskId: task.id, status: "OPEN" },
         data: {
           status: "RESOLVED",
-          resolvedAt: completedAt,
+          resolvedAt: submittedAt,
           resolvedById: user.id,
         },
       });
     });
 
-    let message = "Task completed with proof uploaded.";
-    if (task.isRecurring && isRecurringFrequency(task.frequency)) {
-      const recurrenceOptions = {
-        weeklyDays:
-          task.frequency === "WEEKLY"
-            ? parseWeeklyDaysFromForm(task.recurrenceWeeklyDays)
-            : undefined,
-        monthDay:
-          task.frequency === "MONTHLY"
-            ? (task.recurrenceMonthDay ?? task.dueAt.getDate())
-            : undefined,
-      };
-      const nextDue = computeNextDueAt(task.frequency, task.dueAt, recurrenceOptions);
-      if (nextDue) {
-        await prisma.delegatedTask.create({
-          data: {
-            organizationId: task.organizationId,
-            title: task.title,
-            instructions: task.instructions,
-            assigneeUserId: task.assigneeUserId,
-            createdById: task.createdById,
-            priority: task.priority,
-            department: task.department,
-            category: task.category,
-            frequency: task.frequency,
-            recurrenceWeeklyDays: task.recurrenceWeeklyDays,
-            recurrenceMonthDay: task.recurrenceMonthDay,
-            isRecurring: true,
-            seriesId: task.seriesId ?? task.id,
-            occurrenceNumber: task.occurrenceNumber + 1,
-            nextOccurrenceAt: computeNextDueAt(
-              task.frequency,
-              nextDue,
-              recurrenceOptions,
-            ),
-            remindViaEmail: task.remindViaEmail,
-            remindViaWhatsApp: task.remindViaWhatsApp,
-            dueAt: nextDue,
-            status: "PENDING",
-          },
-        });
-        message = "Task completed. Next recurring run scheduled.";
-      }
+    const assigneeName = task.assignee.name ?? task.assignee.email.split("@")[0];
+    const reviewer = await loadReportingManagerContact(
+      task.organizationId,
+      task.assigneeUserId,
+      task.createdBy,
+    );
+
+    await notifyTaskAssigner({
+      assignerEmail: reviewer.email,
+      assignerName: reviewer.name,
+      assigneeName,
+      taskTitle: task.title,
+      organizationName: user.organizationName,
+      subject: `Proof submitted for verification: ${task.title}`,
+      bodyLines: [
+        `${assigneeName} submitted completion proof for this task.`,
+        "Review the proof and verify to mark the task complete.",
+        ...(note ? [`Assignee note: ${note}`] : []),
+      ],
+    });
+
+    revalidatePath("/app");
+    revalidatePath("/app/tasks");
+    redirectWithToast("Proof submitted. Your reporting manager will verify it.");
+  } catch (error) {
+    if (isNextRedirect(error)) {
+      throw error;
     }
+    console.error("completeTaskWithProof", error);
+    return { ok: false, message: "Could not submit proof. Please try again." };
+  }
+}
+
+export async function verifyTaskProof(
+  taskId: string,
+  formData: FormData,
+): Promise<TaskActionState> {
+  try {
+    const user = await getSessionUser();
+    if (!user) {
+      return { ok: false, message: "Sign in required." };
+    }
+
+    const task = await loadTaskForUser(taskId, user.organizationId);
+    if (!task || task.status !== "AWAITING_VERIFICATION") {
+      return { ok: false, message: "This task is not awaiting verification." };
+    }
+
+    const verifierByAssignee = await loadVerifierMap(
+      task.organizationId,
+      task.assigneeUserId,
+    );
+    if (
+      !canVerifyTask(
+        user,
+        {
+          assigneeUserId: task.assigneeUserId,
+          createdById: task.createdById,
+          status: task.status,
+        },
+        verifierByAssignee,
+      )
+    ) {
+      return { ok: false, message: "You cannot verify this task." };
+    }
+
+    const note = formData.get("verificationNote")?.toString().trim() || null;
+    const completedAt = new Date();
+
+    await prisma.delegatedTask.update({
+      where: { id: task.id },
+      data: {
+        status: "COMPLETED",
+        completedAt,
+        verifiedAt: completedAt,
+        verifiedById: user.id,
+        instructions: note
+          ? [task.instructions, `Verification note: ${note}`]
+              .filter(Boolean)
+              .join("\n\n")
+          : task.instructions,
+      },
+    });
+
+    const nextDue = await spawnNextRecurringTask(task);
+    const message = nextDue
+      ? "Task verified and completed. Next recurring run scheduled."
+      : "Task verified and marked complete.";
 
     revalidatePath("/app");
     revalidatePath("/app/tasks");
@@ -152,8 +266,72 @@ export async function completeTaskWithProof(
     if (isNextRedirect(error)) {
       throw error;
     }
-    console.error("completeTaskWithProof", error);
-    return { ok: false, message: "Could not complete task. Please try again." };
+    console.error("verifyTaskProof", error);
+    return { ok: false, message: "Could not verify task." };
+  }
+}
+
+export async function rejectTaskProof(
+  taskId: string,
+  formData: FormData,
+): Promise<TaskActionState> {
+  try {
+    const user = await getSessionUser();
+    if (!user) {
+      return { ok: false, message: "Sign in required." };
+    }
+
+    const task = await loadTaskForUser(taskId, user.organizationId);
+    if (!task || task.status !== "AWAITING_VERIFICATION") {
+      return { ok: false, message: "This task is not awaiting verification." };
+    }
+
+    const verifierByAssignee = await loadVerifierMap(
+      task.organizationId,
+      task.assigneeUserId,
+    );
+    if (
+      !canVerifyTask(
+        user,
+        {
+          assigneeUserId: task.assigneeUserId,
+          createdById: task.createdById,
+          status: task.status,
+        },
+        verifierByAssignee,
+      )
+    ) {
+      return { ok: false, message: "You cannot review this task." };
+    }
+
+    const note = formData.get("verificationNote")?.toString().trim();
+    if (!note || note.length < 5) {
+      return {
+        ok: false,
+        message: "Add a short reason so the assignee knows what to fix.",
+      };
+    }
+
+    await prisma.delegatedTask.update({
+      where: { id: task.id },
+      data: {
+        status: "IN_PROGRESS",
+        proofSubmittedAt: null,
+        instructions: [task.instructions, `Proof rejected: ${note}`]
+          .filter(Boolean)
+          .join("\n\n"),
+      },
+    });
+
+    revalidatePath("/app");
+    revalidatePath("/app/tasks");
+    redirectWithToast("Proof sent back to assignee for rework.");
+  } catch (error) {
+    if (isNextRedirect(error)) {
+      throw error;
+    }
+    console.error("rejectTaskProof", error);
+    return { ok: false, message: "Could not reject proof." };
   }
 }
 
@@ -175,6 +353,13 @@ async function createAssigneeRequest(
 
   if (task.status === "COMPLETED") {
     return { ok: false, message: "This task is already completed." };
+  }
+
+  if (task.status === "AWAITING_VERIFICATION") {
+    return {
+      ok: false,
+      message: "Wait for your reporting manager to verify the submitted proof.",
+    };
   }
 
   const message = formData.get("message")?.toString().trim() || "";

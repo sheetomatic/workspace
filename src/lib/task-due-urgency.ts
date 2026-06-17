@@ -9,7 +9,8 @@ export type TaskDueUrgency =
   | "due-future"
   | "waiting-revision"
   | "waiting-extension"
-  | "waiting-help";
+  | "waiting-help"
+  | "waiting-verification";
 
 export function isTaskDueToday(dueAt: Date) {
   const now = new Date();
@@ -20,6 +21,7 @@ export function isTaskActiveStatus(status: TaskStatus) {
   return (
     status === "PENDING" ||
     status === "IN_PROGRESS" ||
+    status === "AWAITING_VERIFICATION" ||
     status === "REVISION_REQUESTED" ||
     status === "EXTENSION_REQUESTED" ||
     status === "HELP_REQUESTED"
@@ -48,6 +50,9 @@ export function getTaskDueUrgency(input: {
   }
   if (status === "HELP_REQUESTED") {
     return "waiting-help";
+  }
+  if (status === "AWAITING_VERIFICATION") {
+    return "waiting-verification";
   }
 
   if (status === "COMPLETED") {
@@ -93,6 +98,8 @@ export function taskUrgencyLabel(urgency: TaskDueUrgency) {
       return "Extension requested";
     case "waiting-help":
       return "Help requested";
+    case "waiting-verification":
+      return "Awaiting verification";
   }
 }
 
