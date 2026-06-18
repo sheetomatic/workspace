@@ -6,8 +6,6 @@ import { useState } from "react";
 import {
   BarChart3,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   GitBranch,
   LayoutDashboard,
   ListChecks,
@@ -66,21 +64,9 @@ export function FmsModuleNav({
             </div>
           ) : null}
         </div>
-        <button
-          type="button"
-          className="ws-fms-subnav-collapse"
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          onClick={() => setCollapsed((value) => !value)}
-        >
-          {collapsed ? (
-            <PanelLeftOpen size={16} aria-hidden />
-          ) : (
-            <PanelLeftClose size={16} aria-hidden />
-          )}
-        </button>
       </div>
 
-      <ul className="ws-module-subnav-list">
+      <ul className="ws-module-subnav-list ws-fms-subnav-list">
         {isManager ? (
           <li>
             <Link
@@ -103,7 +89,7 @@ export function FmsModuleNav({
           <button
             type="button"
             className={`ws-module-subnav-link ws-fms-subnav-toggle${queueActive ? " is-active" : ""}`}
-            aria-expanded={queueOpen}
+            aria-expanded={queueOpen && !collapsed}
             title="My queue"
             onClick={() => {
               if (collapsed) {
@@ -229,16 +215,22 @@ export function FmsModuleNav({
         ) : null}
       </ul>
 
-      {collapsed ? (
-        <Link
-          href="/app/fms/my-stops"
-          className="ws-fms-subnav-expand-hint"
-          title="Expand sidebar"
-          onClick={() => setCollapsed(false)}
+      <div className="ws-fms-subnav-footer">
+        <button
+          type="button"
+          className="ws-fms-subnav-collapse"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          onClick={() => setCollapsed((value) => !value)}
         >
-          <ChevronRight size={14} aria-hidden />
-        </Link>
-      ) : null}
+          {collapsed ? (
+            <PanelLeftOpen size={18} aria-hidden />
+          ) : (
+            <PanelLeftClose size={18} aria-hidden />
+          )}
+          {!collapsed ? <span>Collapse</span> : null}
+        </button>
+      </div>
     </nav>
   );
 }

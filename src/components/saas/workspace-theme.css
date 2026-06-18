@@ -16544,6 +16544,9 @@ body:has(.workspace-app.saas-app) {
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .workspace-app .ws-module-layout-main {
@@ -17987,43 +17990,97 @@ body:has(.workspace-app.saas-app) {
   font-weight: 700;
 }
 
+.workspace-app .ws-fms-subnav {
+  overflow: hidden;
+}
+
+.workspace-app .ws-fms-subnav-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .workspace-app .ws-fms-subnav-top {
+  flex-shrink: 0;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
+  margin-bottom: 4px;
+}
+
+.workspace-app .ws-fms-subnav-footer {
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--sf-card-border);
 }
 
 .workspace-app .ws-fms-subnav-collapse {
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
   border: 1px solid var(--sf-card-border);
-  border-radius: 6px;
+  border-radius: 8px;
   background: #fff;
   color: var(--sf-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
   cursor: pointer;
 }
 
+.workspace-app .ws-fms-subnav-collapse:hover {
+  background: #ecebea;
+  color: var(--sf-text);
+  border-color: #c9c7c5;
+}
+
 .workspace-app .ws-fms-subnav.is-collapsed {
-  width: 56px;
+  width: 72px;
   padding: 12px 8px;
 }
 
 .workspace-app .ws-fms-module-layout:has(.ws-fms-subnav.is-collapsed) {
-  grid-template-columns: 56px minmax(0, 1fr);
+  grid-template-columns: 72px minmax(0, 1fr);
 }
 
 .workspace-app .ws-fms-subnav.is-collapsed .ws-module-subnav-brand {
   justify-content: center;
   padding: 8px 4px 12px;
+  margin-bottom: 0;
+  border-bottom: none;
 }
 
-.workspace-app .ws-fms-subnav.is-collapsed .ws-module-subnav-link {
+.workspace-app .ws-fms-subnav.is-collapsed .ws-module-subnav-link,
+.workspace-app .ws-fms-subnav.is-collapsed .ws-fms-subnav-toggle {
   justify-content: center;
-  padding: 10px 8px;
+  align-items: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.workspace-app .ws-fms-subnav.is-collapsed .ws-fms-subnav-collapse {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.workspace-app .ws-fms-subnav.is-collapsed .ws-fms-subnav-footer {
+  display: flex;
+  justify-content: center;
+  padding-top: 10px;
 }
 
 .workspace-app .ws-fms-subnav-toggle {
@@ -18079,13 +18136,6 @@ body:has(.workspace-app.saas-app) {
   color: #014486;
 }
 
-.workspace-app .ws-fms-subnav-expand-hint {
-  display: grid;
-  place-items: center;
-  margin-top: 8px;
-  padding: 8px;
-  color: var(--sf-text-secondary);
-}
 
 /* FMS line cards (control tower) */
 .workspace-app .ws-fms-lines-grid {
