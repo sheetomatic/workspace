@@ -55,8 +55,8 @@ export const clientProjects: ClientProject[] = [
       "Apps across departments  -  HR through import and export operations.",
   },
   {
-    client: "Poultry Farm",
-    location: "India",
+    client: "Borade Poultry Farm",
+    location: "Mumbai",
     useCase: "Egg Supply Chain",
     description: "Egg purchase to delivery  -  procurement, stock, and dispatch on mobile.",
   },
@@ -80,7 +80,7 @@ export const clientProjects: ClientProject[] = [
   },
   {
     client: "Fly High Fly Safe",
-    location: "Mumbai",
+    location: "Bangalore",
     useCase: "Tour & Travel",
     description: "CRM and invoicing management for bookings, payments, and client follow-up.",
   },
