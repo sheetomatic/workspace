@@ -40,9 +40,6 @@ export default async function FmsSetupPage() {
       <TaskPageToolbar
         title="Setup"
         description="AI-powered flow design, forms, and workflow launch."
-        actions={
-          canDesign ? <FmsDescribeProcessLink /> : undefined
-        }
       />
 
       {canDesign ? <FmsAiSetupPanel /> : null}
