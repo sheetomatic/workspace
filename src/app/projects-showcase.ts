@@ -9,14 +9,14 @@ export const clientProjectsShowcase = {
   eyebrow: "Built on Google Sheets & AppSheet",
   title: "Real MSME deliveries across India and beyond",
   lead:
-    "Owner-led businesses run daily operations on Sheetomatic — from HSE dashboards to order-to-delivery and field staff tracking.",
+    "Owner-led businesses run daily operations on Sheetomatic  -  from HSE dashboards to order-to-delivery and field staff tracking.",
 } as const;
 
 export const clientProjects: ClientProject[] = [
   {
     client: "Altasnim",
     location: "Oman",
-    useCase: "Oil & Gas — HSE Dashboard",
+    useCase: "Oil & Gas  -  HSE Dashboard",
     description:
       "Real-time HSE violations, penalties, and performance across cluster locations.",
   },
@@ -38,7 +38,7 @@ export const clientProjects: ClientProject[] = [
     client: "DNM Flora",
     location: "India",
     useCase: "Steel Bar Trading",
-    description: "Sales to dispatch — quotes, orders, and dispatch coordination in one flow.",
+    description: "Sales to dispatch  -  quotes, orders, and dispatch coordination in one flow.",
   },
   {
     client: "MPCC",
@@ -52,13 +52,13 @@ export const clientProjects: ClientProject[] = [
     location: "Hong Kong",
     useCase: "Multi-department Apps",
     description:
-      "Apps across departments — HR through import and export operations.",
+      "Apps across departments  -  HR through import and export operations.",
   },
   {
     client: "Poultry Farm",
     location: "India",
     useCase: "Egg Supply Chain",
-    description: "Egg purchase to delivery — procurement, stock, and dispatch on mobile.",
+    description: "Egg purchase to delivery  -  procurement, stock, and dispatch on mobile.",
   },
   {
     client: "ELVO Logistic",
@@ -70,7 +70,7 @@ export const clientProjects: ClientProject[] = [
     client: "Satya Advertisers",
     location: "Delhi",
     useCase: "Bag Manufacturing",
-    description: "Jewellery carry bag orders — production planning and dispatch tracking.",
+    description: "Jewellery carry bag orders  -  production planning and dispatch tracking.",
   },
   {
     client: "Lillybell",
