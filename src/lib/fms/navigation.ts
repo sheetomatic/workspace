@@ -15,14 +15,20 @@ function firstParam(value: string | string[] | undefined) {
   return undefined;
 }
 
+export type FmsInstanceAction = "complete";
+
 export function fmsInstanceHref(
   instanceId: string,
   from: FmsFromContext,
   templateId?: string,
+  action?: FmsInstanceAction,
 ) {
   const params = new URLSearchParams({ from });
   if (from === "my-stops" && templateId) {
     params.set("templateId", templateId);
+  }
+  if (action === "complete") {
+    params.set("action", "complete");
   }
   return `/app/fms/instances/${instanceId}?${params.toString()}`;
 }

@@ -78,7 +78,7 @@ export default async function FmsMyStopsTemplatePage({ params }: PageProps) {
     <div className="saas-page ws-fms-page ws-fms-sf">
       <TaskPageToolbar
         title={template.name}
-        description="Your stops on this workflow. Tap Complete on your active cell to mark done or upload proof."
+        description="Click any row to open the full journey. Your active stop opens ready to mark done or upload proof."
         actions={
           <Link href="/app/fms/my-stops" className="btn-secondary btn-sm">
             All workflows
@@ -115,8 +115,7 @@ export default async function FmsMyStopsTemplatePage({ params }: PageProps) {
       />
 
       <p className="ws-fms-muted ws-fms-tracker-footnote">
-        Other team members see the same workflow with their own stops highlighted.
-        Use the gear on a step header for WHAT, HOW, WHO, WHEN, and TAT.
+        Click any row to open the journey and complete your stop. Use the gear on a step header for WHAT, HOW, WHO, WHEN, and TAT.
       </p>
     </div>
   );

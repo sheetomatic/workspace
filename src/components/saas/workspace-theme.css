@@ -17360,6 +17360,19 @@ body:has(.workspace-app.saas-app) {
   background-image: linear-gradient(rgba(1, 118, 211, 0.04), rgba(1, 118, 211, 0.04));
 }
 
+.workspace-app .ws-fms-tracker-data-row.is-clickable {
+  cursor: pointer;
+}
+
+.workspace-app .ws-fms-tracker-data-row.is-clickable:focus-visible td {
+  outline: 2px solid #0176d3;
+  outline-offset: -2px;
+}
+
+.workspace-app .ws-fms-tracker-data-row.is-clickable .ws-fms-route-snapshot {
+  pointer-events: none;
+}
+
 .workspace-app .ws-fms-tracker-footnote {
   margin-top: 12px;
   font-size: 0.8125rem;

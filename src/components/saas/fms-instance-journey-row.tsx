@@ -127,8 +127,18 @@ export function FmsInstanceJourneyRow({
   instanceStatus,
   steps,
   completePanel,
-}: FmsInstanceJourneyRowProps) {
-  const [formOpenForStepId, setFormOpenForStepId] = useState<string | null>(null);
+  autoOpenComplete = false,
+}: FmsInstanceJourneyRowProps & { autoOpenComplete?: boolean }) {
+  const [formOpenForStepId, setFormOpenForStepId] = useState<string | null>(() => {
+    if (
+      autoOpenComplete &&
+      completePanel?.canComplete &&
+      completePanel.stepState.id
+    ) {
+      return completePanel.stepState.id;
+    }
+    return null;
+  });
   const allDone =
     steps.length > 0 && steps.every((step) => step.status === "DONE");
   const completedCount = steps.filter((step) => step.status === "DONE").length;

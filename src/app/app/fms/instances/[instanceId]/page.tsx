@@ -22,7 +22,7 @@ import {
 
 type PageProps = {
   params: Promise<{ instanceId: string }>;
-  searchParams: Promise<{ from?: string; templateId?: string }>;
+  searchParams: Promise<{ from?: string; templateId?: string; action?: string }>;
 };
 
 export default async function FmsInstancePage({ params, searchParams }: PageProps) {
@@ -135,6 +135,7 @@ export default async function FmsInstancePage({ params, searchParams }: PageProp
           submittedAt={instance.submission?.createdAt ?? null}
           instanceStatus={instance.status}
           steps={instance.stepStates}
+          autoOpenComplete={query.action === "complete" && canComplete}
           completePanel={
             activeStep && instance.status === "ACTIVE"
               ? {

@@ -73,9 +73,10 @@ export function FmsTrainRouteSnapshot({
 }: {
   stops: RouteSnapshotStop[];
   expanded?: boolean;
-  onToggle: () => void;
+  onToggle?: () => void;
   label?: string;
 }) {
+  const interactive = Boolean(onToggle);
   const currentIndex = stops.findIndex((stop) => stop.status === "IN_PROGRESS");
   const currentStop = currentIndex >= 0 ? stops[currentIndex] : null;
   const currentTiming = currentStop ? stopTiming(currentStop) : null;
@@ -90,14 +91,8 @@ export function FmsTrainRouteSnapshot({
     .filter(Boolean)
     .join(" ");
 
-  return (
-    <button
-      type="button"
-      className={snapshotClass}
-      aria-expanded={expanded}
-      aria-label={`${label}. Click to ${expanded ? "hide" : "show"} row details.`}
-      onClick={onToggle}
-    >
+  const content = (
+    <>
       <span className="ws-fms-route-snapshot-label">Start</span>
       {stops.map((stop, index) => {
         const isCurrent = stop.status === "IN_PROGRESS";
@@ -147,9 +142,35 @@ export function FmsTrainRouteSnapshot({
             : "Stopped here"}
         </span>
       ) : null}
-      <span className="ws-fms-route-snapshot-chevron" aria-hidden>
-        {expanded ? "Hide" : "Details"}
-      </span>
-    </button>
+      {interactive ? (
+        <span className="ws-fms-route-snapshot-chevron" aria-hidden>
+          {expanded ? "Hide" : "Details"}
+        </span>
+      ) : (
+        <span className="ws-fms-route-snapshot-chevron" aria-hidden>
+          Open
+        </span>
+      )}
+    </>
+  );
+
+  if (interactive) {
+    return (
+      <button
+        type="button"
+        className={snapshotClass}
+        aria-expanded={expanded}
+        aria-label={`${label}. Click to ${expanded ? "hide" : "show"} row details.`}
+        onClick={onToggle}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <div className={snapshotClass} aria-label={label}>
+      {content}
+    </div>
   );
 }
