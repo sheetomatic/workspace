@@ -17880,39 +17880,67 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-fms-perf-charts-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
   margin-bottom: 16px;
 }
 
 .workspace-app .ws-fms-perf-chart-card {
   min-width: 0;
-  padding: 16px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
 }
 
-.workspace-app .ws-fms-perf-chart-card-wide {
-  grid-column: 1 / -1;
+.workspace-app .ws-fms-perf-chart-card.is-wide {
+  grid-column: span 2;
+}
+
+.workspace-app .ws-fms-perf-chart-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 12px 0;
 }
 
 .workspace-app .ws-fms-perf-chart-head h2 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.8125rem;
   font-weight: 700;
+  color: #0f172a;
 }
 
 .workspace-app .ws-fms-perf-chart-head p {
-  margin: 4px 0 0;
-  font-size: 0.8125rem;
-  color: var(--sf-text-secondary);
+  margin: 2px 0 0;
+  font-size: 0.6875rem;
+  color: #64748b;
+  line-height: 1.3;
+}
+
+.workspace-app .ws-fms-perf-chart-type {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .workspace-app .ws-fms-perf-chart-body {
-  margin-top: 12px;
+  padding: 4px 6px 8px;
 }
 
 .workspace-app .ws-fms-perf-empty {
-  margin: 16px 0 4px;
-  font-size: 0.8125rem;
+  margin: 0;
+  padding: 24px 12px;
+  font-size: 0.75rem;
+  text-align: center;
 }
 
 .workspace-app .ws-fms-perf-tables-grid {
@@ -18662,6 +18690,16 @@ body:has(.workspace-app.saas-app) {
   white-space: nowrap;
 }
 
+@media (max-width: 1100px) {
+  .workspace-app .ws-fms-perf-charts-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workspace-app .ws-fms-perf-chart-card.is-wide {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 900px) {
   .workspace-app .ws-fms-perf-charts-grid,
   .workspace-app .ws-fms-perf-tables-grid,
@@ -18669,7 +18707,7 @@ body:has(.workspace-app.saas-app) {
     grid-template-columns: 1fr;
   }
 
-  .workspace-app .ws-fms-perf-chart-card-wide {
+  .workspace-app .ws-fms-perf-chart-card.is-wide {
     grid-column: auto;
   }
 
