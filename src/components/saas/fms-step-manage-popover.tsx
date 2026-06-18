@@ -13,10 +13,12 @@ export function FmsStepManagePopover({
   meta,
   compact = false,
   showEditLink = true,
+  editHref,
 }: {
   meta: FmsStepManageMeta;
   compact?: boolean;
   showEditLink?: boolean;
+  editHref?: string;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -36,7 +38,11 @@ export function FmsStepManagePopover({
         meta={meta}
         open={open}
         onClose={() => setOpen(false)}
-        editHref={showEditLink ? `/app/fms/forms/${meta.formId}` : undefined}
+        editHref={
+          showEditLink
+            ? (editHref ?? `/app/fms/forms/${meta.formId}?from=setup`)
+            : undefined
+        }
       />
     </>
   );

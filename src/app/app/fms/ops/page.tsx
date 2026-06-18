@@ -6,6 +6,7 @@ import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import { getFmsOpsPage, getFmsPipelineCounts } from "@/lib/fms/queries";
 import { listRecentFmsAudit } from "@/lib/fms/audit";
+import { fmsInstanceHref } from "@/lib/fms/navigation";
 import {
   formatDelayLabel,
   isStepOverdue,
@@ -112,7 +113,7 @@ export default async function FmsOpsPage({ searchParams }: PageProps) {
                         <tr key={stepState.id}>
                           <td>
                             <Link
-                              href={`/app/fms/instances/${stepState.instanceId}`}
+                              href={fmsInstanceHref(stepState.instanceId, "ops")}
                               className="ws-sf-record-link"
                             >
                               {stepState.instance.referenceLabel ??
@@ -129,7 +130,7 @@ export default async function FmsOpsPage({ searchParams }: PageProps) {
                           </td>
                           <td className="ws-fms-table-actions">
                             <Link
-                              href={`/app/fms/instances/${stepState.instanceId}`}
+                              href={fmsInstanceHref(stepState.instanceId, "ops")}
                               className="btn-primary btn-sm ws-sf-btn-primary"
                             >
                               Open
@@ -191,7 +192,7 @@ export default async function FmsOpsPage({ searchParams }: PageProps) {
                         <tr key={stepState.id}>
                           <td>
                             <Link
-                              href={`/app/fms/instances/${stepState.instanceId}`}
+                              href={fmsInstanceHref(stepState.instanceId, "ops")}
                               className="ws-sf-record-link"
                             >
                               {stepState.instance.referenceLabel ??
@@ -210,7 +211,7 @@ export default async function FmsOpsPage({ searchParams }: PageProps) {
                           </td>
                           <td className="ws-fms-table-actions">
                             <Link
-                              href={`/app/fms/instances/${stepState.instanceId}`}
+                              href={fmsInstanceHref(stepState.instanceId, "ops")}
                               className="btn-primary btn-sm ws-sf-btn-primary"
                             >
                               Assign

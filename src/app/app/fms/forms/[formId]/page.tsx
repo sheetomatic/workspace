@@ -7,20 +7,22 @@ import { FmsPipelineStatusBadge } from "@/components/saas/fms-pipeline-status-ba
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
 import { FmsTemplateBuilder } from "@/components/saas/fms-template-builder";
 import { requireSession } from "@/lib/require-session";
+import { hasMinimumRole } from "@/lib/permissions";
 import { canManageFms, canSubmitFmsForm } from "@/lib/fms/access";
 import { DEFAULT_FMS_ALERT_CONFIG } from "@/lib/fms/constants";
+import { resolveFmsBackLink } from "@/lib/fms/navigation";
 import { getFmsForm } from "@/lib/fms/queries";
 import { listAssignableMembers } from "@/lib/tasks";
 
 type PageProps = {
   params: Promise<{ formId: string }>;
-  searchParams: Promise<{ setup?: string }>;
+  searchParams: Promise<{ setup?: string; from?: string }>;
 };
 
 export default async function FmsFormDetailPage({ params, searchParams }: PageProps) {
   const user = await requireSession(undefined, { module: "FMS" });
   const { formId } = await params;
-  const { setup } = await searchParams;
+  const { setup, from } = await searchParams;
   const form = await getFmsForm(formId, user.organizationId);
 
   if (!form) {
@@ -33,12 +35,18 @@ export default async function FmsFormDetailPage({ params, searchParams }: PagePr
     ? await listAssignableMembers(user.organizationId)
     : [];
   const hasWorkflow = Boolean(form.template);
+  const backLink = resolveFmsBackLink({
+    from: from ?? (setup ? "setup" : undefined),
+    isManager: hasMinimumRole(user.role, "MANAGER"),
+    defaultForManager: "setup",
+    defaultForMember: "my-stops",
+  });
 
   return (
     <div className="saas-page ws-fms-page ws-fms-sf ws-fms-jotform-page">
       <div className="ws-fms-jf-page-bar">
-        <Link href="/app/fms" className="ws-fms-jf-back">
-          Back to FMS
+        <Link href={backLink.href} className="ws-fms-jf-back">
+          {backLink.label}
         </Link>
         <div className="ws-fms-jf-page-meta">
           <FmsPipelineStatusBadge

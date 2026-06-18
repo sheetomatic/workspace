@@ -5,6 +5,7 @@ import { ChevronRight } from "lucide-react";
 import type { FmsStepStatus } from "@prisma/client";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
 import { FmsTrainTrack, type TrainTrackStop } from "@/components/saas/fms-train-track";
+import { fmsInstanceHref, type FmsFromContext } from "@/lib/fms/navigation";
 import {
   formatDelayLabel,
   formatStepWhenLabel,
@@ -78,6 +79,8 @@ export function FmsTrackerRowDetail({
   steps,
   stepStates,
   viewerUserId,
+  returnContext = "lines",
+  returnTemplateId,
   onCompleteStep,
 }: {
   instanceId: string;
@@ -87,6 +90,8 @@ export function FmsTrackerRowDetail({
   steps: StepDef[];
   stepStates: StepState[];
   viewerUserId?: string;
+  returnContext?: FmsFromContext;
+  returnTemplateId?: string;
   onCompleteStep?: (stepStateId: string) => void;
 }) {
   const stepByStepId = new Map(stepStates.map((state) => [state.stepId, state]));
@@ -125,6 +130,12 @@ export function FmsTrackerRowDetail({
         activeState.delayMinutes,
       )
     : null;
+
+  const instanceHref = fmsInstanceHref(
+    instanceId,
+    returnContext,
+    returnTemplateId,
+  );
 
   return (
     <div className="ws-fms-tracker-row-detail">
@@ -225,7 +236,7 @@ export function FmsTrackerRowDetail({
               </button>
             ) : null}
             <Link
-              href={`/app/fms/instances/${instanceId}`}
+              href={instanceHref}
               className="ws-fms-tracker-row-detail-link"
             >
               Open full journey
@@ -237,7 +248,7 @@ export function FmsTrackerRowDetail({
         <section className="ws-fms-tracker-row-detail-stop is-idle">
           <p className="ws-fms-muted">
             No active stop right now.{" "}
-            <Link href={`/app/fms/instances/${instanceId}`}>Open full journey</Link>
+            <Link href={instanceHref}>Open full journey</Link>
           </p>
         </section>
       )}

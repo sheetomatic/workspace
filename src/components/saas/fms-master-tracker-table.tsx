@@ -12,6 +12,7 @@ import { FmsTrainRouteSnapshot } from "@/components/saas/fms-train-route-snapsho
 import type { FmsStepManageMeta } from "@/components/saas/fms-step-info-modal";
 import type { FmsStepCompleteState } from "@/components/saas/fms-step-complete-panel";
 import type { FmsSlaConfig } from "@/lib/fms/constants";
+import { fmsFormHref, fmsInstanceHref, type FmsFromContext } from "@/lib/fms/navigation";
 import {
   formatDelayLabel,
   isStepOverdue,
@@ -127,15 +128,25 @@ export function FmsMasterTrackerTable({
   block,
   viewerUserId,
   showEditLink = true,
+  returnContext = "lines",
+  returnTemplateId,
 }: {
   block: TrackerTableBlock;
   viewerUserId?: string;
   showEditLink?: boolean;
+  returnContext?: FmsFromContext;
+  returnTemplateId?: string;
 }) {
   const columns = useMemo(() => leadColumns(block.form.fields), [block.form.fields]);
   const [expandedInstanceId, setExpandedInstanceId] = useState<string | null>(null);
   const [activeTask, setActiveTask] = useState<ActiveTask | null>(null);
   const totalCols = rowColSpan(columns.length, block.steps.length);
+  const formEditHref = showEditLink
+    ? fmsFormHref(
+        block.form.id,
+        returnContext === "my-stops" ? "my-stops" : "lines",
+      )
+    : undefined;
 
   function toggleRow(instanceId: string) {
     setExpandedInstanceId((current) => (current === instanceId ? null : instanceId));
@@ -201,6 +212,7 @@ export function FmsMasterTrackerTable({
                     <FmsStepManagePopover
                       compact
                       showEditLink={showEditLink}
+                      editHref={formEditHref}
                       meta={stepMeta(block, step, index)}
                     />
                   </div>
@@ -241,6 +253,9 @@ export function FmsMasterTrackerTable({
                 return {
                   id: step.id,
                   status: state?.status ?? ("PENDING" as FmsStepStatus),
+                  plannedAt: state?.plannedAt ? new Date(state.plannedAt) : null,
+                  actualAt: state?.actualAt ? new Date(state.actualAt) : null,
+                  delayMinutes: state?.delayMinutes ?? null,
                 };
               });
 
@@ -259,7 +274,11 @@ export function FmsMasterTrackerTable({
                     </td>
                     <td className="ws-fms-tracker-lead-col is-label">
                       <Link
-                        href={`/app/fms/instances/${instance.id}`}
+                        href={fmsInstanceHref(
+                          instance.id,
+                          returnContext,
+                          returnTemplateId,
+                        )}
                         className="ws-fms-tracker-lead-link"
                       >
                         <FileInput size={14} aria-hidden />
@@ -382,6 +401,8 @@ export function FmsMasterTrackerTable({
                           steps={block.steps}
                           stepStates={instance.stepStates}
                           viewerUserId={viewerUserId}
+                          returnContext={returnContext}
+                          returnTemplateId={returnTemplateId}
                           onCompleteStep={openTaskForStepState}
                         />
                       </td>

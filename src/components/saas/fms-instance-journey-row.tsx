@@ -4,10 +4,9 @@ import { useState } from "react";
 import type { FmsInstanceStatus, FmsStepStatus } from "@prisma/client";
 import { CheckCircle2, Clock, FileInput } from "lucide-react";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
-import {
-  FmsStepCompletePanel,
-  type FmsStepCompleteState,
-} from "@/components/saas/fms-step-complete-panel";
+import type { FmsStepCompleteState } from "@/components/saas/fms-step-complete-panel";
+import { FmsStepTaskModal } from "@/components/saas/fms-step-task-modal";
+import type { FmsStepManageMeta } from "@/components/saas/fms-step-info-modal";
 import {
   computeStepUrgency,
   formatDelayLabel,
@@ -115,6 +114,7 @@ type FmsInstanceJourneyRowProps = {
   completePanel?: {
     stepState: FmsStepCompleteState;
     canComplete: boolean;
+    taskMeta: FmsStepManageMeta;
   } | null;
 };
 
@@ -132,8 +132,14 @@ export function FmsInstanceJourneyRow({
   const allDone =
     steps.length > 0 && steps.every((step) => step.status === "DONE");
   const completedCount = steps.filter((step) => step.status === "DONE").length;
+  const taskModalOpen = Boolean(
+    formOpenForStepId &&
+      completePanel?.stepState.id === formOpenForStepId &&
+      completePanel.taskMeta,
+  );
 
   return (
+    <>
     <div className="ws-fms-journey-row">
       <p className="ws-fms-journey-row-hint">
         Lead form filled - FMS flow started. Each column is one stop on the route.
@@ -203,8 +209,7 @@ export function FmsInstanceJourneyRow({
             step.plannedAt &&
             (urgency === "same-day" || urgency === "overdue");
           const showCompleteForm =
-            formOpenForStepId === step.id &&
-            completePanel?.stepState.id === step.id;
+            taskModalOpen && completePanel?.stepState.id === step.id;
           const prevStatus = index === 0 ? "lead" : steps[index - 1]!.status;
           const wireClass = connectorClass(
             prevStatus,
@@ -216,7 +221,7 @@ export function FmsInstanceJourneyRow({
           return (
             <article
               key={step.id}
-              className={`ws-fms-journey-row-node ${stateClass}`}
+              className={`ws-fms-journey-row-node ${stateClass}${showCompleteForm ? " is-form-open" : ""}`}
               role="listitem"
             >
               <span
@@ -235,7 +240,11 @@ export function FmsInstanceJourneyRow({
               </div>
               <div className="ws-fms-journey-row-card">
                 {isStuck ? (
-                  <p className="ws-fms-journey-row-stuck">Stopped here</p>
+                  <p
+                    className={`ws-fms-journey-row-stuck${overdue ? " is-overdue" : ""}`}
+                  >
+                    {overdue && delayLabel ? delayLabel : "Stopped here"}
+                  </p>
                 ) : null}
                 <header className="ws-fms-journey-row-card-head">
                   <div>
@@ -313,14 +322,6 @@ export function FmsInstanceJourneyRow({
                   </div>
                 ) : null}
 
-                {showCompleteForm && completePanel ? (
-                  <FmsStepCompletePanel
-                    canComplete={completePanel.canComplete}
-                    mode="form"
-                    stepState={completePanel.stepState}
-                    onCancel={() => setFormOpenForStepId(null)}
-                  />
-                ) : null}
               </div>
             </article>
           );
@@ -346,5 +347,15 @@ export function FmsInstanceJourneyRow({
         </div>
       </div>
     </div>
+    {taskModalOpen && completePanel ? (
+      <FmsStepTaskModal
+        meta={completePanel.taskMeta}
+        stepState={completePanel.stepState}
+        canComplete={completePanel.canComplete}
+        open
+        onClose={() => setFormOpenForStepId(null)}
+      />
+    ) : null}
+    </>
   );
 }

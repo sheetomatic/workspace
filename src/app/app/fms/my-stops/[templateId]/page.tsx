@@ -90,6 +90,8 @@ export default async function FmsMyStopsTemplatePage({ params }: PageProps) {
         block={block}
         viewerUserId={user.id}
         showEditLink={false}
+        returnContext="my-stops"
+        returnTemplateId={templateId}
         summary={
           <div className="ws-sf-metrics ws-fms-metrics ws-fms-tracker-metrics">
             <div className="ws-sf-metric-tile">

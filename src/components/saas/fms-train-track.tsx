@@ -1,5 +1,4 @@
 import type { FmsStepStatus } from "@prisma/client";
-import { TrainFront } from "lucide-react";
 import {
   computeStepUrgency,
   formatDelayLabel,
@@ -129,10 +128,9 @@ export function FmsTrainTrack({
               <div className="ws-fms-train-segment" aria-hidden />
               <div className="ws-fms-train-stop-marker">
                 {isCurrent ? (
-                  <TrainFront
-                    size={compact ? 14 : 18}
-                    className="ws-fms-train-icon"
-                    aria-label="Train is here"
+                  <span
+                    className={`ws-fms-train-stop-indicator is-stuck${urgency === "overdue" ? " is-overdue" : ""}`}
+                    aria-label="Stopped here"
                   />
                 ) : stop.status === "DONE" ? (
                   <span className="ws-fms-train-check" aria-hidden>

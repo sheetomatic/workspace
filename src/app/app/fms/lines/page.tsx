@@ -82,7 +82,7 @@ export default async function FmsLinesPage({ searchParams }: PageProps) {
     <div className="saas-page ws-fms-page ws-fms-sf">
       <TaskPageToolbar
         title="Live pipelines"
-        description="Click the route snapshot on any row to expand lead details and the live train track."
+        description="Click the route snapshot on any row to expand lead details and the live route track."
         actions={
           <Link href="/app/fms/ops" className="btn-secondary btn-sm">
             Ops monitor
@@ -157,7 +157,7 @@ export default async function FmsLinesPage({ searchParams }: PageProps) {
 
       {activeLeadCount > 0 ? (
         <p className="ws-fms-muted ws-fms-tracker-footnote">
-          Tip: click Start-train-End snapshot to expand a row. Step gear shows WHAT / HOW / WHO / TAT. Workflow setup edits the FMS structure.
+          Tip: click Start-End snapshot to expand a row. Step gear shows WHAT / HOW / WHO / TAT. Workflow setup edits the FMS structure.
         </p>
       ) : null}
     </div>

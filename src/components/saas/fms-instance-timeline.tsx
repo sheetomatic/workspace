@@ -131,7 +131,9 @@ export function FmsInstanceTimeline({
             </div>
             <div className="ws-fms-timeline-body">
               {isStuck ? (
-                <p className="ws-fms-timeline-stuck-label">Stopped here</p>
+                <p className="ws-fms-timeline-stuck-label">
+                  {overdue && delayLabel ? delayLabel : "Stopped here"}
+                </p>
               ) : null}
               <header>
                 <div className="ws-fms-timeline-title">

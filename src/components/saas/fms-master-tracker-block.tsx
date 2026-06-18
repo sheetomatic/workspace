@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Settings2 } from "lucide-react";
 import { FmsMasterTrackerTable } from "@/components/saas/fms-master-tracker-table";
 import type { TrackerTableBlock } from "@/components/saas/fms-master-tracker-table";
+import { fmsFormHref, type FmsFromContext } from "@/lib/fms/navigation";
 
 export type FmsTrackerBlock = {
   id: string;
@@ -75,12 +76,19 @@ export function FmsMasterTrackerBlock({
   viewerUserId,
   showEditLink = true,
   summary,
+  returnContext = "lines",
+  returnTemplateId,
 }: {
   block: FmsTrackerBlock;
   viewerUserId?: string;
   showEditLink?: boolean;
   summary?: React.ReactNode;
+  returnContext?: FmsFromContext;
+  returnTemplateId?: string;
 }) {
+  const formFromContext: FmsFromContext =
+    returnContext === "my-stops" ? "my-stops" : "lines";
+
   return (
     <section className="ws-sf-card ws-fms-tracker-block">
       <header className="ws-fms-tracker-block-head">
@@ -101,7 +109,7 @@ export function FmsMasterTrackerBlock({
           </Link>
           {showEditLink ? (
             <Link
-              href={`/app/fms/forms/${block.form.id}`}
+              href={fmsFormHref(block.form.id, formFromContext)}
               className="ws-fms-tracker-manage-link"
               title="Workflow setup"
             >
@@ -118,6 +126,8 @@ export function FmsMasterTrackerBlock({
         block={serializeBlock(block)}
         viewerUserId={viewerUserId}
         showEditLink={showEditLink}
+        returnContext={returnContext}
+        returnTemplateId={returnTemplateId}
       />
     </section>
   );
