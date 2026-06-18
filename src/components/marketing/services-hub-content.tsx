@@ -15,7 +15,6 @@ import {
   Package,
   Plane,
   Sheet,
-  Sparkles,
   Stethoscope,
   Store,
   Truck,
@@ -47,7 +46,6 @@ import {
 } from "@/app/services-content";
 import {
   footerIndustryLinks,
-  serviceDeliverables,
   serviceProblemSolutions,
   servicesPage,
 } from "@/app/page-content";
@@ -97,15 +95,6 @@ const solutionHrefOverrides: Record<string, string> = {
   "Inventory management": "/services/inventory",
   "Flow monitoring": "/services/flow",
   "Workflow automation": "/services/automation",
-};
-
-const deliveryIcons: Record<string, { icon: LucideIcon; tone: string }> = {
-  "Owner view": { icon: BarChart3, tone: "tone-sky" },
-  Automation: { icon: Sparkles, tone: "tone-violet" },
-  "End-to-end": { icon: GitBranch, tone: "tone-indigo" },
-  "Daily control": { icon: BarChart3, tone: "tone-emerald" },
-  "Follow-up": { icon: Bot, tone: "tone-green" },
-  "After go-live": { icon: Wrench, tone: "tone-amber" },
 };
 
 const industryIcons: Record<string, LucideIcon> = {
@@ -345,44 +334,6 @@ export function ServicesHubContent() {
                 <span>View all HR services</span>
                 <ArrowRight size={14} aria-hidden />
               </MarketingLinkButton>
-            </div>
-          </div>
-        </section>
-
-        <section className="services-delivery">
-          <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-14">
-            <div className="services-section-head services-section-head-center">
-              <p className="services-section-eyebrow">What we deliver</p>
-              <h2 className="services-section-title">
-                {servicesPage.deliveryTitle}
-              </h2>
-              <p className="services-section-lead">{servicesPage.deliveryLead}</p>
-            </div>
-
-            <div className="services-delivery-grid">
-              {serviceDeliverables.map((item) => {
-                const meta = deliveryIcons[item.tag] ?? deliveryIcons["End-to-end"];
-                const Icon = meta.icon;
-                return (
-                  <article
-                    className={`services-offer-card${item.featured ? " featured" : ""}`}
-                    key={item.title}
-                  >
-                    <div className="services-offer-head">
-                      <span className={`marketing-icon sm ${meta.tone}`} aria-hidden>
-                        <Icon size={18} strokeWidth={2} />
-                      </span>
-                      <span className="services-offer-tag">{item.tag}</span>
-                    </div>
-                    <h3 className="services-offer-title">{item.title}</h3>
-                    <p className="services-offer-text">{item.text}</p>
-                    <p className="services-offer-outcome">
-                      <CheckCircle2 size={16} aria-hidden />
-                      {item.outcome}
-                    </p>
-                  </article>
-                );
-              })}
             </div>
           </div>
         </section>
