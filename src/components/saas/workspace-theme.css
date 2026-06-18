@@ -15748,6 +15748,7 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-fms-n8n-canvas-shell {
   width: 100%;
+  min-height: 220px;
   overflow-x: auto;
   overflow-y: hidden;
   padding: 20px 16px;
@@ -15844,6 +15845,7 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .ws-fms-n8n-node {
+  position: relative;
   width: 260px;
   min-height: 120px;
   padding: 16px 18px;
@@ -15955,6 +15957,43 @@ body:has(.workspace-app.saas-app) {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.workspace-app .ws-fms-n8n-step-gear {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #e5e5ea;
+  border-radius: 8px;
+  background: #fff;
+  color: #8e8e93;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.workspace-app .ws-fms-n8n-step-gear:hover {
+  border-color: #007aff;
+  color: #007aff;
+  background: #f0f7ff;
+}
+
+.workspace-app .ws-fms-n8n-node.is-selected .ws-fms-n8n-step-gear {
+  border-color: #007aff;
+  color: #007aff;
+  background: #eef4ff;
+}
+
+.workspace-app .ws-fms-n8n-hint-gear {
+  display: inline;
+  vertical-align: -2px;
+  color: #8e8e93;
 }
 
 .workspace-app .ws-fms-flow-manual-editor {
@@ -16322,6 +16361,7 @@ body:has(.workspace-app.saas-app) {
 .workspace-app .ws-fms-design-flow {
   padding-bottom: 18px;
   overflow: visible;
+  min-height: 280px;
 }
 
 .workspace-app .ws-fms-design-flow .ws-fms-n8n-wrap {
@@ -16334,6 +16374,15 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-fms-design-flow .ws-fms-n8n-canvas-shell {
   margin-top: 4px;
+  min-height: 240px;
+}
+
+.workspace-app .ws-fms-design-editor {
+  border-top: 3px solid #007aff;
+}
+
+.workspace-app .ws-fms-picker-collapsed-bar {
+  margin-bottom: 12px;
 }
 
 .workspace-app .ws-fms-design-form,
@@ -17360,6 +17409,11 @@ body:has(.workspace-app.saas-app) {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
   padding: 14px 16px;
   border-radius: 8px;
   border: 1px solid var(--sf-card-border);
@@ -17454,12 +17508,16 @@ body:has(.workspace-app.saas-app) {
   flex-direction: column;
   gap: 4px;
   min-height: 100%;
+  width: 100%;
   padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid var(--sf-card-border);
   background: #fafaf9;
   text-decoration: none;
+  text-align: left;
+  font: inherit;
   color: inherit;
+  cursor: pointer;
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState, type RefObject } from "react";
 import Link from "next/link";
 import { Settings2, UserRound, X } from "lucide-react";
 import {
@@ -54,6 +54,9 @@ export function FmsFlowchartBuilder({
   formNeedsSetup = false,
   justApproved = false,
   initialAiPrompt = "",
+  autoBuildAi = false,
+  canvasRef,
+  onFlowStarted,
 }: {
   designId?: string;
   initialName?: string;
@@ -71,6 +74,9 @@ export function FmsFlowchartBuilder({
   formNeedsSetup?: boolean;
   justApproved?: boolean;
   initialAiPrompt?: string;
+  autoBuildAi?: boolean;
+  canvasRef?: RefObject<HTMLDivElement | null>;
+  onFlowStarted?: () => void;
 }) {
   const saveAction = mode === "create" ? createFmsFlowDesign : updateFmsFlowDesign;
   const [saveState, saveFormAction, savePending] = useActionState(
@@ -102,6 +108,8 @@ export function FmsFlowchartBuilder({
   const [ownerReviewOpen, setOwnerReviewOpen] = useState(false);
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const editorRef = useRef<HTMLDivElement>(null);
+  const internalCanvasRef = useRef<HTMLDivElement>(null);
+  const flowCanvasRef = canvasRef ?? internalCanvasRef;
   const pendingScrollToStepId = useRef<string | null>(null);
 
   const hasFlow = steps.length > 0;
@@ -138,8 +146,9 @@ export function FmsFlowchartBuilder({
     setName(draft.name);
     setDescription(draft.description);
     setSteps(mapped);
-    setSelectedStepId(null);
+    setSelectedStepId(mapped[0]?.id ?? null);
     setOwnerReviewOpen(mapped.length > 0);
+    onFlowStarted?.();
   }
 
   function updateStep(id: string, patch: Partial<FmsFlowchartStep>) {
@@ -153,17 +162,28 @@ export function FmsFlowchartBuilder({
     pendingScrollToStepId.current = step.id;
     setSteps((prev) => insertFlowchartStepAt(prev, index, step));
     setSelectedStepId(step.id);
+    onFlowStarted?.();
   }
 
   function moveStepAfter(stepId: string, afterStepId: string | null) {
     setSteps((prev) => reorderFlowchartStepAfter(prev, stepId, afterStepId));
   }
 
-  function startManualEdit() {
-    const step = newFlowchartStep();
-    setSteps([step]);
-    setSelectedStepId(step.id);
-    pendingScrollToStepId.current = step.id;
+  function openStepEditor(id: string) {
+    setSelectedStepId(id);
+    pendingScrollToStepId.current = id;
+  }
+
+  function removeStep(id: string) {
+    setSteps((prev) => {
+      if (prev.length <= 1) {
+        return prev;
+      }
+      return prev.filter((step) => step.id !== id);
+    });
+    if (selectedStepId === id) {
+      setSelectedStepId(null);
+    }
   }
 
   useEffect(() => {
@@ -180,17 +200,11 @@ export function FmsFlowchartBuilder({
     }
   }, [steps, selectedStepId]);
 
-  function removeStep(id: string) {
-    setSteps((prev) => {
-      if (prev.length <= 1) {
-        return prev;
-      }
-      return prev.filter((step) => step.id !== id);
-    });
-    if (selectedStepId === id) {
-      setSelectedStepId(null);
+  useEffect(() => {
+    if (initialSteps.length > 0) {
+      onFlowStarted?.();
     }
-  }
+  }, [initialSteps.length, onFlowStarted]);
 
   return (
     <div className="ws-fms-design-shell">
@@ -203,28 +217,6 @@ export function FmsFlowchartBuilder({
             </Link>
           ) : null}
         </div>
-        {canEditFlow ? (
-          <div className="ws-fms-design-actions">
-            {hasFlow ? (
-              <button
-                type="button"
-                className="ws-fms-btn-quiet"
-                onClick={() => setOwnerReviewOpen(true)}
-              >
-                <UserRound size={14} aria-hidden />
-                Assign owners
-              </button>
-            ) : null}
-            <button
-              type="button"
-              className={`ws-fms-btn-quiet${notifyOpen ? " is-active" : ""}`}
-              onClick={() => setNotifyOpen((open) => !open)}
-            >
-              <Settings2 size={14} aria-hidden />
-              Notifications
-            </button>
-          </div>
-        ) : null}
       </header>
 
       {reviewNote && initialStatus === "REJECTED" ? (
@@ -256,8 +248,9 @@ export function FmsFlowchartBuilder({
         <FmsFlowAiBar
           onReady={applyAiDraft}
           existingDraft={aiExistingDraft}
-          compact={hasFlow}
+          compact={hasFlow || Boolean(initialAiPrompt)}
           initialPrompt={initialAiPrompt}
+          autoBuildOnMount={autoBuildAi}
         />
       ) : null}
 
@@ -287,89 +280,86 @@ export function FmsFlowchartBuilder({
         <input type="hidden" name="holidayDatesJson" value={holidayDatesJson} readOnly />
         <input type="hidden" name="alertConfigJson" value={alertConfigJson} readOnly />
 
-        {hasFlow ? (
-          <>
-            <section className="ws-fms-design-card ws-fms-design-meta">
-              <input
-                name="name"
-                required
-                className="ws-fms-design-title"
-                value={name}
-                readOnly={readOnly}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="FMS flow name"
-              />
-              <input
-                name="description"
-                className="ws-fms-design-desc"
-                value={description}
-                readOnly={readOnly}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="What does this process handle?"
-              />
-            </section>
+        {canEditFlow || hasFlow ? (
+          <section className="ws-fms-design-card ws-fms-design-meta">
+            <input
+              name="name"
+              required
+              className="ws-fms-design-title"
+              value={name}
+              readOnly={readOnly}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="FMS flow name"
+            />
+            <input
+              name="description"
+              className="ws-fms-design-desc"
+              value={description}
+              readOnly={readOnly}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="What does this process handle?"
+            />
+          </section>
+        ) : null}
 
-            <section className="ws-fms-design-card ws-fms-design-flow">
-              <FmsN8nFlowView
-                steps={steps}
-                members={members}
-                readOnly={readOnly}
-                selectedStepId={selectedStepId}
-                onSelectStep={setSelectedStepId}
-                onInsertStepAt={canEditFlow ? insertStepAt : undefined}
-              />
-            </section>
-
-            {selectedStep && selectedStepIndex >= 0 && canEditFlow ? (
-              <section
-                className="ws-fms-design-card ws-fms-design-editor"
-                ref={editorRef}
-              >
-                <div className="ws-fms-design-editor-head">
-                  <h2 className="ws-fms-design-card-title">
-                    Step {selectedStepIndex + 1}
-                  </h2>
-                  <button
-                    type="button"
-                    className="ws-fms-design-editor-done"
-                    onClick={() => setSelectedStepId(null)}
-                    aria-label="Done editing step"
-                  >
-                    <X size={16} aria-hidden />
-                    Done
-                  </button>
-                </div>
-                <div
-                  className="ws-fms-flow-manual-editor"
-                  data-flow-step-id={selectedStep.id}
-                >
-                  <FlowStepNode
-                    step={selectedStep}
-                    index={selectedStepIndex}
-                    members={members}
-                    readOnly={readOnly}
-                    allSteps={steps}
-                    onConnectAfter={(afterStepId) =>
-                      moveStepAfter(selectedStep.id, afterStepId)
-                    }
-                    onUpdate={(patch) => updateStep(selectedStep.id, patch)}
-                    onRemove={() => removeStep(selectedStep.id)}
-                    canRemove={steps.length > 1}
-                  />
-                </div>
-              </section>
-            ) : null}
-          </>
-        ) : canEditFlow ? (
-          <section className="ws-fms-design-card ws-fms-design-empty">
-            <p>Describe your process above, or start from scratch.</p>
-            <button type="button" className="ws-fms-btn-quiet is-primary" onClick={startManualEdit}>
-              Add first step
-            </button>
+        {canEditFlow || hasFlow ? (
+          <section
+            className="ws-fms-design-card ws-fms-design-flow"
+            ref={flowCanvasRef}
+          >
+            <FmsN8nFlowView
+              steps={steps}
+              members={members}
+              readOnly={readOnly}
+              selectedStepId={selectedStepId}
+              onSelectStep={openStepEditor}
+              onEditStep={openStepEditor}
+              onInsertStepAt={canEditFlow ? insertStepAt : undefined}
+            />
           </section>
         ) : (
           <p className="ws-fms-muted">No steps in this design.</p>
         )}
+
+        {selectedStep && selectedStepIndex >= 0 && canEditFlow ? (
+          <section
+            className="ws-fms-design-card ws-fms-design-editor"
+            ref={editorRef}
+          >
+            <div className="ws-fms-design-editor-head">
+              <h2 className="ws-fms-design-card-title">
+                Step {selectedStepIndex + 1}
+              </h2>
+              <button
+                type="button"
+                className="ws-fms-design-editor-done"
+                onClick={() => setSelectedStepId(null)}
+                aria-label="Done editing step"
+              >
+                <X size={16} aria-hidden />
+                Done
+              </button>
+            </div>
+            <div
+              className="ws-fms-flow-manual-editor"
+              data-flow-step-id={selectedStep.id}
+            >
+              <FlowStepNode
+                step={selectedStep}
+                index={selectedStepIndex}
+                members={members}
+                readOnly={readOnly}
+                allSteps={steps}
+                onConnectAfter={(afterStepId) =>
+                  moveStepAfter(selectedStep.id, afterStepId)
+                }
+                onUpdate={(patch) => updateStep(selectedStep.id, patch)}
+                onRemove={() => removeStep(selectedStep.id)}
+                canRemove={steps.length > 1}
+              />
+            </div>
+          </section>
+        ) : null}
 
         {statusMessage ? (
           <p
@@ -380,19 +370,41 @@ export function FmsFlowchartBuilder({
           </p>
         ) : null}
 
-        {canEditFlow && hasFlow ? (
+        {canEditFlow ? (
           <footer className="ws-fms-design-footer">
             <button
-              type="submit"
-              className="ws-fms-btn-quiet"
-              disabled={savePending || submitPending}
+              type="button"
+              className={`ws-fms-btn-quiet${notifyOpen ? " is-active" : ""}`}
+              onClick={() => setNotifyOpen((open) => !open)}
+              aria-label="Notification settings"
+              title="Notification settings"
             >
-              {savePending
-                ? "Saving..."
-                : mode === "create"
-                  ? "Create flowchart"
-                  : "Save draft"}
+              <Settings2 size={14} aria-hidden />
+              Alerts
             </button>
+            {hasFlow ? (
+              <button
+                type="button"
+                className={`ws-fms-btn-quiet${ownerReviewOpen ? " is-active" : ""}`}
+                onClick={() => setOwnerReviewOpen(true)}
+              >
+                <UserRound size={14} aria-hidden />
+                Assign owners
+              </button>
+            ) : null}
+            {hasFlow ? (
+              <button
+                type="submit"
+                className="ws-fms-btn-quiet is-primary"
+                disabled={savePending || submitPending}
+              >
+                {savePending
+                  ? "Saving..."
+                  : mode === "create"
+                    ? "Create flowchart"
+                    : "Save draft"}
+              </button>
+            ) : null}
           </footer>
         ) : null}
       </form>

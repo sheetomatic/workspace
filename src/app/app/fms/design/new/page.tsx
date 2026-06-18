@@ -1,13 +1,7 @@
 import Link from "next/link";
-import { FmsFlowchartBuilder } from "@/components/saas/fms-flowchart-builder";
-import { FmsWorkflowTemplatePicker } from "@/components/saas/fms-workflow-template-picker";
+import { FmsNewFlowDesignShell } from "@/components/saas/fms-new-flow-design-shell";
 import { requireSession } from "@/lib/require-session";
 import { canSubmitFmsFlow } from "@/lib/fms/access";
-import {
-  getFmsWorkflowTemplate,
-  templateToFlowchartSteps,
-} from "@/lib/fms/workflow-templates";
-import { getFmsAiStarter } from "@/lib/fms/ai-starters";
 import { listAssignableMembers } from "@/lib/tasks";
 
 type PageProps = {
@@ -21,8 +15,6 @@ export default async function NewFmsFlowDesignPage({ searchParams }: PageProps) 
   }
 
   const { template: templateId, starter: starterId } = await searchParams;
-  const template = templateId ? getFmsWorkflowTemplate(templateId) : null;
-  const starter = !template && starterId ? getFmsAiStarter(starterId) : null;
   const members = await listAssignableMembers(user.organizationId);
 
   return (
@@ -32,14 +24,10 @@ export default async function NewFmsFlowDesignPage({ searchParams }: PageProps) 
           Back to setup
         </Link>
       </div>
-      {!template && !starter ? <FmsWorkflowTemplatePicker /> : null}
-      <FmsFlowchartBuilder
+      <FmsNewFlowDesignShell
         members={members}
-        mode="create"
-        initialName={template?.name ?? starter?.label ?? ""}
-        initialDescription={template?.description ?? starter?.summary ?? ""}
-        initialSteps={template ? templateToFlowchartSteps(template) : []}
-        initialAiPrompt={starter?.prompt ?? ""}
+        initialTemplateId={templateId}
+        initialStarterId={starterId}
       />
     </div>
   );

@@ -23,11 +23,13 @@ export function FmsFlowAiBar({
   existingDraft,
   compact = false,
   initialPrompt = "",
+  autoBuildOnMount = false,
 }: {
   onReady: (draft: ParsedFmsFlowDraft) => void;
   existingDraft?: ParsedFmsFlowDraft;
   compact?: boolean;
   initialPrompt?: string;
+  autoBuildOnMount?: boolean;
 }) {
   const [prompt, setPrompt] = useState(initialPrompt);
   const [message, setMessage] = useState("");
@@ -50,6 +52,20 @@ export function FmsFlowAiBar({
       setPrompt(initialPrompt);
     }
   }, [initialPrompt]);
+
+  const autoBuildStarted = useRef(false);
+  useEffect(() => {
+    if (
+      !autoBuildOnMount ||
+      autoBuildStarted.current ||
+      initialPrompt.trim().length < 6
+    ) {
+      return;
+    }
+    autoBuildStarted.current = true;
+    void runGenerate(initialPrompt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount for starter chips
+  }, [autoBuildOnMount, initialPrompt]);
 
   const showStarters = !compact && questions.length === 0 && !busy;
 
