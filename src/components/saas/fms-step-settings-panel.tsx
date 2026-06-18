@@ -32,16 +32,25 @@ export function FmsStepSettingsPanel({
 
       <div className="ws-fms-jf-props-body">
         <label className="ws-fms-jf-option-field">
-          Role label
+          WHAT (step name)
           <input
-            value={step.roleLabel}
-            onChange={(event) => onUpdate({ roleLabel: event.target.value })}
-            placeholder="e.g. Legal team"
+            value={step.stepName}
+            onChange={(event) => onUpdate({ stepName: event.target.value })}
+            placeholder="e.g. Confirmation from buyer"
           />
         </label>
 
         <label className="ws-fms-jf-option-field">
-          TAT / SLA type
+          WHO (role / team)
+          <input
+            value={step.roleLabel}
+            onChange={(event) => onUpdate({ roleLabel: event.target.value })}
+            placeholder="e.g. Shalender Singh"
+          />
+        </label>
+
+        <label className="ws-fms-jf-option-field">
+          WHEN (TAT / SLA type)
           <select
             value={step.slaType}
             onChange={(event) =>

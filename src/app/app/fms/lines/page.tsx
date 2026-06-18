@@ -1,15 +1,16 @@
 import Link from "next/link";
-import { FmsLineCard } from "@/components/saas/fms-line-card";
-import { FmsPagination } from "@/components/saas/fms-pagination";
+import { FmsMasterTrackerBlock } from "@/components/saas/fms-master-tracker-block";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
-import { getFmsPipelineCounts, listFmsInstancesPage } from "@/lib/fms/queries";
-import { fmsPageFromSearchParam } from "@/lib/scale";
+import {
+  getFmsPipelineCounts,
+  listFmsTrackerBlocks,
+} from "@/lib/fms/queries";
 import { redirect } from "next/navigation";
 
 type PageProps = {
-  searchParams: Promise<{ page?: string; completedPage?: string }>;
+  searchParams: Promise<{ completedPage?: string }>;
 };
 
 export default async function FmsLinesPage({ searchParams }: PageProps) {
@@ -19,26 +20,31 @@ export default async function FmsLinesPage({ searchParams }: PageProps) {
     redirect("/app/fms/my-stops");
   }
 
-  const params = await searchParams;
-  const page = fmsPageFromSearchParam(params.page);
-  const completedPageNum = fmsPageFromSearchParam(params.completedPage);
-  const [activePage, completedPage, pipelineCounts] = await Promise.all([
-    listFmsInstancesPage(user.organizationId, { status: "ACTIVE", page }),
-    listFmsInstancesPage(user.organizationId, {
-      status: "COMPLETED",
-      page: completedPageNum,
+  await searchParams;
+
+  const [activeBlocks, completedBlocks, pipelineCounts] = await Promise.all([
+    listFmsTrackerBlocks(user.organizationId, { instanceStatus: "ACTIVE" }),
+    listFmsTrackerBlocks(user.organizationId, {
+      instanceStatus: "COMPLETED",
+      limit: 20,
     }),
     getFmsPipelineCounts(user.organizationId),
   ]);
 
-  const activeJobs = activePage.items;
-  const completedJobs = completedPage.items;
+  const activeLeadCount = activeBlocks.reduce(
+    (sum, block) => sum + block.instances.length,
+    0,
+  );
+  const completedLeadCount = completedBlocks.reduce(
+    (sum, block) => sum + block.instances.length,
+    0,
+  );
 
   return (
     <div className="saas-page ws-fms-page ws-fms-sf">
       <TaskPageToolbar
         title="Live pipelines"
-        description="See every active workflow and where it is in the route right now."
+        description="One FMS block per workflow. Each row is a lead; steps run Planned → Actual → Status left to right."
         actions={
           <Link href="/app/fms/ops" className="btn-secondary btn-sm">
             Ops monitor
@@ -71,7 +77,7 @@ export default async function FmsLinesPage({ searchParams }: PageProps) {
         </div>
       </div>
 
-      {activeJobs.length === 0 ? (
+      {activeBlocks.length === 0 ? (
         <div className="ws-empty-state ws-fms-empty-state">
           <p>No active lines yet. Submit a live form to start a journey.</p>
           <Link href="/app/fms/setup" className="btn-primary btn-sm ws-sf-btn-primary">
@@ -79,57 +85,34 @@ export default async function FmsLinesPage({ searchParams }: PageProps) {
           </Link>
         </div>
       ) : (
-        <>
-          <section className="ws-fms-lines-grid" aria-label="Active workflow lines">
-            {activeJobs.map((job) => (
-              <FmsLineCard
-                key={job.id}
-                instanceId={job.id}
-                title={job.referenceLabel ?? job.template.name}
-                workflowName={job.template.name}
-                status={job.status}
-                stepStates={job.stepStates}
-              />
-            ))}
-          </section>
-          <FmsPagination
-            page={activePage.page}
-            totalPages={activePage.totalPages}
-            total={activePage.total}
-            searchParams={params}
-            basePath="/app/fms/lines"
-          />
-        </>
+        <div className="ws-fms-tracker-stack">
+          {activeBlocks.map((block) => (
+            <FmsMasterTrackerBlock key={block.id} block={block} />
+          ))}
+        </div>
       )}
 
-      {completedJobs.length > 0 ? (
+      {completedBlocks.length > 0 ? (
         <section className="ws-fms-lines-section" aria-label="Recently completed">
           <header className="ws-fms-section-heading">
             <h2>Recently completed</h2>
-            <p>Journeys that reached the destination.</p>
+            <p>
+              {completedLeadCount} completed lead{completedLeadCount === 1 ? "" : "s"} across{" "}
+              {completedBlocks.length} workflow{completedBlocks.length === 1 ? "" : "s"}.
+            </p>
           </header>
-          <div className="ws-fms-lines-grid">
-            {completedJobs.map((job) => (
-              <FmsLineCard
-                key={job.id}
-                instanceId={job.id}
-                title={job.referenceLabel ?? job.template.name}
-                workflowName={job.template.name}
-                status={job.status}
-                stepStates={job.stepStates}
-              />
+          <div className="ws-fms-tracker-stack">
+            {completedBlocks.map((block) => (
+              <FmsMasterTrackerBlock key={block.id} block={block} />
             ))}
           </div>
-          <FmsPagination
-            page={completedPage.page}
-            totalPages={completedPage.totalPages}
-            total={completedPage.total}
-            searchParams={params}
-            basePath="/app/fms/lines"
-            pageParam="completedPage"
-            label="completed lines"
-          />
         </section>
+      ) : null}
+
+      {activeLeadCount > 0 ? (
+        <p className="ws-fms-muted ws-fms-tracker-footnote">
+          Tip: use the gear on each step header for WHAT / HOW / WHO / WHEN / TAT. Block Manage opens full workflow settings.
+        </p>
       ) : null}
     </div>
   );

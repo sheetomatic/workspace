@@ -17145,6 +17145,275 @@ body:has(.workspace-app.saas-app) {
   border-color: #ea001e;
 }
 
+/* FMS master tracker (spreadsheet-style blocks) */
+.workspace-app .ws-fms-tracker-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.workspace-app .ws-fms-tracker-block {
+  padding: 0;
+  overflow: hidden;
+}
+
+.workspace-app .ws-fms-tracker-block-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--sf-card-border);
+  background: #fafaf9;
+}
+
+.workspace-app .ws-fms-tracker-block-head h2 {
+  margin: 0;
+  font-size: 1.0625rem;
+}
+
+.workspace-app .ws-fms-tracker-block-eyebrow {
+  margin: 0 0 2px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-fms-tracker-block-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.workspace-app .ws-fms-tracker-manage-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--sf-card-border);
+  border-radius: 6px;
+  background: #fff;
+  color: #014486;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.workspace-app .ws-fms-tracker-manage-link:hover {
+  border-color: #0176d3;
+  background: #eef4ff;
+}
+
+.workspace-app .ws-fms-tracker-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.workspace-app .ws-fms-tracker-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.workspace-app .ws-fms-tracker-table th,
+.workspace-app .ws-fms-tracker-table td {
+  border: 1px solid #e5e5e5;
+  padding: 8px 10px;
+  vertical-align: top;
+  text-align: left;
+}
+
+.workspace-app .ws-fms-tracker-band {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.workspace-app .ws-fms-tracker-band.is-lead {
+  background: #e8f4ec;
+  color: #1b5e35;
+}
+
+.workspace-app .ws-fms-tracker-band.is-step {
+  background: #fff4e5;
+  color: #8a6116;
+}
+
+.workspace-app .ws-fms-tracker-step-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.workspace-app .ws-fms-tracker-step-name {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--sf-text);
+}
+
+.workspace-app .ws-fms-tracker-row-sub th {
+  background: #f3f3f3;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-fms-tracker-pas.is-planned {
+  background: #fff8f0;
+}
+
+.workspace-app .ws-fms-tracker-pas.is-actual {
+  background: #fff;
+}
+
+.workspace-app .ws-fms-tracker-pas.is-actual.is-ontime {
+  background: #e3fcef;
+  color: #1b5e35;
+}
+
+.workspace-app .ws-fms-tracker-pas.is-actual.is-late,
+.workspace-app .ws-fms-tracker-pas.is-actual.is-overdue {
+  background: #fef1ee;
+  color: #8c1d18;
+}
+
+.workspace-app .ws-fms-tracker-pas.is-status {
+  background: #e8f4ec;
+}
+
+.workspace-app .ws-fms-tracker-lead-col.is-label {
+  min-width: 120px;
+  background: #f7fcf9;
+  font-weight: 700;
+}
+
+.workspace-app .ws-fms-tracker-lead-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #014486;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.workspace-app .ws-fms-tracker-lead-link:hover {
+  text-decoration: underline;
+}
+
+.workspace-app .ws-fms-tracker-data-row:hover td {
+  background-image: linear-gradient(rgba(1, 118, 211, 0.04), rgba(1, 118, 211, 0.04));
+}
+
+.workspace-app .ws-fms-tracker-footnote {
+  margin-top: 12px;
+  font-size: 0.8125rem;
+}
+
+.workspace-app .ws-fms-step-manage {
+  position: relative;
+  display: inline-flex;
+}
+
+.workspace-app .ws-fms-step-manage-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: #014486;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+
+.workspace-app .ws-fms-step-manage-btn:hover,
+.workspace-app .ws-fms-step-manage-btn.is-open {
+  border-color: #0176d3;
+  background: #eef4ff;
+}
+
+.workspace-app .ws-fms-step-manage-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  width: min(280px, 80vw);
+  padding: 12px;
+  border: 1px solid var(--sf-card-border);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  text-align: left;
+}
+
+.workspace-app .ws-fms-step-manage-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.workspace-app .ws-fms-step-manage-head button {
+  border: none;
+  background: transparent;
+  color: #014486;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.workspace-app .ws-fms-step-manage-meta {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.workspace-app .ws-fms-step-manage-meta dt {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-fms-step-manage-meta dd {
+  margin: 2px 0 0;
+  font-size: 0.8125rem;
+  color: var(--sf-text);
+  line-height: 1.35;
+}
+
+.workspace-app .ws-fms-step-manage-edit {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #014486;
+  text-decoration: none;
+}
+
+.workspace-app .ws-fms-step-manage-edit:hover {
+  text-decoration: underline;
+}
+
 /* FMS line cards (control tower) */
 .workspace-app .ws-fms-lines-grid {
   display: grid;

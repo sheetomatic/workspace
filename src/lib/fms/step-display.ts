@@ -114,3 +114,54 @@ export function slaSummary(
   }
   return slaType.replaceAll("_", " ").toLowerCase();
 }
+
+export function formatStepWhenLabel(slaType: string) {
+  if (slaType === "NONE") {
+    return "Anytime";
+  }
+  if (slaType === "TAT_CALENDAR_DAYS") {
+    return "Within working days";
+  }
+  if (slaType === "TAT_WORKING_HOURS") {
+    return "Within working hours";
+  }
+  if (slaType === "SPECIFIC_TIME") {
+    return "Fixed time of day";
+  }
+  if (slaType === "LEAD_TIME_MINUS") {
+    return "Before form deadline";
+  }
+  return "As configured";
+}
+
+export function formatTatClock(
+  slaType: string,
+  slaConfig: {
+    days?: number;
+    hours?: number;
+    atHour?: number;
+    atMinute?: number;
+    minusDays?: number;
+  },
+) {
+  if (slaType === "TAT_WORKING_HOURS") {
+    const totalHours = slaConfig.hours ?? 1;
+    const hours = Math.floor(totalHours);
+    const minutes = Math.round((totalHours - hours) * 60);
+    return `${hours}:${String(minutes).padStart(2, "0")}:00`;
+  }
+  if (slaType === "TAT_CALENDAR_DAYS") {
+    const days = slaConfig.days ?? 1;
+    return `${days}:00:00`;
+  }
+  if (slaType === "SPECIFIC_TIME") {
+    const hour = slaConfig.atHour ?? 18;
+    const minute = String(slaConfig.atMinute ?? 0).padStart(2, "0");
+    return `${hour}:${minute}:00`;
+  }
+  if (slaType === "LEAD_TIME_MINUS") {
+    const minus = slaConfig.minusDays ?? 0;
+    return `${minus}:00:00`;
+  }
+  return "-";
+}

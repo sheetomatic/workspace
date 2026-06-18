@@ -394,3 +394,45 @@ export async function getFmsOnboardingStatus(organizationId: string) {
     hasAssignedOwner: Boolean(assignedStep),
   };
 }
+
+export async function listFmsTrackerBlocks(
+  organizationId: string,
+  filter: { instanceStatus: "ACTIVE" | "COMPLETED"; limit?: number },
+) {
+  const limit = filter.limit ?? 50;
+
+  return prisma.fmsTemplate.findMany({
+    where: {
+      organizationId,
+      status: "ACTIVE",
+      instances: { some: { status: filter.instanceStatus } },
+    },
+    include: {
+      form: {
+        select: {
+          id: true,
+          name: true,
+          fields: { orderBy: { sortOrder: "asc" } },
+        },
+      },
+      steps: {
+        orderBy: { sortOrder: "asc" },
+        include: {
+          defaultOwner: { select: { name: true, email: true } },
+        },
+      },
+      instances: {
+        where: { status: filter.instanceStatus },
+        include: {
+          submission: true,
+          stepStates: {
+            orderBy: { step: { sortOrder: "asc" } },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        take: limit,
+      },
+    },
+    orderBy: { name: "asc" },
+  });
+}
