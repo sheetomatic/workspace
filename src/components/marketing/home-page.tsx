@@ -17,6 +17,7 @@ import {
   WhatsAppButton,
 } from "./marketing-buttons";
 import { whatsappDisplayNumber } from "@/app/site-content";
+import { ClientProjectsShowcase } from "./client-projects-showcase";
 
 const linkIcons = {
   Workspace: LayoutDashboardIcon,
@@ -80,6 +81,8 @@ export function HomePage() {
           </div>
         </div>
       </section>
+
+      <ClientProjectsShowcase />
 
       <section className="minimal-strip soft-section">
         <div className="mx-auto max-w-3xl px-5 text-center sm:px-8">
