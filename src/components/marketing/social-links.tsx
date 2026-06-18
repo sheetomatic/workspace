@@ -21,26 +21,25 @@ export function SocialLinks({
   variant?: "default" | "footer";
 }) {
   return (
-    <div
+    <ul
       className={`social-links ${variant === "footer" ? "social-links-footer" : ""} ${className}`.trim()}
-      role="list"
     >
       {socialLinks.map((link) => {
         const Icon = iconByNetwork[link.name];
         return (
-          <a
-            className={`social-link social-link-${link.name.toLowerCase()}`}
-            href={link.href}
-            key={link.name}
-            rel="noopener noreferrer"
-            target="_blank"
-            aria-label={link.label}
-            role="listitem"
-          >
-            <Icon size={20} />
-          </a>
+          <li key={link.name}>
+            <a
+              className={`social-link social-link-${link.name.toLowerCase()}`}
+              href={link.href}
+              rel="noopener noreferrer"
+              target="_blank"
+              aria-label={link.label}
+            >
+              <Icon size={20} />
+            </a>
+          </li>
         );
       })}
-    </div>
+    </ul>
   );
 }

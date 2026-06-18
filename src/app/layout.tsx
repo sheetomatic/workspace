@@ -52,7 +52,7 @@ const manrope = Manrope({
   weight: ["700", "800"],
   variable: "--font-manrope",
   display: "swap",
-  preload: true,
+  preload: false,
   adjustFontFallback: true,
 });
 
