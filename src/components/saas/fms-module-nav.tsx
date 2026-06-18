@@ -68,7 +68,7 @@ export function FmsModuleNav({ user }: { user: SessionUser }) {
       label: "Setup",
       icon: Settings2,
       visible: canSetup,
-      description: "Forms, flowcharts, workflows",
+      description: "AI workflow setup",
     },
   ];
 

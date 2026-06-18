@@ -513,7 +513,7 @@ export async function parseFmsFormFromDescription(
     "fields: [{label, fieldType: TEXT|TEXTAREA|EMAIL|PHONE|NUMBER|ENUM|ENUM_LIST|DATE|DATETIME, required, options?, dependsOn?, choicesByParent?, placeholder?, helpText?}]";
   const systemPrompt = isRefine
     ? `Refine an FMS intake form JSON. Input may be any language; output English JSON only with keys name, description, ${fieldSchema}. Apply requested edits; keep other fields unless asked to change. If the user asks to build, generate, or fill out the form, or the current form is only a stub (title + timestamp), output a COMPLETE form (4-12 fields) for the process described. ALWAYS include a DATETIME field labeled "Submission timestamp" (or "Timestamp") — auto-filled on submit; add it if missing. For category/product patterns use ENUM parent + dependent ENUM child with dependsOn (parent field key slug) and choicesByParent map.`
-    : `Design an FMS intake form JSON from a description. Input may be any language; output English JSON only with keys name, description, ${fieldSchema}. Map dropdown to ENUM, checkboxes to ENUM_LIST, uploads to FILE. Produce 4-12 fields the submitter must fill in. NEVER return only Request title and Submission timestamp — always include process-specific fields (e.g. for purchase orders: vendor name, PO number, line items or amount, delivery date, department, supporting documents). MUST include a DATETIME field labeled "Submission timestamp" (auto-filled on submit, not user-entered). Use half-width pairs for short fields like email + phone when appropriate. When the user describes category then product (or similar parent-child dropdowns), add a parent ENUM and child ENUM with dependsOn set to the parent field key slug and choicesByParent mapping parent values to child option arrays.`;
+    : `Design an FMS intake form JSON from a description. Input may be any language; output English JSON only with keys name, description, ${fieldSchema}. You are an FMS consultant: one main tracker plus stage-wise forms. Include universal fields where relevant: FMS ID (text), Department, Requested By, Priority, Due Date, Status, Remarks, Attachment (FILE). Map dropdown to ENUM, checkboxes to ENUM_LIST, uploads to FILE. Produce 4-12 fields the submitter must fill in. NEVER return only Request title and Submission timestamp — always include process-specific fields (e.g. for purchase orders: vendor name, PO number, line items or amount, delivery date, department, supporting documents). MUST include a DATETIME field labeled "Submission timestamp" (auto-filled on submit, not user-entered). Use half-width pairs for short fields like email + phone when appropriate. When the user describes category then product (or similar parent-child dropdowns), add a parent ENUM and child ENUM with dependsOn set to the parent field key slug and choicesByParent mapping parent values to child option arrays. Do not mix fields from unrelated departments.`;
 
   const userContent = isRefine
     ? `Current form JSON:\n${JSON.stringify(existingDraft)}\n\nChange:\n${description}`
@@ -690,7 +690,9 @@ export async function parseFmsFlowchartFromDescription(
     .join("\n");
   const isRefine = Boolean(options?.existingDraft?.steps?.length);
 
-  const systemPrompt = `You are an auto workflow designer for Indian MSME teams (like Kissflow/Pipefy approval chains). Input may be any language; output English JSON only.
+  const systemPrompt = `You are an expert FMS (Flow Management System) consultant for Indian MSME teams. Input may be any language; output English JSON only.
+
+FMS = one main tracker + stage-wise forms. Do not mix unrelated departments (e.g. do not put HR leave steps in a Purchase PO flow).
 
 Return JSON with keys:
 - status: "ready" OR "needs_clarification"
@@ -701,14 +703,15 @@ Return JSON with keys:
 
 Workflow design rules:
 - Use status "needs_clarification" only when too vague for 2+ steps (single word, no process, no actors).
-- When ready, produce 2-8 sequential approval/action stages after form submit (linear chain).
+- When ready, produce 2-8 sequential stages after form submit (linear chain). Each stage = one form in the full FMS.
 - Each step is a distinct stage with its own responsible role — NEVER assign the same generic owner to every step.
 - ownerRole: functional role for this step ONLY (e.g. "Purchase analyst", "Accounts payable", "Founder approval", "Warehouse receipt"). Must differ across steps when the process involves different functions.
-- ownerHint: best-matching team member FULL NAME from the list below, OR a specific role phrase (e.g. "Accounts head", "Ops manager") that maps to one person. Different steps should usually map to different people when the team has multiple members.
-- howInstructions: concrete action that owner performs (1-2 sentences).
+- ownerHint: best-matching team member FULL NAME from the list below, OR a specific role phrase that maps to one person. Different steps should usually map to different people when the team has multiple members.
+- howInstructions: concrete action that owner performs (1-2 sentences). Mention inputs, outputs, and proof if applicable.
 - tatValue/tatUnit: realistic SLA; hours for same-day, days for multi-day (Mon-Sat working days).
-- Infer sensible defaults from process type (PO, leave, expense, trademark, vendor onboarding) rather than asking questions.
+- Infer sensible defaults from process type (PO, leave, expense, lead to closure, stock issue, complaint ticket, task delegation) rather than asking questions.
 - Prefer ready over clarification when reasonable defaults exist.
+- Include approval stages where the process description implies sign-off.
 
 Team (assign each step to the best match — spread work across people when roles differ):
 ${memberList || "(none listed — use distinct ownerRole labels per step)"}`;

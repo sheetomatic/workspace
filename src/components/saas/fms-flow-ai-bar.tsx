@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Mic, MicOff } from "lucide-react";
 import { generateFmsFlowchartFromAiAction } from "@/app/app/fms/design-actions";
 import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
+import { FMS_AI_STARTERS } from "@/lib/fms/ai-starters";
 import type { ParsedFmsFlowDraft } from "@/lib/integrations/openai";
 
 function isErrorMessage(message: string) {
@@ -21,12 +22,14 @@ export function FmsFlowAiBar({
   onReady,
   existingDraft,
   compact = false,
+  initialPrompt = "",
 }: {
   onReady: (draft: ParsedFmsFlowDraft) => void;
   existingDraft?: ParsedFmsFlowDraft;
   compact?: boolean;
+  initialPrompt?: string;
 }) {
-  const [prompt, setPrompt] = useState("");
+  const [prompt, setPrompt] = useState(initialPrompt);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -41,6 +44,14 @@ export function FmsFlowAiBar({
   }, []);
 
   useEffect(() => () => stopTracks(), [stopTracks]);
+
+  useEffect(() => {
+    if (initialPrompt.trim()) {
+      setPrompt(initialPrompt);
+    }
+  }, [initialPrompt]);
+
+  const showStarters = !compact && questions.length === 0 && !busy;
 
   async function runGenerate(
     description: string,
@@ -188,14 +199,32 @@ export function FmsFlowAiBar({
       <div className="ws-fms-flow-ai-head">
         <SheetomaticAiMark variant="icon" sizes="lg" />
         <div>
-          <h3>Auto workflow designer</h3>
+          <h3>{compact ? "Refine with AI" : "AI FMS consultant"}</h3>
           <p className="ws-fms-muted">
             {compact
               ? "Refine with voice or text"
-              : "Describe the process — AI builds steps, then you confirm each step owner."}
+              : "Department process to stages, owners, TAT, and intake form - voice or text."}
           </p>
         </div>
       </div>
+
+      {showStarters ? (
+        <div className="ws-fms-flow-ai-starters">
+          <p className="ws-fms-flow-ai-starters-label">Quick starts</p>
+          <div className="ws-fms-flow-ai-starter-chips">
+            {FMS_AI_STARTERS.slice(0, 8).map((starter) => (
+              <button
+                key={starter.id}
+                type="button"
+                className="ws-fms-flow-ai-starter-chip"
+                onClick={() => setPrompt(starter.prompt)}
+              >
+                {starter.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {questions.length > 0 ? (
         <div className="ws-fms-flow-clarify">
@@ -230,7 +259,7 @@ export function FmsFlowAiBar({
               className="ws-fms-flow-ai-prompt"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="e.g. PO flow: sourcing shortlists vendor, founder approves, accounts pays in 2 days, warehouse receives goods..."
+              placeholder="e.g. Purchase Requisition FMS: material request, manager approval, then PO. Or Sales lead to closure with follow-up TAT..."
               rows={compact ? 2 : 3}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {

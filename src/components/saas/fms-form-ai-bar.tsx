@@ -206,12 +206,12 @@ export function FmsFormAiBar({
       <div className="ws-fms-flow-ai-head">
         <SheetomaticAiMark variant="icon" sizes="lg" />
         <div>
-          <h3>{isStub ? "Generate intake form with AI" : "Refine form with AI"}</h3>
+          <h3>{isStub ? "AI form designer" : "Refine form with AI"}</h3>
           <p className="ws-fms-muted">
             {compact
               ? "Voice or text to update fields"
               : isStub
-                ? "Speak or type what to collect. AI builds all fields in seconds."
+                ? "FMS intake form from your process - fields, dropdowns, attachments, and timestamps."
                 : "Describe changes, e.g. add phone field or make vendor name required."}
           </p>
         </div>

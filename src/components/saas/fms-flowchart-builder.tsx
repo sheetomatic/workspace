@@ -51,6 +51,7 @@ export function FmsFlowchartBuilder({
   linkedFormName,
   formNeedsSetup = false,
   justApproved = false,
+  initialAiPrompt = "",
 }: {
   designId?: string;
   initialName?: string;
@@ -67,6 +68,7 @@ export function FmsFlowchartBuilder({
   linkedFormName?: string | null;
   formNeedsSetup?: boolean;
   justApproved?: boolean;
+  initialAiPrompt?: string;
 }) {
   const saveAction = mode === "create" ? createFmsFlowDesign : updateFmsFlowDesign;
   const [saveState, saveFormAction, savePending] = useActionState(
@@ -263,6 +265,7 @@ export function FmsFlowchartBuilder({
           onReady={applyAiDraft}
           existingDraft={aiExistingDraft}
           compact={hasFlow}
+          initialPrompt={initialAiPrompt}
         />
       ) : null}
 

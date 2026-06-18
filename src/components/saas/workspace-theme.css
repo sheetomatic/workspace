@@ -17258,6 +17258,171 @@ body:has(.workspace-app.saas-app) {
   box-shadow: 0 2px 8px rgba(1, 118, 211, 0.12);
 }
 
+.workspace-app .ws-fms-template-picker-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.workspace-app .ws-fms-ai-setup-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.workspace-app .ws-fms-ai-setup-hero-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 14px 16px;
+}
+
+.workspace-app .ws-fms-ai-setup-hero-head h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.workspace-app .ws-fms-ai-setup-hero-head p {
+  margin: 6px 0 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: #64748b;
+  max-width: 42rem;
+}
+
+.workspace-app .ws-fms-ai-setup-hero-head .btn-cta {
+  margin-left: auto;
+}
+
+.workspace-app .ws-fms-ai-dept-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.workspace-app .ws-fms-ai-dept-chips button {
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #fff;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+}
+
+.workspace-app .ws-fms-ai-dept-chips button.is-active {
+  border-color: #0176d3;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.workspace-app .ws-fms-ai-starter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.workspace-app .ws-fms-ai-starter-grid.is-compact {
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+
+.workspace-app .ws-fms-ai-starter-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--sf-card-border);
+  background: #fafaf9;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.workspace-app .ws-fms-ai-starter-card:hover {
+  border-color: #0176d3;
+  box-shadow: 0 2px 8px rgba(1, 118, 211, 0.1);
+}
+
+.workspace-app .ws-fms-ai-starter-card strong {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.workspace-app .ws-fms-ai-starter-card span {
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.workspace-app .ws-fms-ai-starter-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #1d4ed8;
+}
+
+.workspace-app .ws-fms-template-dept {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #2563eb;
+}
+
+.workspace-app .ws-fms-flow-ai-starters {
+  margin-bottom: 12px;
+}
+
+.workspace-app .ws-fms-flow-ai-starters-label {
+  margin: 0 0 8px;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.workspace-app .ws-fms-flow-ai-starter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.workspace-app .ws-fms-flow-ai-starter-chip {
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  background: #f8fafc;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #1e40af;
+  cursor: pointer;
+}
+
+.workspace-app .ws-fms-flow-ai-starter-chip:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.workspace-app .ws-fms-ai-setup-panel {
+  margin-bottom: 4px;
+}
+
 .workspace-app .ws-fms-onboarding-list {
   list-style: none;
   margin: 0;

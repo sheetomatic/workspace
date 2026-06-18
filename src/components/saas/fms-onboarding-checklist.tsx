@@ -13,7 +13,7 @@ const STEPS: Array<{
   {
     key: "hasDesign",
     title: "Create a flowchart",
-    detail: "Describe your process or start from a template.",
+    detail: "Use AI consultant or pick a department template.",
     href: "/app/fms/design/new",
   },
   {

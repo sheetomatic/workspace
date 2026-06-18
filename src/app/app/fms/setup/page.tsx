@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FmsSetupItemCard } from "@/components/saas/fms-setup-item-card";
+import { FmsAiSetupPanel } from "@/components/saas/fms-ai-setup-panel";
 import { FmsDescribeProcessLink } from "@/components/saas/fms-describe-process-link";
 import { FmsOnboardingChecklist } from "@/components/saas/fms-onboarding-checklist";
 import { FmsPipelineStatusBadge } from "@/components/saas/fms-pipeline-status-badge";
@@ -38,11 +39,13 @@ export default async function FmsSetupPage() {
     <div className="saas-page ws-fms-page ws-fms-sf">
       <TaskPageToolbar
         title="Setup"
-        description="Design routes, create forms, and launch workflows."
+        description="AI-powered flow design, forms, and workflow launch."
         actions={
           canDesign ? <FmsDescribeProcessLink /> : undefined
         }
       />
+
+      {canDesign ? <FmsAiSetupPanel /> : null}
 
       <FmsOnboardingChecklist status={onboarding} />
 
