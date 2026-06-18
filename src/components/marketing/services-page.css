@@ -855,6 +855,76 @@
   color: #0ea5e9;
 }
 
+/* Industries (footer-aligned) */
+.services-industries {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.services-industries .services-section-eyebrow {
+  color: #93c5fd;
+}
+
+.services-industries .services-section-title {
+  color: #f8fafc;
+}
+
+.services-industries .services-section-lead {
+  color: #94a3b8;
+}
+
+@media (min-width: 1024px) {
+  .services-industries-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.services-industry-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 100%;
+  padding: 1.25rem 1.3rem 1.3rem;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(30, 41, 59, 0.55);
+  box-shadow: 0 10px 32px rgba(2, 6, 23, 0.35);
+  text-decoration: none;
+  color: inherit;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.services-industry-card:hover {
+  border-color: #60a5fa;
+  transform: translateY(-3px);
+  box-shadow: 0 18px 44px rgba(37, 99, 235, 0.18);
+}
+
+.services-industry-card-title {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: 800;
+  color: #f8fafc;
+  line-height: 1.35;
+}
+
+.services-industry-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: #93c5fd;
+}
+
+.services-industry-card:hover .services-industry-card-link {
+  color: #bfdbfe;
+}
+
 /* ??? Process timeline ??? */
 .services-process {
   background: #ffffff;

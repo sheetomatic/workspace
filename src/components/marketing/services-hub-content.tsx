@@ -3,15 +3,21 @@ import {
   ArrowRight,
   BarChart3,
   Bot,
+  Briefcase,
+  Building2,
   CalendarCheck,
   CheckCircle2,
   ClipboardList,
   GitBranch,
+  GraduationCap,
   ListChecks,
   MapPin,
   Package,
+  Plane,
   Sheet,
-  Sparkles,
+  Stethoscope,
+  Store,
+  Truck,
   Users,
   Wrench,
   type LucideIcon,
@@ -39,7 +45,7 @@ import {
   servicesHub,
 } from "@/app/services-content";
 import {
-  serviceDeliverables,
+  footerIndustryLinks,
   serviceProblemSolutions,
   servicesPage,
 } from "@/app/page-content";
@@ -91,13 +97,14 @@ const solutionHrefOverrides: Record<string, string> = {
   "Workflow automation": "/services/automation",
 };
 
-const deliveryIcons: Record<string, { icon: LucideIcon; tone: string }> = {
-  "Owner view": { icon: BarChart3, tone: "tone-sky" },
-  Automation: { icon: Sparkles, tone: "tone-violet" },
-  "End-to-end": { icon: GitBranch, tone: "tone-indigo" },
-  "Daily control": { icon: BarChart3, tone: "tone-emerald" },
-  "Follow-up": { icon: Bot, tone: "tone-green" },
-  "After go-live": { icon: Wrench, tone: "tone-amber" },
+const industryIcons: Record<string, LucideIcon> = {
+  Ecommerce: Store,
+  "Real Estate": Building2,
+  Healthcare: Stethoscope,
+  Travel: Plane,
+  Education: GraduationCap,
+  SaaS: Briefcase,
+  Logistics: Truck,
 };
 
 export function ServicesHubContent() {
@@ -328,7 +335,7 @@ export function ServicesHubContent() {
           </div>
         </section>
 
-        <section className="services-delivery">
+        <section className="services-delivery services-industries" id="industries">
           <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-14">
             <div className="services-section-head services-section-head-center">
               <p className="services-section-eyebrow">Industries</p>
@@ -338,28 +345,24 @@ export function ServicesHubContent() {
               <p className="services-section-lead">{servicesPage.deliveryLead}</p>
             </div>
 
-            <div className="services-delivery-grid">
-              {serviceDeliverables.map((item) => {
-                const meta = deliveryIcons[item.tag] ?? deliveryIcons["End-to-end"];
-                const Icon = meta.icon;
+            <div className="services-delivery-grid services-industries-grid">
+              {footerIndustryLinks.map((item) => {
+                const Icon = industryIcons[item.label] ?? Briefcase;
                 return (
-                  <article
-                    className={`services-offer-card${item.featured ? " featured" : ""}`}
-                    key={item.title}
+                  <Link
+                    className="services-industry-card"
+                    href={item.href}
+                    key={item.label}
                   >
-                    <div className="services-offer-head">
-                      <span className={`marketing-icon sm ${meta.tone}`} aria-hidden>
-                        <Icon size={18} strokeWidth={2} />
-                      </span>
-                      <span className="services-offer-tag">{item.tag}</span>
-                    </div>
-                    <h3 className="services-offer-title">{item.title}</h3>
-                    <p className="services-offer-text">{item.text}</p>
-                    <p className="services-offer-outcome">
-                      <CheckCircle2 size={16} aria-hidden />
-                      {item.outcome}
-                    </p>
-                  </article>
+                    <span className="marketing-icon sm tone-sky" aria-hidden>
+                      <Icon size={18} strokeWidth={2} />
+                    </span>
+                    <h3 className="services-industry-card-title">{item.label}</h3>
+                    <span className="services-industry-card-link">
+                      Explore Sheetomatic AI
+                      <ArrowRight size={16} aria-hidden />
+                    </span>
+                  </Link>
                 );
               })}
             </div>
