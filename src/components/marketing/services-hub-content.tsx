@@ -348,26 +348,37 @@ export function ServicesHubContent() {
               <p className="services-section-lead">{servicesPage.industriesLead}</p>
             </div>
 
-            <div className="services-delivery-grid services-industries-grid">
-              {footerIndustryLinks.map((item) => {
-                const Icon = industryIcons[item.label] ?? Briefcase;
-                return (
-                  <Link
-                    className="services-industry-card"
-                    href={item.href}
-                    key={item.label}
+            <div className="services-industries-marquee">
+              <div className="services-industries-track">
+                {[0, 1].map((copy) => (
+                  <div
+                    className="services-industries-group"
+                    key={copy}
+                    aria-hidden={copy === 1 ? true : undefined}
                   >
-                    <span className="marketing-icon sm tone-sky" aria-hidden>
-                      <Icon size={18} strokeWidth={2} />
-                    </span>
-                    <h3 className="services-industry-card-title">{item.label}</h3>
-                    <span className="services-industry-card-link">
-                      Explore Sheetomatic AI
-                      <ArrowRight size={16} aria-hidden />
-                    </span>
-                  </Link>
-                );
-              })}
+                    {footerIndustryLinks.map((item) => {
+                      const Icon = industryIcons[item.label] ?? Briefcase;
+                      return (
+                        <Link
+                          className="services-industry-card"
+                          href={item.href}
+                          key={`${copy}-${item.label}`}
+                          tabIndex={copy === 1 ? -1 : undefined}
+                        >
+                          <span className="marketing-icon sm tone-sky" aria-hidden>
+                            <Icon size={18} strokeWidth={2} />
+                          </span>
+                          <h3 className="services-industry-card-title">{item.label}</h3>
+                          <span className="services-industry-card-link">
+                            Explore Sheetomatic AI
+                            <ArrowRight size={16} aria-hidden />
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
