@@ -17874,6 +17874,63 @@ body:has(.workspace-app.saas-app) {
   margin-bottom: 16px;
 }
 
+.workspace-app .ws-fms-perf-filter-bar {
+  margin-bottom: 16px;
+}
+
+.workspace-app .ws-fms-perf-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.workspace-app .ws-fms-perf-chart-card {
+  min-width: 0;
+  padding: 16px;
+}
+
+.workspace-app .ws-fms-perf-chart-card-wide {
+  grid-column: 1 / -1;
+}
+
+.workspace-app .ws-fms-perf-chart-head h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.workspace-app .ws-fms-perf-chart-head p {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-fms-perf-chart-body {
+  margin-top: 12px;
+}
+
+.workspace-app .ws-fms-perf-empty {
+  margin: 16px 0 4px;
+  font-size: 0.8125rem;
+}
+
+.workspace-app .ws-fms-perf-tables-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.workspace-app .ws-fms-perf-tables-grid .ws-fms-section {
+  margin-top: 0;
+  min-width: 0;
+}
+
+.workspace-app .ws-sf-metric-tile strong.is-late {
+  color: #8c1d18;
+}
+
 .workspace-app .ws-fms-perf-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -18606,8 +18663,14 @@ body:has(.workspace-app.saas-app) {
 }
 
 @media (max-width: 900px) {
+  .workspace-app .ws-fms-perf-charts-grid,
+  .workspace-app .ws-fms-perf-tables-grid,
   .workspace-app .ws-fms-perf-grid {
     grid-template-columns: 1fr;
+  }
+
+  .workspace-app .ws-fms-perf-chart-card-wide {
+    grid-column: auto;
   }
 
   .workspace-app .ws-fms-step-task-modal .ws-fms-step-manage-meta {
