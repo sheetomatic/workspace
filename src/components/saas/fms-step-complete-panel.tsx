@@ -24,10 +24,12 @@ function StepCompleteForm({
   stepState,
   onCancel,
   embedded = false,
+  compact = false,
 }: {
   stepState: FmsStepCompleteState;
   onCancel?: () => void;
   embedded?: boolean;
+  compact?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(
     completeFmsStepAction,
@@ -40,6 +42,8 @@ function StepCompleteForm({
     {},
   );
   const [markedDone, setMarkedDone] = useState(false);
+  const showNotes = stepState.step.allowNotes !== false;
+  const showUpload = true;
 
   useEffect(() => {
     if (state.ok && onCancel) {
@@ -53,26 +57,28 @@ function StepCompleteForm({
 
   return (
     <div
-      className={`ws-sf-card ws-fms-step-panel ws-fms-step-panel-form${embedded ? " is-embedded" : ""}`}
+      className={`ws-sf-card ws-fms-step-panel ws-fms-step-panel-form${embedded ? " is-embedded" : ""}${compact ? " is-compact" : ""}`}
     >
-      <header className="ws-fms-step-panel-form-header">
-        <div>
-          <h3>Your stop: {stepState.step.stepName}</h3>
-          <p className="ws-fms-step-panel-intro">
-            Mark done, add notes, or upload proof
-          </p>
-        </div>
-        {onCancel ? (
-          <button
-            aria-label="Close"
-            className="ws-fms-step-panel-close"
-            type="button"
-            onClick={onCancel}
-          >
-            <X aria-hidden size={16} />
-          </button>
-        ) : null}
-      </header>
+      {!compact ? (
+        <header className="ws-fms-step-panel-form-header">
+          <div>
+            <h3>Your stop: {stepState.step.stepName}</h3>
+            <p className="ws-fms-step-panel-intro">
+              Mark done, add notes, or upload proof
+            </p>
+          </div>
+          {onCancel ? (
+            <button
+              aria-label="Close"
+              className="ws-fms-step-panel-close"
+              type="button"
+              onClick={onCancel}
+            >
+              <X aria-hidden size={16} />
+            </button>
+          ) : null}
+        </header>
+      ) : null}
 
       <form
         action={formAction}
@@ -103,32 +109,40 @@ function StepCompleteForm({
           </label>
         </section>
 
-        <section className="ws-fms-step-option">
-          <div className="ws-fms-step-option-head">
-            <StickyNote aria-hidden size={16} />
-            <strong>Notes</strong>
-          </div>
-          <label className="form-field-full">
-            <span className="sr-only">Notes / remarks</span>
-            <textarea name="notes" placeholder="Optional remarks" rows={3} />
-          </label>
-        </section>
+        {showUpload ? (
+          <section className="ws-fms-step-option ws-fms-step-option-upload">
+            <div className="ws-fms-step-option-head">
+              <Paperclip aria-hidden size={16} />
+              <strong>Attachment</strong>
+            </div>
+            <label className="ws-fms-attachment-field">
+              <span className="ws-fms-attachment-field-label">
+                Choose file or photo
+              </span>
+              <span className="ws-fms-attachment-field-hint">
+                PDF, Word, Excel, or image (optional proof)
+              </span>
+              <input
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                name="attachment"
+                type="file"
+              />
+            </label>
+          </section>
+        ) : null}
 
-        <section className="ws-fms-step-option">
-          <div className="ws-fms-step-option-head">
-            <Paperclip aria-hidden size={16} />
-            <strong>Upload</strong>
-          </div>
-          <label className="form-field-full">
-            <span className="sr-only">Attachment</span>
-            <input
-              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
-              name="attachment"
-              type="file"
-            />
-          </label>
-          <p className="ws-fms-step-option-hint">Optional proof or supporting file</p>
-        </section>
+        {showNotes ? (
+          <section className="ws-fms-step-option">
+            <div className="ws-fms-step-option-head">
+              <StickyNote aria-hidden size={16} />
+              <strong>Notes</strong>
+            </div>
+            <label className="form-field-full">
+              <span className="sr-only">Notes / remarks</span>
+              <textarea name="notes" placeholder="Optional remarks" rows={3} />
+            </label>
+          </section>
+        ) : null}
 
         {captureFields.length > 0 ? (
           <section className="ws-fms-step-option">
@@ -205,12 +219,14 @@ export function FmsStepCompletePanel({
   defaultExpanded = false,
   mode = "collapsible",
   onCancel,
+  compact = false,
 }: {
   stepState: FmsStepCompleteState;
   canComplete: boolean;
   defaultExpanded?: boolean;
   mode?: "collapsible" | "form";
   onCancel?: () => void;
+  compact?: boolean;
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
@@ -223,7 +239,12 @@ export function FmsStepCompletePanel({
       return null;
     }
     return (
-      <StepCompleteForm embedded stepState={stepState} onCancel={onCancel} />
+      <StepCompleteForm
+        compact={compact}
+        embedded
+        stepState={stepState}
+        onCancel={onCancel}
+      />
     );
   }
 

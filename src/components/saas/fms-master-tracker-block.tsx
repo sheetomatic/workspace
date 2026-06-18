@@ -90,7 +90,7 @@ export function FmsMasterTrackerBlock({
     returnContext === "my-stops" ? "my-stops" : "lines";
 
   return (
-    <section className="ws-sf-card ws-fms-tracker-block">
+    <section className="ws-sf-card ws-fms-tracker-block" id={`fms-${block.id}`}>
       <header className="ws-fms-tracker-block-head">
         <div>
           <p className="ws-fms-tracker-block-eyebrow">FMS tracker</p>

@@ -181,7 +181,7 @@ export function flowStepToTemplateStep(step: FmsFlowchartStep) {
     slaType,
     slaConfig,
     allowMarkDone: true,
-    allowUpload: false,
+    allowUpload: true,
     allowNotes: true,
     captureFields: [],
   };

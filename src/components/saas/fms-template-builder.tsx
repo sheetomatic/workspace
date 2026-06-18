@@ -53,7 +53,7 @@ function newStep(): FmsStepDraft {
     atMinute: "0",
     minusDays: "0",
     allowMarkDone: true,
-    allowUpload: false,
+    allowUpload: true,
     allowNotes: true,
     captureFields: [],
   };

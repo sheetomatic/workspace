@@ -12127,6 +12127,11 @@ body:has(.workspace-app.saas-app) {
   border-bottom: 1px solid var(--sf-card-border);
 }
 
+.workspace-app .ws-fms-sf .ws-sf-page-toolbar-copy {
+  min-width: 0;
+  flex: 1;
+}
+
 .workspace-app .ws-fms-sf .ws-sf-page-toolbar h1 {
   margin: 0;
   font-size: 1.75rem;
@@ -17858,6 +17863,103 @@ body:has(.workspace-app.saas-app) {
   overflow-x: auto;
 }
 
+.workspace-app .ws-fms-perf-table-wrap-narrow {
+  max-width: 420px;
+}
+
+.workspace-app .ws-fms-perf-metrics {
+  margin-bottom: 16px;
+}
+
+.workspace-app .ws-fms-perf-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.workspace-app .ws-fms-perf-grid .ws-fms-section {
+  margin-top: 0;
+  min-width: 0;
+}
+
+.workspace-app .ws-fms-perf-workflow a,
+.workspace-app .ws-fms-perf-doer {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-app .ws-fms-perf-workflow a {
+  color: #0176d3;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.workspace-app .ws-fms-perf-workflow a:hover {
+  text-decoration: underline;
+}
+
+.workspace-app .ws-fms-tracker-block {
+  scroll-margin-top: 20px;
+}
+
+.workspace-app .ws-fms-attachment-field {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px dashed #90caf9;
+  border-radius: 8px;
+  background: #f8fbff;
+  cursor: pointer;
+}
+
+.workspace-app .ws-fms-attachment-field:hover {
+  border-color: #0176d3;
+  background: #eef4ff;
+}
+
+.workspace-app .ws-fms-attachment-field-label {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #014486;
+}
+
+.workspace-app .ws-fms-attachment-field-hint {
+  font-size: 0.75rem;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-fms-attachment-field input[type="file"] {
+  width: 100%;
+  margin-top: 4px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 0.8125rem;
+}
+
+.workspace-app .ws-fms-step-option-upload {
+  border-color: #bfdbfe;
+  background: #fafcff;
+}
+
+.workspace-app .ws-fms-step-task-modal {
+  width: min(520px, 100%);
+}
+
+.workspace-app .ws-fms-step-task-modal .ws-fms-step-manage-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+.workspace-app .ws-fms-step-task-modal .ws-fms-step-panel-form.is-compact {
+  margin-top: 0;
+}
+
 .workspace-app .ws-fms-perf-table {
   width: 100%;
   border-collapse: collapse;
@@ -18454,6 +18556,14 @@ body:has(.workspace-app.saas-app) {
 }
 
 @media (max-width: 900px) {
+  .workspace-app .ws-fms-perf-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-app .ws-fms-step-task-modal .ws-fms-step-manage-meta {
+    grid-template-columns: 1fr;
+  }
+
   .workspace-app .ws-module-layout {
     grid-template-columns: 1fr;
     display: flex;

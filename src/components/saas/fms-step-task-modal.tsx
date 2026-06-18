@@ -97,6 +97,7 @@ export function FmsStepTaskModal({
         {canComplete ? (
           <FmsStepCompletePanel
             canComplete
+            compact
             mode="form"
             stepState={stepState}
             onCancel={onClose}
