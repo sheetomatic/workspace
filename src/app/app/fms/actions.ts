@@ -716,6 +716,84 @@ export async function completeFmsStepAction(
   }
 }
 
+export async function uploadFmsStepAttachmentAction(
+  _prev: FmsActionState,
+  formData: FormData,
+): Promise<FmsActionState> {
+  try {
+    const actor = await getFmsActor();
+    if (!actor.ok) {
+      return { ok: false, message: actor.message };
+    }
+    const user = actor.user;
+
+    const stepStateId = formData.get("stepStateId")?.toString() ?? "";
+    if (!stepStateId) {
+      return { ok: false, message: "Step not found." };
+    }
+
+    const stepState = await prisma.fmsStepState.findFirst({
+      where: {
+        id: stepStateId,
+        instance: { organizationId: user.organizationId, status: "ACTIVE" },
+      },
+      include: { step: true },
+    });
+
+    if (!stepState) {
+      return { ok: false, message: "Step not found." };
+    }
+
+    if (stepState.status !== "IN_PROGRESS") {
+      return { ok: false, message: "This step is not active." };
+    }
+
+    if (!stepState.step.allowUpload) {
+      return { ok: false, message: "Uploads are not allowed for this step." };
+    }
+
+    if (!canCompleteFmsStep(user, stepState)) {
+      if (!stepState.ownerUserId) {
+        return {
+          ok: false,
+          message: "This step has no owner. Ask a manager to assign someone first.",
+        };
+      }
+      return { ok: false, message: "You are not allowed to upload to this step." };
+    }
+
+    const file = formData.get("attachment");
+    if (!(file instanceof File) || file.size === 0) {
+      return { ok: false, message: "Choose a file to upload." };
+    }
+
+    const fileCheck = validateFmsAttachmentFile(file);
+    if (!fileCheck.ok) {
+      return { ok: false, message: fileCheck.message };
+    }
+
+    const attachmentBuffer = Buffer.from(await file.arrayBuffer());
+
+    await prisma.fmsStepAttachment.create({
+      data: {
+        stepStateId,
+        uploadedById: user.id,
+        fileName: file.name,
+        mimeType: file.type || "application/octet-stream",
+        fileSize: file.size,
+        data: new Uint8Array(attachmentBuffer),
+      },
+    });
+
+    revalidatePath(`/app/fms/instances/${stepState.instanceId}`);
+    revalidatePath("/app/fms");
+    return { ok: true, message: "File uploaded." };
+  } catch (error) {
+    console.error("uploadFmsStepAttachmentAction", error);
+    return { ok: false, message: "Could not upload file." };
+  }
+}
+
 export async function deleteFmsFormAction(
   _prev: FmsActionState,
   formData: FormData,

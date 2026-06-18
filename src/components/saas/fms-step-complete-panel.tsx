@@ -120,10 +120,10 @@ function StepCompleteForm({
                 Choose file or photo
               </span>
               <span className="ws-fms-attachment-field-hint">
-                PDF, Word, Excel, or image (optional proof)
+                Images, videos, PDF, Word, or Excel (optional proof)
               </span>
               <input
-                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
                 name="attachment"
                 type="file"
               />

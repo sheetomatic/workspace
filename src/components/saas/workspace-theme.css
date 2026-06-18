@@ -17150,6 +17150,76 @@ body:has(.workspace-app.saas-app) {
   font-size: 0.75rem;
 }
 
+.workspace-app .ws-fms-journey-row-complete-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.workspace-app .ws-fms-journey-inline-upload {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.workspace-app .ws-fms-journey-inline-upload-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px dashed #90caf9;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.workspace-app .ws-fms-journey-inline-upload-label:hover {
+  border-color: #0176d3;
+  background: #f8fbff;
+}
+
+.workspace-app .ws-fms-journey-inline-upload-copy {
+  display: grid;
+  gap: 1px;
+}
+
+.workspace-app .ws-fms-journey-inline-upload-copy strong {
+  font-size: 0.75rem;
+  color: #014486;
+}
+
+.workspace-app .ws-fms-journey-inline-upload-copy small {
+  font-size: 0.6875rem;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-fms-journey-inline-upload-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.workspace-app .ws-fms-journey-inline-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.workspace-app .ws-fms-journey-inline-upload-msg {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 0.75rem;
+}
+
 .workspace-app .ws-fms-journey-row-node .ws-fms-step-panel-form {
   margin-top: 10px;
 }

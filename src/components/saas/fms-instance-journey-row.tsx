@@ -5,6 +5,7 @@ import type { FmsInstanceStatus, FmsStepStatus } from "@prisma/client";
 import { CheckCircle2, Clock, FileInput } from "lucide-react";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
 import type { FmsStepCompleteState } from "@/components/saas/fms-step-complete-panel";
+import { FmsStepInlineUpload } from "@/components/saas/fms-step-inline-upload";
 import { FmsStepTaskModal } from "@/components/saas/fms-step-task-modal";
 import type { FmsStepManageMeta } from "@/components/saas/fms-step-info-modal";
 import {
@@ -341,22 +342,29 @@ export function FmsInstanceJourneyRow({
           <p className="ws-fms-journey-row-complete-label">
             Your stop: <strong>{activeCompleteStep.step.stepName}</strong>
           </p>
-          {completePanel.canComplete ? (
-            <button
-              className="btn-primary ws-sf-btn-primary ws-fms-mark-done-btn"
-              type="button"
-              onClick={() => setFormOpenForStepId(activeCompleteStep.id)}
-            >
-              <CheckCircle2 aria-hidden size={16} />
-              Mark done
-            </button>
-          ) : (
-            <p className="ws-fms-muted ws-fms-journey-row-wait">
-              {!completePanel.stepState.ownerUserId
-                ? "No doer assigned. Ask a manager to reassign this stop."
-                : "Only the assigned doer can mark this stop done."}
-            </p>
-          )}
+          <div className="ws-fms-journey-row-complete-actions">
+            <FmsStepInlineUpload
+              allowUpload={completePanel.stepState.step.allowUpload}
+              canUpload={completePanel.canComplete}
+              stepStateId={completePanel.stepState.id}
+            />
+            {completePanel.canComplete ? (
+              <button
+                className="btn-primary ws-sf-btn-primary ws-fms-mark-done-btn"
+                type="button"
+                onClick={() => setFormOpenForStepId(activeCompleteStep.id)}
+              >
+                <CheckCircle2 aria-hidden size={16} />
+                Mark done
+              </button>
+            ) : (
+              <p className="ws-fms-muted ws-fms-journey-row-wait">
+                {!completePanel.stepState.ownerUserId
+                  ? "No doer assigned. Ask a manager to reassign this stop."
+                  : "Only the assigned doer can mark this stop done."}
+              </p>
+            )}
+          </div>
         </div>
       ) : null}
     </div>

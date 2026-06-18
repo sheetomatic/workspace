@@ -14,7 +14,7 @@ export function FmsInstanceAttachments({ rows }: { rows: AttachmentRow[] }) {
     <section className="ws-sf-card ws-fms-section">
       <header className="ws-fms-section-heading">
         <h2>Step attachments</h2>
-        <p>Proof files uploaded when steps were completed.</p>
+        <p>Files, images, and videos uploaded at each stop.</p>
       </header>
       <ul className="ws-fms-attachments-list">
         {rows.map((file) => (
