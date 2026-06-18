@@ -427,6 +427,9 @@ export async function listFmsTrackerBlocks(
           submission: true,
           stepStates: {
             orderBy: { step: { sortOrder: "asc" } },
+            include: {
+              owner: { select: { id: true, name: true, email: true } },
+            },
           },
         },
         orderBy: { createdAt: "desc" },
@@ -435,4 +438,146 @@ export async function listFmsTrackerBlocks(
     },
     orderBy: { name: "asc" },
   });
+}
+
+export async function listFmsQueueTemplatesForUser(
+  organizationId: string,
+  userId: string,
+) {
+  const templates = await prisma.fmsTemplate.findMany({
+    where: {
+      organizationId,
+      status: "ACTIVE",
+      instances: {
+        some: {
+          status: "ACTIVE",
+          stepStates: { some: { ownerUserId: userId } },
+        },
+      },
+    },
+    select: {
+      id: true,
+      name: true,
+      form: { select: { id: true } },
+    },
+    orderBy: { name: "asc" },
+  });
+
+  return Promise.all(
+    templates.map(async (template) => {
+      const [assignedLeads, activeStops] = await Promise.all([
+        prisma.fmsInstance.count({
+          where: {
+            organizationId,
+            templateId: template.id,
+            status: "ACTIVE",
+            stepStates: { some: { ownerUserId: userId } },
+          },
+        }),
+        prisma.fmsStepState.count({
+          where: {
+            ownerUserId: userId,
+            status: "IN_PROGRESS",
+            instance: {
+              organizationId,
+              status: "ACTIVE",
+              templateId: template.id,
+            },
+          },
+        }),
+      ]);
+      return {
+        id: template.id,
+        name: template.name,
+        formId: template.form.id,
+        assignedLeads,
+        activeStops,
+      };
+    }),
+  );
+}
+
+export async function getFmsTrackerBlockByTemplate(
+  organizationId: string,
+  templateId: string,
+  filter?: {
+    instanceStatus?: "ACTIVE" | "COMPLETED";
+    assigneeUserId?: string;
+    limit?: number;
+  },
+) {
+  const limit = filter?.limit ?? 50;
+  const instanceStatus = filter?.instanceStatus ?? "ACTIVE";
+
+  return prisma.fmsTemplate.findFirst({
+    where: { id: templateId, organizationId, status: "ACTIVE" },
+    include: {
+      form: {
+        select: {
+          id: true,
+          name: true,
+          fields: { orderBy: { sortOrder: "asc" } },
+        },
+      },
+      steps: {
+        orderBy: { sortOrder: "asc" },
+        include: {
+          defaultOwner: { select: { name: true, email: true } },
+        },
+      },
+      instances: {
+        where: {
+          status: instanceStatus,
+          ...(filter?.assigneeUserId
+            ? {
+                stepStates: {
+                  some: { ownerUserId: filter.assigneeUserId },
+                },
+              }
+            : {}),
+        },
+        include: {
+          submission: true,
+          stepStates: {
+            orderBy: { step: { sortOrder: "asc" } },
+            include: {
+              owner: { select: { id: true, name: true, email: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        take: limit,
+      },
+    },
+  });
+}
+
+export async function getFmsPerformanceSummary(organizationId: string) {
+  const templates = await prisma.fmsTemplate.findMany({
+    where: { organizationId, status: "ACTIVE" },
+    select: {
+      id: true,
+      name: true,
+      instances: {
+        where: { status: "ACTIVE" },
+        select: {
+          id: true,
+          createdAt: true,
+          stepStates: {
+            select: {
+              status: true,
+              plannedAt: true,
+              actualAt: true,
+              delayMinutes: true,
+              ownerUserId: true,
+              owner: { select: { id: true, name: true, email: true } },
+            },
+          },
+        },
+      },
+    },
+    orderBy: { name: "asc" },
+  });
+
+  return templates;
 }
