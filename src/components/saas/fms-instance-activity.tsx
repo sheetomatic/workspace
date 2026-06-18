@@ -1,10 +1,5 @@
 import type { FmsAuditAction } from "@prisma/client";
-import type { ComponentProps } from "react";
-import { FmsInstanceTimeline } from "@/components/saas/fms-instance-timeline";
-import type { FmsStepCompleteState } from "@/components/saas/fms-step-complete-panel";
 import { FMS_AUDIT_LABELS } from "@/lib/fms/audit";
-
-type TimelineStep = ComponentProps<typeof FmsInstanceTimeline>["steps"][number];
 
 type AuditRow = {
   id: string;
@@ -22,29 +17,17 @@ function formatWhen(value: Date) {
 }
 
 export function FmsInstanceActivity({
-  steps,
   auditEvents,
-  completePanel,
 }: {
-  steps: TimelineStep[];
   auditEvents: AuditRow[];
-  completePanel?: {
-    stepState: FmsStepCompleteState;
-    canComplete: boolean;
-  } | null;
 }) {
+  if (auditEvents.length === 0) {
+    return null;
+  }
+
   return (
     <div className="ws-fms-activity-stack">
       <section className="ws-sf-card ws-fms-section">
-        <header className="ws-fms-section-heading">
-          <h2>Stop timeline</h2>
-          <p>Planned vs actual times at each stop. The highlighted stop is where the job is stuck.</p>
-        </header>
-        <FmsInstanceTimeline completePanel={completePanel} steps={steps} />
-      </section>
-
-      {auditEvents.length > 0 ? (
-        <section className="ws-sf-card ws-fms-section">
           <header className="ws-fms-section-heading">
             <h2>Activity log</h2>
             <p>Who did what on this job.</p>
@@ -66,7 +49,6 @@ export function FmsInstanceActivity({
             })}
           </ul>
         </section>
-      ) : null}
     </div>
   );
 }

@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { FmsInstanceActivity } from "@/components/saas/fms-instance-activity";
 import { FmsInstanceAttachments } from "@/components/saas/fms-instance-attachments";
 import { FmsInstanceControlPanel } from "@/components/saas/fms-instance-control-panel";
+import { FmsInstanceJourneyRow } from "@/components/saas/fms-instance-journey-row";
 import { FmsPipelineCountBadges } from "@/components/saas/fms-pipeline-count-badges";
-import { FmsTrainTrack } from "@/components/saas/fms-train-track";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
 import { canControlFmsPipeline, canCompleteFmsStep } from "@/lib/fms/access";
@@ -69,16 +69,6 @@ export default async function FmsInstancePage({ params }: PageProps) {
 
   const completedCount = instance.stepStates.filter((s) => s.status === "DONE").length;
 
-  const trainStops = instance.stepStates.map((s) => ({
-    id: s.id,
-    name: s.step.stepName,
-    status: s.status,
-    plannedAt: s.plannedAt,
-    actualAt: s.actualAt,
-    delayMinutes: s.delayMinutes,
-    ownerName: s.owner?.name ?? s.owner?.email.split("@")[0] ?? null,
-  }));
-
   const attachmentRows = instance.stepStates.flatMap((stepState) =>
     stepState.attachments.map((file) => ({
       id: file.id,
@@ -103,7 +93,7 @@ export default async function FmsInstancePage({ params }: PageProps) {
       <section className="ws-sf-card ws-fms-journey-hero">
         <header className="ws-fms-journey-header">
           <div>
-            <p className="ws-fms-journey-eyebrow">Live route</p>
+            <p className="ws-fms-journey-eyebrow">Lead → FMS flow</p>
             <h2>
               {activeStep
                 ? `Stopped at: ${activeStep.step.stepName}`
@@ -117,11 +107,37 @@ export default async function FmsInstancePage({ params }: PageProps) {
           </div>
         </header>
 
-        <FmsTrainTrack
-          stops={trainStops}
-          startLabel="Form submitted"
-          endLabel="Complete"
-          showOwner
+        <FmsInstanceJourneyRow
+          leadLabel={instance.referenceLabel ?? "Lead"}
+          formName={instance.template.form.name}
+          formFields={instance.template.form.fields.map((field) => ({
+            id: field.id,
+            fieldKey: field.fieldKey,
+            label: field.label,
+          }))}
+          submissionValues={submissionValues ?? {}}
+          submittedAt={instance.submission?.createdAt ?? null}
+          instanceStatus={instance.status}
+          steps={instance.stepStates}
+          completePanel={
+            activeStep && instance.status === "ACTIVE"
+              ? {
+                  canComplete,
+                  stepState: {
+                    id: activeStep.id,
+                    status: activeStep.status,
+                    ownerUserId: activeStep.ownerUserId,
+                    step: {
+                      stepName: activeStep.step.stepName,
+                      allowMarkDone: activeStep.step.allowMarkDone,
+                      allowUpload: activeStep.step.allowUpload,
+                      allowNotes: activeStep.step.allowNotes,
+                      captureFields: activeStep.step.captureFields,
+                    },
+                  },
+                }
+              : null
+          }
         />
 
         {activeStep ? (
@@ -174,56 +190,9 @@ export default async function FmsInstancePage({ params }: PageProps) {
       </section>
 
       <div className="ws-fms-instance-layout">
-        {submissionValues && Object.keys(submissionValues).length > 0 ? (
-          <section className="ws-sf-card ws-fms-section">
-            <header className="ws-fms-section-heading">
-              <h2>Form submission</h2>
-              <p>Values captured when this journey started.</p>
-            </header>
-            <dl className="ws-fms-submission-grid">
-              {instance.template.form.fields.map((field) => {
-                const value = submissionValues[field.fieldKey];
-                const display = Array.isArray(value)
-                  ? value.join(", ")
-                  : value === null || value === undefined
-                    ? "-"
-                    : String(value);
-                return (
-                  <div key={field.id}>
-                    <dt>{field.label}</dt>
-                    <dd>{display}</dd>
-                  </div>
-                );
-              })}
-            </dl>
-          </section>
-        ) : null}
-
         <FmsInstanceAttachments rows={attachmentRows} />
 
-        <FmsInstanceActivity
-          auditEvents={auditEvents}
-          completePanel={
-            activeStep && instance.status === "ACTIVE"
-              ? {
-                  canComplete,
-                  stepState: {
-                    id: activeStep.id,
-                    status: activeStep.status,
-                    ownerUserId: activeStep.ownerUserId,
-                    step: {
-                      stepName: activeStep.step.stepName,
-                      allowMarkDone: activeStep.step.allowMarkDone,
-                      allowUpload: activeStep.step.allowUpload,
-                      allowNotes: activeStep.step.allowNotes,
-                      captureFields: activeStep.step.captureFields,
-                    },
-                  },
-                }
-              : null
-          }
-          steps={instance.stepStates}
-        />
+        <FmsInstanceActivity auditEvents={auditEvents} />
       </div>
     </div>
   );
