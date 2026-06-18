@@ -116,7 +116,7 @@ export function FmsMasterTrackerBlock({ block }: { block: FmsTrackerBlock }) {
           <p className="ws-fms-tracker-block-eyebrow">FMS tracker</p>
           <h2>{block.name}</h2>
           <p className="ws-fms-muted">
-            {block.instances.length} lead{block.instances.length === 1 ? "" : "s"} ÿ{" "}
+            {block.instances.length} lead{block.instances.length === 1 ? "" : "s"} |{" "}
             {block.steps.length} step{block.steps.length === 1 ? "" : "s"}
           </p>
         </div>

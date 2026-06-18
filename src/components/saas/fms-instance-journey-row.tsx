@@ -136,7 +136,7 @@ export function FmsInstanceJourneyRow({
   return (
     <div className="ws-fms-journey-row">
       <p className="ws-fms-journey-row-hint">
-        Lead form filled — FMS flow started. Each column is one stop on the route.
+        Lead form filled - FMS flow started. Each column is one stop on the route.
       </p>
 
       <div
