@@ -215,6 +215,9 @@ export const servicesPage = {
     { label: "Build", text: "End-to-end on Sheets, dashboards, WhatsApp & AI" },
     { label: "Adopt", text: "Train and tune until owners trust the numbers" },
   ],
+  deliveryTitle: "Pick your starting point",
+  deliveryLead:
+    "Most clients begin with WhatsApp AI or MIS. We connect HR, inventory, and flow once the first win sticks.",
   industriesTitle: "Sectors we serve across India",
   industriesLead:
     "Owner-led MSMEs in these industries run WhatsApp AI, MIS, and workspace ops from one Sheetomatic stack.",
