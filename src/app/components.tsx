@@ -8,7 +8,6 @@ import { SocialLinks } from "@/components/marketing/social-links";
 import {
   contactDetails,
   footerCompanyLinks,
-  footerIndustryLinks,
   footerProductLinks,
   mainNav,
 } from "./page-content";
@@ -136,14 +135,6 @@ export function SiteFooter() {
               </Link>
             ))}
             <Link href="/login">Workspace</Link>
-          </div>
-          <div>
-            <p className="site-footer-col-label">Industries</p>
-            {footerIndustryLinks.map((item) => (
-              <Link href={item.href} key={item.label}>
-                {item.label}
-              </Link>
-            ))}
           </div>
           <div>
             <p className="site-footer-col-label">Company</p>

@@ -405,24 +405,28 @@ export const productCategories = [
     text: "Stock in/out, locations, reorder signals, and ties to sales and purchase data.",
   },
   {
-    name: "Task Delegation Systems",
-    text: "Assign work with owners, due dates, priorities, and WhatsApp reminders.",
+    name: "WhatsApp API",
+    text: "Official WhatsApp Business API setup, templates, webhooks, and team inbox integrations.",
   },
   {
-    name: "Custom Apps",
-    text: "AppSheet and Sheets apps shaped to your process - not generic templates.",
+    name: "WhatsApp AI Chatbot",
+    text: "AI replies, lead capture, and handoff to your team inside WhatsApp conversations.",
   },
   {
-    name: "ERP",
-    text: "Practical operational ERP layers on Sheets and apps - right-sized for MSME adoption.",
+    name: "Fully AI Powered Task Delegation Systems",
+    text: "Assign, proof-check, and verify tasks with AI-assisted delegation and manager workflows.",
   },
   {
-    name: "Software",
-    text: "Internal tools, portals, and workflows that replace manual coordination.",
+    name: "Fully AI Powered FMS (Flow Monitoring Systems) Creation",
+    text: "Design and deploy flow monitoring pipelines with stops, proofs, and live pipeline dashboards.",
   },
   {
-    name: "Industry-specific custom apps",
-    text: "Manufacturing, distribution, clinics, real estate, and other vertical workflows.",
+    name: "Checklist",
+    text: "Recurring operational checklists with owners, due dates, and completion tracking on mobile.",
+  },
+  {
+    name: "Custom ERP & Software",
+    text: "Custom apps, ERP layers, internal tools, and industry-specific software on Sheets and AppSheet.",
     featured: true,
   },
 ];

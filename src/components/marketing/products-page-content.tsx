@@ -2,14 +2,15 @@ import { FinalCta, MarketingPage, SiteFooter, SiteHeader } from "@/app/component
 import { clientProblems, productCategories, productsPage } from "@/app/page-content";
 import "./minimal-premium.css";
 import {
+  Bot,
   Building2,
   CalendarCheck,
-  Factory,
-  ListChecks,
+  ClipboardCheck,
+  GitBranch,
   MapPin,
-  Monitor,
+  MessageCircle,
   Package,
-  Puzzle,
+  Sparkles,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -21,11 +22,12 @@ const productIcons: { icon: LucideIcon; tone: string }[] = [
   { icon: CalendarCheck, tone: "tone-emerald" },
   { icon: MapPin, tone: "tone-violet" },
   { icon: Package, tone: "tone-indigo" },
-  { icon: ListChecks, tone: "tone-green" },
-  { icon: Puzzle, tone: "tone-rose" },
+  { icon: MessageCircle, tone: "tone-green" },
+  { icon: Bot, tone: "tone-green" },
+  { icon: Sparkles, tone: "tone-green" },
+  { icon: GitBranch, tone: "tone-amber" },
+  { icon: ClipboardCheck, tone: "tone-rose" },
   { icon: Building2, tone: "tone-slate" },
-  { icon: Monitor, tone: "tone-sky" },
-  { icon: Factory, tone: "tone-amber" },
 ];
 
 export function ProductsPageContent() {
