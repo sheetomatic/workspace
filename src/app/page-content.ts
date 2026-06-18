@@ -162,7 +162,7 @@ export const servicesPage = {
   ],
   audienceLabel: "Trusted by owners in",
   ownerGlance: {
-    eyebrow: "Industries",
+    eyebrow: "What we deliver",
     items: [
       {
         tag: "AI",
@@ -215,8 +215,8 @@ export const servicesPage = {
     { label: "Build", text: "End-to-end on Sheets, dashboards, WhatsApp & AI" },
     { label: "Adopt", text: "Train and tune until owners trust the numbers" },
   ],
-  deliveryTitle: "Sectors we serve across India",
-  deliveryLead:
+  industriesTitle: "Sectors we serve across India",
+  industriesLead:
     "Owner-led MSMEs in these industries run WhatsApp AI, MIS, and workspace ops from one Sheetomatic stack.",
   processTitle: "End to end. Three phases.",
   processLead:

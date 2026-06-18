@@ -150,7 +150,10 @@ export function ServicesHubContent() {
                 ))}
               </ul>
 
-              <div className="services-audience" aria-label="Industries">
+              <div
+                className="services-audience"
+                aria-label={servicesPage.audienceLabel}
+              >
                 <span className="services-audience-label">
                   {servicesPage.audienceLabel}
                 </span>
@@ -340,9 +343,9 @@ export function ServicesHubContent() {
             <div className="services-section-head services-section-head-center">
               <p className="services-section-eyebrow">Industries</p>
               <h2 className="services-section-title">
-                {servicesPage.deliveryTitle}
+                {servicesPage.industriesTitle}
               </h2>
-              <p className="services-section-lead">{servicesPage.deliveryLead}</p>
+              <p className="services-section-lead">{servicesPage.industriesLead}</p>
             </div>
 
             <div className="services-delivery-grid services-industries-grid">
