@@ -17322,6 +17322,196 @@ body:has(.workspace-app.saas-app) {
   font-size: 0.8125rem;
 }
 
+.workspace-app .ws-fms-tracker-band.is-route,
+.workspace-app .ws-fms-tracker-route-col {
+  background: #f0f6ff;
+  min-width: 148px;
+  width: 148px;
+}
+
+.workspace-app .ws-fms-tracker-data-row.is-expanded td {
+  background: #f8fbff;
+  border-bottom-color: transparent;
+}
+
+.workspace-app .ws-fms-tracker-expand-row td {
+  padding: 0;
+  background: #f8fbff;
+  border-top: none;
+}
+
+.workspace-app .ws-fms-route-snapshot {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  padding: 6px 4px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--sf-text);
+}
+
+.workspace-app .ws-fms-route-snapshot:hover,
+.workspace-app .ws-fms-route-snapshot.is-expanded {
+  border-color: #0176d3;
+  background: #eef4ff;
+}
+
+.workspace-app .ws-fms-route-snapshot-label {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-fms-route-snapshot-segment {
+  display: inline-flex;
+  align-items: center;
+}
+
+.workspace-app .ws-fms-route-snapshot-wire {
+  display: inline-block;
+  width: 10px;
+  height: 2px;
+  background: #dddbda;
+}
+
+.workspace-app .ws-fms-route-snapshot-wire.is-done,
+.workspace-app .ws-fms-route-snapshot-wire.is-active {
+  background: #2e844a;
+}
+
+.workspace-app .ws-fms-route-snapshot-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  border: 1px solid #c9c7c5;
+  background: #fff;
+}
+
+.workspace-app .ws-fms-route-snapshot-dot.is-done {
+  border-color: #2e844a;
+  background: #d9f0e3;
+}
+
+.workspace-app .ws-fms-route-snapshot-dot.is-current,
+.workspace-app .ws-fms-route-snapshot-train {
+  color: #014486;
+}
+
+.workspace-app .ws-fms-route-snapshot-chevron {
+  margin-left: 4px;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  color: #014486;
+  text-transform: uppercase;
+}
+
+.workspace-app .ws-fms-tracker-row-detail {
+  padding: 16px 18px 18px;
+  border-top: 1px solid #d8edff;
+}
+
+.workspace-app .ws-fms-tracker-row-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(280px, 1.4fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.workspace-app .ws-fms-tracker-row-detail h3 {
+  margin: 0 0 8px;
+  font-size: 0.8125rem;
+}
+
+.workspace-app .ws-fms-tracker-row-detail-title {
+  margin: 0 0 10px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.workspace-app .ws-fms-tracker-row-detail-eyebrow {
+  margin: 0 0 2px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #014486;
+}
+
+.workspace-app .ws-fms-tracker-row-detail-fields,
+.workspace-app .ws-fms-tracker-row-detail-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px 12px;
+  margin: 0;
+}
+
+.workspace-app .ws-fms-tracker-row-detail-fields dt,
+.workspace-app .ws-fms-tracker-row-detail-meta dt {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-fms-tracker-row-detail-fields dd,
+.workspace-app .ws-fms-tracker-row-detail-meta dd {
+  margin: 2px 0 0;
+  font-size: 0.8125rem;
+}
+
+.workspace-app .ws-fms-tracker-row-detail-route .ws-fms-train-track {
+  padding: 0;
+}
+
+.workspace-app .ws-fms-tracker-row-detail-stop {
+  padding: 14px;
+  border: 1px solid #d8edff;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.workspace-app .ws-fms-tracker-row-detail-stop header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.workspace-app .ws-fms-tracker-row-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.workspace-app .ws-fms-tracker-row-detail-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #014486;
+  text-decoration: none;
+}
+
+.workspace-app .ws-fms-tracker-row-detail-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 900px) {
+  .workspace-app .ws-fms-tracker-row-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .workspace-app .ws-fms-step-manage {
   position: relative;
   display: inline-flex;

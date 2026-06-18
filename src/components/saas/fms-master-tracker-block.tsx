@@ -103,10 +103,10 @@ export function FmsMasterTrackerBlock({
             <Link
               href={`/app/fms/forms/${block.form.id}`}
               className="ws-fms-tracker-manage-link"
-              title="Manage workflow and form"
+              title="Workflow setup"
             >
               <Settings2 size={16} aria-hidden />
-              Manage
+              Workflow setup
             </Link>
           ) : null}
         </div>
