@@ -28,7 +28,7 @@ export const clientProjects: ClientProject[] = [
       "Stock control and movement tracking on Google Sheets and AppSheet.",
   },
   {
-    client: "Pawar Constructions",
+    client: "PPCPL (Pawar Patkar Constructions Private Limited)",
     location: "Pune",
     useCase: "Vendor Source to Contract",
     description:
@@ -89,6 +89,13 @@ export const clientProjects: ClientProject[] = [
     location: "Gujarat",
     useCase: "Mobile Distribution",
     description: "Order to delivery with real-time inventory across distributor networks.",
+  },
+  {
+    client: "1000+ Clients",
+    location: "India",
+    useCase: "WhatsApp API",
+    description:
+      "Official WhatsApp Business API, templates, team inbox, and workflow integrations at scale.",
   },
   {
     client: "100+ Clients",
