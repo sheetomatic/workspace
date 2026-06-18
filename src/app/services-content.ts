@@ -1,5 +1,7 @@
 /** Service category hub + sub-page content for /services and /services/[slug] */
 
+import { hrWorkspaceModules } from "./hr-module-content";
+
 export type ServiceCategorySlug =
   | "hr"
   | "tasks"
@@ -30,6 +32,22 @@ export type ServiceCategory = {
   featured?: boolean;
   relatedSlugs?: ServiceCategorySlug[];
 };
+
+/** Hub browse grid — order and labels for /services category cards */
+export const servicesBrowseCards: {
+  slug: ServiceCategorySlug;
+  label: string;
+}[] = [
+  { slug: "flow", label: "FMS (Flow Management Systems)" },
+  { slug: "tasks", label: "Task Delegation" },
+  { slug: "inventory", label: "IMS (Inventory Management Systems)" },
+  {
+    slug: "whatsapp-ai",
+    label: "WhatsApp API to Assign Tasks & Reports",
+  },
+  { slug: "hr", label: "HR & Workforce" },
+  { slug: "automation", label: "Custom Software Development" },
+];
 
 export const servicesHub = {
   eyebrow: "AI-powered operations",
@@ -397,6 +415,28 @@ export const serviceCategories: ServiceCategory[] = [
       "Hi Sheetomatic, I want to scope workflow automation across Sheets, WhatsApp, and our workspace.",
     relatedSlugs: ["mis", "tasks"],
   },
+];
+
+/** All service routes for header nav dropdown */
+export const servicesNavLinks = [
+  { href: "/services", label: "All services" },
+  ...servicesBrowseCards.map(({ slug, label }) => ({
+    href: `/services/${slug}`,
+    label,
+  })),
+  ...serviceCategories
+    .filter(
+      (category) =>
+        !servicesBrowseCards.some((card) => card.slug === category.slug),
+    )
+    .map((category) => ({
+      href: `/services/${category.slug}`,
+      label: category.name,
+    })),
+  ...hrWorkspaceModules.map((mod) => ({
+    href: mod.marketingHref,
+    label: mod.name,
+  })),
 ];
 
 export const serviceCategoryBySlug = Object.fromEntries(

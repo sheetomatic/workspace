@@ -12,6 +12,7 @@ import {
   footerProductLinks,
   mainNav,
 } from "./page-content";
+import { servicesNavLinks } from "./services-content";
 import {
   finalCtaContent,
   siteBrand,
@@ -57,15 +58,38 @@ export function SiteHeader() {
             className="site-nav-saas site-nav-desktop hidden min-[901px]:flex items-center gap-6"
             aria-label="Main"
           >
-            {mainNav.map((item) => (
-              <Link
-                className="shrink-0 whitespace-nowrap text-inherit no-underline hover:text-blue-600"
-                href={item.href}
-                key={item.href}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {mainNav.map((item) =>
+              item.href === "/services" ? (
+                <div className="site-nav-dropdown" key={item.href}>
+                  <Link
+                    className="site-nav-dropdown-trigger shrink-0 whitespace-nowrap text-inherit no-underline hover:text-blue-600"
+                    href={item.href}
+                  >
+                    {item.label}
+                  </Link>
+                  <div className="site-nav-dropdown-panel" role="menu">
+                    {servicesNavLinks.map((link) => (
+                      <Link
+                        className="site-nav-dropdown-link"
+                        href={link.href}
+                        key={link.href}
+                        role="menuitem"
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <Link
+                  className="shrink-0 whitespace-nowrap text-inherit no-underline hover:text-blue-600"
+                  href={item.href}
+                  key={item.href}
+                >
+                  {item.label}
+                </Link>
+              ),
+            )}
           </nav>
           <div className="site-header-actions">
             <Link className="ab-header-workspace" href="/login">

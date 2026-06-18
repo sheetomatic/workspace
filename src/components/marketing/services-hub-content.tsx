@@ -34,7 +34,8 @@ import {
   hrWorkspaceModules,
 } from "@/app/hr-module-content";
 import {
-  serviceCategories,
+  serviceCategoryBySlug,
+  servicesBrowseCards,
   servicesHub,
 } from "@/app/services-content";
 import {
@@ -196,7 +197,8 @@ export function ServicesHubContent() {
             </div>
 
             <div className="services-hub-grid">
-              {serviceCategories.map((category) => {
+              {servicesBrowseCards.map(({ slug, label }) => {
+                const category = serviceCategoryBySlug[slug];
                 const meta =
                   categoryIcons[category.slug] ?? categoryIcons.tasks;
                 const Icon = meta.icon;
@@ -218,13 +220,13 @@ export function ServicesHubContent() {
                         <span className="services-hub-badge">Popular</span>
                       ) : null}
                     </div>
-                    <h3 className="services-hub-card-title">{category.name}</h3>
+                    <h3 className="services-hub-card-title">{label}</h3>
                     <p className="services-hub-card-blurb">
                       {category.shortDescription}
                     </p>
                     <p className="services-hub-card-detail">{category.hubBlurb}</p>
                     <span className="services-hub-card-link">
-                      Explore {category.name}
+                      Explore {label}
                       <ArrowRight size={16} aria-hidden />
                     </span>
                   </Link>
@@ -329,7 +331,7 @@ export function ServicesHubContent() {
         <section className="services-delivery">
           <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-14">
             <div className="services-section-head services-section-head-center">
-              <p className="services-section-eyebrow">What we deliver</p>
+              <p className="services-section-eyebrow">Industries</p>
               <h2 className="services-section-title">
                 {servicesPage.deliveryTitle}
               </h2>

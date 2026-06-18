@@ -8,19 +8,15 @@ export const knowledgeTransferLinks = {
 } as const;
 
 export const mainNav = [
-  { href: "/ai", label: "Sheetomatic AI" },
   { href: "/services", label: "Services" },
   { href: "/products", label: "Products" },
-  { href: "/courses", label: "Courses" },
   { href: "/about", label: "About" },
-  { href: "/career", label: "Careers" },
   { href: "/contact", label: "Contact" },
 ];
 
 export const footerCompanyLinks = [
   { href: "/services", label: "Services" },
   { href: "/products", label: "Products" },
-  { href: "/courses", label: "Courses" },
   { href: "/about", label: "About" },
   { href: "/career", label: "Careers" },
   { href: "/contact", label: "Contact" },
@@ -166,7 +162,7 @@ export const servicesPage = {
   ],
   audienceLabel: "Trusted by owners in",
   ownerGlance: {
-    eyebrow: "What we deliver",
+    eyebrow: "Industries",
     items: [
       {
         tag: "AI",
