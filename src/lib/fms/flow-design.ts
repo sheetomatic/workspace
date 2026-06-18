@@ -11,7 +11,7 @@ export type FmsFlowchartStep = {
   tatUnit: "hours" | "days";
 };
 
-export function newFlowchartStep(stepName = ""): FmsFlowchartStep {
+export function newFlowchartStep(stepName = "New step"): FmsFlowchartStep {
   return {
     id: crypto.randomUUID(),
     stepName,
@@ -20,6 +20,46 @@ export function newFlowchartStep(stepName = ""): FmsFlowchartStep {
     tatValue: "1",
     tatUnit: "days",
   };
+}
+
+/** Insert a new (or provided) step at index in the pipeline (0 = right after trigger). */
+export function insertFlowchartStepAt(
+  steps: FmsFlowchartStep[],
+  index: number,
+  step: FmsFlowchartStep = newFlowchartStep(""),
+): FmsFlowchartStep[] {
+  const next = [...steps];
+  const at = Math.max(0, Math.min(index, next.length));
+  next.splice(at, 0, step);
+  return next;
+}
+
+/**
+ * Reorder so `stepId` runs immediately after `afterStepId`.
+ * Pass afterStepId=null to move to the first position (after form submit).
+ */
+export function reorderFlowchartStepAfter(
+  steps: FmsFlowchartStep[],
+  stepId: string,
+  afterStepId: string | null,
+): FmsFlowchartStep[] {
+  const fromIndex = steps.findIndex((s) => s.id === stepId);
+  if (fromIndex === -1) {
+    return steps;
+  }
+  const next = [...steps];
+  const [moved] = next.splice(fromIndex, 1);
+  if (afterStepId === null) {
+    next.unshift(moved);
+    return next;
+  }
+  const afterIndex = next.findIndex((s) => s.id === afterStepId);
+  if (afterIndex === -1) {
+    next.splice(fromIndex, 0, moved);
+    return next;
+  }
+  next.splice(afterIndex + 1, 0, moved);
+  return next;
 }
 
 export function parseFlowchartSteps(raw: unknown): FmsFlowchartStep[] {

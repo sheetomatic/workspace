@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Pencil, Plus, Settings2, UserRound } from "lucide-react";
+import { Settings2, UserRound, X } from "lucide-react";
 import {
   createFmsFlowDesign,
   submitFmsFlowDesignForApproval,
@@ -24,8 +24,10 @@ import {
   type FmsAlertConfig,
 } from "@/lib/fms/constants";
 import {
+  insertFlowchartStepAt,
   mapAiFlowToSteps,
   newFlowchartStep,
+  reorderFlowchartStepAfter,
   type FmsFlowchartStep,
 } from "@/lib/fms/flow-design";
 import type { FmsAssignableMember } from "@/lib/fms/flow-owner-resolve";
@@ -97,13 +99,18 @@ export function FmsFlowchartBuilder({
     parseAlertConfig(initialAlertConfig ?? DEFAULT_FMS_ALERT_CONFIG),
   );
   const [notifyOpen, setNotifyOpen] = useState(false);
-  const [editMode, setEditMode] = useState(false);
   const [ownerReviewOpen, setOwnerReviewOpen] = useState(false);
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const pendingScrollToStepId = useRef<string | null>(null);
 
   const hasFlow = steps.length > 0;
+  const selectedStep = selectedStepId
+    ? steps.find((step) => step.id === selectedStepId)
+    : undefined;
+  const selectedStepIndex = selectedStep
+    ? steps.findIndex((step) => step.id === selectedStep.id)
+    : -1;
   const stepsJson = JSON.stringify(steps);
   const holidayDatesJson = JSON.stringify(holidayDates);
   const alertConfigJson = JSON.stringify(alertConfig);
@@ -131,7 +138,6 @@ export function FmsFlowchartBuilder({
     setName(draft.name);
     setDescription(draft.description);
     setSteps(mapped);
-    setEditMode(false);
     setSelectedStepId(null);
     setOwnerReviewOpen(mapped.length > 0);
   }
@@ -142,21 +148,22 @@ export function FmsFlowchartBuilder({
     );
   }
 
-  function addStep() {
-    const step = newFlowchartStep("");
+  function insertStepAt(index: number) {
+    const step = newFlowchartStep();
     pendingScrollToStepId.current = step.id;
-    setSteps((prev) => [...prev, step]);
-    setEditMode(true);
+    setSteps((prev) => insertFlowchartStepAt(prev, index, step));
     setSelectedStepId(step.id);
   }
 
+  function moveStepAfter(stepId: string, afterStepId: string | null) {
+    setSteps((prev) => reorderFlowchartStepAfter(prev, stepId, afterStepId));
+  }
+
   function startManualEdit() {
-    if (steps.length === 0) {
-      const step = newFlowchartStep("");
-      setSteps([step]);
-      setSelectedStepId(step.id);
-    }
-    setEditMode(true);
+    const step = newFlowchartStep();
+    setSteps([step]);
+    setSelectedStepId(step.id);
+    pendingScrollToStepId.current = step.id;
   }
 
   useEffect(() => {
@@ -171,7 +178,7 @@ export function FmsFlowchartBuilder({
     if (node instanceof HTMLElement) {
       node.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
-  }, [steps]);
+  }, [steps, selectedStepId]);
 
   function removeStep(id: string) {
     setSteps((prev) => {
@@ -199,29 +206,14 @@ export function FmsFlowchartBuilder({
         {canEditFlow ? (
           <div className="ws-fms-design-actions">
             {hasFlow ? (
-              <>
-                <button
-                  type="button"
-                  className={`ws-fms-btn-quiet${editMode ? " is-active" : ""}`}
-                  onClick={() => {
-                    setEditMode((value) => !value);
-                    if (editMode) {
-                      setSelectedStepId(null);
-                    }
-                  }}
-                >
-                  <Pencil size={14} aria-hidden />
-                  {editMode ? "Done editing" : "Edit steps"}
-                </button>
-                <button
-                  type="button"
-                  className="ws-fms-btn-quiet"
-                  onClick={() => setOwnerReviewOpen(true)}
-                >
-                  <UserRound size={14} aria-hidden />
-                  Assign owners
-                </button>
-              </>
+              <button
+                type="button"
+                className="ws-fms-btn-quiet"
+                onClick={() => setOwnerReviewOpen(true)}
+              >
+                <UserRound size={14} aria-hidden />
+                Assign owners
+              </button>
             ) : null}
             <button
               type="button"
@@ -322,55 +314,57 @@ export function FmsFlowchartBuilder({
                 steps={steps}
                 members={members}
                 readOnly={readOnly}
-                editMode={editMode}
                 selectedStepId={selectedStepId}
                 onSelectStep={setSelectedStepId}
-                hideToolbar
+                onInsertStepAt={canEditFlow ? insertStepAt : undefined}
               />
             </section>
 
-            {editMode && canEditFlow ? (
-              <section className="ws-fms-design-card ws-fms-design-editor" ref={editorRef}>
-                <h2 className="ws-fms-design-card-title">Edit step details</h2>
-                <div className="ws-fms-flow-manual-editor">
-                  {steps.map((step, index) => (
-                    <div
-                      key={step.id}
-                      data-flow-step-id={step.id}
-                      className={
-                        selectedStepId && selectedStepId !== step.id
-                          ? "ws-fms-flow-step-collapsed"
-                          : undefined
-                      }
-                    >
-                      <FlowStepNode
-                        step={step}
-                        index={index}
-                        members={members}
-                        readOnly={readOnly}
-                        onUpdate={(patch) => updateStep(step.id, patch)}
-                        onRemove={() => removeStep(step.id)}
-                        canRemove={steps.length > 1}
-                      />
-                    </div>
-                  ))}
+            {selectedStep && selectedStepIndex >= 0 && canEditFlow ? (
+              <section
+                className="ws-fms-design-card ws-fms-design-editor"
+                ref={editorRef}
+              >
+                <div className="ws-fms-design-editor-head">
+                  <h2 className="ws-fms-design-card-title">
+                    Step {selectedStepIndex + 1}
+                  </h2>
                   <button
                     type="button"
-                    className="ws-fms-btn-quiet"
-                    onClick={addStep}
+                    className="ws-fms-design-editor-done"
+                    onClick={() => setSelectedStepId(null)}
+                    aria-label="Done editing step"
                   >
-                    <Plus size={14} aria-hidden />
-                    Add step
+                    <X size={16} aria-hidden />
+                    Done
                   </button>
+                </div>
+                <div
+                  className="ws-fms-flow-manual-editor"
+                  data-flow-step-id={selectedStep.id}
+                >
+                  <FlowStepNode
+                    step={selectedStep}
+                    index={selectedStepIndex}
+                    members={members}
+                    readOnly={readOnly}
+                    allSteps={steps}
+                    onConnectAfter={(afterStepId) =>
+                      moveStepAfter(selectedStep.id, afterStepId)
+                    }
+                    onUpdate={(patch) => updateStep(selectedStep.id, patch)}
+                    onRemove={() => removeStep(selectedStep.id)}
+                    canRemove={steps.length > 1}
+                  />
                 </div>
               </section>
             ) : null}
           </>
         ) : canEditFlow ? (
           <section className="ws-fms-design-card ws-fms-design-empty">
-            <p>Use voice or text above and AI will build your flowchart in seconds.</p>
-            <button type="button" className="ws-fms-btn-quiet" onClick={startManualEdit}>
-              Build manually instead
+            <p>Describe your process above, or start from scratch.</p>
+            <button type="button" className="ws-fms-btn-quiet is-primary" onClick={startManualEdit}>
+              Add first step
             </button>
           </section>
         ) : (

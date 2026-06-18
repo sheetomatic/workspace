@@ -5,6 +5,11 @@ import type { FmsFlowchartStep } from "@/lib/fms/flow-design";
 
 type Member = { id: string; name: string; email: string };
 
+function stepLabel(step: FmsFlowchartStep, number: number) {
+  const name = step.stepName.trim();
+  return name ? `Step ${number}: ${name}` : `Step ${number}`;
+}
+
 export function FlowStepNode({
   step,
   index,
@@ -13,6 +18,8 @@ export function FlowStepNode({
   onUpdate,
   onRemove,
   canRemove,
+  allSteps,
+  onConnectAfter,
 }: {
   step: FmsFlowchartStep;
   index: number;
@@ -21,18 +28,24 @@ export function FlowStepNode({
   onUpdate: (patch: Partial<FmsFlowchartStep>) => void;
   onRemove: () => void;
   canRemove: boolean;
+  allSteps?: FmsFlowchartStep[];
+  onConnectAfter?: (afterStepId: string | null) => void;
 }) {
+  const stepNumber = index + 1;
+  const otherSteps = (allSteps ?? []).filter((s) => s.id !== step.id);
+  const runsAfterId = index > 0 ? (allSteps?.[index - 1]?.id ?? "") : "";
+
   return (
     <div className="ws-fms-flow-node">
       <div className="ws-fms-flow-node-head">
-        <span className="ws-fms-flow-node-index">{index + 1}</span>
+        <span className="ws-fms-flow-node-index">{stepNumber}</span>
         <input
           className="ws-fms-flow-node-title"
           value={step.stepName}
           readOnly={readOnly}
           onChange={(event) => onUpdate({ stepName: event.target.value })}
-          placeholder={`Step ${index + 1} name`}
-          aria-label={`Step ${index + 1} name`}
+          placeholder={`Step ${stepNumber} name`}
+          aria-label={`Step ${stepNumber} name`}
         />
         {!readOnly && canRemove ? (
           <button
@@ -45,6 +58,29 @@ export function FlowStepNode({
           </button>
         ) : null}
       </div>
+
+      {!readOnly && onConnectAfter && otherSteps.length > 0 ? (
+        <label className="ws-fms-flow-field ws-fms-flow-runs-after">
+          <span className="ws-fms-flow-label">Runs after</span>
+          <select
+            value={runsAfterId}
+            onChange={(event) =>
+              onConnectAfter(event.target.value ? event.target.value : null)
+            }
+            aria-label="Runs after"
+          >
+            <option value="">Form submitted</option>
+            {otherSteps.map((other) => {
+              const otherIndex = (allSteps ?? []).findIndex((s) => s.id === other.id);
+              return (
+                <option key={other.id} value={other.id}>
+                  {stepLabel(other, otherIndex + 1)}
+                </option>
+              );
+            })}
+          </select>
+        </label>
+      ) : null}
 
       <div className="ws-fms-flow-node-grid">
         <label className="ws-fms-flow-field">

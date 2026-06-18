@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Clock, Pencil, User, UserRound } from "lucide-react";
+import { Clock, Plus, User } from "lucide-react";
 import type { FmsFlowchartStep } from "@/lib/fms/flow-design";
 
 type Member = { id: string; name: string; email: string };
@@ -20,88 +20,95 @@ function tatLabel(step: FmsFlowchartStep) {
     : `${n} day${n === "1" ? "" : "s"}`;
 }
 
+function N8nConnector({
+  showAdd,
+  onAdd,
+}: {
+  showAdd: boolean;
+  onAdd?: () => void;
+}) {
+  return (
+    <div className="ws-fms-n8n-edge" aria-hidden={!showAdd}>
+      <span className="ws-fms-n8n-edge-line" />
+      {showAdd && onAdd ? (
+        <button
+          type="button"
+          className="ws-fms-n8n-add-btn"
+          onClick={(event) => {
+            event.stopPropagation();
+            onAdd();
+          }}
+          aria-label="Add step"
+          title="Add step"
+        >
+          <Plus size={13} strokeWidth={2.5} aria-hidden />
+        </button>
+      ) : (
+        <span className="ws-fms-n8n-edge-dot" />
+      )}
+    </div>
+  );
+}
+
 export function FmsN8nFlowView({
   steps,
   members,
   readOnly,
-  editMode,
-  onToggleEdit,
-  onAssignOwners,
   selectedStepId,
   onSelectStep,
-  hideToolbar = false,
+  onInsertStepAt,
 }: {
   steps: FmsFlowchartStep[];
   members: Member[];
   readOnly: boolean;
-  editMode: boolean;
-  onToggleEdit?: () => void;
-  onAssignOwners?: () => void;
   selectedStepId?: string | null;
   onSelectStep?: (id: string) => void;
-  hideToolbar?: boolean;
+  /** Insert at pipeline index (0 = after trigger, before current step 1). */
+  onInsertStepAt?: (index: number) => void;
 }) {
   if (steps.length === 0) {
     return null;
   }
 
+  const canWire = !readOnly && Boolean(onInsertStepAt);
+
   return (
     <div className="ws-fms-n8n-wrap">
-      {!hideToolbar ? (
-        <div className="ws-fms-n8n-toolbar">
-          <span className="ws-fms-muted">Workflow preview</span>
-          <div className="ws-fms-n8n-toolbar-actions">
-            {!readOnly && onAssignOwners ? (
-              <button
-                type="button"
-                className="ws-fms-n8n-edit-btn"
-                onClick={onAssignOwners}
-              >
-                <UserRound size={14} aria-hidden />
-                Assign owners
-              </button>
-            ) : null}
-            {!readOnly && onToggleEdit ? (
-              <button
-                type="button"
-                className={`ws-fms-n8n-edit-btn${editMode ? " is-active" : ""}`}
-                onClick={onToggleEdit}
-              >
-                <Pencil size={14} aria-hidden />
-                {editMode ? "Done editing" : "Edit steps"}
-              </button>
-            ) : null}
-          </div>
-        </div>
-      ) : (
-        <div className="ws-fms-n8n-head">
-          <h2 className="ws-fms-design-card-title">Workflow preview</h2>
-          <p className="ws-fms-n8n-head-hint">Scroll horizontally to review every step.</p>
-        </div>
-      )}
+      <div className="ws-fms-n8n-head">
+        <h2 className="ws-fms-design-card-title">Workflow</h2>
+        {canWire ? (
+          <p className="ws-fms-n8n-head-hint">
+            Tap <span className="ws-fms-n8n-hint-plus">+</span> to add a step.
+            Tap a step to edit.
+          </p>
+        ) : null}
+      </div>
 
       <div className="ws-fms-n8n-canvas-shell">
         <div className="ws-fms-n8n-canvas" role="list" aria-label="Workflow steps">
-          <div className="ws-fms-n8n-node ws-fms-n8n-trigger" role="listitem">
-            <span className="ws-fms-n8n-node-badge">Trigger</span>
-            <strong>Form submitted</strong>
-            <span className="ws-fms-n8n-node-sub">Starts the job</span>
+          <div className="ws-fms-n8n-segment" role="listitem">
+            <div className="ws-fms-n8n-node ws-fms-n8n-trigger">
+              <span className="ws-fms-n8n-node-badge">Trigger</span>
+              <strong>Form submitted</strong>
+              <span className="ws-fms-n8n-node-sub">Starts the job</span>
+            </div>
+            <N8nConnector
+              showAdd={canWire}
+              onAdd={() => onInsertStepAt?.(0)}
+            />
           </div>
 
           {steps.map((step, index) => (
             <div key={step.id} className="ws-fms-n8n-segment" role="listitem">
-              <div className="ws-fms-n8n-edge" aria-hidden>
-                <ArrowRight size={18} />
-              </div>
               <div
-                role={editMode && !readOnly ? "button" : undefined}
-                tabIndex={editMode && !readOnly ? 0 : undefined}
+                role={!readOnly ? "button" : undefined}
+                tabIndex={!readOnly ? 0 : undefined}
                 className={`ws-fms-n8n-node ws-fms-n8n-step${
                   selectedStepId === step.id ? " is-selected" : ""
-                }${editMode && !readOnly ? " is-editable" : ""}`}
-                onClick={() => editMode && !readOnly && onSelectStep?.(step.id)}
+                }${!readOnly ? " is-editable" : ""}`}
+                onClick={() => !readOnly && onSelectStep?.(step.id)}
                 onKeyDown={(event) => {
-                  if (!editMode || readOnly) {
+                  if (readOnly) {
                     return;
                   }
                   if (event.key === "Enter" || event.key === " ") {
@@ -113,17 +120,14 @@ export function FmsN8nFlowView({
                 <div className="ws-fms-n8n-node-top">
                   <span className="ws-fms-n8n-node-badge">Step {index + 1}</span>
                   <strong>{step.stepName.trim() || `Step ${index + 1}`}</strong>
-                  {step.ownerRoleLabel ? (
-                    <span className="ws-fms-n8n-node-role">{step.ownerRoleLabel}</span>
-                  ) : null}
                 </div>
                 <div className="ws-fms-n8n-meta">
                   <span>
-                    <User size={12} aria-hidden />
+                    <User size={11} aria-hidden />
                     {ownerName(step, members)}
                   </span>
                   <span>
-                    <Clock size={12} aria-hidden />
+                    <Clock size={11} aria-hidden />
                     {tatLabel(step)}
                   </span>
                 </div>
@@ -133,17 +137,16 @@ export function FmsN8nFlowView({
                   </p>
                 ) : null}
               </div>
+              <N8nConnector
+                showAdd={canWire}
+                onAdd={() => onInsertStepAt?.(index + 1)}
+              />
             </div>
           ))}
 
-          <div className="ws-fms-n8n-segment" role="listitem">
-            <div className="ws-fms-n8n-edge" aria-hidden>
-              <ArrowRight size={18} />
-            </div>
-            <div className="ws-fms-n8n-node ws-fms-n8n-end">
-              <span className="ws-fms-n8n-node-badge is-end">End</span>
-              <strong>Job complete</strong>
-            </div>
+          <div className="ws-fms-n8n-node ws-fms-n8n-end" role="listitem">
+            <span className="ws-fms-n8n-node-badge is-end">End</span>
+            <strong>Job complete</strong>
           </div>
         </div>
       </div>
