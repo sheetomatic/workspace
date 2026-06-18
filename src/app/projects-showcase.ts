@@ -110,4 +110,29 @@ export const clientProjects: ClientProject[] = [
     description:
       "Order to delivery for wedding, pre-wedding, anniversary, and birthday video projects.",
   },
+  {
+    client: "Kavlin Construction",
+    location: "Dhamtari",
+    useCase: "Prefab / PEB Building",
+    description:
+      "CRM with validation workflows and quotation systems for prefab and PEB project sales.",
+  },
+  {
+    client: "Soha Homes",
+    location: "Raipur",
+    useCase: "Real Estate CRM",
+    description: "Lead tracking, site visits, and follow-up for home buyers and projects.",
+  },
+  {
+    client: "Shanti Honda",
+    location: "Raigarh",
+    useCase: "Daily Reporting Dashboard",
+    description: "Daily sales, service, and outlet performance reporting for dealership ops.",
+  },
+  {
+    client: "Shanti Industries",
+    location: "Raipur",
+    useCase: "CRM & Inventory",
+    description: "Customer pipeline linked to stock movement and order fulfilment on Sheets.",
+  },
 ];
