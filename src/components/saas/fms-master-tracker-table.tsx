@@ -240,16 +240,17 @@ export function FmsMasterTrackerTable({
                           : "";
 
                     function openTask() {
-                      if (!isMine) {
+                      if (!isMine || !state) {
                         return;
                       }
+                      const stepState = state;
                       setActiveTask({
                         meta: stepMeta(block, step, stepIndex, ownerName),
                         canComplete: true,
                         stepState: {
-                          id: state.id,
-                          status: state.status,
-                          ownerUserId: state.ownerUserId,
+                          id: stepState.id,
+                          status: stepState.status,
+                          ownerUserId: stepState.ownerUserId,
                           step: {
                             stepName: step.stepName,
                             allowMarkDone: step.allowMarkDone,
