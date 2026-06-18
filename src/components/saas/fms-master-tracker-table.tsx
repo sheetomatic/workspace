@@ -164,18 +164,24 @@ export function FmsMasterTrackerTable({
     <div className="ws-fms-tracker-scroll">
       <table className="ws-fms-tracker-table">
         <thead>
-          <tr className="ws-fms-tracker-row-lead">
-            <th className="ws-fms-tracker-band is-route">Route</th>
+          <tr className="ws-fms-tracker-row-steps">
             <th
-              colSpan={columns.length + 1}
-              className="ws-fms-tracker-band is-lead"
-            >
-              Lead / intake
+              rowSpan={2}
+              className="ws-fms-tracker-route-col is-snap"
+              aria-label="Route snapshot"
+            />
+            <th rowSpan={2} className="ws-fms-tracker-lead-col is-label">
+              Lead
             </th>
+            {columns.map((field) => (
+              <th key={field.id} rowSpan={2} className="ws-fms-tracker-lead-col">
+                {field.label}
+              </th>
+            ))}
             {block.steps.map((step, index) => (
               <th key={step.id} colSpan={4} className="ws-fms-tracker-band is-step">
                 <div className="ws-fms-tracker-step-head">
-                  <span>Step {index + 1}</span>
+                  <strong className="ws-fms-tracker-step-name">{step.stepName}</strong>
                   <FmsStepManagePopover
                     compact
                     showEditLink={showEditLink}
@@ -183,24 +189,22 @@ export function FmsMasterTrackerTable({
                     meta={stepMeta(block, step, index)}
                   />
                 </div>
-                <strong className="ws-fms-tracker-step-name">{step.stepName}</strong>
+                <p className="ws-fms-tracker-step-doer">
+                  {step.roleLabel ??
+                    step.defaultOwner?.name ??
+                    step.defaultOwner?.email.split("@")[0] ??
+                    "Unassigned"}
+                </p>
               </th>
             ))}
           </tr>
           <tr className="ws-fms-tracker-row-sub">
-            <th className="ws-fms-tracker-route-col">Snapshot</th>
-            <th className="ws-fms-tracker-lead-col is-label">Lead</th>
-            {columns.map((field) => (
-              <th key={field.id} className="ws-fms-tracker-lead-col">
-                {field.label}
-              </th>
-            ))}
             {block.steps.map((step) => (
               <Fragment key={step.id}>
-                <th className="ws-fms-tracker-pas is-planned">Planned</th>
-                <th className="ws-fms-tracker-pas is-actual">Actual</th>
-                <th className="ws-fms-tracker-pas is-delay">Delay</th>
-                <th className="ws-fms-tracker-pas is-status">Status</th>
+                <th className="ws-fms-tracker-pas is-planned is-centered">Planned</th>
+                <th className="ws-fms-tracker-pas is-actual is-centered">Actual</th>
+                <th className="ws-fms-tracker-pas is-delay is-centered">Delay</th>
+                <th className="ws-fms-tracker-pas is-status is-centered">Status</th>
               </Fragment>
             ))}
           </tr>
@@ -263,10 +267,10 @@ export function FmsMasterTrackerTable({
                   if (!state) {
                     return (
                       <Fragment key={step.id}>
-                        <td className="ws-fms-tracker-pas">-</td>
-                        <td className="ws-fms-tracker-pas">-</td>
-                        <td className="ws-fms-tracker-pas">-</td>
-                        <td className="ws-fms-tracker-pas">-</td>
+                        <td className="ws-fms-tracker-pas is-centered">-</td>
+                        <td className="ws-fms-tracker-pas is-centered">-</td>
+                        <td className="ws-fms-tracker-pas is-centered">-</td>
+                        <td className="ws-fms-tracker-pas is-centered">-</td>
                       </Fragment>
                     );
                   }
@@ -302,19 +306,21 @@ export function FmsMasterTrackerTable({
 
                   return (
                     <Fragment key={step.id}>
-                      <td className="ws-fms-tracker-pas is-planned">
+                      <td className="ws-fms-tracker-pas is-planned is-centered">
                         {formatCellDate(plannedAt)}
                       </td>
-                      <td className={`ws-fms-tracker-pas is-actual ${actualClass}`}>
+                      <td
+                        className={`ws-fms-tracker-pas is-actual is-centered ${actualClass}`}
+                      >
                         {formatCellDate(actualAt)}
                       </td>
                       <td
-                        className={`ws-fms-tracker-pas is-delay${delayLabel ? " is-late" : ""}`}
+                        className={`ws-fms-tracker-pas is-delay is-centered${delayLabel ? " is-late" : ""}`}
                       >
                         {delayLabel ?? (state.status === "PENDING" ? "-" : "None")}
                       </td>
                       <td
-                        className={`ws-fms-tracker-pas is-status${isMine ? " is-actionable" : ""}`}
+                        className={`ws-fms-tracker-pas is-status is-centered${isMine ? " is-actionable" : ""}`}
                       >
                         <FmsStatusBadge status={state.status} />
                       </td>

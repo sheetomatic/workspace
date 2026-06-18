@@ -2,6 +2,8 @@ import type { FmsFormFieldType, FmsSlaType } from "@prisma/client";
 
 export type FmsFieldWidth = "half" | "full";
 
+export type FmsPlanMode = "AUTO_TAT_ALL" | "ON_PREV_ACTUAL";
+
 export type FmsAlertConfig = {
   whatsappEnabled: boolean;
   emailEnabled: boolean;
@@ -10,6 +12,7 @@ export type FmsAlertConfig = {
   dueComingDaysBefore: number;
   onSameDay: boolean;
   onOverdue: boolean;
+  planMode: FmsPlanMode;
 };
 
 export const DEFAULT_FMS_ALERT_CONFIG: FmsAlertConfig = {
@@ -20,6 +23,7 @@ export const DEFAULT_FMS_ALERT_CONFIG: FmsAlertConfig = {
   dueComingDaysBefore: 1,
   onSameDay: true,
   onOverdue: true,
+  planMode: "AUTO_TAT_ALL",
 };
 
 export function parseAlertConfig(raw: unknown): FmsAlertConfig {
@@ -39,6 +43,8 @@ export function parseAlertConfig(raw: unknown): FmsAlertConfig {
         : DEFAULT_FMS_ALERT_CONFIG.dueComingDaysBefore,
     onSameDay: record.onSameDay !== false,
     onOverdue: record.onOverdue !== false,
+    planMode:
+      record.planMode === "ON_PREV_ACTUAL" ? "ON_PREV_ACTUAL" : "AUTO_TAT_ALL",
   };
 }
 

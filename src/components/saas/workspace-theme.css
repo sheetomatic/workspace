@@ -17311,6 +17311,75 @@ body:has(.workspace-app.saas-app) {
   text-transform: none;
   letter-spacing: normal;
   color: var(--sf-text);
+  text-align: center;
+}
+
+.workspace-app .ws-fms-tracker-step-doer {
+  margin: 4px 0 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-align: center;
+  color: #014486;
+}
+
+.workspace-app .ws-fms-tracker-pas.is-centered,
+.workspace-app .ws-fms-tracker-table td.ws-fms-tracker-pas {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.workspace-app .ws-fms-tracker-pas.is-status.is-centered {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.workspace-app .ws-fms-tracker-route-col.is-snap {
+  min-width: 148px;
+  width: 148px;
+  background: #f0f6ff;
+}
+
+.workspace-app .ws-fms-jf-planning {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--sf-card-border);
+  border-radius: 8px;
+  background: #fafaf9;
+}
+
+.workspace-app .ws-fms-jf-planning-options {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.workspace-app .ws-fms-jf-planning-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--sf-card-border);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.workspace-app .ws-fms-jf-planning-option input {
+  margin-top: 3px;
+}
+
+.workspace-app .ws-fms-jf-planning-option strong {
+  display: block;
+  font-size: 0.8125rem;
+}
+
+.workspace-app .ws-fms-jf-planning-option small {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: var(--sf-text-secondary);
+  line-height: 1.35;
 }
 
 .workspace-app .ws-fms-tracker-row-sub th {

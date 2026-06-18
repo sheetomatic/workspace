@@ -11,7 +11,6 @@ import { fmsInitialState } from "@/lib/fms-action-state";
 import {
   parseHolidayDates,
   parseAlertConfig,
-  DEFAULT_FMS_ALERT_CONFIG,
   type FmsAlertConfig,
   type FmsCaptureField,
   type FmsSlaConfig,
@@ -431,6 +430,55 @@ export function FmsTemplateBuilder({
                 ))
               )}
             </div>
+
+            <section className="ws-fms-jf-planning">
+              <h3>Plan dates</h3>
+              <p className="ws-fms-muted">
+                Choose how planned due dates appear on the live pipeline grid.
+              </p>
+              <div className="ws-fms-jf-planning-options">
+                <label className="ws-fms-jf-planning-option">
+                  <input
+                    checked={alertConfig.planMode === "AUTO_TAT_ALL"}
+                    name="planMode"
+                    type="radio"
+                    onChange={() =>
+                      setAlertConfig((current) => ({
+                        ...current,
+                        planMode: "AUTO_TAT_ALL",
+                      }))
+                    }
+                  />
+                  <span>
+                    <strong>Auto plan from TAT (default)</strong>
+                    <small>
+                      When the first step is done, plan all remaining steps using
+                      each step TAT.
+                    </small>
+                  </span>
+                </label>
+                <label className="ws-fms-jf-planning-option">
+                  <input
+                    checked={alertConfig.planMode === "ON_PREV_ACTUAL"}
+                    name="planMode"
+                    type="radio"
+                    onChange={() =>
+                      setAlertConfig((current) => ({
+                        ...current,
+                        planMode: "ON_PREV_ACTUAL",
+                      }))
+                    }
+                  />
+                  <span>
+                    <strong>Plan on previous actual</strong>
+                    <small>
+                      Show the next step planned date only after the previous
+                      step actual time is recorded.
+                    </small>
+                  </span>
+                </label>
+              </div>
+            </section>
 
             <section className="ws-fms-jf-holidays">
             <h3>Holidays</h3>

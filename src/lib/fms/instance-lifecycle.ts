@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { notifyFmsStepAssigned } from "@/lib/fms/notify-step-assigned";
 import { computePlannedAt, computeDelayMinutes } from "@/lib/fms/sla";
 import {
+  parseAlertConfig,
   parseHolidayDates,
   type FmsSlaConfig,
   type FmsWorkingDaysConfig,
@@ -42,12 +43,48 @@ export function buildReferenceLabel(
   return `Job ${new Date().toLocaleString("en-IN")}`;
 }
 
+async function planAllStepsFromAnchor(
+  instance: InstanceWithPipeline,
+  startIndex: number,
+  anchor: Date,
+) {
+  const workingDays = workingDaysFromTemplate(instance.template);
+  const steps = instance.template.steps;
+  let cursor = anchor;
+  const plannedByStateId = new Map<string, Date | null>();
+
+  for (let index = startIndex; index < steps.length; index += 1) {
+    const step = steps[index]!;
+    const state = instance.stepStates.find((item) => item.stepId === step.id);
+    if (!state || state.status !== "PENDING") {
+      continue;
+    }
+    const plannedAt = computePlannedAt(
+      step.slaType,
+      step.slaConfig as FmsSlaConfig,
+      cursor,
+      workingDays,
+    );
+    if (plannedAt) {
+      cursor = plannedAt;
+    }
+    plannedByStateId.set(state.id, plannedAt);
+    await prisma.fmsStepState.update({
+      where: { id: state.id },
+      data: { plannedAt },
+    });
+  }
+
+  return plannedByStateId;
+}
+
 async function advancePipelineAfterStep(params: {
   instance: InstanceWithPipeline;
   currentStepId: string;
   completedAt: Date;
 }) {
   const { instance, currentStepId, completedAt } = params;
+  const planMode = parseAlertConfig(instance.template.alertConfig).planMode;
   const currentIndex = instance.template.steps.findIndex(
     (s) => s.id === currentStepId,
   );
@@ -55,13 +92,48 @@ async function advancePipelineAfterStep(params: {
 
   if (nextStep) {
     const workingDays = workingDaysFromTemplate(instance.template);
-    const plannedAt = computePlannedAt(
-      nextStep.slaType,
-      nextStep.slaConfig as FmsSlaConfig,
-      completedAt,
-      workingDays,
-    );
     const nextState = instance.stepStates.find((s) => s.stepId === nextStep.id);
+    let plannedByStateId = new Map<string, Date | null>();
+
+    if (planMode === "AUTO_TAT_ALL" && currentIndex === 0) {
+      plannedByStateId = await planAllStepsFromAnchor(
+        instance,
+        currentIndex + 1,
+        completedAt,
+      );
+    }
+
+    let plannedAt: Date | null;
+    if (planMode === "ON_PREV_ACTUAL") {
+      plannedAt = computePlannedAt(
+        nextStep.slaType,
+        nextStep.slaConfig as FmsSlaConfig,
+        completedAt,
+        workingDays,
+      );
+    } else if (nextState) {
+      const persisted = await prisma.fmsStepState.findUnique({
+        where: { id: nextState.id },
+        select: { plannedAt: true },
+      });
+      plannedAt =
+        plannedByStateId.get(nextState.id) ??
+        persisted?.plannedAt ??
+        computePlannedAt(
+          nextStep.slaType,
+          nextStep.slaConfig as FmsSlaConfig,
+          completedAt,
+          workingDays,
+        );
+    } else {
+      plannedAt = computePlannedAt(
+        nextStep.slaType,
+        nextStep.slaConfig as FmsSlaConfig,
+        completedAt,
+        workingDays,
+      );
+    }
+
     if (nextState) {
       await prisma.fmsStepState.update({
         where: { id: nextState.id },
