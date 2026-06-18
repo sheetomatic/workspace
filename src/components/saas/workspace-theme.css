@@ -16873,7 +16873,7 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-fms-journey-row-track {
   display: flex;
-  align-items: stretch;
+  align-items: flex-start;
   gap: 12px;
   overflow-x: auto;
   padding: 8px 4px 16px;
@@ -16890,14 +16890,6 @@ body:has(.workspace-app.saas-app) {
   min-width: 220px;
   max-width: 280px;
   padding: 0 6px;
-}
-
-.workspace-app .ws-fms-journey-row-node.is-stuck {
-  z-index: 2;
-}
-
-.workspace-app .ws-fms-journey-row-node.is-form-open {
-  z-index: 3;
 }
 
 .workspace-app .ws-fms-journey-row-wire {
@@ -16954,6 +16946,8 @@ body:has(.workspace-app.saas-app) {
   border-radius: 8px;
   background: #fff;
   min-height: 180px;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .workspace-app .ws-fms-journey-row-node.is-lead .ws-fms-journey-row-marker {
@@ -17118,6 +17112,29 @@ body:has(.workspace-app.saas-app) {
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid var(--sf-card-border);
+}
+
+.workspace-app .ws-fms-journey-row-complete-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+  padding: 12px 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #f3f9ff;
+}
+
+.workspace-app .ws-fms-journey-row-complete-label {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-fms-journey-row-complete-label strong {
+  color: var(--sf-text);
 }
 
 .workspace-app .ws-fms-journey-row-wait {

@@ -132,6 +132,9 @@ export function FmsInstanceJourneyRow({
   const allDone =
     steps.length > 0 && steps.every((step) => step.status === "DONE");
   const completedCount = steps.filter((step) => step.status === "DONE").length;
+  const activeCompleteStep = completePanel
+    ? steps.find((step) => step.id === completePanel.stepState.id)
+    : null;
   const taskModalOpen = Boolean(
     formOpenForStepId &&
       completePanel?.stepState.id === formOpenForStepId &&
@@ -208,8 +211,6 @@ export function FmsInstanceJourneyRow({
             step.status === "IN_PROGRESS" &&
             step.plannedAt &&
             (urgency === "same-day" || urgency === "overdue");
-          const showCompleteForm =
-            taskModalOpen && completePanel?.stepState.id === step.id;
           const prevStatus = index === 0 ? "lead" : steps[index - 1]!.status;
           const wireClass = connectorClass(
             prevStatus,
@@ -221,7 +222,7 @@ export function FmsInstanceJourneyRow({
           return (
             <article
               key={step.id}
-              className={`ws-fms-journey-row-node ${stateClass}${showCompleteForm ? " is-form-open" : ""}`}
+              className={`ws-fms-journey-row-node ${stateClass}`}
               role="listitem"
             >
               <span
@@ -300,28 +301,6 @@ export function FmsInstanceJourneyRow({
                   </ul>
                 ) : null}
 
-                {isStuck && completePanel?.stepState.id === step.id ? (
-                  <div className="ws-fms-journey-row-actions">
-                    {!showCompleteForm && completePanel.canComplete ? (
-                      <button
-                        className="btn-primary ws-sf-btn-primary ws-fms-mark-done-btn"
-                        type="button"
-                        onClick={() => setFormOpenForStepId(step.id)}
-                      >
-                        <CheckCircle2 aria-hidden size={16} />
-                        Mark done
-                      </button>
-                    ) : null}
-                    {!showCompleteForm && !completePanel.canComplete ? (
-                      <p className="ws-fms-muted ws-fms-journey-row-wait">
-                        {!completePanel.stepState.ownerUserId
-                          ? "No doer assigned. Ask a manager to reassign this stop."
-                          : "Only the assigned doer can mark this stop done."}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
-
               </div>
             </article>
           );
@@ -346,6 +325,30 @@ export function FmsInstanceJourneyRow({
           <span className="ws-fms-journey-row-end-label">Complete</span>
         </div>
       </div>
+
+      {activeCompleteStep?.status === "IN_PROGRESS" && completePanel ? (
+        <div className="ws-fms-journey-row-complete-bar">
+          <p className="ws-fms-journey-row-complete-label">
+            Your stop: <strong>{activeCompleteStep.step.stepName}</strong>
+          </p>
+          {completePanel.canComplete ? (
+            <button
+              className="btn-primary ws-sf-btn-primary ws-fms-mark-done-btn"
+              type="button"
+              onClick={() => setFormOpenForStepId(activeCompleteStep.id)}
+            >
+              <CheckCircle2 aria-hidden size={16} />
+              Mark done
+            </button>
+          ) : (
+            <p className="ws-fms-muted ws-fms-journey-row-wait">
+              {!completePanel.stepState.ownerUserId
+                ? "No doer assigned. Ask a manager to reassign this stop."
+                : "Only the assigned doer can mark this stop done."}
+            </p>
+          )}
+        </div>
+      ) : null}
     </div>
     {taskModalOpen && completePanel ? (
       <FmsStepTaskModal
