@@ -67,7 +67,7 @@ export function FmsPerformanceFilters({
     <div
       className={`ws-task-filter-bar ws-fms-perf-filter-bar${pending ? " is-loading" : ""}`}
     >
-      <div className="ws-filter-layout ws-filter-layout-compact">
+      <div className="ws-fms-perf-filter-layout">
         <div className="ws-filter-group">
           <span className="ws-filter-group-label">FMS wise</span>
           <div className="ws-filter-select-wrap">
