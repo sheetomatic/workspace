@@ -12,14 +12,14 @@ const FMS_ATTACHMENT_ACCEPT =
 
 type FmsStepInlineUploadProps = {
   stepStateId: string;
-  allowUpload: boolean;
   canUpload: boolean;
+  compact?: boolean;
 };
 
 export function FmsStepInlineUpload({
   stepStateId,
-  allowUpload,
   canUpload,
+  compact = false,
 }: FmsStepInlineUploadProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -40,7 +40,7 @@ export function FmsStepInlineUpload({
     router.refresh();
   }, [state.ok, router]);
 
-  if (!allowUpload || !canUpload) {
+  if (!canUpload) {
     return null;
   }
 
@@ -48,18 +48,24 @@ export function FmsStepInlineUpload({
     <form
       ref={formRef}
       action={formAction}
-      className="ws-fms-journey-inline-upload"
+      className={`ws-fms-journey-inline-upload${compact ? " is-compact" : ""}`}
       encType="multipart/form-data"
     >
       <input type="hidden" name="stepStateId" value={stepStateId} />
       <label className="ws-fms-journey-inline-upload-label">
         <Paperclip aria-hidden size={14} />
-        <span className="ws-fms-journey-inline-upload-copy">
-          <strong>Upload file</strong>
-          <small>
-            Images, videos, or documents (max {formatFmsAttachmentMaxSize()})
-          </small>
-        </span>
+        {compact ? (
+          <span className="ws-fms-journey-inline-upload-copy is-compact">
+            <strong>Upload file</strong>
+          </span>
+        ) : (
+          <span className="ws-fms-journey-inline-upload-copy">
+            <strong>Upload file</strong>
+            <small>
+              Images, videos, or documents (max {formatFmsAttachmentMaxSize()})
+            </small>
+          </span>
+        )}
         <input
           ref={fileInputRef}
           accept={FMS_ATTACHMENT_ACCEPT}
@@ -78,6 +84,11 @@ export function FmsStepInlineUpload({
         <Upload aria-hidden size={14} />
         {pending ? "Uploading..." : "Upload"}
       </button>
+      {compact ? (
+        <span className="ws-fms-journey-inline-upload-hint">
+          Max {formatFmsAttachmentMaxSize()}
+        </span>
+      ) : null}
       {state.message ? (
         <p
           className={

@@ -21,7 +21,7 @@ function normalizeStep(step: FmsTemplateStepDraft) {
     slaType: step.slaType,
     slaConfig: step.slaConfig ?? {},
     allowMarkDone: step.allowMarkDone ?? true,
-    allowUpload: step.allowUpload ?? false,
+    allowUpload: step.allowUpload ?? true,
     allowNotes: step.allowNotes ?? true,
     captureFields: step.captureFields ?? [],
   };

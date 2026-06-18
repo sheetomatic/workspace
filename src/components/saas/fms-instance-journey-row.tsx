@@ -303,13 +303,35 @@ export function FmsInstanceJourneyRow({
                   </p>
                 ) : null}
                 {step.attachments.length > 0 ? (
-                  <ul className="ws-fms-attachments">
+                  <ul className="ws-fms-journey-attachments">
                     {step.attachments.map((file) => (
-                      <li key={file.id}>
-                        {file.fileName} ({Math.round(file.fileSize / 1024)} KB)
+                      <li key={file.id} className="ws-fms-journey-attachment-item">
+                        <a
+                          className="ws-fms-journey-attachment-link"
+                          href={`/api/fms/attachments/${file.id}`}
+                          rel="noreferrer"
+                          target="_blank"
+                          title={file.fileName}
+                        >
+                          {file.fileName}
+                        </a>
+                        <span className="ws-fms-journey-attachment-size">
+                          {Math.round(file.fileSize / 1024)} KB
+                        </span>
                       </li>
                     ))}
                   </ul>
+                ) : null}
+                {isStuck &&
+                completePanel?.stepState.id === step.id &&
+                completePanel.canComplete ? (
+                  <div className="ws-fms-journey-row-card-upload">
+                    <FmsStepInlineUpload
+                      compact
+                      canUpload={completePanel.canComplete}
+                      stepStateId={completePanel.stepState.id}
+                    />
+                  </div>
                 ) : null}
 
               </div>
@@ -344,7 +366,6 @@ export function FmsInstanceJourneyRow({
           </p>
           <div className="ws-fms-journey-row-complete-actions">
             <FmsStepInlineUpload
-              allowUpload={completePanel.stepState.step.allowUpload}
               canUpload={completePanel.canComplete}
               stepStateId={completePanel.stepState.id}
             />

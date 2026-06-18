@@ -748,10 +748,6 @@ export async function uploadFmsStepAttachmentAction(
       return { ok: false, message: "This step is not active." };
     }
 
-    if (!stepState.step.allowUpload) {
-      return { ok: false, message: "Uploads are not allowed for this step." };
-    }
-
     if (!canCompleteFmsStep(user, stepState)) {
       if (!stepState.ownerUserId) {
         return {
