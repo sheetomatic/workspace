@@ -141,7 +141,15 @@ async function replyText(
     aiSourceTitles?: string[];
   },
 ) {
-  await sendWhatsAppText({ organizationId, toPhone, body });
+  const result = await sendWhatsAppText({ organizationId, toPhone, body });
+  if (!result.sent) {
+    console.error(
+      "[whatsapp-bot] outbound text failed",
+      result.reason,
+      organizationId,
+      toPhone.slice(-4),
+    );
+  }
   await recordWaOutboundMessage({
     organizationId,
     toPhone,
@@ -196,12 +204,15 @@ async function sendMainMenu(
     0,
     6,
   );
+  const fallbackText = delegationMenuFallbackText(userName, role);
+
+  await replyText(org.id, toPhone, fallbackText);
 
   await sendWhatsAppInteractiveWithFallback({
     organizationId: org.id,
     toPhone,
     interactive: wrapInteractive(buildMainMenuList(userName, items, role)),
-    fallbackText: delegationMenuFallbackText(userName, role),
+    fallbackText,
   });
 }
 
@@ -1085,6 +1096,20 @@ async function handleCustomerMessage(
       return;
     }
 
+    const offlineBody = extractInboundBody(message)?.trim();
+    if (offlineBody) {
+      const offlineReply = isWhatsAppMenuCommand(offlineBody)
+        ? [
+            `Hi! Thanks for messaging *${org.name}*.`,
+            "",
+            "Our WhatsApp AI is not live yet. A team member will reply here soon.",
+            "",
+            "For *Task* on WhatsApp: save your mobile number in Sheetomatic *Team* settings, then reply *menu* from that number.",
+          ].join("\n")
+        : `Thanks for messaging *${org.name}*. Our team will get back to you shortly.`;
+      await replyText(org.id, message.from, offlineReply);
+    }
+
     await markEvent(message.id, {
       organizationId: org.id,
       fromPhone: message.from,
@@ -1220,6 +1245,13 @@ async function handleCustomerMessage(
       messageType: message.type,
       status: "lead_human_only",
     });
+    await replyText(
+      org.id,
+      message.from,
+      isWhatsAppMenuCommand(customerMessage)
+        ? `Hi! A team member will reply here shortly. Reply *menu* to browse topics while you wait.`
+        : "Thanks for your message. A team member will reply here shortly.",
+    );
     return;
   }
 
@@ -1227,6 +1259,22 @@ async function handleCustomerMessage(
   const customerShortcut = mapCustomerTextShortcut(command);
   if (customerShortcut) {
     await handleCustomerMenuAction(org, message, customerShortcut);
+    return;
+  }
+
+  if (isWhatsAppGreeting(customerMessage)) {
+    await replyText(
+      org.id,
+      message.from,
+      `Hi${waContact?.name ? ` ${waContact.name}` : ""}! How can we help you today? Reply *menu* to browse topics.`,
+    );
+    await sendCustomerKnowledgeMenu(org, message.from);
+    await markEvent(message.id, {
+      organizationId: org.id,
+      fromPhone: message.from,
+      messageType: message.type,
+      status: "kb_menu_sent",
+    });
     return;
   }
 
@@ -1415,6 +1463,22 @@ async function handleTeamMemberMessage(
 
   if (message.type === "text" && message.text?.body) {
     const rawText = message.text.body.trim();
+
+    if (isWhatsAppMenuCommand(rawText)) {
+      await handleMenuAction(WA_MENU.MAIN_MENU, {
+        organizationId: org.id,
+        organizationName: org.name,
+        organizationSlug: member.organizationSlug,
+        fromPhone: message.from,
+        userName: member.userName,
+        userId: member.userId,
+        role: member.role,
+        externalId: message.id,
+        messageType: message.type,
+      });
+      return;
+    }
+
     const command = normalizeWhatsAppCommand(rawText);
     const taskCommand = parseTaskTextCommand(rawText);
     if (
@@ -1469,7 +1533,9 @@ async function handleTeamMemberMessage(
       await replyText(
         org.id,
         message.from,
-        "Add a few more words to assign a task, send a voice note, or reply *menu*.",
+        isWhatsAppGreeting(rawText)
+          ? delegationMenuFallbackText(member.userName, member.role)
+          : "Add a few more words to assign a task, send a voice note, or reply *menu*.",
       );
       return;
     }

@@ -13,11 +13,13 @@ const GREETING_EXACT = new Set([
 
 const GREETING_PREFIX = /^(hi|hello|hey|namaste)\b/;
 
-/** Normalize free-text WhatsApp commands (trim, lowercase, strip edge punctuation). */
+/** Strip zero-width chars and normalize unicode before command matching. */
 export function normalizeWhatsAppCommand(text: string) {
   return text
     .trim()
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
     .toLowerCase()
+    .normalize("NFKC")
     .replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
 }
 

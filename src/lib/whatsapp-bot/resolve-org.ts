@@ -70,7 +70,16 @@ function phonesMatch(stored: string | null | undefined, incoming: string) {
   }
   const a = normalizeWhatsAppPhone(stored);
   const b = normalizeWhatsAppPhone(incoming);
-  return Boolean(a && b && a === b);
+  if (!a || !b) {
+    return false;
+  }
+  if (a === b) {
+    return true;
+  }
+  if (a.length >= 10 && b.length >= 10 && a.slice(-10) === b.slice(-10)) {
+    return true;
+  }
+  return false;
 }
 
 export async function resolveDelegatorByPhone(
