@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ParsedTaskDraft } from "@/lib/integrations/openai";
 import { Mic, MicOff } from "lucide-react";
 import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
+import { isWhatsAppGreeting } from "@/lib/whatsapp-bot/normalize-command";
 
 type Props = {
   onDraft: (draft: ParsedTaskDraft) => void;
@@ -12,6 +13,9 @@ type Props = {
 
 function isAiPanelErrorMessage(message: string) {
   const lower = message.toLowerCase();
+  if (lower.startsWith("hi!")) {
+    return false;
+  }
   return (
     lower.includes("quota") ||
     lower.includes("billing") ||
@@ -43,8 +47,14 @@ export function TaskAiPanel({ onDraft, compact = false }: Props) {
 
   async function parseInstruction(text: string) {
     const trimmed = text.trim();
+    if (isWhatsAppGreeting(trimmed)) {
+      setMessage(
+        "Hi! Describe the task you want to create, for example: Assign payment follow-up to Amit today at 5pm with WhatsApp reminder.",
+      );
+      return false;
+    }
     if (trimmed.length < 8) {
-      setMessage("Add a few more words, then parse again.");
+      setMessage("Add a few more words describing the task, then parse again.");
       return false;
     }
 

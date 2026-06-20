@@ -12,7 +12,11 @@ import { mapOpenAiServiceError } from "@/lib/integrations/openai-messages";
 import { formatWhatsAppPhone, normalizeWhatsAppPhone } from "@/lib/phone";
 import { createDelegatedTaskFromDraft } from "@/lib/tasks/create-from-draft";
 import { formatTaskDue } from "@/lib/tasks";
-import { downloadWhatsAppMedia } from "@/lib/whatsapp-bot/media";
+import {
+  isWhatsAppGreeting,
+  isWhatsAppMenuCommand,
+  normalizeWhatsAppCommand,
+} from "@/lib/whatsapp-bot/normalize-command";
 import {
   buildDelegatePromptButtons,
   buildMainMenuList,
@@ -125,10 +129,6 @@ function extractMessages(payload: MetaWebhookPayload): {
   }
 
   return { phoneNumberId, messages };
-}
-
-function normalizeCommand(text: string) {
-  return text.trim().toLowerCase();
 }
 
 async function replyText(
@@ -585,47 +585,69 @@ function mapTextShortcut(
   command: string,
   role: import("@prisma/client").Role,
 ): WaMenuActionId | null {
-  if (
-    command === "menu" ||
-    command === "hi" ||
-    command === "hello" ||
-    command === "start"
-  ) {
+  if (isWhatsAppMenuCommand(command)) {
     return WA_MENU.MAIN_MENU;
   }
+
+  const normalized = normalizeWhatsAppCommand(command);
 
   const isManager = hasMinimumRole(role, "MANAGER");
 
   if (isManager) {
-    if (command === "1" || command === "delegate" || command === "assign" || command === "task") {
+    if (
+      normalized === "1" ||
+      normalized === "delegate" ||
+      normalized === "assign" ||
+      normalized === "task"
+    ) {
       return WA_MENU.DELEGATE_TASK;
     }
-    if (command === "2" || command === "my tasks" || command === "tasks" || command === "mytasks") {
+    if (
+      normalized === "2" ||
+      normalized === "my tasks" ||
+      normalized === "tasks" ||
+      normalized === "mytasks"
+    ) {
       return WA_MENU.MY_TASKS;
     }
-    if (command === "3" || command === "performance" || command === "stats" || command === "report") {
+    if (
+      normalized === "3" ||
+      normalized === "performance" ||
+      normalized === "stats" ||
+      normalized === "report"
+    ) {
       return WA_MENU.TEAM_PERFORMANCE;
     }
-    if (command === "4" || command === "team" || command === "members") {
+    if (normalized === "4" || normalized === "team" || normalized === "members") {
       return WA_MENU.TEAM_LIST;
     }
-    if (command === "5" || command === "help") {
+    if (normalized === "5" || normalized === "help") {
       return WA_MENU.HELP;
     }
-    if (command === "6" || command === "topics" || command === "videos") {
+    if (normalized === "6" || normalized === "topics" || normalized === "videos") {
       return WA_MENU.BROWSE_TOPICS;
     }
   } else {
-    if (command === "1" || command === "my tasks" || command === "tasks" || command === "mytasks") {
+    if (
+      normalized === "1" ||
+      normalized === "my tasks" ||
+      normalized === "tasks" ||
+      normalized === "mytasks"
+    ) {
       return WA_MENU.MY_TASKS;
     }
-    if (command === "2" || command === "performance" || command === "stats" || command === "report") {
+    if (
+      normalized === "2" ||
+      normalized === "performance" ||
+      normalized === "stats" ||
+      normalized === "report"
+    ) {
       return WA_MENU.TEAM_PERFORMANCE;
     }
-    if (command === "3" || command === "help") {
+    if (normalized === "3" || normalized === "help") {
       return WA_MENU.HELP;
     }
-    if (command === "4" || command === "topics" || command === "videos") {
+    if (normalized === "4" || normalized === "topics" || normalized === "videos") {
       return WA_MENU.BROWSE_TOPICS;
     }
   }
@@ -1201,7 +1223,7 @@ async function handleCustomerMessage(
     return;
   }
 
-  const command = normalizeCommand(customerMessage.trim());
+  const command = normalizeWhatsAppCommand(customerMessage.trim());
   const customerShortcut = mapCustomerTextShortcut(command);
   if (customerShortcut) {
     await handleCustomerMenuAction(org, message, customerShortcut);
@@ -1393,7 +1415,7 @@ async function handleTeamMemberMessage(
 
   if (message.type === "text" && message.text?.body) {
     const rawText = message.text.body.trim();
-    const command = normalizeCommand(rawText);
+    const command = normalizeWhatsAppCommand(rawText);
     const taskCommand = parseTaskTextCommand(rawText);
     if (
       await handleTaskTextCommand(member, taskCommand, {
@@ -1571,11 +1593,28 @@ async function runTaskPipeline(
     instruction: string;
   },
 ) {
+  const instruction = params.instruction.trim();
+  if (isWhatsAppGreeting(instruction) || instruction.length < 8) {
+    await markEvent(params.externalId, {
+      organizationId: delegator.organizationId,
+      fromPhone: params.fromPhone,
+      messageType: params.messageType,
+      status: "menu_sent",
+    });
+    await sendMainMenu(
+      { id: delegator.organizationId, name: delegator.organizationName },
+      params.fromPhone,
+      delegator.userName,
+      delegator.role,
+    );
+    return;
+  }
+
   const members = await listMemberHints(delegator.organizationId);
 
   let draft;
   try {
-    ({ draft } = await parseTaskFromInstruction(params.instruction, members));
+    ({ draft } = await parseTaskFromInstruction(instruction, members));
   } catch (error) {
     const raw = error instanceof Error ? error.message : "Parse failed";
     await markEvent(params.externalId, {

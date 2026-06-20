@@ -1,4 +1,8 @@
 import type { AiKnowledgeType } from "@prisma/client";
+import {
+  isWhatsAppMenuCommand,
+  normalizeWhatsAppCommand,
+} from "@/lib/whatsapp-bot/normalize-command";
 
 export type KnowledgeMenuItem = {
   id: string;
@@ -192,12 +196,9 @@ export function parseCustomerMenuAction(message: {
 
 export function mapCustomerTextShortcut(command: string) {
   if (
-    command === "menu" ||
-    command === "hi" ||
-    command === "hello" ||
-    command === "start" ||
-    command === "topics" ||
-    command === "help"
+    isWhatsAppMenuCommand(command) ||
+    normalizeWhatsAppCommand(command) === "topics" ||
+    normalizeWhatsAppCommand(command) === "help"
   ) {
     return WA_CUSTOMER_MENU.BROWSE_TOPICS;
   }
