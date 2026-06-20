@@ -14,6 +14,7 @@ import {
   toggleWhatsAppBotLive,
 } from "@/app/app/whatsapp/actions";
 import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
+import { SHEETOMATIC_WHATSAPP_PORTAL_URL } from "@/lib/integrations/redlava-portal";
 import type { WhatsAppGoLiveStatus } from "@/lib/whatsapp-go-live";
 
 function CopyField({ label, value }: { label: string; value: string }) {
@@ -47,27 +48,28 @@ export function WhatsAppGoLivePanel({ status }: { status: WhatsAppGoLiveStatus }
     messageId?: string;
   } | null>(null);
 
+  const portalHost = new URL(SHEETOMATIC_WHATSAPP_PORTAL_URL).host;
+
   const steps = [
     {
       id: "api",
       title: "Connect WhatsApp API",
-      description:
-        "Your business number is on RedLava (official Meta API). Open Settings and save your Integration API key + Phone ID.",
+      description: `Your business number uses the official Meta API via ${portalHost}. Open Settings and save your Integration API key + Phone ID.`,
       done: status.credentialsReady,
       note: status.phoneId
         ? `Phone ID ${status.phoneId}${status.businessPhone ? ` - ${status.businessPhone}` : ""}`
-        : "Save your RedLava API key and Phone ID in Settings",
+        : `Save your API key and Phone ID from ${portalHost} in Settings`,
     },
     {
       id: "webhook",
       title: "Register webhook",
       description:
-        "In RedLava or Meta WhatsApp settings, point inbound messages to Sheetomatic (not the wchatter URL).",
+        "In Sheetomatic WhatsApp or Meta settings, point inbound messages to the Sheetomatic callback URL below.",
       done: status.webhookReceived,
       note: status.webhookReceived
         ? "Inbound webhook received"
         : status.verifyTokenConfigured
-          ? "Point RedLava to the callback URL below — waiting for first message"
+          ? "Point webhook to the callback URL below - waiting for first message"
           : status.verifyTokenHint,
     },
     {
@@ -79,7 +81,7 @@ export function WhatsAppGoLivePanel({ status }: { status: WhatsAppGoLiveStatus }
       note:
         status.delegatorCount > 0
           ? `${status.delegatorCount} authorized number(s)`
-          : "Add WhatsApp numbers in Settings",
+          : "Add WhatsApp numbers in Team settings",
     },
   ];
 
@@ -111,8 +113,8 @@ export function WhatsAppGoLivePanel({ status }: { status: WhatsAppGoLiveStatus }
           </p>
           <h2>Connect WhatsApp and Go Live</h2>
           <p>
-            Official WhatsApp Business API via RedLava - no QR scan needed. Your
-            number is already connected; finish setup below and turn AI on.
+            Official WhatsApp Business API via Sheetomatic ({portalHost}) - no QR
+            scan needed. Finish setup below and turn AI on.
           </p>
         </div>
         <span
@@ -141,12 +143,12 @@ export function WhatsAppGoLivePanel({ status }: { status: WhatsAppGoLiveStatus }
       </ol>
 
       <div className="ws-go-live-webhook">
-        <h3>Webhook for RedLava / Meta</h3>
+        <h3>Webhook for Sheetomatic / Meta</h3>
         <CopyField label="Callback URL" value={status.webhookUrl} />
         <p className="ws-go-live-hint">
           Verify token: set <code>WHATSAPP_WEBHOOK_VERIFY_TOKEN</code> on Vercel,
-          then use the same string in Meta/RedLava webhook setup. Optional: add{" "}
-          <code>META_APP_SECRET</code> from your Meta app Basic settings.
+          then use the same string in Meta or {portalHost} webhook setup. Optional:
+          add <code>META_APP_SECRET</code> from your Meta app Basic settings.
         </p>
         {status.lastInboundAt ? (
           <p className="ws-go-live-hint ok">
@@ -154,6 +156,10 @@ export function WhatsAppGoLivePanel({ status }: { status: WhatsAppGoLiveStatus }
             {new Date(status.lastInboundAt).toLocaleString("en-IN")}
           </p>
         ) : null}
+        <p className="ws-go-live-hint">
+          Send test message delivers to <strong>your</strong> WhatsApp number from Team
+          profile (not another manager).
+        </p>
       </div>
 
       {status.blockers.length > 0 && !status.isLive ? (

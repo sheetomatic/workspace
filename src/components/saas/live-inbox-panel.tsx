@@ -281,7 +281,7 @@ export function LiveInboxPanel({
 
             {!webhookReceived ? (
               <p className="ws-inbox-alert is-warning">
-                Waiting for first inbound webhook. Point Meta/RedLava to your callback URL in{" "}
+                Waiting for first inbound webhook. Point Meta / Sheetomatic WhatsApp to your callback URL in{" "}
                 <Link href="/ai/app/settings#official-api">Settings</Link>, then send a test
                 message.
               </p>

@@ -8,8 +8,11 @@ import {
   AlertCircle,
 } from "lucide-react";
 import type { getCampaignRelatedSetup } from "@/lib/ai-module-data";
+import { SHEETOMATIC_WHATSAPP_PORTAL_URL } from "@/lib/integrations/redlava-portal";
 
 type SetupData = Awaited<ReturnType<typeof getCampaignRelatedSetup>>;
+
+const PORTAL_HOST = new URL(SHEETOMATIC_WHATSAPP_PORTAL_URL).host;
 
 function StatusPill({ ok, label }: { ok: boolean; label: string }) {
   return (
@@ -33,11 +36,11 @@ export function CampaignRelatedSetup({ data }: { data: SetupData }) {
       href: "/ai/app/settings",
       icon: Settings,
       title: "Settings",
-      subtitle: "RedLava API key, Phone ID, team numbers",
+      subtitle: `API key, Phone ID, and team numbers from ${PORTAL_HOST}`,
       status: data.settingsReady ? "Ready" : "Incomplete",
       ok: data.settingsReady,
       details: [
-        { ok: data.apiKeyReady, text: "RedLava API key saved" },
+        { ok: data.apiKeyReady, text: "Integration API key saved" },
         { ok: data.phoneIdReady, text: "Phone ID configured" },
         {
           ok: data.managerCount > 0,
@@ -111,7 +114,8 @@ export function CampaignRelatedSetup({ data }: { data: SetupData }) {
         </div>
         <div className="ai-campaign-provider">
           <span className="ai-campaign-provider-label">Provider</span>
-          <strong>RedLava</strong>
+          <strong>Sheetomatic WhatsApp</strong>
+          <span className="ai-campaign-provider-host">{PORTAL_HOST}</span>
           <StatusPill
             ok={data.canSend}
             label={data.canSend ? "Connected" : "Not configured"}

@@ -21,10 +21,7 @@ import {
   type WhatsAppTemplateVariable,
 } from "@/lib/whatsapp-templates";
 import { normalizeWhatsAppPhone } from "@/lib/phone";
-import {
-  listWhatsAppMembers,
-  resolveWorkspaceWhatsAppCredentials,
-} from "@/lib/whatsapp-settings";
+import { resolveWorkspaceWhatsAppCredentials } from "@/lib/whatsapp-settings";
 import { parseWhatsAppProviderField } from "@/lib/whatsapp-settings-form";
 import type { WhatsAppTemplateActionState } from "@/lib/whatsapp-template-types";
 
@@ -586,58 +583,42 @@ export async function sendWhatsAppConnectionTest(): Promise<WhatsAppTemplateActi
     return { ok: false, message: "Only admins can run connection tests." };
   }
 
-  const members = await listWhatsAppMembers(user.organizationId);
   const credentials = await resolveWorkspaceWhatsAppCredentials(user.organizationId);
   const { normalizeWhatsAppPhone, whatsAppPhonesEqual, formatWhatsAppPhone } =
     await import("@/lib/phone");
 
-  const eligible = members.filter((member) => {
-    const phone = member.phone?.trim();
-    if (!phone) {
-      return false;
-    }
-    if (
-      credentials.businessPhone &&
-      whatsAppPhonesEqual(phone, credentials.businessPhone)
-    ) {
-      return false;
-    }
-    return Boolean(normalizeWhatsAppPhone(phone));
+  const tester = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { name: true, phone: true },
   });
 
-  const target =
-    eligible.find((member) => hasMinimumRole(member.role, "MANAGER")) ??
-    eligible[0];
+  const testerPhone = tester?.phone?.trim() ?? "";
+  const normalizedTesterPhone = normalizeWhatsAppPhone(testerPhone);
 
-  if (!target?.phone) {
-    const businessFormatted = credentials.businessPhone
-      ? formatWhatsAppPhone(credentials.businessPhone)
-      : null;
-    if (
-      members.some(
-        (member) =>
-          member.phone?.trim() &&
-          credentials.businessPhone &&
-          whatsAppPhonesEqual(member.phone, credentials.businessPhone),
-      )
-    ) {
-      return {
-        ok: false,
-        message: [
-          "Your team WhatsApp number is the same as the business line",
-          businessFormatted ? `(${businessFormatted})` : "",
-          "— Meta cannot deliver API messages to your own business number.",
-          "",
-          "In Settings, add a personal mobile for a manager (different from the business line), then retry Send test message.",
-        ]
-          .filter(Boolean)
-          .join(" "),
-      };
-    }
-
+  if (!normalizedTesterPhone) {
     return {
       ok: false,
-      message: "Add a team WhatsApp number in Settings before testing.",
+      message:
+        "Add your personal WhatsApp number in Team settings before testing. The test is sent to you, not another team member.",
+    };
+  }
+
+  if (
+    credentials.businessPhone &&
+    whatsAppPhonesEqual(testerPhone, credentials.businessPhone)
+  ) {
+    const businessFormatted = formatWhatsAppPhone(credentials.businessPhone);
+    return {
+      ok: false,
+      message: [
+        "Your WhatsApp number is the same as the business line",
+        businessFormatted ? `(${businessFormatted})` : "",
+        "- Meta cannot deliver API messages to your own business number.",
+        "",
+        "Use a personal mobile number on your Team profile, then retry Send test message.",
+      ]
+        .filter(Boolean)
+        .join(" "),
     };
   }
 
@@ -647,11 +628,11 @@ export async function sendWhatsAppConnectionTest(): Promise<WhatsAppTemplateActi
   );
   const result = await sendWhatsAppText({
     organizationId: user.organizationId,
-    toPhone: target.phone,
+    toPhone: testerPhone,
     body: [
-      "Sheetomatic AI connection test",
+      "Sheetomatic WhatsApp connection test",
       "",
-      `If you received this, outbound WhatsApp via ${PORTAL_BRAND} is working.`,
+      `Hi ${tester?.name?.split(/\s+/)[0] ?? "there"}! If you received this, outbound WhatsApp via ${PORTAL_BRAND} is working.`,
       "Reply hi on the business number to test inbound task delegation.",
     ].join("\n"),
   });
@@ -665,7 +646,7 @@ export async function sendWhatsAppConnectionTest(): Promise<WhatsAppTemplateActi
 
   return {
     ok: true,
-    message: `Test message sent to ${target.name}. Check WhatsApp on that phone.`,
+    message: `Test message sent to your WhatsApp (${formatWhatsAppPhone(testerPhone)}). Check that phone.`,
     messageId: result.messageId,
   };
 }

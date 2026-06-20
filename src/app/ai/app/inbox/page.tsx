@@ -102,7 +102,7 @@ export default async function SheetomaticAiInboxPage({
       ) : !goLiveStatus.webhookReceived ? (
         <p className="saas-form-message error ws-inbox-setup-banner">
           No inbound messages received yet. Register webhook{" "}
-          <code>{goLiveStatus.webhookUrlWithToken}</code> in RedLava/Meta, then send a test
+          <code>{goLiveStatus.webhookUrlWithToken}</code> in Sheetomatic WhatsApp / Meta, then send a test
           message to{" "}
           {formatWhatsAppPhone(credentials.businessPhone ?? settings?.businessPhone ?? "") ||
             "your business number"}

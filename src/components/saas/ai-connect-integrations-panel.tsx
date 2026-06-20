@@ -42,7 +42,7 @@ export function AiConnectIntegrationsPanel({
     {
       id: "whatsapp",
       title: "Connect WhatsApp",
-      description: "Set up WhatsApp chatbot with RedLava credentials",
+      description: "Set up WhatsApp chatbot with Sheetomatic WhatsApp credentials",
       icon: MessageCircle,
       href: "/ai/app/settings",
       primaryLabel: whatsAppConnected ? "Manage" : "Connect",

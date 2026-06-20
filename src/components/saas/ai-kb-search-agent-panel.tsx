@@ -129,7 +129,7 @@ export function AiKbSearchAgentPanel({
         <section className="ai-joyz-agent-card">
           <h3>AI configuration</h3>
           <p>
-            Model and reply settings are managed at the workspace level. Connect RedLava,
+            Model and reply settings are managed at the workspace level. Connect Sheetomatic WhatsApp,
             add training data, then go live from Campaign.
           </p>
           <div className="ai-joyz-agent-links">

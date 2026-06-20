@@ -31,7 +31,7 @@ export function AiSetupDashboard({
         id: "integrations",
         title: "Connect WhatsApp API",
         description:
-          "Save RedLava API key and Phone ID for your business number.",
+          "Save Sheetomatic WhatsApp API key and Phone ID for your business number.",
         href: "/ai/app/settings",
         icon: Plug,
         done: Boolean(integrationsConnected),

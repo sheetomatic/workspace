@@ -2352,6 +2352,12 @@
   color: #1d4ed8;
 }
 
+.ai-campaign-provider-host {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
 .ai-setup-pill {
   display: inline-flex;
   align-items: center;
