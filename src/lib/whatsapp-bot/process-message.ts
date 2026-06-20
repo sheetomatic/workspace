@@ -17,6 +17,7 @@ import {
   isWhatsAppMenuCommand,
   normalizeWhatsAppCommand,
 } from "@/lib/whatsapp-bot/normalize-command";
+import { downloadWhatsAppMedia } from "@/lib/whatsapp-bot/media";
 import {
   buildDelegatePromptButtons,
   buildMainMenuList,
