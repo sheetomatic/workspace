@@ -145,12 +145,22 @@ export function WhatsAppGoLivePanel({ status }: { status: WhatsAppGoLiveStatus }
 
       <div className="ws-go-live-webhook">
         <h3>Webhook for Sheetomatic / Meta</h3>
-        <CopyField label="Callback URL" value={status.webhookUrl} />
+        <CopyField label="Callback URL (paste in wa.sheetomatic.com)" value={status.webhookUrlWithToken} />
+        <p className="ws-go-live-hint">
+          Use the full URL above (includes verify token). Plain URL without{" "}
+          <code>?token=</code> will block inbound messages.
+        </p>
         <p className="ws-go-live-hint">
           Verify token: set <code>WHATSAPP_WEBHOOK_VERIFY_TOKEN</code> on Vercel,
           then use the same string in Meta or {portalHost} webhook setup. Optional:
           add <code>META_APP_SECRET</code> from your Meta app Basic settings.
         </p>
+        {!status.webhookReceived ? (
+          <p className="ws-go-live-hint error">
+            No inbound webhook received yet. Until this works, replying Hi on the
+            business chat will do nothing.
+          </p>
+        ) : null}
         {status.lastInboundAt ? (
           <p className="ws-go-live-hint ok">
             Last inbound message:{" "}

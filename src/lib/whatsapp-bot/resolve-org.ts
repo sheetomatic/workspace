@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { normalizeWhatsAppPhone } from "@/lib/phone";
+import { resolveWhatsAppTestPhone } from "@/lib/whatsapp-test-phone";
 import { hasMinimumRole } from "@/lib/permissions";
 import type { Role } from "@prisma/client";
 
@@ -124,6 +125,31 @@ export async function resolveTeamMemberByPhone(
       role: membership.role,
       phone: normalized,
     };
+  }
+
+  const testPhone = resolveWhatsAppTestPhone();
+  if (testPhone && phonesMatch(testPhone, fromPhone)) {
+    for (const role of ["OWNER", "ADMIN", "MANAGER"] as const) {
+      const membership = await prisma.membership.findFirst({
+        where: { organizationId, role },
+        include: {
+          user: { select: { id: true, name: true, email: true, phone: true } },
+          organization: { select: { name: true, slug: true } },
+        },
+      });
+      if (membership) {
+        return {
+          organizationId,
+          organizationName: membership.organization.name,
+          organizationSlug: membership.organization.slug,
+          userId: membership.user.id,
+          userName:
+            membership.user.name ?? membership.user.email.split("@")[0],
+          role: membership.role,
+          phone: testPhone,
+        };
+      }
+    }
   }
 
   return null;

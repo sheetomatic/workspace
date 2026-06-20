@@ -26,6 +26,7 @@ import {
   formatWhatsAppTestPhoneLabel,
   resolveWhatsAppTestPhone,
 } from "@/lib/whatsapp-test-phone";
+import { syncWhatsAppTestPhoneForUser } from "@/lib/whatsapp-test-phone-sync";
 import { parseWhatsAppProviderField } from "@/lib/whatsapp-settings-form";
 import type { WhatsAppTemplateActionState } from "@/lib/whatsapp-template-types";
 
@@ -632,8 +633,10 @@ export async function sendWhatsAppConnectionTest(): Promise<WhatsAppTemplateActi
     body: [
       "Sheetomatic WhatsApp connection test",
       "",
-      `Hi ${tester?.name?.split(/\s+/)[0] ?? "there"}! If you received this, outbound WhatsApp via ${PORTAL_BRAND} is working.`,
-      "Reply hi on the business number to test inbound task delegation.",
+      `Hi ${tester?.name?.split(/\s+/)[0] ?? "there"}! Outbound WhatsApp is working.`,
+      "",
+      "Now open the Sheetomatic Technologies chat and reply *Hi* to test inbound.",
+      "You should get the task menu within a few seconds.",
     ].join("\n"),
   });
 
@@ -643,6 +646,12 @@ export async function sendWhatsAppConnectionTest(): Promise<WhatsAppTemplateActi
       message: formatWhatsAppSendFailureMessage(result.detail, "text"),
     };
   }
+
+  await syncWhatsAppTestPhoneForUser(
+    user.organizationId,
+    user.id,
+    user.role,
+  );
 
   return {
     ok: true,
