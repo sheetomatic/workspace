@@ -776,7 +776,7 @@ async function seedSheetomaticTechnologies(
 
   await prisma.user.update({
     where: { id: founderUserId },
-    data: { phone: "919685788980" },
+    data: { phone: "919329103106" },
   });
 }
 

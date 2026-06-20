@@ -15,6 +15,7 @@ import {
 } from "@/app/app/whatsapp/actions";
 import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
 import { SHEETOMATIC_WHATSAPP_PORTAL_URL } from "@/lib/integrations/redlava-portal";
+import { formatWhatsAppTestPhoneLabel } from "@/lib/whatsapp-test-phone";
 import type { WhatsAppGoLiveStatus } from "@/lib/whatsapp-go-live";
 
 function CopyField({ label, value }: { label: string; value: string }) {
@@ -157,8 +158,8 @@ export function WhatsAppGoLivePanel({ status }: { status: WhatsAppGoLiveStatus }
           </p>
         ) : null}
         <p className="ws-go-live-hint">
-          Send test message delivers to <strong>your</strong> WhatsApp number from Team
-          profile (not another manager).
+          Test WA number: <strong>{formatWhatsAppTestPhoneLabel()}</strong> — Send
+          test message delivers there.
         </p>
       </div>
 

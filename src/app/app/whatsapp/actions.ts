@@ -22,6 +22,10 @@ import {
 } from "@/lib/whatsapp-templates";
 import { normalizeWhatsAppPhone } from "@/lib/phone";
 import { resolveWorkspaceWhatsAppCredentials } from "@/lib/whatsapp-settings";
+import {
+  formatWhatsAppTestPhoneLabel,
+  resolveWhatsAppTestPhone,
+} from "@/lib/whatsapp-test-phone";
 import { parseWhatsAppProviderField } from "@/lib/whatsapp-settings-form";
 import type { WhatsAppTemplateActionState } from "@/lib/whatsapp-template-types";
 
@@ -584,43 +588,39 @@ export async function sendWhatsAppConnectionTest(): Promise<WhatsAppTemplateActi
   }
 
   const credentials = await resolveWorkspaceWhatsAppCredentials(user.organizationId);
-  const { normalizeWhatsAppPhone, whatsAppPhonesEqual, formatWhatsAppPhone } =
-    await import("@/lib/phone");
+  const { whatsAppPhonesEqual, formatWhatsAppPhone } = await import("@/lib/phone");
 
-  const tester = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { name: true, phone: true },
-  });
-
-  const testerPhone = tester?.phone?.trim() ?? "";
-  const normalizedTesterPhone = normalizeWhatsAppPhone(testerPhone);
-
-  if (!normalizedTesterPhone) {
+  const testPhone = resolveWhatsAppTestPhone();
+  if (!testPhone) {
     return {
       ok: false,
-      message:
-        "Add your personal WhatsApp number in Team settings before testing. The test is sent to you, not another team member.",
+      message: "Test WhatsApp number is not configured.",
     };
   }
 
   if (
     credentials.businessPhone &&
-    whatsAppPhonesEqual(testerPhone, credentials.businessPhone)
+    whatsAppPhonesEqual(testPhone, credentials.businessPhone)
   ) {
     const businessFormatted = formatWhatsAppPhone(credentials.businessPhone);
     return {
       ok: false,
       message: [
-        "Your WhatsApp number is the same as the business line",
+        "The test WhatsApp number is the same as the business line",
         businessFormatted ? `(${businessFormatted})` : "",
         "- Meta cannot deliver API messages to your own business number.",
         "",
-        "Use a personal mobile number on your Team profile, then retry Send test message.",
+        "Set WHATSAPP_TEST_PHONE to a personal mobile number on Vercel.",
       ]
         .filter(Boolean)
         .join(" "),
     };
   }
+
+  const tester = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { name: true },
+  });
 
   const { sendWhatsAppText } = await import("@/lib/whatsapp-bot/send");
   const { formatWhatsAppSendFailureMessage } = await import(
@@ -628,7 +628,7 @@ export async function sendWhatsAppConnectionTest(): Promise<WhatsAppTemplateActi
   );
   const result = await sendWhatsAppText({
     organizationId: user.organizationId,
-    toPhone: testerPhone,
+    toPhone: testPhone,
     body: [
       "Sheetomatic WhatsApp connection test",
       "",
@@ -646,7 +646,7 @@ export async function sendWhatsAppConnectionTest(): Promise<WhatsAppTemplateActi
 
   return {
     ok: true,
-    message: `Test message sent to your WhatsApp (${formatWhatsAppPhone(testerPhone)}). Check that phone.`,
+    message: `Test message sent to ${formatWhatsAppTestPhoneLabel()}. Check that phone.`,
     messageId: result.messageId,
   };
 }
