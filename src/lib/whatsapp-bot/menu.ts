@@ -6,26 +6,27 @@ export function delegationMenuText(
   items: Array<{ title: string; type?: string }> = [],
   role: Role = "STAFF",
 ) {
+  const firstName = userName.split(/\s+/)[0] || userName;
   const isManager = hasMinimumRole(role, "MANAGER");
   const lines = [
-    `Hi ${userName}! Sheetomatic Tasks on WhatsApp`,
+    `Hi ${firstName}! *Sheetomatic Tasks* on WhatsApp`,
     "",
     "Tap *Open menu* if you see a list button above.",
     "",
-    "Or reply:",
+    "Or reply with a number:",
   ];
 
   if (isManager) {
     lines.push("1 - Assign a task");
-    lines.push("2 - My / team tasks");
-    lines.push("3 - Performance stats");
+    lines.push("2 - Team tasks");
+    lines.push("3 - Team performance");
     lines.push("4 - Team members");
-    lines.push("5 - Help");
+    lines.push("5 - How it works");
     lines.push("6 - Browse topics");
   } else {
     lines.push("1 - My tasks");
     lines.push("2 - My performance");
-    lines.push("3 - Help");
+    lines.push("3 - How it works");
     lines.push("4 - Browse topics");
   }
 
@@ -45,19 +46,42 @@ export function delegationMenuText(
   return lines.join("\n");
 }
 
-/** Short plain-text fallback when interactive menu delivery succeeds but lacks a message id. */
+/** Plain-text fallback when interactive menu delivery fails. */
 export function delegationMenuFallbackText(
   userName: string,
   role: Role = "STAFF",
 ) {
+  const firstName = userName.split(/\s+/)[0] || userName;
   const isManager = hasMinimumRole(role, "MANAGER");
-  const greeting = `Hi ${userName}!`;
+
+  const lines = [
+    `Hi ${firstName}! *Sheetomatic Tasks* on WhatsApp`,
+    "",
+  ];
 
   if (isManager) {
-    return `${greeting} Reply *menu* for options, or type 1 to assign, 2 for tasks, 3 for performance, 4 for team, 5 for help, 6 for topics.`;
+    lines.push(
+      "1 - Assign a task",
+      "2 - Team tasks",
+      "3 - Team performance",
+      "4 - Team members",
+      "5 - How it works",
+      "6 - Browse topics",
+      "",
+      "Reply *menu* anytime. Send a voice note or text to assign work.",
+    );
+  } else {
+    lines.push(
+      "1 - My tasks",
+      "2 - My performance",
+      "3 - How it works",
+      "4 - Browse topics",
+      "",
+      "Reply *menu* anytime. Update tasks with start/done/help <id>.",
+    );
   }
 
-  return `${greeting} Reply *menu* for options, or type 1 for tasks, 2 for performance, 3 for help, 4 for topics.`;
+  return lines.join("\n");
 }
 
 /** Compact fallback for my-tasks interactive messages (list or action buttons). */

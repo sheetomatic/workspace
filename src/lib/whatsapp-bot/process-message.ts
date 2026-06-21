@@ -207,8 +207,6 @@ async function sendMainMenu(
   );
   const fallbackText = delegationMenuFallbackText(userName, role);
 
-  await replyText(org.id, toPhone, fallbackText);
-
   await sendWhatsAppInteractiveWithFallback({
     organizationId: org.id,
     toPhone,

@@ -89,9 +89,11 @@ export function buildMainMenuList(
     type: "list" as const,
     header: { type: "text" as const, text: "Sheetomatic" },
     body: {
-      text: `Hi ${firstName}! Choose what you want to do next.`,
+      text: isManager
+        ? `Hi ${firstName}! *Sheetomatic Tasks* on WhatsApp. Choose an option below, or send a voice note or text to assign work.`
+        : `Hi ${firstName}! *Sheetomatic Tasks* on WhatsApp. Choose an option below.`,
     },
-    footer: { text: "Tasks, updates, and performance" },
+    footer: { text: "Reply menu anytime" },
     action: {
       button: "Open menu",
       sections,
