@@ -582,6 +582,18 @@ export async function toggleWhatsAppBotLive(
   };
 }
 
+function connectionTestTemplateName() {
+  return (
+    process.env.WHATSAPP_CONNECTION_TEST_TEMPLATE?.trim() || "confirmation"
+  );
+}
+
+function connectionTestTemplateLanguage() {
+  return (
+    process.env.WHATSAPP_CONNECTION_TEST_TEMPLATE_LANGUAGE?.trim() || "en"
+  );
+}
+
 export async function sendWhatsAppConnectionTest(): Promise<WhatsAppTemplateActionState> {
   const user = await getSessionUser();
   if (!user || !hasMinimumRole(user.role, "ADMIN")) {
@@ -590,6 +602,21 @@ export async function sendWhatsAppConnectionTest(): Promise<WhatsAppTemplateActi
 
   const credentials = await resolveWorkspaceWhatsAppCredentials(user.organizationId);
   const { whatsAppPhonesEqual, formatWhatsAppPhone } = await import("@/lib/phone");
+  const { isWhatsAppProviderConfigured, deliverWhatsAppMessage } = await import(
+    "@/lib/integrations/whatsapp-provider"
+  );
+  const {
+    formatWhatsAppSendFailureMessage,
+    getRedlavaWaWallet,
+  } = await import("@/lib/integrations/redlava");
+
+  if (!isWhatsAppProviderConfigured(credentials)) {
+    return {
+      ok: false,
+      message:
+        "WhatsApp API is not configured. Save your API key and Phone ID in Settings → WhatsApp, then try again.",
+    };
+  }
 
   const testPhone = resolveWhatsAppTestPhone();
   if (!testPhone) {
@@ -618,32 +645,91 @@ export async function sendWhatsAppConnectionTest(): Promise<WhatsAppTemplateActi
     };
   }
 
+  if (credentials.redlavaApiKey) {
+    const wallet = await getRedlavaWaWallet({
+      apiKey: credentials.redlavaApiKey,
+      phoneId: credentials.redlavaPhoneId,
+    });
+    if (!wallet.ok) {
+      return {
+        ok: false,
+        message: `Could not verify WhatsApp wallet: ${wallet.error}. Check your API key and Phone ID in Settings → WhatsApp.`,
+      };
+    }
+    if (wallet.wallet.balance <= 0) {
+      return {
+        ok: false,
+        message:
+          "WhatsApp message wallet balance is zero. Top up at wa.sheetomatic.com, then run the test again.",
+      };
+    }
+  }
+
   const tester = await prisma.user.findUnique({
     where: { id: user.id },
     select: { name: true },
   });
+  const testerFirstName =
+    tester?.name?.split(/\s+/)[0]?.trim() || "there";
 
-  const { sendWhatsAppText } = await import("@/lib/whatsapp-bot/send");
-  const { formatWhatsAppSendFailureMessage } = await import(
-    "@/lib/integrations/redlava"
-  );
-  const result = await sendWhatsAppText({
+  const recipientLabel = formatWhatsAppTestPhoneLabel();
+  const phoneIdHint = credentials.redlavaPhoneId
+    ? `Phone ID ${credentials.redlavaPhoneId}`
+    : "Phone ID not set";
+  const businessLabel = credentials.businessPhone
+    ? formatWhatsAppPhone(credentials.businessPhone) ?? "Sheetomatic Technologies"
+    : "Sheetomatic Technologies";
+
+  // Utility template — delivers outside the 24h window (free-text often gets a wamid but never arrives).
+  let result = await deliverWhatsAppMessage({
     organizationId: user.organizationId,
     toPhone: testPhone,
-    body: [
-      "Sheetomatic WhatsApp connection test",
-      "",
-      `Hi ${tester?.name?.split(/\s+/)[0] ?? "there"}! Outbound WhatsApp is working.`,
-      "",
-      "Now open the Sheetomatic Technologies chat and reply *Hi* to test inbound.",
-      "You should get the task menu within a few seconds.",
-    ].join("\n"),
+    message: {
+      type: "template",
+      template: {
+        name: connectionTestTemplateName(),
+        language: { code: connectionTestTemplateLanguage() },
+        components: [
+          {
+            type: "body",
+            parameters: [{ type: "text", text: testerFirstName }],
+          },
+        ],
+      },
+    },
+    templateLanguageCode: connectionTestTemplateLanguage(),
   });
 
+  let usedTemplateFallback = true;
   if (!result.sent) {
+    usedTemplateFallback = false;
+    const testBody = [
+      "Sheetomatic WhatsApp connection test",
+      "",
+      `Hi ${testerFirstName}! Outbound WhatsApp is working.`,
+      "",
+      `Open the ${businessLabel} chat on WhatsApp and reply *Hi* to test inbound.`,
+    ].join("\n");
+    result = await deliverWhatsAppMessage({
+      organizationId: user.organizationId,
+      toPhone: testPhone,
+      message: {
+        type: "text",
+        text: { body: testBody },
+      },
+    });
+  }
+
+  if (!result.sent) {
+    const detail = formatWhatsAppSendFailureMessage(result.detail, "text");
     return {
       ok: false,
-      message: formatWhatsAppSendFailureMessage(result.detail, "text"),
+      message: [
+        detail,
+        "",
+        `Recipient: ${recipientLabel}. ${phoneIdHint}. Credentials source: ${credentials.source}.`,
+        `Look for the message in WhatsApp chat with *${businessLabel}* (also check Updates tab). It is not an SMS.`,
+      ].join("\n"),
     };
   }
 
@@ -655,7 +741,13 @@ export async function sendWhatsAppConnectionTest(): Promise<WhatsAppTemplateActi
 
   return {
     ok: true,
-    message: `Test message sent to ${formatWhatsAppTestPhoneLabel()}. Check that phone.`,
+    message: [
+      usedTemplateFallback
+        ? `Test template (${connectionTestTemplateName()}) sent to ${recipientLabel}.`
+        : `Test text sent to ${recipientLabel} (within 24h window).`,
+      `On WhatsApp, open the chat with *${businessLabel}* on ${recipientLabel} — not SMS. Also check the Updates tab.`,
+      `${phoneIdHint}. Reply *Hi* in that chat to test inbound.`,
+    ].join(" "),
     messageId: result.messageId,
   };
 }
