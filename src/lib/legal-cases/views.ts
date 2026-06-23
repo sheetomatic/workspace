@@ -6,6 +6,8 @@ export type LegalViewKey =
   | "running"
   | "as-due"
   | "diary"
+  | "statement"
+  | "pf-due"
   | "order-deposits"
   | "simple-fracture"
   | "new-cases";
@@ -67,6 +69,18 @@ export const LEGAL_VIEWS: LegalViewDefinition[] = [
     categoryFilter: true,
   },
   {
+    key: "statement",
+    label: "Statement",
+    description: "Statement, WS, EVI, and PF hearing stages sorted by next date.",
+    categoryFilter: true,
+  },
+  {
+    key: "pf-due",
+    label: "PF due",
+    description: "Plaintiff filings due from court — filter by assignee (Pare, Vicky, etc.).",
+    categoryFilter: true,
+  },
+  {
     key: "order-deposits",
     label: "Order + Deposits",
     description: "Orders and deposit cases sorted by amount (high to low).",
@@ -92,6 +106,24 @@ export function legalViewByKey(key: string): LegalViewDefinition | undefined {
 
 export function legalViewColumns(key: LegalViewKey): LegalViewColumn[] {
   switch (key) {
+    case "running":
+      return [
+        col("S.No", (_c, i) => String(i + 1)),
+        scalar("File No.", "fileNumber"),
+        scalar("MCC NO", "mccNumber"),
+        scalar("Case Category", "category"),
+        scalar("Applicant", "applicant"),
+        scalar("Non Applicant", "nonApplicant"),
+        scalar("Case Stage", "caseStage"),
+        scalar("Next date", "nextDate"),
+        sec2(),
+        extra("DECEASED LICENCE"),
+        extra("LICENCE NO."),
+        extra("DL VFN"),
+        extra("SBI A/C NO."),
+        extra("CHEQUE BK"),
+        scalar("Remark (Requirements)/ Proposals", "remarks"),
+      ];
     case "as-due":
       return [
         col("S.No", (_c, i) => String(i + 1)),
@@ -109,6 +141,7 @@ export function legalViewColumns(key: LegalViewKey): LegalViewColumn[] {
         extra("CHEQUE BK"),
       ];
     case "diary":
+    case "statement":
       return [
         sec2(),
         scalar("Next date", "nextDate"),
@@ -125,6 +158,23 @@ export function legalViewColumns(key: LegalViewKey): LegalViewColumn[] {
         scalar("Co. Advocate", "coAdvocate"),
         extra("PDC STATUS"),
         extra("CC DATE"),
+        col("Person Responsible", (c) => c.s2Responsible ?? ""),
+        scalar("Remark (Requirements)/ Proposals", "remarks"),
+      ];
+    case "pf-due":
+      return [
+        sec2(),
+        col("F.No", (c) => c.fileNumber),
+        scalar("MCC NO", "mccNumber"),
+        scalar("Case Category", "category"),
+        scalar("Applicant", "applicant"),
+        scalar("Non Applicant", "nonApplicant"),
+        scalar("Next date", "nextDate"),
+        scalar("Case Stage", "caseStage"),
+        scalar("AMD & CC Status", "amdCcStatus"),
+        scalar("F-No", "fNo"),
+        scalar("Court", "court"),
+        extra("PDC STATUS"),
         col("Person Responsible", (c) => c.s2Responsible ?? ""),
         scalar("Remark (Requirements)/ Proposals", "remarks"),
       ];

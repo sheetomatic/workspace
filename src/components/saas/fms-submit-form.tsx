@@ -60,10 +60,7 @@ export function FmsSubmitForm({
   const [values, setValues] = useState<Record<string, unknown>>({});
 
   const visibleFields = useMemo(
-    () =>
-      fields.filter(
-        (field) => !isTimestampField(field) && field.fieldType !== "FILE",
-      ),
+    () => fields.filter((field) => !isTimestampField(field)),
     [fields],
   );
 
@@ -106,7 +103,11 @@ export function FmsSubmitForm({
   }
 
   return (
-    <form action={formAction} className="ws-sf-card ws-fms-submit-form">
+    <form
+      action={formAction}
+      className="ws-sf-card ws-fms-submit-form"
+      encType="multipart/form-data"
+    >
       <input type="hidden" name="formId" value={formId} />
       <input
         type="hidden"
@@ -247,15 +248,9 @@ export function FmsSubmitForm({
               {field.fieldType === "FILE" ? (
                 <input
                   type="file"
+                  name={`file_${field.fieldKey}`}
                   required={field.required}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) {
-                      setValue(field.fieldKey, "");
-                      return;
-                    }
-                    setValue(field.fieldKey, file.name);
-                  }}
+                  className="ws-fms-attachment-field-input"
                 />
               ) : null}
             </label>

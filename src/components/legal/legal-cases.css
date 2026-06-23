@@ -1546,6 +1546,30 @@
   font-size: 0.68rem;
 }
 
+.workspace-app .legal-pf-assignee-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0 0 0.75rem;
+}
+
+.workspace-app .legal-pf-assignee-link {
+  padding: 0.25rem 0.6rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+  text-decoration: none;
+  background: #fff;
+}
+
+.workspace-app .legal-pf-assignee-link.is-active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
 .workspace-app .legal-running-insights {
   display: flex;
   flex-wrap: wrap;
@@ -1592,6 +1616,31 @@
 }
 
 .workspace-app .legal-category-filter select {
+  max-width: 14rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.workspace-app .legal-view-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin: 0 0 0.75rem;
+}
+
+.workspace-app .legal-view-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #475569;
+  min-width: 9rem;
+}
+
+.workspace-app .legal-view-filter select {
   max-width: 14rem;
   padding: 0.35rem 0.5rem;
   border: 1px solid #cbd5e1;

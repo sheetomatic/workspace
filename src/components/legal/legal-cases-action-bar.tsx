@@ -6,7 +6,6 @@ import { Plus, X } from "lucide-react";
 import {
   exportLegalCasesToGoogleSheetAction,
   syncLegalCasesFromGoogleSheet,
-  syncLegalCasesTwoWayAction,
 } from "@/app/app/cases/actions";
 import { LegalCaseCreateForm } from "@/components/legal/legal-case-create-form";
 
@@ -109,17 +108,9 @@ export function LegalSheetSyncButton() {
           className="btn-cta btn-secondary legal-sync-btn"
           disabled={pending}
           type="button"
-          onClick={() => runSync(syncLegalCasesTwoWayAction)}
-        >
-          {pending ? "Syncing..." : "Two-way sync"}
-        </button>
-        <button
-          className="btn-cta btn-secondary legal-sync-btn"
-          disabled={pending}
-          type="button"
           onClick={() => runSync(syncLegalCasesFromGoogleSheet)}
         >
-          Import
+          {pending ? "Syncing..." : "Import"}
         </button>
         <button
           className="btn-cta btn-secondary legal-sync-btn"
@@ -127,7 +118,7 @@ export function LegalSheetSyncButton() {
           type="button"
           onClick={() => runSync(exportLegalCasesToGoogleSheetAction)}
         >
-          Export
+          {pending ? "Syncing..." : "Export"}
         </button>
       </div>
       {message ? (
@@ -136,8 +127,7 @@ export function LegalSheetSyncButton() {
         </p>
       ) : (
         <p className="saas-sheets-hint">
-          Set your CRM sheet URL in Settings, then sync here. Two-way sync imports
-          sheet rows into the database and writes database cases back to the sheet.
+          Set your CRM sheet URL in Settings, then import or export cases here.
         </p>
       )}
     </div>

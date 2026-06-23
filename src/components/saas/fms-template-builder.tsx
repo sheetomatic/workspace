@@ -24,6 +24,7 @@ export type FmsStepDraft = {
   id: string;
   stepName: string;
   roleLabel: string;
+  instructions: string;
   defaultOwnerUserId: string;
   slaType: FmsSlaType;
   slaDays: string;
@@ -44,6 +45,7 @@ function newStep(): FmsStepDraft {
     id: crypto.randomUUID(),
     stepName: "",
     roleLabel: "",
+    instructions: "",
     defaultOwnerUserId: "",
     slaType: "TAT_CALENDAR_DAYS",
     slaDays: "1",
@@ -62,6 +64,7 @@ function stepToDraft(
   step: {
     stepName: string;
     roleLabel: string | null;
+    instructions: string | null;
     defaultOwnerUserId: string | null;
     slaType: FmsSlaType;
     slaConfig: unknown;
@@ -76,6 +79,7 @@ function stepToDraft(
     id: crypto.randomUUID(),
     stepName: step.stepName,
     roleLabel: step.roleLabel ?? "",
+    instructions: step.instructions ?? "",
     defaultOwnerUserId: step.defaultOwnerUserId ?? "",
     slaType: step.slaType,
     slaDays: String(cfg.days ?? 1),
@@ -314,6 +318,7 @@ export function FmsTemplateBuilder({
     validSteps.map((s) => ({
       stepName: s.stepName.trim(),
       roleLabel: s.roleLabel.trim() || undefined,
+      instructions: s.instructions.trim() || undefined,
       defaultOwnerUserId: s.defaultOwnerUserId || undefined,
       slaType: s.slaType,
       slaConfig: buildSlaConfig(s),

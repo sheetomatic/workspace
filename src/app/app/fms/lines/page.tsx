@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { FmsMasterTrackerBlock } from "@/components/saas/fms-master-tracker-block";
+import { FmsPagination } from "@/components/saas/fms-pagination";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
+import { canSubmitFmsForm } from "@/lib/fms/access";
 import {
+  countCompletedFmsInstances,
   getFmsPipelineCounts,
   listFmsTrackerBlocks,
 } from "@/lib/fms/queries";
@@ -51,6 +54,8 @@ type PageProps = {
   searchParams: Promise<{ completedPage?: string }>;
 };
 
+const COMPLETED_PAGE_SIZE = 20;
+
 export default async function FmsLinesPage({ searchParams }: PageProps) {
   const user = await requireSession(undefined, { module: "FMS" });
 
@@ -58,22 +63,28 @@ export default async function FmsLinesPage({ searchParams }: PageProps) {
     redirect("/app/fms/my-stops");
   }
 
-  await searchParams;
+  const params = await searchParams;
+  const completedPage = Math.max(1, Number(params.completedPage ?? "1") || 1);
+  const completedSkip = (completedPage - 1) * COMPLETED_PAGE_SIZE;
 
-  const [activeBlocks, completedBlocks, pipelineCounts] = await Promise.all([
+  const [activeBlocks, completedBlocks, completedTotal, pipelineCounts] =
+    await Promise.all([
     listFmsTrackerBlocks(user.organizationId, { instanceStatus: "ACTIVE" }),
     listFmsTrackerBlocks(user.organizationId, {
       instanceStatus: "COMPLETED",
-      limit: 20,
+      limit: COMPLETED_PAGE_SIZE,
+      skip: completedSkip,
     }),
+    countCompletedFmsInstances(user.organizationId),
     getFmsPipelineCounts(user.organizationId),
   ]);
 
-  const activeLeadCount = activeBlocks.reduce(
-    (sum, block) => sum + block.instances.length,
-    0,
+  const completedTotalPages = Math.max(
+    1,
+    Math.ceil(completedTotal / COMPLETED_PAGE_SIZE),
   );
-  const completedLeadCount = completedBlocks.reduce(
+
+  const activeLeadCount = activeBlocks.reduce(
     (sum, block) => sum + block.instances.length,
     0,
   );
@@ -129,6 +140,7 @@ export default async function FmsLinesPage({ searchParams }: PageProps) {
               key={block.id}
               block={mapTrackerBlock(block)}
               viewerUserId={user.id}
+              showNewLead={canSubmitFmsForm(user)}
             />
           ))}
         </div>
@@ -139,8 +151,11 @@ export default async function FmsLinesPage({ searchParams }: PageProps) {
           <header className="ws-fms-section-heading">
             <h2>Recently completed</h2>
             <p>
-              {completedLeadCount} completed lead{completedLeadCount === 1 ? "" : "s"} across{" "}
-              {completedBlocks.length} workflow{completedBlocks.length === 1 ? "" : "s"}.
+              {completedTotal} completed job{completedTotal === 1 ? "" : "s"} on this page
+              {completedTotalPages > 1
+                ? ` (page ${completedPage} of ${completedTotalPages})`
+                : ""}
+              .
             </p>
           </header>
           <div className="ws-fms-tracker-stack">
@@ -152,6 +167,15 @@ export default async function FmsLinesPage({ searchParams }: PageProps) {
               />
             ))}
           </div>
+          <FmsPagination
+            page={completedPage}
+            totalPages={completedTotalPages}
+            total={completedTotal}
+            searchParams={params}
+            basePath="/app/fms/lines"
+            pageParam="completedPage"
+            label="completed jobs"
+          />
         </section>
       ) : null}
 

@@ -43,7 +43,7 @@ function StepCompleteForm({
   );
   const [markedDone, setMarkedDone] = useState(false);
   const showNotes = stepState.step.allowNotes !== false;
-  const showUpload = true;
+  const showUpload = stepState.step.allowUpload !== false;
 
   useEffect(() => {
     if (state.ok && onCancel) {
@@ -252,7 +252,7 @@ export function FmsStepCompletePanel({
     const message = !stepState.step.allowMarkDone
       ? "This step is tracked for visibility only."
       : !stepState.ownerUserId
-        ? "This step has no owner assigned. A manager must reassign before work can continue."
+        ? "This step has no owner. Claim it above, or ask a manager to assign someone."
         : "Only the assigned owner can complete this step.";
 
     return (

@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { FmsPagination } from "@/components/saas/fms-pagination";
 import { FmsRecentActivity } from "@/components/saas/fms-recent-activity";
+import { FmsNotificationHealthPanel } from "@/components/saas/fms-notification-health-panel";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import { getFmsOpsPage, getFmsPipelineCounts } from "@/lib/fms/queries";
 import { listRecentFmsAudit } from "@/lib/fms/audit";
+import { getFmsNotificationHealth } from "@/lib/fms/notification-health";
 import { fmsInstanceHref } from "@/lib/fms/navigation";
 import {
   formatDelayLabel,
@@ -30,10 +32,11 @@ export default async function FmsOpsPage({ searchParams }: PageProps) {
   const overduePage = fmsPageFromSearchParam(params.overduePage);
   const unassignedPage = fmsPageFromSearchParam(params.unassignedPage);
 
-  const [ops, recentActivity, pipelineCounts] = await Promise.all([
+  const [ops, recentActivity, pipelineCounts, notifyHealth] = await Promise.all([
     getFmsOpsPage(user.organizationId, { overduePage, unassignedPage }),
     listRecentFmsAudit(user.organizationId, 15),
     getFmsPipelineCounts(user.organizationId),
+    getFmsNotificationHealth(user.organizationId),
   ]);
 
   return (
@@ -74,6 +77,8 @@ export default async function FmsOpsPage({ searchParams }: PageProps) {
           <span className="ws-stat-card-hint">Awaiting next stop</span>
         </div>
       </div>
+
+      <FmsNotificationHealthPanel health={notifyHealth} />
 
       <div className="ws-fms-ops-stack">
         <div className="ws-fms-ops-grid">

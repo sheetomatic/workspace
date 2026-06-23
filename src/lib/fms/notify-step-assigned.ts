@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { dispatchFmsStepReminder } from "@/lib/fms-reminders";
+import { createFmsStepAssignedNotification } from "@/lib/fms/in-app-notifications";
 
 export async function notifyFmsStepAssigned(stepStateId: string) {
   const stepState = await prisma.fmsStepState.findUnique({
@@ -19,10 +20,26 @@ export async function notifyFmsStepAssigned(stepStateId: string) {
   if (
     !stepState ||
     stepState.status !== "IN_PROGRESS" ||
-    stepState.whatsappAssignSentAt ||
     !stepState.ownerUserId ||
     !stepState.owner
   ) {
+    return;
+  }
+
+  try {
+    await createFmsStepAssignedNotification({
+      userId: stepState.ownerUserId,
+      organizationId: stepState.instance.organizationId,
+      instanceId: stepState.instanceId,
+      referenceLabel:
+        stepState.instance.referenceLabel ?? stepState.instance.template.name,
+      stepName: stepState.step.stepName,
+    });
+  } catch (error) {
+    console.error("fms in-app notification", error);
+  }
+
+  if (stepState.whatsappAssignSentAt) {
     return;
   }
 

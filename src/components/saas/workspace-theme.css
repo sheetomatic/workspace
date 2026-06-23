@@ -19825,3 +19825,90 @@ body:has(.workspace-app.saas-app) {
     grid-template-columns: 1fr;
   }
 }
+
+.workspace-app .ws-fms-claim-banner {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--sf-card-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--sf-accent) 8%, transparent);
+}
+
+.workspace-app .ws-fms-claim-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.workspace-app .ws-fms-notify-bell {
+  position: relative;
+}
+
+.workspace-app .ws-fms-notify-bell summary {
+  list-style: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.workspace-app .ws-fms-notify-bell-count {
+  display: inline-flex;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--sf-accent);
+  color: #fff;
+  font-size: 11px;
+}
+
+.workspace-app .ws-fms-notify-bell-panel {
+  position: absolute;
+  right: 0;
+  z-index: 20;
+  width: min(320px, 80vw);
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid var(--sf-card-border);
+  border-radius: 12px;
+  background: var(--sf-card-bg);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+}
+
+.workspace-app .ws-fms-notify-bell-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.workspace-app .ws-fms-notify-bell-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.workspace-app .ws-fms-notify-health {
+  margin-bottom: 16px;
+}
+
+.workspace-app .ws-fms-notify-health-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.workspace-app .ws-fms-notify-health-issues {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--sf-danger, #b42318);
+}
+
+.workspace-app .ws-fms-notify-health-details {
+  margin-top: 10px;
+}

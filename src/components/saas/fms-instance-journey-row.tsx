@@ -49,6 +49,18 @@ function formatDate(value: Date | null) {
 }
 
 function displayValue(value: unknown) {
+  if (value && typeof value === "object" && "attachmentId" in value) {
+    const ref = value as { attachmentId: string; fileName?: string };
+    const label = ref.fileName ?? "Download file";
+    return (
+      <a
+        className="ws-fms-journey-attachment-link"
+        href={`/api/fms/attachments/${ref.attachmentId}`}
+      >
+        {label}
+      </a>
+    );
+  }
   if (Array.isArray(value)) {
     return value.join(", ");
   }

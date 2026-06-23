@@ -145,6 +145,7 @@ model Organization {
   fmsInstances      FmsInstance[]
   fmsFormSubmissions FmsFormSubmission[]
   fmsAuditEvents    FmsAuditEvent[]
+  userAppNotifications UserAppNotification[]
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
 }
@@ -811,6 +812,7 @@ model User {
   fmsFlowDesignsCreated FmsFlowDesign[]         @relation("FmsFlowDesignCreator")
   fmsFlowDesignsApproved FmsFlowDesign[]        @relation("FmsFlowDesignApprover")
   fmsAuditEvents         FmsAuditEvent[]        @relation("FmsAuditActor")
+  appNotifications       UserAppNotification[]
   createdAt            DateTime                 @default(now())
   updatedAt            DateTime                 @updatedAt
 }
@@ -1352,4 +1354,28 @@ model FmsAuditEvent {
 
   @@index([organizationId, createdAt])
   @@index([instanceId, createdAt])
+}
+
+model UserAppNotification {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  kind           String
+  title          String
+  body           String
+  href           String?
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([userId, readAt])
+  @@index([organizationId, createdAt])
+}
+
+model CronHeartbeat {
+  jobKey    String   @id
+  lastRunAt DateTime
+  lastOk    Boolean  @default(true)
+  summary   String?
 }

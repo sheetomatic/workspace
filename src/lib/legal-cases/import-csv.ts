@@ -1,5 +1,10 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { normalizeStaffCode } from "@/lib/legal-cases/access";
+import {
+  columnIndex,
+  findHeaderRowIndex,
+  normalizedHeaderRow,
+} from "@/lib/legal-cases/header-aliases";
 
 export const HINGORANI_GOOGLE_SHEET_ID =
   "1Rbow1wttTd0rIxzf_zo9qkKmO1lvFb3keSk1-P-HhKc";
@@ -191,14 +196,23 @@ function buildSectionDataFromRow(
 }
 
 export function parseLegalCasesCsv(content: string): ParsedLegalCase[] {
-  return parseLegalCasesRows(parseCsv(content));
+  const rows = parseCsv(content);
+  const headerRow = findHeaderRowIndex(rows) + 1;
+  return parseLegalCasesRows(rows, { headerRow });
 }
 
-export function parseLegalCasesRows(rows: string[][]): ParsedLegalCase[] {
-  const header = rows[0] ?? [];
-  const col = (name: string) => header.findIndex((item) => item.trim() === name);
+export function parseLegalCasesRows(
+  rows: string[][],
+  options?: { headerRow?: number },
+): ParsedLegalCase[] {
+  const headerIndex =
+    options?.headerRow && options.headerRow > 0
+      ? options.headerRow - 1
+      : findHeaderRowIndex(rows);
+  const header = normalizedHeaderRow(rows, headerIndex);
+  const col = (name: string) => columnIndex(header, name);
   const personResponsibleCols = header
-    .map((item, index) => (item.trim() === "PERSON RESPONSIBLE" ? index : -1))
+    .map((item, index) => (item === "PERSON RESPONSIBLE" ? index : -1))
     .filter((index) => index >= 0);
 
   const indexes = {
@@ -231,7 +245,7 @@ export function parseLegalCasesRows(rows: string[][]): ParsedLegalCase[] {
   const seen = new Set<string>();
   const parsed: ParsedLegalCase[] = [];
 
-  for (const row of rows.slice(1)) {
+  for (const row of rows.slice(headerIndex + 1)) {
     const fileNumber = cell(row, indexes.fileNumber);
     if (!fileNumber) continue;
     const mccNumber = cell(row, indexes.mccNumber) || null;

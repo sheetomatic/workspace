@@ -1,12 +1,8 @@
 import type { SessionUser } from "@/lib/auth";
-import { canControlFmsPipeline, canManageFms } from "@/lib/fms/access";
+import { canViewFmsInstance, type FmsInstanceAccessContext } from "@/lib/fms/access";
 
-type AttachmentContext = {
+type AttachmentContext = FmsInstanceAccessContext & {
   organizationId: string;
-  ownerUserId: string | null;
-  instance: {
-    submission: { submittedById: string } | null;
-  };
 };
 
 export function canAccessFmsStepAttachment(
@@ -16,14 +12,5 @@ export function canAccessFmsStepAttachment(
   if (attachment.organizationId !== user.organizationId) {
     return false;
   }
-  if (canManageFms(user.role) || canControlFmsPipeline(user.role)) {
-    return true;
-  }
-  if (attachment.ownerUserId === user.id) {
-    return true;
-  }
-  if (attachment.instance.submission?.submittedById === user.id) {
-    return true;
-  }
-  return false;
+  return canViewFmsInstance(user, attachment);
 }

@@ -6,17 +6,19 @@ import {
   LegalCasesPageActions,
 } from "@/components/legal/legal-cases-action-bar";
 import { LegalCaseViewTable } from "@/components/legal/legal-case-view-table";
-import { LegalCategoryFilter } from "@/components/legal/legal-category-filter";
 import { LegalRunningInsights } from "@/components/legal/legal-running-insights";
+import { LegalViewFilters } from "@/components/legal/legal-view-filters";
 import { LegalViewsNav } from "@/components/legal/legal-views-nav";
 import { PageHeader } from "@/components/saas/page-header";
 import { isLegalAdmin } from "@/lib/legal-cases/access";
 import {
+  buildLegalViewListQuery,
   countAllCases,
   countRunningCases,
+  getLegalViewFilterOptions,
   getRunningInsights,
-  listLegalCategories,
   listLegalViewCases,
+  type LegalViewListFilter,
 } from "@/lib/legal-cases/view-queries";
 import {
   legalViewByKey,
@@ -28,8 +30,29 @@ import "@/components/legal/legal-cases.css";
 
 type ViewPageProps = {
   params: Promise<{ viewKey: string }>;
-  searchParams: Promise<{ category?: string; page?: string }>;
+  searchParams: Promise<{
+    category?: string;
+    page?: string;
+    assignee?: string;
+    fileStatus?: string;
+    caseStage?: string;
+    section?: string;
+  }>;
 };
+
+function parseViewFilters(
+  searchParams: Awaited<ViewPageProps["searchParams"]>,
+): LegalViewListFilter {
+  const page = Math.max(1, Number(searchParams.page ?? "1") || 1);
+  return {
+    category: searchParams.category,
+    assignee: searchParams.assignee,
+    fileStatus: searchParams.fileStatus,
+    caseStage: searchParams.caseStage,
+    section: searchParams.section,
+    page,
+  };
+}
 
 export default async function LegalCaseViewPage({
   params,
@@ -43,13 +66,13 @@ export default async function LegalCaseViewPage({
   }
 
   const viewKey = view.key as LegalViewKey;
-  const { category, page: pageParam } = await searchParams;
-  const page = Math.max(1, Number(pageParam ?? "1") || 1);
+  const resolvedSearchParams = await searchParams;
+  const filters = parseViewFilters(resolvedSearchParams);
   const admin = isLegalAdmin(user);
 
-  const [casePage, categories, counts, runningInsights] = await Promise.all([
-    listLegalViewCases(user, viewKey, { category, page }),
-    listLegalCategories(user),
+  const [casePage, filterOptions, counts, runningInsights] = await Promise.all([
+    listLegalViewCases(user, viewKey, filters),
+    getLegalViewFilterOptions(user),
     Promise.all([countAllCases(user), countRunningCases(user)]).then(
       ([all, running]) => ({ all, running }),
     ),
@@ -57,8 +80,7 @@ export default async function LegalCaseViewPage({
   ]);
 
   const columns = legalViewColumns(viewKey);
-  const listQuery = new URLSearchParams();
-  if (category) listQuery.set("category", category);
+  const listQuery = buildLegalViewListQuery(filters);
 
   return (
     <div className="saas-page legal-list-page">
@@ -88,11 +110,19 @@ export default async function LegalCaseViewPage({
       <LegalCaseCreatePanel canCreate={admin} />
 
       <section className="legal-panel legal-panel-compact">
-        {view.categoryFilter ? (
-          <Suspense fallback={null}>
-            <LegalCategoryFilter categories={categories} current={category} />
-          </Suspense>
-        ) : null}
+        <Suspense fallback={null}>
+          <LegalViewFilters
+            current={{
+              category: filters.category,
+              assignee: filters.assignee,
+              fileStatus: filters.fileStatus,
+              caseStage: filters.caseStage,
+              section: filters.section,
+            }}
+            options={filterOptions}
+            showCategory={view.categoryFilter}
+          />
+        </Suspense>
 
         {runningInsights ? (
           <LegalRunningInsights insights={runningInsights} />

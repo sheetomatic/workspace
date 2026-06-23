@@ -22,6 +22,12 @@ export async function GET(
           instance: {
             include: {
               submission: { select: { submittedById: true } },
+              stepStates: {
+                select: {
+                  ownerUserId: true,
+                  completedByUserId: true,
+                },
+              },
             },
           },
         },
@@ -33,8 +39,8 @@ export async function GET(
     !attachment ||
     !canAccessFmsStepAttachment(user, {
       organizationId: attachment.stepState.instance.organizationId,
-      ownerUserId: attachment.stepState.ownerUserId,
-      instance: attachment.stepState.instance,
+      submission: attachment.stepState.instance.submission,
+      stepStates: attachment.stepState.instance.stepStates,
     })
   ) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

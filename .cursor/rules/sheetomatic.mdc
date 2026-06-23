@@ -1,0 +1,42 @@
+---
+description: Sheetomatic scope, architecture, and token discipline
+alwaysApply: true
+---
+
+# Scope
+
+- Repo root: `sheetomatic-redesign` only.
+- Do NOT search `node_modules/`, `.next/`, or paths outside this repo.
+- Do NOT run `Glob` with `**/*` on the repo root — use targeted paths under `src/`, `prisma/`, or `public/`.
+- Only edit files the user @-mentions or names explicitly.
+
+# Architecture
+
+- **Marketing (public):** `/`, `/services`, `/products`, `/courses`, `/about`, `/contact`, `/career`, `/whatsapp-api`, etc.
+- **Workspace (auth):** `/app/*` — dashboard, tasks, team, settings, approvals, reports.
+- **Tenant isolation:** All queries filter by `session.organizationId`. Never accept `organizationId` from client forms or API body.
+- **Roles:** VIEWER < STAFF < MANAGER < ADMIN < OWNER.
+- **Stack:** Next.js 16, Prisma 6, NextAuth 5, Tailwind 4. No new UI libraries without explicit request.
+
+# Edit discipline
+
+- Smallest diff that fixes the issue. No refactors unless asked.
+- Match existing naming, types, and patterns in the touched folder.
+- Run `npm run build` only when the task touches routes, auth, DB schema, or the user asks for verification.
+- Keep marketing (`/`) and workspace (`/app`) both working after every change.
+
+# CSS (token savings)
+
+- SaaS/workspace styles: `src/components/saas/workspace-theme.css`, `ai-crm-theme.css`.
+- Marketing styles: `src/app/globals.css` (~4000 lines) — do not read or edit for small SaaS-only fixes.
+- Prefer editing the smallest CSS file that owns the component.
+
+# AI / API routes
+
+- Voice: `POST /api/tasks/transcribe` (Whisper → English).
+- Parse: `POST /api/tasks/parse` (gpt-4o-mini → task JSON).
+- Rate limits exist; do not remove without discussion.
+
+# Audit backlog
+
+- For planned work, reference `AUDIT_ACTIONS.md` by item number — do not read the full file unless the task requires it.

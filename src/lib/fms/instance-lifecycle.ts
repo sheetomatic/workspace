@@ -377,3 +377,30 @@ export async function reassignFmsStepOwner(params: {
 
   void notifyFmsStepAssigned(stepState.id);
 }
+
+export async function updateFmsStepPlannedAt(params: {
+  stepStateId: string;
+  organizationId: string;
+  plannedAt: Date;
+}) {
+  const stepState = await prisma.fmsStepState.findFirst({
+    where: {
+      id: params.stepStateId,
+      instance: { organizationId: params.organizationId, status: "ACTIVE" },
+    },
+  });
+
+  if (!stepState) {
+    throw new Error("Step not found");
+  }
+
+  await prisma.fmsStepState.update({
+    where: { id: stepState.id },
+    data: {
+      plannedAt: params.plannedAt,
+      whatsappDueSoonSentAt: null,
+      whatsappSameDaySentAt: null,
+      whatsappOverdueSentAt: null,
+    },
+  });
+}

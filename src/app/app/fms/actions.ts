@@ -37,6 +37,7 @@ import {
   validateCaptureFields,
 } from "@/lib/fms/capture-fields";
 import { validateFmsAttachmentFile } from "@/lib/fms/attachment-limits";
+import { persistFmsIntakeFiles } from "@/lib/fms/intake-attachments";
 import {
   fmsTemplateStepsFingerprint,
   fmsTemplateStepsLockedMessage,
@@ -209,6 +210,7 @@ function parseStepsJson(raw: string) {
   return JSON.parse(raw) as {
     stepName: string;
     roleLabel?: string;
+    instructions?: string;
     defaultOwnerUserId?: string;
     slaType: FmsSlaType;
     slaConfig: FmsSlaConfig;
@@ -370,6 +372,7 @@ export async function createFmsTemplate(
             sortOrder: index,
             stepName: step.stepName.trim(),
             roleLabel: step.roleLabel?.trim() || null,
+            instructions: step.instructions?.trim() || null,
             defaultOwnerUserId: step.defaultOwnerUserId || null,
             slaType: step.slaType,
             slaConfig: step.slaConfig ?? {},
@@ -482,6 +485,7 @@ export async function updateFmsTemplate(
               sortOrder: index,
               stepName: step.stepName.trim(),
               roleLabel: step.roleLabel?.trim() || null,
+              instructions: step.instructions?.trim() || null,
               defaultOwnerUserId: step.defaultOwnerUserId || null,
               slaType: step.slaType,
               slaConfig: step.slaConfig ?? {},
@@ -543,6 +547,12 @@ export async function submitFmsForm(
 
     for (const field of form.fields) {
       if (field.fieldType === "FILE") {
+        if (field.required) {
+          const file = formData.get(`file_${field.fieldKey}`);
+          if (!(file instanceof File) || file.size === 0) {
+            return { ok: false, message: `${field.label} is required.` };
+          }
+        }
         continue;
       }
       if (!field.required) {
@@ -576,6 +586,29 @@ export async function submitFmsForm(
         submissionId: submission.id,
         referenceLabel,
       });
+
+      const intakeStep =
+        instance.stepStates.find((step) => step.status === "IN_PROGRESS") ??
+        instance.stepStates[0];
+
+      if (intakeStep) {
+        const valuesWithFiles = await persistFmsIntakeFiles({
+          formData,
+          fields: form.fields,
+          userId: user.id,
+          stepStateId: intakeStep.id,
+          values,
+        });
+
+        if (JSON.stringify(valuesWithFiles) !== JSON.stringify(values)) {
+          values = valuesWithFiles;
+          await prisma.fmsFormSubmission.update({
+            where: { id: submission.id },
+            data: { values: values as Prisma.InputJsonValue },
+          });
+        }
+      }
+
       await recordFmsAudit({
         organizationId: user.organizationId,
         userId: user.id,
@@ -643,7 +676,8 @@ export async function completeFmsStepAction(
       if (!stepState.ownerUserId) {
         return {
           ok: false,
-          message: "This step has no owner. Ask a manager to assign someone first.",
+          message:
+            "This step has no owner. Claim it on the job page, or ask a manager to assign someone.",
         };
       }
       return { ok: false, message: "You are not allowed to complete this step." };
@@ -752,7 +786,8 @@ export async function uploadFmsStepAttachmentAction(
       if (!stepState.ownerUserId) {
         return {
           ok: false,
-          message: "This step has no owner. Ask a manager to assign someone first.",
+          message:
+            "This step has no owner. Claim it on the job page, or ask a manager to assign someone.",
         };
       }
       return { ok: false, message: "You are not allowed to upload to this step." };

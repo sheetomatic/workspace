@@ -75,6 +75,7 @@ export function FmsMasterTrackerBlock({
   block,
   viewerUserId,
   showEditLink = true,
+  showNewLead = true,
   summary,
   returnContext = "lines",
   returnTemplateId,
@@ -82,6 +83,7 @@ export function FmsMasterTrackerBlock({
   block: FmsTrackerBlock;
   viewerUserId?: string;
   showEditLink?: boolean;
+  showNewLead?: boolean;
   summary?: React.ReactNode;
   returnContext?: FmsFromContext;
   returnTemplateId?: string;
@@ -101,12 +103,14 @@ export function FmsMasterTrackerBlock({
           </p>
         </div>
         <div className="ws-fms-tracker-block-actions">
-          <Link
-            href={`/app/fms/forms/${block.form.id}/submit`}
-            className="btn-primary btn-sm ws-sf-btn-primary"
-          >
-            New lead
-          </Link>
+          {showNewLead ? (
+            <Link
+              href={`/app/fms/forms/${block.form.id}/submit`}
+              className="btn-primary btn-sm ws-sf-btn-primary"
+            >
+              New lead
+            </Link>
+          ) : null}
           {showEditLink ? (
             <Link
               href={fmsFormHref(block.form.id, formFromContext)}

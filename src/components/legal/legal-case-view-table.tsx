@@ -9,6 +9,14 @@ export function LegalCaseViewTable({
   columns: LegalViewColumn[];
   items: LegalCase[];
 }) {
+  if (columns.length === 0) {
+    return (
+      <p className="legal-view-empty">
+        This view is missing table columns. Contact support.
+      </p>
+    );
+  }
+
   if (items.length === 0) {
     return <p className="legal-view-empty">No cases match this view.</p>;
   }

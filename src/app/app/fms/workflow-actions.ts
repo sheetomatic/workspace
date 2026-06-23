@@ -5,8 +5,9 @@ import {
   cancelFmsInstance,
   reassignFmsStepOwner,
   skipFmsStep,
+  updateFmsStepPlannedAt,
 } from "@/lib/fms/instance-lifecycle";
-import { canControlFmsPipeline, canManageFms } from "@/lib/fms/access";
+import { canControlFmsPipeline, canManageFms, canClaimFmsStep } from "@/lib/fms/access";
 import { getFmsActor } from "@/lib/fms/session";
 import { recordFmsAudit } from "@/lib/fms/audit";
 import { prisma } from "@/lib/db";
@@ -203,6 +204,140 @@ export async function reassignFmsStepAction(
       ok: false,
       message:
         error instanceof Error ? error.message : "Could not reassign step owner.",
+    };
+  }
+}
+
+export async function claimFmsStepAction(
+  _prev: FmsActionState,
+  formData: FormData,
+): Promise<FmsActionState> {
+  try {
+    const actor = await getFmsActor();
+    if (!actor.ok) {
+      return { ok: false, message: actor.message };
+    }
+    const { user } = actor;
+
+    const stepStateId = formData.get("stepStateId")?.toString() ?? "";
+    const instanceId = formData.get("instanceId")?.toString() ?? "";
+
+    const stepState = await prisma.fmsStepState.findFirst({
+      where: {
+        id: stepStateId,
+        instance: { organizationId: user.organizationId, status: "ACTIVE" },
+      },
+      include: { step: true },
+    });
+
+    if (!stepState) {
+      return { ok: false, message: "Step not found." };
+    }
+
+    if (!canClaimFmsStep(user, stepState)) {
+      return {
+        ok: false,
+        message: stepState.ownerUserId
+          ? "This step already has an owner."
+          : "You cannot claim this step.",
+      };
+    }
+
+    await reassignFmsStepOwner({
+      stepStateId,
+      organizationId: user.organizationId,
+      newOwnerUserId: user.id,
+    });
+
+    await recordFmsAudit({
+      organizationId: user.organizationId,
+      userId: user.id,
+      action: "STEP_REASSIGNED",
+      instanceId: stepState.instanceId,
+      summary: `Claimed "${stepState.step.stepName}".`,
+      metadata: { stepStateId, toOwnerId: user.id, claimed: true },
+    });
+
+    if (instanceId) {
+      revalidateInstance(instanceId);
+    }
+
+    return { ok: true, message: "Step assigned to you. You can mark it done now." };
+  } catch (error) {
+    console.error("claimFmsStepAction", error);
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "Could not claim step.",
+    };
+  }
+}
+
+export async function updateFmsStepPlannedAtAction(
+  _prev: FmsActionState,
+  formData: FormData,
+): Promise<FmsActionState> {
+  try {
+    const actor = await getFmsActor();
+    if (!actor.ok) {
+      return { ok: false, message: actor.message };
+    }
+    const { user } = actor;
+
+    if (!canControlFmsPipeline(user.role) && !canManageFms(user.role)) {
+      return { ok: false, message: "You cannot change planned dates." };
+    }
+
+    const stepStateId = formData.get("stepStateId")?.toString() ?? "";
+    const instanceId = formData.get("instanceId")?.toString() ?? "";
+    const plannedRaw = formData.get("plannedAt")?.toString()?.trim() ?? "";
+
+    if (!plannedRaw) {
+      return { ok: false, message: "Choose a planned date and time." };
+    }
+
+    const plannedAt = new Date(plannedRaw);
+    if (Number.isNaN(plannedAt.getTime())) {
+      return { ok: false, message: "Invalid date." };
+    }
+
+    const stepState = await prisma.fmsStepState.findFirst({
+      where: {
+        id: stepStateId,
+        instance: { organizationId: user.organizationId },
+      },
+      include: { step: true },
+    });
+
+    if (!stepState) {
+      return { ok: false, message: "Step not found." };
+    }
+
+    await updateFmsStepPlannedAt({
+      stepStateId,
+      organizationId: user.organizationId,
+      plannedAt,
+    });
+
+    await recordFmsAudit({
+      organizationId: user.organizationId,
+      userId: user.id,
+      action: "STEP_REASSIGNED",
+      instanceId: stepState.instanceId,
+      summary: `Updated planned date for "${stepState.step.stepName}".`,
+      metadata: { stepStateId, plannedAt: plannedAt.toISOString() },
+    });
+
+    if (instanceId) {
+      revalidateInstance(instanceId);
+    }
+
+    return { ok: true, message: "Planned date updated." };
+  } catch (error) {
+    console.error("updateFmsStepPlannedAtAction", error);
+    return {
+      ok: false,
+      message:
+        error instanceof Error ? error.message : "Could not update planned date.",
     };
   }
 }

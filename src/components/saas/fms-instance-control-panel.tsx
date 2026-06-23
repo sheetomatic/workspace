@@ -7,6 +7,7 @@ import {
   cancelFmsInstanceAction,
   reassignFmsStepAction,
   skipFmsStepAction,
+  updateFmsStepPlannedAtAction,
 } from "@/app/app/fms/workflow-actions";
 import { fmsInitialState } from "@/lib/fms-action-state";
 
@@ -20,6 +21,7 @@ type ActiveStep = {
   id: string;
   status: FmsStepStatus;
   ownerUserId: string | null;
+  plannedAt: Date | null;
   step: { stepName: string };
   owner: { id: string; name: string | null; email: string } | null;
 };
@@ -47,13 +49,22 @@ export function FmsInstanceControlPanel({
     reassignFmsStepAction,
     fmsInitialState,
   );
+  const [plannedState, plannedAction, plannedPending] = useActionState(
+    updateFmsStepPlannedAtAction,
+    fmsInitialState,
+  );
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (skipState.message || cancelState.message || reassignState.message) {
+    if (
+      skipState.message ||
+      cancelState.message ||
+      reassignState.message ||
+      plannedState.message
+    ) {
       setOpen(true);
     }
-  }, [skipState.message, cancelState.message, reassignState.message]);
+  }, [skipState.message, cancelState.message, reassignState.message, plannedState.message]);
 
   if (instanceStatus !== "ACTIVE") {
     return null;
@@ -128,6 +139,36 @@ export function FmsInstanceControlPanel({
             {reassignState.message ? (
               <p className={reassignState.ok ? "ws-form-success" : "ws-form-error"}>
                 {reassignState.message}
+              </p>
+            ) : null}
+          </form>
+
+          <form action={plannedAction} className="ws-fms-control-form">
+            <input type="hidden" name="instanceId" value={instanceId} />
+            <input type="hidden" name="stepStateId" value={activeStep.id} />
+            <label>
+              <span>Override planned date</span>
+              <input
+                defaultValue={
+                  activeStep.plannedAt
+                    ? new Date(activeStep.plannedAt).toISOString().slice(0, 16)
+                    : ""
+                }
+                name="plannedAt"
+                type="datetime-local"
+                required
+              />
+            </label>
+            <button
+              type="submit"
+              className="btn-secondary btn-sm"
+              disabled={plannedPending}
+            >
+              {plannedPending ? "Saving..." : "Update planned date"}
+            </button>
+            {plannedState.message ? (
+              <p className={plannedState.ok ? "ws-form-success" : "ws-form-error"}>
+                {plannedState.message}
               </p>
             ) : null}
           </form>

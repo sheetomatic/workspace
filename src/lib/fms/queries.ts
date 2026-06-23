@@ -395,11 +395,22 @@ export async function getFmsOnboardingStatus(organizationId: string) {
   };
 }
 
+export async function countCompletedFmsInstances(organizationId: string) {
+  return prisma.fmsInstance.count({
+    where: { organizationId, status: "COMPLETED" },
+  });
+}
+
 export async function listFmsTrackerBlocks(
   organizationId: string,
-  filter: { instanceStatus: "ACTIVE" | "COMPLETED"; limit?: number },
+  filter: {
+    instanceStatus: "ACTIVE" | "COMPLETED";
+    limit?: number;
+    skip?: number;
+  },
 ) {
   const limit = filter.limit ?? 50;
+  const skip = filter.skip ?? 0;
 
   return prisma.fmsTemplate.findMany({
     where: {
@@ -433,6 +444,7 @@ export async function listFmsTrackerBlocks(
           },
         },
         orderBy: { createdAt: "desc" },
+        skip,
         take: limit,
       },
     },

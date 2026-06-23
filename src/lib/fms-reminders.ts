@@ -23,7 +23,7 @@ function formatPlannedDate(plannedAt: Date) {
 }
 
 function fmsInstanceUrl(instanceId: string) {
-  return `${getLoginBaseUrl()}/app/fms/instances/${instanceId}`;
+  return `${getLoginBaseUrl()}/app/fms/instances/${instanceId}?from=my-stops&action=complete`;
 }
 
 function buildMessageBody(params: {

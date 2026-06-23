@@ -18,6 +18,7 @@ import {
 import type { SessionUser } from "@/lib/auth";
 import { canApproveFmsFlow, canSubmitFmsFlow } from "@/lib/fms/access";
 import { hasMinimumRole } from "@/lib/permissions";
+import { FmsInAppNotificationsBell } from "@/components/saas/fms-in-app-notifications-bell";
 
 export type FmsQueueTemplateNav = {
   id: string;
@@ -35,9 +36,19 @@ function navIsActive(pathname: string, href: string) {
 export function FmsModuleNav({
   user,
   queueTemplates,
+  unreadCount = 0,
+  notifications = [],
 }: {
   user: SessionUser;
   queueTemplates: FmsQueueTemplateNav[];
+  unreadCount?: number;
+  notifications?: Array<{
+    id: string;
+    title: string;
+    body: string;
+    href: string | null;
+    createdAt: string;
+  }>;
 }) {
   const pathname = usePathname();
   const isManager = hasMinimumRole(user.role, "MANAGER");
@@ -64,6 +75,12 @@ export function FmsModuleNav({
             </div>
           ) : null}
         </div>
+        {!collapsed ? (
+          <FmsInAppNotificationsBell
+            notifications={notifications}
+            unreadCount={unreadCount}
+          />
+        ) : null}
       </div>
 
       <ul className="ws-module-subnav-list ws-fms-subnav-list">

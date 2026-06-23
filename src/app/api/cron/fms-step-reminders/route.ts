@@ -33,7 +33,8 @@ export async function GET(request: Request) {
   let sent = 0;
   let batches = 0;
 
-  while (batches < SCALE.CRON_REMINDER_MAX_BATCHES) {
+  try {
+    while (batches < SCALE.CRON_REMINDER_MAX_BATCHES) {
     const steps = await prisma.fmsStepState.findMany({
       where: {
         status: "IN_PROGRESS",
@@ -162,5 +163,29 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ processed, sent, batches });
+    const summary = `processed=${processed} sent=${sent} batches=${batches}`;
+    await recordCronHeartbeat(summary, true);
+    return NextResponse.json({ processed, sent, batches });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Cron failed";
+    await recordCronHeartbeat(message, false);
+    throw error;
+  }
+}
+
+async function recordCronHeartbeat(summary: string, ok: boolean) {
+  await prisma.cronHeartbeat.upsert({
+    where: { jobKey: "fms-step-reminders" },
+    create: {
+      jobKey: "fms-step-reminders",
+      lastRunAt: new Date(),
+      lastOk: ok,
+      summary,
+    },
+    update: {
+      lastRunAt: new Date(),
+      lastOk: ok,
+      summary,
+    },
+  });
 }

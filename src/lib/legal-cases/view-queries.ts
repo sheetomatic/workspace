@@ -1,7 +1,14 @@
 import type { LegalCase } from "@prisma/client";
 import type { SessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { isLegalAdmin } from "@/lib/legal-cases/access";
+import {
+  isAssignedToSection,
+  isLegalAdmin,
+  normalizeStaffCode,
+  sectionResponsibleCode,
+  userStaffCode,
+} from "@/lib/legal-cases/access";
+import { LEGAL_SECTION_LABELS } from "@/lib/legal-cases/constants";
 import { buildLegalListWhere } from "@/lib/legal-cases/queries";
 import {
   hasSectionField,
@@ -12,6 +19,24 @@ import {
 import type { LegalViewKey } from "@/lib/legal-cases/views";
 
 const VIEW_PAGE_SIZE = 100;
+const WORK_SECTIONS = [2, 3, 4, 5, 6, 7] as const;
+
+export type LegalViewListFilter = {
+  category?: string;
+  assignee?: string;
+  fileStatus?: string;
+  caseStage?: string;
+  section?: string;
+  page?: number;
+};
+
+export type LegalViewFilterOptions = {
+  categories: string[];
+  assignees: string[];
+  statuses: string[];
+  stages: string[];
+  sections: Array<{ value: string; label: string }>;
+};
 
 export type RunningInsights = {
   total: number;
@@ -26,12 +51,108 @@ function matchesCategory(legalCase: LegalCase, category: string) {
   return (legalCase.category ?? "").toLowerCase() === category.toLowerCase();
 }
 
+function stageMatchesStatement(stage: string) {
+  return /STATEMENT|STAT\s*DONE|PF|WS|EVI|ISSUES|PAPER\s*DUE|RESERVE/i.test(
+    stage,
+  );
+}
+
+function stageMatchesPfDue(stage: string) {
+  return /\bPF\b|PF\s*OD|PF\s*COM|PF\s*DRIVER|PF\s*NOTICE/i.test(stage);
+}
+
+function assigneeMatches(legalCase: LegalCase, assignee?: string) {
+  if (!assignee?.trim()) return true;
+  const needle = assignee.trim().toUpperCase();
+  const haystack = [
+    legalCase.s2Responsible,
+    legalCase.s3Responsible,
+    legalCase.s4Responsible,
+    legalCase.s5Responsible,
+    legalCase.s6Responsible,
+    legalCase.s7Responsible,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toUpperCase();
+  return haystack.includes(needle);
+}
+
+function sectionMatches(
+  legalCase: LegalCase,
+  section: string | undefined,
+  context: { admin: boolean; staffCode: string },
+) {
+  if (!section?.trim()) return true;
+  const sectionNum = Number(section);
+  if (!WORK_SECTIONS.includes(sectionNum as (typeof WORK_SECTIONS)[number])) {
+    return true;
+  }
+  const workSection = sectionNum as (typeof WORK_SECTIONS)[number];
+  if (context.admin) {
+    return Boolean(sectionResponsibleCode(legalCase, workSection));
+  }
+  if (!context.staffCode) return false;
+  return isAssignedToSection(legalCase, workSection, context.staffCode);
+}
+
+function applyCommonViewFilters(
+  rows: LegalCase[],
+  options: LegalViewListFilter,
+  context: { admin: boolean; staffCode: string },
+): LegalCase[] {
+  const assigneeCode = options.assignee?.trim()
+    ? normalizeStaffCode(options.assignee)
+    : null;
+  const sectionNum = options.section?.trim() ? Number(options.section) : null;
+  const hasWorkSection =
+    sectionNum !== null &&
+    WORK_SECTIONS.includes(sectionNum as (typeof WORK_SECTIONS)[number]);
+
+  return rows.filter((item) => {
+    if (options.fileStatus?.trim()) {
+      if (
+        (item.fileStatus ?? "").toUpperCase() !==
+        options.fileStatus.trim().toUpperCase()
+      ) {
+        return false;
+      }
+    }
+    if (options.caseStage?.trim()) {
+      if ((item.caseStage ?? "").trim() !== options.caseStage.trim()) {
+        return false;
+      }
+    }
+    if (assigneeCode) {
+      if (hasWorkSection) {
+        if (
+          !isAssignedToSection(
+            item,
+            sectionNum as (typeof WORK_SECTIONS)[number],
+            assigneeCode,
+          )
+        ) {
+          return false;
+        }
+      } else if (!assigneeMatches(item, options.assignee)) {
+        return false;
+      }
+    } else if (hasWorkSection) {
+      if (!sectionMatches(item, options.section, context)) {
+        return false;
+      }
+    }
+    return true;
+  });
+}
+
 function filterViewCases(
   cases: LegalCase[],
   viewKey: LegalViewKey,
-  category?: string,
+  options: LegalViewListFilter = {},
+  context: { admin: boolean; staffCode: string } = { admin: true, staffCode: "" },
 ): LegalCase[] {
-  let rows = cases.filter((item) => matchesCategory(item, category ?? ""));
+  let rows = cases.filter((item) => matchesCategory(item, options.category ?? ""));
 
   switch (viewKey) {
     case "running":
@@ -44,6 +165,26 @@ function filterViewCases(
       break;
     case "diary":
       rows = rows.filter((item) => Boolean(item.nextDate?.trim()));
+      rows.sort((a, b) =>
+        (a.nextDate ?? "").localeCompare(b.nextDate ?? "", undefined, {
+          numeric: true,
+        }),
+      );
+      break;
+    case "statement":
+      rows = rows.filter((item) =>
+        stageMatchesStatement(item.caseStage?.toUpperCase() ?? ""),
+      );
+      rows.sort((a, b) =>
+        (a.nextDate ?? "").localeCompare(b.nextDate ?? "", undefined, {
+          numeric: true,
+        }),
+      );
+      break;
+    case "pf-due":
+      rows = rows.filter((item) =>
+        stageMatchesPfDue(item.caseStage?.toUpperCase() ?? ""),
+      );
       rows.sort((a, b) =>
         (a.nextDate ?? "").localeCompare(b.nextDate ?? "", undefined, {
           numeric: true,
@@ -113,18 +254,32 @@ function filterViewCases(
       break;
   }
 
-  return rows;
+  return applyCommonViewFilters(rows, options, context);
+}
+
+export function buildLegalViewListQuery(
+  filter: LegalViewListFilter,
+): URLSearchParams {
+  const params = new URLSearchParams();
+  if (filter.category) params.set("category", filter.category);
+  if (filter.assignee) params.set("assignee", filter.assignee);
+  if (filter.fileStatus) params.set("fileStatus", filter.fileStatus);
+  if (filter.caseStage) params.set("caseStage", filter.caseStage);
+  if (filter.section) params.set("section", filter.section);
+  return params;
 }
 
 export async function listLegalViewCases(
   user: SessionUser,
   viewKey: LegalViewKey,
-  options: { category?: string; page?: number } = {},
+  options: LegalViewListFilter = {},
 ) {
   const page = Math.max(1, options.page ?? 1);
+  const admin = isLegalAdmin(user);
+  const staffCode = userStaffCode(user);
 
   const baseWhere = buildLegalListWhere(user, {
-    mineOnly: !isLegalAdmin(user),
+    mineOnly: !admin,
   });
 
   const cases = await prisma.legalCase.findMany({
@@ -132,7 +287,10 @@ export async function listLegalViewCases(
     orderBy: [{ fileNumber: "asc" }, { mccNumber: "asc" }],
   });
 
-  const filtered = filterViewCases(cases, viewKey, options.category);
+  const filtered = filterViewCases(cases, viewKey, options, {
+    admin,
+    staffCode,
+  });
   const total = filtered.length;
   const totalPages = Math.max(1, Math.ceil(total / VIEW_PAGE_SIZE));
   const items = filtered.slice((page - 1) * VIEW_PAGE_SIZE, page * VIEW_PAGE_SIZE);
@@ -170,16 +328,75 @@ export async function getRunningInsights(
 }
 
 export async function listLegalCategories(user: SessionUser) {
-  const where = buildLegalListWhere(user, { mineOnly: !isLegalAdmin(user) });
-  const rows = await prisma.legalCase.findMany({
-    where,
-    select: { category: true },
-    distinct: ["category"],
-    orderBy: { category: "asc" },
+  const options = await getLegalViewFilterOptions(user);
+  return options.categories;
+}
+
+export async function getLegalViewFilterOptions(
+  user: SessionUser,
+): Promise<LegalViewFilterOptions> {
+  const where = buildLegalListWhere(user, {
+    mineOnly: !isLegalAdmin(user),
   });
-  return rows
-    .map((row) => row.category?.trim())
-    .filter((value): value is string => Boolean(value));
+
+  const cases = await prisma.legalCase.findMany({
+    where,
+    select: {
+      category: true,
+      fileStatus: true,
+      caseStage: true,
+      s2Responsible: true,
+      s3Responsible: true,
+      s4Responsible: true,
+      s5Responsible: true,
+      s6Responsible: true,
+      s7Responsible: true,
+    },
+  });
+
+  const categories = new Set<string>();
+  const statuses = new Set<string>();
+  const stages = new Set<string>();
+  const assignees = new Set<string>();
+
+  for (const item of cases) {
+    const category = item.category?.trim();
+    if (category) categories.add(category);
+
+    const status = item.fileStatus?.trim();
+    if (status) statuses.add(status);
+
+    const stage = item.caseStage?.trim();
+    if (stage) stages.add(stage);
+
+    for (const code of [
+      item.s2Responsible,
+      item.s3Responsible,
+      item.s4Responsible,
+      item.s5Responsible,
+      item.s6Responsible,
+      item.s7Responsible,
+    ]) {
+      const normalized = normalizeStaffCode(code);
+      if (normalized) assignees.add(normalized);
+    }
+  }
+
+  const sections = WORK_SECTIONS.map((section) => ({
+    value: String(section),
+    label: `S${section} · ${LEGAL_SECTION_LABELS[section]}`,
+  }));
+
+  const sortAlpha = (a: string, b: string) =>
+    a.localeCompare(b, undefined, { sensitivity: "base" });
+
+  return {
+    categories: [...categories].sort(sortAlpha),
+    assignees: [...assignees].sort(sortAlpha),
+    statuses: [...statuses].sort(sortAlpha),
+    stages: [...stages].sort(sortAlpha),
+    sections,
+  };
 }
 
 export async function countAllCases(user: SessionUser) {

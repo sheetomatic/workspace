@@ -4,11 +4,17 @@ import { FmsInstanceActivity } from "@/components/saas/fms-instance-activity";
 import { FmsInstanceAttachments } from "@/components/saas/fms-instance-attachments";
 import { FmsInstanceControlPanel } from "@/components/saas/fms-instance-control-panel";
 import { FmsInstanceJourneyRow } from "@/components/saas/fms-instance-journey-row";
+import { FmsClaimStepBanner } from "@/components/saas/fms-claim-step-banner";
 import { FmsPipelineCountBadges } from "@/components/saas/fms-pipeline-count-badges";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
-import { canControlFmsPipeline, canCompleteFmsStep } from "@/lib/fms/access";
+import {
+  canControlFmsPipeline,
+  canCompleteFmsStep,
+  canViewFmsInstance,
+  canClaimFmsStep,
+} from "@/lib/fms/access";
 import { resolveFmsBackLink } from "@/lib/fms/navigation";
 import { getFmsInstance, getFmsPipelineCounts } from "@/lib/fms/queries";
 import type { FmsSlaConfig } from "@/lib/fms/constants";
@@ -43,6 +49,18 @@ export default async function FmsInstancePage({ params, searchParams }: PageProp
     notFound();
   }
 
+  const accessContext = {
+    submission: instance.submission,
+    stepStates: instance.stepStates.map((step) => ({
+      ownerUserId: step.ownerUserId,
+      completedByUserId: step.completedByUserId,
+    })),
+  };
+
+  if (!canViewFmsInstance(user, accessContext)) {
+    notFound();
+  }
+
   const [auditEvents, pipelineCounts] = await Promise.all([
     listFmsAuditForInstance(instanceId, user.organizationId),
     getFmsPipelineCounts(user.organizationId),
@@ -54,6 +72,10 @@ export default async function FmsInstancePage({ params, searchParams }: PageProp
     Boolean(activeStep) &&
     instance.status === "ACTIVE" &&
     canCompleteFmsStep(user, activeStep ?? { ownerUserId: null });
+  const canClaim =
+    Boolean(activeStep) &&
+    instance.status === "ACTIVE" &&
+    canClaimFmsStep(user, activeStep ?? { ownerUserId: null, status: "PENDING" });
 
   const members = canControl
     ? await listAssignableMembers(user.organizationId)
@@ -209,11 +231,26 @@ export default async function FmsInstancePage({ params, searchParams }: PageProp
           </p>
         ) : null}
 
+        {canClaim && activeStep ? (
+          <FmsClaimStepBanner instanceId={instance.id} stepStateId={activeStep.id} />
+        ) : null}
+
         {canControl ? (
           <FmsInstanceControlPanel
             instanceId={instance.id}
             instanceStatus={instance.status}
-            activeStep={activeStep ?? null}
+            activeStep={
+              activeStep
+                ? {
+                    id: activeStep.id,
+                    status: activeStep.status,
+                    ownerUserId: activeStep.ownerUserId,
+                    plannedAt: activeStep.plannedAt,
+                    step: { stepName: activeStep.step.stepName },
+                    owner: activeStep.owner,
+                  }
+                : null
+            }
             members={members}
           />
         ) : null}

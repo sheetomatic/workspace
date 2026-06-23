@@ -1,0 +1,119 @@
+---
+description: Sheetomatic product north star — EM Ready owner ops + deficit KRA/KPI
+alwaysApply: true
+---
+
+# Product north star
+
+**Sheetomatic = EM Ready owner operations platform** for BCI/CEOITBOX-style Indian SMEs.
+
+**USP:** FMS, IMS, tasks, checklists, and MIS auto-update all week. Owner/reviewer opens the system and **starts EM with zero prep** — no MIS hire needed to compile reports.
+
+When designing UI, APIs, or prioritizing work, ask: *Does this make EM Ready faster? Does person-wise KRA/KPI show deficits clearly?*
+
+## Core product (build and invest here)
+
+### EM Ready (hero outcome)
+- One owner/reviewer view for weekly executive meeting (EM)
+- Auto-fetched, live data — no human prepares slides or merges Sheets before the meeting
+- Exceptions-first: overdue, delayed, pending, stock breaches — not raw row dumps
+
+### FMS — Flow Management System (multiple allowed)
+- An org can have **multiple FMS templates** (split FMS): e.g. Order Placed, Sample, Dispatch, Payment follow-up
+- Each FMS defines steps with Who / How / When / proof channel / SLA
+- Per job/instance: Planned | Actual | Status | Time Delay per step
+- SLA breach drives internal WhatsApp alerts (staff only — not customer chatbot)
+
+### IMS — Inventory Management System
+- Stock in/out, balances, reorder exceptions
+- Feeds same person-wise KRA/KPI and EM board as FMS
+
+### Task delegation, checklists, PMS/MIS
+- Tasks, recurring checklists, and other modules feed the **same EM scoreboard**
+- All roll up to **person-wise KRA/KPI** on EM
+
+### WhatsApp role
+- **Internal alerts only** — task assign, SLA breach, overdue nudges
+- Official API first; Web Based API dev-only unless `NEXT_PUBLIC_ENABLE_WEB_BASED_API=true`
+- Not a JoyzAI-style customer FAQ bot (deprioritize)
+
+### Native forms — no Google Forms, no Sheet formulas
+- **Do not** depend on Google Forms, prefilled Form URLs, IMPORTRANGE, or BMP-style Sheet formulas for FMS/PC/HR capture
+- **Sheetomatic builds the forms** — step completion, checklist runs, HR screening, PO lines, etc. are in-app (web; WA deep links later if needed)
+- SLA (planned/actual/delay), DB_Format unpivot, For PC, and conditional RAG run in **server TypeScript + Postgres**, not Sheets
+- Google Sheets/Looker may remain optional **export or mirror** for owners who want a spreadsheet view — not the runtime
+
+## KRA/KPI scoring — deficit (negative) framing
+
+**Critical:** Person-wise KRA/KPI is shown as **negative deficit %**, NOT positive “% done”.
+
+### Do NOT show
+- “8 of 10 done = 80%” completion framing on EM/KRA views
+
+### DO show
+- Penalty-style deficit from gaps and delays
+- Example: 10 tasks assigned, **2 still pending** → show **-20%**, not 80% done
+- Each unit (task, FMS step, checklist item, etc.) contributes `-100 / total_count` per violation category unless a module-specific weight is defined
+
+### Example task breakdown (10 tasks)
+| Status | Count | EM meaning |
+|--------|-------|------------|
+| Done on time | 2 | No penalty |
+| Not done on time (open, past due) | 6 | Penalty each |
+| Pending and delayed | 1 | Penalty (pending + delay) |
+| Done but delayed | 1 | Penalty (late completion) |
+
+Person KRA/KPI = sum of penalties across **all modules** (tasks + all FMS instances + IMS exceptions + checklists) for that person in the EM period.
+
+### Violation categories (default weights — tune per module)
+1. **Pending** (not started / still open) — full unit penalty `-100/total`
+2. **Overdue open** (not done on time) — full unit penalty
+3. **Done late** (completed after SLA) — penalty (same or reduced weight per product decision)
+4. **On time** — zero penalty
+
+Display: person row shows e.g. **Tasks -20% | FMS Order Flow -15% | Checklist -10% | Total -45%** (or single rolled-up deficit — UI TBD).
+
+## Deprioritize
+
+- JoyzAI parity / customer-facing WhatsApp AI bot as hero product
+- Generic CRM chatbot positioning
+- Linking to `wa.redlava.in`; production domain `ai.sheetomatic.com`
+- Branding: use **Official API**, **Web Based API** — never MAS / Message Auto Sender in UI
+
+## Reference market
+
+- BCI (Rahul Jain): FMS, IMS, checklists, split FMS, delegation sheets, MIS, weekly EM
+- CEOITBOX: Google Workspace implementation + optional MIS placement — we productize the runtime
+
+## BCI language to mirror (YouTube, site, EM UI)
+
+Use alumni vocabulary — do not invent new acronyms. Key phrases from BCI curriculum & testimonials:
+
+- **Autopilot business** / run ops **one day a week** (or 1.5–2 days for weekly reviews only)
+- **EA, PC, FMS, IMS** — Executive Assistant, Process Checklist, Flow Management System, Inventory Management System
+- **Stop blame game** → employees take **ownership**; **accountability structure**
+- **KRA & KPI** per employee — BCI teaches **4 parameters** to define them; we show **deficit %** not completion %
+- **MIS number system** — monitor performance of all employees (BMI site copy)
+- **Weekly reviews** with teams = EM; owner discusses exceptions, not prep
+- **300 flowcharts and 300 FMSs** (Vaibhav Tapdiya testimonial) → we productize multi-FMS without 300 manual sheets
+- **On-time collection, inventory, dispatch** as pain areas FMS/IMS address
+
+### BCI reference links (for content research — not affiliation claims)
+
+- Channel: **Rahul Jain- Business coaching India** on YouTube
+- Example testimonial: [Vidit Jain / Toyo Kombucha BMP](https://www.youtube.com/watch?v=k_hqaJXpnRk) — systems = autopilot, manage high revenue without overwhelm
+- Testimonial hub: [businesscoachingindia.com](https://businesscoachingindia.com/) — Vaibhav Tapdiya (300 FMS, weekly office), weekly-review-only alumni, KRA/KPI quotes
+- BMP curriculum: [9-month workshop LP](https://lp.businesscoachingindia.com/9-months-workshop/) — BMS, org hierarchy, 4 KRA/KPI parameters, accountability
+
+### Sheetomatic pitch vs BCI outcome (same dream, different vehicle)
+
+| BCI alumni say | Sheetomatic delivers |
+|----------------|---------------------|
+| "We made 300 FMS in Sheets" | Multiple FMS templates in product — no sheet sprawl |
+| "Weekly reviews with my team" | EM board ready — open and start |
+| "KRA/KPI for each employee" | Person-wise deficit % across tasks + all FMS + IMS + checklists |
+| "Stop blame game" | Planned/actual/delay visible per person — data not arguments |
+| "MIS monitors performance" | Auto-fetch — no MIS hire to compile before EM |
+| "On-time delivery / collection" | SLA breach alerts + EM exceptions |
+
+Do not claim official BCI partnership unless contracted. Position as: **"Built for owners who trained on FMS/MIS/EM — now the system runs it."**

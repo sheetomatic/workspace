@@ -50,6 +50,16 @@ export function FmsStepSettingsPanel({
         </label>
 
         <label className="ws-fms-jf-option-field">
+          HOW (instructions for doer)
+          <textarea
+            rows={4}
+            value={step.instructions}
+            onChange={(event) => onUpdate({ instructions: event.target.value })}
+            placeholder="What should the doer check or deliver at this stop?"
+          />
+        </label>
+
+        <label className="ws-fms-jf-option-field">
           WHEN (TAT / SLA type)
           <select
             value={step.slaType}
