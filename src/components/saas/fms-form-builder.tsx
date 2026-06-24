@@ -12,7 +12,21 @@ import {
 import { fmsInitialState } from "@/lib/fms-action-state";
 import { FmsFieldTypePopover } from "@/components/saas/fms-form-add-modal";
 import { FmsBuilderTableField } from "@/components/saas/fms-builder-table-field";
-import { FMS_FIELD_TYPE_LABELS, DEFAULT_PO_LINE_ITEM_COLUMNS, defaultFieldWidth, isHalfWidthFieldType, parseFieldOptions, parseTableFooterTotals, type FmsFieldWidth, type FmsTableColumn, type FmsTableFooterTotal } from "@/lib/fms/constants";
+import {
+  DEFAULT_PO_LINE_ITEM_COLUMNS,
+  FMS_DEFAULT_TABLE_FIELD_LABEL,
+  FMS_FIELD_TYPE_LABELS,
+  defaultFieldWidth,
+  defaultTableFooterTotals,
+  isHalfWidthFieldType,
+  mergeTableColumnsWithDefaults,
+  normalizeTableFieldLabel,
+  parseFieldOptions,
+  parseTableFooterTotals,
+  type FmsFieldWidth,
+  type FmsTableColumn,
+  type FmsTableFooterTotal,
+} from "@/lib/fms/constants";
 import { countMeaningfulFormFields } from "@/lib/fms/form-ai";
 import type { ParsedFmsFormDraft } from "@/lib/integrations/openai";
 
@@ -43,7 +57,7 @@ const DEFAULT_LABELS: Partial<Record<FmsFormFieldType, string>> = {
   DATE: "Date",
   DATETIME: "Date & time",
   FILE: "File upload",
-  TABLE: "Line items",
+  TABLE: FMS_DEFAULT_TABLE_FIELD_LABEL,
 };
 
 const DEFAULT_PLACEHOLDERS: Partial<Record<FmsFormFieldType, string>> = {
@@ -72,16 +86,7 @@ function newField(type: FmsFormFieldType = "TEXT"): FormFieldDraft {
         ? DEFAULT_PO_LINE_ITEM_COLUMNS.map((column) => ({ ...column }))
         : [],
     tableFooterTotals:
-      type === "TABLE"
-        ? [
-            {
-              key: "grand_total",
-              label: "Grand total",
-              columnKey: "line_total",
-              decimals: 2,
-            },
-          ]
-        : [],
+      type === "TABLE" ? defaultTableFooterTotals([]) : [],
   };
 }
 
@@ -106,7 +111,10 @@ function toDraft(
       : "";
     return {
       id: crypto.randomUUID(),
-      label: field.label,
+      label:
+        field.fieldType === "TABLE"
+          ? normalizeTableFieldLabel(field.label)
+          : field.label,
       fieldType: field.fieldType,
       required: field.required,
       options: parsed.choices.join("\n"),
@@ -116,14 +124,17 @@ function toDraft(
       dependsOnEnabled: Boolean(parsed.dependsOn && parsed.choicesByParent),
       dependsOn: parsed.dependsOn ?? "",
       choicesByParentText,
-      tableColumns: field.fieldType === "TABLE"
-        ? (parsed.columns?.length
-            ? parsed.columns.map((column) => ({ ...column }))
-            : DEFAULT_PO_LINE_ITEM_COLUMNS.map((column) => ({ ...column })))
-        : [],
+      tableColumns:
+        field.fieldType === "TABLE"
+          ? mergeTableColumnsWithDefaults(
+              parsed.columns?.length
+                ? parsed.columns.map((column) => ({ ...column }))
+                : [],
+            )
+          : [],
       tableFooterTotals:
         field.fieldType === "TABLE"
-          ? parseTableFooterTotals(field.options)
+          ? defaultTableFooterTotals(parseTableFooterTotals(field.options))
           : [],
     };
   });
@@ -147,7 +158,10 @@ function draftFromAi(draft: ParsedFmsFormDraft): {
         : "";
       return {
         id: crypto.randomUUID(),
-        label: field.label,
+        label:
+          field.fieldType === "TABLE"
+            ? normalizeTableFieldLabel(field.label)
+            : field.label,
         fieldType: field.fieldType,
         required: field.required,
         options:
@@ -162,11 +176,14 @@ function draftFromAi(draft: ParsedFmsFormDraft): {
         choicesByParentText,
         tableColumns:
           field.fieldType === "TABLE"
-            ? (field.columns?.length
-                ? field.columns.map((column) => ({ ...column }))
-                : DEFAULT_PO_LINE_ITEM_COLUMNS.map((column) => ({ ...column })))
+            ? mergeTableColumnsWithDefaults(
+                field.columns?.length
+                  ? field.columns.map((column) => ({ ...column }))
+                  : [],
+              )
             : [],
-        tableFooterTotals: [],
+        tableFooterTotals:
+          field.fieldType === "TABLE" ? defaultTableFooterTotals([]) : [],
       };
     }),
   };
@@ -230,10 +247,12 @@ function FieldPreviewStub({
   field,
   editorMode = false,
   onUpdate,
+  onActivate,
 }: {
   field: FormFieldDraft;
   editorMode?: boolean;
   onUpdate?: (patch: Partial<FormFieldDraft>) => void;
+  onActivate?: () => void;
 }) {
   const options = parseOptionTags(field.options);
 
@@ -308,6 +327,7 @@ function FieldPreviewStub({
                 : DEFAULT_PO_LINE_ITEM_COLUMNS
             }
             onChange={(tableColumns) => onUpdate({ tableColumns })}
+            onActivate={onActivate}
           />
         ) : (
           <span className="ws-fms-jf-table-preview">
@@ -335,6 +355,7 @@ function EditorField({
   canMoveUp,
   canMoveDown,
   onSelect,
+  onOpenSettings,
   onUpdate,
   onMoveUp,
   onMoveDown,
@@ -345,6 +366,7 @@ function EditorField({
   canMoveUp: boolean;
   canMoveDown: boolean;
   onSelect: () => void;
+  onOpenSettings: () => void;
   onUpdate: (patch: Partial<FormFieldDraft>) => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
@@ -378,21 +400,24 @@ function EditorField({
     >
       <div className="ws-fms-jf-field-row">
         <div className="ws-fms-jf-field-main">
-          <input
-            className="ws-fms-jf-field-label"
-            value={field.label}
-            onChange={(event) => onUpdate({ label: event.target.value })}
-            placeholder="Field label"
-            aria-label="Field label"
-          />
-          {field.required ? <span className="ws-fms-jf-req">*</span> : null}
-          <span className="ws-fms-jf-field-type-pill">
-            {FMS_FIELD_TYPE_LABELS[field.fieldType]}
-          </span>
+          <div className="ws-fms-jf-field-header">
+            <input
+              className="ws-fms-jf-field-label"
+              value={field.label}
+              onChange={(event) => onUpdate({ label: event.target.value })}
+              placeholder={DEFAULT_LABELS[field.fieldType] ?? "Field label"}
+              aria-label="Field label"
+            />
+            {field.required ? <span className="ws-fms-jf-req">*</span> : null}
+            <span className="ws-fms-jf-field-type-pill">
+              {FMS_FIELD_TYPE_LABELS[field.fieldType]}
+            </span>
+          </div>
           <FieldPreviewStub
             field={field}
             editorMode
             onUpdate={onUpdate}
+            onActivate={onOpenSettings}
           />
         </div>
         <div className="ws-fms-jf-field-actions">
@@ -420,7 +445,10 @@ function EditorField({
             type="button"
             className={`ws-fms-jf-gear${selected ? " is-active" : ""}`}
             aria-label="Field settings"
-            onClick={onSelect}
+            onClick={(event) => {
+              event.stopPropagation();
+              onOpenSettings();
+            }}
           >
             <Settings2 size={16} aria-hidden />
           </button>
@@ -666,11 +694,8 @@ export function FmsFormBuilder({
                     selected={field.id === selectedId}
                     canMoveUp={index > 0}
                     canMoveDown={index < fields.length - 1}
-                    onSelect={() =>
-                      setSelectedId((prev) =>
-                        prev === field.id ? null : field.id,
-                      )
-                    }
+                    onSelect={() => setSelectedId(field.id)}
+                    onOpenSettings={() => setSelectedId(field.id)}
                     onUpdate={(patch) => updateField(field.id, patch)}
                     onMoveUp={() => moveField(field.id, "up")}
                     onMoveDown={() => moveField(field.id, "down")}

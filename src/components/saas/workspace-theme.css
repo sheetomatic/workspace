@@ -13746,6 +13746,23 @@ body:has(.workspace-app.saas-app) {
   margin-bottom: 8px;
 }
 
+.workspace-app .ws-fms-jf-field-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+.workspace-app .ws-fms-jf-field-header .ws-fms-jf-field-label {
+  flex: 1 1 8rem;
+  width: auto;
+  min-width: 6rem;
+}
+
+.workspace-app .ws-fms-jf-field-header .ws-fms-jf-req {
+  flex-shrink: 0;
+}
+
 .workspace-app .ws-fms-jf-field-label {
   display: block;
   width: 100%;
@@ -15084,8 +15101,8 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-fms-builder-table {
   display: grid;
-  gap: 10px;
-  margin-top: 4px;
+  gap: 12px;
+  margin-top: 8px;
 }
 
 .workspace-app .ws-fms-builder-table-scroll {
@@ -15097,13 +15114,13 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-fms-builder-table-grid {
   width: 100%;
-  min-width: 480px;
+  min-width: 640px;
   border-collapse: collapse;
 }
 
 .workspace-app .ws-fms-builder-table-grid th,
 .workspace-app .ws-fms-builder-table-grid td {
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-bottom: 1px solid #ececec;
   vertical-align: middle;
 }
@@ -15114,7 +15131,7 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-fms-builder-table-grid th {
   vertical-align: top;
-  min-width: 120px;
+  min-width: 148px;
 }
 
 .workspace-app .ws-fms-builder-table-head-cell {
@@ -15125,15 +15142,22 @@ body:has(.workspace-app.saas-app) {
 .workspace-app .ws-fms-builder-table-head-actions {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.workspace-app .ws-fms-builder-table-grid th:hover .ws-fms-builder-table-head-actions,
+.workspace-app .ws-fms-builder-table-grid th:focus-within .ws-fms-builder-table-head-actions {
+  opacity: 1;
 }
 
 .workspace-app .ws-fms-builder-table-head-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
@@ -15161,8 +15185,9 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-fms-builder-table-type-pill {
   display: inline-flex;
-  align-self: flex-start;
-  padding: 2px 8px;
+  flex-shrink: 0;
+  align-self: center;
+  padding: 2px 7px;
   border-radius: 999px;
   font-size: 0.625rem;
   font-weight: 700;
@@ -15179,10 +15204,10 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-fms-builder-table-head-input {
   width: 100%;
-  min-width: 72px;
-  padding: 6px 8px;
+  min-width: 96px;
+  padding: 7px 10px;
   border: 1px solid #d1d5db;
-  border-radius: 4px;
+  border-radius: 6px;
   background: #fff;
   font-size: 0.8125rem;
   font-weight: 600;

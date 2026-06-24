@@ -7,8 +7,11 @@ import {
   FMS_FORM_FIELD_TYPES,
   DEFAULT_PO_LINE_ITEM_COLUMNS,
   defaultFieldWidth,
+  defaultTableFooterTotals,
   isHalfWidthFieldType,
   isTableFieldType,
+  mergeTableColumnsWithDefaults,
+  normalizeTableFieldLabel,
   slugifyFieldKey,
   type FmsFieldWidth,
   type FmsTableColumn,
@@ -63,10 +66,7 @@ export function FmsFieldSettingsPanel({
       isEnumType(candidate.fieldType) &&
       slugifyFieldKey(candidate.label.trim() || "field"),
   );
-  const tableColumns =
-    field.tableColumns.length > 0
-      ? field.tableColumns
-      : DEFAULT_PO_LINE_ITEM_COLUMNS.map((column) => ({ ...column }));
+  const tableColumns = mergeTableColumnsWithDefaults(field.tableColumns);
 
   async function handleChoicesUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -106,17 +106,24 @@ export function FmsFieldSettingsPanel({
             value={field.fieldType}
             onChange={(event) => {
               const fieldType = event.target.value as FmsFormFieldType;
+              const switchingToTable = fieldType === "TABLE";
               onUpdate({
                 fieldType,
                 width: defaultFieldWidth(fieldType),
-                tableColumns:
-                  fieldType === "TABLE"
-                    ? field.tableColumns.length
-                      ? field.tableColumns
-                      : DEFAULT_PO_LINE_ITEM_COLUMNS.map((column) => ({
-                          ...column,
-                        }))
-                    : [],
+                ...(switchingToTable
+                  ? {
+                      label: normalizeTableFieldLabel(field.label),
+                      tableColumns: mergeTableColumnsWithDefaults(
+                        field.tableColumns,
+                      ),
+                      tableFooterTotals: defaultTableFooterTotals(
+                        field.tableFooterTotals,
+                      ),
+                    }
+                  : {
+                      tableColumns: [],
+                      tableFooterTotals: [],
+                    }),
               });
             }}
           >

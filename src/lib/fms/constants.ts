@@ -182,6 +182,72 @@ export const DEFAULT_PO_LINE_ITEM_COLUMNS: FmsTableColumn[] = [
   },
 ];
 
+export const FMS_DEFAULT_TABLE_FIELD_LABEL = "Line items";
+
+export const FMS_DEFAULT_TABLE_FOOTER_TOTALS: FmsTableFooterTotal[] = [
+  {
+    key: "grand_total",
+    label: "Grand total",
+    columnKey: "line_total",
+    decimals: 2,
+  },
+];
+
+const GENERIC_NON_TABLE_FIELD_LABELS = new Set([
+  "Short text",
+  "Long text",
+  "Email",
+  "Phone number",
+  "Number",
+  "Single choice",
+  "Multiple choice",
+  "Date",
+  "Date & time",
+  "File upload",
+  "New field",
+]);
+
+/** Use when loading or switching to TABLE so label matches the field type. */
+export function normalizeTableFieldLabel(label: string): string {
+  const trimmed = label.trim();
+  if (!trimmed || GENERIC_NON_TABLE_FIELD_LABELS.has(trimmed)) {
+    return FMS_DEFAULT_TABLE_FIELD_LABEL;
+  }
+  return trimmed;
+}
+
+/** Merge saved columns with PO defaults so Rate / Line total appear on older forms. */
+export function mergeTableColumnsWithDefaults(
+  columns: FmsTableColumn[],
+): FmsTableColumn[] {
+  if (!columns.length) {
+    return DEFAULT_PO_LINE_ITEM_COLUMNS.map((column) => ({ ...column }));
+  }
+  const byKey = new Map(columns.map((column) => [column.key, column]));
+  const defaultKeys = DEFAULT_PO_LINE_ITEM_COLUMNS.map((column) => column.key);
+  const merged: FmsTableColumn[] = DEFAULT_PO_LINE_ITEM_COLUMNS.map(
+    (defaultColumn) => {
+      const saved = byKey.get(defaultColumn.key);
+      return saved ? { ...saved } : { ...defaultColumn };
+    },
+  );
+  for (const column of columns) {
+    if (!defaultKeys.includes(column.key)) {
+      merged.push({ ...column });
+    }
+  }
+  return merged;
+}
+
+export function defaultTableFooterTotals(
+  footerTotals: FmsTableFooterTotal[],
+): FmsTableFooterTotal[] {
+  if (footerTotals.length) {
+    return footerTotals.map((total) => ({ ...total }));
+  }
+  return FMS_DEFAULT_TABLE_FOOTER_TOTALS.map((total) => ({ ...total }));
+}
+
 export function isTableFieldType(fieldType: FmsFormFieldType) {
   return fieldType === "TABLE";
 }

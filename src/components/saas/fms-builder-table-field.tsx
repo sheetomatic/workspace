@@ -44,15 +44,26 @@ const FORMULA_OPERATIONS: FmsTableFormulaOp[] = [
 export function FmsBuilderTableField({
   columns,
   onChange,
+  onActivate,
 }: {
   columns: FmsTableColumn[];
   onChange: (columns: FmsTableColumn[]) => void;
+  onActivate?: () => void;
 }) {
   const tableColumns = resolveTableColumns(columns);
   const canDeleteColumn = tableColumns.length > 1;
 
   return (
-    <div className="ws-fms-builder-table">
+    <div
+      className="ws-fms-builder-table"
+      onPointerDown={(event) => {
+        const target = event.target as HTMLElement;
+        if (target.closest("input, select, textarea, button")) {
+          return;
+        }
+        onActivate?.();
+      }}
+    >
       <div className="ws-fms-builder-table-scroll">
         <table className="ws-fms-builder-table-grid">
           <thead>
@@ -65,6 +76,7 @@ export function FmsBuilderTableField({
                       value={column.label}
                       placeholder="Column label"
                       aria-label={`Column ${index + 1} label`}
+                      onFocus={() => onActivate?.()}
                       onChange={(event) =>
                         onChange(
                           updateTableColumn(tableColumns, index, {
@@ -73,7 +85,10 @@ export function FmsBuilderTableField({
                         )
                       }
                     />
-                    <div className="ws-fms-builder-table-head-actions">
+                    <div
+                      className="ws-fms-builder-table-head-actions"
+                      aria-label={`${column.label} column actions`}
+                    >
                       <button
                         type="button"
                         className="ws-fms-builder-table-head-btn"
@@ -84,7 +99,7 @@ export function FmsBuilderTableField({
                           onChange(moveTableColumn(tableColumns, index, "left"))
                         }
                       >
-                        <ChevronLeft size={14} aria-hidden />
+                        <ChevronLeft size={13} aria-hidden />
                       </button>
                       <button
                         type="button"
@@ -96,7 +111,7 @@ export function FmsBuilderTableField({
                           onChange(moveTableColumn(tableColumns, index, "right"))
                         }
                       >
-                        <ChevronRight size={14} aria-hidden />
+                        <ChevronRight size={13} aria-hidden />
                       </button>
                       <button
                         type="button"
@@ -108,14 +123,9 @@ export function FmsBuilderTableField({
                           onChange(removeTableColumnAt(tableColumns, index))
                         }
                       >
-                        <Trash2 size={14} aria-hidden />
+                        <Trash2 size={13} aria-hidden />
                       </button>
                     </div>
-                    <span
-                      className={`ws-fms-builder-table-type-pill${isCalculatedTableColumn(column) ? " is-calc" : ""}`}
-                    >
-                      {COLUMN_TYPE_LABELS[column.columnType]}
-                    </span>
                   </div>
                 </th>
               ))}
@@ -125,10 +135,11 @@ export function FmsBuilderTableField({
             <tr>
               {tableColumns.map((column, index) => {
                 if (isCalculatedTableColumn(column)) {
+                  const formulaHint = describeColumnFormula(column);
                   return (
                     <td key={`${column.key}-preview-${index}`}>
                       <div className="ws-fms-intake-calc-value is-preview">
-                        Auto
+                        {formulaHint || "Auto"}
                       </div>
                     </td>
                   );
@@ -176,8 +187,8 @@ export function FmsBuilderTableField({
           Add column
         </button>
         <p className="ws-fms-muted ws-fms-builder-table-hint">
-          Use field settings to add calculated columns (Qty x Rate) and table
-          totals.
+          Hover a column header to reorder or delete. Open field settings for
+          column types, formulas, and table totals.
         </p>
       </div>
     </div>
