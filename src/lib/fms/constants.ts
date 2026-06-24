@@ -618,13 +618,10 @@ export function serializeFieldOptions(
   const footerTotals = inputObj.footerTotals;
 
   if (fieldType === "TABLE") {
-    const tableOptions: Record<string, unknown> = {
+    return {
       columns: columns?.length ? columns : DEFAULT_PO_LINE_ITEM_COLUMNS,
+      ...(footerTotals?.length ? { footerTotals } : {}),
     };
-    if (footerTotals?.length) {
-      tableOptions.footerTotals = footerTotals;
-    }
-    return tableOptions;
   }
 
   if (isEnum) {

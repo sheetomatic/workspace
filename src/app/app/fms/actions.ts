@@ -221,7 +221,11 @@ function parseFieldsJson(raw: string) {
       fieldKey,
       fieldType: field.fieldType,
       required: Boolean(field.required),
-      options: serializeFieldOptions(field.fieldType, optionsInput, width),
+      options: serializeFieldOptions(
+        field.fieldType,
+        optionsInput,
+        width,
+      ) as Prisma.InputJsonValue,
       placeholder: field.placeholder?.trim() || null,
       helpText: field.helpText?.trim() || null,
     };
