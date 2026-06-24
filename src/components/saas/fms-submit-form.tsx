@@ -4,11 +4,7 @@ import { useActionState, useMemo, useState } from "react";
 import type { FmsFormFieldType } from "@prisma/client";
 import { submitFmsForm } from "@/app/app/fms/actions";
 import { fmsInitialState } from "@/lib/fms-action-state";
-import {
-  isHalfWidthFieldType,
-  isTimestampField,
-  parseFieldOptions,
-} from "@/lib/fms/constants";
+import { isTimestampField, parseFieldOptions } from "@/lib/fms/constants";
 
 type FormField = {
   fieldKey: string;
@@ -20,19 +16,8 @@ type FormField = {
   helpText: string | null;
 };
 
-function fieldLayoutClass(field: FormField) {
-  if (
-    field.fieldType === "TEXTAREA" ||
-    field.fieldType === "FILE" ||
-    field.fieldType === "ENUM_LIST"
-  ) {
-    return "form-field-full";
-  }
-  const { width } = parseFieldOptions(field.options);
-  if (isHalfWidthFieldType(field.fieldType) && width === "half") {
-    return undefined;
-  }
-  return "form-field-full";
+function fieldInputId(fieldKey: string) {
+  return `fms-field-${fieldKey}`;
 }
 
 function resolveEnumChoices(field: FormField, values: Record<string, unknown>) {
@@ -105,7 +90,7 @@ export function FmsSubmitForm({
   return (
     <form
       action={formAction}
-      className="ws-sf-card ws-fms-submit-form"
+      className="ws-fms-submit-form ws-fms-intake-form"
       encType="multipart/form-data"
     >
       <input type="hidden" name="formId" value={formId} />
@@ -123,137 +108,171 @@ export function FmsSubmitForm({
         </p>
       </header>
 
-      <div className="form-grid-premium ws-fms-submit-grid">
+      <div className="ws-fms-intake-fields">
         {visibleFields.map((field) => {
           const options = resolveEnumChoices(field, values);
           const parsed = parseFieldOptions(field.options);
-          const layoutClass = fieldLayoutClass(field);
+          const inputId = fieldInputId(field.fieldKey);
+          const labelId = `${inputId}-label`;
           const parentMissing =
             parsed.dependsOn &&
             !String(values[parsed.dependsOn] ?? "").trim();
 
           return (
-            <label
-              key={field.fieldKey}
-              className={layoutClass}
-            >
-              <span>
+            <div key={field.fieldKey} className="ws-fms-intake-field">
+              <label
+                className="ws-fms-intake-label"
+                id={labelId}
+                htmlFor={field.fieldType === "ENUM_LIST" ? undefined : inputId}
+              >
                 {field.label}
-                {field.required ? " *" : ""}
-              </span>
+                {field.required ? (
+                  <span className="ws-fms-intake-req" aria-hidden>
+                    {" "}
+                    *
+                  </span>
+                ) : null}
+              </label>
+
               {field.helpText ? (
-                <small className="ws-fms-help">{field.helpText}</small>
+                <p className="ws-fms-intake-help">{field.helpText}</p>
               ) : null}
+
               {parentMissing ? (
-                <small className="ws-fms-help">
-                  Select the parent field first.
-                </small>
+                <p className="ws-fms-intake-help">Select the parent field first.</p>
               ) : null}
 
-              {field.fieldType === "TEXT" ||
-              field.fieldType === "EMAIL" ||
-              field.fieldType === "PHONE" ? (
-                <input
-                  type={
-                    field.fieldType === "EMAIL"
-                      ? "email"
-                      : field.fieldType === "PHONE"
-                        ? "tel"
-                        : "text"
-                  }
-                  required={field.required}
-                  placeholder={field.placeholder ?? undefined}
-                  value={(values[field.fieldKey] as string) ?? ""}
-                  onChange={(e) => setValue(field.fieldKey, e.target.value)}
-                />
-              ) : null}
+              <div className="ws-fms-intake-control">
+                {field.fieldType === "TEXT" ||
+                field.fieldType === "EMAIL" ||
+                field.fieldType === "PHONE" ? (
+                  <input
+                    id={inputId}
+                    className="ws-fms-intake-input"
+                    type={
+                      field.fieldType === "EMAIL"
+                        ? "email"
+                        : field.fieldType === "PHONE"
+                          ? "tel"
+                          : "text"
+                    }
+                    required={field.required}
+                    placeholder={field.placeholder ?? undefined}
+                    value={(values[field.fieldKey] as string) ?? ""}
+                    onChange={(e) => setValue(field.fieldKey, e.target.value)}
+                  />
+                ) : null}
 
-              {field.fieldType === "TEXTAREA" ? (
-                <textarea
-                  rows={4}
-                  required={field.required}
-                  placeholder={field.placeholder ?? undefined}
-                  value={(values[field.fieldKey] as string) ?? ""}
-                  onChange={(e) => setValue(field.fieldKey, e.target.value)}
-                />
-              ) : null}
+                {field.fieldType === "TEXTAREA" ? (
+                  <textarea
+                    id={inputId}
+                    className="ws-fms-intake-input ws-fms-intake-textarea"
+                    rows={4}
+                    required={field.required}
+                    placeholder={field.placeholder ?? undefined}
+                    value={(values[field.fieldKey] as string) ?? ""}
+                    onChange={(e) => setValue(field.fieldKey, e.target.value)}
+                  />
+                ) : null}
 
-              {field.fieldType === "NUMBER" ? (
-                <input
-                  type="number"
-                  required={field.required}
-                  placeholder={field.placeholder ?? undefined}
-                  value={(values[field.fieldKey] as string) ?? ""}
-                  onChange={(e) => setValue(field.fieldKey, e.target.value)}
-                />
-              ) : null}
+                {field.fieldType === "NUMBER" ? (
+                  <input
+                    id={inputId}
+                    className="ws-fms-intake-input"
+                    type="number"
+                    required={field.required}
+                    placeholder={field.placeholder ?? undefined}
+                    value={(values[field.fieldKey] as string) ?? ""}
+                    onChange={(e) => setValue(field.fieldKey, e.target.value)}
+                  />
+                ) : null}
 
-              {field.fieldType === "DATE" ? (
-                <input
-                  type="date"
-                  required={field.required}
-                  value={(values[field.fieldKey] as string) ?? ""}
-                  onChange={(e) => setValue(field.fieldKey, e.target.value)}
-                />
-              ) : null}
+                {field.fieldType === "DATE" ? (
+                  <input
+                    id={inputId}
+                    className="ws-fms-intake-input"
+                    type="date"
+                    required={field.required}
+                    value={(values[field.fieldKey] as string) ?? ""}
+                    onChange={(e) => setValue(field.fieldKey, e.target.value)}
+                  />
+                ) : null}
 
-              {field.fieldType === "DATETIME" ? (
-                <input
-                  type="datetime-local"
-                  required={field.required}
-                  value={(values[field.fieldKey] as string) ?? ""}
-                  onChange={(e) => setValue(field.fieldKey, e.target.value)}
-                />
-              ) : null}
+                {field.fieldType === "DATETIME" ? (
+                  <input
+                    id={inputId}
+                    className="ws-fms-intake-input"
+                    type="datetime-local"
+                    required={field.required}
+                    value={(values[field.fieldKey] as string) ?? ""}
+                    onChange={(e) => setValue(field.fieldKey, e.target.value)}
+                  />
+                ) : null}
 
-              {field.fieldType === "ENUM" ? (
-                <select
-                  required={field.required}
-                  disabled={Boolean(parentMissing)}
-                  value={(values[field.fieldKey] as string) ?? ""}
-                  onChange={(e) => setValue(field.fieldKey, e.target.value)}
-                >
-                  <option value="">
-                    {parentMissing ? "Select parent first..." : "Select..."}
-                  </option>
-                  {options.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
+                {field.fieldType === "ENUM" ? (
+                  <select
+                    id={inputId}
+                    className="ws-fms-intake-input"
+                    required={field.required}
+                    disabled={Boolean(parentMissing)}
+                    value={(values[field.fieldKey] as string) ?? ""}
+                    onChange={(e) => setValue(field.fieldKey, e.target.value)}
+                  >
+                    <option value="">
+                      {parentMissing ? "Select parent first..." : "Select..."}
                     </option>
-                  ))}
-                </select>
-              ) : null}
+                    {options.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                ) : null}
 
-              {field.fieldType === "ENUM_LIST" ? (
-                <div className="ws-fms-enum-list">
-                  {options.map((option) => {
-                    const selected = Array.isArray(values[field.fieldKey])
-                      ? (values[field.fieldKey] as string[]).includes(option)
-                      : false;
-                    return (
-                      <label key={option} className="ws-fms-check-row">
-                        <input
-                          type="checkbox"
-                          checked={selected}
-                          disabled={Boolean(parentMissing)}
-                          onChange={() => toggleEnumList(field.fieldKey, option)}
-                        />
-                        <span>{option}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              ) : null}
+                {field.fieldType === "ENUM_LIST" ? (
+                  <div
+                    className="ws-fms-intake-options"
+                    role="group"
+                    aria-labelledby={labelId}
+                  >
+                    {options.map((option) => {
+                      const optionId = `${inputId}-${option.replace(/\s+/g, "-").toLowerCase()}`;
+                      const selected = Array.isArray(values[field.fieldKey])
+                        ? (values[field.fieldKey] as string[]).includes(option)
+                        : false;
+                      return (
+                        <label
+                          key={option}
+                          htmlFor={optionId}
+                          className={`ws-fms-intake-option${selected ? " is-selected" : ""}`}
+                        >
+                          <input
+                            id={optionId}
+                            type="checkbox"
+                            checked={selected}
+                            disabled={Boolean(parentMissing)}
+                            onChange={() => toggleEnumList(field.fieldKey, option)}
+                          />
+                          <span className="ws-fms-intake-option-text">{option}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                ) : null}
 
-              {field.fieldType === "FILE" ? (
-                <input
-                  type="file"
-                  name={`file_${field.fieldKey}`}
-                  required={field.required}
-                  className="ws-fms-attachment-field-input"
-                />
-              ) : null}
-            </label>
+                {field.fieldType === "FILE" ? (
+                  <div className="ws-fms-intake-file">
+                    <input
+                      id={inputId}
+                      type="file"
+                      name={`file_${field.fieldKey}`}
+                      required={field.required}
+                      className="ws-fms-intake-file-input"
+                    />
+                  </div>
+                ) : null}
+              </div>
+            </div>
           );
         })}
       </div>

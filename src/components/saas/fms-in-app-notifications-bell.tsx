@@ -64,21 +64,16 @@ export function FmsInAppNotificationsBell({
     open && typeof document !== "undefined"
       ? createPortal(
           <div className="workspace-app ws-fms-notify-bell-portal" ref={panelRef}>
-            <button
-              type="button"
-              className="ws-fms-notify-bell-backdrop"
-              aria-label="Close notifications"
-              onClick={() => setOpen(false)}
-            />
-            <div
+            <section
               id={panelId}
-              className="ws-fms-notify-bell-panel"
+              className="ws-fms-notify-popover"
               role="dialog"
-              aria-label="FMS notifications"
+              aria-label="FMS alerts"
             >
-              <header className="ws-fms-notify-bell-panel-head">
-                <div className="ws-fms-notify-bell-panel-title">
-                  <strong>Notifications</strong>
+              <header className="ws-fms-notify-popover-head">
+                <div className="ws-fms-notify-popover-brand">
+                  <span className="ws-inbox-status-pill live">FMS</span>
+                  <strong>Alerts</strong>
                   {unreadCount > 0 ? (
                     <span className="ws-fms-notify-bell-count">{unreadCount}</span>
                   ) : null}
@@ -86,61 +81,63 @@ export function FmsInAppNotificationsBell({
                 <button
                   type="button"
                   className="ws-fms-notify-bell-close"
-                  aria-label="Close"
+                  aria-label="Close alerts"
                   onClick={() => setOpen(false)}
                 >
                   <X size={16} aria-hidden />
                 </button>
               </header>
-              {notifications.length === 0 ? (
-                <p className="ws-fms-muted ws-fms-notify-bell-empty">
-                  No new notifications.
-                </p>
-              ) : (
-                <ul className="ws-fms-notify-bell-list">
-                  {notifications.map((item) => (
-                    <li key={item.id} className="ws-fms-notify-bell-item">
-                      <div className="ws-fms-notify-bell-copy">
-                        <strong className="ws-fms-notify-bell-title">
-                          {item.title}
-                        </strong>
-                        <p className="ws-fms-notify-bell-body">{item.body}</p>
-                        <time
-                          className="ws-fms-notify-bell-time"
-                          dateTime={item.createdAt}
-                        >
+
+              <div className="ws-fms-notify-popover-feed">
+                {notifications.length === 0 ? (
+                  <p className="ws-fms-muted ws-fms-notify-bell-empty">
+                    No new alerts.
+                  </p>
+                ) : (
+                  notifications.map((item) => (
+                    <article
+                      key={item.id}
+                      className="ws-inbox-bubble outbound ws-fms-notify-bubble"
+                    >
+                      <span className="ws-fms-notify-bubble-tag">{item.title}</span>
+                      <p>{item.body}</p>
+                      <footer className="ws-fms-notify-bubble-foot">
+                        <time dateTime={item.createdAt}>
                           {new Date(item.createdAt).toLocaleString("en-IN", {
                             dateStyle: "medium",
                             timeStyle: "short",
                           })}
                         </time>
-                      </div>
-                      <div className="ws-fms-notify-bell-actions">
-                        {item.href ? (
-                          <a
-                            className="btn-secondary btn-sm"
-                            href={item.href}
-                            onClick={() => setOpen(false)}
-                          >
-                            Open
-                          </a>
-                        ) : null}
-                        <form action={markReadAction}>
-                          <input
-                            type="hidden"
-                            name="notificationId"
-                            value={item.id}
-                          />
-                          <button className="btn-secondary btn-sm" type="submit">
-                            Dismiss
-                          </button>
-                        </form>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+                        <div className="ws-fms-notify-bubble-actions">
+                          {item.href ? (
+                            <a
+                              className="ws-fms-notify-bubble-link"
+                              href={item.href}
+                              onClick={() => setOpen(false)}
+                            >
+                              Open
+                            </a>
+                          ) : null}
+                          <form action={markReadAction} className="ws-fms-notify-dismiss-form">
+                            <input
+                              type="hidden"
+                              name="notificationId"
+                              value={item.id}
+                            />
+                            <button
+                              className="ws-fms-notify-bubble-link"
+                              type="submit"
+                            >
+                              Dismiss
+                            </button>
+                          </form>
+                        </div>
+                      </footer>
+                    </article>
+                  ))
+                )}
+              </div>
+            </section>
           </div>,
           document.body,
         )
@@ -151,7 +148,7 @@ export function FmsInAppNotificationsBell({
       <button
         ref={triggerRef}
         type="button"
-        className="ws-fms-notify-bell-trigger"
+        className={`ws-fms-notify-bell-trigger${unreadCount > 0 ? " has-unread" : ""}`}
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((value) => !value)}
