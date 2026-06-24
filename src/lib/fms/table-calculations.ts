@@ -154,13 +154,13 @@ export function describeColumnFormula(
   if (parts.length >= 2) {
     switch (column.formula.operation) {
       case "MULTIPLY":
-        return `${parts[0]} ª ${parts.slice(1).join(" ª ")}`;
+        return `${parts[0]} Ã— ${parts.slice(1).join(" Ã— ")}`;
       case "ADD":
         return parts.join(" + ");
       case "SUBTRACT":
-        return `${parts[0]} ? ${parts[1]}`;
+        return `${parts[0]} âˆ’ ${parts[1]}`;
       case "DIVIDE":
-        return `${parts[0]} º ${parts[1]}`;
+        return `${parts[0]} Ã· ${parts[1]}`;
       default:
         break;
     }
