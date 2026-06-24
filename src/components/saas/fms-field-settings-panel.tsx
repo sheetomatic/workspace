@@ -5,7 +5,6 @@ import type { FmsFormFieldType } from "@prisma/client";
 import {
   FMS_FIELD_TYPE_LABELS,
   FMS_FORM_FIELD_TYPES,
-  DEFAULT_PO_LINE_ITEM_COLUMNS,
   defaultFieldWidth,
   defaultTableFooterTotals,
   isHalfWidthFieldType,

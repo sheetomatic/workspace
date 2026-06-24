@@ -14666,14 +14666,16 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-fms-jf-field-type-pill {
   display: inline-flex;
-  align-self: flex-start;
+  align-self: center;
+  flex-shrink: 0;
   margin: 0;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: 999px;
   font-size: 0.6875rem;
   font-weight: 600;
   color: #475569;
   background: #f1f5f9;
+  border: 1px solid #e2e8f0;
 }
 
 .workspace-app .ws-fms-jf-ai-row-in-canvas {
