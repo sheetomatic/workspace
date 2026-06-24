@@ -28,13 +28,13 @@ const items: NavItem[] = [
     href: "/app/ims/items",
     label: "Items",
     icon: Package,
-    description: "Master data & QC policy",
+    description: "Master data and QC policy",
   },
   {
     href: "/app/ims/stock",
     label: "Stock",
     icon: PackageSearch,
-    description: "Levels & status colours",
+    description: "Levels and status colours",
   },
   {
     href: "/app/ims/move",
@@ -66,7 +66,7 @@ export function ImsModuleNav() {
         <Package size={18} aria-hidden />
         <div>
           <strong>Inventory</strong>
-          <span>IMS ÿ RM & FG stores</span>
+          <span>IMS - RM and FG stores</span>
         </div>
       </div>
       <ul className="ws-module-subnav-list">

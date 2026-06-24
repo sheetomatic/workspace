@@ -74,7 +74,7 @@ export default async function ImsItemsPage() {
             {items.map((item) => (
               <details key={item.id} className="ws-ims-edit-item">
                 <summary>
-                  {item.code} ÿ {item.name}
+                  {item.code} - {item.name}
                   {!item.isActive ? " (inactive)" : ""}
                 </summary>
                 <ImsItemForm item={item} />

@@ -12,7 +12,7 @@ export default async function ImsMovePage() {
     <div className="saas-page ws-ims-page">
       <PageHeader
         title="Stock movements"
-        description="RM In ? Issue to production ? FG In ? FG Out. Optional QC prompt on receipt when item policy is Optional."
+        description="RM In, issue to production, FG In, FG Out. Optional QC prompt on receipt when item policy is Optional."
       />
 
       <div className="ws-ims-move-grid">

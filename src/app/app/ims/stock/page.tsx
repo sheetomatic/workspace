@@ -37,7 +37,7 @@ export default async function ImsStockPage() {
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={10}>No stock records ÿ add items and record movements.</td>
+                <td colSpan={10}>No stock records - add items and record movements.</td>
               </tr>
             ) : (
               rows.map((row) => (

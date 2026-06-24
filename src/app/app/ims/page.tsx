@@ -15,7 +15,7 @@ export default async function ImsDashboardPage() {
     <div className="saas-page ws-ims-page">
       <PageHeader
         title="Inventory (IMS)"
-        description="Raw material and finished goods — stock levels, movements, and optional QC on receipt."
+        description="Raw material and finished goods - stock levels, movements, and optional QC on receipt."
       />
 
       <div className="ws-task-stats">
@@ -90,7 +90,7 @@ export default async function ImsDashboardPage() {
               <tbody>
                 {stats.topItems.length === 0 ? (
                   <tr>
-                    <td colSpan={4}>No items yet ÿ add items to get started.</td>
+                    <td colSpan={4}>No items yet - add items to get started.</td>
                   </tr>
                 ) : (
                   stats.topItems.map((row) => (
@@ -136,7 +136,7 @@ export default async function ImsDashboardPage() {
                     <tr key={row.id}>
                       <td>{row.createdAt.toLocaleDateString("en-IN")}</td>
                       <td>
-                        {row.item.code} ÿ {row.item.name}
+                        {row.item.code} - {row.item.name}
                       </td>
                       <td>{row.movementType.replaceAll("_", " ")}</td>
                       <td>{Number(row.quantity).toLocaleString("en-IN")}</td>
@@ -160,7 +160,7 @@ export default async function ImsDashboardPage() {
         </Link>
         <Link className="ws-ims-module-card" href="/app/ims/qc">
           <strong>QC queue</strong>
-          <p>Pass or fail pending inspections ÿ pass moves stock to usable.</p>
+          <p>Pass or fail pending inspections - pass moves stock to usable.</p>
         </Link>
       </div>
     </div>

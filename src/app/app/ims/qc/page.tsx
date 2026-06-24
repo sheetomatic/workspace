@@ -23,10 +23,10 @@ export default async function ImsQcPage() {
             <article key={inspection.id} className="ws-ims-qc-card">
               <div className="ws-ims-qc-head">
                 <strong>
-                  {inspection.item.code} ÿ {inspection.item.name}
+                  {inspection.item.code} - {inspection.item.name}
                 </strong>
                 <span>
-                  {formatImsQty(Number(inspection.quantity), inspection.item.uom)} ÿ{" "}
+                  {formatImsQty(Number(inspection.quantity), inspection.item.uom)} |{" "}
                   {inspection.storeType} store
                 </span>
                 <span className="ws-ims-meta">
@@ -47,7 +47,7 @@ export default async function ImsQcPage() {
                     value="pass"
                     className="ws-btn-primary"
                   >
-                    Pass ? usable
+                    Pass to usable
                   </button>
                   <button
                     type="submit"

@@ -67,7 +67,7 @@ export function ImsMovementForm({
           ) : (
             filtered.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.code} ÿ {item.name}
+                {item.code} - {item.name}
               </option>
             ))
           )}
@@ -97,11 +97,11 @@ export function ImsMovementForm({
       </label>
 
       {selected?.qcOnReceipt === "ALWAYS" && isReceipt ? (
-        <p className="ws-ims-help">QC is always required for this item ÿ stock goes to QC pending.</p>
+        <p className="ws-ims-help">QC is always required for this item - stock goes to QC pending.</p>
       ) : null}
 
       {selected?.qcOnReceipt === "OFF" && isReceipt ? (
-        <p className="ws-ims-help">QC is off ÿ stock goes directly to usable.</p>
+        <p className="ws-ims-help">QC is off - stock goes directly to usable.</p>
       ) : null}
 
       {showQcPrompt ? (

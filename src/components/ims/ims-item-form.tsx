@@ -94,9 +94,9 @@ export function ImsItemForm({ item }: { item?: ImsItem }) {
         <label>
           QC on receipt
           <select name="qcOnReceipt" defaultValue={item?.qcOnReceipt ?? "OPTIONAL"}>
-            <option value="OFF">Off ÿ straight to usable</option>
-            <option value="OPTIONAL">Optional ÿ ask on receipt</option>
-            <option value="ALWAYS">Always ÿ QC pending</option>
+            <option value="OFF">Off - straight to usable</option>
+            <option value="OPTIONAL">Optional - ask on receipt</option>
+            <option value="ALWAYS">Always - QC pending</option>
           </select>
         </label>
       </div>
