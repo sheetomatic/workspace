@@ -28,6 +28,8 @@ export type TeamActionState = {
   loginEmail?: string;
   tempPassword?: string;
   emailSent?: boolean;
+  userId?: string;
+  userName?: string;
 };
 
 const ASSIGNABLE_ROLES: Role[] = ["VIEWER", "STAFF", "MANAGER", "ADMIN"];
@@ -135,6 +137,14 @@ export async function inviteTeamMember(
   const reportingManagerId = parseReportingManagerId(
     formData.get("reportingManagerId")?.toString(),
   );
+  let resolvedReportingManagerId = reportingManagerId;
+  if (!resolvedReportingManagerId && role !== "OWNER") {
+    const inviterMembership = await prisma.membership.findFirst({
+      where: { organizationId: user.organizationId, userId: user.id },
+      select: { id: true },
+    });
+    resolvedReportingManagerId = inviterMembership?.id ?? null;
+  }
   const isDepartmentHead = formData.get("isDepartmentHead") === "on";
   const staffCode =
     normalizeStaffCode(formData.get("staffCode")?.toString()) || null;
@@ -180,7 +190,7 @@ export async function inviteTeamMember(
   const reportingManagerError = await validateReportingManager({
     organizationId: user.organizationId,
     role,
-    reportingManagerId,
+    reportingManagerId: resolvedReportingManagerId,
   });
   if (reportingManagerError) {
     return { ok: false, message: reportingManagerError };
@@ -226,7 +236,7 @@ export async function inviteTeamMember(
         role,
         department,
         designation,
-        reportingManagerId,
+        reportingManagerId: resolvedReportingManagerId,
         isDepartmentHead,
         modules,
         staffCode,
@@ -242,6 +252,8 @@ export async function inviteTeamMember(
     });
 
     revalidatePath("/app/team");
+    revalidatePath("/app/fms/setup");
+    revalidatePath("/app/fms/design/new");
     return {
       ok: true,
       message: emailStatusMessage(
@@ -251,6 +263,8 @@ export async function inviteTeamMember(
       ),
       loginEmail: email,
       emailSent: emailResult.sent,
+      userId: memberUser.id,
+      userName: name,
     };
   }
 
@@ -267,7 +281,7 @@ export async function inviteTeamMember(
           role,
           department,
           designation,
-          reportingManagerId,
+          reportingManagerId: resolvedReportingManagerId,
           isDepartmentHead,
           modules,
           staffCode,
@@ -298,6 +312,8 @@ export async function inviteTeamMember(
   });
 
   revalidatePath("/app/team");
+  revalidatePath("/app/fms/setup");
+  revalidatePath("/app/fms/design/new");
   return {
     ok: true,
     message: emailStatusMessage(
@@ -308,6 +324,8 @@ export async function inviteTeamMember(
     loginEmail: email,
     tempPassword: emailResult.sent ? undefined : tempPassword,
     emailSent: emailResult.sent,
+    userId: memberUser.id,
+    userName: name,
   };
 }
 

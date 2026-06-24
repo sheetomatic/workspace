@@ -3,11 +3,11 @@
 import { Check, UserRound } from "lucide-react";
 import type { FmsFlowchartStep } from "@/lib/fms/flow-design";
 import {
-  memberRoleLabel,
-  type FmsAssignableMember,
-} from "@/lib/fms/flow-owner-resolve";
+  FmsStepOwnerField,
+  type FmsStepOwnerMember,
+} from "@/components/saas/fms-step-owner-field";
 
-type Member = FmsAssignableMember;
+type Member = FmsStepOwnerMember;
 
 function ownerName(ownerUserId: string, members: Member[]) {
   if (!ownerUserId) {
@@ -20,12 +20,14 @@ function ownerName(ownerUserId: string, members: Member[]) {
 export function FmsFlowOwnerAssignPanel({
   steps,
   members,
+  onMembersChange,
   onUpdateStep,
   onConfirm,
   onDismiss,
 }: {
   steps: FmsFlowchartStep[];
   members: Member[];
+  onMembersChange: (members: Member[]) => void;
   onUpdateStep: (stepId: string, ownerUserId: string) => void;
   onConfirm: () => void;
   onDismiss?: () => void;
@@ -42,11 +44,11 @@ export function FmsFlowOwnerAssignPanel({
         <div>
           <h3>
             <UserRound size={18} aria-hidden />
-            Confirm step owners
+            Assign step owners
           </h3>
           <p className="ws-fms-muted">
-            AI built the workflow. Assign a different owner per step - like
-            Pipefy/Kissflow approval chains.
+            Pick who owns each stop. If someone is not in your team yet, add them
+            here and set TAT on each step.
           </p>
         </div>
         {onDismiss ? (
@@ -58,7 +60,7 @@ export function FmsFlowOwnerAssignPanel({
 
       {unassigned > 0 ? (
         <p className="ws-fms-flow-owner-alert" role="status">
-          {unassigned} step{unassigned === 1 ? "" : "s"} still need an owner.
+          {unassigned} step{unassigned === 1 ? "" : "s"} still need a step owner.
         </p>
       ) : allSameOwner ? (
         <p className="ws-fms-flow-owner-alert is-warning" role="status">
@@ -77,22 +79,21 @@ export function FmsFlowOwnerAssignPanel({
                 {step.ownerRoleLabel ? (
                   <span className="ws-fms-flow-owner-role">{step.ownerRoleLabel}</span>
                 ) : null}
+                <span className="ws-fms-flow-owner-tat">
+                  TAT: {step.tatValue} {step.tatUnit.replaceAll("_", " ").toLowerCase()}
+                </span>
               </div>
             </div>
-            <label className="ws-fms-flow-owner-pick">
-              <span className="sr-only">Owner for {step.stepName}</span>
-              <select
+            <div className="ws-fms-flow-owner-pick">
+              <FmsStepOwnerField
+                compact
+                label="Step owner"
+                members={members}
                 value={step.ownerUserId}
-                onChange={(event) => onUpdateStep(step.id, event.target.value)}
-              >
-                <option value="">Select owner...</option>
-                {members.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.name} ({memberRoleLabel(member)})
-                  </option>
-                ))}
-              </select>
-            </label>
+                onChange={(userId) => onUpdateStep(step.id, userId)}
+                onMembersChange={onMembersChange}
+              />
+            </div>
             <span className="ws-fms-flow-owner-current">
               {ownerName(step.ownerUserId, members)}
             </span>
@@ -108,7 +109,7 @@ export function FmsFlowOwnerAssignPanel({
           onClick={onConfirm}
         >
           <Check size={16} aria-hidden />
-          Confirm owners
+          Confirm step owners
         </button>
       </div>
     </section>

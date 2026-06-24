@@ -45,7 +45,7 @@ export function FmsFlowchartBuilder({
   initialHolidayDates = [],
   initialAlertConfig,
   initialStatus = "DRAFT",
-  members,
+  members: initialMembers,
   mode = "create",
   canApprove = false,
   reviewNote,
@@ -95,6 +95,7 @@ export function FmsFlowchartBuilder({
 
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription ?? "");
+  const [memberList, setMemberList] = useState(initialMembers);
   const [steps, setSteps] = useState<FmsFlowchartStep[]>(() =>
     initialSteps.length > 0 ? initialSteps : [],
   );
@@ -132,7 +133,7 @@ export function FmsFlowchartBuilder({
         steps: steps.map((s) => ({
           stepName: s.stepName,
           ownerHint:
-            members.find((m) => m.id === s.ownerUserId)?.name ?? null,
+            memberList.find((m) => m.id === s.ownerUserId)?.name ?? null,
           ownerRole: s.ownerRoleLabel ?? null,
           howInstructions: s.howInstructions,
           tatValue: Number(s.tatValue) || 1,
@@ -142,7 +143,7 @@ export function FmsFlowchartBuilder({
     : undefined;
 
   function applyAiDraft(draft: ParsedFmsFlowDraft) {
-    const mapped = mapAiFlowToSteps(draft, members);
+    const mapped = mapAiFlowToSteps(draft, memberList);
     setName(draft.name);
     setDescription(draft.description);
     setSteps(mapped);
@@ -257,7 +258,8 @@ export function FmsFlowchartBuilder({
       {canEditFlow && ownerReviewOpen && hasFlow ? (
         <FmsFlowOwnerAssignPanel
           steps={steps}
-          members={members}
+          members={memberList}
+          onMembersChange={setMemberList}
           onUpdateStep={(stepId, ownerUserId) => updateStep(stepId, { ownerUserId })}
           onConfirm={() => setOwnerReviewOpen(false)}
           onDismiss={() => setOwnerReviewOpen(false)}
@@ -309,7 +311,7 @@ export function FmsFlowchartBuilder({
           >
             <FmsN8nFlowView
               steps={steps}
-              members={members}
+              members={memberList}
               readOnly={readOnly}
               selectedStepId={selectedStepId}
               onSelectStep={openStepEditor}
@@ -347,7 +349,8 @@ export function FmsFlowchartBuilder({
               <FlowStepNode
                 step={selectedStep}
                 index={selectedStepIndex}
-                members={members}
+                members={memberList}
+                onMembersChange={setMemberList}
                 readOnly={readOnly}
                 allSteps={steps}
                 onConnectAfter={(afterStepId) =>

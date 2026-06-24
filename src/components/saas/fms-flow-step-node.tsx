@@ -2,8 +2,12 @@
 
 import { Trash2 } from "lucide-react";
 import type { FmsFlowchartStep } from "@/lib/fms/flow-design";
+import {
+  FmsStepOwnerField,
+  type FmsStepOwnerMember,
+} from "@/components/saas/fms-step-owner-field";
 
-type Member = { id: string; name: string; email: string };
+type Member = FmsStepOwnerMember;
 
 function stepLabel(step: FmsFlowchartStep, number: number) {
   const name = step.stepName.trim();
@@ -14,6 +18,7 @@ export function FlowStepNode({
   step,
   index,
   members,
+  onMembersChange,
   readOnly,
   onUpdate,
   onRemove,
@@ -24,6 +29,7 @@ export function FlowStepNode({
   step: FmsFlowchartStep;
   index: number;
   members: Member[];
+  onMembersChange?: (members: Member[]) => void;
   readOnly: boolean;
   onUpdate: (patch: Partial<FmsFlowchartStep>) => void;
   onRemove: () => void;
@@ -83,24 +89,31 @@ export function FlowStepNode({
       ) : null}
 
       <div className="ws-fms-flow-node-grid">
-        <label className="ws-fms-flow-field">
-          <span className="ws-fms-flow-label">WHO</span>
+        <div className="ws-fms-flow-field ws-fms-flow-field-wide">
+          <span className="ws-fms-flow-label">Step owner</span>
           {step.ownerRoleLabel ? (
             <span className="ws-fms-flow-role-hint">{step.ownerRoleLabel}</span>
           ) : null}
-          <select
-            value={step.ownerUserId}
-            disabled={readOnly}
-            onChange={(event) => onUpdate({ ownerUserId: event.target.value })}
-          >
-            <option value="">Select owner...</option>
-            {members.map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.name}
+          {readOnly ? (
+            <select value={step.ownerUserId} disabled>
+              <option value="">
+                {step.ownerUserId
+                  ? members.find((m) => m.id === step.ownerUserId)?.name ??
+                    "Assigned"
+                  : "Unassigned"}
               </option>
-            ))}
-          </select>
-        </label>
+            </select>
+          ) : (
+            <FmsStepOwnerField
+              compact
+              label=""
+              members={members}
+              value={step.ownerUserId}
+              onChange={(userId) => onUpdate({ ownerUserId: userId })}
+              onMembersChange={onMembersChange ?? (() => undefined)}
+            />
+          )}
+        </div>
 
         <label className="ws-fms-flow-field ws-fms-flow-field-wide">
           <span className="ws-fms-flow-label">HOW</span>

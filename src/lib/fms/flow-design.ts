@@ -1,5 +1,9 @@
 import type { FmsSlaType } from "@prisma/client";
 import type { FmsSlaConfig } from "@/lib/fms/constants";
+import {
+  resolveFlowOwnersBatch,
+  type FmsAssignableMember,
+} from "@/lib/fms/flow-owner-resolve";
 
 export type FmsFlowchartStep = {
   id: string;
@@ -110,16 +114,11 @@ export function validateFlowchartSteps(steps: FmsFlowchartStep[]) {
   if (incomplete) {
     return {
       ok: false as const,
-      message: `Complete WHO, HOW, and WHEN for "${incomplete.stepName.trim()}".`,
+      message: `Complete step owner, HOW, and WHEN for "${incomplete.stepName.trim()}".`,
     };
   }
   return { ok: true as const, steps: valid };
 }
-
-import {
-  resolveFlowOwnersBatch,
-  type FmsAssignableMember,
-} from "@/lib/fms/flow-owner-resolve";
 
 export function resolveFlowOwner(
   ownerHint: string | null | undefined,

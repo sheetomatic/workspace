@@ -7,15 +7,23 @@ import {
   FMS_SLA_TYPE_LABELS,
 } from "@/lib/fms/constants";
 import type { FmsStepDraft } from "@/components/saas/fms-template-builder";
+import {
+  FmsStepOwnerField,
+  type FmsStepOwnerMember,
+} from "@/components/saas/fms-step-owner-field";
 
 export function FmsStepSettingsPanel({
   step,
+  members,
+  onMembersChange,
   onUpdate,
   onRemove,
   onClose,
   canRemove,
 }: {
   step: FmsStepDraft;
+  members: FmsStepOwnerMember[];
+  onMembersChange: (members: FmsStepOwnerMember[]) => void;
   onUpdate: (patch: Partial<FmsStepDraft>) => void;
   onRemove: () => void;
   onClose: () => void;
@@ -40,12 +48,19 @@ export function FmsStepSettingsPanel({
           />
         </label>
 
+        <FmsStepOwnerField
+          members={members}
+          value={step.defaultOwnerUserId}
+          onChange={(userId) => onUpdate({ defaultOwnerUserId: userId })}
+          onMembersChange={onMembersChange}
+        />
+
         <label className="ws-fms-jf-option-field">
-          WHO (role / team)
+          Role label (optional)
           <input
             value={step.roleLabel}
             onChange={(event) => onUpdate({ roleLabel: event.target.value })}
-            placeholder="e.g. Shalender Singh"
+            placeholder="e.g. Accounts team"
           />
         </label>
 

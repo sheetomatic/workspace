@@ -37,7 +37,7 @@ const STEPS: Array<{
   {
     key: "hasAssignedOwner",
     title: "Assign step owners",
-    detail: "Each stop should have someone responsible before go-live.",
+    detail: "Each stop needs a step owner. Add new people to the team right from step settings if needed.",
     href: "/app/fms/lines",
   },
 ];

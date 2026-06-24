@@ -17,8 +17,9 @@ import {
 } from "@/lib/fms/constants";
 import { slaSummary } from "@/lib/fms/step-display";
 import { FmsStepSettingsPanel } from "@/components/saas/fms-step-settings-panel";
+import type { FmsStepOwnerMember } from "@/components/saas/fms-step-owner-field";
 
-type Member = { id: string; name: string; email: string };
+type Member = FmsStepOwnerMember;
 
 export type FmsStepDraft = {
   id: string;
@@ -192,25 +193,10 @@ function StepEditor({
             placeholder={`Step ${index + 1} name`}
             aria-label={`Step ${index + 1} name`}
           />
-          <select
-            className="ws-fms-jf-step-owner-inline"
-            value={step.defaultOwnerUserId}
-            onChange={(event) =>
-              onUpdate({ defaultOwnerUserId: event.target.value })
-            }
-            aria-label="Default owner"
-          >
-            <option value="">Unassigned</option>
-            {members.map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.name}
-              </option>
-            ))}
-          </select>
           <div className="ws-fms-jf-step-preview">
             <span className="ws-fms-jf-preview-muted">
-              {ownerLabel(step, members)} - {tatLabel}
-              {toggles.length > 0 ? ` - ${toggles.join(", ")}` : ""}
+              {ownerLabel(step, members)} · {tatLabel}
+              {toggles.length > 0 ? ` · ${toggles.join(", ")}` : ""}
             </span>
           </div>
         </div>
@@ -246,7 +232,7 @@ export function FmsTemplateBuilder({
   initialSteps = [],
   initialHolidayDates = [],
   initialAlertConfig,
-  members,
+  members: initialMembers,
   mode = "create",
   templateStatus,
 }: {
@@ -262,6 +248,7 @@ export function FmsTemplateBuilder({
 }) {
   const action = mode === "create" ? createFmsTemplate : updateFmsTemplate;
   const [state, formAction, pending] = useActionState(action, fmsInitialState);
+  const [members, setMembers] = useState<Member[]>(initialMembers);
   const [name, setName] = useState(initialName);
   const [steps, setSteps] = useState<FmsStepDraft[]>(() =>
     initialSteps.length > 0 ? initialSteps.map(stepToDraft) : [newStep()],
@@ -615,6 +602,8 @@ export function FmsTemplateBuilder({
           {selectedStep ? (
             <FmsStepSettingsPanel
               step={selectedStep}
+              members={members}
+              onMembersChange={setMembers}
               onUpdate={(patch) => updateStep(selectedStep.id, patch)}
               onRemove={() => {
                 setSteps((prev) => {

@@ -178,8 +178,17 @@ function parseFieldsJson(raw: string) {
     choicesByParent?: Record<string, string[]>;
     columns?: FmsTableColumn[];
   }[];
+  const usedKeys = new Set<string>();
   return parsed.map((field, index) => {
-    const fieldKey = slugifyFieldKey(field.label);
+    let fieldKey = slugifyFieldKey(field.label);
+    if (usedKeys.has(fieldKey)) {
+      let suffix = 2;
+      while (usedKeys.has(`${fieldKey}_${suffix}`)) {
+        suffix += 1;
+      }
+      fieldKey = `${fieldKey}_${suffix}`;
+    }
+    usedKeys.add(fieldKey);
     const width = field.width ?? "full";
     let optionsInput: FmsFieldOptionsInput;
 
