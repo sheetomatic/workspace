@@ -11,7 +11,7 @@ import {
   serializeWeeklyDays,
 } from "@/lib/task-schedule";
 import { formatOpenAiError } from "@/lib/integrations/openai-errors";
-import { slugifyFieldKey } from "@/lib/fms/constants";
+import { slugifyFieldKey, normalizeTableColumn, type FmsTableColumn } from "@/lib/fms/constants";
 import { isStubFmsForm } from "@/lib/fms/form-ai";
 
 export type TaskMemberHint = {
@@ -273,6 +273,7 @@ export type ParsedFmsFormFieldDraft = {
   fieldType: FmsFormFieldType;
   required: boolean;
   options?: string[];
+  columns?: FmsTableColumn[];
   dependsOn?: string;
   choicesByParent?: Record<string, string[]>;
   placeholder?: string;
@@ -379,6 +380,7 @@ const FMS_FIELD_TYPES: FmsFormFieldType[] = [
   "DATE",
   "DATETIME",
   "FILE",
+  "TABLE",
 ];
 
 function normalizeFmsField(raw: Record<string, unknown>): ParsedFmsFormFieldDraft | null {
@@ -393,8 +395,18 @@ function normalizeFmsField(raw: Record<string, unknown>): ParsedFmsFormFieldDraf
     : "TEXT";
 
   let options: string[] = [];
+  let columns: FmsTableColumn[] | undefined;
   let dependsOn: string | undefined;
   let choicesByParent: Record<string, string[]> | undefined;
+
+  if (Array.isArray(raw.columns)) {
+    columns = raw.columns
+      .map((column) => normalizeTableColumn(column))
+      .filter((column): column is NonNullable<typeof column> => column !== null);
+    if (columns.length === 0) {
+      columns = undefined;
+    }
+  }
 
   if (Array.isArray(raw.options)) {
     options = (raw.options as unknown[])
@@ -427,6 +439,7 @@ function normalizeFmsField(raw: Record<string, unknown>): ParsedFmsFormFieldDraf
     fieldType,
     required: Boolean(raw.required),
     options: fieldType === "ENUM" || fieldType === "ENUM_LIST" ? options : undefined,
+    columns: fieldType === "TABLE" ? columns : undefined,
     dependsOn:
       fieldType === "ENUM" && dependsOn && choicesByParent
         ? dependsOn
@@ -510,10 +523,10 @@ export async function parseFmsFormFromDescription(
     existingDraft?.fields?.length && !isStubFmsForm(existingDraft),
   );
   const fieldSchema =
-    "fields: [{label, fieldType: TEXT|TEXTAREA|EMAIL|PHONE|NUMBER|ENUM|ENUM_LIST|DATE|DATETIME, required, options?, dependsOn?, choicesByParent?, placeholder?, helpText?}]";
+    "fields: [{label, fieldType: TEXT|TEXTAREA|EMAIL|PHONE|NUMBER|ENUM|ENUM_LIST|DATE|DATETIME|TABLE, required, options?, columns?, dependsOn?, choicesByParent?, placeholder?, helpText?}]";
   const systemPrompt = isRefine
-    ? `Refine an FMS intake form JSON. Input may be any language; output English JSON only with keys name, description, ${fieldSchema}. Apply requested edits; keep other fields unless asked to change. If the user asks to build, generate, or fill out the form, or the current form is only a stub (title + timestamp), output a COMPLETE form (4-12 fields) for the process described. ALWAYS include a DATETIME field labeled "Submission timestamp" (or "Timestamp") — auto-filled on submit; add it if missing. For category/product patterns use ENUM parent + dependent ENUM child with dependsOn (parent field key slug) and choicesByParent map.`
-    : `Design an FMS intake form JSON from a description. Input may be any language; output English JSON only with keys name, description, ${fieldSchema}. You are an FMS consultant: one main tracker plus stage-wise forms. Include universal fields where relevant: FMS ID (text), Department, Requested By, Priority, Due Date, Status, Remarks, Attachment (FILE). Map dropdown to ENUM, checkboxes to ENUM_LIST, uploads to FILE. Produce 4-12 fields the submitter must fill in. NEVER return only Request title and Submission timestamp — always include process-specific fields (e.g. for purchase orders: vendor name, PO number, line items or amount, delivery date, department, supporting documents). MUST include a DATETIME field labeled "Submission timestamp" (auto-filled on submit, not user-entered). Use half-width pairs for short fields like email + phone when appropriate. When the user describes category then product (or similar parent-child dropdowns), add a parent ENUM and child ENUM with dependsOn set to the parent field key slug and choicesByParent mapping parent values to child option arrays. Do not mix fields from unrelated departments.`;
+    ? `Refine an FMS intake form JSON. Input may be any language; output English JSON only with keys name, description, ${fieldSchema}. Apply requested edits; keep other fields unless asked to change. If the user asks to build, generate, or fill out the form, or the current form is only a stub (title + timestamp), output a COMPLETE form (4-12 fields) for the process described. ALWAYS include a DATETIME field labeled "Submission timestamp" (or "Timestamp") — auto-filled on submit; add it if missing. For category/product patterns use ENUM parent + dependent ENUM child with dependsOn (parent field key slug) and choicesByParent map. For purchase orders or line-item lists use fieldType TABLE with columns array: each column has key, label, columnType (TEXT|NUMBER|ENUM), required?, choices? for ENUM.`
+    : `Design an FMS intake form JSON from a description. Input may be any language; output English JSON only with keys name, description, ${fieldSchema}. You are an FMS consultant: one main tracker plus stage-wise forms. Include universal fields where relevant: FMS ID (text), Department, Requested By, Priority, Due Date, Status, Remarks, Attachment (FILE). Map dropdown to ENUM, checkboxes to ENUM_LIST, uploads to FILE, repeatable line items to TABLE. Produce 4-12 fields the submitter must fill in. NEVER return only Request title and Submission timestamp — always include process-specific fields (e.g. for purchase orders: vendor name, PO number, TABLE field for line items with item name, quantity, UOM, size, color, delivery date, department, supporting documents). MUST include a DATETIME field labeled "Submission timestamp" (auto-filled on submit, not user-entered). Use half-width pairs for short fields like email + phone when appropriate. When the user describes category then product (or similar parent-child dropdowns), add a parent ENUM and child ENUM with dependsOn set to the parent field key slug and choicesByParent mapping parent values to child option arrays. For line items use TABLE with columns array. Do not mix fields from unrelated departments.`;
 
   const userContent = isRefine
     ? `Current form JSON:\n${JSON.stringify(existingDraft)}\n\nChange:\n${description}`

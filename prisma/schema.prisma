@@ -36,6 +36,7 @@ enum FmsFormFieldType {
   EMAIL
   PHONE
   FILE
+  TABLE
 }
 
 enum FmsFormStatus {

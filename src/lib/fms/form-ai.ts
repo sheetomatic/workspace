@@ -5,6 +5,7 @@ import {
   slugifyFieldKey,
   type FmsFieldOptionsInput,
   type FmsFieldWidth,
+  type FmsTableColumn,
 } from "@/lib/fms/constants";
 import type {
   ParsedFmsFormDraft,
@@ -93,6 +94,8 @@ export function aiFormDraftToFieldCreates(draft: ParsedFmsFormDraft) {
         choicesByParent: field.choicesByParent,
         width,
       };
+    } else if (field.fieldType === "TABLE" && field.columns?.length) {
+      optionsInput = { columns: field.columns };
     } else if (field.options?.length) {
       optionsInput = { choices: field.options, width };
     } else {

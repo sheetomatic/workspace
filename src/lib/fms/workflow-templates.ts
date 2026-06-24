@@ -78,7 +78,7 @@ export const FMS_WORKFLOW_TEMPLATES: FmsWorkflowTemplate[] = [
     id: "purchase-order",
     department: "purchase",
     name: "Purchase Order",
-    description: "Vendor shortlist, founder approval, payment, and goods receipt.",
+    description: "Vendor shortlist, founder approval, payment, and goods receipt. Intake includes line items table.",
     steps: [
       {
         stepName: "Source Vendor Shortlist",

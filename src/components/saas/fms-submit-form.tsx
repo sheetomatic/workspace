@@ -4,7 +4,8 @@ import { useActionState, useMemo, useState } from "react";
 import type { FmsFormFieldType } from "@prisma/client";
 import { submitFmsForm } from "@/app/app/fms/actions";
 import { fmsInitialState } from "@/lib/fms-action-state";
-import { isTimestampField, parseFieldOptions } from "@/lib/fms/constants";
+import { isTimestampField, parseFieldOptions, parseTableColumns } from "@/lib/fms/constants";
+import { FmsIntakeTableField } from "@/components/saas/fms-intake-table-field";
 
 type FormField = {
   fieldKey: string;
@@ -270,6 +271,16 @@ export function FmsSubmitForm({
                       className="ws-fms-intake-file-input"
                     />
                   </div>
+                ) : null}
+
+                {field.fieldType === "TABLE" ? (
+                  <FmsIntakeTableField
+                    fieldKey={field.fieldKey}
+                    columns={parseTableColumns(field.options)}
+                    value={values[field.fieldKey]}
+                    required={field.required}
+                    onChange={(rows) => setValue(field.fieldKey, rows)}
+                  />
                 ) : null}
               </div>
             </div>

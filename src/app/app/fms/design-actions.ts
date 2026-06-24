@@ -21,6 +21,7 @@ import {
   aiFormDraftToFieldCreates,
   buildDesignIntakeAiPrompt,
 } from "@/lib/fms/form-ai";
+import { getIntakeFieldsForDesignName } from "@/lib/fms/form-templates";
 import { type FmsActionState, type FmsFlowAiGenerateResult } from "@/lib/fms-action-state";
 import { isNextRedirect } from "@/lib/next-redirect";
 import {
@@ -250,6 +251,11 @@ async function buildIntakeFieldsForDesign(
       helpText: "Filled automatically on submit",
     },
   ];
+
+  const templateFields = getIntakeFieldsForDesignName(design.name);
+  if (templateFields) {
+    return templateFields;
+  }
 
   const status = getIntegrationStatus();
   if (!status.openai) {

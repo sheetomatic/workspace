@@ -148,6 +148,8 @@ export default async function FmsInstancePage({ params, searchParams }: PageProp
             id: field.id,
             fieldKey: field.fieldKey,
             label: field.label,
+            fieldType: field.fieldType,
+            options: field.options,
           }))}
           submissionValues={submissionValues ?? {}}
           submittedAt={instance.submission?.createdAt ?? null}

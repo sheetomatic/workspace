@@ -5,10 +5,14 @@ import type { FmsFormFieldType } from "@prisma/client";
 import {
   FMS_FIELD_TYPE_LABELS,
   FMS_FORM_FIELD_TYPES,
+  DEFAULT_PO_LINE_ITEM_COLUMNS,
   defaultFieldWidth,
   isHalfWidthFieldType,
+  isTableFieldType,
   slugifyFieldKey,
   type FmsFieldWidth,
+  type FmsTableColumn,
+  type FmsTableColumnType,
 } from "@/lib/fms/constants";
 import type { FormFieldDraft } from "@/components/saas/fms-form-builder";
 
@@ -32,6 +36,35 @@ function isEnumType(fieldType: FmsFormFieldType) {
   return fieldType === "ENUM" || fieldType === "ENUM_LIST";
 }
 
+function newTableColumn(): FmsTableColumn {
+  return {
+    key: `column_${crypto.randomUUID().slice(0, 8)}`,
+    label: "New column",
+    columnType: "TEXT",
+    required: false,
+  };
+}
+
+function updateTableColumn(
+  columns: FmsTableColumn[],
+  index: number,
+  patch: Partial<FmsTableColumn>,
+): FmsTableColumn[] {
+  return columns.map((column, columnIndex) => {
+    if (columnIndex !== index) {
+      return column;
+    }
+    const next = { ...column, ...patch };
+    if (patch.label && !patch.key) {
+      next.key = slugifyFieldKey(patch.label);
+    }
+    if (next.columnType !== "ENUM") {
+      delete next.choices;
+    }
+    return next;
+  });
+}
+
 export function FmsFieldSettingsPanel({
   field,
   allFields,
@@ -46,8 +79,11 @@ export function FmsFieldSettingsPanel({
   onClose: () => void;
 }) {
   const showPlaceholder =
-    field.fieldType !== "FILE" && !isEnumType(field.fieldType);
+    field.fieldType !== "FILE" &&
+    !isEnumType(field.fieldType) &&
+    !isTableFieldType(field.fieldType);
   const showOptions = isEnumType(field.fieldType);
+  const showTableColumns = isTableFieldType(field.fieldType);
   const canSetWidth = isHalfWidthFieldType(field.fieldType);
   const fieldKey = slugifyFieldKey(field.label.trim() || "field");
   const parentCandidates = allFields.filter(
@@ -56,6 +92,10 @@ export function FmsFieldSettingsPanel({
       isEnumType(candidate.fieldType) &&
       slugifyFieldKey(candidate.label.trim() || "field"),
   );
+  const tableColumns =
+    field.tableColumns.length > 0
+      ? field.tableColumns
+      : DEFAULT_PO_LINE_ITEM_COLUMNS.map((column) => ({ ...column }));
 
   async function handleChoicesUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -98,6 +138,14 @@ export function FmsFieldSettingsPanel({
               onUpdate({
                 fieldType,
                 width: defaultFieldWidth(fieldType),
+                tableColumns:
+                  fieldType === "TABLE"
+                    ? field.tableColumns.length
+                      ? field.tableColumns
+                      : DEFAULT_PO_LINE_ITEM_COLUMNS.map((column) => ({
+                          ...column,
+                        }))
+                    : [],
               });
             }}
           >
@@ -220,6 +268,110 @@ export function FmsFieldSettingsPanel({
               Field key: {fieldKey}
             </p>
           </>
+        ) : null}
+
+        {showTableColumns ? (
+          <div className="ws-fms-jf-table-columns">
+            <div className="ws-fms-jf-table-columns-head">
+              <span>Table columns</span>
+              <button
+                type="button"
+                className="ws-fms-jf-table-columns-add"
+                onClick={() =>
+                  onUpdate({
+                    tableColumns: [...tableColumns, newTableColumn()],
+                  })
+                }
+              >
+                Add column
+              </button>
+            </div>
+            {tableColumns.map((column, index) => (
+              <div key={`${column.key}-${index}`} className="ws-fms-jf-table-column">
+                <label className="ws-fms-jf-option-field">
+                  Column label
+                  <input
+                    value={column.label}
+                    onChange={(event) =>
+                      onUpdate({
+                        tableColumns: updateTableColumn(tableColumns, index, {
+                          label: event.target.value,
+                        }),
+                      })
+                    }
+                  />
+                </label>
+                <label className="ws-fms-jf-option-field">
+                  Type
+                  <select
+                    value={column.columnType}
+                    onChange={(event) =>
+                      onUpdate({
+                        tableColumns: updateTableColumn(tableColumns, index, {
+                          columnType: event.target.value as FmsTableColumnType,
+                        }),
+                      })
+                    }
+                  >
+                    <option value="TEXT">Text</option>
+                    <option value="NUMBER">Number</option>
+                    <option value="ENUM">Dropdown</option>
+                  </select>
+                </label>
+                <label className="ws-fms-jf-option-check">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(column.required)}
+                    onChange={(event) =>
+                      onUpdate({
+                        tableColumns: updateTableColumn(tableColumns, index, {
+                          required: event.target.checked,
+                        }),
+                      })
+                    }
+                  />
+                  Required in each row
+                </label>
+                {column.columnType === "ENUM" ? (
+                  <label className="ws-fms-jf-option-field">
+                    Choices (one per line)
+                    <textarea
+                      rows={3}
+                      value={(column.choices ?? []).join("\n")}
+                      onChange={(event) =>
+                        onUpdate({
+                          tableColumns: updateTableColumn(tableColumns, index, {
+                            choices: event.target.value
+                              .split("\n")
+                              .map((choice) => choice.trim())
+                              .filter(Boolean),
+                          }),
+                        })
+                      }
+                      placeholder={"Pcs\nKg\nBox"}
+                    />
+                  </label>
+                ) : null}
+                <button
+                  type="button"
+                  className="ws-fms-jf-table-column-remove"
+                  onClick={() =>
+                    onUpdate({
+                      tableColumns: tableColumns.filter(
+                        (_, columnIndex) => columnIndex !== index,
+                      ),
+                    })
+                  }
+                  disabled={tableColumns.length <= 1}
+                >
+                  Remove column
+                </button>
+              </div>
+            ))}
+            <p className="ws-fms-jf-field-key-hint ws-fms-muted">
+              Submitters can add and remove rows when filling the form.
+            </p>
+          </div>
         ) : null}
 
         {showPlaceholder ? (

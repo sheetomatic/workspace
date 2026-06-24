@@ -2,6 +2,18 @@ import type { FmsFormFieldType, FmsSlaType } from "@prisma/client";
 
 export type FmsFieldWidth = "half" | "full";
 
+export type FmsTableColumnType = "TEXT" | "NUMBER" | "ENUM";
+
+export type FmsTableColumn = {
+  key: string;
+  label: string;
+  columnType: FmsTableColumnType;
+  required?: boolean;
+  choices?: string[];
+};
+
+export type FmsTableRow = Record<string, string>;
+
 export type FmsPlanMode = "AUTO_TAT_ALL" | "ON_PREV_ACTUAL";
 
 export type FmsAlertConfig = {
@@ -53,6 +65,7 @@ export type FmsFieldOptionsParsed = {
   width: FmsFieldWidth;
   dependsOn?: string;
   choicesByParent?: Record<string, string[]>;
+  columns?: FmsTableColumn[];
 };
 
 export const FMS_HALF_WIDTH_FIELD_TYPES: FmsFormFieldType[] = [
@@ -76,6 +89,7 @@ export const FMS_FIELD_TYPE_LABELS: Record<FmsFormFieldType, string> = {
   EMAIL: "Email",
   PHONE: "Phone",
   FILE: "File upload",
+  TABLE: "Line items table",
 };
 
 export const FMS_SLA_TYPE_LABELS: Record<FmsSlaType, string> = {
@@ -96,6 +110,179 @@ export const FMS_FORM_FIELD_TYPES = FMS_FIELD_TYPES.filter(
 );
 
 export const FMS_SLA_TYPES = Object.keys(FMS_SLA_TYPE_LABELS) as FmsSlaType[];
+
+export const DEFAULT_PO_LINE_ITEM_COLUMNS: FmsTableColumn[] = [
+  {
+    key: "item_name",
+    label: "Item name",
+    columnType: "TEXT",
+    required: true,
+  },
+  {
+    key: "quantity",
+    label: "Quantity",
+    columnType: "NUMBER",
+    required: true,
+  },
+  {
+    key: "uom",
+    label: "UOM",
+    columnType: "ENUM",
+    required: true,
+    choices: ["Pcs", "Kg", "Ltr", "Mtr", "Box", "Set"],
+  },
+  {
+    key: "size",
+    label: "Size",
+    columnType: "TEXT",
+  },
+  {
+    key: "color",
+    label: "Color",
+    columnType: "ENUM",
+    choices: ["Red", "Blue", "Green", "Black", "White", "Other"],
+  },
+];
+
+export function isTableFieldType(fieldType: FmsFormFieldType) {
+  return fieldType === "TABLE";
+}
+
+export function normalizeTableColumn(raw: unknown): FmsTableColumn | null {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+  const record = raw as Record<string, unknown>;
+  const label =
+    typeof record.label === "string" && record.label.trim()
+      ? record.label.trim()
+      : "";
+  if (!label) {
+    return null;
+  }
+  const key =
+    typeof record.key === "string" && record.key.trim()
+      ? record.key.trim()
+      : slugifyFieldKey(label);
+  const columnType =
+    record.columnType === "NUMBER" || record.columnType === "ENUM"
+      ? record.columnType
+      : "TEXT";
+  const choices = Array.isArray(record.choices)
+    ? record.choices.map(String).map((choice) => choice.trim()).filter(Boolean)
+    : undefined;
+  return {
+    key,
+    label,
+    columnType,
+    required: Boolean(record.required),
+    ...(choices?.length ? { choices } : {}),
+  };
+}
+
+export function parseTableColumns(options: unknown): FmsTableColumn[] {
+  const parsed = parseFieldOptions(options);
+  if (parsed.columns?.length) {
+    return parsed.columns;
+  }
+  return [];
+}
+
+export function isTableRowArray(value: unknown): value is FmsTableRow[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (row) => row && typeof row === "object" && !Array.isArray(row),
+    )
+  );
+}
+
+export function emptyTableRow(columns: FmsTableColumn[]): FmsTableRow {
+  const row: FmsTableRow = {};
+  for (const column of columns) {
+    row[column.key] = "";
+  }
+  return row;
+}
+
+export function validateTableFieldValue(
+  value: unknown,
+  columns: FmsTableColumn[],
+  required: boolean,
+): string | null {
+  if (!columns.length) {
+    return "Table has no columns configured.";
+  }
+  if (!isTableRowArray(value) || value.length === 0) {
+    return required ? "Add at least one row." : null;
+  }
+
+  for (let rowIndex = 0; rowIndex < value.length; rowIndex += 1) {
+    const row = value[rowIndex];
+    const hasAnyValue = columns.some((column) =>
+      String(row[column.key] ?? "").trim(),
+    );
+    if (!hasAnyValue) {
+      if (value.length === 1 && !required) {
+        continue;
+      }
+      return `Row ${rowIndex + 1} is empty.`;
+    }
+
+    for (const column of columns) {
+      const cell = String(row[column.key] ?? "").trim();
+      if (column.required && !cell) {
+        return `Row ${rowIndex + 1}: ${column.label} is required.`;
+      }
+      if (
+        column.columnType === "ENUM" &&
+        cell &&
+        column.choices?.length &&
+        !column.choices.includes(cell)
+      ) {
+        return `Row ${rowIndex + 1}: invalid ${column.label}.`;
+      }
+      if (column.columnType === "NUMBER" && cell && Number.isNaN(Number(cell))) {
+        return `Row ${rowIndex + 1}: ${column.label} must be a number.`;
+      }
+    }
+  }
+
+  const meaningfulRows = value.filter((row) =>
+    columns.some((column) => String(row[column.key] ?? "").trim()),
+  );
+  if (required && meaningfulRows.length === 0) {
+    return "Add at least one row.";
+  }
+
+  return null;
+}
+
+export function formatTableSummary(
+  value: unknown,
+  columns: FmsTableColumn[],
+): string {
+  if (!isTableRowArray(value) || columns.length === 0) {
+    return "-";
+  }
+  const rows = value.filter((row) =>
+    columns.some((column) => String(row[column.key] ?? "").trim()),
+  );
+  if (rows.length === 0) {
+    return "-";
+  }
+  const primary = columns[0];
+  const labels = rows
+    .map((row) => String(row[primary.key] ?? "").trim())
+    .filter(Boolean);
+  if (labels.length === 0) {
+    return `${rows.length} row${rows.length === 1 ? "" : "s"}`;
+  }
+  if (labels.length <= 2) {
+    return labels.join(", ");
+  }
+  return `${labels.slice(0, 2).join(", ")} +${labels.length - 2} more`;
+}
 
 export function slugifyFieldKey(label: string) {
   return label
@@ -163,7 +350,16 @@ export function parseFieldOptions(options: unknown): FmsFieldOptionsParsed {
         choicesByParent = undefined;
       }
     }
-    return { choices, width, dependsOn, choicesByParent };
+    let columns: FmsTableColumn[] | undefined;
+    if (Array.isArray(record.columns)) {
+      columns = record.columns
+        .map((column) => normalizeTableColumn(column))
+        .filter((column): column is FmsTableColumn => column !== null);
+      if (columns.length === 0) {
+        columns = undefined;
+      }
+    }
+    return { choices, width, dependsOn, choicesByParent, columns };
   }
   return { choices: [], width: "full" };
 }
@@ -173,6 +369,7 @@ export type FmsFieldOptionsInput = {
   width?: FmsFieldWidth;
   dependsOn?: string;
   choicesByParent?: Record<string, string[]>;
+  columns?: FmsTableColumn[];
 };
 
 export function serializeFieldOptions(
@@ -188,6 +385,11 @@ export function serializeFieldOptions(
   const width = inputObj.width ?? widthOverride ?? "full";
   const dependsOn = inputObj.dependsOn?.trim();
   const choicesByParent = inputObj.choicesByParent;
+  const columns = inputObj.columns;
+
+  if (fieldType === "TABLE") {
+    return columns?.length ? { columns } : { columns: DEFAULT_PO_LINE_ITEM_COLUMNS };
+  }
 
   if (isEnum) {
     const hasDependency = Boolean(dependsOn && choicesByParent);

@@ -3,7 +3,8 @@
 import { Fragment, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { FileInput } from "lucide-react";
-import type { FmsStepStatus } from "@prisma/client";
+import type { FmsFormFieldType, FmsStepStatus } from "@prisma/client";
+import { formatFmsFieldValueText } from "@/lib/fms/display-values";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
 import { FmsStepManagePopover } from "@/components/saas/fms-step-manage-popover";
 import { FmsTrainRouteSnapshot } from "@/components/saas/fms-train-route-snapshot";
@@ -26,6 +27,7 @@ export type TrackerTableBlock = {
       fieldKey: string;
       label: string;
       fieldType: string;
+      options?: unknown;
     }[];
   };
   steps: {
@@ -58,14 +60,16 @@ export type TrackerTableBlock = {
   }[];
 };
 
-function displayValue(value: unknown) {
-  if (Array.isArray(value)) {
-    return value.join(", ");
-  }
-  if (value === null || value === undefined || value === "") {
-    return "-";
-  }
-  return String(value);
+function displayValue(
+  value: unknown,
+  fieldType?: string,
+  options?: unknown,
+) {
+  return formatFmsFieldValueText(
+    value,
+    fieldType as FmsFormFieldType | undefined,
+    options,
+  );
 }
 
 function formatCellDate(value: string | null) {
@@ -259,7 +263,11 @@ export function FmsMasterTrackerTable({
                 </td>
                 {columns.map((field) => (
                   <td key={field.id} className="ws-fms-tracker-lead-col">
-                    {displayValue(values[field.fieldKey])}
+                    {displayValue(
+                      values[field.fieldKey],
+                      field.fieldType,
+                      field.options,
+                    )}
                   </td>
                 ))}
                 {block.steps.map((step) => {

@@ -11,7 +11,7 @@ import {
 } from "@/app/app/fms/actions";
 import { fmsInitialState } from "@/lib/fms-action-state";
 import { FmsFieldTypePopover } from "@/components/saas/fms-form-add-modal";
-import { FMS_FIELD_TYPE_LABELS, DEFAULT_PO_LINE_ITEM_COLUMNS, defaultFieldWidth, isHalfWidthFieldType, parseFieldOptions, slugifyFieldKey, type FmsFieldWidth, type FmsTableColumn } from "@/lib/fms/constants";
+import { FMS_FIELD_TYPE_LABELS, DEFAULT_PO_LINE_ITEM_COLUMNS, defaultFieldWidth, isHalfWidthFieldType, parseFieldOptions, type FmsFieldWidth, type FmsTableColumn } from "@/lib/fms/constants";
 import { countMeaningfulFormFields } from "@/lib/fms/form-ai";
 import type { ParsedFmsFormDraft } from "@/lib/integrations/openai";
 
@@ -145,7 +145,9 @@ function draftFromAi(draft: ParsedFmsFormDraft): {
         choicesByParentText,
         tableColumns:
           field.fieldType === "TABLE"
-            ? DEFAULT_PO_LINE_ITEM_COLUMNS.map((column) => ({ ...column }))
+            ? (field.columns?.length
+                ? field.columns.map((column) => ({ ...column }))
+                : DEFAULT_PO_LINE_ITEM_COLUMNS.map((column) => ({ ...column })))
             : [],
       };
     }),

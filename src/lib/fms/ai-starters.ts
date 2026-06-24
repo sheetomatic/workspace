@@ -60,7 +60,7 @@ export const FMS_AI_STARTERS: FmsAiStarter[] = [
     summary: "Vendor, approval, pay, receive",
     templateId: "purchase-order",
     prompt:
-      "Purchase Order FMS: vendor shortlist, founder approval, accounts payment, warehouse goods receipt. Include TAT per stage and distinct owners for ops, founder, accounts, warehouse.",
+      "Purchase Order FMS: vendor shortlist, founder approval, accounts payment, warehouse goods receipt. Intake form must include vendor name, PO number, expected delivery date, and a TABLE field named Line items with columns item name, quantity, UOM, size, and color. Include TAT per stage and distinct owners for ops, founder, accounts, warehouse.",
   },
   {
     id: "purchase-requisition",

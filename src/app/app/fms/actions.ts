@@ -22,10 +22,13 @@ import {
   parseHolidayDates,
   parseAlertConfig,
   serializeFieldOptions,
+  parseTableColumns,
+  validateTableFieldValue,
   type FmsCaptureField,
   type FmsFieldWidth,
   type FmsFieldOptionsInput,
   type FmsSlaConfig,
+  type FmsTableColumn,
 } from "@/lib/fms/constants";
 import {
   buildReferenceLabel,
@@ -173,13 +176,16 @@ function parseFieldsJson(raw: string) {
     width?: FmsFieldWidth;
     dependsOn?: string;
     choicesByParent?: Record<string, string[]>;
+    columns?: FmsTableColumn[];
   }[];
   return parsed.map((field, index) => {
     const fieldKey = slugifyFieldKey(field.label);
     const width = field.width ?? "full";
     let optionsInput: FmsFieldOptionsInput;
 
-    if (field.dependsOn && field.choicesByParent) {
+    if (field.fieldType === "TABLE" && field.columns?.length) {
+      optionsInput = { columns: field.columns };
+    } else if (field.dependsOn && field.choicesByParent) {
       optionsInput = {
         dependsOn: field.dependsOn,
         choicesByParent: field.choicesByParent,
@@ -552,6 +558,18 @@ export async function submitFmsForm(
           if (!(file instanceof File) || file.size === 0) {
             return { ok: false, message: `${field.label} is required.` };
           }
+        }
+        continue;
+      }
+      if (field.fieldType === "TABLE") {
+        const columns = parseTableColumns(field.options);
+        const tableError = validateTableFieldValue(
+          values[field.fieldKey],
+          columns,
+          field.required,
+        );
+        if (tableError) {
+          return { ok: false, message: `${field.label}: ${tableError}` };
         }
         continue;
       }

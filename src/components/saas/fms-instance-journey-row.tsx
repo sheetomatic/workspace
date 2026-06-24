@@ -1,10 +1,11 @@
 "use client";
 
-import type { FmsInstanceStatus, FmsStepStatus } from "@prisma/client";
+import type { FmsFormFieldType, FmsInstanceStatus, FmsStepStatus } from "@prisma/client";
 import { CheckCircle2, Clock, FileInput } from "lucide-react";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
 import type { FmsStepCompleteState } from "@/components/saas/fms-step-complete-panel";
 import { FmsStepActionBar } from "@/components/saas/fms-step-action-bar";
+import { renderFmsFieldValue } from "@/lib/fms/display-values";
 import {
   computeStepUrgency,
   formatDelayLabel,
@@ -17,6 +18,8 @@ export type JourneyFormField = {
   id: string;
   fieldKey: string;
   label: string;
+  fieldType: FmsFormFieldType;
+  options?: unknown;
 };
 
 export type JourneyStep = {
@@ -45,26 +48,12 @@ function formatDate(value: Date | null) {
   }).format(value);
 }
 
-function displayValue(value: unknown) {
-  if (value && typeof value === "object" && "attachmentId" in value) {
-    const ref = value as { attachmentId: string; fileName?: string };
-    const label = ref.fileName ?? "Download file";
-    return (
-      <a
-        className="ws-fms-journey-attachment-link"
-        href={`/api/fms/attachments/${ref.attachmentId}`}
-      >
-        {label}
-      </a>
-    );
-  }
-  if (Array.isArray(value)) {
-    return value.join(", ");
-  }
-  if (value === null || value === undefined || value === "") {
-    return "-";
-  }
-  return String(value);
+function displayValue(
+  value: unknown,
+  fieldType: FmsFormFieldType,
+  options?: unknown,
+) {
+  return renderFmsFieldValue(value, fieldType, options);
 }
 
 function stepStateClass(
@@ -175,7 +164,13 @@ export function FmsInstanceJourneyRow({
                 {formFields.map((field) => (
                   <div key={field.id}>
                     <dt>{field.label}</dt>
-                    <dd>{displayValue(submissionValues[field.fieldKey])}</dd>
+                    <dd>
+                      {displayValue(
+                        submissionValues[field.fieldKey],
+                        field.fieldType,
+                        field.options,
+                      )}
+                    </dd>
                   </div>
                 ))}
               </dl>
