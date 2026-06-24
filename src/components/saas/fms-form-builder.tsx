@@ -12,7 +12,7 @@ import {
 import { fmsInitialState } from "@/lib/fms-action-state";
 import { FmsFieldTypePopover } from "@/components/saas/fms-form-add-modal";
 import { FmsBuilderTableField } from "@/components/saas/fms-builder-table-field";
-import { FMS_FIELD_TYPE_LABELS, DEFAULT_PO_LINE_ITEM_COLUMNS, defaultFieldWidth, isHalfWidthFieldType, parseFieldOptions, type FmsFieldWidth, type FmsTableColumn } from "@/lib/fms/constants";
+import { FMS_FIELD_TYPE_LABELS, DEFAULT_PO_LINE_ITEM_COLUMNS, defaultFieldWidth, isHalfWidthFieldType, parseFieldOptions, parseTableFooterTotals, type FmsFieldWidth, type FmsTableColumn, type FmsTableFooterTotal } from "@/lib/fms/constants";
 import { countMeaningfulFormFields } from "@/lib/fms/form-ai";
 import type { ParsedFmsFormDraft } from "@/lib/integrations/openai";
 
@@ -29,6 +29,7 @@ export type FormFieldDraft = {
   dependsOn: string;
   choicesByParentText: string;
   tableColumns: FmsTableColumn[];
+  tableFooterTotals: FmsTableFooterTotal[];
 };
 
 const DEFAULT_LABELS: Partial<Record<FmsFormFieldType, string>> = {
@@ -70,6 +71,17 @@ function newField(type: FmsFormFieldType = "TEXT"): FormFieldDraft {
       type === "TABLE"
         ? DEFAULT_PO_LINE_ITEM_COLUMNS.map((column) => ({ ...column }))
         : [],
+    tableFooterTotals:
+      type === "TABLE"
+        ? [
+            {
+              key: "grand_total",
+              label: "Grand total",
+              columnKey: "line_total",
+              decimals: 2,
+            },
+          ]
+        : [],
   };
 }
 
@@ -109,6 +121,10 @@ function toDraft(
             ? parsed.columns.map((column) => ({ ...column }))
             : DEFAULT_PO_LINE_ITEM_COLUMNS.map((column) => ({ ...column })))
         : [],
+      tableFooterTotals:
+        field.fieldType === "TABLE"
+          ? parseTableFooterTotals(field.options)
+          : [],
     };
   });
 }
@@ -150,6 +166,7 @@ function draftFromAi(draft: ParsedFmsFormDraft): {
                 ? field.columns.map((column) => ({ ...column }))
                 : DEFAULT_PO_LINE_ITEM_COLUMNS.map((column) => ({ ...column })))
             : [],
+        tableFooterTotals: [],
       };
     }),
   };
@@ -550,6 +567,9 @@ export function FmsFormBuilder({
             columns: field.tableColumns.length
               ? field.tableColumns
               : DEFAULT_PO_LINE_ITEM_COLUMNS,
+            footerTotals: field.tableFooterTotals.length
+              ? field.tableFooterTotals
+              : undefined,
           };
         }
         return { ...base, options: [] };

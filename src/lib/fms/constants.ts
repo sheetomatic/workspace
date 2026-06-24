@@ -2,7 +2,27 @@ import type { FmsFormFieldType, FmsSlaType } from "@prisma/client";
 
 export type FmsFieldWidth = "half" | "full";
 
-export type FmsTableColumnType = "TEXT" | "NUMBER" | "ENUM";
+export type FmsTableColumnType = "TEXT" | "NUMBER" | "ENUM" | "CALCULATED";
+
+export type FmsTableFormulaOp =
+  | "MULTIPLY"
+  | "ADD"
+  | "SUBTRACT"
+  | "DIVIDE"
+  | "SUM";
+
+export type FmsTableColumnFormula = {
+  operation: FmsTableFormulaOp;
+  operandKeys: string[];
+  decimals?: number;
+};
+
+export type FmsTableFooterTotal = {
+  key: string;
+  label: string;
+  columnKey: string;
+  decimals?: number;
+};
 
 export type FmsTableColumn = {
   key: string;
@@ -10,6 +30,7 @@ export type FmsTableColumn = {
   columnType: FmsTableColumnType;
   required?: boolean;
   choices?: string[];
+  formula?: FmsTableColumnFormula;
 };
 
 export type FmsTableRow = Record<string, string>;
@@ -66,6 +87,7 @@ export type FmsFieldOptionsParsed = {
   dependsOn?: string;
   choicesByParent?: Record<string, string[]>;
   columns?: FmsTableColumn[];
+  footerTotals?: FmsTableFooterTotal[];
 };
 
 export const FMS_HALF_WIDTH_FIELD_TYPES: FmsFormFieldType[] = [
@@ -125,6 +147,22 @@ export const DEFAULT_PO_LINE_ITEM_COLUMNS: FmsTableColumn[] = [
     required: true,
   },
   {
+    key: "rate",
+    label: "Rate",
+    columnType: "NUMBER",
+    required: true,
+  },
+  {
+    key: "line_total",
+    label: "Line total",
+    columnType: "CALCULATED",
+    formula: {
+      operation: "MULTIPLY",
+      operandKeys: ["quantity", "rate"],
+      decimals: 2,
+    },
+  },
+  {
     key: "uom",
     label: "UOM",
     columnType: "ENUM",
@@ -165,18 +203,46 @@ export function normalizeTableColumn(raw: unknown): FmsTableColumn | null {
       ? record.key.trim()
       : slugifyFieldKey(label);
   const columnType =
-    record.columnType === "NUMBER" || record.columnType === "ENUM"
+    record.columnType === "NUMBER" ||
+    record.columnType === "ENUM" ||
+    record.columnType === "CALCULATED"
       ? record.columnType
       : "TEXT";
   const choices = Array.isArray(record.choices)
     ? record.choices.map(String).map((choice) => choice.trim()).filter(Boolean)
     : undefined;
+  let formula: FmsTableColumnFormula | undefined;
+  if (record.formula && typeof record.formula === "object") {
+    const formulaRecord = record.formula as Record<string, unknown>;
+    const operation = formulaRecord.operation;
+    const operandKeys = Array.isArray(formulaRecord.operandKeys)
+      ? formulaRecord.operandKeys.map(String).filter(Boolean)
+      : [];
+    if (
+      (operation === "MULTIPLY" ||
+        operation === "ADD" ||
+        operation === "SUBTRACT" ||
+        operation === "DIVIDE" ||
+        operation === "SUM") &&
+      operandKeys.length >= 2
+    ) {
+      formula = {
+        operation,
+        operandKeys,
+        decimals:
+          typeof formulaRecord.decimals === "number"
+            ? Math.min(Math.max(formulaRecord.decimals, 0), 4)
+            : 2,
+      };
+    }
+  }
   return {
     key,
     label,
     columnType,
     required: Boolean(record.required),
     ...(choices?.length ? { choices } : {}),
+    ...(formula ? { formula } : {}),
   };
 }
 
@@ -186,6 +252,11 @@ export function parseTableColumns(options: unknown): FmsTableColumn[] {
     return parsed.columns;
   }
   return [];
+}
+
+export function parseTableFooterTotals(options: unknown): FmsTableFooterTotal[] {
+  const parsed = parseFieldOptions(options);
+  return parsed.footerTotals ?? [];
 }
 
 export function newTableColumn(): FmsTableColumn {
@@ -210,8 +281,24 @@ export function updateTableColumn(
     if (patch.label && !patch.key) {
       next.key = slugifyFieldKey(patch.label);
     }
-    if (next.columnType !== "ENUM") {
+    if (next.columnType === "ENUM") {
+      if (!next.choices?.length) {
+        delete next.choices;
+      }
+    } else {
       delete next.choices;
+    }
+    if (next.columnType === "CALCULATED") {
+      if (!next.formula?.operandKeys?.length) {
+        next.formula = {
+          operation: "MULTIPLY",
+          operandKeys: [],
+          decimals: 2,
+        };
+      }
+      next.required = false;
+    } else {
+      delete next.formula;
     }
     return next;
   });
@@ -268,7 +355,54 @@ export function resolveTableColumnChoices(column: FmsTableColumn): string[] {
 }
 
 export function tableColumnUsesSelect(column: FmsTableColumn) {
-  return column.columnType === "ENUM" || resolveTableColumnChoices(column).length > 0;
+  return (
+    column.columnType === "ENUM" ||
+    resolveTableColumnChoices(column).length > 0
+  );
+}
+
+export function isCalculatedTableColumn(column: FmsTableColumn) {
+  return column.columnType === "CALCULATED";
+}
+
+export function newTableFooterTotal(): FmsTableFooterTotal {
+  return {
+    key: `total_${crypto.randomUUID().slice(0, 8)}`,
+    label: "Grand total",
+    columnKey: "",
+    decimals: 2,
+  };
+}
+
+export function normalizeTableFooterTotal(raw: unknown): FmsTableFooterTotal | null {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+  const record = raw as Record<string, unknown>;
+  const label =
+    typeof record.label === "string" && record.label.trim()
+      ? record.label.trim()
+      : "";
+  const columnKey =
+    typeof record.columnKey === "string" && record.columnKey.trim()
+      ? record.columnKey.trim()
+      : "";
+  if (!label || !columnKey) {
+    return null;
+  }
+  const key =
+    typeof record.key === "string" && record.key.trim()
+      ? record.key.trim()
+      : slugifyFieldKey(label);
+  return {
+    key,
+    label,
+    columnKey,
+    decimals:
+      typeof record.decimals === "number"
+        ? Math.min(Math.max(record.decimals, 0), 4)
+        : 2,
+  };
 }
 
 export function isTableRowArray(value: unknown): value is FmsTableRow[] {
@@ -300,9 +434,11 @@ export function validateTableFieldValue(
     return required ? "Add at least one row." : null;
   }
 
+  const inputColumns = columns.filter((column) => !isCalculatedTableColumn(column));
+
   for (let rowIndex = 0; rowIndex < value.length; rowIndex += 1) {
     const row = value[rowIndex];
-    const hasAnyValue = columns.some((column) =>
+    const hasAnyValue = inputColumns.some((column) =>
       String(row[column.key] ?? "").trim(),
     );
     if (!hasAnyValue) {
@@ -312,7 +448,7 @@ export function validateTableFieldValue(
       return `Row ${rowIndex + 1} is empty.`;
     }
 
-    for (const column of columns) {
+    for (const column of inputColumns) {
       const cell = String(row[column.key] ?? "").trim();
       if (column.required && !cell) {
         return `Row ${rowIndex + 1}: ${column.label} is required.`;
@@ -332,7 +468,7 @@ export function validateTableFieldValue(
   }
 
   const meaningfulRows = value.filter((row) =>
-    columns.some((column) => String(row[column.key] ?? "").trim()),
+    inputColumns.some((column) => String(row[column.key] ?? "").trim()),
   );
   if (required && meaningfulRows.length === 0) {
     return "Add at least one row.";
@@ -442,7 +578,16 @@ export function parseFieldOptions(options: unknown): FmsFieldOptionsParsed {
         columns = undefined;
       }
     }
-    return { choices, width, dependsOn, choicesByParent, columns };
+    let footerTotals: FmsTableFooterTotal[] | undefined;
+    if (Array.isArray(record.footerTotals)) {
+      footerTotals = record.footerTotals
+        .map((total) => normalizeTableFooterTotal(total))
+        .filter((total): total is FmsTableFooterTotal => total !== null);
+      if (footerTotals.length === 0) {
+        footerTotals = undefined;
+      }
+    }
+    return { choices, width, dependsOn, choicesByParent, columns, footerTotals };
   }
   return { choices: [], width: "full" };
 }
@@ -453,6 +598,7 @@ export type FmsFieldOptionsInput = {
   dependsOn?: string;
   choicesByParent?: Record<string, string[]>;
   columns?: FmsTableColumn[];
+  footerTotals?: FmsTableFooterTotal[];
 };
 
 export function serializeFieldOptions(
@@ -469,9 +615,16 @@ export function serializeFieldOptions(
   const dependsOn = inputObj.dependsOn?.trim();
   const choicesByParent = inputObj.choicesByParent;
   const columns = inputObj.columns;
+  const footerTotals = inputObj.footerTotals;
 
   if (fieldType === "TABLE") {
-    return columns?.length ? { columns } : { columns: DEFAULT_PO_LINE_ITEM_COLUMNS };
+    const tableOptions: Record<string, unknown> = {
+      columns: columns?.length ? columns : DEFAULT_PO_LINE_ITEM_COLUMNS,
+    };
+    if (footerTotals?.length) {
+      tableOptions.footerTotals = footerTotals;
+    }
+    return tableOptions;
   }
 
   if (isEnum) {

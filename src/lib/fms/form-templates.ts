@@ -4,6 +4,7 @@ import {
   serializeFieldOptions,
   slugifyFieldKey,
   type FmsTableColumn,
+  type FmsTableFooterTotal,
 } from "@/lib/fms/constants";
 
 export type FmsIntakeFormFieldTemplate = {
@@ -14,6 +15,7 @@ export type FmsIntakeFormFieldTemplate = {
   helpText?: string;
   options?: string[];
   columns?: FmsTableColumn[];
+  footerTotals?: FmsTableFooterTotal[];
 };
 
 const INTAKE_FORM_TEMPLATES: Record<string, FmsIntakeFormFieldTemplate[]> = {
@@ -39,7 +41,21 @@ const INTAKE_FORM_TEMPLATES: Record<string, FmsIntakeFormFieldTemplate[]> = {
       fieldType: "TABLE",
       required: true,
       columns: DEFAULT_PO_LINE_ITEM_COLUMNS,
-      helpText: "Add each item to purchase with quantity, UOM, size, and color.",
+      footerTotals: [
+        {
+          key: "grand_total",
+          label: "Grand total",
+          columnKey: "line_total",
+          decimals: 2,
+        },
+        {
+          key: "total_quantity",
+          label: "Total quantity",
+          columnKey: "quantity",
+          decimals: 0,
+        },
+      ],
+      helpText: "Add each item with quantity and rate; line total calculates automatically.",
     },
     {
       label: "Notes",
@@ -70,6 +86,7 @@ export function intakeFormTemplateToFieldCreates(
     options: serializeFieldOptions(field.fieldType, {
       choices: field.options ?? [],
       columns: field.columns,
+      footerTotals: field.footerTotals,
     }),
     placeholder: field.placeholder?.trim() || null,
     helpText: field.helpText?.trim() || null,

@@ -7,8 +7,10 @@ import {
   Trash2,
 } from "lucide-react";
 import {
+  isCalculatedTableColumn,
   moveTableColumn,
   newTableColumn,
+  newTableFooterTotal,
   removeTableColumnAt,
   resolveTableColumnChoices,
   resolveTableColumns,
@@ -16,13 +18,28 @@ import {
   updateTableColumn,
   type FmsTableColumn,
   type FmsTableColumnType,
+  type FmsTableFooterTotal,
+  type FmsTableFormulaOp,
 } from "@/lib/fms/constants";
+import {
+  describeColumnFormula,
+  numericSourceColumns,
+  summableTableColumns,
+} from "@/lib/fms/table-calculations";
 
 const COLUMN_TYPE_LABELS: Record<FmsTableColumnType, string> = {
   TEXT: "Text",
   NUMBER: "Number",
   ENUM: "Dropdown",
+  CALCULATED: "Calculated",
 };
+
+const FORMULA_OPERATIONS: FmsTableFormulaOp[] = [
+  "MULTIPLY",
+  "ADD",
+  "SUBTRACT",
+  "DIVIDE",
+];
 
 export function FmsBuilderTableField({
   columns,
@@ -94,7 +111,9 @@ export function FmsBuilderTableField({
                         <Trash2 size={14} aria-hidden />
                       </button>
                     </div>
-                    <span className="ws-fms-builder-table-type-pill">
+                    <span
+                      className={`ws-fms-builder-table-type-pill${isCalculatedTableColumn(column) ? " is-calc" : ""}`}
+                    >
                       {COLUMN_TYPE_LABELS[column.columnType]}
                     </span>
                   </div>
@@ -105,6 +124,16 @@ export function FmsBuilderTableField({
           <tbody>
             <tr>
               {tableColumns.map((column, index) => {
+                if (isCalculatedTableColumn(column)) {
+                  return (
+                    <td key={`${column.key}-preview-${index}`}>
+                      <div className="ws-fms-intake-calc-value is-preview">
+                        Auto
+                      </div>
+                    </td>
+                  );
+                }
+
                 const choices = resolveTableColumnChoices(column);
                 const useSelect = tableColumnUsesSelect(column);
                 return (
@@ -147,8 +176,8 @@ export function FmsBuilderTableField({
           Add column
         </button>
         <p className="ws-fms-muted ws-fms-builder-table-hint">
-          Delete or reorder columns with the icons above each header. Set type
-          and dropdown choices in field settings.
+          Use field settings to add calculated columns (Qty x Rate) and table
+          totals.
         </p>
       </div>
     </div>
@@ -157,13 +186,28 @@ export function FmsBuilderTableField({
 
 export function FmsTableColumnSettingsList({
   columns,
+  footerTotals = [],
   onChange,
 }: {
   columns: FmsTableColumn[];
-  onChange: (columns: FmsTableColumn[]) => void;
+  footerTotals?: FmsTableFooterTotal[];
+  onChange: (patch: {
+    tableColumns?: FmsTableColumn[];
+    tableFooterTotals?: FmsTableFooterTotal[];
+  }) => void;
 }) {
   const tableColumns = resolveTableColumns(columns);
   const canDeleteColumn = tableColumns.length > 1;
+  const numberColumns = numericSourceColumns(tableColumns);
+  const summableColumns = summableTableColumns(tableColumns);
+
+  function updateColumns(next: FmsTableColumn[]) {
+    onChange({ tableColumns: next });
+  }
+
+  function updateFooterTotals(next: FmsTableFooterTotal[]) {
+    onChange({ tableFooterTotals: next });
+  }
 
   return (
     <div className="ws-fms-jf-table-columns">
@@ -177,7 +221,7 @@ export function FmsTableColumnSettingsList({
         <button
           type="button"
           className="ws-fms-jf-table-columns-add"
-          onClick={() => onChange([...tableColumns, newTableColumn()])}
+          onClick={() => updateColumns([...tableColumns, newTableColumn()])}
         >
           <Plus size={14} aria-hidden />
           Add column
@@ -196,6 +240,9 @@ export function FmsTableColumnSettingsList({
                 <span className="ws-fms-jf-table-column-type">
                   {COLUMN_TYPE_LABELS[column.columnType]}
                   {column.required ? " - Required" : ""}
+                  {describeColumnFormula(column)
+                    ? ` - ${describeColumnFormula(column)}`
+                    : ""}
                 </span>
               </div>
               <div className="ws-fms-jf-table-column-card-actions">
@@ -206,7 +253,7 @@ export function FmsTableColumnSettingsList({
                   title="Move up"
                   disabled={index === 0}
                   onClick={() =>
-                    onChange(moveTableColumn(tableColumns, index, "left"))
+                    updateColumns(moveTableColumn(tableColumns, index, "left"))
                   }
                 >
                   <ChevronLeft size={14} aria-hidden />
@@ -218,7 +265,7 @@ export function FmsTableColumnSettingsList({
                   title="Move down"
                   disabled={index === tableColumns.length - 1}
                   onClick={() =>
-                    onChange(moveTableColumn(tableColumns, index, "right"))
+                    updateColumns(moveTableColumn(tableColumns, index, "right"))
                   }
                 >
                   <ChevronRight size={14} aria-hidden />
@@ -230,7 +277,7 @@ export function FmsTableColumnSettingsList({
                   title="Delete column"
                   disabled={!canDeleteColumn}
                   onClick={() =>
-                    onChange(removeTableColumnAt(tableColumns, index))
+                    updateColumns(removeTableColumnAt(tableColumns, index))
                   }
                 >
                   <Trash2 size={14} aria-hidden />
@@ -244,7 +291,7 @@ export function FmsTableColumnSettingsList({
                 <input
                   value={column.label}
                   onChange={(event) =>
-                    onChange(
+                    updateColumns(
                       updateTableColumn(tableColumns, index, {
                         label: event.target.value,
                       }),
@@ -257,7 +304,7 @@ export function FmsTableColumnSettingsList({
                 <select
                   value={column.columnType}
                   onChange={(event) =>
-                    onChange(
+                    updateColumns(
                       updateTableColumn(tableColumns, index, {
                         columnType: event.target.value as FmsTableColumnType,
                       }),
@@ -267,22 +314,27 @@ export function FmsTableColumnSettingsList({
                   <option value="TEXT">Text</option>
                   <option value="NUMBER">Number</option>
                   <option value="ENUM">Dropdown</option>
+                  <option value="CALCULATED">Calculated</option>
                 </select>
               </label>
-              <label className="ws-fms-jf-option-check">
-                <input
-                  type="checkbox"
-                  checked={Boolean(column.required)}
-                  onChange={(event) =>
-                    onChange(
-                      updateTableColumn(tableColumns, index, {
-                        required: event.target.checked,
-                      }),
-                    )
-                  }
-                />
-                Required in each row
-              </label>
+
+              {!isCalculatedTableColumn(column) ? (
+                <label className="ws-fms-jf-option-check">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(column.required)}
+                    onChange={(event) =>
+                      updateColumns(
+                        updateTableColumn(tableColumns, index, {
+                          required: event.target.checked,
+                        }),
+                      )
+                    }
+                  />
+                  Required in each row
+                </label>
+              ) : null}
+
               {column.columnType === "ENUM" ? (
                 <label className="ws-fms-jf-option-field">
                   Dropdown choices (one per line)
@@ -290,7 +342,7 @@ export function FmsTableColumnSettingsList({
                     rows={3}
                     value={(column.choices ?? []).join("\n")}
                     onChange={(event) =>
-                      onChange(
+                      updateColumns(
                         updateTableColumn(tableColumns, index, {
                           choices: event.target.value
                             .split("\n")
@@ -303,13 +355,229 @@ export function FmsTableColumnSettingsList({
                   />
                 </label>
               ) : null}
+
+              {isCalculatedTableColumn(column) ? (
+                <div className="ws-fms-jf-formula-block">
+                  <label className="ws-fms-jf-option-field">
+                    Formula
+                    <select
+                      value={column.formula?.operation ?? "MULTIPLY"}
+                      onChange={(event) =>
+                        updateColumns(
+                          updateTableColumn(tableColumns, index, {
+                            formula: {
+                              operation: event.target
+                                .value as FmsTableFormulaOp,
+                              operandKeys: column.formula?.operandKeys ?? [],
+                              decimals: column.formula?.decimals ?? 2,
+                            },
+                          }),
+                        )
+                      }
+                    >
+                      {FORMULA_OPERATIONS.map((operation) => (
+                        <option key={operation} value={operation}>
+                          {operation.charAt(0) +
+                            operation.slice(1).toLowerCase()}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="ws-fms-jf-option-field">
+                    First column
+                    <select
+                      value={column.formula?.operandKeys[0] ?? ""}
+                      onChange={(event) => {
+                        const operandKeys = [
+                          ...(column.formula?.operandKeys ?? []),
+                        ];
+                        operandKeys[0] = event.target.value;
+                        updateColumns(
+                          updateTableColumn(tableColumns, index, {
+                            formula: {
+                              operation: column.formula?.operation ?? "MULTIPLY",
+                              operandKeys,
+                              decimals: column.formula?.decimals ?? 2,
+                            },
+                          }),
+                        );
+                      }}
+                    >
+                      <option value="">Select column...</option>
+                      {numberColumns.map((source) => (
+                        <option key={source.key} value={source.key}>
+                          {source.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="ws-fms-jf-option-field">
+                    Second column
+                    <select
+                      value={column.formula?.operandKeys[1] ?? ""}
+                      onChange={(event) => {
+                        const operandKeys = [
+                          column.formula?.operandKeys[0] ?? "",
+                          event.target.value,
+                        ].filter(Boolean);
+                        updateColumns(
+                          updateTableColumn(tableColumns, index, {
+                            formula: {
+                              operation: column.formula?.operation ?? "MULTIPLY",
+                              operandKeys,
+                              decimals: column.formula?.decimals ?? 2,
+                            },
+                          }),
+                        );
+                      }}
+                    >
+                      <option value="">Select column...</option>
+                      {numberColumns.map((source) => (
+                        <option key={source.key} value={source.key}>
+                          {source.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="ws-fms-jf-option-field">
+                    Decimal places
+                    <input
+                      type="number"
+                      min={0}
+                      max={4}
+                      value={column.formula?.decimals ?? 2}
+                      onChange={(event) =>
+                        updateColumns(
+                          updateTableColumn(tableColumns, index, {
+                            formula: {
+                              operation: column.formula?.operation ?? "MULTIPLY",
+                              operandKeys: column.formula?.operandKeys ?? [],
+                              decimals: Math.min(
+                                Math.max(Number(event.target.value) || 0, 0),
+                                4,
+                              ),
+                            },
+                          }),
+                        )
+                      }
+                    />
+                  </label>
+                </div>
+              ) : null}
             </div>
           </article>
         ))}
       </div>
 
+      <div className="ws-fms-jf-table-totals">
+        <div className="ws-fms-jf-table-columns-head">
+          <div>
+            <strong>Table totals</strong>
+            <p className="ws-fms-muted ws-fms-jf-table-columns-sub">
+              Sum a column across all rows (e.g. grand total).
+            </p>
+          </div>
+          <button
+            type="button"
+            className="ws-fms-jf-table-columns-add"
+            onClick={() =>
+              updateFooterTotals([...footerTotals, newTableFooterTotal()])
+            }
+          >
+            <Plus size={14} aria-hidden />
+            Add total
+          </button>
+        </div>
+
+        {footerTotals.length === 0 ? (
+          <p className="ws-fms-muted ws-fms-jf-table-totals-empty">
+            No totals yet. Add one to show grand total quantity or amount below
+            the table.
+          </p>
+        ) : (
+          <div className="ws-fms-jf-table-column-list">
+            {footerTotals.map((total, index) => (
+              <article
+                key={`${total.key}-${index}`}
+                className="ws-fms-jf-table-column-card"
+              >
+                <header className="ws-fms-jf-table-column-card-head">
+                  <strong>{total.label || "Table total"}</strong>
+                  <button
+                    type="button"
+                    className="ws-fms-jf-table-column-icon ws-fms-jf-table-column-delete"
+                    aria-label="Remove total"
+                    onClick={() =>
+                      updateFooterTotals(
+                        footerTotals.filter((_, i) => i !== index),
+                      )
+                    }
+                  >
+                    <Trash2 size={14} aria-hidden />
+                  </button>
+                </header>
+                <div className="ws-fms-jf-table-column-card-body">
+                  <label className="ws-fms-jf-option-field">
+                    Total label
+                    <input
+                      value={total.label}
+                      onChange={(event) => {
+                        const next = [...footerTotals];
+                        next[index] = { ...total, label: event.target.value };
+                        updateFooterTotals(next);
+                      }}
+                    />
+                  </label>
+                  <label className="ws-fms-jf-option-field">
+                    Sum column
+                    <select
+                      value={total.columnKey}
+                      onChange={(event) => {
+                        const next = [...footerTotals];
+                        next[index] = {
+                          ...total,
+                          columnKey: event.target.value,
+                        };
+                        updateFooterTotals(next);
+                      }}
+                    >
+                      <option value="">Select column...</option>
+                      {summableColumns.map((source) => (
+                        <option key={source.key} value={source.key}>
+                          {source.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="ws-fms-jf-option-field">
+                    Decimal places
+                    <input
+                      type="number"
+                      min={0}
+                      max={4}
+                      value={total.decimals ?? 2}
+                      onChange={(event) => {
+                        const next = [...footerTotals];
+                        next[index] = {
+                          ...total,
+                          decimals: Math.min(
+                            Math.max(Number(event.target.value) || 0, 0),
+                            4,
+                          ),
+                        };
+                        updateFooterTotals(next);
+                      }}
+                    />
+                  </label>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
+
       <p className="ws-fms-jf-field-key-hint ws-fms-muted">
-        Submitters add rows on the live form - they cannot delete columns.
+        Calculated columns update live on submit. Submitters add rows only.
       </p>
     </div>
   );

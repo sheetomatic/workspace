@@ -1,40 +1,56 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import type { FmsTableColumn, FmsTableRow } from "@/lib/fms/constants";
+import type { FmsTableColumn, FmsTableFooterTotal, FmsTableRow } from "@/lib/fms/constants";
 import {
   emptyTableRow,
+  isCalculatedTableColumn,
   isTableRowArray,
   resolveTableColumnChoices,
   tableColumnUsesSelect,
 } from "@/lib/fms/constants";
+import {
+  applyTableCalculations,
+  computeFooterTotal,
+} from "@/lib/fms/table-calculations";
 
 export function FmsIntakeTableField({
   fieldKey,
   columns,
+  footerTotals = [],
   value,
-  required,
   onChange,
 }: {
   fieldKey: string;
   columns: FmsTableColumn[];
+  footerTotals?: FmsTableFooterTotal[];
   value: unknown;
-  required: boolean;
+  required?: boolean;
   onChange: (rows: FmsTableRow[]) => void;
 }) {
-  const rows = isTableRowArray(value) && value.length > 0
+  const baseRows = isTableRowArray(value) && value.length > 0
     ? value
     : [emptyTableRow(columns)];
+  const rows = applyTableCalculations(baseRows, columns);
+
+  const footerValues = footerTotals.map((total) => ({
+    total,
+    value: computeFooterTotal(rows, columns, total),
+  }));
+
+  function commitRows(nextRows: FmsTableRow[]) {
+    onChange(applyTableCalculations(nextRows, columns));
+  }
 
   function updateRow(rowIndex: number, columnKey: string, cellValue: string) {
     const next = rows.map((row, index) =>
       index === rowIndex ? { ...row, [columnKey]: cellValue } : row,
     );
-    onChange(next);
+    commitRows(next);
   }
 
   function addRow() {
-    onChange([...rows, emptyTableRow(columns)]);
+    commitRows([...rows, emptyTableRow(columns)]);
   }
 
   if (columns.length === 0) {
@@ -61,6 +77,9 @@ export function FmsIntakeTableField({
                       *
                     </span>
                   ) : null}
+                  {isCalculatedTableColumn(column) ? (
+                    <span className="ws-fms-intake-calc-tag">Calc</span>
+                  ) : null}
                 </th>
               ))}
             </tr>
@@ -71,6 +90,20 @@ export function FmsIntakeTableField({
                 {columns.map((column) => {
                   const inputId = `${fieldKey}-${rowIndex}-${column.key}`;
                   const cellValue = String(row[column.key] ?? "");
+
+                  if (isCalculatedTableColumn(column)) {
+                    return (
+                      <td key={column.key}>
+                        <div
+                          className="ws-fms-intake-calc-value"
+                          aria-live="polite"
+                        >
+                          {cellValue || "-"}
+                        </div>
+                      </td>
+                    );
+                  }
+
                   const choices = resolveTableColumnChoices(column);
                   const useSelect = tableColumnUsesSelect(column);
 
@@ -114,6 +147,18 @@ export function FmsIntakeTableField({
           </tbody>
         </table>
       </div>
+
+      {footerValues.length > 0 ? (
+        <div className="ws-fms-intake-table-footer">
+          {footerValues.map(({ total, value: totalValue }) => (
+            <div key={total.key} className="ws-fms-intake-table-footer-row">
+              <span>{total.label}</span>
+              <strong>{totalValue || "-"}</strong>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       <button
         type="button"
         className="ws-fms-intake-table-add"

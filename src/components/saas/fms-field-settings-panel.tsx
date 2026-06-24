@@ -244,7 +244,8 @@ export function FmsFieldSettingsPanel({
         {showTableColumns ? (
           <FmsTableColumnSettingsList
             columns={tableColumns}
-            onChange={(nextColumns) => onUpdate({ tableColumns: nextColumns })}
+            footerTotals={field.tableFooterTotals}
+            onChange={(patch) => onUpdate(patch)}
           />
         ) : null}
 

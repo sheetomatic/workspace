@@ -24,12 +24,15 @@ import {
   serializeFieldOptions,
   parseTableColumns,
   validateTableFieldValue,
+  isTableRowArray,
   type FmsCaptureField,
   type FmsFieldWidth,
   type FmsFieldOptionsInput,
   type FmsSlaConfig,
   type FmsTableColumn,
+  type FmsTableFooterTotal,
 } from "@/lib/fms/constants";
+import { applyTableCalculations } from "@/lib/fms/table-calculations";
 import {
   buildReferenceLabel,
   completeFmsStep,
@@ -177,6 +180,7 @@ function parseFieldsJson(raw: string) {
     dependsOn?: string;
     choicesByParent?: Record<string, string[]>;
     columns?: FmsTableColumn[];
+    footerTotals?: FmsTableFooterTotal[];
   }[];
   const usedKeys = new Set<string>();
   return parsed.map((field, index) => {
@@ -193,7 +197,10 @@ function parseFieldsJson(raw: string) {
     let optionsInput: FmsFieldOptionsInput;
 
     if (field.fieldType === "TABLE" && field.columns?.length) {
-      optionsInput = { columns: field.columns };
+      optionsInput = {
+        columns: field.columns,
+        footerTotals: field.footerTotals,
+      };
     } else if (field.dependsOn && field.choicesByParent) {
       optionsInput = {
         dependsOn: field.dependsOn,
@@ -572,6 +579,10 @@ export async function submitFmsForm(
       }
       if (field.fieldType === "TABLE") {
         const columns = parseTableColumns(field.options);
+        const rawRows = values[field.fieldKey];
+        if (isTableRowArray(rawRows)) {
+          values[field.fieldKey] = applyTableCalculations(rawRows, columns);
+        }
         const tableError = validateTableFieldValue(
           values[field.fieldKey],
           columns,
