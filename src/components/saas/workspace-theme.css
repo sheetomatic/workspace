@@ -20124,25 +20124,71 @@ body:has(.workspace-app.saas-app) {
   font-weight: 700;
 }
 
+.workspace-app .ws-fms-notify-bell-portal {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  pointer-events: none;
+}
+
+.workspace-app .ws-fms-notify-bell-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgb(15 23 42 / 12%);
+  pointer-events: auto;
+  cursor: default;
+}
+
 .workspace-app .ws-fms-notify-bell-panel {
-  z-index: 1200;
-  max-height: min(70vh, 420px);
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  left: auto;
+  width: min(360px, calc(100vw - 24px));
+  z-index: 1301;
+  max-height: min(70vh, 480px);
   overflow: auto;
   padding: 12px;
   border: 1px solid var(--sf-card-border);
   border-radius: 12px;
   background: #fff;
-  box-shadow: 0 12px 32px rgb(15 23 42 / 18%);
+  box-shadow: 0 16px 40px rgb(15 23 42 / 18%);
+  pointer-events: auto;
 }
 
 .workspace-app .ws-fms-notify-bell-panel-head {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 10px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--sf-card-border);
   font-size: 0.8125rem;
+}
+
+.workspace-app .ws-fms-notify-bell-panel-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.workspace-app .ws-fms-notify-bell-close {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--sf-card-border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--sf-text-secondary);
+  cursor: pointer;
+}
+
+.workspace-app .ws-fms-notify-bell-close:hover {
+  background: #f3f3f3;
+  color: var(--sf-text);
 }
 
 .workspace-app .ws-fms-notify-bell-panel-head .ws-fms-notify-bell-count {
