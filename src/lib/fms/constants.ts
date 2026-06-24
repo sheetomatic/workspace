@@ -217,6 +217,35 @@ export function updateTableColumn(
   });
 }
 
+export function removeTableColumnAt(
+  columns: FmsTableColumn[],
+  index: number,
+): FmsTableColumn[] {
+  if (columns.length <= 1) {
+    return columns;
+  }
+  return columns.filter((_, columnIndex) => columnIndex !== index);
+}
+
+export function moveTableColumn(
+  columns: FmsTableColumn[],
+  index: number,
+  direction: "left" | "right",
+): FmsTableColumn[] {
+  const targetIndex = direction === "left" ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= columns.length) {
+    return columns;
+  }
+  const next = [...columns];
+  const [moved] = next.splice(index, 1);
+  next.splice(targetIndex, 0, moved);
+  return next;
+}
+
+export function resolveTableColumns(columns: FmsTableColumn[]) {
+  return columns.length ? columns : DEFAULT_PO_LINE_ITEM_COLUMNS;
+}
+
 /** Dropdown choices for a table column — uses saved choices or sensible defaults by label. */
 export function resolveTableColumnChoices(column: FmsTableColumn): string[] {
   if (column.choices?.length) {

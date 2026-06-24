@@ -15032,6 +15032,71 @@ body:has(.workspace-app.saas-app) {
   border-bottom: none;
 }
 
+.workspace-app .ws-fms-builder-table-grid th {
+  vertical-align: top;
+  min-width: 120px;
+}
+
+.workspace-app .ws-fms-builder-table-head-cell {
+  display: grid;
+  gap: 6px;
+}
+
+.workspace-app .ws-fms-builder-table-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.workspace-app .ws-fms-builder-table-head-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #fff;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.workspace-app .ws-fms-builder-table-head-btn:hover:not(:disabled) {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+}
+
+.workspace-app .ws-fms-builder-table-head-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.workspace-app .ws-fms-builder-table-head-delete:hover:not(:disabled) {
+  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.workspace-app .ws-fms-builder-table-type-pill {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #475569;
+  background: #f1f5f9;
+}
+
+.workspace-app .ws-fms-builder-table-toolbar {
+  display: grid;
+  gap: 6px;
+}
+
 .workspace-app .ws-fms-builder-table-head-input {
   width: 100%;
   min-width: 72px;
@@ -15081,21 +15146,119 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-fms-jf-table-columns-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
-  font-size: 0.8125rem;
-  font-weight: 700;
+  gap: 12px;
 }
 
-.workspace-app .ws-fms-jf-table-columns-add,
-.workspace-app .ws-fms-jf-table-column-remove {
+.workspace-app .ws-fms-jf-table-columns-head strong {
+  display: block;
+  font-size: 0.875rem;
+}
+
+.workspace-app .ws-fms-jf-table-columns-sub {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+}
+
+.workspace-app .ws-fms-jf-table-column-list {
+  display: grid;
+  gap: 10px;
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.workspace-app .ws-fms-jf-table-column-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.workspace-app .ws-fms-jf-table-column-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+.workspace-app .ws-fms-jf-table-column-card-head strong {
+  display: block;
+  font-size: 0.8125rem;
+  color: #0f172a;
+}
+
+.workspace-app .ws-fms-jf-table-column-type {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.6875rem;
+  color: #64748b;
+}
+
+.workspace-app .ws-fms-jf-table-column-card-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.workspace-app .ws-fms-jf-table-column-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #fff;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.workspace-app .ws-fms-jf-table-column-icon:hover:not(:disabled) {
+  border-color: #cbd5e1;
+  background: #fff;
+  color: #334155;
+}
+
+.workspace-app .ws-fms-jf-table-column-icon:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.workspace-app .ws-fms-jf-table-column-delete:hover:not(:disabled) {
+  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.workspace-app .ws-fms-jf-table-column-card-body {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.workspace-app .ws-fms-jf-table-columns-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
   background: #fff;
   padding: 6px 10px;
   font-size: 0.75rem;
+  font-weight: 600;
   cursor: pointer;
+}
+
+.workspace-app .ws-fms-jf-table-columns-add:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
 }
 
 .workspace-app .ws-fms-jf-table-column {
