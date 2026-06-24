@@ -17,7 +17,6 @@ import {
 } from "@/lib/fms/access";
 import { resolveFmsBackLink } from "@/lib/fms/navigation";
 import { getFmsInstance, getFmsPipelineCounts } from "@/lib/fms/queries";
-import type { FmsSlaConfig } from "@/lib/fms/constants";
 import { listFmsAuditForInstance } from "@/lib/fms/audit";
 import { listAssignableMembers } from "@/lib/tasks";
 import {
@@ -103,9 +102,6 @@ export default async function FmsInstancePage({ params, searchParams }: PageProp
     | undefined;
 
   const completedCount = instance.stepStates.filter((s) => s.status === "DONE").length;
-  const activeStepIndex = activeStep
-    ? instance.template.steps.findIndex((step) => step.id === activeStep.stepId)
-    : -1;
 
   const attachmentRows = instance.stepStates.flatMap((stepState) =>
     stepState.attachments.map((file) => ({
@@ -173,19 +169,6 @@ export default async function FmsInstancePage({ params, searchParams }: PageProp
                       allowNotes: activeStep.step.allowNotes,
                       captureFields: activeStep.step.captureFields,
                     },
-                  },
-                  taskMeta: {
-                    stepName: activeStep.step.stepName,
-                    instructions: activeStep.step.instructions,
-                    roleLabel: activeStep.step.roleLabel,
-                    whoName:
-                      activeStep.owner?.name ??
-                      activeStep.owner?.email.split("@")[0] ??
-                      null,
-                    slaType: activeStep.step.slaType,
-                    slaConfig: (activeStep.step.slaConfig ?? {}) as FmsSlaConfig,
-                    formId: instance.template.form.id,
-                    stepIndex: activeStepIndex >= 0 ? activeStepIndex : 0,
                   },
                 }
               : null

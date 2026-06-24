@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CheckCircle2, ChevronDown, Paperclip, StickyNote, X } from "lucide-react";
 import type { FmsStepStatus } from "@prisma/client";
 import { completeFmsStepAction } from "@/app/app/fms/actions";
@@ -35,6 +36,7 @@ function StepCompleteForm({
     completeFmsStepAction,
     fmsInitialState,
   );
+  const router = useRouter();
   const captureFields = Array.isArray(stepState.step.captureFields)
     ? (stepState.step.captureFields as FmsCaptureField[])
     : [];
@@ -46,10 +48,14 @@ function StepCompleteForm({
   const showUpload = stepState.step.allowUpload !== false;
 
   useEffect(() => {
-    if (state.ok && onCancel) {
+    if (!state.ok) {
+      return;
+    }
+    if (onCancel) {
       onCancel();
     }
-  }, [state.ok, onCancel]);
+    router.refresh();
+  }, [state.ok, onCancel, router]);
 
   function setCaptureValue(key: string, value: string) {
     setCompletionValues((prev) => ({ ...prev, [key]: value }));

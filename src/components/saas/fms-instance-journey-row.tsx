@@ -1,13 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import type { FmsInstanceStatus, FmsStepStatus } from "@prisma/client";
 import { CheckCircle2, Clock, FileInput } from "lucide-react";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
 import type { FmsStepCompleteState } from "@/components/saas/fms-step-complete-panel";
-import { FmsStepInlineUpload } from "@/components/saas/fms-step-inline-upload";
-import { FmsStepTaskModal } from "@/components/saas/fms-step-task-modal";
-import type { FmsStepManageMeta } from "@/components/saas/fms-step-info-modal";
+import { FmsStepActionBar } from "@/components/saas/fms-step-action-bar";
 import {
   computeStepUrgency,
   formatDelayLabel,
@@ -127,7 +124,6 @@ type FmsInstanceJourneyRowProps = {
   completePanel?: {
     stepState: FmsStepCompleteState;
     canComplete: boolean;
-    taskMeta: FmsStepManageMeta;
   } | null;
 };
 
@@ -142,27 +138,12 @@ export function FmsInstanceJourneyRow({
   completePanel,
   autoOpenComplete = false,
 }: FmsInstanceJourneyRowProps & { autoOpenComplete?: boolean }) {
-  const [formOpenForStepId, setFormOpenForStepId] = useState<string | null>(() => {
-    if (
-      autoOpenComplete &&
-      completePanel?.canComplete &&
-      completePanel.stepState.id
-    ) {
-      return completePanel.stepState.id;
-    }
-    return null;
-  });
   const allDone =
     steps.length > 0 && steps.every((step) => step.status === "DONE");
   const completedCount = steps.filter((step) => step.status === "DONE").length;
   const activeCompleteStep = completePanel
     ? steps.find((step) => step.id === completePanel.stepState.id)
     : null;
-  const taskModalOpen = Boolean(
-    formOpenForStepId &&
-      completePanel?.stepState.id === formOpenForStepId &&
-      completePanel.taskMeta,
-  );
 
   return (
     <>
@@ -189,19 +170,21 @@ export function FmsInstanceJourneyRow({
               </div>
               <span className="ws-fms-journey-row-pill is-done">Form filled</span>
             </header>
-            <dl className="ws-fms-journey-row-fields">
-              {formFields.map((field) => (
-                <div key={field.id}>
-                  <dt>{field.label}</dt>
-                  <dd>{displayValue(submissionValues[field.fieldKey])}</dd>
-                </div>
-              ))}
-            </dl>
-            {submittedAt ? (
-              <p className="ws-fms-journey-row-foot">
-                Submitted {formatDate(submittedAt)}
-              </p>
-            ) : null}
+            <div className="ws-fms-journey-row-card-body">
+              <dl className="ws-fms-journey-row-fields">
+                {formFields.map((field) => (
+                  <div key={field.id}>
+                    <dt>{field.label}</dt>
+                    <dd>{displayValue(submissionValues[field.fieldKey])}</dd>
+                  </div>
+                ))}
+              </dl>
+              {submittedAt ? (
+                <p className="ws-fms-journey-row-foot">
+                  Submitted {formatDate(submittedAt)}
+                </p>
+              ) : null}
+            </div>
           </div>
         </article>
 
@@ -280,72 +263,62 @@ export function FmsInstanceJourneyRow({
                   </div>
                   <FmsStatusBadge status={step.status} />
                 </header>
-                <dl className="ws-fms-journey-row-meta">
-                  <div>
-                    <dt>Doer</dt>
-                    <dd>{ownerName}</dd>
-                  </div>
-                  <div>
-                    <dt>Planned</dt>
-                    <dd>{formatDate(step.plannedAt)}</dd>
-                  </div>
-                  <div>
-                    <dt>Actual</dt>
-                    <dd>{formatDate(step.actualAt)}</dd>
-                  </div>
-                  <div>
-                    <dt>Delay</dt>
-                    <dd>{delayLabel ?? (step.status === "PENDING" ? "-" : "None")}</dd>
-                  </div>
-                </dl>
-                {delayLabel && (overdue || doneLate) ? (
-                  <span className="ws-sf-badge ws-sf-badge-danger ws-fms-journey-row-delay">
-                    {delayLabel}
-                  </span>
-                ) : null}
-                {step.status === "IN_PROGRESS" && step.plannedAt && !overdue ? (
-                  <span className="ws-sf-badge ws-sf-badge-info ws-fms-journey-row-delay">
-                    On track
-                  </span>
-                ) : null}
-                {step.notes ? <p className="ws-fms-notes">{step.notes}</p> : null}
-                {step.completedBy?.name ? (
-                  <p className="ws-fms-muted ws-fms-journey-row-foot">
-                    Completed by {step.completedBy.name}
-                  </p>
-                ) : null}
-                {step.attachments.length > 0 ? (
-                  <ul className="ws-fms-journey-attachments">
-                    {step.attachments.map((file) => (
-                      <li key={file.id} className="ws-fms-journey-attachment-item">
-                        <a
-                          className="ws-fms-journey-attachment-link"
-                          href={`/api/fms/attachments/${file.id}`}
-                          rel="noreferrer"
-                          target="_blank"
-                          title={file.fileName}
-                        >
-                          {file.fileName}
-                        </a>
-                        <span className="ws-fms-journey-attachment-size">
-                          {Math.round(file.fileSize / 1024)} KB
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-                {isStuck &&
-                completePanel?.stepState.id === step.id &&
-                completePanel.canComplete ? (
-                  <div className="ws-fms-journey-row-card-upload">
-                    <FmsStepInlineUpload
-                      compact
-                      canUpload={completePanel.canComplete}
-                      stepStateId={completePanel.stepState.id}
-                    />
-                  </div>
-                ) : null}
-
+                <div className="ws-fms-journey-row-card-body">
+                  <dl className="ws-fms-journey-row-meta">
+                    <div>
+                      <dt>Doer</dt>
+                      <dd>{ownerName}</dd>
+                    </div>
+                    <div>
+                      <dt>Planned</dt>
+                      <dd>{formatDate(step.plannedAt)}</dd>
+                    </div>
+                    <div>
+                      <dt>Actual</dt>
+                      <dd>{formatDate(step.actualAt)}</dd>
+                    </div>
+                    <div>
+                      <dt>Delay</dt>
+                      <dd>{delayLabel ?? (step.status === "PENDING" ? "-" : "None")}</dd>
+                    </div>
+                  </dl>
+                  {delayLabel && (overdue || doneLate) ? (
+                    <span className="ws-sf-badge ws-sf-badge-danger ws-fms-journey-row-delay">
+                      {delayLabel}
+                    </span>
+                  ) : null}
+                  {step.status === "IN_PROGRESS" && step.plannedAt && !overdue ? (
+                    <span className="ws-sf-badge ws-sf-badge-info ws-fms-journey-row-delay">
+                      On track
+                    </span>
+                  ) : null}
+                  {step.notes ? <p className="ws-fms-notes">{step.notes}</p> : null}
+                  {step.completedBy?.name ? (
+                    <p className="ws-fms-muted ws-fms-journey-row-foot">
+                      Completed by {step.completedBy.name}
+                    </p>
+                  ) : null}
+                  {step.attachments.length > 0 ? (
+                    <ul className="ws-fms-journey-attachments">
+                      {step.attachments.map((file) => (
+                        <li key={file.id} className="ws-fms-journey-attachment-item">
+                          <a
+                            className="ws-fms-journey-attachment-link"
+                            href={`/api/fms/attachments/${file.id}`}
+                            rel="noreferrer"
+                            target="_blank"
+                            title={file.fileName}
+                          >
+                            {file.fileName}
+                          </a>
+                          <span className="ws-fms-journey-attachment-size">
+                            {Math.round(file.fileSize / 1024)} KB
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
               </div>
             </article>
           );
@@ -372,44 +345,14 @@ export function FmsInstanceJourneyRow({
       </div>
 
       {activeCompleteStep?.status === "IN_PROGRESS" && completePanel ? (
-        <div className="ws-fms-journey-row-complete-bar">
-          <p className="ws-fms-journey-row-complete-label">
-            Your stop: <strong>{activeCompleteStep.step.stepName}</strong>
-          </p>
-          <div className="ws-fms-journey-row-complete-actions">
-            <FmsStepInlineUpload
-              canUpload={completePanel.canComplete}
-              stepStateId={completePanel.stepState.id}
-            />
-            {completePanel.canComplete ? (
-              <button
-                className="btn-primary ws-sf-btn-primary ws-fms-mark-done-btn"
-                type="button"
-                onClick={() => setFormOpenForStepId(activeCompleteStep.id)}
-              >
-                <CheckCircle2 aria-hidden size={16} />
-                Mark done
-              </button>
-            ) : (
-              <p className="ws-fms-muted ws-fms-journey-row-wait">
-                {!completePanel.stepState.ownerUserId
-                  ? "No doer assigned. Ask a manager to reassign this stop."
-                  : "Only the assigned doer can mark this stop done."}
-              </p>
-            )}
-          </div>
-        </div>
+        <FmsStepActionBar
+          canComplete={completePanel.canComplete}
+          defaultOpenPanel={autoOpenComplete ? "done" : null}
+          stepName={activeCompleteStep.step.stepName}
+          stepState={completePanel.stepState}
+        />
       ) : null}
     </div>
-    {taskModalOpen && completePanel ? (
-      <FmsStepTaskModal
-        meta={completePanel.taskMeta}
-        stepState={completePanel.stepState}
-        canComplete={completePanel.canComplete}
-        open
-        onClose={() => setFormOpenForStepId(null)}
-      />
-    ) : null}
     </>
   );
 }
