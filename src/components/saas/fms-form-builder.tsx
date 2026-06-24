@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useRef, useState } from "react";
-import { Plus, Settings2, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Settings2, Trash2 } from "lucide-react";
 import { FmsFormAiBar } from "@/components/saas/fms-form-ai-bar";
 import { FmsFieldSettingsPanel } from "@/components/saas/fms-field-settings-panel";
 import type { FmsFormFieldType } from "@prisma/client";
@@ -11,7 +11,7 @@ import {
 } from "@/app/app/fms/actions";
 import { fmsInitialState } from "@/lib/fms-action-state";
 import { FmsFieldTypePopover } from "@/components/saas/fms-form-add-modal";
-import { FMS_FIELD_TYPE_LABELS, defaultFieldWidth, isHalfWidthFieldType, parseFieldOptions, type FmsFieldWidth } from "@/lib/fms/constants";
+import { FMS_FIELD_TYPE_LABELS, DEFAULT_PO_LINE_ITEM_COLUMNS, defaultFieldWidth, isHalfWidthFieldType, parseFieldOptions, slugifyFieldKey, type FmsFieldWidth, type FmsTableColumn } from "@/lib/fms/constants";
 import { countMeaningfulFormFields } from "@/lib/fms/form-ai";
 import type { ParsedFmsFormDraft } from "@/lib/integrations/openai";
 
@@ -27,6 +27,7 @@ export type FormFieldDraft = {
   dependsOnEnabled: boolean;
   dependsOn: string;
   choicesByParentText: string;
+  tableColumns: FmsTableColumn[];
 };
 
 const DEFAULT_LABELS: Partial<Record<FmsFormFieldType, string>> = {
@@ -40,6 +41,7 @@ const DEFAULT_LABELS: Partial<Record<FmsFormFieldType, string>> = {
   DATE: "Date",
   DATETIME: "Date & time",
   FILE: "File upload",
+  TABLE: "Line items",
 };
 
 const DEFAULT_PLACEHOLDERS: Partial<Record<FmsFormFieldType, string>> = {
@@ -63,6 +65,10 @@ function newField(type: FmsFormFieldType = "TEXT"): FormFieldDraft {
     dependsOnEnabled: false,
     dependsOn: "",
     choicesByParentText: "",
+    tableColumns:
+      type === "TABLE"
+        ? DEFAULT_PO_LINE_ITEM_COLUMNS.map((column) => ({ ...column }))
+        : [],
   };
 }
 
@@ -97,6 +103,11 @@ function toDraft(
       dependsOnEnabled: Boolean(parsed.dependsOn && parsed.choicesByParent),
       dependsOn: parsed.dependsOn ?? "",
       choicesByParentText,
+      tableColumns: field.fieldType === "TABLE"
+        ? (parsed.columns?.length
+            ? parsed.columns.map((column) => ({ ...column }))
+            : DEFAULT_PO_LINE_ITEM_COLUMNS.map((column) => ({ ...column })))
+        : [],
     };
   });
 }
@@ -132,6 +143,10 @@ function draftFromAi(draft: ParsedFmsFormDraft): {
         dependsOnEnabled: Boolean(field.dependsOn && field.choicesByParent),
         dependsOn: field.dependsOn ?? "",
         choicesByParentText,
+        tableColumns:
+          field.fieldType === "TABLE"
+            ? DEFAULT_PO_LINE_ITEM_COLUMNS.map((column) => ({ ...column }))
+            : [],
       };
     }),
   };
@@ -261,6 +276,23 @@ function FieldPreviewStub({
       {field.fieldType === "FILE" ? (
         <span className="ws-fms-jf-stub ws-fms-jf-stub-file">Choose file</span>
       ) : null}
+
+      {field.fieldType === "TABLE" ? (
+        <span className="ws-fms-jf-table-preview">
+          <span className="ws-fms-jf-table-preview-head">
+            {(field.tableColumns.length
+              ? field.tableColumns
+              : DEFAULT_PO_LINE_ITEM_COLUMNS
+            )
+              .slice(0, 4)
+              .map((column) => column.label)
+              .join(" · ")}
+          </span>
+          <span className="ws-fms-jf-stub ws-fms-jf-stub-muted">
+            Repeatable rows — add/remove on submit
+          </span>
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -268,14 +300,22 @@ function FieldPreviewStub({
 function EditorField({
   field,
   selected,
+  canMoveUp,
+  canMoveDown,
   onSelect,
   onUpdate,
+  onMoveUp,
+  onMoveDown,
   onRemove,
 }: {
   field: FormFieldDraft;
   selected: boolean;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
   onSelect: () => void;
   onUpdate: (patch: Partial<FormFieldDraft>) => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
   onRemove: () => void;
 }) {
   const canSetWidth = isHalfWidthFieldType(field.fieldType);
@@ -320,6 +360,26 @@ function EditorField({
           <FieldPreviewStub field={field} editorMode />
         </div>
         <div className="ws-fms-jf-field-actions">
+          <button
+            type="button"
+            className="ws-fms-jf-gear ws-fms-jf-move"
+            aria-label="Move question up"
+            title="Move up"
+            disabled={!canMoveUp}
+            onClick={onMoveUp}
+          >
+            <ChevronUp size={16} aria-hidden />
+          </button>
+          <button
+            type="button"
+            className="ws-fms-jf-gear ws-fms-jf-move"
+            aria-label="Move question down"
+            title="Move down"
+            disabled={!canMoveDown}
+            onClick={onMoveDown}
+          >
+            <ChevronDown size={16} aria-hidden />
+          </button>
           <button
             type="button"
             className={`ws-fms-jf-gear${selected ? " is-active" : ""}`}
@@ -381,6 +441,8 @@ export function FmsFormBuilder({
         options: isEnumType(field.fieldType) && !field.dependsOnEnabled
           ? parseOptionTags(field.options)
           : undefined,
+        columns:
+          field.fieldType === "TABLE" ? field.tableColumns : undefined,
         dependsOn:
           field.dependsOnEnabled && field.dependsOn.trim()
             ? field.dependsOn.trim()
@@ -417,6 +479,23 @@ export function FmsFormBuilder({
     });
   }
 
+  function moveField(id: string, direction: "up" | "down") {
+    setFields((prev) => {
+      const index = prev.findIndex((field) => field.id === id);
+      if (index < 0) {
+        return prev;
+      }
+      const targetIndex = direction === "up" ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= prev.length) {
+        return prev;
+      }
+      const next = [...prev];
+      const [moved] = next.splice(index, 1);
+      next.splice(targetIndex, 0, moved);
+      return next;
+    });
+  }
+
   function applyAiDraft(draft: ParsedFmsFormDraft) {
     if (countMeaningfulFormFields(draft) === 0) {
       return;
@@ -446,6 +525,14 @@ export function FmsFormBuilder({
       };
 
       if (!isEnumType(field.fieldType)) {
+        if (field.fieldType === "TABLE") {
+          return {
+            ...base,
+            columns: field.tableColumns.length
+              ? field.tableColumns
+              : DEFAULT_PO_LINE_ITEM_COLUMNS,
+          };
+        }
         return { ...base, options: [] };
       }
 
@@ -533,17 +620,21 @@ export function FmsFormBuilder({
                   </p>
                 </div>
               ) : (
-                fields.map((field) => (
+                fields.map((field, index) => (
                   <EditorField
                     key={field.id}
                     field={field}
                     selected={field.id === selectedId}
+                    canMoveUp={index > 0}
+                    canMoveDown={index < fields.length - 1}
                     onSelect={() =>
                       setSelectedId((prev) =>
                         prev === field.id ? null : field.id,
                       )
                     }
                     onUpdate={(patch) => updateField(field.id, patch)}
+                    onMoveUp={() => moveField(field.id, "up")}
+                    onMoveDown={() => moveField(field.id, "down")}
                     onRemove={() => removeField(field.id)}
                   />
                 ))

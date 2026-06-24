@@ -14625,6 +14625,18 @@ body:has(.workspace-app.saas-app) {
   background: #fef2f2;
 }
 
+.workspace-app .ws-fms-jf-move:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.workspace-app .ws-fms-jf-move:not(:disabled):hover {
+  border-color: #64748b;
+  color: #334155;
+  background: #f8fafc;
+}
+
 .workspace-app .ws-fms-jf-field.is-selected {
   background: #f8fbff;
 }
