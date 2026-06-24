@@ -29,7 +29,7 @@ export async function createFmsStepAssignedNotification(params: {
       organizationId: params.organizationId,
       kind: "FMS_STEP_ASSIGNED",
       title: "FMS step assigned",
-      body: `${params.stepName} � ${params.referenceLabel}`,
+      body: `${params.stepName} - ${params.referenceLabel}`,
       href,
     },
   });
