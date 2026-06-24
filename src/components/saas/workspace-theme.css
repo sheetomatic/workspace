@@ -14583,6 +14583,36 @@ body:has(.workspace-app.saas-app) {
   align-content: start;
 }
 
+/* Inline field settings — expands below the selected field card */
+.workspace-app .ws-fms-jf-fields-grid .ws-fms-jf-field.is-expanded {
+  grid-column: 1 / -1;
+  padding-bottom: 0;
+}
+
+.workspace-app .ws-fms-jf-props-inline {
+  flex: none;
+  width: auto;
+  max-width: none;
+  margin: 12px -14px 0;
+  border-left: none;
+  border-top: 1px solid #dbeafe;
+  border-radius: 0 0 9px 9px;
+  background: #f8fafc;
+  overflow: visible;
+}
+
+.workspace-app .ws-fms-jf-props-inline .ws-fms-jf-props-head {
+  padding: 10px 14px;
+  background: #f1f5f9;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.workspace-app .ws-fms-jf-props-inline .ws-fms-jf-props-body {
+  max-height: min(60vh, 520px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .workspace-app .ws-fms-jf-field-row {
   display: flex;
   align-items: flex-start;
@@ -14684,6 +14714,12 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-fms-jf-field.is-half-width.is-expanded {
   grid-column: 1 / -1;
+}
+
+@media (max-width: 720px) {
+  .workspace-app .ws-fms-jf-props-inline .ws-fms-jf-props-body {
+    max-height: none;
+  }
 }
 
 .workspace-app .ws-fms-jf-empty-full {

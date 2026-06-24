@@ -351,22 +351,28 @@ function FieldPreviewStub({
 
 function EditorField({
   field,
+  allFields,
   selected,
+  settingsOpen,
   canMoveUp,
   canMoveDown,
   onSelect,
-  onOpenSettings,
+  onToggleSettings,
+  onCloseSettings,
   onUpdate,
   onMoveUp,
   onMoveDown,
   onRemove,
 }: {
   field: FormFieldDraft;
+  allFields: FormFieldDraft[];
   selected: boolean;
+  settingsOpen: boolean;
   canMoveUp: boolean;
   canMoveDown: boolean;
   onSelect: () => void;
-  onOpenSettings: () => void;
+  onToggleSettings: () => void;
+  onCloseSettings: () => void;
   onUpdate: (patch: Partial<FormFieldDraft>) => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
@@ -374,10 +380,11 @@ function EditorField({
 }) {
   const canSetWidth = isHalfWidthFieldType(field.fieldType);
   const isFullWidth = !canSetWidth || field.width === "full";
+  const showSettings = selected && settingsOpen;
 
   return (
     <div
-      className={`ws-fms-jf-field${selected ? " is-selected" : ""}${isFullWidth ? " is-full-width" : " is-half-width"}`}
+      className={`ws-fms-jf-field${selected ? " is-selected" : ""}${showSettings ? " is-expanded" : ""}${isFullWidth ? " is-full-width" : " is-half-width"}`}
       onClick={(event) => {
         const target = event.target as HTMLElement;
         if (target.closest("button, input, select, textarea, label, a")) {
@@ -417,7 +424,7 @@ function EditorField({
             field={field}
             editorMode
             onUpdate={onUpdate}
-            onActivate={onOpenSettings}
+            onActivate={onToggleSettings}
           />
         </div>
         <div className="ws-fms-jf-field-actions">
@@ -443,11 +450,12 @@ function EditorField({
           </button>
           <button
             type="button"
-            className={`ws-fms-jf-gear${selected ? " is-active" : ""}`}
+            className={`ws-fms-jf-gear${showSettings ? " is-active" : ""}`}
             aria-label="Field settings"
+            aria-expanded={showSettings}
             onClick={(event) => {
               event.stopPropagation();
-              onOpenSettings();
+              onToggleSettings();
             }}
           >
             <Settings2 size={16} aria-hidden />
@@ -463,6 +471,17 @@ function EditorField({
           </button>
         </div>
       </div>
+
+      {showSettings ? (
+        <FmsFieldSettingsPanel
+          inline
+          field={field}
+          allFields={allFields}
+          onUpdate={onUpdate}
+          onRemove={onRemove}
+          onClose={onCloseSettings}
+        />
+      ) : null}
     </div>
   );
 }
@@ -488,6 +507,7 @@ export function FmsFormBuilder({
   const [description, setDescription] = useState(initialDescription);
   const [fields, setFields] = useState(() => toDraft(initialFields));
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const fieldsJsonRef = useRef<HTMLInputElement>(null);
 
@@ -531,6 +551,7 @@ export function FmsFormBuilder({
     const field = newField(type);
     setFields((prev) => [...prev, field]);
     setSelectedId(field.id);
+    setSettingsOpen(true);
   }
 
   function removeField(id: string) {
@@ -538,9 +559,29 @@ export function FmsFormBuilder({
       const next = prev.filter((field) => field.id !== id);
       if (selectedId === id) {
         setSelectedId(next[0]?.id ?? null);
+        setSettingsOpen(Boolean(next[0]));
       }
       return next;
     });
+  }
+
+  function selectField(id: string) {
+    setSelectedId(id);
+    setSettingsOpen(true);
+  }
+
+  function toggleFieldSettings(id: string) {
+    if (selectedId === id && settingsOpen) {
+      setSettingsOpen(false);
+      return;
+    }
+    setSelectedId(id);
+    setSettingsOpen(true);
+  }
+
+  function closeFieldSettings() {
+    setSelectedId(null);
+    setSettingsOpen(false);
   }
 
   function moveField(id: string, direction: "up" | "down") {
@@ -569,6 +610,7 @@ export function FmsFormBuilder({
     setDescription(mapped.description);
     setFields(mapped.fields);
     setSelectedId(mapped.fields[0]?.id ?? null);
+    setSettingsOpen(mapped.fields.length > 0);
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -622,8 +664,6 @@ export function FmsFormBuilder({
     }),
   );
 
-  const selectedField = fields.find((field) => field.id === selectedId) ?? null;
-
   return (
     <div className="ws-fms-form-builder">
       <FmsFormAiBar
@@ -676,45 +716,36 @@ export function FmsFormBuilder({
 
         <div className="ws-fms-jf-divider" aria-hidden />
 
-        <div className="ws-fms-jf-builder-split">
-          <div className="ws-fms-jf-fields-scroll">
-            <div className="ws-fms-jf-fields ws-fms-jf-fields-grid">
-              {fields.length === 0 ? (
-                <div className="ws-fms-jf-empty ws-fms-jf-empty-full">
-                  <p>No fields yet.</p>
-                  <p className="ws-fms-muted">
-                    Tap <strong>Build form with AI</strong> above — voice or text works.
-                  </p>
-                </div>
-              ) : (
-                fields.map((field, index) => (
-                  <EditorField
-                    key={field.id}
-                    field={field}
-                    selected={field.id === selectedId}
-                    canMoveUp={index > 0}
-                    canMoveDown={index < fields.length - 1}
-                    onSelect={() => setSelectedId(field.id)}
-                    onOpenSettings={() => setSelectedId(field.id)}
-                    onUpdate={(patch) => updateField(field.id, patch)}
-                    onMoveUp={() => moveField(field.id, "up")}
-                    onMoveDown={() => moveField(field.id, "down")}
-                    onRemove={() => removeField(field.id)}
-                  />
-                ))
-              )}
-            </div>
+        <div className="ws-fms-jf-fields-scroll">
+          <div className="ws-fms-jf-fields ws-fms-jf-fields-grid">
+            {fields.length === 0 ? (
+              <div className="ws-fms-jf-empty ws-fms-jf-empty-full">
+                <p>No fields yet.</p>
+                <p className="ws-fms-muted">
+                  Tap <strong>Build form with AI</strong> above — voice or text works.
+                </p>
+              </div>
+            ) : (
+              fields.map((field, index) => (
+                <EditorField
+                  key={field.id}
+                  field={field}
+                  allFields={fields}
+                  selected={field.id === selectedId}
+                  settingsOpen={settingsOpen}
+                  canMoveUp={index > 0}
+                  canMoveDown={index < fields.length - 1}
+                  onSelect={() => selectField(field.id)}
+                  onToggleSettings={() => toggleFieldSettings(field.id)}
+                  onCloseSettings={closeFieldSettings}
+                  onUpdate={(patch) => updateField(field.id, patch)}
+                  onMoveUp={() => moveField(field.id, "up")}
+                  onMoveDown={() => moveField(field.id, "down")}
+                  onRemove={() => removeField(field.id)}
+                />
+              ))
+            )}
           </div>
-
-          {selectedField ? (
-            <FmsFieldSettingsPanel
-              field={selectedField}
-              allFields={fields}
-              onUpdate={(patch) => updateField(selectedField.id, patch)}
-              onRemove={() => removeField(selectedField.id)}
-              onClose={() => setSelectedId(null)}
-            />
-          ) : null}
         </div>
 
         <div className="ws-fms-jf-add-wrap ws-fms-jf-canvas-footer">

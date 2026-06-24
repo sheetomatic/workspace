@@ -44,12 +44,14 @@ export function FmsFieldSettingsPanel({
   onUpdate,
   onRemove,
   onClose,
+  inline = false,
 }: {
   field: FormFieldDraft;
   allFields: FormFieldDraft[];
   onUpdate: (patch: Partial<FormFieldDraft>) => void;
   onRemove: () => void;
   onClose: () => void;
+  inline?: boolean;
 }) {
   const showPlaceholder =
     field.fieldType !== "FILE" &&
@@ -90,7 +92,12 @@ export function FmsFieldSettingsPanel({
   }
 
   return (
-    <aside className="ws-fms-jf-props-panel" aria-label="Field settings">
+    <aside
+      className={
+        inline ? "ws-fms-jf-props-panel ws-fms-jf-props-inline" : "ws-fms-jf-props-panel"
+      }
+      aria-label="Field settings"
+    >
       <header className="ws-fms-jf-props-head">
         <h3>Field settings</h3>
         <button type="button" className="ws-fms-jf-props-close" onClick={onClose}>
