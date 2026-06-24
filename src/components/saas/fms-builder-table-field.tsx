@@ -195,7 +195,7 @@ export function FmsTableColumnSettingsList({
                 <strong>{column.label.trim() || "Untitled column"}</strong>
                 <span className="ws-fms-jf-table-column-type">
                   {COLUMN_TYPE_LABELS[column.columnType]}
-                  {column.required ? " · Required" : ""}
+                  {column.required ? " - Required" : ""}
                 </span>
               </div>
               <div className="ws-fms-jf-table-column-card-actions">
@@ -309,7 +309,7 @@ export function FmsTableColumnSettingsList({
       </div>
 
       <p className="ws-fms-jf-field-key-hint ws-fms-muted">
-        Submitters add rows on the live form — they cannot delete columns.
+        Submitters add rows on the live form - they cannot delete columns.
       </p>
     </div>
   );
