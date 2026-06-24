@@ -129,13 +129,43 @@ export function formulaOperationLabel(operation: FmsTableFormulaOp): string {
   }
 }
 
-export function describeColumnFormula(column: FmsTableColumn): string {
+function operandLabel(
+  key: string,
+  columns?: FmsTableColumn[],
+): string {
+  if (!columns?.length) {
+    return key;
+  }
+  const match = columns.find((column) => column.key === key);
+  return match?.label?.trim() || key;
+}
+
+export function describeColumnFormula(
+  column: FmsTableColumn,
+  columns?: FmsTableColumn[],
+): string {
   if (!isCalculatedTableColumn(column) || !column.formula) {
     return "";
   }
   const op = formulaOperationLabel(column.formula.operation).toLowerCase();
-  const keys = column.formula.operandKeys.join(", ");
-  return `${op} (${keys})`;
+  const parts = column.formula.operandKeys.map((key) =>
+    operandLabel(key, columns),
+  );
+  if (parts.length >= 2) {
+    switch (column.formula.operation) {
+      case "MULTIPLY":
+        return `${parts[0]} ª ${parts.slice(1).join(" ª ")}`;
+      case "ADD":
+        return parts.join(" + ");
+      case "SUBTRACT":
+        return `${parts[0]} ? ${parts[1]}`;
+      case "DIVIDE":
+        return `${parts[0]} º ${parts[1]}`;
+      default:
+        break;
+    }
+  }
+  return `${op} (${parts.join(", ")})`;
 }
 
 export function numericSourceColumns(columns: FmsTableColumn[]) {

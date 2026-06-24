@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -26,6 +27,10 @@ import {
   numericSourceColumns,
   summableTableColumns,
 } from "@/lib/fms/table-calculations";
+import {
+  columnCardHighlightClass,
+  FmsTableCalcAiBar,
+} from "@/components/saas/fms-table-calc-ai-bar";
 
 const COLUMN_TYPE_LABELS: Record<FmsTableColumnType, string> = {
   TEXT: "Text",
@@ -135,7 +140,7 @@ export function FmsBuilderTableField({
             <tr>
               {tableColumns.map((column, index) => {
                 if (isCalculatedTableColumn(column)) {
-                  const formulaHint = describeColumnFormula(column);
+                  const formulaHint = describeColumnFormula(column, tableColumns);
                   return (
                     <td key={`${column.key}-preview-${index}`}>
                       <div className="ws-fms-intake-calc-value is-preview">
@@ -187,8 +192,8 @@ export function FmsBuilderTableField({
           Add column
         </button>
         <p className="ws-fms-muted ws-fms-builder-table-hint">
-          Hover a column header to reorder or delete. Open field settings for
-          column types, formulas, and table totals.
+          Hover a column header to reorder or delete. Use AI calculations in
+          field settings for line totals, GST, and grand totals.
         </p>
       </div>
     </div>
@@ -211,6 +216,19 @@ export function FmsTableColumnSettingsList({
   const canDeleteColumn = tableColumns.length > 1;
   const numberColumns = numericSourceColumns(tableColumns);
   const summableColumns = summableTableColumns(tableColumns);
+  const [highlightKeys, setHighlightKeys] = useState<string[]>([]);
+  const columnRefs = useRef<Record<string, HTMLElement | null>>({});
+
+  useEffect(() => {
+    if (highlightKeys.length === 0) {
+      return;
+    }
+    const firstKey = highlightKeys[0];
+    const node = columnRefs.current[firstKey];
+    node?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const timer = window.setTimeout(() => setHighlightKeys([]), 4000);
+    return () => window.clearTimeout(timer);
+  }, [highlightKeys]);
 
   function updateColumns(next: FmsTableColumn[]) {
     onChange({ tableColumns: next });
@@ -222,6 +240,21 @@ export function FmsTableColumnSettingsList({
 
   return (
     <div className="ws-fms-jf-table-columns">
+      <FmsTableCalcAiBar
+        columns={tableColumns}
+        footerTotals={footerTotals}
+        onApply={({ tableColumns: nextColumns, tableFooterTotals, highlightColumnKeys, message }) => {
+          onChange({
+            tableColumns: nextColumns,
+            tableFooterTotals,
+          });
+          setHighlightKeys(highlightColumnKeys);
+          if (message) {
+            // Parent may show toast later; status is visible in AI bar.
+          }
+        }}
+      />
+
       <div className="ws-fms-jf-table-columns-head">
         <div>
           <strong>Table columns</strong>
@@ -243,7 +276,10 @@ export function FmsTableColumnSettingsList({
         {tableColumns.map((column, index) => (
           <article
             key={`${column.key}-${index}`}
-            className="ws-fms-jf-table-column-card"
+            ref={(node) => {
+              columnRefs.current[column.key] = node;
+            }}
+            className={`ws-fms-jf-table-column-card${columnCardHighlightClass(column, highlightKeys)}`}
           >
             <header className="ws-fms-jf-table-column-card-head">
               <div>
@@ -251,8 +287,8 @@ export function FmsTableColumnSettingsList({
                 <span className="ws-fms-jf-table-column-type">
                   {COLUMN_TYPE_LABELS[column.columnType]}
                   {column.required ? " - Required" : ""}
-                  {describeColumnFormula(column)
-                    ? ` - ${describeColumnFormula(column)}`
+                  {describeColumnFormula(column, tableColumns)
+                    ? ` - ${describeColumnFormula(column, tableColumns)}`
                     : ""}
                 </span>
               </div>

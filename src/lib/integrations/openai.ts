@@ -766,3 +766,62 @@ ${memberList || "(none listed — use distinct ownerRole labels per step)"}`;
 
   return { status: "ready", draft, usage };
 }
+
+export type TableCalcParseResult = {
+  suggestion: import("@/lib/fms/table-calc-ai").TableCalcAiSuggestion;
+  usage: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+};
+
+export async function parseTableCalculationFromDescription(
+  description: string,
+  context: {
+    columns: FmsTableColumn[];
+    footerTotals: import("@/lib/fms/constants").FmsTableFooterTotal[];
+  },
+): Promise<TableCalcParseResult> {
+  const { buildTableCalcAiContext, normalizeTableCalcAiResponse } =
+    await import("@/lib/fms/table-calc-ai");
+
+  const systemPrompt = `You configure calculated columns and footer totals for an FMS line-items table (purchase orders, invoices, stock lines).
+Input may be any language; output English JSON only.
+
+Return JSON:
+{
+  "explanation": "1-2 plain sentences for the form admin describing what you set up",
+  "columns": [{ "key": "slug_key", "label": "Display label", "columnType": "CALCULATED", "formula": { "operation": "MULTIPLY|ADD|SUBTRACT|DIVIDE", "operandKeys": ["existing_column_key", ...], "decimals": 2 } }],
+  "newColumns": [{ "key": "slug_key", "label": "Display label", "columnType": "NUMBER", "required": false }],
+  "footerTotals": [{ "key": "slug_key", "label": "Grand total", "columnKey": "column_to_sum", "decimals": 2 }]
+}
+
+Rules:
+- operandKeys MUST use exact keys from existing columns listed below, or keys you propose in newColumns (add newColumns BEFORE referencing them in formulas).
+- Operations work per row: MULTIPLY (qty × rate), ADD (a + b), SUBTRACT (a − b), DIVIDE (a ÷ b).
+- For percentages (GST, discount): if no rate column exists, add a NUMBER column in newColumns (e.g. "GST %" or "Discount %") and multiply amount × rate ÷ 100 using MULTIPLY then DIVIDE, OR use two NUMBER columns the user fills.
+- For "sum all line totals" or "grand total": use footerTotals with columnKey pointing to the calculated amount column — do NOT use a CALCULATED column for row sums.
+- Reuse existing calculated columns when updating (same key) instead of duplicating.
+- Match column keys/labels to the closest existing column when the user says quantity, rate, amount, total, etc.
+- decimals: 2 for money, 0 for whole numbers.
+- If the request cannot be done with available columns, explain in explanation and propose newColumns.
+- Only include keys you need; omit empty arrays.`;
+
+  const tableContext = buildTableCalcAiContext(
+    context.columns,
+    context.footerTotals,
+  );
+  const userContent = `Current table:\n${JSON.stringify(tableContext, null, 2)}\n\nUser request:\n${description}`;
+
+  const { content, usage } = await requestFmsOpenAiJson(systemPrompt, userContent);
+  const parsed = JSON.parse(content) as Record<string, unknown>;
+  const suggestion = normalizeTableCalcAiResponse(parsed);
+  if (!suggestion) {
+    throw new Error(
+      "AI could not suggest a calculation. Try: multiply quantity by rate for line total.",
+    );
+  }
+
+  return { suggestion, usage };
+}

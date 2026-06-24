@@ -52,9 +52,11 @@ import { isNextRedirect } from "@/lib/next-redirect";
 import {
   type FmsActionState,
   type FmsAiGenerateResult,
+  type TableCalcAiGenerateResult,
 } from "@/lib/fms-action-state";
 import {
   parseFmsFormFromDescription,
+  parseTableCalculationFromDescription,
   type ParsedFmsFormDraft,
 } from "@/lib/integrations/openai";
 import {
@@ -157,6 +159,91 @@ export async function generateFmsFormFromAiAction(input: {
       };
     }
     console.error("generateFmsFormFromAiAction", error);
+    return { ok: false, message: mapFmsOpenAiServiceError(raw) };
+  }
+}
+
+export async function suggestTableCalculationAction(input: {
+  description: string;
+  columns: FmsTableColumn[];
+  footerTotals: FmsTableFooterTotal[];
+}): Promise<TableCalcAiGenerateResult> {
+  try {
+    const user = await requireFmsAdmin();
+    const description = input.description?.trim() ?? "";
+
+    if (description.length < 4) {
+      return {
+        ok: false,
+        message: "Describe the calculation in a few words.",
+      };
+    }
+
+    const { validateTableCalcPrerequisites } = await import(
+      "@/lib/fms/table-calc-ai"
+    );
+    const prerequisite = validateTableCalcPrerequisites(input.columns);
+    if (!prerequisite.ok) {
+      return { ok: false, message: prerequisite.message };
+    }
+
+    const rate = await checkRateLimit(
+      `fms-table-calc-ai:${user.organizationId}:${user.id}`,
+      40,
+      60_000,
+    );
+    if (!rate.allowed) {
+      return {
+        ok: false,
+        message: `Rate limit exceeded. Retry in ${rate.retryAfterSec}s.`,
+      };
+    }
+
+    const orgQuota = await checkTaskAiOrgQuota(user.organizationId);
+    if (!orgQuota.allowed) {
+      return { ok: false, message: orgQuota.message };
+    }
+
+    const status = getIntegrationStatus();
+    if (!status.openai) {
+      return { ok: false, message: FMS_AI_PARSE_UNAVAILABLE };
+    }
+
+    const { suggestion, usage } = await parseTableCalculationFromDescription(
+      description,
+      {
+        columns: input.columns,
+        footerTotals: input.footerTotals,
+      },
+    );
+
+    await recordTaskAiUsage({
+      organizationId: user.organizationId,
+      userId: user.id,
+      route: "parse",
+      usage: {
+        promptTokens: usage.promptTokens,
+        completionTokens: usage.completionTokens,
+        totalTokens: usage.totalTokens,
+      },
+    });
+
+    return { ok: true, suggestion };
+  } catch (error) {
+    const raw =
+      error instanceof Error ? error.message : "Failed to suggest calculation.";
+    if (raw === "OPENAI_NOT_CONFIGURED") {
+      return { ok: false, message: FMS_AI_PARSE_UNAVAILABLE };
+    }
+    if (raw.startsWith("OPENAI_ERROR:")) {
+      return {
+        ok: false,
+        message: mapFmsOpenAiServiceError(
+          raw.replace(/^OPENAI_ERROR:/, ""),
+        ),
+      };
+    }
+    console.error("suggestTableCalculationAction", error);
     return { ok: false, message: mapFmsOpenAiServiceError(raw) };
   }
 }
