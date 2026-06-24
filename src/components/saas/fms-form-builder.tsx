@@ -11,6 +11,7 @@ import {
 } from "@/app/app/fms/actions";
 import { fmsInitialState } from "@/lib/fms-action-state";
 import { FmsFieldTypePopover } from "@/components/saas/fms-form-add-modal";
+import { FmsBuilderTableField } from "@/components/saas/fms-builder-table-field";
 import { FMS_FIELD_TYPE_LABELS, DEFAULT_PO_LINE_ITEM_COLUMNS, defaultFieldWidth, isHalfWidthFieldType, parseFieldOptions, type FmsFieldWidth, type FmsTableColumn } from "@/lib/fms/constants";
 import { countMeaningfulFormFields } from "@/lib/fms/form-ai";
 import type { ParsedFmsFormDraft } from "@/lib/integrations/openai";
@@ -211,9 +212,11 @@ function previewPlaceholder(field: FormFieldDraft) {
 function FieldPreviewStub({
   field,
   editorMode = false,
+  onUpdate,
 }: {
   field: FormFieldDraft;
   editorMode?: boolean;
+  onUpdate?: (patch: Partial<FormFieldDraft>) => void;
 }) {
   const options = parseOptionTags(field.options);
 
@@ -280,20 +283,30 @@ function FieldPreviewStub({
       ) : null}
 
       {field.fieldType === "TABLE" ? (
-        <span className="ws-fms-jf-table-preview">
-          <span className="ws-fms-jf-table-preview-head">
-            {(field.tableColumns.length
-              ? field.tableColumns
-              : DEFAULT_PO_LINE_ITEM_COLUMNS
-            )
-              .slice(0, 4)
-              .map((column) => column.label)
-              .join(" · ")}
+        editorMode && onUpdate ? (
+          <FmsBuilderTableField
+            columns={
+              field.tableColumns.length
+                ? field.tableColumns
+                : DEFAULT_PO_LINE_ITEM_COLUMNS
+            }
+            onChange={(tableColumns) => onUpdate({ tableColumns })}
+          />
+        ) : (
+          <span className="ws-fms-jf-table-preview">
+            <span className="ws-fms-jf-table-preview-head">
+              {(field.tableColumns.length
+                ? field.tableColumns
+                : DEFAULT_PO_LINE_ITEM_COLUMNS
+              )
+                .map((column) => column.label)
+                .join(" · ")}
+            </span>
+            <span className="ws-fms-jf-stub ws-fms-jf-stub-muted">
+              Repeatable rows on submit
+            </span>
           </span>
-          <span className="ws-fms-jf-stub ws-fms-jf-stub-muted">
-            Repeatable rows — add/remove on submit
-          </span>
-        </span>
+        )
       ) : null}
     </div>
   );
@@ -359,7 +372,11 @@ function EditorField({
           <span className="ws-fms-jf-field-type-pill">
             {FMS_FIELD_TYPE_LABELS[field.fieldType]}
           </span>
-          <FieldPreviewStub field={field} editorMode />
+          <FieldPreviewStub
+            field={field}
+            editorMode
+            onUpdate={onUpdate}
+          />
         </div>
         <div className="ws-fms-jf-field-actions">
           <button

@@ -14933,11 +14933,11 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .ws-fms-intake-table-grid th {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: #64748b;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  color: #334155;
   background: #f8fafc;
 }
 
@@ -14947,36 +14947,6 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-fms-intake-table-input {
   min-width: 88px;
-}
-
-.workspace-app .ws-fms-intake-table-actions-head,
-.workspace-app .ws-fms-intake-table-actions {
-  width: 44px;
-  text-align: center;
-}
-
-.workspace-app .ws-fms-intake-table-remove {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  background: #fff;
-  color: #64748b;
-  cursor: pointer;
-}
-
-.workspace-app .ws-fms-intake-table-remove:hover:not(:disabled) {
-  color: #b91c1c;
-  border-color: #fecaca;
-  background: #fef2f2;
-}
-
-.workspace-app .ws-fms-intake-table-remove:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
 }
 
 .workspace-app .ws-fms-intake-table-add {
@@ -15030,6 +15000,78 @@ body:has(.workspace-app.saas-app) {
   font-size: 0.75rem;
   font-weight: 600;
   color: #475569;
+}
+
+.workspace-app .ws-fms-builder-table {
+  display: grid;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.workspace-app .ws-fms-builder-table-scroll {
+  overflow-x: auto;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.workspace-app .ws-fms-builder-table-grid {
+  width: 100%;
+  min-width: 480px;
+  border-collapse: collapse;
+}
+
+.workspace-app .ws-fms-builder-table-grid th,
+.workspace-app .ws-fms-builder-table-grid td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #ececec;
+  vertical-align: middle;
+}
+
+.workspace-app .ws-fms-builder-table-grid tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.workspace-app .ws-fms-builder-table-head-input {
+  width: 100%;
+  min-width: 72px;
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.workspace-app .ws-fms-builder-table-head-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+.workspace-app .ws-fms-builder-table-add-col {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.workspace-app .ws-fms-builder-table-add-col:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.workspace-app .ws-fms-builder-table-hint {
+  margin: 0;
+  font-size: 0.75rem;
 }
 
 .workspace-app .ws-fms-jf-table-columns {

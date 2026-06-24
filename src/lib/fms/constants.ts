@@ -188,6 +188,60 @@ export function parseTableColumns(options: unknown): FmsTableColumn[] {
   return [];
 }
 
+export function newTableColumn(): FmsTableColumn {
+  return {
+    key: `column_${crypto.randomUUID().slice(0, 8)}`,
+    label: "New column",
+    columnType: "TEXT",
+    required: false,
+  };
+}
+
+export function updateTableColumn(
+  columns: FmsTableColumn[],
+  index: number,
+  patch: Partial<FmsTableColumn>,
+): FmsTableColumn[] {
+  return columns.map((column, columnIndex) => {
+    if (columnIndex !== index) {
+      return column;
+    }
+    const next = { ...column, ...patch };
+    if (patch.label && !patch.key) {
+      next.key = slugifyFieldKey(patch.label);
+    }
+    if (next.columnType !== "ENUM") {
+      delete next.choices;
+    }
+    return next;
+  });
+}
+
+/** Dropdown choices for a table column — uses saved choices or sensible defaults by label. */
+export function resolveTableColumnChoices(column: FmsTableColumn): string[] {
+  if (column.choices?.length) {
+    return column.choices;
+  }
+  if (column.columnType !== "ENUM") {
+    return [];
+  }
+  const hint = `${column.key} ${column.label}`.toLowerCase();
+  if (hint.includes("uom") || hint.includes("unit")) {
+    return ["Pcs", "Kg", "Ltr", "Mtr", "Box", "Set"];
+  }
+  if (hint.includes("color") || hint.includes("colour")) {
+    return ["Red", "Blue", "Green", "Black", "White", "Other"];
+  }
+  if (hint.includes("size")) {
+    return ["XS", "S", "M", "L", "XL", "XXL", "Free"];
+  }
+  return [];
+}
+
+export function tableColumnUsesSelect(column: FmsTableColumn) {
+  return column.columnType === "ENUM" || resolveTableColumnChoices(column).length > 0;
+}
+
 export function isTableRowArray(value: unknown): value is FmsTableRow[] {
   return (
     Array.isArray(value) &&

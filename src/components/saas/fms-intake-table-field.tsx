@@ -1,10 +1,12 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import type { FmsTableColumn, FmsTableRow } from "@/lib/fms/constants";
 import {
   emptyTableRow,
   isTableRowArray,
+  resolveTableColumnChoices,
+  tableColumnUsesSelect,
 } from "@/lib/fms/constants";
 
 export function FmsIntakeTableField({
@@ -35,18 +37,11 @@ export function FmsIntakeTableField({
     onChange([...rows, emptyTableRow(columns)]);
   }
 
-  function removeRow(rowIndex: number) {
-    if (rows.length <= 1) {
-      onChange([emptyTableRow(columns)]);
-      return;
-    }
-    onChange(rows.filter((_, index) => index !== rowIndex));
-  }
-
   if (columns.length === 0) {
     return (
       <p className="ws-fms-intake-help">
-        This table has no columns configured in the form builder.
+        This table has no columns configured. Ask an admin to use Manage form and
+        add columns.
       </p>
     );
   }
@@ -68,9 +63,6 @@ export function FmsIntakeTableField({
                   ) : null}
                 </th>
               ))}
-              <th className="ws-fms-intake-table-actions-head">
-                <span className="ws-fms-sr-only">Actions</span>
-              </th>
             </tr>
           </thead>
           <tbody>
@@ -79,9 +71,12 @@ export function FmsIntakeTableField({
                 {columns.map((column) => {
                   const inputId = `${fieldKey}-${rowIndex}-${column.key}`;
                   const cellValue = String(row[column.key] ?? "");
+                  const choices = resolveTableColumnChoices(column);
+                  const useSelect = tableColumnUsesSelect(column);
+
                   return (
                     <td key={column.key}>
-                      {column.columnType === "ENUM" ? (
+                      {useSelect ? (
                         <select
                           id={inputId}
                           className="ws-fms-intake-input ws-fms-intake-table-input"
@@ -91,7 +86,7 @@ export function FmsIntakeTableField({
                           }
                         >
                           <option value="">Select...</option>
-                          {(column.choices ?? []).map((choice) => (
+                          {choices.map((choice) => (
                             <option key={choice} value={choice}>
                               {choice}
                             </option>
@@ -101,7 +96,9 @@ export function FmsIntakeTableField({
                         <input
                           id={inputId}
                           className="ws-fms-intake-input ws-fms-intake-table-input"
-                          type={column.columnType === "NUMBER" ? "number" : "text"}
+                          type={
+                            column.columnType === "NUMBER" ? "number" : "text"
+                          }
                           value={cellValue}
                           placeholder={column.label}
                           onChange={(event) =>
@@ -112,17 +109,6 @@ export function FmsIntakeTableField({
                     </td>
                   );
                 })}
-                <td className="ws-fms-intake-table-actions">
-                  <button
-                    type="button"
-                    className="ws-fms-intake-table-remove"
-                    aria-label={`Remove row ${rowIndex + 1}`}
-                    onClick={() => removeRow(rowIndex)}
-                    disabled={rows.length === 1 && !required}
-                  >
-                    <Trash2 size={14} aria-hidden />
-                  </button>
-                </td>
               </tr>
             ))}
           </tbody>

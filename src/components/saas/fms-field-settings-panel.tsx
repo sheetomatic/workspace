@@ -9,7 +9,9 @@ import {
   defaultFieldWidth,
   isHalfWidthFieldType,
   isTableFieldType,
+  newTableColumn,
   slugifyFieldKey,
+  updateTableColumn,
   type FmsFieldWidth,
   type FmsTableColumn,
   type FmsTableColumnType,
@@ -34,35 +36,6 @@ function parseLinesFromUpload(text: string) {
 
 function isEnumType(fieldType: FmsFormFieldType) {
   return fieldType === "ENUM" || fieldType === "ENUM_LIST";
-}
-
-function newTableColumn(): FmsTableColumn {
-  return {
-    key: `column_${crypto.randomUUID().slice(0, 8)}`,
-    label: "New column",
-    columnType: "TEXT",
-    required: false,
-  };
-}
-
-function updateTableColumn(
-  columns: FmsTableColumn[],
-  index: number,
-  patch: Partial<FmsTableColumn>,
-): FmsTableColumn[] {
-  return columns.map((column, columnIndex) => {
-    if (columnIndex !== index) {
-      return column;
-    }
-    const next = { ...column, ...patch };
-    if (patch.label && !patch.key) {
-      next.key = slugifyFieldKey(patch.label);
-    }
-    if (next.columnType !== "ENUM") {
-      delete next.choices;
-    }
-    return next;
-  });
 }
 
 export function FmsFieldSettingsPanel({
