@@ -8,6 +8,7 @@ import {
   ListTodo,
   LogOut,
   MapPin,
+  Package,
   Settings,
   Users,
 } from "lucide-react";
@@ -57,6 +58,13 @@ const navItems: NavItem[] = [
     module: "FMS",
   },
   { href: "/app/hr", label: "HR", icon: MapPin, minRole: "VIEWER", module: "HR" },
+  {
+    href: "/app/ims",
+    label: "Inventory",
+    icon: Package,
+    minRole: "VIEWER",
+    module: "IMS",
+  },
   {
     href: "/app/approvals",
     label: "Approvals",

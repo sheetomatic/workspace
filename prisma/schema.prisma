@@ -23,6 +23,7 @@ enum WorkspaceModule {
   REPORTS
   CASES
   FMS
+  IMS
 }
 
 enum FmsFormFieldType {
@@ -147,6 +148,10 @@ model Organization {
   fmsFormSubmissions FmsFormSubmission[]
   fmsAuditEvents    FmsAuditEvent[]
   userAppNotifications UserAppNotification[]
+  imsItems             ImsItem[]
+  imsStockBalances     ImsStockBalance[]
+  imsStockMovements    ImsStockMovement[]
+  imsQcInspections     ImsQcInspection[]
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
 }
@@ -814,6 +819,8 @@ model User {
   fmsFlowDesignsApproved FmsFlowDesign[]        @relation("FmsFlowDesignApprover")
   fmsAuditEvents         FmsAuditEvent[]        @relation("FmsAuditActor")
   appNotifications       UserAppNotification[]
+  imsMovementsCreated    ImsStockMovement[]    @relation("ImsMovementCreator")
+  imsQcInspected         ImsQcInspection[]     @relation("ImsQcInspector")
   createdAt            DateTime                 @default(now())
   updatedAt            DateTime                 @updatedAt
 }
@@ -1379,4 +1386,131 @@ model CronHeartbeat {
   lastRunAt DateTime
   lastOk    Boolean  @default(true)
   summary   String?
+}
+
+enum ImsItemType {
+  RAW_MATERIAL
+  FINISHED_GOOD
+}
+
+enum ImsAbcClass {
+  A
+  B
+  C
+}
+
+enum ImsQcPolicy {
+  OFF
+  OPTIONAL
+  ALWAYS
+}
+
+enum ImsStoreType {
+  RM
+  FG
+}
+
+enum ImsStockBucket {
+  USABLE
+  QC_PENDING
+}
+
+enum ImsMovementType {
+  RM_IN
+  ISSUE_TO_PRODUCTION
+  FG_IN
+  FG_OUT
+  QC_PASS
+  QC_FAIL
+}
+
+enum ImsQcStatus {
+  PENDING
+  PASSED
+  FAILED
+}
+
+model ImsItem {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  code           String
+  name           String
+  description    String?
+  uom            String       @default("pcs")
+  category       String?
+  itemType       ImsItemType  @default(RAW_MATERIAL)
+  abcClass       ImsAbcClass  @default(C)
+  unitCost       Decimal      @default(0) @db.Decimal(18, 4)
+  minQty         Decimal      @default(0) @db.Decimal(18, 4)
+  reorderQty     Decimal      @default(0) @db.Decimal(18, 4)
+  maxQty         Decimal      @default(0) @db.Decimal(18, 4)
+  qcOnReceipt    ImsQcPolicy  @default(OPTIONAL)
+  isActive       Boolean      @default(true)
+  balances       ImsStockBalance[]
+  movements      ImsStockMovement[]
+  qcInspections  ImsQcInspection[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, code])
+  @@index([organizationId, itemType, isActive])
+}
+
+model ImsStockBalance {
+  id             String         @id @default(cuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           ImsItem        @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  storeType      ImsStoreType
+  bucket         ImsStockBucket @default(USABLE)
+  quantity       Decimal        @default(0) @db.Decimal(18, 4)
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([organizationId, itemId, storeType, bucket])
+  @@index([organizationId, storeType])
+}
+
+model ImsStockMovement {
+  id             String          @id @default(cuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           ImsItem         @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  movementType   ImsMovementType
+  storeType      ImsStoreType
+  quantity       Decimal         @db.Decimal(18, 4)
+  unitCost       Decimal         @db.Decimal(18, 4)
+  reference      String?
+  notes          String?
+  qcRequired     Boolean         @default(false)
+  qcInspectionId String?         @unique
+  qcInspection   ImsQcInspection? @relation(fields: [qcInspectionId], references: [id], onDelete: SetNull)
+  createdById    String
+  createdBy      User            @relation("ImsMovementCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt      DateTime        @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([itemId, createdAt])
+}
+
+model ImsQcInspection {
+  id             String          @id @default(cuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           ImsItem         @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  storeType      ImsStoreType
+  quantity       Decimal         @db.Decimal(18, 4)
+  status         ImsQcStatus     @default(PENDING)
+  notes          String?
+  movement       ImsStockMovement?
+  inspectedById  String?
+  inspectedBy    User?           @relation("ImsQcInspector", fields: [inspectedById], references: [id], onDelete: SetNull)
+  inspectedAt    DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([organizationId, status])
 }

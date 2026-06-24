@@ -7,6 +7,7 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
   "TASKS",
   "FMS",
   "HR",
+  "IMS",
   "APPROVALS",
   "REPORTS",
 ];
@@ -16,6 +17,7 @@ export const WORKSPACE_MODULE_LABELS: Record<WorkspaceModule, string> = {
   TASKS: "Tasks",
   FMS: "FMS",
   HR: "HR (attendance, field, hiring)",
+  IMS: "Inventory (IMS)",
   APPROVALS: "Approvals",
   REPORTS: "Reports & MIS",
 };
@@ -25,6 +27,7 @@ export const WORKSPACE_MODULE_HREFS: Partial<Record<WorkspaceModule, string>> = 
   TASKS: "/app/tasks",
   FMS: "/app/fms",
   HR: "/app/hr",
+  IMS: "/app/ims",
   APPROVALS: "/app/approvals",
   REPORTS: "/app/reports",
 };
@@ -35,7 +38,7 @@ export function defaultModulesForRole(role: Role): WorkspaceModule[] {
     return [...WORKSPACE_MODULES];
   }
   if (role === "MANAGER") {
-    return ["TASKS", "FMS", "APPROVALS", "REPORTS"];
+    return ["TASKS", "FMS", "IMS", "APPROVALS", "REPORTS"];
   }
   if (role === "STAFF") {
     return ["TASKS", "FMS"];
@@ -120,6 +123,9 @@ export function pathnameRequiresModule(pathname: string): WorkspaceModule | null
   }
   if (pathname.startsWith("/app/hr")) {
     return "HR";
+  }
+  if (pathname.startsWith("/app/ims")) {
+    return "IMS";
   }
   if (pathname.startsWith("/app/reports")) {
     return "REPORTS";

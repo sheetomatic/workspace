@@ -1,0 +1,423 @@
+import type {
+  ImsAbcClass,
+  ImsItemType,
+  ImsMovementType,
+  ImsQcPolicy,
+  ImsStoreType,
+  Prisma,
+} from "@prisma/client";
+import { Decimal } from "@prisma/client/runtime/library";
+import { prisma } from "@/lib/db";
+import { computeStockStatus } from "@/lib/ims/stock-status";
+
+function dec(value: number | string): Decimal {
+  return new Decimal(value);
+}
+
+function num(value: Decimal | null | undefined): number {
+  if (!value) {
+    return 0;
+  }
+  return Number(value);
+}
+
+export function storeTypeForItemType(itemType: ImsItemType): ImsStoreType {
+  return itemType === "FINISHED_GOOD" ? "FG" : "RM";
+}
+
+async function adjustBalance(
+  tx: Prisma.TransactionClient,
+  organizationId: string,
+  itemId: string,
+  storeType: ImsStoreType,
+  bucket: "USABLE" | "QC_PENDING",
+  delta: Decimal,
+) {
+  const existing = await tx.imsStockBalance.findUnique({
+    where: {
+      organizationId_itemId_storeType_bucket: {
+        organizationId,
+        itemId,
+        storeType,
+        bucket,
+      },
+    },
+  });
+
+  const current = existing?.quantity ?? dec(0);
+  const next = current.add(delta);
+
+  if (next.lt(0)) {
+    throw new Error("Insufficient stock for this movement.");
+  }
+
+  if (existing) {
+    await tx.imsStockBalance.update({
+      where: { id: existing.id },
+      data: { quantity: next },
+    });
+    return;
+  }
+
+  await tx.imsStockBalance.create({
+    data: {
+      organizationId,
+      itemId,
+      storeType,
+      bucket,
+      quantity: next,
+    },
+  });
+}
+
+export async function listImsItems(organizationId: string, activeOnly = true) {
+  return prisma.imsItem.findMany({
+    where: {
+      organizationId,
+      ...(activeOnly ? { isActive: true } : {}),
+    },
+    orderBy: [{ itemType: "asc" }, { code: "asc" }],
+  });
+}
+
+export async function upsertImsItem(
+  organizationId: string,
+  data: {
+    id?: string;
+    code: string;
+    name: string;
+    description?: string;
+    uom: string;
+    category?: string;
+    itemType: ImsItemType;
+    abcClass: ImsAbcClass;
+    unitCost: number;
+    minQty: number;
+    reorderQty: number;
+    maxQty: number;
+    qcOnReceipt: ImsQcPolicy;
+    isActive: boolean;
+  },
+) {
+  const payload = {
+    code: data.code.trim().toUpperCase(),
+    name: data.name.trim(),
+    description: data.description?.trim() || null,
+    uom: data.uom.trim() || "pcs",
+    category: data.category?.trim() || null,
+    itemType: data.itemType,
+    abcClass: data.abcClass,
+    unitCost: dec(data.unitCost),
+    minQty: dec(data.minQty),
+    reorderQty: dec(data.reorderQty),
+    maxQty: dec(data.maxQty),
+    qcOnReceipt: data.qcOnReceipt,
+    isActive: data.isActive,
+  };
+
+  if (data.id) {
+    return prisma.imsItem.update({
+      where: { id: data.id, organizationId },
+      data: payload,
+    });
+  }
+
+  return prisma.imsItem.create({
+    data: {
+      organizationId,
+      ...payload,
+    },
+  });
+}
+
+export async function getStockRows(organizationId: string) {
+  const items = await listImsItems(organizationId);
+  const balances = await prisma.imsStockBalance.findMany({
+    where: { organizationId },
+  });
+
+  const balanceMap = new Map<string, { usable: number; qcPending: number }>();
+
+  for (const row of balances) {
+    const key = `${row.itemId}:${row.storeType}`;
+    const current = balanceMap.get(key) ?? { usable: 0, qcPending: 0 };
+    if (row.bucket === "USABLE") {
+      current.usable = num(row.quantity);
+    } else {
+      current.qcPending = num(row.quantity);
+    }
+    balanceMap.set(key, current);
+  }
+
+  return items.map((item) => {
+    const storeType = storeTypeForItemType(item.itemType);
+    const key = `${item.id}:${storeType}`;
+    const buckets = balanceMap.get(key) ?? { usable: 0, qcPending: 0 };
+    const status = computeStockStatus({
+      usableQty: buckets.usable,
+      minQty: num(item.minQty),
+      reorderQty: num(item.reorderQty),
+      maxQty: num(item.maxQty),
+    });
+    const value = buckets.usable * num(item.unitCost);
+
+    return {
+      item,
+      storeType,
+      usableQty: buckets.usable,
+      qcPendingQty: buckets.qcPending,
+      status,
+      value,
+    };
+  });
+}
+
+export async function getImsDashboardStats(organizationId: string) {
+  const rows = await getStockRows(organizationId);
+  const statusCounts = { red: 0, orange: 0, green: 0, blue: 0 };
+  const abcValue: Record<ImsAbcClass, number> = { A: 0, B: 0, C: 0 };
+  let totalValue = 0;
+  let pendingQc = 0;
+
+  for (const row of rows) {
+    totalValue += row.value;
+    statusCounts[row.status] += 1;
+    abcValue[row.item.abcClass] += row.value;
+    pendingQc += row.qcPendingQty;
+  }
+
+  const recentMovements = await prisma.imsStockMovement.findMany({
+    where: { organizationId },
+    include: {
+      item: { select: { code: true, name: true } },
+      createdBy: { select: { name: true } },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 8,
+  });
+
+  return {
+    totalValue,
+    itemCount: rows.length,
+    statusCounts,
+    abcValue,
+    pendingQc,
+    topItems: [...rows]
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6)
+      .map((row) => ({
+        code: row.item.code,
+        name: row.item.name,
+        value: row.value,
+        status: row.status,
+      })),
+    recentMovements,
+  };
+}
+
+export async function listPendingQc(organizationId: string) {
+  return prisma.imsQcInspection.findMany({
+    where: { organizationId, status: "PENDING" },
+    include: {
+      item: true,
+    },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+function resolveQcRequired(
+  policy: ImsQcPolicy,
+  userSelected?: boolean,
+): boolean {
+  if (policy === "ALWAYS") {
+    return true;
+  }
+  if (policy === "OFF") {
+    return false;
+  }
+  return Boolean(userSelected);
+}
+
+export async function recordStockMovement(params: {
+  organizationId: string;
+  userId: string;
+  itemId: string;
+  movementType: ImsMovementType;
+  quantity: number;
+  reference?: string;
+  notes?: string;
+  qcRequiredChoice?: boolean;
+}) {
+  if (params.quantity <= 0) {
+    throw new Error("Quantity must be greater than zero.");
+  }
+
+  const item = await prisma.imsItem.findFirst({
+    where: { id: params.itemId, organizationId: params.organizationId, isActive: true },
+  });
+
+  if (!item) {
+    throw new Error("Item not found.");
+  }
+
+  const storeType = storeTypeForItemType(item.itemType);
+  const qty = dec(params.quantity);
+
+  if (params.movementType === "RM_IN" && item.itemType !== "RAW_MATERIAL") {
+    throw new Error("RM In applies to raw material items only.");
+  }
+  if (params.movementType === "FG_IN" && item.itemType !== "FINISHED_GOOD") {
+    throw new Error("FG In applies to finished goods only.");
+  }
+  if (params.movementType === "ISSUE_TO_PRODUCTION" && item.itemType !== "RAW_MATERIAL") {
+    throw new Error("Issue to production applies to raw materials only.");
+  }
+  if (params.movementType === "FG_OUT" && item.itemType !== "FINISHED_GOOD") {
+    throw new Error("FG Out applies to finished goods only.");
+  }
+
+  const isReceipt =
+    params.movementType === "RM_IN" || params.movementType === "FG_IN";
+  const qcRequired = isReceipt
+    ? resolveQcRequired(item.qcOnReceipt, params.qcRequiredChoice)
+    : false;
+
+  return prisma.$transaction(async (tx) => {
+    let qcInspectionId: string | undefined;
+
+    if (isReceipt) {
+      if (qcRequired) {
+        const inspection = await tx.imsQcInspection.create({
+          data: {
+            organizationId: params.organizationId,
+            itemId: item.id,
+            storeType,
+            quantity: qty,
+            status: "PENDING",
+          },
+        });
+        qcInspectionId = inspection.id;
+        await adjustBalance(
+          tx,
+          params.organizationId,
+          item.id,
+          storeType,
+          "QC_PENDING",
+          qty,
+        );
+      } else {
+        await adjustBalance(
+          tx,
+          params.organizationId,
+          item.id,
+          storeType,
+          "USABLE",
+          qty,
+        );
+      }
+    } else if (params.movementType === "ISSUE_TO_PRODUCTION") {
+      await adjustBalance(
+        tx,
+        params.organizationId,
+        item.id,
+        storeType,
+        "USABLE",
+        qty.neg(),
+      );
+    } else if (params.movementType === "FG_OUT") {
+      await adjustBalance(
+        tx,
+        params.organizationId,
+        item.id,
+        storeType,
+        "USABLE",
+        qty.neg(),
+      );
+    }
+
+    return tx.imsStockMovement.create({
+      data: {
+        organizationId: params.organizationId,
+        itemId: item.id,
+        movementType: params.movementType,
+        storeType,
+        quantity: qty,
+        unitCost: item.unitCost,
+        reference: params.reference?.trim() || null,
+        notes: params.notes?.trim() || null,
+        qcRequired,
+        qcInspectionId,
+        createdById: params.userId,
+      },
+    });
+  });
+}
+
+export async function resolveQcInspection(params: {
+  organizationId: string;
+  userId: string;
+  inspectionId: string;
+  pass: boolean;
+  notes?: string;
+}) {
+  const inspection = await prisma.imsQcInspection.findFirst({
+    where: {
+      id: params.inspectionId,
+      organizationId: params.organizationId,
+      status: "PENDING",
+    },
+    include: { item: true },
+  });
+
+  if (!inspection) {
+    throw new Error("QC inspection not found or already resolved.");
+  }
+
+  const qty = inspection.quantity;
+
+  return prisma.$transaction(async (tx) => {
+    await adjustBalance(
+      tx,
+      params.organizationId,
+      inspection.itemId,
+      inspection.storeType,
+      "QC_PENDING",
+      qty.neg(),
+    );
+
+    if (params.pass) {
+      await adjustBalance(
+        tx,
+        params.organizationId,
+        inspection.itemId,
+        inspection.storeType,
+        "USABLE",
+        qty,
+      );
+    }
+
+    await tx.imsQcInspection.update({
+      where: { id: inspection.id },
+      data: {
+        status: params.pass ? "PASSED" : "FAILED",
+        notes: params.notes?.trim() || inspection.notes,
+        inspectedById: params.userId,
+        inspectedAt: new Date(),
+      },
+    });
+
+    await tx.imsStockMovement.create({
+      data: {
+        organizationId: params.organizationId,
+        itemId: inspection.itemId,
+        movementType: params.pass ? "QC_PASS" : "QC_FAIL",
+        storeType: inspection.storeType,
+        quantity: qty,
+        unitCost: inspection.item.unitCost,
+        notes: params.notes?.trim() || null,
+        qcRequired: true,
+        createdById: params.userId,
+      },
+    });
+  });
+}

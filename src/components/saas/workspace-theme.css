@@ -17432,7 +17432,8 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .ws-module-layout-main .ws-tasks-sf,
-.workspace-app .ws-module-layout-main .ws-fms-sf {
+.workspace-app .ws-module-layout-main .ws-fms-sf,
+.workspace-app .ws-module-layout-main .ws-ims-page {
   margin: 0;
   min-height: 100%;
 }
@@ -21095,4 +21096,590 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-fms-notify-health-details {
   margin-top: 10px;
+}
+
+/* IMS — inventory management */
+.workspace-app .ws-ims-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.workspace-app .ws-ims-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.workspace-app .ws-ims-subnav-link {
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.workspace-app .ws-ims-subnav-link.active {
+  color: #0f172a;
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+.workspace-app .ws-ims-dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.workspace-app .ws-ims-stat-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.workspace-app .ws-ims-stat-card span {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.workspace-app .ws-ims-stat-card strong {
+  font-size: 1.35rem;
+  color: #0f172a;
+}
+
+.workspace-app .ws-ims-stat-primary {
+  background: linear-gradient(180deg, #ecfdf5 0%, #fff 100%);
+  border-color: #a7f3d0;
+}
+
+.workspace-app .ws-ims-split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.workspace-app .ws-ims-panel {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.workspace-app .ws-ims-panel h2 {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.workspace-app .ws-ims-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.workspace-app .ws-ims-panel-head h2 {
+  margin: 0;
+}
+
+.workspace-app .ws-ims-link {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #059669;
+}
+
+.workspace-app .ws-ims-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.workspace-app .ws-ims-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.workspace-app .ws-ims-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.workspace-app .ws-ims-form input,
+.workspace-app .ws-ims-form select,
+.workspace-app .ws-ims-form textarea {
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.workspace-app .ws-ims-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.workspace-app .ws-ims-checkbox,
+.workspace-app .ws-ims-radio {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.8125rem;
+  color: #334155;
+}
+
+.workspace-app .ws-ims-checkbox input,
+.workspace-app .ws-ims-radio input {
+  margin-top: 3px;
+}
+
+.workspace-app .ws-ims-qc-prompt {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.workspace-app .ws-ims-qc-prompt legend {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #0f172a;
+  padding: 0 4px;
+}
+
+.workspace-app .ws-ims-table-wrap {
+  overflow-x: auto;
+}
+
+.workspace-app .ws-ims-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.workspace-app .ws-ims-table th,
+.workspace-app .ws-ims-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.workspace-app .ws-ims-table th {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.workspace-app .ws-ims-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.workspace-app .ws-ims-status-red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.workspace-app .ws-ims-status-orange {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.workspace-app .ws-ims-status-green {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.workspace-app .ws-ims-status-blue {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.workspace-app .ws-ims-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.workspace-app .ws-ims-status-count {
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.workspace-app .ws-ims-status-count strong {
+  font-size: 1.5rem;
+  color: #0f172a;
+}
+
+.workspace-app .ws-ims-status-count span:last-child {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.workspace-app .ws-ims-quick-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.workspace-app .ws-ims-module-card {
+  display: block;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(180deg, #fff 0%, #f0fdf4 100%);
+  text-decoration: none;
+  color: inherit;
+}
+
+.workspace-app .ws-ims-module-card strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #0f172a;
+}
+
+.workspace-app .ws-ims-module-card p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.workspace-app .ws-ims-edit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.workspace-app .ws-ims-edit-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.workspace-app .ws-ims-edit-item summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.workspace-app .ws-ims-edit-item .ws-ims-form {
+  margin-top: 12px;
+}
+
+.workspace-app .ws-ims-qc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.workspace-app .ws-ims-qc-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.workspace-app .ws-ims-qc-row:last-child {
+  border-bottom: none;
+}
+
+.workspace-app .ws-ims-meta,
+.workspace-app .ws-ims-help,
+.workspace-app .ws-ims-note {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.workspace-app .ws-ims-feedback {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #059669;
+}
+
+.workspace-app .ws-ims-feedback-error {
+  color: #b91c1c;
+}
+
+.workspace-app .ws-ims-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.workspace-app .ws-ims-pill-red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.workspace-app .ws-ims-pill-orange {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.workspace-app .ws-ims-pill-green {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.workspace-app .ws-ims-pill-blue {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.workspace-app .ws-ims-status-card {
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.workspace-app .ws-ims-status-card strong {
+  font-size: 1.5rem;
+  color: #0f172a;
+}
+
+.workspace-app .ws-ims-module-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.workspace-app .ws-ims-move-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.workspace-app .ws-ims-move-grid .ws-ims-panel,
+.workspace-app .ws-ims-move-grid form {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.workspace-app .ws-ims-panel-wide {
+  grid-column: 1 / -1;
+}
+
+.workspace-app .ws-ims-form-inline {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.workspace-app .ws-ims-abc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.workspace-app .ws-ims-abc-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.workspace-app .ws-ims-abc-list li:last-child {
+  border-bottom: none;
+}
+
+.workspace-app .ws-ims-qc-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.workspace-app .ws-ims-qc-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.workspace-app .ws-ims-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.workspace-app .ws-ims-pill-red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.workspace-app .ws-ims-pill-orange {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.workspace-app .ws-ims-pill-green {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.workspace-app .ws-ims-pill-blue {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.workspace-app .ws-ims-status-card {
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.workspace-app .ws-ims-status-card strong {
+  font-size: 1.5rem;
+  color: #0f172a;
+}
+
+.workspace-app .ws-ims-status-card span {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.workspace-app .ws-ims-status-red {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.workspace-app .ws-ims-status-orange {
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+
+.workspace-app .ws-ims-status-green {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.workspace-app .ws-ims-status-blue {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.workspace-app .ws-ims-abc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.workspace-app .ws-ims-abc-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.875rem;
+  color: #334155;
+}
+
+.workspace-app .ws-ims-module-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.workspace-app .ws-ims-move-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.workspace-app .ws-ims-move-grid .ws-ims-form {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.workspace-app .ws-ims-move-grid .ws-ims-form h3 {
+  margin: 0 0 8px;
+  font-size: 0.9375rem;
+  color: #0f172a;
+}
+
+.workspace-app .ws-ims-panel-wide {
+  grid-column: 1 / -1;
+}
+
+.workspace-app .ws-ims-qc-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 16px 18px;
+}
+
+.workspace-app .ws-ims-qc-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.workspace-app .ws-ims-form-inline {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.workspace-app .ws-ims-form-inline label {
+  flex: 1;
+  min-width: 200px;
 }
