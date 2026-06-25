@@ -9,6 +9,8 @@ import {
   LayoutDashboard,
   Package,
   PackageSearch,
+  SlidersHorizontal,
+  Truck,
 } from "lucide-react";
 
 type NavItem = {
@@ -30,6 +32,12 @@ const items: NavItem[] = [
     label: "Items",
     icon: Package,
     description: "Master data and QC policy",
+  },
+  {
+    href: "/app/ims/vendors",
+    label: "Vendors",
+    icon: Truck,
+    description: "Supplier master data",
   },
   {
     href: "/app/ims/stock",
@@ -54,6 +62,12 @@ const items: NavItem[] = [
     label: "QC queue",
     icon: ClipboardCheck,
     description: "Pass or fail receipts",
+  },
+  {
+    href: "/app/ims/settings",
+    label: "Form settings",
+    icon: SlidersHorizontal,
+    description: "Customise item & vendor forms",
   },
 ];
 

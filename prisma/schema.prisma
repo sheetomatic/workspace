@@ -153,6 +153,9 @@ model Organization {
   imsStockMovements    ImsStockMovement[]
   imsQcInspections     ImsQcInspection[]
   imsAttachments       ImsAttachment[]
+  imsVendors           ImsVendor[]
+  imsCustomFields      ImsCustomField[]
+  imsFieldSettings     ImsFieldSetting[]
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
 }
@@ -1433,6 +1436,20 @@ enum ImsQcStatus {
   FAILED
 }
 
+enum ImsFormEntity {
+  ITEM
+  VENDOR
+}
+
+enum ImsCustomFieldType {
+  TEXT
+  TEXTAREA
+  NUMBER
+  SELECT
+  DATE
+  CHECKBOX
+}
+
 model ImsItem {
   id             String       @id @default(cuid())
   organizationId String
@@ -1451,6 +1468,7 @@ model ImsItem {
   qcOnReceipt    ImsQcPolicy  @default(OPTIONAL)
   isActive       Boolean      @default(true)
   sortOrder      Int          @default(0)
+  customValues   Json?
   balances       ImsStockBalance[]
   movements      ImsStockMovement[]
   qcInspections  ImsQcInspection[]
@@ -1541,4 +1559,61 @@ model ImsQcInspection {
   updatedAt      DateTime        @updatedAt
 
   @@index([organizationId, status])
+}
+
+model ImsVendor {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  code           String
+  name           String
+  contactName    String?
+  email          String?
+  phone          String?
+  address        String?
+  gstin          String?
+  paymentTerms   String?
+  leadTimeDays   Int?
+  notes          String?
+  isActive       Boolean      @default(true)
+  sortOrder      Int          @default(0)
+  customValues   Json?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, code])
+  @@index([organizationId, isActive])
+}
+
+model ImsCustomField {
+  id             String             @id @default(cuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  entity         ImsFormEntity
+  key            String
+  label          String
+  fieldType      ImsCustomFieldType
+  options        String[]
+  required       Boolean            @default(false)
+  helpText       String?
+  sortOrder      Int                @default(0)
+  isActive       Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@unique([organizationId, entity, key])
+  @@index([organizationId, entity, isActive])
+}
+
+model ImsFieldSetting {
+  id             String        @id @default(cuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  entity         ImsFormEntity
+  fieldKey       String
+  label          String?
+  hidden         Boolean       @default(false)
+  sortOrder      Int           @default(0)
+
+  @@unique([organizationId, entity, fieldKey])
 }

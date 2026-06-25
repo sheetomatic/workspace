@@ -21932,6 +21932,153 @@ body:has(.workspace-app.saas-app) {
   color: #fff;
 }
 
+/* Customisable forms: full-width fields in the dynamic form grid */
+.workspace-app .ws-ims-form-grid .ws-ims-form-full {
+  grid-column: 1 / -1;
+}
+
+/* Form settings (form builder) */
+.workspace-app .ws-ims-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.workspace-app .ws-ims-settings-tabs {
+  align-self: flex-start;
+}
+
+.workspace-app .ws-ims-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.workspace-app .ws-ims-builder-section {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.workspace-app .ws-ims-builder-section h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.workspace-app .ws-ims-builder-subhead {
+  margin: 8px 0 0;
+  font-size: 0.875rem;
+  color: #334155;
+}
+
+.workspace-app .ws-ims-builder-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.workspace-app .ws-ims-builder-row {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.workspace-app .ws-ims-builder-custom-row {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.workspace-app .ws-ims-builder-move {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.workspace-app .ws-ims-builder-move form {
+  display: inline-flex;
+  gap: 4px;
+  margin: 0;
+}
+
+.workspace-app .ws-ims-builder-rename {
+  flex: 1;
+  min-width: 180px;
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+}
+
+.workspace-app .ws-ims-builder-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.workspace-app .ws-ims-builder-locked {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.workspace-app .ws-ims-builder-save {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.workspace-app .ws-ims-builder-custom-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.workspace-app .ws-ims-builder-custom-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 160px;
+}
+
+.workspace-app .ws-ims-builder-custom-info strong {
+  color: #0f172a;
+}
+
+.workspace-app .ws-ims-builder-custom-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.workspace-app .ws-ims-builder-custom-actions form {
+  margin: 0;
+}
+
+.workspace-app .ws-ims-builder-edit,
+.workspace-app .ws-ims-builder-add {
+  margin-top: 12px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 12px;
+}
+
 a.workspace-app .ws-stat-card,
 .workspace-app a.ws-stat-card {
   text-decoration: none;

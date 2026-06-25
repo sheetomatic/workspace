@@ -4,37 +4,36 @@ import Link from "next/link";
 import { Fragment, useMemo, useState } from "react";
 import { useFormState } from "react-dom";
 import {
-  ImsItemForm,
-  type ImsItemFormData,
-} from "@/components/ims/ims-item-form";
+  ImsVendorForm,
+  type ImsVendorFormData,
+} from "@/components/ims/ims-vendor-form";
 import {
-  deleteImsItemAction,
-  moveImsItemAction,
+  deleteImsVendorAction,
+  moveImsVendorAction,
   type ImsActionState,
 } from "@/app/app/ims/actions";
 import type { FormLayout } from "@/lib/ims/form-fields";
-import { formatImsCurrency, formatImsQty } from "@/lib/ims/stock-status";
 
 const initialState: ImsActionState = { ok: false, message: "" };
 
-function ImsItemRowActions({
-  item,
+function ImsVendorRowActions({
+  vendor,
   editing,
   onEditToggle,
   canReorder,
   isFirst,
   isLast,
 }: {
-  item: ImsItemFormData;
+  vendor: ImsVendorFormData;
   editing: boolean;
   onEditToggle: () => void;
   canReorder: boolean;
   isFirst: boolean;
   isLast: boolean;
 }) {
-  const [moveState, moveAction] = useFormState(moveImsItemAction, initialState);
+  const [moveState, moveAction] = useFormState(moveImsVendorAction, initialState);
   const [deleteState, deleteAction] = useFormState(
-    deleteImsItemAction,
+    deleteImsVendorAction,
     initialState,
   );
 
@@ -42,7 +41,7 @@ function ImsItemRowActions({
     <div className="ws-ims-row-actions">
       {canReorder ? (
         <form action={moveAction} className="ws-ims-row-move">
-          <input type="hidden" name="id" value={item.id} />
+          <input type="hidden" name="id" value={vendor.id} />
           <button
             type="submit"
             name="direction"
@@ -81,14 +80,14 @@ function ImsItemRowActions({
         onSubmit={(event) => {
           if (
             !window.confirm(
-              `Delete ${item.code}? This cannot be undone. Items with stock or history cannot be deleted.`,
+              `Delete ${vendor.code}? This cannot be undone.`,
             )
           ) {
             event.preventDefault();
           }
         }}
       >
-        <input type="hidden" name="id" value={item.id} />
+        <input type="hidden" name="id" value={vendor.id} />
         <button type="submit" className="ws-btn-danger ws-btn-small">
           Delete
         </button>
@@ -104,88 +103,49 @@ function ImsItemRowActions({
   );
 }
 
-export function ImsItemsManager({
-  items,
+export function ImsVendorsManager({
+  vendors,
   layout,
 }: {
-  items: ImsItemFormData[];
+  vendors: ImsVendorFormData[];
   layout: FormLayout;
 }) {
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("ALL");
-  const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [activeFilter, setActiveFilter] = useState("ACTIVE");
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const categories = useMemo(() => {
-    const set = new Set<string>();
-    for (const item of items) {
-      if (item.category) {
-        set.add(item.category);
-      }
-    }
-    return Array.from(set).sort();
-  }, [items]);
-
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
-    return items.filter((item) => {
-      if (typeFilter !== "ALL" && item.itemType !== typeFilter) {
+    return vendors.filter((vendor) => {
+      if (activeFilter === "ACTIVE" && !vendor.isActive) {
         return false;
       }
-      if (categoryFilter !== "ALL" && (item.category ?? "") !== categoryFilter) {
-        return false;
-      }
-      if (activeFilter === "ACTIVE" && !item.isActive) {
-        return false;
-      }
-      if (activeFilter === "INACTIVE" && item.isActive) {
+      if (activeFilter === "INACTIVE" && vendor.isActive) {
         return false;
       }
       if (term) {
         return (
-          item.code.toLowerCase().includes(term) ||
-          item.name.toLowerCase().includes(term)
+          vendor.code.toLowerCase().includes(term) ||
+          vendor.name.toLowerCase().includes(term) ||
+          (vendor.contactName ?? "").toLowerCase().includes(term)
         );
       }
       return true;
     });
-  }, [items, search, typeFilter, categoryFilter, activeFilter]);
+  }, [vendors, search, activeFilter]);
 
-  const canReorder =
-    !search.trim() &&
-    typeFilter === "ALL" &&
-    categoryFilter === "ALL" &&
-    activeFilter === "ALL";
+  const canReorder = !search.trim() && activeFilter === "ALL";
 
   return (
     <div className="ws-ims-items">
       <div className="ws-ims-filters">
         <input
           type="search"
-          placeholder="Search code or name"
+          placeholder="Search code, name, or contact"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           className="ws-ims-filter-search"
         />
-        <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
-          <option value="ALL">All types</option>
-          <option value="RAW_MATERIAL">Raw material</option>
-          <option value="FINISHED_GOOD">Finished good</option>
-        </select>
-        {categories.length > 0 ? (
-          <select
-            value={categoryFilter}
-            onChange={(event) => setCategoryFilter(event.target.value)}
-          >
-            <option value="ALL">All categories</option>
-            {categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-        ) : null}
         <select
           value={activeFilter}
           onChange={(event) => setActiveFilter(event.target.value)}
@@ -197,10 +157,10 @@ export function ImsItemsManager({
       </div>
 
       <p className="ws-ims-help">
-        Showing {filtered.length} of {items.length} items.
+        Showing {filtered.length} of {vendors.length} vendors.
         {canReorder
           ? " Use the arrows to reorder."
-          : " Clear search and filters (set type, category, and status to All) to reorder items."}
+          : " Clear search and set status to All to reorder vendors."}
       </p>
 
       <div className="ws-ims-table-wrap">
@@ -209,12 +169,9 @@ export function ImsItemsManager({
             <tr>
               <th>Code</th>
               <th>Name</th>
-              <th>Type</th>
-              <th>Category</th>
-              <th>ABC</th>
-              <th>Min / Reorder / Max</th>
-              <th>Cost</th>
-              <th>QC</th>
+              <th>Contact</th>
+              <th>Email / Phone</th>
+              <th>Lead time</th>
               <th>Status</th>
               <th></th>
             </tr>
@@ -222,39 +179,40 @@ export function ImsItemsManager({
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={10}>No items match these filters.</td>
+                <td colSpan={7}>No vendors match these filters.</td>
               </tr>
             ) : (
-              filtered.map((item, index) => (
-                <Fragment key={item.id}>
-                  <tr
-                    className={item.isActive ? "" : "ws-ims-row-inactive"}
-                  >
+              filtered.map((vendor, index) => (
+                <Fragment key={vendor.id}>
+                  <tr className={vendor.isActive ? "" : "ws-ims-row-inactive"}>
                     <td data-label="Code">
-                      <Link href={`/app/ims/items/${item.id}`}>{item.code}</Link>
+                      <Link href={`/app/ims/vendors/${vendor.id}`}>
+                        {vendor.code}
+                      </Link>
                     </td>
-                    <td data-label="Name">{item.name}</td>
-                    <td data-label="Type">
-                      {item.itemType === "RAW_MATERIAL" ? "RM" : "FG"}
+                    <td data-label="Name">{vendor.name}</td>
+                    <td data-label="Contact">{vendor.contactName ?? "-"}</td>
+                    <td data-label="Email / Phone">
+                      {vendor.email ?? "-"}
+                      {vendor.phone ? (
+                        <small className="ws-ims-cell-sub">{vendor.phone}</small>
+                      ) : null}
                     </td>
-                    <td data-label="Category">{item.category ?? "-"}</td>
-                    <td data-label="ABC">{item.abcClass}</td>
-                    <td data-label="Min / Reorder / Max">
-                      {formatImsQty(item.minQty)} / {formatImsQty(item.reorderQty)} /{" "}
-                      {formatImsQty(item.maxQty)}
+                    <td data-label="Lead time">
+                      {vendor.leadTimeDays !== null
+                        ? `${vendor.leadTimeDays} days`
+                        : "-"}
                     </td>
-                    <td data-label="Cost">{formatImsCurrency(item.unitCost)}</td>
-                    <td data-label="QC">{item.qcOnReceipt}</td>
                     <td data-label="Status">
-                      {item.isActive ? "Active" : "Inactive"}
+                      {vendor.isActive ? "Active" : "Inactive"}
                     </td>
                     <td data-label="Actions">
-                      <ImsItemRowActions
-                        item={item}
-                        editing={editingId === item.id}
+                      <ImsVendorRowActions
+                        vendor={vendor}
+                        editing={editingId === vendor.id}
                         onEditToggle={() =>
                           setEditingId((current) =>
-                            current === item.id ? null : item.id,
+                            current === vendor.id ? null : vendor.id,
                           )
                         }
                         canReorder={canReorder}
@@ -263,10 +221,10 @@ export function ImsItemsManager({
                       />
                     </td>
                   </tr>
-                  {editingId === item.id ? (
+                  {editingId === vendor.id ? (
                     <tr className="ws-ims-edit-row">
-                      <td colSpan={10}>
-                        <ImsItemForm layout={layout} item={item} />
+                      <td colSpan={7}>
+                        <ImsVendorForm layout={layout} vendor={vendor} />
                       </td>
                     </tr>
                   ) : null}

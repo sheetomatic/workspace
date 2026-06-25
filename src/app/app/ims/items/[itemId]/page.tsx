@@ -2,12 +2,22 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/saas/page-header";
 import { requireSession } from "@/lib/require-session";
-import { getItemDetail } from "@/lib/ims/ims-store";
+import { getItemDetail, listImsCustomFields } from "@/lib/ims/ims-store";
 import {
   formatImsCurrency,
   formatImsQty,
   IMS_STOCK_STATUS_LABELS,
 } from "@/lib/ims/stock-status";
+
+function formatCustomValue(value: unknown, fieldType: string): string {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+  if (fieldType === "CHECKBOX") {
+    return value ? "Yes" : "No";
+  }
+  return String(value);
+}
 
 const MOVEMENT_LABELS: Record<string, string> = {
   RM_IN: "RM In",
@@ -25,13 +35,19 @@ export default async function ImsItemDetailPage({
   params: { itemId: string };
 }) {
   const user = await requireSession(undefined, { module: "IMS" });
-  const detail = await getItemDetail(user.organizationId, params.itemId);
+  const [detail, customFields] = await Promise.all([
+    getItemDetail(user.organizationId, params.itemId),
+    listImsCustomFields(user.organizationId, "ITEM"),
+  ]);
 
   if (!detail) {
     notFound();
   }
 
   const { item } = detail;
+  const customValues =
+    (item.customValues as Record<string, unknown> | null) ?? {};
+  const activeCustomFields = customFields.filter((field) => field.isActive);
 
   return (
     <div className="saas-page ws-ims-page">
@@ -122,6 +138,22 @@ export default async function ImsItemDetailPage({
           </ul>
         </section>
       </div>
+
+      {activeCustomFields.length > 0 ? (
+        <section className="ws-ims-panel">
+          <h2>Custom fields</h2>
+          <ul className="ws-ims-abc-list">
+            {activeCustomFields.map((field) => (
+              <li key={field.id}>
+                <span>{field.label}</span>
+                <strong>
+                  {formatCustomValue(customValues[field.key], field.fieldType)}
+                </strong>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section className="ws-ims-panel">
         <h2>Movement history</h2>

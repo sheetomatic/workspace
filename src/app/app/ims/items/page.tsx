@@ -5,11 +5,21 @@ import { ImsItemImport } from "@/components/ims/ims-item-import";
 import type { ImsItemFormData } from "@/components/ims/ims-item-form";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
-import { listImsItems } from "@/lib/ims/ims-store";
+import { getImsFormConfig, listImsItems } from "@/lib/ims/ims-store";
+import { resolveFormLayout } from "@/lib/ims/form-fields";
 
 export default async function ImsItemsPage() {
   const user = await requireSession(undefined, { module: "IMS" });
-  const items = await listImsItems(user.organizationId, false);
+  const [items, formConfig] = await Promise.all([
+    listImsItems(user.organizationId, false),
+    getImsFormConfig(user.organizationId, "ITEM"),
+  ]);
+
+  const layout = resolveFormLayout(
+    "ITEM",
+    formConfig.fieldSettings,
+    formConfig.customFields,
+  );
 
   const formItems: ImsItemFormData[] = items.map((item) => ({
     id: item.id,
@@ -26,6 +36,7 @@ export default async function ImsItemsPage() {
     maxQty: Number(item.maxQty),
     qcOnReceipt: item.qcOnReceipt,
     isActive: item.isActive,
+    customValues: (item.customValues as Record<string, unknown> | null) ?? null,
   }));
 
   const canManage = hasMinimumRole(user.role, "MANAGER");
@@ -42,12 +53,12 @@ export default async function ImsItemsPage() {
       <div className="ws-ims-split">
         <section className="ws-ims-panel">
           <h2>Add item</h2>
-          <ImsItemForm />
+          <ImsItemForm layout={layout} />
         </section>
 
         <section className="ws-ims-panel ws-ims-panel-wide">
           <h2>All items ({items.length})</h2>
-          <ImsItemsManager items={formItems} />
+          <ImsItemsManager items={formItems} layout={layout} />
         </section>
       </div>
     </div>

@@ -2,6 +2,8 @@
 
 import type {
   ImsAbcClass,
+  ImsCustomFieldType,
+  ImsFormEntity,
   ImsItemType,
   ImsMovementType,
   ImsQcPolicy,
@@ -12,16 +14,26 @@ import { prisma } from "@/lib/db";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import {
+  deleteImsCustomField,
   deleteImsItem,
+  deleteImsVendor,
   importImsItems,
+  importImsVendors,
   recordGoodsReceipt,
   recordStockMovement,
+  reorderImsCustomField,
   reorderImsItem,
+  reorderImsVendor,
   resolveQcInspection,
+  saveImsFieldSettings,
+  upsertImsCustomField,
   upsertImsItem,
+  upsertImsVendor,
   type GoodsReceiptLine,
   type ImsItemImportRow,
+  type ImsVendorImportRow,
 } from "@/lib/ims/ims-store";
+import { slugifyFieldKey } from "@/lib/ims/form-fields";
 import { resolveMemberModules } from "@/lib/workspace-modules";
 
 export type ImsActionState = {
@@ -32,6 +44,8 @@ export type ImsActionState = {
 const IMS_PATHS = [
   "/app/ims",
   "/app/ims/items",
+  "/app/ims/vendors",
+  "/app/ims/settings",
   "/app/ims/stock",
   "/app/ims/move",
   "/app/ims/movements",
@@ -52,6 +66,17 @@ function parseNumber(value: FormDataEntryValue | null, fallback = 0) {
 
 function parseIsActive(formData: FormData) {
   return formData.getAll("isActive").some((value) => value.toString() === "on");
+}
+
+/** Collect custom field values (form inputs named cf_<key>) into an object. */
+function collectCustomValues(formData: FormData): Record<string, unknown> {
+  const values: Record<string, unknown> = {};
+  for (const [key, value] of formData.entries()) {
+    if (key.startsWith("cf_")) {
+      values[key.slice(3)] = value.toString();
+    }
+  }
+  return values;
 }
 
 function actionError(error: unknown, fallback: string): ImsActionState {
@@ -84,6 +109,7 @@ export async function saveImsItemAction(
       maxQty: parseNumber(formData.get("maxQty")),
       qcOnReceipt: formData.get("qcOnReceipt")?.toString() as ImsQcPolicy,
       isActive: parseIsActive(formData),
+      customValues: collectCustomValues(formData),
     });
 
     revalidateIms();
@@ -158,6 +184,227 @@ export async function importImsItemsAction(
     };
   } catch (error) {
     return actionError(error, "Could not import items.");
+  }
+}
+
+/* ------------------------------ Vendors ------------------------------ */
+
+export async function saveImsVendorAction(
+  _prev: ImsActionState,
+  formData: FormData,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const id = formData.get("id")?.toString() || undefined;
+
+    const leadTimeRaw = formData.get("leadTimeDays")?.toString() ?? "";
+
+    await upsertImsVendor(user.organizationId, {
+      id,
+      code: formData.get("code")?.toString() ?? "",
+      name: formData.get("name")?.toString() ?? "",
+      contactName: formData.get("contactName")?.toString(),
+      email: formData.get("email")?.toString(),
+      phone: formData.get("phone")?.toString(),
+      address: formData.get("address")?.toString(),
+      gstin: formData.get("gstin")?.toString(),
+      paymentTerms: formData.get("paymentTerms")?.toString(),
+      leadTimeDays: leadTimeRaw.trim() === "" ? null : parseNumber(formData.get("leadTimeDays")),
+      notes: formData.get("notes")?.toString(),
+      isActive: parseIsActive(formData),
+      customValues: collectCustomValues(formData),
+    });
+
+    revalidateIms();
+    return { ok: true, message: id ? "Vendor updated." : "Vendor created." };
+  } catch (error) {
+    return actionError(error, "Could not save vendor.");
+  }
+}
+
+export async function deleteImsVendorAction(
+  _prev: ImsActionState,
+  formData: FormData,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const vendor = await deleteImsVendor(
+      user.organizationId,
+      formData.get("id")?.toString() ?? "",
+    );
+    revalidateIms();
+    return { ok: true, message: `Deleted ${vendor.code}.` };
+  } catch (error) {
+    return actionError(error, "Could not delete vendor.");
+  }
+}
+
+export async function moveImsVendorAction(
+  _prev: ImsActionState,
+  formData: FormData,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const direction =
+      formData.get("direction")?.toString() === "up" ? "up" : "down";
+    await reorderImsVendor(
+      user.organizationId,
+      formData.get("id")?.toString() ?? "",
+      direction,
+    );
+    revalidateIms();
+    return { ok: true, message: "Order updated." };
+  } catch (error) {
+    return actionError(error, "Could not reorder vendor.");
+  }
+}
+
+export async function importImsVendorsAction(
+  _prev: ImsActionState,
+  formData: FormData,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+
+    let rows: ImsVendorImportRow[] = [];
+    try {
+      rows = JSON.parse(formData.get("rows")?.toString() ?? "[]");
+    } catch {
+      return { ok: false, message: "Could not read the rows to import." };
+    }
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return { ok: false, message: "No valid rows to import." };
+    }
+
+    const result = await importImsVendors(user.organizationId, rows);
+    revalidateIms();
+    return {
+      ok: true,
+      message: `Imported ${result.total} vendor${
+        result.total === 1 ? "" : "s"
+      } (${result.created} created, ${result.updated} updated).`,
+    };
+  } catch (error) {
+    return actionError(error, "Could not import vendors.");
+  }
+}
+
+/* ----------------------- Customisable form admin ----------------------- */
+
+function parseFormEntity(formData: FormData): ImsFormEntity {
+  return formData.get("entity")?.toString() === "VENDOR" ? "VENDOR" : "ITEM";
+}
+
+export async function saveImsCustomFieldAction(
+  _prev: ImsActionState,
+  formData: FormData,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const id = formData.get("id")?.toString() || undefined;
+    const entity = parseFormEntity(formData);
+    const label = formData.get("label")?.toString() ?? "";
+    const fieldType =
+      (formData.get("fieldType")?.toString() as ImsCustomFieldType) ?? "TEXT";
+
+    const optionsRaw = formData.get("options")?.toString() ?? "";
+    const options = optionsRaw
+      .split(/[\n,]/)
+      .map((opt) => opt.trim())
+      .filter(Boolean);
+
+    await upsertImsCustomField(user.organizationId, {
+      id,
+      entity,
+      key: slugifyFieldKey(label),
+      label,
+      fieldType,
+      options,
+      required: formData.get("required")?.toString() === "on",
+      helpText: formData.get("helpText")?.toString(),
+    });
+
+    revalidateIms();
+    return { ok: true, message: id ? "Custom field updated." : "Custom field added." };
+  } catch (error) {
+    return actionError(error, "Could not save custom field.");
+  }
+}
+
+export async function deleteImsCustomFieldAction(
+  _prev: ImsActionState,
+  formData: FormData,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    await deleteImsCustomField(
+      user.organizationId,
+      formData.get("id")?.toString() ?? "",
+    );
+    revalidateIms();
+    return { ok: true, message: "Custom field deleted." };
+  } catch (error) {
+    return actionError(error, "Could not delete custom field.");
+  }
+}
+
+export async function moveImsCustomFieldAction(
+  _prev: ImsActionState,
+  formData: FormData,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const direction =
+      formData.get("direction")?.toString() === "up" ? "up" : "down";
+    await reorderImsCustomField(
+      user.organizationId,
+      formData.get("id")?.toString() ?? "",
+      direction,
+    );
+    revalidateIms();
+    return { ok: true, message: "Order updated." };
+  } catch (error) {
+    return actionError(error, "Could not reorder custom field.");
+  }
+}
+
+export async function saveImsFieldSettingsAction(
+  _prev: ImsActionState,
+  formData: FormData,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const entity = parseFormEntity(formData);
+
+    let settings: Array<{
+      fieldKey: string;
+      label?: string | null;
+      hidden: boolean;
+      sortOrder: number;
+    }> = [];
+    try {
+      const parsed = JSON.parse(formData.get("settings")?.toString() ?? "[]");
+      if (Array.isArray(parsed)) {
+        settings = parsed.map((row) => ({
+          fieldKey: String(row.fieldKey),
+          label:
+            row.label === null || row.label === undefined
+              ? null
+              : String(row.label),
+          hidden: Boolean(row.hidden),
+          sortOrder: Number(row.sortOrder) || 0,
+        }));
+      }
+    } catch {
+      return { ok: false, message: "Could not read the field settings." };
+    }
+
+    await saveImsFieldSettings(user.organizationId, entity, settings);
+    revalidateIms();
+    return { ok: true, message: "Form layout saved." };
+  } catch (error) {
+    return actionError(error, "Could not save the form layout.");
   }
 }
 

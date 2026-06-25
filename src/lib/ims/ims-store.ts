@@ -1,5 +1,7 @@
 import type {
   ImsAbcClass,
+  ImsCustomFieldType,
+  ImsFormEntity,
   ImsItemType,
   ImsMovementType,
   ImsQcPolicy,
@@ -86,6 +88,77 @@ export async function listImsItems(organizationId: string, activeOnly = true) {
   });
 }
 
+/**
+ * Validate and coerce raw custom field values against the org's active custom
+ * field definitions for an entity. Returns the JSON to persist (or undefined
+ * when the org has no custom fields defined). Throws when a required field is
+ * empty or a value is invalid for its type.
+ */
+export async function coerceImsCustomValues(
+  organizationId: string,
+  entity: "ITEM" | "VENDOR",
+  raw: Record<string, unknown> | null | undefined,
+): Promise<Prisma.InputJsonValue | undefined> {
+  const fields = await prisma.imsCustomField.findMany({
+    where: { organizationId, entity, isActive: true },
+    orderBy: { sortOrder: "asc" },
+  });
+
+  if (fields.length === 0) {
+    return undefined;
+  }
+
+  const source = raw ?? {};
+  const result: Record<string, unknown> = {};
+
+  for (const field of fields) {
+    const rawValue = source[field.key];
+
+    if (field.fieldType === "CHECKBOX") {
+      const checked =
+        rawValue === true ||
+        rawValue === "on" ||
+        rawValue === "true" ||
+        rawValue === "1";
+      if (field.required && !checked) {
+        throw new Error(`${field.label} is required.`);
+      }
+      result[field.key] = checked;
+      continue;
+    }
+
+    const str =
+      rawValue === undefined || rawValue === null ? "" : String(rawValue).trim();
+
+    if (!str) {
+      if (field.required) {
+        throw new Error(`${field.label} is required.`);
+      }
+      result[field.key] = null;
+      continue;
+    }
+
+    if (field.fieldType === "NUMBER") {
+      const num = Number(str.replace(/[, ]/g, ""));
+      if (!Number.isFinite(num)) {
+        throw new Error(`${field.label} must be a number.`);
+      }
+      result[field.key] = num;
+    } else if (field.fieldType === "SELECT") {
+      if (field.options.length > 0 && !field.options.includes(str)) {
+        throw new Error(
+          `${field.label} must be one of: ${field.options.join(", ")}.`,
+        );
+      }
+      result[field.key] = str;
+    } else {
+      result[field.key] = str;
+    }
+  }
+
+  return result as Prisma.InputJsonValue;
+}
+
 export async function upsertImsItem(
   organizationId: string,
   data: {
@@ -103,6 +176,7 @@ export async function upsertImsItem(
     maxQty: number;
     qcOnReceipt: ImsQcPolicy;
     isActive: boolean;
+    customValues?: Record<string, unknown>;
   },
 ) {
   validateImsItemInput({
@@ -113,6 +187,12 @@ export async function upsertImsItem(
     maxQty: data.maxQty,
     unitCost: data.unitCost,
   });
+
+  const customValues = await coerceImsCustomValues(
+    organizationId,
+    "ITEM",
+    data.customValues,
+  );
 
   const payload = {
     code: data.code.trim().toUpperCase(),
@@ -128,6 +208,7 @@ export async function upsertImsItem(
     maxQty: dec(data.maxQty),
     qcOnReceipt: data.qcOnReceipt,
     isActive: data.isActive,
+    ...(customValues !== undefined ? { customValues } : {}),
   };
 
   if (data.id) {
@@ -294,6 +375,446 @@ export async function importImsItems(
   }
 
   return { created, updated, total: rows.length };
+}
+
+/* ----------------------------- Vendors ----------------------------- */
+
+export type ImsVendorData = {
+  id?: string;
+  code: string;
+  name: string;
+  contactName?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  gstin?: string;
+  paymentTerms?: string;
+  leadTimeDays?: number | null;
+  notes?: string;
+  isActive: boolean;
+  customValues?: Record<string, unknown>;
+};
+
+export async function listImsVendors(organizationId: string, activeOnly = true) {
+  return prisma.imsVendor.findMany({
+    where: {
+      organizationId,
+      ...(activeOnly ? { isActive: true } : {}),
+    },
+    orderBy: [{ sortOrder: "asc" }, { code: "asc" }],
+  });
+}
+
+export async function getVendorDetail(organizationId: string, vendorId: string) {
+  return prisma.imsVendor.findFirst({
+    where: { id: vendorId, organizationId },
+  });
+}
+
+async function assertUniqueImsVendorCode(
+  organizationId: string,
+  code: string,
+  excludeVendorId?: string,
+) {
+  const normalized = code.trim().toUpperCase();
+  const existing = await prisma.imsVendor.findFirst({
+    where: {
+      organizationId,
+      code: normalized,
+      ...(excludeVendorId ? { NOT: { id: excludeVendorId } } : {}),
+    },
+    select: { id: true },
+  });
+
+  if (existing) {
+    throw new Error(`Vendor code "${normalized}" is already in use.`);
+  }
+}
+
+function normalizeLeadTime(value: number | null | undefined): number | null {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return null;
+  }
+  if (value < 0) {
+    throw new Error("Lead time cannot be negative.");
+  }
+  return Math.round(value);
+}
+
+export async function upsertImsVendor(
+  organizationId: string,
+  data: ImsVendorData,
+) {
+  if (!data.code.trim()) {
+    throw new Error("Vendor code is required.");
+  }
+  if (!data.name.trim()) {
+    throw new Error("Vendor name is required.");
+  }
+
+  const customValues = await coerceImsCustomValues(
+    organizationId,
+    "VENDOR",
+    data.customValues,
+  );
+
+  const payload = {
+    name: data.name.trim(),
+    contactName: data.contactName?.trim() || null,
+    email: data.email?.trim() || null,
+    phone: data.phone?.trim() || null,
+    address: data.address?.trim() || null,
+    gstin: data.gstin?.trim() || null,
+    paymentTerms: data.paymentTerms?.trim() || null,
+    leadTimeDays: normalizeLeadTime(data.leadTimeDays),
+    notes: data.notes?.trim() || null,
+    isActive: data.isActive,
+    ...(customValues !== undefined ? { customValues } : {}),
+  };
+
+  const code = data.code.trim().toUpperCase();
+
+  if (data.id) {
+    await assertUniqueImsVendorCode(organizationId, code, data.id);
+    return prisma.imsVendor.update({
+      where: { id: data.id, organizationId },
+      data: { code, ...payload },
+    });
+  }
+
+  await assertUniqueImsVendorCode(organizationId, code);
+  const last = await prisma.imsVendor.findFirst({
+    where: { organizationId },
+    orderBy: { sortOrder: "desc" },
+    select: { sortOrder: true },
+  });
+  return prisma.imsVendor.create({
+    data: {
+      organizationId,
+      code,
+      ...payload,
+      sortOrder: (last?.sortOrder ?? 0) + 1,
+    },
+  });
+}
+
+export async function deleteImsVendor(organizationId: string, vendorId: string) {
+  const vendor = await prisma.imsVendor.findFirst({
+    where: { id: vendorId, organizationId },
+    select: { id: true, code: true },
+  });
+  if (!vendor) {
+    throw new Error("Vendor not found.");
+  }
+  await prisma.imsVendor.delete({ where: { id: vendorId, organizationId } });
+  return vendor;
+}
+
+export async function reorderImsVendor(
+  organizationId: string,
+  vendorId: string,
+  direction: "up" | "down",
+) {
+  const vendors = await prisma.imsVendor.findMany({
+    where: { organizationId },
+    orderBy: [{ sortOrder: "asc" }, { code: "asc" }],
+    select: { id: true, sortOrder: true },
+  });
+
+  const index = vendors.findIndex((row) => row.id === vendorId);
+  if (index === -1) {
+    throw new Error("Vendor not found.");
+  }
+
+  const swapWith = direction === "up" ? index - 1 : index + 1;
+  if (swapWith < 0 || swapWith >= vendors.length) {
+    return;
+  }
+
+  const current = vendors[index];
+  const neighbour = vendors[swapWith];
+
+  await prisma.$transaction([
+    prisma.imsVendor.update({
+      where: { id: current.id, organizationId },
+      data: { sortOrder: swapWith + 1 },
+    }),
+    prisma.imsVendor.update({
+      where: { id: neighbour.id, organizationId },
+      data: { sortOrder: index + 1 },
+    }),
+  ]);
+}
+
+export type ImsVendorImportRow = {
+  code: string;
+  name: string;
+  contactName?: string;
+  email?: string;
+  phone?: string;
+  gstin?: string;
+  address?: string;
+  paymentTerms?: string;
+  leadTimeDays?: number | null;
+  isActive: boolean;
+};
+
+export async function importImsVendors(
+  organizationId: string,
+  rows: ImsVendorImportRow[],
+) {
+  let created = 0;
+  let updated = 0;
+
+  const last = await prisma.imsVendor.findFirst({
+    where: { organizationId },
+    orderBy: { sortOrder: "desc" },
+    select: { sortOrder: true },
+  });
+  let nextSort = (last?.sortOrder ?? 0) + 1;
+
+  for (const row of rows) {
+    if (!row.code.trim()) {
+      throw new Error("Vendor code is required.");
+    }
+    if (!row.name.trim()) {
+      throw new Error("Vendor name is required.");
+    }
+
+    const code = row.code.trim().toUpperCase();
+    const payload = {
+      name: row.name.trim(),
+      contactName: row.contactName?.trim() || null,
+      email: row.email?.trim() || null,
+      phone: row.phone?.trim() || null,
+      gstin: row.gstin?.trim() || null,
+      address: row.address?.trim() || null,
+      paymentTerms: row.paymentTerms?.trim() || null,
+      leadTimeDays: normalizeLeadTime(row.leadTimeDays),
+      isActive: row.isActive,
+    };
+
+    const existing = await prisma.imsVendor.findFirst({
+      where: { organizationId, code },
+      select: { id: true },
+    });
+
+    if (existing) {
+      await prisma.imsVendor.update({
+        where: { id: existing.id, organizationId },
+        data: payload,
+      });
+      updated += 1;
+    } else {
+      await prisma.imsVendor.create({
+        data: { organizationId, code, ...payload, sortOrder: nextSort },
+      });
+      nextSort += 1;
+      created += 1;
+    }
+  }
+
+  return { created, updated, total: rows.length };
+}
+
+/* ----------------- Custom fields and field settings ----------------- */
+
+export async function listImsCustomFields(
+  organizationId: string,
+  entity: ImsFormEntity,
+) {
+  return prisma.imsCustomField.findMany({
+    where: { organizationId, entity },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+  });
+}
+
+export async function upsertImsCustomField(
+  organizationId: string,
+  data: {
+    id?: string;
+    entity: ImsFormEntity;
+    key: string;
+    label: string;
+    fieldType: ImsCustomFieldType;
+    options: string[];
+    required: boolean;
+    helpText?: string;
+  },
+) {
+  const label = data.label.trim();
+  if (!label) {
+    throw new Error("Field label is required.");
+  }
+
+  const key = data.key.trim();
+  if (!key) {
+    throw new Error("Could not derive a key from the label. Use letters or numbers.");
+  }
+
+  const options =
+    data.fieldType === "SELECT"
+      ? data.options.map((opt) => opt.trim()).filter(Boolean)
+      : [];
+
+  if (data.fieldType === "SELECT" && options.length === 0) {
+    throw new Error("Add at least one option for a dropdown field.");
+  }
+
+  if (data.id) {
+    return prisma.imsCustomField.update({
+      where: { id: data.id, organizationId },
+      data: {
+        label,
+        fieldType: data.fieldType,
+        options,
+        required: data.required,
+        helpText: data.helpText?.trim() || null,
+      },
+    });
+  }
+
+  const existing = await prisma.imsCustomField.findFirst({
+    where: { organizationId, entity: data.entity, key },
+    select: { id: true },
+  });
+  if (existing) {
+    throw new Error(`A custom field with key "${key}" already exists.`);
+  }
+
+  const last = await prisma.imsCustomField.findFirst({
+    where: { organizationId, entity: data.entity },
+    orderBy: { sortOrder: "desc" },
+    select: { sortOrder: true },
+  });
+
+  return prisma.imsCustomField.create({
+    data: {
+      organizationId,
+      entity: data.entity,
+      key,
+      label,
+      fieldType: data.fieldType,
+      options,
+      required: data.required,
+      helpText: data.helpText?.trim() || null,
+      sortOrder: (last?.sortOrder ?? 0) + 1,
+    },
+  });
+}
+
+export async function deleteImsCustomField(
+  organizationId: string,
+  fieldId: string,
+) {
+  const field = await prisma.imsCustomField.findFirst({
+    where: { id: fieldId, organizationId },
+    select: { id: true, label: true },
+  });
+  if (!field) {
+    throw new Error("Custom field not found.");
+  }
+  await prisma.imsCustomField.delete({ where: { id: fieldId, organizationId } });
+  return field;
+}
+
+export async function reorderImsCustomField(
+  organizationId: string,
+  fieldId: string,
+  direction: "up" | "down",
+) {
+  const field = await prisma.imsCustomField.findFirst({
+    where: { id: fieldId, organizationId },
+    select: { id: true, entity: true },
+  });
+  if (!field) {
+    throw new Error("Custom field not found.");
+  }
+
+  const fields = await prisma.imsCustomField.findMany({
+    where: { organizationId, entity: field.entity },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    select: { id: true, sortOrder: true },
+  });
+
+  const index = fields.findIndex((row) => row.id === fieldId);
+  const swapWith = direction === "up" ? index - 1 : index + 1;
+  if (swapWith < 0 || swapWith >= fields.length) {
+    return;
+  }
+
+  const current = fields[index];
+  const neighbour = fields[swapWith];
+
+  await prisma.$transaction([
+    prisma.imsCustomField.update({
+      where: { id: current.id, organizationId },
+      data: { sortOrder: swapWith + 1 },
+    }),
+    prisma.imsCustomField.update({
+      where: { id: neighbour.id, organizationId },
+      data: { sortOrder: index + 1 },
+    }),
+  ]);
+}
+
+export async function listImsFieldSettings(
+  organizationId: string,
+  entity: ImsFormEntity,
+) {
+  return prisma.imsFieldSetting.findMany({
+    where: { organizationId, entity },
+    orderBy: { sortOrder: "asc" },
+  });
+}
+
+export async function saveImsFieldSettings(
+  organizationId: string,
+  entity: ImsFormEntity,
+  settings: Array<{
+    fieldKey: string;
+    label?: string | null;
+    hidden: boolean;
+    sortOrder: number;
+  }>,
+) {
+  await prisma.$transaction(
+    settings.map((setting) =>
+      prisma.imsFieldSetting.upsert({
+        where: {
+          organizationId_entity_fieldKey: {
+            organizationId,
+            entity,
+            fieldKey: setting.fieldKey,
+          },
+        },
+        create: {
+          organizationId,
+          entity,
+          fieldKey: setting.fieldKey,
+          label: setting.label?.trim() || null,
+          hidden: setting.hidden,
+          sortOrder: setting.sortOrder,
+        },
+        update: {
+          label: setting.label?.trim() || null,
+          hidden: setting.hidden,
+          sortOrder: setting.sortOrder,
+        },
+      }),
+    ),
+  );
+}
+
+export async function getImsFormConfig(
+  organizationId: string,
+  entity: ImsFormEntity,
+) {
+  const [fieldSettings, customFields] = await Promise.all([
+    listImsFieldSettings(organizationId, entity),
+    listImsCustomFields(organizationId, entity),
+  ]);
+  return { fieldSettings, customFields };
 }
 
 export async function getStockRows(
