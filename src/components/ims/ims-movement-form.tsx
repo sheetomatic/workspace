@@ -1,12 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useFormState } from "react-dom";
 import type { ImsItem, ImsMovementType } from "@prisma/client";
+import {
+  recordMovementAction,
+  type ImsActionState,
+} from "@/app/app/ims/actions";
 
 type ItemOption = Pick<
   ImsItem,
   "id" | "code" | "name" | "itemType" | "qcOnReceipt" | "uom"
 >;
+
+const initial: ImsActionState = { ok: false, message: "" };
 
 const MOVEMENT_LABELS: Record<ImsMovementType, string> = {
   RM_IN: "RM In",
@@ -15,6 +22,7 @@ const MOVEMENT_LABELS: Record<ImsMovementType, string> = {
   FG_OUT: "FG Out",
   QC_PASS: "QC pass",
   QC_FAIL: "QC fail",
+  ADJUSTMENT: "Adjustment",
 };
 
 function itemsForMovement(items: ItemOption[], movementType: ImsMovementType) {
@@ -33,12 +41,13 @@ function itemsForMovement(items: ItemOption[], movementType: ImsMovementType) {
 export function ImsMovementForm({
   items,
   movementType,
-  action,
+  usableMap,
 }: {
   items: ItemOption[];
   movementType: ImsMovementType;
-  action: (formData: FormData) => void | Promise<void>;
+  usableMap?: Record<string, number>;
 }) {
+  const [state, action] = useFormState(recordMovementAction, initial);
   const filtered = useMemo(
     () => itemsForMovement(items, movementType),
     [items, movementType],
@@ -46,8 +55,10 @@ export function ImsMovementForm({
   const [itemId, setItemId] = useState(filtered[0]?.id ?? "");
   const selected = filtered.find((item) => item.id === itemId);
   const isReceipt = movementType === "RM_IN" || movementType === "FG_IN";
-  const showQcPrompt =
-    isReceipt && selected?.qcOnReceipt === "OPTIONAL";
+  const isIssue =
+    movementType === "ISSUE_TO_PRODUCTION" || movementType === "FG_OUT";
+  const showQcPrompt = isReceipt && selected?.qcOnReceipt === "OPTIONAL";
+  const available = selected ? usableMap?.[selected.id] ?? 0 : 0;
 
   return (
     <form action={action} className="ws-ims-form">
@@ -74,6 +85,12 @@ export function ImsMovementForm({
         </select>
       </label>
 
+      {isIssue && selected ? (
+        <p className="ws-ims-help">
+          Available: {available.toLocaleString("en-IN")} {selected.uom}
+        </p>
+      ) : null}
+
       <label>
         Quantity
         <input
@@ -97,7 +114,9 @@ export function ImsMovementForm({
       </label>
 
       {selected?.qcOnReceipt === "ALWAYS" && isReceipt ? (
-        <p className="ws-ims-help">QC is always required for this item - stock goes to QC pending.</p>
+        <p className="ws-ims-help">
+          QC is always required for this item - stock goes to QC pending.
+        </p>
       ) : null}
 
       {selected?.qcOnReceipt === "OFF" && isReceipt ? (
@@ -109,6 +128,16 @@ export function ImsMovementForm({
           <input name="qcRequired" type="checkbox" value="yes" />
           QC required for this receipt?
         </label>
+      ) : null}
+
+      {state.message ? (
+        <p
+          className={
+            state.ok ? "ws-ims-feedback" : "ws-ims-feedback ws-ims-feedback-error"
+          }
+        >
+          {state.message}
+        </p>
       ) : null}
 
       <div className="ws-ims-form-actions">

@@ -21428,6 +21428,10 @@ body:has(.workspace-app.saas-app) {
   color: #059669;
 }
 
+.workspace-app .ws-ims-access-panel form {
+  margin-top: 12px;
+}
+
 .workspace-app .ws-ims-feedback-error {
   color: #b91c1c;
 }
@@ -21682,4 +21686,143 @@ body:has(.workspace-app.saas-app) {
 .workspace-app .ws-ims-form-inline label {
   flex: 1;
   min-width: 200px;
+}
+
+/* IMS P1/P2 additions: filters, responsive tables, inline edit, adjust toggle */
+.workspace-app .ws-ims-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.workspace-app .ws-ims-filters input,
+.workspace-app .ws-ims-filters select {
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  background: #fff;
+  color: #0f172a;
+}
+
+.workspace-app .ws-ims-filter-search {
+  flex: 1;
+  min-width: 220px;
+}
+
+.workspace-app .ws-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #0f172a;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.workspace-app .ws-btn-secondary:hover {
+  background: #f1f5f9;
+}
+
+.workspace-app .ws-btn-small {
+  height: 30px;
+  padding: 0 10px;
+  font-size: 0.8125rem;
+}
+
+.workspace-app .ws-ims-row-inactive {
+  opacity: 0.6;
+}
+
+.workspace-app .ws-ims-edit-row > td {
+  background: #f8fafc;
+  padding: 16px;
+}
+
+.workspace-app .ws-ims-toggle {
+  display: inline-flex;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.workspace-app .ws-ims-toggle button {
+  border: none;
+  background: #fff;
+  padding: 8px 14px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+}
+
+.workspace-app .ws-ims-toggle button.is-active {
+  background: #0f172a;
+  color: #fff;
+}
+
+a.workspace-app .ws-stat-card,
+.workspace-app a.ws-stat-card {
+  text-decoration: none;
+  transition: box-shadow 0.15s ease;
+}
+
+.workspace-app a.ws-stat-card:hover {
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
+}
+
+.workspace-app .ws-ims-table-responsive .ws-ims-pill {
+  vertical-align: middle;
+}
+
+/* Responsive: stack table rows into cards on small screens */
+@media (max-width: 720px) {
+  .workspace-app .ws-ims-table-responsive thead {
+    display: none;
+  }
+
+  .workspace-app .ws-ims-table-responsive,
+  .workspace-app .ws-ims-table-responsive tbody,
+  .workspace-app .ws-ims-table-responsive tr,
+  .workspace-app .ws-ims-table-responsive td {
+    display: block;
+    width: 100%;
+  }
+
+  .workspace-app .ws-ims-table-responsive tr {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    padding: 6px 12px;
+  }
+
+  .workspace-app .ws-ims-table-responsive td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    border: none;
+    padding: 8px 0;
+    text-align: right;
+  }
+
+  .workspace-app .ws-ims-table-responsive td::before {
+    content: attr(data-label);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    text-align: left;
+  }
+
+  .workspace-app .ws-ims-table-responsive td[data-label=""]::before {
+    content: "";
+  }
 }

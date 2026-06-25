@@ -1,67 +1,41 @@
 import { PageHeader } from "@/components/saas/page-header";
+import {
+  ImsStockTable,
+  type StockTableRow,
+} from "@/components/ims/ims-stock-table";
 import { requireSession } from "@/lib/require-session";
 import { getStockRows } from "@/lib/ims/ims-store";
-import {
-  formatImsCurrency,
-  formatImsQty,
-  IMS_STOCK_STATUS_LABELS,
-} from "@/lib/ims/stock-status";
 
 export default async function ImsStockPage() {
   const user = await requireSession(undefined, { module: "IMS" });
   const rows = await getStockRows(user.organizationId);
 
+  const tableRows: StockTableRow[] = rows.map((row) => ({
+    id: row.item.id,
+    code: row.item.code,
+    name: row.item.name,
+    itemType: row.item.itemType,
+    category: row.item.category,
+    storeType: row.storeType,
+    uom: row.item.uom,
+    usableQty: row.usableQty,
+    qcPendingQty: row.qcPendingQty,
+    minQty: Number(row.item.minQty),
+    reorderQty: Number(row.item.reorderQty),
+    maxQty: Number(row.item.maxQty),
+    value: row.value,
+    status: row.status,
+    isActive: row.item.isActive,
+  }));
+
   return (
     <div className="saas-page ws-ims-page">
       <PageHeader
         title="Stock levels"
-        description="Usable quantity drives alert colours. QC pending is shown separately."
+        description="Usable quantity drives alert colours. QC pending is shown separately. Inactive items still holding stock are included."
       />
 
-      <div className="ws-ims-table-wrap">
-        <table className="ws-ims-table">
-          <thead>
-            <tr>
-              <th>Code</th>
-              <th>Name</th>
-              <th>Store</th>
-              <th>Usable</th>
-              <th>QC pending</th>
-              <th>Min</th>
-              <th>Reorder</th>
-              <th>Max</th>
-              <th>Value</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={10}>No stock records - add items and record movements.</td>
-              </tr>
-            ) : (
-              rows.map((row) => (
-                <tr key={row.item.id}>
-                  <td>{row.item.code}</td>
-                  <td>{row.item.name}</td>
-                  <td>{row.storeType}</td>
-                  <td>{formatImsQty(row.usableQty, row.item.uom)}</td>
-                  <td>{formatImsQty(row.qcPendingQty, row.item.uom)}</td>
-                  <td>{formatImsQty(Number(row.item.minQty))}</td>
-                  <td>{formatImsQty(Number(row.item.reorderQty))}</td>
-                  <td>{formatImsQty(Number(row.item.maxQty))}</td>
-                  <td>{formatImsCurrency(row.value)}</td>
-                  <td>
-                    <span className={`ws-ims-pill ws-ims-pill-${row.status}`}>
-                      {IMS_STOCK_STATUS_LABELS[row.status]}
-                    </span>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <ImsStockTable rows={tableRows} />
     </div>
   );
 }

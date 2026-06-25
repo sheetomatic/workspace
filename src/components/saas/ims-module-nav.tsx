@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   ArrowLeftRight,
   ClipboardCheck,
+  History,
   LayoutDashboard,
   Package,
   PackageSearch,
@@ -38,9 +39,15 @@ const items: NavItem[] = [
   },
   {
     href: "/app/ims/move",
-    label: "Movements",
+    label: "Record movement",
     icon: ArrowLeftRight,
-    description: "RM In, issue, FG In/Out",
+    description: "RM In, issue, FG In/Out, adjust",
+  },
+  {
+    href: "/app/ims/movements",
+    label: "History",
+    icon: History,
+    description: "All movements with filters",
   },
   {
     href: "/app/ims/qc",

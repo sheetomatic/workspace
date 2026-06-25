@@ -1,15 +1,23 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/saas/page-header";
+import { ImsTeamAccessPanel } from "@/components/ims/ims-team-access-panel";
 import { requireSession } from "@/lib/require-session";
-import { getImsDashboardStats } from "@/lib/ims/ims-store";
+import { countManagersMissingIms, getImsDashboardStats } from "@/lib/ims/ims-store";
+import { hasMinimumRole } from "@/lib/permissions";
 import {
   formatImsCurrency,
+  formatImsQty,
   IMS_STOCK_STATUS_LABELS,
 } from "@/lib/ims/stock-status";
 
 export default async function ImsDashboardPage() {
   const user = await requireSession(undefined, { module: "IMS" });
-  const stats = await getImsDashboardStats(user.organizationId);
+  const [stats, membersMissingIms] = await Promise.all([
+    getImsDashboardStats(user.organizationId),
+    hasMinimumRole(user.role, "ADMIN")
+      ? countManagersMissingIms(user.organizationId)
+      : Promise.resolve(0),
+  ]);
 
   return (
     <div className="saas-page ws-ims-page">
@@ -17,6 +25,10 @@ export default async function ImsDashboardPage() {
         title="Inventory (IMS)"
         description="Raw material and finished goods - stock levels, movements, and optional QC on receipt."
       />
+
+      {hasMinimumRole(user.role, "ADMIN") ? (
+        <ImsTeamAccessPanel membersMissingIms={membersMissingIms} />
+      ) : null}
 
       <div className="ws-task-stats">
         <div className="ws-stat-card">
@@ -27,14 +39,14 @@ export default async function ImsDashboardPage() {
           <span>Active items</span>
           <strong>{stats.itemCount}</strong>
         </div>
-        <div className="ws-stat-card ws-stat-pending">
-          <span>QC pending (units)</span>
-          <strong>{stats.pendingQc.toLocaleString("en-IN")}</strong>
-        </div>
-        <div className="ws-stat-card ws-stat-progress">
+        <Link href="/app/ims/qc" className="ws-stat-card ws-stat-pending">
+          <span>QC pending (inspections)</span>
+          <strong>{stats.pendingQcCount.toLocaleString("en-IN")}</strong>
+        </Link>
+        <Link href="/app/ims/stock" className="ws-stat-card ws-stat-progress">
           <span>Below minimum</span>
           <strong>{stats.statusCounts.red}</strong>
-        </div>
+        </Link>
       </div>
 
       <div className="ws-ims-split">
@@ -71,6 +83,47 @@ export default async function ImsDashboardPage() {
         </section>
       </div>
 
+      <section className="ws-ims-panel">
+        <div className="ws-ims-panel-head">
+          <h2>Reorder soon</h2>
+          <Link href="/app/ims/stock">View all stock</Link>
+        </div>
+        {stats.reorderList.length === 0 ? (
+          <p className="ws-ims-help">All items are at healthy levels.</p>
+        ) : (
+          <div className="ws-ims-table-wrap">
+            <table className="ws-ims-table ws-ims-table-responsive">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Name</th>
+                  <th>Usable</th>
+                  <th>Reorder at</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.reorderList.map((row) => (
+                  <tr key={row.id}>
+                    <td data-label="Code">
+                      <Link href={`/app/ims/items/${row.id}`}>{row.code}</Link>
+                    </td>
+                    <td data-label="Name">{row.name}</td>
+                    <td data-label="Usable">{formatImsQty(row.usableQty, row.uom)}</td>
+                    <td data-label="Reorder at">{formatImsQty(row.reorderQty)}</td>
+                    <td data-label="Status">
+                      <span className={`ws-ims-pill ws-ims-pill-${row.status}`}>
+                        {IMS_STOCK_STATUS_LABELS[row.status]}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
       <div className="ws-ims-split">
         <section className="ws-ims-panel">
           <div className="ws-ims-panel-head">
@@ -94,8 +147,10 @@ export default async function ImsDashboardPage() {
                   </tr>
                 ) : (
                   stats.topItems.map((row) => (
-                    <tr key={row.code}>
-                      <td>{row.code}</td>
+                    <tr key={row.id}>
+                      <td>
+                        <Link href={`/app/ims/items/${row.id}`}>{row.code}</Link>
+                      </td>
                       <td>{row.name}</td>
                       <td>{formatImsCurrency(row.value)}</td>
                       <td>
@@ -114,7 +169,7 @@ export default async function ImsDashboardPage() {
         <section className="ws-ims-panel">
           <div className="ws-ims-panel-head">
             <h2>Recent movements</h2>
-            <Link href="/app/ims/move">Record movement</Link>
+            <Link href="/app/ims/movements">View all</Link>
           </div>
           <div className="ws-ims-table-wrap">
             <table className="ws-ims-table">

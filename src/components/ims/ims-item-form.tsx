@@ -1,12 +1,28 @@
 "use client";
 
 import { useFormState } from "react-dom";
-import type { ImsItem } from "@prisma/client";
 import { saveImsItemAction, type ImsActionState } from "@/app/app/ims/actions";
 
 const initial: ImsActionState = { ok: false, message: "" };
 
-export function ImsItemForm({ item }: { item?: ImsItem }) {
+export type ImsItemFormData = {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  uom: string;
+  category: string | null;
+  itemType: "RAW_MATERIAL" | "FINISHED_GOOD";
+  abcClass: "A" | "B" | "C";
+  unitCost: number;
+  minQty: number;
+  reorderQty: number;
+  maxQty: number;
+  qcOnReceipt: "OFF" | "OPTIONAL" | "ALWAYS";
+  isActive: boolean;
+};
+
+export function ImsItemForm({ item }: { item?: ImsItemFormData }) {
   const [state, action] = useFormState(saveImsItemAction, initial);
 
   return (
@@ -58,7 +74,7 @@ export function ImsItemForm({ item }: { item?: ImsItem }) {
             type="number"
             min="0"
             step="any"
-            defaultValue={item ? Number(item.unitCost) : 0}
+            defaultValue={item ? item.unitCost : 0}
           />
         </label>
         <label>
@@ -68,7 +84,7 @@ export function ImsItemForm({ item }: { item?: ImsItem }) {
             type="number"
             min="0"
             step="any"
-            defaultValue={item ? Number(item.minQty) : 0}
+            defaultValue={item ? item.minQty : 0}
           />
         </label>
         <label>
@@ -78,7 +94,7 @@ export function ImsItemForm({ item }: { item?: ImsItem }) {
             type="number"
             min="0"
             step="any"
-            defaultValue={item ? Number(item.reorderQty) : 0}
+            defaultValue={item ? item.reorderQty : 0}
           />
         </label>
         <label>
@@ -88,7 +104,7 @@ export function ImsItemForm({ item }: { item?: ImsItem }) {
             type="number"
             min="0"
             step="any"
-            defaultValue={item ? Number(item.maxQty) : 0}
+            defaultValue={item ? item.maxQty : 0}
           />
         </label>
         <label>
@@ -111,9 +127,11 @@ export function ImsItemForm({ item }: { item?: ImsItem }) {
       </label>
 
       <label className="ws-ims-checkbox">
+        <input type="hidden" name="isActive" value="off" />
         <input
           name="isActive"
           type="checkbox"
+          value="on"
           defaultChecked={item?.isActive ?? true}
         />
         Active item

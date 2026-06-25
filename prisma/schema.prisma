@@ -1422,6 +1422,7 @@ enum ImsMovementType {
   FG_OUT
   QC_PASS
   QC_FAIL
+  ADJUSTMENT
 }
 
 enum ImsQcStatus {
