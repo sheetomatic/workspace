@@ -435,6 +435,13 @@ export async function recordStockMovement(params: {
   reference?: string;
   notes?: string;
   qcRequiredChoice?: boolean;
+  quantityOrdered?: number;
+  poNumber?: string;
+  supplierName?: string;
+  invoiceNumber?: string;
+  invoiceDate?: string;
+  invoiceAmount?: number;
+  attachmentId?: string;
 }) {
   const isAdjustment = params.movementType === "ADJUSTMENT";
 
@@ -538,6 +545,10 @@ export async function recordStockMovement(params: {
       );
     }
 
+    const invoiceDate = params.invoiceDate
+      ? new Date(params.invoiceDate)
+      : null;
+
     return tx.imsStockMovement.create({
       data: {
         organizationId: params.organizationId,
@@ -545,9 +556,23 @@ export async function recordStockMovement(params: {
         movementType: params.movementType,
         storeType,
         quantity: qty,
+        quantityOrdered:
+          params.quantityOrdered && params.quantityOrdered > 0
+            ? dec(params.quantityOrdered)
+            : null,
         unitCost: item.unitCost,
         reference: params.reference?.trim() || null,
         notes: params.notes?.trim() || null,
+        poNumber: params.poNumber?.trim() || null,
+        supplierName: params.supplierName?.trim() || null,
+        invoiceNumber: params.invoiceNumber?.trim() || null,
+        invoiceDate:
+          invoiceDate && !Number.isNaN(invoiceDate.getTime()) ? invoiceDate : null,
+        invoiceAmount:
+          params.invoiceAmount && params.invoiceAmount > 0
+            ? dec(params.invoiceAmount)
+            : null,
+        attachmentId: params.attachmentId?.trim() || null,
         qcRequired,
         qcInspectionId,
         createdById: params.userId,

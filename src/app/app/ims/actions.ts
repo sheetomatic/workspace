@@ -105,6 +105,13 @@ export async function recordMovementAction(
       reference: formData.get("reference")?.toString(),
       notes: formData.get("notes")?.toString(),
       qcRequiredChoice,
+      quantityOrdered: parseNumber(formData.get("quantityOrdered")),
+      poNumber: formData.get("poNumber")?.toString(),
+      supplierName: formData.get("supplierName")?.toString(),
+      invoiceNumber: formData.get("invoiceNumber")?.toString(),
+      invoiceDate: formData.get("invoiceDate")?.toString() || undefined,
+      invoiceAmount: parseNumber(formData.get("invoiceAmount")),
+      attachmentId: formData.get("attachmentId")?.toString() || undefined,
     });
 
     revalidateIms();

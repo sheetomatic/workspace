@@ -21225,6 +21225,21 @@ body:has(.workspace-app.saas-app) {
   border: 1px solid #cbd5e1;
   border-radius: 10px;
   background: #fff;
+  color: #0f172a;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.workspace-app .ws-ims-form input:focus,
+.workspace-app .ws-ims-form select:focus,
+.workspace-app .ws-ims-form textarea:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.workspace-app .ws-ims-form input::placeholder,
+.workspace-app .ws-ims-form textarea::placeholder {
+  color: #94a3b8;
 }
 
 .workspace-app .ws-ims-form-actions {
@@ -21825,4 +21840,106 @@ a.workspace-app .ws-stat-card,
   .workspace-app .ws-ims-table-responsive td[data-label=""]::before {
     content: "";
   }
+}
+
+/* GRN receipt form: grouped fieldsets, invoice upload */
+.workspace-app .ws-ims-section-title {
+  margin: 24px 0 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.workspace-app .ws-ims-receipt-panel {
+  border: 1px solid #dbe1ea;
+  border-radius: 16px;
+}
+
+.workspace-app .ws-ims-receipt-head h3 {
+  margin: 0 0 4px;
+  font-size: 1.0625rem;
+  color: #0f172a;
+}
+
+.workspace-app .ws-ims-fieldset {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 0;
+  background: #f8fafc;
+}
+
+.workspace-app .ws-ims-fieldset legend {
+  padding: 0 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.workspace-app .ws-ims-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.workspace-app .ws-ims-upload-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.workspace-app .ws-ims-upload-label input[type="file"] {
+  font-size: 0.8125rem;
+  padding: 8px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.workspace-app .ws-ims-upload-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8125rem;
+  color: #475569;
+}
+
+.workspace-app .ws-ims-upload-done {
+  color: #166534;
+}
+
+.workspace-app .ws-ims-upload-done button {
+  border: none;
+  background: none;
+  color: #b91c1c;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.workspace-app .ws-ims-upload-error {
+  color: #b91c1c;
+}
+
+.workspace-app .ws-ims-cell-sub {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.workspace-app .ws-ims-link {
+  color: #4f46e5;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.workspace-app .ws-ims-link:hover {
+  text-decoration: underline;
 }

@@ -152,6 +152,7 @@ model Organization {
   imsStockBalances     ImsStockBalance[]
   imsStockMovements    ImsStockMovement[]
   imsQcInspections     ImsQcInspection[]
+  imsAttachments       ImsAttachment[]
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
 }
@@ -821,6 +822,7 @@ model User {
   appNotifications       UserAppNotification[]
   imsMovementsCreated    ImsStockMovement[]    @relation("ImsMovementCreator")
   imsQcInspected         ImsQcInspection[]     @relation("ImsQcInspector")
+  imsAttachmentsUploaded ImsAttachment[]       @relation("ImsAttachmentUploader")
   createdAt            DateTime                 @default(now())
   updatedAt            DateTime                 @updatedAt
 }
@@ -1482,9 +1484,17 @@ model ImsStockMovement {
   movementType   ImsMovementType
   storeType      ImsStoreType
   quantity       Decimal         @db.Decimal(18, 4)
+  quantityOrdered Decimal?       @db.Decimal(18, 4)
   unitCost       Decimal         @db.Decimal(18, 4)
   reference      String?
   notes          String?
+  poNumber       String?
+  supplierName   String?
+  invoiceNumber  String?
+  invoiceDate    DateTime?
+  invoiceAmount  Decimal?        @db.Decimal(18, 2)
+  attachmentId   String?
+  attachment     ImsAttachment?  @relation(fields: [attachmentId], references: [id], onDelete: SetNull)
   qcRequired     Boolean         @default(false)
   qcInspectionId String?         @unique
   qcInspection   ImsQcInspection? @relation(fields: [qcInspectionId], references: [id], onDelete: SetNull)
@@ -1494,6 +1504,22 @@ model ImsStockMovement {
 
   @@index([organizationId, createdAt])
   @@index([itemId, createdAt])
+}
+
+model ImsAttachment {
+  id             String        @id @default(cuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  fileName       String
+  mimeType       String
+  size           Int
+  data           Bytes
+  uploadedById   String?
+  uploadedBy     User?         @relation("ImsAttachmentUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  movements      ImsStockMovement[]
+  createdAt      DateTime      @default(now())
+
+  @@index([organizationId, createdAt])
 }
 
 model ImsQcInspection {

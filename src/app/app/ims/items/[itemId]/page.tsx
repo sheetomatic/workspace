@@ -132,14 +132,15 @@ export default async function ImsItemDetailPage({
                 <th>When</th>
                 <th>Type</th>
                 <th>Qty</th>
-                <th>Reference</th>
+                <th>PO / Supplier</th>
+                <th>Invoice</th>
                 <th>By</th>
               </tr>
             </thead>
             <tbody>
               {detail.movements.length === 0 ? (
                 <tr>
-                  <td colSpan={5}>No movements recorded for this item.</td>
+                  <td colSpan={6}>No movements recorded for this item.</td>
                 </tr>
               ) : (
                 detail.movements.map((row) => (
@@ -153,7 +154,36 @@ export default async function ImsItemDetailPage({
                     <td data-label="Qty">
                       {Number(row.quantity).toLocaleString("en-IN")} {item.uom}
                     </td>
-                    <td data-label="Reference">{row.reference ?? "-"}</td>
+                    <td data-label="PO / Supplier">
+                      {row.poNumber || row.supplierName ? (
+                        <>
+                          {row.poNumber ?? "-"}
+                          {row.supplierName ? (
+                            <small className="ws-ims-cell-sub">
+                              {row.supplierName}
+                            </small>
+                          ) : null}
+                        </>
+                      ) : (
+                        row.reference ?? "-"
+                      )}
+                    </td>
+                    <td data-label="Invoice">
+                      {row.invoiceNumber ?? "-"}
+                      {row.attachmentId ? (
+                        <>
+                          {" "}
+                          <a
+                            href={`/api/ims/attachments/${row.attachmentId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ws-ims-link"
+                          >
+                            View
+                          </a>
+                        </>
+                      ) : null}
+                    </td>
                     <td data-label="By">
                       {row.createdBy?.name ?? row.createdBy?.email ?? "-"}
                     </td>

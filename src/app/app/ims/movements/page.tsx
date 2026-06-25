@@ -20,6 +20,10 @@ export default async function ImsMovementsPage() {
     uom: row.item.uom,
     quantity: Number(row.quantity),
     reference: row.reference,
+    poNumber: row.poNumber,
+    supplierName: row.supplierName,
+    invoiceNumber: row.invoiceNumber,
+    attachmentId: row.attachmentId,
     by: row.createdBy?.name ?? row.createdBy?.email ?? "-",
   }));
 

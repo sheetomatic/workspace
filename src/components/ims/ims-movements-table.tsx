@@ -13,6 +13,10 @@ export type MovementRow = {
   uom: string;
   quantity: number;
   reference: string | null;
+  poNumber: string | null;
+  supplierName: string | null;
+  invoiceNumber: string | null;
+  attachmentId: string | null;
   by: string;
 };
 
@@ -41,6 +45,9 @@ export function ImsMovementsTable({ rows }: { rows: MovementRow[] }) {
           row.itemCode.toLowerCase().includes(term) ||
           row.itemName.toLowerCase().includes(term) ||
           (row.reference ?? "").toLowerCase().includes(term) ||
+          (row.poNumber ?? "").toLowerCase().includes(term) ||
+          (row.supplierName ?? "").toLowerCase().includes(term) ||
+          (row.invoiceNumber ?? "").toLowerCase().includes(term) ||
           row.by.toLowerCase().includes(term)
         );
       }
@@ -80,14 +87,15 @@ export function ImsMovementsTable({ rows }: { rows: MovementRow[] }) {
               <th>Item</th>
               <th>Type</th>
               <th>Qty</th>
-              <th>Reference</th>
+              <th>PO / Supplier</th>
+              <th>Invoice</th>
               <th>By</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={6}>No movements match these filters.</td>
+                <td colSpan={7}>No movements match these filters.</td>
               </tr>
             ) : (
               filtered.map((row) => (
@@ -107,7 +115,34 @@ export function ImsMovementsTable({ rows }: { rows: MovementRow[] }) {
                   <td data-label="Qty">
                     {row.quantity.toLocaleString("en-IN")} {row.uom}
                   </td>
-                  <td data-label="Reference">{row.reference ?? "-"}</td>
+                  <td data-label="PO / Supplier">
+                    {row.poNumber || row.supplierName ? (
+                      <>
+                        {row.poNumber ?? "-"}
+                        {row.supplierName ? (
+                          <small className="ws-ims-cell-sub">{row.supplierName}</small>
+                        ) : null}
+                      </>
+                    ) : (
+                      row.reference ?? "-"
+                    )}
+                  </td>
+                  <td data-label="Invoice">
+                    {row.invoiceNumber ?? "-"}
+                    {row.attachmentId ? (
+                      <>
+                        {" "}
+                        <a
+                          href={`/api/ims/attachments/${row.attachmentId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ws-ims-link"
+                        >
+                          View
+                        </a>
+                      </>
+                    ) : null}
+                  </td>
                   <td data-label="By">{row.by}</td>
                 </tr>
               ))
