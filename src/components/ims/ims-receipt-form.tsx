@@ -1,10 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFormState } from "react-dom";
 import type { ImsItem } from "@prisma/client";
 import {
-  recordMovementAction,
+  recordReceiptAction,
   type ImsActionState,
 } from "@/app/app/ims/actions";
 
@@ -21,8 +22,28 @@ type UploadState =
   | { status: "done"; id: string; fileName: string }
   | { status: "error"; message: string };
 
+type Line = {
+  key: string;
+  itemId: string;
+  quantityOrdered: string;
+  quantityReceived: string;
+  qcHold: boolean;
+};
+
+let lineCounter = 0;
+function newLine(itemId = ""): Line {
+  lineCounter += 1;
+  return {
+    key: `line-${lineCounter}`,
+    itemId,
+    quantityOrdered: "",
+    quantityReceived: "",
+    qcHold: false,
+  };
+}
+
 export function ImsReceiptForm({ items }: { items: ItemOption[] }) {
-  const [state, action] = useFormState(recordMovementAction, initial);
+  const [state, action] = useFormState(recordReceiptAction, initial);
   const formRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -30,19 +51,33 @@ export function ImsReceiptForm({ items }: { items: ItemOption[] }) {
     () => items.filter((item) => item.itemType === "RAW_MATERIAL"),
     [items],
   );
-  const [itemId, setItemId] = useState(rawMaterials[0]?.id ?? "");
-  const [upload, setUpload] = useState<UploadState>({ status: "idle" });
 
-  const selected = rawMaterials.find((item) => item.id === itemId);
-  const showQcPrompt = selected?.qcOnReceipt === "OPTIONAL";
+  const [lines, setLines] = useState<Line[]>([newLine(rawMaterials[0]?.id ?? "")]);
+  const [upload, setUpload] = useState<UploadState>({ status: "idle" });
 
   useEffect(() => {
     if (state.ok) {
       formRef.current?.reset();
       setUpload({ status: "idle" });
-      setItemId(rawMaterials[0]?.id ?? "");
+      setLines([newLine(rawMaterials[0]?.id ?? "")]);
     }
   }, [state, rawMaterials]);
+
+  function updateLine(key: string, patch: Partial<Line>) {
+    setLines((current) =>
+      current.map((line) => (line.key === key ? { ...line, ...patch } : line)),
+    );
+  }
+
+  function addLine() {
+    setLines((current) => [...current, newLine(rawMaterials[0]?.id ?? "")]);
+  }
+
+  function removeLine(key: string) {
+    setLines((current) =>
+      current.length === 1 ? current : current.filter((line) => line.key !== key),
+    );
+  }
 
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -54,10 +89,7 @@ export function ImsReceiptForm({ items }: { items: ItemOption[] }) {
     const body = new FormData();
     body.append("file", file);
     try {
-      const res = await fetch("/api/ims/attachments", {
-        method: "POST",
-        body,
-      });
+      const res = await fetch("/api/ims/attachments", { method: "POST", body });
       const data = (await res.json()) as {
         attachment?: { id: string; fileName: string };
         error?: string;
@@ -83,9 +115,34 @@ export function ImsReceiptForm({ items }: { items: ItemOption[] }) {
     if (fileRef.current) fileRef.current.value = "";
   }
 
+  const linesPayload = JSON.stringify(
+    lines
+      .filter((line) => line.itemId && line.quantityReceived)
+      .map((line) => ({
+        itemId: line.itemId,
+        quantityReceived: line.quantityReceived,
+        quantityOrdered: line.quantityOrdered,
+        qcHold: line.qcHold,
+      })),
+  );
+
+  const hasValidLine = lines.some((line) => line.itemId && line.quantityReceived);
+
+  if (rawMaterials.length === 0) {
+    return (
+      <div className="ws-ims-receipt-head">
+        <h3>Receive raw material (GRN)</h3>
+        <p className="ws-ims-help">
+          No raw materials defined yet. <Link href="/app/ims/items">Add an item</Link>{" "}
+          (type: Raw material) to start receiving stock.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <form ref={formRef} action={action} className="ws-ims-form ws-ims-receipt">
-      <input type="hidden" name="movementType" value="RM_IN" />
+      <input type="hidden" name="lines" value={linesPayload} />
       {upload.status === "done" ? (
         <input type="hidden" name="attachmentId" value={upload.id} />
       ) : null}
@@ -93,54 +150,109 @@ export function ImsReceiptForm({ items }: { items: ItemOption[] }) {
       <div className="ws-ims-receipt-head">
         <h3>Receive raw material (GRN)</h3>
         <p className="ws-ims-help">
-          Record an inbound receipt against a purchase order and attach the supplier
-          invoice.
+          Add one or more items received in this delivery, then record the shared PO and
+          invoice details once.
         </p>
       </div>
 
       <fieldset className="ws-ims-fieldset">
-        <legend>Item &amp; quantity</legend>
-        <div className="ws-ims-form-grid">
-          <label>
-            Item
-            <select
-              name="itemId"
-              required
-              value={itemId}
-              onChange={(event) => setItemId(event.target.value)}
-            >
-              {rawMaterials.length === 0 ? (
-                <option value="">No raw materials available</option>
-              ) : (
-                rawMaterials.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.code} - {item.name}
-                  </option>
-                ))
-              )}
-            </select>
-          </label>
-          <label>
-            Quantity ordered
-            <input
-              name="quantityOrdered"
-              type="number"
-              min="0"
-              step="any"
-              placeholder={selected?.uom ?? "qty"}
-            />
-          </label>
-          <label>
-            Quantity received
-            <input
-              name="quantity"
-              type="number"
-              min="0.0001"
-              step="any"
-              required
-              placeholder={selected?.uom ?? "qty"}
-            />
-          </label>
+        <legend>Items received</legend>
+
+        <div className="ws-ims-line-head">
+          <span>Item</span>
+          <span>Ordered</span>
+          <span>Received</span>
+          <span>QC</span>
+          <span />
+        </div>
+
+        <div className="ws-ims-line-list">
+          {lines.map((line, index) => {
+            const selected = rawMaterials.find((item) => item.id === line.itemId);
+            const policy = selected?.qcOnReceipt;
+            return (
+              <div key={line.key} className="ws-ims-line">
+                <label className="ws-ims-line-field" data-col="item">
+                  <span className="ws-ims-line-label">Item {index + 1}</span>
+                  <select
+                    value={line.itemId}
+                    onChange={(event) =>
+                      updateLine(line.key, { itemId: event.target.value })
+                    }
+                  >
+                    {rawMaterials.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.code} - {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="ws-ims-line-field" data-col="ordered">
+                  <span className="ws-ims-line-label">Ordered</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    placeholder={selected?.uom ?? "qty"}
+                    value={line.quantityOrdered}
+                    onChange={(event) =>
+                      updateLine(line.key, { quantityOrdered: event.target.value })
+                    }
+                  />
+                </label>
+                <label className="ws-ims-line-field" data-col="received">
+                  <span className="ws-ims-line-label">Received</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    placeholder={selected?.uom ?? "qty"}
+                    value={line.quantityReceived}
+                    onChange={(event) =>
+                      updateLine(line.key, { quantityReceived: event.target.value })
+                    }
+                  />
+                </label>
+                <div className="ws-ims-line-field" data-col="qc">
+                  <span className="ws-ims-line-label">QC</span>
+                  {policy === "OPTIONAL" ? (
+                    <label className="ws-ims-line-qc">
+                      <input
+                        type="checkbox"
+                        checked={line.qcHold}
+                        onChange={(event) =>
+                          updateLine(line.key, { qcHold: event.target.checked })
+                        }
+                      />
+                      Hold
+                    </label>
+                  ) : policy === "ALWAYS" ? (
+                    <span className="ws-ims-line-tag">Always</span>
+                  ) : (
+                    <span className="ws-ims-line-tag ws-ims-line-tag-muted">Off</span>
+                  )}
+                </div>
+                <div className="ws-ims-line-field" data-col="remove">
+                  <span className="ws-ims-line-label" />
+                  <button
+                    type="button"
+                    className="ws-ims-line-remove"
+                    onClick={() => removeLine(line.key)}
+                    disabled={lines.length === 1}
+                    aria-label="Remove line"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="ws-ims-line-actions">
+          <button type="button" className="ws-btn-secondary" onClick={addLine}>
+            + Add item
+          </button>
         </div>
       </fieldset>
 
@@ -213,21 +325,6 @@ export function ImsReceiptForm({ items }: { items: ItemOption[] }) {
         <textarea name="notes" rows={2} placeholder="Condition notes, discrepancies, etc." />
       </label>
 
-      {selected?.qcOnReceipt === "ALWAYS" ? (
-        <p className="ws-ims-help">
-          QC is always required for this item - stock goes to QC pending.
-        </p>
-      ) : null}
-      {selected?.qcOnReceipt === "OFF" ? (
-        <p className="ws-ims-help">QC is off - stock goes directly to usable.</p>
-      ) : null}
-      {showQcPrompt ? (
-        <label className="ws-ims-checkbox">
-          <input name="qcRequired" type="checkbox" value="yes" />
-          Hold this receipt for QC inspection?
-        </label>
-      ) : null}
-
       {state.message ? (
         <p
           className={
@@ -242,7 +339,7 @@ export function ImsReceiptForm({ items }: { items: ItemOption[] }) {
         <button
           type="submit"
           className="ws-btn-primary"
-          disabled={!itemId || upload.status === "uploading"}
+          disabled={!hasValidLine || upload.status === "uploading"}
         >
           Record receipt
         </button>

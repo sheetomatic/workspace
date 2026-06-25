@@ -12,9 +12,11 @@ import { prisma } from "@/lib/db";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import {
+  recordGoodsReceipt,
   recordStockMovement,
   resolveQcInspection,
   upsertImsItem,
+  type GoodsReceiptLine,
 } from "@/lib/ims/ims-store";
 import { resolveMemberModules } from "@/lib/workspace-modules";
 
@@ -84,6 +86,67 @@ export async function saveImsItemAction(
     return { ok: true, message: id ? "Item updated." : "Item created." };
   } catch (error) {
     return actionError(error, "Could not save item.");
+  }
+}
+
+export async function recordReceiptAction(
+  _prev: ImsActionState,
+  formData: FormData,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession(undefined, { module: "IMS" });
+
+    let lines: GoodsReceiptLine[] = [];
+    try {
+      const raw = formData.get("lines")?.toString() ?? "[]";
+      const parsed = JSON.parse(raw) as Array<{
+        itemId?: string;
+        quantityReceived?: number | string;
+        quantityOrdered?: number | string;
+        qcHold?: boolean;
+      }>;
+      lines = parsed
+        .filter((line) => line.itemId)
+        .map((line) => ({
+          itemId: String(line.itemId),
+          quantityReceived: Number(line.quantityReceived) || 0,
+          quantityOrdered:
+            line.quantityOrdered !== undefined && line.quantityOrdered !== ""
+              ? Number(line.quantityOrdered)
+              : undefined,
+          qcHold: Boolean(line.qcHold),
+        }));
+    } catch {
+      return { ok: false, message: "Could not read the item lines." };
+    }
+
+    const result = await recordGoodsReceipt({
+      organizationId: user.organizationId,
+      userId: user.id,
+      poNumber: formData.get("poNumber")?.toString(),
+      supplierName: formData.get("supplierName")?.toString(),
+      reference: formData.get("reference")?.toString(),
+      invoiceNumber: formData.get("invoiceNumber")?.toString(),
+      invoiceDate: formData.get("invoiceDate")?.toString() || undefined,
+      invoiceAmount: parseNumber(formData.get("invoiceAmount")),
+      attachmentId: formData.get("attachmentId")?.toString() || undefined,
+      notes: formData.get("notes")?.toString(),
+      lines,
+    });
+
+    revalidateIms();
+    const qcNote =
+      result.qcCount > 0
+        ? ` ${result.qcCount} line${result.qcCount === 1 ? "" : "s"} held for QC.`
+        : "";
+    return {
+      ok: true,
+      message: `Receipt recorded for ${result.created} item${
+        result.created === 1 ? "" : "s"
+      }.${qcNote}`,
+    };
+  } catch (error) {
+    return actionError(error, "Could not record the receipt.");
   }
 }
 

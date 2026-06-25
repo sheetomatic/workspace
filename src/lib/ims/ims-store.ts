@@ -581,6 +581,143 @@ export async function recordStockMovement(params: {
   });
 }
 
+export type GoodsReceiptLine = {
+  itemId: string;
+  quantityReceived: number;
+  quantityOrdered?: number;
+  qcHold?: boolean;
+};
+
+/** Multi-line raw-material goods receipt (GRN): one movement per line, shared header. */
+export async function recordGoodsReceipt(params: {
+  organizationId: string;
+  userId: string;
+  poNumber?: string;
+  supplierName?: string;
+  reference?: string;
+  invoiceNumber?: string;
+  invoiceDate?: string;
+  invoiceAmount?: number;
+  attachmentId?: string;
+  notes?: string;
+  lines: GoodsReceiptLine[];
+}) {
+  const lines = params.lines.filter(
+    (line) => line.itemId && Number.isFinite(line.quantityReceived),
+  );
+
+  if (lines.length === 0) {
+    throw new Error("Add at least one item line with a received quantity.");
+  }
+
+  for (const line of lines) {
+    if (line.quantityReceived <= 0) {
+      throw new Error("Each line needs a received quantity greater than zero.");
+    }
+  }
+
+  const items = await prisma.imsItem.findMany({
+    where: {
+      organizationId: params.organizationId,
+      id: { in: lines.map((line) => line.itemId) },
+      isActive: true,
+    },
+  });
+  const itemMap = new Map(items.map((item) => [item.id, item]));
+
+  for (const line of lines) {
+    const item = itemMap.get(line.itemId);
+    if (!item) {
+      throw new Error("One of the selected items was not found.");
+    }
+    if (item.itemType !== "RAW_MATERIAL") {
+      throw new Error(`${item.code} is not a raw material.`);
+    }
+  }
+
+  const invoiceDate = params.invoiceDate ? new Date(params.invoiceDate) : null;
+  const invoiceAmount =
+    params.invoiceAmount && params.invoiceAmount > 0
+      ? dec(params.invoiceAmount)
+      : null;
+
+  return prisma.$transaction(async (tx) => {
+    let created = 0;
+    let qcCount = 0;
+
+    for (const line of lines) {
+      const item = itemMap.get(line.itemId)!;
+      const storeType = storeTypeForItemType(item.itemType);
+      const qty = dec(line.quantityReceived);
+      const qcRequired = resolveQcRequired(item.qcOnReceipt, line.qcHold);
+
+      let qcInspectionId: string | undefined;
+      if (qcRequired) {
+        const inspection = await tx.imsQcInspection.create({
+          data: {
+            organizationId: params.organizationId,
+            itemId: item.id,
+            storeType,
+            quantity: qty,
+            status: "PENDING",
+          },
+        });
+        qcInspectionId = inspection.id;
+        qcCount += 1;
+        await adjustBalance(
+          tx,
+          params.organizationId,
+          item.id,
+          storeType,
+          "QC_PENDING",
+          qty,
+        );
+      } else {
+        await adjustBalance(
+          tx,
+          params.organizationId,
+          item.id,
+          storeType,
+          "USABLE",
+          qty,
+        );
+      }
+
+      await tx.imsStockMovement.create({
+        data: {
+          organizationId: params.organizationId,
+          itemId: item.id,
+          movementType: "RM_IN",
+          storeType,
+          quantity: qty,
+          quantityOrdered:
+            line.quantityOrdered && line.quantityOrdered > 0
+              ? dec(line.quantityOrdered)
+              : null,
+          unitCost: item.unitCost,
+          reference: params.reference?.trim() || null,
+          notes: params.notes?.trim() || null,
+          poNumber: params.poNumber?.trim() || null,
+          supplierName: params.supplierName?.trim() || null,
+          invoiceNumber: params.invoiceNumber?.trim() || null,
+          invoiceDate:
+            invoiceDate && !Number.isNaN(invoiceDate.getTime())
+              ? invoiceDate
+              : null,
+          invoiceAmount,
+          attachmentId: params.attachmentId?.trim() || null,
+          qcRequired,
+          qcInspectionId,
+          createdById: params.userId,
+        },
+      });
+      created += 1;
+    }
+
+    return { created, qcCount };
+  });
+}
+
 export async function resolveQcInspection(params: {
   organizationId: string;
   userId: string;

@@ -21728,10 +21728,43 @@ body:has(.workspace-app.saas-app) {
   min-width: 220px;
 }
 
+.workspace-app .ws-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: #4f46e5;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+}
+
+.workspace-app .ws-btn-primary:hover {
+  background: #4338ca;
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.25);
+}
+
+.workspace-app .ws-btn-primary:active {
+  transform: translateY(1px);
+}
+
+.workspace-app .ws-btn-primary:disabled {
+  background: #c7d2fe;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
 .workspace-app .ws-btn-secondary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   height: 38px;
   padding: 0 14px;
   border-radius: 10px;
@@ -21741,10 +21774,16 @@ body:has(.workspace-app.saas-app) {
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
 
 .workspace-app .ws-btn-secondary:hover {
   background: #f1f5f9;
+}
+
+.workspace-app .ws-btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .workspace-app .ws-btn-small {
@@ -21942,4 +21981,138 @@ a.workspace-app .ws-stat-card,
 
 .workspace-app .ws-ims-link:hover {
   text-decoration: underline;
+}
+
+/* Multi-line GRN: repeatable item rows */
+.workspace-app .ws-ims-line-head,
+.workspace-app .ws-ims-line {
+  display: grid;
+  grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr) minmax(0, 1fr) 84px 88px;
+  gap: 10px;
+  align-items: center;
+}
+
+.workspace-app .ws-ims-line-head {
+  padding: 0 4px 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.workspace-app .ws-ims-line-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.workspace-app .ws-ims-line {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px;
+}
+
+.workspace-app .ws-ims-line-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.workspace-app .ws-ims-line-field select,
+.workspace-app .ws-ims-line-field input {
+  width: 100%;
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+}
+
+.workspace-app .ws-ims-line-label {
+  display: none;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.workspace-app .ws-ims-line-qc {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.workspace-app .ws-ims-line-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.workspace-app .ws-ims-line-tag-muted {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.workspace-app .ws-ims-line-remove {
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: #b91c1c;
+  border-radius: 8px;
+  padding: 8px 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.workspace-app .ws-ims-line-remove:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.workspace-app .ws-ims-line-remove:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.workspace-app .ws-ims-line-actions {
+  margin-top: 12px;
+}
+
+@media (max-width: 760px) {
+  .workspace-app .ws-ims-line-head {
+    display: none;
+  }
+
+  .workspace-app .ws-ims-line {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .workspace-app .ws-ims-line-field[data-col="item"] {
+    grid-column: 1 / -1;
+  }
+
+  .workspace-app .ws-ims-line-field[data-col="remove"] {
+    grid-column: 1 / -1;
+  }
+
+  .workspace-app .ws-ims-line-label {
+    display: block;
+  }
+
+  .workspace-app .ws-ims-line-remove {
+    width: 100%;
+  }
 }
