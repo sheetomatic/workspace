@@ -113,7 +113,8 @@ function renderBuiltinField(
         required={required}
         defaultValue={value === null || value === undefined ? "" : String(value)}
         placeholder={field.placeholder ?? undefined}
-        disabled={isEdit && field.key === "code"}
+        readOnly={isEdit && field.key === "code"}
+        aria-readonly={isEdit && field.key === "code"}
       />
     </label>
   );

@@ -21248,6 +21248,12 @@ body:has(.workspace-app.saas-app) {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+.workspace-app .ws-ims-form input[readonly] {
+  background: #f1f5f9;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
 .workspace-app .ws-ims-form input:focus,
 .workspace-app .ws-ims-form select:focus,
 .workspace-app .ws-ims-form textarea:focus {
