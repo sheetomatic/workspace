@@ -1450,6 +1450,7 @@ model ImsItem {
   maxQty         Decimal      @default(0) @db.Decimal(18, 4)
   qcOnReceipt    ImsQcPolicy  @default(OPTIONAL)
   isActive       Boolean      @default(true)
+  sortOrder      Int          @default(0)
   balances       ImsStockBalance[]
   movements      ImsStockMovement[]
   qcInspections  ImsQcInspection[]

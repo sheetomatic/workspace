@@ -12,11 +12,15 @@ import { prisma } from "@/lib/db";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import {
+  deleteImsItem,
+  importImsItems,
   recordGoodsReceipt,
   recordStockMovement,
+  reorderImsItem,
   resolveQcInspection,
   upsertImsItem,
   type GoodsReceiptLine,
+  type ImsItemImportRow,
 } from "@/lib/ims/ims-store";
 import { resolveMemberModules } from "@/lib/workspace-modules";
 
@@ -86,6 +90,74 @@ export async function saveImsItemAction(
     return { ok: true, message: id ? "Item updated." : "Item created." };
   } catch (error) {
     return actionError(error, "Could not save item.");
+  }
+}
+
+export async function deleteImsItemAction(
+  _prev: ImsActionState,
+  formData: FormData,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const item = await deleteImsItem(
+      user.organizationId,
+      formData.get("id")?.toString() ?? "",
+    );
+    revalidateIms();
+    return { ok: true, message: `Deleted ${item.code}.` };
+  } catch (error) {
+    return actionError(error, "Could not delete item.");
+  }
+}
+
+export async function moveImsItemAction(
+  _prev: ImsActionState,
+  formData: FormData,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const direction =
+      formData.get("direction")?.toString() === "up" ? "up" : "down";
+    await reorderImsItem(
+      user.organizationId,
+      formData.get("id")?.toString() ?? "",
+      direction,
+    );
+    revalidateIms();
+    return { ok: true, message: "Order updated." };
+  } catch (error) {
+    return actionError(error, "Could not reorder item.");
+  }
+}
+
+export async function importImsItemsAction(
+  _prev: ImsActionState,
+  formData: FormData,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+
+    let rows: ImsItemImportRow[] = [];
+    try {
+      rows = JSON.parse(formData.get("rows")?.toString() ?? "[]");
+    } catch {
+      return { ok: false, message: "Could not read the rows to import." };
+    }
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return { ok: false, message: "No valid rows to import." };
+    }
+
+    const result = await importImsItems(user.organizationId, rows);
+    revalidateIms();
+    return {
+      ok: true,
+      message: `Imported ${result.total} item${
+        result.total === 1 ? "" : "s"
+      } (${result.created} created, ${result.updated} updated).`,
+    };
+  } catch (error) {
+    return actionError(error, "Could not import items.");
   }
 }
 

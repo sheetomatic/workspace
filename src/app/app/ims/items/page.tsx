@@ -1,8 +1,10 @@
 import { PageHeader } from "@/components/saas/page-header";
 import { ImsItemForm } from "@/components/ims/ims-item-form";
 import { ImsItemsManager } from "@/components/ims/ims-items-manager";
+import { ImsItemImport } from "@/components/ims/ims-item-import";
 import type { ImsItemFormData } from "@/components/ims/ims-item-form";
 import { requireSession } from "@/lib/require-session";
+import { hasMinimumRole } from "@/lib/permissions";
 import { listImsItems } from "@/lib/ims/ims-store";
 
 export default async function ImsItemsPage() {
@@ -26,12 +28,16 @@ export default async function ImsItemsPage() {
     isActive: item.isActive,
   }));
 
+  const canManage = hasMinimumRole(user.role, "MANAGER");
+
   return (
     <div className="saas-page ws-ims-page">
       <PageHeader
         title="Item master"
         description="Define raw materials and finished goods with min, reorder, max, cost, ABC, and QC policy."
       />
+
+      {canManage ? <ImsItemImport /> : null}
 
       <div className="ws-ims-split">
         <section className="ws-ims-panel">

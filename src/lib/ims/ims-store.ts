@@ -82,7 +82,7 @@ export async function listImsItems(organizationId: string, activeOnly = true) {
       organizationId,
       ...(activeOnly ? { isActive: true } : {}),
     },
-    orderBy: [{ itemType: "asc" }, { code: "asc" }],
+    orderBy: [{ sortOrder: "asc" }, { itemType: "asc" }, { code: "asc" }],
   });
 }
 
@@ -139,12 +139,161 @@ export async function upsertImsItem(
   }
 
   await assertUniqueImsItemCode(organizationId, payload.code);
+  const last = await prisma.imsItem.findFirst({
+    where: { organizationId },
+    orderBy: { sortOrder: "desc" },
+    select: { sortOrder: true },
+  });
   return prisma.imsItem.create({
     data: {
       organizationId,
       ...payload,
+      sortOrder: (last?.sortOrder ?? 0) + 1,
     },
   });
+}
+
+/** Delete an item, but only if it has no stock balances or movements. */
+export async function deleteImsItem(organizationId: string, itemId: string) {
+  const item = await prisma.imsItem.findFirst({
+    where: { id: itemId, organizationId },
+    select: { id: true, code: true },
+  });
+  if (!item) {
+    throw new Error("Item not found.");
+  }
+
+  const [movementCount, balanceCount] = await Promise.all([
+    prisma.imsStockMovement.count({ where: { organizationId, itemId } }),
+    prisma.imsStockBalance.count({ where: { organizationId, itemId } }),
+  ]);
+
+  if (movementCount > 0 || balanceCount > 0) {
+    throw new Error(
+      "This item has stock or movement history and cannot be deleted. Deactivate it instead.",
+    );
+  }
+
+  await prisma.imsItem.delete({ where: { id: itemId, organizationId } });
+  return item;
+}
+
+/** Move an item up or down in the manual sort order by swapping with its neighbour. */
+export async function reorderImsItem(
+  organizationId: string,
+  itemId: string,
+  direction: "up" | "down",
+) {
+  const items = await prisma.imsItem.findMany({
+    where: { organizationId },
+    orderBy: [{ sortOrder: "asc" }, { itemType: "asc" }, { code: "asc" }],
+    select: { id: true, sortOrder: true },
+  });
+
+  const index = items.findIndex((row) => row.id === itemId);
+  if (index === -1) {
+    throw new Error("Item not found.");
+  }
+
+  const swapWith = direction === "up" ? index - 1 : index + 1;
+  if (swapWith < 0 || swapWith >= items.length) {
+    return;
+  }
+
+  // Normalise sortOrder values (they may collide) using array position, then swap.
+  const current = items[index];
+  const neighbour = items[swapWith];
+
+  await prisma.$transaction([
+    prisma.imsItem.update({
+      where: { id: current.id, organizationId },
+      data: { sortOrder: swapWith + 1 },
+    }),
+    prisma.imsItem.update({
+      where: { id: neighbour.id, organizationId },
+      data: { sortOrder: index + 1 },
+    }),
+  ]);
+}
+
+export type ImsItemImportRow = {
+  code: string;
+  name: string;
+  description?: string;
+  uom?: string;
+  category?: string;
+  itemType: ImsItemType;
+  abcClass: ImsAbcClass;
+  unitCost: number;
+  minQty: number;
+  reorderQty: number;
+  maxQty: number;
+  qcOnReceipt: ImsQcPolicy;
+  isActive: boolean;
+};
+
+/** Bulk create-or-update items by code. Returns counts. */
+export async function importImsItems(
+  organizationId: string,
+  rows: ImsItemImportRow[],
+) {
+  let created = 0;
+  let updated = 0;
+
+  const last = await prisma.imsItem.findFirst({
+    where: { organizationId },
+    orderBy: { sortOrder: "desc" },
+    select: { sortOrder: true },
+  });
+  let nextSort = (last?.sortOrder ?? 0) + 1;
+
+  for (const row of rows) {
+    validateImsItemInput({
+      code: row.code,
+      name: row.name,
+      minQty: row.minQty,
+      reorderQty: row.reorderQty,
+      maxQty: row.maxQty,
+      unitCost: row.unitCost,
+    });
+
+    const code = row.code.trim().toUpperCase();
+    const payload = {
+      name: row.name.trim(),
+      description: row.description?.trim() || null,
+      uom: row.uom?.trim() || "pcs",
+      category: row.category?.trim() || null,
+      itemType: row.itemType,
+      abcClass: row.abcClass,
+      unitCost: dec(row.unitCost),
+      minQty: dec(row.minQty),
+      reorderQty: dec(row.reorderQty),
+      maxQty: dec(row.maxQty),
+      qcOnReceipt: row.qcOnReceipt,
+      isActive: row.isActive,
+    };
+
+    const existing = await prisma.imsItem.findFirst({
+      where: { organizationId, code },
+      select: { id: true },
+    });
+
+    if (existing) {
+      await prisma.imsItem.update({
+        where: { id: existing.id, organizationId },
+        data: payload,
+      });
+      updated += 1;
+    } else {
+      await prisma.imsItem.create({
+        data: { organizationId, code, ...payload, sortOrder: nextSort },
+      });
+      nextSort += 1;
+      created += 1;
+    }
+  }
+
+  return { created, updated, total: rows.length };
 }
 
 export async function getStockRows(

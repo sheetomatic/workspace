@@ -2,11 +2,106 @@
 
 import Link from "next/link";
 import { Fragment, useMemo, useState } from "react";
+import { useFormState } from "react-dom";
 import {
   ImsItemForm,
   type ImsItemFormData,
 } from "@/components/ims/ims-item-form";
+import {
+  deleteImsItemAction,
+  moveImsItemAction,
+  type ImsActionState,
+} from "@/app/app/ims/actions";
 import { formatImsCurrency, formatImsQty } from "@/lib/ims/stock-status";
+
+const initialState: ImsActionState = { ok: false, message: "" };
+
+function ImsItemRowActions({
+  item,
+  editing,
+  onEditToggle,
+  canReorder,
+  isFirst,
+  isLast,
+}: {
+  item: ImsItemFormData;
+  editing: boolean;
+  onEditToggle: () => void;
+  canReorder: boolean;
+  isFirst: boolean;
+  isLast: boolean;
+}) {
+  const [moveState, moveAction] = useFormState(moveImsItemAction, initialState);
+  const [deleteState, deleteAction] = useFormState(
+    deleteImsItemAction,
+    initialState,
+  );
+
+  return (
+    <div className="ws-ims-row-actions">
+      {canReorder ? (
+        <form action={moveAction} className="ws-ims-row-move">
+          <input type="hidden" name="id" value={item.id} />
+          <button
+            type="submit"
+            name="direction"
+            value="up"
+            className="ws-ims-icon-btn"
+            disabled={isFirst}
+            aria-label="Move up"
+            title="Move up"
+          >
+            {"\u2191"}
+          </button>
+          <button
+            type="submit"
+            name="direction"
+            value="down"
+            className="ws-ims-icon-btn"
+            disabled={isLast}
+            aria-label="Move down"
+            title="Move down"
+          >
+            {"\u2193"}
+          </button>
+        </form>
+      ) : null}
+
+      <button
+        type="button"
+        className="ws-btn-secondary ws-btn-small"
+        onClick={onEditToggle}
+      >
+        {editing ? "Close" : "Edit"}
+      </button>
+
+      <form
+        action={deleteAction}
+        onSubmit={(event) => {
+          if (
+            !window.confirm(
+              `Delete ${item.code}? This cannot be undone. Items with stock or history cannot be deleted.`,
+            )
+          ) {
+            event.preventDefault();
+          }
+        }}
+      >
+        <input type="hidden" name="id" value={item.id} />
+        <button type="submit" className="ws-btn-danger ws-btn-small">
+          Delete
+        </button>
+      </form>
+
+      {deleteState.message && !deleteState.ok ? (
+        <span className="ws-ims-row-error">{deleteState.message}</span>
+      ) : null}
+      {moveState.message && !moveState.ok ? (
+        <span className="ws-ims-row-error">{moveState.message}</span>
+      ) : null}
+    </div>
+  );
+}
 
 export function ImsItemsManager({ items }: { items: ImsItemFormData[] }) {
   const [search, setSearch] = useState("");
@@ -50,6 +145,12 @@ export function ImsItemsManager({ items }: { items: ImsItemFormData[] }) {
     });
   }, [items, search, typeFilter, categoryFilter, activeFilter]);
 
+  const canReorder =
+    !search.trim() &&
+    typeFilter === "ALL" &&
+    categoryFilter === "ALL" &&
+    activeFilter === "ALL";
+
   return (
     <div className="ws-ims-items">
       <div className="ws-ims-filters">
@@ -90,6 +191,9 @@ export function ImsItemsManager({ items }: { items: ImsItemFormData[] }) {
 
       <p className="ws-ims-help">
         Showing {filtered.length} of {items.length} items.
+        {canReorder
+          ? " Use the arrows to reorder."
+          : " Clear search and filters (set type, category, and status to All) to reorder items."}
       </p>
 
       <div className="ws-ims-table-wrap">
@@ -114,7 +218,7 @@ export function ImsItemsManager({ items }: { items: ImsItemFormData[] }) {
                 <td colSpan={10}>No items match these filters.</td>
               </tr>
             ) : (
-              filtered.map((item) => (
+              filtered.map((item, index) => (
                 <Fragment key={item.id}>
                   <tr
                     className={item.isActive ? "" : "ws-ims-row-inactive"}
@@ -137,18 +241,19 @@ export function ImsItemsManager({ items }: { items: ImsItemFormData[] }) {
                     <td data-label="Status">
                       {item.isActive ? "Active" : "Inactive"}
                     </td>
-                    <td data-label="">
-                      <button
-                        type="button"
-                        className="ws-btn-secondary ws-btn-small"
-                        onClick={() =>
+                    <td data-label="Actions">
+                      <ImsItemRowActions
+                        item={item}
+                        editing={editingId === item.id}
+                        onEditToggle={() =>
                           setEditingId((current) =>
                             current === item.id ? null : item.id,
                           )
                         }
-                      >
-                        {editingId === item.id ? "Close" : "Edit"}
-                      </button>
+                        canReorder={canReorder}
+                        isFirst={index === 0}
+                        isLast={index === filtered.length - 1}
+                      />
                     </td>
                   </tr>
                   {editingId === item.id ? (
