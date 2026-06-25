@@ -50,13 +50,13 @@ export default async function ImsItemsPage() {
 
       {canManage ? <ImsItemImport /> : null}
 
-      <div className="ws-ims-split">
+      <div className="ws-ims-stack">
         <section className="ws-ims-panel">
           <h2>Add item</h2>
           <ImsItemForm layout={layout} />
         </section>
 
-        <section className="ws-ims-panel ws-ims-panel-wide">
+        <section className="ws-ims-panel">
           <h2>All items ({items.length})</h2>
           <ImsItemsManager items={formItems} layout={layout} />
         </section>

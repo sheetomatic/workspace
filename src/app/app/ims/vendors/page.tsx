@@ -49,13 +49,13 @@ export default async function ImsVendorsPage() {
 
       {canManage ? <ImsVendorImport /> : null}
 
-      <div className="ws-ims-split">
+      <div className="ws-ims-stack">
         <section className="ws-ims-panel">
           <h2>Add vendor</h2>
           <ImsVendorForm layout={layout} />
         </section>
 
-        <section className="ws-ims-panel ws-ims-panel-wide">
+        <section className="ws-ims-panel">
           <h2>All vendors ({vendors.length})</h2>
           <ImsVendorsManager vendors={formVendors} layout={layout} />
         </section>
