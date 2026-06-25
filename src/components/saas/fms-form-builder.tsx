@@ -337,7 +337,7 @@ function FieldPreviewStub({
                 : DEFAULT_PO_LINE_ITEM_COLUMNS
               )
                 .map((column) => column.label)
-                .join(" · ")}
+                .join(" / ")}
             </span>
             <span className="ws-fms-jf-stub ws-fms-jf-stub-muted">
               Repeatable rows on submit
@@ -555,6 +555,26 @@ export function FmsFormBuilder({
   }
 
   function removeField(id: string) {
+    const target = fields.find((field) => field.id === id);
+    const trimmedLabel = target?.label.trim() ?? "";
+    const defaultLabel = target ? DEFAULT_LABELS[target.fieldType] : undefined;
+    // Confirm only when the field carries real content, so deleting a freshly
+    // added blank/default field stays one tap.
+    const hasContent =
+      target !== undefined &&
+      ((trimmedLabel && trimmedLabel !== defaultLabel) ||
+        Boolean(target.options.trim()) ||
+        Boolean(target.helpText.trim()) ||
+        target.fieldType === "TABLE");
+    if (
+      hasContent &&
+      typeof window !== "undefined" &&
+      !window.confirm(
+        `Delete the field "${trimmedLabel || "Untitled field"}"? This cannot be undone after you save.`,
+      )
+    ) {
+      return;
+    }
     setFields((prev) => {
       const next = prev.filter((field) => field.id !== id);
       if (selectedId === id) {
@@ -722,7 +742,7 @@ export function FmsFormBuilder({
               <div className="ws-fms-jf-empty ws-fms-jf-empty-full">
                 <p>No fields yet.</p>
                 <p className="ws-fms-muted">
-                  Tap <strong>Build form with AI</strong> above — voice or text works.
+                  Tap <strong>Build form with AI</strong> above - voice or text works.
                 </p>
               </div>
             ) : (

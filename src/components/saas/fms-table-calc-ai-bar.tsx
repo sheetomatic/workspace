@@ -15,7 +15,7 @@ import {
 } from "@/lib/fms/constants";
 
 const EXAMPLE_PROMPTS = [
-  "Qty × Rate = Line total",
+  "Qty x Rate = Line total",
   "Sum all line totals as Grand total",
   "Discount 10% off subtotal",
 ];
@@ -149,7 +149,7 @@ export function FmsTableCalcAiBar({
         <div>
           <h3>AI calculations</h3>
           <p className="ws-fms-muted">
-            Describe totals in plain language — we set up the columns and
+            Describe totals in plain language - we set up the columns and
             formulas for you.
           </p>
         </div>

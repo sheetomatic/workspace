@@ -12,6 +12,7 @@ import {
   moveTableColumn,
   newTableColumn,
   newTableFooterTotal,
+  pruneFooterTotalsForColumns,
   removeTableColumnAt,
   resolveTableColumnChoices,
   resolveTableColumns,
@@ -238,6 +239,17 @@ export function FmsTableColumnSettingsList({
     onChange({ tableFooterTotals: next });
   }
 
+  function deleteColumn(index: number) {
+    const nextColumns = removeTableColumnAt(tableColumns, index);
+    if (nextColumns === tableColumns) {
+      return;
+    }
+    onChange({
+      tableColumns: nextColumns,
+      tableFooterTotals: pruneFooterTotalsForColumns(footerTotals, nextColumns),
+    });
+  }
+
   return (
     <div className="ws-fms-jf-table-columns">
       <FmsTableCalcAiBar
@@ -323,9 +335,7 @@ export function FmsTableColumnSettingsList({
                   aria-label={`Delete ${column.label} column`}
                   title="Delete column"
                   disabled={!canDeleteColumn}
-                  onClick={() =>
-                    updateColumns(removeTableColumnAt(tableColumns, index))
-                  }
+                  onClick={() => deleteColumn(index)}
                 >
                   <Trash2 size={14} aria-hidden />
                 </button>

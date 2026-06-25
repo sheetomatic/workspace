@@ -33,34 +33,52 @@ export function computeRowFormula(
   }
 
   const { operation, operandKeys, decimals = 2 } = column.formula;
-  const operands = operandKeys
-    .map((key) => parseNumeric(row[key]))
-    .filter((value): value is number => value !== null);
-
-  if (operands.length < 2 && operation !== "SUM") {
-    return "";
-  }
+  // Keep operands positional so SUBTRACT / DIVIDE use the correct sides even
+  // when an earlier cell is blank or non-numeric.
+  const operands = operandKeys.map((key) => parseNumeric(row[key]));
+  const numericOperands = operands.filter(
+    (value): value is number => value !== null,
+  );
 
   let result: number | null = null;
   switch (operation as FmsTableFormulaOp) {
     case "MULTIPLY":
-      result = operands.reduce((acc, value) => acc * value, 1);
+      // Every referenced cell must be numeric, otherwise the product is
+      // misleading (e.g. qty x rate with a blank rate).
+      result =
+        operands.length >= 2 && operands.every((value) => value !== null)
+          ? operands.reduce<number>((acc, value) => acc * (value as number), 1)
+          : null;
       break;
     case "ADD":
-      result = operands.reduce((acc, value) => acc + value, 0);
+      result =
+        operands.length >= 2 && operands.every((value) => value !== null)
+          ? operands.reduce<number>((acc, value) => acc + (value as number), 0)
+          : null;
       break;
     case "SUBTRACT":
       result =
-        operands.length >= 2 ? operands[0] - operands[1] : null;
+        operands.length >= 2 &&
+        operands[0] !== null &&
+        operands[1] !== null
+          ? (operands[0] as number) - (operands[1] as number)
+          : null;
       break;
     case "DIVIDE":
       result =
-        operands.length >= 2 && operands[1] !== 0
-          ? operands[0] / operands[1]
+        operands.length >= 2 &&
+        operands[0] !== null &&
+        operands[1] !== null &&
+        operands[1] !== 0
+          ? (operands[0] as number) / (operands[1] as number)
           : null;
       break;
     case "SUM":
-      result = operands.reduce((acc, value) => acc + value, 0);
+      // Sum tolerates blanks - it adds up whatever numeric cells exist.
+      result =
+        numericOperands.length > 0
+          ? numericOperands.reduce((acc, value) => acc + value, 0)
+          : null;
       break;
     default:
       result = null;
@@ -78,9 +96,27 @@ export function applyTableRowCalculations(
   columns: FmsTableColumn[],
 ): FmsTableRow {
   const next = { ...row };
-  for (const column of columns) {
-    if (isCalculatedTableColumn(column)) {
-      next[column.key] = computeRowFormula(next, column);
+  const calculatedColumns = columns.filter((column) =>
+    isCalculatedTableColumn(column),
+  );
+  if (calculatedColumns.length === 0) {
+    return next;
+  }
+  // Recompute repeatedly so a calculated column can reference another
+  // calculated column regardless of their order (e.g. line total -> total
+  // with GST). Stop once a pass changes nothing or the safety cap is hit.
+  const maxPasses = calculatedColumns.length;
+  for (let pass = 0; pass < maxPasses; pass += 1) {
+    let changed = false;
+    for (const column of calculatedColumns) {
+      const computed = computeRowFormula(next, column);
+      if (computed !== next[column.key]) {
+        next[column.key] = computed;
+        changed = true;
+      }
+    }
+    if (!changed) {
+      break;
     }
   }
   return next;
@@ -154,13 +190,13 @@ export function describeColumnFormula(
   if (parts.length >= 2) {
     switch (column.formula.operation) {
       case "MULTIPLY":
-        return `${parts[0]} × ${parts.slice(1).join(" × ")}`;
+        return `${parts[0]} x ${parts.slice(1).join(" x ")}`;
       case "ADD":
         return parts.join(" + ");
       case "SUBTRACT":
-        return `${parts[0]} − ${parts[1]}`;
+        return `${parts[0]} - ${parts[1]}`;
       case "DIVIDE":
-        return `${parts[0]} ÷ ${parts[1]}`;
+        return `${parts[0]} / ${parts[1]}`;
       default:
         break;
     }

@@ -262,7 +262,7 @@ export function applyTableCalcSuggestion(
   if (appliedColumnKeys.length === 0 && !suggestion.footerTotals?.length) {
     return {
       ok: false,
-      message: "Nothing to apply. Try describing qty × rate or a grand total.",
+      message: "Nothing to apply. Try describing qty x rate or a grand total.",
     };
   }
 

@@ -377,7 +377,39 @@ export function removeTableColumnAt(
   if (columns.length <= 1) {
     return columns;
   }
-  return columns.filter((_, columnIndex) => columnIndex !== index);
+  const removed = columns[index];
+  const next = columns.filter((_, columnIndex) => columnIndex !== index);
+  if (!removed) {
+    return next;
+  }
+  // Drop the deleted column from any calculated formula so it does not leave a
+  // dangling operand reference that silently breaks the calculation.
+  return next.map((column) => {
+    if (!isCalculatedTableColumn(column) || !column.formula) {
+      return column;
+    }
+    if (!column.formula.operandKeys.includes(removed.key)) {
+      return column;
+    }
+    return {
+      ...column,
+      formula: {
+        ...column.formula,
+        operandKeys: column.formula.operandKeys.filter(
+          (key) => key !== removed.key,
+        ),
+      },
+    };
+  });
+}
+
+/** Footer totals that point at a removed column key must be dropped too. */
+export function pruneFooterTotalsForColumns(
+  footerTotals: FmsTableFooterTotal[],
+  columns: FmsTableColumn[],
+): FmsTableFooterTotal[] {
+  const validKeys = new Set(columns.map((column) => column.key));
+  return footerTotals.filter((total) => validKeys.has(total.columnKey));
 }
 
 export function moveTableColumn(
@@ -399,7 +431,7 @@ export function resolveTableColumns(columns: FmsTableColumn[]) {
   return columns.length ? columns : DEFAULT_PO_LINE_ITEM_COLUMNS;
 }
 
-/** Dropdown choices for a table column — uses saved choices or sensible defaults by label. */
+/** Dropdown choices for a table column - uses saved choices or sensible defaults by label. */
 export function resolveTableColumnChoices(column: FmsTableColumn): string[] {
   if (column.choices?.length) {
     return column.choices;
@@ -594,7 +626,7 @@ export type FmsSlaConfig = {
 };
 
 export type FmsWorkingDaysConfig = {
-  /** India MSME default: skip Sunday only (Mon–Sat working). */
+  /** India MSME default: skip Sunday only (Mon-Sat working). */
   skipSaturday?: boolean;
   holidayDates?: string[];
 };

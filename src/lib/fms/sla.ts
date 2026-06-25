@@ -2,7 +2,7 @@ import type { FmsSlaType } from "@prisma/client";
 import type { FmsSlaConfig, FmsWorkingDaysConfig } from "@/lib/fms/constants";
 import { parseHolidayDates } from "@/lib/fms/constants";
 
-/** India MSME default: Mon–Sat working, Sunday off. Optionally skip Saturday. */
+/** India MSME default: Mon-Sat working, Sunday off. Optionally skip Saturday. */
 export function isWorkingDay(date: Date, config: FmsWorkingDaysConfig = {}) {
   const dow = date.getDay();
   if (dow === 0) {
