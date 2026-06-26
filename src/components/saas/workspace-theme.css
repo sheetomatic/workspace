@@ -19824,17 +19824,20 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .ws-fms-subnav {
-  overflow: hidden;
+  overflow: visible;
 }
 
 .workspace-app .ws-fms-subnav-list {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
 }
 
 .workspace-app .ws-fms-subnav-top {
+  position: relative;
+  z-index: 5;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -19843,6 +19846,7 @@ body:has(.workspace-app.saas-app) {
   margin-bottom: 8px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--sf-card-border);
+  overflow: visible;
 }
 
 .workspace-app .ws-fms-subnav-top .ws-module-subnav-brand {
@@ -21328,6 +21332,7 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-fms-notify-bell {
   position: relative;
+  z-index: 6;
   width: 100%;
 }
 
@@ -21346,6 +21351,24 @@ body:has(.workspace-app.saas-app) {
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.workspace-app .ws-fms-notify-bell-trigger.is-open,
+.workspace-app .ws-fms-notify-bell-trigger.has-unread {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.workspace-app .ws-fms-notify-bell-trigger.is-open {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.workspace-app .ws-fms-notify-bell-trigger.has-unread:hover {
+  background: #ecfdf5;
 }
 
 .workspace-app .ws-fms-notify-bell-trigger:hover {
@@ -21379,6 +21402,32 @@ body:has(.workspace-app.saas-app) {
 .workspace-app .ws-fms-notify-bell-label {
   flex: 1;
   text-align: left;
+  pointer-events: none;
+}
+
+.workspace-app .ws-fms-notify-bell-count,
+.workspace-app .ws-fms-notify-bell-muted {
+  pointer-events: none;
+}
+
+.workspace-app .ws-fms-notify-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  max-height: min(60vh, 420px);
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 16px 36px rgb(15 23 42 / 18%);
+  overflow: hidden;
+}
+
+.workspace-app .ws-fms-notify-dropdown .ws-fms-notify-popover-feed {
+  max-height: min(52vh, 360px);
 }
 
 .workspace-app .ws-fms-notify-bell-portal {
@@ -21492,11 +21541,6 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-fms-notify-bell-backdrop {
   display: none;
-}
-
-.workspace-app .ws-fms-notify-bell-trigger.has-unread {
-  border-color: #86efac;
-  background: #f0fdf4;
 }
 
 .workspace-app .ws-fms-notify-bell-close {

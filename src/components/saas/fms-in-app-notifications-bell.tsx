@@ -1,7 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useId, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { Bell, X } from "lucide-react";
 import { markFmsAppNotificationReadAction } from "@/app/app/fms/notification-actions";
 
@@ -21,14 +20,9 @@ export function FmsInAppNotificationsBell({
   notifications: NotificationRow[];
 }) {
   const panelId = useId();
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-
-  const [, markReadAction] = useActionState(markFmsAppNotificationReadAction, {
-    ok: false,
-    message: "",
-  });
+  const [pending, startTransition] = useTransition();
 
   useEffect(() => {
     if (!open) {
@@ -37,10 +31,7 @@ export function FmsInAppNotificationsBell({
 
     function onPointerDown(event: MouseEvent) {
       const target = event.target as Node;
-      if (
-        triggerRef.current?.contains(target) ||
-        panelRef.current?.contains(target)
-      ) {
+      if (rootRef.current?.contains(target)) {
         return;
       }
       setOpen(false);
@@ -60,95 +51,19 @@ export function FmsInAppNotificationsBell({
     };
   }, [open]);
 
-  const panel =
-    open && typeof document !== "undefined"
-      ? createPortal(
-          <div className="workspace-app ws-fms-notify-bell-portal" ref={panelRef}>
-            <section
-              id={panelId}
-              className="ws-fms-notify-popover"
-              role="dialog"
-              aria-label="FMS alerts"
-            >
-              <header className="ws-fms-notify-popover-head">
-                <div className="ws-fms-notify-popover-brand">
-                  <span className="ws-inbox-status-pill live">FMS</span>
-                  <strong>Alerts</strong>
-                  {unreadCount > 0 ? (
-                    <span className="ws-fms-notify-bell-count">{unreadCount}</span>
-                  ) : null}
-                </div>
-                <button
-                  type="button"
-                  className="ws-fms-notify-bell-close"
-                  aria-label="Close alerts"
-                  onClick={() => setOpen(false)}
-                >
-                  <X size={16} aria-hidden />
-                </button>
-              </header>
-
-              <div className="ws-fms-notify-popover-feed">
-                {notifications.length === 0 ? (
-                  <p className="ws-fms-muted ws-fms-notify-bell-empty">
-                    No new alerts.
-                  </p>
-                ) : (
-                  notifications.map((item) => (
-                    <article
-                      key={item.id}
-                      className="ws-inbox-bubble outbound ws-fms-notify-bubble"
-                    >
-                      <span className="ws-fms-notify-bubble-tag">{item.title}</span>
-                      <p>{item.body}</p>
-                      <footer className="ws-fms-notify-bubble-foot">
-                        <time dateTime={item.createdAt}>
-                          {new Date(item.createdAt).toLocaleString("en-IN", {
-                            dateStyle: "medium",
-                            timeStyle: "short",
-                          })}
-                        </time>
-                        <div className="ws-fms-notify-bubble-actions">
-                          {item.href ? (
-                            <a
-                              className="ws-fms-notify-bubble-link"
-                              href={item.href}
-                              onClick={() => setOpen(false)}
-                            >
-                              Open
-                            </a>
-                          ) : null}
-                          <form action={markReadAction} className="ws-fms-notify-dismiss-form">
-                            <input
-                              type="hidden"
-                              name="notificationId"
-                              value={item.id}
-                            />
-                            <button
-                              className="ws-fms-notify-bubble-link"
-                              type="submit"
-                            >
-                              Dismiss
-                            </button>
-                          </form>
-                        </div>
-                      </footer>
-                    </article>
-                  ))
-                )}
-              </div>
-            </section>
-          </div>,
-          document.body,
-        )
-      : null;
+  function dismissNotification(notificationId: string) {
+    const formData = new FormData();
+    formData.set("notificationId", notificationId);
+    startTransition(async () => {
+      await markFmsAppNotificationReadAction({ ok: false, message: "" }, formData);
+    });
+  }
 
   return (
-    <div className="ws-fms-notify-bell">
+    <div className="ws-fms-notify-bell" ref={rootRef}>
       <button
-        ref={triggerRef}
         type="button"
-        className={`ws-fms-notify-bell-trigger${unreadCount > 0 ? " has-unread" : ""}`}
+        className={`ws-fms-notify-bell-trigger${open ? " is-open" : ""}${unreadCount > 0 ? " has-unread" : ""}`}
         aria-label={
           unreadCount > 0
             ? `Notifications, ${unreadCount} unread`
@@ -156,7 +71,13 @@ export function FmsInAppNotificationsBell({
         }
         aria-expanded={open}
         aria-controls={panelId}
-        onClick={() => setOpen((value) => !value)}
+        onPointerDown={(event) => {
+          event.stopPropagation();
+        }}
+        onClick={(event) => {
+          event.stopPropagation();
+          setOpen((value) => !value);
+        }}
       >
         <Bell size={15} aria-hidden />
         <span className="ws-fms-notify-bell-label">Notifications</span>
@@ -168,7 +89,78 @@ export function FmsInAppNotificationsBell({
           <span className="ws-fms-notify-bell-muted">None</span>
         )}
       </button>
-      {panel}
+
+      {open ? (
+        <section
+          id={panelId}
+          className="ws-fms-notify-dropdown"
+          role="dialog"
+          aria-label="FMS alerts"
+        >
+          <header className="ws-fms-notify-popover-head">
+            <div className="ws-fms-notify-popover-brand">
+              <span className="ws-inbox-status-pill live">FMS</span>
+              <strong>Alerts</strong>
+              {unreadCount > 0 ? (
+                <span className="ws-fms-notify-bell-count">{unreadCount}</span>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              className="ws-fms-notify-bell-close"
+              aria-label="Close alerts"
+              onClick={() => setOpen(false)}
+            >
+              <X size={16} aria-hidden />
+            </button>
+          </header>
+
+          <div className="ws-fms-notify-popover-feed">
+            {notifications.length === 0 ? (
+              <p className="ws-fms-muted ws-fms-notify-bell-empty">
+                No new alerts.
+              </p>
+            ) : (
+              notifications.map((item) => (
+                <article
+                  key={item.id}
+                  className="ws-inbox-bubble outbound ws-fms-notify-bubble"
+                >
+                  <span className="ws-fms-notify-bubble-tag">{item.title}</span>
+                  <p>{item.body}</p>
+                  <footer className="ws-fms-notify-bubble-foot">
+                    <time dateTime={item.createdAt}>
+                      {new Date(item.createdAt).toLocaleString("en-IN", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}
+                    </time>
+                    <div className="ws-fms-notify-bubble-actions">
+                      {item.href ? (
+                        <a
+                          className="ws-fms-notify-bubble-link"
+                          href={item.href}
+                          onClick={() => setOpen(false)}
+                        >
+                          Open
+                        </a>
+                      ) : null}
+                      <button
+                        type="button"
+                        className="ws-fms-notify-bubble-link"
+                        disabled={pending}
+                        onClick={() => dismissNotification(item.id)}
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </footer>
+                </article>
+              ))
+            )}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
