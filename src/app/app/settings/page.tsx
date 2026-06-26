@@ -45,7 +45,7 @@ export default async function SettingsPage() {
     organization.status === "ACTIVE" ? "Active" : "Onboarding";
 
   return (
-    <div className="saas-page">
+    <div className="saas-page saas-settings-page">
       <PageHeader
         title="Settings"
         description={

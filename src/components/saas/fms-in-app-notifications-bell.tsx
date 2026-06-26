@@ -149,15 +149,24 @@ export function FmsInAppNotificationsBell({
         ref={triggerRef}
         type="button"
         className={`ws-fms-notify-bell-trigger${unreadCount > 0 ? " has-unread" : ""}`}
+        aria-label={
+          unreadCount > 0
+            ? `Notifications, ${unreadCount} unread`
+            : "Notifications, no unread alerts"
+        }
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((value) => !value)}
       >
         <Bell size={15} aria-hidden />
-        <span>Notifications</span>
+        <span className="ws-fms-notify-bell-label">Notifications</span>
         {unreadCount > 0 ? (
-          <span className="ws-fms-notify-bell-count">{unreadCount}</span>
-        ) : null}
+          <span className="ws-fms-notify-bell-count" aria-hidden>
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
+        ) : (
+          <span className="ws-fms-notify-bell-muted">None</span>
+        )}
       </button>
       {panel}
     </div>

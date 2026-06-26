@@ -922,6 +922,35 @@ body:has(.workspace-app.saas-app) {
   gap: 16px;
 }
 
+.workspace-app .saas-settings-page .saas-settings-grid {
+  max-width: 52rem;
+  gap: 14px;
+}
+
+.workspace-app .saas-settings-page .saas-panel {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+}
+
+.workspace-app .saas-settings-page .saas-panel h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.workspace-app .saas-settings-page .saas-panel-lead {
+  margin: 0 0 14px;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #64748b;
+  max-width: 40rem;
+}
+
 .workspace-app .saas-settings-page {
   max-width: 44rem;
 }
@@ -10971,6 +11000,7 @@ body:has(.workspace-app.saas-app) {
 .workspace-app .ws-tasks-sf {
   --sf-brand: #0176d3;
   --sf-brand-hover: #014486;
+  --sf-accent: #0176d3;
   --sf-page-bg: #f3f3f3;
   --sf-card-border: #dddbda;
   --sf-text: #181818;
@@ -11811,6 +11841,9 @@ body:has(.workspace-app.saas-app) {
   font-size: 1rem;
   font-weight: 700;
   color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .workspace-app .ws-notification-lead {
@@ -21321,16 +21354,31 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-fms-notify-bell-count {
   display: inline-flex;
-  min-width: 18px;
-  height: 18px;
+  min-width: 20px;
+  height: 20px;
   margin-left: auto;
+  padding: 0 6px;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: var(--sf-accent);
+  background: #dc2626;
   color: #fff;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.workspace-app .ws-fms-notify-bell-muted {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.workspace-app .ws-fms-notify-bell-label {
+  flex: 1;
+  text-align: left;
 }
 
 .workspace-app .ws-fms-notify-bell-portal {
@@ -21474,7 +21522,12 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-fms-notify-bell-empty {
   margin: 0;
-  font-size: 0.75rem;
+  padding: 16px 12px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 72%);
+  font-size: 0.8125rem;
+  text-align: center;
+  color: #475569;
 }
 
 .workspace-app .ws-fms-notify-health {
