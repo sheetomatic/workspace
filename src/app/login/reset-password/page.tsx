@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import "@/components/saas/workspace-theme.css";
+import "@/components/saas/workspace-typography.css";
 import { ResetPasswordForm } from "@/components/saas/reset-password-form";
 import Link from "next/link";
 import Image from "next/image";

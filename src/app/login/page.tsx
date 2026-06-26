@@ -1,4 +1,5 @@
 import "@/components/saas/workspace-theme.css";
+import "@/components/saas/workspace-typography.css";
 import { Suspense } from "react";
 import { LoginForm } from "@/components/saas/login-form";
 import { CheckCircle2 } from "lucide-react";

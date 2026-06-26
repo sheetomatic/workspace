@@ -20,15 +20,15 @@
   --text-caption: 0.8125rem; /* 13px */
   --text-sm: 0.875rem; /* 14px */
   --text-md: 0.9375rem; /* 15px */
-  --text-base: 1rem; /* 16px */
-  --text-lead: 1.0625rem; /* 17px */
-  --text-card-title: 1.25rem; /* 20px */
-  --text-card-title-lg: 1.375rem; /* 22px */
-  --text-section: clamp(1.75rem, 3.5vw, 2.5rem); /* 28-40px */
-  --text-page: clamp(2rem, 4vw, 3rem); /* 32-48px */
-  --text-hero: clamp(2.125rem, 4.5vw, 3.25rem); /* 34-52px */
-  --text-price: clamp(1.5rem, 2.5vw, 1.75rem); /* 24-28px */
-  --text-display: clamp(2rem, 5vw, 3rem); /* 32-48px */
+  --text-base: 0.9375rem; /* 15px — compact body */
+  --text-lead: 1rem; /* 16px */
+  --text-card-title: 1.0625rem; /* 17px */
+  --text-card-title-lg: 1.125rem; /* 18px */
+  --text-section: clamp(1.375rem, 2.5vw, 1.75rem); /* 22-28px */
+  --text-page: clamp(1.5rem, 3vw, 2rem); /* 24-32px */
+  --text-hero: clamp(1.625rem, 3.5vw, 2.25rem); /* 26-36px */
+  --text-price: clamp(1.25rem, 2vw, 1.5rem); /* 20-24px */
+  --text-display: clamp(1.5rem, 3.5vw, 2rem); /* 24-32px */
   --weight-body: 600;
   --weight-strong: 800;
   --weight-heading: 950;
