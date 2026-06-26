@@ -70,6 +70,7 @@ export default async function FmsInstancePage({ params, searchParams }: PageProp
     Boolean(activeStep) &&
     instance.status === "ACTIVE" &&
     canClaimFmsStep(user, activeStep ?? { ownerUserId: null, status: "PENDING" });
+  const quickComplete = query.action === "complete" && canComplete;
 
   const members = canControl
     ? await listAssignableMembers(user.organizationId)
@@ -137,6 +138,7 @@ export default async function FmsInstancePage({ params, searchParams }: PageProp
             activeStep && instance.status === "ACTIVE"
               ? {
                   canComplete,
+                  quickComplete,
                   stepState: {
                     id: activeStep.id,
                     status: activeStep.status,

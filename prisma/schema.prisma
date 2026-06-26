@@ -85,6 +85,25 @@ enum OrganizationStatus {
   ACTIVE
 }
 
+enum OrgPlan {
+  BCI_STARTER
+  BCI_GROWTH
+  ENTERPRISE
+  LEGAL_ADDON
+}
+
+enum PlanSubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+}
+
+enum PlanBillingPeriod {
+  MONTHLY
+  ANNUAL
+}
+
 enum WorkspaceLinkType {
   GOOGLE_SHEET
   LOOKER_STUDIO
@@ -105,6 +124,12 @@ model Organization {
   legalSheetHeaderRow Int @default(2)
   legalSheetDataStartRow Int @default(3)
   status          OrganizationStatus       @default(ONBOARDING)
+  plan            OrgPlan                  @default(BCI_STARTER)
+  planStatus      PlanSubscriptionStatus   @default(ACTIVE)
+  billingPeriod   PlanBillingPeriod        @default(MONTHLY)
+  allowedModules  WorkspaceModule[]        @default([])
+  maxMembers      Int                      @default(8)
+  maxFmsTemplates Int                      @default(3)
   isPrimary       Boolean                  @default(false)
   memberships     Membership[]
   links           WorkspaceLink[]

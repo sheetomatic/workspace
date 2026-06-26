@@ -13,6 +13,7 @@ import {
   FmsStepStatus,
   FmsTemplateStatus,
   OrganizationStatus,
+  OrgPlan,
   Prisma,
   PrismaClient,
   Role,
@@ -26,6 +27,11 @@ import { DEFAULT_FMS_ALERT_CONFIG } from "../src/lib/fms/constants";
 import { flowStepToTemplateStep } from "../src/lib/fms/flow-design";
 import type { FmsFlowchartStep } from "../src/lib/fms/flow-design";
 import { FMS_WORKFLOW_TEMPLATES } from "../src/lib/fms/workflow-templates";
+import {
+  allowedModulesForPlan,
+  BCI_GROWTH_LIMITS,
+  limitsForPlan,
+} from "../src/lib/org-plan-presets";
 
 function loadEnvFiles() {
   for (const file of [".env.local", ".env"]) {
@@ -357,6 +363,10 @@ export async function seedBciDemo(client: PrismaClient = prisma) {
       name: "BCI Demo Trading Co.",
       industry: "Trading & distribution (BCI demo)",
       status: OrganizationStatus.ACTIVE,
+      plan: OrgPlan.BCI_GROWTH,
+      allowedModules: allowedModulesForPlan(OrgPlan.BCI_GROWTH),
+      maxMembers: BCI_GROWTH_LIMITS.maxMembers,
+      maxFmsTemplates: BCI_GROWTH_LIMITS.maxFmsTemplates,
     },
     create: {
       name: "BCI Demo Trading Co.",
@@ -364,6 +374,10 @@ export async function seedBciDemo(client: PrismaClient = prisma) {
       industry: "Trading & distribution (BCI demo)",
       status: OrganizationStatus.ACTIVE,
       isPrimary: false,
+      plan: OrgPlan.BCI_GROWTH,
+      allowedModules: allowedModulesForPlan(OrgPlan.BCI_GROWTH),
+      maxMembers: limitsForPlan(OrgPlan.BCI_GROWTH).maxMembers,
+      maxFmsTemplates: limitsForPlan(OrgPlan.BCI_GROWTH).maxFmsTemplates,
     },
   });
 

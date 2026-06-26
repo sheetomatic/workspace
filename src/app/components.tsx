@@ -9,9 +9,8 @@ import {
   contactDetails,
   footerCompanyLinks,
   footerProductLinks,
-  mainNav,
 } from "./page-content";
-import { servicesNavLinks } from "./services-content";
+import { SiteHeaderNav } from "@/components/marketing/site-header-nav";
 import {
   finalCtaContent,
   siteBrand,
@@ -53,43 +52,7 @@ export function SiteHeader() {
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <div className="site-header-bar flex items-center justify-between gap-3 py-3.5">
           <SiteBrand variant="header" />
-          <nav
-            className="site-nav-saas site-nav-desktop hidden min-[901px]:flex items-center gap-6"
-            aria-label="Main"
-          >
-            {mainNav.map((item) =>
-              item.href === "/services" ? (
-                <div className="site-nav-dropdown" key={item.href}>
-                  <Link
-                    className="site-nav-dropdown-trigger shrink-0 whitespace-nowrap text-inherit no-underline hover:text-blue-600"
-                    href={item.href}
-                  >
-                    {item.label}
-                  </Link>
-                  <div className="site-nav-dropdown-panel" role="menu">
-                    {servicesNavLinks.map((link) => (
-                      <Link
-                        className="site-nav-dropdown-link"
-                        href={link.href}
-                        key={link.href}
-                        role="menuitem"
-                      >
-                        {link.label}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <Link
-                  className="shrink-0 whitespace-nowrap text-inherit no-underline hover:text-blue-600"
-                  href={item.href}
-                  key={item.href}
-                >
-                  {item.label}
-                </Link>
-              ),
-            )}
-          </nav>
+          <SiteHeaderNav variant="desktop" />
           <div className="site-header-actions">
             <Link className="ab-header-ai" href="/ai">
               Sheetomatic AI
@@ -100,20 +63,7 @@ export function SiteHeader() {
             <WhatsAppButton className="header-cta" label={whatsappDisplayNumber} />
           </div>
         </div>
-        <nav
-          className="site-nav-mobile hidden max-[900px]:flex items-center gap-2 overflow-x-auto pb-3"
-          aria-label="Main mobile"
-        >
-          {mainNav.map((item) => (
-            <Link
-              className="shrink-0 whitespace-nowrap no-underline"
-              href={item.href}
-              key={item.href}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <SiteHeaderNav variant="mobile" />
       </div>
     </header>
   );
@@ -244,7 +194,9 @@ export function FinalCta({
 
 export function MarketingPage({ children }: { children: React.ReactNode }) {
   return (
-    <main className="marketing-page marketing-site">{children}</main>
+    <main id="main" className="marketing-page marketing-site">
+      {children}
+    </main>
   );
 }
 

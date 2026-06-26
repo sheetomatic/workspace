@@ -73,7 +73,7 @@ export function PendingWorkspacesPanel({
               </p>
             </div>
             <form action={formAction}>
-              <input name="organizationId" type="hidden" value={workspace.id} />
+              <input name="workspaceSlug" type="hidden" value={workspace.slug} />
               <button
                 className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
                 disabled={pending}

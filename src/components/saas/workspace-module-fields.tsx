@@ -12,25 +12,39 @@ export function WorkspaceModuleFields({
   role,
   defaultModules,
   lockSelection = false,
+  orgAllowedModules,
 }: {
   role: Role;
   defaultModules?: WorkspaceModule[];
   /** When true (edit form), role changes do not reset saved module picks. */
   lockSelection?: boolean;
+  /** Org tier cap; omit or empty = all modules selectable (legacy). */
+  orgAllowedModules?: WorkspaceModule[];
 }) {
   const isEditing = lockSelection || Boolean(defaultModules?.length);
-
-  const [selected, setSelected] = useState<WorkspaceModule[]>(() =>
-    defaultModules?.length ? defaultModules : modulesFromRoleDefault(role),
+  const allowedSet = new Set(
+    orgAllowedModules?.length ? orgAllowedModules : WORKSPACE_MODULES,
   );
+
+  const [selected, setSelected] = useState<WorkspaceModule[]>(() => {
+    const initial = defaultModules?.length
+      ? defaultModules
+      : modulesFromRoleDefault(role);
+    return initial.filter((module) => allowedSet.has(module));
+  });
 
   useEffect(() => {
     if (!isEditing) {
-      setSelected(modulesFromRoleDefault(role));
+      setSelected(
+        modulesFromRoleDefault(role).filter((module) => allowedSet.has(module)),
+      );
     }
-  }, [role, isEditing]);
+  }, [role, isEditing, orgAllowedModules]);
 
   function toggle(module: WorkspaceModule) {
+    if (!allowedSet.has(module)) {
+      return;
+    }
     setSelected((current) =>
       current.includes(module)
         ? current.filter((item) => item !== module)
@@ -50,13 +64,15 @@ export function WorkspaceModuleFields({
       <div className="ws-member-module-grid" role="group" aria-label="Workspace modules">
         {WORKSPACE_MODULES.map((module) => {
           const checked = selected.includes(module);
+          const tierLocked = !allowedSet.has(module);
           return (
             <label
-              className={`ws-module-option${checked ? " is-selected" : ""}`}
+              className={`ws-module-option${checked ? " is-selected" : ""}${tierLocked ? " is-tier-locked" : ""}`}
               key={module}
             >
               <input
                 checked={checked}
+                disabled={tierLocked}
                 name="modules"
                 type="checkbox"
                 value={module}
@@ -64,6 +80,7 @@ export function WorkspaceModuleFields({
               />
               <span className="ws-module-option-label">
                 {WORKSPACE_MODULE_LABELS[module]}
+                {tierLocked ? " (plan upgrade)" : ""}
               </span>
             </label>
           );

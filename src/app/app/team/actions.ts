@@ -2,7 +2,7 @@
 
 import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
-import type { AttendanceWorkMode, Role, TaskDepartment } from "@prisma/client";
+import type { AttendanceWorkMode, Role, TaskDepartment, WorkspaceModule } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { getSessionUser } from "@/lib/auth";
 import { normalizeStaffCode } from "@/lib/legal-cases/access";
@@ -17,10 +17,12 @@ import {
 } from "@/lib/integrations/email";
 import { assertOrganizationAccess } from "@/lib/workspace";
 import {
-  modulesFromRoleDefault,
-  parseModulesFromForm,
-  resolveMemberModules,
-} from "@/lib/workspace-modules";
+  clampModulesToOrg,
+  isOrgTierEnforced,
+  modulesForTierRole,
+  resolveOrgAllowedModules,
+} from "@/lib/org-plan-presets";
+import { parseModulesFromForm, resolveMemberModules } from "@/lib/workspace-modules";
 
 export type TeamActionState = {
   ok: boolean;
@@ -116,6 +118,39 @@ async function validateReportingManager(input: {
   return null;
 }
 
+async function getOrganizationPlanContext(organizationId: string) {
+  const organization = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: {
+      plan: true,
+      allowedModules: true,
+      maxMembers: true,
+      _count: { select: { memberships: true } },
+    },
+  });
+
+  if (!organization) {
+    return null;
+  }
+
+  return {
+    ...organization,
+    tierEnforced: isOrgTierEnforced(organization.allowedModules),
+    orgAllowedModules: resolveOrgAllowedModules(organization.allowedModules),
+  };
+}
+
+function resolveModulesForOrg(input: {
+  role: Role;
+  formModules: WorkspaceModule[];
+  fallbackModules: WorkspaceModule[];
+  orgAllowedModules: WorkspaceModule[];
+}) {
+  const requested =
+    input.formModules.length > 0 ? input.formModules : input.fallbackModules;
+  return clampModulesToOrg(requested, input.orgAllowedModules);
+}
+
 export async function inviteTeamMember(
   _prev: TeamActionState,
   formData: FormData,
@@ -196,9 +231,30 @@ export async function inviteTeamMember(
     return { ok: false, message: reportingManagerError };
   }
 
-  let modules = parseModulesFromForm(formData);
+  const orgPlan = await getOrganizationPlanContext(user.organizationId);
+  if (!orgPlan) {
+    return { ok: false, message: "Workspace not found." };
+  }
+
+  if (
+    orgPlan.tierEnforced &&
+    orgPlan._count.memberships >= orgPlan.maxMembers
+  ) {
+    return {
+      ok: false,
+      message: `This plan allows up to ${orgPlan.maxMembers} members. Upgrade to add more.`,
+    };
+  }
+
+  const formModules = parseModulesFromForm(formData);
+  let modules = resolveModulesForOrg({
+    role,
+    formModules,
+    fallbackModules: modulesForTierRole(orgPlan.plan, role),
+    orgAllowedModules: orgPlan.orgAllowedModules,
+  });
   if (modules.length === 0) {
-    modules = modulesFromRoleDefault(role);
+    modules = modulesForTierRole(orgPlan.plan, role);
   }
 
   await assertOrganizationAccess(user.organizationId, user.id);
@@ -394,9 +450,20 @@ export async function updateTeamMemberDetails(
     return { ok: false, message: reportingManagerError };
   }
 
-  let modules = parseModulesFromForm(formData);
+  const orgPlan = await getOrganizationPlanContext(user.organizationId);
+  if (!orgPlan) {
+    return { ok: false, message: "Workspace not found." };
+  }
+
+  const formModules = parseModulesFromForm(formData);
+  let modules = resolveModulesForOrg({
+    role,
+    formModules,
+    fallbackModules: resolveMemberModules(role, membership.modules),
+    orgAllowedModules: orgPlan.orgAllowedModules,
+  });
   if (modules.length === 0) {
-    modules = resolveMemberModules(role, membership.modules);
+    modules = modulesForTierRole(orgPlan.plan, role);
   }
 
   await prisma.user.update({

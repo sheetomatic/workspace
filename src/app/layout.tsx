@@ -30,7 +30,7 @@ export const metadata: Metadata = {
       "MIS, Google Sheets, AppSheet, dashboards, WhatsApp API, and AI task delegation for Indian MSMEs.",
     images: [
       {
-        url: "/images/sheetomatic-logo.png",
+        url: "/images/sheetomatic-logo.svg",
         width: 1000,
         height: 1000,
         alt: "Sheetomatic logo",
@@ -69,6 +69,12 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-slate-900 focus:shadow-lg"
+        >
+          Skip to content
+        </a>
         {children}
         <SheetomaticAiLauncher />
       </body>

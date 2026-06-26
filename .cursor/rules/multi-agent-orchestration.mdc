@@ -1,0 +1,40 @@
+---
+description: Orchestrate parallel specialist agents for Sheetomatic multi-tenant development
+alwaysApply: true
+---
+
+# Multi-Agent Orchestration
+
+When the user asks to build features, audit, or work on the multi-tenant website, delegate to specialist subagents in `.cursor/agents/`:
+
+| Agent | File | Scope |
+|-------|------|-------|
+| Front End Developer | `frontend-developer.md` | UI, components, marketing, FMS UX, accessibility |
+| Backend Developer | `backend-developer.md` | Prisma, DB, server actions, API, cron, storage |
+| Quality Team | `quality-team.md` | P0–P3 gaps, security, regression (readonly) |
+| SaaS Multi-Tenant | `saas-multitenant.md` | Provisioning, tiers, enterprise UX patterns |
+
+## Parallel execution
+
+For large tasks (e.g. "make a website", "improve FMS", "multi-tenant work"):
+
+1. Launch **Frontend + Backend in parallel** on non-overlapping files
+2. Launch **Quality Team** (readonly) after or in parallel for audit
+3. Launch **SaaS Architect** for provisioning/tier/UX architecture
+
+Use `/multitask` or background subagents for parallel workstreams.
+
+## Project context
+
+- Repo: `sheetomatic-redesign` (Next.js 16, Prisma/Postgres, multi-tenant BCI ops platform)
+- FMS spec: `.cursor/rules/fms-design-playbook.mdc`, `docs/BCI-FMS-SALES-KIT.md`
+- Backlog: `AUDIT_ACTIONS.md`
+- Active workstreams: `.cursor/WORKSTREAM.md`
+
+## Coordination rules
+
+- Backend owns `prisma/`, `src/lib/`, server actions
+- Frontend owns `src/components/`, page layouts (except action files)
+- Quality never edits — reports only
+- SaaS architect proposes; Backend/Frontend implement
+- Never let two agents edit the same file simultaneously

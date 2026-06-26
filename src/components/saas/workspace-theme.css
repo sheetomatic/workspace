@@ -327,6 +327,15 @@ body:has(.workspace-app.saas-app) {
   outline-offset: 1px;
 }
 
+.workspace-app .saas-nav-section {
+  margin: 14px 10px 6px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
 .workspace-app .saas-sidebar-footer {
   display: flex;
   flex-direction: column;
@@ -344,6 +353,19 @@ body:has(.workspace-app.saas-app) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.workspace-app .saas-plan-badge {
+  margin: 0;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .workspace-app .saas-user-chip {
@@ -4443,6 +4465,25 @@ body:has(.workspace-app.saas-app) {
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+}
+
+.workspace-app .ws-mobile-shell-org-switcher {
+  min-width: 0;
+  max-width: 42vw;
+  padding: 0;
+  flex-shrink: 1;
+}
+
+.workspace-app .ws-mobile-shell-org-switcher span {
+  display: none;
+}
+
+.workspace-app .ws-mobile-shell-org-switcher select {
+  min-width: 0;
+  max-width: 100%;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.6875rem;
+  border-radius: 999px;
 }
 
 .workspace-app .ws-mobile-shell-ai {
@@ -12122,6 +12163,15 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-login .login-forgot-link a:hover {
   text-decoration: underline;
+}
+
+.workspace-login .login-org-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.85rem;
+  color: #64748b;
 }
 
 .workspace-app .ws-password-settings .login-password-wrap {
@@ -20299,12 +20349,64 @@ body:has(.workspace-app.saas-app) {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 12px 14px;
+  position: relative;
+  padding: 12px 36px 12px 14px;
   border: 1px solid var(--sf-card-border);
   border-radius: 6px;
   text-decoration: none;
   color: var(--sf-text);
   background: #fff;
+}
+
+.workspace-app .ws-fms-my-stop-chevron {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  color: #706e6b;
+}
+
+.workspace-app .ws-fms-my-stops-queue-mobile {
+  display: none;
+  margin-bottom: 12px;
+}
+
+.workspace-app .ws-fms-my-stops-metrics-mobile {
+  display: none;
+  margin-bottom: 12px;
+}
+
+.workspace-app .ws-fms-my-stops-metrics-mobile .ws-fms-tracker-metrics {
+  margin: 0;
+}
+
+.workspace-app .ws-fms-step-work-panel.is-quick-complete .ws-fms-step-work-footer-actions {
+  width: 100%;
+}
+
+.workspace-app .ws-fms-step-work-panel.is-quick-complete .ws-fms-step-action-complete-form {
+  width: 100%;
+}
+
+.workspace-app .ws-fms-step-action-submit.is-quick-complete {
+  width: 100%;
+  min-height: 44px;
+  font-size: 0.9375rem;
+}
+
+@media (max-width: 768px) {
+  .workspace-app .ws-fms-my-stops-queue-mobile,
+  .workspace-app .ws-fms-my-stops-metrics-mobile {
+    display: block;
+  }
+
+  .workspace-app .ws-fms-my-stops-tracker-desktop {
+    display: none;
+  }
+
+  .workspace-app .ws-fms-journey-hero.is-compact .ws-fms-journey-badges {
+    display: none;
+  }
 }
 
 .workspace-app .ws-fms-my-stop-link:hover {

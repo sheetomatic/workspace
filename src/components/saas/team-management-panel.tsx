@@ -223,10 +223,12 @@ function MemberEditForm({
   member,
   members,
   onCancel,
+  orgAllowedModules,
 }: {
   member: TeamMemberRow;
   members: TeamMemberRow[];
   onCancel: () => void;
+  orgAllowedModules?: WorkspaceModule[];
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [state, action, pending] = useActionState(
@@ -349,6 +351,7 @@ function MemberEditForm({
       <WorkspaceModuleFields
         defaultModules={member.modules}
         lockSelection
+        orgAllowedModules={orgAllowedModules}
         role={editRole}
       />
 
@@ -413,10 +416,12 @@ export function TeamManagementPanel({
   members,
   currentUserId,
   canManage = true,
+  orgAllowedModules,
 }: {
   members: TeamMemberRow[];
   currentUserId: string;
   canManage?: boolean;
+  orgAllowedModules?: WorkspaceModule[];
 }) {
   const [inviteState, inviteAction, invitePending] = useActionState(
     inviteTeamMember,
@@ -509,6 +514,7 @@ export function TeamManagementPanel({
                     member={member}
                     members={members}
                     onCancel={() => setEditingId(null)}
+                    orgAllowedModules={orgAllowedModules}
                   />
                 </article>
               );
@@ -746,7 +752,10 @@ export function TeamManagementPanel({
                 </label>
               </div>
 
-              <WorkspaceModuleFields role={inviteRole} />
+              <WorkspaceModuleFields
+                orgAllowedModules={orgAllowedModules}
+                role={inviteRole}
+              />
               <div className="form-actions">
                 <button
                   className="btn-cta btn-primary"

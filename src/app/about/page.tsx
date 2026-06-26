@@ -57,7 +57,7 @@ export default function AboutPage() {
           </div>
           <div className="founder-photo about-founder-photo">
             <Image
-              src="/images/founder-shyam.jpg"
+              src="/images/founder-shyam.svg"
               alt="Shyam Kumar Banjare, founder of Sheetomatic"
               fill
               sizes="(max-width: 1024px) 100vw, 40vw"

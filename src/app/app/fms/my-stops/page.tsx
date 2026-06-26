@@ -15,7 +15,7 @@ export default async function FmsMyStopsPage() {
     <div className="saas-page ws-fms-page ws-fms-sf">
       <TaskPageToolbar
         title="My queue"
-        description="Pick a workflow to open your spreadsheet. You only complete stops assigned to you."
+        description="Pick a workflow, then tap your stop to complete it. You only see stops assigned to you."
       />
 
       {templates.length === 0 ? (

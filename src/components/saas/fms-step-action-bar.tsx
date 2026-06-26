@@ -42,6 +42,7 @@ export function FmsStepActionBar({
   initialNotes = "",
   existingAttachments = [],
   accountability,
+  quickComplete = false,
 }: {
   stepState: FmsStepCompleteState;
   canComplete: boolean;
@@ -49,6 +50,7 @@ export function FmsStepActionBar({
   initialNotes?: string | null;
   existingAttachments?: StepAttachment[];
   accountability?: AccountabilityMeta;
+  quickComplete?: boolean;
 }) {
   const router = useRouter();
   const uploadFormRef = useRef<HTMLFormElement>(null);
@@ -68,6 +70,13 @@ export function FmsStepActionBar({
   const captureFields = Array.isArray(stepState.step.captureFields)
     ? (stepState.step.captureFields as FmsCaptureField[])
     : [];
+  const hasRequiredCapture = captureFields.some((field) => field.required);
+  const useQuickComplete =
+    quickComplete &&
+    canComplete &&
+    showMarkDone &&
+    !hasRequiredCapture &&
+    (!showUpload || existingAttachments.length > 0);
 
   const [completeState, completeAction, completePending] = useActionState(
     completeFmsStepAction,
@@ -85,9 +94,9 @@ export function FmsStepActionBar({
   useEffect(() => {
     setNotes(initialNotes ?? "");
     setNotesDirty(false);
-    setMarkedDone(false);
+    setMarkedDone(useQuickComplete);
     setCompletionValues({});
-  }, [stepState.id, initialNotes]);
+  }, [stepState.id, initialNotes, useQuickComplete]);
 
   useEffect(() => {
     if (!completeState.ok) {
@@ -139,7 +148,9 @@ export function FmsStepActionBar({
   }
 
   return (
-    <div className="ws-fms-step-action-bar ws-fms-step-work-panel is-compact">
+    <div
+      className={`ws-fms-step-action-bar ws-fms-step-work-panel is-compact${useQuickComplete ? " is-quick-complete" : ""}`}
+    >
       <header className="ws-fms-step-work-head">
         <div className="ws-fms-step-work-head-copy">
           <h3 className="ws-fms-step-work-title">
@@ -147,7 +158,7 @@ export function FmsStepActionBar({
             {stepName}
           </h3>
         </div>
-        {showMarkDone ? (
+        {showMarkDone && !useQuickComplete ? (
           <label className="ws-fms-step-work-done-toggle">
             <input
               checked={markedDone}
@@ -163,7 +174,7 @@ export function FmsStepActionBar({
         ) : null}
       </header>
 
-      {accountability ? (
+      {accountability && !useQuickComplete ? (
         <dl className="ws-fms-step-work-accountability is-inline">
           <div>
             <dt>Doer</dt>
@@ -239,7 +250,7 @@ export function FmsStepActionBar({
         </section>
       ) : null}
 
-      {showNotes ? (
+      {showNotes && !useQuickComplete ? (
         <section className="ws-fms-step-work-section is-compact">
           <div className="ws-fms-step-work-section-head">
             <h4 className="ws-fms-step-work-section-title">Notes</h4>
@@ -276,7 +287,7 @@ export function FmsStepActionBar({
         </section>
       ) : null}
 
-      {showUpload ? (
+      {showUpload && !useQuickComplete ? (
         <section className="ws-fms-step-work-section is-compact">
           <h4 className="ws-fms-step-work-section-title">
             <Paperclip size={14} aria-hidden />
@@ -338,7 +349,7 @@ export function FmsStepActionBar({
       ) : null}
 
       <footer className="ws-fms-step-work-footer is-compact">
-        {showMarkDone && !markedDone ? (
+        {showMarkDone && !markedDone && !useQuickComplete ? (
           <p className="ws-fms-step-work-footer-hint">
             Mark done to complete
           </p>
@@ -365,13 +376,17 @@ export function FmsStepActionBar({
               readOnly
             />
             <button
-              className="btn-primary btn-sm ws-sf-btn-primary ws-fms-step-action-submit"
+              className={`btn-primary btn-sm ws-sf-btn-primary ws-fms-step-action-submit${useQuickComplete ? " is-quick-complete" : ""}`}
               disabled={
-                completePending || (showMarkDone && !markedDone)
+                completePending || (showMarkDone && !markedDone && !useQuickComplete)
               }
               type="submit"
             >
-              {completePending ? "Completing..." : "Complete step"}
+              {completePending
+                ? "Completing..."
+                : useQuickComplete
+                  ? "Complete stop"
+                  : "Complete step"}
             </button>
           </form>
         </div>

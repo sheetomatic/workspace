@@ -1,5 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import {
+  REQUEST_PATHNAME_HEADER,
+  TENANT_SLUG_HEADER,
+} from "@/lib/tenant-host";
+import {
   apexOrigin,
   isAiAppPath,
   isApiPath,
@@ -8,8 +12,6 @@ import {
   parseHost,
 } from "@/lib/subdomain";
 
-const TENANT_SLUG_HEADER = "x-tenant-slug";
-
 function hasSessionCookie(request: NextRequest) {
   return Boolean(
     request.cookies.get("__Secure-authjs.session-token")?.value ||
@@ -17,8 +19,16 @@ function hasSessionCookie(request: NextRequest) {
   );
 }
 
-function withTenantHeader(response: NextResponse, tenantSlug: string) {
+function withTenantHeader(
+  response: NextResponse,
+  tenantSlug: string,
+  request: NextRequest,
+) {
   response.headers.set(TENANT_SLUG_HEADER, tenantSlug);
+  response.headers.set(
+    REQUEST_PATHNAME_HEADER,
+    request.nextUrl.pathname + request.nextUrl.search,
+  );
   return response;
 }
 
@@ -187,7 +197,7 @@ function handleTenantHost(
   const { pathname } = request.nextUrl;
 
   if (isApiPath(pathname) || isStaticAssetPath(pathname)) {
-    return withTenantHeader(NextResponse.next(), tenantSlug);
+    return withTenantHeader(NextResponse.next(), tenantSlug, request);
   }
 
   if (pathname === "/") {
@@ -232,7 +242,7 @@ function handleTenantHost(
 
   const rewriteUrl = request.nextUrl.clone();
   const response = NextResponse.rewrite(rewriteUrl);
-  return withTenantHeader(response, tenantSlug);
+  return withTenantHeader(response, tenantSlug, request);
 }
 
 export function middleware(request: NextRequest) {

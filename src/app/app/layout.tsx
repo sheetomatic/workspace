@@ -8,7 +8,9 @@ import { WorkspacePwaRegister } from "@/components/saas/workspace-pwa-register";
 import { WorkspacePendingApproval } from "@/components/saas/workspace-pending-approval";
 import { listOrganizationsForUser } from "@/lib/auth-orgs";
 import { prisma } from "@/lib/db";
+import { ORG_PLAN_LABELS } from "@/lib/org-plan-presets";
 import { requireSession } from "@/lib/require-session";
+import { ensureSessionTenantHost } from "@/lib/tenant-host";
 
 export const metadata: Metadata = {
   title: "Workspace | Sheetomatic",
@@ -37,6 +39,7 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const sessionUser = await requireSession();
+  await ensureSessionTenantHost(sessionUser);
   const [organization, organizations] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: sessionUser.organizationId },
@@ -63,7 +66,12 @@ export default async function AppLayout({
   return (
     <AuthSessionProvider>
       <WorkspacePwaRegister />
-      <SaasShell organizations={organizations} user={user}>
+      <SaasShell
+        organizationPlan={organization.plan}
+        organizationPlanLabel={ORG_PLAN_LABELS[organization.plan]}
+        organizations={organizations}
+        user={user}
+      >
         <WorkspacePwaInstallBanner />
         {children}
       </SaasShell>

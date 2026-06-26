@@ -69,6 +69,7 @@ import {
 } from "@/lib/integrations/openai-messages";
 import { getIntegrationStatus } from "@/lib/integrations/status";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { SCALE } from "@/lib/scale";
 
 export async function generateFmsFormFromAiAction(input: {
   description: string;
@@ -88,7 +89,7 @@ export async function generateFmsFormFromAiAction(input: {
 
     const rate = await checkRateLimit(
       `fms-form-ai:${user.organizationId}:${user.id}`,
-      30,
+      SCALE.AI_ROUTE_LIMIT_PER_MIN,
       60_000,
     );
     if (!rate.allowed) {
@@ -189,7 +190,7 @@ export async function suggestTableCalculationAction(input: {
 
     const rate = await checkRateLimit(
       `fms-table-calc-ai:${user.organizationId}:${user.id}`,
-      40,
+      SCALE.AI_ROUTE_LIMIT_PER_MIN,
       60_000,
     );
     if (!rate.allowed) {

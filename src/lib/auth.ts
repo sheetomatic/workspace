@@ -7,7 +7,8 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { prisma, withDbRetry } from "@/lib/db";
 import { PRIMARY_ORG_SLUG } from "@/lib/platform";
-import { allWorkspaceModules, resolveMemberModules } from "@/lib/workspace-modules";
+import { allWorkspaceModules } from "@/lib/workspace-modules";
+import { effectiveMemberModules } from "@/lib/org-plan-presets";
 
 export type SessionUser = {
   id: string;
@@ -313,6 +314,13 @@ export const getSessionUser = cache(async function getSessionUser() {
       },
     });
 
+    const organization = await db.organization.findUnique({
+      where: { id: membership.organizationId },
+      select: { allowedModules: true },
+    });
+
+    const memberRole = membershipRecord?.role ?? membership.role;
+
     return {
       id: tokenUser.id,
       email: tokenUser.email,
@@ -323,9 +331,10 @@ export const getSessionUser = cache(async function getSessionUser() {
       organizationSlug: membership.organization.slug,
       isSuperAdmin: false,
       isDepartmentHead: membershipRecord?.isDepartmentHead ?? false,
-      modules: resolveMemberModules(
-        membershipRecord?.role ?? membership.role,
+      modules: effectiveMemberModules(
+        memberRole,
         membershipRecord?.modules,
+        organization?.allowedModules,
       ),
       staffCode: membershipRecord?.staffCode?.trim() || null,
     };

@@ -113,6 +113,7 @@ type FmsInstanceJourneyRowProps = {
   completePanel?: {
     stepState: FmsStepCompleteState;
     canComplete: boolean;
+    quickComplete?: boolean;
   } | null;
 };
 
@@ -373,6 +374,7 @@ export function FmsInstanceJourneyRow({
           initialNotes={activeCompleteStep.notes}
           stepName={activeCompleteStep.step.stepName}
           stepState={completePanel.stepState}
+          quickComplete={completePanel.quickComplete}
         />
       ) : null}
     </div>

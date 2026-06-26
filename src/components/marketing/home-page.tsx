@@ -19,6 +19,10 @@ import {
 import { whatsappDisplayNumber } from "@/app/site-content";
 import { AI_START_FREE_HREF } from "@/lib/ai-auth-links";
 import { ClientProjectsShowcase } from "./client-projects-showcase";
+import { FocusOffersSection } from "./focus-offers-section";
+import { OutcomesSection } from "./outcomes-section";
+import { IndustriesSection } from "./industries-section";
+import { AiTaskPreview } from "./ai-task-preview";
 
 const linkIcons = {
   Workspace: LayoutDashboardIcon,
@@ -44,7 +48,7 @@ const linkTones = {
 
 export function HomePage() {
   return (
-    <main className="marketing-page marketing-site">
+    <main id="main" className="marketing-page marketing-site">
       <SiteHeader />
 
       <section className="minimal-hero">
@@ -82,6 +86,27 @@ export function HomePage() {
           </div>
         </div>
       </section>
+
+      <FocusOffersSection />
+      <OutcomesSection />
+
+      <section aria-labelledby="home-workspace-preview" className="section soft-section">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8">
+          <div className="section-heading">
+            <p>Workspace</p>
+            <h2 id="home-workspace-preview">From voice note to assigned task in seconds</h2>
+            <div className="section-subcopy">
+              Delegate work, set reminders, and keep owners accountable — the same
+              operational discipline large SaaS platforms use, built for Indian MSMEs.
+            </div>
+          </div>
+          <div className="mt-10">
+            <AiTaskPreview />
+          </div>
+        </div>
+      </section>
+
+      <IndustriesSection />
 
       <section aria-labelledby="home-ai-promo-title" className="home-ai-promo">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">

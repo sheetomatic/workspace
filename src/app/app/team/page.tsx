@@ -25,6 +25,7 @@ import {
   isCasesOnlyWorkspace,
 } from "@/lib/workspace-modules";
 import { tenantPortalOrigin } from "@/lib/workspace-auth-links";
+import { resolveOrgAllowedModules } from "@/lib/org-plan-presets";
 import "@/components/legal/legal-cases.css";
 
 function TeamCollapsibleSection({
@@ -105,10 +106,19 @@ export default async function TeamPage() {
   }
 
   const canManage = canManageTeam(user);
-  const [allMembers, hrSettings] = await Promise.all([
+  const [allMembers, hrSettings, organization] = await Promise.all([
     listWorkspaceMembers(user.organizationId),
     canManage ? getOrCreateHrSettings(user.organizationId) : Promise.resolve(null),
+    canManage
+      ? prisma.organization.findUnique({
+          where: { id: user.organizationId },
+          select: { allowedModules: true },
+        })
+      : Promise.resolve(null),
   ]);
+  const orgAllowedModules = organization
+    ? resolveOrgAllowedModules(organization.allowedModules)
+    : undefined;
   const visibleMembers = canManage
     ? allMembers
     : viewerMembership?.department
@@ -162,6 +172,7 @@ export default async function TeamPage() {
           canManage={canManage}
           currentUserId={user.id}
           members={visibleMembers}
+          orgAllowedModules={orgAllowedModules}
         />
       </div>
     </div>

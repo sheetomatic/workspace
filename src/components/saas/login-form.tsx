@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -43,6 +43,13 @@ function safeCallbackUrl(raw: string | null, fallback: string) {
   return fallback;
 }
 
+type LoginOrgOption = {
+  slug: string;
+  name: string;
+  role: string;
+  isPrimary?: boolean;
+};
+
 export function LoginForm() {
   const searchParams = useSearchParams();
   const product = searchParams.get("product");
@@ -81,6 +88,11 @@ export function LoginForm() {
         : null,
   );
   const [loading, setLoading] = useState(false);
+  const [orgOptions, setOrgOptions] = useState<LoginOrgOption[] | null>(null);
+  const [selectedOrg, setSelectedOrg] = useState("");
+  const [orgLookupPending, setOrgLookupPending] = useState(false);
+  const [orgLookupError, setOrgLookupError] = useState<string | null>(null);
+  const orgLookupRequestId = useRef(0);
   const [loginState, loginAction, loginPending] = useActionState(
     loginWithCredentialsFormAction,
     loginInitialState,
@@ -93,8 +105,107 @@ export function LoginForm() {
   const canSubmitLogin =
     !loginPending &&
     !registerPending &&
+    !orgLookupPending &&
     email.trim().length > 0 &&
-    password.length > 0;
+    password.length > 0 &&
+    (!orgOptions ||
+      orgOptions.length <= 1 ||
+      (selectedOrg.length > 0 && orgOptions.some((org) => org.slug === selectedOrg)));
+
+  const lookupOrganizations = useCallback(
+    async (lookupEmail: string, lookupPassword: string) => {
+      if (isSignup || isAiProduct || orgSlug) {
+        setOrgOptions(null);
+        setSelectedOrg("");
+        return;
+      }
+
+      const normalizedEmail = lookupEmail.trim().toLowerCase();
+      if (!normalizedEmail || lookupPassword.length === 0) {
+        setOrgOptions(null);
+        setSelectedOrg("");
+        return;
+      }
+
+      const requestId = ++orgLookupRequestId.current;
+      setOrgLookupPending(true);
+      setOrgLookupError(null);
+
+      try {
+        const response = await fetch("/api/auth/organizations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: normalizedEmail,
+            password: lookupPassword,
+          }),
+        });
+
+        if (requestId !== orgLookupRequestId.current) {
+          return;
+        }
+
+        if (response.status === 401) {
+          setOrgOptions(null);
+          setSelectedOrg("");
+          setOrgLookupError(null);
+          return;
+        }
+
+        if (!response.ok) {
+          setOrgLookupError("Could not load workspaces. Try again.");
+          return;
+        }
+
+        const data = (await response.json()) as { organizations?: LoginOrgOption[] };
+        const organizations = data.organizations ?? [];
+        setOrgOptions(organizations);
+
+        if (organizations.length === 1) {
+          setSelectedOrg(organizations[0].slug);
+          return;
+        }
+
+        if (organizations.length > 1) {
+          const preferred =
+            organizations.find((org) => org.isPrimary) ?? organizations[0];
+          setSelectedOrg(preferred.slug);
+        }
+      } catch {
+        if (requestId === orgLookupRequestId.current) {
+          setOrgOptions(null);
+          setSelectedOrg("");
+          setOrgLookupError("Network error while loading workspaces.");
+        }
+      } finally {
+        if (requestId === orgLookupRequestId.current) {
+          setOrgLookupPending(false);
+        }
+      }
+    },
+    [isAiProduct, isSignup, orgSlug],
+  );
+
+  useEffect(() => {
+    if (isSignup || isAiProduct || orgSlug) {
+      setOrgOptions(null);
+      setSelectedOrg("");
+      return;
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || password.length === 0) {
+      setOrgOptions(null);
+      setSelectedOrg("");
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      void lookupOrganizations(normalizedEmail, password);
+    }, 450);
+
+    return () => window.clearTimeout(timer);
+  }, [email, isAiProduct, isSignup, lookupOrganizations, orgSlug, password]);
 
   const canSubmitSignup =
     !loading &&
@@ -157,6 +268,8 @@ export function LoginForm() {
     setEmail(accountEmail);
     setPassword("demo1234");
     setError(null);
+    setOrgOptions(null);
+    setSelectedOrg("");
   }
 
   const signupTitle = isAiProduct
@@ -313,6 +426,7 @@ export function LoginForm() {
                 required
                 type={showPassword ? "text" : "password"}
                 value={password}
+                onBlur={() => void lookupOrganizations(email, password)}
                 onChange={(event) => setPassword(event.target.value)}
               />
               <button
@@ -325,6 +439,40 @@ export function LoginForm() {
               </button>
             </span>
           </label>
+
+          {orgOptions && orgOptions.length > 1 ? (
+            <label className="form-field-full">
+              Workspace
+              <select
+                aria-busy={orgLookupPending}
+                name="organization"
+                required
+                value={selectedOrg}
+                onChange={(event) => setSelectedOrg(event.target.value)}
+              >
+                {orgOptions.map((org) => (
+                  <option key={org.slug} value={org.slug}>
+                    {org.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : orgOptions?.length === 1 ? (
+            <input name="organization" type="hidden" value={orgOptions[0].slug} />
+          ) : null}
+
+          {orgLookupPending ? (
+            <p className="login-org-hint form-field-full" role="status">
+              <Loader2 className="animate-spin" size={16} aria-hidden />
+              Looking up your workspaces…
+            </p>
+          ) : null}
+
+          {orgLookupError ? (
+            <p className="login-error form-field-full" role="alert">
+              {orgLookupError}
+            </p>
+          ) : null}
 
           <p className="login-forgot-link form-field-full">
             <Link

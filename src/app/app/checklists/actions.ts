@@ -14,6 +14,7 @@ import {
   importChecklistTemplates,
   type ChecklistTemplateImportRow,
 } from "@/lib/checklists/template-import";
+import { resolveChecklistAssigneeForOrg } from "@/lib/checklists/assignee-validation";
 
 const fmsInitialState: FmsActionState = { ok: false };
 
@@ -61,10 +62,27 @@ export async function createChecklistTemplateAction(
     }
 
     const title = formData.get("title")?.toString().trim() ?? "";
-    const assigneeUserId = formData.get("assigneeUserId")?.toString() ?? "";
-    if (!title || !assigneeUserId) {
+    const assigneeUserIdRaw = formData.get("assigneeUserId")?.toString() ?? "";
+    if (!title) {
       return { ok: false, message: "Title and doer are required." };
     }
+
+    const assigneeResult = await resolveChecklistAssigneeForOrg(
+      user.organizationId,
+      assigneeUserIdRaw,
+      (args) =>
+        prisma.membership.findFirst({
+          where: {
+            organizationId: args.organizationId,
+            userId: args.userId,
+          },
+          select: { id: true },
+        }),
+    );
+    if (!assigneeResult.ok) {
+      return { ok: false, message: assigneeResult.message };
+    }
+    const assigneeUserId = assigneeResult.assigneeUserId;
 
     const frequency = parseFrequency(formData.get("frequency")?.toString() ?? "MONTHLY");
     const dueMonthDay = Number.parseInt(formData.get("dueMonthDay")?.toString() ?? "1", 10);

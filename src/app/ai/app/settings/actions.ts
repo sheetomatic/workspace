@@ -76,29 +76,25 @@ export async function activateOrganizationAction(
     return { ok: false, message: "Only super admins can activate workspaces." };
   }
 
-  const organizationId = formData.get("organizationId")?.toString().trim();
-  if (!organizationId) {
+  const workspaceSlug = formData.get("workspaceSlug")?.toString().trim();
+  if (!workspaceSlug) {
     return { ok: false, message: "Workspace not found." };
   }
 
-  const organization = await prisma.organization.findUnique({
-    where: { id: organizationId },
-    select: { id: true, name: true, status: true },
+  const organization = await prisma.organization.findFirst({
+    where: { slug: workspaceSlug, status: "ONBOARDING" },
+    select: { id: true, name: true },
   });
 
   if (!organization) {
-    return { ok: false, message: "Workspace not found." };
-  }
-
-  if (organization.status === "ACTIVE") {
-    return { ok: true, message: `${organization.name} is already active.` };
+    return { ok: false, message: "Workspace not found or already active." };
   }
 
   await prisma.organization.update({
-    where: { id: organizationId },
+    where: { id: organization.id },
     data: { status: "ACTIVE" },
   });
-  await grantOwnerModules(organizationId);
+  await grantOwnerModules(organization.id);
 
   revalidatePath("/ai/app/settings");
   revalidatePath("/ai/app");

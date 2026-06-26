@@ -25,7 +25,7 @@ export const siteBrand = {
   name: "Sheetomatic",
   tagline: "Automation and AI Consultancy",
   headerTagline: "Automation and AI for MSME operations",
-  logoSrc: "/images/sheetomatic-logo.png",
+  logoSrc: "/images/sheetomatic-logo.svg",
   logoAlt: "Sheetomatic logo",
   footerDescription:
     "Automation and AI consultancy for Indian MSMEs - systems your team will actually use.",

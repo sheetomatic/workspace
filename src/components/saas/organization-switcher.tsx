@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTransition } from "react";
+import { tenantPortalOrigin } from "@/lib/workspace-auth-links";
 
 export type OrganizationOption = {
   slug: string;
@@ -14,9 +15,11 @@ export type OrganizationOption = {
 export function OrganizationSwitcher({
   organizations,
   currentSlug,
+  className,
 }: {
   organizations: OrganizationOption[];
   currentSlug: string;
+  className?: string;
 }) {
   const { update } = useSession();
   const router = useRouter();
@@ -34,13 +37,26 @@ export function OrganizationSwitcher({
 
     startTransition(async () => {
       await update({ organizationSlug: slug });
-      router.push(pathname.startsWith("/ai/app") ? "/ai/app" : "/app/tasks");
-      router.refresh();
+
+      if (pathname.startsWith("/ai/app")) {
+        router.push("/ai/app");
+        router.refresh();
+        return;
+      }
+
+      const protocol =
+        window.location.protocol === "http:" ? "http" : "https";
+      const targetPath = pathname.startsWith("/app") ? pathname : "/app";
+      window.location.href = `${tenantPortalOrigin(slug, protocol)}${targetPath}`;
     });
   }
 
+  const switcherClassName = className
+    ? `saas-org-switcher ${className}`
+    : "saas-org-switcher";
+
   return (
-    <label className="saas-org-switcher">
+    <label className={switcherClassName}>
       <span>Workspace</span>
       <select
         disabled={pending}

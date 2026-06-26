@@ -39,6 +39,7 @@ import {
 } from "@/lib/integrations/openai-messages";
 import { getIntegrationStatus } from "@/lib/integrations/status";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { SCALE } from "@/lib/scale";
 import { listAssignableMembers } from "@/lib/tasks";
 
 async function requireFmsDesigner() {
@@ -573,7 +574,7 @@ export async function generateFmsFlowchartFromAiAction(input: {
 
     const rate = await checkRateLimit(
       `fms-flow-ai:${user.organizationId}:${user.id}`,
-      30,
+      SCALE.AI_ROUTE_LIMIT_PER_MIN,
       60_000,
     );
     if (!rate.allowed) {

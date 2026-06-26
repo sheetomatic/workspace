@@ -105,6 +105,55 @@ const navItems: NavItem[] = [
   { href: "/app/settings", label: "Settings", icon: Settings, minRole: "VIEWER" },
 ];
 
+const SETUP_HREFS = new Set(["/app/team", "/app/settings"]);
+
+const appsNavItems = navItems.filter((item) => !SETUP_HREFS.has(item.href));
+const setupNavItems = navItems.filter((item) => SETUP_HREFS.has(item.href));
+
+function NavLinks({
+  items,
+  pathname,
+  user,
+  variant,
+}: {
+  items: NavItem[];
+  pathname: string;
+  user: SessionUser;
+  variant: "desktop" | "mobile";
+}) {
+  const visible = items.filter((item) => canAccessNav(user, item));
+
+  return visible.map(({ href, label, icon: Icon }) => {
+    const active = navIsActive(pathname, href);
+
+    if (variant === "mobile") {
+      return (
+        <Link
+          key={href}
+          aria-current={active ? "page" : undefined}
+          className={active ? "ws-mobile-nav-link active" : "ws-mobile-nav-link"}
+          href={href}
+        >
+          <Icon size={20} strokeWidth={2} />
+          <span>{label}</span>
+        </Link>
+      );
+    }
+
+    return (
+      <Link
+        key={href}
+        aria-current={active ? "page" : undefined}
+        className={active ? "saas-nav-link active" : "saas-nav-link"}
+        href={href}
+      >
+        <Icon size={18} strokeWidth={2} />
+        {label}
+      </Link>
+    );
+  });
+}
+
 function canAccessRole(userRole: SessionUser["role"], minRole?: NavItem["minRole"]) {
   if (!minRole) {
     return true;
@@ -136,18 +185,36 @@ function userInitials(user: SessionUser) {
     .toUpperCase();
 }
 
+function formatPlanLabel(plan: string) {
+  return plan
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 export function SaasShell({
   user,
   organizations,
+  organizationPlan,
+  organizationPlanLabel,
   children,
 }: {
   user: SessionUser;
   organizations: OrganizationOption[];
+  /** Raw plan enum from Organization.plan */
+  organizationPlan?: string | null;
+  /** Human label from ORG_PLAN_LABELS (pass from server layout). */
+  organizationPlanLabel?: string | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const visibleNav = navItems.filter((item) => canAccessNav(user, item));
   const roleLabel = user.isSuperAdmin ? "Super Admin" : ROLE_LABELS[user.role];
+  const showPlanBadge =
+    Boolean(organizationPlan) &&
+    ROLE_ORDER.indexOf(user.role) >= ROLE_ORDER.indexOf("ADMIN");
+  const planLabel =
+    organizationPlanLabel ?? (organizationPlan ? formatPlanLabel(organizationPlan) : null);
+  const mobileNavItems = [...appsNavItems, ...setupNavItems];
 
   return (
     <div className="saas-app workspace-app">
@@ -166,15 +233,11 @@ export function SaasShell({
             <span>{user.organizationName}</span>
           </div>
         </div>
-        <div className="ws-mobile-shell-profile" title={`${user.name ?? user.email} · ${roleLabel}`}>
-          <span className="crm-avatar sm" aria-hidden>
-            {userInitials(user)}
-          </span>
-          <div className="ws-mobile-shell-profile-text">
-            <strong>{user.name ?? user.email.split("@")[0]}</strong>
-            <span>{roleLabel}</span>
-          </div>
-        </div>
+        <OrganizationSwitcher
+          className="ws-mobile-shell-org-switcher"
+          currentSlug={user.organizationSlug}
+          organizations={organizations}
+        />
         <div className="ws-mobile-shell-actions">
           <button
             aria-label="Sign out"
@@ -188,20 +251,7 @@ export function SaasShell({
       </header>
 
       <nav className="ws-mobile-shell-nav" aria-label="Workspace navigation">
-        {visibleNav.map(({ href, label, icon: Icon }) => {
-          const active = navIsActive(pathname, href);
-          return (
-            <Link
-              key={href}
-              aria-current={active ? "page" : undefined}
-              className={active ? "ws-mobile-nav-link active" : "ws-mobile-nav-link"}
-              href={href}
-            >
-              <Icon size={20} strokeWidth={2} />
-              <span>{label}</span>
-            </Link>
-          );
-        })}
+        <NavLinks items={mobileNavItems} pathname={pathname} user={user} variant="mobile" />
       </nav>
 
       <aside className="saas-sidebar ws-shell-desktop">
@@ -242,22 +292,22 @@ export function SaasShell({
         />
 
         <nav className="saas-nav" aria-label="Workspace">
-          {visibleNav.map(({ href, label, icon: Icon }) => {
-            const active = navIsActive(pathname, href);
-            return (
-              <Link
-                key={href}
-                className={active ? "saas-nav-link active" : "saas-nav-link"}
-                href={href}
-              >
-                <Icon size={18} strokeWidth={2} />
-                {label}
-              </Link>
-            );
-          })}
+          <NavLinks items={appsNavItems} pathname={pathname} user={user} variant="desktop" />
+
+          {setupNavItems.some((item) => canAccessNav(user, item)) ? (
+            <>
+              <p className="saas-nav-section">Setup</p>
+              <NavLinks items={setupNavItems} pathname={pathname} user={user} variant="desktop" />
+            </>
+          ) : null}
         </nav>
 
         <div className="saas-sidebar-footer">
+          {showPlanBadge ? (
+            <p className="saas-plan-badge" title={`Workspace plan: ${organizationPlan}`}>
+              Plan · {planLabel}
+            </p>
+          ) : null}
           <p className="crm-sidebar-email" title={user.email}>
             {user.email}
           </p>
@@ -273,7 +323,9 @@ export function SaasShell({
       </aside>
 
       <div className="saas-main">
-        <div className="saas-content">{children}</div>
+        <div className="saas-content" id="main">
+          {children}
+        </div>
       </div>
     </div>
   );
