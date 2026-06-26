@@ -13,6 +13,7 @@ When the user asks to build features, audit, or work on the multi-tenant website
 | Backend Developer | `backend-developer.md` | Prisma, DB, server actions, API, cron, storage |
 | Quality Team | `quality-team.md` | P0–P3 gaps, security, regression (readonly) |
 | SaaS Multi-Tenant | `saas-multitenant.md` | Provisioning, tiers, enterprise UX patterns |
+| Release & Deploy Ops | `release-ops.md` | Commit, push main, Vercel verify — no user intervention |
 
 ## Parallel execution
 
@@ -21,6 +22,7 @@ For large tasks (e.g. "make a website", "improve FMS", "multi-tenant work"):
 1. Launch **Frontend + Backend in parallel** on non-overlapping files
 2. Launch **Quality Team** (readonly) after or in parallel for audit
 3. Launch **SaaS Architect** for provisioning/tier/UX architecture
+4. Launch **Release Ops** after implementations pass tests to commit, push, and verify production deploy
 
 Use `/multitask` or background subagents for parallel workstreams.
 

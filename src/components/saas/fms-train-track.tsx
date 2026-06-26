@@ -85,6 +85,8 @@ type FmsTrainTrackProps = {
   endLabel?: string;
   compact?: boolean;
   showOwner?: boolean;
+  /** Focused instance work screen — minimal labels, no status chips */
+  workMode?: boolean;
 };
 
 export function FmsTrainTrack({
@@ -93,6 +95,7 @@ export function FmsTrainTrack({
   endLabel = "Finish",
   compact = false,
   showOwner = false,
+  workMode = false,
 }: FmsTrainTrackProps) {
   const currentIndex = stops.findIndex((s) => s.status === "IN_PROGRESS");
   const doneCount = stops.filter((s) => s.status === "DONE").length;
@@ -100,7 +103,7 @@ export function FmsTrainTrack({
 
   return (
     <div
-      className={`ws-fms-train-track${compact ? " is-compact" : ""}${allDone ? " is-finished" : ""}`}
+      className={`ws-fms-train-track${compact ? " is-compact" : ""}${workMode ? " is-work-mode" : ""}${allDone ? " is-finished" : ""}`}
       role="list"
       aria-label={`Workflow route, stop ${Math.max(currentIndex + 1, doneCount)} of ${stops.length}`}
     >
@@ -146,19 +149,19 @@ export function FmsTrainTrack({
                 <span className="ws-fms-train-stop-name" title={stop.name}>
                   {stop.name}
                 </span>
-                {showOwner ? (
+                {showOwner && !workMode ? (
                   <span className="ws-fms-train-stop-doer">
                     Doer: {stop.ownerName ?? "Unassigned"}
                   </span>
                 ) : null}
-                {delayStatus ? (
+                {!workMode && delayStatus ? (
                   <span
                     className={`ws-fms-train-delay-badge is-${delayStatus.tone}`}
                   >
                     {delayStatus.label}
                   </span>
                 ) : null}
-                {isCurrent ? (
+                {!workMode && isCurrent ? (
                   <span className="ws-fms-train-now-badge">Stopped here</span>
                 ) : null}
               </div>

@@ -20105,50 +20105,114 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .ws-fms-journey-hero.is-work-mode {
-  padding: 16px 18px 12px;
+  padding: 16px 20px 0;
   border-left: 4px solid #0176d3;
+  background: #fff;
 }
 
 .workspace-app .ws-fms-journey-header-work h2 {
-  font-size: 1.25rem;
+  font-size: 1.375rem;
   font-weight: 700;
   color: #032d60;
+  letter-spacing: -0.01em;
 }
 
 .workspace-app .ws-fms-journey-work-meta {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   font-size: 0.8125rem;
   color: var(--sf-text-secondary);
 }
 
 .workspace-app .ws-fms-instance-work-mode {
-  display: grid;
-  gap: 16px;
-  max-width: 760px;
+  margin-top: 12px;
+  padding-bottom: 16px;
 }
 
-.workspace-app .ws-fms-journey-row.is-work-mode .ws-fms-train-track {
-  padding: 4px 0 8px;
-  border-bottom: 1px solid var(--sf-card-border);
+.workspace-app .ws-fms-instance-work-card {
+  max-width: 720px;
+  padding: 16px 18px 18px;
+  border: 1px solid #d8e6f8;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fafcff 0%, #fff 100%);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
-.workspace-app .ws-fms-journey-row.is-work-mode .ws-fms-step-work-panel {
+.workspace-app .ws-fms-train-track.is-work-mode {
+  padding: 4px 0 20px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #e8eef5;
+}
+
+.workspace-app .ws-fms-train-track.is-work-mode .ws-fms-train-stop {
+  min-width: 80px;
+  max-width: 128px;
+}
+
+.workspace-app .ws-fms-train-track.is-work-mode .ws-fms-train-stop-marker {
+  width: 32px;
+  height: 32px;
+  font-size: 0.6875rem;
+}
+
+.workspace-app .ws-fms-train-track.is-work-mode .ws-fms-train-segment {
+  top: 18px;
+}
+
+.workspace-app .ws-fms-train-track.is-work-mode .ws-fms-train-origin,
+.workspace-app .ws-fms-train-track.is-work-mode .ws-fms-train-destination {
+  padding-top: 12px;
+  min-width: 48px;
+}
+
+.workspace-app .ws-fms-train-track.is-work-mode .ws-fms-train-stop-label {
+  margin-top: 10px;
+  min-height: 2.5em;
+}
+
+.workspace-app .ws-fms-train-track.is-work-mode .ws-fms-train-stop-name {
+  font-size: 0.75rem;
+  line-height: 1.3;
+  -webkit-line-clamp: 3;
+}
+
+.workspace-app .ws-fms-journey-row.is-work-mode .ws-fms-step-work-panel.is-embedded {
   margin: 0;
   padding: 0;
   border: none;
   box-shadow: none;
   background: transparent;
+  position: static;
 }
 
-.workspace-app .ws-fms-step-work-panel .ws-fms-step-work-accountability.is-inline {
+.workspace-app .ws-fms-step-work-panel.is-embedded {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.workspace-app .ws-fms-step-work-accountability-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.workspace-app .ws-fms-step-work-panel.is-embedded .ws-fms-step-work-accountability.is-inline {
+  flex: 1 1 280px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin: 0 0 16px;
+  gap: 10px 14px;
+  margin: 0;
   padding: 12px 14px;
-  border: 1px solid #d8e6f8;
+  border: 1px solid #e3edf9;
   border-radius: 10px;
-  background: linear-gradient(180deg, #f8fbff 0%, #fff 100%);
+  background: #fff;
+}
+
+.workspace-app .ws-fms-step-work-panel.is-embedded .ws-fms-step-work-done-toggle {
+  flex: 0 0 auto;
+  align-self: center;
 }
 
 .workspace-app .ws-fms-step-work-notes-actions {
@@ -20175,29 +20239,40 @@ body:has(.workspace-app.saas-app) {
   min-height: 44px;
 }
 
-.workspace-app .ws-fms-step-work-footer.is-compact {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--sf-card-border);
+.workspace-app .ws-fms-step-work-panel.is-embedded .ws-fms-step-work-footer.is-compact {
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px solid #e8eef5;
+  flex-direction: column;
+  align-items: stretch;
 }
 
-.workspace-app .ws-fms-step-work-footer-actions .ws-fms-step-action-complete-form {
+.workspace-app .ws-fms-step-work-panel.is-embedded .ws-fms-step-work-footer-actions {
+  width: 100%;
+  margin-left: 0;
+}
+
+.workspace-app .ws-fms-step-work-panel.is-embedded .ws-fms-step-action-complete-form {
   width: 100%;
 }
 
-.workspace-app .ws-fms-step-work-footer-actions .ws-fms-step-action-submit {
+.workspace-app .ws-fms-step-work-panel.is-embedded .ws-fms-step-action-submit {
   width: 100%;
   min-height: 44px;
   font-size: 0.9375rem;
 }
 
 @media (max-width: 720px) {
-  .workspace-app .ws-fms-step-work-panel .ws-fms-step-work-accountability.is-inline {
+  .workspace-app .ws-fms-step-work-panel.is-embedded .ws-fms-step-work-accountability.is-inline {
     grid-template-columns: 1fr;
   }
 
   .workspace-app .ws-fms-step-work-upload-row {
     grid-template-columns: 1fr;
+  }
+
+  .workspace-app .ws-fms-instance-work-card {
+    padding: 14px;
   }
 }
 
@@ -21135,19 +21210,20 @@ body:has(.workspace-app.saas-app) {
 .workspace-app .ws-mis-page {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .workspace-app .ws-mis-metric-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 42px;
-  padding: 4px 8px;
-  border-radius: 999px;
+  min-width: 32px;
+  padding: 2px 8px;
+  border-radius: 6px;
   background: #f4f6f9;
   color: #0b5cab;
   font-weight: 700;
+  font-size: 0.8125rem;
   text-decoration: none;
 }
 
@@ -21239,12 +21315,23 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-mis-score-table {
   width: 100%;
-  min-width: 760px;
+  min-width: 640px;
+}
+
+.workspace-app .ws-mis-summary-table {
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.workspace-app .ws-mis-summary-table th.ws-mis-col-num,
+.workspace-app .ws-mis-summary-table td.ws-mis-col-num {
+  width: 72px;
+  text-align: center;
 }
 
 .workspace-app .ws-mis-score-table th,
 .workspace-app .ws-mis-score-table td {
-  padding: 11px 14px;
+  padding: 9px 12px;
   vertical-align: middle;
 }
 
@@ -21263,29 +21350,68 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .ws-mis-doer-filter {
-  margin-bottom: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
 }
 
 .workspace-app .ws-mis-doer-filter-layout {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 12px 16px;
-  width: 100%;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+}
+
+.workspace-app .ws-mis-doer-filter .ws-filter-group {
+  margin: 0;
 }
 
 .workspace-app .ws-mis-doer-filter .ws-filter-group-label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  font-size: 0.75rem;
 }
 
-.workspace-app .ws-mis-summary-view .ws-sf-list-view-header {
+.workspace-app .ws-mis-summary-view .ws-sf-list-view-header,
+.workspace-app .ws-mis-summary-header {
+  flex-direction: column;
   align-items: flex-start;
+  gap: 4px;
+}
+
+.workspace-app .ws-mis-summary-hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--sf-text-secondary);
 }
 
 .workspace-app .ws-mis-data-view-header {
   align-items: flex-start;
+}
+
+.workspace-app .ws-mis-data-view-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.workspace-app .ws-mis-result-on-time {
+  background: #e3fcef;
+  color: #1b7f4b;
+  border: 1px solid #b8e6cf;
+}
+
+.workspace-app .ws-mis-result-badge {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .workspace-app .ws-mis-data-view-heading {

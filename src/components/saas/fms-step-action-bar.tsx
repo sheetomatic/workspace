@@ -43,6 +43,7 @@ export function FmsStepActionBar({
   existingAttachments = [],
   accountability,
   quickComplete = false,
+  embedded = false,
 }: {
   stepState: FmsStepCompleteState;
   canComplete: boolean;
@@ -51,6 +52,8 @@ export function FmsStepActionBar({
   existingAttachments?: StepAttachment[];
   accountability?: AccountabilityMeta;
   quickComplete?: boolean;
+  /** Hide duplicate title when parent page already shows current stop */
+  embedded?: boolean;
 }) {
   const router = useRouter();
   const uploadFormRef = useRef<HTMLFormElement>(null);
@@ -149,58 +152,76 @@ export function FmsStepActionBar({
 
   return (
     <div
-      className={`ws-fms-step-action-bar ws-fms-step-work-panel is-compact${useQuickComplete ? " is-quick-complete" : ""}`}
+      className={`ws-fms-step-action-bar ws-fms-step-work-panel is-compact${embedded ? " is-embedded" : ""}${useQuickComplete ? " is-quick-complete" : ""}`}
     >
-      <header className="ws-fms-step-work-head">
-        <div className="ws-fms-step-work-head-copy">
-          <h3 className="ws-fms-step-work-title">
-            <span className="ws-fms-step-work-eyebrow">Your stop</span>
-            {stepName}
-          </h3>
-        </div>
-        {showMarkDone && !useQuickComplete ? (
-          <label className="ws-fms-step-work-done-toggle">
-            <input
-              checked={markedDone}
-              className="ws-fms-step-action-chip-input"
-              type="checkbox"
-              onChange={(event) => setMarkedDone(event.target.checked)}
-            />
-            <span className="ws-fms-step-work-done-label">
-              <CheckCircle2 size={15} aria-hidden />
-              Mark done
-            </span>
-          </label>
-        ) : null}
-      </header>
+      {!embedded ? (
+        <header className="ws-fms-step-work-head">
+          <div className="ws-fms-step-work-head-copy">
+            <h3 className="ws-fms-step-work-title">
+              <span className="ws-fms-step-work-eyebrow">Your stop</span>
+              {stepName}
+            </h3>
+          </div>
+          {showMarkDone && !useQuickComplete ? (
+            <label className="ws-fms-step-work-done-toggle">
+              <input
+                checked={markedDone}
+                className="ws-fms-step-action-chip-input"
+                type="checkbox"
+                onChange={(event) => setMarkedDone(event.target.checked)}
+              />
+              <span className="ws-fms-step-work-done-label">
+                <CheckCircle2 size={15} aria-hidden />
+                Mark done
+              </span>
+            </label>
+          ) : null}
+        </header>
+      ) : null}
 
       {accountability && !useQuickComplete ? (
-        <dl className="ws-fms-step-work-accountability is-inline">
-          <div>
-            <dt>Doer</dt>
-            <dd>{accountability.doerName}</dd>
-          </div>
-          <div>
-            <dt>Status</dt>
-            <dd>
-              {accountability.isOverdue && accountability.delayLabel ? (
-                <span className="ws-fms-train-delay-badge is-late">
-                  {accountability.delayLabel}
-                </span>
-              ) : accountability.plannedAt ? (
-                <span className="ws-fms-train-delay-badge is-ok">On track</span>
-              ) : (
-                <span className="ws-fms-train-delay-badge is-neutral">In progress</span>
-              )}
-            </dd>
-          </div>
-          {accountability.plannedAt ? (
+        <div className="ws-fms-step-work-accountability-row">
+          <dl className="ws-fms-step-work-accountability is-inline">
             <div>
-              <dt>Due</dt>
-              <dd>{formatDueDate(accountability.plannedAt)}</dd>
+              <dt>Doer</dt>
+              <dd>{accountability.doerName}</dd>
             </div>
+            <div>
+              <dt>Status</dt>
+              <dd>
+                {accountability.isOverdue && accountability.delayLabel ? (
+                  <span className="ws-fms-train-delay-badge is-late">
+                    {accountability.delayLabel}
+                  </span>
+                ) : accountability.plannedAt ? (
+                  <span className="ws-fms-train-delay-badge is-ok">On track</span>
+                ) : (
+                  <span className="ws-fms-train-delay-badge is-neutral">In progress</span>
+                )}
+              </dd>
+            </div>
+            {accountability.plannedAt ? (
+              <div>
+                <dt>Due</dt>
+                <dd>{formatDueDate(accountability.plannedAt)}</dd>
+              </div>
+            ) : null}
+          </dl>
+          {embedded && showMarkDone && !useQuickComplete ? (
+            <label className="ws-fms-step-work-done-toggle">
+              <input
+                checked={markedDone}
+                className="ws-fms-step-action-chip-input"
+                type="checkbox"
+                onChange={(event) => setMarkedDone(event.target.checked)}
+              />
+              <span className="ws-fms-step-work-done-label">
+                <CheckCircle2 size={15} aria-hidden />
+                Mark done
+              </span>
+            </label>
           ) : null}
-        </dl>
+        </div>
       ) : null}
 
       {captureFields.length > 0 ? (

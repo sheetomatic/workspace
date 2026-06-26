@@ -150,43 +150,47 @@ export function FmsInstanceJourneyRow({
     <div className={`ws-fms-journey-row${focusStop ? " is-focus-stop is-work-mode" : ""}`}>
       {focusStop ? (
         <div className="ws-fms-instance-work-mode">
-          <FmsTrainTrack
-            compact
-            endLabel="Complete"
-            showOwner={false}
-            startLabel="Start"
-            stops={trainStops}
-          />
-          {activeCompleteStep?.status === "IN_PROGRESS" && completePanel ? (
-            <FmsStepActionBar
-              accountability={{
-                doerName:
-                  activeCompleteStep.owner?.name ??
-                  activeCompleteStep.owner?.email.split("@")[0] ??
-                  "Unassigned",
-                delayLabel: formatDelayLabel(
-                  liveDelayMinutes(
+          <div className="ws-fms-instance-work-card">
+            <FmsTrainTrack
+              compact
+              endLabel="Complete"
+              showOwner={false}
+              startLabel="Start"
+              stops={trainStops}
+              workMode
+            />
+            {activeCompleteStep?.status === "IN_PROGRESS" && completePanel ? (
+              <FmsStepActionBar
+                accountability={{
+                  doerName:
+                    activeCompleteStep.owner?.name ??
+                    activeCompleteStep.owner?.email.split("@")[0] ??
+                    "Unassigned",
+                  delayLabel: formatDelayLabel(
+                    liveDelayMinutes(
+                      activeCompleteStep.plannedAt,
+                      activeCompleteStep.actualAt,
+                      activeCompleteStep.delayMinutes,
+                    ),
+                  ),
+                  isOverdue: isStepOverdue(
+                    activeCompleteStep.status,
                     activeCompleteStep.plannedAt,
                     activeCompleteStep.actualAt,
                     activeCompleteStep.delayMinutes,
                   ),
-                ),
-                isOverdue: isStepOverdue(
-                  activeCompleteStep.status,
-                  activeCompleteStep.plannedAt,
-                  activeCompleteStep.actualAt,
-                  activeCompleteStep.delayMinutes,
-                ),
-                plannedAt: activeCompleteStep.plannedAt,
-              }}
-              canComplete={completePanel.canComplete}
-              existingAttachments={activeCompleteStep.attachments}
-              initialNotes={activeCompleteStep.notes}
-              stepName={activeCompleteStep.step.stepName}
-              stepState={completePanel.stepState}
-              quickComplete={completePanel.quickComplete}
-            />
-          ) : null}
+                  plannedAt: activeCompleteStep.plannedAt,
+                }}
+                canComplete={completePanel.canComplete}
+                embedded
+                existingAttachments={activeCompleteStep.attachments}
+                initialNotes={activeCompleteStep.notes}
+                stepName={activeCompleteStep.step.stepName}
+                stepState={completePanel.stepState}
+                quickComplete={completePanel.quickComplete}
+              />
+            ) : null}
+          </div>
         </div>
       ) : (
       <details className="ws-fms-journey-pipeline" open>

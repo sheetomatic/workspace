@@ -16,19 +16,19 @@ export function MisCategorySummaryTable({
 }) {
   return (
     <section className="ws-sf-list-view ws-mis-summary-view" aria-label="MIS category summary">
-      <header className="ws-sf-list-view-header">
+      <header className="ws-sf-list-view-header ws-mis-summary-header">
         <div className="ws-sf-list-view-title">
           <h2>MIS score by category</h2>
           <span className="ws-sf-list-view-count">
             {itemCount} item{itemCount === 1 ? "" : "s"}
           </span>
         </div>
-        <p className="ws-em-section-lead">
+        <p className="ws-mis-summary-hint">
           Click any number to drill down into the data view below.
         </p>
       </header>
       <div className="ws-sf-table-wrap ws-mis-table-scroll">
-        <table className="ws-fms-data-table ws-sf-data-table ws-mis-score-table">
+        <table className="ws-fms-data-table ws-sf-data-table ws-mis-score-table ws-mis-summary-table">
           <thead>
             <tr>
               <th>Category</th>

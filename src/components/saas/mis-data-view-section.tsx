@@ -54,41 +54,41 @@ export function MisDataViewSection({
     : null;
 
   return (
-    <>
-      <MisDoerFilter options={doerOptions} currentDoer={activeFilters.doer} />
-
-      <section className="ws-sf-list-view ws-mis-data-view" aria-label="MIS drill down">
-        <header className="ws-sf-list-view-header ws-mis-data-view-header">
-          <div className="ws-mis-data-view-heading">
-            <div className="ws-sf-list-view-title">
-              <h2>Data view</h2>
-              <span className="ws-sf-list-view-count">
-                {rows.length} item{rows.length === 1 ? "" : "s"}
-              </span>
-            </div>
-            {filtersActive ? (
-              <div className="ws-mis-active-filters" aria-label="Active filters">
-                {categoryChip ? (
-                  <span className="ws-mis-filter-chip">{categoryChip}</span>
-                ) : null}
-                {metricChip ? (
-                  <span className="ws-mis-filter-chip">{metricChip}</span>
-                ) : null}
-                {activeFilters.doer && activeFilters.doer !== "all" ? (
-                  <span className="ws-mis-filter-chip">
-                    {doerOptions.find((option) => option.id === activeFilters.doer)?.label ??
-                      "Doer"}
-                  </span>
-                ) : null}
-              </div>
-            ) : null}
+    <section className="ws-sf-list-view ws-mis-data-view" aria-label="MIS drill down">
+      <header className="ws-sf-list-view-header ws-mis-data-view-header">
+        <div className="ws-mis-data-view-heading">
+          <div className="ws-sf-list-view-title">
+            <h2>Data view</h2>
+            <span className="ws-sf-list-view-count">
+              {rows.length} item{rows.length === 1 ? "" : "s"}
+            </span>
           </div>
+          {filtersActive ? (
+            <div className="ws-mis-active-filters" aria-label="Active filters">
+              {categoryChip ? (
+                <span className="ws-mis-filter-chip">{categoryChip}</span>
+              ) : null}
+              {metricChip ? (
+                <span className="ws-mis-filter-chip">{metricChip}</span>
+              ) : null}
+              {activeFilters.doer && activeFilters.doer !== "all" ? (
+                <span className="ws-mis-filter-chip">
+                  {doerOptions.find((option) => option.id === activeFilters.doer)?.label ??
+                    "Doer"}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+        <div className="ws-mis-data-view-toolbar">
+          <MisDoerFilter options={doerOptions} currentDoer={activeFilters.doer} />
           {filtersActive ? (
             <Link href={basePath} className="btn-secondary btn-sm">
               Clear filter
             </Link>
           ) : null}
-        </header>
+        </div>
+      </header>
 
         {rows.length === 0 ? (
           <div className="ws-empty-state">
@@ -144,7 +144,7 @@ export function MisDataViewSection({
                       </td>
                       <td>
                         <span
-                          className={`ws-sf-badge${row.delayed ? " ws-sf-badge-danger" : " ws-sf-badge-info"}`}
+                          className={`ws-sf-badge ws-mis-result-badge${row.delayed ? " ws-sf-badge-danger" : " ws-mis-result-on-time"}`}
                         >
                           {row.delayed ? "Delayed" : "On time"}
                         </span>
@@ -157,6 +157,5 @@ export function MisDataViewSection({
           </div>
         )}
       </section>
-    </>
   );
 }

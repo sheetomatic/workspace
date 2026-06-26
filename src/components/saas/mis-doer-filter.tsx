@@ -43,7 +43,7 @@ export function MisDoerFilter({
 
   return (
     <div
-      className={`ws-task-filter-bar ws-mis-doer-filter${pending ? " is-loading" : ""}`}
+      className={`ws-mis-doer-filter${pending ? " is-loading" : ""}`}
       aria-label="MIS doer filter"
     >
       <div className="ws-mis-doer-filter-layout">
