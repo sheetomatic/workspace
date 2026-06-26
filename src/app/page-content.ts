@@ -10,6 +10,7 @@ export const knowledgeTransferLinks = {
 export const mainNav = [
   { href: "/services", label: "Services" },
   { href: "/products", label: "Products" },
+  { href: "/ai", label: "Sheetomatic AI" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];

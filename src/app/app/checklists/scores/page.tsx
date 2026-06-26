@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
   MisCategorySummaryTable,
-  MisDataViewTable,
+  MisDataViewSection,
 } from "@/components/saas/mis-category-table";
 import { PcPersonMisTable } from "@/components/saas/pc-work-tables";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
@@ -9,13 +9,13 @@ import { buildChecklistMisRows } from "@/lib/checklists/mis";
 import { buildPcMisDetailRows, buildPcPersonMisRows } from "@/lib/checklists/pc-mis";
 import { listChecklistOccurrencesForMis } from "@/lib/checklists/queries";
 import { canAccessEmReady } from "@/lib/em/em-access";
-import { categorySummary, filterMisRows } from "@/lib/mis/reports-data";
+import { categorySummary, filterMisRows, misDoerOptions } from "@/lib/mis/reports-data";
 import { requireSession } from "@/lib/require-session";
 import { canCreateTasks } from "@/lib/tasks";
 import { redirect } from "next/navigation";
 
 type PageProps = {
-  searchParams: Promise<{ category?: string; metric?: string }>;
+  searchParams: Promise<{ category?: string; metric?: string; doer?: string }>;
 };
 
 export default async function ChecklistScoresPage({ searchParams }: PageProps) {
@@ -30,7 +30,12 @@ export default async function ChecklistScoresPage({ searchParams }: PageProps) {
   const detailRows = buildPcMisDetailRows(occurrences);
   const summary = categorySummary("PC", detailRows);
   const personRows = buildPcPersonMisRows(checklistRows);
-  const filteredRows = filterMisRows(detailRows, params);
+  const metricFiltered = filterMisRows(detailRows, {
+    category: params.category,
+    metric: params.metric,
+  });
+  const doerOptions = misDoerOptions(metricFiltered);
+  const filteredRows = filterMisRows(metricFiltered, { doer: params.doer });
   const showEmReady = canAccessEmReady(user);
 
   return (
@@ -74,7 +79,16 @@ export default async function ChecklistScoresPage({ searchParams }: PageProps) {
         <PcPersonMisTable rows={personRows} />
       </section>
 
-      <MisDataViewTable basePath="/app/checklists/scores" rows={filteredRows} />
+      <MisDataViewSection
+        basePath="/app/checklists/scores"
+        rows={filteredRows}
+        doerOptions={doerOptions}
+        activeFilters={{
+          category: params.category,
+          metric: params.metric,
+          doer: params.doer,
+        }}
+      />
 
       <p className="ws-fms-muted ws-mis-score-footnote">
         PC MIS: on-time checklist completion = 100, minus ~2 pts/hour late. EA tasks and FMS steps have

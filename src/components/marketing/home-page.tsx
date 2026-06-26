@@ -17,6 +17,7 @@ import {
   WhatsAppButton,
 } from "./marketing-buttons";
 import { whatsappDisplayNumber } from "@/app/site-content";
+import { AI_START_FREE_HREF } from "@/lib/ai-auth-links";
 import { ClientProjectsShowcase } from "./client-projects-showcase";
 
 const linkIcons = {
@@ -78,6 +79,50 @@ export function HomePage() {
                 </Link>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="home-ai-promo-title" className="home-ai-promo">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8">
+          <div className="home-ai-promo-inner">
+            <div className="home-ai-promo-copy">
+              <p className="home-ai-promo-kicker">Sheetomatic AI</p>
+              <h2 className="home-ai-promo-title" id="home-ai-promo-title">
+                WhatsApp AI, team inbox, and CRM in one workspace
+              </h2>
+              <p className="home-ai-promo-lead">
+                Connect your business number, train replies from FAQs and docs, and
+                hand off to your team when a human should take over.
+              </p>
+              <ul className="home-ai-promo-highlights">
+                <li>AI replies on WhatsApp</li>
+                <li>Shared team inbox</li>
+                <li>Go live when you are ready</li>
+              </ul>
+              <div className="home-ai-promo-actions">
+                <MarketingLinkButton href={AI_START_FREE_HREF} variant="primary">
+                  Start free
+                </MarketingLinkButton>
+                <MarketingLinkButton href="/ai" variant="secondary">
+                  <span>Explore Sheetomatic AI</span>
+                  <ArrowRightIcon size={18} />
+                </MarketingLinkButton>
+              </div>
+            </div>
+            <Link className="home-ai-promo-card" href="/ai">
+              <span className="marketing-icon sm tone-green" aria-hidden>
+                <MessageCircleIcon size={20} />
+              </span>
+              <span className="home-ai-promo-card-body">
+                <strong>Built for Indian MSMEs</strong>
+                <span>
+                  Official WhatsApp Business API, knowledge-trained replies, and
+                  human takeover from one dashboard.
+                </span>
+              </span>
+              <ArrowRightIcon size={18} aria-hidden />
+            </Link>
           </div>
         </div>
       </section>

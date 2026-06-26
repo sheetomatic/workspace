@@ -116,6 +116,7 @@ function buildPersonKra(
         category: "Task" as const,
         title: row.title,
         owner: row.owner,
+        ownerId: row.ownerId,
         status: row.status,
         score: row.score,
         delayed: row.delayed,

@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import {
   AlertTriangle,
   ChevronRight,
@@ -61,7 +64,60 @@ function MetricTile({
   );
 }
 
+function EmDoerFilterBar({
+  options,
+  value,
+  onChange,
+}: {
+  options: string[];
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  if (options.length <= 1) {
+    return null;
+  }
+
+  return (
+    <div className="ws-task-filter-bar ws-em-doer-filter" aria-label="EM doer filter">
+      <div className="ws-em-doer-filter-layout">
+        <label className="ws-filter-group">
+          <span className="ws-filter-group-label">
+            <UserRound size={14} aria-hidden />
+            Doer
+          </span>
+          <div className="ws-filter-select-wrap">
+            <select
+              aria-label="Filter by doer"
+              className="ws-filter-select"
+              value={value}
+              onChange={(event) => onChange(event.target.value)}
+            >
+              <option value="">All doers</option>
+              {options.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+        </label>
+        {value ? (
+          <button
+            className="ws-filter-clear ws-filter-clear-inline"
+            type="button"
+            onClick={() => onChange("")}
+          >
+            Clear doer
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export function EmReadyBoard({ payload }: { payload: EmReadyPayload }) {
+  const [doerName, setDoerName] = useState("");
+
   const when = new Intl.DateTimeFormat("en-IN", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -76,13 +132,45 @@ export function EmReadyBoard({ payload }: { payload: EmReadyPayload }) {
           ? "Yearly review"
           : "Custom period review";
 
-  const totalExceptions =
-    payload.tiles.overdueTasks +
-    payload.tiles.overdueFmsStops +
-    payload.tiles.unassignedFmsStops;
+  const doerOptions = useMemo(() => {
+    const names = new Set<string>();
+    for (const row of payload.personKra) {
+      if (row.owner !== "Unassigned") {
+        names.add(row.owner);
+      }
+    }
+    for (const item of payload.exceptions) {
+      if (item.owner !== "Unassigned") {
+        names.add(item.owner);
+      }
+    }
+    return [...names].sort((a, b) => a.localeCompare(b));
+  }, [payload.exceptions, payload.personKra]);
+
+  const filteredExceptions = useMemo(() => {
+    if (!doerName) {
+      return payload.exceptions;
+    }
+    return payload.exceptions.filter((item) => item.owner === doerName);
+  }, [doerName, payload.exceptions]);
+
+  const filteredPersonKra = useMemo(() => {
+    if (!doerName) {
+      return payload.personKra;
+    }
+    return payload.personKra.filter((row) => row.owner === doerName);
+  }, [doerName, payload.personKra]);
+
+  const totalExceptions = doerName
+    ? filteredExceptions.length
+    : payload.tiles.overdueTasks +
+      payload.tiles.overdueFmsStops +
+      payload.tiles.unassignedFmsStops;
 
   return (
     <div className="ws-em-ready">
+      <EmDoerFilterBar options={doerOptions} value={doerName} onChange={setDoerName} />
+
       <section className="ws-em-hero" aria-label="EM Ready overview">
         <div className="ws-em-hero-copy">
           <p className="ws-em-hero-eyebrow">
@@ -144,10 +232,10 @@ export function EmReadyBoard({ payload }: { payload: EmReadyPayload }) {
       </div>
 
       {(payload.taskSummary || payload.fmsSummary) && (
-        <section className="ws-em-section" aria-label="Module deficit summary">
+        <section className="ws-em-section ws-em-module-section" aria-label="Module deficit summary">
           <header className="ws-fms-section-heading">
             <h2>Module deficit</h2>
-            <p>Penalty view  -  gap from 100%, not &ldquo;% done&rdquo;.</p>
+            <p>Penalty view - gap from 100%, not &ldquo;% done&rdquo;.</p>
           </header>
           <div className="ws-em-module-grid">
             {payload.taskSummary ? (
@@ -203,21 +291,26 @@ export function EmReadyBoard({ payload }: { payload: EmReadyPayload }) {
                 Discuss first
               </h2>
               <span className="ws-sf-list-view-count">
-                {payload.exceptions.length} item
-                {payload.exceptions.length === 1 ? "" : "s"}
+                {filteredExceptions.length} item
+                {filteredExceptions.length === 1 ? "" : "s"}
               </span>
             </div>
             <p className="ws-em-section-lead">
-              Overdue FMS stops and tasks for {payload.period.periodLabel}.
+              Overdue FMS stops and tasks for {payload.period.periodLabel}
+              {doerName ? ` - ${doerName}` : ""}.
             </p>
           </header>
-          {payload.exceptions.length === 0 ? (
+          {filteredExceptions.length === 0 ? (
             <div className="ws-empty-state ws-fms-empty-state is-positive">
-              <p>All pipelines on track. Nothing blocking EM today.</p>
+              <p>
+                {doerName
+                  ? `No exceptions for ${doerName} in this period.`
+                  : "All pipelines on track. Nothing blocking EM today."}
+              </p>
             </div>
           ) : (
             <ul className="ws-em-exception-list">
-              {payload.exceptions.map((item) => (
+              {filteredExceptions.map((item) => (
                 <li key={`${item.kind}-${item.id}`}>
                   <Link href={item.href} className="ws-em-exception-item">
                     <span className={`ws-em-kind ws-em-kind-${item.kind}`}>
@@ -257,11 +350,12 @@ export function EmReadyBoard({ payload }: { payload: EmReadyPayload }) {
                   Person-wise KRA
                 </h2>
                 <span className="ws-sf-list-view-count">
-                  {payload.personKra.length} people
+                  {filteredPersonKra.length} people
                 </span>
               </div>
               <p className="ws-em-section-lead">
-                Tasks + FMS combined deficit per team member.
+                Tasks + FMS combined deficit per team member
+                {doerName ? ` - ${doerName}` : ""}.
               </p>
             </header>
             <div className="ws-sf-table-wrap ws-em-table-wrap">
@@ -269,57 +363,65 @@ export function EmReadyBoard({ payload }: { payload: EmReadyPayload }) {
                 <thead>
                   <tr>
                     <th>Person</th>
-                    <th>Tasks</th>
-                    <th>FMS</th>
-                    <th>PC</th>
-                    <th>Total</th>
+                    <th className="ws-mis-col-num">Tasks</th>
+                    <th className="ws-mis-col-num">FMS</th>
+                    <th className="ws-mis-col-num">PC</th>
+                    <th className="ws-mis-col-num">Total</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {payload.personKra.map((row) => (
-                    <tr key={row.owner}>
-                      <td className="ws-em-person-cell">{row.owner}</td>
-                      <td>
-                        {row.taskTotal > 0 ? (
-                          <div className="ws-em-kra-cell">
-                            <DeficitBadge value={row.taskDeficitPct} size="sm" />
-                            <span className="ws-em-sub">
-                              {row.taskDelayed}/{row.taskTotal} delayed
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="ws-fms-muted"> - </span>
-                        )}
-                      </td>
-                      <td>
-                        {row.fmsTotal > 0 ? (
-                          <div className="ws-em-kra-cell">
-                            <DeficitBadge value={row.fmsDeficitPct} size="sm" />
-                            <span className="ws-em-sub">
-                              {row.fmsDelayed}/{row.fmsTotal} delayed
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="ws-fms-muted"> - </span>
-                        )}
-                      </td>
-                      <td>
-                        {row.checklistTotal > 0 ? (
-                          <div className="ws-em-kra-cell">
-                            <DeficitBadge value={row.checklistDeficitPct} size="sm" />
-                            <span className="ws-em-sub">
-                              {row.checklistDelayed}/{row.checklistTotal} delayed
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="ws-fms-muted"> - </span>
-                        )}
-                      </td>
-                      <td>
-                        <DeficitBadge value={row.totalDeficitPct} size="sm" />
+                  {filteredPersonKra.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="ws-fms-muted">
+                        No KRA rows for this doer.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredPersonKra.map((row) => (
+                      <tr key={row.owner}>
+                        <td className="ws-em-person-cell">{row.owner}</td>
+                        <td className="ws-mis-col-num">
+                          {row.taskTotal > 0 ? (
+                            <div className="ws-em-kra-cell">
+                              <DeficitBadge value={row.taskDeficitPct} size="sm" />
+                              <span className="ws-em-sub">
+                                {row.taskDelayed}/{row.taskTotal} delayed
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="ws-fms-muted">-</span>
+                          )}
+                        </td>
+                        <td className="ws-mis-col-num">
+                          {row.fmsTotal > 0 ? (
+                            <div className="ws-em-kra-cell">
+                              <DeficitBadge value={row.fmsDeficitPct} size="sm" />
+                              <span className="ws-em-sub">
+                                {row.fmsDelayed}/{row.fmsTotal} delayed
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="ws-fms-muted">-</span>
+                          )}
+                        </td>
+                        <td className="ws-mis-col-num">
+                          {row.checklistTotal > 0 ? (
+                            <div className="ws-em-kra-cell">
+                              <DeficitBadge value={row.checklistDeficitPct} size="sm" />
+                              <span className="ws-em-sub">
+                                {row.checklistDelayed}/{row.checklistTotal} delayed
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="ws-fms-muted">-</span>
+                          )}
+                        </td>
+                        <td className="ws-mis-col-num">
+                          <DeficitBadge value={row.totalDeficitPct} size="sm" />
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

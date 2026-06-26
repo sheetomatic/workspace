@@ -2,7 +2,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/saas/page-header";
 import {
   MisCategorySummaryTable,
-  MisDataViewTable,
+  MisDataViewSection,
 } from "@/components/saas/mis-category-table";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
@@ -13,11 +13,12 @@ import {
   buildTaskMisRows,
   categorySummary,
   filterMisRows,
+  misDoerOptions,
 } from "@/lib/mis/reports-data";
 import { listDelegatedTasks } from "@/lib/tasks";
 
 type ReportsPageProps = {
-  searchParams: Promise<{ category?: string; metric?: string }>;
+  searchParams: Promise<{ category?: string; metric?: string; doer?: string }>;
 };
 
 export default async function ReportsPage({ searchParams }: ReportsPageProps) {
@@ -48,7 +49,16 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   ].filter(
     (row) => row.total > 0 || row.category === "Task" || row.category === "FMS",
   );
-  const detailRows = filterMisRows(allRows, params);
+  const detailRows = filterMisRows(allRows, {
+    category: params.category,
+    metric: params.metric,
+    doer: params.doer,
+  });
+  const metricFiltered = filterMisRows(allRows, {
+    category: params.category,
+    metric: params.metric,
+  });
+  const doerOptions = misDoerOptions(metricFiltered);
 
   return (
     <div className="saas-page ws-mis-page ws-tasks-sf">
@@ -70,7 +80,16 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         summaries={summaries}
       />
 
-      <MisDataViewTable basePath="/app/reports" rows={detailRows} />
+      <MisDataViewSection
+        basePath="/app/reports"
+        rows={detailRows}
+        doerOptions={doerOptions}
+        activeFilters={{
+          category: params.category,
+          metric: params.metric,
+          doer: params.doer,
+        }}
+      />
     </div>
   );
 }

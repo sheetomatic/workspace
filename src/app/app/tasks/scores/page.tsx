@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
   MisCategorySummaryTable,
-  MisDataViewTable,
+  MisDataViewSection,
 } from "@/components/saas/mis-category-table";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
@@ -10,12 +10,13 @@ import {
   buildTaskMisRows,
   categorySummary,
   filterMisRows,
+  misDoerOptions,
 } from "@/lib/mis/reports-data";
 import { canCreateTasks, listDelegatedTasks } from "@/lib/tasks";
 import { redirect } from "next/navigation";
 
 type PageProps = {
-  searchParams: Promise<{ category?: string; metric?: string }>;
+  searchParams: Promise<{ category?: string; metric?: string; doer?: string }>;
 };
 
 export default async function TasksScoresPage({ searchParams }: PageProps) {
@@ -34,7 +35,12 @@ export default async function TasksScoresPage({ searchParams }: PageProps) {
 
   const taskRows = buildTaskMisRows(taskPage.items);
   const summary = categorySummary("Task", taskRows);
-  const detailRows = filterMisRows(taskRows, params);
+  const metricFiltered = filterMisRows(taskRows, {
+    category: params.category,
+    metric: params.metric,
+  });
+  const doerOptions = misDoerOptions(metricFiltered);
+  const detailRows = filterMisRows(metricFiltered, { doer: params.doer });
   const showEmReady = canAccessEmReady(user);
 
   return (
@@ -62,7 +68,16 @@ export default async function TasksScoresPage({ searchParams }: PageProps) {
         summaries={[summary]}
       />
 
-      <MisDataViewTable basePath="/app/tasks/scores" rows={detailRows} />
+      <MisDataViewSection
+        basePath="/app/tasks/scores"
+        rows={detailRows}
+        doerOptions={doerOptions}
+        activeFilters={{
+          category: params.category,
+          metric: params.metric,
+          doer: params.doer,
+        }}
+      />
 
       <p className="ws-fms-muted ws-mis-score-footnote">
         Task MIS: on-time completion = 100, minus ~2 pts/hour late. Deficit % is

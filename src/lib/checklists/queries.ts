@@ -242,7 +242,7 @@ export async function listChecklistOccurrencesForMis(
     },
     include: {
       template: { select: { title: true, team: true } },
-      assignee: { select: { name: true, email: true } },
+      assignee: { select: { id: true, name: true, email: true } },
     },
     take: 500,
   });

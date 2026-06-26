@@ -9,11 +9,19 @@ export type MisDetailRow = {
   category: MisCategory;
   title: string;
   owner: string;
+  ownerId: string | null;
   status: string;
   score: number;
   delayed: boolean;
   href: string;
 };
+
+export type MisDoerOption = {
+  id: string;
+  label: string;
+};
+
+export const MIS_UNASSIGNED_DOER = "__unassigned__";
 
 export type MisCategorySummary = {
   category: MisCategory;
@@ -80,26 +88,71 @@ export function metricHref(
 
 export function filterMisRows(
   rows: MisDetailRow[],
-  options: { category?: string; metric?: string },
+  options: { category?: string; metric?: string; doer?: string },
 ) {
   const selectedCategory = options.category?.toLowerCase();
   const selectedMetric = options.metric ?? "all";
+  const selectedDoer = options.doer;
 
   return rows.filter((row) => {
     if (selectedCategory && row.category.toLowerCase() !== selectedCategory) {
       return false;
     }
     if (selectedMetric === "delayed") {
-      return row.delayed;
+      if (!row.delayed) {
+        return false;
+      }
+    } else if (selectedMetric === "onTime") {
+      if (row.delayed) {
+        return false;
+      }
+    } else if (selectedMetric === "deficit") {
+      if (row.score >= 100) {
+        return false;
+      }
     }
-    if (selectedMetric === "onTime") {
-      return !row.delayed;
-    }
-    if (selectedMetric === "deficit") {
-      return row.score < 100;
+    if (selectedDoer && selectedDoer !== "all") {
+      const rowDoerId = row.ownerId ?? MIS_UNASSIGNED_DOER;
+      if (rowDoerId !== selectedDoer) {
+        return false;
+      }
     }
     return true;
   });
+}
+
+export function misDoerOptions(rows: MisDetailRow[]): MisDoerOption[] {
+  const map = new Map<string, string>();
+
+  for (const row of rows) {
+    const id = row.ownerId ?? MIS_UNASSIGNED_DOER;
+    const label = row.ownerId ? row.owner : "Unassigned";
+    map.set(id, label);
+  }
+
+  return [...map.entries()]
+    .map(([id, label]) => ({ id, label }))
+    .sort((a, b) => {
+      if (a.id === MIS_UNASSIGNED_DOER) {
+        return 1;
+      }
+      if (b.id === MIS_UNASSIGNED_DOER) {
+        return -1;
+      }
+      return a.label.localeCompare(b.label);
+    });
+}
+
+export function hasMisActiveFilters(options: {
+  category?: string;
+  metric?: string;
+  doer?: string;
+}) {
+  return Boolean(
+    options.category ||
+      (options.metric && options.metric !== "all") ||
+      (options.doer && options.doer !== "all"),
+  );
 }
 
 export function buildTaskMisRows(tasks: TaskItem[]): MisDetailRow[] {
@@ -116,6 +169,7 @@ export function buildTaskMisRows(tasks: TaskItem[]): MisDetailRow[] {
       category: "Task",
       title: task.title,
       owner,
+      ownerId: task.assignee.id,
       status: task.status.replaceAll("_", " "),
       score: score.score,
       delayed: score.label === "Late" || score.label === "Overdue",
@@ -145,6 +199,7 @@ export function buildFmsMisRows(jobs: FmsJobItem[]): MisDetailRow[] {
           current?.owner?.name ??
           current?.owner?.email.split("@")[0] ??
           "Unassigned",
+        ownerId: current?.owner?.id ?? null,
         status: current?.step.stepName ?? job.status,
         score: score.score,
         delayed,

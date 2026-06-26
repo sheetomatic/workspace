@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
   MisCategorySummaryTable,
-  MisDataViewTable,
+  MisDataViewSection,
 } from "@/components/saas/mis-category-table";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
@@ -12,11 +12,12 @@ import {
   buildFmsMisRows,
   categorySummary,
   filterMisRows,
+  misDoerOptions,
 } from "@/lib/mis/reports-data";
 import { redirect } from "next/navigation";
 
 type PageProps = {
-  searchParams: Promise<{ category?: string; metric?: string }>;
+  searchParams: Promise<{ category?: string; metric?: string; doer?: string }>;
 };
 
 export default async function FmsScoresPage({ searchParams }: PageProps) {
@@ -35,7 +36,12 @@ export default async function FmsScoresPage({ searchParams }: PageProps) {
 
   const fmsRows = buildFmsMisRows(fmsPage.items);
   const summary = categorySummary("FMS", fmsRows);
-  const detailRows = filterMisRows(fmsRows, params);
+  const metricFiltered = filterMisRows(fmsRows, {
+    category: params.category,
+    metric: params.metric,
+  });
+  const doerOptions = misDoerOptions(metricFiltered);
+  const detailRows = filterMisRows(metricFiltered, { doer: params.doer });
   const showEmReady = canAccessEmReady(user);
 
   return (
@@ -63,7 +69,16 @@ export default async function FmsScoresPage({ searchParams }: PageProps) {
         summaries={[summary]}
       />
 
-      <MisDataViewTable basePath="/app/fms/scores" rows={detailRows} />
+      <MisDataViewSection
+        basePath="/app/fms/scores"
+        rows={detailRows}
+        doerOptions={doerOptions}
+        activeFilters={{
+          category: params.category,
+          metric: params.metric,
+          doer: params.doer,
+        }}
+      />
 
       <p className="ws-fms-muted ws-mis-score-footnote">
         FMS MIS score: 100 for on-time stops, minus ~2 points per hour late. Deficit

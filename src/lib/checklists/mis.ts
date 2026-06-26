@@ -5,6 +5,7 @@ export type ChecklistMisRow = {
   id: string;
   title: string;
   owner: string;
+  ownerId: string;
   team: string;
   status: string;
   score: number;
@@ -24,7 +25,7 @@ export function buildChecklistMisRows(
       title: string;
       team: string;
     };
-    assignee: { name: string | null; email: string };
+    assignee: { id: string; name: string | null; email: string };
   }>,
 ): ChecklistMisRow[] {
   return occurrences.map((row) => {
@@ -40,6 +41,7 @@ export function buildChecklistMisRows(
       id: row.id,
       title: row.template.title,
       owner,
+      ownerId: row.assignee.id,
       team: row.template.team,
       status: row.status,
       score: score.score,

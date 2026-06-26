@@ -21063,6 +21063,141 @@ body:has(.workspace-app.saas-app) {
   background: #f8fafc;
 }
 
+.workspace-app .ws-mis-doer-filter {
+  margin-bottom: 0;
+}
+
+.workspace-app .ws-mis-doer-filter-layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+  width: 100%;
+}
+
+.workspace-app .ws-mis-doer-filter .ws-filter-group-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.workspace-app .ws-mis-summary-view .ws-sf-list-view-header {
+  align-items: flex-start;
+}
+
+.workspace-app .ws-mis-data-view-header {
+  align-items: flex-start;
+}
+
+.workspace-app .ws-mis-data-view-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.workspace-app .ws-mis-active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.workspace-app .ws-mis-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.workspace-app .ws-mis-col-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.workspace-app .ws-mis-score-table th.ws-mis-col-num {
+  text-align: right;
+}
+
+.workspace-app .ws-mis-cat-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.workspace-app .ws-mis-cat-pill.is-task {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.workspace-app .ws-mis-cat-pill.is-fms {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.workspace-app .ws-mis-cat-pill.is-pc {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.workspace-app .ws-mis-name-cell {
+  min-width: 180px;
+  max-width: 280px;
+}
+
+.workspace-app .ws-mis-owner-cell {
+  font-weight: 600;
+  color: var(--sf-text);
+  white-space: nowrap;
+}
+
+.workspace-app .ws-mis-status-cell {
+  max-width: 220px;
+}
+
+.workspace-app .ws-mis-data-view .ws-empty-state {
+  padding: 28px 16px;
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+}
+
+.workspace-app .ws-em-doer-filter {
+  border-color: #fcd34d;
+  background: linear-gradient(180deg, #fffdf5 0%, #fff 100%);
+}
+
+.workspace-app .ws-em-doer-filter-layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+  width: 100%;
+}
+
+.workspace-app .ws-em-doer-filter .ws-filter-group-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.workspace-app .ws-em-module-section .ws-fms-section-heading {
+  margin-bottom: 12px;
+}
+
+.workspace-app .ws-em-kra-table .ws-mis-col-num .ws-em-kra-cell {
+  align-items: flex-end;
+}
+
 .workspace-app .ws-fms-clickable-row {
   cursor: pointer;
 }

@@ -91,6 +91,9 @@ export function SiteHeader() {
             )}
           </nav>
           <div className="site-header-actions">
+            <Link className="ab-header-ai" href="/ai">
+              Sheetomatic AI
+            </Link>
             <Link className="ab-header-workspace" href="/login">
               Workspace
             </Link>
