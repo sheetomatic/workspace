@@ -3,6 +3,7 @@
 import type { FmsFormFieldType, FmsInstanceStatus, FmsStepStatus } from "@prisma/client";
 import { CheckCircle2, Clock, FileInput } from "lucide-react";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
+import { FmsTrainTrack } from "@/components/saas/fms-train-track";
 import type { FmsStepCompleteState } from "@/components/saas/fms-step-complete-panel";
 import { FmsStepActionBar } from "@/components/saas/fms-step-action-bar";
 import { renderFmsFieldValue } from "@/lib/fms/display-values";
@@ -134,11 +135,61 @@ export function FmsInstanceJourneyRow({
     ? steps.find((step) => step.id === completePanel.stepState.id)
     : null;
   const focusStop = Boolean(completePanel?.canComplete);
+  const trainStops = steps.map((step) => ({
+    id: step.id,
+    name: step.step.stepName,
+    status: step.status,
+    plannedAt: step.plannedAt,
+    actualAt: step.actualAt,
+    delayMinutes: step.delayMinutes,
+    ownerName: step.owner?.name ?? step.owner?.email.split("@")[0] ?? null,
+  }));
 
   return (
     <>
-    <div className={`ws-fms-journey-row${focusStop ? " is-focus-stop" : ""}`}>
-      <details className="ws-fms-journey-pipeline" open={!focusStop}>
+    <div className={`ws-fms-journey-row${focusStop ? " is-focus-stop is-work-mode" : ""}`}>
+      {focusStop ? (
+        <div className="ws-fms-instance-work-mode">
+          <FmsTrainTrack
+            compact
+            endLabel="Complete"
+            showOwner={false}
+            startLabel="Start"
+            stops={trainStops}
+          />
+          {activeCompleteStep?.status === "IN_PROGRESS" && completePanel ? (
+            <FmsStepActionBar
+              accountability={{
+                doerName:
+                  activeCompleteStep.owner?.name ??
+                  activeCompleteStep.owner?.email.split("@")[0] ??
+                  "Unassigned",
+                delayLabel: formatDelayLabel(
+                  liveDelayMinutes(
+                    activeCompleteStep.plannedAt,
+                    activeCompleteStep.actualAt,
+                    activeCompleteStep.delayMinutes,
+                  ),
+                ),
+                isOverdue: isStepOverdue(
+                  activeCompleteStep.status,
+                  activeCompleteStep.plannedAt,
+                  activeCompleteStep.actualAt,
+                  activeCompleteStep.delayMinutes,
+                ),
+                plannedAt: activeCompleteStep.plannedAt,
+              }}
+              canComplete={completePanel.canComplete}
+              existingAttachments={activeCompleteStep.attachments}
+              initialNotes={activeCompleteStep.notes}
+              stepName={activeCompleteStep.step.stepName}
+              stepState={completePanel.stepState}
+              quickComplete={completePanel.quickComplete}
+            />
+          ) : null}
+        </div>
+      ) : (
+      <details className="ws-fms-journey-pipeline" open>
         <summary className="ws-fms-journey-pipeline-summary">
           <span>
             Pipeline · {completedCount}/{steps.length} stops passed
@@ -346,8 +397,9 @@ export function FmsInstanceJourneyRow({
         </div>
       </div>
       </details>
+      )}
 
-      {activeCompleteStep?.status === "IN_PROGRESS" && completePanel ? (
+      {!focusStop && activeCompleteStep?.status === "IN_PROGRESS" && completePanel ? (
         <FmsStepActionBar
           accountability={{
             doerName:

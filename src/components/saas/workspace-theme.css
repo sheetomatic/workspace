@@ -20104,6 +20104,103 @@ body:has(.workspace-app.saas-app) {
   font-weight: 700;
 }
 
+.workspace-app .ws-fms-journey-hero.is-work-mode {
+  padding: 16px 18px 12px;
+  border-left: 4px solid #0176d3;
+}
+
+.workspace-app .ws-fms-journey-header-work h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #032d60;
+}
+
+.workspace-app .ws-fms-journey-work-meta {
+  margin: 6px 0 0;
+  font-size: 0.8125rem;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-fms-instance-work-mode {
+  display: grid;
+  gap: 16px;
+  max-width: 760px;
+}
+
+.workspace-app .ws-fms-journey-row.is-work-mode .ws-fms-train-track {
+  padding: 4px 0 8px;
+  border-bottom: 1px solid var(--sf-card-border);
+}
+
+.workspace-app .ws-fms-journey-row.is-work-mode .ws-fms-step-work-panel {
+  margin: 0;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+.workspace-app .ws-fms-step-work-panel .ws-fms-step-work-accountability.is-inline {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid #d8e6f8;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #f8fbff 0%, #fff 100%);
+}
+
+.workspace-app .ws-fms-step-work-notes-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.workspace-app .ws-fms-step-work-upload-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.workspace-app .ws-fms-step-work-upload-row .ws-fms-step-work-file-drop {
+  margin: 0;
+}
+
+.workspace-app .ws-fms-step-work-upload-row .ws-fms-step-action-upload-btn {
+  align-self: stretch;
+  min-height: 44px;
+}
+
+.workspace-app .ws-fms-step-work-footer.is-compact {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--sf-card-border);
+}
+
+.workspace-app .ws-fms-step-work-footer-actions .ws-fms-step-action-complete-form {
+  width: 100%;
+}
+
+.workspace-app .ws-fms-step-work-footer-actions .ws-fms-step-action-submit {
+  width: 100%;
+  min-height: 44px;
+  font-size: 0.9375rem;
+}
+
+@media (max-width: 720px) {
+  .workspace-app .ws-fms-step-work-panel .ws-fms-step-work-accountability.is-inline {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-app .ws-fms-step-work-upload-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .workspace-app .ws-fms-journey-hero {
   margin-bottom: 16px;
   padding: 20px;

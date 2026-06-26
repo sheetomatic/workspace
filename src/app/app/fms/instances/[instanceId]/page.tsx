@@ -103,22 +103,37 @@ export default async function FmsInstancePage({ params, searchParams }: PageProp
         }
       />
 
-      <section className={`ws-sf-card ws-fms-journey-hero${canComplete ? " is-compact" : ""}`}>
-        <header className="ws-fms-journey-header">
-          <div>
-            <p className="ws-fms-journey-eyebrow">Lead → FMS flow</p>
-            <h2>
-              {activeStep
-                ? `Stopped at: ${activeStep.step.stepName}`
-                : instance.status === "COMPLETED"
-                  ? "Completed"
-                  : "Awaiting next stop"}
-            </h2>
-          </div>
-          <div className="ws-fms-journey-badges">
-            <FmsPipelineCountBadges counts={pipelineCounts} />
-          </div>
-        </header>
+      <section
+        className={`ws-sf-card ws-fms-journey-hero${canComplete ? " is-compact is-work-mode" : ""}`}
+      >
+        {!canComplete ? (
+          <header className="ws-fms-journey-header">
+            <div>
+              <p className="ws-fms-journey-eyebrow">Lead → FMS flow</p>
+              <h2>
+                {activeStep
+                  ? `Stopped at: ${activeStep.step.stepName}`
+                  : instance.status === "COMPLETED"
+                    ? "Completed"
+                    : "Awaiting next stop"}
+              </h2>
+            </div>
+            <div className="ws-fms-journey-badges">
+              <FmsPipelineCountBadges counts={pipelineCounts} />
+            </div>
+          </header>
+        ) : activeStep ? (
+          <header className="ws-fms-journey-header ws-fms-journey-header-work">
+            <div>
+              <p className="ws-fms-journey-eyebrow">Current stop</p>
+              <h2>{activeStep.step.stepName}</h2>
+              <p className="ws-fms-journey-work-meta">
+                {completedCount} of {instance.stepStates.length} stops passed ·{" "}
+                {instance.template.name}
+              </p>
+            </div>
+          </header>
+        ) : null}
 
         <FmsInstanceJourneyRow
           leadLabel={instance.referenceLabel ?? "Lead"}

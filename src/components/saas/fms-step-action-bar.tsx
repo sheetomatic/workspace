@@ -252,8 +252,20 @@ export function FmsStepActionBar({
 
       {showNotes && !useQuickComplete ? (
         <section className="ws-fms-step-work-section is-compact">
-          <div className="ws-fms-step-work-section-head">
-            <h4 className="ws-fms-step-work-section-title">Notes</h4>
+          <h4 className="ws-fms-step-work-section-title">Notes</h4>
+          <label className="ws-fms-step-action-notes">
+            <span className="sr-only">Notes for this stop</span>
+            <textarea
+              placeholder="Optional remarks"
+              rows={3}
+              value={notes}
+              onChange={(event) => {
+                setNotes(event.target.value);
+                setNotesDirty(true);
+              }}
+            />
+          </label>
+          <div className="ws-fms-step-work-notes-actions">
             <form action={saveNotesAction} className="ws-fms-step-work-save-notes-form">
               <input type="hidden" name="stepStateId" value={stepState.id} />
               <input type="hidden" name="notes" value={notes} readOnly />
@@ -263,27 +275,15 @@ export function FmsStepActionBar({
                 type="submit"
               >
                 <Save size={13} aria-hidden />
-                {saveNotesPending ? "Saving..." : "Save"}
+                {saveNotesPending ? "Saving..." : "Save notes"}
               </button>
             </form>
+            {saveNotesState.message ? (
+              <p className={saveNotesState.ok ? "ws-form-success" : "ws-form-error"}>
+                {saveNotesState.message}
+              </p>
+            ) : null}
           </div>
-          <label className="ws-fms-step-action-notes">
-            <span className="sr-only">Notes for this stop</span>
-            <textarea
-              placeholder="Optional remarks"
-              rows={2}
-              value={notes}
-              onChange={(event) => {
-                setNotes(event.target.value);
-                setNotesDirty(true);
-              }}
-            />
-          </label>
-          {saveNotesState.message ? (
-            <p className={saveNotesState.ok ? "ws-form-success" : "ws-form-error"}>
-              {saveNotesState.message}
-            </p>
-          ) : null}
         </section>
       ) : null}
 
@@ -315,7 +315,7 @@ export function FmsStepActionBar({
           <form
             ref={uploadFormRef}
             action={uploadAction}
-            className="ws-fms-step-work-upload"
+            className="ws-fms-step-work-upload ws-fms-step-work-upload-row"
             encType="multipart/form-data"
           >
             <input type="hidden" name="stepStateId" value={stepState.id} />
@@ -337,7 +337,7 @@ export function FmsStepActionBar({
               type="submit"
             >
               <Upload size={14} aria-hidden />
-              {uploadPending ? "Uploading..." : "Upload file"}
+              {uploadPending ? "Uploading..." : "Upload"}
             </button>
           </form>
           {uploadState.message ? (
