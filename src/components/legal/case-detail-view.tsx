@@ -15,6 +15,8 @@ import {
 } from "@/lib/legal-cases/access";
 import type { SessionUser } from "@/lib/auth";
 import { LegalDocumentUploadForm } from "@/components/legal/legal-document-upload-form";
+import { LegalCaseAlerts } from "@/components/legal/legal-case-alerts";
+import { ProcessDiaryPanel } from "@/components/legal/process-diary-panel";
 import "./legal-cases.css";
 
 type CaseWithDocs = LegalCase & {
@@ -101,17 +103,31 @@ export function CaseDetailView({
   return (
     <div>
       <header className="ws-page-header" style={{ marginBottom: "1rem" }}>
-        <h1>
-          File {legalCase.fileNumber}
-          {legalCase.mccNumber ? ` - ${legalCase.mccNumber}` : ""}
-        </h1>
-        <p>
-          {legalCase.applicant ?? "Unknown applicant"} | {legalCase.fileStatus ?? "No status"} |{" "}
-          {legalCase.caseStage ?? "No stage"}
-          {!admin && mySections.length > 0
-            ? ` | Your sections: ${mySections.map((section) => `S${section}`).join(", ")}`
-            : ""}
-        </p>
+        <div className="legal-case-detail-head">
+          <div>
+            <h1>
+              File {legalCase.fileNumber}
+              {legalCase.mccNumber ? ` - ${legalCase.mccNumber}` : ""}
+            </h1>
+            <p>
+              {legalCase.applicant ?? "Unknown applicant"} | {legalCase.fileStatus ?? "No status"} |{" "}
+              {legalCase.caseStage ?? "No stage"}
+              {!admin && mySections.length > 0
+                ? ` | Your sections: ${mySections.map((section) => `S${section}`).join(", ")}`
+                : ""}
+            </p>
+          </div>
+          <div className="legal-case-detail-actions">
+            <Link className="btn-cta btn-secondary" href={`/app/cases/${legalCase.id}/file-cover`}>
+              File cover
+            </Link>
+            {admin ? (
+              <Link className="btn-ghost" href="/app/cases/settings">
+                Settings
+              </Link>
+            ) : null}
+          </div>
+        </div>
       </header>
 
       <nav aria-label="Case sections" className="legal-section-tabs">
@@ -141,8 +157,24 @@ export function CaseDetailView({
           Section {activeSection}: {LEGAL_SECTION_LABELS[activeSection]}
           {!canEdit ? (activeSection === 1 && !admin ? " (overview)" : " (read only)") : ""}
         </h3>
+        <LegalCaseAlerts legalCase={legalCase} section={activeSection} />
         <div className="legal-field-grid">{sectionFields(activeSection, legalCase)}</div>
       </div>
+
+      {activeSection === 2 && canEdit ? (
+        <div style={{ marginBottom: "1rem" }}>
+          <ProcessDiaryPanel
+            legalCase={{
+              id: legalCase.id,
+              sectionData: legalCase.sectionData,
+              nextDate: legalCase.nextDate,
+              mccNumber: legalCase.mccNumber,
+              coAdvocate: legalCase.coAdvocate,
+              amdCcStatus: legalCase.amdCcStatus,
+            }}
+          />
+        </div>
+      ) : null}
 
       {categories.length > 0 ? (
         <div className="legal-panel">

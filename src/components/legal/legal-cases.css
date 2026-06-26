@@ -1663,6 +1663,36 @@
   text-overflow: ellipsis;
 }
 
+.workspace-app .legal-table-action-col {
+  width: 3.5rem;
+  max-width: none;
+  text-align: center;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: #fff;
+}
+
+.workspace-app .legal-view-table thead .legal-table-action-col {
+  z-index: 2;
+}
+
+.workspace-app .legal-table-edit-link {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1d4ed8;
+  text-decoration: none;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+}
+
+.workspace-app .legal-table-edit-link:hover {
+  background: #dbeafe;
+}
+
 .workspace-app .legal-view-empty {
   margin: 0;
   padding: 1rem;
@@ -1672,6 +1702,20 @@
 
 .workspace-app .legal-pagination-actions {
   display: flex;
+  gap: 0.5rem;
+}
+
+.workspace-app .legal-case-detail-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+}
+
+.workspace-app .legal-case-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
@@ -1685,5 +1729,374 @@
   .workspace-app .legal-page-actions {
     justify-content: flex-start;
     flex-wrap: wrap;
+  }
+}
+
+/* ---- Print / sort list (Cases to be filed) ---- */
+.workspace-app .legal-print-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.workspace-app .legal-print-control {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: #475569;
+}
+
+.workspace-app .legal-print-control input,
+.workspace-app .legal-print-control select {
+  padding: 6px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+}
+
+.workspace-app .legal-print-doc {
+  background: #fff;
+}
+
+.workspace-app .legal-print-title {
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin: 0 0 4px;
+  color: #0f172a;
+}
+
+.workspace-app .legal-print-sub {
+  text-align: center;
+  font-size: 0.8125rem;
+  color: #64748b;
+  margin: 0 0 16px;
+}
+
+.workspace-app .legal-print-section {
+  margin-bottom: 18px;
+  break-inside: avoid;
+}
+
+.workspace-app .legal-print-section-head {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid #94a3b8;
+  border-bottom: none;
+  color: #0f172a;
+}
+
+.workspace-app .lp-head-to-be-filed {
+  background: #ccfbf1;
+}
+.workspace-app .lp-head-papers-pending {
+  background: #fef3c7;
+}
+.workspace-app .lp-head-plaint-due {
+  background: #e0f2fe;
+}
+.workspace-app .lp-head-filed {
+  background: #fed7aa;
+}
+
+.workspace-app .legal-print-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+  table-layout: fixed;
+}
+
+.workspace-app .legal-print-table th,
+.workspace-app .legal-print-table td {
+  border: 1px solid #94a3b8;
+  padding: 3px 5px;
+  text-align: left;
+  vertical-align: top;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+
+.workspace-app .legal-print-table th {
+  background: #f1f5f9;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.workspace-app .legal-print-table .lp-col-num {
+  width: 34px;
+  text-align: right;
+}
+.workspace-app .legal-print-table .lp-col-file {
+  width: 58px;
+}
+.workspace-app .legal-print-table .lp-col-fi {
+  width: 40px;
+}
+.workspace-app .legal-print-table .lp-col-date {
+  width: 72px;
+  white-space: nowrap;
+}
+.workspace-app .legal-print-table .lp-col-field {
+  width: 72px;
+}
+.workspace-app .legal-print-table .lp-col-status {
+  width: 64px;
+}
+
+.workspace-app .legal-print-table tr.lp-status-to-be-filed td {
+  background: #f0fdfa;
+}
+.workspace-app .legal-print-table tr.lp-status-papers-pending td {
+  background: #fffbeb;
+}
+.workspace-app .legal-print-table tr.lp-status-plaint-due td {
+  background: #f0f9ff;
+}
+.workspace-app .legal-print-table tr.lp-status-filed td {
+  background: #fff7ed;
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 8mm;
+  }
+
+  .no-print,
+  .saas-sidebar,
+  .ws-shell-desktop,
+  .ws-mobile-shell-header,
+  .ws-mobile-shell-nav,
+  .ws-module-subnav {
+    display: none !important;
+  }
+
+  .workspace-app .saas-main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .workspace-app .saas-page.legal-print-page {
+    padding: 0 !important;
+  }
+
+  .workspace-app .legal-print-table {
+    font-size: 8pt;
+  }
+
+  .workspace-app .legal-print-table thead {
+    display: table-header-group;
+  }
+
+  .workspace-app .legal-print-section {
+    break-inside: auto;
+  }
+}
+
+/* Follow Fatal FIR tracker (voice note 1) */
+.workspace-app .legal-follow-fatal-wrap {
+  margin-top: 1rem;
+}
+
+.workspace-app .legal-follow-fatal-table tr.legal-follow-active td {
+  background: #ecfdf5;
+}
+
+.workspace-app .legal-follow-fatal-table tr.legal-follow-no-insurance td {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.workspace-app .legal-follow-fatal-table tr.legal-follow-unknown-vehicle td {
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.workspace-app .legal-follow-fatal-table tr.legal-follow-lost td {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.workspace-app .legal-follow-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.workspace-app .legal-follow-legend span {
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+}
+
+.workspace-app .legal-follow-active-sample {
+  background: #ecfdf5;
+}
+
+.workspace-app .legal-follow-no-insurance-sample {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.workspace-app .legal-follow-unknown-sample {
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.workspace-app .legal-follow-lost-sample {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.workspace-app .legal-follow-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Court diary row highlights (screenshots 2 / 2a) */
+.workspace-app .legal-view-table tr.legal-diary-row-no-show td {
+  background: #fff7ed;
+}
+
+.workspace-app .legal-view-table tr.legal-diary-row-publication td {
+  background: #fef2f2;
+  font-weight: 600;
+}
+
+.workspace-app .legal-print-table tr.lp-diary-no-show td {
+  background: #fff7ed;
+}
+
+.workspace-app .legal-print-table tr.lp-diary-publication td {
+  background: #fef2f2;
+}
+
+/* Process diary panel (voice notes 3, 6, 7) */
+.workspace-app .legal-process-diary {
+  margin-top: 1.5rem;
+}
+
+.workspace-app .legal-process-fieldset {
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.workspace-app .legal-process-fieldset legend {
+  font-weight: 600;
+  padding: 0 0.35rem;
+}
+
+.workspace-app .legal-process-diary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.workspace-app .legal-process-alert {
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  margin: 0.75rem 0;
+  font-size: 0.9rem;
+}
+
+.workspace-app .legal-process-alert-warn {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+}
+
+.workspace-app .legal-process-alert-danger {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+}
+
+.workspace-app .legal-case-alerts {
+  margin-bottom: 1rem;
+}
+
+/* Diary quick update (mobile red-pen workflow) */
+.workspace-app .legal-diary-quick-page .legal-list-toolbar-main {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.workspace-app .legal-diary-quick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.workspace-app .legal-diary-quick-card {
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  background: #fff;
+}
+
+.workspace-app .legal-diary-quick-card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.workspace-app .legal-diary-quick-meta {
+  margin: 0 0 0.65rem;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.workspace-app .legal-diary-quick-card label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.workspace-app .legal-diary-quick-card label input {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.workspace-app .legal-diary-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.workspace-app .legal-diary-quick-no-show {
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+
+.workspace-app .legal-diary-quick-publication {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+@media (min-width: 640px) {
+  .workspace-app .legal-diary-quick-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   }
 }

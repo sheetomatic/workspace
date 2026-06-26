@@ -13,6 +13,8 @@ export type ProcessDiaryAction =
   | "mark_pf"
   | "record_no_show"
   | "record_appearance"
+  | "record_notice_stamps"
+  | "record_client_call"
   | "add_log";
 
 const NO_SHOW_MARKS = ["B", "C", "D", "E"] as const;
@@ -62,6 +64,11 @@ export type ProcessDiaryInput = {
   coAdvocate?: string;
   ownerDriverLawyer?: string;
   odPhone?: string;
+  pfReadyDt?: string;
+  pfCourtDt?: string;
+  pfPostDt?: string;
+  clientCallDate?: string;
+  clientCallBy?: string;
 };
 
 export type ProcessDiaryResult = {
@@ -195,6 +202,69 @@ export function applyProcessDiary(
         amdCcStatus: legalCase.amdCcStatus,
         fileCover,
         message: "Appearance and advocate details saved.",
+      };
+    }
+    case "record_notice_stamps": {
+      const pfTracking = [...fileCover.pfTracking];
+      const row = pfTracking[0] ?? {
+        pfLastDt: "",
+        vikkyDt: "",
+        pareDt: "",
+        postDt: "",
+        groupDt: "",
+      };
+      pfTracking[0] = {
+        ...row,
+        pfLastDt: input.pfReadyDt?.trim() || row.pfLastDt,
+        vikkyDt: input.pfCourtDt?.trim() || row.vikkyDt,
+        postDt: input.pfPostDt?.trim() || row.postDt,
+      };
+      fileCover = { ...fileCover, pfTracking };
+      fileCover = appendProcessLog(fileCover, {
+        date: stamp,
+        process: "PF NOTICE STAMPS",
+      });
+      return {
+        fileStatus: legalCase.fileStatus,
+        caseStage: legalCase.caseStage,
+        prevDate: legalCase.prevDate,
+        nextDate: legalCase.nextDate,
+        mccNumber: legalCase.mccNumber,
+        coAdvocate: legalCase.coAdvocate,
+        amdCcStatus: legalCase.amdCcStatus,
+        fileCover,
+        message: "Notice typed / court / post dates saved.",
+      };
+    }
+    case "record_client_call": {
+      const log = [...fileCover.calledClientLog];
+      const emptyIndex = log.findIndex(
+        (row) => !row.date.trim() && !row.by.trim(),
+      );
+      const entry = {
+        date: input.clientCallDate?.trim() || stamp,
+        by: input.clientCallBy?.trim() || "",
+      };
+      if (emptyIndex >= 0) {
+        log[emptyIndex] = entry;
+      } else {
+        log.push(entry);
+      }
+      fileCover = { ...fileCover, calledClientLog: log };
+      fileCover = appendProcessLog(fileCover, {
+        date: entry.date,
+        process: "CLIENT CALL",
+      });
+      return {
+        fileStatus: legalCase.fileStatus,
+        caseStage: legalCase.caseStage,
+        prevDate: legalCase.prevDate,
+        nextDate: legalCase.nextDate,
+        mccNumber: legalCase.mccNumber,
+        coAdvocate: legalCase.coAdvocate,
+        amdCcStatus: legalCase.amdCcStatus,
+        fileCover,
+        message: "Client call logged.",
       };
     }
     case "add_log": {

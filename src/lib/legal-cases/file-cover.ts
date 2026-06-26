@@ -159,7 +159,9 @@ export function parseFileCoverData(sectionData: unknown): FileCoverData {
   } as FileCoverData;
 }
 
-export function fileCoverFromLegalCase(legalCase: LegalCase): FileCoverData {
+export function fileCoverFromLegalCase(
+  legalCase: Pick<LegalCase, "sectionData" | "coAdvocate">,
+): FileCoverData {
   const parsed = parseFileCoverData(legalCase.sectionData);
   const flat = asSectionData(legalCase.sectionData);
 
@@ -173,6 +175,13 @@ export function fileCoverFromLegalCase(legalCase: LegalCase): FileCoverData {
     advocateInsurance: parsed.advocateInsurance || legalCase.coAdvocate || "",
     coFileNo: parsed.coFileNo || flat["CO. FILE NO."] || "",
   };
+}
+
+/** Strip non-JSON values so Prisma + RSC serialization never fail on sectionData. */
+export function sanitizeSectionDataJson(
+  value: Prisma.InputJsonValue,
+): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 
 export function mergeSectionDataWithFileCover(
@@ -201,11 +210,11 @@ export function mergeSectionDataWithFileCover(
     mergedFlat["CO. FILE NO."] = fileCover.coFileNo.trim();
   }
 
-  return {
+  return sanitizeSectionDataJson({
     ...current,
     ...mergedFlat,
     [FILE_COVER_JSON_KEY]: fileCover,
-  };
+  });
 }
 
 export function fileCoverToCaseScalars(
