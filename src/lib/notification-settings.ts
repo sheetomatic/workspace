@@ -5,6 +5,7 @@ export type NotificationSettingsRow = {
   caseOverdueAlert: boolean;
   taskDueDateAlert: boolean;
   taskOverdueAlert: boolean;
+  imsReorderAlert: boolean;
   alertDaysBefore: number;
   alertViaEmail: boolean;
   alertViaWhatsApp: boolean;
@@ -17,6 +18,7 @@ const DEFAULTS: NotificationSettingsRow = {
   caseOverdueAlert: true,
   taskDueDateAlert: true,
   taskOverdueAlert: true,
+  imsReorderAlert: false,
   alertDaysBefore: 1,
   alertViaEmail: true,
   alertViaWhatsApp: false,
@@ -41,6 +43,7 @@ export async function getOrCreateNotificationSettings(
       caseOverdueAlert: true,
       taskDueDateAlert: true,
       taskOverdueAlert: true,
+      imsReorderAlert: true,
       alertDaysBefore: true,
       alertViaEmail: true,
       alertViaWhatsApp: true,
@@ -63,6 +66,7 @@ export function parseNotificationSettingsForm(formData: FormData): NotificationS
     caseOverdueAlert: formData.get("caseOverdueAlert") === "on",
     taskDueDateAlert: formData.get("taskDueDateAlert") === "on",
     taskOverdueAlert: formData.get("taskOverdueAlert") === "on",
+    imsReorderAlert: formData.get("imsReorderAlert") === "on",
     alertDaysBefore,
     alertViaEmail: formData.get("alertViaEmail") === "on",
     alertViaWhatsApp: formData.get("alertViaWhatsApp") === "on",

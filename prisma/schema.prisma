@@ -840,6 +840,7 @@ model UserNotificationSettings {
   caseOverdueAlert   Boolean      @default(true)
   taskDueDateAlert   Boolean      @default(true)
   taskOverdueAlert   Boolean      @default(true)
+  imsReorderAlert    Boolean      @default(false)
   alertDaysBefore    Int          @default(1)
   alertViaEmail      Boolean      @default(true)
   alertViaWhatsApp   Boolean      @default(false)
