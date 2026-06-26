@@ -125,18 +125,24 @@ export function FmsInstanceJourneyRow({
   instanceStatus,
   steps,
   completePanel,
-  autoOpenComplete = false,
-}: FmsInstanceJourneyRowProps & { autoOpenComplete?: boolean }) {
+}: FmsInstanceJourneyRowProps) {
   const allDone =
     steps.length > 0 && steps.every((step) => step.status === "DONE");
   const completedCount = steps.filter((step) => step.status === "DONE").length;
   const activeCompleteStep = completePanel
     ? steps.find((step) => step.id === completePanel.stepState.id)
     : null;
+  const focusStop = Boolean(completePanel?.canComplete);
 
   return (
     <>
-    <div className="ws-fms-journey-row">
+    <div className={`ws-fms-journey-row${focusStop ? " is-focus-stop" : ""}`}>
+      <details className="ws-fms-journey-pipeline" open={!focusStop}>
+        <summary className="ws-fms-journey-pipeline-summary">
+          <span>
+            Pipeline · {completedCount}/{steps.length} stops passed
+          </span>
+        </summary>
       <p className="ws-fms-journey-row-hint">
         Lead form filled - FMS flow started. Each column is one stop on the route.
       </p>
@@ -338,11 +344,33 @@ export function FmsInstanceJourneyRow({
           <span className="ws-fms-journey-row-end-label">Complete</span>
         </div>
       </div>
+      </details>
 
       {activeCompleteStep?.status === "IN_PROGRESS" && completePanel ? (
         <FmsStepActionBar
+          accountability={{
+            doerName:
+              activeCompleteStep.owner?.name ??
+              activeCompleteStep.owner?.email.split("@")[0] ??
+              "Unassigned",
+            delayLabel: formatDelayLabel(
+              liveDelayMinutes(
+                activeCompleteStep.plannedAt,
+                activeCompleteStep.actualAt,
+                activeCompleteStep.delayMinutes,
+              ),
+            ),
+            isOverdue: isStepOverdue(
+              activeCompleteStep.status,
+              activeCompleteStep.plannedAt,
+              activeCompleteStep.actualAt,
+              activeCompleteStep.delayMinutes,
+            ),
+            plannedAt: activeCompleteStep.plannedAt,
+          }}
           canComplete={completePanel.canComplete}
-          defaultOpenPanel={autoOpenComplete ? "done" : null}
+          existingAttachments={activeCompleteStep.attachments}
+          initialNotes={activeCompleteStep.notes}
           stepName={activeCompleteStep.step.stepName}
           stepState={completePanel.stepState}
         />

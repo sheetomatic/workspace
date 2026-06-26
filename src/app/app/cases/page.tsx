@@ -9,8 +9,7 @@ import { PageHeader } from "@/components/saas/page-header";
 import { isLegalAdmin } from "@/lib/legal-cases/access";
 import { getLegalDashboardStats } from "@/lib/legal-cases/queries";
 import {
-  countAllCases,
-  countRunningCases,
+  getLegalViewNavCounts,
   getRunningInsights,
 } from "@/lib/legal-cases/view-queries";
 import { requireSession } from "@/lib/require-session";
@@ -22,9 +21,7 @@ export default async function CasesPage() {
   const admin = isLegalAdmin(user);
   const [stats, counts, runningInsights] = await Promise.all([
     getLegalDashboardStats(user),
-    Promise.all([countAllCases(user), countRunningCases(user)]).then(
-      ([all, running]) => ({ all, running }),
-    ),
+    getLegalViewNavCounts(user),
     admin ? getRunningInsights(user) : Promise.resolve(null),
   ]);
 

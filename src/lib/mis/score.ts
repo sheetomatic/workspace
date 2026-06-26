@@ -129,13 +129,32 @@ export function taskMisScore(input: {
   return result(70, "Pending");
 }
 
-/** Checklist completion ratio (capture fields, proof items, etc.). */
+/** Checklist completion ratio (legacy task proof placeholder). */
 export function checklistMisScore(completed: number, total: number): MisScoreResult {
   if (total <= 0) {
     return result(100, "No items");
   }
   const ratio = completed / total;
   return result(ratio * 100, `${completed}/${total} done`);
+}
+
+/** Single PC occurrence: on time = 100, open overdue or late done penalized. */
+export function checklistOccurrenceMisScore(input: {
+  status: string;
+  plannedAt: Date;
+  actualAt: Date | null;
+}): MisScoreResult {
+  if (input.status === "DONE" && input.actualAt) {
+    if (input.actualAt.getTime() <= input.plannedAt.getTime()) {
+      return result(100, "On time");
+    }
+    const hoursLate = (input.actualAt.getTime() - input.plannedAt.getTime()) / (1000 * 60 * 60);
+    return result(100 - hoursLate * 2, "Late");
+  }
+  if (input.status === "OVERDUE" || Date.now() > input.plannedAt.getTime()) {
+    return result(0, "Overdue");
+  }
+  return result(85, "Pending");
 }
 
 export function aggregateMisScore(scores: number[]): MisScoreResult {

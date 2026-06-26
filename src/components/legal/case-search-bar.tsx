@@ -103,7 +103,7 @@ export function CaseSearchBar({
               })}
               title="Remove stage filter"
             >
-              Stage {caseStage}
+              Case Stage {caseStage}
               <span aria-hidden="true" className="legal-filter-chip-x">
                 x
               </span>
@@ -167,8 +167,12 @@ export function CaseSearchBar({
             <option value="APPEAL FILED">APPEAL FILED</option>
             <option value="HIGH COURT">HIGH COURT</option>
           </select>
-          <select defaultValue={caseStage ?? ""} name="caseStage">
-            <option value="">All stages</option>
+          <select
+            aria-label="Case Stage"
+            defaultValue={caseStage ?? ""}
+            name="caseStage"
+          >
+            <option value="">All case stages</option>
             <option value="ROOM">ROOM</option>
             <option value="DEPOSIT">DEPOSIT</option>
             <option value="HC">HC</option>

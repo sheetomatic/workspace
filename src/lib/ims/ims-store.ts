@@ -33,6 +33,25 @@ export function storeTypeForItemType(itemType: ImsItemType): ImsStoreType {
   return itemType === "FINISHED_GOOD" ? "FG" : "RM";
 }
 
+/**
+ * Only link an attachment that belongs to the same org. Prevents a client from
+ * referencing another tenant's attachment id on a stock movement.
+ */
+async function resolveOrgAttachmentId(
+  organizationId: string,
+  attachmentId?: string | null,
+): Promise<string | null> {
+  const trimmed = attachmentId?.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const attachment = await prisma.imsAttachment.findFirst({
+    where: { id: trimmed, organizationId },
+    select: { id: true },
+  });
+  return attachment?.id ?? null;
+}
+
 async function adjustBalance(
   tx: Prisma.TransactionClient,
   organizationId: string,
@@ -963,6 +982,109 @@ export async function getImsDashboardStats(organizationId: string) {
   };
 }
 
+const INBOUND_MOVEMENT_TYPES: ImsMovementType[] = ["RM_IN", "FG_IN", "QC_PASS"];
+const OUTBOUND_MOVEMENT_TYPES: ImsMovementType[] = [
+  "ISSUE_TO_PRODUCTION",
+  "FG_OUT",
+  "QC_FAIL",
+];
+
+export async function getImsReportData(
+  organizationId: string,
+  options?: { trendDays?: number },
+) {
+  const trendDays = options?.trendDays ?? 30;
+  const rows = await getStockRows(organizationId);
+
+  const categoryMap = new Map<
+    string,
+    { category: string; value: number; itemCount: number }
+  >();
+  const abcValue: Record<ImsAbcClass, number> = { A: 0, B: 0, C: 0 };
+  const statusCounts = { red: 0, orange: 0, green: 0, blue: 0 };
+  let totalValue = 0;
+  let pendingQcUnits = 0;
+
+  for (const row of rows) {
+    totalValue += row.value;
+    statusCounts[row.status] += 1;
+    abcValue[row.item.abcClass] += row.value;
+    pendingQcUnits += row.qcPendingQty;
+    const category = row.item.category?.trim() || "Uncategorised";
+    const current =
+      categoryMap.get(category) ?? { category, value: 0, itemCount: 0 };
+    current.value += row.value;
+    current.itemCount += 1;
+    categoryMap.set(category, current);
+  }
+
+  const categoryValuation = Array.from(categoryMap.values()).sort(
+    (a, b) => b.value - a.value,
+  );
+
+  const since = new Date();
+  since.setDate(since.getDate() - (trendDays - 1));
+  since.setHours(0, 0, 0, 0);
+
+  const movements = await prisma.imsStockMovement.findMany({
+    where: { organizationId, createdAt: { gte: since } },
+    select: { movementType: true, createdAt: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const trendMap = new Map<string, { date: string; inbound: number; outbound: number }>();
+  for (let i = 0; i < trendDays; i += 1) {
+    const day = new Date(since);
+    day.setDate(since.getDate() + i);
+    const key = day.toISOString().slice(0, 10);
+    trendMap.set(key, { date: key, inbound: 0, outbound: 0 });
+  }
+
+  const typeCounts: Record<string, number> = {};
+  for (const movement of movements) {
+    const key = movement.createdAt.toISOString().slice(0, 10);
+    const bucket = trendMap.get(key);
+    if (bucket) {
+      if (INBOUND_MOVEMENT_TYPES.includes(movement.movementType)) {
+        bucket.inbound += 1;
+      } else if (OUTBOUND_MOVEMENT_TYPES.includes(movement.movementType)) {
+        bucket.outbound += 1;
+      }
+    }
+    typeCounts[movement.movementType] =
+      (typeCounts[movement.movementType] ?? 0) + 1;
+  }
+
+  const topItems = [...rows]
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 10)
+    .map((row) => ({
+      id: row.item.id,
+      code: row.item.code,
+      name: row.item.name,
+      category: row.item.category,
+      usableQty: row.usableQty,
+      uom: row.item.uom,
+      value: row.value,
+      status: row.status,
+    }));
+
+  return {
+    totalValue,
+    itemCount: rows.length,
+    pendingQcUnits,
+    statusCounts,
+    abcValue,
+    categoryValuation,
+    movementTrend: Array.from(trendMap.values()),
+    movementTypeCounts: typeCounts,
+    topItems,
+    trendDays,
+  };
+}
+
+export type ImsReportData = Awaited<ReturnType<typeof getImsReportData>>;
+
 export type ImsMovementFilters = {
   movementType?: ImsMovementType;
   itemId?: string;
@@ -985,6 +1107,19 @@ export async function listMovements(
     },
     orderBy: { createdAt: "desc" },
     take: filters.take ?? 200,
+  });
+}
+
+export async function countMovements(
+  organizationId: string,
+  filters: Pick<ImsMovementFilters, "movementType" | "itemId"> = {},
+) {
+  return prisma.imsStockMovement.count({
+    where: {
+      organizationId,
+      ...(filters.movementType ? { movementType: filters.movementType } : {}),
+      ...(filters.itemId ? { itemId: filters.itemId } : {}),
+    },
   });
 }
 
@@ -1153,6 +1288,11 @@ export async function recordStockMovement(params: {
     ? resolveQcRequired(item.qcOnReceipt, params.qcRequiredChoice)
     : false;
 
+  const attachmentId = await resolveOrgAttachmentId(
+    params.organizationId,
+    params.attachmentId,
+  );
+
   return prisma.$transaction(async (tx) => {
     let qcInspectionId: string | undefined;
 
@@ -1238,11 +1378,11 @@ export async function recordStockMovement(params: {
         invoiceNumber: params.invoiceNumber?.trim() || null,
         invoiceDate:
           invoiceDate && !Number.isNaN(invoiceDate.getTime()) ? invoiceDate : null,
-        invoiceAmount:
-          params.invoiceAmount && params.invoiceAmount > 0
-            ? dec(params.invoiceAmount)
-            : null,
-        attachmentId: params.attachmentId?.trim() || null,
+          invoiceAmount:
+            params.invoiceAmount && params.invoiceAmount > 0
+              ? dec(params.invoiceAmount)
+              : null,
+        attachmentId,
         qcRequired,
         qcInspectionId,
         createdById: params.userId,
@@ -1310,6 +1450,10 @@ export async function recordGoodsReceipt(params: {
     params.invoiceAmount && params.invoiceAmount > 0
       ? dec(params.invoiceAmount)
       : null;
+  const attachmentId = await resolveOrgAttachmentId(
+    params.organizationId,
+    params.attachmentId,
+  );
 
   return prisma.$transaction(async (tx) => {
     let created = 0;
@@ -1375,7 +1519,7 @@ export async function recordGoodsReceipt(params: {
               ? invoiceDate
               : null,
           invoiceAmount,
-          attachmentId: params.attachmentId?.trim() || null,
+          attachmentId,
           qcRequired,
           qcInspectionId,
           createdById: params.userId,

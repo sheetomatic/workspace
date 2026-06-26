@@ -144,8 +144,8 @@ export async function completeTaskWithProof(
         });
       }
 
-      await tx.delegatedTask.update({
-        where: { id: task.id },
+      await tx.delegatedTask.updateMany({
+        where: { id: task.id, organizationId: user.organizationId },
         data: {
           status: "AWAITING_VERIFICATION",
           proofSubmittedAt: submittedAt,
@@ -239,8 +239,8 @@ export async function verifyTaskProof(
     const note = formData.get("verificationNote")?.toString().trim() || null;
     const completedAt = new Date();
 
-    await prisma.delegatedTask.update({
-      where: { id: task.id },
+    await prisma.delegatedTask.updateMany({
+      where: { id: task.id, organizationId: user.organizationId },
       data: {
         status: "COMPLETED",
         completedAt,
@@ -312,8 +312,8 @@ export async function rejectTaskProof(
       };
     }
 
-    await prisma.delegatedTask.update({
-      where: { id: task.id },
+    await prisma.delegatedTask.updateMany({
+      where: { id: task.id, organizationId: user.organizationId },
       data: {
         status: "IN_PROGRESS",
         proofSubmittedAt: null,

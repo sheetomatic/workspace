@@ -145,12 +145,25 @@ export async function createFieldVisitAction(formData: FormData): Promise<void> 
     return;
   }
 
-  const assigneeUserId = String(formData.get("assigneeUserId"));
+  const assigneeUserId = String(formData.get("assigneeUserId") ?? "").trim();
   const clientName = String(formData.get("clientName") ?? "").trim();
   const purpose = String(formData.get("purpose") ?? "").trim();
   const locationLabel = String(formData.get("locationLabel") ?? "").trim();
 
-  if (!clientName) {
+  if (!clientName || !assigneeUserId) {
+    return;
+  }
+
+  const assigneeMembership = await prisma.membership.findUnique({
+    where: {
+      userId_organizationId: {
+        userId: assigneeUserId,
+        organizationId: user.organizationId,
+      },
+    },
+    select: { id: true },
+  });
+  if (!assigneeMembership) {
     return;
   }
 

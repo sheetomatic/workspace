@@ -139,8 +139,9 @@ export async function getFmsOpsPage(
       where: overdueWhere,
       include: {
         step: true,
+        owner: { select: { id: true, name: true, email: true } },
         instance: {
-          include: { template: { select: { name: true } } },
+          include: { template: { select: { name: true, pcUserIds: true, eaUserId: true } } },
         },
       },
       orderBy: { plannedAt: "asc" },
@@ -152,7 +153,7 @@ export async function getFmsOpsPage(
       include: {
         step: true,
         instance: {
-          include: { template: { select: { name: true } } },
+          include: { template: { select: { name: true, pcUserIds: true, eaUserId: true } } },
         },
       },
       orderBy: { instance: { updatedAt: "desc" } },

@@ -13,6 +13,7 @@ import {
 } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { seedHingoraniCases } from "./seed-hingorani";
+import { seedBciDemo } from "./seed-bci-demo";
 
 const prisma = new PrismaClient();
 
@@ -981,10 +982,12 @@ async function main() {
     await seedHingoraniCases(prisma, hingorani.id);
   }
 
+  await seedBciDemo();
+
   console.log("Seed complete. Demo password for all accounts:", DEMO_PASSWORD);
   console.log("Super admin:", SUPER_ADMIN.email, "@ sheetomatic-technologies");
   console.log("Hingorani cases workspace: admin@hingorani.demo @ hingorani");
-  console.log("Hingorani doers: shyam@hingorani.demo (SHYAM), mt@hingorani.demo (MT)");
+  console.log("BCI FMS demo: owner@bci.demo @ bci-demo (password:", DEMO_PASSWORD + ")");
   console.log("Accounts:");
   for (const entry of seedUsers) {
     console.log(`  ${entry.email} (${entry.role} @ ${entry.orgSlug})`);

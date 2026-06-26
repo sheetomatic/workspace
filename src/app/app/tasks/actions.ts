@@ -554,8 +554,8 @@ export async function resendTaskAssignmentReminders(
     kind: "assignment",
   });
 
-  await prisma.delegatedTask.update({
-    where: { id: task.id },
+  await prisma.delegatedTask.updateMany({
+    where: { id: task.id, organizationId: user.organizationId },
     data: {
       emailAssignmentSentAt: reminders.emailSent
         ? new Date()
@@ -617,8 +617,8 @@ export async function resendTaskDueReminders(
     kind: "due",
   });
 
-  await prisma.delegatedTask.update({
-    where: { id: task.id },
+  await prisma.delegatedTask.updateMany({
+    where: { id: task.id, organizationId: user.organizationId },
     data: {
       emailReminderSentAt: reminders.emailSent
         ? new Date()

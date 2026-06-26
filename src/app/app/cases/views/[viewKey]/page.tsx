@@ -13,8 +13,7 @@ import { PageHeader } from "@/components/saas/page-header";
 import { isLegalAdmin } from "@/lib/legal-cases/access";
 import {
   buildLegalViewListQuery,
-  countAllCases,
-  countRunningCases,
+  getLegalViewNavCounts,
   getLegalViewFilterOptions,
   getRunningInsights,
   listLegalViewCases,
@@ -73,9 +72,7 @@ export default async function LegalCaseViewPage({
   const [casePage, filterOptions, counts, runningInsights] = await Promise.all([
     listLegalViewCases(user, viewKey, filters),
     getLegalViewFilterOptions(user),
-    Promise.all([countAllCases(user), countRunningCases(user)]).then(
-      ([all, running]) => ({ all, running }),
-    ),
+    getLegalViewNavCounts(user),
     viewKey === "running" ? getRunningInsights(user) : Promise.resolve(null),
   ]);
 
@@ -93,6 +90,35 @@ export default async function LegalCaseViewPage({
             description={`${casePage.total.toLocaleString()} cases - ${view.description}`}
             title={view.label}
           />
+          {viewKey === "new-cases" ? (
+            <Link
+              className="btn-ghost legal-print-link"
+              href="/app/cases/print/to-be-filed"
+            >
+              Print / sort list
+            </Link>
+          ) : null}
+          {viewKey === "diary" ? (
+            <>
+              <Link className="btn-ghost legal-print-link" href="/app/cases/print/diary">
+                Print court diary
+              </Link>
+              <Link
+                className="btn-ghost legal-print-link"
+                href="/app/cases/views/diary/quick-update"
+              >
+                Quick update (mobile)
+              </Link>
+            </>
+          ) : null}
+          {viewKey === "statement" ? (
+            <Link
+              className="btn-ghost legal-print-link"
+              href="/app/cases/print/statement"
+            >
+              Print statement list
+            </Link>
+          ) : null}
         </div>
         {admin ? (
           <Suspense

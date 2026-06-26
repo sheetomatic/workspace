@@ -27,7 +27,10 @@ export async function notifyWaLeadAssignment(params: {
   }
 
   const assignee = await prisma.user.findFirst({
-    where: { id: params.assigneeUserId },
+    where: {
+      id: params.assigneeUserId,
+      memberships: { some: { organizationId: params.organizationId } },
+    },
     select: { name: true, phone: true },
   });
 

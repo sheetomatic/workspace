@@ -4,11 +4,16 @@ import {
   type MovementRow,
 } from "@/components/ims/ims-movements-table";
 import { requireSession } from "@/lib/require-session";
-import { listMovements } from "@/lib/ims/ims-store";
+import { countMovements, listMovements } from "@/lib/ims/ims-store";
+
+const MOVEMENT_FETCH_CAP = 2000;
 
 export default async function ImsMovementsPage() {
   const user = await requireSession(undefined, { module: "IMS" });
-  const movements = await listMovements(user.organizationId, { take: 300 });
+  const [movements, totalCount] = await Promise.all([
+    listMovements(user.organizationId, { take: MOVEMENT_FETCH_CAP }),
+    countMovements(user.organizationId),
+  ]);
 
   const rows: MovementRow[] = movements.map((row) => ({
     id: row.id,
@@ -34,7 +39,7 @@ export default async function ImsMovementsPage() {
         description="Every stock movement - receipts, issues, dispatches, and adjustments. Filter by type or search."
       />
 
-      <ImsMovementsTable rows={rows} />
+      <ImsMovementsTable rows={rows} totalCount={totalCount} />
     </div>
   );
 }

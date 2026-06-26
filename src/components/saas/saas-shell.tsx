@@ -3,12 +3,14 @@
 import {
   BarChart3,
   Briefcase,
+  CheckSquare,
   ClipboardCheck,
   GitBranch,
   ListTodo,
   LogOut,
   MapPin,
   Package,
+  Presentation,
   Settings,
   Users,
 } from "lucide-react";
@@ -45,8 +47,15 @@ const navItems: NavItem[] = [
   },
   {
     href: "/app/tasks",
-    label: "Tasks",
+    label: "EA",
     icon: ListTodo,
+    minRole: "VIEWER",
+    module: "TASKS",
+  },
+  {
+    href: "/app/checklists",
+    label: "PC",
+    icon: CheckSquare,
     minRole: "VIEWER",
     module: "TASKS",
   },
@@ -71,6 +80,13 @@ const navItems: NavItem[] = [
     icon: ClipboardCheck,
     minRole: "MANAGER",
     module: "APPROVALS",
+  },
+  {
+    href: "/app/em",
+    label: "EM Ready",
+    icon: Presentation,
+    minRole: "MANAGER",
+    module: "REPORTS",
   },
   {
     href: "/app/reports",

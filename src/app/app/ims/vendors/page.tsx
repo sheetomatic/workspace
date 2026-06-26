@@ -50,14 +50,20 @@ export default async function ImsVendorsPage() {
       {canManage ? <ImsVendorImport /> : null}
 
       <div className="ws-ims-stack">
-        <section className="ws-ims-panel">
-          <h2>Add vendor</h2>
-          <ImsVendorForm layout={layout} />
-        </section>
+        {canManage ? (
+          <section className="ws-ims-panel">
+            <h2>Add vendor</h2>
+            <ImsVendorForm layout={layout} />
+          </section>
+        ) : null}
 
         <section className="ws-ims-panel">
           <h2>All vendors ({vendors.length})</h2>
-          <ImsVendorsManager vendors={formVendors} layout={layout} />
+          <ImsVendorsManager
+            vendors={formVendors}
+            layout={layout}
+            canManage={canManage}
+          />
         </section>
       </div>
     </div>

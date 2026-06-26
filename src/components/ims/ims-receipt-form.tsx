@@ -42,7 +42,13 @@ function newLine(itemId = ""): Line {
   };
 }
 
-export function ImsReceiptForm({ items }: { items: ItemOption[] }) {
+export function ImsReceiptForm({
+  items,
+  vendorNames = [],
+}: {
+  items: ItemOption[];
+  vendorNames?: string[];
+}) {
   const [state, action] = useFormState(recordReceiptAction, initial);
   const formRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -58,6 +64,7 @@ export function ImsReceiptForm({ items }: { items: ItemOption[] }) {
   useEffect(() => {
     if (state.ok) {
       formRef.current?.reset();
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset upload + lines after a successful server action
       setUpload({ status: "idle" });
       setLines([newLine(rawMaterials[0]?.id ?? "")]);
     }
@@ -265,7 +272,19 @@ export function ImsReceiptForm({ items }: { items: ItemOption[] }) {
           </label>
           <label>
             Supplier / vendor
-            <input name="supplierName" type="text" placeholder="Supplier name" />
+            <input
+              name="supplierName"
+              type="text"
+              placeholder="Supplier name"
+              list={vendorNames.length > 0 ? "ims-vendor-names" : undefined}
+            />
+            {vendorNames.length > 0 ? (
+              <datalist id="ims-vendor-names">
+                {vendorNames.map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
+            ) : null}
           </label>
           <label>
             GRN / challan reference

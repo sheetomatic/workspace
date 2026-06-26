@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/saas/page-header";
 import {
   MisCategorySummaryTable,
   MisDataViewTable,
 } from "@/components/saas/mis-category-table";
 import { requireSession } from "@/lib/require-session";
+import { hasMinimumRole } from "@/lib/permissions";
 import { listFmsInstancesPage } from "@/lib/fms/queries";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
 import {
@@ -53,6 +55,13 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       <PageHeader
         title="Reports & MIS"
         description="Category-wise performance in numbers and percentages. Click any number to see the data behind it."
+        actions={
+          hasMinimumRole(user.role, "MANAGER") ? (
+            <Link href="/app/em" className="btn-primary btn-sm ws-sf-btn-primary">
+              EM Ready board
+            </Link>
+          ) : undefined
+        }
       />
 
       <MisCategorySummaryTable

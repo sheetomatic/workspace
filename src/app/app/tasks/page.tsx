@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { TaskStatus } from "@prisma/client";
 import { TaskAssigneeDashboard } from "@/components/saas/task-assignee-dashboard";
@@ -18,6 +19,7 @@ import {
 } from "@/lib/task-filter-label";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
+import { canAccessEmReady } from "@/lib/em/em-access";
 import { taskPageFromSearchParam } from "@/lib/scale";
 import { getTaskDueUrgency } from "@/lib/task-due-urgency";
 import { getWorkspaceIntegrationStatus } from "@/lib/workspace-integration-status";
@@ -112,6 +114,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
     };
   });
   const showCreate = canCreateTasks(user.role);
+  const showEmReady = canAccessEmReady(user);
   const showAssigneeFilter =
     hasMinimumRole(user.role, "MANAGER") || user.role === "VIEWER";
 
@@ -150,6 +153,11 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
         description="All team tasks, workload, and filters."
         actions={
           <>
+            {showEmReady ? (
+              <Link href="/app/em" className="btn-secondary btn-sm">
+                EM Ready
+              </Link>
+            ) : null}
             <TaskExportBar
               compact
               sheetsReady={false}

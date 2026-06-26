@@ -16,7 +16,7 @@ import {
   sectionField,
   sectionFieldMatches,
 } from "@/lib/legal-cases/section-data";
-import type { LegalViewKey } from "@/lib/legal-cases/views";
+import { LEGAL_VIEWS, type LegalViewKey } from "@/lib/legal-cases/views";
 
 const VIEW_PAGE_SIZE = 100;
 const WORK_SECTIONS = [2, 3, 4, 5, 6, 7] as const;
@@ -155,9 +155,6 @@ function filterViewCases(
   let rows = cases.filter((item) => matchesCategory(item, options.category ?? ""));
 
   switch (viewKey) {
-    case "running":
-      rows = rows.filter((item) => item.fileStatus?.toUpperCase() === "RUNNING");
-      break;
     case "as-due":
       rows = rows.filter((item) =>
         sectionFieldMatches(item, "AGREEMENT", /as\s*due/i),
@@ -254,6 +251,8 @@ function filterViewCases(
       break;
   }
 
+  rows = rows.filter((item) => item.fileStatus?.toUpperCase() === "RUNNING");
+
   return applyCommonViewFilters(rows, options, context);
 }
 
@@ -296,6 +295,26 @@ export async function listLegalViewCases(
   const items = filtered.slice((page - 1) * VIEW_PAGE_SIZE, page * VIEW_PAGE_SIZE);
 
   return { items, total, page, totalPages, pageSize: VIEW_PAGE_SIZE };
+}
+
+export async function listAllLegalViewCases(
+  user: SessionUser,
+  viewKey: LegalViewKey,
+  options: LegalViewListFilter = {},
+): Promise<LegalCase[]> {
+  const admin = isLegalAdmin(user);
+  const staffCode = userStaffCode(user);
+
+  const baseWhere = buildLegalListWhere(user, {
+    mineOnly: !admin,
+  });
+
+  const cases = await prisma.legalCase.findMany({
+    where: baseWhere,
+    orderBy: [{ fileNumber: "asc" }, { mccNumber: "asc" }],
+  });
+
+  return filterViewCases(cases, viewKey, options, { admin, staffCode });
 }
 
 export async function getRunningInsights(
@@ -410,4 +429,27 @@ export async function countRunningCases(user: SessionUser) {
     mineOnly: !isLegalAdmin(user),
   });
   return prisma.legalCase.count({ where });
+}
+
+export type LegalViewNavCounts = Record<LegalViewKey, number>;
+
+export async function getLegalViewNavCounts(
+  user: SessionUser,
+): Promise<LegalViewNavCounts> {
+  const admin = isLegalAdmin(user);
+  const staffCode = userStaffCode(user);
+  const context = { admin, staffCode };
+
+  const baseWhere = buildLegalListWhere(user, { mineOnly: !admin });
+  const cases = await prisma.legalCase.findMany({ where: baseWhere });
+
+  const counts = {} as LegalViewNavCounts;
+  for (const view of LEGAL_VIEWS) {
+    if (view.key === "all") {
+      counts.all = cases.length;
+    } else {
+      counts[view.key] = filterViewCases(cases, view.key, {}, context).length;
+    }
+  }
+  return counts;
 }

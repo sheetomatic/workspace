@@ -5,6 +5,7 @@ import {
 } from "@/components/saas/mis-category-table";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
+import { canAccessEmReady } from "@/lib/em/em-access";
 import {
   buildTaskMisRows,
   categorySummary,
@@ -34,6 +35,7 @@ export default async function TasksScoresPage({ searchParams }: PageProps) {
   const taskRows = buildTaskMisRows(taskPage.items);
   const summary = categorySummary("Task", taskRows);
   const detailRows = filterMisRows(taskRows, params);
+  const showEmReady = canAccessEmReady(user);
 
   return (
     <div className="saas-page ws-mis-page ws-tasks-sf">
@@ -41,9 +43,16 @@ export default async function TasksScoresPage({ searchParams }: PageProps) {
         title="MIS scores"
         description="Task performance with deficit tracking. Click any number to drill down."
         actions={
-          <Link href="/app/reports" className="btn-secondary btn-sm">
-            Reports & MIS
-          </Link>
+          <>
+            {showEmReady ? (
+              <Link href="/app/em" className="btn-primary btn-sm ws-sf-btn-primary">
+                EM Ready
+              </Link>
+            ) : null}
+            <Link href="/app/reports" className="btn-secondary btn-sm">
+              Reports & MIS
+            </Link>
+          </>
         }
       />
 

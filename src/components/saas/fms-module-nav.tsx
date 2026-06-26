@@ -13,10 +13,12 @@ import {
   PanelLeftOpen,
   Radar,
   Settings2,
+  Sparkles,
   TrainFront,
 } from "lucide-react";
 import type { SessionUser } from "@/lib/auth";
 import { canApproveFmsFlow, canSubmitFmsFlow } from "@/lib/fms/access";
+import { canAccessEmReady } from "@/lib/em/em-access";
 import { hasMinimumRole } from "@/lib/permissions";
 import { FmsInAppNotificationsBell } from "@/components/saas/fms-in-app-notifications-bell";
 
@@ -52,6 +54,7 @@ export function FmsModuleNav({
 }) {
   const pathname = usePathname();
   const isManager = hasMinimumRole(user.role, "MANAGER");
+  const showEmReady = canAccessEmReady(user);
   const canSetup = canSubmitFmsFlow(user.role) || canApproveFmsFlow(user.role);
   const [collapsed, setCollapsed] = useState(false);
   const [queueOpen, setQueueOpen] = useState(
@@ -188,7 +191,7 @@ export function FmsModuleNav({
               {!collapsed ? (
                 <span>
                   Ops monitor
-                  <small>Overdue and unassigned</small>
+                  <small>Late stops and owners</small>
                 </span>
               ) : null}
             </Link>
@@ -207,6 +210,24 @@ export function FmsModuleNav({
                 <span>
                   MIS scores
                   <small>On-time performance</small>
+                </span>
+              ) : null}
+            </Link>
+          </li>
+        ) : null}
+
+        {showEmReady ? (
+          <li>
+            <Link
+              href="/app/em"
+              className={`ws-module-subnav-link${navIsActive(pathname, "/app/em") ? " is-active" : ""}`}
+              title="EM Ready"
+            >
+              <Sparkles size={16} aria-hidden />
+              {!collapsed ? (
+                <span>
+                  EM Ready
+                  <small>Executive meeting board</small>
                 </span>
               ) : null}
             </Link>

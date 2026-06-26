@@ -7,10 +7,12 @@ import {
   ClipboardList,
   PlusCircle,
   ListTodo,
+  Sparkles,
   Users,
 } from "lucide-react";
 import type { SessionUser } from "@/lib/auth";
 import { canCreateTasks } from "@/lib/tasks";
+import { canAccessEmReady } from "@/lib/em/em-access";
 
 type NavItem = {
   href: string;
@@ -30,6 +32,7 @@ function navIsActive(pathname: string, href: string) {
 export function TasksModuleNav({ user }: { user: SessionUser }) {
   const pathname = usePathname();
   const isManager = canCreateTasks(user.role);
+  const showEmReady = canAccessEmReady(user);
 
   const items: NavItem[] = [
     {
@@ -58,18 +61,25 @@ export function TasksModuleNav({ user }: { user: SessionUser }) {
       label: "MIS scores",
       icon: BarChart3,
       visible: isManager,
-      description: "Task & checklist performance",
+      description: "Task performance",
+    },
+    {
+      href: "/app/em",
+      label: "EM Ready",
+      icon: Sparkles,
+      visible: showEmReady,
+      description: "Weekly executive meeting",
     },
   ];
 
   const visibleItems = items.filter((item) => item.visible);
 
   return (
-    <nav className="ws-module-subnav ws-tasks-subnav" aria-label="Tasks navigation">
+    <nav className="ws-module-subnav ws-tasks-subnav" aria-label="EA navigation">
       <div className="ws-module-subnav-brand">
         <ListTodo size={18} aria-hidden />
         <div>
-          <strong>Tasks</strong>
+          <strong>EA</strong>
           <span>Delegation & proof</span>
         </div>
       </div>

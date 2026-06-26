@@ -88,16 +88,17 @@ export function CaseListTable({
           <th>Applicant</th>
           <th>Category</th>
           <th>Status</th>
-          <th>Stage</th>
+          <th>Case Stage</th>
           <th>Court</th>
           <th>{admin ? "Assignees" : "My sections"}</th>
           <th>Docs</th>
+          <th className="legal-table-action-col">Edit</th>
         </tr>
       </thead>
       <tbody>
         {items.length === 0 ? (
           <tr>
-            <td colSpan={9}>No cases match your filters.</td>
+            <td colSpan={10}>No cases match your filters.</td>
           </tr>
         ) : (
           items.map((item) => (
@@ -121,6 +122,14 @@ export function CaseListTable({
                 <AssigneeCell item={item} user={user} />
               </td>
               <td>{item._count.documents}</td>
+              <td className="legal-table-action-col">
+                <Link
+                  className="legal-table-edit-link"
+                  href={`/app/cases/${item.id}`}
+                >
+                  Edit
+                </Link>
+              </td>
             </tr>
           ))
         )}

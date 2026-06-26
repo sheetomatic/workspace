@@ -42,6 +42,7 @@ export default async function ImsDashboardPage() {
         <Link href="/app/ims/qc" className="ws-stat-card ws-stat-pending">
           <span>QC pending (inspections)</span>
           <strong>{stats.pendingQcCount.toLocaleString("en-IN")}</strong>
+          <small>{formatImsQty(stats.pendingQcUnits)} units on hold</small>
         </Link>
         <Link href="/app/ims/stock" className="ws-stat-card ws-stat-progress">
           <span>Below minimum</span>

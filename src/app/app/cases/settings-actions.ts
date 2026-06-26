@@ -93,8 +93,12 @@ function revalidateCasesPaths() {
   revalidatePath("/app/cases/settings");
 }
 
-export async function loadLegalCasesSettingsBackupMeta(organizationId: string) {
-  return getLegalCaseImportBackupMeta(prisma, organizationId);
+export async function loadLegalCasesSettingsBackupMeta() {
+  const user = await requireLegalAdmin();
+  if (!user) {
+    return null;
+  }
+  return getLegalCaseImportBackupMeta(prisma, user.organizationId);
 }
 
 export async function previewLegalCasesImportAction(
@@ -272,8 +276,8 @@ export async function updateLegalCaseFromSettingsAction(
     return { ok: false, message: "Case not found." };
   }
 
-  await prisma.legalCase.update({
-    where: { id: caseId },
+  await prisma.legalCase.updateMany({
+    where: { id: caseId, organizationId: user.organizationId },
     data: {
       fileNumber,
       mccNumber: textField(formData, "mccNumber"),

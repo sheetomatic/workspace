@@ -407,8 +407,8 @@ export async function updateTeamMemberDetails(
     },
   });
 
-  await prisma.membership.update({
-    where: { id: membershipId },
+  await prisma.membership.updateMany({
+    where: { id: membershipId, organizationId: user.organizationId },
     data: {
       role,
       department,
@@ -457,8 +457,8 @@ export async function updateMemberRole(
     return { ok: false, message: "Only owners can promote to Owner." };
   }
 
-  await prisma.membership.update({
-    where: { id: membershipId },
+  await prisma.membership.updateMany({
+    where: { id: membershipId, organizationId: user.organizationId },
     data: { role },
   });
 
@@ -495,7 +495,9 @@ export async function removeTeamMember(
     }
   }
 
-  await prisma.membership.delete({ where: { id: membershipId } });
+  await prisma.membership.deleteMany({
+    where: { id: membershipId, organizationId: user.organizationId },
+  });
   revalidatePath("/app/team");
   return { ok: true, message: "Member removed from workspace." };
 }

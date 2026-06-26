@@ -10,7 +10,8 @@ export type LegalViewKey =
   | "pf-due"
   | "order-deposits"
   | "simple-fracture"
-  | "new-cases";
+  | "new-cases"
+  | "follow-fatal";
 
 export type LegalViewColumn = {
   key: string;
@@ -58,7 +59,7 @@ export const LEGAL_VIEWS: LegalViewDefinition[] = [
   },
   {
     key: "as-due",
-    label: "AS due (1 Apr)",
+    label: "As Due",
     description: "Agreement status AS due - cases pending agreement signing.",
     categoryFilter: true,
   },
@@ -88,7 +89,7 @@ export const LEGAL_VIEWS: LegalViewDefinition[] = [
   },
   {
     key: "simple-fracture",
-    label: "Simple fracture (Abhishek)",
+    label: "Simple fracture",
     description: "Simple fracture list for Abhishek assignee.",
     categoryFilter: false,
   },
@@ -96,6 +97,13 @@ export const LEGAL_VIEWS: LegalViewDefinition[] = [
     key: "new-cases",
     label: "New cases (BD)",
     description: "Cases to be filed - BD team queue.",
+    categoryFilter: false,
+  },
+  {
+    key: "follow-fatal",
+    label: "Follow Fatal FIR",
+    description:
+      "Monthly fatality follow-up — field staff pipeline with insurance/vehicle exclusions.",
     categoryFilter: false,
   },
 ];
@@ -222,6 +230,8 @@ export function legalViewColumns(key: LegalViewKey): LegalViewColumn[] {
         extra("ACCOUNT"),
         scalar("Remark (Requirements)/ Proposals", "remarks"),
       ];
+    case "follow-fatal":
+      return [];
     default:
       return [];
   }

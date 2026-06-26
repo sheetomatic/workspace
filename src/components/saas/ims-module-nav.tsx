@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ArrowLeftRight,
+  BarChart3,
   ClipboardCheck,
   History,
   LayoutDashboard,
@@ -62,6 +63,12 @@ const items: NavItem[] = [
     label: "QC queue",
     icon: ClipboardCheck,
     description: "Pass or fail receipts",
+  },
+  {
+    href: "/app/ims/reports",
+    label: "Reports",
+    icon: BarChart3,
+    description: "Valuation, ABC, trends",
   },
   {
     href: "/app/ims/settings",

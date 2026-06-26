@@ -19,11 +19,6 @@ import { resolveFmsBackLink } from "@/lib/fms/navigation";
 import { getFmsInstance, getFmsPipelineCounts } from "@/lib/fms/queries";
 import { listFmsAuditForInstance } from "@/lib/fms/audit";
 import { listAssignableMembers } from "@/lib/tasks";
-import {
-  formatDelayLabel,
-  isStepOverdue,
-  liveDelayMinutes,
-} from "@/lib/fms/step-display";
 
 type PageProps = {
   params: Promise<{ instanceId: string }>;
@@ -80,23 +75,6 @@ export default async function FmsInstancePage({ params, searchParams }: PageProp
     ? await listAssignableMembers(user.organizationId)
     : [];
 
-  const activeDelay = activeStep
-    ? liveDelayMinutes(
-        activeStep.plannedAt,
-        activeStep.actualAt,
-        activeStep.delayMinutes,
-      )
-    : null;
-  const activeDelayLabel = formatDelayLabel(activeDelay);
-  const activeOverdue = activeStep
-    ? isStepOverdue(
-        activeStep.status,
-        activeStep.plannedAt,
-        activeStep.actualAt,
-        activeStep.delayMinutes,
-      )
-    : false;
-
   const submissionValues = instance.submission?.values as
     | Record<string, unknown>
     | undefined;
@@ -124,7 +102,7 @@ export default async function FmsInstancePage({ params, searchParams }: PageProp
         }
       />
 
-      <section className="ws-sf-card ws-fms-journey-hero">
+      <section className={`ws-sf-card ws-fms-journey-hero${canComplete ? " is-compact" : ""}`}>
         <header className="ws-fms-journey-header">
           <div>
             <p className="ws-fms-journey-eyebrow">Lead → FMS flow</p>
@@ -155,7 +133,6 @@ export default async function FmsInstancePage({ params, searchParams }: PageProp
           submittedAt={instance.submission?.createdAt ?? null}
           instanceStatus={instance.status}
           steps={instance.stepStates}
-          autoOpenComplete={query.action === "complete" && canComplete}
           completePanel={
             activeStep && instance.status === "ACTIVE"
               ? {
@@ -176,45 +153,6 @@ export default async function FmsInstancePage({ params, searchParams }: PageProp
               : null
           }
         />
-
-        {activeStep ? (
-          <dl className="ws-fms-journey-active-meta">
-            <div>
-              <dt>Doer</dt>
-              <dd>
-                {activeStep.owner?.name ??
-                  activeStep.owner?.email.split("@")[0] ??
-                  "Unassigned"}
-              </dd>
-            </div>
-            <div>
-              <dt>Delay status</dt>
-              <dd>
-                {activeOverdue && activeDelayLabel ? (
-                  <span className="ws-fms-train-delay-badge is-late">
-                    {activeDelayLabel}
-                  </span>
-                ) : activeStep.plannedAt ? (
-                  <span className="ws-fms-train-delay-badge is-ok">On track</span>
-                ) : (
-                  <span className="ws-fms-train-delay-badge is-neutral">
-                    In progress
-                  </span>
-                )}
-              </dd>
-            </div>
-          </dl>
-        ) : null}
-
-        {activeStep?.plannedAt ? (
-          <p className="ws-fms-journey-due">
-            Due at this stop:{" "}
-            {new Intl.DateTimeFormat("en-IN", {
-              dateStyle: "medium",
-              timeStyle: "short",
-            }).format(activeStep.plannedAt)}
-          </p>
-        ) : null}
 
         {canClaim && activeStep ? (
           <FmsClaimStepBanner instanceId={instance.id} stepStateId={activeStep.id} />
@@ -242,7 +180,14 @@ export default async function FmsInstancePage({ params, searchParams }: PageProp
       </section>
 
       <div className="ws-fms-instance-layout">
-        <FmsInstanceAttachments rows={attachmentRows} />
+        <FmsInstanceAttachments
+          rows={attachmentRows}
+          showUploadHint={
+            canComplete &&
+            Boolean(activeStep) &&
+            activeStep!.step.allowUpload !== false
+          }
+        />
 
         <FmsInstanceActivity auditEvents={auditEvents} />
       </div>

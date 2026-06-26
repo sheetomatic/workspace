@@ -41,6 +41,14 @@ export default async function ImsItemsPage() {
 
   const canManage = hasMinimumRole(user.role, "MANAGER");
 
+  const categoryOptions = Array.from(
+    new Set(
+      formItems
+        .map((item) => item.category?.trim())
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ).sort();
+
   return (
     <div className="saas-page ws-ims-page">
       <PageHeader
@@ -51,14 +59,21 @@ export default async function ImsItemsPage() {
       {canManage ? <ImsItemImport /> : null}
 
       <div className="ws-ims-stack">
-        <section className="ws-ims-panel">
-          <h2>Add item</h2>
-          <ImsItemForm layout={layout} />
-        </section>
+        {canManage ? (
+          <section className="ws-ims-panel">
+            <h2>Add item</h2>
+            <ImsItemForm layout={layout} categoryOptions={categoryOptions} />
+          </section>
+        ) : null}
 
         <section className="ws-ims-panel">
           <h2>All items ({items.length})</h2>
-          <ImsItemsManager items={formItems} layout={layout} />
+          <ImsItemsManager
+            items={formItems}
+            layout={layout}
+            canManage={canManage}
+            categoryOptions={categoryOptions}
+          />
         </section>
       </div>
     </div>

@@ -97,6 +97,8 @@ export default async function FmsFormDetailPage({ params, searchParams }: PagePr
               initialAlertConfig={
                 form.template?.alertConfig ?? DEFAULT_FMS_ALERT_CONFIG
               }
+              initialPcUserIds={form.template?.pcUserIds ?? []}
+              initialEaUserId={form.template?.eaUserId}
               members={members}
               mode={hasWorkflow ? "edit" : "create"}
               templateStatus={form.template?.status}

@@ -7,12 +7,9 @@ import {
   legalViewPath,
   type LegalViewKey,
 } from "@/lib/legal-cases/views";
+import type { LegalViewNavCounts } from "@/lib/legal-cases/view-queries";
 
-export function LegalViewsNav({
-  counts,
-}: {
-  counts: { all: number; running: number };
-}) {
+export function LegalViewsNav({ counts }: { counts: LegalViewNavCounts }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -28,16 +25,10 @@ export function LegalViewsNav({
     return pathname === `/app/cases/views/${key}`;
   }
 
-  const countFor = (key: LegalViewKey) => {
-    if (key === "all") return counts.all;
-    if (key === "running") return counts.running;
-    return null;
-  };
-
   return (
     <nav aria-label="Case views" className="legal-views-nav">
       {LEGAL_VIEWS.map((view) => {
-        const count = countFor(view.key);
+        const count = counts[view.key];
         return (
           <Link
             key={view.key}
@@ -46,9 +37,7 @@ export function LegalViewsNav({
             href={hrefFor(view.key)}
           >
             {view.label}
-            {count !== null ? (
-              <span className="legal-view-tab-count">{count.toLocaleString()}</span>
-            ) : null}
+            <span className="legal-view-tab-count">{count.toLocaleString()}</span>
           </Link>
         );
       })}

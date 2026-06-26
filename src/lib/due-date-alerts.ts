@@ -6,6 +6,11 @@ import {
   normalizeStaffCode,
 } from "@/lib/legal-cases/access";
 import {
+  needsClientCallAlert,
+  needsSigningFilingAlert,
+  signingFilingGapDays,
+} from "@/lib/legal-cases/case-alerts";
+import {
   daysBetween,
   parseLegalNextDate,
   startOfLocalDay,
@@ -171,6 +176,43 @@ export async function dispatchDueDateAlerts() {
           const label = kind === "overdue" ? "Overdue hearing" : "Upcoming hearing";
           lines.push(
             `${label}: ${legalCase.caseRef} (${legalCase.fileNumber}) - next date ${legalCase.nextDate}`,
+          );
+        }
+      }
+
+      const alertCases = await prisma.legalCase.findMany({
+        where: { organizationId: row.organizationId },
+        select: {
+          caseRef: true,
+          fileNumber: true,
+          signingDate: true,
+          caseFiled: true,
+          sectionData: true,
+          s2Responsible: true,
+          s3Responsible: true,
+          s4Responsible: true,
+          s5Responsible: true,
+          s6Responsible: true,
+          s7Responsible: true,
+        },
+        take: 500,
+      });
+
+      for (const legalCase of alertCases) {
+        if (!caseMatchesStaffCode(legalCase as LegalCase, staffCode)) {
+          continue;
+        }
+
+        if (row.caseDueDateAlert && needsSigningFilingAlert(legalCase)) {
+          const gap = signingFilingGapDays(legalCase);
+          lines.push(
+            `Signing/filing overdue: ${legalCase.caseRef} (${legalCase.fileNumber}) - signed ${legalCase.signingDate}, not filed (${gap} days)`,
+          );
+        }
+
+        if (row.caseDueDateAlert && needsClientCallAlert(legalCase as LegalCase)) {
+          lines.push(
+            `Client call overdue: ${legalCase.caseRef} (${legalCase.fileNumber}) - log call in process diary`,
           );
         }
       }

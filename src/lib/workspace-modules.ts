@@ -127,13 +127,13 @@ export function pathnameRequiresModule(pathname: string): WorkspaceModule | null
   if (pathname.startsWith("/app/ims")) {
     return "IMS";
   }
-  if (pathname.startsWith("/app/reports")) {
+  if (pathname.startsWith("/app/reports") || pathname.startsWith("/app/em")) {
     return "REPORTS";
   }
   if (pathname.startsWith("/app/approvals")) {
     return "APPROVALS";
   }
-  if (pathname.startsWith("/app/tasks")) {
+  if (pathname.startsWith("/app/tasks") || pathname.startsWith("/app/checklists")) {
     return "TASKS";
   }
   if (pathname.startsWith("/app/fms")) {

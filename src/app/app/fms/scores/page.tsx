@@ -6,6 +6,7 @@ import {
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
+import { canAccessEmReady } from "@/lib/em/em-access";
 import { listFmsInstancesPage } from "@/lib/fms/queries";
 import {
   buildFmsMisRows,
@@ -35,6 +36,7 @@ export default async function FmsScoresPage({ searchParams }: PageProps) {
   const fmsRows = buildFmsMisRows(fmsPage.items);
   const summary = categorySummary("FMS", fmsRows);
   const detailRows = filterMisRows(fmsRows, params);
+  const showEmReady = canAccessEmReady(user);
 
   return (
     <div className="saas-page ws-mis-page ws-fms-sf">
@@ -42,9 +44,16 @@ export default async function FmsScoresPage({ searchParams }: PageProps) {
         title="MIS scores"
         description="FMS line performance with deficit tracking. Click any number to drill down."
         actions={
-          <Link href="/app/reports" className="btn-secondary btn-sm">
-            Reports & MIS
-          </Link>
+          <>
+            {showEmReady ? (
+              <Link href="/app/em" className="btn-primary btn-sm ws-sf-btn-primary">
+                EM Ready
+              </Link>
+            ) : null}
+            <Link href="/app/reports" className="btn-secondary btn-sm">
+              Reports & MIS
+            </Link>
+          </>
         }
       />
 

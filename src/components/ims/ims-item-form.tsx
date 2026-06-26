@@ -25,9 +25,11 @@ export type ImsItemFormData = {
 export function ImsItemForm({
   layout,
   item,
+  categoryOptions,
 }: {
   layout: FormLayout;
   item?: ImsItemFormData;
+  categoryOptions?: string[];
 }) {
   const builtinValues: Record<string, unknown> = item
     ? {
@@ -55,6 +57,7 @@ export function ImsItemForm({
       customValues={item?.customValues ?? {}}
       action={saveImsItemAction}
       submitLabel={item ? "Update item" : "Create item"}
+      categoryOptions={categoryOptions}
     />
   );
 }

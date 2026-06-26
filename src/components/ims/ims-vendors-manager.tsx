@@ -106,9 +106,11 @@ function ImsVendorRowActions({
 export function ImsVendorsManager({
   vendors,
   layout,
+  canManage = true,
 }: {
   vendors: ImsVendorFormData[];
   layout: FormLayout;
+  canManage?: boolean;
 }) {
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("ACTIVE");
@@ -134,7 +136,8 @@ export function ImsVendorsManager({
     });
   }, [vendors, search, activeFilter]);
 
-  const canReorder = !search.trim() && activeFilter === "ALL";
+  const canReorder = canManage && !search.trim() && activeFilter === "ALL";
+  const colCount = canManage ? 7 : 6;
 
   return (
     <div className="ws-ims-items">
@@ -173,13 +176,13 @@ export function ImsVendorsManager({
               <th>Email / Phone</th>
               <th>Lead time</th>
               <th>Status</th>
-              <th></th>
+              {canManage ? <th></th> : null}
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={7}>No vendors match these filters.</td>
+                <td colSpan={colCount}>No vendors match these filters.</td>
               </tr>
             ) : (
               filtered.map((vendor, index) => (
@@ -206,24 +209,26 @@ export function ImsVendorsManager({
                     <td data-label="Status">
                       {vendor.isActive ? "Active" : "Inactive"}
                     </td>
-                    <td data-label="Actions">
-                      <ImsVendorRowActions
-                        vendor={vendor}
-                        editing={editingId === vendor.id}
-                        onEditToggle={() =>
-                          setEditingId((current) =>
-                            current === vendor.id ? null : vendor.id,
-                          )
-                        }
-                        canReorder={canReorder}
-                        isFirst={index === 0}
-                        isLast={index === filtered.length - 1}
-                      />
-                    </td>
+                    {canManage ? (
+                      <td data-label="Actions">
+                        <ImsVendorRowActions
+                          vendor={vendor}
+                          editing={editingId === vendor.id}
+                          onEditToggle={() =>
+                            setEditingId((current) =>
+                              current === vendor.id ? null : vendor.id,
+                            )
+                          }
+                          canReorder={canReorder}
+                          isFirst={index === 0}
+                          isLast={index === filtered.length - 1}
+                        />
+                      </td>
+                    ) : null}
                   </tr>
-                  {editingId === vendor.id ? (
+                  {canManage && editingId === vendor.id ? (
                     <tr className="ws-ims-edit-row">
-                      <td colSpan={7}>
+                      <td colSpan={colCount}>
                         <ImsVendorForm layout={layout} vendor={vendor} />
                       </td>
                     </tr>

@@ -156,6 +156,8 @@ model Organization {
   imsVendors           ImsVendor[]
   imsCustomFields      ImsCustomField[]
   imsFieldSettings     ImsFieldSetting[]
+  checklistTemplates   ChecklistTemplate[]
+  checklistOccurrences ChecklistOccurrence[]
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
 }
@@ -814,6 +816,7 @@ model User {
   taskAiUsageEvents    TaskAiUsageEvent[]
   fmsFormsCreated      FmsForm[]                @relation("FmsFormCreator")
   fmsTemplatesCreated  FmsTemplate[]            @relation("FmsTemplateCreator")
+  fmsTemplatesEa       FmsTemplate[]            @relation("FmsTemplateEa")
   fmsFormSubmissions   FmsFormSubmission[]      @relation("FmsFormSubmitter")
   fmsStepsOwned        FmsStepState[]           @relation("FmsStepOwner")
   fmsStepsCompleted    FmsStepState[]           @relation("FmsStepCompleter")
@@ -823,6 +826,10 @@ model User {
   fmsFlowDesignsApproved FmsFlowDesign[]        @relation("FmsFlowDesignApprover")
   fmsAuditEvents         FmsAuditEvent[]        @relation("FmsAuditActor")
   appNotifications       UserAppNotification[]
+  checklistTemplatesCreated ChecklistTemplate[] @relation("ChecklistTemplateCreator")
+  checklistTemplatesOwned   ChecklistTemplate[] @relation("ChecklistTemplateAssignee")
+  checklistOccurrencesOwned ChecklistOccurrence[] @relation("ChecklistOccurrenceAssignee")
+  checklistOccurrencesDone  ChecklistOccurrence[] @relation("ChecklistOccurrenceCompleter")
   imsMovementsCreated    ImsStockMovement[]    @relation("ImsMovementCreator")
   imsQcInspected         ImsQcInspection[]     @relation("ImsQcInspector")
   imsAttachmentsUploaded ImsAttachment[]       @relation("ImsAttachmentUploader")
@@ -884,6 +891,7 @@ model Membership {
   modules            WorkspaceModule[]   @default([])
   userId             String
   organizationId     String
+  lastTaskDigestAt     DateTime?
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdAt      DateTime        @default(now())
@@ -1236,6 +1244,9 @@ model FmsTemplate {
   status         FmsTemplateStatus @default(DRAFT)
   holidayDates   Json              @default("[]")
   alertConfig    Json              @default("{}")
+  pcUserIds      Json              @default("[]")
+  eaUserId       String?
+  eaUser         User?             @relation("FmsTemplateEa", fields: [eaUserId], references: [id], onDelete: SetNull)
   createdById    String
   createdBy      User              @relation("FmsTemplateCreator", fields: [createdById], references: [id], onDelete: Cascade)
   steps          FmsTemplateStep[]
@@ -1259,7 +1270,7 @@ model FmsTemplateStep {
   slaType            FmsSlaType    @default(NONE)
   slaConfig          Json          @default("{}")
   allowMarkDone      Boolean       @default(true)
-  allowUpload        Boolean       @default(false)
+  allowUpload        Boolean       @default(true)
   allowNotes         Boolean       @default(true)
   captureFields      Json          @default("[]")
   stepStates         FmsStepState[]
@@ -1617,4 +1628,103 @@ model ImsFieldSetting {
   sortOrder      Int           @default(0)
 
   @@unique([organizationId, entity, fieldKey])
+}
+
+enum ChecklistTeam {
+  ACCOUNTS
+  HR
+  MAINTENANCE
+  QUALITY
+  STORE
+  GENERAL
+}
+
+enum ChecklistFrequency {
+  WEEKLY
+  FORTNIGHTLY
+  MONTHLY
+  QUARTERLY
+  HALF_YEARLY
+  YEARLY
+}
+
+enum ChecklistOccurrenceStatus {
+  PENDING
+  DONE
+  OVERDUE
+}
+
+enum ChecklistReferenceKind {
+  WEB
+  YOUTUBE
+  SHARED
+}
+
+model ChecklistTemplate {
+  id               String             @id @default(cuid())
+  organizationId   String
+  organization     Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title            String
+  instructions     String?
+  team             ChecklistTeam      @default(GENERAL)
+  frequency        ChecklistFrequency
+  dueMonthDay      Int?
+  dueWeekday       Int?
+  dueMonth         Int?
+  anchorDate       DateTime?
+  dueHour          Int                @default(18)
+  dueMinute        Int                @default(0)
+  assigneeUserId   String
+  assignee         User               @relation("ChecklistTemplateAssignee", fields: [assigneeUserId], references: [id], onDelete: Cascade)
+  createdById      String
+  createdBy        User               @relation("ChecklistTemplateCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  isActive         Boolean            @default(true)
+  remindViaEmail   Boolean            @default(true)
+  references       ChecklistReference[]
+  occurrences      ChecklistOccurrence[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@index([organizationId, isActive])
+  @@index([organizationId, team])
+  @@index([organizationId, assigneeUserId])
+}
+
+model ChecklistReference {
+  id         String                 @id @default(cuid())
+  templateId String
+  template   ChecklistTemplate      @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  kind       ChecklistReferenceKind
+  label      String
+  href       String
+  note       String?
+  sortOrder  Int                    @default(0)
+
+  @@index([templateId])
+}
+
+model ChecklistOccurrence {
+  id                  String                    @id @default(cuid())
+  organizationId      String
+  organization        Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  templateId          String
+  template            ChecklistTemplate         @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  assigneeUserId      String
+  assignee            User                      @relation("ChecklistOccurrenceAssignee", fields: [assigneeUserId], references: [id], onDelete: Cascade)
+  seriesKey           String
+  plannedAt           DateTime
+  actualAt            DateTime?
+  delayMinutes        Int?
+  status              ChecklistOccurrenceStatus @default(PENDING)
+  notes               String?
+  completedById       String?
+  completedBy         User?                     @relation("ChecklistOccurrenceCompleter", fields: [completedById], references: [id], onDelete: SetNull)
+  emailReminderSentAt DateTime?
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+
+  @@unique([templateId, seriesKey])
+  @@index([organizationId, assigneeUserId, status])
+  @@index([organizationId, plannedAt])
+  @@index([organizationId, status, plannedAt])
 }

@@ -248,6 +248,176 @@ ${memberList}`,
   };
 }
 
+export type ParsedChecklistDraft = {
+  title: string;
+  instructions: string;
+  team: string;
+  frequency: string;
+  dueMonthDay: number;
+  dueWeekday: number;
+  dueMonth: number;
+  assigneeUserId: string | null;
+  assigneeHint: string | null;
+  remindViaEmail: boolean;
+};
+
+export type ChecklistParseResult = {
+  draft: ParsedChecklistDraft;
+  usage: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+};
+
+const PC_TEAMS = [
+  "ACCOUNTS",
+  "HR",
+  "MAINTENANCE",
+  "QUALITY",
+  "STORE",
+  "GENERAL",
+] as const;
+
+const PC_FREQUENCIES = [
+  "WEEKLY",
+  "FORTNIGHTLY",
+  "MONTHLY",
+  "QUARTERLY",
+  "HALF_YEARLY",
+  "YEARLY",
+] as const;
+
+function normalizeChecklistDraft(
+  raw: Record<string, unknown>,
+  members: TaskMemberHint[],
+): ParsedChecklistDraft {
+  const team = PC_TEAMS.includes(raw.team as (typeof PC_TEAMS)[number])
+    ? (raw.team as string)
+    : "GENERAL";
+  const frequency = PC_FREQUENCIES.includes(
+    raw.frequency as (typeof PC_FREQUENCIES)[number],
+  )
+    ? (raw.frequency as string)
+    : "MONTHLY";
+
+  const assigneeHint =
+    typeof raw.assigneeHint === "string" ? raw.assigneeHint : null;
+  const rawAssignee =
+    typeof raw.assigneeUserId === "string" ? raw.assigneeUserId : null;
+  const assigneeUserId =
+    rawAssignee && members.some((member) => member.id === rawAssignee)
+      ? rawAssignee
+      : resolveAssignee(assigneeHint ?? rawAssignee, members);
+
+  const dueMonthDay = Number.parseInt(String(raw.dueMonthDay ?? 5), 10);
+  const dueWeekday = Number.parseInt(String(raw.dueWeekday ?? 1), 10);
+  const dueMonth = Number.parseInt(String(raw.dueMonth ?? 4), 10);
+
+  return {
+    title:
+      typeof raw.title === "string" && raw.title.trim().length >= 3
+        ? raw.title.trim()
+        : "New checklist",
+    instructions:
+      typeof raw.instructions === "string" ? raw.instructions.trim() : "",
+    team,
+    frequency,
+    dueMonthDay: Number.isFinite(dueMonthDay)
+      ? Math.min(31, Math.max(1, dueMonthDay))
+      : 5,
+    dueWeekday: Number.isFinite(dueWeekday)
+      ? Math.min(6, Math.max(0, dueWeekday))
+      : 1,
+    dueMonth: Number.isFinite(dueMonth) ? Math.min(12, Math.max(1, dueMonth)) : 4,
+    assigneeUserId,
+    assigneeHint,
+    remindViaEmail: raw.remindViaEmail !== false,
+  };
+}
+
+export async function parseChecklistFromInstruction(
+  instruction: string,
+  members: TaskMemberHint[],
+): Promise<ChecklistParseResult> {
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) {
+    throw new Error("OPENAI_NOT_CONFIGURED");
+  }
+
+  const memberList = members
+    .map((member) => `- id: ${member.id} | name: ${member.name} | email: ${member.email}`)
+    .join("\n");
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: process.env.OPENAI_TASK_MODEL ?? "gpt-4o-mini",
+      temperature: 0.2,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content: `You extract a recurring Process Checklist (PC) from owner instructions.
+
+Input may be in ANY language. Output JSON only. All string values in English.
+
+Keys:
+- title (concise English)
+- instructions (how to complete + proof; empty if none)
+- team: ACCOUNTS | HR | MAINTENANCE | QUALITY | STORE | GENERAL
+- frequency: WEEKLY | FORTNIGHTLY | MONTHLY | QUARTERLY | HALF_YEARLY | YEARLY
+- dueMonthDay: 1-31 for monthly/quarterly/half-yearly cycles (e.g. GST on 5th -> 5)
+- dueWeekday: 0=Sun through 6=Sat for weekly/fortnightly
+- dueMonth: 1-12 for yearly (e.g. April -> 4)
+- assigneeHint: doer name or email fragment
+- remindViaEmail: true unless user says no email reminders
+
+Examples: "GST filing every month on 5th for accounts head Amit" -> MONTHLY, day 5, ACCOUNTS.
+
+Team members:
+${memberList}`,
+        },
+        { role: "user", content: instruction },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(
+      `OPENAI_ERROR:${formatOpenAiError(response.status, detail)}`,
+    );
+  }
+
+  const payload = (await response.json()) as {
+    choices?: { message?: { content?: string } }[];
+    usage?: {
+      prompt_tokens?: number;
+      completion_tokens?: number;
+      total_tokens?: number;
+    };
+  };
+  const content = payload.choices?.[0]?.message?.content;
+  if (!content) {
+    throw new Error("OPENAI_EMPTY");
+  }
+
+  const parsed = JSON.parse(content) as Record<string, unknown>;
+  return {
+    draft: normalizeChecklistDraft(parsed, members),
+    usage: {
+      promptTokens: payload.usage?.prompt_tokens ?? 0,
+      completionTokens: payload.usage?.completion_tokens ?? 0,
+      totalTokens: payload.usage?.total_tokens ?? 0,
+    },
+  };
+}
+
 function extensionForMime(mimeType: string) {
   const mime = mimeType.toLowerCase();
   if (mime.includes("webm")) {

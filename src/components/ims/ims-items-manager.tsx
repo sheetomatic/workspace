@@ -107,9 +107,13 @@ function ImsItemRowActions({
 export function ImsItemsManager({
   items,
   layout,
+  canManage = true,
+  categoryOptions,
 }: {
   items: ImsItemFormData[];
   layout: FormLayout;
+  canManage?: boolean;
+  categoryOptions?: string[];
 }) {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("ALL");
@@ -153,10 +157,13 @@ export function ImsItemsManager({
   }, [items, search, typeFilter, categoryFilter, activeFilter]);
 
   const canReorder =
+    canManage &&
     !search.trim() &&
     typeFilter === "ALL" &&
     categoryFilter === "ALL" &&
     activeFilter === "ALL";
+
+  const colCount = canManage ? 10 : 9;
 
   return (
     <div className="ws-ims-items">
@@ -216,13 +223,13 @@ export function ImsItemsManager({
               <th>Cost</th>
               <th>QC</th>
               <th>Status</th>
-              <th></th>
+              {canManage ? <th></th> : null}
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={10}>No items match these filters.</td>
+                <td colSpan={colCount}>No items match these filters.</td>
               </tr>
             ) : (
               filtered.map((item, index) => (
@@ -248,25 +255,31 @@ export function ImsItemsManager({
                     <td data-label="Status">
                       {item.isActive ? "Active" : "Inactive"}
                     </td>
-                    <td data-label="Actions">
-                      <ImsItemRowActions
-                        item={item}
-                        editing={editingId === item.id}
-                        onEditToggle={() =>
-                          setEditingId((current) =>
-                            current === item.id ? null : item.id,
-                          )
-                        }
-                        canReorder={canReorder}
-                        isFirst={index === 0}
-                        isLast={index === filtered.length - 1}
-                      />
-                    </td>
+                    {canManage ? (
+                      <td data-label="Actions">
+                        <ImsItemRowActions
+                          item={item}
+                          editing={editingId === item.id}
+                          onEditToggle={() =>
+                            setEditingId((current) =>
+                              current === item.id ? null : item.id,
+                            )
+                          }
+                          canReorder={canReorder}
+                          isFirst={index === 0}
+                          isLast={index === filtered.length - 1}
+                        />
+                      </td>
+                    ) : null}
                   </tr>
-                  {editingId === item.id ? (
+                  {canManage && editingId === item.id ? (
                     <tr className="ws-ims-edit-row">
-                      <td colSpan={10}>
-                        <ImsItemForm layout={layout} item={item} />
+                      <td colSpan={colCount}>
+                        <ImsItemForm
+                          layout={layout}
+                          item={item}
+                          categoryOptions={categoryOptions ?? categories}
+                        />
                       </td>
                     </tr>
                   ) : null}

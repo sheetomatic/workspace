@@ -17,6 +17,7 @@ import {
 } from "@/lib/fms/constants";
 import { slaSummary } from "@/lib/fms/step-display";
 import { FmsStepSettingsPanel } from "@/components/saas/fms-step-settings-panel";
+import { TaskMemberPicker } from "@/components/saas/task-member-picker";
 import type { FmsStepOwnerMember } from "@/components/saas/fms-step-owner-field";
 
 type Member = FmsStepOwnerMember;
@@ -225,6 +226,13 @@ function StepEditor({
   );
 }
 
+function parsePcUserIds(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter((id): id is string => typeof id === "string" && id.length > 0);
+}
+
 export function FmsTemplateBuilder({
   formId,
   templateId,
@@ -232,6 +240,8 @@ export function FmsTemplateBuilder({
   initialSteps = [],
   initialHolidayDates = [],
   initialAlertConfig,
+  initialPcUserIds = [],
+  initialEaUserId = "",
   members: initialMembers,
   mode = "create",
   templateStatus,
@@ -242,6 +252,8 @@ export function FmsTemplateBuilder({
   initialSteps?: Parameters<typeof stepToDraft>[0][];
   initialHolidayDates?: unknown;
   initialAlertConfig?: unknown;
+  initialPcUserIds?: unknown;
+  initialEaUserId?: string | null;
   members: Member[];
   mode?: "create" | "edit";
   templateStatus?: "DRAFT" | "ACTIVE" | "ARCHIVED";
@@ -261,6 +273,10 @@ export function FmsTemplateBuilder({
   const [alertConfig, setAlertConfig] = useState<FmsAlertConfig>(() =>
     parseAlertConfig(initialAlertConfig),
   );
+  const [pcUserIds, setPcUserIds] = useState<string[]>(() =>
+    parsePcUserIds(initialPcUserIds),
+  );
+  const [eaUserId, setEaUserId] = useState(initialEaUserId ?? "");
 
   function updateAlertConfig(patch: Partial<FmsAlertConfig>) {
     setAlertConfig((prev) => ({ ...prev, ...patch }));
@@ -318,6 +334,7 @@ export function FmsTemplateBuilder({
 
   const holidayDatesJson = JSON.stringify(holidayDates);
   const alertConfigJson = JSON.stringify(alertConfig);
+  const pcUserIdsJson = JSON.stringify(pcUserIds);
   const selectedStep = steps.find((step) => step.id === selectedId) ?? null;
 
   return (
@@ -343,6 +360,8 @@ export function FmsTemplateBuilder({
         value={alertConfigJson}
         readOnly
       />
+      <input type="hidden" name="pcUserIdsJson" value={pcUserIdsJson} readOnly />
+      <input type="hidden" name="eaUserId" value={eaUserId} readOnly />
 
       <div className="ws-fms-jf-canvas ws-fms-jf-workflow-canvas">
         <header className="ws-fms-jf-header ws-fms-jf-sticky-header">
@@ -422,6 +441,41 @@ export function FmsTemplateBuilder({
                 ))
               )}
             </div>
+
+            <section className="ws-fms-jf-pc-ea">
+              <h3>PC & EA assignment</h3>
+              <p className="ws-fms-muted">
+                Assign process controllers and executive assistants for PC monitor filters.
+              </p>
+              <div className="ws-fms-jf-pc-ea-grid">
+                <div>
+                  <span className="ws-fms-jf-pc-ea-label">Process controllers (PC)</span>
+                  <TaskMemberPicker
+                    members={members.map((member) => ({
+                      id: member.id,
+                      name: member.name ?? "",
+                      email: member.email,
+                    }))}
+                    selectedIds={pcUserIds}
+                    onChange={setPcUserIds}
+                  />
+                </div>
+                <label className="ws-fms-jf-pc-ea-select">
+                  <span>Executive assistant (EA)</span>
+                  <select
+                    value={eaUserId}
+                    onChange={(event) => setEaUserId(event.target.value)}
+                  >
+                    <option value="">None</option>
+                    {members.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.name ?? member.email.split("@")[0]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </section>
 
             <section className="ws-fms-jf-planning">
               <h3>Plan dates</h3>

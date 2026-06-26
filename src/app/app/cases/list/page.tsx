@@ -18,7 +18,7 @@ import {
   parseLegalListSearchParams,
 } from "@/lib/legal-cases/list-filters";
 import { getLegalAssigneeCounts, getLegalSectionCounts, listLegalCases } from "@/lib/legal-cases/queries";
-import { countAllCases, countRunningCases } from "@/lib/legal-cases/view-queries";
+import { getLegalViewNavCounts } from "@/lib/legal-cases/view-queries";
 import { requireSession } from "@/lib/require-session";
 import "@/components/legal/legal-cases.css";
 
@@ -55,9 +55,7 @@ export default async function CasesListPage({ searchParams }: CasesListPageProps
     }),
     getLegalSectionCounts(user),
     admin ? getLegalAssigneeCounts(user) : Promise.resolve({ rows: [], total: 0, mode: "doer" as const }),
-    Promise.all([countAllCases(user), countRunningCases(user)]).then(
-      ([all, running]) => ({ all, running }),
-    ),
+    getLegalViewNavCounts(user),
   ]);
 
   const title = buildLegalListTitle(filter);

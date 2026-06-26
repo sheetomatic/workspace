@@ -20,6 +20,7 @@ type DynamicFormProps = {
     formData: FormData,
   ) => Promise<ImsActionState>;
   submitLabel: string;
+  categoryOptions?: string[];
 };
 
 function numberDefault(value: unknown): number | string {
@@ -36,6 +37,7 @@ function renderBuiltinField(
   field: FormLayoutBuiltinField,
   value: unknown,
   isEdit: boolean,
+  categoryOptions: string[] = [],
 ) {
   const required = field.locked && field.control !== "checkbox";
 
@@ -104,6 +106,11 @@ function renderBuiltinField(
     );
   }
 
+  const categoryListId =
+    field.key === "category" && categoryOptions.length > 0
+      ? "ims-category-options"
+      : undefined;
+
   return (
     <label key={field.key}>
       {field.label}
@@ -115,7 +122,15 @@ function renderBuiltinField(
         placeholder={field.placeholder ?? undefined}
         readOnly={isEdit && field.key === "code"}
         aria-readonly={isEdit && field.key === "code"}
+        list={categoryListId}
       />
+      {categoryListId ? (
+        <datalist id={categoryListId}>
+          {categoryOptions.map((option) => (
+            <option key={option} value={option} />
+          ))}
+        </datalist>
+      ) : null}
     </label>
   );
 }
@@ -210,6 +225,7 @@ export function ImsDynamicForm({
   customValues,
   action,
   submitLabel,
+  categoryOptions = [],
 }: DynamicFormProps) {
   const [state, formAction] = useFormState(action, initial);
   const isEdit = Boolean(recordId);
@@ -220,7 +236,12 @@ export function ImsDynamicForm({
 
       <div className="ws-ims-form-grid">
         {layout.builtins.map((field) =>
-          renderBuiltinField(field, builtinValues[field.key], isEdit),
+          renderBuiltinField(
+            field,
+            builtinValues[field.key],
+            isEdit,
+            categoryOptions,
+          ),
         )}
         {layout.custom.map((field) =>
           renderCustomField(field, customValues[field.key]),

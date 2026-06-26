@@ -19,7 +19,11 @@ export async function markFmsAppNotificationReadAction(
     return { ok: false, message: "Missing notification." };
   }
 
-  const updated = await markAppNotificationRead(notificationId, actor.user.id);
+  const updated = await markAppNotificationRead(
+    notificationId,
+    actor.user.id,
+    actor.user.organizationId,
+  );
   if (!updated) {
     return { ok: false, message: "Notification not found." };
   }

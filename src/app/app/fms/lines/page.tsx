@@ -4,6 +4,7 @@ import { FmsPagination } from "@/components/saas/fms-pagination";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
+import { canAccessEmReady } from "@/lib/em/em-access";
 import { canSubmitFmsForm } from "@/lib/fms/access";
 import {
   countCompletedFmsInstances,
@@ -83,6 +84,7 @@ export default async function FmsLinesPage({ searchParams }: PageProps) {
     1,
     Math.ceil(completedTotal / COMPLETED_PAGE_SIZE),
   );
+  const showEmReady = canAccessEmReady(user);
 
   const activeLeadCount = activeBlocks.reduce(
     (sum, block) => sum + block.instances.length,
@@ -95,9 +97,16 @@ export default async function FmsLinesPage({ searchParams }: PageProps) {
         title="Live pipelines"
         description="Click any row to open the full journey. Your active stop opens ready to mark done or upload proof."
         actions={
-          <Link href="/app/fms/ops" className="btn-secondary btn-sm">
-            Ops monitor
-          </Link>
+          <>
+            {showEmReady ? (
+              <Link href="/app/em" className="btn-primary btn-sm ws-sf-btn-primary">
+                EM Ready
+              </Link>
+            ) : null}
+            <Link href="/app/fms/ops" className="btn-secondary btn-sm">
+              Ops monitor
+            </Link>
+          </>
         }
       />
 

@@ -2,7 +2,7 @@ import { fmsJobMisScore, taskMisScore } from "@/lib/mis/score";
 import type { listFmsInstancesPage } from "@/lib/fms/queries";
 import type { listDelegatedTasks } from "@/lib/tasks";
 
-export type MisCategory = "Task" | "FMS";
+export type MisCategory = "Task" | "FMS" | "PC";
 
 export type MisDetailRow = {
   id: string;

@@ -334,6 +334,18 @@ function parseStepsJson(raw: string) {
   }[];
 }
 
+function parsePcUserIdsJson(raw: string): string[] {
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed.filter((id): id is string => typeof id === "string" && id.length > 0);
+  } catch {
+    return [];
+  }
+}
+
 async function requireFmsAdmin() {
   const actor = await getFmsActor();
   if (!actor.ok) {
@@ -445,6 +457,10 @@ export async function createFmsTemplate(
     const holidayDates = parseHolidayDates(JSON.parse(holidayDatesRaw));
     const alertConfigRaw = formData.get("alertConfigJson")?.toString() ?? "{}";
     const alertConfig = parseAlertConfig(JSON.parse(alertConfigRaw));
+    const pcUserIds = parsePcUserIdsJson(
+      formData.get("pcUserIdsJson")?.toString() ?? "[]",
+    );
+    const eaUserId = formData.get("eaUserId")?.toString().trim() || null;
 
     if (!name) {
       return { ok: false, message: "FMS name is required." };
@@ -479,6 +495,8 @@ export async function createFmsTemplate(
         status: activate ? "ACTIVE" : "DRAFT",
         holidayDates,
         alertConfig,
+        pcUserIds,
+        eaUserId,
         createdById: user.id,
         steps: {
           create: steps.map((step, index) => ({
@@ -524,6 +542,10 @@ export async function updateFmsTemplate(
     const holidayDates = parseHolidayDates(JSON.parse(holidayDatesRaw));
     const alertConfigRaw = formData.get("alertConfigJson")?.toString() ?? "{}";
     const alertConfig = parseAlertConfig(JSON.parse(alertConfigRaw));
+    const pcUserIds = parsePcUserIdsJson(
+      formData.get("pcUserIdsJson")?.toString() ?? "[]",
+    );
+    const eaUserId = formData.get("eaUserId")?.toString().trim() || null;
 
     const template = await prisma.fmsTemplate.findFirst({
       where: { id: templateId, organizationId: user.organizationId },
@@ -572,6 +594,8 @@ export async function updateFmsTemplate(
           status: activate ? "ACTIVE" : template.status,
           holidayDates,
           alertConfig,
+          pcUserIds,
+          eaUserId,
         },
       });
 
@@ -593,6 +617,8 @@ export async function updateFmsTemplate(
           status: activate ? "ACTIVE" : template.status,
           holidayDates,
           alertConfig,
+          pcUserIds,
+          eaUserId,
           steps: {
             create: steps.map((step, index) => ({
               sortOrder: index,
@@ -954,6 +980,64 @@ export async function uploadFmsStepAttachmentAction(
   }
 }
 
+export async function saveFmsStepNotesAction(
+  _prev: FmsActionState,
+  formData: FormData,
+): Promise<FmsActionState> {
+  try {
+    const actor = await getFmsActor();
+    if (!actor.ok) {
+      return { ok: false, message: actor.message };
+    }
+    const user = actor.user;
+
+    const stepStateId = formData.get("stepStateId")?.toString() ?? "";
+    if (!stepStateId) {
+      return { ok: false, message: "Step not found." };
+    }
+
+    const stepState = await prisma.fmsStepState.findFirst({
+      where: {
+        id: stepStateId,
+        instance: { organizationId: user.organizationId, status: "ACTIVE" },
+      },
+    });
+
+    if (!stepState) {
+      return { ok: false, message: "Step not found." };
+    }
+
+    if (stepState.status !== "IN_PROGRESS") {
+      return { ok: false, message: "This step is not active." };
+    }
+
+    if (!canCompleteFmsStep(user, stepState)) {
+      if (!stepState.ownerUserId) {
+        return {
+          ok: false,
+          message:
+            "This step has no owner. Claim it on the job page, or ask a manager to assign someone.",
+        };
+      }
+      return { ok: false, message: "You are not allowed to update notes on this step." };
+    }
+
+    const notes = formData.get("notes")?.toString().trim() ?? "";
+
+    await prisma.fmsStepState.update({
+      where: { id: stepStateId },
+      data: { notes: notes || null },
+    });
+
+    revalidatePath(`/app/fms/instances/${stepState.instanceId}`);
+    revalidatePath("/app/fms");
+    return { ok: true, message: "Notes saved." };
+  } catch (error) {
+    console.error("saveFmsStepNotesAction", error);
+    return { ok: false, message: "Could not save notes." };
+  }
+}
+
 export async function deleteFmsFormAction(
   _prev: FmsActionState,
   formData: FormData,
@@ -987,7 +1071,9 @@ export async function deleteFmsFormAction(
       };
     }
 
-    await prisma.fmsForm.delete({ where: { id: formId } });
+    await prisma.fmsForm.deleteMany({
+      where: { id: formId, organizationId: user.organizationId },
+    });
 
     revalidatePath("/app/fms");
     redirect("/app/fms");

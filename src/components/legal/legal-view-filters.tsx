@@ -118,12 +118,12 @@ export function LegalViewFilters({
 
       {options.stages.length > 0 ? (
         <label className="legal-view-filter">
-          Stage
+          Case Stage
           <select
             defaultValue={current.caseStage ?? ""}
             onChange={(event) => onChange("caseStage", event.target.value)}
           >
-            <option value="">All stages</option>
+            <option value="">All case stages</option>
             {options.stages.map((stage) => (
               <option key={stage} value={stage}>
                 {stage}

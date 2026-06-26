@@ -157,7 +157,7 @@ export function FmsFormAiBar({
           `recording.${fileExtensionForMime(recordedMime)}`,
         );
         try {
-          const res = await fetch("/api/tasks/transcribe", {
+          const res = await fetch("/api/ai/transcribe", {
             method: "POST",
             body: form,
           });

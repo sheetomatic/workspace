@@ -59,9 +59,10 @@ export async function countUnreadAppNotifications(
 export async function markAppNotificationRead(
   notificationId: string,
   userId: string,
+  organizationId: string,
 ) {
   const row = await prisma.userAppNotification.findFirst({
-    where: { id: notificationId, userId },
+    where: { id: notificationId, userId, organizationId },
   });
   if (!row || row.readAt) {
     return false;

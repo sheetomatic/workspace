@@ -18,6 +18,22 @@ async function requireCrmAdmin() {
   return requireSession("ADMIN", { redirectTo: "/ai/app" });
 }
 
+/** Ensure a client-supplied assignee actually belongs to the caller's org. */
+async function assigneeBelongsToOrg(
+  assigneeUserId: string,
+  organizationId: string,
+) {
+  const membership = await prisma.membership.findUnique({
+    where: {
+      userId_organizationId: { userId: assigneeUserId, organizationId },
+    },
+    select: { id: true },
+  });
+  return Boolean(membership);
+}
+
+const ASSIGNEE_NOT_IN_ORG = "Selected assignee is not a member of this workspace.";
+
 function revalidateCrm(organizationId: string) {
   revalidatePath("/ai/app/contacts");
   revalidateTag(waInboxListTag(organizationId), { expire: 0 });
@@ -53,6 +69,13 @@ export async function assignWaLead(
 
   if (!contact) {
     return { ok: false, message: "Lead not found." };
+  }
+
+  if (
+    assigneeUserId &&
+    !(await assigneeBelongsToOrg(assigneeUserId, user.organizationId))
+  ) {
+    return { ok: false, message: ASSIGNEE_NOT_IN_ORG };
   }
 
   await prisma.waContact.update({
@@ -96,6 +119,10 @@ export async function bulkAssignWaLeads(
   }
   if (!assigneeUserId.trim()) {
     return { ok: false, message: "Choose an assignee." };
+  }
+
+  if (!(await assigneeBelongsToOrg(assigneeUserId.trim(), user.organizationId))) {
+    return { ok: false, message: ASSIGNEE_NOT_IN_ORG };
   }
 
   const contacts = await prisma.waContact.findMany({
@@ -200,10 +227,15 @@ export async function scheduleWaFollowUp(params: {
     return { ok: false, message: "Lead not found." };
   }
 
-  const assigneeUserId =
-    params.assigneeUserId?.trim() ||
-    contact.assignedToId ||
-    user.id;
+  const requestedAssignee = params.assigneeUserId?.trim();
+  if (
+    requestedAssignee &&
+    !(await assigneeBelongsToOrg(requestedAssignee, user.organizationId))
+  ) {
+    return { ok: false, message: ASSIGNEE_NOT_IN_ORG };
+  }
+
+  const assigneeUserId = requestedAssignee || contact.assignedToId || user.id;
 
   await prisma.waContactFollowUp.create({
     data: {

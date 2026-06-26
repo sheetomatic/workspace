@@ -1,8 +1,15 @@
 import type { LegalCase } from "@prisma/client";
 import { fileCoverFromLegalCase } from "@/lib/legal-cases/file-cover";
+import { intakeField, isFatalCategory } from "@/lib/legal-cases/intake-fields";
 
 export function FileCoverPrintView({ legalCase }: { legalCase: LegalCase }) {
   const cover = fileCoverFromLegalCase(legalCase);
+  const isFatal = isFatalCategory(legalCase.category);
+  const formLabel = isFatal ? "Form F (Fatal)" : "Form I (Injury)";
+  const finalBill = intakeField(legalCase, "FINAL BILL AMT", "FINAL BILL PDF");
+  const medicalBills = intakeField(legalCase, "MEDICAL BILLS PDF", "MEDICAL AMT");
+  const discharge = intakeField(legalCase, "DISCHARGE CARD PDF");
+  const injuredDl = intakeField(legalCase, "INJURED DL", "DECEASED LICENCE");
 
   return (
     <div className="legal-file-cover-print">
@@ -13,7 +20,7 @@ export function FileCoverPrintView({ legalCase }: { legalCase: LegalCase }) {
         </div>
         <div className="legal-file-cover-print-brand">
           <h1>HINGORANI LAW CHAMBER</h1>
-          <p>Bhopal | Motor Accident Claims</p>
+          <p>{formLabel} · Bhopal | Motor Accident Claims</p>
         </div>
         <div>
           <strong>MCC No.</strong>
@@ -55,12 +62,34 @@ export function FileCoverPrintView({ legalCase }: { legalCase: LegalCase }) {
             <li>FITNESS / TO: {cover.fitnessTo || "-"}</li>
             <li>POLICY NO.: {cover.policyNo || "-"}</li>
             <li>POLICY ISSUE: {cover.policyIssue || "-"}</li>
+            {isFatal ? (
+              <>
+                <li>PM: {intakeField(legalCase, "PM") || "-"}</li>
+                <li>DECEASED DL: {cover.deceasedDl || injuredDl || "-"}</li>
+              </>
+            ) : (
+              <>
+                <li>MLC / INJURED DL: {injuredDl || "-"}</li>
+                <li>FINAL BILL: {finalBill || "-"}</li>
+                <li>MEDICAL BILLS: {medicalBills || "-"}</li>
+                <li>DISCHARGE: {discharge || "-"}</li>
+              </>
+            )}
           </ul>
         </section>
         <section>
           <h2>Scan document</h2>
           <ul>
             <li>PLAINT DATE / BY: {[cover.plaintDate, cover.plaintBy].filter(Boolean).join(" / ") || "-"}</li>
+            {!isFatal ? (
+              <>
+                <li>GROUP DATE / BY: {[cover.groupDate, cover.groupBy].filter(Boolean).join(" / ") || "-"}</li>
+                <li>DISCHARGE DATE: {discharge || "-"}</li>
+                <li>FINAL BILL DATE: {intakeField(legalCase, "FB DATE", "FB date") || "-"}</li>
+                <li>MEDICAL BILLS DATE: {intakeField(legalCase, "MEDICAL BILLS PDF") || "-"}</li>
+                <li>INJURED PHOTO: {intakeField(legalCase, "ACCIDENT PHOTO") || cover.accidentPhoto || "-"}</li>
+              </>
+            ) : null}
             <li>NA OD WS DATE: {cover.naOdWsDate || "-"}</li>
             <li>COMPANY WS DATE: {cover.companyWsDate || "-"}</li>
             <li>CC RECEIVED: {cover.ccReceivedDate || "-"}</li>

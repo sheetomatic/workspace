@@ -191,6 +191,37 @@ export const FMS_WORKFLOW_TEMPLATES: FmsWorkflowTemplate[] = [
     ],
   },
   {
+    id: "payment-collection",
+    department: "accounts",
+    name: "Payment Collection",
+    description: "Outstanding invoice follow-up through payment received.",
+    steps: [
+      {
+        stepName: "Log Outstanding",
+        ownerRoleLabel: "Accounts",
+        howInstructions:
+          "Record customer, invoice number, outstanding amount, and due date.",
+        tatValue: "4",
+        tatUnit: "hours",
+      },
+      {
+        stepName: "Collection Follow-up",
+        ownerRoleLabel: "Accounts",
+        howInstructions:
+          "Call customer, note commitment date, and schedule next follow-up.",
+        tatValue: "2",
+        tatUnit: "days",
+      },
+      {
+        stepName: "Payment Received",
+        ownerRoleLabel: "Accounts",
+        howInstructions: "Confirm bank credit and close the collection line.",
+        tatValue: "1",
+        tatUnit: "days",
+      },
+    ],
+  },
+  {
     id: "invoice-creation",
     department: "accounts",
     name: "Invoice Creation",

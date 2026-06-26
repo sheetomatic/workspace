@@ -26,7 +26,7 @@ export default async function CasesSettingsPage() {
       },
     }),
     prisma.legalCase.count({ where: { organizationId: user.organizationId } }),
-    loadLegalCasesSettingsBackupMeta(user.organizationId),
+    loadLegalCasesSettingsBackupMeta(),
   ]);
 
   return (
