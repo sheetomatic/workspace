@@ -12,7 +12,7 @@ function TemplateCard({ template }: { template: PcLibraryTemplate }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <article className="ws-sf-card ws-pc-library-card">
+    <article className="ws-pc-library-card">
       <header className="ws-pc-library-card-head">
         <div>
           <span className="ws-pc-library-category">{template.category}</span>
@@ -49,14 +49,18 @@ function TemplateCard({ template }: { template: PcLibraryTemplate }) {
                 <tbody>
                   {template.items.map((item) => (
                     <tr key={item.id}>
-                      <td>{item.order}</td>
-                      <td>{item.activity}</td>
-                      <td>
+                      <td className="ws-pc-library-col-order">{item.order}</td>
+                      <td className="ws-pc-library-col-activity">
+                        <span className="ws-pc-library-activity">{item.activity}</span>
+                      </td>
+                      <td className="ws-pc-library-col-freq">
                         <span className="ws-pc-library-freq">{item.frequency}</span>
                       </td>
-                      <td>{item.ownerRole}</td>
-                      <td className="ws-pc-library-proof">{item.proof}</td>
-                      <td>{item.tat ?? "-"}</td>
+                      <td className="ws-pc-library-col-owner">{item.ownerRole}</td>
+                      <td className="ws-pc-library-col-proof">
+                        <span className="ws-pc-library-proof">{item.proof}</span>
+                      </td>
+                      <td className="ws-pc-library-col-tat">{item.tat ?? "—"}</td>
                     </tr>
                   ))}
                 </tbody>
