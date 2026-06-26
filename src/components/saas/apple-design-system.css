@@ -1,0 +1,568 @@
+/**
+ * Apple-inspired design system for Sheetomatic workspace + login.
+ * Typography follows Apple HIG (SF Pro, regular/semibold weights).
+ * Surfaces: #fbfbfd / #f5f5f7, text #1d1d1f / #6e6e73, accent #0071e3.
+ */
+
+:root {
+  --apple-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --apple-text: #1d1d1f;
+  --apple-text-secondary: #6e6e73;
+  --apple-text-tertiary: #86868b;
+  --apple-bg: #fbfbfd;
+  --apple-bg-secondary: #f5f5f7;
+  --apple-bg-tertiary: #e8e8ed;
+  --apple-fill: #f5f5f7;
+  --apple-border: #d2d2d7;
+  --apple-border-light: #e8e8ed;
+  --apple-blue: #0071e3;
+  --apple-blue-hover: #0077ed;
+  --apple-blue-pressed: #006edb;
+  --apple-green: #34c759;
+  --apple-red: #ff3b30;
+  --apple-radius-sm: 8px;
+  --apple-radius: 12px;
+  --apple-radius-lg: 18px;
+  --apple-radius-pill: 980px;
+  --apple-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --apple-shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06);
+  --apple-font-caption2: 0.6875rem;
+  --apple-font-caption1: 0.75rem;
+  --apple-font-footnote: 0.8125rem;
+  --apple-font-subhead: 0.9375rem;
+  --apple-font-callout: 1rem;
+  --apple-font-body: 0.875rem;
+  --apple-font-headline: 1.0625rem;
+  --apple-font-title3: 1.25rem;
+  --apple-font-title2: 1.375rem;
+  --apple-font-title1: 1.75rem;
+  --apple-font-large-title: 2.125rem;
+  --apple-weight-regular: 400;
+  --apple-weight-medium: 500;
+  --apple-weight-semibold: 600;
+  --apple-leading-tight: 1.15;
+  --apple-leading-normal: 1.47059;
+  --apple-tracking-tight: -0.022em;
+}
+
+/* Workspace shell */
+.workspace-app,
+.workspace-login {
+  font-family: var(--apple-font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--apple-text);
+}
+
+.workspace-app {
+  --ws-font-xs: var(--apple-font-caption2);
+  --ws-font-sm: var(--apple-font-caption1);
+  --ws-font-base: var(--apple-font-body);
+  --ws-font-md: var(--apple-font-headline);
+  --ws-font-lg: var(--apple-font-title3);
+  --ws-font-stat: var(--apple-font-title2);
+  --sf-brand: var(--apple-blue);
+  --sf-brand-hover: var(--apple-blue-hover);
+  --sf-page-bg: var(--apple-bg);
+  --sf-card-border: var(--apple-border-light);
+  --sf-text: var(--apple-text);
+  --sf-text-secondary: var(--apple-text-secondary);
+  --sf-header-bg: var(--apple-bg-secondary);
+  --sf-row-hover: var(--apple-fill);
+  font-size: var(--apple-font-body);
+  font-weight: var(--apple-weight-regular);
+  line-height: var(--apple-leading-normal);
+  letter-spacing: -0.011em;
+}
+
+.workspace-app.saas-app {
+  background: var(--apple-bg);
+}
+
+.workspace-app .saas-content {
+  padding: 24px 28px 40px;
+  background: var(--apple-bg);
+}
+
+/* Light sidebar (Apple Settings / iCloud style) */
+.workspace-app .saas-sidebar {
+  background: var(--apple-bg-secondary);
+  border-right: 1px solid var(--apple-border-light);
+  box-shadow: none;
+  color: var(--apple-text);
+}
+
+.workspace-app .saas-sidebar-brand strong {
+  color: var(--apple-text);
+  font-size: var(--apple-font-subhead);
+  font-weight: var(--apple-weight-semibold);
+}
+
+.workspace-app .saas-sidebar-brand span {
+  color: var(--apple-text-secondary);
+}
+
+.workspace-app .saas-sidebar-brand .logo-mark {
+  background: #fff;
+  border: 1px solid var(--apple-border-light);
+}
+
+.workspace-app .crm-sidebar-head {
+  border-bottom-color: var(--apple-border-light);
+}
+
+.workspace-app .crm-sidebar-profile {
+  background: #fff;
+  border: 1px solid var(--apple-border-light);
+}
+
+.workspace-app .crm-sidebar-profile strong {
+  color: var(--apple-text);
+  font-weight: var(--apple-weight-semibold);
+}
+
+.workspace-app .crm-user-role {
+  color: var(--apple-text-secondary);
+}
+
+.workspace-app .crm-avatar {
+  background: var(--apple-bg-tertiary);
+  color: var(--apple-text);
+  font-weight: var(--apple-weight-semibold);
+}
+
+.workspace-app .saas-nav-link {
+  color: var(--apple-text);
+  font-weight: var(--apple-weight-regular);
+  font-size: var(--apple-font-body);
+  border-radius: var(--apple-radius-sm);
+}
+
+.workspace-app .saas-nav-link:hover {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: transparent;
+  color: var(--apple-text);
+}
+
+.workspace-app .saas-nav-link.active {
+  background: #fff;
+  border-color: var(--apple-border-light);
+  color: var(--apple-text);
+  font-weight: var(--apple-weight-semibold);
+  box-shadow: var(--apple-shadow);
+}
+
+.workspace-app .saas-nav-link:focus-visible {
+  outline: 2px solid var(--apple-blue);
+  outline-offset: 1px;
+}
+
+.workspace-app .saas-nav-section {
+  color: var(--apple-text-tertiary);
+  font-weight: var(--apple-weight-semibold);
+  letter-spacing: 0.06em;
+}
+
+.workspace-app .saas-sidebar-foot {
+  border-top-color: var(--apple-border-light);
+}
+
+.workspace-app .saas-sidebar-foot .saas-plan-badge,
+.workspace-app .saas-sidebar-foot span,
+.workspace-app .saas-sidebar-foot button {
+  color: var(--apple-text-secondary);
+}
+
+/* Module subnav */
+.workspace-app .ws-module-subnav {
+  background: var(--apple-bg-secondary);
+  border-right-color: var(--apple-border-light);
+}
+
+.workspace-app .ws-module-subnav-link {
+  font-size: var(--apple-font-body);
+  font-weight: var(--apple-weight-regular);
+  border-radius: var(--apple-radius-sm);
+  color: var(--apple-text);
+}
+
+.workspace-app .ws-module-subnav-link:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.workspace-app .ws-module-subnav-link.is-active {
+  background: #fff;
+  color: var(--apple-text);
+  font-weight: var(--apple-weight-semibold);
+  box-shadow: var(--apple-shadow);
+}
+
+.workspace-app .ws-module-subnav-link small {
+  color: var(--apple-text-secondary);
+}
+
+/* Page titles */
+.workspace-app .ws-page-header h1,
+.workspace-app .crm-dashboard-topbar h1,
+.workspace-app .hs-dashboard-topbar h1,
+.workspace-app .ws-tasks-sf .ws-sf-page-toolbar h1,
+.workspace-app .ws-fms-sf .ws-sf-page-toolbar h1,
+.workspace-app .ws-settings-page .ws-page-header h1 {
+  font-family: var(--apple-font);
+  font-size: var(--apple-font-title2);
+  font-weight: var(--apple-weight-semibold);
+  letter-spacing: var(--apple-tracking-tight);
+  line-height: var(--apple-leading-tight);
+  color: var(--apple-text);
+}
+
+.workspace-app .ws-page-header p,
+.workspace-app .ws-sf-page-toolbar p {
+  font-size: var(--apple-font-subhead);
+  font-weight: var(--apple-weight-regular);
+  color: var(--apple-text-secondary);
+  line-height: var(--apple-leading-normal);
+}
+
+.workspace-app .ws-page-header {
+  margin-bottom: 20px;
+}
+
+/* Section headings */
+.workspace-app .saas-panel-head h2,
+.workspace-app .ws-settings-pro-panel-head h2,
+.workspace-app .ws-sf-list-view-title h2,
+.workspace-app .ws-tasks-sf .ws-sf-list-view-title h2,
+.workspace-app .ws-fms-sf .ws-sf-list-view-title h2,
+.workspace-app .ws-fms-journey-header h2,
+.workspace-app .ws-fms-journey-header-work h2,
+.workspace-app .ws-em-hero-copy h2,
+.workspace-app .ws-fms-ops-hero-copy h2 {
+  font-family: var(--apple-font);
+  font-size: var(--apple-font-headline);
+  font-weight: var(--apple-weight-semibold);
+  letter-spacing: -0.016em;
+  color: var(--apple-text);
+}
+
+.workspace-app .ws-fms-step-work-title {
+  font-size: var(--apple-font-headline);
+  font-weight: var(--apple-weight-semibold);
+}
+
+.workspace-app .ws-fms-step-work-section-title {
+  font-size: var(--apple-font-footnote);
+  font-weight: var(--apple-weight-semibold);
+  color: var(--apple-text-secondary);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* KPI / stats */
+.workspace-app .saas-kpi strong,
+.workspace-app .ws-stat-card strong,
+.workspace-app .ws-tasks-sf .ws-sf-metric-tile strong,
+.workspace-app .ws-fms-sf .ws-sf-metric-tile strong,
+.workspace-app .ws-ims-status-card strong,
+.workspace-app .ws-pc-metric-card strong {
+  font-size: var(--apple-font-title3);
+  font-weight: var(--apple-weight-semibold);
+  letter-spacing: var(--apple-tracking-tight);
+  color: var(--apple-text);
+}
+
+.workspace-app .saas-kpi span,
+.workspace-app .ws-sf-metric-tile span {
+  font-size: var(--apple-font-footnote);
+  font-weight: var(--apple-weight-regular);
+  color: var(--apple-text-secondary);
+}
+
+.workspace-app .ws-em-hero-stat strong {
+  font-size: var(--apple-font-title2);
+  font-weight: var(--apple-weight-semibold);
+}
+
+.workspace-app .ws-em-deficit-lg {
+  font-size: var(--apple-font-title2);
+  font-weight: var(--apple-weight-semibold);
+}
+
+/* Cards & list views */
+.workspace-app .saas-kpi,
+.workspace-app .saas-panel,
+.workspace-app .ws-sf-card,
+.workspace-app .ws-sf-list-view,
+.workspace-app .ws-tasks-sf .ws-sf-list-view,
+.workspace-app .ws-fms-sf .ws-sf-list-view,
+.workspace-app .ws-fms-instance-work-card,
+.workspace-app .ws-fms-journey-hero {
+  border-radius: var(--apple-radius);
+  border: 1px solid var(--apple-border-light);
+  background: #fff;
+  box-shadow: var(--apple-shadow);
+}
+
+.workspace-app .ws-sf-list-view-header,
+.workspace-app .ws-tasks-sf .ws-sf-list-view-header,
+.workspace-app .ws-fms-sf .ws-sf-list-view-header {
+  background: var(--apple-bg-secondary);
+  border-bottom-color: var(--apple-border-light);
+}
+
+.workspace-app .ws-sf-list-view-count {
+  font-size: var(--apple-font-caption1);
+  font-weight: var(--apple-weight-regular);
+  color: var(--apple-text-secondary);
+}
+
+/* Tables */
+.workspace-app .ws-fms-data-table,
+.workspace-app .ws-sf-data-table,
+.workspace-app .ws-mis-score-table {
+  font-size: var(--apple-font-body);
+}
+
+.workspace-app .ws-fms-data-table th,
+.workspace-app .ws-sf-data-table th,
+.workspace-app .ws-mis-score-table th {
+  font-size: var(--apple-font-caption1);
+  font-weight: var(--apple-weight-semibold);
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--apple-text-secondary);
+  border-bottom-color: var(--apple-border-light);
+}
+
+.workspace-app .ws-fms-data-table td,
+.workspace-app .ws-sf-data-table td,
+.workspace-app .ws-mis-score-table td {
+  border-bottom-color: var(--apple-border-light);
+}
+
+.workspace-app .ws-mis-data-row:hover {
+  background: var(--apple-fill);
+}
+
+/* Buttons ÿ Apple pill style */
+.workspace-app .btn-primary,
+.workspace-app .ws-sf-btn-primary,
+.workspace-app .ws-tasks-sf .ws-sf-btn-primary,
+.workspace-app .ws-fms-sf .ws-sf-btn-primary {
+  min-height: 32px;
+  padding: 6px 16px;
+  border-radius: var(--apple-radius-pill);
+  background: var(--apple-blue);
+  border: none;
+  color: #fff;
+  font-size: var(--apple-font-body);
+  font-weight: var(--apple-weight-regular);
+  box-shadow: none;
+  letter-spacing: -0.011em;
+}
+
+.workspace-app .btn-primary:hover,
+.workspace-app .ws-sf-btn-primary:hover {
+  background: var(--apple-blue-hover);
+}
+
+.workspace-app .btn-secondary,
+.workspace-app .btn-ghost {
+  min-height: 32px;
+  padding: 6px 16px;
+  border-radius: var(--apple-radius-pill);
+  border: 1px solid var(--apple-border);
+  background: #fff;
+  color: var(--apple-blue);
+  font-size: var(--apple-font-body);
+  font-weight: var(--apple-weight-regular);
+  box-shadow: none;
+}
+
+.workspace-app .btn-secondary:hover {
+  background: var(--apple-fill);
+  border-color: var(--apple-border);
+  color: var(--apple-blue-hover);
+}
+
+.workspace-app .btn-sm {
+  min-height: 28px;
+  padding: 4px 12px;
+  font-size: var(--apple-font-footnote);
+}
+
+/* Links */
+.workspace-app a.ws-sf-record-link,
+.workspace-app .ws-mis-metric-link {
+  color: var(--apple-blue);
+  font-weight: var(--apple-weight-regular);
+}
+
+.workspace-app .ws-mis-metric-link {
+  border-radius: var(--apple-radius-sm);
+  background: transparent;
+}
+
+.workspace-app .ws-mis-metric-link:hover {
+  background: rgba(0, 113, 227, 0.08);
+  color: var(--apple-blue-hover);
+}
+
+/* Badges */
+.workspace-app .ws-sf-badge,
+.workspace-app .ws-mis-result-badge {
+  border-radius: var(--apple-radius-pill);
+  font-size: var(--apple-font-caption2);
+  font-weight: var(--apple-weight-semibold);
+  letter-spacing: 0.02em;
+}
+
+.workspace-app .ws-mis-result-on-time {
+  background: rgba(52, 199, 89, 0.12);
+  color: #248a3d;
+  border: none;
+}
+
+.workspace-app .ws-sf-badge-danger {
+  background: rgba(255, 59, 48, 0.12);
+  color: #d70015;
+  border: none;
+}
+
+/* Forms */
+.workspace-app input,
+.workspace-app select,
+.workspace-app textarea {
+  font-family: var(--apple-font);
+  font-size: var(--apple-font-body);
+  border-radius: var(--apple-radius-sm);
+  border-color: var(--apple-border);
+}
+
+.workspace-app input:focus,
+.workspace-app select:focus,
+.workspace-app textarea:focus {
+  border-color: var(--apple-blue);
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2);
+  outline: none;
+}
+
+/* FMS work card accent */
+.workspace-app .ws-fms-journey-hero.is-work-mode {
+  border-left-color: var(--apple-blue);
+}
+
+/* Login */
+.workspace-login {
+  font-family: var(--apple-font);
+}
+
+.workspace-login .login-brand-copy h1 {
+  font-size: var(--apple-font-title1);
+  font-weight: var(--apple-weight-semibold);
+  letter-spacing: var(--apple-tracking-tight);
+}
+
+.workspace-login .login-card-head h2 {
+  font-size: var(--apple-font-title3);
+  font-weight: var(--apple-weight-semibold);
+}
+
+.workspace-login .login-submit.btn-primary {
+  background: var(--apple-blue);
+  border-radius: var(--apple-radius-pill);
+  font-weight: var(--apple-weight-regular);
+  box-shadow: none;
+}
+
+.workspace-login .login-switch-mode a {
+  color: var(--apple-blue);
+}
+
+/* Marketing site ÿ apple.com tone */
+.marketing-site {
+  font-family: var(--apple-font);
+  background: var(--apple-bg);
+  color: var(--apple-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.site-header-saas {
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+  background: rgba(251, 251, 253, 0.8);
+  backdrop-filter: saturate(180%) blur(20px);
+}
+
+.site-brand {
+  color: var(--apple-text);
+}
+
+.site-brand strong {
+  font-weight: var(--apple-weight-semibold);
+  letter-spacing: -0.016em;
+}
+
+.site-brand small {
+  color: var(--apple-text-secondary);
+  font-weight: var(--apple-weight-regular);
+}
+
+.saas-hero,
+.saas-hero-ai {
+  background: var(--apple-bg);
+  border-bottom-color: var(--apple-border-light);
+}
+
+.saas-hero-title {
+  color: var(--apple-text);
+  font-weight: var(--apple-weight-semibold);
+  letter-spacing: var(--apple-tracking-tight);
+  line-height: 1.05;
+}
+
+.saas-hero-lead {
+  color: var(--apple-text-secondary);
+  font-weight: var(--apple-weight-regular);
+  font-size: var(--apple-font-headline);
+}
+
+.saas-hero-eyebrow {
+  border-color: var(--apple-border-light);
+  background: var(--apple-fill);
+  color: var(--apple-blue);
+  font-weight: var(--apple-weight-regular);
+  border-radius: var(--apple-radius-pill);
+}
+
+.saas-hero-metric {
+  border-color: var(--apple-border-light);
+  border-radius: var(--apple-radius);
+  box-shadow: var(--apple-shadow);
+}
+
+.type-section-title,
+.type-page-title,
+.type-hero-title,
+.type-card-title,
+.type-card-title-lg {
+  font-weight: var(--apple-weight-semibold);
+  letter-spacing: var(--apple-tracking-tight);
+}
+
+.type-kicker {
+  font-weight: var(--apple-weight-semibold);
+  letter-spacing: var(--tracking-kicker);
+}
+
+@media (max-width: 768px) {
+  .workspace-app .saas-content {
+    padding: 16px 16px 32px;
+  }
+
+  .workspace-app .ws-page-header h1,
+  .workspace-app .ws-tasks-sf .ws-sf-page-toolbar h1,
+  .workspace-app .ws-fms-sf .ws-sf-page-toolbar h1 {
+    font-size: var(--apple-font-headline);
+  }
+}

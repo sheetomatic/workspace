@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Inter, Manrope } from "next/font/google";
+import { Inter } from "next/font/google";
 import { SheetomaticAiLauncher } from "@/components/sheetomatic-ai-launcher";
+import "@/components/saas/apple-design-system.css";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sheetomatic.com";
@@ -41,19 +42,10 @@ export const metadata: Metadata = {
 
 const inter = Inter({
   subsets: ["latin"],
-  weight: ["400", "600", "700"],
+  weight: ["400", "500", "600"],
   variable: "--font-inter",
   display: "swap",
   preload: true,
-  adjustFontFallback: true,
-});
-
-const manrope = Manrope({
-  subsets: ["latin"],
-  weight: ["700", "800"],
-  variable: "--font-manrope",
-  display: "swap",
-  preload: false,
   adjustFontFallback: true,
 });
 
@@ -65,7 +57,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${manrope.variable} h-full antialiased`}
+      className={`${inter.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>

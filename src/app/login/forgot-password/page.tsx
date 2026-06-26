@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import "@/components/saas/workspace-theme.css";
-import "@/components/saas/workspace-typography.css";
+import "@/components/saas/apple-design-system.css";
 import { ForgotPasswordForm } from "@/components/saas/forgot-password-form";
 import Link from "next/link";
 import Image from "next/image";

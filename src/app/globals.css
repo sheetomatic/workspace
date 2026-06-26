@@ -11,32 +11,40 @@
   --success: #10b981;
   --warning: #f59e0b;
 
-  /* Typography scale (Inter body, Manrope headings) */
-  --font-body: var(--font-inter), Arial, Helvetica, sans-serif;
-  --font-heading: var(--font-manrope), var(--font-inter), Arial, Helvetica,
-    sans-serif;
-  --text-tag: 0.6875rem; /* 11px */
-  --text-kicker: 0.75rem; /* 12px */
-  --text-caption: 0.8125rem; /* 13px */
-  --text-sm: 0.875rem; /* 14px */
-  --text-md: 0.9375rem; /* 15px */
-  --text-base: 0.9375rem; /* 15px — compact body */
-  --text-lead: 1rem; /* 16px */
-  --text-card-title: 1.0625rem; /* 17px */
-  --text-card-title-lg: 1.125rem; /* 18px */
-  --text-section: clamp(1.375rem, 2.5vw, 1.75rem); /* 22-28px */
-  --text-page: clamp(1.5rem, 3vw, 2rem); /* 24-32px */
-  --text-hero: clamp(1.625rem, 3.5vw, 2.25rem); /* 26-36px */
-  --text-price: clamp(1.25rem, 2vw, 1.5rem); /* 20-24px */
-  --text-display: clamp(1.5rem, 3.5vw, 2rem); /* 24-32px */
-  --weight-body: 600;
-  --weight-strong: 800;
-  --weight-heading: 950;
-  --leading-body: 1.65;
-  --leading-relaxed: 1.65;
-  --leading-tight: 1.12;
-  --tracking-kicker: 0.2em;
+  /* Apple-inspired typography (SF Pro system stack) */
+  --font-body: var(--apple-font, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
+  --font-heading: var(--font-body);
+  --text-tag: 0.6875rem;
+  --text-kicker: 0.75rem;
+  --text-caption: 0.8125rem;
+  --text-sm: 0.875rem;
+  --text-md: 0.9375rem;
+  --text-base: 1.0625rem;
+  --text-lead: 1.0625rem;
+  --text-card-title: 1.25rem;
+  --text-card-title-lg: 1.375rem;
+  --text-section: clamp(1.75rem, 3vw, 2.5rem);
+  --text-page: clamp(2rem, 3.5vw, 2.75rem);
+  --text-hero: clamp(2.25rem, 4vw, 3.5rem);
+  --text-price: clamp(1.375rem, 2vw, 1.75rem);
+  --text-display: clamp(2rem, 4vw, 3rem);
+  --weight-body: 400;
+  --weight-strong: 500;
+  --weight-heading: 600;
+  --leading-body: 1.47059;
+  --leading-relaxed: 1.5;
+  --leading-tight: 1.1;
+  --tracking-kicker: 0.08em;
   --text-section-title: var(--text-section);
+
+  /* Apple palette */
+  --background: #fbfbfd;
+  --foreground: #1d1d1f;
+  --primary-blue: #0071e3;
+  --primary-blue-dark: #006edb;
+  --muted-text: #6e6e73;
+  --border: #d2d2d7;
 }
 
 @theme inline {
@@ -67,7 +75,8 @@ h1,
 h2,
 h3 {
   font-family: var(--font-heading);
-  letter-spacing: 0;
+  font-weight: var(--weight-heading);
+  letter-spacing: -0.022em;
 }
 
 .type-kicker {
@@ -252,21 +261,21 @@ a.btn-block {
 .btn-secondary,
 .btn-whatsapp {
   display: inline-flex;
-  min-height: 46px;
+  min-height: 44px;
   align-items: center;
   justify-content: center;
   gap: 9px;
-  border-radius: 999px;
-  padding: 12px 18px;
+  border-radius: 980px;
+  padding: 12px 22px;
   font-size: var(--text-md);
   font-weight: var(--weight-strong);
   text-align: center;
   line-height: 1.25;
   white-space: normal;
+  letter-spacing: -0.011em;
   transition:
-    transform 180ms ease,
-    box-shadow 180ms ease,
-    background 180ms ease;
+    background 180ms ease,
+    border-color 180ms ease;
 }
 
 .btn-primary,
@@ -275,7 +284,7 @@ a.btn-block {
   background: var(--primary-blue);
   color: #ffffff;
   border: none;
-  box-shadow: 0 16px 30px rgba(37, 99, 235, 0.2);
+  box-shadow: none;
 }
 
 .btn-secondary {
