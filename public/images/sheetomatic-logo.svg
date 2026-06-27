@@ -1,5 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Sheetomatic">
-  <rect width="64" height="64" rx="14" fill="#1565c0"/>
-  <path fill="#fff" d="M18 20h28v6H18zm0 12h20v6H18zm0 12h24v6H18z"/>
-  <circle cx="46" cy="44" r="6" fill="#93c5fd"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 32" fill="none" role="img" aria-label="Sheetomatic">
+  <rect x="1" y="1" width="30" height="30" rx="7" stroke="#000" stroke-width="1.75" fill="none"/>
+  <circle cx="10" cy="10" r="2.25" fill="#000"/>
+  <circle cx="22" cy="10" r="2.25" fill="#000"/>
+  <circle cx="10" cy="22" r="2.25" fill="#000"/>
+  <circle cx="22" cy="22" r="2.25" fill="#000"/>
+  <text
+    x="40"
+    y="22.5"
+    font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    font-size="17.5"
+    font-weight="600"
+    letter-spacing="-0.03em"
+    fill="#000"
+  >Sheetomatic</text>
 </svg>

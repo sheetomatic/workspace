@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
   },
   icons: {
-    apple: "/icons/workspace-icon-192.png",
+    apple: "/icons/workspace-icon-192.png?v=2",
   },
   other: {
     "mobile-web-app-capable": "yes",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1e40af",
+  themeColor: "#111111",
 };
 
 export default async function AppLayout({

@@ -9,31 +9,31 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sheetomatic.com";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Sheetomatic | Automation and AI Consultancy for MSME Operations",
+    default: "Sheetomatic | AI-Native Platform for Indian MSMEs",
     template: "%s | Sheetomatic",
   },
   description:
-    "Sheetomatic is an Automation and AI Consultancy for Indian MSMEs: AI tasks, follow-ups, client workspaces, Google Sheets, AppSheet, dashboards, and WhatsApp automation.",
+    "Sheetomatic Workspace and Sheetomatic AI — EM-ready every week with zero manual MIS prep. PC and EA portals monitor team performance automatically. No spreadsheet sprawl. No dedicated MIS person.",
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "any" },
-      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+      { url: "/favicon.ico?v=2", sizes: "any" },
+      { url: "/icon.png?v=2", type: "image/png", sizes: "512x512" },
     ],
-    apple: "/apple-icon.png",
-    shortcut: "/favicon.ico",
+    apple: "/apple-icon.png?v=2",
+    shortcut: "/favicon.ico?v=2",
   },
   openGraph: {
     type: "website",
     locale: "en_IN",
     siteName: "Sheetomatic",
-    title: "Sheetomatic | Automation and AI for MSME Operations",
+    title: "Sheetomatic | AI-Native Platform for Indian MSMEs",
     description:
-      "MIS, Google Sheets, AppSheet, dashboards, WhatsApp API, and AI task delegation for Indian MSMEs.",
+      "One workspace. One AI layer. EM-ready every week — without manual MIS prep, spreadsheet sprawl, or a dedicated MIS team.",
     images: [
       {
-        url: "/images/sheetomatic-logo.svg",
-        width: 1000,
-        height: 1000,
+        url: "/images/og-default.png",
+        width: 1200,
+        height: 630,
         alt: "Sheetomatic logo",
       },
     ],
