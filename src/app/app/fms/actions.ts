@@ -8,6 +8,11 @@ import type {
   Prisma,
 } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import {
+  fmsTemplateLimitMessage,
+  getOrganizationPlanContext,
+  isAtFmsTemplateLimit,
+} from "@/lib/org-plan-context";
 import { canManageFms, canSubmitFmsForm, canCompleteFmsStep } from "@/lib/fms/access";
 import { getFmsActor } from "@/lib/fms/session";
 import { recordFmsAudit } from "@/lib/fms/audit";
@@ -481,6 +486,14 @@ export async function createFmsTemplate(
     const steps = parseStepsJson(stepsRaw);
     if (steps.length === 0) {
       return { ok: false, message: "Add at least one step." };
+    }
+
+    const orgPlan = await getOrganizationPlanContext(user.organizationId);
+    if (orgPlan && isAtFmsTemplateLimit(orgPlan)) {
+      return {
+        ok: false,
+        message: fmsTemplateLimitMessage(orgPlan.maxFmsTemplates),
+      };
     }
 
     await prisma.fmsForm.update({

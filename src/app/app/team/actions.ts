@@ -18,10 +18,13 @@ import {
 import { assertOrganizationAccess } from "@/lib/workspace";
 import {
   clampModulesToOrg,
-  isOrgTierEnforced,
   modulesForTierRole,
-  resolveOrgAllowedModules,
 } from "@/lib/org-plan-presets";
+import {
+  getOrganizationPlanContext,
+  isAtMemberLimit,
+  memberLimitMessage,
+} from "@/lib/org-plan-context";
 import { parseModulesFromForm, resolveMemberModules } from "@/lib/workspace-modules";
 
 export type TeamActionState = {
@@ -116,28 +119,6 @@ async function validateReportingManager(input: {
   }
 
   return null;
-}
-
-async function getOrganizationPlanContext(organizationId: string) {
-  const organization = await prisma.organization.findUnique({
-    where: { id: organizationId },
-    select: {
-      plan: true,
-      allowedModules: true,
-      maxMembers: true,
-      _count: { select: { memberships: true } },
-    },
-  });
-
-  if (!organization) {
-    return null;
-  }
-
-  return {
-    ...organization,
-    tierEnforced: isOrgTierEnforced(organization.allowedModules),
-    orgAllowedModules: resolveOrgAllowedModules(organization.allowedModules),
-  };
 }
 
 function resolveModulesForOrg(input: {
@@ -236,13 +217,10 @@ export async function inviteTeamMember(
     return { ok: false, message: "Workspace not found." };
   }
 
-  if (
-    orgPlan.tierEnforced &&
-    orgPlan._count.memberships >= orgPlan.maxMembers
-  ) {
+  if (isAtMemberLimit(orgPlan)) {
     return {
       ok: false,
-      message: `This plan allows up to ${orgPlan.maxMembers} members. Upgrade to add more.`,
+      message: memberLimitMessage(orgPlan.maxMembers),
     };
   }
 

@@ -6,6 +6,14 @@ import { getSessionUser } from "@/lib/auth";
 import { updateAiReplySettings } from "@/lib/integrations/ai-reply-settings";
 import { hasMinimumRole } from "@/lib/permissions";
 import { prisma } from "@/lib/db";
+import {
+  clampModulesToOrg,
+  modulesForTierRole,
+} from "@/lib/org-plan-presets";
+import {
+  client50OnboardingPreset,
+  organizationEntitlementsData,
+} from "@/lib/org-onboarding";
 
 export type WorkspaceStatusActionState = {
   ok: boolean;
@@ -19,15 +27,51 @@ export type AiSettingsActionState = {
 
 const DEFAULT_OWNER_MODULES = [
   "TASKS",
-  "HR",
   "APPROVALS",
   "REPORTS",
 ] satisfies WorkspaceModule[];
 
+async function applyClientOnboardingEntitlements(organizationId: string) {
+  const preset = client50OnboardingPreset();
+  await prisma.organization.update({
+    where: { id: organizationId },
+    data: organizationEntitlementsData(preset),
+  });
+
+  const ownerMemberships = await prisma.membership.findMany({
+    where: { organizationId, role: "OWNER" },
+    select: { id: true, modules: true },
+  });
+
+  for (const membership of ownerMemberships) {
+    const modules = clampModulesToOrg(
+      membership.modules.length > 0
+        ? membership.modules
+        : modulesForTierRole("OWNER", preset.plan),
+      preset.allowedModules,
+    );
+    await prisma.membership.update({
+      where: { id: membership.id },
+      data: {
+        modules: modules.length > 0 ? modules : [...preset.allowedModules],
+      },
+    });
+  }
+}
+
 async function grantOwnerModules(organizationId: string) {
+  const organization = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: { allowedModules: true },
+  });
+  const modules =
+    organization?.allowedModules && organization.allowedModules.length > 0
+      ? organization.allowedModules
+      : ([...DEFAULT_OWNER_MODULES] satisfies WorkspaceModule[]);
+
   await prisma.membership.updateMany({
     where: { organizationId, role: "OWNER" },
-    data: { modules: [...DEFAULT_OWNER_MODULES] },
+    data: { modules: [...modules] },
   });
 }
 
@@ -51,6 +95,7 @@ export async function setWorkspaceStatusAction(
   });
 
   if (status === "ACTIVE") {
+    await applyClientOnboardingEntitlements(user.organizationId);
     await grantOwnerModules(user.organizationId);
   }
 
@@ -94,6 +139,7 @@ export async function activateOrganizationAction(
     where: { id: organization.id },
     data: { status: "ACTIVE" },
   });
+  await applyClientOnboardingEntitlements(organization.id);
   await grantOwnerModules(organization.id);
 
   revalidatePath("/ai/app/settings");
