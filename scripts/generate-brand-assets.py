@@ -161,6 +161,17 @@ def main() -> None:
     save_ico(favicon)
     print(f"wrote {favicon.relative_to(ROOT)}")
 
+    # Next.js App Router file conventions override public/ static files.
+    app_dir = ROOT / "src/app"
+    for name in ("icon.png", "apple-icon.png"):
+        src = PUBLIC / name
+        dest = app_dir / name
+        dest.write_bytes(src.read_bytes())
+        print(f"wrote {dest.relative_to(ROOT)}")
+    app_favicon = app_dir / "favicon.ico"
+    app_favicon.write_bytes(favicon.read_bytes())
+    print(f"wrote {app_favicon.relative_to(ROOT)}")
+
 
 if __name__ == "__main__":
     main()
