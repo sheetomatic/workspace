@@ -72,8 +72,6 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
   const user = await requireSession(undefined, { module: "FMS" });
   await ensureLeadConnections(user.organizationId);
 
-  await ensureLeadConnections(user.organizationId);
-
   const uncategorized = await prisma.inboundLead.findMany({
     where: { organizationId: user.organizationId, category: null },
     select: { id: true, requirement: true },
