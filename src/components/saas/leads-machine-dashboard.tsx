@@ -10,7 +10,13 @@ import {
   scheduleInboundLeadFollowUp,
   updateInboundLeadStatus,
 } from "@/app/app/leads/actions";
-import { LEAD_CHANNEL_LABELS } from "@/lib/leads/channels";
+import {
+  LEAD_CHANNEL_LABELS,
+  LEAD_DASHBOARD_SOURCE_FILTERS,
+  LEAD_SOURCE_PRIORITY_CHANNEL,
+  isLeadSourceComingSoon,
+  type LeadDashboardSourceFilter,
+} from "@/lib/leads/channels";
 import { fmsInstanceHref } from "@/lib/fms/navigation";
 
 const STATUS_LABELS: Record<InboundLeadStatus, string> = {
@@ -90,7 +96,9 @@ export function LeadsMachineDashboard({
   canManage: boolean;
   periodLabel?: string;
 }) {
-  const [channelFilter, setChannelFilter] = useState<LeadSourceChannel | "ALL">("ALL");
+  const [channelFilter, setChannelFilter] = useState<LeadDashboardSourceFilter>(
+    LEAD_SOURCE_PRIORITY_CHANNEL,
+  );
   const [pending, startTransition] = useTransition();
 
   const filtered = useMemo(() => {
@@ -155,22 +163,40 @@ export function LeadsMachineDashboard({
       </div>
 
       <div className="leads-machine-filters">
-        {(["ALL", "WHATSAPP", "INSTAGRAM", "FACEBOOK", "GOOGLE_SHEETS", "MANUAL"] as const).map(
-          (channel) => (
+        {LEAD_DASHBOARD_SOURCE_FILTERS.map((channel) => {
+          const comingSoon = channel !== "ALL" && isLeadSourceComingSoon(channel);
+          const isPriority = channel === LEAD_SOURCE_PRIORITY_CHANNEL;
+          const label =
+            channel === "ALL" ? "All sources" : LEAD_CHANNEL_LABELS[channel];
+
+          return (
             <button
               key={channel}
               type="button"
-              className={
-                channelFilter === channel
-                  ? "leads-machine-filter active"
-                  : "leads-machine-filter"
-              }
-              onClick={() => setChannelFilter(channel)}
+              disabled={comingSoon}
+              className={[
+                "leads-machine-filter",
+                channelFilter === channel ? "active" : "",
+                isPriority ? "is-priority" : "",
+                comingSoon ? "is-coming-soon" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              onClick={() => {
+                if (!comingSoon) {
+                  setChannelFilter(channel);
+                }
+              }}
             >
-              {channel === "ALL" ? "All sources" : LEAD_CHANNEL_LABELS[channel]}
+              {label}
+              {comingSoon ? (
+                <span className="leads-coming-soon-badge">Coming soon</span>
+              ) : isPriority ? (
+                <span className="leads-priority-badge">Active</span>
+              ) : null}
             </button>
-          ),
-        )}
+          );
+        })}
       </div>
 
       <div className="leads-machine-table-wrap">
@@ -194,7 +220,8 @@ export function LeadsMachineDashboard({
               <tr>
                 <td colSpan={canManage ? 7 : 6}>
                   <p className="leads-machine-muted">
-                    No leads yet. Connect sources in Settings or POST to the ingest API.
+                    No Google Sheets leads in this period yet. Open Source settings to
+                    connect your sheet and run Sync now.
                   </p>
                 </td>
               </tr>

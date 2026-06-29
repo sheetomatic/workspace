@@ -5,6 +5,11 @@ import type {
 } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { bridgeInboundLeadToFms } from "@/lib/leads/fms-bridge";
+import {
+  LEAD_CHANNEL_DEFAULTS,
+  LEAD_SOURCE_COMING_SOON_CHANNELS,
+  LEAD_SOURCE_PRIORITY_CHANNEL,
+} from "@/lib/leads/channels";
 import { defaultGoogleSheetsLeadConfig } from "@/lib/leads/sheet-config";
 
 export type LeadIngestInput = {
@@ -36,29 +41,36 @@ export async function ensureLeadConnections(organizationId: string) {
   const existing = await prisma.leadIngestConnection.count({
     where: { organizationId },
   });
-  if (existing > 0) {
-    return;
+
+  if (existing === 0) {
+    const defaults = LEAD_CHANNEL_DEFAULTS;
+
+    await prisma.leadIngestConnection.createMany({
+      data: defaults.map((item) => ({
+        organizationId,
+        channel: item.channel,
+        label: item.label,
+        enabled: item.channel === LEAD_SOURCE_PRIORITY_CHANNEL,
+        config:
+          item.channel === LEAD_SOURCE_PRIORITY_CHANNEL
+            ? (defaultGoogleSheetsLeadConfig() as object)
+            : undefined,
+      })),
+      skipDuplicates: true,
+    });
   }
 
-  const defaults: Array<{ channel: LeadSourceChannel; label: string }> = [
-    { channel: "WHATSAPP", label: "WhatsApp Business" },
-    { channel: "INSTAGRAM", label: "Instagram DMs / Lead ads" },
-    { channel: "FACEBOOK", label: "Facebook / Meta Lead forms" },
-    { channel: "GOOGLE_SHEETS", label: "Google Sheets intake" },
-  ];
+  await enforceLeadSourcePhase(organizationId);
+}
 
-  await prisma.leadIngestConnection.createMany({
-    data: defaults.map((item) => ({
+/** Phase 1: Google Sheets only — disable coming-soon connectors. */
+export async function enforceLeadSourcePhase(organizationId: string) {
+  await prisma.leadIngestConnection.updateMany({
+    where: {
       organizationId,
-      channel: item.channel,
-      label: item.label,
-      enabled: item.channel === "WHATSAPP",
-      config:
-        item.channel === "GOOGLE_SHEETS"
-          ? (defaultGoogleSheetsLeadConfig() as object)
-          : undefined,
-    })),
-    skipDuplicates: true,
+      channel: { in: LEAD_SOURCE_COMING_SOON_CHANNELS },
+    },
+    data: { enabled: false },
   });
 }
 

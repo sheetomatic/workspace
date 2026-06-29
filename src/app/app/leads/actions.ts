@@ -4,10 +4,11 @@ import { revalidatePath } from "next/cache";
 import type { InboundLeadStatus, LeadSourceChannel, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { generateLeadMachineApiKey } from "@/lib/leads/api-auth";
-import { ensureLeadConnections, ingestInboundLead } from "@/lib/leads/ingest";
+import { ensureLeadConnections, enforceLeadSourcePhase, ingestInboundLead } from "@/lib/leads/ingest";
 import { bridgeInboundLeadToFms } from "@/lib/leads/fms-bridge";
 import { pullLeadsFromConnection } from "@/lib/leads/sync-sources";
 import { defaultGoogleSheetsLeadConfig } from "@/lib/leads/sheet-config";
+import { isLeadSourceComingSoon } from "@/lib/leads/channels";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import { isActiveOrgMember } from "@/lib/assignee-org";
@@ -143,8 +144,8 @@ export async function syncLeadChannelNow(channel: LeadSourceChannel) {
     return { ok: false, message: "Admin only." };
   }
 
-  if (channel === "WHATSAPP") {
-    return { ok: false, message: "WhatsApp leads sync automatically from inbox." };
+  if (isLeadSourceComingSoon(channel)) {
+    return { ok: false, message: "This connector is coming soon." };
   }
 
   const result = await pullLeadsFromConnection({
@@ -170,6 +171,10 @@ export async function updateLeadConnection(params: {
   const user = await requireSession(undefined, { module: "FMS" });
   if (!hasMinimumRole(user.role, "ADMIN")) {
     return { ok: false, message: "Admin only." };
+  }
+
+  if (isLeadSourceComingSoon(params.channel)) {
+    return { ok: false, message: "This connector is coming soon." };
   }
 
   await ensureLeadConnections(user.organizationId);

@@ -3,8 +3,12 @@
 import { useState, useTransition } from "react";
 import type { LeadSourceChannel } from "@prisma/client";
 import Link from "next/link";
-import { regenerateLeadsApiKey, syncLeadChannelNow, updateLeadConnection, updateGoogleSheetsLeadConfig } from "@/app/app/leads/actions";
-import { LEAD_CHANNEL_LABELS } from "@/lib/leads/channels";
+import { regenerateLeadsApiKey, syncLeadChannelNow, updateGoogleSheetsLeadConfig } from "@/app/app/leads/actions";
+import {
+  isLeadSourceComingSoon,
+  LEAD_CHANNEL_LABELS,
+  LEAD_SOURCE_PRIORITY_CHANNEL,
+} from "@/lib/leads/channels";
 import { DEFAULT_LEADS_SPREADSHEET_URL } from "@/lib/leads/sheet-config";
 import "@/components/saas/leads-machine.css";
 
@@ -39,8 +43,8 @@ export function LeadsSettingsPanel({
         <div>
           <h1>Leads Machine settings</h1>
           <p>
-            Connect Meta, Google Sheets, or your own API. WhatsApp leads sync
-            automatically from Sheetomatic AI inbox.
+            Phase 1: Google Sheets is the active intake connector. WhatsApp, Instagram,
+            Facebook, and manual entry are coming soon.
           </p>
         </div>
         <Link className="btn-secondary" href="/app/leads">
@@ -80,46 +84,35 @@ export function LeadsSettingsPanel({
       </section>
 
       <div className="leads-settings-grid">
-        {connections.map((connection) =>
-          connection.channel === "GOOGLE_SHEETS" ? (
-            <GoogleSheetsConnectionCard
-              key={connection.id}
-              connection={connection}
-              disabled={pending}
-              sheetsAuthConfigured={sheetsAuthConfigured}
-              onSave={(payload) =>
-                startTransition(async () => {
-                  await updateGoogleSheetsLeadConfig(payload);
-                })
-              }
-              onSync={() =>
-                startTransition(async () => {
-                  await syncLeadChannelNow(connection.channel);
-                })
-              }
-            />
-          ) : (
-            <ConnectionCard
-              key={connection.id}
-              connection={connection}
-              disabled={pending}
-              onSave={(enabled, configJson) =>
-                startTransition(async () => {
-                  await updateLeadConnection({
-                    channel: connection.channel,
-                    enabled,
-                    configJson,
-                  });
-                })
-              }
-              onSync={() =>
-                startTransition(async () => {
-                  await syncLeadChannelNow(connection.channel);
-                })
-              }
-            />
-          ),
-        )}
+        {connections
+          .slice()
+          .sort((a, b) => {
+            if (a.channel === LEAD_SOURCE_PRIORITY_CHANNEL) return -1;
+            if (b.channel === LEAD_SOURCE_PRIORITY_CHANNEL) return 1;
+            return a.channel.localeCompare(b.channel);
+          })
+          .map((connection) =>
+            connection.channel === LEAD_SOURCE_PRIORITY_CHANNEL ? (
+              <GoogleSheetsConnectionCard
+                key={connection.id}
+                connection={connection}
+                disabled={pending}
+                sheetsAuthConfigured={sheetsAuthConfigured}
+                onSave={(payload) =>
+                  startTransition(async () => {
+                    await updateGoogleSheetsLeadConfig(payload);
+                  })
+                }
+                onSync={() =>
+                  startTransition(async () => {
+                    await syncLeadChannelNow(connection.channel);
+                  })
+                }
+              />
+            ) : isLeadSourceComingSoon(connection.channel) ? (
+              <ComingSoonConnectionCard key={connection.id} connection={connection} />
+            ) : null,
+          )}
       </div>
     </div>
   );
@@ -162,8 +155,11 @@ function GoogleSheetsConnectionCard({
   );
 
   return (
-    <article className="leads-settings-card">
-      <h3>{LEAD_CHANNEL_LABELS.GOOGLE_SHEETS}</h3>
+    <article className="leads-settings-card leads-settings-card-priority">
+      <div className="leads-settings-card-head">
+        <h3>{LEAD_CHANNEL_LABELS.GOOGLE_SHEETS}</h3>
+        <span className="leads-priority-badge">Active · Phase 1</span>
+      </div>
       <p className="leads-machine-muted">{connection.label}</p>
       <p className="leads-machine-muted">
         Service account: {sheetsAuthConfigured ? "configured" : "not configured — CSV export fallback"}
@@ -247,68 +243,18 @@ function GoogleSheetsConnectionCard({
   );
 }
 
-function ConnectionCard({
-  connection,
-  disabled,
-  onSave,
-  onSync,
-}: {
-  connection: ConnectionRow;
-  disabled: boolean;
-  onSave: (enabled: boolean, configJson: string) => void;
-  onSync: () => void;
-}) {
-  const [enabled, setEnabled] = useState(connection.enabled);
-  const [configJson, setConfigJson] = useState(
-    JSON.stringify(connection.config ?? {}, null, 2),
-  );
-
+function ComingSoonConnectionCard({ connection }: { connection: ConnectionRow }) {
   return (
-    <article className="leads-settings-card">
-      <h3>{LEAD_CHANNEL_LABELS[connection.channel]}</h3>
-      <p className="leads-machine-muted">{connection.label}</p>
-
-      <label className="mt-3 flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={enabled}
-          onChange={(event) => setEnabled(event.target.checked)}
-        />
-        Enabled
-      </label>
-
-      <textarea
-        value={configJson}
-        onChange={(event) => setConfigJson(event.target.value)}
-        placeholder={`{\n  "apiUrl": "https://your-api.example/leads",\n  "apiKey": "...",\n  "rowsPath": "data.leads"\n}`}
-      />
-
-      {connection.lastSyncAt ? (
-        <p className="leads-machine-muted">
-          Last sync: {new Date(connection.lastSyncAt).toLocaleString("en-IN")}
-        </p>
-      ) : null}
-      {connection.lastSyncError ? (
-        <p className="leads-machine-muted" style={{ color: "#b91c1c" }}>
-          {connection.lastSyncError}
-        </p>
-      ) : null}
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        <button
-          type="button"
-          className="btn-primary"
-          disabled={disabled}
-          onClick={() => onSave(enabled, configJson)}
-        >
-          Save
-        </button>
-        {connection.channel !== "WHATSAPP" ? (
-          <button type="button" className="btn-secondary" disabled={disabled} onClick={onSync}>
-            Sync now
-          </button>
-        ) : null}
+    <article className="leads-settings-card leads-settings-card-coming-soon">
+      <div className="leads-settings-card-head">
+        <h3>{LEAD_CHANNEL_LABELS[connection.channel]}</h3>
+        <span className="leads-coming-soon-badge">Coming soon</span>
       </div>
+      <p className="leads-machine-muted">{connection.label}</p>
+      <p className="leads-machine-muted">
+        This connector is on the roadmap. Google Sheets is available now for Phase 1
+        intake.
+      </p>
     </article>
   );
 }

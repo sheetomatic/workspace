@@ -61,6 +61,9 @@
 }
 
 .leads-machine-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   border: 1px solid #e2e8f0;
   background: #fff;
   border-radius: 999px;
@@ -73,6 +76,55 @@
   border-color: #2563eb;
   background: #eff6ff;
   color: #1d4ed8;
+}
+
+.leads-machine-filter.is-priority.active {
+  border-color: #15803d;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.leads-machine-filter.is-coming-soon {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.leads-coming-soon-badge,
+.leads-priority-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+}
+
+.leads-coming-soon-badge {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.leads-priority-badge {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.leads-settings-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.leads-settings-card-priority {
+  border-color: #86efac;
+  background: linear-gradient(180deg, #f0fdf4 0%, #fff 40%);
+}
+
+.leads-settings-card-coming-soon {
+  background: #f8fafc;
+  opacity: 0.92;
 }
 
 .leads-machine-table-wrap {
