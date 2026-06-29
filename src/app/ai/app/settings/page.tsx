@@ -20,6 +20,7 @@ import {
 } from "@/app/app/whatsapp/mas-actions";
 import { getWhatsAppGoLiveStatus } from "@/lib/whatsapp-go-live";
 import { isWebBasedApiUiEnabled } from "@/lib/web-based-api-ui";
+import { listPendingWorkspaceSignups } from "@/lib/pending-workspace-signups";
 
 export default async function SheetomaticAiSettingsPage() {
   const user = await requireSession("ADMIN", { redirectTo: "/ai/app" });
@@ -28,7 +29,12 @@ export default async function SheetomaticAiSettingsPage() {
   const organization = user.isSuperAdmin
     ? await prisma.organization.findUnique({
         where: { id: user.organizationId },
-        select: { name: true, status: true },
+        select: {
+          name: true,
+          status: true,
+          plan: true,
+          allowedModules: true,
+        },
       })
     : null;
   const canEditAiReplyLimits =
@@ -62,23 +68,7 @@ export default async function SheetomaticAiSettingsPage() {
           wallet: { ok: false as const, error: "Wallet unavailable.", body: {} },
         }),
     getAiReplyUsageSummary(user.organizationId),
-    user.isSuperAdmin
-      ? prisma.organization.findMany({
-          where: { status: "ONBOARDING" },
-          orderBy: { createdAt: "desc" },
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            createdAt: true,
-            memberships: {
-              where: { role: "OWNER" },
-              take: 1,
-              select: { user: { select: { email: true } } },
-            },
-          },
-        })
-      : Promise.resolve([]),
+    user.isSuperAdmin ? listPendingWorkspaceSignups() : Promise.resolve([]),
     showWebBasedApi
       ? loadMasWhatsAppLinkStatusForSettings()
       : Promise.resolve(null),
@@ -127,11 +117,13 @@ export default async function SheetomaticAiSettingsPage() {
         openaiConfigured={Boolean(process.env.OPENAI_API_KEY)}
         organizationName={organization?.name ?? null}
         organizationStatus={organization?.status ?? null}
+        organizationPlan={organization?.plan ?? null}
+        organizationAllowedModules={organization?.allowedModules ?? []}
         pendingWorkspaces={pendingWorkspaces.map((workspace) => ({
           id: workspace.id,
           name: workspace.name,
           slug: workspace.slug,
-          ownerEmail: workspace.memberships[0]?.user.email ?? null,
+          ownerEmail: workspace.ownerEmail,
           createdAt: workspace.createdAt.toLocaleDateString("en-IN", {
             timeZone: "Asia/Kolkata",
             dateStyle: "medium",

@@ -24876,6 +24876,16 @@ a.workspace-app .ws-stat-card,
   margin-bottom: 4px;
 }
 
+.workspace-app .ws-signup-approvals-section {
+  margin-bottom: 16px;
+}
+
+.workspace-app .ws-signup-approvals-section .ws-sf-list-view-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .workspace-app .ws-pc-setup-page .ws-sf-list-view-title h2 {
   font-size: 1.0625rem;
   font-weight: 700;

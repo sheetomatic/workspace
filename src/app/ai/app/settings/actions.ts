@@ -7,13 +7,14 @@ import { updateAiReplySettings } from "@/lib/integrations/ai-reply-settings";
 import { hasMinimumRole } from "@/lib/permissions";
 import { prisma } from "@/lib/db";
 import {
-  clampModulesToOrg,
-  modulesForTierRole,
-} from "@/lib/org-plan-presets";
-import {
   client50OnboardingPreset,
   organizationEntitlementsData,
 } from "@/lib/org-onboarding";
+import {
+  clampModulesToOrg,
+  modulesForTierRole,
+} from "@/lib/org-plan-presets";
+import { activatePendingWorkspaceBySlug } from "@/lib/workspace-signup-activation";
 
 export type WorkspaceStatusActionState = {
   ok: boolean;
@@ -30,6 +31,13 @@ const DEFAULT_OWNER_MODULES = [
   "APPROVALS",
   "REPORTS",
 ] satisfies WorkspaceModule[];
+
+function revalidateSignupApprovalSurfaces() {
+  revalidatePath("/app/approvals");
+  revalidatePath("/ai/app/settings");
+  revalidatePath("/ai/app");
+  revalidatePath("/app");
+}
 
 async function applyClientOnboardingEntitlements(organizationId: string) {
   const preset = client50OnboardingPreset();
@@ -99,9 +107,7 @@ export async function setWorkspaceStatusAction(
     await grantOwnerModules(user.organizationId);
   }
 
-  revalidatePath("/ai/app/settings");
-  revalidatePath("/ai/app");
-  revalidatePath("/app");
+  revalidateSignupApprovalSurfaces();
 
   return {
     ok: true,
@@ -126,30 +132,13 @@ export async function activateOrganizationAction(
     return { ok: false, message: "Workspace not found." };
   }
 
-  const organization = await prisma.organization.findFirst({
-    where: { slug: workspaceSlug, status: "ONBOARDING" },
-    select: { id: true, name: true },
-  });
-
-  if (!organization) {
-    return { ok: false, message: "Workspace not found or already active." };
+  const result = await activatePendingWorkspaceBySlug(workspaceSlug);
+  if (!result.ok) {
+    return { ok: false, message: result.message };
   }
 
-  await prisma.organization.update({
-    where: { id: organization.id },
-    data: { status: "ACTIVE" },
-  });
-  await applyClientOnboardingEntitlements(organization.id);
-  await grantOwnerModules(organization.id);
-
-  revalidatePath("/ai/app/settings");
-  revalidatePath("/ai/app");
-  revalidatePath("/app");
-
-  return {
-    ok: true,
-    message: `${organization.name} activated. The owner can sign in now.`,
-  };
+  revalidateSignupApprovalSurfaces();
+  return { ok: true, message: result.message };
 }
 
 export async function saveAiReplySettingsAction(
