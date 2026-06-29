@@ -5,32 +5,48 @@ import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import {
   countAccountsTemplates,
   getAccountsChecklistGrid,
+  type AccountsChecklistGrid,
 } from "@/lib/checklists/accounts-grid";
 import { canCreateTasks } from "@/lib/tasks";
 import { listWorkspaceMembers } from "@/lib/workspace";
 import { requireSession } from "@/lib/require-session";
 
+function emptyGrid(): AccountsChecklistGrid {
+  return {
+    monthLabel: new Date().toLocaleString("en-IN", {
+      month: "long",
+      year: "numeric",
+    }),
+    week1Label: "Week 1",
+    week2Label: "Week 2",
+    rows: [],
+  };
+}
+
 export default async function AccountsChecklistPage() {
   const user = await requireSession(undefined, { module: "TASKS" });
   const canManage = canCreateTasks(user.role);
-  const [grid, templateCount, members] = await Promise.all([
-    getAccountsChecklistGrid(user.organizationId).catch(() => ({
-      monthLabel: new Date().toLocaleString("en-IN", {
-        month: "long",
-        year: "numeric",
-      }),
-      week1Label: "Week 1",
-      week2Label: "Week 2",
-      rows: [],
-    })),
-    countAccountsTemplates(user.organizationId).catch(() => 0),
-    canManage ? listWorkspaceMembers(user.organizationId) : Promise.resolve([]),
-  ]);
 
-  const memberOptions = members.map((member) => ({
-    id: member.user.id,
-    label: member.user.name ?? member.user.email,
-  }));
+  let grid = emptyGrid();
+  let templateCount = 0;
+  let memberOptions: { id: string; label: string }[] = [];
+
+  try {
+    const [gridResult, templateCountResult, members] = await Promise.all([
+      getAccountsChecklistGrid(user.organizationId),
+      countAccountsTemplates(user.organizationId),
+      canManage ? listWorkspaceMembers(user.organizationId) : Promise.resolve([]),
+    ]);
+    grid = gridResult;
+    templateCount = templateCountResult;
+    memberOptions = members.map((member) => ({
+      id: member.user.id,
+      label: member.user.name ?? member.user.email,
+    }));
+  } catch (error) {
+    console.error("[accounts-checklist] load failed", error);
+  }
+
   if (
     canManage &&
     !memberOptions.some((member) => member.id === user.id)

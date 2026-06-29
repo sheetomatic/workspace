@@ -8,7 +8,10 @@ import { OrganizationSwitcher } from "@/components/saas/organization-switcher";
 import type { OrganizationOption } from "@/components/saas/organization-switcher";
 import type { SessionUser } from "@/lib/auth";
 import { ROLE_LABELS } from "@/lib/permissions";
-import type { WorkspaceAppearance } from "@/lib/workspace-appearance";
+import {
+  mergeWorkspaceAppearance,
+  type WorkspaceAppearance,
+} from "@/lib/workspace-appearance";
 import {
   getWorkspaceNavSections,
   navIsActive,
@@ -95,10 +98,13 @@ export function SaasShell({
   organizations: OrganizationOption[];
   organizationPlan?: string | null;
   organizationPlanLabel?: string | null;
-  appearance: WorkspaceAppearance & { logoSrc: string };
+  appearance?: WorkspaceAppearance & { logoSrc: string };
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const resolvedAppearance =
+    appearance ??
+    mergeWorkspaceAppearance(null, user.organizationName, undefined, Date.now());
   const showPlanBadge =
     Boolean(organizationPlan) &&
     ROLE_ORDER.indexOf(user.role) >= ROLE_ORDER.indexOf("ADMIN");
@@ -118,14 +124,14 @@ export function SaasShell({
     visibleWorkspaceNavItems(user, section.items),
   );
 
-  const productName = appearance.productName;
-  const brandSubtitle = appearance.brandName || user.organizationName;
+  const productName = resolvedAppearance.productName;
+  const brandSubtitle = resolvedAppearance.brandName || user.organizationName;
 
   return (
     <div className="saas-app workspace-app">
       <header className="ws-mobile-shell-header">
         <div className="ws-mobile-shell-brand">
-          <WorkspaceBrandLogo alt={`${productName} logo`} logoSrc={appearance.logoSrc} />
+          <WorkspaceBrandLogo alt={`${productName} logo`} logoSrc={resolvedAppearance.logoSrc} />
           <div className="ws-mobile-shell-brand-text">
             <strong>{productName}</strong>
             <span>{brandSubtitle}</span>
@@ -155,7 +161,7 @@ export function SaasShell({
       <aside className="saas-sidebar ws-shell-desktop">
         <div className="crm-sidebar-head">
           <div className="saas-sidebar-brand">
-            <WorkspaceBrandLogo alt={`${productName} logo`} logoSrc={appearance.logoSrc} />
+            <WorkspaceBrandLogo alt={`${productName} logo`} logoSrc={resolvedAppearance.logoSrc} />
             <div>
               <strong>{productName}</strong>
               <span>{brandSubtitle}</span>
