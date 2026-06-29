@@ -32,11 +32,12 @@ const MOVEMENT_LABELS: Record<string, string> = {
 export default async function ImsItemDetailPage({
   params,
 }: {
-  params: { itemId: string };
+  params: Promise<{ itemId: string }>;
 }) {
   const user = await requireSession(undefined, { module: "IMS" });
+  const { itemId } = await params;
   const [detail, customFields] = await Promise.all([
-    getItemDetail(user.organizationId, params.itemId),
+    getItemDetail(user.organizationId, itemId),
     listImsCustomFields(user.organizationId, "ITEM"),
   ]);
 

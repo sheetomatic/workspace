@@ -20,11 +20,12 @@ function formatCustomValue(
 export default async function ImsVendorDetailPage({
   params,
 }: {
-  params: { vendorId: string };
+  params: Promise<{ vendorId: string }>;
 }) {
   const user = await requireSession(undefined, { module: "IMS" });
+  const { vendorId } = await params;
   const [vendor, customFields] = await Promise.all([
-    getVendorDetail(user.organizationId, params.vendorId),
+    getVendorDetail(user.organizationId, vendorId),
     listImsCustomFields(user.organizationId, "VENDOR"),
   ]);
 
