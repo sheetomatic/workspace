@@ -74,7 +74,7 @@ export function LeadsPeriodToolbar({ period }: { period: LeadsPeriodRange }) {
   };
 
   return (
-    <section className="leads-period-toolbar saas-panel" aria-label="Lead period">
+    <section className="leads-period-toolbar" aria-label="Lead period">
       <div className="leads-period-toolbar-row">
         <div className="leads-period-types">
           {PERIOD_OPTIONS.map((option) => (

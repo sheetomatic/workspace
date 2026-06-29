@@ -1,3 +1,107 @@
+.leads-machine-page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.leads-header-live-badge,
+.leads-header-setup-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.leads-header-live-badge {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.leads-header-setup-badge {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.leads-connection-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.leads-connection-alert strong {
+  display: block;
+  font-size: 0.92rem;
+  margin-bottom: 0.15rem;
+}
+
+.leads-connection-alert p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  max-width: 52rem;
+}
+
+.leads-connection-alert code {
+  font-size: 0.8rem;
+  background: #f1f5f9;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+}
+
+.leads-connection-alert.is-error {
+  border-color: #fecaca;
+  background: #fff1f2;
+}
+
+.leads-connection-alert.is-error strong {
+  color: #b91c1c;
+}
+
+.leads-connection-alert.is-warning {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.leads-connection-alert.is-setup {
+  border-color: #bfdbfe;
+  background: linear-gradient(180deg, #eff6ff 0%, #fff 100%);
+}
+
+.leads-overview {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.workspace-app .leads-machine-page .hs-quick-stat.accent-blue {
+  border-left-color: #2563eb;
+}
+
+.leads-kpi-sub {
+  margin-left: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.leads-overview-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .leads-machine {
   display: grid;
   gap: 1.25rem;
@@ -382,6 +486,11 @@
 .leads-period-toolbar {
   display: grid;
   gap: 0.75rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
 }
 
 .leads-period-toolbar-row {
@@ -420,13 +529,14 @@
 
 .leads-status-pill {
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 0.65rem 0.8rem;
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-  font-size: 0.82rem;
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
   text-transform: capitalize;
+  background: #fff;
 }
 
 .leads-table-head {

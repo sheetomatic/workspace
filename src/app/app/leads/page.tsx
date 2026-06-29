@@ -1,15 +1,15 @@
 import Link from "next/link";
-import { LeadsGoogleSheetsSetupBanner } from "@/components/saas/leads-google-sheets-setup";
-import { LeadsLiveStatusBar } from "@/components/saas/leads-live-status";
+import { LeadsConnectionAlert } from "@/components/saas/leads-connection-alert";
 import { LeadsMachineDashboard } from "@/components/saas/leads-machine-dashboard";
+import { LeadsMachineOverview } from "@/components/saas/leads-machine-overview";
 import { LeadsPeriodToolbar } from "@/components/saas/leads-period-toolbar";
+import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import "@/components/saas/leads-machine.css";
 import {
   getGoogleSheetsServiceAccountEmail,
   isGoogleSheetsAuthConfigured,
 } from "@/lib/integrations/google-sheets-auth";
 import { hasMinimumRole } from "@/lib/permissions";
-import { LEAD_CHANNEL_LABELS } from "@/lib/leads/channels";
 import { ensureLeadConnections } from "@/lib/leads/ingest";
 import { parseLeadsPeriodParams } from "@/lib/leads/period";
 import {
@@ -60,76 +60,52 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
     serviceAccountEmail: getGoogleSheetsServiceAccountEmail(),
   };
 
+  const isLive =
+    sheetsSetup.enabled &&
+    Boolean(sheetsSetup.lastSyncAt) &&
+    !sheetsSetup.lastSyncError;
+
   return (
     <div className="saas-page leads-machine-page">
-      <header className="saas-page-head">
-        <div>
-          <h1>Leads Machine</h1>
-          <p>
-            Phase 1: Google Sheets intake with week, month, quarter, and year views.
-            Leads bridge into FMS Lead to Sales when a matching workflow is active.
-          </p>
-        </div>
-        {canManage ? (
-          <Link className="btn-secondary" href="/app/leads/settings">
-            Connect Google Sheets
-          </Link>
-        ) : null}
-      </header>
+      <TaskPageToolbar
+        title="Leads Machine"
+        description="Google Sheets intake with weekly, monthly, quarterly, and yearly views. Qualified leads bridge into FMS Lead to Sales."
+        actions={
+          <>
+            {isLive ? (
+              <span className="leads-header-live-badge">
+                Live · Google Sheets
+                {sheetsSetup.lastSyncAt
+                  ? ` · ${new Date(sheetsSetup.lastSyncAt).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                    })}`
+                  : ""}
+              </span>
+            ) : sheetsSetup.enabled ? (
+              <span className="leads-header-setup-badge">Setup in progress</span>
+            ) : null}
+            {canManage ? (
+              <Link className="btn-secondary btn-sm" href="/app/leads/settings">
+                Google Sheets settings
+              </Link>
+            ) : null}
+          </>
+        }
+      />
 
-      <LeadsGoogleSheetsSetupBanner canManage={canManage} status={sheetsSetup} />
-
-      <LeadsLiveStatusBar
+      <LeadsConnectionAlert
         canManage={canManage}
-        leadsInPeriod={periodStats.total}
+        leadsCount={lifetimeStats.total}
         status={sheetsSetup}
       />
 
       <LeadsPeriodToolbar period={period} />
 
-      <div className="saas-stat-grid">
-        <div className="saas-stat-card">
-          <span>Leads in period</span>
-          <strong>{periodStats.total}</strong>
-        </div>
-        <div className="saas-stat-card">
-          <span>Open pipeline</span>
-          <strong>{periodStats.openPipeline}</strong>
-        </div>
-        <div className="saas-stat-card">
-          <span>Won</span>
-          <strong>{periodStats.won}</strong>
-        </div>
-        <div className="saas-stat-card">
-          <span>Conversion</span>
-          <strong>{periodStats.conversionRate}%</strong>
-        </div>
-        <div className="saas-stat-card">
-          <span>Linked to FMS</span>
-          <strong>{periodStats.withFms}</strong>
-        </div>
-        <div className="saas-stat-card">
-          <span>Lifetime leads</span>
-          <strong>{lifetimeStats.total}</strong>
-        </div>
-      </div>
-
-      <div className="leads-machine-channel-stats">
-        {Object.entries(periodStats.byChannel).map(([channel, count]) => (
-          <span key={channel} className="leads-channel-badge">
-            {LEAD_CHANNEL_LABELS[channel as keyof typeof LEAD_CHANNEL_LABELS]}: {count}
-          </span>
-        ))}
-      </div>
-
-      <div className="leads-status-grid">
-        {Object.entries(periodStats.byStatus).map(([status, count]) => (
-          <div key={status} className="leads-status-pill">
-            <span>{status.replaceAll("_", " ")}</span>
-            <strong>{count}</strong>
-          </div>
-        ))}
-      </div>
+      <LeadsMachineOverview
+        lifetimeTotal={lifetimeStats.total}
+        periodStats={periodStats}
+      />
 
       <LeadsMachineDashboard
         canManage={canManage}
