@@ -21,7 +21,7 @@ const ICON_SIZE_MAP: Record<SheetomaticAiMarkSize, number> = {
 };
 
 type Props = {
-  /** `icon` = square mark for inline bars; `lockup` = full logo with optional label. */
+  /** `icon` = square mark only; `lockup` = full Sheetomatic AI wordmark image. */
   variant?: "icon" | "lockup";
   sizes?: SheetomaticAiMarkSize;
   size?: number;
@@ -42,7 +42,7 @@ function resolveHeight(
 }
 
 export function SheetomaticAiMark({
-  variant = "lockup",
+  variant = "icon",
   sizes,
   size,
   showLabel = false,
@@ -72,15 +72,17 @@ export function SheetomaticAiMark({
       aria-label="Sheetomatic AI"
       title="Sheetomatic AI"
     >
-      <Image
-        src={variant === "icon" ? ICON_PATH : LOCKUP_PATH}
-        alt=""
-        width={width}
-        height={height}
-        className="sheetomatic-ai-mark-logo"
-        aria-hidden
-      />
-      {showLabel && variant === "lockup" ? (
+      <span className="sheetomatic-ai-mark-wrap">
+        <Image
+          src={variant === "icon" ? ICON_PATH : LOCKUP_PATH}
+          alt=""
+          width={width}
+          height={height}
+          className="sheetomatic-ai-mark-logo"
+          aria-hidden
+        />
+      </span>
+      {showLabel ? (
         <span className="sheetomatic-ai-mark-label">Sheetomatic AI</span>
       ) : null}
     </span>

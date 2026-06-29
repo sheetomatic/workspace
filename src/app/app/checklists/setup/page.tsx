@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { PcAiSetupPanel } from "@/components/saas/pc-ai-setup-panel";
 import { ChecklistImport } from "@/components/saas/checklist-import";
 import { PcSetupAiBar } from "@/components/saas/pc-setup-ai-bar";
 import { PcTemplateLibraryBoard } from "@/components/saas/pc-template-library-board";
@@ -64,7 +63,6 @@ export default async function PcSetupPage() {
         }
       />
 
-      <PcAiSetupPanel canConfigure={canConfigure} />
       <PcSetupAiBar canConfigure={canConfigure} />
       {canConfigure ? <ChecklistImport /> : null}
 
