@@ -34,7 +34,7 @@
     },
     {
       "path": "/api/cron/leads-sync",
-      "schedule": "0 8 * * *"
+      "schedule": "*/15 * * * *"
     }
   ],
   "functions": {

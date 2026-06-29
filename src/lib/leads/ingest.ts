@@ -10,7 +10,14 @@ import {
   LEAD_SOURCE_COMING_SOON_CHANNELS,
   LEAD_SOURCE_PRIORITY_CHANNEL,
 } from "@/lib/leads/channels";
-import { defaultGoogleSheetsLeadConfig, resolveGoogleSheetsLeadConfig } from "@/lib/leads/sheet-config";
+import {
+  categorizeLeadRequirement,
+  defaultPipeValueForCategory,
+} from "@/lib/leads/categories";
+import {
+  defaultGoogleSheetsLeadConfig,
+  resolveGoogleSheetsLeadConfig,
+} from "@/lib/leads/sheet-config";
 
 export type LeadIngestInput = {
   organizationId: string;
@@ -152,14 +159,26 @@ export async function ingestInboundLead(input: LeadIngestInput) {
     });
   }
 
+  const requirement = input.requirement?.trim() || lead?.requirement || undefined;
+  const requirementChanged =
+    Boolean(input.requirement?.trim()) &&
+    input.requirement?.trim() !== (lead?.requirement ?? "");
+  const category =
+    !lead || requirementChanged
+      ? categorizeLeadRequirement(requirement)
+      : lead.category ?? categorizeLeadRequirement(requirement);
+  const pipeValue = lead?.pipeValue ?? defaultPipeValueForCategory(category);
+
   const data = {
     connectionId: connection?.id ?? null,
     name: input.name?.trim() || undefined,
     phone: phone ?? undefined,
     email: input.email?.trim() || undefined,
     city: input.city?.trim() || undefined,
-    requirement: input.requirement?.trim() || undefined,
+    requirement,
     sourceDetail: input.sourceDetail?.trim() || undefined,
+    category,
+    pipeValue,
     status: input.status,
     assignedToId: input.assignedToId ?? undefined,
     nextFollowUpAt: input.nextFollowUpAt ?? undefined,

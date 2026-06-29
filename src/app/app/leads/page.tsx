@@ -1,119 +1,171 @@
 import Link from "next/link";
-import { LeadsConnectionAlert } from "@/components/saas/leads-connection-alert";
-import { LeadsMachineDashboard } from "@/components/saas/leads-machine-dashboard";
-import { LeadsMachineOverview } from "@/components/saas/leads-machine-overview";
+import { LeadsCrmWorkspace } from "@/components/saas/leads-crm-workspace";
 import { LeadsPeriodToolbar } from "@/components/saas/leads-period-toolbar";
+import { LeadsPipelineCards } from "@/components/saas/leads-pipeline-cards";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import "@/components/saas/leads-machine.css";
-import {
-  getGoogleSheetsServiceAccountEmail,
-  isGoogleSheetsAuthConfigured,
-} from "@/lib/integrations/google-sheets-auth";
-import { hasMinimumRole } from "@/lib/permissions";
+import { categorizeLeadRequirement, defaultPipeValueForCategory } from "@/lib/leads/categories";
+import { maybeAutoSyncGoogleSheets, LEADS_SYNC_INTERVAL_LABEL } from "@/lib/leads/auto-sync";
 import { ensureLeadConnections } from "@/lib/leads/ingest";
+import { parseLeadsListParams } from "@/lib/leads/list-params";
 import { parseLeadsPeriodParams } from "@/lib/leads/period";
 import {
   getGoogleSheetsLeadConnection,
-  getLeadsMachineStats,
   getLeadsMachineStatsForPeriod,
-  listInboundLeadsForPeriod,
-  listOverdueLeadFollowUps,
-  listTodayLeadFollowUps,
+  getLeadsPipeMetricsForPeriod,
+  listInboundLeadsForPeriodPaginated,
 } from "@/lib/leads/queries";
+import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { listWorkspaceMembers } from "@/lib/workspace";
+import { prisma } from "@/lib/db";
 
 type PageProps = {
-  searchParams: Promise<{
-    period?: string;
-    week?: string;
-    month?: string;
-    quarter?: string;
-    year?: string;
-  }>;
+  searchParams: Promise<LeadsListSearchParams>;
 };
+
+type LeadsListSearchParams = {
+  period?: string;
+  week?: string;
+  month?: string;
+  quarter?: string;
+  year?: string;
+  status?: string;
+  category?: string;
+  page?: string;
+  sort?: string;
+  q?: string;
+};
+
+function serializeLead(lead: Awaited<ReturnType<typeof listInboundLeadsForPeriodPaginated>>["leads"][number]) {
+  return {
+    id: lead.id,
+    name: lead.name,
+    phone: lead.phone,
+    email: lead.email,
+    requirement: lead.requirement,
+    category: lead.category,
+    status: lead.status,
+    discussionNotes: lead.discussionNotes,
+    quotationValue: lead.quotationValue?.toString() ?? null,
+    pipeValue: lead.pipeValue?.toString() ?? null,
+    nextFollowUpAt: lead.nextFollowUpAt?.toISOString() ?? null,
+    capturedAt: lead.capturedAt?.toISOString() ?? null,
+    createdAt: lead.createdAt.toISOString(),
+    assignedTo: lead.assignedTo,
+    followUps: lead.followUps.map((item) => ({
+      id: item.id,
+      scheduledAt: item.scheduledAt.toISOString(),
+      notes: item.notes,
+    })),
+    activities: lead.activities.map((item) => ({
+      id: item.id,
+      type: item.type,
+      body: item.body,
+      createdAt: item.createdAt.toISOString(),
+      createdBy: item.createdBy,
+    })),
+  };
+}
 
 export default async function LeadsMachinePage({ searchParams }: PageProps) {
   const user = await requireSession(undefined, { module: "FMS" });
   await ensureLeadConnections(user.organizationId);
 
+  await ensureLeadConnections(user.organizationId);
+
+  const uncategorized = await prisma.inboundLead.findMany({
+    where: { organizationId: user.organizationId, category: null },
+    select: { id: true, requirement: true },
+    take: 100,
+  });
+  if (uncategorized.length > 0) {
+    await Promise.all(
+      uncategorized.map((lead) => {
+        const category = categorizeLeadRequirement(lead.requirement);
+        return prisma.inboundLead.update({
+          where: { id: lead.id },
+          data: {
+            category,
+            pipeValue: defaultPipeValueForCategory(category),
+          },
+        });
+      }),
+    );
+  }
+
   const params = await searchParams;
   const period = parseLeadsPeriodParams(params);
+  const listParams = parseLeadsListParams(params);
   const canManage = hasMinimumRole(user.role, "MANAGER");
+  const isAdmin = hasMinimumRole(user.role, "ADMIN");
 
-  const [periodStats, lifetimeStats, leads, todayFollowUps, overdueFollowUps, teamMembers, sheetsConnection] =
+  if (isAdmin) {
+    await maybeAutoSyncGoogleSheets(user.organizationId);
+  }
+
+  const [periodStats, pipeMetrics, leadPage, teamMembers, sheetsConnection] =
     await Promise.all([
       getLeadsMachineStatsForPeriod(user.organizationId, period),
-      getLeadsMachineStats(user.organizationId),
-      listInboundLeadsForPeriod(user.organizationId, period),
-      listTodayLeadFollowUps(user.organizationId),
-      listOverdueLeadFollowUps(user.organizationId),
+      getLeadsPipeMetricsForPeriod(user.organizationId, period),
+      listInboundLeadsForPeriodPaginated(user.organizationId, period, listParams),
       listWorkspaceMembers(user.organizationId),
       getGoogleSheetsLeadConnection(user.organizationId),
     ]);
 
-  const sheetsSetup = {
-    enabled: sheetsConnection?.enabled ?? false,
-    lastSyncAt: sheetsConnection?.lastSyncAt ?? null,
-    lastSyncError: sheetsConnection?.lastSyncError ?? null,
-    sheetsAuthConfigured: isGoogleSheetsAuthConfigured(),
-    serviceAccountEmail: getGoogleSheetsServiceAccountEmail(),
-  };
-
-  const isLive =
-    sheetsSetup.enabled &&
-    Boolean(sheetsSetup.lastSyncAt) &&
-    !sheetsSetup.lastSyncError;
+  const lastSyncLabel = sheetsConnection?.lastSyncAt
+    ? new Date(sheetsConnection.lastSyncAt).toLocaleString("en-IN", {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "Not synced yet";
 
   return (
     <div className="saas-page leads-machine-page">
       <TaskPageToolbar
         title="Leads Machine"
-        description="Google Sheets intake with weekly, monthly, quarterly, and yearly views. Qualified leads bridge into FMS Lead to Sales."
+        description="Google Sheets intake · AI categories · pipeline value · follow-ups and quotations."
         actions={
           <>
-            {isLive ? (
-              <span className="leads-header-live-badge">
-                Live · Google Sheets
-                {sheetsSetup.lastSyncAt
-                  ? ` · ${new Date(sheetsSetup.lastSyncAt).toLocaleDateString("en-IN", {
-                      day: "numeric",
-                      month: "short",
-                    })}`
-                  : ""}
-              </span>
-            ) : sheetsSetup.enabled ? (
-              <span className="leads-header-setup-badge">Setup in progress</span>
-            ) : null}
+            <span className="leads-sync-meta">
+              Last sync: {lastSyncLabel} · Auto {LEADS_SYNC_INTERVAL_LABEL}
+            </span>
             {canManage ? (
-              <Link className="btn-secondary btn-sm" href="/app/leads/settings">
-                Google Sheets settings
+              <Link
+                className="leads-setup-icon-btn"
+                href="/app/leads/settings"
+                title="Google Sheets setup"
+                aria-label="Google Sheets setup"
+              >
+                ⚙
               </Link>
             ) : null}
           </>
         }
       />
 
-      <LeadsConnectionAlert
-        canManage={canManage}
-        leadsCount={lifetimeStats.total}
-        status={sheetsSetup}
-      />
-
       <LeadsPeriodToolbar period={period} />
 
-      <LeadsMachineOverview
-        lifetimeTotal={lifetimeStats.total}
-        periodStats={periodStats}
+      <LeadsPipelineCards
+        activeCategory={listParams.category}
+        activeStatus={listParams.status}
+        baseParams={params}
+        byStatus={periodStats.byStatus}
+        pipeMetrics={pipeMetrics}
       />
 
-      <LeadsMachineDashboard
+      <LeadsCrmWorkspace
         canManage={canManage}
-        leads={leads}
-        overdueFollowUps={overdueFollowUps}
+        leads={leadPage.leads.map(serializeLead)}
+        listParams={params}
+        page={leadPage.page}
         periodLabel={period.periodLabel}
+        sort={listParams.sort}
         teamMembers={teamMembers}
-        todayFollowUps={todayFollowUps}
+        total={leadPage.total}
+        totalPages={leadPage.totalPages}
       />
     </div>
   );

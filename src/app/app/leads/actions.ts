@@ -3,20 +3,26 @@
 import { revalidatePath } from "next/cache";
 import type { InboundLeadStatus, LeadSourceChannel, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { isActiveOrgMember } from "@/lib/assignee-org";
+import { logInboundLeadActivity } from "@/lib/leads/activity";
 import { generateLeadMachineApiKey } from "@/lib/leads/api-auth";
-import { ensureLeadConnections, enforceLeadSourcePhase, ingestInboundLead } from "@/lib/leads/ingest";
+import { isLeadSourceComingSoon } from "@/lib/leads/channels";
+import {
+  categorizeLeadRequirement,
+  defaultPipeValueForCategory,
+} from "@/lib/leads/categories";
 import { bridgeInboundLeadToFms } from "@/lib/leads/fms-bridge";
-import { pullLeadsFromConnection } from "@/lib/leads/sync-sources";
-import { buildGoogleSheetsLeadConfigFromInput } from "@/lib/leads/sheet-config";
 import { testLeadsGoogleSheetAccess } from "@/lib/leads/google-sheets";
+import { ensureLeadConnections } from "@/lib/leads/ingest";
+import { buildGoogleSheetsLeadConfigFromInput } from "@/lib/leads/sheet-config";
 import {
   formatLeadSyncCounts,
   formatLeadSyncError,
 } from "@/lib/leads/sync-messages";
-import { isLeadSourceComingSoon } from "@/lib/leads/channels";
-import { requireSession } from "@/lib/require-session";
+import { pullLeadsFromConnection } from "@/lib/leads/sync-sources";
+import { ingestInboundLead } from "@/lib/leads/ingest";
 import { hasMinimumRole } from "@/lib/permissions";
-import { isActiveOrgMember } from "@/lib/assignee-org";
+import { requireSession } from "@/lib/require-session";
 
 export async function assignInboundLead(leadId: string, assigneeUserId: string | null) {
   const user = await requireSession(undefined, { module: "FMS" });
@@ -54,7 +60,135 @@ export async function updateInboundLeadStatus(leadId: string, status: InboundLea
     data: { status },
   });
 
+  await logInboundLeadActivity({
+    organizationId: user.organizationId,
+    leadId,
+    type: "STATUS_CHANGE",
+    body: `Status changed to ${status.replaceAll("_", " ")}`,
+    createdByUserId: user.id,
+  });
+
   revalidatePath("/app/leads");
+  return { ok: true };
+}
+
+export async function updateInboundLeadDetails(params: {
+  leadId: string;
+  name: string;
+  phone: string;
+  email: string;
+  requirement: string;
+  discussionNotes: string;
+  quotationValue: string;
+  pipeValue: string;
+}) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  const category = categorizeLeadRequirement(params.requirement);
+  const quotation = Number.parseFloat(params.quotationValue);
+  const pipe = Number.parseFloat(params.pipeValue);
+
+  await prisma.inboundLead.updateMany({
+    where: { id: params.leadId, organizationId: user.organizationId },
+    data: {
+      name: params.name.trim() || null,
+      phone: params.phone.trim() || null,
+      email: params.email.trim() || null,
+      requirement: params.requirement.trim() || null,
+      discussionNotes: params.discussionNotes.trim() || null,
+      category,
+      quotationValue: Number.isFinite(quotation) && quotation > 0 ? quotation : null,
+      pipeValue:
+        Number.isFinite(pipe) && pipe > 0
+          ? pipe
+          : defaultPipeValueForCategory(category),
+    },
+  });
+
+  await logInboundLeadActivity({
+    organizationId: user.organizationId,
+    leadId: params.leadId,
+    type: "EDIT",
+    body: "Lead details updated",
+    createdByUserId: user.id,
+  });
+
+  revalidatePath("/app/leads");
+  return { ok: true };
+}
+
+export async function deleteInboundLead(leadId: string) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Admin only." };
+  }
+
+  await prisma.inboundLead.deleteMany({
+    where: { id: leadId, organizationId: user.organizationId },
+  });
+
+  revalidatePath("/app/leads");
+  return { ok: true };
+}
+
+export async function addInboundLeadNote(leadId: string, note: string) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  const trimmed = note.trim();
+  if (!trimmed) {
+    return { ok: false, message: "Note required." };
+  }
+
+  const lead = await prisma.inboundLead.findFirst({
+    where: { id: leadId, organizationId: user.organizationId },
+    select: { discussionNotes: true },
+  });
+  if (!lead) {
+    return { ok: false, message: "Lead not found." };
+  }
+
+  const merged = [lead.discussionNotes?.trim(), trimmed].filter(Boolean).join("\n\n");
+
+  await prisma.inboundLead.updateMany({
+    where: { id: leadId, organizationId: user.organizationId },
+    data: { discussionNotes: merged },
+  });
+
+  await logInboundLeadActivity({
+    organizationId: user.organizationId,
+    leadId,
+    type: "NOTE",
+    body: trimmed,
+    createdByUserId: user.id,
+  });
+
+  revalidatePath("/app/leads");
+  return { ok: true };
+}
+
+export async function logLeadContactAction(leadId: string, type: "CALL" | "WHATSAPP") {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  await logInboundLeadActivity({
+    organizationId: user.organizationId,
+    leadId,
+    type,
+    body:
+      type === "CALL"
+        ? "Call initiated from Leads Machine"
+        : "WhatsApp opened from Leads Machine",
+    createdByUserId: user.id,
+  });
+
   return { ok: true };
 }
 
@@ -88,6 +222,14 @@ export async function scheduleInboundLeadFollowUp(params: {
   await prisma.inboundLead.updateMany({
     where: { id: params.leadId, organizationId: user.organizationId },
     data: { nextFollowUpAt: scheduledAt, status: "FOLLOW_UP" },
+  });
+
+  await logInboundLeadActivity({
+    organizationId: user.organizationId,
+    leadId: params.leadId,
+    type: "FOLLOW_UP",
+    body: params.notes?.trim() || `Follow-up scheduled for ${scheduledAt.toLocaleString("en-IN")}`,
+    createdByUserId: user.id,
   });
 
   revalidatePath("/app/leads");

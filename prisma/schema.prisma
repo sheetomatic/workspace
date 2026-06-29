@@ -187,6 +187,7 @@ model Organization {
   leadIngestConnections LeadIngestConnection[]
   inboundLeads         InboundLead[]
   inboundLeadFollowUps InboundLeadFollowUp[]
+  inboundLeadActivities InboundLeadActivity[]
   leadMachineApiKeyHint String?
   leadMachineApiKeyHash String?
   logoUrl               String?
@@ -885,6 +886,7 @@ model User {
   assignedInboundLeads         InboundLead[]         @relation("InboundLeadAssignee")
   assignedInboundLeadFollowUps InboundLeadFollowUp[] @relation("InboundLeadFollowUpAssignee")
   createdInboundLeadFollowUps  InboundLeadFollowUp[] @relation("InboundLeadFollowUpCreator")
+  inboundLeadActivities        InboundLeadActivity[] @relation("InboundLeadActivityCreator")
   createdAt            DateTime                 @default(now())
   updatedAt            DateTime                 @updatedAt
 }
@@ -1792,6 +1794,17 @@ enum LeadSourceChannel {
   API
 }
 
+enum InboundLeadActivityType {
+  NOTE
+  STATUS_CHANGE
+  FOLLOW_UP
+  QUOTATION
+  CALL
+  WHATSAPP
+  EDIT
+  SYNC
+}
+
 enum InboundLeadStatus {
   NEW
   CONTACTED
@@ -1841,6 +1854,10 @@ model InboundLead {
   city           String?
   requirement    String?
   sourceDetail   String?
+  category       String?
+  pipeValue      Decimal?             @db.Decimal(14, 2)
+  quotationValue Decimal?             @db.Decimal(14, 2)
+  discussionNotes String?
   status         InboundLeadStatus    @default(NEW)
   rawPayload     Json?
   fmsInstanceId  String?              @unique
@@ -1852,6 +1869,7 @@ model InboundLead {
   nextFollowUpAt DateTime?
   capturedAt     DateTime?
   followUps      InboundLeadFollowUp[]
+  activities     InboundLeadActivity[]
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
 
@@ -1861,6 +1879,24 @@ model InboundLead {
   @@index([organizationId, nextFollowUpAt])
   @@index([organizationId, assignedToId])
   @@index([organizationId, capturedAt])
+  @@index([organizationId, category])
+}
+
+model InboundLeadActivity {
+  id              String                  @id @default(cuid())
+  organizationId  String
+  organization    Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  leadId          String
+  lead            InboundLead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type            InboundLeadActivityType
+  body            String?
+  metadata        Json?
+  createdByUserId String?
+  createdBy       User?                   @relation("InboundLeadActivityCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime                @default(now())
+
+  @@index([organizationId, leadId, createdAt])
+  @@index([leadId])
 }
 
 model InboundLeadFollowUp {

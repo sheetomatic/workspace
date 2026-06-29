@@ -1,9 +1,12 @@
 import { prisma } from "@/lib/db";
 import { getFmsStepSummaryForLead } from "@/lib/leads/fms-bridge";
+import type { LeadsSortOrder } from "@/lib/leads/list-params";
+import { computePipeMetrics } from "@/lib/leads/pipe-metrics";
 import {
   leadCapturedAtWhere,
   type LeadsPeriodRange,
 } from "@/lib/leads/period";
+import type { InboundLeadStatus, Prisma } from "@prisma/client";
 
 function startOfToday() {
   const d = new Date();
@@ -78,6 +81,128 @@ export async function getLeadsMachineStatsForPeriod(
     ),
     periodLabel: period.periodLabel,
   };
+}
+
+export async function listInboundLeadsForPeriodPaginated(
+  organizationId: string,
+  period: LeadsPeriodRange,
+  options: {
+    page: number;
+    pageSize: number;
+    sort: LeadsSortOrder;
+    status?: InboundLeadStatus;
+    category?: string;
+    q?: string;
+  },
+) {
+  const where: Prisma.InboundLeadWhereInput = {
+    organizationId,
+    ...leadCapturedAtWhere(period),
+    ...(options.status ? { status: options.status } : {}),
+    ...(options.category ? { category: options.category } : {}),
+    ...(options.q
+      ? {
+          OR: [
+            { name: { contains: options.q, mode: "insensitive" } },
+            { phone: { contains: options.q, mode: "insensitive" } },
+            { email: { contains: options.q, mode: "insensitive" } },
+            { requirement: { contains: options.q, mode: "insensitive" } },
+          ],
+        }
+      : {}),
+  };
+
+  const orderBy =
+    options.sort === "oldest"
+      ? [{ capturedAt: "asc" as const }, { createdAt: "asc" as const }]
+      : [{ capturedAt: "desc" as const }, { createdAt: "desc" as const }];
+
+  const skip = (options.page - 1) * options.pageSize;
+
+  const [total, leads] = await Promise.all([
+    prisma.inboundLead.count({ where }),
+    prisma.inboundLead.findMany({
+      where,
+      orderBy,
+      skip,
+      take: options.pageSize,
+      include: {
+        assignedTo: { select: { id: true, name: true, email: true } },
+        followUps: {
+          where: { completedAt: null },
+          orderBy: { scheduledAt: "asc" },
+          take: 5,
+          include: {
+            assignee: { select: { id: true, name: true, email: true } },
+          },
+        },
+        activities: {
+          orderBy: { createdAt: "desc" },
+          take: 8,
+          include: {
+            createdBy: { select: { id: true, name: true, email: true } },
+          },
+        },
+      },
+    }),
+  ]);
+
+  return {
+    total,
+    page: options.page,
+    pageSize: options.pageSize,
+    totalPages: Math.max(1, Math.ceil(total / options.pageSize)),
+    leads,
+  };
+}
+
+export async function listInboundLeadActivities(leadId: string, organizationId: string) {
+  return prisma.inboundLeadActivity.findMany({
+    where: { leadId, organizationId },
+    orderBy: { createdAt: "desc" },
+    include: {
+      createdBy: { select: { id: true, name: true, email: true } },
+    },
+  });
+}
+
+export async function getLeadsPipeMetricsForPeriod(
+  organizationId: string,
+  period: LeadsPeriodRange,
+) {
+  const leads = await prisma.inboundLead.findMany({
+    where: {
+      organizationId,
+      ...leadCapturedAtWhere(period),
+    },
+    select: {
+      status: true,
+      category: true,
+      pipeValue: true,
+      quotationValue: true,
+    },
+  });
+
+  return computePipeMetrics(leads);
+}
+
+export async function getLeadsCategoryBreakdown(
+  organizationId: string,
+  period: LeadsPeriodRange,
+) {
+  const rows = await prisma.inboundLead.groupBy({
+    by: ["category"],
+    where: {
+      organizationId,
+      ...leadCapturedAtWhere(period),
+    },
+    _count: { _all: true },
+  });
+
+  return rows.map((row) => ({
+    category: row.category ?? "GENERAL",
+    count: row._count._all,
+  }));
 }
 
 export async function listInboundLeadsForPeriod(

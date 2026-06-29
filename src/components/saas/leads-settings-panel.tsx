@@ -56,17 +56,14 @@ export function LeadsSettingsPanel({
 
   return (
     <div className="saas-page leads-settings-page">
-      <header className="saas-page-head">
+      <header className="saas-page-head leads-settings-head">
         <div>
-          <h1>Leads Machine settings</h1>
-          <p>
-            Phase 1: Google Sheets is the active intake connector. WhatsApp, Instagram,
-            Facebook, and manual entry are coming soon.
-          </p>
+          <Link className="btn-secondary btn-sm" href="/app/leads">
+            ← Back to leads
+          </Link>
+          <h1>Google Sheets setup</h1>
+          <p>Connect your form responses sheet. Sync runs automatically every 15 minutes.</p>
         </div>
-        <Link className="btn-secondary" href="/app/leads">
-          Back to leads
-        </Link>
       </header>
 
       {notice ? (
@@ -123,8 +120,9 @@ export function LeadsSettingsPanel({
           )}
       </div>
 
-      <section className="saas-panel">
-        <h2>Ingest API</h2>
+      <section className="saas-panel leads-settings-api">
+        <details>
+          <summary>Ingest API (advanced)</summary>
         <p className="leads-machine-muted">
           POST leads from any system to <code>{ingestUrl}</code>
         </p>
@@ -152,6 +150,7 @@ export function LeadsSettingsPanel({
         >
           {apiKeyHint ? "Regenerate API key" : "Generate API key"}
         </button>
+        </details>
       </section>
     </div>
   );
@@ -214,15 +213,22 @@ function GoogleSheetsConnectionCard({
     !connection.lastSyncError &&
     connection.syncStatus !== "ERROR";
 
+  const lastSyncLabel = connection.lastSyncAt
+    ? new Date(connection.lastSyncAt).toLocaleString("en-IN")
+    : "Never";
+
   return (
     <article className="leads-settings-card leads-settings-card-priority">
       <div className="leads-settings-card-head">
         <h3>{LEAD_CHANNEL_LABELS.GOOGLE_SHEETS}</h3>
         <span className={isLive ? "leads-priority-badge" : "leads-coming-soon-badge"}>
-          {isLive ? "Live" : connection.lastSyncError ? "Sync error" : "Setup"}
+          {isLive ? "Live" : connection.lastSyncError ? "Error" : "Setup"}
         </span>
       </div>
-      <p className="leads-machine-muted">{connection.label}</p>
+
+      <p className="leads-settings-sync-line">
+        Last sync: <strong>{lastSyncLabel}</strong> · Auto every 15 min
+      </p>
       <p className="leads-machine-muted">
         Service account: {sheetsAuthConfigured ? "configured on server" : "missing on server"}
         {serviceAccountEmail ? (
@@ -233,15 +239,18 @@ function GoogleSheetsConnectionCard({
         ) : null}
       </p>
 
-      <GoogleSheetsSetupSteps
-        status={{
-          enabled: connection.enabled,
-          lastSyncAt: connection.lastSyncAt,
-          lastSyncError: connection.lastSyncError,
-          sheetsAuthConfigured,
-          serviceAccountEmail,
-        }}
-      />
+      <details className="leads-settings-guide">
+        <summary>Setup guide</summary>
+        <GoogleSheetsSetupSteps
+          status={{
+            enabled: connection.enabled,
+            lastSyncAt: connection.lastSyncAt,
+            lastSyncError: connection.lastSyncError,
+            sheetsAuthConfigured,
+            serviceAccountEmail,
+          }}
+        />
+      </details>
 
       <label className="mt-3 flex items-center gap-2 text-sm">
         <input
