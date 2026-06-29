@@ -87,7 +87,7 @@ export function mergeWorkspaceAppearance(
   organizationName: string,
   logoUrl?: string | null,
   logoVersion?: string | number,
-): WorkspaceAppearance & { logoSrc: string } {
+): WorkspaceAppearance & { logoSrc: string; lockupSrc: string; lockupLightSrc: string } {
   const preset =
     stored?.preset && listThemePresets().includes(stored.preset)
       ? stored.preset
@@ -95,10 +95,10 @@ export function mergeWorkspaceAppearance(
   const presetColors =
     preset !== "custom" ? THEME_PRESETS[preset] : THEME_PRESETS.default;
 
-  const logoSrc =
+  const customLogo =
     logoUrl && logoVersion != null
       ? `${WORKSPACE_LOGO_API_PATH}?v=${logoVersion}`
-      : "/images/sheetomatic-icon.svg";
+      : null;
 
   return {
     preset,
@@ -108,7 +108,9 @@ export function mergeWorkspaceAppearance(
     background: stored?.background ?? presetColors.background,
     productName: stored?.productName?.trim() || "Sheetomatic",
     brandName: stored?.brandName?.trim() || organizationName,
-    logoSrc,
+    logoSrc: customLogo ?? siteBrand.iconSrc,
+    lockupSrc: customLogo ?? siteBrand.logoSrc,
+    lockupLightSrc: customLogo ?? "/images/sheetomatic-logo-light.svg",
   };
 }
 

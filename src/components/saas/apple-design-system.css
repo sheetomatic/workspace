@@ -108,6 +108,18 @@
   border: 1px solid var(--apple-border-light);
 }
 
+.workspace-app .ws-sidebar-org-name {
+  color: var(--apple-text-secondary);
+}
+
+.workspace-app .saas-sidebar-brand--lockup .ws-sidebar-brand-lockup--on-dark {
+  display: none;
+}
+
+.workspace-app .saas-sidebar-brand--lockup .ws-sidebar-brand-lockup--on-light {
+  display: block;
+}
+
 .workspace-app .crm-sidebar-head {
   border-bottom-color: var(--apple-border-light);
 }

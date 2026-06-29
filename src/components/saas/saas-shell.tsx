@@ -77,18 +77,83 @@ function formatPlanLabel(plan: string) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function WorkspaceBrandLogo({ logoSrc, alt }: { logoSrc: string; alt: string }) {
+function isCustomWorkspaceLogo(src: string) {
+  return src.startsWith("/api/workspace/logo");
+}
+
+function WorkspaceBrandLogo({
+  logoSrc,
+  alt,
+  light = false,
+}: {
+  logoSrc: string;
+  alt: string;
+  light?: boolean;
+}) {
+  const src =
+    !isCustomWorkspaceLogo(logoSrc) && light
+      ? "/images/sheetomatic-icon-light.svg"
+      : logoSrc;
+
   return (
     <span className="logo-mark">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         alt={alt}
         className="ws-brand-mark-img"
-        height={32}
-        src={logoSrc}
-        width={32}
+        height={28}
+        src={src}
+        width={28}
       />
     </span>
+  );
+}
+
+function WorkspaceSidebarBrand({
+  appearance,
+  organizationName,
+}: {
+  appearance: WorkspaceAppearance & {
+    logoSrc: string;
+    lockupSrc: string;
+    lockupLightSrc: string;
+  };
+  organizationName: string;
+}) {
+  const custom = isCustomWorkspaceLogo(appearance.logoSrc);
+
+  if (custom) {
+    return (
+      <div className="saas-sidebar-brand">
+        <img
+          alt={appearance.productName}
+          className="ws-sidebar-brand-lockup ws-sidebar-brand-lockup--custom"
+          src={appearance.lockupSrc}
+        />
+        <span className="ws-sidebar-org-name">{appearance.brandName}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="saas-sidebar-brand saas-sidebar-brand--lockup">
+      <img
+        alt="Sheetomatic"
+        className="ws-sidebar-brand-lockup ws-sidebar-brand-lockup--on-dark"
+        height={24}
+        src={appearance.lockupLightSrc}
+        width={168}
+      />
+      <img
+        alt=""
+        aria-hidden
+        className="ws-sidebar-brand-lockup ws-sidebar-brand-lockup--on-light"
+        height={24}
+        src={appearance.lockupSrc}
+        width={168}
+      />
+      <span className="ws-sidebar-org-name">{organizationName}</span>
+    </div>
   );
 }
 
@@ -104,7 +169,11 @@ export function SaasShell({
   organizations: OrganizationOption[];
   organizationPlan?: string | null;
   organizationPlanLabel?: string | null;
-  appearance?: WorkspaceAppearance & { logoSrc: string };
+  appearance?: WorkspaceAppearance & {
+    logoSrc: string;
+    lockupSrc: string;
+    lockupLightSrc: string;
+  };
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -132,15 +201,20 @@ export function SaasShell({
 
   const productName = resolvedAppearance.productName;
   const brandSubtitle = resolvedAppearance.brandName || user.organizationName;
+  const customBrand = isCustomWorkspaceLogo(resolvedAppearance.logoSrc);
 
   return (
     <div className="saas-app workspace-app">
       <header className="ws-mobile-shell-header">
         <div className="ws-mobile-shell-brand">
-          <WorkspaceBrandLogo alt={`${productName} logo`} logoSrc={resolvedAppearance.logoSrc} />
+          <WorkspaceBrandLogo
+            alt="Sheetomatic"
+            light
+            logoSrc={resolvedAppearance.logoSrc}
+          />
           <div className="ws-mobile-shell-brand-text">
-            <strong>{productName}</strong>
-            <span>{brandSubtitle}</span>
+            <strong>{customBrand ? productName : user.organizationName}</strong>
+            {customBrand ? <span>{brandSubtitle}</span> : null}
           </div>
         </div>
         <OrganizationSwitcher
@@ -166,13 +240,10 @@ export function SaasShell({
 
       <aside className="saas-sidebar ws-shell-desktop">
         <div className="crm-sidebar-head">
-          <div className="saas-sidebar-brand">
-            <WorkspaceBrandLogo alt={`${productName} logo`} logoSrc={resolvedAppearance.logoSrc} />
-            <div>
-              <strong>{productName}</strong>
-              <span>{brandSubtitle}</span>
-            </div>
-          </div>
+          <WorkspaceSidebarBrand
+            appearance={resolvedAppearance}
+            organizationName={user.organizationName}
+          />
         </div>
 
         <div className="crm-sidebar-profile">

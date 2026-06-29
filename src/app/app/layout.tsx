@@ -73,12 +73,7 @@ export default async function AppLayout({
     ...sessionUser,
     organizationName: organization.name,
   };
-  const appearance = mergeWorkspaceAppearance(
-    null,
-    organization.name,
-    undefined,
-    organization.updatedAt.getTime(),
-  );
+  const appearance = mergeWorkspaceAppearance(null, organization.name);
 
   return (
     <AuthSessionProvider>
