@@ -35,7 +35,7 @@ export default async function EmReadyPage({ searchParams }: PageProps) {
     <div className="saas-page ws-mis-page ws-fms-sf ws-em-page">
       <TaskPageToolbar
         title="EM Ready"
-        description="Executive meeting board with period-wise exceptions, person-wise KRA deficit, and zero prep."
+        description="Executive meeting board with period-wise exceptions and zero prep."
         actions={
           <>
             {payload.fmsEnabled ? (

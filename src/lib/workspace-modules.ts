@@ -90,9 +90,7 @@ export function resolveWorkspaceHomeHref(
   for (const module of WORKSPACE_MODULES) {
     if (hasWorkspaceModule(user, module)) {
       if (module === "TASKS") {
-        return hasMinimumRole(user.role, "MANAGER") || user.role === "VIEWER"
-          ? "/app/tasks"
-          : "/app/tasks/my-work";
+        return "/app/today";
       }
       if (module === "FMS") {
         return hasMinimumRole(user.role, "MANAGER")
@@ -133,7 +131,11 @@ export function pathnameRequiresModule(pathname: string): WorkspaceModule | null
   if (pathname.startsWith("/app/approvals")) {
     return "APPROVALS";
   }
-  if (pathname.startsWith("/app/tasks") || pathname.startsWith("/app/checklists")) {
+  if (
+    pathname.startsWith("/app/tasks") ||
+    pathname.startsWith("/app/checklists") ||
+    pathname.startsWith("/app/today")
+  ) {
     return "TASKS";
   }
   if (pathname.startsWith("/app/fms")) {

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { EmReadyPayload } from "@/lib/em/em-ready-data";
 import { formatDeficitPct } from "@/lib/em/em-ready-data";
+import { KRA_KPI_SURFACE_HIDDEN } from "@/lib/pms-surface";
 
 function DeficitBadge({
   value,
@@ -180,9 +181,10 @@ export function EmReadyBoard({ payload }: { payload: EmReadyPayload }) {
           <h2>Open and start - zero prep</h2>
           <p>
             {payload.period.periodLabel}. Live data refreshed {when}. Discuss
-            exceptions only: overdue FMS stops, delayed tasks, and person-wise KRA
-            deficit - live accountability across tasks, FMS, and PC without
-            compiling tabs first.
+            exceptions only: overdue FMS stops and delayed tasks
+            {KRA_KPI_SURFACE_HIDDEN
+              ? "."
+              : " — and person-wise KRA deficit — live accountability across tasks, FMS, and PC without compiling tabs first."}
           </p>
         </div>
         <div className="ws-em-hero-stat">
@@ -269,8 +271,8 @@ export function EmReadyBoard({ payload }: { payload: EmReadyPayload }) {
                   {payload.fmsSummary.delayed} delayed of {payload.fmsSummary.total}{" "}
                   active
                 </p>
-                <Link href="/app/fms/scores" className="ws-em-link">
-                  FMS MIS scores
+                <Link href="/app/fms/lines" className="ws-em-link">
+                  Live pipelines
                   <ChevronRight size={14} aria-hidden />
                 </Link>
               </article>
@@ -338,7 +340,7 @@ export function EmReadyBoard({ payload }: { payload: EmReadyPayload }) {
           )}
         </section>
 
-        {payload.personKra.length > 0 ? (
+        {KRA_KPI_SURFACE_HIDDEN ? null : payload.personKra.length > 0 ? (
           <section
             className="ws-sf-list-view ws-em-section"
             aria-label="Person-wise KRA"

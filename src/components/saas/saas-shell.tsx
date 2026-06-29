@@ -1,130 +1,34 @@
 "use client";
 
-import {
-  BarChart3,
-  Briefcase,
-  CheckSquare,
-  ClipboardCheck,
-  GitBranch,
-  ListTodo,
-  LogOut,
-  MapPin,
-  Package,
-  Presentation,
-  Settings,
-  Users,
-} from "lucide-react";
-import Image from "next/image";
+import { LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import type { WorkspaceModule } from "@prisma/client";
 import { OrganizationSwitcher } from "@/components/saas/organization-switcher";
 import type { OrganizationOption } from "@/components/saas/organization-switcher";
 import type { SessionUser } from "@/lib/auth";
 import { ROLE_LABELS } from "@/lib/permissions";
-import { hasWorkspaceModule } from "@/lib/workspace-modules";
-import { siteBrand } from "@/app/site-content";
+import type { WorkspaceAppearance } from "@/lib/workspace-appearance";
+import {
+  getWorkspaceNavSections,
+  navIsActive,
+  visibleWorkspaceNavItems,
+  type WorkspaceNavItem,
+} from "@/lib/workspace-navigation";
 
 const ROLE_ORDER = ["VIEWER", "STAFF", "MANAGER", "ADMIN", "OWNER"] as const;
-
-type NavItem = {
-  href: string;
-  label: string;
-  icon: typeof ListTodo;
-  minRole?: (typeof ROLE_ORDER)[number];
-  module?: WorkspaceModule;
-  allowDepartmentHead?: boolean;
-};
-
-const navItems: NavItem[] = [
-  {
-    href: "/app/cases",
-    label: "Cases",
-    icon: Briefcase,
-    minRole: "VIEWER",
-    module: "CASES",
-  },
-  {
-    href: "/app/tasks",
-    label: "EA",
-    icon: ListTodo,
-    minRole: "VIEWER",
-    module: "TASKS",
-  },
-  {
-    href: "/app/checklists",
-    label: "PC",
-    icon: CheckSquare,
-    minRole: "VIEWER",
-    module: "TASKS",
-  },
-  {
-    href: "/app/fms",
-    label: "FMS",
-    icon: GitBranch,
-    minRole: "VIEWER",
-    module: "FMS",
-  },
-  { href: "/app/hr", label: "HR", icon: MapPin, minRole: "VIEWER", module: "HR" },
-  {
-    href: "/app/ims",
-    label: "Inventory",
-    icon: Package,
-    minRole: "VIEWER",
-    module: "IMS",
-  },
-  {
-    href: "/app/approvals",
-    label: "Approvals",
-    icon: ClipboardCheck,
-    minRole: "MANAGER",
-    module: "APPROVALS",
-  },
-  {
-    href: "/app/em",
-    label: "EM Ready",
-    icon: Presentation,
-    minRole: "MANAGER",
-    module: "REPORTS",
-  },
-  {
-    href: "/app/reports",
-    label: "Reports",
-    icon: BarChart3,
-    minRole: "VIEWER",
-    module: "REPORTS",
-  },
-  {
-    href: "/app/team",
-    label: "Team",
-    icon: Users,
-    minRole: "ADMIN",
-    allowDepartmentHead: true,
-  },
-  { href: "/app/settings", label: "Settings", icon: Settings, minRole: "VIEWER" },
-];
-
-const SETUP_HREFS = new Set(["/app/team", "/app/settings"]);
-
-const appsNavItems = navItems.filter((item) => !SETUP_HREFS.has(item.href));
-const setupNavItems = navItems.filter((item) => SETUP_HREFS.has(item.href));
 
 function NavLinks({
   items,
   pathname,
-  user,
   variant,
 }: {
-  items: NavItem[];
+  items: WorkspaceNavItem[];
   pathname: string;
-  user: SessionUser;
   variant: "desktop" | "mobile";
 }) {
-  const visible = items.filter((item) => canAccessNav(user, item));
-
-  return visible.map(({ href, label, icon: Icon }) => {
-    const active = navIsActive(pathname, href);
+  return items.map(({ href, label, icon: Icon, matchPrefix }) => {
+    const active = navIsActive(pathname, href, matchPrefix);
 
     if (variant === "mobile") {
       return (
@@ -154,28 +58,6 @@ function NavLinks({
   });
 }
 
-function canAccessRole(userRole: SessionUser["role"], minRole?: NavItem["minRole"]) {
-  if (!minRole) {
-    return true;
-  }
-  return ROLE_ORDER.indexOf(userRole) >= ROLE_ORDER.indexOf(minRole);
-}
-
-function canAccessNav(user: SessionUser, item: NavItem) {
-  const roleAllowed = canAccessRole(user.role, item.minRole);
-  if (!roleAllowed && !(item.allowDepartmentHead && user.isDepartmentHead)) {
-    return false;
-  }
-  if (!item.module) {
-    return true;
-  }
-  return hasWorkspaceModule(user, item.module);
-}
-
-function navIsActive(pathname: string, href: string) {
-  return href === "/app" ? pathname === "/app" : pathname.startsWith(href);
-}
-
 function userInitials(user: SessionUser) {
   return (user.name ?? user.email)
     .split(" ")
@@ -192,45 +74,61 @@ function formatPlanLabel(plan: string) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+function WorkspaceBrandLogo({ logoSrc, alt }: { logoSrc: string; alt: string }) {
+  return (
+    <span className="logo-mark">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img alt={alt} height={32} src={logoSrc} width={32} />
+    </span>
+  );
+}
+
 export function SaasShell({
   user,
   organizations,
   organizationPlan,
   organizationPlanLabel,
+  appearance,
   children,
 }: {
   user: SessionUser;
   organizations: OrganizationOption[];
-  /** Raw plan enum from Organization.plan */
   organizationPlan?: string | null;
-  /** Human label from ORG_PLAN_LABELS (pass from server layout). */
   organizationPlanLabel?: string | null;
+  appearance: WorkspaceAppearance & { logoSrc: string };
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const roleLabel = user.isSuperAdmin ? "Super Admin" : ROLE_LABELS[user.role];
   const showPlanBadge =
     Boolean(organizationPlan) &&
     ROLE_ORDER.indexOf(user.role) >= ROLE_ORDER.indexOf("ADMIN");
   const planLabel =
     organizationPlanLabel ?? (organizationPlan ? formatPlanLabel(organizationPlan) : null);
-  const mobileNavItems = [...appsNavItems, ...setupNavItems];
+
+  const sections = getWorkspaceNavSections({
+    user,
+    organizationSlug: user.organizationSlug,
+  });
+  const mainSections = sections.filter((section) => section.id !== "settings");
+  const settingsSection = sections.find((section) => section.id === "settings");
+  const settingsItems = settingsSection
+    ? visibleWorkspaceNavItems(user, settingsSection.items)
+    : [];
+  const mobileNavItems = sections.flatMap((section) =>
+    visibleWorkspaceNavItems(user, section.items),
+  );
+
+  const productName = appearance.productName;
+  const brandSubtitle = appearance.brandName || user.organizationName;
 
   return (
     <div className="saas-app workspace-app">
       <header className="ws-mobile-shell-header">
         <div className="ws-mobile-shell-brand">
-          <span className="logo-mark">
-            <Image
-              src={siteBrand.logoSrc}
-              alt={siteBrand.logoAlt}
-              width={28}
-              height={28}
-            />
-          </span>
+          <WorkspaceBrandLogo alt={`${productName} logo`} logoSrc={appearance.logoSrc} />
           <div className="ws-mobile-shell-brand-text">
-            <strong>Sheetomatic</strong>
-            <span>{user.organizationName}</span>
+            <strong>{productName}</strong>
+            <span>{brandSubtitle}</span>
           </div>
         </div>
         <OrganizationSwitcher
@@ -251,23 +149,16 @@ export function SaasShell({
       </header>
 
       <nav className="ws-mobile-shell-nav" aria-label="Workspace navigation">
-        <NavLinks items={mobileNavItems} pathname={pathname} user={user} variant="mobile" />
+        <NavLinks items={mobileNavItems} pathname={pathname} variant="mobile" />
       </nav>
 
       <aside className="saas-sidebar ws-shell-desktop">
         <div className="crm-sidebar-head">
           <div className="saas-sidebar-brand">
-            <span className="logo-mark">
-              <Image
-                src={siteBrand.logoSrc}
-                alt={siteBrand.logoAlt}
-                width={32}
-                height={32}
-              />
-            </span>
+            <WorkspaceBrandLogo alt={`${productName} logo`} logoSrc={appearance.logoSrc} />
             <div>
-              <strong>Sheetomatic</strong>
-              <span>{user.organizationName}</span>
+              <strong>{productName}</strong>
+              <span>{brandSubtitle}</span>
             </div>
           </div>
         </div>
@@ -292,15 +183,26 @@ export function SaasShell({
         />
 
         <nav className="saas-nav" aria-label="Workspace">
-          <NavLinks items={appsNavItems} pathname={pathname} user={user} variant="desktop" />
-
-          {setupNavItems.some((item) => canAccessNav(user, item)) ? (
-            <>
-              <p className="saas-nav-section">Setup</p>
-              <NavLinks items={setupNavItems} pathname={pathname} user={user} variant="desktop" />
-            </>
-          ) : null}
+          {mainSections.map((section) => {
+            const items = visibleWorkspaceNavItems(user, section.items);
+            if (items.length === 0) {
+              return null;
+            }
+            return (
+              <div key={section.id}>
+                <p className="saas-nav-section">{section.label}</p>
+                <NavLinks items={items} pathname={pathname} variant="desktop" />
+              </div>
+            );
+          })}
         </nav>
+
+        {settingsItems.length > 0 && settingsSection ? (
+          <div className="saas-sidebar-setup">
+            <p className="saas-nav-section">{settingsSection.label}</p>
+            <NavLinks items={settingsItems} pathname={pathname} variant="desktop" />
+          </div>
+        ) : null}
 
         <div className="saas-sidebar-footer">
           {showPlanBadge ? (

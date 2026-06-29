@@ -2,8 +2,23 @@
  * AI Process Checklist (PC) template library - department starters and reference links.
  */
 
+import { PMS_REFERENCE_VIDEOS } from "@/lib/pms-surface";
+
+/** PMS reference videos for future module build (see pms-surface.ts). */
+export const PMS_REFERENCE_DRIVE_URL = PMS_REFERENCE_VIDEOS.referenceDrive;
+export const PMS_REFERENCE_YOUTUBE_URL = PMS_REFERENCE_VIDEOS.youtubeWalkthrough;
+export const PMS_ACTUAL_DEMO_YOUTUBE_URL = PMS_REFERENCE_VIDEOS.actualPms;
+
 export const PC_SAMPLE_SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1N4CdRzXlix-tWVqynyXgcPBIXyc_Ac2o79thwhGc96I/edit?usp=sharing";
+
+/** Legacy Task Delegation + KRA master workbook (SPSL reference). */
+export const LEGACY_TASK_DELEGATION_SHEET_URL =
+  "https://docs.google.com/spreadsheets/d/1AmvRMr6kA4HehKIP9AhJfvNZ_DAbtjyuJsSU01cQtbE/edit?usp=sharing";
+
+/** Legacy per-employee KRA + delegation sheet (Anil Kumar Yadav reference). */
+export const LEGACY_EMPLOYEE_TASK_SHEET_URL =
+  "https://docs.google.com/spreadsheets/d/1tqtIXAKlu8yn2Mah2b4TIQ5Gfy1-MLCDDVUuZhc1kvA/edit?usp=sharing";
 
 export type ChecklistReferenceKind = "web" | "youtube" | "shared";
 

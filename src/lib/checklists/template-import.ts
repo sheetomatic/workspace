@@ -33,6 +33,7 @@ export type ChecklistTemplateImportRow = {
   instructions: string | null;
   team: ChecklistTeam;
   frequency: ChecklistFrequency;
+  dueMonthDay: number;
   dueHour: number;
   dueMinute: number;
   assigneeEmail: string;
@@ -85,6 +86,10 @@ const FREQUENCY_ALIASES: Record<string, ChecklistFrequency> = {
   "half yearly": "HALF_YEARLY",
   yearly: "YEARLY",
   annual: "YEARLY",
+  m: "MONTHLY",
+  q: "QUARTERLY",
+  y: "YEARLY",
+  hy: "HALF_YEARLY",
 };
 
 function pick(raw: Record<string, string>, keys: string[]): string {
@@ -164,10 +169,13 @@ export function normalizeChecklistImportRow(
 ): ParsedChecklistImportRow {
   const errors: string[] = [];
 
-  const title = pick(raw, ["title", "checklist", "name"]);
+  const title =
+    pick(raw, ["title", "checklist", "name", "particular", "particulars"]) ||
+    pick(raw, ["activity"]);
   const instructions = pick(raw, ["instructions", "description"]) || null;
-  const teamRaw = pick(raw, ["team", "department"]);
-  const frequencyRaw = pick(raw, ["frequency", "schedule"]);
+  const teamRaw = pick(raw, ["team", "department", "accountability"]);
+  const frequencyRaw = pick(raw, ["frequency", "schedule", "freq"]);
+  const lastDateRaw = pick(raw, ["lastdate", "last date", "duemonthday", "due day"]);
   const dueHourRaw = pick(raw, ["duehour", "due hour", "hour"]);
   const dueMinuteRaw = pick(raw, ["dueminute", "due minute", "minute"]);
   const assigneeEmail = pick(raw, ["assigneeemail", "assignee email", "doer", "email"]);
@@ -195,6 +203,7 @@ export function normalizeChecklistImportRow(
 
   const dueHour = parseNum(dueHourRaw, 18);
   const dueMinute = parseNum(dueMinuteRaw, 0);
+  const dueMonthDay = parseNum(lastDateRaw, 1);
 
   if (Number.isNaN(dueHour) || dueHour < 0 || dueHour > 23) {
     errors.push("Invalid dueHour (0-23)");
@@ -203,11 +212,16 @@ export function normalizeChecklistImportRow(
     errors.push("Invalid dueMinute (0-59)");
   }
 
+  if (Number.isNaN(dueMonthDay) || dueMonthDay < 1 || dueMonthDay > 31) {
+    errors.push("Invalid last date / dueMonthDay (1-31)");
+  }
+
   const data: ChecklistTemplateImportRow = {
     title,
     instructions,
     team: team ?? "GENERAL",
     frequency: frequency ?? "MONTHLY",
+    dueMonthDay: Number.isNaN(dueMonthDay) ? 1 : dueMonthDay,
     dueHour: Number.isNaN(dueHour) ? 18 : dueHour,
     dueMinute: Number.isNaN(dueMinute) ? 0 : dueMinute,
     assigneeEmail: assigneeEmail.toLowerCase(),
@@ -252,7 +266,7 @@ export async function importChecklistTemplates(
         instructions: row.instructions,
         team: row.team,
         frequency: row.frequency,
-        dueMonthDay: 1,
+        dueMonthDay: row.dueMonthDay,
         dueWeekday: 1,
         dueMonth: 4,
         anchorDate: row.frequency === "FORTNIGHTLY" ? new Date() : null,

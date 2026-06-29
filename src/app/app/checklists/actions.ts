@@ -15,6 +15,8 @@ import {
   type ChecklistTemplateImportRow,
 } from "@/lib/checklists/template-import";
 import { resolveChecklistAssigneeForOrg } from "@/lib/checklists/assignee-validation";
+import { deployAccountsChecklistPack } from "@/lib/checklists/accounts-deploy";
+import { canCreateTasks } from "@/lib/tasks";
 
 const fmsInitialState: FmsActionState = { ok: false };
 
@@ -183,6 +185,7 @@ export async function completeChecklistOccurrenceAction(
 
     revalidatePath("/app/checklists");
     revalidatePath("/app/checklists/my-tasks");
+    revalidatePath("/app/today");
     revalidatePath("/app/em");
     return { ok: true, message: "Checklist marked done." };
   } catch (error) {
@@ -239,6 +242,81 @@ export async function importChecklistTemplatesAction(
     const message =
       error instanceof Error ? error.message : "Could not import checklists.";
     return { ok: false, message };
+  }
+}
+
+export async function deployAccountsChecklistAction(
+  _prev: FmsActionState,
+  formData: FormData,
+): Promise<FmsActionState> {
+  try {
+    const actor = await getChecklistActor();
+    if (!actor.ok) {
+      return { ok: false, message: actor.message };
+    }
+    const user = actor.user;
+    if (!canCreateTasks(user.role)) {
+      return { ok: false, message: "Only managers can deploy the accounts checklist." };
+    }
+
+    const assigneeUserId = formData.get("assigneeUserId")?.toString().trim() ?? "";
+    const complianceAssigneeUserId =
+      formData.get("complianceAssigneeUserId")?.toString().trim() || undefined;
+
+    const assigneeResult = await resolveChecklistAssigneeForOrg(
+      user.organizationId,
+      assigneeUserId,
+      (args) =>
+        prisma.membership.findFirst({
+          where: { organizationId: args.organizationId, userId: args.userId },
+          select: { id: true },
+        }),
+    );
+    if (!assigneeResult.ok) {
+      return { ok: false, message: assigneeResult.message };
+    }
+
+    let complianceUserId: string | undefined;
+    if (complianceAssigneeUserId) {
+      const complianceResult = await resolveChecklistAssigneeForOrg(
+        user.organizationId,
+        complianceAssigneeUserId,
+        (args) =>
+          prisma.membership.findFirst({
+            where: { organizationId: args.organizationId, userId: args.userId },
+            select: { id: true },
+          }),
+      );
+      if (!complianceResult.ok) {
+        return { ok: false, message: complianceResult.message };
+      }
+      complianceUserId = complianceResult.assigneeUserId;
+    }
+
+    const result = await deployAccountsChecklistPack({
+      organizationId: user.organizationId,
+      createdById: user.id,
+      assigneeUserId: assigneeResult.assigneeUserId,
+      complianceAssigneeUserId: complianceUserId,
+    });
+
+    [
+      "/app/checklists",
+      "/app/checklists/accounts",
+      "/app/checklists/setup",
+      "/app/checklists/my-tasks",
+    ].forEach((path) => revalidatePath(path));
+
+    return {
+      ok: true,
+      message: `Accounts checklist deployed: ${result.created} created, ${result.skipped} already existed.`,
+    };
+  } catch (error) {
+    console.error("deployAccountsChecklistAction", error);
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "Could not deploy accounts checklist.",
+    };
   }
 }
 

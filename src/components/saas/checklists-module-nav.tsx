@@ -5,12 +5,14 @@ import { usePathname } from "next/navigation";
 import {
   CheckSquare,
   ClipboardList,
+  Grid3x3,
   Radar,
   Settings2,
   BarChart3,
 } from "lucide-react";
 import type { SessionUser } from "@/lib/auth";
 import { canCreateTasks } from "@/lib/tasks";
+import { PMS_SURFACE_HIDDEN } from "@/lib/pms-surface";
 
 function navIsActive(pathname: string, href: string) {
   if (href === "/app/checklists") {
@@ -32,6 +34,13 @@ export function ChecklistsModuleNav({ user }: { user: SessionUser }) {
       description: "Complete assigned work",
     },
     {
+      href: "/app/checklists/accounts",
+      label: "Accounts grid",
+      icon: Grid3x3,
+      visible: isManager,
+      description: "Classic checklist sheet",
+    },
+    {
       href: "/app/checklists",
       label: "PC monitor",
       icon: Radar,
@@ -42,7 +51,7 @@ export function ChecklistsModuleNav({ user }: { user: SessionUser }) {
       href: "/app/checklists/scores",
       label: "MIS scores",
       icon: BarChart3,
-      visible: isManager,
+      visible: isManager && !PMS_SURFACE_HIDDEN,
       description: "PC planned vs actual",
     },
     {
