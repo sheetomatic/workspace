@@ -1,6 +1,6 @@
 # Agent Collaboration Board
 
-**Goal:** SaaS-level multi-tenant platform ÿ agents work independently, post handoffs here.  
+**Goal:** SaaS-level multi-tenant platform Ã¿ agents work independently, post handoffs here.  
 **Read this file before starting. Append your section when done.**
 
 ---
@@ -30,7 +30,7 @@
 
 ## Backend Developer
 
-**Completed (2026-06-27):** Phase 2 P0 ÿ checklist assignee validation + tenant subdomain binding.
+**Completed (2026-06-27):** Phase 2 P0 Ã¿ checklist assignee validation + tenant subdomain binding.
 
 ### Files changed
 
@@ -41,7 +41,7 @@
 | `src/middleware.ts` | Sets `x-pathname` on tenant rewrites via `REQUEST_PATHNAME_HEADER` |
 | `src/app/app/layout.tsx` | Calls `ensureSessionTenantHost(sessionUser)` after `requireSession` |
 
-**Not changed (SaaS already landed):** `src/app/app/team/actions.ts` ÿ invite/update already wired to `src/lib/org-plan-presets.ts` (`maxMembers`, `clampModulesToOrg`, `modulesForTierRole`).
+**Not changed (SaaS already landed):** `src/app/app/team/actions.ts` Ã¿ invite/update already wired to `src/lib/org-plan-presets.ts` (`maxMembers`, `clampModulesToOrg`, `modulesForTierRole`).
 
 ### API contracts for Frontend
 
@@ -55,8 +55,8 @@ When a logged-in user hits a tenant host whose slug ? `session.organizationSlug`
 
 - **Production:** `https://acme.sheetomatic.com/app/team?tab=members`
 - **Local dev:** `http://acme.localhost/app/team` (when request host is `*.localhost`)
-- **Generic portal (`app.sheetomatic.com`):** No redirect ÿ `getRequestTenantSlug()` is `null`
-- **Super-admin:** No redirect ÿ may browse any tenant host
+- **Generic portal (`app.sheetomatic.com`):** No redirect Ã¿ `getRequestTenantSlug()` is `null`
+- **Super-admin:** No redirect Ã¿ may browse any tenant host
 
 **Frontend org-switcher must:**
 
@@ -82,7 +82,7 @@ When a logged-in user hits a tenant host whose slug ? `session.organizationSlug`
 
 ### Blockers / needs from SaaS
 
-- None for team invite ÿ `org-plan-presets.ts` + `Organization.plan` / `allowedModules` / `maxMembers` already integrated in `team/actions.ts`
+- None for team invite Ã¿ `org-plan-presets.ts` + `Organization.plan` / `allowedModules` / `maxMembers` already integrated in `team/actions.ts`
 - **Follow-up:** Enforce `maxFmsTemplates` on FMS template create (Backend BE-3 scope, not Phase 2 P0)
 - **Follow-up:** Mirror `ensureSessionTenantHost` in `src/app/ai/app/layout.tsx` if AI portal gets tenant subdomains
 
@@ -90,15 +90,15 @@ When a logged-in user hits a tenant host whose slug ? `session.organizationSlug`
 
 ## Front End Developer
 
-**Phase 2 (2026-06-27)** ÿ login org picker, tenant org-switch redirect, shell UX, brand placeholders.
+**Phase 2 (2026-06-27)** Ã¿ login org picker, tenant org-switch redirect, shell UX, brand placeholders.
 
 ### Files changed
-- `src/components/saas/login-form.tsx` ÿ debounced + blur `POST /api/auth/organizations`; workspace picker when `organizations.length > 1`
-- `src/components/saas/organization-switcher.tsx` ÿ workspace switch uses `window.location.href = tenantPortalOrigin(slug)/app`; AI stays client-router
-- `src/components/saas/saas-shell.tsx` ÿ mobile header org switcher; Apps vs Setup nav sections; optional `organizationPlan` footer badge (ADMIN+)
-- `src/components/saas/workspace-theme.css` ÿ `.saas-nav-section`, `.saas-plan-badge`, `.ws-mobile-shell-org-switcher`
-- `public/images/*` ÿ SVG placeholders + README for founder assets
-- `src/app/site-content.ts`, `src/app/layout.tsx`, `src/app/about/page.tsx` ÿ image paths ? SVG placeholders
+- `src/components/saas/login-form.tsx` Ã¿ debounced + blur `POST /api/auth/organizations`; workspace picker when `organizations.length > 1`
+- `src/components/saas/organization-switcher.tsx` Ã¿ workspace switch uses `window.location.href = tenantPortalOrigin(slug)/app`; AI stays client-router
+- `src/components/saas/saas-shell.tsx` Ã¿ mobile header org switcher; Apps vs Setup nav sections; optional `organizationPlan` footer badge (ADMIN+)
+- `src/components/saas/workspace-theme.css` Ã¿ `.saas-nav-section`, `.saas-plan-badge`, `.ws-mobile-shell-org-switcher`
+- `public/images/*` Ã¿ SVG placeholders + README for founder assets
+- `src/app/site-content.ts`, `src/app/layout.tsx`, `src/app/about/page.tsx` Ã¿ image paths ? SVG placeholders
 
 ### UI patterns
 - Login org lookup only for workspace sign-in (skips AI product, signup, and `?org=` deep links)
@@ -106,7 +106,7 @@ When a logged-in user hits a tenant host whose slug ? `session.organizationSlug`
 - Plan badge hidden until `organizationPlan` prop is passed from layout (now wired: `organization.plan` from Prisma)
 
 ### Needs from Backend
-- **Tenant session binding on org switch:** after `session.update({ organizationSlug })`, tenant host (`{slug}.sheetomatic.com/app`) must accept the session cookie or re-bind org from `x-tenant-slug` header ÿ confirm cookie domain (`AUTH_COOKIE_DOMAIN`) covers tenant subdomains
+- **Tenant session binding on org switch:** after `session.update({ organizationSlug })`, tenant host (`{slug}.sheetomatic.com/app`) must accept the session cookie or re-bind org from `x-tenant-slug` header Ã¿ confirm cookie domain (`AUTH_COOKIE_DOMAIN`) covers tenant subdomains
 - **Login with picked org:** `loginWithCredentialsAction` already validates `organization` slug when provided; no API change needed
 
 ### Needs from SaaS
@@ -123,13 +123,13 @@ When a logged-in user hits a tenant host whose slug ? `session.organizationSlug`
 
 ## SaaS Multi-Tenant Architect
 
-**Completed:** 2026-06-27 ÿ Phase 2 BCI tier packaging + enforcement touchpoints
+**Completed:** 2026-06-27 Ã¿ Phase 2 BCI tier packaging + enforcement touchpoints
 
 ### Schema (`20260627120000_org_plan_tiers`)
 
 | Field | Type | Default | Notes |
 |-------|------|---------|-------|
-| `Organization.plan` | `OrgPlan` enum | `BCI_STARTER` | `BCI_STARTER`, `BCI_GROWTH`, `ENTERPRISE`, `LEGAL_ADDON` |
+| `Organization.plan` | `OrgPlan` enum | `BCI_STARTER` | `BCI_STARTER`, `BCI_GROWTH`, `TASKS_ADDON`, `ENTERPRISE`, `LEGAL_ADDON` |
 | `Organization.allowedModules` | `WorkspaceModule[]` | `[]` | **Empty = legacy:** all modules until backfilled |
 | `Organization.maxMembers` | `Int` | `8` | Enforced only when `allowedModules` non-empty |
 | `Organization.maxFmsTemplates` | `Int` | `3` | Schema-ready; FMS create actions not yet clamped |
@@ -138,8 +138,9 @@ When a logged-in user hits a tenant host whose slug ? `session.organizationSlug`
 
 | Plan | Modules | maxMembers | maxFmsTemplates |
 |------|---------|------------|-----------------|
-| **BCI_STARTER** | TASKS, FMS, REPORTS, APPROVALS | 8 | 3 |
+| **BCI_STARTER** | FMS, REPORTS, APPROVALS | 8 | 3 |
 | **BCI_GROWTH** | Starter + IMS, HR | 20 | 10 |
+| **TASKS_ADDON** | TASKS only | 25 | 0 |
 | **LEGAL_ADDON** | CASES, TASKS | 50 | 0 |
 | **ENTERPRISE** | All 7 modules | 999 | 999 |
 
@@ -152,7 +153,7 @@ Exports: `modulesForTierRole`, `effectiveMemberModules`, `clampModulesToOrg`, `r
 | Session modules | `src/lib/auth.ts` ? `getSessionUser` | `effectiveMemberModules(role, membership.modules, org.allowedModules)` |
 | Invite member | `src/app/app/team/actions.ts` | Reject if `tierEnforced && count >= maxMembers`; clamp form modules to org tier |
 | Update member | `src/app/app/team/actions.ts` | Same module clamp on save |
-| Team UI checkboxes | `workspace-module-fields.tsx` | Disabled + ÿ(plan upgrade)ÿ for modules outside org tier |
+| Team UI checkboxes | `workspace-module-fields.tsx` | Disabled + Ã¿(plan upgrade)Ã¿ for modules outside org tier |
 | Team page data | `src/app/app/team/page.tsx` | Passes `orgAllowedModules` to panel |
 | **Not yet** | FMS template create | Backend: clamp to `maxFmsTemplates` when tier enforced |
 | **Not yet** | `saas-shell.tsx` | Frontend: tier badge in shell footer (`ORG_PLAN_LABELS[plan]`) |
@@ -167,16 +168,16 @@ Exports: `modulesForTierRole`, `effectiveMemberModules`, `clampModulesToOrg`, `r
 
 ### Frontend shell requirements (handoff)
 
-1. **Tier badge** ÿ Shell footer or org switcher: show `ORG_PLAN_LABELS[plan]`; fetch `plan` on layout or extend session.
-2. **Apps vs Setup split** ÿ Starter hides IMS/HR nav when tier enforced (session modules already filtered).
-3. **Upgrade CTA** ÿ When module checkbox shows ÿ(plan upgrade)ÿ, link to sales/contact (no billing yet).
-4. **Org switcher** ÿ After tenant host binding lands, show plan badge per org in dropdown.
+1. **Tier badge** Ã¿ Shell footer or org switcher: show `ORG_PLAN_LABELS[plan]`; fetch `plan` on layout or extend session.
+2. **Apps vs Setup split** Ã¿ Starter hides IMS/HR nav when tier enforced (session modules already filtered).
+3. **Upgrade CTA** Ã¿ When module checkbox shows Ã¿(plan upgrade)Ã¿, link to sales/contact (no billing yet).
+4. **Org switcher** Ã¿ After tenant host binding lands, show plan badge per org in dropdown.
 
 ### Backend handoff
 
 - Wire `maxFmsTemplates` in FMS template create/duplicate actions.
 - Optional: provisioning pipeline sets `allowedModules` from `plan` on org create.
-- P0 checklist assignee validation ÿ unchanged by this work.
+- P0 checklist assignee validation Ã¿ unchanged by this work.
 
 ---
 
@@ -187,7 +188,7 @@ Exports: `modulesForTierRole`, `effectiveMemberModules`, `clampModulesToOrg`, `r
 
 ---
 
-### Phase 1 shipped code ÿ verification
+### Phase 1 shipped code Ã¿ verification
 
 | Item | File(s) | Verdict | Notes |
 |------|---------|---------|-------|
@@ -206,9 +207,9 @@ Exports: `modulesForTierRole`, `effectiveMemberModules`, `clampModulesToOrg`, `r
 | Checklist assignee org validation | Backend | **FAIL** | `createChecklistTemplateAction` writes `assigneeUserId` without `membership.findFirst` (import path validates via email map only) |
 | Tenant subdomain ? session binding | Backend | **FAIL** | `app/layout.tsx` has no redirect when `getRequestTenantSlug()` ? `sessionUser.organizationSlug` |
 | Org switcher ? tenant host | Frontend | **FAIL** | `organization-switcher.tsx` calls `router.push(pathname)` on same host; no `tenantPortalOrigin(slug)` |
-| BCI tier presets + enforcement | SaaS + Backend | **PARTIAL** | `org-plan-presets.ts` + schema fields exist; `auth.ts`/`team/actions.ts` clamp modules ÿ legacy orgs with empty `allowedModules` bypass tier until migrated |
+| BCI tier presets + enforcement | SaaS + Backend | **PARTIAL** | `org-plan-presets.ts` + schema fields exist; `auth.ts`/`team/actions.ts` clamp modules Ã¿ legacy orgs with empty `allowedModules` bypass tier until migrated |
 | Login multi-org picker | Frontend | **FAIL** | Hidden `organization` from query only; no UI when credentials match 2+ memberships |
-| Playwright smoke tests | Quality | **PASS (scaffold)** | `playwright.config.ts`, `tests/smoke/login.spec.ts`, `npm run test:e2e` ÿ run `npx playwright install chromium` once before first run |
+| Playwright smoke tests | Quality | **PASS (scaffold)** | `playwright.config.ts`, `tests/smoke/login.spec.ts`, `npm run test:e2e` Ã¿ run `npx playwright install chromium` once before first run |
 
 ---
 
@@ -216,33 +217,33 @@ Exports: `modulesForTierRole`, `effectiveMemberModules`, `clampModulesToOrg`, `r
 
 Each case is **manual or Playwright**; Backend/Frontend/SaaS agents append pass/fail in their sections when done.
 
-#### AC-1 ÿ Checklist assignee cross-tenant
+#### AC-1 Ã¿ Checklist assignee cross-tenant
 
 **Given** admin in org A (`acme-demo`), **when** `createChecklistTemplateAction` is called with `assigneeUserId` belonging to org B only, **then** action returns `{ ok: false }` and no `ChecklistTemplate` row is created.
 
 **Steps:** Seed user `owner@bakery.demo`; POST assignee ID from bakery membership while session is acme. **Owner:** Backend.
 
-#### AC-2 ÿ Tenant subdomain binding
+#### AC-2 Ã¿ Tenant subdomain binding
 
 **Given** user session org slug `acme-demo`, **when** they open `https://bakery-demo.sheetomatic.com/app/tasks` (or `{slug}.localhost` in dev), **then** 302 to `https://acme-demo.sheetomatic.com/app/tasks` (preserve path + query). Super-admin exempt.
 
 **Owner:** Backend (+ SaaS for host contract).
 
-#### AC-3 ÿ Org switcher redirect
+#### AC-3 Ã¿ Org switcher redirect
 
 **Given** user with memberships in `acme-demo` and `bakery-demo` on `acme-demo.*` host, **when** they select `bakery-demo` in org switcher, **then** full navigation to `https://bakery-demo.sheetomatic.com/app/tasks` (or AI home if on `/ai/app`), session updated via `update({ organizationSlug })`.
 
 **Owner:** Frontend (uses `tenantPortalOrigin` from `workspace-auth-links.ts`).
 
-#### AC-4 ÿ BCI tier module clamp
+#### AC-4 Ã¿ BCI tier module clamp
 
-**Given** org with `plan: BCI_STARTER`, `allowedModules: [TASKS,FMS,REPORTS,APPROVALS]` (non-empty), **when** admin invites member with IMS checkbox, **then** saved membership modules exclude IMS; nav/shell hides IMS routes for that user.
+**Given** org with `plan: BCI_STARTER`, `allowedModules: [FMS,REPORTS,APPROVALS]` (non-empty), **when** admin invites member with IMS or TASKS checkbox, **then** saved membership modules exclude IMS/TASKS; nav/shell hides those routes for that user.
 
 **Given** legacy org with `allowedModules: []`, **then** no clamp until SaaS migration backfill (document expected behavior).
 
 **Owner:** SaaS + Backend.
 
-#### AC-5 ÿ Login multi-org picker
+#### AC-5 Ã¿ Login multi-org picker
 
 **Given** email/password valid for 2+ orgs and no `?org=` query, **when** user submits login form, **then** UI shows org picker (or server returns actionable error listing workspaces) before `signIn`; selected slug sent as `organization` credential.
 
@@ -250,16 +251,16 @@ Each case is **manual or Playwright**; Backend/Frontend/SaaS agents append pass/
 
 ---
 
-### P0ÿP3 findings (current)
+### P0Ã¿P3 findings (current)
 
 | Priority | Finding | Location | Owner | Status |
 |----------|---------|----------|-------|--------|
-| **P0** | Checklist assignee not validated against org membership | `checklists/actions.ts:64ÿ86` | Backend | Open |
-| **P0** | Tenant host ? session org ÿ no redirect | `app/app/layout.tsx` | Backend | Open |
+| **P0** | Checklist assignee not validated against org membership | `checklists/actions.ts:64Ã¿86` | Backend | Open |
+| **P0** | Tenant host ? session org Ã¿ no redirect | `app/app/layout.tsx` | Backend | Open |
 | **P0** | Brand images 404 (`/public/images/*` missing) | `layout.tsx`, `site-content.ts` | Frontend | Open |
-| **P1** | Org switcher stays on wrong subdomain | `organization-switcher.tsx:35ÿ38` | Frontend | Open |
+| **P1** | Org switcher stays on wrong subdomain | `organization-switcher.tsx:35Ã¿38` | Frontend | Open |
 | **P1** | No login org picker for multi-org users | `login-form.tsx` | Frontend | Open |
-| **P1** | Tier enforcement skipped when `allowedModules` empty | `org-plan-presets.ts:31ÿ38` | SaaS | Open (by design until migration) |
+| **P1** | Tier enforcement skipped when `allowedModules` empty | `org-plan-presets.ts:31Ã¿38` | SaaS | Open (by design until migration) |
 | **P2** | Cron routes allow unauthenticated GET when `CRON_SECRET` unset (non-prod) | `api/cron/*/route.ts` | Backend | Open |
 | **P2** | Marketing mobile nav still horizontal scroll pills (not hamburger) | `site-header-nav.tsx` | Frontend | Open |
 | **P3** | No automated tenant-isolation test suite yet | `tests/` | Quality | Scaffold only |
@@ -274,14 +275,14 @@ Each case is **manual or Playwright**; Backend/Frontend/SaaS agents append pass/
 | **High** | Session org usable on wrong tenant subdomain | `middleware.ts`, `app/layout.tsx` | Redirect to `tenantPortalOrigin(sessionSlug)` when slug mismatch |
 | **Medium** | Cron endpoints open without secret in dev/staging | `api/cron/task-reminders/route.ts` etc. | Require `CRON_SECRET` in all deployed envs; document in `.env.example` |
 | **Medium** | Super-admin can access any org by design | `auth.ts`, `auth-orgs.ts` | Acceptable; audit log recommended (P2) |
-| **Low** | Attachments + FMS routes scoped by `organizationId` | `attachment-access.ts`, FMS actions | **PASS** ÿ spot-checked |
+| **Low** | Attachments + FMS routes scoped by `organizationId` | `attachment-access.ts`, FMS actions | **PASS** Ã¿ spot-checked |
 | **Low** | FMS AI rate limits + task parse/transcribe limits | `fms/actions.ts`, `api/tasks/parse` | **PASS** |
 
 ---
 
 ### Recommended test plan (all agents)
 
-**Smoke (Quality ÿ scaffold added):**
+**Smoke (Quality Ã¿ scaffold added):**
 
 ```bash
 npx playwright install chromium   # once per machine
@@ -291,14 +292,14 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 
 **P0 manual / future e2e (before client onboarding):**
 
-1. Tenant isolation ÿ user A cannot read/update org B FMS instance, task, checklist occurrence (IDOR on UUIDs).
+1. Tenant isolation Ã¿ user A cannot read/update org B FMS instance, task, checklist occurrence (IDOR on UUIDs).
 2. AC-1 through AC-5 above.
-3. Login revoked membership ÿ remove membership row, next request signs user out (`auth.ts` revalidation).
-4. Cron ÿ `GET /api/cron/task-reminders` without Bearer ? 401 when `CRON_SECRET` set.
+3. Login revoked membership Ã¿ remove membership row, next request signs user out (`auth.ts` revalidation).
+4. Cron Ã¿ `GET /api/cron/task-reminders` without Bearer ? 401 when `CRON_SECRET` set.
 
 **FMS regression (QA-3):** intake TABLE calc + AI calc; SLA/delay with holidays; flow approve ? provision; step claim/reassign/skip/cancel; WA cron idempotency (`whatsapp*SentAt`).
 
-**BCI demo (QA-4):** run `npm run db:seed-bci`; walk 15-min script in `docs/BCI-FMS-SALES-KIT.md` ÿ my-stops mobile queue, EM Ready, 3 split FMS.
+**BCI demo (QA-4):** run `npm run db:seed-bci`; walk 15-min script in `docs/BCI-FMS-SALES-KIT.md` Ã¿ my-stops mobile queue, EM Ready, 3 split FMS.
 
 ---
 

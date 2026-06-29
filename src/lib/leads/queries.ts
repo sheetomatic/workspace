@@ -20,6 +20,10 @@ function startOfTomorrow() {
   return d;
 }
 
+export async function getInboundLeadWorkspaceTotal(organizationId: string) {
+  return prisma.inboundLead.count({ where: { organizationId } });
+}
+
 export async function getLeadsMachineStatsForPeriod(
   organizationId: string,
   period: LeadsPeriodRange,

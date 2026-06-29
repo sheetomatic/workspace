@@ -10,6 +10,7 @@ import {
 } from "@/lib/leads/period";
 
 const PERIOD_OPTIONS: { value: LeadsPeriodType; label: string }[] = [
+  { value: "all", label: "All" },
   { value: "weekly", label: "Weekly" },
   { value: "monthly", label: "Monthly" },
   { value: "quarterly", label: "Quarterly" },
@@ -92,18 +93,22 @@ export function LeadsPeriodToolbar({ period }: { period: LeadsPeriodRange }) {
           ))}
         </div>
         <div className="leads-period-nav">
-          <Link className="btn-secondary btn-sm" href={prevHref}>
-            Previous
-          </Link>
-          <Link className="btn-secondary btn-sm" href={nextHref}>
-            Next
-          </Link>
+          {period.type === "all" ? null : (
+            <>
+              <Link className="btn-secondary btn-sm" href={prevHref}>
+                Previous
+              </Link>
+              <Link className="btn-secondary btn-sm" href={nextHref}>
+                Next
+              </Link>
+            </>
+          )}
         </div>
       </div>
 
       <div className="leads-period-toolbar-row">
         <p className="leads-period-label">{period.periodLabel}</p>
-        {period.type === "quarterly" ? (
+        {period.type === "all" ? null : period.type === "quarterly" ? (
           <select
             className="leads-period-input"
             defaultValue={period.quarter}

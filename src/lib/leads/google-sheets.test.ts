@@ -73,10 +73,10 @@ describe("parseLeadsSheetRows", () => {
 });
 
 describe("parseLeadsPeriodParams", () => {
-  it("defaults to weekly period", () => {
+  it("defaults to all-time period", () => {
     const period = parseLeadsPeriodParams({});
-    expect(period.type).toBe("weekly");
-    expect(period.week).toMatch(/^\d{4}-W\d{2}$/);
+    expect(period.type).toBe("all");
+    expect(period.periodLabel).toBe("All time");
   });
 
   it("parses quarterly period", () => {

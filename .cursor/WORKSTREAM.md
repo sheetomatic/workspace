@@ -1,4 +1,4 @@
-# Sheetomatic Multi-Tenant ÿ Active Workstreams
+# Sheetomatic Multi-Tenant ï¿½ Active Workstreams
 
 **Project:** `sheetomatic-redesign`  
 **Updated:** 2026-06-26  
@@ -25,7 +25,7 @@
 | FE-2 | EM deficit rollup row (Tasks\|FMS\|PC\|IMS\|Total) | `src/app/app/em/`, reports components | P1 |
 | FE-3 | Mobile polish for FMS my-stops (2-tap complete) | `src/app/app/fms/my-stops/` | P1 |
 | FE-4 | FMS attachment UX (progress, preview, size warn) | `fms-instance-attachments.tsx`, `attachment-limits.ts` | P2 |
-| FE-5 | Marketing home ÿ wire unused sections | `src/components/marketing/home-page.tsx` | P1 |
+| FE-5 | Marketing home ï¿½ wire unused sections | `src/components/marketing/home-page.tsx` | P1 |
 | FE-6 | Skip link + aria-current on marketing nav | `src/app/layout.tsx`, `components.tsx` | P2 |
 
 ### 2. Backend Developer (`backend-developer`)
@@ -39,11 +39,11 @@
 | BE-5 | Multi-level escalation engine | `src/lib/fms/sla.ts`, notify modules | P2 |
 | BE-6 | Password reset flow | `src/lib/auth.ts`, email provider | P1 |
 
-### 3. Quality Team (`quality-team`) ÿ readonly
+### 3. Quality Team (`quality-team`) ï¿½ readonly
 
 | # | Task | Scope | Priority |
 |---|------|-------|----------|
-| QA-1 | Full P0ÿP3 audit vs `AUDIT_ACTIONS.md` | Whole repo | P0 |
+| QA-1 | Full P0ï¿½P3 audit vs `AUDIT_ACTIONS.md` | Whole repo | P0 |
 | QA-2 | Tenant isolation penetration test plan | All `/app/app/*/actions.ts` | P0 |
 | QA-3 | FMS regression matrix | FMS module | P1 |
 | QA-4 | BCI 15-min demo validation | `bci-demo` seed | P1 |
@@ -64,9 +64,9 @@
 ## Parallel execution order
 
 ```
-Phase 1 ÿ DONE (2026-06-26)
+Phase 1 ï¿½ DONE (2026-06-26)
 
-Phase 2 — DONE (2026-06-27): tier schema, tenant binding, org picker, shell UX, Playwright scaffold
+Phase 2 ï¿½ DONE (2026-06-27): tier schema, tenant binding, org picker, shell UX, Playwright scaffold
 
 Phase 3 (current):
   Frontend: FE-1 (needs BE-1)

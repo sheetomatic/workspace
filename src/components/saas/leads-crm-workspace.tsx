@@ -98,6 +98,8 @@ export function LeadsCrmWorkspace({
   totalPages,
   listParams,
   periodLabel,
+  period,
+  workspaceTotal,
   teamMembers,
   canManage,
   sort,
@@ -108,6 +110,8 @@ export function LeadsCrmWorkspace({
   totalPages: number;
   listParams: LeadsListSearchParams;
   periodLabel: string;
+  period: string;
+  workspaceTotal: number;
   teamMembers: TeamMember[];
   canManage: boolean;
   sort: "newest" | "oldest";
@@ -180,7 +184,21 @@ export function LeadsCrmWorkspace({
             {leads.length === 0 ? (
               <tr>
                 <td colSpan={canManage ? 7 : 6}>
-                  <p className="leads-machine-muted">No leads match this filter.</p>
+                  <div className="leads-empty-state">
+                    <p className="leads-machine-muted">No leads match this filter.</p>
+                    {workspaceTotal > 0 && period !== "all" ? (
+                      <p className="leads-machine-muted">
+                        {workspaceTotal} lead{workspaceTotal === 1 ? "" : "s"} in this workspace.{" "}
+                        <Link href="/app/leads?period=all">View all leads</Link>
+                      </p>
+                    ) : null}
+                    {workspaceTotal === 0 ? (
+                      <p className="leads-machine-muted">
+                        Connect Google Sheets in{" "}
+                        <Link href="/app/leads/settings">setup</Link> and run sync to import leads.
+                      </p>
+                    ) : null}
+                  </div>
                 </td>
               </tr>
             ) : (

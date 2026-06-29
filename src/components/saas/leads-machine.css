@@ -874,3 +874,29 @@
   display: grid;
   gap: 0.5rem;
 }
+
+.leads-empty-state {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.75rem 0;
+}
+
+.leads-error-panel {
+  max-width: 42rem;
+  margin: 2rem auto;
+  padding: 1.25rem;
+  border: 1px solid #fecaca;
+  border-radius: 14px;
+  background: #fff7f7;
+}
+
+.leads-error-panel h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+}
+
+.leads-error-actions {
+  display: flex;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}

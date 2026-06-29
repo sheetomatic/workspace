@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { after } from "next/server";
 import { LeadsCrmWorkspace } from "@/components/saas/leads-crm-workspace";
 import { LeadsPeriodToolbar } from "@/components/saas/leads-period-toolbar";
 import { LeadsPipelineCards } from "@/components/saas/leads-pipeline-cards";
@@ -11,6 +12,7 @@ import { parseLeadsListParams } from "@/lib/leads/list-params";
 import { parseLeadsPeriodParams } from "@/lib/leads/period";
 import {
   getGoogleSheetsLeadConnection,
+  getInboundLeadWorkspaceTotal,
   getLeadsMachineStatsForPeriod,
   getLeadsPipeMetricsForPeriod,
   listInboundLeadsForPeriodPaginated,
@@ -58,7 +60,7 @@ function serializeLead(lead: Awaited<ReturnType<typeof listInboundLeadsForPeriod
       scheduledAt: item.scheduledAt.toISOString(),
       notes: item.notes,
     })),
-    activities: lead.activities.map((item) => ({
+    activities: (lead.activities ?? []).map((item) => ({
       id: item.id,
       type: item.type,
       body: item.body,
@@ -72,24 +74,28 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
   const user = await requireSession(undefined, { module: "FMS" });
   await ensureLeadConnections(user.organizationId);
 
-  const uncategorized = await prisma.inboundLead.findMany({
-    where: { organizationId: user.organizationId, category: null },
-    select: { id: true, requirement: true },
-    take: 100,
-  });
-  if (uncategorized.length > 0) {
-    await Promise.all(
-      uncategorized.map((lead) => {
-        const category = categorizeLeadRequirement(lead.requirement);
-        return prisma.inboundLead.update({
-          where: { id: lead.id },
-          data: {
-            category,
-            pipeValue: defaultPipeValueForCategory(category),
-          },
-        });
-      }),
-    );
+  try {
+    const uncategorized = await prisma.inboundLead.findMany({
+      where: { organizationId: user.organizationId, category: null },
+      select: { id: true, requirement: true },
+      take: 100,
+    });
+    if (uncategorized.length > 0) {
+      await Promise.all(
+        uncategorized.map((lead) => {
+          const category = categorizeLeadRequirement(lead.requirement);
+          return prisma.inboundLead.update({
+            where: { id: lead.id },
+            data: {
+              category,
+              pipeValue: defaultPipeValueForCategory(category),
+            },
+          });
+        }),
+      );
+    }
+  } catch (error) {
+    console.error("leads category backfill", error);
   }
 
   const params = await searchParams;
@@ -99,16 +105,23 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
   const isAdmin = hasMinimumRole(user.role, "ADMIN");
 
   if (isAdmin) {
-    await maybeAutoSyncGoogleSheets(user.organizationId);
+    after(async () => {
+      try {
+        await maybeAutoSyncGoogleSheets(user.organizationId);
+      } catch (error) {
+        console.error("leads auto-sync", error);
+      }
+    });
   }
 
-  const [periodStats, pipeMetrics, leadPage, teamMembers, sheetsConnection] =
+  const [periodStats, pipeMetrics, leadPage, teamMembers, sheetsConnection, workspaceTotal] =
     await Promise.all([
       getLeadsMachineStatsForPeriod(user.organizationId, period),
       getLeadsPipeMetricsForPeriod(user.organizationId, period),
       listInboundLeadsForPeriodPaginated(user.organizationId, period, listParams),
       listWorkspaceMembers(user.organizationId),
       getGoogleSheetsLeadConnection(user.organizationId),
+      getInboundLeadWorkspaceTotal(user.organizationId),
     ]);
 
   const lastSyncLabel = sheetsConnection?.lastSyncAt
@@ -159,11 +172,13 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
         leads={leadPage.leads.map(serializeLead)}
         listParams={params}
         page={leadPage.page}
+        period={period.type}
         periodLabel={period.periodLabel}
         sort={listParams.sort}
         teamMembers={teamMembers}
         total={leadPage.total}
         totalPages={leadPage.totalPages}
+        workspaceTotal={workspaceTotal}
       />
     </div>
   );

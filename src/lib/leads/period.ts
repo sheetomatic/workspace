@@ -1,6 +1,6 @@
 import { dateToIsoWeek, toIsoDate } from "@/lib/em/em-period";
 
-export type LeadsPeriodType = "weekly" | "monthly" | "quarterly" | "yearly";
+export type LeadsPeriodType = "all" | "weekly" | "monthly" | "quarterly" | "yearly";
 
 export type LeadsPeriodRange = {
   type: LeadsPeriodType;
@@ -130,6 +130,17 @@ function yearToRange(yearValue: string) {
   };
 }
 
+function buildAllRange(): LeadsPeriodRange {
+  return {
+    type: "all",
+    start: new Date(0),
+    end: new Date(8640000000000000),
+    startIso: "",
+    endIso: "",
+    periodLabel: "All time",
+  };
+}
+
 function buildRange(
   type: LeadsPeriodType,
   start: Date,
@@ -155,7 +166,11 @@ export function currentQuarterToken(date = new Date()) {
 export function parseLeadsPeriodParams(
   params: LeadsPeriodSearchParams,
 ): LeadsPeriodRange {
-  const type = (params.period ?? "weekly") as LeadsPeriodType;
+  const type = (params.period ?? "all") as LeadsPeriodType;
+
+  if (type === "all") {
+    return buildAllRange();
+  }
 
   if (type === "monthly") {
     const now = new Date();
@@ -184,6 +199,9 @@ export function parseLeadsPeriodParams(
 export function leadsPeriodToSearchParams(range: LeadsPeriodRange) {
   const params = new URLSearchParams();
   params.set("period", range.type);
+  if (range.type === "all") {
+    return params;
+  }
   if (range.type === "weekly" && range.week) {
     params.set("week", range.week);
   }
@@ -201,6 +219,10 @@ export function leadsPeriodToSearchParams(range: LeadsPeriodRange) {
 
 /** Prisma filter on capturedAt with createdAt fallback for legacy rows. */
 export function leadCapturedAtWhere(range: LeadsPeriodRange) {
+  if (range.type === "all") {
+    return {};
+  }
+
   return {
     OR: [
       {
@@ -224,6 +246,10 @@ export function shiftLeadsPeriod(
   range: LeadsPeriodRange,
   direction: -1 | 1,
 ): LeadsPeriodRange {
+  if (range.type === "all") {
+    return range;
+  }
+
   if (range.type === "weekly" && range.week) {
     const { start } = isoWeekToRange(range.week);
     start.setDate(start.getDate() + direction * 7);
