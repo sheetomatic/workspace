@@ -1,12 +1,18 @@
 import Link from "next/link";
+import { LeadsGoogleSheetsSetupBanner } from "@/components/saas/leads-google-sheets-setup";
 import { LeadsMachineDashboard } from "@/components/saas/leads-machine-dashboard";
 import { LeadsPeriodToolbar } from "@/components/saas/leads-period-toolbar";
 import "@/components/saas/leads-machine.css";
+import {
+  getGoogleSheetsServiceAccountEmail,
+  isGoogleSheetsAuthConfigured,
+} from "@/lib/integrations/google-sheets-auth";
 import { hasMinimumRole } from "@/lib/permissions";
 import { LEAD_CHANNEL_LABELS } from "@/lib/leads/channels";
 import { ensureLeadConnections } from "@/lib/leads/ingest";
 import { parseLeadsPeriodParams } from "@/lib/leads/period";
 import {
+  getGoogleSheetsLeadConnection,
   getLeadsMachineStats,
   getLeadsMachineStatsForPeriod,
   listInboundLeadsForPeriod,
@@ -34,7 +40,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
   const period = parseLeadsPeriodParams(params);
   const canManage = hasMinimumRole(user.role, "MANAGER");
 
-  const [periodStats, lifetimeStats, leads, todayFollowUps, overdueFollowUps, teamMembers] =
+  const [periodStats, lifetimeStats, leads, todayFollowUps, overdueFollowUps, teamMembers, sheetsConnection] =
     await Promise.all([
       getLeadsMachineStatsForPeriod(user.organizationId, period),
       getLeadsMachineStats(user.organizationId),
@@ -42,7 +48,16 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
       listTodayLeadFollowUps(user.organizationId),
       listOverdueLeadFollowUps(user.organizationId),
       listWorkspaceMembers(user.organizationId),
+      getGoogleSheetsLeadConnection(user.organizationId),
     ]);
+
+  const sheetsSetup = {
+    enabled: sheetsConnection?.enabled ?? false,
+    lastSyncAt: sheetsConnection?.lastSyncAt ?? null,
+    lastSyncError: sheetsConnection?.lastSyncError ?? null,
+    sheetsAuthConfigured: isGoogleSheetsAuthConfigured(),
+    serviceAccountEmail: getGoogleSheetsServiceAccountEmail(),
+  };
 
   return (
     <div className="saas-page leads-machine-page">
@@ -56,10 +71,12 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
         </div>
         {canManage ? (
           <Link className="btn-secondary" href="/app/leads/settings">
-            Source settings
+            Connect Google Sheets
           </Link>
         ) : null}
       </header>
+
+      <LeadsGoogleSheetsSetupBanner canManage={canManage} status={sheetsSetup} />
 
       <LeadsPeriodToolbar period={period} />
 

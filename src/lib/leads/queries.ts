@@ -217,6 +217,17 @@ export async function listLeadConnections(organizationId: string) {
   });
 }
 
+export async function getGoogleSheetsLeadConnection(organizationId: string) {
+  return prisma.leadIngestConnection.findUnique({
+    where: {
+      organizationId_channel: {
+        organizationId,
+        channel: "GOOGLE_SHEETS",
+      },
+    },
+  });
+}
+
 export async function listTodayLeadFollowUps(organizationId: string) {
   const todayStart = startOfToday();
   const todayEnd = startOfTomorrow();

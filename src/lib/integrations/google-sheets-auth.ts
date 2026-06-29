@@ -31,6 +31,10 @@ export function isGoogleSheetsAuthConfigured() {
   return getGoogleSheetsCredentials() !== null;
 }
 
+export function getGoogleSheetsServiceAccountEmail() {
+  return getGoogleSheetsCredentials()?.client_email ?? null;
+}
+
 export function createGoogleSheetsClient() {
   return createGoogleSheetsClientWithScope([
     "https://www.googleapis.com/auth/spreadsheets.readonly",

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import type { LeadSourceChannel } from "@prisma/client";
 import Link from "next/link";
 import { regenerateLeadsApiKey, syncLeadChannelNow, updateGoogleSheetsLeadConfig } from "@/app/app/leads/actions";
+import { GoogleSheetsSetupSteps } from "@/components/saas/leads-google-sheets-setup";
 import {
   isLeadSourceComingSoon,
   LEAD_CHANNEL_LABELS,
@@ -28,11 +29,13 @@ export function LeadsSettingsPanel({
   apiKeyHint,
   ingestUrl,
   sheetsAuthConfigured,
+  serviceAccountEmail,
 }: {
   connections: ConnectionRow[];
   apiKeyHint: string | null;
   ingestUrl: string;
   sheetsAuthConfigured: boolean;
+  serviceAccountEmail: string | null;
 }) {
   const [pending, startTransition] = useTransition();
   const [freshKey, setFreshKey] = useState<string | null>(null);
@@ -51,6 +54,39 @@ export function LeadsSettingsPanel({
           Back to leads
         </Link>
       </header>
+
+      <div className="leads-settings-grid">
+        {connections
+          .slice()
+          .sort((a, b) => {
+            if (a.channel === LEAD_SOURCE_PRIORITY_CHANNEL) return -1;
+            if (b.channel === LEAD_SOURCE_PRIORITY_CHANNEL) return 1;
+            return a.channel.localeCompare(b.channel);
+          })
+          .map((connection) =>
+            connection.channel === LEAD_SOURCE_PRIORITY_CHANNEL ? (
+              <GoogleSheetsConnectionCard
+                key={connection.id}
+                connection={connection}
+                disabled={pending}
+                sheetsAuthConfigured={sheetsAuthConfigured}
+                serviceAccountEmail={serviceAccountEmail}
+                onSave={(payload) =>
+                  startTransition(async () => {
+                    await updateGoogleSheetsLeadConfig(payload);
+                  })
+                }
+                onSync={() =>
+                  startTransition(async () => {
+                    await syncLeadChannelNow(connection.channel);
+                  })
+                }
+              />
+            ) : isLeadSourceComingSoon(connection.channel) ? (
+              <ComingSoonConnectionCard key={connection.id} connection={connection} />
+            ) : null,
+          )}
+      </div>
 
       <section className="saas-panel">
         <h2>Ingest API</h2>
@@ -82,38 +118,6 @@ export function LeadsSettingsPanel({
           {apiKeyHint ? "Regenerate API key" : "Generate API key"}
         </button>
       </section>
-
-      <div className="leads-settings-grid">
-        {connections
-          .slice()
-          .sort((a, b) => {
-            if (a.channel === LEAD_SOURCE_PRIORITY_CHANNEL) return -1;
-            if (b.channel === LEAD_SOURCE_PRIORITY_CHANNEL) return 1;
-            return a.channel.localeCompare(b.channel);
-          })
-          .map((connection) =>
-            connection.channel === LEAD_SOURCE_PRIORITY_CHANNEL ? (
-              <GoogleSheetsConnectionCard
-                key={connection.id}
-                connection={connection}
-                disabled={pending}
-                sheetsAuthConfigured={sheetsAuthConfigured}
-                onSave={(payload) =>
-                  startTransition(async () => {
-                    await updateGoogleSheetsLeadConfig(payload);
-                  })
-                }
-                onSync={() =>
-                  startTransition(async () => {
-                    await syncLeadChannelNow(connection.channel);
-                  })
-                }
-              />
-            ) : isLeadSourceComingSoon(connection.channel) ? (
-              <ComingSoonConnectionCard key={connection.id} connection={connection} />
-            ) : null,
-          )}
-      </div>
     </div>
   );
 }
@@ -122,12 +126,14 @@ function GoogleSheetsConnectionCard({
   connection,
   disabled,
   sheetsAuthConfigured,
+  serviceAccountEmail,
   onSave,
   onSync,
 }: {
   connection: ConnectionRow;
   disabled: boolean;
   sheetsAuthConfigured: boolean;
+  serviceAccountEmail: string | null;
   onSave: (payload: {
     enabled: boolean;
     spreadsheetUrl: string;
@@ -163,7 +169,23 @@ function GoogleSheetsConnectionCard({
       <p className="leads-machine-muted">{connection.label}</p>
       <p className="leads-machine-muted">
         Service account: {sheetsAuthConfigured ? "configured" : "not configured — CSV export fallback"}
+        {serviceAccountEmail ? (
+          <>
+            {" "}
+            (<code>{serviceAccountEmail}</code>)
+          </>
+        ) : null}
       </p>
+
+      <GoogleSheetsSetupSteps
+        status={{
+          enabled: connection.enabled,
+          lastSyncAt: connection.lastSyncAt,
+          lastSyncError: connection.lastSyncError,
+          sheetsAuthConfigured,
+          serviceAccountEmail,
+        }}
+      />
 
       <label className="mt-3 flex items-center gap-2 text-sm">
         <input

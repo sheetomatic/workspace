@@ -220,8 +220,9 @@ export function LeadsMachineDashboard({
               <tr>
                 <td colSpan={canManage ? 7 : 6}>
                   <p className="leads-machine-muted">
-                    No Google Sheets leads in this period yet. Open Source settings to
-                    connect your sheet and run Sync now.
+                    No Google Sheets leads in this period yet.{" "}
+                    <Link href="/app/leads/settings">Connect Google Sheets</Link> and run
+                    Sync now.
                   </p>
                 </td>
               </tr>

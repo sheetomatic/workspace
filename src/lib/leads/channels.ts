@@ -19,8 +19,16 @@ export const LEAD_CHANNEL_DEFAULTS: Array<{
   { channel: "FACEBOOK", label: "Facebook / Meta Lead forms" },
 ];
 
-/** Active intake connector for Phase 1. */
-export const LEAD_SOURCE_PRIORITY_CHANNEL: LeadSourceChannel = "GOOGLE_SHEETS";
+export const LEAD_DASHBOARD_SOURCE_FILTERS = [
+  "GOOGLE_SHEETS",
+  "ALL",
+  "WHATSAPP",
+  "INSTAGRAM",
+  "FACEBOOK",
+  "MANUAL",
+] as const;
+
+export type LeadDashboardSourceFilter = (typeof LEAD_DASHBOARD_SOURCE_FILTERS)[number];
 
 /** Connectors shown in UI but not yet available for setup. */
 export const LEAD_SOURCE_COMING_SOON_CHANNELS: LeadSourceChannel[] = [
@@ -34,16 +42,8 @@ export function isLeadSourceComingSoon(channel: LeadSourceChannel) {
   return LEAD_SOURCE_COMING_SOON_CHANNELS.includes(channel);
 }
 
-export const LEAD_DASHBOARD_SOURCE_FILTERS = [
-  "GOOGLE_SHEETS",
-  "ALL",
-  "WHATSAPP",
-  "INSTAGRAM",
-  "FACEBOOK",
-  "MANUAL",
-] as const;
-
-export type LeadDashboardSourceFilter = (typeof LEAD_DASHBOARD_SOURCE_FILTERS)[number];
+/** Active intake connector for Phase 1. */
+export const LEAD_SOURCE_PRIORITY_CHANNEL: LeadDashboardSourceFilter = "GOOGLE_SHEETS";
 
 /** Maps channel to FMS lead source field value */
 export function fmsSourceLabelForChannel(channel: LeadSourceChannel): string {
