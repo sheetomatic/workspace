@@ -23,46 +23,55 @@ export const youtubeChannelName = "Sheetomatic Videos";
 
 export const siteBrand = {
   name: "Sheetomatic",
-  tagline: "Automation and AI Consultancy",
-  headerTagline: "Automation and AI for MSME operations",
+  tagline: "P.A.C.E. systems that scale without you",
+  headerTagline: "P.A.C.E. for MSME operations",
+  /** Icon-only mark for headers, sidebars, and app tiles */
+  iconSrc: "/images/sheetomatic-icon.svg",
+  /** White icon for dark backgrounds (login, footer) */
+  iconLightSrc: "/images/sheetomatic-icon-light.svg",
+  /** Full lockup for exports and standalone brand use */
   logoSrc: "/images/sheetomatic-logo.svg",
   logoAlt: "Sheetomatic logo",
   footerDescription:
-    "Automation and AI consultancy for Indian MSMEs - systems your team will actually use.",
+    "Sheetomatic Workspace and Sheetomatic AI — the P.A.C.E. framework for Indian MSMEs. Systems (FMS, IMS, CRM, EM, WhatsApp AI) plus Process Coordinator and Executive Assistant roles so you scale without the owner.",
   footerBottomLine: "Sheetomatic · sheetomatic.com",
 };
 
 export const finalCtaContent = {
-  kicker: "Message us on WhatsApp",
-  title: "Turn daily chaos into tasks, MIS, and owner control.",
-  text: "WhatsApp us to scope your first automation, MIS build, or AI workflow for your business.",
+  kicker: "Start on WhatsApp",
+  title: "Build a business that scales without you.",
+  text: "P.A.C.E. systems — FMS, IMS, CRM, EM, and WhatsApp AI — with Process Coordinator and Executive Assistant roles in one workspace. One conversation to stop spreadsheet firefighting.",
   buttonLabel: "WhatsApp",
 };
 
 export const services = [
   {
-    title: "MIS & reporting",
-    text: "Monthly MIS, data cleanup, owner dashboards, and management reporting.",
+    title: "Sheetomatic Workspace",
+    text: "Finance, inventory, checklists, tasks, and leadership visibility — in one place.",
   },
   {
-    title: "Google Sheets & Apps Script",
-    text: "Formulas, automation, approvals, reminders, and recurring reports.",
+    title: "FMS",
+    text: "Flow monitoring from enquiry to closure — stage owners, proofs, and stall alerts built in.",
   },
   {
-    title: "AppSheet business apps",
-    text: "CRM, inventory, attendance, field apps, and task systems on Sheets.",
+    title: "IMS",
+    text: "Inventory that stays accurate. No shadow spreadsheets. Stock you can trust.",
   },
   {
-    title: "Looker Studio dashboards",
-    text: "Daily control views for sales, stock, collections, and KPIs.",
+    title: "Checklist module",
+    text: "Recurring SOPs on mobile - Process Coordinator role scores completion, photos, and exceptions via the PC portal.",
   },
   {
-    title: "WhatsApp API & workflows",
-    text: "Official API, templates, inbox, and integrations with your stack.",
+    title: "Tasks module",
+    text: "Every task assigned, tracked, and scored - Executive Assistant role monitors follow-through via the EA portal.",
   },
   {
-    title: "Implementation support",
-    text: "Discovery, build, training, and ongoing fixes after go-live.",
+    title: "Executive Meeting (Weekly)",
+    text: "Monday board ready automatically. Exceptions only — no all-nighter MIS prep.",
+  },
+  {
+    title: "Sheetomatic AI",
+    text: "WhatsApp API plus AI — follow-ups, updates, and answers where your team already works.",
   },
 ];
 
@@ -70,5 +79,5 @@ export const whatsappPageHero = {
   eyebrow: "WhatsApp API Solutions",
   title: "Official WhatsApp API for campaigns, inbox, and automation",
   lead:
-    "Bulk templates, team inbox, chatbots, and integrations with Google Sheets, CRM, Tally, Busy, and your operating workflows.",
+    "Bulk templates, team inbox, AI chatbots, and deep integration with Sheetomatic Workspace — CRM, Tally, Busy, and your operating stack.",
 };

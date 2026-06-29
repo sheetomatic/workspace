@@ -14,7 +14,7 @@ import {
   importChecklistTemplates,
   type ChecklistTemplateImportRow,
 } from "@/lib/checklists/template-import";
-import { resolveChecklistAssigneeForOrg } from "@/lib/checklists/assignee-validation";
+import { resolveChecklistAssigneeForOrg, activeAssigneeMembershipWhere } from "@/lib/checklists/assignee-validation";
 import { deployAccountsChecklistPack } from "@/lib/checklists/accounts-deploy";
 import { canCreateTasks } from "@/lib/tasks";
 
@@ -77,8 +77,9 @@ export async function createChecklistTemplateAction(
           where: {
             organizationId: args.organizationId,
             userId: args.userId,
+            ...activeAssigneeMembershipWhere,
           },
-          select: { id: true },
+          select: { id: true, deactivatedAt: true },
         }),
     );
     if (!assigneeResult.ok) {
@@ -268,8 +269,12 @@ export async function deployAccountsChecklistAction(
       assigneeUserId,
       (args) =>
         prisma.membership.findFirst({
-          where: { organizationId: args.organizationId, userId: args.userId },
-          select: { id: true },
+          where: {
+            organizationId: args.organizationId,
+            userId: args.userId,
+            ...activeAssigneeMembershipWhere,
+          },
+          select: { id: true, deactivatedAt: true },
         }),
     );
     if (!assigneeResult.ok) {
@@ -283,8 +288,12 @@ export async function deployAccountsChecklistAction(
         complianceAssigneeUserId,
         (args) =>
           prisma.membership.findFirst({
-            where: { organizationId: args.organizationId, userId: args.userId },
-            select: { id: true },
+            where: {
+              organizationId: args.organizationId,
+              userId: args.userId,
+              ...activeAssigneeMembershipWhere,
+            },
+            select: { id: true, deactivatedAt: true },
           }),
       );
       if (!complianceResult.ok) {

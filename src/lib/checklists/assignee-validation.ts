@@ -1,6 +1,17 @@
 export type ChecklistAssigneeErrorCode =
   | "MISSING_ASSIGNEE"
-  | "ASSIGNEE_NOT_IN_ORG";
+  | "ASSIGNEE_NOT_IN_ORG"
+  | "ASSIGNEE_INACTIVE";
+
+export type AssigneeMembershipRecord = {
+  id: string;
+  deactivatedAt?: Date | null;
+};
+
+/** Membership lookup filter for active workspace members only. */
+export const activeAssigneeMembershipWhere = {
+  deactivatedAt: null,
+} as const;
 
 export type ChecklistAssigneeValidationResult =
   | { ok: true; assigneeUserId: string }
@@ -21,15 +32,22 @@ export function validateChecklistAssigneeInput(
   return { ok: true, assigneeUserId: trimmed };
 }
 
-/** Validate assignee membership exists for the current organization. */
+/** Validate assignee membership exists and is active for the current organization. */
 export function validateChecklistAssigneeMembership(
-  membership: { id: string } | null,
+  membership: AssigneeMembershipRecord | null,
 ): ChecklistAssigneeValidationResult {
   if (!membership) {
     return {
       ok: false,
       code: "ASSIGNEE_NOT_IN_ORG",
       message: "Selected doer must be a member of this workspace.",
+    };
+  }
+  if (membership.deactivatedAt) {
+    return {
+      ok: false,
+      code: "ASSIGNEE_INACTIVE",
+      message: "Selected doer is inactive in this workspace.",
     };
   }
   return { ok: true, assigneeUserId: "" };
@@ -41,7 +59,7 @@ export async function resolveChecklistAssigneeForOrg(
   findMembership: (args: {
     organizationId: string;
     userId: string;
-  }) => Promise<{ id: string } | null>,
+  }) => Promise<AssigneeMembershipRecord | null>,
 ): Promise<ChecklistAssigneeValidationResult> {
   const input = validateChecklistAssigneeInput(assigneeUserId);
   if (!input.ok) {

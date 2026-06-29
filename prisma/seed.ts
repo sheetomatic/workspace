@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import {
   MetricTone,
   OrganizationStatus,
+  OrgPlan,
   PrismaClient,
   Role,
   TaskDepartment,
@@ -14,6 +15,7 @@ import {
 import bcrypt from "bcryptjs";
 import { seedHingoraniCases } from "./seed-hingorani";
 import { seedBciDemo } from "./seed-bci-demo";
+import { DEFAULT_BCI_ORG_MODULES } from "../src/lib/workspace-addons.shared";
 
 const prisma = new PrismaClient();
 
@@ -160,6 +162,8 @@ const organizations = [
     industry: "Automation & AI consultancy",
     status: OrganizationStatus.ACTIVE,
     isPrimary: true,
+    plan: OrgPlan.BCI_STARTER,
+    allowedModules: DEFAULT_BCI_ORG_MODULES,
   },
   {
     name: "Acme Manufacturing",
@@ -781,6 +785,78 @@ async function seedSheetomaticTechnologies(
   });
 }
 
+/** Demo user with memberships in two ACTIVE workspaces (login org-picker E2E). */
+async function seedMultiOrgConsultant(passwordHash: string) {
+  const consultantEmail = "consultant@demo.sheetomatic.com";
+  const user = await prisma.user.upsert({
+    where: { email: consultantEmail },
+    update: {
+      name: "Cross Org Consultant",
+      passwordHash,
+    },
+    create: {
+      email: consultantEmail,
+      name: "Cross Org Consultant",
+      passwordHash,
+    },
+  });
+
+  const acme = await prisma.organization.findUnique({
+    where: { slug: "acme-manufacturing" },
+  });
+  const hingorani = await prisma.organization.findUnique({
+    where: { slug: "hingorani" },
+  });
+
+  if (!acme || !hingorani) {
+    return;
+  }
+
+  await prisma.membership.upsert({
+    where: {
+      userId_organizationId: {
+        userId: user.id,
+        organizationId: acme.id,
+      },
+    },
+    update: {
+      role: Role.MANAGER,
+      department: TaskDepartment.OPERATIONS,
+      designation: "Operations Consultant",
+    },
+    create: {
+      userId: user.id,
+      organizationId: acme.id,
+      role: Role.MANAGER,
+      department: TaskDepartment.OPERATIONS,
+      designation: "Operations Consultant",
+    },
+  });
+
+  await prisma.membership.upsert({
+    where: {
+      userId_organizationId: {
+        userId: user.id,
+        organizationId: hingorani.id,
+      },
+    },
+    update: {
+      role: Role.MANAGER,
+      department: TaskDepartment.OPERATIONS,
+      designation: "Legal Ops Consultant",
+      modules: [WorkspaceModule.CASES],
+    },
+    create: {
+      userId: user.id,
+      organizationId: hingorani.id,
+      role: Role.MANAGER,
+      department: TaskDepartment.OPERATIONS,
+      designation: "Legal Ops Consultant",
+      modules: [WorkspaceModule.CASES],
+    },
+  });
+}
+
 async function seedTeamHierarchy() {
   const acme = await prisma.organization.findUnique({
     where: { slug: "acme-manufacturing" },
@@ -848,6 +924,9 @@ async function main() {
         industry: org.industry,
         status: org.status,
         isPrimary: org.isPrimary,
+        ...("plan" in org && org.plan
+          ? { plan: org.plan, allowedModules: org.allowedModules ?? [] }
+          : {}),
       },
       create: org,
     });
@@ -919,6 +998,7 @@ async function main() {
   }
 
   await seedTeamHierarchy();
+  await seedMultiOrgConsultant(passwordHash);
 
   for (const org of organizations) {
     const organization = await prisma.organization.findUniqueOrThrow({
@@ -963,6 +1043,7 @@ async function main() {
       role: Role.OWNER,
       department: TaskDepartment.ADMIN,
       designation: "Founder & Super Admin",
+      modules: DEFAULT_BCI_ORG_MODULES,
     },
     create: {
       userId: superAdminUser.id,
@@ -970,6 +1051,7 @@ async function main() {
       role: Role.OWNER,
       department: TaskDepartment.ADMIN,
       designation: "Founder & Super Admin",
+      modules: DEFAULT_BCI_ORG_MODULES,
     },
   });
 

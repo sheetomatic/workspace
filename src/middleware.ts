@@ -131,7 +131,20 @@ function handleProtectedAppRoutes(request: NextRequest, isLoggedIn: boolean) {
   return null;
 }
 
+function workspacePortalHost(request: NextRequest) {
+  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "sheetomatic.com";
+  return `workspace.${root}`;
+}
+
 function handleWorkspacePortalHost(request: NextRequest, isLoggedIn: boolean) {
+  const host = request.headers.get("host")?.split(":")[0] ?? "";
+  if (host.startsWith("app.")) {
+    const target = request.nextUrl.clone();
+    target.hostname = workspacePortalHost(request);
+    target.protocol = "https:";
+    return NextResponse.redirect(target);
+  }
+
   const { pathname } = request.nextUrl;
 
   if (isApiPath(pathname) || isStaticAssetPath(pathname)) {
@@ -176,7 +189,7 @@ function handleAiPortalHost(request: NextRequest, isLoggedIn: boolean) {
 
   if (pathname.startsWith("/app")) {
     const workspaceHost = request.nextUrl.clone();
-    workspaceHost.hostname = `app.${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "sheetomatic.com"}`;
+    workspaceHost.hostname = workspacePortalHost(request);
     workspaceHost.pathname = pathname;
     return NextResponse.redirect(workspaceHost);
   }

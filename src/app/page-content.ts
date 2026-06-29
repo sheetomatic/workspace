@@ -3,7 +3,6 @@ import { whatsappDisplayNumber, whatsappTel } from "./site-content";
 export const knowledgeTransferLinks = {
   flowMonitoring: "/courses#topic-flow-monitoring",
   dashboards: "/courses#topic-dashboards",
-  appsheet: "/courses#topic-appsheet",
   whatsapp: "/courses#topic-whatsapp",
 } as const;
 
@@ -19,145 +18,122 @@ export const footerCompanyLinks = [
   { href: "/services", label: "Services" },
   { href: "/products", label: "Products" },
   { href: "/about", label: "About" },
-  { href: "/career", label: "Careers" },
   { href: "/contact", label: "Contact" },
+  { href: "/career", label: "Careers" },
+  { href: "/courses", label: "Training" },
 ];
 
 export const footerProductLinks = [
+  { href: "/login", label: "Workspace" },
   { href: "/ai", label: "Sheetomatic AI" },
-  { href: "/products", label: "Workspace products" },
-  { href: "/courses", label: "Courses & training" },
-  { href: "/ai#features", label: "AI features" },
+  { href: "/services/flow", label: "FMS" },
+  { href: "/services/inventory", label: "IMS" },
+  { href: "/services/checklist", label: "Process Coordinator" },
+  { href: "/services/tasks", label: "Executive Assistant" },
+  { href: "/services/mis", label: "Executive Meeting (Weekly)" },
+  { href: "/services/automation", label: "Custom Software" },
   { href: "/ai/pricing", label: "AI pricing" },
 ];
 
-export const footerIndustryLinks = [
-  { href: "/ai#features", label: "Ecommerce" },
-  { href: "/ai#features", label: "Real Estate" },
-  { href: "/ai#features", label: "Healthcare" },
-  { href: "/ai#features", label: "Travel" },
-  { href: "/ai#features", label: "Education" },
-  { href: "/ai#features", label: "SaaS" },
-  { href: "/ai#features", label: "Logistics" },
+/** Services hub industry cards — each links to a relevant module, not generic anchors */
+export const servicesIndustryCards = [
+  { href: "/services/flow", label: "Manufacturing" },
+  { href: "/services/inventory", label: "Distribution" },
+  { href: "/services/checklist", label: "Services" },
+  { href: "/services/flow", label: "Trading" },
+  { href: "/services/tasks", label: "Job work" },
+  { href: "/services/whatsapp-ai", label: "Ecommerce" },
+  { href: "/services/whatsapp-ai", label: "Real Estate" },
+  { href: "/services/mis", label: "Healthcare" },
 ];
 
-export const homeQuickLinks = [
-  {
-    href: "/login",
-    label: "Workspace",
-    description:
-      "Sign in to your client dashboard for tasks, reports, approvals, and team control.",
-  },
-  {
-    href: "/ai",
-    label: "Sheetomatic AI",
-    description:
-      "WhatsApp AI chatbot, team inbox, CRM, and automation for customer conversations.",
-  },
-  {
-    href: "/services",
-    label: "Services",
-    description: "End-to-end AI-powered solutions on Google Workspace and WhatsApp.",
-  },
-  {
-    href: "/products",
-    label: "Products",
-    description:
-      "CRM, attendance, inventory, task systems, and custom apps on Google Workspace.",
-  },
-  {
-    href: "/courses",
-    label: "Courses",
-    description:
-      "Free YouTube playlists and paid programs on Sheets, AppSheet, and automation.",
-  },
-  {
-    href: "/about",
-    label: "About",
-    description: "Founder-led consultancy for Indian MSME operations.",
-  },
-  {
-    href: "/career",
-    label: "Careers",
-    description:
-      "Join the Sheetomatic payroll bench - MIS, AI tools, WhatsApp automation, and Google Workspace roles.",
-  },
-  {
-    href: "/contact",
-    label: "Contact",
-    description: "WhatsApp us for MIS, automation, and AI workflows.",
-  },
-] as const;
-
-export const homePage = {
-  eyebrow: "Automation and AI Consultancy",
-  title: "Operational control for Indian MSMEs.",
+export const homePainHook = {
+  eyebrow: "Tired of Google Sheets & AppSheet limitations?",
+  title: "Your ops deserve more than spreadsheet patches and storage limits.",
   lead:
-    "Client workspaces, Google Workspace systems, and WhatsApp automation - built for owners who need clarity, not complexity.",
-};
+    "When row caps, broken AppSheet automations, and data trapped in personal Drive slow your team down, it is time for a real workspace — not another tab in someone's Google account.",
+  pains: [
+    {
+      title: "Google Sheets & AppSheet limits",
+      text: "Automations break at scale. Permissions sprawl. Nobody owns the master file.",
+    },
+    {
+      title: "Data storage & ownership risk",
+      text: "Stock, sales, and collections live in personal Drive — gone when staff change.",
+    },
+  ],
+} as const;
 
 export const clientProblems = {
   eyebrow: "The problem",
-  title: "Most MSMEs run on chaos, not systems.",
+  title: "Google Sheets, AppSheet, and WhatsApp were never meant to run a business.",
   lead:
-    "Before we implement anything, we align on what is breaking today - usually the same patterns across manufacturing, distribution, and services.",
+    "Most MSMEs lose margin in the same places — spreadsheet limits, scattered storage, delayed reporting, and conversations that never become action.",
   items: [
     {
-      title: "Data lives in WhatsApp and scattered sheets",
-      text: "Sales, stock, collections, and follow-ups sit in personal chats and files. No one sees the full picture.",
+      title: "Google Sheets & AppSheet hit their ceiling fast",
+      text: "Row limits, fragile automations, and version conflicts — ops slow down exactly when you need to scale.",
     },
     {
-      title: "Owners chase updates manually",
-      text: "Managers report late. MIS takes days. Decisions wait on phone calls instead of daily numbers.",
+      title: "Data storage lives in the wrong place",
+      text: "Critical numbers sit in personal Gmail and Drive folders. Access breaks when people leave. Nothing is audit-ready.",
+    },
+    {
+      title: "Operations live in spreadsheets nobody trusts",
+      text: "Sales, stock, and collections sit in files with different formats. No one sees one version of the truth.",
+    },
+    {
+      title: "MIS depends on experts you cannot keep",
+      text: "Weekly reports take days. Quality varies. Owners wait on analysts instead of acting on Monday numbers.",
+    },
+    {
+      title: "WhatsApp is your CRM — and your chaos",
+      text: "Leads, follow-ups, and customer history scatter across personal chats. Nothing rolls up to management.",
+    },
+    {
+      title: "Managers chase updates instead of fixing leaks",
+      text: "Tasks, checklists, and flow stages stall because reminders live in memory, not a system.",
     },
     {
       title: "Heavy ERP is overkill and under-used",
-      text: "Big software bills, low adoption, and teams still fall back to Excel and informal messages.",
+      text: "Big software bills, low adoption, and teams still fall back to informal messages and manual files.",
     },
     {
-      title: "MIS talent is hard to hire and retain",
-      text: "Full payroll, office, and tools on your books - while reporting quality still varies week to week.",
-    },
-    {
-      title: "Customer follow-up is inconsistent",
-      text: "Leads, payments, and service requests slip when reminders depend on individual memory.",
-    },
-    {
-      title: "No single workspace for the business",
-      text: "Each department uses its own format. Owners cannot log in once and see tasks, MIS, and exceptions.",
+      title: "No weekly executive view without manual assembly",
+      text: "Executive Meeting boards require copy-paste every Sunday. Monday starts late — before decisions even begin.",
     },
   ],
   resolution:
-    "Sheetomatic designs practical systems on Google Workspace and client workspaces, scoped on a consultation call, then delivered with adoption support.",
+    "Sheetomatic Workspace replaces spreadsheet chaos with FMS, IMS, Checklist and Tasks modules — Process Coordinator and Executive Assistant roles monitor through their portals — plus Executive Meeting (Weekly) ready every Monday, exceptions only, without building a MIS team.",
 };
 
 export const servicesPage = {
-  eyebrow: "AI-powered operations",
-  title: "End-to-end systems for",
-  titleAccent: "sales, stock, cash, and customer conversations.",
+  eyebrow: "For running MSMEs",
+  title: "Operating systems that protect",
+  titleAccent: "margin — not another fire drill.",
   lead:
-    "One consultation to scope it. We design, build, integrate, train, and support - with AI in WhatsApp, reporting, and daily follow-up from day one.",
+    "Built for owner-led businesses with revenue and a team — not startup experiments. We Build your workspace, Manage adoption until portals run daily, and Scale modules as leaks close. Monday numbers land without you in every task.",
   heroStats: [
     {
-      value: "AI",
-      headline: "Intelligence built in",
+      value: "Mon",
+      headline: "Monday numbers you act on",
       label:
-        "WhatsApp AI, smart reminders, and assisted reporting - part of the system, not a bolt-on.",
+        "Executive Meeting (Weekly) assembles person-wise deficit and overdue flow — exceptions only, zero Sunday MIS prep.",
       featured: true,
       accent: "sky",
     },
     {
-      value: "E2E",
-      headline: "End-to-end delivery",
+      value: "PC+EA",
+      headline: "Accountability without you chasing",
       label:
-        "Discovery through go-live, integration, and training - one team owns the full solution.",
+        "Checklist module scores via the Process Coordinator role. Tasks module scores via the Executive Assistant role. Your team runs the rhythm - you review the board.",
       accent: "amber",
     },
     {
-      value: "Daily",
-      headline: "Runs every day",
+      value: "BMS",
+      headline: "Build. Manage. Scale.",
       label:
-        "We stay until managers use it daily and AI handles the routine follow-ups reliably.",
+        "One system replaces spreadsheet patches and WhatsApp follow-ups — perceived value in margin saved, not software price.",
       accent: "emerald",
     },
   ],
@@ -166,32 +142,32 @@ export const servicesPage = {
     eyebrow: "What we deliver",
     items: [
       {
+        tag: "FMS",
+        headline: "Flow monitoring end to end",
+        detail:
+          "Enquiry to dispatch, payment, and closure — stage owners, proofs, and nudges when work stalls.",
+      },
+      {
+        tag: "IMS",
+        headline: "Inventory you can trust",
+        detail:
+          "Stock in/out, locations, reorder signals, and alerts tied to the same flow your team runs daily.",
+      },
+      {
+        tag: "PC",
+        headline: "Checklist module (PC role)",
+        detail:
+          "Recurring checklists with owners, due dates, and completion scoring - Process Coordinator role monitors standards every shift via the PC portal.",
+      },
+      {
         tag: "AI",
-        headline: "WhatsApp & chat automation",
+        headline: "WhatsApp AI & CRM inbox",
         detail:
-          "AI replies, lead qualification, team inbox, and human handoff on official WhatsApp API.",
-      },
-      {
-        tag: "MIS",
-        headline: "Reporting owners trust",
-        detail:
-          "Daily dashboards and monthly MIS with AI-assisted alerts when numbers or collections drift.",
-      },
-      {
-        tag: "Flow",
-        headline: "Order visibility end to end",
-        detail:
-          "Enquiry to dispatch, payment, and closure - with stage owners and automatic nudges when work stalls.",
-      },
-      {
-        tag: "Ops",
-        headline: "Tasks & follow-up on autopilot",
-        detail:
-          "Delegated work, due dates, voice capture, and WhatsApp reminders so nothing lives in memory.",
+          "Official WhatsApp Business API, AI chatbot, lead capture, and human handoff in Sheetomatic AI.",
       },
     ],
     footnote:
-      "Full-stack delivery on one call - scoped, built, integrated, and supported by Sheetomatic.",
+      "Workspace SaaS plus Sheetomatic AI — scoped, configured, and supported by one team.",
   },
   audienceTags: [
     "Manufacturing",
@@ -201,49 +177,49 @@ export const servicesPage = {
     "Job work",
   ],
   painSection: {
-    eyebrow: "Sound familiar?",
-    title: "Six leaks draining margin every week",
+    eyebrow: "Firefighting costs margin",
+    title: "Six leaks owners fix with systems, not more chasing",
     lead:
-      "If two or more sound like your Monday morning, you are exactly who we build for.",
+      "If two or more match your week, you are the right customer — a running MSME, not a slide-deck startup.",
     pullQuote:
-      "You do not need another ERP demo. You need one place where flow, stock, tasks, and MIS stay current.",
+      "Price is what you pay. Perceived value is margin protected every Monday — without you in every WhatsApp thread.",
   },
-  resolutionHeadline: "One call. One blueprint. Systems people actually open.",
+  resolutionHeadline: "Build the system. Manage adoption. Scale what works.",
   resolutionSub:
-    "We map flow, stock, tasks, and reporting on Google Workspace and client workspaces - then stay until managers and staff use it daily.",
+    "FMS, IMS, Checklist and Tasks modules, and Executive Meeting (Weekly) in one workspace — Process Coordinator and Executive Assistant roles hold the team accountable through their portals while you manage from the board.",
   resolutionPillars: [
-    { label: "Discover", text: "Trace where data and follow-ups break today" },
-    { label: "Build", text: "End-to-end on Sheets, dashboards, WhatsApp & AI" },
-    { label: "Adopt", text: "Train and tune until owners trust the numbers" },
+    { label: "Build", text: "Map leaks and wire modules to how your team already works" },
+    { label: "Manage", text: "Portals live until Checklist and Tasks module scores run without owner chasing" },
+    { label: "Scale", text: "Add IMS, AI, and custom modules as the first win sticks" },
   ],
-  industriesTitle: "Sectors we serve across India",
+  industriesTitle: "Running MSMEs across India",
   industriesLead:
-    "Owner-led MSMEs in these industries run WhatsApp AI, MIS, and workspace ops from one Sheetomatic stack.",
-  processTitle: "End to end. Three phases.",
+    "Manufacturing, distribution, trading, and services with real payroll — one workspace, not another pilot that never sticks.",
+  processTitle: "Build. Manage. Scale.",
   processLead:
-    "One partner from discovery to daily use - with AI wired in throughout, not added later.",
+    "Systems beat firefighting — we stay through adoption, not hand you a login and leave.",
   processCtaLead:
-    "Tell us where attendance, field teams, or follow-ups break today - we will map the first win on WhatsApp.",
+    "Share where margin leaks today — flow stalls, stock drift, or Monday numbers you cannot trust. We map the first system win.",
   processSteps: [
     {
       step: "01",
-      title: "Discover & scope",
-      text: "We map leaks in WhatsApp, sheets, follow-ups, stock, and owner visibility - and define the full solution on one call.",
+      title: "Build",
+      text: "Trace margin leaks in flow, stock, checklists, and follow-ups — then wire FMS, IMS, Checklist and Tasks modules, and Executive Meeting to your process.",
     },
     {
       step: "02",
-      title: "Build & integrate",
-      text: "Sheets, Looker Studio, WhatsApp API, Sheetomatic AI, and your workspace - connected as one end-to-end system.",
+      title: "Manage",
+      text: "Train Process Coordinator and Executive Assistant roles on the Checklist and Tasks modules until daily discipline runs without you chasing WhatsApp — Sheetomatic AI connected throughout.",
     },
     {
       step: "03",
-      title: "Go live & tune AI",
-      text: "Team training, AI prompt tuning, post go-live fixes, and support until the stack runs every day without you chasing.",
+      title: "Scale",
+      text: "Expand modules, tune AI, and tighten the Monday board until exceptions only — team accountability without owner in every task.",
     },
   ],
-  problemSolutionTitle: "Problems we fix - end to end",
+  problemSolutionTitle: "Leaks closed with systems",
   problemSolutionLead:
-    "Each solution is scoped, built, integrated, and supported by Sheetomatic - with AI handling routine conversations and follow-ups throughout.",
+    "FMS, IMS, and Executive Meeting are running systems — Checklist and Tasks modules empower Process Coordinator and Executive Assistant roles to monitor performance through their portals so you manage the board, not every task.",
 };
 
 export type ServiceProblemSolution = {
@@ -257,186 +233,169 @@ export type ServiceProblemSolution = {
 
 export const serviceProblemSolutions: ServiceProblemSolution[] = [
   {
-    problem: "Tasks get lost in WhatsApp and memory",
+    problem: "Orders stall between enquiry and closure",
     problemDetail:
-      "Follow-ups depend on who remembers to chase - not a system with owners, due dates, and AI nudges.",
-    solution: "AI task delegation",
+      "Nobody sees where work stuck — enquiry, dispatch, payment, or delivery — until someone asks on WhatsApp.",
+    solution: "FMS — Flow Monitoring",
     solutionDetail:
-      "End-to-end task system with voice/text capture, smart assignment, priorities, and WhatsApp reminders from your workspace.",
-    href: "/services/tasks",
-    cta: "Explore tasks service",
-  },
-  {
-    problem: "No reliable attendance or leave visibility",
-    problemDetail:
-      "Field and office attendance live in registers and chats - nobody trusts the numbers.",
-    solution: "Attendance & leave system",
-    solutionDetail:
-      "Geo-fenced check-in, leave approvals, payroll-ready attendance, and facial recognition policy - in Sheetomatic workspace.",
-    href: "/services/hr/attendance-leave",
-    cta: "View attendance module",
-  },
-  {
-    problem: "Field teams are invisible until end of day",
-    problemDetail:
-      "Sales and service executives check in on WhatsApp - no map, no client trail, no MIS.",
-    solution: "Field executive tracking",
-    solutionDetail:
-      "Separate module for client geo check-ins, visit plans, and manager dashboards - not mixed with office punch.",
-    href: "/services/hr/field-tracking",
-    cta: "View field tracking",
-  },
-  {
-    problem: "Leads and customers scattered across chats",
-    problemDetail:
-      "Sales history and pipeline stage are buried in personal WhatsApp threads.",
-    solution: "AI-powered CRM",
-    solutionDetail:
-      "Lead tracking, pipeline, and customer records linked to WhatsApp conversations and team inbox - one end-to-end CRM.",
-    href: "/services/crm",
-    cta: "Explore CRM service",
-  },
-  {
-    problem: "Night-time WhatsApp leads go unanswered",
-    problemDetail:
-      "Customers message after hours. Your team replies late - or not at all.",
-    solution: "WhatsApp AI chatbot",
-    solutionDetail:
-      "AI replies, qualification, order updates, team inbox, and human handoff - official API, built and tuned for your business.",
-    href: "/services/whatsapp-ai",
-    cta: "Explore WhatsApp AI",
-  },
-  {
-    problem: "Owner numbers arrive too late to act",
-    problemDetail:
-      "Sales, collections, and exceptions land in chats - not a dashboard with alerts you can act on.",
-    solution: "AI-assisted MIS",
-    solutionDetail:
-      "Daily dashboards, monthly MIS, and Looker views with AI-flagged exceptions when collections or KPIs drift.",
-    href: "/services/mis",
-    cta: "Explore MIS service",
+      "Stage-based visibility with named owners, proofs, and automatic nudges when a step sits too long.",
+    href: "/services/flow",
+    cta: "Explore FMS",
   },
   {
     problem: "Stock on paper does not match reality",
     problemDetail:
       "Inventory registers drift from sales and purchases. Reorders are guesswork.",
-    solution: "Inventory management",
+    solution: "IMS — Inventory Management",
     solutionDetail:
-      "End-to-end stock in/out, locations, reorder signals, and alerts - tied to the same data your team uses daily.",
+      "Stock in/out, locations, reorder signals, and alerts — tied to the same flow data your team uses daily.",
     href: "/services/inventory",
-    cta: "Explore inventory service",
+    cta: "Explore IMS",
   },
   {
-    problem: "Orders stall between enquiry and closure",
+    problem: "Recurring ops slip without accountability",
     problemDetail:
-      "Nobody sees where an order stuck - enquiry, dispatch, payment, or delivery.",
-    solution: "Flow monitoring",
+      "Daily and weekly checklists depend on who remembers — not scored completion via the Checklist module and Process Coordinator role.",
+    solution: "Process Coordinator",
     solutionDetail:
-      "Stage-based visibility with named owners and AI nudges when a step sits too long - enquiry to closure.",
-    href: "/services/flow",
-    cta: "Explore flow service",
+      "Checklist module with recurring SOPs, owners, due dates, and mobile completion — Process Coordinator role scores via the PC portal; standards monitored, not remembered.",
+    href: "/services/checklist",
+    cta: "Explore Process Coordinator",
   },
   {
-    problem: "Manual copy-paste eats the week",
+    problem: "Tasks get lost in WhatsApp and memory",
     problemDetail:
-      "Reports, approvals, and reminders are rebuilt by hand every day.",
-    solution: "Workflow automation",
+      "Executive Assistants chase follow-ups manually — no Tasks module with owners, due dates, and scored delivery.",
+    solution: "Executive Assistant",
     solutionDetail:
-      "End-to-end automations across Sheets, WhatsApp, workspace, and AI - replacing repetitive reporting and follow-up.",
+      "Tasks module for delegation with priorities and proof — Executive Assistant role scores via the EA portal; follow-through monitored, not chased on WhatsApp.",
+    href: "/services/tasks",
+    cta: "Explore Executive Assistant",
+  },
+  {
+    problem: "Monday starts without a trusted executive view",
+    problemDetail:
+      "Executive Meeting boards are rebuilt by hand every Sunday. Owners wait on MIS instead of acting on numbers.",
+    solution: "Executive Meeting (Weekly)",
+    solutionDetail:
+      "Weekly board assembled automatically — person-wise deficit, overdue flow, and team scores. Open Monday, exceptions only.",
+    href: "/services/mis",
+    cta: "Explore Executive Meeting",
+  },
+  {
+    problem: "Night-time WhatsApp leads go unanswered",
+    problemDetail:
+      "Customers message after hours. Your team replies late — or not at all.",
+    solution: "WhatsApp AI chatbot",
+    solutionDetail:
+      "AI replies, qualification, order updates, CRM inbox, and human handoff — official WhatsApp Business API.",
+    href: "/services/whatsapp-ai",
+    cta: "Explore WhatsApp AI",
+  },
+  {
+    problem: "Your process does not fit off-the-shelf modules",
+    problemDetail:
+      "Generic ERP and template apps miss how your team actually works. You need something built for your industry.",
+    solution: "Custom Software",
+    solutionDetail:
+      "Industry-specific modules, integrations, and workflows — scoped, built, and run on Sheetomatic Workspace.",
     href: "/services/automation",
-    cta: "Explore automation service",
+    cta: "Explore Custom Software",
   },
 ];
 
 export const serviceDeliverables = [
   {
-    title: "MIS & reporting",
-    tag: "Owner view",
-    text: "Monthly MIS, data cleanup, owner dashboards, and management reporting your team can maintain.",
-    outcome: "Decisions from daily numbers - not week-old phone updates.",
+    title: "FMS — Flow Monitoring",
+    tag: "Pipeline",
+    text: "Stage-based order and job flow from enquiry to closure with owners, proofs, and stall alerts.",
+    outcome: "Everyone sees where work stuck — before margin leaks.",
     featured: true,
   },
   {
-    title: "Google Sheets & automation",
-    tag: "Automation",
-    text: "Formulas, workflows, recurring reports, and AI-assisted integrations that replace manual copy-paste.",
-    outcome: "Hours back every week on reporting and follow-ups.",
+    title: "IMS — Inventory Management",
+    tag: "Stock",
+    text: "Stock in/out, locations, reorder signals, and alerts connected to live flow data.",
+    outcome: "Inventory matches reality — not last week's register.",
   },
   {
-    title: "Business apps & workflows",
-    tag: "End-to-end",
-    text: "CRM, inventory, attendance, field ops, and task systems - designed, built, and supported as one stack.",
-    outcome: "Field and office on one system - no parallel registers.",
+    title: "Process Coordinator",
+    tag: "Operations",
+    text: "Checklist module with mobile completion — Process Coordinator role scores via the PC portal and monitors standards every shift.",
+    outcome: "Daily ops run on schedule — scored, not remembered.",
   },
   {
-    title: "Looker Studio dashboards",
-    tag: "Daily control",
-    text: "Sales, stock, collections, and KPI views connected to live sheet data.",
-    outcome: "Owner dashboard readable in under 60 seconds.",
-  },
-  {
-    title: "WhatsApp API & workflows",
+    title: "Executive Assistant",
     tag: "Follow-up",
-    text: "Official API, templates, team inbox, and integrations with your operating stack.",
-    outcome: "Leads and payments chased with system reminders - not memory.",
+    text: "Tasks module with due dates and proof of completion — Executive Assistant role scores via the EA portal and monitors follow-through.",
+    outcome: "Follow-ups land on time — without chasing on WhatsApp.",
   },
   {
-    title: "Implementation support",
-    tag: "After go-live",
-    text: "Discovery, build, training, and ongoing fixes when reality hits the process.",
-    outcome: "Systems that survive staff turnover and busy season.",
+    title: "Executive Meeting (Weekly)",
+    tag: "Executive",
+    text: "Weekly board assembled automatically — person-wise deficit, overdue flow, and team scores. Open Monday, exceptions only.",
+    outcome: "Monday starts with numbers you trust — no MIS assembly.",
+    featured: true,
+  },
+  {
+    title: "Sheetomatic AI",
+    tag: "Conversations",
+    text: "WhatsApp Business API, AI chatbot, CRM inbox, and team handoff for customer conversations.",
+    outcome: "Leads captured and followed up — day and night.",
+  },
+  {
+    title: "Custom Software",
+    tag: "Your process",
+    text: "Industry-specific modules, integrations, and workflows built on Sheetomatic Workspace when standard modules are not enough.",
+    outcome: "Software shaped around your operation — scoped and supported by Sheetomatic.",
   },
 ];
 
 export const productCategories = [
   {
-    name: "CRM",
-    text: "Lead tracking, follow-ups, customer records, and sales pipeline on Google Workspace.",
+    name: "FMS — Flow Monitoring",
+    text: "Stop orders dying in the middle — stage owners and stall alerts protect margin from enquiry to closure.",
   },
   {
-    name: "Employee Attendance & Leave App",
-    text: "Attendance, leave, geo-fencing, and HR visibility for field and office teams.",
+    name: "IMS — Inventory Management",
+    text: "Stock that matches sales and purchases — reorder before stockouts eat margin, not after the fire drill.",
   },
   {
-    name: "Field Executive Apps",
-    text: "Visit logs, orders, collections, and site reporting from mobile - synced to central sheets.",
+    name: "Process Coordinator",
+    text: "Shift standards run on the Checklist module — Process Coordinator role scores via the PC portal so managers coach from data, not your memory.",
   },
   {
-    name: "Inventory Management Systems",
-    text: "Stock in/out, locations, reorder signals, and ties to sales and purchase data.",
+    name: "Executive Assistant",
+    text: "Tasks module with owners, due dates, and proof — Executive Assistant role monitors follow-through via the EA portal so you are not in every WhatsApp chase.",
   },
   {
-    name: "WhatsApp API",
-    text: "Official WhatsApp Business API setup, templates, webhooks, and team inbox integrations.",
-  },
-  {
-    name: "WhatsApp AI Chatbot",
-    text: "AI replies, lead capture, and handoff to your team inside WhatsApp conversations.",
-  },
-  {
-    name: "Fully AI Powered Task Delegation Systems",
-    text: "Assign, proof-check, and verify tasks with AI-assisted delegation and manager workflows.",
-  },
-  {
-    name: "Fully AI Powered FMS (Flow Monitoring Systems) Creation",
-    text: "Design and deploy flow monitoring pipelines with stops, proofs, and live pipeline dashboards.",
-  },
-  {
-    name: "Checklist",
-    text: "Recurring operational checklists with owners, due dates, and completion tracking on mobile.",
-  },
-  {
-    name: "Custom ERP & Software",
-    text: "Custom apps, ERP layers, internal tools, and industry-specific software on Sheets and AppSheet.",
+    name: "Executive Meeting (Weekly)",
+    text: "Monday numbers you trust — person-wise deficit and team scores assembled automatically, exceptions only.",
     featured: true,
+  },
+  {
+    name: "WhatsApp AI chatbot",
+    text: "Night leads qualified and handed to owned tasks — conversations become action, not owner firefighting.",
+  },
+  {
+    name: "Sheetomatic AI CRM",
+    text: "Pipeline and customer history tied to WhatsApp — one record per account, not scattered personal chats.",
+  },
+  {
+    name: "Sheetomatic Workspace",
+    text: "One login for running MSMEs — FMS, IMS, Checklist, Tasks, Executive Meeting, and AI modules; Process Coordinator and Executive Assistant roles run daily through their portals.",
+  },
+  {
+    name: "Custom Software",
+    text: "When standard modules miss your process — built on the same workspace, scaled after the first system win sticks.",
   },
 ];
 
 export const productsPage = {
-  eyebrow: "Products",
-  title: "Business systems you can run daily.",
+  eyebrow: "Operating systems, not apps",
+  title: "Modules that protect margin while your team runs without you.",
   lead:
-    "Ready-made and custom-built products on Google Workspace. Discuss scope on a call - we match the right app to your operation.",
+    "For owner-led MSMEs with revenue and payroll — FMS, IMS, Checklist and Tasks modules, Executive Meeting (Weekly), and Sheetomatic AI, with Process Coordinator and Executive Assistant roles on their portals. Perceived value in Monday numbers and closed leaks, not shelf price.",
 };
 
 export const contactPage = {
@@ -479,27 +438,27 @@ export const aboutPage = {
   eyebrow: "About",
   title: "Built for operators, not slide decks.",
   lead:
-    "Sheetomatic is an Automation and AI Consultancy for Indian MSMEs - founded by Shyam Kumar Banjare.",
+    "Sheetomatic builds Workspace SaaS and Sheetomatic AI for Indian MSMEs — founded by Shyam Kumar Banjare.",
 };
 
 export const careerPage = {
   eyebrow: "Career",
-  title: "Join the Sheetomatic AI + MIS bench.",
+  title: "Join the Sheetomatic team.",
   lead:
-    "We hire on Sheetomatic Payroll for MIS, Google Workspace, AI tools, and WhatsApp automation roles - off-site or at client office when the placement requires it.",
+    "We hire for operations, AI, and client success roles — remote or at client sites when the placement requires it.",
 };
 
 export const coursesPage = {
   eyebrow: "Knowledge Transfer",
-  title: "Learn automation on your schedule.",
+  title: "Learn operational systems on your schedule.",
   lead:
-    "Free playlists on Sheetomatic Videos (YouTube) or paid programs on the Sheetomatic store - practical Google Workspace skills for owners, managers, and teams.",
+    "Free playlists on Sheetomatic Videos (YouTube) or paid programs on the Sheetomatic store — practical skills for owners, managers, and teams.",
   freeTitle: "Free video library",
   freeLead:
-    "Sheetomatic Videos on YouTube - open any playlist below. Flow Monitoring Systems, Sheets, AppSheet, Forms, Looker Studio, Query, and more.",
+    "Sheetomatic Videos on YouTube — flow monitoring, WhatsApp automation, MIS structure, and operational best practices.",
   paidTitle: "Paid programs",
   paidLead:
-    "Structured programs on the Sheetomatic learning store - enroll after you choose a program.",
+    "Structured programs on the Sheetomatic learning store — enroll after you choose a program.",
   paidStoreButtonLabel: "View paid programs on store",
   watchYoutubeLabel: "Watch on YouTube",
 };
@@ -513,88 +472,28 @@ export const freeCourseTopics = [
     tag: "Flow Monitoring",
   },
   {
-    id: "topic-sheets",
-    title: "Google Sheets Premium Course",
-    text: "Beginner to advanced Sheets for business reporting, formulas, and daily operations.",
-    href: "https://www.youtube.com/playlist?list=PLJ2nwPX6W6AFx1xrNMG2UATSLe0ebTtgI",
-    tag: "Sheets",
-  },
-  {
     id: "topic-whatsapp",
     title: "WhatsApp Automations",
-    text: "Connect WhatsApp workflows with sheets, reminders, and follow-ups for MSME teams.",
+    text: "Connect WhatsApp workflows with reminders and follow-ups for MSME teams.",
     href: "https://www.youtube.com/playlist?list=PLJ2nwPX6W6AGRshLErzQNK5l9J_V6Nffx",
     tag: "WhatsApp",
   },
   {
-    id: "topic-forms",
-    title: "Google Forms",
-    text: "Create forms in Hindi - field capture, approvals, and data that feeds your MIS pipeline.",
-    href: "https://www.youtube.com/playlist?list=PLJ2nwPX6W6AH-lF9s0aYPSm8g9hfHSu9R",
-    tag: "Forms",
-  },
-  {
-    id: "topic-appsheet",
-    title: "AppSheet Course",
-    text: "No-code AppSheet apps in Hindi - CRM, inventory, attendance, and field workflows on Sheets.",
-    href: "https://www.youtube.com/playlist?list=PLJ2nwPX6W6AHByfyaVxX7PvRsFI1AgKQm",
-    tag: "AppSheet",
-  },
-  {
     id: "topic-dashboards",
-    title: "Google Data Studio (Looker Studio)",
-    text: "Step-by-step Looker Studio in Hindi - owner dashboards from Sheets and connected data.",
+    title: "Executive dashboards",
+    text: "Build owner-level dashboards for daily control and weekly executive meeting reporting.",
     href: "https://www.youtube.com/playlist?list=PLJ2nwPX6W6AEGRsuLRVQjkCpwEpTibZv_",
     tag: "Dashboards",
-  },
-  {
-    id: "topic-query",
-    title: "Query in Google Sheets",
-    text: "QUERY function series - pull and shape report data without manual copy-paste.",
-    href: "https://www.youtube.com/playlist?list=PLJ2nwPX6W6AFbq6vYp7M6OCYHDxtyBsBG",
-    tag: "Query",
-  },
-  {
-    id: "topic-functions",
-    title: "Logical Functions in Google Sheets",
-    text: "IF function series - conditions, validations, and smarter sheet logic.",
-    href: "https://www.youtube.com/playlist?list=PLJ2nwPX6W6AHWdLgGm1yD6C1jK0O-gGPg",
-    tag: "Functions",
-  },
-  {
-    id: "topic-docs",
-    title: "Google Docs",
-    text: "Full Docs course in Hindi - documents, collaboration, and a practical MS Word alternative.",
-    href: "https://www.youtube.com/playlist?list=PLJ2nwPX6W6AEaQLrgiSAO8NMnu7GWMeVS",
-    tag: "Docs",
   },
 ];
 
 export const paidCourses = [
   {
-    title: "Google Sheets Beginner to Advanced",
-    tag: "Sheets",
-    text: "Formulas, data cleanup, reporting formats, and automation foundations for daily business work.",
+    title: "Flow Monitoring for MSME Owners",
+    tag: "FMS",
+    text: "Stage-based flow design, owners, proofs, and pipeline visibility from enquiry to closure.",
     level: "Foundation",
     featured: true,
-  },
-  {
-    title: "Google Forms Practical Training",
-    tag: "Forms",
-    text: "Capture field data, approvals, and structured inputs that feed your MIS pipeline.",
-    level: "Foundation",
-  },
-  {
-    title: "Looker Studio Dashboard Design",
-    tag: "Dashboards",
-    text: "Build owner-level dashboards connected to Sheets and BigQuery for clear daily control.",
-    level: "Intermediate",
-  },
-  {
-    title: "AppSheet for Business Apps",
-    tag: "AppSheet",
-    text: "Design mobile apps on top of Google Sheets for CRM, inventory, and operations.",
-    level: "Intermediate",
   },
   {
     title: "MIS Reporting for MSME Owners",

@@ -5,7 +5,7 @@ import { marketingMetadata } from "@/lib/marketing-metadata";
 export const metadata: Metadata = marketingMetadata({
   title: "Products",
   description:
-    "CRM, attendance, inventory, ERP, and custom Google Workspace apps built for MSME operations.",
+    "FMS, IMS, CRM, and workspace apps for MSME operations — systems and teams built so your business scales without you and stays profitable.",
   path: "/products",
 });
 

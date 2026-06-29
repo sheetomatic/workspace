@@ -78,7 +78,18 @@ Pilot: ₹[X]/month for 3 FMS + team. Demo login: bci-demo org on sheetomatic.co
 
 ## Package: BCI FMS Starter (recommended offer)
 
-### Included
+**Modular packaging (like Zoho / Salesforce add-ons):**
+
+| SKU | Modules | Who buys it |
+|-----|---------|-------------|
+| **BCI FMS Bundle** | FMS, Reports, Approvals, EM Ready | BCI alumni running split flows |
+| **Executive Assistant (Tasks) add-on** | Tasks, PC, checklists | Any owner — sold **separately**, not bundled into BCI |
+| **BCI Growth** | BCI bundle + IMS + HR | Multi-dept MSME |
+| **BCI + Tasks** | Merge both SKUs at provisioning | Client wants FMS **and** EA in one workspace |
+
+> **Rule:** Tasks is **not** included in BCI Starter or Growth. Provision `TASKS_ADDON` or merge entitlements when sold together.
+
+### BCI FMS Starter — included
 
 1. **3 split FMS** (pre-built, customized to client):
    - Sales: Lead to Closure
@@ -104,11 +115,13 @@ Pilot: ₹[X]/month for 3 FMS + team. Demo login: bci-demo org on sheetomatic.co
 
 ### Suggested pricing anchors (India MSME)
 
-| Tier | Price guide | Best for |
-|------|-------------|----------|
-| **Starter** | ₹3,999–5,999/mo | 1 location, 3 FMS, ≤8 users |
-| **Growth** | ₹8,999–12,999/mo | + IMS, tasks, ≤20 users |
-| **Implementation** | ₹15,000–25,000 one-time | Mapping + go-live (credit 1st month optional) |
+| Tier | Price guide | Modules | Best for |
+|------|-------------|---------|----------|
+| **BCI Starter** | ₹3,999–5,999/mo | FMS + Reports + Approvals | 1 location, 3 FMS, ≤8 users |
+| **Tasks add-on** | ₹999–1,999/mo | Executive Assistant only | Owners who want EA/PC without FMS |
+| **BCI Growth** | ₹8,999–12,999/mo | Starter + IMS + HR | Multi-dept, ≤20 users |
+| **BCI + Tasks bundle** | Starter + add-on price | Both SKUs merged | FMS accountability + daily task discipline |
+| **Implementation** | ₹15,000–25,000 one-time | Mapping + go-live | Credit 1st month optional |
 
 *Adjust to your market. Anchor against MIS coordinator cost (₹15–25k/mo).*
 

@@ -5,7 +5,7 @@ import { marketingMetadata } from "@/lib/marketing-metadata";
 export const metadata: Metadata = marketingMetadata({
   title: "Courses & Knowledge Transfer",
   description:
-    "Free YouTube playlists and paid programs on Google Sheets, AppSheet, dashboards, and WhatsApp automation.",
+    "Free YouTube playlists and paid programs on automation, flow monitoring, dashboards, and WhatsApp for MSME teams.",
   path: "/courses",
 });
 

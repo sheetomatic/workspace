@@ -6,10 +6,10 @@ import { launchSteps } from "@/app/product-content";
 import "./wa-product.css";
 
 const highlights = [
-  { icon: MessageCircle, label: "AI replies on WhatsApp" },
-  { icon: Inbox, label: "Team inbox & CRM" },
-  { icon: BookOpen, label: "Train from FAQs & docs" },
-  { icon: Radio, label: "Go live when you are ready" },
+  { icon: MessageCircle, label: "AI captures leads 24/7" },
+  { icon: Inbox, label: "Inbox and CRM convert chats" },
+  { icon: BookOpen, label: "Follow-up tasks stay on track" },
+  { icon: Radio, label: "Shared inbox, humans close" },
 ];
 
 export function AiCompactHomePage() {
@@ -24,10 +24,10 @@ export function AiCompactHomePage() {
               <Sparkles size={14} aria-hidden />
               Sheetomatic AI
             </span>
-            <h1>WhatsApp AI workspace for teams that need to go live fast</h1>
+            <h1>A WhatsApp system to attract, convert, and scale sales</h1>
             <p className="wa-ai-compact-lead">
-              Sign up, connect your business number, train the bot, and turn on auto-replies
-              from one dashboard built for Indian MSMEs.
+              Capture leads with AI. Convert in shared inbox and CRM. Empower your team to
+              close while AI handles routine replies.
             </p>
             <div className="wa-ai-compact-hero-actions">
               <Link className="wa-btn-primary" href={AI_START_FREE_HREF}>
@@ -50,10 +50,10 @@ export function AiCompactHomePage() {
           <div className="wa-ai-golive-grid">
             <div className="wa-ai-golive-main">
               <span className="wa-product-kicker">Go live</span>
-              <h2>From signup to live AI in three steps</h2>
+              <h2>Install your WhatsApp sales system in three steps</h2>
               <p className="wa-ai-golive-sub">
-                No developer required. Your team owns setup, training, and launch inside
-                Sheetomatic AI.
+                A repeatable go-live process. Connect, train, and launch without developers
+                or scattered tools.
               </p>
               <ol className="wa-ai-golive-steps">
                 {launchSteps.map((step) => (

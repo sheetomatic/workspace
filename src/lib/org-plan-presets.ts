@@ -5,8 +5,8 @@ import {
   WORKSPACE_MODULES,
 } from "@/lib/workspace-modules";
 
+/** BCI FMS core — split flows, EM Ready, approvals, MIS. Tasks sold separately. */
 export const BCI_STARTER_ALLOWED: WorkspaceModule[] = [
-  "TASKS",
   "FMS",
   "REPORTS",
   "APPROVALS",
@@ -18,6 +18,9 @@ export const BCI_GROWTH_ALLOWED: WorkspaceModule[] = [
   "HR",
 ];
 
+/** Executive Assistant / PC / checklists — standalone module anyone can buy. */
+export const TASKS_ADDON_ALLOWED: WorkspaceModule[] = ["TASKS"];
+
 export const BCI_STARTER_LIMITS = {
   maxMembers: 8,
   maxFmsTemplates: 3,
@@ -26,6 +29,11 @@ export const BCI_STARTER_LIMITS = {
 export const BCI_GROWTH_LIMITS = {
   maxMembers: 20,
   maxFmsTemplates: 10,
+} as const;
+
+export const TASKS_ADDON_LIMITS = {
+  maxMembers: 25,
+  maxFmsTemplates: 0,
 } as const;
 
 /** Legacy orgs keep empty allowedModules until migrated - no tier clamping. */
@@ -50,6 +58,8 @@ export function allowedModulesForPlan(plan: OrgPlan): WorkspaceModule[] {
       return [...BCI_STARTER_ALLOWED];
     case "BCI_GROWTH":
       return [...BCI_GROWTH_ALLOWED];
+    case "TASKS_ADDON":
+      return [...TASKS_ADDON_ALLOWED];
     case "LEGAL_ADDON":
       return ["CASES", "TASKS"];
     case "ENTERPRISE":
@@ -65,6 +75,8 @@ export function limitsForPlan(plan: OrgPlan) {
       return { ...BCI_STARTER_LIMITS };
     case "BCI_GROWTH":
       return { ...BCI_GROWTH_LIMITS };
+    case "TASKS_ADDON":
+      return { ...TASKS_ADDON_LIMITS };
     case "LEGAL_ADDON":
       return { maxMembers: 50, maxFmsTemplates: 0 };
     case "ENTERPRISE":
@@ -72,6 +84,13 @@ export function limitsForPlan(plan: OrgPlan) {
     default:
       return { maxMembers: 999, maxFmsTemplates: 999 };
   }
+}
+
+/** Union module lists when a client buys BCI + Tasks (or other add-ons). */
+export function mergeAllowedModules(
+  ...moduleSets: WorkspaceModule[][]
+): WorkspaceModule[] {
+  return [...new Set(moduleSets.flat())];
 }
 
 /** Default member modules for a role, clamped to org tier. */
@@ -103,4 +122,12 @@ export const ORG_PLAN_LABELS: Record<OrgPlan, string> = {
   BCI_GROWTH: "BCI FMS Growth",
   ENTERPRISE: "Enterprise",
   LEGAL_ADDON: "Legal add-on",
+  TASKS_ADDON: "Executive Assistant (Tasks)",
 };
+
+/** Product packaging labels for sales / onboarding UI. */
+export const MODULE_SKU_LABELS = {
+  bciCore: "BCI FMS Bundle (FMS + Reports + Approvals)",
+  tasksAddon: "Executive Assistant / Tasks add-on",
+  bciGrowth: "BCI Growth (+ IMS + HR)",
+} as const;

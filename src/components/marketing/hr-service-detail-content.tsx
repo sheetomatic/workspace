@@ -131,7 +131,7 @@ export function HrServiceDetailContent({ moduleSlug }: HrServiceDetailContentPro
                 <p className="services-hr-parity-label">Enterprise-grade patterns</p>
                 <p className="services-hr-parity-text">
                   Same ideas as enterprise HCM platforms  -  scoped for Indian MSME
-                  teams with WhatsApp-ready ops and Google Sheets export.
+                  teams with WhatsApp-ready ops and Executive Meeting (Weekly) reporting.
                 </p>
                 <ul className="services-hr-parity-list">
                   {mod.darwinboxParity.map((item) => (

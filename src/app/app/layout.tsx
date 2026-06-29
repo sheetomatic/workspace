@@ -44,19 +44,37 @@ export default async function AppLayout({
 }) {
   const sessionUser = await requireSession();
   await ensureSessionTenantHost(sessionUser);
-  const [organization, organizations] = await Promise.all([
-    prisma.organization.findUnique({
-      where: { id: sessionUser.organizationId },
-      select: {
-        id: true,
-        name: true,
-        status: true,
-        plan: true,
-        updatedAt: true,
-      },
-    }),
-    listOrganizationsForUser(sessionUser.id),
-  ]);
+
+  let organization: {
+    id: string;
+    name: string;
+    status: import("@prisma/client").OrganizationStatus;
+    plan: import("@prisma/client").OrgPlan;
+    updatedAt: Date;
+  } | null = null;
+  let organizations: Awaited<ReturnType<typeof listOrganizationsForUser>> = [];
+
+  try {
+    [organization, organizations] = await Promise.all([
+      prisma.organization.findUnique({
+        where: { id: sessionUser.organizationId },
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          plan: true,
+          updatedAt: true,
+        },
+      }),
+      listOrganizationsForUser(sessionUser.id),
+    ]);
+  } catch (error) {
+    console.error("[app-layout] workspace bootstrap failed", error);
+    redirect(
+      "/api/auth/signout?callbackUrl=" +
+        encodeURIComponent("/login?error=workspace"),
+    );
+  }
 
   if (!organization) {
     redirect(

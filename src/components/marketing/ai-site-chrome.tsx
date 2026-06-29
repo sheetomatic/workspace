@@ -1,6 +1,6 @@
 import Link from "next/link";
-import Image from "next/image";
 import { siteBrand, whatsappDisplayNumber } from "@/app/site-content";
+import { BrandIconMark } from "@/components/brand/brand-icon-mark";
 import { WhatsAppButton } from "@/components/marketing/marketing-buttons";
 import { AI_LOGIN_HREF, AI_START_FREE_HREF } from "@/lib/ai-auth-links";
 
@@ -18,13 +18,7 @@ export function AiSiteHeader() {
         <div className="site-header-bar flex items-center justify-between gap-3 py-3.5">
           <Link className="site-brand" href="/ai">
             <span className="logo-mark">
-              <Image
-                src={siteBrand.logoSrc}
-                alt={siteBrand.logoAlt}
-                width={40}
-                height={40}
-                priority
-              />
+              <BrandIconMark size={26} priority />
             </span>
             <span className="site-brand-text">
               <strong>Sheetomatic AI</strong>
@@ -84,12 +78,7 @@ export function AiSiteFooter() {
           <div className="site-footer-brand">
             <Link className="site-brand site-brand-footer" href="/ai">
               <span className="logo-mark">
-                <Image
-                  src={siteBrand.logoSrc}
-                  alt={siteBrand.logoAlt}
-                  width={40}
-                  height={40}
-                />
+                <BrandIconMark size={26} theme="light" />
               </span>
               <span className="site-brand-text">
                 <strong>Sheetomatic AI</strong>
@@ -110,11 +99,15 @@ export function AiSiteFooter() {
             <Link href={AI_LOGIN_HREF}>Sign in</Link>
           </div>
           <div>
-            <p className="site-footer-col-label">Sheetomatic</p>
-            <Link href="/">Main website</Link>
-            <Link href="/services">Services</Link>
-            <Link href="/career">Careers</Link>
-            <Link href="/contact">Contact</Link>
+            <p className="site-footer-col-label">Company</p>
+            <nav aria-label="Sheetomatic company links">
+              <Link href="/">Main website</Link>
+              <Link href="/services">Services</Link>
+              <Link href="/products">Products</Link>
+              <Link href="/about">About</Link>
+              <Link href="/career">Careers</Link>
+              <Link href="/contact">Contact</Link>
+            </nav>
             <WhatsAppButton
               className="footer-inline-btn footer-whatsapp-btn mt-3"
               label={whatsappDisplayNumber}

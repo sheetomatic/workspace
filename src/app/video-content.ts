@@ -12,65 +12,64 @@ export type MarketingVideo = {
   youtubeId?: string;
 };
 
-/** AI section - single supporting video */
-export const aiSectionVideo: MarketingVideo = {
-  id: "ai-deep-dive",
-  label: "AI workflow",
-  title: "Delegate work in one sentence",
-  description: "Full walkthrough of AI instruction to structured operations.",
-  youtubeId: "",
+/** AI Enabled Tasks — voice/text delegation on WhatsApp */
+export const aiEnabledTasksVideo: MarketingVideo = {
+  id: "ai-enabled-tasks",
+  label: "AI Enabled Tasks",
+  title: "From voice note to assigned task in seconds",
+  description:
+    "Speak or type on WhatsApp. Sheetomatic creates the task, assigns the owner, and sends alerts — no spreadsheets, no chasing.",
+  youtubeId: "n-bHn6kFuaA",
 };
+
+/** AI section - single supporting video */
+export const aiSectionVideo: MarketingVideo = aiEnabledTasksVideo;
 
 /** Founder / trust video */
 export const founderVideo: MarketingVideo = {
   id: "founder",
   label: "Founder",
   title: "Message from Shyam Kumar Banjare",
-  description: "How Sheetomatic helps MSMEs move from chaos to control.",
+  description:
+    "How Sheetomatic applies the P.A.C.E. framework so MSMEs scale without the owner — systems and role-based operations, not founder firefighting.",
   youtubeId: "",
 };
 
-/** Services hero stack & USP � -  YouTube demos (Sheetomatic Videos) */
+/** Services hero stack — YouTube demos (Sheetomatic Videos) */
 export const servicesDemoVideos = {
   fms: {
     href: "https://youtu.be/bXYleWCg200",
     label: "Watch how FMS works",
   },
-  misDashboards: {
+  emReports: {
     href: "https://www.youtube.com/playlist?list=PLJ2nwPX6W6AEGRsuLRVQjkCpwEpTibZv_",
-    label: "Dashboard videos",
-  },
-  appsheet: {
-    href: "https://www.youtube.com/playlist?list=PLJ2nwPX6W6AHByfyaVxX7PvRsFI1AgKQm",
-    label: "AppSheet playlist",
+    label: "Executive reporting demos",
   },
   whatsapp: {
     href: "https://www.youtube.com/playlist?list=PLJ2nwPX6W6AGRshLErzQNK5l9J_V6Nffx",
     label: "WhatsApp videos",
   },
+  aiTasks: {
+    href: "https://youtu.be/n-bHn6kFuaA",
+    label: "Watch AI Enabled Tasks",
+  },
 } as const;
 
 /** Per-offer videos (matches focusOffers ids in marketing-content.ts) */
 export const offerVideos: Record<string, MarketingVideo> = {
-  "mis-payroll": {
-    id: "video-mis-payroll",
-    label: "Payroll MIS",
-    title: "Hire MIS on Sheetomatic Payroll",
-    description: "Save ESI, PF, office, and laptop costs vs direct hiring.",
-    youtubeId: "",
+  "ai-workspace": {
+    id: "video-ai-workspace",
+    label: "Workspace",
+    title: "Sheetomatic Workspace walkthrough",
+    description:
+      "FMS, IMS, CRM, Executive Meeting, and WhatsApp AI systems — with Process Coordinator and Executive Assistant roles — in one SaaS login.",
+    youtubeId: "n-bHn6kFuaA",
   },
-  "custom-apps": {
-    id: "video-custom-apps",
-    label: "Custom apps",
-    title: "AppSheet + Google Sheets solution",
-    description: "One custom system instead of many tools with no analysis.",
-    youtubeId: "",
-  },
-  "pro-website": {
-    id: "video-pro-website",
-    label: "Website",
-    title: "Professional website delivery",
-    description: "Low-cost, high-trust web presence for your business.",
+  "whatsapp-ai": {
+    id: "video-whatsapp-ai",
+    label: "WhatsApp AI",
+    title: "WhatsApp AI and team inbox",
+    description: "Official API, AI replies, and tasks from real conversations.",
     youtubeId: "",
   },
 };

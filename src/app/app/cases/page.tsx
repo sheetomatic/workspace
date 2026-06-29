@@ -18,7 +18,15 @@ import { Suspense } from "react";
 
 export default async function CasesPage() {
   const user = await requireSession(undefined, { module: "CASES" });
+  const isHingorani = user.organizationSlug === "hingorani";
   const admin = isLegalAdmin(user);
+  const pageTitle = isHingorani
+    ? admin
+      ? "Hingorani dashboard"
+      : "My work"
+    : admin
+      ? "Cases dashboard"
+      : "My work";
   const [stats, counts, runningInsights] = await Promise.all([
     getLegalDashboardStats(user),
     getLegalViewNavCounts(user),
@@ -35,7 +43,7 @@ export default async function CasesPage() {
                 ? "Manage all MACT case files, hearings, and documents."
                 : `Your assigned cases${user.staffCode ? ` (${user.staffCode})` : ""}.`
             }
-            title={admin ? "Cases dashboard" : "My work"}
+            title={pageTitle}
           />
         </div>
         {admin ? (

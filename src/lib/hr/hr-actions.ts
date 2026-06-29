@@ -161,9 +161,9 @@ export async function createFieldVisitAction(formData: FormData): Promise<void> 
         organizationId: user.organizationId,
       },
     },
-    select: { id: true },
+    select: { id: true, deactivatedAt: true },
   });
-  if (!assigneeMembership) {
+  if (!assigneeMembership || assigneeMembership.deactivatedAt) {
     return;
   }
 

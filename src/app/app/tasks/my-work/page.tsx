@@ -89,7 +89,7 @@ export default async function TasksMyWorkPage() {
     <div className="saas-page ws-tasks-page ws-tasks-sf">
       <TaskPageToolbar
         title="My work"
-        description="Tasks assigned to you. Submit proof when done; your reporting manager verifies before completion."
+        description="Open Today for your full queue. This view shows delegated tasks only."
       />
 
       <Suspense fallback={null}>

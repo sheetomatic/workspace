@@ -397,7 +397,7 @@ export async function seedBciDemo(client: PrismaClient = prisma) {
       role: Role.OWNER,
       department: TaskDepartment.ADMIN,
       designation: "Founder",
-      modules: ["TASKS", "FMS", "IMS", "REPORTS", "APPROVALS"],
+      modules: ["FMS", "IMS", "REPORTS", "APPROVALS", "HR"],
     },
     {
       key: "manager",
@@ -406,7 +406,7 @@ export async function seedBciDemo(client: PrismaClient = prisma) {
       role: Role.MANAGER,
       department: TaskDepartment.OPERATIONS,
       designation: "Operations Manager",
-      modules: ["TASKS", "FMS", "IMS", "REPORTS", "APPROVALS"],
+      modules: ["FMS", "IMS", "REPORTS", "APPROVALS"],
     },
     {
       key: "sales",
@@ -415,7 +415,7 @@ export async function seedBciDemo(client: PrismaClient = prisma) {
       role: Role.STAFF,
       department: TaskDepartment.SALES,
       designation: "Sales Executive",
-      modules: ["TASKS", "FMS"],
+      modules: ["FMS"],
     },
     {
       key: "accounts",
@@ -424,7 +424,7 @@ export async function seedBciDemo(client: PrismaClient = prisma) {
       role: Role.STAFF,
       department: TaskDepartment.ACCOUNTS,
       designation: "Accounts Executive",
-      modules: ["TASKS", "FMS"],
+      modules: ["FMS"],
     },
     {
       key: "ops",
@@ -433,7 +433,7 @@ export async function seedBciDemo(client: PrismaClient = prisma) {
       role: Role.STAFF,
       department: TaskDepartment.OPERATIONS,
       designation: "Dispatch Coordinator",
-      modules: ["TASKS", "FMS"],
+      modules: ["FMS"],
     },
   ];
 

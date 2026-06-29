@@ -176,6 +176,33 @@
   background: #f8fafc;
 }
 
+.ai-tasks-feature-list {
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.ai-tasks-feature-list li {
+  position: relative;
+  padding-left: 1.25rem;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
+  color: #334155;
+}
+
+.ai-tasks-feature-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #2563eb;
+}
+
 @media (min-width: 900px) {
   .video-inline-band {
     display: grid;

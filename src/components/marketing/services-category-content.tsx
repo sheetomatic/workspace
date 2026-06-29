@@ -1,15 +1,14 @@
-import Link from "next/link";
 import {
-  ArrowLeft,
   ArrowRight,
   BarChart3,
   Bot,
   CalendarCheck,
   CheckCircle2,
+  ClipboardCheck,
   ClipboardList,
   GitBranch,
   Package,
-  Sheet,
+  Wrench,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -24,6 +23,7 @@ import {
   WhatsAppButton,
 } from "@/components/marketing/marketing-buttons";
 import { HrModuleCard } from "@/components/marketing/hr-module-card";
+import { RelatedServicesSection } from "@/components/marketing/related-services-section";
 import { ServicesBreadcrumb } from "@/components/marketing/services-breadcrumb";
 import { ServicesSubNav } from "@/components/marketing/services-sub-nav";
 import {
@@ -33,7 +33,6 @@ import {
 import {
   serviceCategories,
   serviceCategoryBySlug,
-  type ServiceCategory,
   type ServiceCategorySlug,
 } from "@/app/services-content";
 import { servicesPage } from "@/app/page-content";
@@ -49,7 +48,8 @@ const categoryIcons: Record<string, { icon: LucideIcon; tone: string }> = {
   crm: { icon: Users, tone: "tone-violet" },
   inventory: { icon: Package, tone: "tone-amber" },
   flow: { icon: GitBranch, tone: "tone-slate" },
-  automation: { icon: Sheet, tone: "tone-rose" },
+  checklist: { icon: ClipboardCheck, tone: "tone-rose" },
+  automation: { icon: Wrench, tone: "tone-slate" },
 };
 
 type ServicesCategoryContentProps = {
@@ -60,9 +60,6 @@ export function ServicesCategoryContent({ slug }: ServicesCategoryContentProps) 
   const category = serviceCategoryBySlug[slug];
   const meta = categoryIcons[slug] ?? categoryIcons.tasks;
   const Icon = meta.icon;
-  const related = (category.relatedSlugs ?? [])
-    .map((relatedSlug) => serviceCategoryBySlug[relatedSlug])
-    .filter(Boolean);
 
   return (
     <MarketingPage>
@@ -225,53 +222,7 @@ export function ServicesCategoryContent({ slug }: ServicesCategoryContentProps) 
           </div>
         </section>
 
-        {related.length > 0 ? (
-          <section className="services-related">
-            <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-14">
-              <div className="services-section-head">
-                <p className="services-section-eyebrow">Related services</p>
-                <h2 className="services-section-title">
-                  Often scoped together
-                </h2>
-              </div>
-              <div className="services-related-grid">
-                {related.map((item: ServiceCategory) => {
-                  const relatedMeta =
-                    categoryIcons[item.slug] ?? categoryIcons.tasks;
-                  const RelatedIcon = relatedMeta.icon;
-                  return (
-                    <Link
-                      className="services-related-card"
-                      href={`/services/${item.slug}`}
-                      key={item.slug}
-                    >
-                      <span
-                        className={`marketing-icon sm ${relatedMeta.tone}`}
-                        aria-hidden
-                      >
-                        <RelatedIcon size={18} strokeWidth={2} />
-                      </span>
-                      <div>
-                        <strong>{item.name}</strong>
-                        <p>{item.shortDescription}</p>
-                      </div>
-                      <ArrowRight size={16} aria-hidden />
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-        ) : null}
-
-        <div className="services-back-bar">
-          <div className="mx-auto max-w-6xl px-5 sm:px-8">
-            <Link className="services-back-link" href="/services">
-              <ArrowLeft size={16} aria-hidden />
-              <span>Back to all services</span>
-            </Link>
-          </div>
-        </div>
+        <RelatedServicesSection relatedSlugs={category.relatedSlugs ?? []} />
 
         <FinalCta />
         <SiteFooter />

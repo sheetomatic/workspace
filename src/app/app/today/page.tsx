@@ -1,5 +1,5 @@
 import { MyTodayBoard } from "@/components/saas/my-today-board";
-import { getMyTodayPayload } from "@/lib/work/my-today";
+import { getMyTodayPayload, EMPTY_TODAY_PAYLOAD } from "@/lib/work/my-today";
 import { canCreateTasks } from "@/lib/tasks";
 import { requireSession } from "@/lib/require-session";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
@@ -17,7 +17,12 @@ export default async function MyTodayPage() {
     );
   }
 
-  const payload = await getMyTodayPayload(user.organizationId, user.id);
+  const payload = await getMyTodayPayload(user.organizationId, user.id).catch(
+    (error) => {
+      console.error("[today-page] load failed", error);
+      return EMPTY_TODAY_PAYLOAD;
+    },
+  );
 
   return (
     <div className="saas-page ws-today-page ws-tasks-sf">

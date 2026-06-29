@@ -5,6 +5,10 @@ import {
   organizationEntitlementsData,
 } from "@/lib/org-onboarding";
 import {
+  applyOrganizationEntitlements,
+  syncOrganizationPlanRecord,
+} from "@/lib/organization-plan";
+import {
   clampModulesToOrg,
   modulesForTierRole,
 } from "@/lib/org-plan-presets";
@@ -17,9 +21,10 @@ const DEFAULT_OWNER_MODULES = [
 
 async function applyClientOnboardingEntitlements(organizationId: string) {
   const preset = client50OnboardingPreset();
-  await prisma.organization.update({
-    where: { id: organizationId },
-    data: organizationEntitlementsData(preset),
+  await applyOrganizationEntitlements(organizationId, {
+    ...organizationEntitlementsData(preset),
+    status: "ACTIVE",
+    activatedAt: new Date(),
   });
 
   const ownerMemberships = await prisma.membership.findMany({
@@ -74,6 +79,7 @@ export async function activatePendingWorkspaceBySlug(workspaceSlug: string) {
     data: { status: "ACTIVE" },
   });
   await applyClientOnboardingEntitlements(organization.id);
+  await syncOrganizationPlanRecord(organization.id, { activatedAt: new Date() });
   await grantOwnerModules(organization.id);
 
   return {

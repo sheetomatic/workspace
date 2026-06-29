@@ -9,26 +9,26 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sheetomatic.com";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Sheetomatic | AI-Native Platform for Indian MSMEs",
+    default: "Sheetomatic | P.A.C.E. Framework for Indian MSMEs",
     template: "%s | Sheetomatic",
   },
   description:
-    "Sheetomatic Workspace and Sheetomatic AI — EM-ready every week with zero manual MIS prep. PC and EA portals monitor team performance automatically. No spreadsheet sprawl. No dedicated MIS person.",
+    "P.A.C.E. framework for Indian MSMEs — FMS, IMS, CRM, Executive Meeting, and WhatsApp AI systems with Process Coordinator and Executive Assistant roles. Scale without the owner; stop spreadsheet firefighting.",
   icons: {
     icon: [
-      { url: "/favicon.ico?v=2", sizes: "any" },
-      { url: "/icon.png?v=2", type: "image/png", sizes: "512x512" },
+      { url: "/favicon.ico?v=5", sizes: "any" },
+      { url: "/icon.png?v=5", type: "image/png", sizes: "512x512" },
     ],
-    apple: "/apple-icon.png?v=2",
-    shortcut: "/favicon.ico?v=2",
+    apple: "/apple-icon.png?v=5",
+    shortcut: "/favicon.ico?v=5",
   },
   openGraph: {
     type: "website",
     locale: "en_IN",
     siteName: "Sheetomatic",
-    title: "Sheetomatic | AI-Native Platform for Indian MSMEs",
+    title: "Sheetomatic | P.A.C.E. Framework for Indian MSMEs",
     description:
-      "One workspace. One AI layer. EM-ready every week — without manual MIS prep, spreadsheet sprawl, or a dedicated MIS team.",
+      "P.A.C.E. for MSMEs: systems (FMS, IMS, CRM, EM, WhatsApp AI) and role-based operations (Process Coordinator, Executive Assistant). Scale without the owner in one workspace.",
     images: [
       {
         url: "/images/og-default.png",

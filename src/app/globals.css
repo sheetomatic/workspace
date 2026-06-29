@@ -155,19 +155,23 @@ a {
 
 .logo-mark {
   display: grid;
-  height: 44px;
-  width: 44px;
+  flex-shrink: 0;
+  height: 40px;
+  width: 40px;
   place-items: center;
-  overflow: hidden;
-  border: 1px solid rgba(47, 140, 255, 0.14);
-  border-radius: 12px;
+  padding: 7px;
+  border: 1px solid rgba(47, 140, 255, 0.12);
+  border-radius: 10px;
   background: #ffffff;
-  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
 
 .logo-mark img {
-  height: 100%;
-  width: 100%;
+  display: block;
+  height: auto;
+  width: auto;
+  max-height: 100%;
+  max-width: 100%;
   object-fit: contain;
 }
 
@@ -2920,9 +2924,10 @@ strong {
 
 .site-brand strong {
   display: block;
-  font-family: var(--font-heading);
+  font-family: var(--apple-font, var(--font-heading));
   font-size: var(--text-lead);
-  font-weight: var(--weight-heading);
+  font-weight: 600;
+  letter-spacing: -0.022em;
   line-height: 1.1;
   white-space: nowrap;
 }
@@ -3140,8 +3145,9 @@ strong {
   }
 
   .site-header-saas .logo-mark {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
+    padding: 6px;
     flex-shrink: 0;
   }
 
@@ -3752,6 +3758,11 @@ strong {
 .saas-page-hero {
   background:
     linear-gradient(180deg, #ffffff, #f1f5f9);
+  text-align: center;
+}
+
+.saas-page-hero .type-lead {
+  text-align: center;
 }
 
 .saas-founder-kicker {
@@ -3954,9 +3965,22 @@ strong {
 
 .site-footer-grid > div:not(.site-footer-brand) a:not(.btn-cta) {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   color: #94a3b8;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-decoration: none;
+}
+
+.site-footer-links nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.site-footer-links nav a:last-child {
+  margin-bottom: 0;
 }
 
 .site-footer-grid > div:not(.site-footer-brand) a:not(.btn-cta):hover {
@@ -4042,7 +4066,7 @@ strong {
   }
 
   .site-footer-grid.site-footer-minimal {
-    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
   }
 
   .site-footer-brand {

@@ -26,10 +26,10 @@ export type ProductFeature = {
 };
 
 export const productHome = {
-  eyebrow: "Sheetomatic on WhatsApp",
-  title: "Tasks on WhatsApp — or full AI for every customer message",
+  eyebrow: "WhatsApp sales system",
+  title: "Attract leads, convert in CRM, empower your team",
   lead:
-    "Choose Task + WhatsApp Messages for owner delegation and team alerts, or upgrade to Tasks + WhatsApp AI full access for customer chatbot, lead capture, CRM inbox, and knowledge-trained replies.",
+    "WhatsApp AI captures every inquiry. Inbox and CRM turn chats into follow-ups. Shared workspace lets AI handle routine while your team closes.",
   primaryCta: "Start AI pilot",
   secondaryCta: "See pricing",
   loginCta: "Log in",
@@ -212,10 +212,10 @@ export const productFaqs = [
 ];
 
 export const chatbotPage = {
-  eyebrow: "WhatsApp AI Chatbot",
-  title: "Automate customer conversations on WhatsApp",
+  eyebrow: "Attracting customers",
+  title: "WhatsApp AI that captures leads 24/7",
   lead:
-    "Train an AI assistant on your business knowledge. It answers FAQs, qualifies leads, shares order status, and books appointments  -  24/7 on WhatsApp.",
+    "Train AI on your FAQs and offers. It replies instantly, qualifies intent, and saves every contact before your team joins the chat.",
   cta: "Connect WhatsApp",
   useCases: [
     "Product & pricing FAQs",
@@ -227,10 +227,10 @@ export const chatbotPage = {
 };
 
 export const crmPage = {
-  eyebrow: "WhatsApp CRM",
-  title: "Inbox, contacts, and pipeline  -  built for WhatsApp-first teams",
+  eyebrow: "Converting sales",
+  title: "Inbox, CRM, and follow-ups that close deals",
   lead:
-    "Manage every customer conversation with tags, assignments, pipeline stages, and team notes. Designed like modern support software, tuned for WhatsApp.",
+    "Every WhatsApp chat lands in one pipeline. Assign owners, set follow-up tasks, and track stages without losing context.",
   cta: "Open Team Inbox",
 };
 

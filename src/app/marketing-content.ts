@@ -10,56 +10,59 @@ export const aiCapabilities = [
     tag: "Follow-ups",
   },
   {
-    title: "AI MIS summaries",
-    text: "Daily owner summaries across sales, collections, and exceptions - readable in under 60 seconds.",
-    tag: "MIS",
+    title: "AI owner summaries",
+    text: "Daily summaries across sales, collections, and exceptions — readable in under 60 seconds.",
+    tag: "Reports",
   },
   {
     title: "AI workflow setup",
-    text: "Faster blueprinting for sheets, AppSheet apps, dashboards, and reminder rules during implementation.",
+    text: "Faster blueprinting for modules, dashboards, and reminder rules during implementation.",
     tag: "Setup",
   },
 ];
 
 export const uspSection = {
-  eyebrow: "Your control stack",
-  title: "Four systems owners actually open",
+  eyebrow: "Systems and roles",
+  title: "Your operation runs — you don't run the reminders.",
   subcopy:
-    "Flow, stock, performance, and tasks in one practical layer on Google Workspace - without paying for ERP modules your team will not use.",
+    "MSME owners need systems for flow, stock, and weekly review — and people in defined roles who hold managers accountable. Sheetomatic wires both so you're not the memory for every follow-up.",
   systems: [
     {
       acronym: "FMS",
-      name: "Flow Monitoring Systems",
-      text: "Know which orders, payments, and jobs are late before they hurt margin - with clear owners on every step.",
+      name: "Flow Monitoring System",
+      text: "Every order, payment, and job on one trail. See delays before margin leaks — not when someone asks on WhatsApp.",
       icon: "workflow",
     },
     {
       acronym: "IMS",
       name: "Inventory Management System",
-      text: "Stop guessing stock. See balances, movement, and reorder points tied to real sales and purchase data.",
+      text: "Stock that matches reality. Movements tied to sales and purchase flow — reorder before the sale is lost.",
       icon: "inventory",
     },
     {
-      acronym: "PMS",
-      name: "Performance Management System",
-      text: "Targets vs actuals and team KPIs in one view - daily and monthly, not a surprise at month-end.",
+      acronym: "EM",
+      name: "Executive Meeting (Weekly)",
+      text: "Open Monday. Exceptions only. Person-wise deficit and overdue flow — assembled automatically, zero Sunday MIS prep.",
       icon: "performance",
     },
-    {
-      acronym: "TD",
-      name: "Task Delegation",
-      text: "Work assigned with owner, due date, and reminders - so nothing lives only in someone's head or chat.",
-      icon: "delegation",
-    },
   ],
-  checklistBlock: {
-    title: "Checklist system",
-    text: "Standard operating checklists your team runs on mobile - with timestamps, photos, and exception flags for managers.",
-    icon: "checklist",
-    areas: [
-      { label: "Maintenance", note: "Plant, equipment, and facility rounds" },
-      { label: "Accounts", note: "Month-end, GST, and payment discipline" },
-      { label: "HR", note: "Onboarding, attendance, and policy compliance" },
+  rolePortals: {
+    heading: "Role portals",
+    subheading:
+      "Defined positions with one place to monitor — without you in every task.",
+    items: [
+      {
+        name: "Checklist module",
+        role: "Process Coordinator",
+        text: "Recurring checklists on mobile with proof and exceptions. Process Coordinator role monitors completion via the PC portal — managers coach from data, not memory.",
+        icon: "checklist",
+      },
+      {
+        name: "Tasks module",
+        role: "Executive Assistant",
+        text: "Tasks with owner, due date, and proof. Executive Assistant role monitors follow-through via the EA portal — nothing lives only in chat or someone's head.",
+        icon: "delegation",
+      },
     ],
   },
 };
@@ -67,7 +70,7 @@ export const uspSection = {
 export const platformPillars = [
   {
     title: "AI-first operations",
-    text: "Instruction to action: tasks, reminders, and summaries generated from how your team already communicates.",
+    text: "Instruction to action. Tasks, reminders, and summaries from how your team already communicates.",
     tag: "AI core",
   },
   {
@@ -77,66 +80,53 @@ export const platformPillars = [
   },
   {
     title: "Role-based access",
-    text: "Owner, Admin, Manager, Staff, and Viewer roles control who can enter, approve, or only view.",
+    text: "Owner, Admin, Manager, Staff, and Viewer roles — who can enter, approve, or only view.",
     tag: "RBAC",
   },
   {
-    title: "Google Workspace layer",
-    text: "Sheets, AppSheet, Looker Studio, Apps Script, and WhatsApp connected under one control system.",
-    tag: "Integrations",
+    title: "SaaS platform",
+    text: "One hosted system. WhatsApp, AI, and your modules connected under one login.",
+    tag: "Platform",
   },
 ];
 
 export const focusOffers = [
   {
-    id: "mis-payroll",
-    tag: "Off-site MIS",
-    title: "MIS talent on Sheetomatic Payroll - not on your books",
-    whyTitle: "Why this matters",
+    id: "ai-workspace",
+    tag: "Operating system",
+    title: "One workspace - team runs without you in every task",
+    whyTitle: "Systems beat firefighting",
     whyText:
-      "When you hire MIS staff directly, recurring cost hits you every month: ESI, PF, office rent, internet, and laptop or system purchase.",
-    solutionTitle: "What you save with us",
+      "MSMEs lose margin chasing updates on WhatsApp. Checklist and Tasks modules with Process Coordinator and Executive Assistant roles hold managers accountable while you review Monday numbers.",
+    solutionTitle: "Build-Manage-Scale on Sheetomatic",
     solutionText:
-      "Hire on Sheetomatic Payroll for off-site MIS support. We handle the employment layer so you get reporting capacity without carrying full payroll overhead on your balance sheet.",
-    savings: ["No ESI on your books", "No PF liability", "No office setup", "No laptop capex"],
-    ctaNote: "Start hiring from Sheetomatic today. Call us for payroll and MIS scope details.",
+      "FMS, IMS, Checklist and Tasks modules, and Executive Meeting in one workspace — Process Coordinator and Executive Assistant roles on their portals. We manage adoption until the rhythm runs daily, then scale modules as leaks close.",
+    savings: [
+      "Monday board ready - exceptions only",
+      "Checklist and Tasks module scores without owner chasing",
+      "One login your team actually opens",
+      "Managed until the rhythm sticks",
+    ],
+    ctaNote: "Owner-led MSME with revenue and payroll. Map your first system win on a call.",
     featured: true,
   },
   {
-    id: "custom-apps",
-    tag: "Custom systems",
-    title: "Stop juggling software with no real analysis",
-    whyTitle: "Sound familiar?",
+    id: "whatsapp-ai",
+    tag: "WhatsApp AI",
+    title: "Conversations become owned tasks - not owner firefighting",
+    whyTitle: "Leads die when replies depend on you",
     whyText:
-      "Many MSMEs run multiple applications, ERP modules, and spreadsheets - but owners still do not get clear daily analysis or one place to act.",
-    solutionTitle: "Try a custom application instead",
+      "Night messages sit unanswered. Follow-ups live in memory. No system sits between chat and accountability.",
+    solutionTitle: "WhatsApp wired to your operating system",
     solutionText:
-      "We build tailored apps on AppSheet with Google Sheets and BigQuery, plus custom software where you need it - designed around how your team actually works.",
+      "Official API, AI qualification, team inbox, and automatic task creation. Tasks module and Executive Assistant role monitor delivery via the EA portal so managers own follow-through.",
     savings: [
-      "One system for your process",
-      "Dashboards owners understand",
-      "Apps your team adopts",
-      "Built and maintained by Sheetomatic",
+      "Night leads qualified before your team wakes",
+      "Handoff with context - not screenshot archaeology",
+      "Tasks with owners and due dates from real chats",
+      "Managed tuning until replies match your business",
     ],
-    ctaNote: "Replace tool sprawl with a system that gives analysis, not just data entry.",
-  },
-  {
-    id: "pro-website",
-    tag: "Web presence",
-    title: "Pro-level website at practical cost",
-    whyTitle: "Why owners ask us",
-    whyText:
-      "You need a trustworthy site that explains your offer, captures leads, and supports consultation - without agency pricing that does not fit MSME budgets.",
-    solutionTitle: "Let's connect on Google Meet",
-    solutionText:
-      "We design and build conversion-focused websites aligned with your automation and AI story. Book a slot and we will scope pages, messaging, and delivery timeline together.",
-    savings: [
-      "Professional brand presence",
-      "Clear service positioning",
-      "Consult Today integration",
-      "Low-cost delivery model",
-    ],
-    ctaNote: "Need a pro website without overspending? Consult Today and we will plan it on a call.",
+    ctaNote: "Stop being the 24/7 reply desk. Scope WhatsApp AI with your workspace system.",
   },
 ];
 
@@ -148,7 +138,7 @@ export const engagementModels = [
     points: [
       "AI instruction to structured tasks",
       "Secure sign-in per organization",
-      "MIS, approvals, and reports modules",
+      "Reports, approvals, and operations modules",
     ],
     cta: "Consult Today",
     href: "https://calendar.app.google/MVmguFeQZpMNDTFo9",
@@ -157,11 +147,11 @@ export const engagementModels = [
   {
     name: "Implementation consultancy",
     summary:
-      "We design and build your Google Workspace operating system: sheets, apps, dashboards, scripts.",
+      "We design and deploy your Sheetomatic operating system — modules, roles, and workflows mapped to your process.",
     points: [
       "Process mapping and solution design",
-      "AppSheet and Looker delivery",
-      "Go-live support and handover",
+      "Module configuration and go-live",
+      "Team training and handover",
     ],
     cta: "View implementation",
     href: "/services",
@@ -169,13 +159,13 @@ export const engagementModels = [
   {
     name: "Managed support",
     summary:
-      "Ongoing MIS fixes, enhancements, and team guidance so the system keeps working after launch.",
+      "Ongoing enhancements, reporting support, and team guidance so the system keeps working after launch.",
     points: [
       "Monthly reporting support",
       "Expert hours for changes",
       "Training for internal teams",
     ],
-    cta: "MIS support options",
+    cta: "Support options",
     href: "/services",
   },
 ];
@@ -183,31 +173,26 @@ export const engagementModels = [
 export const deliverySteps = [
   {
     step: "01",
-    title: "Discover",
-    text: "Audit spreadsheets, WhatsApp habits, and reporting pain. Define the first workflow to automate.",
+    title: "Build",
+    text: "Map margin leaks — flow stalls, stock drift, Monday numbers you cannot trust — and wire the first modules to how your team already works.",
   },
   {
     step: "02",
-    title: "Design",
-    text: "Blueprint data model, roles, approvals, dashboards, and integration map on Google Workspace.",
+    title: "Manage",
+    text: "Checklist and Tasks modules live with Process Coordinator and Executive Assistant roles until daily discipline runs without you chasing — portals, AI rules, and real data tested before you trust the board.",
   },
   {
     step: "03",
-    title: "Deploy",
-    text: "Build AppSheet apps, sheets, Looker views, and client workspace access. Test with real data.",
-  },
-  {
-    step: "04",
-    title: "Support",
-    text: "Train your team, monitor adoption, and iterate with managed support or expert hour packs.",
+    title: "Scale",
+    text: "Add IMS, WhatsApp AI, and custom modules as the rhythm sticks — team accountability grows, owner time on the Monday board only.",
   },
 ];
 
 export const pricingSection = {
-  eyebrow: "MIS support",
-  title: "Off-site MIS on Sheetomatic payroll",
+  eyebrow: "Managed support",
+  title: "Expert hours when your team needs backup",
   subcopy:
-    "Choose hours and days per week. Scope and skills (Sheets, AppSheet, dashboards) are confirmed on a consultation call.",
+    "Choose support level and scope on a consultation call — reporting, module changes, and AI tuning included.",
 };
 
 export const misSupportPlans = [
@@ -215,23 +200,23 @@ export const misSupportPlans = [
     name: "Part-time daily",
     schedule: "4 hours, 5 days per week",
     description:
-      "Steady daily MIS: sheet upkeep, reporting, and follow-ups without carrying full payroll on your books.",
+      "Steady daily support — reporting upkeep, exception tracking, and follow-ups without hiring in-house.",
     includes: [
-      "Resource on Sheetomatic payroll",
-      "Google Sheets and Excel MIS work",
+      "Dedicated Sheetomatic expert",
+      "Workspace reporting and ops support",
       "Off-site / remote delivery",
-      "Laptop and connectivity via Sheetomatic",
+      "Tools and connectivity via Sheetomatic",
     ],
     cta: "Enquire on WhatsApp",
-    message: "Hi Sheetomatic, I want MIS support: 4 hours, 5 days per week.",
+    message: "Hi Sheetomatic, I want managed support: 4 hours, 5 days per week.",
   },
   {
     name: "Focused days",
     schedule: "8 hours, 3 days per week",
     description:
-      "Longer blocks on three days - strong for dashboard builds, AppSheet fixes, and monthly MIS delivery.",
+      "Longer blocks on three days — strong for dashboard builds, module setup, and monthly report delivery.",
     includes: [
-      "Same Sheetomatic payroll model",
+      "Same managed support model",
       "24 hours per week capacity",
       "Dashboard and automation focus",
       "Flexible mid-week scheduling",
@@ -239,44 +224,36 @@ export const misSupportPlans = [
     cta: "Enquire on WhatsApp",
     featured: true,
     badge: "Flexible",
-    message: "Hi Sheetomatic, I want MIS support: 8 hours, 3 days per week.",
+    message: "Hi Sheetomatic, I want managed support: 8 hours, 3 days per week.",
   },
   {
-    name: "Full week MIS",
+    name: "Full week support",
     schedule: "8 hours, 5 days per week",
     description:
-      "Full-week bench for owners who need daily MIS rhythm, owner dashboards, and live reporting support.",
+      "Full-week coverage for owners who need daily reporting rhythm, owner dashboards, and live ops support.",
     includes: [
       "40 hours per week coverage",
-      "Daily MIS and exception tracking",
-      "AppSheet / Apps Script as skills allow",
+      "Daily reports and exception tracking",
+      "Module and AI tuning as scope allows",
       "Senior or complex scope available on consultation",
     ],
     cta: "Enquire on WhatsApp",
-    message: "Hi Sheetomatic, I want MIS support: 8 hours, 5 days per week.",
+    message: "Hi Sheetomatic, I want managed support: 8 hours, 5 days per week.",
   },
 ];
 
-export const trustTools = [
-  "Google Sheets",
-  "AppSheet",
-  "Looker Studio",
-  "Apps Script",
-  "WhatsApp API",
-  "Google Drive",
-  "BigQuery",
-];
+export const trustTools = ["WhatsApp API", "Sheetomatic AI", "SaaS workspace"];
 
 export const industriesSection = {
   eyebrow: "Industries",
   title: "Operational MSMEs we serve across India",
   subcopy:
-    "Owner-led businesses that run on spreadsheets, WhatsApp, and daily follow-ups - and need MIS, apps, or AI without heavy IT overhead.",
+    "Owner-led businesses that run on follow-ups, WhatsApp, and daily discipline — and need one SaaS workspace without heavy IT overhead.",
   items: [
     {
       icon: "factory",
       name: "Manufacturing",
-      note: "Production MIS, stock, dispatch, and collections",
+      note: "Production flow, stock, dispatch, and collections",
     },
     {
       icon: "store",
@@ -286,12 +263,12 @@ export const industriesSection = {
     {
       icon: "truck",
       name: "Logistics & transport",
-      note: "Trip sheets, billing, and exception alerts",
+      note: "Trip tracking, billing, and exception alerts",
     },
     {
       icon: "briefcase",
       name: "CA & professional firms",
-      note: "Client MIS packs and recurring reporting",
+      note: "Client report packs and recurring visibility",
     },
     {
       icon: "stethoscope",
@@ -311,36 +288,36 @@ export const industriesSection = {
     {
       icon: "graduation-cap",
       name: "Training & services",
-      note: "CRM-style follow-ups on Google Workspace",
+      note: "CRM-style follow-ups in one workspace",
     },
   ],
 };
 
 export const outcomesSection = {
-  eyebrow: "Outcomes",
-  title: "What changes after Sheetomatic is live",
+  eyebrow: "Perceived value",
+  title: "What running MSMEs gain — beyond software price",
   subcopy:
-    "Results from MIS support, custom Google systems, and AI-assisted operations - not generic software promises.",
+    "Margin protected, Monday numbers trusted, team discipline without owner in every task — systems that stick, not firefighting that repeats.",
   items: [
     {
-      highlight: "MIS on our payroll",
-      title: "Reporting capacity without full payroll load",
-      text: "Hire off-site MIS on Sheetomatic payroll. You avoid ESI, PF, office, and laptop costs on your own books.",
+      highlight: "Margin protected",
+      title: "Leaks closed with systems, not more chasing",
+      text: "Flow stalls, stock drift, and missed follow-ups surface in FMS and IMS before they cost margin — not when a customer complains.",
     },
     {
-      highlight: "One system, clear analysis",
-      title: "Replace scattered tools with one custom app",
-      text: "AppSheet, Sheets, and dashboards built for your process - so owners see daily numbers, not disconnected data entry.",
+      highlight: "Team runs without you",
+      title: "Checklist and Tasks modules hold managers accountable",
+      text: "Checklist module scores via the Process Coordinator role. Tasks module scores via the Executive Assistant role. You review scores on the board — not every WhatsApp thread.",
     },
     {
-      highlight: "Instruction to task",
-      title: "AI and WhatsApp drive follow-ups",
-      text: "Managers assign work once. Tasks, owners, priorities, and reminders run from sheet status - less chasing on calls.",
+      highlight: "Monday numbers",
+      title: "Executive Meeting ready — exceptions only",
+      text: "Person-wise deficit, overdue flow, and team scores assembled automatically. Open Monday and act — zero Sunday MIS prep.",
     },
     {
-      highlight: "Owner view under 60 sec",
-      title: "Dashboards owners actually open",
-      text: "Daily MIS, exceptions, and collections in Looker or sheet views your team maintains with our implementation support.",
+      highlight: "Build-Manage-Scale",
+      title: "One partner through adoption, not a login handoff",
+      text: "We stay until portals run daily and the first win sticks — then scale modules as your operation grows without restarting the fire drill.",
     },
   ],
 };
@@ -353,24 +330,24 @@ export const outcomeStories = outcomesSection.items.map((item) => ({
 }));
 
 export const misTalentCareers = {
-  kicker: "Join our AI + MIS bench",
-  title: "Have MIS or AI tools skills? Join Sheetomatic.",
+  kicker: "Join our AI + operations bench",
+  title: "Have ops or AI skills? Join Sheetomatic.",
   lead:
-    "We hire on Sheetomatic Payroll and place you with MSME clients on sheets, dashboards, WhatsApp workflows, and AI-assisted reporting. Work off-site or at a client office when the role needs it - we handle payroll and delivery structure.",
+    "We hire on Sheetomatic Payroll and place you with MSME clients on workspace modules, WhatsApp workflows, and AI-assisted reporting. Work off-site or at a client office when the role needs it — we handle payroll and delivery structure.",
   fitTitle: "You are a good fit if",
   fitPoints: [
-    "You are strong in Google Sheets, Excel, or MIS reporting",
-    "You are curious about AI tools - ChatGPT, automation, and practical MSME use cases",
-    "You can learn WhatsApp workflows, AppSheet, dashboards, or Apps Script",
+    "You are strong in operations reporting or process discipline",
+    "You are curious about AI tools — ChatGPT, automation, and practical MSME use cases",
+    "You can learn WhatsApp workflows, workspace modules, and owner dashboards",
     "You are reliable, detail-oriented, and open to off-site or client-office placement",
     "You want steady client work instead of chasing freelance gigs",
   ],
   perksTitle: "Why join Sheetomatic",
   perks: [
     "Employment on Sheetomatic Payroll",
-    "Off-site or client office - placement matched to each role",
+    "Off-site or client office — placement matched to each role",
     "Hands-on AI tools and WhatsApp automation knowledge",
-    "Real MSME systems, not dummy practice files",
+    "Real MSME systems, not dummy practice environments",
     "Mentorship from the implementation team",
   ],
   steps: [
@@ -382,7 +359,7 @@ export const misTalentCareers = {
     {
       step: "02",
       title: "Practical check",
-      text: "Short sheet or AI-assisted task, or a sample of your past MIS work - no long exams.",
+      text: "Short workspace or AI-assisted task, or a sample of your past ops work — no long exams.",
     },
     {
       step: "03",
@@ -391,7 +368,7 @@ export const misTalentCareers = {
     },
   ],
   ctaNote:
-    "Mention MIS or AI talent in your WhatsApp message. We are building the bench for MSME clients who hire through Sheetomatic Payroll.",
+    "Mention ops or AI talent in your WhatsApp message. We are building the bench for MSME clients who work through Sheetomatic.",
   whatsappApplyMessage:
-    "Hi Sheetomatic, I have MIS / AI tools skills and would like to join your payroll team.",
+    "Hi Sheetomatic, I have ops / AI tools skills and would like to join your payroll team.",
 };

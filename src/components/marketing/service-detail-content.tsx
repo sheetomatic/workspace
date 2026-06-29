@@ -1,15 +1,15 @@
-import Link from "next/link";
 import {
   ArrowRight,
   BarChart3,
   Bot,
   CalendarCheck,
   CheckCircle2,
+  ClipboardCheck,
   ClipboardList,
   GitBranch,
   MapPin,
   Package,
-  Sheet,
+  Wrench,
   UserRoundSearch,
   Users,
   type LucideIcon,
@@ -24,9 +24,11 @@ import {
   MarketingLinkButton,
   WhatsAppButton,
 } from "@/components/marketing/marketing-buttons";
+import { RelatedServicesSection } from "@/components/marketing/related-services-section";
 import { ServicesBreadcrumb } from "@/components/marketing/services-breadcrumb";
 import { ServicesSubNav } from "@/components/marketing/services-sub-nav";
 import { whatsappDisplayNumber } from "@/app/site-content";
+import { aiEnabledTasksVideo } from "@/app/video-content";
 import {
   serviceCategoryBySlug,
   serviceCategories,
@@ -43,6 +45,7 @@ import {
 } from "@/app/hr-module-content";
 import "@/components/marketing/minimal-premium.css";
 import "@/components/marketing/services-page.css";
+import { VideoEmbed } from "@/components/marketing/video-embed";
 
 const categoryIcons: Record<
   ServiceCategorySlug,
@@ -55,7 +58,8 @@ const categoryIcons: Record<
   crm: { icon: Users, tone: "tone-violet" },
   inventory: { icon: Package, tone: "tone-amber" },
   flow: { icon: GitBranch, tone: "tone-slate" },
-  automation: { icon: Sheet, tone: "tone-rose" },
+  checklist: { icon: ClipboardCheck, tone: "tone-rose" },
+  automation: { icon: Wrench, tone: "tone-slate" },
 };
 
 const hrModuleIcons: Record<string, { icon: LucideIcon; tone: string }> = {
@@ -122,9 +126,6 @@ function HrModulePanel({ mod }: { mod: HrServicesModule }) {
 function GenericServiceDetail({ category }: { category: ServiceCategory }) {
   const meta = categoryIcons[category.slug];
   const Icon = meta.icon;
-  const related = (category.relatedSlugs ?? [])
-    .map((slug) => serviceCategoryBySlug[slug])
-    .filter(Boolean);
 
   return (
     <>
@@ -177,6 +178,14 @@ function GenericServiceDetail({ category }: { category: ServiceCategory }) {
         </div>
       </section>
 
+      {category.slug === "tasks" ? (
+        <section className="services-detail-video" aria-label="AI Enabled Tasks demo">
+          <div className="mx-auto max-w-5xl px-5 py-10 sm:px-8">
+            <VideoEmbed video={aiEnabledTasksVideo} variant="featured" />
+          </div>
+        </section>
+      ) : null}
+
       <section className="services-detail-features">
         <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-16">
           <div className="services-section-head services-section-head-center">
@@ -223,41 +232,10 @@ function GenericServiceDetail({ category }: { category: ServiceCategory }) {
         </div>
       </section>
 
-      {related.length > 0 ? (
-        <section className="services-detail-related">
-          <div className="mx-auto max-w-6xl px-5 pb-14 sm:px-8">
-            <div className="services-section-head">
-              <p className="services-section-eyebrow">Related services</p>
-              <h2 className="services-section-title">Often connected next</h2>
-            </div>
-            <div className="services-related-grid">
-              {related.map((rel) => {
-                const relMeta = categoryIcons[rel.slug];
-                const RelIcon = relMeta.icon;
-                return (
-                  <Link
-                    className="services-related-card"
-                    href={`/services/${rel.slug}`}
-                    key={rel.slug}
-                  >
-                    <span
-                      className={`marketing-icon sm ${relMeta.tone}`}
-                      aria-hidden
-                    >
-                      <RelIcon size={18} strokeWidth={2} />
-                    </span>
-                    <div>
-                      <strong>{rel.name}</strong>
-                      <p>{rel.shortDescription}</p>
-                    </div>
-                    <ArrowRight size={16} aria-hidden />
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      ) : null}
+      <RelatedServicesSection
+        className="services-detail-related"
+        relatedSlugs={category.relatedSlugs ?? []}
+      />
     </>
   );
 }

@@ -21,6 +21,8 @@
     "db:reset": "prisma migrate reset --force",
     "postinstall": "prisma generate",
     "test:e2e": "playwright test",
+    "test:e2e:smoke": "playwright test tests/smoke",
+    "test:e2e:tenant": "playwright test tests/e2e/tenant-isolation.spec.ts",
     "test:e2e:ui": "playwright test --ui",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest"

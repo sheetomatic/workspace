@@ -46,8 +46,9 @@ export function SheetomaticAiLauncher() {
       className="sheetomatic-ai-launcher"
       href={href}
       aria-label="Open Sheetomatic AI"
+      title="Sheetomatic AI"
     >
-      <SheetomaticAiMark variant="icon" sizes="md" />
+      <SheetomaticAiMark variant="icon" sizes="sm" />
       <span className="sheetomatic-ai-launcher-label">Sheetomatic AI</span>
     </Link>
   );

@@ -7,14 +7,12 @@ import {
   Building2,
   CalendarCheck,
   CheckCircle2,
+  ClipboardCheck,
   ClipboardList,
   GitBranch,
-  GraduationCap,
   ListChecks,
   MapPin,
   Package,
-  Plane,
-  Sheet,
   Stethoscope,
   Store,
   Truck,
@@ -45,8 +43,8 @@ import {
   servicesHub,
 } from "@/app/services-content";
 import {
-  footerIndustryLinks,
   serviceProblemSolutions,
+  servicesIndustryCards,
   servicesPage,
 } from "@/app/page-content";
 import "@/components/marketing/minimal-premium.css";
@@ -63,7 +61,8 @@ const categoryIcons: Record<
   crm: { icon: Users, tone: "tone-violet" },
   inventory: { icon: Package, tone: "tone-amber" },
   flow: { icon: GitBranch, tone: "tone-slate" },
-  automation: { icon: Sheet, tone: "tone-rose" },
+  checklist: { icon: ClipboardCheck, tone: "tone-rose" },
+  automation: { icon: Wrench, tone: "tone-slate" },
 };
 
 const ownerGlanceIcons: Record<string, { icon: LucideIcon; tone: string }> = {
@@ -82,7 +81,7 @@ const solutionIcons: Record<string, LucideIcon> = {
   "AI-assisted MIS": BarChart3,
   "Inventory management": Package,
   "Flow monitoring": GitBranch,
-  "Workflow automation": Sheet,
+  "Custom Software": Wrench,
 };
 
 const solutionHrefOverrides: Record<string, string> = {
@@ -94,17 +93,18 @@ const solutionHrefOverrides: Record<string, string> = {
   "AI-assisted MIS": "/services/mis",
   "Inventory management": "/services/inventory",
   "Flow monitoring": "/services/flow",
-  "Workflow automation": "/services/automation",
+  "Custom Software": "/services/automation",
 };
 
 const industryIcons: Record<string, LucideIcon> = {
+  Manufacturing: Wrench,
+  Distribution: Truck,
+  Services: Briefcase,
+  Trading: Store,
+  "Job work": ClipboardList,
   Ecommerce: Store,
   "Real Estate": Building2,
   Healthcare: Stethoscope,
-  Travel: Plane,
-  Education: GraduationCap,
-  SaaS: Briefcase,
-  Logistics: Truck,
 };
 
 export function ServicesHubContent() {
@@ -116,7 +116,7 @@ export function ServicesHubContent() {
 
         <section className="services-hero" id="overview">
           <div className="services-hero-grid mx-auto max-w-6xl px-5 py-14 sm:px-8 sm:py-20">
-            <div className="services-hero-copy">
+            <div className="services-hero-copy services-hero-centered text-center">
               <p className="services-hero-kicker type-kicker text-sky-700">
                 {servicesHub.eyebrow}
               </p>
@@ -127,7 +127,7 @@ export function ServicesHubContent() {
                 </span>
               </h1>
               <p className="services-hero-lead">{servicesHub.lead}</p>
-              <div className="services-hero-actions marketing-actions">
+              <div className="services-hero-actions marketing-actions centered">
                 <WhatsAppButton label={whatsappDisplayNumber} />
                 <MarketingLinkButton href="/products" variant="secondary">
                   <span>See products</span>
@@ -356,7 +356,7 @@ export function ServicesHubContent() {
                     key={copy}
                     aria-hidden={copy === 1 ? true : undefined}
                   >
-                    {footerIndustryLinks.map((item) => {
+                    {servicesIndustryCards.map((item) => {
                       const Icon = industryIcons[item.label] ?? Briefcase;
                       return (
                         <Link
@@ -370,7 +370,7 @@ export function ServicesHubContent() {
                           </span>
                           <h3 className="services-industry-card-title">{item.label}</h3>
                           <span className="services-industry-card-link">
-                            Explore Sheetomatic AI
+                            Explore module
                             <ArrowRight size={16} aria-hidden />
                           </span>
                         </Link>

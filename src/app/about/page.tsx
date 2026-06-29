@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { BarChart3, Database, GraduationCap } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import {
   FinalCta,
   MarketingPage,
@@ -10,12 +9,14 @@ import {
   SiteHeader,
 } from "../components";
 import { aboutPage } from "../page-content";
+import { HowWeWorkSection } from "@/components/marketing/how-we-work-section";
+import { WorkShowcaseSection } from "@/components/marketing/client-projects-showcase";
 import { marketingMetadata } from "@/lib/marketing-metadata";
 
 export const metadata: Metadata = marketingMetadata({
   title: "About",
   description:
-    "Founder-led automation and AI consultancy for Indian MSMEs — Google Workspace, MIS, and practical systems your team will use.",
+    "Founder-led AI SaaS for Indian MSMEs — the P.A.C.E. framework with FMS, IMS, CRM, EM, and WhatsApp AI systems, plus Process Coordinator and Executive Assistant roles. Scale without the owner.",
   path: "/about",
 });
 
@@ -32,32 +33,29 @@ export default function AboutPage() {
         <div className="about-founder-grid mx-auto max-w-5xl gap-10 px-5 sm:px-8">
           <div className="about-founder-copy">
             <p className="type-lead">
-              Sheetomatic builds systems around how MSME teams already work:
-              Google Sheets, AppSheet, Looker Studio, client workspaces, and
-              WhatsApp. Less manual follow-up, cleaner data, faster decisions.
+              Sheetomatic builds AI SaaS for how MSME teams actually operate:
+              flow monitoring, task delegation, owner dashboards, and WhatsApp
+              automation in one workspace. Less manual follow-up, cleaner data,
+              faster decisions.
             </p>
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               {[
-                { icon: Database, label: "MIS automation", tone: "tone-sky" },
-                { icon: BarChart3, label: "Dashboards", tone: "tone-indigo" },
-                { icon: GraduationCap, label: "Training", tone: "tone-emerald" },
+                { icon: Database, label: "Flow monitoring", tone: "tone-sky" },
+                { icon: BarChart3, label: "Owner dashboards", tone: "tone-indigo" },
+                { icon: GraduationCap, label: "WhatsApp AI", tone: "tone-emerald" },
               ].map(({ icon: Icon, label, tone }) => (
                 <div className="founder-point" key={label}>
                   <span className={`marketing-icon sm ${tone}`} aria-hidden>
                     <Icon size={20} />
                   </span>
-                  {label === "Training" ? (
-                    <Link href="/courses">{label}</Link>
-                  ) : (
-                    <span>{label}</span>
-                  )}
+                  <span>{label}</span>
                 </div>
               ))}
             </div>
           </div>
           <div className="founder-photo about-founder-photo">
             <Image
-              src="/images/founder-shyam.svg"
+              src="/images/founder-shyam.jpg"
               alt="Shyam Kumar Banjare, founder of Sheetomatic"
               fill
               sizes="(max-width: 1024px) 100vw, 40vw"
@@ -71,6 +69,8 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
+      <HowWeWorkSection />
+      <WorkShowcaseSection />
       <FinalCta />
       <SiteFooter />
     </MarketingPage>

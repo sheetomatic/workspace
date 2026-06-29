@@ -133,6 +133,7 @@ async function createDelegatedTaskInner(
     where: {
       organizationId: user.organizationId,
       userId: { in: assigneeUserIds },
+      deactivatedAt: null,
     },
     select: { userId: true },
   });
@@ -429,8 +430,11 @@ export async function updateDelegatedTask(
     },
   });
 
-  if (!membership) {
-    return { ok: false, message: "Assignee must be in your organization." };
+  if (!membership || membership.deactivatedAt) {
+    return {
+      ok: false,
+      message: "Assignee must be an active member of your organization.",
+    };
   }
 
   const dueAtChanged = dueAt.getTime() !== task.dueAt.getTime();

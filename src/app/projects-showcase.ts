@@ -6,11 +6,48 @@ export type ClientProject = {
 };
 
 export const clientProjectsShowcase = {
-  eyebrow: "Built on Google Sheets & AppSheet",
-  title: "Real MSME deliveries across India and beyond",
+  eyebrow: "Our work",
+  title: "Real MSME operations we have built and run",
   lead:
-    "Owner-led businesses run daily operations on Sheetomatic  -  from HSE dashboards to order-to-delivery and field staff tracking.",
+    "Construction, trading, logistics, retail, real estate, and field teams - flow, stock, CRM, checklists, and WhatsApp AI in one workspace.",
 } as const;
+
+/** Highlight diverse industries on the homepage grid. */
+export const featuredClientProjects: ClientProject[] = [
+  {
+    client: "PPCPL (Pawar Patkar Constructions Private Limited)",
+    location: "Pune",
+    useCase: "Vendor source to contract",
+    description:
+      "Work orders, material issues, and transfers from vendor onboarding through site delivery.",
+  },
+  {
+    client: "Borade Poultry Farm",
+    location: "Mumbai",
+    useCase: "Egg supply chain",
+    description: "Procurement, stock, and dispatch on mobile across the supply chain.",
+  },
+  {
+    client: "Kavlin Struc",
+    location: "Dhamtari",
+    useCase: "Prefab and PEB building",
+    description:
+      "CRM with validation workflows and quotation systems for prefab and PEB project sales.",
+  },
+  {
+    client: "Altasnim",
+    location: "Oman",
+    useCase: "Oil and gas HSE dashboard",
+    description: "Real-time HSE violations, penalties, and performance across clusters.",
+  },
+  {
+    client: "1000+ clients",
+    location: "India",
+    useCase: "WhatsApp Business API",
+    description:
+      "Official API, templates, team inbox, and workflow integrations at scale.",
+  },
+];
 
 export const clientProjects: ClientProject[] = [
   {
@@ -19,13 +56,6 @@ export const clientProjects: ClientProject[] = [
     useCase: "Oil & Gas  -  HSE Dashboard",
     description:
       "Real-time HSE violations, penalties, and performance across cluster locations.",
-  },
-  {
-    client: "Hotchand Tolaram",
-    location: "Dubai, UAE",
-    useCase: "Inventory Management",
-    description:
-      "Stock control and movement tracking on Google Sheets and AppSheet.",
   },
   {
     client: "PPCPL (Pawar Patkar Constructions Private Limited)",
@@ -118,17 +148,11 @@ export const clientProjects: ClientProject[] = [
       "Order to delivery for wedding, pre-wedding, anniversary, and birthday video projects.",
   },
   {
-    client: "Kavlin Construction",
+    client: "Kavlin Struc",
     location: "Dhamtari",
     useCase: "Prefab / PEB Building",
     description:
       "CRM with validation workflows and quotation systems for prefab and PEB project sales.",
-  },
-  {
-    client: "Soha Homes",
-    location: "Raipur",
-    useCase: "Real Estate CRM",
-    description: "Lead tracking, site visits, and follow-up for home buyers and projects.",
   },
   {
     client: "Shanti Honda",
@@ -140,6 +164,6 @@ export const clientProjects: ClientProject[] = [
     client: "Shanti Industries",
     location: "Raipur",
     useCase: "CRM & Inventory",
-    description: "Customer pipeline linked to stock movement and order fulfilment on Sheets.",
+    description: "Customer pipeline linked to stock movement and order fulfilment in Workspace.",
   },
 ];

@@ -17,9 +17,60 @@ const uspIconMap: Record<string, LucideIcon> = {
   checklist: ClipboardCheck,
 };
 
+function UspSystemCard({
+  acronym,
+  name,
+  text,
+  icon,
+  featured = false,
+}: {
+  acronym: string;
+  name: string;
+  text: string;
+  icon: string;
+  featured?: boolean;
+}) {
+  const Icon = uspIconMap[icon] ?? Workflow;
+
+  return (
+    <article className={`usp-system-card ${featured ? "featured" : ""}`}>
+      <span className="usp-acronym">{acronym}</span>
+      <span className="usp-system-icon" aria-hidden>
+        <Icon size={22} />
+      </span>
+      <h3>{name}</h3>
+      <p>{text}</p>
+    </article>
+  );
+}
+
+function UspRolePortalCard({
+  name,
+  role,
+  text,
+  icon,
+}: {
+  name: string;
+  role: string;
+  text: string;
+  icon: string;
+}) {
+  const Icon = uspIconMap[icon] ?? Workflow;
+
+  return (
+    <article className="usp-system-card usp-role-portal-card">
+      <span className="usp-role-badge">{role}</span>
+      <span className="usp-system-icon" aria-hidden>
+        <Icon size={22} />
+      </span>
+      <h3>{name}</h3>
+      <p>{text}</p>
+    </article>
+  );
+}
+
 export function UspSection() {
   const section = uspSection;
-  const ChecklistIcon = uspIconMap.checklist;
 
   return (
     <section className="section bg-white" id="usp">
@@ -31,41 +82,35 @@ export function UspSection() {
         </div>
 
         <div className="usp-systems-grid">
-          {section.systems.map((system) => {
-            const Icon = uspIconMap[system.icon] ?? Workflow;
-
-            return (
-              <article
-                className={`usp-system-card ${system.acronym === "TD" ? "featured" : ""}`}
-                key={system.name}
-              >
-                <span className="usp-acronym">{system.acronym}</span>
-                <span className="usp-system-icon" aria-hidden>
-                  <Icon size={22} />
-                </span>
-                <h3>{system.name}</h3>
-                <p>{system.text}</p>
-              </article>
-            );
-          })}
+          {section.systems.map((system) => (
+            <UspSystemCard
+              key={system.name}
+              acronym={system.acronym}
+              name={system.name}
+              text={system.text}
+              icon={system.icon}
+              featured={system.acronym === "EM"}
+            />
+          ))}
         </div>
 
-        <div className="usp-checklist-band">
-          <div className="usp-checklist-head">
-            <span className="usp-checklist-icon" aria-hidden>
-              <ChecklistIcon size={26} />
-            </span>
-            <div className="usp-checklist-copy">
-              <h3>{section.checklistBlock.title}</h3>
-              <p>{section.checklistBlock.text}</p>
-            </div>
+        <div className="usp-role-portals">
+          <div className="usp-role-portals-heading">
+            <h3>{section.rolePortals.heading}</h3>
+            {section.rolePortals.subheading ? (
+              <p>{section.rolePortals.subheading}</p>
+            ) : null}
           </div>
-          <div className="usp-checklist-areas">
-            {section.checklistBlock.areas.map((area) => (
-              <article className="usp-checklist-area" key={area.label}>
-                <strong>{area.label}</strong>
-                <span>{area.note}</span>
-              </article>
+
+          <div className="usp-role-portals-grid">
+            {section.rolePortals.items.map((portal) => (
+              <UspRolePortalCard
+                key={portal.name}
+                name={portal.name}
+                role={portal.role}
+                text={portal.text}
+                icon={portal.icon}
+              />
             ))}
           </div>
         </div>

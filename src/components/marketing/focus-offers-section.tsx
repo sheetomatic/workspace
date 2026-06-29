@@ -11,12 +11,11 @@ export function FocusOffersSection() {
     <section className="section bg-white" id="offers">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <div className="section-heading">
-          <p>Why Sheetomatic</p>
-          <h2>Three problems we solve for growing MSMEs.</h2>
+          <p>Core offers</p>
+          <h2>Workspace and WhatsApp AI</h2>
           <div className="section-subcopy">
-            Off-site MIS on our payroll, custom apps instead of scattered ERPs,
-            and professional websites at practical cost - all start with one
-            consultation.
+            Two products on one operating system - margin protected, Monday
+            clarity, team accountability without owner firefighting.
           </div>
         </div>
 

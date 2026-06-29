@@ -1,5 +1,4 @@
 import "@/components/marketing/minimal-premium.css";
-import Image from "next/image";
 import Link from "next/link";
 import {
   WhatsAppButton,
@@ -11,6 +10,7 @@ import {
   footerProductLinks,
 } from "./page-content";
 import { SiteHeaderNav } from "@/components/marketing/site-header-nav";
+import { BrandIconMark } from "@/components/brand/brand-icon-mark";
 import {
   finalCtaContent,
   siteBrand,
@@ -28,12 +28,10 @@ export function SiteBrand({
       href="/"
     >
       <span className="logo-mark">
-        <Image
-          src={siteBrand.logoSrc}
-          alt={siteBrand.logoAlt}
-          width={40}
-          height={40}
+        <BrandIconMark
+          size={26}
           priority={variant === "header"}
+          theme={variant === "footer" ? "light" : "dark"}
         />
       </span>
       <span className="site-brand-text">
@@ -80,23 +78,25 @@ export function SiteFooter() {
             <SocialLinks variant="footer" />
             <WhatsAppButton className="btn-footer-cta" label={whatsappDisplayNumber} />
           </div>
-          <div>
+          <div className="site-footer-links">
             <p className="site-footer-col-label">Product</p>
-            {footerProductLinks.map((item) => (
-              <Link href={item.href} key={item.href}>
-                {item.label}
-              </Link>
-            ))}
-            <Link href="/login">Workspace</Link>
+            <nav aria-label="Product links">
+              {footerProductLinks.map((item) => (
+                <Link href={item.href} key={item.href}>
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
           </div>
-          <div>
+          <div className="site-footer-links">
             <p className="site-footer-col-label">Company</p>
-            {footerCompanyLinks.map((item) => (
-              <Link href={item.href} key={item.href}>
-                {item.label}
-              </Link>
-            ))}
-            <Link href="/login">Sign in</Link>
+            <nav aria-label="Company links">
+              {footerCompanyLinks.map((item) => (
+                <Link href={item.href} key={item.href}>
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
           </div>
           <div className="site-footer-reach">
             <p className="site-footer-col-label">Reach us</p>
@@ -139,7 +139,7 @@ export function PageHero({
       <div className="mx-auto max-w-5xl px-5 py-20 text-center sm:px-8">
         <div className="eyebrow mx-auto">{eyebrow}</div>
         <h1 className="type-page-title mt-6">{title}</h1>
-        <p className="type-lead mx-auto mt-5 max-w-3xl">{text}</p>
+        <p className="type-lead mx-auto mt-5 max-w-2xl text-center">{text}</p>
       </div>
     </section>
   );
@@ -158,11 +158,11 @@ export function FinalCta({
         <div className="wa-final-cta-inner mx-auto max-w-5xl px-5 text-center sm:px-8">
           <p className="wa-kicker">{content.kicker}</p>
           <h2 className="type-section-title mt-4 text-slate-950">
-            Connect WhatsApp to your MIS and follow-up flow
+            Turn WhatsApp into your MSME growth channel
           </h2>
           <p className="type-lead mx-auto mt-4 max-w-2xl">
-            Plan official API setup, templates, inbox, and integrations with
-            Sheetomatic on Google Workspace.
+            Official API, AI follow-ups, and deep ties to FMS, IMS, and your
+            operating systems — so sales and ops scale without you.
           </p>
           <div className="wa-final-cta-actions cta-stack">
             <WhatsAppButton

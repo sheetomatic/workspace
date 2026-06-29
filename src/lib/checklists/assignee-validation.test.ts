@@ -39,6 +39,19 @@ describe("validateChecklistAssigneeMembership", () => {
     });
   });
 
+  it("rejects inactive org member", () => {
+    expect(
+      validateChecklistAssigneeMembership({
+        id: "mem-1",
+        deactivatedAt: new Date("2026-01-01"),
+      }),
+    ).toEqual({
+      ok: false,
+      code: "ASSIGNEE_INACTIVE",
+      message: "Selected doer is inactive in this workspace.",
+    });
+  });
+
   it("accepts org member", () => {
     expect(validateChecklistAssigneeMembership({ id: "mem-1" }).ok).toBe(true);
   });

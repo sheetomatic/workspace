@@ -75,12 +75,12 @@ export function TasksModuleNav({ user }: { user: SessionUser }) {
   const visibleItems = items.filter((item) => item.visible);
 
   return (
-    <nav className="ws-module-subnav ws-tasks-subnav" aria-label="EA navigation">
+    <nav className="ws-module-subnav ws-tasks-subnav" aria-label="Tasks navigation">
       <div className="ws-module-subnav-brand">
         <ListTodo size={18} aria-hidden />
         <div>
-          <strong>EA</strong>
-          <span>Delegation & proof</span>
+          <strong>Tasks</strong>
+          <span>Delegation and proof</span>
         </div>
       </div>
       <ul className="ws-module-subnav-list">

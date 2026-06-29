@@ -11,6 +11,7 @@ import type {
 } from "@/lib/integrations/messageautosender";
 import { isWebBasedApiUiEnabled } from "@/lib/web-based-api-ui";
 import type { PendingWorkspaceRow } from "@/components/saas/pending-workspaces-panel";
+import type { OrgPlan, WorkspaceModule } from "@prisma/client";
 
 export function WhatsAppSettingsWorkspacePanel({
   initialValues,
@@ -33,6 +34,8 @@ export function WhatsAppSettingsWorkspacePanel({
   aiReplySummary,
   organizationName = null,
   organizationStatus = null,
+  organizationPlan = null,
+  organizationAllowedModules = [],
   pendingWorkspaces = [],
   showAdminPanels = false,
   showWebBasedApi = isWebBasedApiUiEnabled(),
@@ -57,6 +60,8 @@ export function WhatsAppSettingsWorkspacePanel({
   aiReplySummary: AiReplyUsageSummary;
   organizationName?: string | null;
   organizationStatus?: "ONBOARDING" | "ACTIVE" | null;
+  organizationPlan?: OrgPlan | null;
+  organizationAllowedModules?: WorkspaceModule[];
   pendingWorkspaces?: PendingWorkspaceRow[];
   showAdminPanels?: boolean;
   showWebBasedApi?: boolean;
@@ -67,6 +72,8 @@ export function WhatsAppSettingsWorkspacePanel({
         <WorkspaceActivationPanel
           organizationName={organizationName}
           status={organizationStatus}
+          plan={organizationPlan}
+          allowedModules={organizationAllowedModules}
         />
       ) : null}
       <PendingWorkspacesPanel workspaces={pendingWorkspaces} />

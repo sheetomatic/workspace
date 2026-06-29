@@ -5,7 +5,7 @@ import { marketingMetadata } from "@/lib/marketing-metadata";
 export const metadata: Metadata = marketingMetadata({
   title: "Services",
   description:
-    "End-to-end AI-powered solutions for Indian MSMEs — WhatsApp automation, CRM, MIS, HR, inventory, tasks, and workflow delivery.",
+    "Systems, teams, and WhatsApp AI for Indian MSMEs — CRM, FMS, IMS, MIS, HR, inventory, and workflow delivery that scales without the owner.",
   path: "/services",
 });
 

@@ -6,6 +6,10 @@ import {
   setWorkspaceStatusAction,
   type WorkspaceStatusActionState,
 } from "@/app/ai/app/settings/actions";
+import { WorkspaceBundleSelect } from "@/components/saas/workspace-bundle-select";
+import { formatAllowedModules } from "@/lib/workspace-activation-bundles.shared";
+import { ORG_PLAN_LABELS } from "@/lib/org-plan-presets";
+import type { OrgPlan, WorkspaceModule } from "@prisma/client";
 
 const initialState: WorkspaceStatusActionState = { ok: false, message: "" };
 
@@ -13,9 +17,13 @@ const initialState: WorkspaceStatusActionState = { ok: false, message: "" };
 export function WorkspaceActivationPanel({
   organizationName,
   status,
+  plan,
+  allowedModules,
 }: {
   organizationName: string;
   status: "ONBOARDING" | "ACTIVE";
+  plan?: OrgPlan | null;
+  allowedModules?: WorkspaceModule[];
 }) {
   const [state, formAction, pending] = useActionState(
     setWorkspaceStatusAction,
@@ -51,37 +59,48 @@ export function WorkspaceActivationPanel({
         you switch it on.
       </p>
 
-      <form action={formAction} className="mt-4 flex items-center gap-3">
+      {isActive && plan && allowedModules && allowedModules.length > 0 ? (
+        <p className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+          Current bundle:{" "}
+          <strong>{ORG_PLAN_LABELS[plan]}</strong> -{" "}
+          {formatAllowedModules(allowedModules)}
+        </p>
+      ) : null}
+
+      <form action={formAction} className="mt-4">
         <input name="status" type="hidden" value={nextStatus} />
-        <button
-          className={
-            isActive
-              ? "rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
-              : "rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
-          }
-          disabled={pending}
-          type="submit"
-        >
-          {pending ? (
-            <span className="inline-flex items-center gap-2">
-              <Loader2 className="animate-spin" size={14} aria-hidden />
-              Saving...
-            </span>
-          ) : isActive ? (
-            "Move back to pending"
-          ) : (
-            "Activate workspace"
-          )}
-        </button>
-        {state.message ? (
-          <span
+        {!isActive ? <WorkspaceBundleSelect disabled={pending} /> : null}
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
             className={
-              state.ok ? "text-sm text-emerald-600" : "text-sm text-rose-600"
+              isActive
+                ? "rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                : "rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
             }
+            disabled={pending}
+            type="submit"
           >
-            {state.message}
-          </span>
-        ) : null}
+            {pending ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="animate-spin" size={14} aria-hidden />
+                Saving...
+              </span>
+            ) : isActive ? (
+              "Move back to pending"
+            ) : (
+              "Activate workspace"
+            )}
+          </button>
+          {state.message ? (
+            <span
+              className={
+                state.ok ? "text-sm text-emerald-600" : "text-sm text-rose-600"
+              }
+            >
+              {state.message}
+            </span>
+          ) : null}
+        </div>
       </form>
     </section>
   );

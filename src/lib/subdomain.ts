@@ -1,7 +1,7 @@
 export const ROOT_DOMAIN =
   process.env.NEXT_PUBLIC_ROOT_DOMAIN?.trim().toLowerCase() || "sheetomatic.com";
 
-const RESERVED_SUBDOMAINS = new Set(["www", "app", "ai"]);
+const RESERVED_SUBDOMAINS = new Set(["www", "app", "workspace", "ai"]);
 
 export type HostKind = "marketing" | "workspace" | "ai" | "tenant";
 
@@ -16,7 +16,7 @@ function classifySubdomain(subdomain: string, hostname: string): ParsedHost {
     return { kind: "marketing", hostname };
   }
 
-  if (subdomain === "app") {
+  if (subdomain === "workspace" || subdomain === "app") {
     return { kind: "workspace", hostname };
   }
 

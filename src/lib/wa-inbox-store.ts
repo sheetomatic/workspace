@@ -2,6 +2,7 @@ import { unstable_cache, revalidateTag } from "next/cache";
 import { prisma } from "@/lib/db";
 import type { WaLeadCaptureStep } from "@prisma/client";
 import { triggerWaCrmSheetSync } from "@/lib/integrations/google-sheets-wa-crm";
+import { queueLeadSyncFromWhatsApp } from "@/lib/leads/ingest";
 import { formatWhatsAppPhone, normalizeWhatsAppPhone } from "@/lib/phone";
 import { SCALE } from "@/lib/scale";
 
@@ -111,6 +112,10 @@ export async function recordWaInboundMessage(params: {
   });
 
   bustInboxListCache(params.organizationId);
+  queueLeadSyncFromWhatsApp({
+    organizationId: params.organizationId,
+    contactId: contact.id,
+  });
   return { contactId: contact.id, conversationId: conversation.id };
 }
 
@@ -184,6 +189,10 @@ export async function updateWaContactLeadCapture(params: {
     (params.complete || params.data !== undefined)
   ) {
     triggerWaCrmSheetSync(params.organizationId);
+    queueLeadSyncFromWhatsApp({
+      organizationId: params.organizationId,
+      contactId: params.contactId,
+    });
   }
 
   return result;

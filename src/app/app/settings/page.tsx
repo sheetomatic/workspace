@@ -3,6 +3,8 @@ import { NotificationSettingsPanel } from "@/components/saas/notification-settin
 import { ChangePasswordPanel } from "@/components/saas/change-password-panel";
 import { TaskAiSettingsPanel } from "@/components/saas/task-ai-settings-panel";
 import { WorkspaceLinksPanel } from "@/components/saas/workspace-links-panel";
+import { WorkspaceAppearancePanel } from "@/components/saas/workspace-appearance-panel";
+import { WorkspaceAddonsPanel } from "@/components/saas/workspace-addons-panel";
 import { WorkspaceSettingsForm } from "@/components/saas/workspace-settings-form";
 import { getIntegrationStatus } from "@/lib/integrations/status";
 import { getTaskAiUsageSummary } from "@/lib/integrations/task-ai-settings";
@@ -15,12 +17,17 @@ import { PageHeader } from "@/components/saas/page-header";
 import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
 import { ROLE_LABELS } from "@/lib/permissions";
 import { hasMinimumRole } from "@/lib/permissions";
+import { resolveOrgAllowedModules } from "@/lib/org-plan-presets";
 import { getOrCreateNotificationSettings } from "@/lib/notification-settings";
 import { requireSession } from "@/lib/require-session";
 import {
   getWorkspaceSummary,
   listWorkspaceLinks,
 } from "@/lib/workspace";
+import {
+  mergeWorkspaceAppearance,
+  parseWorkspaceAppearance,
+} from "@/lib/workspace-appearance";
 
 export default async function SettingsPage() {
   const user = await requireSession();
@@ -43,6 +50,13 @@ export default async function SettingsPage() {
   const sheetsConnection = getGoogleSheetsConnectionStatus(spreadsheetId);
   const statusLabel =
     organization.status === "ACTIVE" ? "Active" : "Onboarding";
+  const appearance = mergeWorkspaceAppearance(
+    parseWorkspaceAppearance(organization.workspaceAppearance),
+    organization.name,
+    organization.logoUrl,
+    organization.updatedAt.getTime(),
+  );
+  const allowedModules = resolveOrgAllowedModules(organization.allowedModules);
 
   return (
     <div className="saas-page saas-settings-page">
@@ -59,6 +73,12 @@ export default async function SettingsPage() {
         <NotificationSettingsPanel settings={notificationSettings} />
         {canManageAdmin ? (
           <>
+            <WorkspaceAddonsPanel
+              allowedModules={allowedModules}
+              canEdit={user.isSuperAdmin}
+              plan={organization.plan}
+            />
+            <WorkspaceAppearancePanel appearance={appearance} />
             <article className="saas-panel">
               <h3>Company</h3>
               <WorkspaceSettingsForm

@@ -12,6 +12,11 @@ function context(
 ): OrganizationPlanContext {
   return {
     plan: "ENTERPRISE",
+    planStatus: "ACTIVE",
+    billingPeriod: "MONTHLY",
+    trialEndsAt: null,
+    renewalAt: null,
+    activatedAt: new Date("2026-01-01"),
     allowedModules: ["TASKS", "FMS"],
     maxMembers: 50,
     maxFmsTemplates: 15,

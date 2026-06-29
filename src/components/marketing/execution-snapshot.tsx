@@ -3,23 +3,23 @@ import { CheckCircle2, Circle, Clock3 } from "lucide-react";
 
 const queue = [
   {
-    title: "Quotation follow-up - Metro Retail",
-    meta: "Assigned to Rahul",
+    title: "Demo follow-up - Rahul Mehta",
+    meta: "Assigned to sales team",
     time: "4:30 PM",
     status: "In progress",
     tone: "progress",
   },
   {
-    title: "Payment reminder - Invoice #1842",
-    meta: "WhatsApp sent automatically",
+    title: "Quote sent - Metro Retail",
+    meta: "CRM stage updated",
     time: "Done",
     status: "Completed",
     tone: "done",
   },
   {
-    title: "Dispatch approval - SKU 441",
-    meta: "Waiting for Manager",
-    time: "Urgent",
+    title: "New lead - pricing inquiry",
+    meta: "AI captured overnight",
+    time: "New",
     status: "Pending",
     tone: "pending",
   },
@@ -30,14 +30,14 @@ export function ExecutionSnapshot() {
     <div className="execution-snapshot">
       <div className="execution-snapshot-head">
         <div>
-          <p>Today&apos;s execution</p>
-          <h3>Operations queue</h3>
+          <p>Converting sales</p>
+          <h3>Follow-up system</h3>
         </div>
-        <span className="execution-snapshot-score">76% on track</span>
+        <span className="execution-snapshot-score">12 hot leads</span>
       </div>
 
       <div className="execution-snapshot-progress">
-        <span>Collection progress</span>
+        <span>Pipeline progress</span>
         <div className="execution-progress-track">
           <i style={{ width: "76%" }} />
         </div>
@@ -68,7 +68,7 @@ export function ExecutionSnapshot() {
       </ul>
 
       <p className="execution-snapshot-foot">
-        AI created tasks, reminders fired, owner dashboard updated - no manual
+        AI captured the lead. CRM assigned follow-ups. Your team closes - no manual
         chasing.
       </p>
     </div>

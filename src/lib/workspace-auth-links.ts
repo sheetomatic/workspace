@@ -4,8 +4,14 @@ import { ROOT_DOMAIN } from "@/lib/subdomain";
 export const WORKSPACE_LOGIN_HREF = "/login";
 export const WORKSPACE_SIGNUP_HREF = "/login?intent=start";
 
+/** Generic workspace portal — workspace.sheetomatic.com (app. redirects in middleware). */
+export function workspacePortalOrigin(protocol = "https") {
+  return `${protocol}://workspace.${ROOT_DOMAIN}`;
+}
+
+/** @deprecated Use workspacePortalOrigin */
 export function appPortalOrigin(protocol = "https") {
-  return `${protocol}://app.${ROOT_DOMAIN}`;
+  return workspacePortalOrigin(protocol);
 }
 
 export function aiPortalOrigin(protocol = "https") {
@@ -20,5 +26,5 @@ export function workspaceLoginHref(options?: { org?: string }) {
   if (options?.org) {
     return `${tenantPortalOrigin(options.org)}/login?org=${encodeURIComponent(options.org)}`;
   }
-  return `${appPortalOrigin()}/login`;
+  return `${workspacePortalOrigin()}/login`;
 }

@@ -39,6 +39,8 @@ const EMPTY_PAYLOAD: MyTodayPayload = {
   },
 };
 
+export const EMPTY_TODAY_PAYLOAD = EMPTY_PAYLOAD;
+
 export async function getMyTodayPayload(
   organizationId: string,
   userId: string,

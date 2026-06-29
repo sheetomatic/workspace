@@ -21,7 +21,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { AiCrmTopbar } from "@/components/saas/ai-crm-topbar";
 import { OrganizationSwitcher } from "@/components/saas/organization-switcher";
-import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
+import { BrandIconMark } from "@/components/brand/brand-icon-mark";
 import type { OrganizationOption } from "@/components/saas/organization-switcher";
 import type { SessionUser } from "@/lib/auth";
 import { AI_APP_MIN_ROLE } from "@/lib/ai-auth-links";
@@ -154,7 +154,7 @@ export function AiShell({
           <div className="ai-crm-brand-row">
             <Link className="ai-crm-brand" href="/ai/app">
               <span className="logo-mark">
-                <SheetomaticAiMark sizes="lg" />
+                <BrandIconMark size={22} />
               </span>
               <strong>Sheetomatic AI</strong>
               <ChevronDown aria-hidden size={14} />

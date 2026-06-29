@@ -24,7 +24,7 @@ export const hrModuleOverview = {
   lead:
     "Two focused modules for MSMEs: Attendance & Leave with payroll inputs, and Field Executive Tracking as a separate module. Plus hiring and document workflows for HR.",
   darwinboxNote:
-    "Enterprise HCM platforms combine time tracking, leave, payroll, and recruitment on one mobile-first stack. Sheetomatic brings the same ideas to Indian MSMEs with WhatsApp-ready ops and Google Sheets export.",
+    "Enterprise HCM platforms combine time tracking, leave, payroll, and recruitment on one mobile-first stack. Sheetomatic brings the same ideas to Indian MSMEs with WhatsApp-ready ops and workspace reporting.",
 };
 
 export const attendanceLeaveModule: HrServicesModule = {
@@ -120,7 +120,7 @@ export const fieldTrackingModule: HrServicesModule = {
     "Client name, purpose, and activity notes",
     "Separate from office attendance - field-only KPIs",
     "Manager dashboard for today's field team",
-    "Export to Google Sheets / MIS",
+    "Export to Executive Meeting (Weekly) / MIS",
   ],
   darwinboxParity: [
     "Field force geo check-in",

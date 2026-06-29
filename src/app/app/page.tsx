@@ -1,9 +1,36 @@
 import { redirect } from "next/navigation";
 import { UserDashboard } from "@/components/saas/user-dashboard";
 import { prisma } from "@/lib/db";
+import type { DashboardPayload } from "@/lib/dashboard-types";
 import { requireSession } from "@/lib/require-session";
 import { hasWorkspaceModule, resolveWorkspaceHomeHref } from "@/lib/workspace-modules";
 import { getUserDashboard } from "@/lib/workspace-data";
+
+function emptyDashboardForUser(role: import("@prisma/client").Role): DashboardPayload {
+  return {
+    metricCards: [],
+    followUps: [],
+    pendingPayments: [],
+    taskStats: {
+      pending: 0,
+      inProgress: 0,
+      completedToday: 0,
+      overdue: 0,
+    },
+    charts: {
+      weeklyActivity: [],
+      taskBreakdown: [],
+      metricBars: [],
+      paymentBreakdown: [],
+    },
+    approvalsPending: 0,
+    showApprovals: false,
+    roleScope: "personal",
+    roleLabel: role,
+    dataSource: "database",
+    spreadsheetId: null,
+  };
+}
 
 export default async function AppDashboardPage() {
   const user = await requireSession();
@@ -22,9 +49,7 @@ export default async function AppDashboardPage() {
     dashboard = await getUserDashboard(user);
   } catch (error) {
     console.error("getUserDashboard", error);
-    throw new Error(
-      "Dashboard data could not load. Run npm run db:seed and sign in again.",
-    );
+    dashboard = emptyDashboardForUser(user.role);
   }
 
   const organization = await prisma.organization.findUnique({

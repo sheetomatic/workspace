@@ -3,9 +3,15 @@ import {
   isOrgTierEnforced,
   resolveOrgAllowedModules,
 } from "@/lib/org-plan-presets";
+import { getOrganizationPlanSnapshot } from "@/lib/organization-plan";
 
 export type OrganizationPlanContext = {
   plan: import("@prisma/client").OrgPlan;
+  planStatus: import("@prisma/client").PlanSubscriptionStatus;
+  billingPeriod: import("@prisma/client").PlanBillingPeriod;
+  trialEndsAt: Date | null;
+  renewalAt: Date | null;
+  activatedAt: Date | null;
   allowedModules: import("@prisma/client").WorkspaceModule[];
   maxMembers: number;
   maxFmsTemplates: number;
@@ -18,28 +24,35 @@ export type OrganizationPlanContext = {
 export async function getOrganizationPlanContext(
   organizationId: string,
 ): Promise<OrganizationPlanContext | null> {
-  const organization = await prisma.organization.findUnique({
-    where: { id: organizationId },
-    select: {
-      plan: true,
-      allowedModules: true,
-      maxMembers: true,
-      maxFmsTemplates: true,
-      _count: {
-        select: {
-          memberships: true,
-          fmsTemplates: true,
+  const [organization, planSnapshot] = await Promise.all([
+    prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: {
+        allowedModules: true,
+        maxMembers: true,
+        maxFmsTemplates: true,
+        _count: {
+          select: {
+            memberships: true,
+            fmsTemplates: true,
+          },
         },
       },
-    },
-  });
+    }),
+    getOrganizationPlanSnapshot(organizationId),
+  ]);
 
-  if (!organization) {
+  if (!organization || !planSnapshot) {
     return null;
   }
 
   return {
-    plan: organization.plan,
+    plan: planSnapshot.plan,
+    planStatus: planSnapshot.status,
+    billingPeriod: planSnapshot.billingPeriod,
+    trialEndsAt: planSnapshot.trialEndsAt,
+    renewalAt: planSnapshot.renewalAt,
+    activatedAt: planSnapshot.activatedAt,
     allowedModules: organization.allowedModules,
     maxMembers: organization.maxMembers,
     maxFmsTemplates: organization.maxFmsTemplates,
