@@ -7,6 +7,7 @@ import { generateLeadMachineApiKey } from "@/lib/leads/api-auth";
 import { ensureLeadConnections, ingestInboundLead } from "@/lib/leads/ingest";
 import { bridgeInboundLeadToFms } from "@/lib/leads/fms-bridge";
 import { pullLeadsFromConnection } from "@/lib/leads/sync-sources";
+import { defaultGoogleSheetsLeadConfig } from "@/lib/leads/sheet-config";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import { isActiveOrgMember } from "@/lib/assignee-org";
@@ -196,6 +197,43 @@ export async function updateLeadConnection(params: {
   return { ok: true };
 }
 
+export async function updateGoogleSheetsLeadConfig(params: {
+  enabled: boolean;
+  spreadsheetUrl: string;
+  sheetTab: string;
+  headerRow: number;
+}) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Admin only." };
+  }
+
+  await ensureLeadConnections(user.organizationId);
+
+  const config = {
+    ...defaultGoogleSheetsLeadConfig(),
+    spreadsheetUrl: params.spreadsheetUrl.trim() || defaultGoogleSheetsLeadConfig().spreadsheetUrl,
+    sheetTab: params.sheetTab.trim() || undefined,
+    headerRow: params.headerRow > 0 ? params.headerRow : 1,
+  };
+
+  await prisma.leadIngestConnection.update({
+    where: {
+      organizationId_channel: {
+        organizationId: user.organizationId,
+        channel: "GOOGLE_SHEETS",
+      },
+    },
+    data: {
+      enabled: params.enabled,
+      config: config as Prisma.InputJsonValue,
+    },
+  });
+
+  revalidatePath("/app/leads/settings");
+  return { ok: true };
+}
+
 export async function regenerateLeadsApiKey() {
   const user = await requireSession(undefined, { module: "FMS" });
   if (!hasMinimumRole(user.role, "ADMIN")) {
@@ -237,6 +275,7 @@ export async function createManualInboundLead(formData: FormData) {
     name,
     phone,
     requirement,
+    capturedAt: new Date(),
     actorUserId: user.id,
     createFmsJob: true,
   });

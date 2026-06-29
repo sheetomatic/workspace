@@ -1,5 +1,9 @@
 import { prisma } from "@/lib/db";
 import { getFmsStepSummaryForLead } from "@/lib/leads/fms-bridge";
+import {
+  leadCapturedAtWhere,
+  type LeadsPeriodRange,
+} from "@/lib/leads/period";
 
 function startOfToday() {
   const d = new Date();
@@ -11,6 +15,107 @@ function startOfTomorrow() {
   const d = startOfToday();
   d.setDate(d.getDate() + 1);
   return d;
+}
+
+export async function getLeadsMachineStatsForPeriod(
+  organizationId: string,
+  period: LeadsPeriodRange,
+) {
+  const periodWhere = {
+    organizationId,
+    ...leadCapturedAtWhere(period),
+  };
+
+  const [
+    total,
+    byChannel,
+    byStatus,
+    withFms,
+    openPipeline,
+    won,
+    lost,
+  ] = await Promise.all([
+    prisma.inboundLead.count({ where: periodWhere }),
+    prisma.inboundLead.groupBy({
+      by: ["channel"],
+      where: periodWhere,
+      _count: { _all: true },
+    }),
+    prisma.inboundLead.groupBy({
+      by: ["status"],
+      where: periodWhere,
+      _count: { _all: true },
+    }),
+    prisma.inboundLead.count({
+      where: { ...periodWhere, fmsInstanceId: { not: null } },
+    }),
+    prisma.inboundLead.count({
+      where: {
+        ...periodWhere,
+        status: { in: ["NEW", "CONTACTED", "FOLLOW_UP", "QUALIFIED"] },
+      },
+    }),
+    prisma.inboundLead.count({
+      where: { ...periodWhere, status: "WON" },
+    }),
+    prisma.inboundLead.count({
+      where: { ...periodWhere, status: "LOST" },
+    }),
+  ]);
+
+  return {
+    total,
+    withFms,
+    openPipeline,
+    won,
+    lost,
+    conversionRate: total > 0 ? Math.round((won / total) * 100) : 0,
+    byChannel: Object.fromEntries(
+      byChannel.map((row) => [row.channel, row._count._all]),
+    ),
+    byStatus: Object.fromEntries(
+      byStatus.map((row) => [row.status, row._count._all]),
+    ),
+    periodLabel: period.periodLabel,
+  };
+}
+
+export async function listInboundLeadsForPeriod(
+  organizationId: string,
+  period: LeadsPeriodRange,
+) {
+  const leads = await prisma.inboundLead.findMany({
+    where: {
+      organizationId,
+      ...leadCapturedAtWhere(period),
+    },
+    orderBy: [{ capturedAt: "desc" }, { createdAt: "desc" }],
+    include: {
+      assignedTo: { select: { id: true, name: true, email: true } },
+      followUps: {
+        where: { completedAt: null },
+        orderBy: { scheduledAt: "asc" },
+        take: 3,
+        include: {
+          assignee: { select: { id: true, name: true, email: true } },
+        },
+      },
+      fmsInstance: {
+        select: {
+          id: true,
+          status: true,
+          referenceLabel: true,
+        },
+      },
+    },
+  });
+
+  return Promise.all(
+    leads.map(async (lead) => ({
+      ...lead,
+      fmsStep: await getFmsStepSummaryForLead(lead.fmsInstanceId),
+    })),
+  );
 }
 
 export async function getLeadsMachineStats(organizationId: string) {

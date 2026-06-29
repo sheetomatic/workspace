@@ -31,6 +31,10 @@
     {
       "path": "/api/cron/task-due-digest",
       "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/cron/leads-sync",
+      "schedule": "0 8 * * *"
     }
   ],
   "functions": {
@@ -53,6 +57,9 @@
       "maxDuration": 60
     },
     "src/app/api/cron/task-due-digest/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/cron/leads-sync/route.ts": {
       "maxDuration": 60
     }
   }

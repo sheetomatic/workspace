@@ -1,4 +1,5 @@
 import { LeadsSettingsPanel } from "@/components/saas/leads-settings-panel";
+import { isGoogleSheetsAuthConfigured } from "@/lib/integrations/google-sheets-auth";
 import { ensureLeadConnections } from "@/lib/leads/ingest";
 import { listLeadConnections } from "@/lib/leads/queries";
 import { prisma } from "@/lib/db";
@@ -29,6 +30,7 @@ export default async function LeadsSettingsPage() {
       apiKeyHint={org?.leadMachineApiKeyHint ?? null}
       connections={connections}
       ingestUrl={`${siteUrl}/api/leads/ingest`}
+      sheetsAuthConfigured={isGoogleSheetsAuthConfigured()}
     />
   );
 }

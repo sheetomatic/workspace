@@ -1,6 +1,8 @@
-import type { LeadSourceChannel, Prisma } from "@prisma/client";
+import type { InboundLeadStatus, LeadSourceChannel, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { ingestInboundLead } from "@/lib/leads/ingest";
+import { pullLeadsFromGoogleSheet } from "@/lib/leads/google-sheets";
+import { resolveGoogleSheetsLeadConfig } from "@/lib/leads/sheet-config";
 
 export type ExternalLeadRow = {
   externalId: string;
@@ -10,6 +12,8 @@ export type ExternalLeadRow = {
   city?: string | null;
   requirement?: string | null;
   sourceDetail?: string | null;
+  capturedAt?: Date | null;
+  status?: InboundLeadStatus;
   raw?: Record<string, unknown>;
 };
 
@@ -38,6 +42,10 @@ export async function pullLeadsFromConnection(params: {
 
   if (!connection?.enabled) {
     return { ok: false as const, reason: "connection_disabled" };
+  }
+
+  if (params.channel === "GOOGLE_SHEETS") {
+    return pullGoogleSheetsLeads(params.organizationId, connection);
   }
 
   const config = connection.config as Record<string, unknown>;
@@ -92,6 +100,8 @@ export async function pullLeadsFromConnection(params: {
         city: row.city,
         requirement: row.requirement,
         sourceDetail: row.sourceDetail,
+        capturedAt: row.capturedAt ?? undefined,
+        status: row.status,
         rawPayload: (row.raw ?? row) as Prisma.InputJsonValue,
         createFmsJob: true,
       });
@@ -170,16 +180,6 @@ function normalizeExternalRow(item: unknown): ExternalLeadRow | null {
   };
 }
 
-function pickString(row: Record<string, unknown>, keys: string[]) {
-  for (const key of keys) {
-    const value = row[key];
-    if (typeof value === "string" && value.trim()) {
-      return value.trim();
-    }
-  }
-  return null;
-}
-
 export async function syncAllEnabledLeadConnections(organizationId: string) {
   const connections = await prisma.leadIngestConnection.findMany({
     where: { organizationId, enabled: true, channel: { not: "WHATSAPP" } },
@@ -195,4 +195,80 @@ export async function syncAllEnabledLeadConnections(organizationId: string) {
   }
 
   return results;
+}
+
+async function pullGoogleSheetsLeads(
+  organizationId: string,
+  connection: { id: string; config: unknown },
+) {
+  const sheetConfig = resolveGoogleSheetsLeadConfig(connection.config);
+  if (!sheetConfig) {
+    await prisma.leadIngestConnection.update({
+      where: { id: connection.id },
+      data: {
+        syncStatus: "ERROR",
+        lastSyncError: "Add a spreadsheet ID or URL in Google Sheets settings.",
+      },
+    });
+    return { ok: false as const, reason: "missing_spreadsheet" };
+  }
+
+  await prisma.leadIngestConnection.update({
+    where: { id: connection.id },
+    data: { syncStatus: "SYNCING", lastSyncError: null },
+  });
+
+  try {
+    const rows = await pullLeadsFromGoogleSheet(sheetConfig);
+    let imported = 0;
+    for (const row of rows) {
+      await ingestInboundLead({
+        organizationId,
+        channel: "GOOGLE_SHEETS",
+        externalId: row.externalId,
+        name: row.name,
+        phone: row.phone,
+        email: row.email,
+        city: row.city,
+        requirement: row.requirement,
+        sourceDetail: row.sourceDetail,
+        capturedAt: row.capturedAt ?? undefined,
+        status: row.status,
+        rawPayload: row.raw as Prisma.InputJsonValue,
+        createFmsJob: true,
+      });
+      imported += 1;
+    }
+
+    await prisma.leadIngestConnection.update({
+      where: { id: connection.id },
+      data: {
+        syncStatus: "IDLE",
+        lastSyncAt: new Date(),
+        lastSyncError: null,
+      },
+    });
+
+    return { ok: true as const, imported };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Google Sheets sync failed";
+    await prisma.leadIngestConnection.update({
+      where: { id: connection.id },
+      data: {
+        syncStatus: "ERROR",
+        lastSyncError: message,
+      },
+    });
+    return { ok: false as const, reason: message };
+  }
+}
+
+function pickString(row: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    const value = row[key];
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  return null;
 }

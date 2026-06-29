@@ -8,6 +8,7 @@ import {
   GitBranch,
   ListTodo,
   MapPin,
+  Megaphone,
   Package,
   Presentation,
   Settings,
@@ -51,6 +52,13 @@ const BCI_CORE_ITEMS: WorkspaceNavItem[] = [
     icon: Settings2,
     module: "FMS",
     minRole: "MANAGER",
+  },
+  {
+    href: "/app/leads",
+    label: "Leads",
+    icon: Megaphone,
+    module: "FMS",
+    matchPrefix: "/app/leads",
   },
 ];
 

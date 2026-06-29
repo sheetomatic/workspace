@@ -1,4 +1,4 @@
-/** Demo credentials from `prisma/seed.ts` — requires `npm run db:seed` before authenticated E2E. */
+/** Demo credentials from `prisma/seed.ts` â€” requires `npm run db:seed` before authenticated E2E. */
 export const DEMO_PASSWORD = "demo1234";
 
 export const DEMO_ORGS = {

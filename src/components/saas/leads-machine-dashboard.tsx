@@ -49,6 +49,8 @@ type LeadRow = {
     notes: string | null;
     assignee: { id: string; name: string | null; email: string } | null;
   }>;
+  capturedAt: Date | null;
+  createdAt: Date;
 };
 
 type FollowUpRow = {
@@ -79,12 +81,14 @@ export function LeadsMachineDashboard({
   overdueFollowUps,
   teamMembers,
   canManage,
+  periodLabel,
 }: {
   leads: LeadRow[];
   todayFollowUps: FollowUpRow[];
   overdueFollowUps: FollowUpRow[];
   teamMembers: TeamMember[];
   canManage: boolean;
+  periodLabel?: string;
 }) {
   const [channelFilter, setChannelFilter] = useState<LeadSourceChannel | "ALL">("ALL");
   const [pending, startTransition] = useTransition();
@@ -170,10 +174,14 @@ export function LeadsMachineDashboard({
       </div>
 
       <div className="leads-machine-table-wrap">
+        <div className="leads-table-head">
+          <h2>{periodLabel ? `Leads (${periodLabel})` : "All leads"}</h2>
+        </div>
         <table className="leads-machine-table">
           <thead>
             <tr>
               <th>Lead</th>
+              <th>Captured</th>
               <th>Source</th>
               <th>Status</th>
               <th>FMS (Lead - Sales)</th>
@@ -184,7 +192,7 @@ export function LeadsMachineDashboard({
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={canManage ? 6 : 5}>
+                <td colSpan={canManage ? 7 : 6}>
                   <p className="leads-machine-muted">
                     No leads yet. Connect sources in Settings or POST to the ingest API.
                   </p>
@@ -201,6 +209,13 @@ export function LeadsMachineDashboard({
                     {lead.requirement ? (
                       <span className="leads-machine-sub">{lead.requirement}</span>
                     ) : null}
+                  </td>
+                  <td>
+                    {(lead.capturedAt ?? lead.createdAt).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
                   </td>
                   <td>
                     <span className={`leads-channel-badge channel-${lead.channel.toLowerCase()}`}>

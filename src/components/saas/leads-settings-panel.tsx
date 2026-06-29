@@ -3,12 +3,9 @@
 import { useState, useTransition } from "react";
 import type { LeadSourceChannel } from "@prisma/client";
 import Link from "next/link";
-import {
-  regenerateLeadsApiKey,
-  syncLeadChannelNow,
-  updateLeadConnection,
-} from "@/app/app/leads/actions";
+import { regenerateLeadsApiKey, syncLeadChannelNow, updateLeadConnection, updateGoogleSheetsLeadConfig } from "@/app/app/leads/actions";
 import { LEAD_CHANNEL_LABELS } from "@/lib/leads/channels";
+import { DEFAULT_LEADS_SPREADSHEET_URL } from "@/lib/leads/sheet-config";
 import "@/components/saas/leads-machine.css";
 
 type ConnectionRow = {
@@ -26,10 +23,12 @@ export function LeadsSettingsPanel({
   connections,
   apiKeyHint,
   ingestUrl,
+  sheetsAuthConfigured,
 }: {
   connections: ConnectionRow[];
   apiKeyHint: string | null;
   ingestUrl: string;
+  sheetsAuthConfigured: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const [freshKey, setFreshKey] = useState<string | null>(null);
@@ -81,29 +80,170 @@ export function LeadsSettingsPanel({
       </section>
 
       <div className="leads-settings-grid">
-        {connections.map((connection) => (
-          <ConnectionCard
-            key={connection.id}
-            connection={connection}
-            disabled={pending}
-            onSave={(enabled, configJson) =>
-              startTransition(async () => {
-                await updateLeadConnection({
-                  channel: connection.channel,
-                  enabled,
-                  configJson,
-                });
-              })
-            }
-            onSync={() =>
-              startTransition(async () => {
-                await syncLeadChannelNow(connection.channel);
-              })
-            }
-          />
-        ))}
+        {connections.map((connection) =>
+          connection.channel === "GOOGLE_SHEETS" ? (
+            <GoogleSheetsConnectionCard
+              key={connection.id}
+              connection={connection}
+              disabled={pending}
+              sheetsAuthConfigured={sheetsAuthConfigured}
+              onSave={(payload) =>
+                startTransition(async () => {
+                  await updateGoogleSheetsLeadConfig(payload);
+                })
+              }
+              onSync={() =>
+                startTransition(async () => {
+                  await syncLeadChannelNow(connection.channel);
+                })
+              }
+            />
+          ) : (
+            <ConnectionCard
+              key={connection.id}
+              connection={connection}
+              disabled={pending}
+              onSave={(enabled, configJson) =>
+                startTransition(async () => {
+                  await updateLeadConnection({
+                    channel: connection.channel,
+                    enabled,
+                    configJson,
+                  });
+                })
+              }
+              onSync={() =>
+                startTransition(async () => {
+                  await syncLeadChannelNow(connection.channel);
+                })
+              }
+            />
+          ),
+        )}
       </div>
     </div>
+  );
+}
+
+function GoogleSheetsConnectionCard({
+  connection,
+  disabled,
+  sheetsAuthConfigured,
+  onSave,
+  onSync,
+}: {
+  connection: ConnectionRow;
+  disabled: boolean;
+  sheetsAuthConfigured: boolean;
+  onSave: (payload: {
+    enabled: boolean;
+    spreadsheetUrl: string;
+    sheetTab: string;
+    headerRow: number;
+  }) => void;
+  onSync: () => void;
+}) {
+  const config =
+    connection.config && typeof connection.config === "object"
+      ? (connection.config as Record<string, unknown>)
+      : {};
+
+  const [enabled, setEnabled] = useState(connection.enabled);
+  const [spreadsheetUrl, setSpreadsheetUrl] = useState(
+    typeof config.spreadsheetUrl === "string"
+      ? config.spreadsheetUrl
+      : DEFAULT_LEADS_SPREADSHEET_URL,
+  );
+  const [sheetTab, setSheetTab] = useState(
+    typeof config.sheetTab === "string" ? config.sheetTab : "",
+  );
+  const [headerRow, setHeaderRow] = useState(
+    typeof config.headerRow === "number" ? String(config.headerRow) : "1",
+  );
+
+  return (
+    <article className="leads-settings-card">
+      <h3>{LEAD_CHANNEL_LABELS.GOOGLE_SHEETS}</h3>
+      <p className="leads-machine-muted">{connection.label}</p>
+      <p className="leads-machine-muted">
+        Service account: {sheetsAuthConfigured ? "configured" : "not configured — CSV export fallback"}
+      </p>
+
+      <label className="mt-3 flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={(event) => setEnabled(event.target.checked)}
+        />
+        Enabled
+      </label>
+
+      <label className="leads-settings-field">
+        Spreadsheet URL
+        <input
+          type="url"
+          value={spreadsheetUrl}
+          onChange={(event) => setSpreadsheetUrl(event.target.value)}
+          placeholder={DEFAULT_LEADS_SPREADSHEET_URL}
+        />
+      </label>
+
+      <label className="leads-settings-field">
+        Tab name (optional)
+        <input
+          type="text"
+          value={sheetTab}
+          onChange={(event) => setSheetTab(event.target.value)}
+          placeholder="First tab if empty"
+        />
+      </label>
+
+      <label className="leads-settings-field">
+        Header row
+        <input
+          type="number"
+          min={1}
+          value={headerRow}
+          onChange={(event) => setHeaderRow(event.target.value)}
+        />
+      </label>
+
+      <p className="leads-machine-muted">
+        Expected columns include Date, Name, Phone, Email, City, Requirement, Source, Status.
+      </p>
+
+      {connection.lastSyncAt ? (
+        <p className="leads-machine-muted">
+          Last sync: {new Date(connection.lastSyncAt).toLocaleString("en-IN")}
+        </p>
+      ) : null}
+      {connection.lastSyncError ? (
+        <p className="leads-machine-muted" style={{ color: "#b91c1c" }}>
+          {connection.lastSyncError}
+        </p>
+      ) : null}
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          className="btn-primary"
+          disabled={disabled}
+          onClick={() =>
+            onSave({
+              enabled,
+              spreadsheetUrl,
+              sheetTab,
+              headerRow: Number.parseInt(headerRow, 10) || 1,
+            })
+          }
+        >
+          Save
+        </button>
+        <button type="button" className="btn-secondary" disabled={disabled} onClick={onSync}>
+          Sync now
+        </button>
+      </div>
+    </article>
   );
 }
 

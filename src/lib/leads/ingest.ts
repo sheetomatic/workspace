@@ -5,6 +5,7 @@ import type {
 } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { bridgeInboundLeadToFms } from "@/lib/leads/fms-bridge";
+import { defaultGoogleSheetsLeadConfig } from "@/lib/leads/sheet-config";
 
 export type LeadIngestInput = {
   organizationId: string;
@@ -19,6 +20,7 @@ export type LeadIngestInput = {
   status?: InboundLeadStatus;
   assignedToId?: string | null;
   nextFollowUpAt?: Date | null;
+  capturedAt?: Date | null;
   waContactId?: string | null;
   rawPayload?: Prisma.InputJsonValue;
   createFmsJob?: boolean;
@@ -51,6 +53,10 @@ export async function ensureLeadConnections(organizationId: string) {
       channel: item.channel,
       label: item.label,
       enabled: item.channel === "WHATSAPP",
+      config:
+        item.channel === "GOOGLE_SHEETS"
+          ? (defaultGoogleSheetsLeadConfig() as object)
+          : undefined,
     })),
     skipDuplicates: true,
   });
@@ -105,6 +111,7 @@ export async function ingestInboundLead(input: LeadIngestInput) {
     status: input.status,
     assignedToId: input.assignedToId ?? undefined,
     nextFollowUpAt: input.nextFollowUpAt ?? undefined,
+    capturedAt: input.capturedAt ?? undefined,
     waContactId: input.waContactId ?? undefined,
     rawPayload: input.rawPayload,
     externalId: externalId ?? undefined,
@@ -178,6 +185,7 @@ export async function syncLeadFromWhatsAppContact(params: {
     city: contact.city,
     requirement: contact.requirementDescription,
     sourceDetail: contact.intent ?? undefined,
+    capturedAt: contact.createdAt,
     waContactId: contact.id,
     assignedToId: contact.assignedToId,
     nextFollowUpAt: contact.nextFollowUpAt,
