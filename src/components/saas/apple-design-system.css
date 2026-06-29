@@ -91,6 +91,9 @@
   border-right: 1px solid var(--apple-border-light);
   box-shadow: none;
   color: var(--apple-text);
+  --ws-sidebar-lockup-dark: none;
+  --ws-sidebar-lockup-light: block;
+  --ws-sidebar-org-color: var(--apple-text-secondary);
 }
 
 .workspace-app .saas-sidebar-brand strong {
@@ -109,15 +112,7 @@
 }
 
 .workspace-app .ws-sidebar-org-name {
-  color: var(--apple-text-secondary);
-}
-
-.workspace-app .saas-sidebar-brand--lockup .ws-sidebar-brand-lockup--on-dark {
-  display: none;
-}
-
-.workspace-app .saas-sidebar-brand--lockup .ws-sidebar-brand-lockup--on-light {
-  display: block;
+  color: var(--ws-sidebar-org-color, var(--apple-text-secondary));
 }
 
 .workspace-app .crm-sidebar-head {

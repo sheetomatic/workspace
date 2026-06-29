@@ -7,7 +7,6 @@ import { signOut } from "next-auth/react";
 import { OrganizationSwitcher } from "@/components/saas/organization-switcher";
 import type { OrganizationOption } from "@/components/saas/organization-switcher";
 import type { SessionUser } from "@/lib/auth";
-import { ROLE_LABELS } from "@/lib/permissions";
 import {
   mergeWorkspaceAppearance,
   type WorkspaceAppearance,
@@ -59,15 +58,6 @@ function NavLinks({
       </Link>
     );
   });
-}
-
-function userInitials(user: SessionUser) {
-  return (user.name ?? user.email)
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
 }
 
 function formatPlanLabel(plan: string) {
@@ -244,20 +234,6 @@ export function SaasShell({
             appearance={resolvedAppearance}
             organizationName={user.organizationName}
           />
-        </div>
-
-        <div className="crm-sidebar-profile">
-          <span className="crm-avatar" aria-hidden>
-            {userInitials(user)}
-          </span>
-          <div className="crm-sidebar-profile-text">
-            <strong title={user.name ?? user.email}>
-              {user.name ?? user.email.split("@")[0]}
-            </strong>
-            <span className="crm-user-role">
-              {user.isSuperAdmin ? "Super Admin" : ROLE_LABELS[user.role]}
-            </span>
-          </div>
         </div>
 
         <OrganizationSwitcher
