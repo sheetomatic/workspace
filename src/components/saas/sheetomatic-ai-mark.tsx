@@ -1,8 +1,8 @@
 import type { CSSProperties } from "react";
-import Image from "next/image";
 
 const LOCKUP_PATH = "/brand/sheetomatic-ai-logo.png";
 const ICON_PATH = "/brand/sheetomatic-ai-icon.png";
+const ICON_ON_DARK_PATH = "/images/sheetomatic-icon-light.svg";
 /** Natural lockup aspect ratio (1536x1024). */
 const LOCKUP_ASPECT = 1.5;
 
@@ -26,6 +26,8 @@ type Props = {
   sizes?: SheetomaticAiMarkSize;
   size?: number;
   showLabel?: boolean;
+  /** White icon for primary / dark buttons (also set via `ws-fms-ai-btn-mark` class). */
+  onDark?: boolean;
   className?: string;
 };
 
@@ -46,14 +48,24 @@ export function SheetomaticAiMark({
   sizes,
   size,
   showLabel = false,
+  onDark = false,
   className,
 }: Props) {
   const height = resolveHeight(variant, sizes, size);
   const width =
     variant === "icon" ? height : Math.round(height * LOCKUP_ASPECT);
+  const onDarkSurface =
+    onDark || Boolean(className?.includes("ws-fms-ai-btn-mark"));
+  const iconSrc =
+    variant === "icon"
+      ? onDarkSurface
+        ? ICON_ON_DARK_PATH
+        : ICON_PATH
+      : LOCKUP_PATH;
   const rootClass = [
     "sheetomatic-ai-mark",
     variant === "icon" ? "sheetomatic-ai-mark--icon" : "sheetomatic-ai-mark--lockup",
+    onDarkSurface ? "sheetomatic-ai-mark--on-dark" : null,
     className,
   ]
     .filter(Boolean)
@@ -73,13 +85,14 @@ export function SheetomaticAiMark({
       title="Sheetomatic AI"
     >
       <span className="sheetomatic-ai-mark-wrap">
-        <Image
-          src={variant === "icon" ? ICON_PATH : LOCKUP_PATH}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           alt=""
-          width={width}
-          height={height}
-          className="sheetomatic-ai-mark-logo"
           aria-hidden
+          className="sheetomatic-ai-mark-logo"
+          height={height}
+          src={iconSrc}
+          width={width}
         />
       </span>
       {showLabel ? (
