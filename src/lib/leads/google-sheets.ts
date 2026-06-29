@@ -109,6 +109,29 @@ function mapSheetStatus(value: string): InboundLeadStatus | undefined {
   return map[normalized];
 }
 
+function stableExternalId(params: {
+  externalIdRaw: string;
+  capturedAtRaw: string;
+  phone: string;
+  email: string;
+  rowNumber: number;
+}) {
+  if (params.externalIdRaw) {
+    return params.externalIdRaw;
+  }
+
+  const phoneDigits = params.phone.replace(/\D/g, "");
+  const timestampKey = params.capturedAtRaw.trim().toLowerCase().replace(/\s+/g, "-");
+  if (timestampKey && phoneDigits) {
+    return `sheet-${timestampKey}-${phoneDigits}`;
+  }
+  if (timestampKey && params.email) {
+    return `sheet-${timestampKey}-${params.email.trim().toLowerCase()}`;
+  }
+
+  return `sheet-row-${params.rowNumber}`;
+}
+
 export function parseLeadsSheetRows(
   rows: string[][],
   options?: { headerRow?: number },
@@ -153,11 +176,15 @@ export function parseLeadsSheetRows(
       continue;
     }
 
-    const externalIdRaw = cellAt(row, col.externalId);
-    const externalId =
-      externalIdRaw || `sheet-row-${headerRowIndex + index + 2}`;
-
     const capturedAtRaw = cellAt(row, col.capturedAt);
+    const externalId = stableExternalId({
+      externalIdRaw: cellAt(row, col.externalId),
+      capturedAtRaw,
+      phone,
+      email,
+      rowNumber: headerRowIndex + index + 2,
+    });
+
     const capturedAt = capturedAtRaw ? parseSheetDate(capturedAtRaw) : null;
     const statusRaw = cellAt(row, col.status);
     const status = statusRaw ? mapSheetStatus(statusRaw) : undefined;
@@ -205,12 +232,12 @@ async function getSheetTitle(
   }
 
   if (!isGoogleSheetsAuthConfigured()) {
-    return "Sheet1";
+    return DEFAULT_SHEET_TAB_FALLBACK;
   }
 
   const sheets = createGoogleSheetsClient();
   if (!sheets) {
-    return "Sheet1";
+    return DEFAULT_SHEET_TAB_FALLBACK;
   }
 
   const meta = await sheets.spreadsheets.get({
@@ -228,8 +255,10 @@ async function getSheetTitle(
     }
   }
 
-  return meta.data.sheets?.[0]?.properties?.title ?? "Sheet1";
+  return meta.data.sheets?.[0]?.properties?.title ?? DEFAULT_SHEET_TAB_FALLBACK;
 }
+
+const DEFAULT_SHEET_TAB_FALLBACK = "Form Responses 1";
 
 function buildCsvExportUrl(spreadsheetId: string, gid?: string | null) {
   const params = new URLSearchParams({ format: "csv" });
@@ -239,11 +268,48 @@ function buildCsvExportUrl(spreadsheetId: string, gid?: string | null) {
   return `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?${params.toString()}`;
 }
 
+async function fetchRowsViaCsv(spreadsheetId: string, gid?: string | null) {
+  const response = await fetch(buildCsvExportUrl(spreadsheetId, gid), {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Could not read the Google Sheet (HTTP ${response.status}). Share the sheet with your Google service account or enable link access.`,
+    );
+  }
+
+  const csv = await response.text();
+  if (csv.includes("<!DOCTYPE html")) {
+    throw new Error(
+      "Google Sheet is not accessible. Share it with your service account email (Viewer access) in Google Sheets.",
+    );
+  }
+
+  return parseCsv(csv);
+}
+
+async function fetchRowsViaApi(
+  spreadsheetId: string,
+  gid: string | null | undefined,
+  preferredTab?: string,
+) {
+  const sheets = createGoogleSheetsClient();
+  if (!sheets) {
+    return null;
+  }
+
+  const sheetTitle = await getSheetTitle(spreadsheetId, gid, preferredTab);
+  const quotedTitle = `'${sheetTitle.replace(/'/g, "''")}'`;
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: quotedTitle,
+  });
+  return (response.data.values ?? []) as string[][];
+}
+
 export async function fetchLeadsSheetRows(configInput: GoogleSheetsLeadConfig) {
-  const config = resolveGoogleSheetsLeadConfig(configInput) ?? {
-    ...defaultGoogleSheetsLeadConfig(),
-    spreadsheetId: defaultGoogleSheetsLeadConfig().spreadsheetId!,
-  };
+  const config = resolveGoogleSheetsLeadConfig(configInput) ?? defaultGoogleSheetsLeadConfig();
 
   const spreadsheetId =
     extractSpreadsheetId(config.spreadsheetId) ?? config.spreadsheetId;
@@ -252,43 +318,69 @@ export async function fetchLeadsSheetRows(configInput: GoogleSheetsLeadConfig) {
     extractSheetGid(config.spreadsheetUrl ?? "") ??
     extractSheetGid(spreadsheetId);
 
+  let apiError: Error | null = null;
+
   if (isGoogleSheetsAuthConfigured()) {
-    const sheets = createGoogleSheetsClient();
-    if (sheets) {
-      const sheetTitle = await getSheetTitle(spreadsheetId, gid, config.sheetTab);
-      const quotedTitle = `'${sheetTitle.replace(/'/g, "''")}'`;
-      const response = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range: quotedTitle,
-      });
-      const rows = (response.data.values ?? []) as string[][];
-      if (rows.length > 0) {
-        return { spreadsheetId, sheetTitle, rows };
+    try {
+      const rows = await fetchRowsViaApi(spreadsheetId, gid, config.sheetTab);
+      if (rows && rows.length > 0) {
+        return {
+          spreadsheetId,
+          sheetTitle: config.sheetTab ?? null,
+          rows,
+          source: "api" as const,
+        };
       }
+      if (rows && rows.length === 0) {
+        apiError = new Error("Google Sheets API returned no rows for this tab.");
+      }
+    } catch (error) {
+      apiError =
+        error instanceof Error
+          ? error
+          : new Error("Google Sheets API request failed.");
     }
   }
 
-  const response = await fetch(buildCsvExportUrl(spreadsheetId, gid), {
-    cache: "no-store",
+  try {
+    const rows = await fetchRowsViaCsv(spreadsheetId, gid);
+    if (rows.length > 0) {
+      return {
+        spreadsheetId,
+        sheetTitle: config.sheetTab ?? null,
+        rows,
+        source: "csv" as const,
+      };
+    }
+  } catch (csvError) {
+    if (apiError) {
+      throw apiError;
+    }
+    throw csvError;
+  }
+
+  if (apiError) {
+    throw apiError;
+  }
+
+  throw new Error(
+    "No lead rows found in the sheet. Check the tab/GID and confirm the form has responses.",
+  );
+}
+
+export async function testLeadsGoogleSheetAccess(configInput: GoogleSheetsLeadConfig) {
+  const { rows, source, spreadsheetId, sheetTitle } =
+    await fetchLeadsSheetRows(configInput);
+  const parsed = parseLeadsSheetRows(rows, {
+    headerRow: resolveGoogleSheetsLeadConfig(configInput)?.headerRow ?? 1,
   });
-
-  if (!response.ok) {
-    throw new Error(
-      `Could not read the Google Sheet (HTTP ${response.status}). Share the sheet with your Google service account or publish CSV export access.`,
-    );
-  }
-
-  const csv = await response.text();
-  if (csv.includes("<!DOCTYPE html")) {
-    throw new Error(
-      "Google Sheet is not accessible. Share it with your service account email or enable link access.",
-    );
-  }
 
   return {
     spreadsheetId,
-    sheetTitle: config.sheetTab ?? null,
-    rows: parseCsv(csv),
+    sheetTitle,
+    source,
+    rowCount: rows.length,
+    leadCount: parsed.length,
   };
 }
 

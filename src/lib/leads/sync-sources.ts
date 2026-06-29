@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { ingestInboundLead } from "@/lib/leads/ingest";
 import { pullLeadsFromGoogleSheet } from "@/lib/leads/google-sheets";
 import { resolveGoogleSheetsLeadConfig } from "@/lib/leads/sheet-config";
+import type { LeadSyncCounts } from "@/lib/leads/sync-messages";
 
 export type ExternalLeadRow = {
   externalId: string;
@@ -88,9 +89,9 @@ export async function pullLeadsFromConnection(params: {
     const payload = (await response.json()) as unknown;
     const rows = extractLeadRows(payload, config.rowsPath);
 
-    let imported = 0;
+    let counts: LeadSyncCounts = { processed: 0, created: 0, updated: 0 };
     for (const row of rows) {
-      await ingestInboundLead({
+      const result = await ingestInboundLead({
         organizationId: params.organizationId,
         channel: params.channel,
         externalId: row.externalId,
@@ -105,7 +106,12 @@ export async function pullLeadsFromConnection(params: {
         rawPayload: (row.raw ?? row) as Prisma.InputJsonValue,
         createFmsJob: true,
       });
-      imported += 1;
+      counts.processed += 1;
+      if (result.created) {
+        counts.created += 1;
+      } else {
+        counts.updated += 1;
+      }
     }
 
     await prisma.leadIngestConnection.update({
@@ -117,7 +123,7 @@ export async function pullLeadsFromConnection(params: {
       },
     });
 
-    return { ok: true as const, imported };
+    return { ok: true as const, imported: counts.processed, counts };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Sync failed";
     await prisma.leadIngestConnection.update({
@@ -220,9 +226,9 @@ async function pullGoogleSheetsLeads(
 
   try {
     const rows = await pullLeadsFromGoogleSheet(sheetConfig);
-    let imported = 0;
+    let counts: LeadSyncCounts = { processed: 0, created: 0, updated: 0 };
     for (const row of rows) {
-      await ingestInboundLead({
+      const result = await ingestInboundLead({
         organizationId,
         channel: "GOOGLE_SHEETS",
         externalId: row.externalId,
@@ -237,7 +243,12 @@ async function pullGoogleSheetsLeads(
         rawPayload: row.raw as Prisma.InputJsonValue,
         createFmsJob: true,
       });
-      imported += 1;
+      counts.processed += 1;
+      if (result.created) {
+        counts.created += 1;
+      } else {
+        counts.updated += 1;
+      }
     }
 
     await prisma.leadIngestConnection.update({
@@ -249,7 +260,7 @@ async function pullGoogleSheetsLeads(
       },
     });
 
-    return { ok: true as const, imported };
+    return { ok: true as const, imported: counts.processed, counts };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Google Sheets sync failed";
     await prisma.leadIngestConnection.update({

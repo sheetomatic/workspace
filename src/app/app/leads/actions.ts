@@ -7,7 +7,12 @@ import { generateLeadMachineApiKey } from "@/lib/leads/api-auth";
 import { ensureLeadConnections, enforceLeadSourcePhase, ingestInboundLead } from "@/lib/leads/ingest";
 import { bridgeInboundLeadToFms } from "@/lib/leads/fms-bridge";
 import { pullLeadsFromConnection } from "@/lib/leads/sync-sources";
-import { defaultGoogleSheetsLeadConfig } from "@/lib/leads/sheet-config";
+import { buildGoogleSheetsLeadConfigFromInput } from "@/lib/leads/sheet-config";
+import { testLeadsGoogleSheetAccess } from "@/lib/leads/google-sheets";
+import {
+  formatLeadSyncCounts,
+  formatLeadSyncError,
+} from "@/lib/leads/sync-messages";
 import { isLeadSourceComingSoon } from "@/lib/leads/channels";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
@@ -157,10 +162,53 @@ export async function syncLeadChannelNow(channel: LeadSourceChannel) {
   revalidatePath("/app/leads/settings");
 
   if (!result.ok) {
-    return { ok: false, message: result.reason };
+    return { ok: false, message: formatLeadSyncError(result.reason) };
   }
 
-  return { ok: true, imported: result.imported };
+  return {
+    ok: true,
+    imported: result.imported,
+    counts: result.counts,
+    message: formatLeadSyncCounts(
+      result.counts ?? {
+        processed: result.imported,
+        created: result.imported,
+        updated: 0,
+      },
+    ),
+  };
+}
+
+export async function testGoogleSheetsLeadConnection(params: {
+  spreadsheetUrl: string;
+  sheetTab: string;
+  headerRow: number;
+}) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Admin only." };
+  }
+
+  const config = buildGoogleSheetsLeadConfigFromInput(params);
+
+  try {
+    const result = await testLeadsGoogleSheetAccess(config);
+    return {
+      ok: true,
+      message: `Connected via ${result.source}. Found ${result.leadCount} lead row${result.leadCount === 1 ? "" : "s"} (${result.rowCount} sheet rows).`,
+      leadCount: result.leadCount,
+      rowCount: result.rowCount,
+      source: result.source,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Could not reach the Google Sheet.",
+    };
+  }
 }
 
 export async function updateLeadConnection(params: {
@@ -215,12 +263,11 @@ export async function updateGoogleSheetsLeadConfig(params: {
 
   await ensureLeadConnections(user.organizationId);
 
-  const config = {
-    ...defaultGoogleSheetsLeadConfig(),
-    spreadsheetUrl: params.spreadsheetUrl.trim() || defaultGoogleSheetsLeadConfig().spreadsheetUrl,
-    sheetTab: params.sheetTab.trim() || undefined,
-    headerRow: params.headerRow > 0 ? params.headerRow : 1,
-  };
+  const config = buildGoogleSheetsLeadConfigFromInput({
+    spreadsheetUrl: params.spreadsheetUrl,
+    sheetTab: params.sheetTab,
+    headerRow: params.headerRow,
+  });
 
   await prisma.leadIngestConnection.update({
     where: {
@@ -236,7 +283,39 @@ export async function updateGoogleSheetsLeadConfig(params: {
   });
 
   revalidatePath("/app/leads/settings");
-  return { ok: true };
+
+  if (!params.enabled) {
+    revalidatePath("/app/leads");
+    return { ok: true, message: "Google Sheets settings saved." };
+  }
+
+  const sync = await pullLeadsFromConnection({
+    organizationId: user.organizationId,
+    channel: "GOOGLE_SHEETS",
+  });
+
+  revalidatePath("/app/leads");
+  revalidatePath("/app/leads/settings");
+
+  if (!sync.ok) {
+    return {
+      ok: false,
+      message: `Saved, but sync failed: ${formatLeadSyncError(sync.reason)}`,
+    };
+  }
+
+  return {
+    ok: true,
+    message: `Live and connected. ${formatLeadSyncCounts(
+      sync.counts ?? {
+        processed: sync.imported,
+        created: sync.imported,
+        updated: 0,
+      },
+    )}`,
+    imported: sync.imported,
+    counts: sync.counts,
+  };
 }
 
 export async function regenerateLeadsApiKey() {

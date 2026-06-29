@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LeadsGoogleSheetsSetupBanner } from "@/components/saas/leads-google-sheets-setup";
+import { LeadsLiveStatusBar } from "@/components/saas/leads-live-status";
 import { LeadsMachineDashboard } from "@/components/saas/leads-machine-dashboard";
 import { LeadsPeriodToolbar } from "@/components/saas/leads-period-toolbar";
 import "@/components/saas/leads-machine.css";
@@ -77,6 +78,12 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
       </header>
 
       <LeadsGoogleSheetsSetupBanner canManage={canManage} status={sheetsSetup} />
+
+      <LeadsLiveStatusBar
+        canManage={canManage}
+        leadsInPeriod={periodStats.total}
+        status={sheetsSetup}
+      />
 
       <LeadsPeriodToolbar period={period} />
 

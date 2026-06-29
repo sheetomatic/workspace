@@ -10,7 +10,7 @@ import {
   LEAD_SOURCE_COMING_SOON_CHANNELS,
   LEAD_SOURCE_PRIORITY_CHANNEL,
 } from "@/lib/leads/channels";
-import { defaultGoogleSheetsLeadConfig } from "@/lib/leads/sheet-config";
+import { defaultGoogleSheetsLeadConfig, resolveGoogleSheetsLeadConfig } from "@/lib/leads/sheet-config";
 
 export type LeadIngestInput = {
   organizationId: string;
@@ -61,6 +61,46 @@ export async function ensureLeadConnections(organizationId: string) {
   }
 
   await enforceLeadSourcePhase(organizationId);
+  await migrateGoogleSheetsLeadConfig(organizationId);
+}
+
+async function migrateGoogleSheetsLeadConfig(organizationId: string) {
+  const connection = await prisma.leadIngestConnection.findUnique({
+    where: {
+      organizationId_channel: {
+        organizationId,
+        channel: "GOOGLE_SHEETS",
+      },
+    },
+  });
+
+  if (!connection) {
+    return;
+  }
+
+  const resolved = resolveGoogleSheetsLeadConfig(connection.config);
+  if (!resolved) {
+    return;
+  }
+
+  const current =
+    connection.config && typeof connection.config === "object"
+      ? (connection.config as Record<string, unknown>)
+      : {};
+
+  const needsUpdate =
+    current.gid !== resolved.gid ||
+    current.spreadsheetId !== resolved.spreadsheetId ||
+    !current.spreadsheetUrl;
+
+  if (!needsUpdate) {
+    return;
+  }
+
+  await prisma.leadIngestConnection.update({
+    where: { id: connection.id },
+    data: { config: resolved as object },
+  });
 }
 
 /** Phase 1: Google Sheets only — disable coming-soon connectors. */

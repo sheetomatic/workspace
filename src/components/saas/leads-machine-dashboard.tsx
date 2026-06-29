@@ -221,8 +221,8 @@ export function LeadsMachineDashboard({
                 <td colSpan={canManage ? 7 : 6}>
                   <p className="leads-machine-muted">
                     No Google Sheets leads in this period yet.{" "}
-                    <Link href="/app/leads/settings">Connect Google Sheets</Link> and run
-                    Sync now.
+                    <Link href="/app/leads/settings">Connect Google Sheets</Link>, run
+                    Sync now, or switch to Monthly/Yearly view.
                   </p>
                 </td>
               </tr>

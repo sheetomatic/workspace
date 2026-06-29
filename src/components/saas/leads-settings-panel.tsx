@@ -3,14 +3,22 @@
 import { useState, useTransition } from "react";
 import type { LeadSourceChannel } from "@prisma/client";
 import Link from "next/link";
-import { regenerateLeadsApiKey, syncLeadChannelNow, updateGoogleSheetsLeadConfig } from "@/app/app/leads/actions";
+import {
+  regenerateLeadsApiKey,
+  syncLeadChannelNow,
+  testGoogleSheetsLeadConnection,
+  updateGoogleSheetsLeadConfig,
+} from "@/app/app/leads/actions";
 import { GoogleSheetsSetupSteps } from "@/components/saas/leads-google-sheets-setup";
 import {
   isLeadSourceComingSoon,
   LEAD_CHANNEL_LABELS,
   LEAD_SOURCE_PRIORITY_CHANNEL,
 } from "@/lib/leads/channels";
-import { DEFAULT_LEADS_SPREADSHEET_URL } from "@/lib/leads/sheet-config";
+import {
+  DEFAULT_LEADS_SHEET_TAB,
+  DEFAULT_LEADS_SPREADSHEET_URL,
+} from "@/lib/leads/sheet-config";
 import "@/components/saas/leads-machine.css";
 
 type ConnectionRow = {
@@ -22,6 +30,11 @@ type ConnectionRow = {
   lastSyncAt: Date | null;
   lastSyncError: string | null;
   syncStatus: string;
+};
+
+type Notice = {
+  type: "success" | "error";
+  message: string;
 };
 
 export function LeadsSettingsPanel({
@@ -39,6 +52,7 @@ export function LeadsSettingsPanel({
 }) {
   const [pending, startTransition] = useTransition();
   const [freshKey, setFreshKey] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
 
   return (
     <div className="saas-page leads-settings-page">
@@ -54,6 +68,10 @@ export function LeadsSettingsPanel({
           Back to leads
         </Link>
       </header>
+
+      {notice ? (
+        <div className={`leads-settings-notice is-${notice.type}`}>{notice.message}</div>
+      ) : null}
 
       <div className="leads-settings-grid">
         {connections
@@ -73,12 +91,29 @@ export function LeadsSettingsPanel({
                 serviceAccountEmail={serviceAccountEmail}
                 onSave={(payload) =>
                   startTransition(async () => {
-                    await updateGoogleSheetsLeadConfig(payload);
+                    const result = await updateGoogleSheetsLeadConfig(payload);
+                    setNotice({
+                      type: result.ok ? "success" : "error",
+                      message: result.message ?? (result.ok ? "Saved." : "Save failed."),
+                    });
                   })
                 }
                 onSync={() =>
                   startTransition(async () => {
-                    await syncLeadChannelNow(connection.channel);
+                    const result = await syncLeadChannelNow(connection.channel);
+                    setNotice({
+                      type: result.ok ? "success" : "error",
+                      message: result.message ?? (result.ok ? "Synced." : "Sync failed."),
+                    });
+                  })
+                }
+                onTest={(payload) =>
+                  startTransition(async () => {
+                    const result = await testGoogleSheetsLeadConnection(payload);
+                    setNotice({
+                      type: result.ok ? "success" : "error",
+                      message: result.message,
+                    });
                   })
                 }
               />
@@ -129,6 +164,7 @@ function GoogleSheetsConnectionCard({
   serviceAccountEmail,
   onSave,
   onSync,
+  onTest,
 }: {
   connection: ConnectionRow;
   disabled: boolean;
@@ -141,6 +177,11 @@ function GoogleSheetsConnectionCard({
     headerRow: number;
   }) => void;
   onSync: () => void;
+  onTest: (payload: {
+    spreadsheetUrl: string;
+    sheetTab: string;
+    headerRow: number;
+  }) => void;
 }) {
   const config =
     connection.config && typeof connection.config === "object"
@@ -154,21 +195,36 @@ function GoogleSheetsConnectionCard({
       : DEFAULT_LEADS_SPREADSHEET_URL,
   );
   const [sheetTab, setSheetTab] = useState(
-    typeof config.sheetTab === "string" ? config.sheetTab : "",
+    typeof config.sheetTab === "string" ? config.sheetTab : DEFAULT_LEADS_SHEET_TAB,
   );
   const [headerRow, setHeaderRow] = useState(
     typeof config.headerRow === "number" ? String(config.headerRow) : "1",
   );
 
+  const formPayload = () => ({
+    enabled,
+    spreadsheetUrl,
+    sheetTab,
+    headerRow: Number.parseInt(headerRow, 10) || 1,
+  });
+
+  const isLive =
+    connection.enabled &&
+    Boolean(connection.lastSyncAt) &&
+    !connection.lastSyncError &&
+    connection.syncStatus !== "ERROR";
+
   return (
     <article className="leads-settings-card leads-settings-card-priority">
       <div className="leads-settings-card-head">
         <h3>{LEAD_CHANNEL_LABELS.GOOGLE_SHEETS}</h3>
-        <span className="leads-priority-badge">Active · Phase 1</span>
+        <span className={isLive ? "leads-priority-badge" : "leads-coming-soon-badge"}>
+          {isLive ? "Live" : connection.lastSyncError ? "Sync error" : "Setup"}
+        </span>
       </div>
       <p className="leads-machine-muted">{connection.label}</p>
       <p className="leads-machine-muted">
-        Service account: {sheetsAuthConfigured ? "configured" : "not configured — CSV export fallback"}
+        Service account: {sheetsAuthConfigured ? "configured on server" : "missing on server"}
         {serviceAccountEmail ? (
           <>
             {" "}
@@ -207,12 +263,12 @@ function GoogleSheetsConnectionCard({
       </label>
 
       <label className="leads-settings-field">
-        Tab name (optional)
+        Tab name
         <input
           type="text"
           value={sheetTab}
           onChange={(event) => setSheetTab(event.target.value)}
-          placeholder="First tab if empty"
+          placeholder={DEFAULT_LEADS_SHEET_TAB}
         />
       </label>
 
@@ -227,7 +283,8 @@ function GoogleSheetsConnectionCard({
       </label>
 
       <p className="leads-machine-muted">
-        Expected columns include Date, Name, Phone, Email, City, Requirement, Source, Status.
+        Google Form columns supported: Timestamp, Full Name, Contact Number, Email
+        Address, Company, Requirement Description, Business Owner or Staff.
       </p>
 
       {connection.lastSyncAt ? (
@@ -236,26 +293,25 @@ function GoogleSheetsConnectionCard({
         </p>
       ) : null}
       {connection.lastSyncError ? (
-        <p className="leads-machine-muted" style={{ color: "#b91c1c" }}>
-          {connection.lastSyncError}
-        </p>
+        <p className="leads-settings-error">{connection.lastSyncError}</p>
       ) : null}
 
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
+          className="btn-secondary"
+          disabled={disabled}
+          onClick={() => onTest(formPayload())}
+        >
+          Test connection
+        </button>
+        <button
+          type="button"
           className="btn-primary"
           disabled={disabled}
-          onClick={() =>
-            onSave({
-              enabled,
-              spreadsheetUrl,
-              sheetTab,
-              headerRow: Number.parseInt(headerRow, 10) || 1,
-            })
-          }
+          onClick={() => onSave(formPayload())}
         >
-          Save
+          Save &amp; sync
         </button>
         <button type="button" className="btn-secondary" disabled={disabled} onClick={onSync}>
           Sync now

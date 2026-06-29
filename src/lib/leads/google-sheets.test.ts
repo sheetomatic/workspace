@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { parseLeadsSheetRows } from "@/lib/leads/google-sheets";
 import { parseLeadsPeriodParams } from "@/lib/leads/period";
-import { DEFAULT_LEADS_SPREADSHEET_ID } from "@/lib/leads/sheet-config";
+import {
+  buildGoogleSheetsLeadConfigFromInput,
+  DEFAULT_LEADS_SPREADSHEET_GID,
+  DEFAULT_LEADS_SPREADSHEET_ID,
+} from "@/lib/leads/sheet-config";
 
 describe("parseLeadsSheetRows", () => {
   it("maps common lead columns from a header row", () => {
@@ -49,7 +53,16 @@ describe("parseLeadsSheetRows", () => {
     expect(parsed[0]?.sourceDetail).toContain("Business Owner");
   });
 
-  it("generates stable external ids for rows without an id column", () => {
+  it("generates stable external ids from timestamp and phone", () => {
+    const rows = [
+      ["Timestamp", "Full Name", "Contact Number"],
+      ["29/03/2026 10:15:00", "Asha", "919900001111"],
+    ];
+    const parsed = parseLeadsSheetRows(rows);
+    expect(parsed[0]?.externalId).toBe("sheet-29/03/2026-10:15:00-919900001111");
+  });
+
+  it("falls back to row number when no stable key exists", () => {
     const rows = [
       ["Name", "Phone"],
       ["Asha", "919900001111"],
@@ -79,5 +92,15 @@ describe("sheet config", () => {
     expect(DEFAULT_LEADS_SPREADSHEET_ID).toBe(
       "1uXA3TsZrT9uZNR3fiooNzBKFRYGrxt_1ydJdyJEt11Y",
     );
+  });
+
+  it("extracts gid from spreadsheet url", () => {
+    const config = buildGoogleSheetsLeadConfigFromInput({
+      spreadsheetUrl:
+        "https://docs.google.com/spreadsheets/d/1uXA3TsZrT9uZNR3fiooNzBKFRYGrxt_1ydJdyJEt11Y/edit?gid=1019902152",
+      sheetTab: "Form Responses 1",
+      headerRow: 1,
+    });
+    expect(config.gid).toBe(DEFAULT_LEADS_SPREADSHEET_GID);
   });
 });
