@@ -1,21 +1,25 @@
 import Image from "next/image";
-import { siteBrand } from "@/app/site-content";
 
 type BrandIconMarkProps = {
   size?: number;
   priority?: boolean;
-  /** Use "light" on dark backgrounds (login panel, footer). Default "dark" for light UI. */
+  /** Use "light" on dark backgrounds (login panel, footer). */
   theme?: "light" | "dark";
 };
 
 export function BrandIconMark({
   size = 26,
   priority = false,
-  theme: _theme = "dark",
+  theme = "dark",
 }: BrandIconMarkProps) {
+  const src =
+    theme === "light"
+      ? "/images/sheetomatic-icon-light.svg"
+      : "/images/sheetomatic-icon.svg";
+
   return (
     <Image
-      src={siteBrand.logoSrc}
+      src={src}
       alt=""
       aria-hidden
       width={size}

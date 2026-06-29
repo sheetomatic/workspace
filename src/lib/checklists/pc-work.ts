@@ -18,7 +18,6 @@ export type PcWorkItem = {
   status: string;
   overdue: boolean;
   href: string;
-  /** Checklist occurrences can be marked done on the PC board. */
   completable: boolean;
 };
 
@@ -137,9 +136,18 @@ export async function listMyFmsPcWork(organizationId: string, assigneeUserId: st
 
 export async function listMyPcWork(organizationId: string, assigneeUserId: string) {
   const [checklists, eaTasks, fmsSteps] = await Promise.all([
-    listMyChecklistPcWork(organizationId, assigneeUserId),
-    listMyEaPcWork(organizationId, assigneeUserId),
-    listMyFmsPcWork(organizationId, assigneeUserId),
+    listMyChecklistPcWork(organizationId, assigneeUserId).catch((error) => {
+      console.error("[pc-work] checklist load failed", error);
+      return [];
+    }),
+    listMyEaPcWork(organizationId, assigneeUserId).catch((error) => {
+      console.error("[pc-work] EA load failed", error);
+      return [];
+    }),
+    listMyFmsPcWork(organizationId, assigneeUserId).catch((error) => {
+      console.error("[pc-work] FMS load failed", error);
+      return [];
+    }),
   ]);
 
   return { checklists, eaTasks, fmsSteps };

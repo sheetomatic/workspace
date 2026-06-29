@@ -20,7 +20,7 @@ export default async function MyTodayPage() {
   const payload = await getMyTodayPayload(user.organizationId, user.id);
 
   return (
-    <div className="saas-page ws-today-page">
+    <div className="saas-page ws-today-page ws-tasks-sf">
       <MyTodayBoard canDelegate={canCreateTasks(user.role)} payload={payload} />
     </div>
   );

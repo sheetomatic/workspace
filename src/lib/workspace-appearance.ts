@@ -98,7 +98,7 @@ export function mergeWorkspaceAppearance(
   const logoSrc =
     logoUrl && logoVersion != null
       ? `${WORKSPACE_LOGO_API_PATH}?v=${logoVersion}`
-      : siteBrand.logoSrc;
+      : "/images/sheetomatic-icon.svg";
 
   return {
     preset,

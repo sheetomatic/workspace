@@ -81,7 +81,13 @@ function WorkspaceBrandLogo({ logoSrc, alt }: { logoSrc: string; alt: string }) 
   return (
     <span className="logo-mark">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img alt={alt} height={32} src={logoSrc} width={32} />
+      <img
+        alt={alt}
+        className="ws-brand-mark-img"
+        height={32}
+        src={logoSrc}
+        width={32}
+      />
     </span>
   );
 }
