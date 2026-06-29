@@ -14,6 +14,7 @@ export type PcWorkItem = {
   pcUserIds: string[];
   eaUserId: string | null;
   dueLabel: string;
+  dueAt?: Date | null;
   status: string;
   overdue: boolean;
   href: string;
@@ -87,6 +88,7 @@ export async function listMyEaPcWork(organizationId: string, assigneeUserId: str
     pcUserIds: [] as string[],
     eaUserId: task.assigneeUserId,
     dueLabel: formatDue(task.dueAt),
+    dueAt: task.dueAt,
     status: task.status.replaceAll("_", " "),
     overdue: task.dueAt.getTime() < now,
     href: "/app/tasks/my-work",
@@ -125,6 +127,7 @@ export async function listMyFmsPcWork(organizationId: string, assigneeUserId: st
     pcUserIds: parsePcUserIds(step.instance.template.pcUserIds),
     eaUserId: step.instance.template.eaUserId,
     dueLabel: step.plannedAt ? formatDue(step.plannedAt) : "No SLA",
+    dueAt: step.plannedAt,
     status: step.status.replaceAll("_", " "),
     overdue: step.plannedAt ? step.plannedAt.getTime() < now : false,
     href: `/app/fms/instances/${step.instanceId}?from=ops&action=complete`,
@@ -166,6 +169,7 @@ export async function listOrgEaPcMonitor(organizationId: string) {
     pcUserIds: [] as string[],
     eaUserId: task.assigneeUserId,
     dueLabel: formatDue(task.dueAt),
+    dueAt: task.dueAt,
     status: task.status.replaceAll("_", " "),
     overdue: task.dueAt.getTime() < now,
     href: "/app/tasks",
@@ -214,6 +218,7 @@ export async function listOrgFmsPcMonitor(organizationId: string) {
       pcUserIds: parsePcUserIds(step.instance.template.pcUserIds),
       eaUserId: step.instance.template.eaUserId,
       dueLabel: step.plannedAt ? formatDue(step.plannedAt) : "No SLA",
+      dueAt: step.plannedAt,
       status: step.status.replaceAll("_", " "),
       overdue: step.plannedAt ? step.plannedAt.getTime() < now : false,
       href: `/app/fms/instances/${step.instanceId}?from=ops&action=complete`,

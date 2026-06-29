@@ -11,11 +11,11 @@ type BrandIconMarkProps = {
 export function BrandIconMark({
   size = 26,
   priority = false,
-  theme = "dark",
+  theme: _theme = "dark",
 }: BrandIconMarkProps) {
   return (
     <Image
-      src={theme === "light" ? siteBrand.iconLightSrc : siteBrand.iconSrc}
+      src={siteBrand.logoSrc}
       alt=""
       aria-hidden
       width={size}

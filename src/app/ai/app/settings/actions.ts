@@ -47,7 +47,7 @@ async function applyClientOnboardingEntitlements(organizationId: string) {
     const modules = clampModulesToOrg(
       membership.modules.length > 0
         ? membership.modules
-        : modulesForTierRole("OWNER", preset.plan),
+        : modulesForTierRole(preset.plan, "OWNER"),
       preset.allowedModules,
     );
     await prisma.membership.update({

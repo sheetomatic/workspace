@@ -98,7 +98,7 @@ export function mergeWorkspaceAppearance(
   const logoSrc =
     logoUrl && logoVersion != null
       ? `${WORKSPACE_LOGO_API_PATH}?v=${logoVersion}`
-      : siteBrand.iconLightSrc;
+      : siteBrand.logoSrc;
 
   return {
     preset,
