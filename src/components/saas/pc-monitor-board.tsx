@@ -2,12 +2,6 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import {
-  CheckSquare,
-  ClipboardList,
-  GitBranch,
-  ListTodo,
-} from "lucide-react";
 import type { PcWorkItem } from "@/lib/checklists/pc-work";
 import { PcStatusPill, PcWorkKindBadge } from "@/components/saas/pc-work-badges";
 
@@ -302,37 +296,27 @@ export function PcMonitorMetrics({
   fmsEnabled: boolean;
 }) {
   return (
-    <div className="ws-pc-metrics ws-sf-metrics">
-      <div className={`ws-pc-metric-card${overdueCount > 0 ? " is-alert" : ""}`}>
-        <ClipboardList size={18} aria-hidden />
-        <div>
-          <span>Overdue</span>
-          <strong className={overdueCount > 0 ? "is-late" : undefined}>
-            {overdueCount}
-          </strong>
-        </div>
+    <div className="ws-sf-metrics ws-pc-metrics">
+      <div className={`ws-sf-metric-tile${overdueCount > 0 ? " is-active" : ""}`}>
+        <span>Overdue</span>
+        <strong className={overdueCount > 0 ? "is-late" : undefined}>{overdueCount}</strong>
+        <span className="ws-stat-card-hint">Chase first</span>
       </div>
-      <div className="ws-pc-metric-card">
-        <CheckSquare size={18} aria-hidden />
-        <div>
-          <span>PC checklist</span>
-          <strong>{checklistCount}</strong>
-        </div>
+      <div className="ws-sf-metric-tile">
+        <span>PC checklist</span>
+        <strong>{checklistCount}</strong>
+        <span className="ws-stat-card-hint">Open in queue</span>
       </div>
-      <div className="ws-pc-metric-card">
-        <ListTodo size={18} aria-hidden />
-        <div>
-          <span>EA tasks</span>
-          <strong>{eaCount}</strong>
-        </div>
+      <div className="ws-sf-metric-tile">
+        <span>EA tasks</span>
+        <strong>{eaCount}</strong>
+        <span className="ws-stat-card-hint">Delegated work</span>
       </div>
       {fmsEnabled ? (
-        <div className="ws-pc-metric-card">
-          <GitBranch size={18} aria-hidden />
-          <div>
-            <span>FMS steps</span>
-            <strong>{fmsCount}</strong>
-          </div>
+        <div className="ws-sf-metric-tile">
+          <span>FMS steps</span>
+          <strong>{fmsCount}</strong>
+          <span className="ws-stat-card-hint">Pipeline stops</span>
         </div>
       ) : null}
     </div>

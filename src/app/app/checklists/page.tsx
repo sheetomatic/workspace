@@ -9,6 +9,7 @@ import { listChecklistTemplates } from "@/lib/checklists/queries";
 import { listOrgPcMonitor } from "@/lib/checklists/pc-work";
 import { canAccessEmReady } from "@/lib/em/em-access";
 import { canCreateTasks, listAssignableMembers } from "@/lib/tasks";
+import { PMS_SURFACE_HIDDEN } from "@/lib/pms-surface";
 import { requireSession } from "@/lib/require-session";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
 import { redirect } from "next/navigation";
@@ -68,9 +69,11 @@ export default async function ChecklistsMonitorPage() {
             <Link href="/app/checklists/setup" className="btn-secondary btn-sm">
               Setup
             </Link>
-            <Link href="/app/checklists/scores" className="btn-secondary btn-sm">
-              MIS
-            </Link>
+            {PMS_SURFACE_HIDDEN ? null : (
+              <Link href="/app/checklists/scores" className="btn-secondary btn-sm">
+                MIS
+              </Link>
+            )}
             {showEmReady ? (
               <Link href="/app/em" className="btn-secondary btn-sm">
                 EM

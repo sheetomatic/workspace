@@ -17543,7 +17543,8 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-module-layout-main .ws-tasks-sf,
 .workspace-app .ws-module-layout-main .ws-fms-sf,
-.workspace-app .ws-module-layout-main .ws-ims-page {
+.workspace-app .ws-module-layout-main .ws-ims-page,
+.workspace-app .ws-module-layout-main .ws-checklists-page {
   margin: 0;
   min-height: 100%;
 }
@@ -24222,6 +24223,57 @@ a.workspace-app .ws-stat-card,
   --pc-accent-soft: #f0fdfa;
 }
 
+.workspace-app .ws-pc-subnav .ws-module-subnav-link.is-active {
+  background: var(--pc-accent-soft);
+  color: var(--pc-accent);
+}
+
+.workspace-app .ws-pc-subnav .ws-module-subnav-link.is-active small {
+  color: var(--pc-accent);
+  opacity: 0.9;
+}
+
+.workspace-app .ws-accounts-checklist-page .ws-accounts-deploy-section {
+  margin-bottom: 16px;
+}
+
+.workspace-app .ws-accounts-deploy-card {
+  padding: 16px 18px;
+}
+
+.workspace-app .ws-accounts-grid-section .ws-accounts-grid-wrap {
+  margin-top: 0;
+}
+
+.workspace-app .ws-tasks-sf .ws-accounts-grid {
+  border-color: var(--sf-card-border);
+  background: #fff;
+}
+
+.workspace-app .ws-tasks-sf .ws-accounts-grid th,
+.workspace-app .ws-tasks-sf .ws-accounts-grid td {
+  border-color: var(--sf-card-border);
+}
+
+.workspace-app .ws-tasks-sf .ws-accounts-grid thead th {
+  background: var(--sf-header-bg);
+  color: var(--sf-text);
+}
+
+.workspace-app .ws-pc-section .ws-sf-list-view-header {
+  margin-bottom: 0;
+}
+
+.workspace-app .ws-pc-section .ws-pc-section-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.workspace-app .ws-pc-section .ws-pc-section-title-row h2 {
+  margin: 0;
+}
+
 .workspace-app .ws-accounts-grid-wrap {
   overflow-x: auto;
   margin-top: 16px;
@@ -24323,8 +24375,7 @@ a.workspace-app .ws-stat-card,
 .workspace-app .ws-accounts-deploy-form {
   display: grid;
   gap: 12px;
-  max-width: 420px;
-  margin-top: 12px;
+  max-width: 480px;
 }
 
 .workspace-app .ws-accounts-deploy-form label {

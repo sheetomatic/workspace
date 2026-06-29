@@ -46,18 +46,16 @@ function SectionShell({
   tone: "pc" | "ea" | "fms";
 }) {
   return (
-    <section className={`ws-pc-section ws-pc-section-${tone}`}>
-      <header className="ws-pc-section-header">
-        <div className="ws-pc-section-icon" aria-hidden>
-          <Icon size={18} />
-        </div>
-        <div>
-          <div className="ws-pc-section-title-row">
-            <h2>{title}</h2>
-            <span className="ws-pc-section-count">{count}</span>
+    <section className={`ws-sf-list-view ws-pc-section ws-pc-section-${tone}`}>
+      <header className="ws-sf-list-view-header ws-pc-section-header">
+        <div className="ws-sf-list-view-title ws-pc-section-title-row">
+          <div className="ws-pc-section-icon" aria-hidden>
+            <Icon size={18} />
           </div>
-          <p>{lead}</p>
+          <h2>{title}</h2>
+          <span className="ws-sf-list-view-count">{count}</span>
         </div>
+        <p className="ws-em-section-lead">{lead}</p>
       </header>
       {children}
     </section>
@@ -91,22 +89,26 @@ export function PcMyTasksBoard({
 
   return (
     <div className="ws-pc-my-tasks">
-      <div className="ws-pc-my-summary">
-        <div className="ws-pc-my-summary-item">
-          <span>Total pending</span>
-          <strong>{total}</strong>
-        </div>
-        <div className={`ws-pc-my-summary-item${overdue > 0 ? " is-alert" : ""}`}>
+      <div className="ws-sf-metrics ws-pc-metrics">
+        <div className={`ws-sf-metric-tile${overdue > 0 ? " is-active" : ""}`}>
           <span>Overdue</span>
           <strong className={overdue > 0 ? "is-late" : undefined}>{overdue}</strong>
+          <span className="ws-stat-card-hint">Needs attention</span>
         </div>
-        <div className="ws-pc-my-summary-item">
+        <div className="ws-sf-metric-tile">
+          <span>Total pending</span>
+          <strong>{total}</strong>
+          <span className="ws-stat-card-hint">Across PC, EA, FMS</span>
+        </div>
+        <div className="ws-sf-metric-tile">
           <span>PC checklist</span>
           <strong>{checklists.length}</strong>
+          <span className="ws-stat-card-hint">Recurring items</span>
         </div>
-        <div className="ws-pc-my-summary-item">
+        <div className="ws-sf-metric-tile">
           <span>EA + FMS</span>
           <strong>{eaTasks.length + fmsSteps.length}</strong>
+          <span className="ws-stat-card-hint">Linked modules</span>
         </div>
       </div>
 

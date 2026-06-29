@@ -42,7 +42,7 @@ export default async function AccountsChecklistPage() {
   }
 
   return (
-    <div className="saas-page ws-checklists-page ws-accounts-checklist-page">
+    <div className="saas-page ws-checklists-page ws-tasks-sf ws-accounts-checklist-page">
       <TaskPageToolbar
         title="Accounts Checklist"
         description="Classic M/Q/Y/HY grid with accountability, last date, and fortnight tracking."
