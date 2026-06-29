@@ -20980,10 +20980,40 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .ws-fms-ai-setup-hero-head {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 14px 16px;
+  gap: 14px 18px;
+}
+
+.workspace-app .ws-fms-ai-setup-hero-mark {
+  align-self: start;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.workspace-app .ws-fms-ai-setup-hero-mark .sheetomatic-ai-mark-wrap {
+  width: 40px;
+  height: 40px;
+  padding: 5px;
+}
+
+.workspace-app .ws-fms-ai-setup-hero-copy {
+  min-width: 0;
+}
+
+.workspace-app .ws-fms-ai-setup-hero-action {
+  align-self: center;
+  flex-shrink: 0;
+}
+
+.workspace-app .ws-fms-ai-setup-hero-action .btn-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-left: 0;
+  white-space: nowrap;
 }
 
 .workspace-app .ws-fms-ai-setup-hero-head h2 {
@@ -20998,11 +21028,18 @@ body:has(.workspace-app.saas-app) {
   font-size: 0.875rem;
   line-height: 1.55;
   color: #64748b;
-  max-width: 42rem;
+  max-width: none;
 }
 
-.workspace-app .ws-fms-ai-setup-hero-head .btn-cta {
-  margin-left: auto;
+@media (max-width: 900px) {
+  .workspace-app .ws-fms-ai-setup-hero-head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .workspace-app .ws-fms-ai-setup-hero-action {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
 }
 
 .workspace-app .ws-fms-ai-dept-chips {

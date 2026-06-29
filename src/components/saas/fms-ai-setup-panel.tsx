@@ -8,20 +8,27 @@ export function FmsAiSetupPanel() {
   const featured = FMS_AI_STARTERS.slice(0, 6);
 
   return (
-    <section className="ws-sf-card ws-fms-ai-setup-hero ws-fms-ai-setup-panel" aria-label="AI FMS builder">
+    <section
+      className="ws-sf-card ws-fms-ai-setup-hero ws-fms-ai-setup-panel"
+      aria-label="AI FMS builder"
+    >
       <div className="ws-fms-ai-setup-hero-head">
-        <SheetomaticAiMark variant="icon" sizes="lg" />
-        <div>
+        <div className="ws-fms-ai-setup-hero-mark">
+          <SheetomaticAiMark variant="icon" sizes="lg" />
+        </div>
+        <div className="ws-fms-ai-setup-hero-copy">
           <h2>Build FMS with AI</h2>
           <p>
             One main tracker plus stage-wise forms. Describe your process or pick
             a department starter - AI designs the flow, form fields, TAT, and alerts.
           </p>
         </div>
-        <Link href="/app/fms/design/new" className="btn-cta btn-primary ws-sf-btn-primary">
-          <SheetomaticAiMark variant="icon" sizes="sm" className="ws-fms-ai-btn-mark" />
-          New AI workflow
-        </Link>
+        <div className="ws-fms-ai-setup-hero-action">
+          <Link href="/app/fms/design/new" className="btn-cta btn-primary ws-sf-btn-primary">
+            <SheetomaticAiMark variant="icon" sizes="sm" className="ws-fms-ai-btn-mark" />
+            New AI workflow
+          </Link>
+        </div>
       </div>
       <ul className="ws-fms-ai-starter-grid is-compact">
         {featured.map((starter) => (

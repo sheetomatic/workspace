@@ -37,8 +37,10 @@ export function FmsWorkflowTemplatePicker({
     <div className="ws-fms-template-picker-stack">
       <section className="ws-sf-card ws-fms-ai-setup-hero" aria-label="AI FMS builder">
         <div className="ws-fms-ai-setup-hero-head">
-          <SheetomaticAiMark variant="icon" sizes="lg" />
-          <div>
+          <div className="ws-fms-ai-setup-hero-mark">
+            <SheetomaticAiMark variant="icon" sizes="lg" />
+          </div>
+          <div className="ws-fms-ai-setup-hero-copy">
             <h2>AI FMS consultant</h2>
             <p>
               Pick a department and process below, or describe your own flow in
