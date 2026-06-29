@@ -108,7 +108,7 @@ export function mergeWorkspaceAppearance(
     background: stored?.background ?? presetColors.background,
     productName: stored?.productName?.trim() || "Sheetomatic",
     brandName: stored?.brandName?.trim() || organizationName,
-    logoSrc: customLogo ?? siteBrand.iconSrc,
+    logoSrc: customLogo ?? "/images/sheetomatic-icon.svg",
     lockupSrc: customLogo ?? siteBrand.logoSrc,
     lockupLightSrc: customLogo ?? "/images/sheetomatic-logo-light.svg",
   };
