@@ -16189,33 +16189,18 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .btn-cta .ws-fms-ai-btn-mark {
-  --sheetomatic-ai-mark-height: 18px;
-  --sheetomatic-ai-mark-width: 18px;
   flex-shrink: 0;
+  line-height: 0;
 }
 
-.workspace-app .btn-cta .ws-fms-ai-btn-mark .sheetomatic-ai-mark-wrap {
-  width: 18px;
-  height: 18px;
-  padding: 2px;
-  box-sizing: border-box;
-}
-
-.workspace-app .btn-cta .ws-fms-ai-btn-mark .sheetomatic-ai-mark-logo {
+.workspace-app .btn-cta .ws-fms-ai-btn-mark.sheetomatic-ai-mark--on-dark .sheetomatic-ai-mark-logo {
   display: block;
-  width: 100%;
-  height: 100%;
-  min-width: 0;
-  min-height: 0;
+  width: var(--sheetomatic-ai-mark-width, 16px);
+  height: var(--sheetomatic-ai-mark-height, 16px);
   object-fit: contain;
 }
 
-.workspace-app .btn-primary .ws-fms-ai-btn-mark .sheetomatic-ai-mark-wrap {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.45);
-}
-
-.workspace-app .btn-primary .ws-fms-ai-btn-mark .sheetomatic-ai-mark-logo {
+.workspace-app .btn-primary .ws-fms-ai-btn-mark.sheetomatic-ai-mark--on-dark .sheetomatic-ai-mark-logo {
   filter: none;
 }
 
@@ -21002,9 +20987,15 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .ws-fms-ai-setup-hero-mark .sheetomatic-ai-mark-wrap {
-  width: 40px;
-  height: 40px;
-  padding: 5px;
+  width: 42px;
+  height: 42px;
+  padding: 6px;
+}
+
+.workspace-app .ws-fms-ai-setup-hero-mark .sheetomatic-ai-mark-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .workspace-app .ws-fms-ai-setup-hero-copy {

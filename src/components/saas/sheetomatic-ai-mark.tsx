@@ -15,7 +15,7 @@ const LOCKUP_SIZE_MAP: Record<SheetomaticAiMarkSize, number> = {
 };
 
 const ICON_SIZE_MAP: Record<SheetomaticAiMarkSize, number> = {
-  sm: 20,
+  sm: 16,
   md: 28,
   lg: 36,
 };
@@ -71,6 +71,18 @@ export function SheetomaticAiMark({
     .filter(Boolean)
     .join(" ");
 
+  const logo = (
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img
+      alt=""
+      aria-hidden
+      className="sheetomatic-ai-mark-logo"
+      height={height}
+      src={iconSrc}
+      width={width}
+    />
+  );
+
   return (
     <span
       className={rootClass}
@@ -84,17 +96,7 @@ export function SheetomaticAiMark({
       aria-label="Sheetomatic AI"
       title="Sheetomatic AI"
     >
-      <span className="sheetomatic-ai-mark-wrap">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          alt=""
-          aria-hidden
-          className="sheetomatic-ai-mark-logo"
-          height={height}
-          src={iconSrc}
-          width={width}
-        />
-      </span>
+      {onDarkSurface ? logo : <span className="sheetomatic-ai-mark-wrap">{logo}</span>}
       {showLabel ? (
         <span className="sheetomatic-ai-mark-label">Sheetomatic AI</span>
       ) : null}
