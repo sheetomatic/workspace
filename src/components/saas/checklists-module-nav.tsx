@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   CheckSquare,
   ClipboardList,
-  Grid3x3,
   Radar,
   Settings2,
   BarChart3,
@@ -32,13 +31,6 @@ export function ChecklistsModuleNav({ user }: { user: SessionUser }) {
       icon: ClipboardList,
       visible: true,
       description: "Complete assigned work",
-    },
-    {
-      href: "/app/checklists/accounts",
-      label: "Accounts grid",
-      icon: Grid3x3,
-      visible: isManager,
-      description: "Classic checklist sheet",
     },
     {
       href: "/app/checklists",
