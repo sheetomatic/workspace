@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FMS_AI_STARTERS } from "@/lib/fms/ai-starters";
 import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
+import { AiSetupHeroHead } from "@/components/saas/ai-setup-hero-head";
 
 export function FmsAiSetupPanel() {
   const featured = FMS_AI_STARTERS.slice(0, 6);
@@ -12,24 +13,16 @@ export function FmsAiSetupPanel() {
       className="ws-sf-card ws-fms-ai-setup-hero ws-fms-ai-setup-panel"
       aria-label="AI FMS builder"
     >
-      <div className="ws-fms-ai-setup-hero-head">
-        <div className="ws-fms-ai-setup-hero-mark">
-          <SheetomaticAiMark variant="icon" sizes="lg" />
-        </div>
-        <div className="ws-fms-ai-setup-hero-copy">
-          <h2>Build FMS with AI</h2>
-          <p>
-            One main tracker plus stage-wise forms. Describe your process or pick
-            a department starter - AI designs the flow, form fields, TAT, and alerts.
-          </p>
-        </div>
-        <div className="ws-fms-ai-setup-hero-action">
+      <AiSetupHeroHead
+        title="Build FMS with AI"
+        description="One main tracker plus stage-wise forms. Describe your process or pick a department starter - AI designs the flow, form fields, TAT, and alerts."
+        action={
           <Link href="/app/fms/design/new" className="btn-cta btn-primary ws-sf-btn-primary">
             <SheetomaticAiMark variant="icon" sizes="sm" className="ws-fms-ai-btn-mark" />
             New AI workflow
           </Link>
-        </div>
-      </div>
+        }
+      />
       <ul className="ws-fms-ai-starter-grid is-compact">
         {featured.map((starter) => (
           <li key={starter.id}>

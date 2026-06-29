@@ -12703,6 +12703,7 @@ body:has(.workspace-app.saas-app) {
   margin: 0 0 12px;
 }
 
+.workspace-app .ws-tasks-sf.ws-fms-sf .ws-sf-card,
 .workspace-app .ws-fms-sf .ws-sf-card {
   background: #fff;
   border: 1px solid var(--sf-card-border);
@@ -20976,20 +20977,24 @@ body:has(.workspace-app.saas-app) {
 .workspace-app .ws-fms-ai-setup-hero-head {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 14px 18px;
+  align-items: start;
+  gap: 12px 20px;
 }
 
 .workspace-app .ws-fms-ai-setup-hero-mark {
   align-self: start;
   flex-shrink: 0;
-  padding-top: 2px;
+}
+
+.workspace-app .ws-fms-ai-setup-hero-mark .sheetomatic-ai-mark {
+  display: block;
 }
 
 .workspace-app .ws-fms-ai-setup-hero-mark .sheetomatic-ai-mark-wrap {
-  width: 42px;
-  height: 42px;
-  padding: 6px;
+  width: 40px;
+  height: 40px;
+  padding: 5px;
+  border-radius: 8px;
 }
 
 .workspace-app .ws-fms-ai-setup-hero-mark .sheetomatic-ai-mark-logo {
@@ -21000,11 +21005,13 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-fms-ai-setup-hero-copy {
   min-width: 0;
+  padding-top: 1px;
 }
 
 .workspace-app .ws-fms-ai-setup-hero-action {
-  align-self: center;
+  align-self: start;
   flex-shrink: 0;
+  padding-top: 1px;
 }
 
 .workspace-app .ws-fms-ai-setup-hero-action .btn-cta {
@@ -25176,8 +25183,8 @@ a.workspace-app .ws-stat-card,
   gap: 12px;
 }
 
-.workspace-app .ws-pc-ai-setup-panel {
-  margin-bottom: 4px;
+.workspace-app .ws-fms-workflow-template-picker .ws-fms-ai-setup-hero-head {
+  grid-template-columns: auto minmax(0, 1fr);
 }
 
 .workspace-app .ws-pc-setup-ai-bar-wrap {

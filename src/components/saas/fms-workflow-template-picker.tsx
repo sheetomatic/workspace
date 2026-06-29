@@ -37,7 +37,7 @@ export function FmsWorkflowTemplatePicker({
     <div className="ws-fms-template-picker-stack">
       <section className="ws-sf-card ws-fms-ai-setup-hero" aria-label="AI FMS builder">
         <div className="ws-fms-ai-setup-hero-head">
-          <div className="ws-fms-ai-setup-hero-mark">
+          <div className="ws-fms-ai-setup-hero-mark" aria-hidden>
             <SheetomaticAiMark variant="icon" sizes="lg" />
           </div>
           <div className="ws-fms-ai-setup-hero-copy">

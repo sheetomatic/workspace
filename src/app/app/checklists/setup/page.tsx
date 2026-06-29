@@ -46,7 +46,7 @@ export default async function PcSetupPage() {
   const totalRuns = templates.reduce((sum, row) => sum + row._count.occurrences, 0);
 
   return (
-    <div className="saas-page ws-checklists-page ws-tasks-sf ws-pc-setup-page">
+    <div className="saas-page ws-checklists-page ws-tasks-sf ws-fms-sf ws-pc-setup-page">
       <TaskPageToolbar
         title="Setup"
         description="AI-powered Process Checklist templates, schedules, and live runs - same setup pattern as FMS."
@@ -65,8 +65,6 @@ export default async function PcSetupPage() {
       />
 
       <PcAiSetupPanel canConfigure={canConfigure} />
-      <PcSetupAiBar canConfigure={canConfigure} />
-      {canConfigure ? <ChecklistImport /> : null}
 
       <div className="ws-sf-metrics ws-fms-metrics">
         <div className="ws-sf-metric-tile">
@@ -85,6 +83,9 @@ export default async function PcSetupPage() {
           <span className="ws-stat-card-hint">Department templates</span>
         </div>
       </div>
+
+      <PcSetupAiBar canConfigure={canConfigure} />
+      {canConfigure ? <ChecklistImport /> : null}
 
       <section className="ws-sf-list-view" aria-label="Live PC schedules">
         <header className="ws-sf-list-view-header">
