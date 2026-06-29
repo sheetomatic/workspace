@@ -1,9 +1,8 @@
 import "@/components/saas/workspace-theme.css";
-import "@/components/saas/apple-design-system.css";
 import { Suspense } from "react";
+import { BrandIconMark } from "@/components/brand/brand-icon-mark";
 import { LoginForm } from "@/components/saas/login-form";
 import { CheckCircle2 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { siteBrand } from "@/app/site-content";
 import { prisma } from "@/lib/db";
@@ -39,13 +38,7 @@ export default async function LoginPage({
       <section className="login-brand">
         <Link className="login-logo" href={isAiProduct ? "/ai" : "/"}>
           <span className="logo-mark">
-            <Image
-              src={siteBrand.logoSrc}
-              alt={isAiProduct ? "Sheetomatic AI" : siteBrand.logoAlt}
-              width={40}
-              height={40}
-              priority
-            />
+            <BrandIconMark size={26} priority theme="light" />
           </span>
           <span>{isAiProduct ? "Sheetomatic AI" : "Sheetomatic"}</span>
         </Link>

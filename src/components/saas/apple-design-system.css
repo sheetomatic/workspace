@@ -345,7 +345,7 @@
   background: var(--apple-fill);
 }
 
-/* Buttons ÿ Apple pill style */
+/* Buttons - Apple pill style */
 .workspace-app .btn-primary,
 .workspace-app .ws-sf-btn-primary,
 .workspace-app .ws-tasks-sf .ws-sf-btn-primary,
@@ -480,7 +480,7 @@
   color: var(--apple-blue);
 }
 
-/* Marketing site ÿ apple.com tone */
+/* Marketing site - apple.com tone */
 .marketing-site {
   font-family: var(--apple-font);
   background: var(--apple-bg);

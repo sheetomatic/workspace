@@ -1,10 +1,8 @@
 import { Suspense } from "react";
 import "@/components/saas/workspace-theme.css";
-import "@/components/saas/apple-design-system.css";
+import { BrandIconMark } from "@/components/brand/brand-icon-mark";
 import { ForgotPasswordForm } from "@/components/saas/forgot-password-form";
 import Link from "next/link";
-import Image from "next/image";
-import { siteBrand } from "@/app/site-content";
 
 export const dynamic = "force-dynamic";
 
@@ -26,13 +24,7 @@ export default async function ForgotPasswordPage({
       <section className="login-brand">
         <Link className="login-logo" href="/">
           <span className="logo-mark">
-            <Image
-              alt={siteBrand.logoAlt}
-              height={40}
-              priority
-              src={siteBrand.logoSrc}
-              width={40}
-            />
+            <BrandIconMark size={26} priority theme="light" />
           </span>
           <span>Sheetomatic</span>
         </Link>

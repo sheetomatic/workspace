@@ -1,5 +1,4 @@
 import "@/components/saas/workspace-theme.css";
-import "@/components/saas/apple-design-system.css";
 import "@/components/saas/ai-crm-theme.css";
 import { redirect } from "next/navigation";
 import { AuthSessionProvider } from "@/components/providers/session-provider";
