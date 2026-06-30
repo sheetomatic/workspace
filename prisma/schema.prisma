@@ -1863,6 +1863,13 @@ enum QuotationRequestType {
   INVOICE
 }
 
+enum QuotationStatus {
+  DRAFT
+  SENT
+  REVISED
+  LOCKED
+}
+
 enum LeadConnectionSyncStatus {
   IDLE
   SYNCING
@@ -2030,34 +2037,45 @@ model InboundLeadPayment {
 }
 
 model InboundLeadQuotation {
-  id               String                   @id @default(cuid())
-  organizationId   String
-  organization     Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  leadId           String
-  lead             InboundLead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  quotationNumber  String
-  requestType      QuotationRequestType     @default(PROPOSAL)
-  company          String?
-  address          String?
-  zipCode          String?
-  quotationDate    DateTime
-  projectStartDate DateTime?
-  durationDays     Int?
-  endDate          DateTime?
-  subtotal         Decimal                  @db.Decimal(14, 2)
-  taxAmount        Decimal?                 @db.Decimal(14, 2)
-  totalAmount      Decimal                  @db.Decimal(14, 2)
-  notes            String?
-  sentAt           DateTime?
-  createdByUserId  String?
-  createdBy        User?                    @relation("InboundLeadQuotationCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  lines            InboundLeadQuotationLine[]
-  createdAt        DateTime                 @default(now())
-  updatedAt        DateTime                 @updatedAt
+  id                      String                   @id @default(cuid())
+  organizationId          String
+  organization            Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  leadId                  String
+  lead                    InboundLead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  quotationNumber         String
+  requestType             QuotationRequestType     @default(PROPOSAL)
+  status                  QuotationStatus          @default(DRAFT)
+  revisionNumber          Int                      @default(1)
+  revisedFromQuotationId  String?
+  revisedFrom             InboundLeadQuotation?    @relation("QuotationRevisions", fields: [revisedFromQuotationId], references: [id], onDelete: SetNull)
+  revisions               InboundLeadQuotation[]   @relation("QuotationRevisions")
+  shareToken              String?                  @unique
+  company                 String?
+  address                 String?
+  zipCode                 String?
+  quotationDate           DateTime
+  projectStartDate        DateTime?
+  durationDays            Int?
+  endDate                 DateTime?
+  subtotal                Decimal                  @db.Decimal(14, 2)
+  taxAmount               Decimal?                 @db.Decimal(14, 2)
+  totalAmount             Decimal                  @db.Decimal(14, 2)
+  advanceRequired         Decimal?                 @db.Decimal(14, 2)
+  scopeNotes              String?
+  paymentTerms            String?
+  notes                   String?
+  sentAt                  DateTime?
+  lockedAt                DateTime?
+  createdByUserId         String?
+  createdBy               User?                    @relation("InboundLeadQuotationCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  lines                   InboundLeadQuotationLine[]
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
 
   @@unique([organizationId, quotationNumber])
   @@index([organizationId, leadId])
   @@index([leadId])
+  @@index([shareToken])
 }
 
 model InboundLeadQuotationLine {

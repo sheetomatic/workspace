@@ -10,6 +10,7 @@ import type {
   LeadPaymentType,
   LeadProjectStatus,
   QuotationRequestType,
+  QuotationStatus,
 } from "@prisma/client";
 import {
   addInboundLeadNote,
@@ -17,7 +18,6 @@ import {
   addLeadOfferedService,
   applyAiSuggestedLeadStatus,
   assignInboundLead,
-  createLeadQuotation,
   deleteInboundLead,
   logLeadContactAction,
   scheduleInboundLeadFollowUp,
@@ -26,6 +26,7 @@ import {
   updateLeadMeetingNotes,
   updateLeadProjectStatus,
 } from "@/app/app/leads/actions";
+import { QuotationBuilderPanel } from "@/components/saas/quotation-builder-panel";
 import { formatInr, leadCategoryLabel } from "@/lib/leads/categories";
 import {
   CALLING_STATUS_LABELS,
@@ -67,17 +68,32 @@ type PaymentRow = {
   notes: string | null;
 };
 
+type QuotationLine = {
+  id: string;
+  serviceCategory: string;
+  subCategory: string;
+  quantity: number;
+  unitPrice: string | number;
+  lineTotal: string | number;
+};
+
 type QuotationRow = {
   id: string;
   quotationNumber: string;
   requestType: QuotationRequestType;
+  status: QuotationStatus;
+  revisionNumber: number;
   totalAmount: string | number;
   quotationDate: string;
   sentAt: string | null;
+  lockedAt: string | null;
+  shareToken: string | null;
+  lines: QuotationLine[];
 };
 
 type OfferedServiceRow = {
   id: string;
+  catalogId: string | null;
   serviceCategory: string;
   subCategory: string;
   unitPrice: string | number | null;
@@ -179,8 +195,6 @@ export function LeadDrawerPanel({
   );
   const [paymentType, setPaymentType] = useState<LeadPaymentType>("ADVANCE");
   const [paymentMethod, setPaymentMethod] = useState<LeadPaymentMethod>("UPI");
-  const [quoteType, setQuoteType] = useState<QuotationRequestType>("PROPOSAL");
-  const [quoteDuration, setQuoteDuration] = useState("30");
 
   const aiStatus = lead.aiSuggestedStatus ?? null;
   const showAiHint = aiStatus && aiStatus !== lead.status && canManage;
@@ -672,69 +686,20 @@ export function LeadDrawerPanel({
       ) : null}
 
       {tab === "quote" ? (
-        <section className="leads-drawer-section">
-          <h3>Quotation / Invoice</h3>
-          {canManage ? (
-            <div className="leads-drawer-form">
-              <label>
-                Type
-                <select
-                  value={quoteType}
-                  onChange={(e) => setQuoteType(e.target.value as QuotationRequestType)}
-                >
-                  <option value="PROPOSAL">Proposal</option>
-                  <option value="INVOICE">Invoice</option>
-                </select>
-              </label>
-              <label>
-                Duration (days)
-                <input
-                  type="number"
-                  value={quoteDuration}
-                  onChange={(e) => setQuoteDuration(e.target.value)}
-                />
-              </label>
-              <button
-                type="button"
-                className="btn-primary"
-                disabled={pending}
-                onClick={() =>
-                  startTransition(async () => {
-                    await createLeadQuotation({
-                      leadId: lead.id,
-                      requestType: quoteType,
-                      durationDays: quoteDuration,
-                      lineCatalogIds: [],
-                    });
-                  })
-                }
-              >
-                Generate quotation
-              </button>
-            </div>
-          ) : null}
-          <ul className="leads-quote-list">
-            {lead.quotations.length === 0 ? (
-              <li className="leads-machine-muted">No quotations yet.</li>
-            ) : (
-              lead.quotations.map((quote) => (
-                <li key={quote.id}>
-                  <strong>{quote.quotationNumber}</strong>
-                  <span>
-                    {quote.requestType} · {formatInr(Number(quote.totalAmount))}
-                  </span>
-                  <Link
-                    className="leads-action-btn"
-                    href={`/app/leads/quotations/${quote.id}/print`}
-                    target="_blank"
-                  >
-                    Open PDF
-                  </Link>
-                </li>
-              ))
-            )}
-          </ul>
-        </section>
+        <QuotationBuilderPanel
+          leadId={lead.id}
+          leadName={lead.name}
+          leadCompany={lead.company}
+          leadAddress={lead.address}
+          leadZipCode={lead.zipCode}
+          leadRequirement={lead.requirement}
+          offeredServices={lead.offeredServices}
+          serviceCatalog={serviceCatalog}
+          quotations={lead.quotations}
+          canManage={canManage}
+          pending={pending}
+          startTransition={startTransition}
+        />
       ) : null}
 
       <section className="leads-drawer-section">

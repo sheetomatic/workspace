@@ -1,6 +1,11 @@
 "use client";
 
 import type { ReactNode } from "react";
+import {
+  DEFAULT_QUOTATION_TERMS,
+  QUOTATION_FOOTER_CONTACT,
+  formatQuotationTermsBlock,
+} from "@/lib/leads/quotation-content";
 
 type QuotationLine = {
   serviceCategory: string;
@@ -16,12 +21,15 @@ export function QuotationPrintView({
   quotation,
   toolbar,
   formatInr,
+  embed = false,
 }: {
   organizationName: string;
   logoUrl: string | null;
   quotation: {
     quotationNumber: string;
     requestType: string;
+    status?: string;
+    revisionNumber?: number;
     quotationDate: string;
     projectStartDate: string | null;
     endDate: string | null;
@@ -29,7 +37,11 @@ export function QuotationPrintView({
     company: string | null;
     address: string | null;
     zipCode: string | null;
+    scopeNotes: string | null;
+    paymentTerms: string | null;
+    advanceRequired: number | null;
     notes: string | null;
+    lockedAt: string | null;
     subtotal: number;
     totalAmount: number;
     lines: QuotationLine[];
@@ -45,16 +57,30 @@ export function QuotationPrintView({
   };
   toolbar?: ReactNode;
   formatInr: (value: number) => string;
+  embed?: boolean;
 }) {
   const clientName = quotation.lead.name || "Client";
   const clientCompany = quotation.company || quotation.lead.company || "—";
   const clientAddress = quotation.address || quotation.lead.address || "—";
   const clientZip = quotation.zipCode || quotation.lead.zipCode || "—";
+  const scopeText =
+    quotation.scopeNotes || quotation.lead.requirement || null;
+  const isLocked = quotation.status === "LOCKED" || Boolean(quotation.lockedAt);
+  const revisionLabel =
+    quotation.revisionNumber && quotation.revisionNumber > 1
+      ? ` · Revision ${quotation.revisionNumber}`
+      : "";
 
   return (
-    <div className="quotation-print-page">
+    <div className={`quotation-print-page${embed ? " quotation-print-embed" : ""}`}>
       {toolbar}
       <article className="quotation-print-sheet">
+        {isLocked ? (
+          <div className="quotation-print-locked-banner">
+            Approved · Locked after advance payment
+          </div>
+        ) : null}
+
         <header className="quotation-print-header">
           <div>
             {logoUrl ? (
@@ -66,9 +92,12 @@ export function QuotationPrintView({
             <p>Professional automation · Google Sheets · WhatsApp API · AppSheet</p>
           </div>
           <div className="quotation-print-meta">
-            <h2>{quotation.requestType === "INVOICE" ? "Tax Invoice" : "Quotation"}</h2>
+            <h2>{quotation.requestType === "INVOICE" ? "Tax Invoice" : "Quotation / Proposal"}</h2>
             <p>
-              <strong>{quotation.quotationNumber}</strong>
+              <strong>
+                {quotation.quotationNumber}
+                {revisionLabel}
+              </strong>
             </p>
             <p>Date: {new Date(quotation.quotationDate).toLocaleDateString("en-IN")}</p>
           </div>
@@ -86,10 +115,10 @@ export function QuotationPrintView({
           {quotation.lead.email ? <p>Email: {quotation.lead.email}</p> : null}
         </section>
 
-        {quotation.lead.requirement ? (
+        {scopeText ? (
           <section className="quotation-print-scope">
             <h3>Scope / Requirement</h3>
-            <p>{quotation.lead.requirement}</p>
+            <p>{scopeText}</p>
           </section>
         ) : null}
 
@@ -146,7 +175,19 @@ export function QuotationPrintView({
               ? new Date(quotation.endDate).toLocaleDateString("en-IN")
               : "—"}
           </p>
+          {quotation.advanceRequired ? (
+            <p>
+              Advance required: <strong>{formatInr(quotation.advanceRequired)}</strong>
+            </p>
+          ) : null}
         </section>
+
+        {quotation.paymentTerms ? (
+          <section className="quotation-print-notes">
+            <h3>Payment terms</h3>
+            <p>{quotation.paymentTerms}</p>
+          </section>
+        ) : null}
 
         {quotation.notes ? (
           <section className="quotation-print-notes">
@@ -155,12 +196,17 @@ export function QuotationPrintView({
           </section>
         ) : null}
 
+        <section className="quotation-print-terms">
+          <h3>Terms &amp; conditions</h3>
+          <pre>{formatQuotationTermsBlock(DEFAULT_QUOTATION_TERMS)}</pre>
+          <p className="quotation-print-terms-link">
+            Full terms: sheetomatic.com/terms
+          </p>
+        </section>
+
         <footer className="quotation-print-footer">
           <p>Thank you for choosing {organizationName}.</p>
-          <p>
-            This document is computer-generated. For queries, reply on WhatsApp or email
-            sheetomatic@gmail.com
-          </p>
+          <p>{QUOTATION_FOOTER_CONTACT}</p>
         </footer>
       </article>
 
@@ -178,10 +224,21 @@ export function QuotationPrintView({
           background: #f8fafc;
           padding: 1rem;
         }
+        .quotation-print-page.quotation-print-embed {
+          min-height: auto;
+          background: #fff;
+          padding: 0;
+        }
+        .quotation-print-embed .quotation-print-sheet {
+          border: none;
+          border-radius: 0;
+          padding: 1rem;
+        }
         .quotation-print-toolbar {
           display: flex;
           gap: 0.75rem;
           margin-bottom: 1rem;
+          flex-wrap: wrap;
         }
         .quotation-print-sheet {
           max-width: 900px;
@@ -190,6 +247,16 @@ export function QuotationPrintView({
           border: 1px solid #e2e8f0;
           border-radius: 12px;
           padding: 2rem;
+        }
+        .quotation-print-locked-banner {
+          background: #ecfdf5;
+          border: 1px solid #6ee7b7;
+          color: #047857;
+          padding: 0.5rem 0.75rem;
+          border-radius: 8px;
+          margin-bottom: 1rem;
+          font-weight: 600;
+          font-size: 0.88rem;
         }
         .quotation-print-header {
           display: flex;
@@ -208,8 +275,21 @@ export function QuotationPrintView({
         .quotation-print-client,
         .quotation-print-scope,
         .quotation-print-timeline,
-        .quotation-print-notes {
+        .quotation-print-notes,
+        .quotation-print-terms {
           margin-bottom: 1rem;
+        }
+        .quotation-print-terms pre {
+          white-space: pre-wrap;
+          font-family: inherit;
+          font-size: 0.82rem;
+          color: #475569;
+          margin: 0;
+        }
+        .quotation-print-terms-link {
+          font-size: 0.8rem;
+          color: #64748b;
+          margin-top: 0.5rem;
         }
         .quotation-print-table {
           width: 100%;

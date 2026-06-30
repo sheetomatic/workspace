@@ -30,7 +30,19 @@ import {
 } from "@/lib/leads/sync-messages";
 import { pullLeadsFromConnection } from "@/lib/leads/sync-sources";
 import { ingestInboundLead } from "@/lib/leads/ingest";
-import { computeQuotationTotals, nextQuotationNumber } from "@/lib/leads/quotations";
+import { sendPlainEmail } from "@/lib/integrations/email";
+import {
+  DEFAULT_QUOTATION_PAYMENT_TERMS,
+} from "@/lib/leads/quotation-content";
+import {
+  buildQuotationPublicUrl,
+  buildQuotationShareMessage,
+  computeQuotationTotals,
+  createQuotationShareToken,
+  lockLatestLeadQuotation,
+  nextQuotationNumber,
+  revisionQuotationNumber,
+} from "@/lib/leads/quotations";
 import { inferLeadStageFromRequirement } from "@/lib/leads/stage-ai";
 import { leadStatusLabel } from "@/lib/leads/status-labels";
 import { hasMinimumRole } from "@/lib/permissions";
@@ -640,6 +652,26 @@ export async function addInboundLeadPayment(params: {
     },
   });
 
+  let lockedQuotationNumber: string | null = null;
+  if (params.paymentType === "ADVANCE") {
+    const locked = await lockLatestLeadQuotation(
+      user.organizationId,
+      params.leadId,
+      amount,
+    );
+    if (locked) {
+      lockedQuotationNumber = locked.quotationNumber;
+      await logInboundLeadActivity({
+        organizationId: user.organizationId,
+        leadId: params.leadId,
+        type: "QUOTATION",
+        body: `${locked.quotationNumber} locked after advance payment of ₹${amount.toLocaleString("en-IN")}`,
+        createdByUserId: user.id,
+        metadata: { quotationId: locked.id, locked: true },
+      });
+    }
+  }
+
   await prisma.inboundLead.updateMany({
     where: { id: params.leadId, organizationId: user.organizationId },
     data: { status: "PAYMENT" },
@@ -654,7 +686,10 @@ export async function addInboundLeadPayment(params: {
   });
 
   revalidatePath("/app/leads");
-  return { ok: true };
+  return {
+    ok: true,
+    lockedQuotationNumber,
+  };
 }
 
 export async function addLeadOfferedService(params: {
@@ -693,6 +728,12 @@ export async function createLeadQuotation(params: {
   requestType: QuotationRequestType;
   durationDays?: string;
   notes?: string;
+  scopeNotes?: string;
+  paymentTerms?: string;
+  advanceRequired?: string;
+  company?: string;
+  address?: string;
+  zipCode?: string;
   lineCatalogIds: string[];
 }) {
   const user = await requireSession(undefined, { module: "FMS" });
@@ -740,22 +781,30 @@ export async function createLeadQuotation(params: {
     ? new Date(projectStartDate.getTime() + durationDays * 86400000)
     : null;
 
+  const advanceRequired = Number.parseFloat(params.advanceRequired ?? "");
   const quotation = await prisma.inboundLeadQuotation.create({
     data: {
       organizationId: user.organizationId,
       leadId: lead.id,
       quotationNumber,
       requestType: params.requestType,
-      company: lead.company,
-      address: lead.address,
-      zipCode: lead.zipCode,
+      status: "DRAFT",
+      revisionNumber: 1,
+      company: params.company?.trim() || lead.company,
+      address: params.address?.trim() || lead.address,
+      zipCode: params.zipCode?.trim() || lead.zipCode,
       quotationDate,
       projectStartDate,
       durationDays: Number.isFinite(durationDays) ? durationDays : null,
       endDate,
       subtotal: totals.subtotal,
       totalAmount: totals.totalAmount,
+      advanceRequired: Number.isFinite(advanceRequired) ? advanceRequired : null,
+      scopeNotes: params.scopeNotes?.trim() || lead.requirement || null,
+      paymentTerms:
+        params.paymentTerms?.trim() || DEFAULT_QUOTATION_PAYMENT_TERMS,
       notes: params.notes?.trim() || null,
+      shareToken: createQuotationShareToken(),
       createdByUserId: user.id,
       lines: { create: lines },
     },
@@ -788,11 +837,229 @@ export async function markLeadQuotationSent(quotationId: string) {
     return { ok: false, message: "Not allowed." };
   }
 
-  await prisma.inboundLeadQuotation.updateMany({
+  const quotation = await prisma.inboundLeadQuotation.findFirst({
     where: { id: quotationId, organizationId: user.organizationId },
-    data: { sentAt: new Date() },
+    select: { id: true, status: true, lockedAt: true, shareToken: true },
+  });
+  if (!quotation) {
+    return { ok: false, message: "Quotation not found." };
+  }
+  if (quotation.lockedAt) {
+    return { ok: false, message: "Quotation is locked." };
+  }
+
+  await prisma.inboundLeadQuotation.update({
+    where: { id: quotation.id },
+    data: {
+      sentAt: new Date(),
+      status: quotation.status === "DRAFT" ? "SENT" : quotation.status,
+      shareToken: quotation.shareToken ?? createQuotationShareToken(),
+    },
   });
 
   revalidatePath("/app/leads");
   return { ok: true };
+}
+
+export async function reviseLeadQuotation(quotationId: string) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  const source = await prisma.inboundLeadQuotation.findFirst({
+    where: { id: quotationId, organizationId: user.organizationId },
+    include: { lines: true, lead: true },
+  });
+  if (!source) {
+    return { ok: false, message: "Quotation not found." };
+  }
+  if (source.lockedAt || source.status === "LOCKED") {
+    return { ok: false, message: "Locked quotations cannot be revised." };
+  }
+
+  const revisionNumber = source.revisionNumber + 1;
+  const quotationNumber = revisionQuotationNumber(
+    source.quotationNumber,
+    revisionNumber,
+  );
+
+  const quotation = await prisma.$transaction(async (tx) => {
+    await tx.inboundLeadQuotation.update({
+      where: { id: source.id },
+      data: { status: "REVISED" },
+    });
+
+    return tx.inboundLeadQuotation.create({
+      data: {
+        organizationId: user.organizationId,
+        leadId: source.leadId,
+        quotationNumber,
+        requestType: source.requestType,
+        status: "DRAFT",
+        revisionNumber,
+        revisedFromQuotationId: source.id,
+        company: source.company,
+        address: source.address,
+        zipCode: source.zipCode,
+        quotationDate: new Date(),
+        projectStartDate: source.projectStartDate,
+        durationDays: source.durationDays,
+        endDate: source.endDate,
+        subtotal: source.subtotal,
+        totalAmount: source.totalAmount,
+        advanceRequired: source.advanceRequired,
+        scopeNotes: source.scopeNotes,
+        paymentTerms: source.paymentTerms,
+        notes: source.notes,
+        shareToken: createQuotationShareToken(),
+        createdByUserId: user.id,
+        lines: {
+          create: source.lines.map((line) => ({
+            serviceCategory: line.serviceCategory,
+            subCategory: line.subCategory,
+            quantity: line.quantity,
+            unitPrice: line.unitPrice,
+            lineTotal: line.lineTotal,
+          })),
+        },
+      },
+    });
+  });
+
+  await logInboundLeadActivity({
+    organizationId: user.organizationId,
+    leadId: source.leadId,
+    type: "QUOTATION",
+    body: `Revised ${source.quotationNumber} → ${quotationNumber}`,
+    createdByUserId: user.id,
+    metadata: { quotationId: quotation.id, revisedFrom: source.id },
+  });
+
+  revalidatePath("/app/leads");
+  return { ok: true, quotationId: quotation.id, quotationNumber };
+}
+
+async function getQuotationForShare(organizationId: string, quotationId: string) {
+  return prisma.inboundLeadQuotation.findFirst({
+    where: { id: quotationId, organizationId },
+    include: {
+      lead: { select: { name: true, phone: true, email: true } },
+    },
+  });
+}
+
+export async function sendLeadQuotationWhatsApp(quotationId: string) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  const quotation = await getQuotationForShare(user.organizationId, quotationId);
+  if (!quotation) {
+    return { ok: false, message: "Quotation not found." };
+  }
+  if (quotation.lockedAt) {
+    return { ok: false, message: "Quotation is locked." };
+  }
+
+  const shareToken =
+    quotation.shareToken ??
+    (
+      await prisma.inboundLeadQuotation.update({
+        where: { id: quotation.id },
+        data: { shareToken: createQuotationShareToken() },
+        select: { shareToken: true },
+      })
+    ).shareToken;
+
+  const publicUrl = buildQuotationPublicUrl(shareToken!);
+  const message = buildQuotationShareMessage({
+    clientName: quotation.lead.name || "there",
+    quotationNumber: quotation.quotationNumber,
+    requestType: quotation.requestType,
+    totalAmount: Number(quotation.totalAmount),
+    publicUrl,
+    revisionNumber: quotation.revisionNumber,
+  });
+
+  const phone = quotation.lead.phone?.replace(/\D/g, "") ?? "";
+  if (!phone) {
+    return { ok: false, message: "Lead has no phone number for WhatsApp." };
+  }
+
+  await markLeadQuotationSent(quotationId);
+
+  const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  return { ok: true, waUrl, publicUrl };
+}
+
+export async function sendLeadQuotationEmail(quotationId: string) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  const quotation = await getQuotationForShare(user.organizationId, quotationId);
+  if (!quotation) {
+    return { ok: false, message: "Quotation not found." };
+  }
+  if (!quotation.lead.email?.trim()) {
+    return { ok: false, message: "Lead has no email address." };
+  }
+  if (quotation.lockedAt) {
+    return { ok: false, message: "Quotation is locked." };
+  }
+
+  const shareToken =
+    quotation.shareToken ??
+    (
+      await prisma.inboundLeadQuotation.update({
+        where: { id: quotation.id },
+        data: { shareToken: createQuotationShareToken() },
+        select: { shareToken: true },
+      })
+    ).shareToken;
+
+  const publicUrl = buildQuotationPublicUrl(shareToken!);
+  const docType = quotation.requestType === "INVOICE" ? "Invoice" : "Proposal";
+  const subject = `Sheetomatic ${docType} ${quotation.quotationNumber}`;
+  const text = buildQuotationShareMessage({
+    clientName: quotation.lead.name || "there",
+    quotationNumber: quotation.quotationNumber,
+    requestType: quotation.requestType,
+    totalAmount: Number(quotation.totalAmount),
+    publicUrl,
+    revisionNumber: quotation.revisionNumber,
+  });
+
+  const result = await sendPlainEmail({
+    toEmail: quotation.lead.email.trim(),
+    subject,
+    text,
+  });
+
+  if (!result.sent) {
+    return {
+      ok: false,
+      message:
+        result.reason === "not_configured"
+          ? "Email is not configured (RESEND_API_KEY / TASK_EMAIL_FROM)."
+          : `Email failed: ${result.detail ?? result.reason}`,
+    };
+  }
+
+  await markLeadQuotationSent(quotationId);
+
+  await logInboundLeadActivity({
+    organizationId: user.organizationId,
+    leadId: quotation.leadId,
+    type: "QUOTATION",
+    body: `Emailed ${quotation.quotationNumber} to ${quotation.lead.email}`,
+    createdByUserId: user.id,
+    metadata: { quotationId: quotation.id },
+  });
+
+  revalidatePath("/app/leads");
+  return { ok: true, publicUrl };
 }

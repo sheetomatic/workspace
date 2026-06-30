@@ -17,10 +17,12 @@ export const mainNav = [
 export const footerCompanyLinks = [
   { href: "/services", label: "Services" },
   { href: "/products", label: "Products" },
+  { href: "/whatsapp-plans", label: "WhatsApp API plans" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
   { href: "/career", label: "Careers" },
   { href: "/courses", label: "Training" },
+  { href: "/terms", label: "Terms" },
 ];
 
 export const footerProductLinks = [
