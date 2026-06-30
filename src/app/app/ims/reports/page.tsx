@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PageHeader } from "@/components/saas/page-header";
+import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { ImsReportsCharts } from "@/components/ims/ims-reports-charts";
 import { ImsReportExport } from "@/components/ims/ims-report-export";
 import { requireSession } from "@/lib/require-session";
@@ -15,8 +15,8 @@ export default async function ImsReportsPage() {
   const data = await getImsReportData(user.organizationId);
 
   return (
-    <div className="saas-page ws-ims-page">
-      <PageHeader
+    <div className="ws-ims-page">
+      <TaskPageToolbar
         title="Inventory reports"
         description="Valuation, ABC concentration, stock health, and movement trends across your stores."
       />

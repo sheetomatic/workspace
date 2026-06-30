@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PageHeader } from "@/components/saas/page-header";
+import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
 import { getVendorDetail, listImsCustomFields } from "@/lib/ims/ims-store";
 
@@ -38,8 +38,8 @@ export default async function ImsVendorDetailPage({
   const activeCustomFields = customFields.filter((field) => field.isActive);
 
   return (
-    <div className="saas-page ws-ims-page">
-      <PageHeader
+    <div className="ws-ims-page">
+      <TaskPageToolbar
         title={`${vendor.code} - ${vendor.name}`}
         description={vendor.notes ?? "Vendor contact and supply terms."}
       />

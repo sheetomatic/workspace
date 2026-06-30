@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PageHeader } from "@/components/saas/page-header";
+import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
 import { getItemDetail, listImsCustomFields } from "@/lib/ims/ims-store";
 import {
@@ -51,8 +51,8 @@ export default async function ImsItemDetailPage({
   const activeCustomFields = customFields.filter((field) => field.isActive);
 
   return (
-    <div className="saas-page ws-ims-page">
-      <PageHeader
+    <div className="ws-ims-page">
+      <TaskPageToolbar
         title={`${item.code} - ${item.name}`}
         description={item.description ?? "Item stock, thresholds, and movement history."}
       />

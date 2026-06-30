@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/saas/page-header";
+import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import {
   ImsStockTable,
   type StockTableRow,
@@ -29,8 +29,8 @@ export default async function ImsStockPage() {
   }));
 
   return (
-    <div className="saas-page ws-ims-page">
-      <PageHeader
+    <div className="ws-ims-page">
+      <TaskPageToolbar
         title="Stock levels"
         description="Usable quantity drives alert colours. QC pending is shown separately. Inactive items still holding stock are included."
       />

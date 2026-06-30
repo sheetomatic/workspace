@@ -1,12 +1,12 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { enableImsModuleForTeamAction, type ImsActionState } from "@/app/app/ims/actions";
 
 const initial: ImsActionState = { ok: false, message: "" };
 
 export function ImsTeamAccessPanel({ membersMissingIms }: { membersMissingIms: number }) {
-  const [state, action] = useFormState(enableImsModuleForTeamAction, initial);
+  const [state, action] = useActionState(enableImsModuleForTeamAction, initial);
 
   if (membersMissingIms === 0 && !state.message) {
     return null;

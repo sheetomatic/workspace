@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import type { ImsItem, ImsMovementType } from "@prisma/client";
 import {
   recordMovementAction,
@@ -55,7 +55,7 @@ export function ImsMovementForm({
   usableMap?: Record<string, number>;
   vendorNames?: string[];
 }) {
-  const [state, action] = useFormState(recordMovementAction, initial);
+  const [state, action] = useActionState(recordMovementAction, initial);
   const formRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const filtered = useMemo(

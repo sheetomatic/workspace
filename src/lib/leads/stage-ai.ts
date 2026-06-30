@@ -20,8 +20,12 @@ export function inferLeadStageFromRequirement(
     return "PAYMENT";
   }
 
-  if (/quotation|proposal|invoice|quote|pricing|estimate/i.test(text)) {
-    return "PROPOSAL_INVOICE";
+  if (/\btax invoice\b|invoice sent|send invoice/i.test(text)) {
+    return "INVOICE";
+  }
+
+  if (/quotation|proposal|quote|pricing|estimate/i.test(text)) {
+    return "PROPOSAL";
   }
 
   if (/meeting done|met client|demo done|presentation/i.test(text)) {
@@ -63,10 +67,11 @@ export function mapSheetStageToStatus(value: string): InboundLeadStatus | undefi
     "follow up": "FOLLOW_UP",
     followup: "FOLLOW_UP",
     qualified: "QUALIFIED",
-    "make proposal | invoice": "PROPOSAL_INVOICE",
-    "make proposal": "PROPOSAL_INVOICE",
-    proposal: "PROPOSAL_INVOICE",
-    invoice: "PROPOSAL_INVOICE",
+    "make proposal | invoice": "PROPOSAL",
+    "make proposal": "PROPOSAL",
+    proposal: "PROPOSAL",
+    invoice: "INVOICE",
+    "tax invoice": "INVOICE",
     payment: "PAYMENT",
     "project active": "PROJECT_ACTIVE",
     won: "WON",

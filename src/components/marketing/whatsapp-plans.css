@@ -1,0 +1,266 @@
+.wa-plans-hero-cards {
+  padding-top: 0;
+}
+
+.wa-plan-hero-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.25rem 1.35rem;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.wa-plan-hero-card-accent {
+  border-color: #7dd3fc;
+  background: linear-gradient(180deg, #f0f9ff 0%, #fff 100%);
+}
+
+.wa-plan-hero-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0369a1;
+}
+
+.wa-plan-hero-card h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.wa-plan-hero-card p {
+  margin: 0.55rem 0 0;
+  color: #475569;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.wa-plan-hero-note {
+  font-size: 0.82rem !important;
+  color: #64748b !important;
+}
+
+.wa-plan-hero-price {
+  font-size: 1.65rem !important;
+  font-weight: 700;
+  color: #0369a1 !important;
+}
+
+.wa-plan-hero-price span {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.wa-plans-section-head {
+  text-align: center;
+  max-width: 42rem;
+  margin: 0 auto 1.5rem;
+}
+
+.wa-plans-section-head h2 {
+  margin: 0;
+  font-size: clamp(1.35rem, 2vw, 1.75rem);
+}
+
+.wa-plans-section-head p {
+  margin: 0.5rem 0 0;
+  color: #64748b;
+}
+
+.wa-plans-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.wa-plan-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.wa-plan-card-highlight {
+  border-color: #38bdf8;
+  box-shadow: 0 10px 30px rgba(14, 165, 233, 0.12);
+}
+
+.wa-plan-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.wa-plan-category {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+}
+
+.wa-plan-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: #ecfeff;
+  color: #0e7490;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+}
+
+.wa-plan-name {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.wa-plan-meta {
+  margin: 0;
+  font-size: 0.84rem;
+  color: #64748b;
+}
+
+.wa-plan-price {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0369a1;
+}
+
+.wa-plan-duration {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.wa-plan-card-button {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.wa-plan-card-button:hover {
+  border-color: #38bdf8;
+  box-shadow: 0 10px 30px rgba(14, 165, 233, 0.1);
+  transform: translateY(-1px);
+}
+
+.wa-pay-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(15, 23, 42, 0.55);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.wa-pay-modal {
+  width: min(100%, 420px);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  background: #fff;
+  border-radius: 16px;
+  padding: 1.1rem 1.15rem 1.25rem;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+}
+
+.wa-pay-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.wa-pay-modal-eyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #0369a1;
+}
+
+.wa-pay-modal-head h2 {
+  margin: 0.2rem 0 0;
+  font-size: 1.05rem;
+}
+
+.wa-pay-modal-close {
+  border: none;
+  background: #f1f5f9;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.wa-pay-modal-amount {
+  margin: 0.85rem 0 0;
+  font-size: 0.95rem;
+  color: #334155;
+}
+
+.wa-pay-modal-qr {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.wa-pay-modal-qr-image {
+  width: min(100%, 280px);
+  height: auto;
+  margin: 0 auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.wa-pay-modal-qr-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.wa-pay-modal-upi {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.wa-pay-modal-upi span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.wa-pay-modal-upi code {
+  font-size: 0.88rem;
+  color: #0f172a;
+  word-break: break-all;
+}
+
+.wa-pay-modal-actions {
+  margin-top: 1rem;
+}
+
+.wa-pay-modal-note {
+  margin: 0.65rem 0 0;
+  font-size: 0.8rem;
+  color: #64748b;
+  line-height: 1.45;
+}

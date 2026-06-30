@@ -5,10 +5,11 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   ClipboardList,
+  LayoutDashboard,
+  ListChecks,
   PlusCircle,
   ListTodo,
   Sparkles,
-  Users,
 } from "lucide-react";
 import type { SessionUser } from "@/lib/auth";
 import { canCreateTasks } from "@/lib/tasks";
@@ -26,6 +27,12 @@ function navIsActive(pathname: string, href: string) {
   if (href === "/app/tasks") {
     return pathname === "/app/tasks";
   }
+  if (href === "/app/tasks/today") {
+    return pathname === "/app/tasks/today";
+  }
+  if (href === "/app/tasks/all") {
+    return pathname === "/app/tasks/all";
+  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -36,32 +43,46 @@ export function TasksModuleNav({ user }: { user: SessionUser }) {
 
   const items: NavItem[] = [
     {
-      href: "/app/tasks/my-work",
-      label: "My work",
+      href: "/app/tasks/today",
+      label: "Today",
       icon: ClipboardList,
       visible: true,
-      description: "Tasks assigned to you",
+      description: "Due today & overdue",
+    },
+    {
+      href: "/app/tasks/all",
+      label: "All",
+      icon: ListChecks,
+      visible: true,
+      description: isManager ? "Team task queue" : "Full active queue",
     },
     {
       href: "/app/tasks",
-      label: "Team board",
-      icon: Users,
+      label: "Tasks Management",
+      icon: LayoutDashboard,
       visible: isManager,
-      description: "All team tasks & workload",
+      description: "Charts, scores & summary",
     },
     {
       href: "/app/tasks/create",
-      label: "Create task",
+      label: "Add task",
       icon: PlusCircle,
       visible: isManager,
-      description: "New task only",
+      description: "Create and assign",
     },
     {
       href: "/app/tasks/scores",
-      label: "MIS scores",
+      label: "Reports",
       icon: BarChart3,
       visible: isManager,
-      description: "Task performance",
+      description: "MIS performance",
+    },
+    {
+      href: "/app/tasks#execution-queue",
+      label: "Task list",
+      icon: ListChecks,
+      visible: isManager,
+      description: "Full team queue",
     },
     {
       href: "/app/em",
@@ -79,8 +100,8 @@ export function TasksModuleNav({ user }: { user: SessionUser }) {
       <div className="ws-module-subnav-brand">
         <ListTodo size={18} aria-hidden />
         <div>
-          <strong>Tasks</strong>
-          <span>Delegation and proof</span>
+          <strong>Task Delegation</strong>
+          <span>Tasks Management</span>
         </div>
       </div>
       <ul className="ws-module-subnav-list">

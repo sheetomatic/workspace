@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/saas/page-header";
+import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import {
   ImsMovementsTable,
   type MovementRow,
@@ -33,8 +33,8 @@ export default async function ImsMovementsPage() {
   }));
 
   return (
-    <div className="saas-page ws-ims-page">
-      <PageHeader
+    <div className="ws-ims-page">
+      <TaskPageToolbar
         title="Movement history"
         description="Every stock movement - receipts, issues, dispatches, and adjustments. Filter by type or search."
       />

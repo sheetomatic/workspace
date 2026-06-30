@@ -691,7 +691,6 @@ export function AiTrainingDataPanel({
               <form
                 action={docAction}
                 className="ws-wa-submit-form"
-                encType="multipart/form-data"
                 onSubmit={handleDocumentSubmit}
               >
                 <div className="ws-wa-field ws-wa-field-full">

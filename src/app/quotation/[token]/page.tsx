@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { QuotationPrintToolbar } from "@/components/saas/quotation-print-toolbar";
 import { QuotationPrintView } from "@/components/saas/quotation-print-view";
-import { formatInr } from "@/lib/leads/categories";
 import { getLeadQuotationByShareToken } from "@/lib/leads/quotations";
 
 type PageProps = {
@@ -50,7 +49,6 @@ export default async function PublicQuotationPage({ params }: PageProps) {
         lead: quotation.lead,
       }}
       toolbar={<QuotationPrintToolbar publicView />}
-      formatInr={formatInr}
     />
   );
 }

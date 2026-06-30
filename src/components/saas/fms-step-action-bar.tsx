@@ -337,7 +337,6 @@ export function FmsStepActionBar({
             ref={uploadFormRef}
             action={uploadAction}
             className="ws-fms-step-work-upload ws-fms-step-work-upload-row"
-            encType="multipart/form-data"
           >
             <input type="hidden" name="stepStateId" value={stepState.id} />
             <label className="ws-fms-step-work-file-drop">
@@ -386,7 +385,6 @@ export function FmsStepActionBar({
           <form
             action={completeAction}
             className="ws-fms-step-action-complete-form"
-            encType="multipart/form-data"
           >
             <input type="hidden" name="stepStateId" value={stepState.id} />
             <input type="hidden" name="notes" value={notes} readOnly />

@@ -1,8 +1,9 @@
 "use client";
 
-import { LogOut } from "lucide-react";
+import { ChevronDown, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
 import { OrganizationSwitcher } from "@/components/saas/organization-switcher";
 import type { OrganizationOption } from "@/components/saas/organization-switcher";
@@ -12,7 +13,9 @@ import {
   type WorkspaceAppearance,
 } from "@/lib/workspace-appearance";
 import {
+  flattenWorkspaceNavItems,
   getWorkspaceNavSections,
+  navGroupHasActiveChild,
   navIsActive,
   visibleWorkspaceNavItems,
   type WorkspaceNavItem,
@@ -20,42 +23,141 @@ import {
 
 const ROLE_ORDER = ["VIEWER", "STAFF", "MANAGER", "ADMIN", "OWNER"] as const;
 
-function NavLinks({
-  items,
+function NavLink({
+  href,
+  label,
+  icon: Icon,
+  matchPrefix,
   pathname,
   variant,
-}: {
-  items: WorkspaceNavItem[];
+  nested = false,
+  nestedDeep = false,
+}: WorkspaceNavItem & {
   pathname: string;
   variant: "desktop" | "mobile";
+  nested?: boolean;
+  nestedDeep?: boolean;
 }) {
-  return items.map(({ href, label, icon: Icon, matchPrefix }) => {
-    const active = navIsActive(pathname, href, matchPrefix);
+  const active = navIsActive(pathname, href, matchPrefix);
 
-    if (variant === "mobile") {
-      return (
-        <Link
-          key={href}
-          aria-current={active ? "page" : undefined}
-          className={active ? "ws-mobile-nav-link active" : "ws-mobile-nav-link"}
-          href={href}
-        >
-          <Icon size={20} strokeWidth={2} />
-          <span>{label}</span>
-        </Link>
-      );
-    }
-
+  if (variant === "mobile") {
     return (
       <Link
         key={href}
         aria-current={active ? "page" : undefined}
-        className={active ? "saas-nav-link active" : "saas-nav-link"}
+        className={active ? "ws-mobile-nav-link active" : "ws-mobile-nav-link"}
         href={href}
       >
-        <Icon size={18} strokeWidth={2} />
-        {label}
+        <Icon size={20} strokeWidth={2} />
+        <span>{label}</span>
       </Link>
+    );
+  }
+
+  return (
+    <Link
+      key={href}
+      aria-current={active ? "page" : undefined}
+      className={
+        active
+          ? `saas-nav-link active${nested ? " saas-nav-link-nested" : ""}${nestedDeep ? " saas-nav-link-nested-deep" : ""}`
+          : `saas-nav-link${nested ? " saas-nav-link-nested" : ""}${nestedDeep ? " saas-nav-link-nested-deep" : ""}`
+      }
+      href={href}
+    >
+      <Icon size={nested ? 16 : 18} strokeWidth={2} />
+      {label}
+    </Link>
+  );
+}
+
+function NavGroup({
+  item,
+  pathname,
+  depth,
+}: {
+  item: WorkspaceNavItem;
+  pathname: string;
+  depth: number;
+}) {
+  const Icon = item.icon;
+  const hasActiveChild = navGroupHasActiveChild(pathname, item);
+  const selfActive = navIsActive(pathname, item.href, item.matchPrefix);
+  const groupActive = selfActive || hasActiveChild;
+  const [open, setOpen] = useState(groupActive);
+
+  useEffect(() => {
+    if (groupActive) {
+      setOpen(true);
+    }
+  }, [groupActive, pathname]);
+
+  return (
+    <div
+      className={`saas-nav-group${depth > 0 ? " saas-nav-group-nested" : ""}${groupActive ? " is-active" : ""}${open ? " is-open" : ""}`}
+    >
+      <button
+        type="button"
+        className={`saas-nav-link saas-nav-group-toggle${depth > 0 ? " saas-nav-link-nested" : ""}${selfActive && !hasActiveChild ? " active" : ""}`}
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        aria-controls={`nav-group-${item.href.replace(/\//g, "-")}`}
+      >
+        <Icon size={depth > 0 ? 16 : 18} strokeWidth={2} />
+        <span className="saas-nav-group-label">{item.label}</span>
+        <ChevronDown className="saas-nav-chevron" size={16} strokeWidth={2} aria-hidden />
+      </button>
+      {open ? (
+        <div
+          id={`nav-group-${item.href.replace(/\//g, "-")}`}
+          className={`saas-nav-children${depth > 0 ? " saas-nav-children-deep" : ""}`}
+        >
+          <NavLinks
+            depth={depth + 1}
+            items={item.children ?? []}
+            pathname={pathname}
+            variant="desktop"
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function NavLinks({
+  items,
+  pathname,
+  variant,
+  depth = 0,
+}: {
+  items: WorkspaceNavItem[];
+  pathname: string;
+  variant: "desktop" | "mobile";
+  depth?: number;
+}) {
+  if (variant === "mobile") {
+    const flat = flattenWorkspaceNavItems(items);
+    return flat.map((item) => (
+      <NavLink key={item.href} pathname={pathname} variant="mobile" {...item} />
+    ));
+  }
+
+  return items.map((item) => {
+    if (item.children?.length) {
+      return (
+        <NavGroup key={item.href} depth={depth} item={item} pathname={pathname} />
+      );
+    }
+
+    return (
+      <NavLink
+        key={item.href}
+        nested={depth > 0}
+        nestedDeep={depth > 1}
+        pathname={pathname}
+        variant="desktop"
+        {...item}
+      />
     );
   });
 }
@@ -167,6 +269,13 @@ export function SaasShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const isQuotationPrint =
+    /^\/app\/leads\/quotations\/[^/]+\/print\/?$/.test(pathname);
+
+  if (isQuotationPrint) {
+    return <div className="quotation-print-standalone">{children}</div>;
+  }
+
   const resolvedAppearance =
     appearance ??
     mergeWorkspaceAppearance(null, user.organizationName, undefined, Date.now());
@@ -180,13 +289,15 @@ export function SaasShell({
     user,
     organizationSlug: user.organizationSlug,
   });
-  const mainSections = sections.filter((section) => section.id !== "settings");
+  const mainSections = sections.filter(
+    (section) => section.id !== "settings" && section.id !== "reports",
+  );
   const settingsSection = sections.find((section) => section.id === "settings");
   const settingsItems = settingsSection
     ? visibleWorkspaceNavItems(user, settingsSection.items)
     : [];
-  const mobileNavItems = sections.flatMap((section) =>
-    visibleWorkspaceNavItems(user, section.items),
+  const mobileNavItems = flattenWorkspaceNavItems(
+    sections.flatMap((section) => visibleWorkspaceNavItems(user, section.items)),
   );
 
   const productName = resolvedAppearance.productName;
@@ -249,7 +360,9 @@ export function SaasShell({
             }
             return (
               <div key={section.id}>
-                <p className="saas-nav-section">{section.label}</p>
+                {section.label ? (
+                  <p className="saas-nav-section">{section.label}</p>
+                ) : null}
                 <NavLinks items={items} pathname={pathname} variant="desktop" />
               </div>
             );

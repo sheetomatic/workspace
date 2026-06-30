@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import type { ImsActionState } from "@/app/app/ims/actions";
 import type {
   FormLayout,
@@ -227,7 +227,7 @@ export function ImsDynamicForm({
   submitLabel,
   categoryOptions = [],
 }: DynamicFormProps) {
-  const [state, formAction] = useFormState(action, initial);
+  const [state, formAction] = useActionState(action, initial);
   const isEdit = Boolean(recordId);
 
   return (

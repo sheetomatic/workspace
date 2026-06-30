@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PageHeader } from "@/components/saas/page-header";
+import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { ImsTeamAccessPanel } from "@/components/ims/ims-team-access-panel";
 import { requireSession } from "@/lib/require-session";
 import { countManagersMissingIms, getImsDashboardStats } from "@/lib/ims/ims-store";
@@ -20,10 +20,10 @@ export default async function ImsDashboardPage() {
   ]);
 
   return (
-    <div className="saas-page ws-ims-page">
-      <PageHeader
-        title="Inventory (IMS)"
-        description="Raw material and finished goods - stock levels, movements, and optional QC on receipt."
+    <div className="ws-ims-page">
+      <TaskPageToolbar
+        title="Inventory"
+        description="Raw material and finished goods — stock levels, movements, and QC on receipt."
       />
 
       {hasMinimumRole(user.role, "ADMIN") ? (

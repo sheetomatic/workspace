@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Fragment, useMemo, useState } from "react";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import {
   ImsVendorForm,
   type ImsVendorFormData,
@@ -31,8 +31,8 @@ function ImsVendorRowActions({
   isFirst: boolean;
   isLast: boolean;
 }) {
-  const [moveState, moveAction] = useFormState(moveImsVendorAction, initialState);
-  const [deleteState, deleteAction] = useFormState(
+  const [moveState, moveAction] = useActionState(moveImsVendorAction, initialState);
+  const [deleteState, deleteAction] = useActionState(
     deleteImsVendorAction,
     initialState,
   );

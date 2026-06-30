@@ -1,5 +1,6 @@
 import type { InboundLeadStatus } from "@prisma/client";
-import { formatInr, leadCategoryLabel } from "@/lib/leads/categories";
+import { formatInr, leadCategoryLabel, resolveLeadCategoryId } from "@/lib/leads/categories";
+import { OPEN_LEAD_STATUSES } from "@/lib/leads/status-labels";
 
 type LeadValueRow = {
   status: InboundLeadStatus;
@@ -20,17 +21,7 @@ export function resolveLeadMonetaryValue(lead: LeadValueRow) {
 }
 
 export function computePipeMetrics(leads: LeadValueRow[]) {
-  const openStatuses: InboundLeadStatus[] = [
-    "NEW",
-    "SCHEDULE_MEETING",
-    "MEETING_NOTES",
-    "CONTACTED",
-    "FOLLOW_UP",
-    "QUALIFIED",
-    "PROPOSAL_INVOICE",
-    "PAYMENT",
-    "PROJECT_ACTIVE",
-  ];
+  const openStatuses: InboundLeadStatus[] = OPEN_LEAD_STATUSES;
 
   let pipeCount = 0;
   let pipeValue = 0;
@@ -45,7 +36,7 @@ export function computePipeMetrics(leads: LeadValueRow[]) {
 
   for (const lead of leads) {
     const value = resolveLeadMonetaryValue(lead);
-    const categoryKey = lead.category ?? "GENERAL";
+    const categoryKey = resolveLeadCategoryId(lead.category);
     const bucket = byCategory.get(categoryKey) ?? {
       count: 0,
       value: 0,

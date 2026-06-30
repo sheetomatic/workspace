@@ -9,13 +9,18 @@ describe("inferLeadStageFromRequirement", () => {
   });
 
   it("suggests proposal for quotation requests", () => {
-    expect(inferLeadStageFromRequirement("Please send quotation for chatbot")).toBe(
-      "PROPOSAL_INVOICE",
+    expect(inferLeadStageFromRequirement("Please send quotation for chatbot")).toBe("PROPOSAL");
+  });
+
+  it("suggests invoice for tax invoice requests", () => {
+    expect(inferLeadStageFromRequirement("Please send tax invoice for the project")).toBe(
+      "INVOICE",
     );
   });
 
   it("maps sheet next step labels", () => {
-    expect(mapSheetStageToStatus("Make Proposal | Invoice")).toBe("PROPOSAL_INVOICE");
+    expect(mapSheetStageToStatus("Make Proposal | Invoice")).toBe("PROPOSAL");
+    expect(mapSheetStageToStatus("Invoice")).toBe("INVOICE");
     expect(mapSheetStageToStatus("Schedule Meeting")).toBe("SCHEDULE_MEETING");
   });
 });

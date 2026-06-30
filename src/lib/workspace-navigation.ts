@@ -5,18 +5,20 @@ import {
   Briefcase,
   CheckSquare,
   ClipboardCheck,
+  ClipboardList,
   GitBranch,
-  ListTodo,
+  LayoutDashboard,
+  ListChecks,
   MapPin,
   Megaphone,
   Package,
+  PlusCircle,
   Presentation,
   Settings,
-  Settings2,
   Users,
+  Wrench,
 } from "lucide-react";
 import type { SessionUser } from "@/lib/auth";
-import { PMS_SURFACE_HIDDEN } from "@/lib/pms-surface";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
 
 export type WorkspaceNavItem = {
@@ -28,6 +30,7 @@ export type WorkspaceNavItem = {
   allowDepartmentHead?: boolean;
   matchPrefix?: string;
   addon?: boolean;
+  children?: WorkspaceNavItem[];
 };
 
 export type WorkspaceNavSection = {
@@ -38,7 +41,66 @@ export type WorkspaceNavSection = {
 
 const ROLE_ORDER = ["VIEWER", "STAFF", "MANAGER", "ADMIN", "OWNER"] as const;
 
-const BCI_CORE_ITEMS: WorkspaceNavItem[] = [
+const CHECK_LIST_CHILD_ITEMS: WorkspaceNavItem[] = [
+  {
+    href: "/app/checklists/accounts",
+    label: "Accounts Check List",
+    icon: ClipboardCheck,
+    module: "TASKS",
+    matchPrefix: "/app/checklists/accounts",
+  },
+  {
+    href: "/app/checklists/hr",
+    label: "HR Check List",
+    icon: Users,
+    module: "TASKS",
+    matchPrefix: "/app/checklists/hr",
+  },
+  {
+    href: "/app/checklists/maintenance",
+    label: "Maintenance Check List (Machine)",
+    icon: Wrench,
+    module: "TASKS",
+    matchPrefix: "/app/checklists/maintenance",
+  },
+];
+
+const PC_CHILD_ITEMS: WorkspaceNavItem[] = [
+  {
+    href: "/app/pc/today",
+    label: "Today",
+    icon: ClipboardCheck,
+    module: "TASKS",
+    matchPrefix: "/app/pc/today",
+  },
+  {
+    href: "/app/pc/all",
+    label: "All",
+    icon: ListChecks,
+    module: "TASKS",
+    minRole: "MANAGER",
+    matchPrefix: "/app/pc/all",
+  },
+];
+
+const EA_CHILD_ITEMS: WorkspaceNavItem[] = [
+  {
+    href: "/app/tasks/today",
+    label: "Today",
+    icon: ClipboardList,
+    module: "TASKS",
+    matchPrefix: "/app/tasks/today",
+  },
+  {
+    href: "/app/tasks/all",
+    label: "All",
+    icon: ListChecks,
+    module: "TASKS",
+    matchPrefix: "/app/tasks/all",
+  },
+];
+
+const BCI_ITEMS: WorkspaceNavItem[] = [
   {
     href: "/app/fms",
     label: "FMS",
@@ -47,53 +109,35 @@ const BCI_CORE_ITEMS: WorkspaceNavItem[] = [
     matchPrefix: "/app/fms",
   },
   {
-    href: "/app/fms/setup",
-    label: "Setup",
-    icon: Settings2,
-    module: "FMS",
-    minRole: "MANAGER",
-  },
-  {
-    href: "/app/leads",
-    label: "Leads",
-    icon: Megaphone,
-    module: "FMS",
-    matchPrefix: "/app/leads",
-  },
-];
-
-const ADDON_ITEMS: WorkspaceNavItem[] = [
-  {
-    href: "/app/today",
-    label: "Today",
-    icon: ListTodo,
-    module: "TASKS",
-    matchPrefix: "/app/today",
-    addon: true,
-  },
-  {
     href: "/app/ims",
     label: "IMS",
     icon: Package,
     module: "IMS",
     matchPrefix: "/app/ims",
-    addon: true,
   },
   {
-    href: "/app/checklists/scores",
-    label: "PMS",
-    icon: ClipboardCheck,
-    module: "TASKS",
-    matchPrefix: "/app/checklists/scores",
-    addon: true,
-  },
-  {
-    href: "/app/checklists/my-tasks",
+    href: "/app/checklists",
     label: "Check List",
     icon: CheckSquare,
     module: "TASKS",
     matchPrefix: "/app/checklists",
-    addon: true,
+    children: CHECK_LIST_CHILD_ITEMS,
+  },
+  {
+    href: "/app/tasks/today",
+    label: "EA",
+    icon: ClipboardList,
+    module: "TASKS",
+    matchPrefix: "/app/tasks/today",
+    children: EA_CHILD_ITEMS,
+  },
+  {
+    href: "/app/pc/today",
+    label: "PC",
+    icon: ListChecks,
+    module: "TASKS",
+    matchPrefix: "/app/pc",
+    children: PC_CHILD_ITEMS,
   },
   {
     href: "/app/em",
@@ -102,24 +146,54 @@ const ADDON_ITEMS: WorkspaceNavItem[] = [
     module: "REPORTS",
     minRole: "MANAGER",
     matchPrefix: "/app/em",
-    addon: true,
+  },
+];
+
+const TASK_DELEGATION_ITEMS: WorkspaceNavItem[] = [
+  {
+    href: "/app/tasks",
+    label: "Tasks Management",
+    icon: LayoutDashboard,
+    module: "TASKS",
+    matchPrefix: "/app/tasks",
+  },
+  {
+    href: "/app/tasks/create",
+    label: "Add task",
+    icon: PlusCircle,
+    module: "TASKS",
+    minRole: "MANAGER",
+    matchPrefix: "/app/tasks/create",
+  },
+  {
+    href: "/app/tasks/scores",
+    label: "Reports",
+    icon: BarChart3,
+    module: "TASKS",
+    minRole: "MANAGER",
+    matchPrefix: "/app/tasks/scores",
+  },
+];
+
+const MODULE_ITEMS: WorkspaceNavItem[] = [
+  {
+    href: "/app/leads",
+    label: "Leads",
+    icon: Megaphone,
+    matchPrefix: "/app/leads",
   },
   {
     href: "/app/hr",
     label: "HR",
     icon: MapPin,
-    module: "HR",
     matchPrefix: "/app/hr",
-    addon: true,
   },
   {
     href: "/app/approvals",
     label: "Approvals",
     icon: ClipboardCheck,
-    module: "APPROVALS",
     minRole: "MANAGER",
     matchPrefix: "/app/approvals",
-    addon: true,
   },
 ];
 
@@ -137,12 +211,34 @@ export function canAccessWorkspaceNav(user: SessionUser, item: WorkspaceNavItem)
   return hasWorkspaceModule(user, item.module);
 }
 
+function filterNavItem(user: SessionUser, item: WorkspaceNavItem): WorkspaceNavItem | null {
+  if (!canAccessWorkspaceNav(user, item)) {
+    return null;
+  }
+
+  if (item.children?.length) {
+    const children = item.children
+      .map((child) => filterNavItem(user, child))
+      .filter((child): child is WorkspaceNavItem => child !== null);
+    return { ...item, children };
+  }
+
+  return item;
+}
+
 export function visibleWorkspaceNavItems(user: SessionUser, items: WorkspaceNavItem[]) {
-  return items.filter((item) => {
-    if (PMS_SURFACE_HIDDEN && item.href === "/app/checklists/scores") {
-      return false;
+  return items
+    .map((item) => filterNavItem(user, item))
+    .filter((item): item is WorkspaceNavItem => item !== null);
+}
+
+/** Flat list for mobile bottom nav — expands nested groups to leaf links. */
+export function flattenWorkspaceNavItems(items: WorkspaceNavItem[]): WorkspaceNavItem[] {
+  return items.flatMap((item) => {
+    if (item.children?.length) {
+      return flattenWorkspaceNavItems(item.children);
     }
-    return canAccessWorkspaceNav(user, item);
+    return [item];
   });
 }
 
@@ -157,12 +253,17 @@ export function getWorkspaceNavSections(params: {
     {
       id: "bci",
       label: "BCI",
-      items: BCI_CORE_ITEMS,
+      items: BCI_ITEMS,
     },
     {
-      id: "addons",
-      label: "Add-ons",
-      items: ADDON_ITEMS,
+      id: "task-delegation",
+      label: "Task Delegation",
+      items: TASK_DELEGATION_ITEMS,
+    },
+    {
+      id: "modules",
+      label: "Modules",
+      items: MODULE_ITEMS,
     },
   ];
 
@@ -224,9 +325,31 @@ export function navIsActive(pathname: string, href: string, matchPrefix?: string
   if (base === "/app") {
     return pathname === "/app";
   }
+  if (base === "/app/tasks" && pathname.startsWith("/app/tasks/")) {
+    return false;
+  }
+  if (
+    href === "/app/tasks" &&
+    base === "/app/tasks" &&
+    (pathname === "/app/tasks/today" || pathname === "/app/tasks/all")
+  ) {
+    return false;
+  }
+  if (href === "/app/pc/today" && (matchPrefix ?? href) === "/app/pc") {
+    return pathname === "/app/pc/today";
+  }
+  if (href === "/app/checklists" && base === "/app/checklists") {
+    return pathname === "/app/checklists";
+  }
   if (
     base === "/app/checklists" &&
     pathname.startsWith("/app/checklists/scores")
+  ) {
+    return false;
+  }
+  if (
+    base === "/app/checklists" &&
+    pathname.startsWith("/app/checklists/my-tasks")
   ) {
     return false;
   }
@@ -234,4 +357,18 @@ export function navIsActive(pathname: string, href: string, matchPrefix?: string
     return false;
   }
   return pathname === base || pathname.startsWith(`${base}/`);
+}
+
+export function navGroupHasActiveChild(
+  pathname: string,
+  item: WorkspaceNavItem,
+): boolean {
+  if (!item.children?.length) {
+    return false;
+  }
+  return item.children.some(
+    (child) =>
+      navIsActive(pathname, child.href, child.matchPrefix) ||
+      navGroupHasActiveChild(pathname, child),
+  );
 }

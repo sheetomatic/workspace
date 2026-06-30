@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import type { ImsItem } from "@prisma/client";
 import {
   recordReceiptAction,
@@ -49,7 +49,7 @@ export function ImsReceiptForm({
   items: ItemOption[];
   vendorNames?: string[];
 }) {
-  const [state, action] = useFormState(recordReceiptAction, initial);
+  const [state, action] = useActionState(recordReceiptAction, initial);
   const formRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 

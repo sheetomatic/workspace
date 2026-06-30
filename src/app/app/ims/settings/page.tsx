@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/saas/page-header";
+import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { ImsFormSettingsTabs } from "@/components/ims/ims-form-settings-tabs";
 import type {
   CustomFieldRowData,
@@ -57,8 +57,8 @@ export default async function ImsFormSettingsPage() {
   ]);
 
   return (
-    <div className="saas-page ws-ims-page">
-      <PageHeader
+    <div className="ws-ims-page">
+      <TaskPageToolbar
         title="Form settings"
         description="Customise the item and vendor forms: rename, hide, or reorder built-in fields, and add your own custom fields."
       />

@@ -23,7 +23,7 @@ export default async function TasksScoresPage({ searchParams }: PageProps) {
   const user = await requireSession(undefined, { module: "TASKS" });
 
   if (!canCreateTasks(user.role)) {
-    redirect("/app/tasks/my-work");
+    redirect("/app/tasks/today");
   }
 
   const params = await searchParams;

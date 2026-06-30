@@ -1,11 +1,14 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { formatInr } from "@/lib/leads/categories";
+import { formatInrInWords } from "@/lib/inr-words";
 import {
   DEFAULT_QUOTATION_TERMS,
   QUOTATION_FOOTER_CONTACT,
   formatQuotationTermsBlock,
 } from "@/lib/leads/quotation-content";
+import { siteBrand } from "@/app/site-content";
 
 type QuotationLine = {
   serviceCategory: string;
@@ -20,7 +23,6 @@ export function QuotationPrintView({
   logoUrl,
   quotation,
   toolbar,
-  formatInr,
   embed = false,
 }: {
   organizationName: string;
@@ -56,7 +58,6 @@ export function QuotationPrintView({
     };
   };
   toolbar?: ReactNode;
-  formatInr: (value: number) => string;
   embed?: boolean;
 }) {
   const clientName = quotation.lead.name || "Client";
@@ -70,6 +71,7 @@ export function QuotationPrintView({
     quotation.revisionNumber && quotation.revisionNumber > 1
       ? ` · Revision ${quotation.revisionNumber}`
       : "";
+  const brandLogoSrc = logoUrl ?? siteBrand.logoSrc;
 
   return (
     <div className={`quotation-print-page${embed ? " quotation-print-embed" : ""}`}>
@@ -82,14 +84,13 @@ export function QuotationPrintView({
         ) : null}
 
         <header className="quotation-print-header">
-          <div>
-            {logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt={organizationName} className="quotation-print-logo" />
-            ) : (
-              <h1>{organizationName}</h1>
-            )}
-            <p>Professional automation · Google Sheets · WhatsApp API · AppSheet</p>
+          <div className="quotation-print-brand">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={brandLogoSrc}
+              alt={organizationName}
+              className="quotation-print-logo"
+            />
           </div>
           <div className="quotation-print-meta">
             <h2>{quotation.requestType === "INVOICE" ? "Tax Invoice" : "Quotation / Proposal"}</h2>
@@ -158,6 +159,11 @@ export function QuotationPrintView({
                 <strong>{formatInr(quotation.totalAmount)}</strong>
               </td>
             </tr>
+            <tr className="quotation-print-total-words">
+              <td colSpan={6}>
+                <strong>Amount in words:</strong> {formatInrInWords(quotation.totalAmount)}
+              </td>
+            </tr>
           </tfoot>
         </table>
 
@@ -216,7 +222,11 @@ export function QuotationPrintView({
             display: none !important;
           }
           body {
-            background: #fff;
+            background: #fff !important;
+          }
+          .quotation-print-standalone {
+            background: #fff !important;
+            padding: 0 !important;
           }
         }
         .quotation-print-page {
@@ -261,16 +271,29 @@ export function QuotationPrintView({
         .quotation-print-header {
           display: flex;
           justify-content: space-between;
-          gap: 1rem;
+          align-items: flex-start;
+          gap: 1.5rem;
           border-bottom: 2px solid #0f172a;
           padding-bottom: 1rem;
           margin-bottom: 1.25rem;
         }
+        .quotation-print-brand {
+          display: flex;
+          align-items: center;
+          min-width: 0;
+          flex: 1 1 auto;
+        }
         .quotation-print-logo {
-          max-height: 48px;
+          display: block;
+          height: 40px;
+          width: auto;
+          max-width: min(260px, 100%);
+          object-fit: contain;
+          object-position: left center;
         }
         .quotation-print-meta {
           text-align: right;
+          flex: 0 0 auto;
         }
         .quotation-print-client,
         .quotation-print-scope,
@@ -305,6 +328,11 @@ export function QuotationPrintView({
         .quotation-print-table th {
           background: #0f766e;
           color: #fff;
+        }
+        .quotation-print-total-words td {
+          font-size: 0.86rem;
+          color: #334155;
+          background: #f8fafc;
         }
         .quotation-print-footer {
           margin-top: 2rem;

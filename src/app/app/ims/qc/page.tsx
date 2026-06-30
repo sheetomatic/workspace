@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/saas/page-header";
+import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { ImsQcResolveForm } from "@/components/ims/ims-qc-resolve-form";
 import { requireSession } from "@/lib/require-session";
 import { listPendingQc, listQcHistory } from "@/lib/ims/ims-store";
@@ -12,8 +12,8 @@ export default async function ImsQcPage() {
   ]);
 
   return (
-    <div className="saas-page ws-ims-page">
-      <PageHeader
+    <div className="ws-ims-page">
+      <TaskPageToolbar
         title="QC queue"
         description="Inspect receipts held in QC pending. Pass moves quantity to usable stock; fail removes it from inventory."
       />

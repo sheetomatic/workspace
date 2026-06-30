@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { getFmsOpsPage } from "@/lib/fms/queries";
+import { isTaskDueToday } from "@/lib/task-due-urgency";
 import { ACTIVE_TASK_STATUSES } from "@/lib/tasks";
 
 export type PcWorkKind = "CHECKLIST" | "EA_TASK" | "FMS_STEP";
@@ -23,6 +24,13 @@ export type PcWorkItem = {
 
 function ownerLabel(name: string | null, email: string) {
   return name ?? email.split("@")[0];
+}
+
+function checklistTeamHref(team: string) {
+  if (team === "ACCOUNTS") return "/app/checklists/accounts";
+  if (team === "HR") return "/app/checklists/hr";
+  if (team === "MAINTENANCE") return "/app/checklists/maintenance";
+  return "/app/checklists/accounts";
 }
 
 function formatDue(value: Date) {
@@ -90,7 +98,7 @@ export async function listMyEaPcWork(organizationId: string, assigneeUserId: str
     dueAt: task.dueAt,
     status: task.status.replaceAll("_", " "),
     overdue: task.dueAt.getTime() < now,
-    href: "/app/tasks/my-work",
+    href: "/app/tasks/today",
     completable: false,
   }));
 }
@@ -151,6 +159,65 @@ export async function listMyPcWork(organizationId: string, assigneeUserId: strin
   ]);
 
   return { checklists, eaTasks, fmsSteps };
+}
+
+function isPcFollowupDueToday(item: PcWorkItem) {
+  if (item.overdue) {
+    return true;
+  }
+  if (!item.dueAt) {
+    return false;
+  }
+  return isTaskDueToday(item.dueAt);
+}
+
+/** PC portal — EA tasks and FMS stops only (checklists live under Check List module). */
+export async function listMyPcFollowups(
+  organizationId: string,
+  assigneeUserId: string,
+  scope: "today" | "all" = "all",
+) {
+  const [eaTasks, fmsSteps] = await Promise.all([
+    listMyEaPcWork(organizationId, assigneeUserId).catch((error) => {
+      console.error("[pc-work] EA load failed", error);
+      return [];
+    }),
+    listMyFmsPcWork(organizationId, assigneeUserId).catch((error) => {
+      console.error("[pc-work] FMS load failed", error);
+      return [];
+    }),
+  ]);
+
+  if (scope === "all") {
+    return { eaTasks, fmsSteps };
+  }
+
+  return {
+    eaTasks: eaTasks.filter(isPcFollowupDueToday),
+    fmsSteps: fmsSteps.filter(isPcFollowupDueToday),
+  };
+}
+
+export async function listOrgPcFollowupsMonitor(organizationId: string) {
+  const [eaTasks, fmsSteps] = await Promise.all([
+    listOrgEaPcMonitor(organizationId),
+    listOrgFmsPcMonitor(organizationId),
+  ]);
+
+  return { eaTasks, fmsSteps, total: eaTasks.length + fmsSteps.length };
+}
+
+export function filterPcFollowupsByScope(
+  items: { eaTasks: PcWorkItem[]; fmsSteps: PcWorkItem[] },
+  scope: "today" | "all",
+) {
+  if (scope === "all") {
+    return items;
+  }
+  return {
+    eaTasks: items.eaTasks.filter(isPcFollowupDueToday),
+    fmsSteps: items.fmsSteps.filter(isPcFollowupDueToday),
+  };
 }
 
 export async function listOrgEaPcMonitor(organizationId: string) {
@@ -267,7 +334,7 @@ export async function listOrgPcMonitor(organizationId: string) {
     dueLabel: formatDue(run.plannedAt),
     status: run.status,
     overdue: run.status === "OVERDUE",
-    href: "/app/checklists/my-tasks",
+    href: checklistTeamHref(run.template.team),
     completable: true,
   }));
 

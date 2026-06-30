@@ -19,6 +19,9 @@ import { isLeadSourceComingSoon } from "@/lib/leads/channels";
 import {
   categorizeLeadRequirement,
   defaultPipeValueForCategory,
+  isLeadCategoryId,
+  migrateLegacyLeadCategory,
+  resolveLeadCategoryId,
 } from "@/lib/leads/categories";
 import { bridgeInboundLeadToFms } from "@/lib/leads/fms-bridge";
 import { testLeadsGoogleSheetAccess } from "@/lib/leads/google-sheets";
@@ -96,6 +99,45 @@ export async function updateInboundLeadStatus(leadId: string, status: InboundLea
   return { ok: true };
 }
 
+export async function updateInboundLeadCategory(leadId: string, category: string) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  if (!isLeadCategoryId(category)) {
+    return { ok: false, message: "Invalid category." };
+  }
+
+  const existing = await prisma.inboundLead.findFirst({
+    where: { id: leadId, organizationId: user.organizationId },
+    select: { category: true },
+  });
+  if (!existing) {
+    return { ok: false, message: "Lead not found." };
+  }
+
+  if (existing.category === category) {
+    return { ok: true };
+  }
+
+  await prisma.inboundLead.updateMany({
+    where: { id: leadId, organizationId: user.organizationId },
+    data: { category },
+  });
+
+  await logInboundLeadActivity({
+    organizationId: user.organizationId,
+    leadId,
+    type: "EDIT",
+    body: `Category set to ${category.replaceAll("_", " ")}`,
+    createdByUserId: user.id,
+  });
+
+  revalidatePath("/app/leads");
+  return { ok: true };
+}
+
 export async function updateInboundLeadDetails(params: {
   leadId: string;
   name: string;
@@ -105,13 +147,29 @@ export async function updateInboundLeadDetails(params: {
   discussionNotes: string;
   quotationValue: string;
   pipeValue: string;
+  category?: string;
 }) {
   const user = await requireSession(undefined, { module: "FMS" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
 
-  const category = categorizeLeadRequirement(params.requirement);
+  const existing = await prisma.inboundLead.findFirst({
+    where: { id: params.leadId, organizationId: user.organizationId },
+    select: { requirement: true, category: true },
+  });
+  if (!existing) {
+    return { ok: false, message: "Lead not found." };
+  }
+
+  const requirementTrimmed = params.requirement.trim() || null;
+  const requirementChanged = requirementTrimmed !== (existing.requirement ?? null);
+  const category =
+    params.category && isLeadCategoryId(params.category)
+      ? params.category
+      : requirementChanged
+        ? categorizeLeadRequirement(requirementTrimmed)
+        : resolveLeadCategoryId(existing.category);
   const quotation = Number.parseFloat(params.quotationValue);
   const pipe = Number.parseFloat(params.pipeValue);
 
@@ -735,6 +793,7 @@ export async function createLeadQuotation(params: {
   address?: string;
   zipCode?: string;
   lineCatalogIds: string[];
+  lineItems?: Array<{ catalogId: string; unitPrice: string; quantity?: string }>;
 }) {
   const user = await requireSession(undefined, { module: "FMS" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
@@ -750,9 +809,11 @@ export async function createLeadQuotation(params: {
   }
 
   const catalogIds =
-    params.lineCatalogIds.length > 0
-      ? params.lineCatalogIds
-      : (lead.offeredServices.map((item) => item.catalogId).filter(Boolean) as string[]);
+    params.lineItems && params.lineItems.length > 0
+      ? params.lineItems.map((item) => item.catalogId)
+      : params.lineCatalogIds.length > 0
+        ? params.lineCatalogIds
+        : (lead.offeredServices.map((item) => item.catalogId).filter(Boolean) as string[]);
 
   const catalog = await prisma.leadServiceCatalog.findMany({
     where: { organizationId: user.organizationId, id: { in: catalogIds } },
@@ -761,16 +822,40 @@ export async function createLeadQuotation(params: {
     return { ok: false, message: "Add at least one offered service first." };
   }
 
-  const lines = catalog.map((item) => {
-    const price = item.unitPrice ? Number(item.unitPrice) : 0;
-    return {
-      serviceCategory: item.serviceCategory,
-      subCategory: item.subCategory,
-      quantity: 1,
-      unitPrice: price,
-      lineTotal: price,
-    };
+  const catalogById = new Map(catalog.map((item) => [item.id, item]));
+  const lineInputs =
+    params.lineItems && params.lineItems.length > 0
+      ? params.lineItems
+      : catalogIds.map((catalogId) => ({ catalogId, unitPrice: "0", quantity: "1" }));
+
+  const lines = lineInputs.flatMap((input) => {
+    const item = catalogById.get(input.catalogId);
+    if (!item) {
+      return [];
+    }
+    const unitPrice = Number.parseFloat(input.unitPrice);
+    const quantity = Number.parseInt(input.quantity ?? "1", 10);
+    const price = Number.isFinite(unitPrice) ? unitPrice : 0;
+    const qty = Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
+    return [
+      {
+        serviceCategory: item.serviceCategory,
+        subCategory: item.subCategory,
+        quantity: qty,
+        unitPrice: price,
+        lineTotal: price * qty,
+      },
+    ];
   });
+
+  if (lines.length === 0) {
+    return { ok: false, message: "Add at least one valid line item." };
+  }
+
+  const hasPricedLine = lines.some((line) => line.lineTotal > 0);
+  if (!hasPricedLine) {
+    return { ok: false, message: "Enter an amount for at least one line item." };
+  }
 
   const totals = computeQuotationTotals(lines);
   const quotationNumber = await nextQuotationNumber(user.organizationId);
@@ -813,7 +898,7 @@ export async function createLeadQuotation(params: {
   await prisma.inboundLead.updateMany({
     where: { id: lead.id, organizationId: user.organizationId },
     data: {
-      status: "PROPOSAL_INVOICE",
+      status: params.requestType === "INVOICE" ? "INVOICE" : "PROPOSAL",
       quotationValue: totals.totalAmount,
     },
   });
@@ -1062,4 +1147,27 @@ export async function sendLeadQuotationEmail(quotationId: string) {
 
   revalidatePath("/app/leads");
   return { ok: true, publicUrl };
+}
+
+export async function deleteLeadQuotation(quotationId: string) {
+  const user = await requireSession("MANAGER", { module: "FMS" });
+
+  const quotation = await prisma.inboundLeadQuotation.findFirst({
+    where: { id: quotationId, organizationId: user.organizationId },
+    select: { id: true, lockedAt: true, status: true },
+  });
+
+  if (!quotation) {
+    return { ok: false, message: "Quotation not found." };
+  }
+  if (quotation.lockedAt || quotation.status === "LOCKED") {
+    return { ok: false, message: "Locked quotations cannot be deleted." };
+  }
+
+  await prisma.inboundLeadQuotation.delete({
+    where: { id: quotationId },
+  });
+
+  revalidatePath("/app/leads");
+  return { ok: true };
 }

@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/saas/page-header";
+import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { ImsVendorForm } from "@/components/ims/ims-vendor-form";
 import { ImsVendorsManager } from "@/components/ims/ims-vendors-manager";
 import { ImsVendorImport } from "@/components/ims/ims-vendor-import";
@@ -41,8 +41,8 @@ export default async function ImsVendorsPage() {
   const canManage = hasMinimumRole(user.role, "MANAGER");
 
   return (
-    <div className="saas-page ws-ims-page">
-      <PageHeader
+    <div className="ws-ims-page">
+      <TaskPageToolbar
         title="Vendor master"
         description="Define suppliers with contact, GSTIN, payment terms, and lead times."
       />

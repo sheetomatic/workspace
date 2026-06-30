@@ -5,7 +5,9 @@ import { LeadsPeriodToolbar } from "@/components/saas/leads-period-toolbar";
 import { LeadsPipelineCards } from "@/components/saas/leads-pipeline-cards";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import "@/components/saas/leads-machine.css";
-import { categorizeLeadRequirement } from "@/lib/leads/categories";
+import type { InboundLeadStatus } from "@prisma/client";
+import { categorizeLeadRequirement, migrateLegacyLeadCategory, type LeadCategoryId } from "@/lib/leads/categories";
+import { migrateLegacyLeadStatus } from "@/lib/leads/status-labels";
 import { maybeAutoSyncGoogleSheets, LEADS_SYNC_INTERVAL_LABEL } from "@/lib/leads/auto-sync";
 import { ensureLeadConnections } from "@/lib/leads/ingest";
 import { parseLeadsListParams } from "@/lib/leads/list-params";
@@ -84,7 +86,18 @@ function serializeLead(lead: Awaited<ReturnType<typeof listInboundLeadsForPeriod
       status: item.status,
       revisionNumber: item.revisionNumber,
       totalAmount: item.totalAmount.toString(),
+      subtotal: item.subtotal.toString(),
       quotationDate: item.quotationDate.toISOString(),
+      projectStartDate: item.projectStartDate?.toISOString() ?? null,
+      endDate: item.endDate?.toISOString() ?? null,
+      durationDays: item.durationDays,
+      company: item.company,
+      address: item.address,
+      zipCode: item.zipCode,
+      scopeNotes: item.scopeNotes,
+      paymentTerms: item.paymentTerms,
+      advanceRequired: item.advanceRequired?.toString() ?? null,
+      notes: item.notes,
       sentAt: item.sentAt?.toISOString() ?? null,
       lockedAt: item.lockedAt?.toISOString() ?? null,
       shareToken: item.shareToken,
@@ -119,22 +132,41 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
   await ensureLeadConnections(user.organizationId);
 
   try {
-    const uncategorized = await prisma.inboundLead.findMany({
-      where: { organizationId: user.organizationId, category: null },
-      select: { id: true, requirement: true },
-      take: 100,
+    const leadsToNormalize = await prisma.inboundLead.findMany({
+      where: { organizationId: user.organizationId },
+      select: { id: true, requirement: true, category: true, status: true },
+      take: 250,
     });
-    if (uncategorized.length > 0) {
+    const patchById = new Map<
+      string,
+      { category?: LeadCategoryId; status?: InboundLeadStatus }
+    >();
+    for (const lead of leadsToNormalize) {
+      const patch = patchById.get(lead.id) ?? {};
+      if (!lead.category) {
+        patch.category = categorizeLeadRequirement(lead.requirement);
+      } else {
+        const migratedCategory = migrateLegacyLeadCategory(lead.category);
+        if (migratedCategory && migratedCategory !== lead.category) {
+          patch.category = migratedCategory;
+        }
+      }
+      const migratedStatus = migrateLegacyLeadStatus(lead.status);
+      if (migratedStatus && migratedStatus !== lead.status) {
+        patch.status = migratedStatus;
+      }
+      if (patch.category || patch.status) {
+        patchById.set(lead.id, patch);
+      }
+    }
+    if (patchById.size > 0) {
       await Promise.all(
-        uncategorized.map((lead) => {
-          const category = categorizeLeadRequirement(lead.requirement);
-          return prisma.inboundLead.update({
-            where: { id: lead.id },
-            data: {
-              category,
-            },
-          });
-        }),
+        Array.from(patchById.entries()).map(([id, patch]) =>
+          prisma.inboundLead.update({
+            where: { id },
+            data: patch,
+          }),
+        ),
       );
     }
   } catch (error) {
@@ -177,7 +209,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
     });
   }
 
-  const [periodStats, pipeMetrics, leadPage, teamMembers, sheetsConnection, workspaceTotal, serviceCatalog] =
+  const [periodStats, pipeMetrics, leadPage, teamMembers, sheetsConnection, workspaceTotal, serviceCatalog, organization] =
     await Promise.all([
       getLeadsMachineStatsForPeriod(user.organizationId, period),
       getLeadsPipeMetricsForPeriod(user.organizationId, period),
@@ -186,6 +218,10 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
       getGoogleSheetsLeadConnection(user.organizationId),
       getInboundLeadWorkspaceTotal(user.organizationId),
       listLeadServiceCatalog(user.organizationId),
+      prisma.organization.findUnique({
+        where: { id: user.organizationId },
+        select: { name: true, logoUrl: true },
+      }),
     ]);
 
   const lastSyncLabel = sheetsConnection?.lastSyncAt
@@ -234,6 +270,8 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
         canManage={canManage}
         leads={leadPage.leads.map(serializeLead)}
         listParams={params}
+        organizationLogoUrl={organization?.logoUrl ?? null}
+        organizationName={organization?.name ?? "Sheetomatic"}
         page={leadPage.page}
         period={period.type}
         periodLabel={period.periodLabel}
@@ -246,7 +284,6 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
           id: item.id,
           serviceCategory: item.serviceCategory,
           subCategory: item.subCategory,
-          unitPrice: item.unitPrice?.toString() ?? null,
         }))}
       />
     </div>

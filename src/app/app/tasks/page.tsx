@@ -2,14 +2,12 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { TaskStatus } from "@prisma/client";
-import { TaskAssigneeDashboard } from "@/components/saas/task-assignee-dashboard";
-import { TaskChartsPanel } from "@/components/saas/task-charts-panel";
 import { TaskExportBar } from "@/components/saas/task-export-bar";
 import { TaskFeedbackToast } from "@/components/saas/task-feedback-toast";
 import { TaskIntegrationBanner } from "@/components/saas/task-integration-banner";
 import { TaskFilters } from "@/components/saas/task-filters";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
-import { TaskStatsBar } from "@/components/saas/task-stats-bar";
+import { TaskTrackerDashboard } from "@/components/saas/task-tracker-dashboard";
 import { NewTaskTrigger } from "@/components/saas/tasks-action-bar";
 import { TaskPagination } from "@/components/saas/task-pagination";
 import { TaskTable } from "@/components/saas/task-table";
@@ -27,9 +25,7 @@ import {
   canCreateTasks,
   canUpdateTask,
   formatTaskDueLabel,
-  getTaskAssigneeWorkload,
-  getTaskChartData,
-  getTaskStats,
+  getTaskTrackerDashboardData,
   listAssignableMembers,
   listDelegatedTasks,
 } from "@/lib/tasks";
@@ -37,6 +33,10 @@ import {
   buildTaskVerifierIndex,
   canVerifyTask,
 } from "@/lib/task-verification";
+import {
+  formatIndianGreetingDate,
+  formatIndianGreetingTime,
+} from "@/lib/format-datetime";
 
 type TasksPageProps = {
   searchParams: Promise<{
@@ -53,7 +53,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
   const user = await requireSession(undefined, { module: "TASKS" });
 
   if (!canCreateTasks(user.role) && user.role !== "VIEWER") {
-    redirect("/app/tasks/my-work");
+    redirect("/app/tasks/today");
   }
 
   const params = await searchParams;
@@ -118,18 +118,14 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
   const showAssigneeFilter =
     hasMinimumRole(user.role, "MANAGER") || user.role === "VIEWER";
 
-  const [stats, chartData, members, assigneeWorkload, integrationStatus] =
-    await Promise.all([
-    getTaskStats(user),
-    getTaskChartData(user),
+  const [trackerData, members, integrationStatus] = await Promise.all([
+    getTaskTrackerDashboardData(user),
     canCreateTasks(user.role)
       ? listAssignableMembers(user.organizationId)
       : Promise.resolve([]),
-    showAssigneeFilter
-      ? getTaskAssigneeWorkload(user)
-      : Promise.resolve([]),
     getWorkspaceIntegrationStatus(user.organizationId),
   ]);
+  const displayName = user.name?.trim() || user.email.split("@")[0];
   const filterMembers = members.map((member) => ({
     id: member.id,
     name: member.name,
@@ -145,12 +141,15 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
   const quickFilterActive = hasQuickTaskFilter(filterParams);
   const activeFilterLabel = taskFilterLabel(filterParams);
   const listTitle = activeFilterLabel ? `${activeFilterLabel} Tasks` : "All Tasks";
+  const now = new Date();
+  const greetingDate = formatIndianGreetingDate(now);
+  const greetingTime = formatIndianGreetingTime(now);
 
   return (
     <div className="saas-page ws-tasks-page ws-tasks-sf">
       <TaskPageToolbar
-        title="Team board"
-        description="All team tasks, workload, and filters."
+        title="Tasks Management"
+        description="Task distribution, performance, and team workload."
         actions={
           <>
             {showEmReady ? (
@@ -182,18 +181,17 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
         <TaskIntegrationBanner status={integrationStatus} />
       ) : null}
 
-      <Suspense fallback={<div className="ws-sf-metrics is-loading" />}>
-        <TaskStatsBar stats={stats} />
-      </Suspense>
-
-      <Suspense fallback={null}>
-        <TaskAssigneeDashboard rows={assigneeWorkload} showTeam={showAssigneeFilter} />
-      </Suspense>
-
-      {!quickFilterActive && chartData.statusBreakdown.length > 0 ? (
-        <div className="ws-sf-chart-compact">
-          <TaskChartsPanel charts={chartData} />
-        </div>
+      {!quickFilterActive ? (
+        <Suspense fallback={<div className="ws-task-tracker is-loading" />}>
+      <TaskTrackerDashboard
+        data={trackerData}
+        greetingDate={greetingDate}
+        greetingTime={greetingTime}
+        showCreateLink={showCreate}
+        showTeam={showAssigneeFilter}
+        userName={displayName}
+      />
+        </Suspense>
       ) : null}
 
       <section className="ws-sf-list-view" id="execution-queue" aria-label="Task list">

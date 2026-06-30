@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import type { ImsItem, ImsQcInspection, ImsStoreType } from "@prisma/client";
 import { resolveQcAction, type ImsActionState } from "@/app/app/ims/actions";
 import { formatImsQty } from "@/lib/ims/stock-status";
@@ -13,7 +13,7 @@ type InspectionRow = ImsQcInspection & {
 };
 
 export function ImsQcResolveForm({ inspection }: { inspection: InspectionRow }) {
-  const [state, action] = useFormState(resolveQcAction, initial);
+  const [state, action] = useActionState(resolveQcAction, initial);
 
   return (
     <article className="ws-ims-qc-card">

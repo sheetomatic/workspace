@@ -89,7 +89,6 @@ function StepCompleteForm({
       <form
         action={formAction}
         className="ws-fms-step-panel-body"
-        encType="multipart/form-data"
       >
         <input type="hidden" name="stepStateId" value={stepState.id} />
         <input

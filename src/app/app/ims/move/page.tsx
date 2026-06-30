@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/saas/page-header";
+import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { ImsMovementForm } from "@/components/ims/ims-movement-form";
 import { ImsReceiptForm } from "@/components/ims/ims-receipt-form";
 import { ImsAdjustForm } from "@/components/ims/ims-adjust-form";
@@ -22,8 +22,8 @@ export default async function ImsMovePage() {
     .filter((value): value is string => Boolean(value));
 
   return (
-    <div className="saas-page ws-ims-page">
-      <PageHeader
+    <div className="ws-ims-page">
+      <TaskPageToolbar
         title="Stock movements"
         description="Receive raw material against a PO with invoice, issue to production, manage finished goods, and adjust stock."
       />

@@ -4,19 +4,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   CheckSquare,
-  ClipboardList,
-  Radar,
+  ClipboardCheck,
   Settings2,
-  BarChart3,
+  Users,
+  Wrench,
 } from "lucide-react";
 import type { SessionUser } from "@/lib/auth";
 import { canCreateTasks } from "@/lib/tasks";
-import { PMS_SURFACE_HIDDEN } from "@/lib/pms-surface";
 
 function navIsActive(pathname: string, href: string) {
-  if (href === "/app/checklists") {
-    return pathname === "/app/checklists";
-  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -26,42 +22,42 @@ export function ChecklistsModuleNav({ user }: { user: SessionUser }) {
 
   const items = [
     {
-      href: "/app/checklists/my-tasks",
-      label: "My PC tasks",
-      icon: ClipboardList,
+      href: "/app/checklists/accounts",
+      label: "Accounts Check List",
+      icon: ClipboardCheck,
       visible: true,
-      description: "Complete assigned work",
+      description: "GST, recon & collections",
     },
     {
-      href: "/app/checklists",
-      label: "PC monitor",
-      icon: Radar,
-      visible: isManager,
-      description: "EA, FMS, and checklist",
+      href: "/app/checklists/hr",
+      label: "HR Check List",
+      icon: Users,
+      visible: true,
+      description: "Onboarding & attendance",
     },
     {
-      href: "/app/checklists/scores",
-      label: "MIS scores",
-      icon: BarChart3,
-      visible: isManager && !PMS_SURFACE_HIDDEN,
-      description: "PC planned vs actual",
+      href: "/app/checklists/maintenance",
+      label: "Maintenance (Machine)",
+      icon: Wrench,
+      visible: true,
+      description: "Plant & PM rounds",
     },
     {
       href: "/app/checklists/setup",
       label: "Setup",
       icon: Settings2,
       visible: isManager,
-      description: "AI checklist templates",
+      description: "Templates & schedules",
     },
   ].filter((item) => item.visible);
 
   return (
-    <nav className="ws-module-subnav ws-checklists-subnav ws-pc-subnav" aria-label="PC navigation">
+    <nav className="ws-module-subnav ws-checklists-subnav" aria-label="Check List navigation">
       <div className="ws-module-subnav-brand">
         <CheckSquare size={18} aria-hidden />
         <div>
-          <strong>PC</strong>
-          <span>AI process checklist</span>
+          <strong>Check List</strong>
+          <span>Department SOP checklists</span>
         </div>
       </div>
       <ul className="ws-module-subnav-list">

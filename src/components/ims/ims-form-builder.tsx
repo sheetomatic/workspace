@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import {
   deleteImsCustomFieldAction,
   moveImsCustomFieldAction,
@@ -66,7 +66,7 @@ function BuiltinFieldsEditor({
   builtins: ReturnType<typeof getBuiltinFields>;
   fieldSettings: FieldSettingRow[];
 }) {
-  const [state, action] = useFormState(saveImsFieldSettingsAction, initialState);
+  const [state, action] = useActionState(saveImsFieldSettingsAction, initialState);
 
   const settingMap = new Map(fieldSettings.map((s) => [s.fieldKey, s]));
 
@@ -227,15 +227,15 @@ function CustomFieldRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [editType, setEditType] = useState<ImsCustomFieldType>(field.fieldType);
-  const [moveState, moveAction] = useFormState(
+  const [moveState, moveAction] = useActionState(
     moveImsCustomFieldAction,
     initialState,
   );
-  const [deleteState, deleteAction] = useFormState(
+  const [deleteState, deleteAction] = useActionState(
     deleteImsCustomFieldAction,
     initialState,
   );
-  const [saveState, saveAction] = useFormState(
+  const [saveState, saveAction] = useActionState(
     saveImsCustomFieldAction,
     initialState,
   );
@@ -387,7 +387,7 @@ function CustomFieldRow({
 }
 
 function AddCustomField({ entity }: { entity: ImsFormEntity }) {
-  const [state, action] = useFormState(saveImsCustomFieldAction, initialState);
+  const [state, action] = useActionState(saveImsCustomFieldAction, initialState);
   const [type, setType] = useState<ImsCustomFieldType>("TEXT");
 
   return (

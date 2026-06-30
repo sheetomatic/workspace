@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import {
   checklistInitialState,
   importChecklistTemplatesAction,
@@ -57,7 +57,7 @@ export function ChecklistImport() {
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [summary, setSummary] = useState<ParseResponse["summary"] | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [state, action] = useFormState(importChecklistTemplatesAction, checklistInitialState);
+  const [state, action] = useActionState(importChecklistTemplatesAction, checklistInitialState);
 
   function reset() {
     setRows([]);

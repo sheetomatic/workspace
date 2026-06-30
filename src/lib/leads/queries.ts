@@ -7,6 +7,7 @@ import {
   type LeadsPeriodRange,
 } from "@/lib/leads/period";
 import type { InboundLeadStatus, Prisma } from "@prisma/client";
+import { OPEN_LEAD_STATUSES } from "@/lib/leads/status-labels";
 
 function startOfToday() {
   const d = new Date();
@@ -59,7 +60,7 @@ export async function getLeadsMachineStatsForPeriod(
     prisma.inboundLead.count({
       where: {
         ...periodWhere,
-        status: { in: ["NEW", "SCHEDULE_MEETING", "MEETING_NOTES", "CONTACTED", "FOLLOW_UP", "QUALIFIED", "PROPOSAL_INVOICE", "PAYMENT", "PROJECT_ACTIVE"] },
+        status: { in: OPEN_LEAD_STATUSES },
       },
     }),
     prisma.inboundLead.count({
@@ -301,7 +302,7 @@ export async function getLeadsMachineStats(organizationId: string) {
     prisma.inboundLead.count({
       where: {
         organizationId,
-        status: { in: ["NEW", "SCHEDULE_MEETING", "MEETING_NOTES", "CONTACTED", "FOLLOW_UP", "QUALIFIED", "PROPOSAL_INVOICE", "PAYMENT", "PROJECT_ACTIVE"] },
+        status: { in: OPEN_LEAD_STATUSES },
       },
     }),
   ]);

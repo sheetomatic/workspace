@@ -1,28 +1,51 @@
 import { describe, expect, it } from "vitest";
-import { categorizeLeadRequirement, leadCategoryLabel } from "@/lib/leads/categories";
+import {
+  categorizeLeadRequirement,
+  leadCategoryLabel,
+  migrateLegacyLeadCategory,
+  resolveLeadCategoryId,
+} from "@/lib/leads/categories";
 import { computePipeMetrics } from "@/lib/leads/pipe-metrics";
 
 describe("categorizeLeadRequirement", () => {
-  it("classifies CRM automation requirements", () => {
-    expect(categorizeLeadRequirement("CRM whatsapp automation with google sheet")).toBe(
-      "CRM_AUTOMATION",
+  it("classifies WhatsApp unofficial API needs", () => {
+    expect(categorizeLeadRequirement("Need whatsapp api plan from google sheet")).toBe(
+      "WHATSAPP_API_UNOFFICIAL",
     );
   });
 
-  it("classifies chatbot requirements", () => {
-    expect(categorizeLeadRequirement("Chatboat set up for Customer")).toBe("CHATBOT_AI");
+  it("classifies tasks management requirements", () => {
+    expect(categorizeLeadRequirement("Task delegation and checklist for team")).toBe(
+      "TASKS_MANAGEMENT",
+    );
+  });
+
+  it("classifies GWS training", () => {
+    expect(categorizeLeadRequirement("Google sheets training workshop for staff")).toBe(
+      "TRAINING_GWS",
+    );
+  });
+
+  it("classifies chatbot requirements as Sheetomatic AI", () => {
+    expect(categorizeLeadRequirement("Chatboat set up for Customer")).toBe("SHEETOMATIC_AI");
   });
 
   it("returns readable labels", () => {
-    expect(leadCategoryLabel("FMS_ERP")).toBe("FMS & ERP");
+    expect(leadCategoryLabel("GWS_DEVELOPMENT")).toBe("GWS — Development");
+    expect(leadCategoryLabel("CRM_AUTOMATION")).toBe("Custom Software");
+  });
+
+  it("migrates legacy category ids", () => {
+    expect(migrateLegacyLeadCategory("CRM_AUTOMATION")).toBe("CUSTOM_SOFTWARE");
+    expect(resolveLeadCategoryId("FMS_ERP")).toBe("FMS_BCI");
   });
 });
 
 describe("computePipeMetrics", () => {
   it("aggregates pipe and won values", () => {
     const metrics = computePipeMetrics([
-      { status: "NEW", category: "CRM_AUTOMATION", pipeValue: 85000, quotationValue: null },
-      { status: "WON", category: "CRM_AUTOMATION", pipeValue: 85000, quotationValue: 120000 },
+      { status: "NEW", category: "TASKS_MANAGEMENT", pipeValue: 50000, quotationValue: null },
+      { status: "WON", category: "TASKS_MANAGEMENT", pipeValue: 50000, quotationValue: 120000 },
     ]);
 
     expect(metrics.pipeCount).toBe(1);

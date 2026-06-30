@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/saas/page-header";
+import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { ImsItemForm } from "@/components/ims/ims-item-form";
 import { ImsItemsManager } from "@/components/ims/ims-items-manager";
 import { ImsItemImport } from "@/components/ims/ims-item-import";
@@ -50,8 +50,8 @@ export default async function ImsItemsPage() {
   ).sort();
 
   return (
-    <div className="saas-page ws-ims-page">
-      <PageHeader
+    <div className="ws-ims-page">
+      <TaskPageToolbar
         title="Item master"
         description="Define raw materials and finished goods with min, reorder, max, cost, ABC, and QC policy."
       />

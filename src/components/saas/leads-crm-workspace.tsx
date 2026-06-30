@@ -2,10 +2,17 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { MessageCircle, Phone, Trash2 } from "lucide-react";
+import {
+  deleteInboundLead,
+  logLeadContactAction,
+} from "@/app/app/leads/actions";
 import { LeadDrawerPanel, type LeadDrawerData } from "@/components/saas/leads-drawer-panel";
-import { formatInr, leadCategoryLabel } from "@/lib/leads/categories";
+import { LeadCategorySelect } from "@/components/saas/lead-category-select";
+import { LeadStatusSelect } from "@/components/saas/lead-status-select";
+import { formatInr } from "@/lib/leads/categories";
+import { leadTelHref, leadWhatsAppHref } from "@/lib/leads/contact-links";
 import { buildLeadsListQuery, type LeadsListSearchParams } from "@/lib/leads/list-params";
-import { leadStatusLabel } from "@/lib/leads/status-labels";
 
 type TeamMember = {
   user: { id: string; name: string | null; email: string };
@@ -41,6 +48,45 @@ function quotationAmount(lead: LeadRow) {
   return Number.isFinite(amount) && amount > 0 ? amount : null;
 }
 
+function formatLeadPhone(phone: string | null | undefined) {
+  if (!phone?.trim()) {
+    return null;
+  }
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("91")) {
+    return `+91 ${digits.slice(2, 7)} ${digits.slice(7)}`;
+  }
+  if (digits.length === 10) {
+    return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
+  }
+  return phone.trim();
+}
+
+function leadPrimaryLabel(lead: LeadRow) {
+  const name = lead.name?.trim();
+  if (name) {
+    return name;
+  }
+  return formatLeadPhone(lead.phone) ?? lead.email?.trim() ?? "Unnamed lead";
+}
+
+function leadSecondaryLabel(lead: LeadRow) {
+  const name = lead.name?.trim();
+  if (name) {
+    if (lead.phone) {
+      return formatLeadPhone(lead.phone);
+    }
+    if (lead.email?.trim()) {
+      return lead.email.trim();
+    }
+    return null;
+  }
+  if (lead.phone && lead.email?.trim()) {
+    return lead.email.trim();
+  }
+  return null;
+}
+
 export function LeadsCrmWorkspace({
   leads,
   total,
@@ -54,6 +100,8 @@ export function LeadsCrmWorkspace({
   canManage,
   sort,
   serviceCatalog,
+  organizationName,
+  organizationLogoUrl,
 }: {
   leads: LeadRow[];
   total: number;
@@ -70,8 +118,9 @@ export function LeadsCrmWorkspace({
     id: string;
     serviceCategory: string;
     subCategory: string;
-    unitPrice: string | number | null;
   }>;
+  organizationName: string;
+  organizationLogoUrl: string | null;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchDraft, setSearchDraft] = useState(listParams.q ?? "");
@@ -119,6 +168,7 @@ export function LeadsCrmWorkspace({
           </button>
         </form>
         <div className="leads-crm-toolbar-actions">
+          <span className="leads-crm-period">{periodLabel}</span>
           <Link className="btn-secondary btn-sm" href={sortHref}>
             {sort === "newest" ? "Newest" : "Oldest"}
           </Link>
@@ -129,23 +179,21 @@ export function LeadsCrmWorkspace({
       </div>
 
       <div className="leads-crm-table-wrap">
-        <div className="leads-table-head">
-          <h2>{periodLabel}</h2>
-        </div>
-        <table className="leads-crm-table leads-crm-table-compact">
+        <table className="leads-crm-table leads-crm-table-pro">
           <thead>
             <tr>
               <th>Lead</th>
               <th>Time</th>
               <th>Category</th>
               <th>Status</th>
-              <th>Quoted</th>
+              <th className="leads-col-quoted">Quoted</th>
+              <th className="leads-col-actions" aria-label="Actions" />
             </tr>
           </thead>
           <tbody>
             {leads.length === 0 ? (
               <tr>
-                <td colSpan={5}>
+                <td colSpan={6}>
                   <div className="leads-empty-state">
                     <p className="leads-machine-muted">No leads match this filter.</p>
                     {workspaceTotal > 0 && period !== "all" ? (
@@ -165,6 +213,10 @@ export function LeadsCrmWorkspace({
             ) : (
               leads.map((lead) => {
                 const quoted = quotationAmount(lead);
+                const telHref = leadTelHref(lead.phone);
+                const waHref = leadWhatsAppHref(lead.phone, lead.name);
+                const primary = leadPrimaryLabel(lead);
+                const secondary = leadSecondaryLabel(lead);
                 return (
                   <tr
                     key={lead.id}
@@ -175,25 +227,98 @@ export function LeadsCrmWorkspace({
                     }
                     onClick={() => setSelectedId(lead.id)}
                   >
-                    <td>
-                      <strong className="leads-row-name">{lead.name || "Unnamed"}</strong>
-                      <span className="leads-machine-sub leads-row-contact">
-                        {lead.phone || lead.email || "—"}
-                      </span>
+                    <td className="leads-row-lead">
+                      <div className="leads-row-lead-copy">
+                        <strong className="leads-row-name">{primary}</strong>
+                        {secondary ? (
+                          <span className="leads-row-contact">{secondary}</span>
+                        ) : null}
+                      </div>
                     </td>
                     <td className="leads-row-time">
                       {formatCompactTimestamp(lead.capturedAt, lead.createdAt)}
                     </td>
-                    <td>
-                      <span className="leads-category-badge">
-                        {leadCategoryLabel(lead.category)}
-                      </span>
+                    <td className="leads-row-category">
+                      <LeadCategorySelect
+                        disabled={!canManage}
+                        leadId={lead.id}
+                        value={lead.category}
+                      />
                     </td>
-                    <td>
-                      <span className="leads-status-badge">{leadStatusLabel(lead.status)}</span>
+                    <td className="leads-row-status">
+                      <LeadStatusSelect
+                        disabled={!canManage}
+                        leadId={lead.id}
+                        value={lead.status}
+                      />
                     </td>
                     <td className="leads-row-quoted">
-                      {quoted ? formatInr(quoted) : "—"}
+                      {quoted ? (
+                        <span className="leads-row-quoted-value">{formatInr(quoted)}</span>
+                      ) : (
+                        <span className="leads-row-quoted-empty">—</span>
+                      )}
+                    </td>
+                    <td className="leads-row-actions-cell">
+                      <div
+                        className="leads-row-actions"
+                        onClick={(event) => event.stopPropagation()}
+                        onKeyDown={(event) => event.stopPropagation()}
+                      >
+                        {telHref ? (
+                          <a
+                            className="leads-icon-btn"
+                            href={telHref}
+                            title="Call"
+                            aria-label={`Call ${lead.name || "lead"}`}
+                            onClick={() =>
+                              startTransition(async () => {
+                                await logLeadContactAction(lead.id, "CALL");
+                              })
+                            }
+                          >
+                            <Phone size={16} />
+                          </a>
+                        ) : null}
+                        {waHref ? (
+                          <a
+                            className="leads-icon-btn"
+                            href={waHref}
+                            target="_blank"
+                            rel="noreferrer"
+                            title="WhatsApp"
+                            aria-label={`WhatsApp ${lead.name || "lead"}`}
+                            onClick={() =>
+                              startTransition(async () => {
+                                await logLeadContactAction(lead.id, "WHATSAPP");
+                              })
+                            }
+                          >
+                            <MessageCircle size={16} />
+                          </a>
+                        ) : null}
+                        {canManage ? (
+                          <button
+                            type="button"
+                            className="leads-icon-btn danger"
+                            title="Delete lead"
+                            aria-label={`Delete ${lead.name || "lead"}`}
+                            disabled={pending}
+                            onClick={() => {
+                              if (window.confirm("Delete this lead?")) {
+                                startTransition(async () => {
+                                  await deleteInboundLead(lead.id);
+                                  if (selectedId === lead.id) {
+                                    setSelectedId(null);
+                                  }
+                                });
+                              }
+                            }}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -235,6 +360,8 @@ export function LeadsCrmWorkspace({
             lead={selected}
             onClose={() => setSelectedId(null)}
             onDeleted={() => setSelectedId(null)}
+            organizationLogoUrl={organizationLogoUrl}
+            organizationName={organizationName}
             pending={pending}
             serviceCatalog={serviceCatalog}
             startTransition={startTransition}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import type { ImsItem } from "@prisma/client";
 import {
   recordAdjustmentAction,
@@ -19,7 +19,7 @@ export function ImsAdjustForm({
   items: ItemOption[];
   usableMap?: Record<string, number>;
 }) {
-  const [state, action] = useFormState(recordAdjustmentAction, initial);
+  const [state, action] = useActionState(recordAdjustmentAction, initial);
   const [itemId, setItemId] = useState(items[0]?.id ?? "");
   const [direction, setDirection] = useState<"increase" | "decrease">("increase");
   const selected = items.find((item) => item.id === itemId);

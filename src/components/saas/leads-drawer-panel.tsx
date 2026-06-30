@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MessageCircle, Phone, Trash2, X } from "lucide-react";
+import { X } from "lucide-react";
 import type {
   InboundLeadStatus,
   LeadCallingStatus,
@@ -18,8 +18,6 @@ import {
   addLeadOfferedService,
   applyAiSuggestedLeadStatus,
   assignInboundLead,
-  deleteInboundLead,
-  logLeadContactAction,
   scheduleInboundLeadFollowUp,
   updateInboundLeadDetails,
   updateInboundLeadStatus,
@@ -27,12 +25,13 @@ import {
   updateLeadProjectStatus,
 } from "@/app/app/leads/actions";
 import { QuotationBuilderPanel } from "@/components/saas/quotation-builder-panel";
-import { formatInr, leadCategoryLabel } from "@/lib/leads/categories";
+import { formatInr, leadCategoryLabel, listLeadCategoryOptions, resolveLeadCategoryId, type LeadCategoryId } from "@/lib/leads/categories";
 import {
   CALLING_STATUS_LABELS,
-  LEAD_STATUS_LABELS,
+  listLeadStatusOptions,
   PROJECT_STATUS_LABELS,
   leadStatusLabel,
+  resolveLeadStatus,
 } from "@/lib/leads/status-labels";
 
 const PAYMENT_TYPE_LABELS: Record<LeadPaymentType, string> = {
@@ -56,7 +55,6 @@ type CatalogItem = {
   id: string;
   serviceCategory: string;
   subCategory: string;
-  unitPrice: string | number | null;
 };
 
 type PaymentRow = {
@@ -84,7 +82,18 @@ type QuotationRow = {
   status: QuotationStatus;
   revisionNumber: number;
   totalAmount: string | number;
+  subtotal: string | number;
   quotationDate: string;
+  projectStartDate: string | null;
+  endDate: string | null;
+  durationDays: number | null;
+  company: string | null;
+  address: string | null;
+  zipCode: string | null;
+  scopeNotes: string | null;
+  paymentTerms: string | null;
+  advanceRequired: string | number | null;
+  notes: string | null;
   sentAt: string | null;
   lockedAt: string | null;
   shareToken: string | null;
@@ -133,19 +142,6 @@ export type LeadDrawerData = {
   activities: ActivityRow[];
 };
 
-function phoneDigits(phone: string | null) {
-  return phone?.replace(/\D/g, "") ?? "";
-}
-
-function waHref(phone: string | null, name: string | null) {
-  const digits = phoneDigits(phone);
-  if (!digits) {
-    return null;
-  }
-  const message = `Hi ${name || "there"}, thank you for reaching out to Sheetomatic.`;
-  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
-}
-
 function defaultFollowUpLocal() {
   const d = new Date();
   d.setDate(d.getDate() + 1);
@@ -159,6 +155,8 @@ export function LeadDrawerPanel({
   canManage,
   serviceCatalog,
   teamMembers,
+  organizationName,
+  organizationLogoUrl,
   pending,
   startTransition,
   onClose,
@@ -168,6 +166,8 @@ export function LeadDrawerPanel({
   canManage: boolean;
   serviceCatalog: CatalogItem[];
   teamMembers: Array<{ user: { id: string; name: string | null; email: string } }>;
+  organizationName: string;
+  organizationLogoUrl: string | null;
   pending: boolean;
   startTransition: (callback: () => Promise<void>) => void;
   onClose: () => void;
@@ -183,7 +183,7 @@ export function LeadDrawerPanel({
   const [address, setAddress] = useState(lead.address ?? "");
   const [zipCode, setZipCode] = useState(lead.zipCode ?? "");
   const [requirement, setRequirement] = useState(lead.requirement ?? "");
-  const [discussionNotes, setDiscussionNotes] = useState(lead.discussionNotes ?? "");
+  const [category, setCategory] = useState<LeadCategoryId>(resolveLeadCategoryId(lead.category));
   const [meetingNotes, setMeetingNotes] = useState(lead.meetingNotes ?? "");
   const [quotationValue, setQuotationValue] = useState(String(lead.quotationValue ?? ""));
   const [followUpAt, setFollowUpAt] = useState(defaultFollowUpLocal());
@@ -198,8 +198,6 @@ export function LeadDrawerPanel({
 
   const aiStatus = lead.aiSuggestedStatus ?? null;
   const showAiHint = aiStatus && aiStatus !== lead.status && canManage;
-  const callDigits = phoneDigits(lead.phone);
-  const whatsapp = waHref(lead.phone, lead.name);
 
   return (
     <aside
@@ -241,59 +239,6 @@ export function LeadDrawerPanel({
           ) : null}
         </div>
         <div className="leads-drawer-head-actions">
-          {canManage ? (
-            <div className="leads-icon-actions">
-              {callDigits ? (
-                <a
-                  className="leads-icon-btn"
-                  href={`tel:${callDigits}`}
-                  title="Call"
-                  aria-label="Call"
-                  onClick={() =>
-                    startTransition(async () => {
-                      await logLeadContactAction(lead.id, "CALL");
-                    })
-                  }
-                >
-                  <Phone size={16} />
-                </a>
-              ) : null}
-              {whatsapp ? (
-                <a
-                  className="leads-icon-btn"
-                  href={whatsapp}
-                  target="_blank"
-                  rel="noreferrer"
-                  title="WhatsApp"
-                  aria-label="WhatsApp"
-                  onClick={() =>
-                    startTransition(async () => {
-                      await logLeadContactAction(lead.id, "WHATSAPP");
-                    })
-                  }
-                >
-                  <MessageCircle size={16} />
-                </a>
-              ) : null}
-              <button
-                type="button"
-                className="leads-icon-btn danger"
-                title="Delete"
-                aria-label="Delete lead"
-                disabled={pending}
-                onClick={() => {
-                  if (window.confirm("Delete this lead?")) {
-                    startTransition(async () => {
-                      await deleteInboundLead(lead.id);
-                      onDeleted?.();
-                    });
-                  }
-                }}
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          ) : null}
           <button
             type="button"
             className="leads-icon-btn"
@@ -334,7 +279,7 @@ export function LeadDrawerPanel({
               <label>
                 Status (next stage)
                 <select
-                  value={lead.status}
+                  value={resolveLeadStatus(lead.status)}
                   disabled={pending}
                   onChange={(event) =>
                     startTransition(async () => {
@@ -345,9 +290,9 @@ export function LeadDrawerPanel({
                     })
                   }
                 >
-                  {Object.entries(LEAD_STATUS_LABELS).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
+                  {listLeadStatusOptions().map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
                     </option>
                   ))}
                 </select>
@@ -417,15 +362,24 @@ export function LeadDrawerPanel({
                 <input value={zipCode} onChange={(e) => setZipCode(e.target.value)} />
               </label>
               <label>
-                Requirement
-                <textarea value={requirement} onChange={(e) => setRequirement(e.target.value)} />
+                Category
+                <select
+                  value={category}
+                  disabled={!canManage}
+                  onChange={(event) =>
+                    setCategory(event.target.value as LeadCategoryId)
+                  }
+                >
+                  {listLeadCategoryOptions().map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label>
-                Discussion notes
-                <textarea
-                  value={discussionNotes}
-                  onChange={(e) => setDiscussionNotes(e.target.value)}
-                />
+                Requirement
+                <textarea value={requirement} onChange={(e) => setRequirement(e.target.value)} />
               </label>
               <label>
                 Quotation amount (₹)
@@ -447,7 +401,8 @@ export function LeadDrawerPanel({
                       phone,
                       email,
                       requirement,
-                      discussionNotes,
+                      category,
+                      discussionNotes: lead.discussionNotes ?? "",
                       quotationValue,
                       pipeValue: quotationValue,
                     });
@@ -458,7 +413,36 @@ export function LeadDrawerPanel({
               </button>
             </div>
           ) : null}
-          <section className="leads-drawer-section">
+        </>
+      ) : null}
+
+      {tab === "meeting" ? (
+        <section className="leads-drawer-section">
+          <h3>Meeting notes</h3>
+          <p className="leads-machine-muted">
+            Calling: {CALLING_STATUS_LABELS[lead.callingStatus]}
+          </p>
+          <textarea
+            value={meetingNotes}
+            onChange={(e) => setMeetingNotes(e.target.value)}
+            placeholder="What was discussed in the meeting?"
+            rows={6}
+          />
+          {canManage ? (
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={pending}
+              onClick={() =>
+                startTransition(async () => {
+                  await updateLeadMeetingNotes(lead.id, meetingNotes);
+                })
+              }
+            >
+              Save meeting notes
+            </button>
+          ) : null}
+          <section className="leads-drawer-section leads-drawer-section-nested">
             <h3>Follow-up</h3>
             <div className="leads-drawer-grid">
               <label>
@@ -489,35 +473,6 @@ export function LeadDrawerPanel({
               </button>
             ) : null}
           </section>
-        </>
-      ) : null}
-
-      {tab === "meeting" ? (
-        <section className="leads-drawer-section">
-          <h3>Meeting notes</h3>
-          <p className="leads-machine-muted">
-            Calling: {CALLING_STATUS_LABELS[lead.callingStatus]}
-          </p>
-          <textarea
-            value={meetingNotes}
-            onChange={(e) => setMeetingNotes(e.target.value)}
-            placeholder="What was discussed in the meeting?"
-            rows={6}
-          />
-          {canManage ? (
-            <button
-              type="button"
-              className="btn-primary"
-              disabled={pending}
-              onClick={() =>
-                startTransition(async () => {
-                  await updateLeadMeetingNotes(lead.id, meetingNotes);
-                })
-              }
-            >
-              Save meeting notes
-            </button>
-          ) : null}
           <h3>Quick note to history</h3>
           <textarea
             value={noteDraft}
@@ -556,7 +511,6 @@ export function LeadDrawerPanel({
                   {serviceCatalog.map((item) => (
                     <option key={item.id} value={item.id}>
                       {item.serviceCategory} — {item.subCategory}
-                      {item.unitPrice ? ` (${formatInr(Number(item.unitPrice))})` : ""}
                     </option>
                   ))}
                 </select>
@@ -586,9 +540,6 @@ export function LeadDrawerPanel({
                 <li key={item.id}>
                   <strong>{item.serviceCategory}</strong>
                   <span>{item.subCategory}</span>
-                  {item.unitPrice ? (
-                    <em>{formatInr(Number(item.unitPrice))}</em>
-                  ) : null}
                 </li>
               ))
             )}
@@ -689,6 +640,8 @@ export function LeadDrawerPanel({
         <QuotationBuilderPanel
           leadId={lead.id}
           leadName={lead.name}
+          leadPhone={lead.phone}
+          leadEmail={lead.email}
           leadCompany={lead.company}
           leadAddress={lead.address}
           leadZipCode={lead.zipCode}
@@ -696,6 +649,8 @@ export function LeadDrawerPanel({
           offeredServices={lead.offeredServices}
           serviceCatalog={serviceCatalog}
           quotations={lead.quotations}
+          organizationName={organizationName}
+          organizationLogoUrl={organizationLogoUrl}
           canManage={canManage}
           pending={pending}
           startTransition={startTransition}

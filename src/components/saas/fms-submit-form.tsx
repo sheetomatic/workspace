@@ -92,7 +92,6 @@ export function FmsSubmitForm({
     <form
       action={formAction}
       className="ws-fms-submit-form ws-fms-intake-form"
-      encType="multipart/form-data"
     >
       <input type="hidden" name="formId" value={formId} />
       <input

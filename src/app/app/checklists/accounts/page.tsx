@@ -1,82 +1,33 @@
-import Link from "next/link";
-import { AccountsChecklistDeployPanel } from "@/components/saas/accounts-checklist-deploy";
-import { AccountsChecklistGridBoard } from "@/components/saas/accounts-checklist-grid";
-import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
+import { TeamChecklistBoard } from "@/components/saas/team-checklist-board";
+import { getTeamChecklistProfile } from "@/lib/checklists/team-checklist-profiles";
 import {
-  countAccountsTemplates,
-  getAccountsChecklistGrid,
-  type AccountsChecklistGrid,
-} from "@/lib/checklists/accounts-grid";
+  listChecklistTemplatesByTeam,
+} from "@/lib/checklists/queries";
+import { listMyChecklistPcWork, listOrgPcMonitor } from "@/lib/checklists/pc-work";
 import { canCreateTasks } from "@/lib/tasks";
-import { listWorkspaceMembers } from "@/lib/workspace";
 import { requireSession } from "@/lib/require-session";
-
-function emptyGrid(): AccountsChecklistGrid {
-  return {
-    monthLabel: new Date().toLocaleString("en-IN", {
-      month: "long",
-      year: "numeric",
-    }),
-    week1Label: "Week 1",
-    week2Label: "Week 2",
-    rows: [],
-  };
-}
 
 export default async function AccountsChecklistPage() {
   const user = await requireSession(undefined, { module: "TASKS" });
-  const canManage = canCreateTasks(user.role);
+  const profile = getTeamChecklistProfile("ACCOUNTS")!;
 
-  let grid = emptyGrid();
-  let templateCount = 0;
-  let memberOptions: { id: string; label: string }[] = [];
+  const [templates, monitor, myRuns] = await Promise.all([
+    listChecklistTemplatesByTeam(user.organizationId, "ACCOUNTS"),
+    listOrgPcMonitor(user.organizationId),
+    listMyChecklistPcWork(user.organizationId, user.id),
+  ]);
 
-  try {
-    const [gridResult, templateCountResult, members] = await Promise.all([
-      getAccountsChecklistGrid(user.organizationId),
-      countAccountsTemplates(user.organizationId),
-      canManage ? listWorkspaceMembers(user.organizationId) : Promise.resolve([]),
-    ]);
-    grid = gridResult;
-    templateCount = templateCountResult;
-    memberOptions = members.map((member) => ({
-      id: member.user.id,
-      label: member.user.name ?? member.user.email,
-    }));
-  } catch (error) {
-    console.error("[accounts-checklist] load failed", error);
-  }
-
-  if (
-    canManage &&
-    !memberOptions.some((member) => member.id === user.id)
-  ) {
-    memberOptions.unshift({
-      id: user.id,
-      label: user.name ?? user.email,
-    });
-  }
+  const openRuns = monitor.checklists.filter((row) => row.subtitle === "ACCOUNTS");
+  const myTeamRuns = myRuns.filter((row) => row.template.team === "ACCOUNTS");
 
   return (
-    <div className="saas-page ws-checklists-page ws-tasks-sf ws-accounts-checklist-page">
-      <TaskPageToolbar
-        title="Accounts Checklist"
-        description="Classic M/Q/Y/HY grid with accountability, last date, and fortnight tracking."
-        actions={
-          <Link href="/app/checklists/setup" className="btn-secondary btn-sm">
-            Setup
-          </Link>
-        }
-      />
-
-      {canManage ? (
-        <AccountsChecklistDeployPanel
-          members={memberOptions}
-          templateCount={templateCount}
-        />
-      ) : null}
-
-      <AccountsChecklistGridBoard grid={grid} />
-    </div>
+    <TeamChecklistBoard
+      canConfigure={canCreateTasks(user.role)}
+      myRuns={myTeamRuns}
+      openRuns={openRuns}
+      profile={profile}
+      team="ACCOUNTS"
+      templates={templates}
+    />
   );
 }

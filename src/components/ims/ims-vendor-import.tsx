@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import {
   importImsVendorsAction,
   type ImsActionState,
@@ -57,7 +57,7 @@ export function ImsVendorImport() {
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [summary, setSummary] = useState<ParseResponse["summary"] | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [state, action] = useFormState(importImsVendorsAction, initial);
+  const [state, action] = useActionState(importImsVendorsAction, initial);
 
   function reset() {
     setRows([]);

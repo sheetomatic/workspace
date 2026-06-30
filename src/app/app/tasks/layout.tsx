@@ -1,5 +1,5 @@
 import { requireSession } from "@/lib/require-session";
-import { TasksModuleNav } from "@/components/saas/tasks-module-nav";
+import { TasksModuleLayout } from "@/components/saas/tasks-module-layout";
 
 export default async function TasksLayout({
   children,
@@ -8,10 +8,5 @@ export default async function TasksLayout({
 }) {
   const user = await requireSession(undefined, { module: "TASKS" });
 
-  return (
-    <div className="ws-module-layout ws-tasks-module-layout">
-      <TasksModuleNav user={user} />
-      <div className="ws-module-layout-main">{children}</div>
-    </div>
-  );
+  return <TasksModuleLayout user={user}>{children}</TasksModuleLayout>;
 }

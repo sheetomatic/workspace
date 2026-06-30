@@ -103,7 +103,7 @@ export function resolveWorkspaceHomeHref(
       }
     }
   }
-  return "/app/tasks/my-work";
+  return "/app/tasks/today";
 }
 
 export function isCasesOnlyWorkspace(

@@ -62,6 +62,20 @@ export async function listChecklistTemplates(organizationId: string) {
   });
 }
 
+export async function listChecklistTemplatesByTeam(
+  organizationId: string,
+  team: ChecklistTeam,
+) {
+  return prisma.checklistTemplate.findMany({
+    where: { organizationId, isActive: true, team },
+    include: {
+      ...templateInclude,
+      _count: { select: { occurrences: true } },
+    },
+    orderBy: [{ title: "asc" }],
+  });
+}
+
 export async function listMyChecklistOccurrences(
   organizationId: string,
   assigneeUserId: string,

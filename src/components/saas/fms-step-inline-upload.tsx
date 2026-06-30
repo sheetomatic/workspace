@@ -49,7 +49,6 @@ export function FmsStepInlineUpload({
       ref={formRef}
       action={formAction}
       className={`ws-fms-journey-inline-upload${compact ? " is-compact" : ""}`}
-      encType="multipart/form-data"
     >
       <input type="hidden" name="stepStateId" value={stepStateId} />
       <label className="ws-fms-journey-inline-upload-label">

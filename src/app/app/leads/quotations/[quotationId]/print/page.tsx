@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { QuotationPrintToolbar } from "@/components/saas/quotation-print-toolbar";
 import { QuotationPrintView } from "@/components/saas/quotation-print-view";
-import { formatInr } from "@/lib/leads/categories";
 import { getLeadQuotationForPrint } from "@/lib/leads/quotations";
 import { requireSession } from "@/lib/require-session";
 
@@ -67,7 +66,6 @@ export default async function QuotationPrintPage({ params, searchParams }: PageP
           />
         )
       }
-      formatInr={formatInr}
       embed={isEmbed}
     />
   );

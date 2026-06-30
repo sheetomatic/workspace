@@ -329,6 +329,338 @@ export async function getTaskChartData(user: SessionUser): Promise<TaskChartData
   return { statusBreakdown, departmentBreakdown, weeklyCompleted };
 }
 
+const TRACKER_DISTRIBUTION_COLORS = {
+  overdue: "#dc2626",
+  today: "#f59e0b",
+  open: "#2563eb",
+  closed: "#16a34a",
+} as const;
+
+export type TaskTrackerDashboardData = {
+  distribution: Array<{ name: string; value: number; color: string }>;
+  distributionTotal: number;
+  performanceSeries: Array<{ label: string; completed: number }>;
+  periodScores: {
+    today: { value: number; trend: number };
+    week: { value: number; trend: number };
+    month: { value: number; trend: number };
+  };
+  dueToday: { total: number; completed: number };
+  dailyYield: { completed: number; target: number };
+  teamInsights: {
+    onTrack: Array<{ name: string; userId: string }>;
+    overdue: Array<{ name: string; userId: string }>;
+    idle: Array<{ name: string; userId: string }>;
+  };
+  approvals: { verification: number; requests: number };
+  summaryRows: Array<{
+    label: string;
+    href: string;
+    overdue: number;
+    today: number;
+    open: number;
+  }>;
+};
+
+function endOfToday() {
+  const d = new Date();
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+function startOfWeek() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  const diff = day === 0 ? 6 : day - 1;
+  d.setDate(d.getDate() - diff);
+  return d;
+}
+
+function startOfMonth() {
+  const d = new Date();
+  d.setDate(1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function startOfPreviousWeek() {
+  const d = startOfWeek();
+  d.setDate(d.getDate() - 7);
+  return d;
+}
+
+function startOfPreviousMonth() {
+  const d = startOfMonth();
+  d.setMonth(d.getMonth() - 1);
+  return d;
+}
+
+type TrackerTaskRow = {
+  status: TaskStatus;
+  dueAt: Date;
+  assigneeUserId: string;
+  completedAt: Date | null;
+};
+
+function classifyTrackerBucket(
+  task: TrackerTaskRow,
+  now: Date,
+  todayStart: Date,
+  todayEnd: Date,
+): "overdue" | "today" | "open" | "closed" {
+  if (task.status === "COMPLETED") {
+    return "closed";
+  }
+  if (!isTaskActiveStatus(task.status)) {
+    return "open";
+  }
+  if (task.dueAt.getTime() < now.getTime()) {
+    return "overdue";
+  }
+  if (
+    task.dueAt.getTime() >= todayStart.getTime() &&
+    task.dueAt.getTime() <= todayEnd.getTime()
+  ) {
+    return "today";
+  }
+  return "open";
+}
+
+function countTrackerBuckets(
+  tasks: TrackerTaskRow[],
+  now: Date,
+  todayStart: Date,
+  todayEnd: Date,
+  filter?: (task: TrackerTaskRow) => boolean,
+) {
+  const counts = { overdue: 0, today: 0, open: 0, closed: 0 };
+  for (const task of tasks) {
+    if (filter && !filter(task)) {
+      continue;
+    }
+    counts[classifyTrackerBucket(task, now, todayStart, todayEnd)] += 1;
+  }
+  return counts;
+}
+
+export async function getTaskTrackerDashboardData(
+  user: SessionUser,
+): Promise<TaskTrackerDashboardData> {
+  const where = await buildTaskVisibilityWhere(user);
+  const now = new Date();
+  const todayStart = startOfToday();
+  const todayEnd = endOfToday();
+  const weekStart = startOfWeek();
+  const monthStart = startOfMonth();
+  const prevWeekStart = startOfPreviousWeek();
+  const prevMonthStart = startOfPreviousMonth();
+  const yesterdayStart = startOfDaysAgo(1);
+
+  const [
+    tasks,
+    chartData,
+    assigneeWorkload,
+    members,
+    verificationCount,
+    openRequestCount,
+    completedToday,
+    completedYesterday,
+    completedThisWeek,
+    completedPrevWeek,
+    completedThisMonth,
+    completedPrevMonth,
+    dueTodayActive,
+    dueTodayCompleted,
+  ] = await Promise.all([
+    prisma.delegatedTask.findMany({
+      where,
+      select: {
+        status: true,
+        dueAt: true,
+        assigneeUserId: true,
+        completedAt: true,
+      },
+    }),
+    getTaskChartData(user),
+    getTaskAssigneeWorkload(user),
+    listAssignableMembers(user.organizationId),
+    prisma.delegatedTask.count({
+      where: { ...where, status: "AWAITING_VERIFICATION" },
+    }),
+    prisma.taskRequest.count({
+      where: {
+        organizationId: user.organizationId,
+        status: "OPEN",
+        task: where,
+      },
+    }),
+    prisma.delegatedTask.count({
+      where: {
+        ...where,
+        status: "COMPLETED",
+        completedAt: { gte: todayStart },
+      },
+    }),
+    prisma.delegatedTask.count({
+      where: {
+        ...where,
+        status: "COMPLETED",
+        completedAt: { gte: yesterdayStart, lt: todayStart },
+      },
+    }),
+    prisma.delegatedTask.count({
+      where: {
+        ...where,
+        status: "COMPLETED",
+        completedAt: { gte: weekStart },
+      },
+    }),
+    prisma.delegatedTask.count({
+      where: {
+        ...where,
+        status: "COMPLETED",
+        completedAt: { gte: prevWeekStart, lt: weekStart },
+      },
+    }),
+    prisma.delegatedTask.count({
+      where: {
+        ...where,
+        status: "COMPLETED",
+        completedAt: { gte: monthStart },
+      },
+    }),
+    prisma.delegatedTask.count({
+      where: {
+        ...where,
+        status: "COMPLETED",
+        completedAt: { gte: prevMonthStart, lt: monthStart },
+      },
+    }),
+    prisma.delegatedTask.count({
+      where: {
+        ...where,
+        status: { in: ACTIVE_TASK_STATUSES },
+        dueAt: { gte: todayStart, lte: todayEnd },
+      },
+    }),
+    prisma.delegatedTask.count({
+      where: {
+        ...where,
+        status: "COMPLETED",
+        completedAt: { gte: todayStart },
+        dueAt: { gte: todayStart, lte: todayEnd },
+      },
+    }),
+  ]);
+
+  const distributionCounts = countTrackerBuckets(
+    tasks,
+    now,
+    todayStart,
+    todayEnd,
+  );
+  const distribution = [
+    { name: "Overdue", value: distributionCounts.overdue, color: TRACKER_DISTRIBUTION_COLORS.overdue },
+    { name: "Today", value: distributionCounts.today, color: TRACKER_DISTRIBUTION_COLORS.today },
+    { name: "Open", value: distributionCounts.open, color: TRACKER_DISTRIBUTION_COLORS.open },
+    { name: "Closed", value: distributionCounts.closed, color: TRACKER_DISTRIBUTION_COLORS.closed },
+  ].filter((row) => row.value > 0);
+
+  const distributionTotal =
+    distributionCounts.overdue +
+    distributionCounts.today +
+    distributionCounts.open +
+    distributionCounts.closed;
+
+  const weeklyAvg =
+    chartData.weeklyCompleted.reduce((sum, row) => sum + row.completed, 0) /
+    Math.max(chartData.weeklyCompleted.length, 1);
+  const dailyTarget = Math.max(3, Math.round(weeklyAvg * 1.15));
+
+  const onTrack = assigneeWorkload
+    .filter((row) => row.overdue === 0 && row.total > 0)
+    .slice(0, 6)
+    .map((row) => ({ name: row.name, userId: row.userId }));
+  const overdueMembers = assigneeWorkload
+    .filter((row) => row.overdue > 0)
+    .slice(0, 6)
+    .map((row) => ({ name: row.name, userId: row.userId }));
+  const activeMemberIds = new Set(
+    assigneeWorkload.filter((row) => row.total > 0).map((row) => row.userId),
+  );
+  const idle = members
+    .filter((member) => !activeMemberIds.has(member.id))
+    .slice(0, 6)
+    .map((member) => ({ name: member.name, userId: member.id }));
+
+  const summaryRows = [
+    {
+      label: "My tasks",
+      href: "/app/tasks/today",
+      ...countTrackerBuckets(
+        tasks,
+        now,
+        todayStart,
+        todayEnd,
+        (task) => task.assigneeUserId === user.id,
+      ),
+    },
+    {
+      label: "Team board",
+      href: "/app/tasks",
+      ...countTrackerBuckets(tasks, now, todayStart, todayEnd),
+    },
+    {
+      label: "Pending tasks",
+      href: "/app/tasks?status=PENDING#execution-queue",
+      ...countTrackerBuckets(
+        tasks,
+        now,
+        todayStart,
+        todayEnd,
+        (task) => task.status === "PENDING",
+      ),
+    },
+    {
+      label: "Verification queue",
+      href: "/app/tasks?status=AWAITING_VERIFICATION#execution-queue",
+      ...countTrackerBuckets(
+        tasks,
+        now,
+        todayStart,
+        todayEnd,
+        (task) => task.status === "AWAITING_VERIFICATION",
+      ),
+    },
+  ].map((row) => ({
+    label: row.label,
+    href: row.href,
+    overdue: row.overdue,
+    today: row.today,
+    open: row.open,
+  }));
+
+  return {
+    distribution,
+    distributionTotal,
+    performanceSeries: chartData.weeklyCompleted,
+    periodScores: {
+      today: { value: completedToday, trend: completedToday - completedYesterday },
+      week: { value: completedThisWeek, trend: completedThisWeek - completedPrevWeek },
+      month: { value: completedThisMonth, trend: completedThisMonth - completedPrevMonth },
+    },
+    dueToday: {
+      total: dueTodayActive + dueTodayCompleted,
+      completed: dueTodayCompleted,
+    },
+    dailyYield: { completed: completedToday, target: dailyTarget },
+    teamInsights: { onTrack, overdue: overdueMembers, idle },
+    approvals: { verification: verificationCount, requests: openRequestCount },
+    summaryRows,
+  };
+}
+
 function startOfDaysAgo(days: number) {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
