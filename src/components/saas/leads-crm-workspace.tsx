@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
-import type { InboundLeadStatus } from "@prisma/client";
-import { LeadDrawerPanel } from "@/components/saas/leads-drawer-panel";
+import { LeadDrawerPanel, type LeadDrawerData } from "@/components/saas/leads-drawer-panel";
 import { formatInr, leadCategoryLabel } from "@/lib/leads/categories";
 import { buildLeadsListQuery, type LeadsListSearchParams } from "@/lib/leads/list-params";
 import { leadStatusLabel } from "@/lib/leads/status-labels";
@@ -12,64 +11,15 @@ type TeamMember = {
   user: { id: string; name: string | null; email: string };
 };
 
-type ActivityRow = {
-  id: string;
-  type: string;
-  body: string | null;
-  createdAt: string;
-  createdBy: { name: string | null; email: string } | null;
-};
-
-type LeadRow = {
-  id: string;
-  name: string | null;
-  phone: string | null;
-  email: string | null;
-  company: string | null;
-  address: string | null;
-  zipCode: string | null;
-  requirement: string | null;
-  category: string | null;
-  status: InboundLeadStatus;
-  aiSuggestedStatus: InboundLeadStatus | null;
-  callingStatus: string;
-  projectStatus: string;
-  discussionNotes: string | null;
-  meetingNotes: string | null;
-  quotationValue: string | number | null;
-  pipeValue: string | number | null;
-  nextFollowUpAt: string | null;
+type LeadRow = LeadDrawerData & {
   capturedAt: string | null;
   createdAt: string;
-  assignedTo: { id: string; name: string | null; email: string } | null;
+  pipeValue: string | number | null;
   followUps: Array<{
     id: string;
     scheduledAt: string;
     notes: string | null;
   }>;
-  payments: Array<{
-    id: string;
-    paymentType: string;
-    receivedAmount: string | number;
-    receivedDate: string;
-    paymentMethod: string;
-    notes: string | null;
-  }>;
-  quotations: Array<{
-    id: string;
-    quotationNumber: string;
-    requestType: string;
-    totalAmount: string | number;
-    quotationDate: string;
-    sentAt: string | null;
-  }>;
-  offeredServices: Array<{
-    id: string;
-    serviceCategory: string;
-    subCategory: string;
-    unitPrice: string | number | null;
-  }>;
-  activities: ActivityRow[];
 };
 
 function formatCompactTimestamp(value: string | null, fallback: string) {
