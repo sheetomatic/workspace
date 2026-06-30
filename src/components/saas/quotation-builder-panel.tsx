@@ -12,8 +12,8 @@ import {
 import { formatInr } from "@/lib/leads/categories";
 import {
   DEFAULT_QUOTATION_PAYMENT_TERMS,
+  quotationStatusLabel,
 } from "@/lib/leads/quotation-content";
-import { quotationStatusLabel } from "@/lib/leads/quotations";
 
 type CatalogItem = {
   id: string;

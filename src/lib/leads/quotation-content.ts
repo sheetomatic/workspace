@@ -1,3 +1,5 @@
+import type { QuotationStatus } from "@prisma/client";
+
 /** Default terms appended to proposals / invoices (Sheetomatic standard). */
 export const DEFAULT_QUOTATION_PAYMENT_TERMS =
   "50% advance to confirm the order. Balance on delivery / go-live. GST extra as applicable. Bank transfer or UPI accepted.";
@@ -18,4 +20,14 @@ export const QUOTATION_FOOTER_CONTACT =
 
 export function formatQuotationTermsBlock(terms: readonly string[] = DEFAULT_QUOTATION_TERMS) {
   return terms.map((item, index) => `${index + 1}. ${item}`).join("\n");
+}
+
+export function quotationStatusLabel(status: QuotationStatus) {
+  const labels: Record<QuotationStatus, string> = {
+    DRAFT: "Draft",
+    SENT: "Sent",
+    REVISED: "Superseded",
+    LOCKED: "Locked · Approved",
+  };
+  return labels[status];
 }

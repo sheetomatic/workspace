@@ -38,11 +38,11 @@ import {
   buildQuotationPublicUrl,
   buildQuotationShareMessage,
   computeQuotationTotals,
-  createQuotationShareToken,
   lockLatestLeadQuotation,
   nextQuotationNumber,
   revisionQuotationNumber,
 } from "@/lib/leads/quotations";
+import { createQuotationShareToken } from "@/lib/leads/quotation-tokens";
 import { inferLeadStageFromRequirement } from "@/lib/leads/stage-ai";
 import { leadStatusLabel } from "@/lib/leads/status-labels";
 import { hasMinimumRole } from "@/lib/permissions";

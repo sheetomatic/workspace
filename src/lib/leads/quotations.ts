@@ -1,10 +1,4 @@
-import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/db";
-import type { QuotationStatus } from "@prisma/client";
-
-export function createQuotationShareToken() {
-  return randomBytes(24).toString("base64url");
-}
 
 export async function nextQuotationNumber(organizationId: string) {
   const latest = await prisma.inboundLeadQuotation.findFirst({
@@ -103,16 +97,6 @@ export async function lockLatestLeadQuotation(
         : {}),
     },
   });
-}
-
-export function quotationStatusLabel(status: QuotationStatus) {
-  const labels: Record<QuotationStatus, string> = {
-    DRAFT: "Draft",
-    SENT: "Sent",
-    REVISED: "Superseded",
-    LOCKED: "Locked · Approved",
-  };
-  return labels[status];
 }
 
 export function buildQuotationPublicUrl(shareToken: string) {
