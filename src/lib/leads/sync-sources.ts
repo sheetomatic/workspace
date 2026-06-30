@@ -1,4 +1,4 @@
-import type { InboundLeadStatus, LeadSourceChannel, Prisma } from "@prisma/client";
+import type { InboundLeadStatus, LeadCallingStatus, LeadSourceChannel, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { ingestInboundLead } from "@/lib/leads/ingest";
 import { pullLeadsFromGoogleSheet } from "@/lib/leads/google-sheets";
@@ -11,9 +11,15 @@ export type ExternalLeadRow = {
   phone?: string | null;
   email?: string | null;
   city?: string | null;
+  company?: string | null;
+  address?: string | null;
+  zipCode?: string | null;
   requirement?: string | null;
   sourceDetail?: string | null;
+  meetingNotes?: string | null;
+  callingStatus?: LeadCallingStatus;
   capturedAt?: Date | null;
+  nextFollowUpAt?: Date | null;
   status?: InboundLeadStatus;
   raw?: Record<string, unknown>;
 };
@@ -99,9 +105,15 @@ export async function pullLeadsFromConnection(params: {
         phone: row.phone,
         email: row.email,
         city: row.city,
+        company: row.company,
+        address: row.address,
+        zipCode: row.zipCode,
         requirement: row.requirement,
         sourceDetail: row.sourceDetail,
+        meetingNotes: row.meetingNotes,
+        callingStatus: row.callingStatus,
         capturedAt: row.capturedAt ?? undefined,
+        nextFollowUpAt: row.nextFollowUpAt ?? undefined,
         status: row.status,
         rawPayload: (row.raw ?? row) as Prisma.InputJsonValue,
         createFmsJob: true,
@@ -236,9 +248,15 @@ async function pullGoogleSheetsLeads(
         phone: row.phone,
         email: row.email,
         city: row.city,
+        company: row.company,
+        address: row.address,
+        zipCode: row.zipCode,
         requirement: row.requirement,
         sourceDetail: row.sourceDetail,
+        meetingNotes: row.meetingNotes,
+        callingStatus: row.callingStatus,
         capturedAt: row.capturedAt ?? undefined,
+        nextFollowUpAt: row.nextFollowUpAt ?? undefined,
         status: row.status,
         rawPayload: row.raw as Prisma.InputJsonValue,
         createFmsJob: true,

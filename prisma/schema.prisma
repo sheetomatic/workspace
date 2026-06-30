@@ -188,6 +188,9 @@ model Organization {
   inboundLeads         InboundLead[]
   inboundLeadFollowUps InboundLeadFollowUp[]
   inboundLeadActivities InboundLeadActivity[]
+  inboundLeadPayments InboundLeadPayment[]
+  inboundLeadQuotations InboundLeadQuotation[]
+  leadServiceCatalog   LeadServiceCatalog[]
   leadMachineApiKeyHint String?
   leadMachineApiKeyHash String?
   logoUrl               String?
@@ -887,6 +890,7 @@ model User {
   assignedInboundLeadFollowUps InboundLeadFollowUp[] @relation("InboundLeadFollowUpAssignee")
   createdInboundLeadFollowUps  InboundLeadFollowUp[] @relation("InboundLeadFollowUpCreator")
   inboundLeadActivities        InboundLeadActivity[] @relation("InboundLeadActivityCreator")
+  createdInboundLeadQuotations InboundLeadQuotation[] @relation("InboundLeadQuotationCreator")
   createdAt            DateTime                 @default(now())
   updatedAt            DateTime                 @updatedAt
 }
@@ -1803,15 +1807,60 @@ enum InboundLeadActivityType {
   WHATSAPP
   EDIT
   SYNC
+  MEETING
+  PAYMENT
 }
 
 enum InboundLeadStatus {
   NEW
+  SCHEDULE_MEETING
+  MEETING_NOTES
   CONTACTED
   FOLLOW_UP
   QUALIFIED
+  PROPOSAL_INVOICE
+  PAYMENT
+  PROJECT_ACTIVE
   WON
   LOST
+}
+
+enum LeadCallingStatus {
+  NOT_CALLED
+  CALLING
+  NO_ANSWER
+  CONNECTED
+  NOT_INTERESTED
+}
+
+enum LeadProjectStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum LeadPaymentType {
+  ADVANCE
+  PARTIAL
+  FULL
+  TRAINING_FEE
+  WHATSAPP_API_SETUP
+  WHATSAPP_API_RECHARGE
+  YOUTUBE_ADSENSE
+  COURSE_FEE
+}
+
+enum LeadPaymentMethod {
+  BANK_TRANSFER
+  CASH_DEPOSIT
+  UPI
+}
+
+enum QuotationRequestType {
+  PROPOSAL
+  INVOICE
 }
 
 enum LeadConnectionSyncStatus {
@@ -1854,10 +1903,17 @@ model InboundLead {
   city           String?
   requirement    String?
   sourceDetail   String?
+  company        String?
+  address        String?
+  zipCode        String?
   category       String?
   pipeValue      Decimal?             @db.Decimal(14, 2)
   quotationValue Decimal?             @db.Decimal(14, 2)
   discussionNotes String?
+  meetingNotes   String?
+  callingStatus  LeadCallingStatus    @default(NOT_CALLED)
+  projectStatus  LeadProjectStatus    @default(NOT_STARTED)
+  aiSuggestedStatus InboundLeadStatus?
   status         InboundLeadStatus    @default(NEW)
   rawPayload     Json?
   fmsInstanceId  String?              @unique
@@ -1870,6 +1926,9 @@ model InboundLead {
   capturedAt     DateTime?
   followUps      InboundLeadFollowUp[]
   activities     InboundLeadActivity[]
+  payments       InboundLeadPayment[]
+  quotations     InboundLeadQuotation[]
+  offeredServices InboundLeadOfferedService[]
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
 
@@ -1917,4 +1976,99 @@ model InboundLeadFollowUp {
 
   @@index([organizationId, scheduledAt])
   @@index([leadId])
+}
+
+model LeadServiceCatalog {
+  id              String        @id @default(cuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  serviceCategory String
+  subCategory     String
+  unitPrice       Decimal?      @db.Decimal(14, 2)
+  durationDays    Int?
+  sortOrder       Int           @default(0)
+  offeredOnLeads  InboundLeadOfferedService[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([organizationId, serviceCategory, subCategory])
+  @@index([organizationId, serviceCategory])
+}
+
+model InboundLeadOfferedService {
+  id              String             @id @default(cuid())
+  organizationId  String
+  leadId          String
+  lead            InboundLead        @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  catalogId       String?
+  catalog         LeadServiceCatalog? @relation(fields: [catalogId], references: [id], onDelete: SetNull)
+  serviceCategory String
+  subCategory     String
+  unitPrice       Decimal?           @db.Decimal(14, 2)
+  createdAt       DateTime           @default(now())
+
+  @@index([leadId])
+  @@index([organizationId, leadId])
+}
+
+model InboundLeadPayment {
+  id             String            @id @default(cuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  leadId         String
+  lead           InboundLead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  paymentType    LeadPaymentType
+  receivedAmount Decimal           @db.Decimal(14, 2)
+  receivedDate   DateTime
+  paymentMethod  LeadPaymentMethod
+  notes          String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([organizationId, leadId, receivedDate])
+  @@index([leadId])
+}
+
+model InboundLeadQuotation {
+  id               String                   @id @default(cuid())
+  organizationId   String
+  organization     Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  leadId           String
+  lead             InboundLead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  quotationNumber  String
+  requestType      QuotationRequestType     @default(PROPOSAL)
+  company          String?
+  address          String?
+  zipCode          String?
+  quotationDate    DateTime
+  projectStartDate DateTime?
+  durationDays     Int?
+  endDate          DateTime?
+  subtotal         Decimal                  @db.Decimal(14, 2)
+  taxAmount        Decimal?                 @db.Decimal(14, 2)
+  totalAmount      Decimal                  @db.Decimal(14, 2)
+  notes            String?
+  sentAt           DateTime?
+  createdByUserId  String?
+  createdBy        User?                    @relation("InboundLeadQuotationCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  lines            InboundLeadQuotationLine[]
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+
+  @@unique([organizationId, quotationNumber])
+  @@index([organizationId, leadId])
+  @@index([leadId])
+}
+
+model InboundLeadQuotationLine {
+  id              String               @id @default(cuid())
+  quotationId     String
+  quotation       InboundLeadQuotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  serviceCategory String
+  subCategory     String
+  quantity        Int                  @default(1)
+  unitPrice       Decimal              @db.Decimal(14, 2)
+  lineTotal       Decimal              @db.Decimal(14, 2)
+
+  @@index([quotationId])
 }

@@ -1,5 +1,6 @@
 import type {
   InboundLeadStatus,
+  LeadCallingStatus,
   LeadSourceChannel,
   Prisma,
 } from "@prisma/client";
@@ -14,6 +15,7 @@ import {
   categorizeLeadRequirement,
   defaultPipeValueForCategory,
 } from "@/lib/leads/categories";
+import { inferLeadStageFromRequirement } from "@/lib/leads/stage-ai";
 import {
   defaultGoogleSheetsLeadConfig,
   resolveGoogleSheetsLeadConfig,
@@ -27,8 +29,13 @@ export type LeadIngestInput = {
   phone?: string | null;
   email?: string | null;
   city?: string | null;
+  company?: string | null;
+  address?: string | null;
+  zipCode?: string | null;
   requirement?: string | null;
   sourceDetail?: string | null;
+  meetingNotes?: string | null;
+  callingStatus?: LeadCallingStatus;
   status?: InboundLeadStatus;
   assignedToId?: string | null;
   nextFollowUpAt?: Date | null;
@@ -169,17 +176,28 @@ export async function ingestInboundLead(input: LeadIngestInput) {
       : lead.category ?? categorizeLeadRequirement(requirement);
   const pipeValue = lead?.pipeValue ?? defaultPipeValueForCategory(category);
 
+  const aiSuggestedStatus = inferLeadStageFromRequirement(requirement);
+  const isNewLead = !lead;
+  const resolvedStatus =
+    input.status ?? (isNewLead ? aiSuggestedStatus : lead?.status ?? "NEW");
+
   const data = {
     connectionId: connection?.id ?? null,
     name: input.name?.trim() || undefined,
     phone: phone ?? undefined,
     email: input.email?.trim() || undefined,
     city: input.city?.trim() || undefined,
+    company: input.company?.trim() || undefined,
+    address: input.address?.trim() || undefined,
+    zipCode: input.zipCode?.trim() || undefined,
     requirement,
     sourceDetail: input.sourceDetail?.trim() || undefined,
+    meetingNotes: input.meetingNotes?.trim() || undefined,
+    callingStatus: input.callingStatus ?? undefined,
     category,
     pipeValue,
-    status: input.status,
+    aiSuggestedStatus,
+    status: resolvedStatus,
     assignedToId: input.assignedToId ?? undefined,
     nextFollowUpAt: input.nextFollowUpAt ?? undefined,
     capturedAt: input.capturedAt ?? undefined,
@@ -188,24 +206,29 @@ export async function ingestInboundLead(input: LeadIngestInput) {
     externalId: externalId ?? undefined,
   };
 
-  let isNew = false;
+  let created = false;
 
   if (lead) {
     lead = await prisma.inboundLead.update({
       where: { id: lead.id },
       data: {
         ...data,
+        capturedAt:
+          input.capturedAt !== undefined && input.capturedAt !== null
+            ? input.capturedAt
+            : undefined,
         rawPayload: input.rawPayload ?? lead.rawPayload ?? undefined,
       },
     });
   } else {
-    isNew = true;
+    created = true;
     lead = await prisma.inboundLead.create({
       data: {
         organizationId: input.organizationId,
         channel: input.channel,
         ...data,
-        status: input.status ?? "NEW",
+        status: resolvedStatus,
+        capturedAt: input.capturedAt ?? undefined,
       },
     });
   }
@@ -219,7 +242,7 @@ export async function ingestInboundLead(input: LeadIngestInput) {
     });
   }
 
-  return { lead, fmsBridge, created: isNew };
+  return { lead, fmsBridge, created };
 }
 
 export function queueLeadSyncFromWhatsApp(params: {

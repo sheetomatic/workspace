@@ -1,4 +1,4 @@
-import type { InboundLeadStatus } from "@prisma/client";
+import type { InboundLeadStatus, LeadCallingStatus } from "@prisma/client";
 import {
   createGoogleSheetsClient,
   isGoogleSheetsAuthConfigured,
@@ -6,6 +6,7 @@ import {
 import { parseSheetDate } from "@/lib/integrations/google-sheets-parse";
 import { extractSheetGid, extractSpreadsheetId } from "@/lib/integrations/resolve-sheet-id";
 import { parseCsv } from "@/lib/legal-cases/import-csv";
+import { mapSheetStageToStatus } from "@/lib/leads/stage-ai";
 import type { ExternalLeadRow } from "@/lib/leads/sync-sources";
 import {
   defaultGoogleSheetsLeadConfig,
@@ -23,8 +24,18 @@ const HEADER_ALIASES = {
     "timestamp",
     "time",
     "submitted",
+    "last contacted at",
   ],
-  name: ["name", "lead name", "customer", "client", "contact name", "full name"],
+  name: [
+    "name",
+    "lead name",
+    "customer",
+    "client",
+    "contact name",
+    "full name",
+    "clients name",
+    "client name",
+  ],
   phone: [
     "phone",
     "mobile",
@@ -46,6 +57,7 @@ const HEADER_ALIASES = {
   requirement: [
     "requirement",
     "requirement description",
+    "client requirement",
     "message",
     "notes",
     "query",
@@ -55,7 +67,17 @@ const HEADER_ALIASES = {
     "need",
   ],
   sourceDetail: ["source", "campaign", "channel", "form", "ad", "medium"],
-  status: ["status", "stage", "pipeline"],
+  status: ["status", "stage", "pipeline", "next step", "next stage"],
+  nextFollowUp: [
+    "next followup date",
+    "next follow up date",
+    "next follow-up date",
+    "follow up date",
+  ],
+  meetingNotes: ["meeting notes", "discussion notes", "call remarks"],
+  callingStatus: ["calling status", "call status"],
+  address: ["address"],
+  zipCode: ["zip", "zip code", "pincode", "pin code"],
 } as const;
 
 function normalizeHeader(value: string) {
@@ -94,19 +116,47 @@ function cellAt(row: string[], index: number) {
 }
 
 function mapSheetStatus(value: string): InboundLeadStatus | undefined {
+  const fromStage = mapSheetStageToStatus(value);
+  if (fromStage) {
+    return fromStage;
+  }
+
   const normalized = value.trim().toUpperCase().replace(/\s+/g, "_");
   const map: Record<string, InboundLeadStatus> = {
     NEW: "NEW",
+    SCHEDULE_MEETING: "SCHEDULE_MEETING",
+    MEETING_NOTES: "MEETING_NOTES",
     CONTACTED: "CONTACTED",
     FOLLOW_UP: "FOLLOW_UP",
     FOLLOWUP: "FOLLOW_UP",
     QUALIFIED: "QUALIFIED",
+    PROPOSAL_INVOICE: "PROPOSAL_INVOICE",
+    PAYMENT: "PAYMENT",
+    PROJECT_ACTIVE: "PROJECT_ACTIVE",
     WON: "WON",
     CLOSED_WON: "WON",
     LOST: "LOST",
     CLOSED_LOST: "LOST",
   };
   return map[normalized];
+}
+
+function mapSheetCallingStatus(value: string): LeadCallingStatus | undefined {
+  const normalized = value.trim().toLowerCase();
+  const map: Record<string, LeadCallingStatus> = {
+    "not called": "NOT_CALLED",
+    calling: "CALLING",
+    "no answer": "NO_ANSWER",
+    "no an": "NO_ANSWER",
+    connected: "CONNECTED",
+    "not interested": "NOT_INTERESTED",
+  };
+  for (const [key, status] of Object.entries(map)) {
+    if (normalized.startsWith(key)) {
+      return status;
+    }
+  }
+  return undefined;
 }
 
 function stableExternalId(params: {
@@ -157,6 +207,11 @@ export function parseLeadsSheetRows(
     requirement: columnIndex(headerIndex, HEADER_ALIASES.requirement),
     sourceDetail: columnIndex(headerIndex, HEADER_ALIASES.sourceDetail),
     status: columnIndex(headerIndex, HEADER_ALIASES.status),
+    nextFollowUp: columnIndex(headerIndex, HEADER_ALIASES.nextFollowUp),
+    meetingNotes: columnIndex(headerIndex, HEADER_ALIASES.meetingNotes),
+    callingStatus: columnIndex(headerIndex, HEADER_ALIASES.callingStatus),
+    address: columnIndex(headerIndex, HEADER_ALIASES.address),
+    zipCode: columnIndex(headerIndex, HEADER_ALIASES.zipCode),
   };
 
   const parsed: ExternalLeadRow[] = [];
@@ -188,6 +243,9 @@ export function parseLeadsSheetRows(
     const capturedAt = capturedAtRaw ? parseSheetDate(capturedAtRaw) : null;
     const statusRaw = cellAt(row, col.status);
     const status = statusRaw ? mapSheetStatus(statusRaw) : undefined;
+    const remarks = cellAt(row, col.meetingNotes);
+    const nextFollowUpRaw = cellAt(row, col.nextFollowUp);
+    const callingRaw = cellAt(row, col.callingStatus);
 
     const company = cellAt(row, col.company);
     const role = cellAt(row, col.role);
@@ -211,10 +269,16 @@ export function parseLeadsSheetRows(
       phone: phone || null,
       email: email || null,
       city: cellAt(row, col.city) || null,
+      company: company || null,
+      address: cellAt(row, col.address) || null,
+      zipCode: cellAt(row, col.zipCode) || null,
       requirement: requirement || null,
       sourceDetail: sourceParts.join(" · ") || null,
       capturedAt,
       status,
+      nextFollowUpAt: nextFollowUpRaw ? parseSheetDate(nextFollowUpRaw) : null,
+      meetingNotes: remarks || null,
+      callingStatus: callingRaw ? mapSheetCallingStatus(callingRaw) : undefined,
       raw,
     });
   }

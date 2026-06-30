@@ -59,7 +59,7 @@ export async function getLeadsMachineStatsForPeriod(
     prisma.inboundLead.count({
       where: {
         ...periodWhere,
-        status: { in: ["NEW", "CONTACTED", "FOLLOW_UP", "QUALIFIED"] },
+        status: { in: ["NEW", "SCHEDULE_MEETING", "MEETING_NOTES", "CONTACTED", "FOLLOW_UP", "QUALIFIED", "PROPOSAL_INVOICE", "PAYMENT", "PROJECT_ACTIVE"] },
       },
     }),
     prisma.inboundLead.count({
@@ -142,10 +142,22 @@ export async function listInboundLeadsForPeriodPaginated(
         },
         activities: {
           orderBy: { createdAt: "desc" },
-          take: 8,
+          take: 12,
           include: {
             createdBy: { select: { id: true, name: true, email: true } },
           },
+        },
+        payments: {
+          orderBy: { receivedDate: "desc" },
+          take: 10,
+        },
+        quotations: {
+          orderBy: { quotationDate: "desc" },
+          take: 5,
+          include: { lines: true },
+        },
+        offeredServices: {
+          orderBy: { createdAt: "desc" },
         },
       },
     }),
@@ -289,7 +301,7 @@ export async function getLeadsMachineStats(organizationId: string) {
     prisma.inboundLead.count({
       where: {
         organizationId,
-        status: { in: ["NEW", "CONTACTED", "FOLLOW_UP", "QUALIFIED"] },
+        status: { in: ["NEW", "SCHEDULE_MEETING", "MEETING_NOTES", "CONTACTED", "FOLLOW_UP", "QUALIFIED", "PROPOSAL_INVOICE", "PAYMENT", "PROJECT_ACTIVE"] },
       },
     }),
   ]);

@@ -1,7 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { InboundLeadStatus, LeadSourceChannel, Prisma } from "@prisma/client";
+import type {
+  InboundLeadStatus,
+  LeadPaymentMethod,
+  LeadPaymentType,
+  LeadProjectStatus,
+  LeadCallingStatus,
+  QuotationRequestType,
+} from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { isActiveOrgMember } from "@/lib/assignee-org";
 import { logInboundLeadActivity } from "@/lib/leads/activity";
@@ -21,6 +28,9 @@ import {
 } from "@/lib/leads/sync-messages";
 import { pullLeadsFromConnection } from "@/lib/leads/sync-sources";
 import { ingestInboundLead } from "@/lib/leads/ingest";
+import { computeQuotationTotals, nextQuotationNumber } from "@/lib/leads/quotations";
+import { inferLeadStageFromRequirement } from "@/lib/leads/stage-ai";
+import { leadStatusLabel } from "@/lib/leads/status-labels";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 
@@ -504,6 +514,281 @@ export async function createManualInboundLead(formData: FormData) {
     capturedAt: new Date(),
     actorUserId: user.id,
     createFmsJob: true,
+  });
+
+  revalidatePath("/app/leads");
+  return { ok: true };
+}
+
+export async function applyAiSuggestedLeadStatus(leadId: string) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  const lead = await prisma.inboundLead.findFirst({
+    where: { id: leadId, organizationId: user.organizationId },
+    select: { requirement: true, aiSuggestedStatus: true },
+  });
+  if (!lead) {
+    return { ok: false, message: "Lead not found." };
+  }
+
+  const nextStatus =
+    lead.aiSuggestedStatus ?? inferLeadStageFromRequirement(lead.requirement);
+
+  await prisma.inboundLead.updateMany({
+    where: { id: leadId, organizationId: user.organizationId },
+    data: { status: nextStatus },
+  });
+
+  await logInboundLeadActivity({
+    organizationId: user.organizationId,
+    leadId,
+    type: "STATUS_CHANGE",
+    body: `AI applied status: ${leadStatusLabel(nextStatus)}`,
+    createdByUserId: user.id,
+  });
+
+  revalidatePath("/app/leads");
+  return { ok: true, status: nextStatus };
+}
+
+export async function updateLeadMeetingNotes(leadId: string, meetingNotes: string) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  const trimmed = meetingNotes.trim();
+  await prisma.inboundLead.updateMany({
+    where: { id: leadId, organizationId: user.organizationId },
+    data: {
+      meetingNotes: trimmed || null,
+      ...(trimmed ? { status: "MEETING_NOTES" as const } : {}),
+    },
+  });
+
+  if (trimmed) {
+    await logInboundLeadActivity({
+      organizationId: user.organizationId,
+      leadId,
+      type: "MEETING",
+      body: trimmed,
+      createdByUserId: user.id,
+    });
+  }
+
+  revalidatePath("/app/leads");
+  return { ok: true };
+}
+
+export async function updateLeadProjectStatus(
+  leadId: string,
+  projectStatus: LeadProjectStatus,
+) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  await prisma.inboundLead.updateMany({
+    where: { id: leadId, organizationId: user.organizationId },
+    data: {
+      projectStatus,
+      ...(projectStatus === "IN_PROGRESS" ? { status: "PROJECT_ACTIVE" as const } : {}),
+    },
+  });
+
+  revalidatePath("/app/leads");
+  return { ok: true };
+}
+
+export async function addInboundLeadPayment(params: {
+  leadId: string;
+  paymentType: LeadPaymentType;
+  receivedAmount: string;
+  receivedDate: string;
+  paymentMethod: LeadPaymentMethod;
+  notes?: string;
+}) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  const amount = Number.parseFloat(params.receivedAmount);
+  const receivedDate = new Date(params.receivedDate);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return { ok: false, message: "Enter a valid amount." };
+  }
+  if (Number.isNaN(receivedDate.getTime())) {
+    return { ok: false, message: "Invalid payment date." };
+  }
+
+  await prisma.inboundLeadPayment.create({
+    data: {
+      organizationId: user.organizationId,
+      leadId: params.leadId,
+      paymentType: params.paymentType,
+      receivedAmount: amount,
+      receivedDate,
+      paymentMethod: params.paymentMethod,
+      notes: params.notes?.trim() || null,
+    },
+  });
+
+  await prisma.inboundLead.updateMany({
+    where: { id: params.leadId, organizationId: user.organizationId },
+    data: { status: "PAYMENT" },
+  });
+
+  await logInboundLeadActivity({
+    organizationId: user.organizationId,
+    leadId: params.leadId,
+    type: "PAYMENT",
+    body: `₹${amount.toLocaleString("en-IN")} · ${params.paymentType.replaceAll("_", " ")}`,
+    createdByUserId: user.id,
+  });
+
+  revalidatePath("/app/leads");
+  return { ok: true };
+}
+
+export async function addLeadOfferedService(params: {
+  leadId: string;
+  catalogId: string;
+}) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  const catalog = await prisma.leadServiceCatalog.findFirst({
+    where: { id: params.catalogId, organizationId: user.organizationId },
+  });
+  if (!catalog) {
+    return { ok: false, message: "Service not found." };
+  }
+
+  await prisma.inboundLeadOfferedService.create({
+    data: {
+      organizationId: user.organizationId,
+      leadId: params.leadId,
+      catalogId: catalog.id,
+      serviceCategory: catalog.serviceCategory,
+      subCategory: catalog.subCategory,
+      unitPrice: catalog.unitPrice,
+    },
+  });
+
+  revalidatePath("/app/leads");
+  return { ok: true };
+}
+
+export async function createLeadQuotation(params: {
+  leadId: string;
+  requestType: QuotationRequestType;
+  durationDays?: string;
+  notes?: string;
+  lineCatalogIds: string[];
+}) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  const lead = await prisma.inboundLead.findFirst({
+    where: { id: params.leadId, organizationId: user.organizationId },
+    include: { offeredServices: true },
+  });
+  if (!lead) {
+    return { ok: false, message: "Lead not found." };
+  }
+
+  const catalogIds =
+    params.lineCatalogIds.length > 0
+      ? params.lineCatalogIds
+      : (lead.offeredServices.map((item) => item.catalogId).filter(Boolean) as string[]);
+
+  const catalog = await prisma.leadServiceCatalog.findMany({
+    where: { organizationId: user.organizationId, id: { in: catalogIds } },
+  });
+  if (catalog.length === 0) {
+    return { ok: false, message: "Add at least one offered service first." };
+  }
+
+  const lines = catalog.map((item) => {
+    const price = item.unitPrice ? Number(item.unitPrice) : 0;
+    return {
+      serviceCategory: item.serviceCategory,
+      subCategory: item.subCategory,
+      quantity: 1,
+      unitPrice: price,
+      lineTotal: price,
+    };
+  });
+
+  const totals = computeQuotationTotals(lines);
+  const quotationNumber = await nextQuotationNumber(user.organizationId);
+  const durationDays = Number.parseInt(params.durationDays ?? "", 10);
+  const quotationDate = new Date();
+  const projectStartDate = quotationDate;
+  const endDate = Number.isFinite(durationDays)
+    ? new Date(projectStartDate.getTime() + durationDays * 86400000)
+    : null;
+
+  const quotation = await prisma.inboundLeadQuotation.create({
+    data: {
+      organizationId: user.organizationId,
+      leadId: lead.id,
+      quotationNumber,
+      requestType: params.requestType,
+      company: lead.company,
+      address: lead.address,
+      zipCode: lead.zipCode,
+      quotationDate,
+      projectStartDate,
+      durationDays: Number.isFinite(durationDays) ? durationDays : null,
+      endDate,
+      subtotal: totals.subtotal,
+      totalAmount: totals.totalAmount,
+      notes: params.notes?.trim() || null,
+      createdByUserId: user.id,
+      lines: { create: lines },
+    },
+  });
+
+  await prisma.inboundLead.updateMany({
+    where: { id: lead.id, organizationId: user.organizationId },
+    data: {
+      status: "PROPOSAL_INVOICE",
+      quotationValue: totals.totalAmount,
+    },
+  });
+
+  await logInboundLeadActivity({
+    organizationId: user.organizationId,
+    leadId: lead.id,
+    type: "QUOTATION",
+    body: `${quotationNumber} · ${params.requestType} · ₹${totals.totalAmount.toLocaleString("en-IN")}`,
+    createdByUserId: user.id,
+    metadata: { quotationId: quotation.id },
+  });
+
+  revalidatePath("/app/leads");
+  return { ok: true, quotationId: quotation.id, quotationNumber };
+}
+
+export async function markLeadQuotationSent(quotationId: string) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  await prisma.inboundLeadQuotation.updateMany({
+    where: { id: quotationId, organizationId: user.organizationId },
+    data: { sentAt: new Date() },
   });
 
   revalidatePath("/app/leads");

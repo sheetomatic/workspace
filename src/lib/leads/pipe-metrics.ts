@@ -34,9 +34,14 @@ export function resolveLeadMonetaryValue(lead: LeadValueRow) {
 export function computePipeMetrics(leads: LeadValueRow[]) {
   const openStatuses: InboundLeadStatus[] = [
     "NEW",
+    "SCHEDULE_MEETING",
+    "MEETING_NOTES",
     "CONTACTED",
     "FOLLOW_UP",
     "QUALIFIED",
+    "PROPOSAL_INVOICE",
+    "PAYMENT",
+    "PROJECT_ACTIVE",
   ];
 
   let pipeCount = 0;

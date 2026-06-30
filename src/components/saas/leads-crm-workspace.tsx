@@ -4,25 +4,15 @@ import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import type { InboundLeadStatus } from "@prisma/client";
 import {
-  addInboundLeadNote,
   assignInboundLead,
   deleteInboundLead,
   logLeadContactAction,
-  scheduleInboundLeadFollowUp,
-  updateInboundLeadDetails,
   updateInboundLeadStatus,
 } from "@/app/app/leads/actions";
+import { LeadDrawerPanel } from "@/components/saas/leads-drawer-panel";
 import { leadCategoryLabel } from "@/lib/leads/categories";
 import { buildLeadsListQuery, type LeadsListSearchParams } from "@/lib/leads/list-params";
-
-const STATUS_LABELS: Record<InboundLeadStatus, string> = {
-  NEW: "New",
-  CONTACTED: "Contacted",
-  FOLLOW_UP: "Follow-up",
-  QUALIFIED: "Qualified",
-  WON: "Won",
-  LOST: "Lost",
-};
+import { LEAD_STATUS_LABELS, leadStatusLabel } from "@/lib/leads/status-labels";
 
 type TeamMember = {
   user: { id: string; name: string | null; email: string };
@@ -41,10 +31,17 @@ type LeadRow = {
   name: string | null;
   phone: string | null;
   email: string | null;
+  company: string | null;
+  address: string | null;
+  zipCode: string | null;
   requirement: string | null;
   category: string | null;
   status: InboundLeadStatus;
+  aiSuggestedStatus: InboundLeadStatus | null;
+  callingStatus: string;
+  projectStatus: string;
   discussionNotes: string | null;
+  meetingNotes: string | null;
   quotationValue: string | number | null;
   pipeValue: string | number | null;
   nextFollowUpAt: string | null;
@@ -55,6 +52,28 @@ type LeadRow = {
     id: string;
     scheduledAt: string;
     notes: string | null;
+  }>;
+  payments: Array<{
+    id: string;
+    paymentType: string;
+    receivedAmount: string | number;
+    receivedDate: string;
+    paymentMethod: string;
+    notes: string | null;
+  }>;
+  quotations: Array<{
+    id: string;
+    quotationNumber: string;
+    requestType: string;
+    totalAmount: string | number;
+    quotationDate: string;
+    sentAt: string | null;
+  }>;
+  offeredServices: Array<{
+    id: string;
+    serviceCategory: string;
+    subCategory: string;
+    unitPrice: string | number | null;
   }>;
   activities: ActivityRow[];
 };
@@ -83,14 +102,6 @@ function waHref(phone: string | null, name: string | null) {
   return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
 }
 
-function defaultFollowUpLocal() {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  d.setHours(10, 0, 0, 0);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
 export function LeadsCrmWorkspace({
   leads,
   total,
@@ -103,6 +114,7 @@ export function LeadsCrmWorkspace({
   teamMembers,
   canManage,
   sort,
+  serviceCatalog,
 }: {
   leads: LeadRow[];
   total: number;
@@ -115,6 +127,12 @@ export function LeadsCrmWorkspace({
   teamMembers: TeamMember[];
   canManage: boolean;
   sort: "newest" | "oldest";
+  serviceCatalog: Array<{
+    id: string;
+    serviceCategory: string;
+    subCategory: string;
+    unitPrice: string | number | null;
+  }>;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchDraft, setSearchDraft] = useState(listParams.q ?? "");
@@ -242,14 +260,14 @@ export function LeadsCrmWorkspace({
                             })
                           }
                         >
-                          {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                          {Object.entries(LEAD_STATUS_LABELS).map(([value, label]) => (
                             <option key={value} value={value}>
                               {label}
                             </option>
                           ))}
                         </select>
                       ) : (
-                        STATUS_LABELS[lead.status]
+                        leadStatusLabel(lead.status)
                       )}
                     </td>
                     <td>
@@ -367,204 +385,17 @@ export function LeadsCrmWorkspace({
       </div>
 
       {selected ? (
-        <LeadDetailDrawer
-          canManage={canManage}
-          lead={selected}
-          onClose={() => setSelectedId(null)}
-          pending={pending}
-          startTransition={startTransition}
-        />
-      ) : null}
-    </div>
-  );
-}
-
-function LeadDetailDrawer({
-  lead,
-  canManage,
-  onClose,
-  pending,
-  startTransition,
-}: {
-  lead: LeadRow;
-  canManage: boolean;
-  onClose: () => void;
-  pending: boolean;
-  startTransition: (callback: () => Promise<void>) => void;
-}) {
-  const [name, setName] = useState(lead.name ?? "");
-  const [phone, setPhone] = useState(lead.phone ?? "");
-  const [email, setEmail] = useState(lead.email ?? "");
-  const [requirement, setRequirement] = useState(lead.requirement ?? "");
-  const [discussionNotes, setDiscussionNotes] = useState(lead.discussionNotes ?? "");
-  const [quotationValue, setQuotationValue] = useState(String(lead.quotationValue ?? ""));
-  const [pipeValue, setPipeValue] = useState(String(lead.pipeValue ?? ""));
-  const [followUpAt, setFollowUpAt] = useState(defaultFollowUpLocal());
-  const [noteDraft, setNoteDraft] = useState("");
-
-  return (
-    <div className="leads-drawer-backdrop" role="presentation" onClick={onClose}>
-      <aside
-        className="leads-drawer"
-        role="dialog"
-        aria-label="Lead details"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <header className="leads-drawer-head">
-          <div>
-            <h2>{lead.name || "Lead details"}</h2>
-            <p className="leads-machine-muted">
-              {leadCategoryLabel(lead.category)} · {STATUS_LABELS[lead.status]}
-            </p>
-          </div>
-          <button type="button" className="btn-secondary btn-sm" onClick={onClose}>
-            Close
-          </button>
-        </header>
-
-        {canManage ? (
-          <div className="leads-drawer-form">
-            <label>
-              Name
-              <input value={name} onChange={(e) => setName(e.target.value)} />
-            </label>
-            <label>
-              Phone
-              <input value={phone} onChange={(e) => setPhone(e.target.value)} />
-            </label>
-            <label>
-              Email
-              <input value={email} onChange={(e) => setEmail(e.target.value)} />
-            </label>
-            <label>
-              Requirement
-              <textarea value={requirement} onChange={(e) => setRequirement(e.target.value)} />
-            </label>
-            <label>
-              Discussion notes
-              <textarea
-                value={discussionNotes}
-                onChange={(e) => setDiscussionNotes(e.target.value)}
-              />
-            </label>
-            <div className="leads-drawer-grid">
-              <label>
-                Quotation (₹)
-                <input
-                  type="number"
-                  value={quotationValue}
-                  onChange={(e) => setQuotationValue(e.target.value)}
-                />
-              </label>
-              <label>
-                Pipe value (₹)
-                <input
-                  type="number"
-                  value={pipeValue}
-                  onChange={(e) => setPipeValue(e.target.value)}
-                />
-              </label>
-            </div>
-            <button
-              type="button"
-              className="btn-primary"
-              disabled={pending}
-              onClick={() =>
-                startTransition(async () => {
-                  await updateInboundLeadDetails({
-                    leadId: lead.id,
-                    name,
-                    phone,
-                    email,
-                    requirement,
-                    discussionNotes,
-                    quotationValue,
-                    pipeValue,
-                  });
-                })
-              }
-            >
-              Save lead
-            </button>
-          </div>
-        ) : null}
-
-        <section className="leads-drawer-section">
-          <h3>Follow-up</h3>
-          <div className="leads-drawer-grid">
-            <label>
-              Next follow-up
-              <input
-                type="datetime-local"
-                value={followUpAt}
-                onChange={(e) => setFollowUpAt(e.target.value)}
-              />
-            </label>
-          </div>
-          {canManage ? (
-            <button
-              type="button"
-              className="btn-secondary"
-              disabled={pending}
-              onClick={() =>
-                startTransition(async () => {
-                  await scheduleInboundLeadFollowUp({
-                    leadId: lead.id,
-                    scheduledAt: followUpAt,
-                    notes: noteDraft,
-                  });
-                })
-              }
-            >
-              Schedule follow-up
-            </button>
-          ) : null}
-        </section>
-
-        <section className="leads-drawer-section">
-          <h3>Quick note</h3>
-          <textarea
-            value={noteDraft}
-            onChange={(e) => setNoteDraft(e.target.value)}
-            placeholder="Discussion note for history log"
+        <div className="leads-drawer-backdrop" role="presentation" onClick={() => setSelectedId(null)}>
+          <LeadDrawerPanel
+            canManage={canManage}
+            lead={selected}
+            onClose={() => setSelectedId(null)}
+            pending={pending}
+            serviceCatalog={serviceCatalog}
+            startTransition={startTransition}
           />
-          {canManage ? (
-            <button
-              type="button"
-              className="btn-secondary"
-              disabled={pending}
-              onClick={() =>
-                startTransition(async () => {
-                  await addInboundLeadNote(lead.id, noteDraft);
-                  setNoteDraft("");
-                })
-              }
-            >
-              Add to history
-            </button>
-          ) : null}
-        </section>
-
-        <section className="leads-drawer-section">
-          <h3>History & logs</h3>
-          <ul className="leads-history-list">
-            {lead.activities.length === 0 ? (
-              <li className="leads-machine-muted">No activity yet.</li>
-            ) : (
-              lead.activities.map((item) => (
-                <li key={item.id}>
-                  <strong>{item.type.replaceAll("_", " ")}</strong>
-                  <span>{item.body}</span>
-                  <em>
-                    {new Date(item.createdAt).toLocaleString("en-IN")} ·{" "}
-                    {item.createdBy?.name || item.createdBy?.email || "System"}
-                  </em>
-                </li>
-              ))
-            )}
-          </ul>
-        </section>
-      </aside>
+        </div>
+      ) : null}
     </div>
   );
 }

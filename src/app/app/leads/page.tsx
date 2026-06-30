@@ -19,6 +19,8 @@ import {
 } from "@/lib/leads/queries";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
+import { listLeadServiceCatalog } from "@/lib/leads/service-catalog";
+import { inferLeadStageFromRequirement } from "@/lib/leads/stage-ai";
 import { listWorkspaceMembers } from "@/lib/workspace";
 import { prisma } from "@/lib/db";
 
@@ -45,10 +47,17 @@ function serializeLead(lead: Awaited<ReturnType<typeof listInboundLeadsForPeriod
     name: lead.name,
     phone: lead.phone,
     email: lead.email,
+    company: lead.company,
+    address: lead.address,
+    zipCode: lead.zipCode,
     requirement: lead.requirement,
     category: lead.category,
     status: lead.status,
+    aiSuggestedStatus: lead.aiSuggestedStatus,
+    callingStatus: lead.callingStatus,
+    projectStatus: lead.projectStatus,
     discussionNotes: lead.discussionNotes,
+    meetingNotes: lead.meetingNotes,
     quotationValue: lead.quotationValue?.toString() ?? null,
     pipeValue: lead.pipeValue?.toString() ?? null,
     nextFollowUpAt: lead.nextFollowUpAt?.toISOString() ?? null,
@@ -59,6 +68,28 @@ function serializeLead(lead: Awaited<ReturnType<typeof listInboundLeadsForPeriod
       id: item.id,
       scheduledAt: item.scheduledAt.toISOString(),
       notes: item.notes,
+    })),
+    payments: (lead.payments ?? []).map((item) => ({
+      id: item.id,
+      paymentType: item.paymentType,
+      receivedAmount: item.receivedAmount.toString(),
+      receivedDate: item.receivedDate.toISOString(),
+      paymentMethod: item.paymentMethod,
+      notes: item.notes,
+    })),
+    quotations: (lead.quotations ?? []).map((item) => ({
+      id: item.id,
+      quotationNumber: item.quotationNumber,
+      requestType: item.requestType,
+      totalAmount: item.totalAmount.toString(),
+      quotationDate: item.quotationDate.toISOString(),
+      sentAt: item.sentAt?.toISOString() ?? null,
+    })),
+    offeredServices: (lead.offeredServices ?? []).map((item) => ({
+      id: item.id,
+      serviceCategory: item.serviceCategory,
+      subCategory: item.subCategory,
+      unitPrice: item.unitPrice?.toString() ?? null,
     })),
     activities: (lead.activities ?? []).map((item) => ({
       id: item.id,
@@ -98,6 +129,26 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
     console.error("leads category backfill", error);
   }
 
+  try {
+    const missingAi = await prisma.inboundLead.findMany({
+      where: { organizationId: user.organizationId, aiSuggestedStatus: null },
+      select: { id: true, requirement: true },
+      take: 200,
+    });
+    if (missingAi.length > 0) {
+      await Promise.all(
+        missingAi.map((lead) =>
+          prisma.inboundLead.update({
+            where: { id: lead.id },
+            data: { aiSuggestedStatus: inferLeadStageFromRequirement(lead.requirement) },
+          }),
+        ),
+      );
+    }
+  } catch (error) {
+    console.error("leads ai status backfill", error);
+  }
+
   const params = await searchParams;
   const period = parseLeadsPeriodParams(params);
   const listParams = parseLeadsListParams(params);
@@ -114,7 +165,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
     });
   }
 
-  const [periodStats, pipeMetrics, leadPage, teamMembers, sheetsConnection, workspaceTotal] =
+  const [periodStats, pipeMetrics, leadPage, teamMembers, sheetsConnection, workspaceTotal, serviceCatalog] =
     await Promise.all([
       getLeadsMachineStatsForPeriod(user.organizationId, period),
       getLeadsPipeMetricsForPeriod(user.organizationId, period),
@@ -122,6 +173,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
       listWorkspaceMembers(user.organizationId),
       getGoogleSheetsLeadConnection(user.organizationId),
       getInboundLeadWorkspaceTotal(user.organizationId),
+      listLeadServiceCatalog(user.organizationId),
     ]);
 
   const lastSyncLabel = sheetsConnection?.lastSyncAt
@@ -179,6 +231,12 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
         total={leadPage.total}
         totalPages={leadPage.totalPages}
         workspaceTotal={workspaceTotal}
+        serviceCatalog={serviceCatalog.map((item) => ({
+          id: item.id,
+          serviceCategory: item.serviceCategory,
+          subCategory: item.subCategory,
+          unitPrice: item.unitPrice?.toString() ?? null,
+        }))}
       />
     </div>
   );

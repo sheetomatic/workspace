@@ -3,14 +3,7 @@ import type { InboundLeadStatus } from "@prisma/client";
 import { leadCategoryLabel } from "@/lib/leads/categories";
 import { buildLeadsListQuery, type LeadsListSearchParams } from "@/lib/leads/list-params";
 
-const STATUS_LABELS: Record<InboundLeadStatus, string> = {
-  NEW: "New",
-  CONTACTED: "Contacted",
-  FOLLOW_UP: "Follow-up",
-  QUALIFIED: "Qualified",
-  WON: "Won",
-  LOST: "Lost",
-};
+import { LEAD_STATUS_ORDER, leadStatusLabel } from "@/lib/leads/status-labels";
 
 export function LeadsPipelineCards({
   baseParams,
@@ -39,9 +32,9 @@ export function LeadsPipelineCards({
   };
   byStatus: Record<string, number>;
 }) {
-  const statusCards = (Object.keys(STATUS_LABELS) as InboundLeadStatus[]).map((status) => ({
+  const statusCards = LEAD_STATUS_ORDER.map((status) => ({
     status,
-    label: STATUS_LABELS[status],
+    label: leadStatusLabel(status),
     count: byStatus[status] ?? 0,
     href: `/app/leads?${buildLeadsListQuery(baseParams, {
       status: activeStatus === status ? "" : status,

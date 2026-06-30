@@ -31,9 +31,14 @@ export function parseLeadsListParams(params: LeadsListSearchParams) {
 function parseStatus(value: string | undefined): InboundLeadStatus | undefined {
   const allowed: InboundLeadStatus[] = [
     "NEW",
+    "SCHEDULE_MEETING",
+    "MEETING_NOTES",
     "CONTACTED",
     "FOLLOW_UP",
     "QUALIFIED",
+    "PROPOSAL_INVOICE",
+    "PAYMENT",
+    "PROJECT_ACTIVE",
     "WON",
     "LOST",
   ];

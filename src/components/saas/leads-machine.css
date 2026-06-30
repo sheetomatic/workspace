@@ -900,3 +900,60 @@
   gap: 0.65rem;
   margin-top: 1rem;
 }
+
+.leads-drawer-wide {
+  width: min(560px, 100vw);
+}
+
+.leads-drawer-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+
+.leads-drawer-tabs button {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.leads-drawer-tabs button.active {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #fff;
+}
+
+.leads-ai-status-btn {
+  margin-top: 0.35rem;
+  border: 1px dashed #a78bfa;
+  background: #f5f3ff;
+  color: #5b21b6;
+  border-radius: 8px;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.leads-service-list,
+.leads-payment-list,
+.leads-quote-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.leads-service-list li,
+.leads-payment-list li,
+.leads-quote-list li {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  display: grid;
+  gap: 0.15rem;
+}
