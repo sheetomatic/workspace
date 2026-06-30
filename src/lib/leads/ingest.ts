@@ -13,7 +13,6 @@ import {
 } from "@/lib/leads/channels";
 import {
   categorizeLeadRequirement,
-  defaultPipeValueForCategory,
 } from "@/lib/leads/categories";
 import { inferLeadStageFromRequirement } from "@/lib/leads/stage-ai";
 import {
@@ -174,7 +173,7 @@ export async function ingestInboundLead(input: LeadIngestInput) {
     !lead || requirementChanged
       ? categorizeLeadRequirement(requirement)
       : lead.category ?? categorizeLeadRequirement(requirement);
-  const pipeValue = lead?.pipeValue ?? defaultPipeValueForCategory(category);
+  const pipeValue = lead?.pipeValue ?? lead?.quotationValue ?? undefined;
 
   const aiSuggestedStatus = inferLeadStageFromRequirement(requirement);
   const isNewLead = !lead;

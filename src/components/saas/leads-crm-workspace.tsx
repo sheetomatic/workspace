@@ -1,18 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import type { InboundLeadStatus } from "@prisma/client";
-import {
-  assignInboundLead,
-  deleteInboundLead,
-  logLeadContactAction,
-  updateInboundLeadStatus,
-} from "@/app/app/leads/actions";
 import { LeadDrawerPanel } from "@/components/saas/leads-drawer-panel";
-import { leadCategoryLabel } from "@/lib/leads/categories";
+import { formatInr, leadCategoryLabel } from "@/lib/leads/categories";
 import { buildLeadsListQuery, type LeadsListSearchParams } from "@/lib/leads/list-params";
-import { LEAD_STATUS_LABELS, leadStatusLabel } from "@/lib/leads/status-labels";
+import { leadStatusLabel } from "@/lib/leads/status-labels";
 
 type TeamMember = {
   user: { id: string; name: string | null; email: string };
@@ -78,28 +72,23 @@ type LeadRow = {
   activities: ActivityRow[];
 };
 
-function formatTimestamp(value: string | null, fallback: string) {
+function formatCompactTimestamp(value: string | null, fallback: string) {
   const date = new Date(value ?? fallback);
   return date.toLocaleString("en-IN", {
     day: "numeric",
     month: "short",
-    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
 }
 
-function phoneDigits(phone: string | null) {
-  return phone?.replace(/\D/g, "") ?? "";
-}
-
-function waHref(phone: string | null, name: string | null) {
-  const digits = phoneDigits(phone);
-  if (!digits) {
+function quotationAmount(lead: LeadRow) {
+  const raw = lead.quotationValue;
+  if (raw == null || raw === "") {
     return null;
   }
-  const message = `Hi ${name || "there"}, thank you for reaching out to Sheetomatic.`;
-  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+  const amount = Number(raw);
+  return Number.isFinite(amount) && amount > 0 ? amount : null;
 }
 
 export function LeadsCrmWorkspace({
@@ -143,6 +132,17 @@ export function LeadsCrmWorkspace({
     [leads, selectedId],
   );
 
+  useEffect(() => {
+    if (!selectedId) {
+      return;
+    }
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [selectedId]);
+
   const sortHref =
     sort === "newest"
       ? `/app/leads?${buildLeadsListQuery(listParams, { sort: "oldest", page: "1" })}`
@@ -151,11 +151,7 @@ export function LeadsCrmWorkspace({
   return (
     <div className="leads-crm">
       <div className="leads-crm-toolbar">
-        <form
-          className="leads-crm-search"
-          action="/app/leads"
-          method="get"
-        >
+        <form className="leads-crm-search" action="/app/leads" method="get">
           {Object.entries(listParams).map(([key, value]) =>
             key !== "q" && key !== "page" && value ? (
               <input key={key} type="hidden" name={key} value={value} />
@@ -166,7 +162,7 @@ export function LeadsCrmWorkspace({
             name="q"
             value={searchDraft}
             onChange={(event) => setSearchDraft(event.target.value)}
-            placeholder="Search name, phone, email, requirement"
+            placeholder="Search leads…"
           />
           <button type="submit" className="btn-secondary btn-sm">
             Search
@@ -174,46 +170,43 @@ export function LeadsCrmWorkspace({
         </form>
         <div className="leads-crm-toolbar-actions">
           <Link className="btn-secondary btn-sm" href={sortHref}>
-            Sort: {sort === "newest" ? "Newest first" : "Oldest first"}
+            {sort === "newest" ? "Newest" : "Oldest"}
           </Link>
           <span className="leads-crm-count">
-            {total} lead{total === 1 ? "" : "s"} · page {page} of {totalPages}
+            {total} leads · p{page}/{totalPages}
           </span>
         </div>
       </div>
 
       <div className="leads-crm-table-wrap">
         <div className="leads-table-head">
-          <h2>Leads ({periodLabel})</h2>
+          <h2>{periodLabel}</h2>
         </div>
-        <table className="leads-crm-table">
+        <table className="leads-crm-table leads-crm-table-compact">
           <thead>
             <tr>
               <th>Lead</th>
-              <th>Timestamp</th>
+              <th>Time</th>
               <th>Category</th>
               <th>Status</th>
-              <th>Owner</th>
-              <th>Next follow-up</th>
-              {canManage ? <th>Actions</th> : null}
+              <th>Quoted</th>
             </tr>
           </thead>
           <tbody>
             {leads.length === 0 ? (
               <tr>
-                <td colSpan={canManage ? 7 : 6}>
+                <td colSpan={5}>
                   <div className="leads-empty-state">
                     <p className="leads-machine-muted">No leads match this filter.</p>
                     {workspaceTotal > 0 && period !== "all" ? (
                       <p className="leads-machine-muted">
-                        {workspaceTotal} lead{workspaceTotal === 1 ? "" : "s"} in this workspace.{" "}
-                        <Link href="/app/leads?period=all">View all leads</Link>
+                        {workspaceTotal} in workspace.{" "}
+                        <Link href="/app/leads?period=all">View all</Link>
                       </p>
                     ) : null}
                     {workspaceTotal === 0 ? (
                       <p className="leads-machine-muted">
-                        Connect Google Sheets in{" "}
-                        <Link href="/app/leads/settings">setup</Link> and run sync to import leads.
+                        <Link href="/app/leads/settings">Setup</Link> Google Sheets to import.
                       </p>
                     ) : null}
                   </div>
@@ -221,140 +214,37 @@ export function LeadsCrmWorkspace({
               </tr>
             ) : (
               leads.map((lead) => {
-                const callDigits = phoneDigits(lead.phone);
-                const whatsapp = waHref(lead.phone, lead.name);
+                const quoted = quotationAmount(lead);
                 return (
-                  <tr key={lead.id} className={selectedId === lead.id ? "is-selected" : ""}>
+                  <tr
+                    key={lead.id}
+                    className={
+                      selectedId === lead.id
+                        ? "leads-crm-row is-selected"
+                        : "leads-crm-row"
+                    }
+                    onClick={() => setSelectedId(lead.id)}
+                  >
                     <td>
-                      <button
-                        type="button"
-                        className="leads-row-open"
-                        onClick={() => setSelectedId(lead.id)}
-                      >
-                        <strong>{lead.name || "Unnamed lead"}</strong>
-                      </button>
-                      <span className="leads-machine-sub">
-                        {lead.phone || lead.email || "No contact"}
+                      <strong className="leads-row-name">{lead.name || "Unnamed"}</strong>
+                      <span className="leads-machine-sub leads-row-contact">
+                        {lead.phone || lead.email || "—"}
                       </span>
-                      {lead.requirement ? (
-                        <span className="leads-machine-sub">{lead.requirement}</span>
-                      ) : null}
                     </td>
-                    <td>{formatTimestamp(lead.capturedAt, lead.createdAt)}</td>
+                    <td className="leads-row-time">
+                      {formatCompactTimestamp(lead.capturedAt, lead.createdAt)}
+                    </td>
                     <td>
                       <span className="leads-category-badge">
                         {leadCategoryLabel(lead.category)}
                       </span>
                     </td>
                     <td>
-                      {canManage ? (
-                        <select
-                          value={lead.status}
-                          disabled={pending}
-                          onChange={(event) =>
-                            startTransition(async () => {
-                              await updateInboundLeadStatus(
-                                lead.id,
-                                event.target.value as InboundLeadStatus,
-                              );
-                            })
-                          }
-                        >
-                          {Object.entries(LEAD_STATUS_LABELS).map(([value, label]) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        leadStatusLabel(lead.status)
-                      )}
+                      <span className="leads-status-badge">{leadStatusLabel(lead.status)}</span>
                     </td>
-                    <td>
-                      {canManage ? (
-                        <select
-                          value={lead.assignedTo?.id ?? ""}
-                          disabled={pending}
-                          onChange={(event) =>
-                            startTransition(async () => {
-                              await assignInboundLead(lead.id, event.target.value || null);
-                            })
-                          }
-                        >
-                          <option value="">Unassigned</option>
-                          {teamMembers.map((member) => (
-                            <option key={member.user.id} value={member.user.id}>
-                              {member.user.name || member.user.email}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        lead.assignedTo?.name || lead.assignedTo?.email || "Unassigned"
-                      )}
+                    <td className="leads-row-quoted">
+                      {quoted ? formatInr(quoted) : "—"}
                     </td>
-                    <td>
-                      {lead.nextFollowUpAt
-                        ? formatTimestamp(lead.nextFollowUpAt, lead.createdAt)
-                        : "—"}
-                    </td>
-                    {canManage ? (
-                      <td>
-                        <div className="leads-row-actions">
-                          {callDigits ? (
-                            <a
-                              className="leads-action-btn"
-                              href={`tel:${callDigits}`}
-                              onClick={() =>
-                                startTransition(async () => {
-                                  await logLeadContactAction(lead.id, "CALL");
-                                })
-                              }
-                            >
-                              Call
-                            </a>
-                          ) : null}
-                          {whatsapp ? (
-                            <a
-                              className="leads-action-btn"
-                              href={whatsapp}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={() =>
-                                startTransition(async () => {
-                                  await logLeadContactAction(lead.id, "WHATSAPP");
-                                })
-                              }
-                            >
-                              WA
-                            </a>
-                          ) : null}
-                          <button
-                            type="button"
-                            className="leads-action-btn"
-                            onClick={() => setSelectedId(lead.id)}
-                          >
-                            Open
-                          </button>
-                          <button
-                            type="button"
-                            className="leads-action-btn danger"
-                            disabled={pending}
-                            onClick={() => {
-                              if (window.confirm("Delete this lead?")) {
-                                startTransition(async () => {
-                                  await deleteInboundLead(lead.id);
-                                  if (selectedId === lead.id) {
-                                    setSelectedId(null);
-                                  }
-                                });
-                              }
-                            }}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    ) : null}
                   </tr>
                 );
               })
@@ -369,7 +259,7 @@ export function LeadsCrmWorkspace({
             className="btn-secondary btn-sm"
             href={`/app/leads?${buildLeadsListQuery(listParams, { page: String(page - 1) })}`}
           >
-            Previous 20
+            Previous
           </Link>
         ) : (
           <span />
@@ -379,20 +269,26 @@ export function LeadsCrmWorkspace({
             className="btn-secondary btn-sm"
             href={`/app/leads?${buildLeadsListQuery(listParams, { page: String(page + 1) })}`}
           >
-            Next 20
+            Next
           </Link>
         ) : null}
       </div>
 
       {selected ? (
-        <div className="leads-drawer-backdrop" role="presentation" onClick={() => setSelectedId(null)}>
+        <div
+          className="leads-drawer-backdrop"
+          role="presentation"
+          onClick={() => setSelectedId(null)}
+        >
           <LeadDrawerPanel
             canManage={canManage}
             lead={selected}
             onClose={() => setSelectedId(null)}
+            onDeleted={() => setSelectedId(null)}
             pending={pending}
             serviceCatalog={serviceCatalog}
             startTransition={startTransition}
+            teamMembers={teamMembers}
           />
         </div>
       ) : null}

@@ -5,7 +5,7 @@ import { LeadsPeriodToolbar } from "@/components/saas/leads-period-toolbar";
 import { LeadsPipelineCards } from "@/components/saas/leads-pipeline-cards";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import "@/components/saas/leads-machine.css";
-import { categorizeLeadRequirement, defaultPipeValueForCategory } from "@/lib/leads/categories";
+import { categorizeLeadRequirement } from "@/lib/leads/categories";
 import { maybeAutoSyncGoogleSheets, LEADS_SYNC_INTERVAL_LABEL } from "@/lib/leads/auto-sync";
 import { ensureLeadConnections } from "@/lib/leads/ingest";
 import { parseLeadsListParams } from "@/lib/leads/list-params";
@@ -119,7 +119,6 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
             where: { id: lead.id },
             data: {
               category,
-              pipeValue: defaultPipeValueForCategory(category),
             },
           });
         }),
@@ -188,24 +187,23 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
   return (
     <div className="saas-page leads-machine-page">
       <TaskPageToolbar
-        title="Leads Machine"
-        description="Google Sheets intake · AI categories · pipeline value · follow-ups and quotations."
+        title="Leads"
         actions={
-          <>
-            <span className="leads-sync-meta">
-              Last sync: {lastSyncLabel} · Auto {LEADS_SYNC_INTERVAL_LABEL}
+          <div className="leads-header-actions">
+            <span className="leads-sync-pill" title={`Auto sync ${LEADS_SYNC_INTERVAL_LABEL}`}>
+              {lastSyncLabel === "Not synced yet" ? "Not synced" : lastSyncLabel}
             </span>
             {canManage ? (
               <Link
                 className="leads-setup-icon-btn"
                 href="/app/leads/settings"
-                title="Google Sheets setup"
+                title="Setup"
                 aria-label="Google Sheets setup"
               >
                 ⚙
               </Link>
             ) : null}
-          </>
+          </div>
         }
       />
 

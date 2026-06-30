@@ -1,9 +1,5 @@
 import type { InboundLeadStatus } from "@prisma/client";
-import {
-  defaultPipeValueForCategory,
-  formatInr,
-  leadCategoryLabel,
-} from "@/lib/leads/categories";
+import { formatInr, leadCategoryLabel } from "@/lib/leads/categories";
 
 type LeadValueRow = {
   status: InboundLeadStatus;
@@ -20,15 +16,7 @@ function toNumber(value: LeadValueRow["pipeValue"]) {
 }
 
 export function resolveLeadMonetaryValue(lead: LeadValueRow) {
-  const quotation = toNumber(lead.quotationValue);
-  if (quotation > 0) {
-    return quotation;
-  }
-  const pipe = toNumber(lead.pipeValue);
-  if (pipe > 0) {
-    return pipe;
-  }
-  return defaultPipeValueForCategory(lead.category);
+  return toNumber(lead.quotationValue);
 }
 
 export function computePipeMetrics(leads: LeadValueRow[]) {

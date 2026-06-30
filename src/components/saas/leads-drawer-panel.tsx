@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { MessageCircle, Phone, Trash2, X } from "lucide-react";
 import type {
   InboundLeadStatus,
   LeadCallingStatus,
@@ -15,7 +16,10 @@ import {
   addInboundLeadPayment,
   addLeadOfferedService,
   applyAiSuggestedLeadStatus,
+  assignInboundLead,
   createLeadQuotation,
+  deleteInboundLead,
+  logLeadContactAction,
   scheduleInboundLeadFollowUp,
   updateInboundLeadDetails,
   updateInboundLeadStatus,
@@ -106,11 +110,25 @@ export type LeadDrawerData = {
   quotationValue: string | number | null;
   pipeValue: string | number | null;
   nextFollowUpAt: string | null;
+  assignedTo: { id: string; name: string | null; email: string } | null;
   payments: PaymentRow[];
   quotations: QuotationRow[];
   offeredServices: OfferedServiceRow[];
   activities: ActivityRow[];
 };
+
+function phoneDigits(phone: string | null) {
+  return phone?.replace(/\D/g, "") ?? "";
+}
+
+function waHref(phone: string | null, name: string | null) {
+  const digits = phoneDigits(phone);
+  if (!digits) {
+    return null;
+  }
+  const message = `Hi ${name || "there"}, thank you for reaching out to Sheetomatic.`;
+  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+}
 
 function defaultFollowUpLocal() {
   const d = new Date();
@@ -124,16 +142,20 @@ export function LeadDrawerPanel({
   lead,
   canManage,
   serviceCatalog,
+  teamMembers,
   pending,
   startTransition,
   onClose,
+  onDeleted,
 }: {
   lead: LeadDrawerData;
   canManage: boolean;
   serviceCatalog: CatalogItem[];
+  teamMembers: Array<{ user: { id: string; name: string | null; email: string } }>;
   pending: boolean;
   startTransition: (callback: () => Promise<void>) => void;
   onClose: () => void;
+  onDeleted?: () => void;
 }) {
   const [tab, setTab] = useState<"details" | "meeting" | "services" | "payments" | "quote">(
     "details",
@@ -148,7 +170,6 @@ export function LeadDrawerPanel({
   const [discussionNotes, setDiscussionNotes] = useState(lead.discussionNotes ?? "");
   const [meetingNotes, setMeetingNotes] = useState(lead.meetingNotes ?? "");
   const [quotationValue, setQuotationValue] = useState(String(lead.quotationValue ?? ""));
-  const [pipeValue, setPipeValue] = useState(String(lead.pipeValue ?? ""));
   const [followUpAt, setFollowUpAt] = useState(defaultFollowUpLocal());
   const [noteDraft, setNoteDraft] = useState("");
   const [selectedCatalogId, setSelectedCatalogId] = useState(serviceCatalog[0]?.id ?? "");
@@ -162,8 +183,9 @@ export function LeadDrawerPanel({
   const [quoteDuration, setQuoteDuration] = useState("30");
 
   const aiStatus = lead.aiSuggestedStatus ?? null;
-  const showAiHint =
-    aiStatus && aiStatus !== lead.status && canManage;
+  const showAiHint = aiStatus && aiStatus !== lead.status && canManage;
+  const callDigits = phoneDigits(lead.phone);
+  const whatsapp = waHref(lead.phone, lead.name);
 
   return (
     <aside
@@ -173,14 +195,22 @@ export function LeadDrawerPanel({
       onClick={(event) => event.stopPropagation()}
     >
       <header className="leads-drawer-head">
-        <div>
+        <div className="leads-drawer-head-copy">
           <h2>{lead.name || "Lead details"}</h2>
           <p className="leads-machine-muted">
             {leadCategoryLabel(lead.category)} · {leadStatusLabel(lead.status)}
-            {lead.projectStatus !== "NOT_STARTED"
-              ? ` · ${PROJECT_STATUS_LABELS[lead.projectStatus]}`
-              : ""}
           </p>
+          {lead.nextFollowUpAt ? (
+            <p className="leads-machine-muted leads-drawer-followup-line">
+              Next follow-up:{" "}
+              {new Date(lead.nextFollowUpAt).toLocaleString("en-IN", {
+                day: "numeric",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </p>
+          ) : null}
           {showAiHint ? (
             <button
               type="button"
@@ -192,13 +222,74 @@ export function LeadDrawerPanel({
                 })
               }
             >
-              AI suggests: {leadStatusLabel(aiStatus)} — Apply
+              AI: {leadStatusLabel(aiStatus)} — Apply
             </button>
           ) : null}
         </div>
-        <button type="button" className="btn-secondary btn-sm" onClick={onClose}>
-          Close
-        </button>
+        <div className="leads-drawer-head-actions">
+          {canManage ? (
+            <div className="leads-icon-actions">
+              {callDigits ? (
+                <a
+                  className="leads-icon-btn"
+                  href={`tel:${callDigits}`}
+                  title="Call"
+                  aria-label="Call"
+                  onClick={() =>
+                    startTransition(async () => {
+                      await logLeadContactAction(lead.id, "CALL");
+                    })
+                  }
+                >
+                  <Phone size={16} />
+                </a>
+              ) : null}
+              {whatsapp ? (
+                <a
+                  className="leads-icon-btn"
+                  href={whatsapp}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="WhatsApp"
+                  aria-label="WhatsApp"
+                  onClick={() =>
+                    startTransition(async () => {
+                      await logLeadContactAction(lead.id, "WHATSAPP");
+                    })
+                  }
+                >
+                  <MessageCircle size={16} />
+                </a>
+              ) : null}
+              <button
+                type="button"
+                className="leads-icon-btn danger"
+                title="Delete"
+                aria-label="Delete lead"
+                disabled={pending}
+                onClick={() => {
+                  if (window.confirm("Delete this lead?")) {
+                    startTransition(async () => {
+                      await deleteInboundLead(lead.id);
+                      onDeleted?.();
+                    });
+                  }
+                }}
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          ) : null}
+          <button
+            type="button"
+            className="leads-icon-btn"
+            onClick={onClose}
+            title="Close"
+            aria-label="Close"
+          >
+            <X size={16} />
+          </button>
+        </div>
       </header>
 
       <div className="leads-drawer-tabs">
@@ -269,6 +360,25 @@ export function LeadDrawerPanel({
                 </select>
               </label>
               <label>
+                Owner
+                <select
+                  value={lead.assignedTo?.id ?? ""}
+                  disabled={pending}
+                  onChange={(event) =>
+                    startTransition(async () => {
+                      await assignInboundLead(lead.id, event.target.value || null);
+                    })
+                  }
+                >
+                  <option value="">Unassigned</option>
+                  {teamMembers.map((member) => (
+                    <option key={member.user.id} value={member.user.id}>
+                      {member.user.name || member.user.email}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
                 Name
                 <input value={name} onChange={(e) => setName(e.target.value)} />
               </label>
@@ -303,24 +413,14 @@ export function LeadDrawerPanel({
                   onChange={(e) => setDiscussionNotes(e.target.value)}
                 />
               </label>
-              <div className="leads-drawer-grid">
-                <label>
-                  Quotation (₹)
-                  <input
-                    type="number"
-                    value={quotationValue}
-                    onChange={(e) => setQuotationValue(e.target.value)}
-                  />
-                </label>
-                <label>
-                  Pipe value (₹)
-                  <input
-                    type="number"
-                    value={pipeValue}
-                    onChange={(e) => setPipeValue(e.target.value)}
-                  />
-                </label>
-              </div>
+              <label>
+                Quotation amount (₹)
+                <input
+                  type="number"
+                  value={quotationValue}
+                  onChange={(e) => setQuotationValue(e.target.value)}
+                />
+              </label>
               <button
                 type="button"
                 className="btn-primary"
@@ -335,7 +435,7 @@ export function LeadDrawerPanel({
                       requirement,
                       discussionNotes,
                       quotationValue,
-                      pipeValue,
+                      pipeValue: quotationValue,
                     });
                   })
                 }

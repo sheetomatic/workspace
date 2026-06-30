@@ -50,11 +50,11 @@ export function LeadsPipelineCards({
           className="hs-quick-stat accent-blue leads-pipeline-card"
           href={`/app/leads?${buildLeadsListQuery(baseParams, { status: "", category: "", page: "1" })}`}
         >
-          <span>Pipe count</span>
+          <span>Leads</span>
           <strong>{pipeMetrics.pipeCount}</strong>
         </Link>
         <article className="hs-quick-stat accent-warning leads-pipeline-card is-static">
-          <span>Pipe value</span>
+          <span>Quoted value</span>
           <strong>{pipeMetrics.pipeValueLabel}</strong>
         </article>
         <Link
@@ -109,7 +109,8 @@ export function LeadsPipelineCards({
               >
                 <span>{row.label}</span>
                 <strong>
-                  {row.count} · {row.valueLabel}
+                  {row.count}
+                  {row.valueLabel !== "₹0" ? ` · ${row.valueLabel}` : ""}
                 </strong>
               </Link>
             ))}
