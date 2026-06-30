@@ -1,13 +1,10 @@
-import Link from "next/link";
 import { after } from "next/server";
 import { LeadsCrmWorkspace } from "@/components/saas/leads-crm-workspace";
 import { LeadsPeriodToolbar } from "@/components/saas/leads-period-toolbar";
 import { LeadsPipelineCards } from "@/components/saas/leads-pipeline-cards";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import "@/components/saas/leads-machine.css";
-import type { InboundLeadStatus } from "@prisma/client";
-import { categorizeLeadRequirement, migrateLegacyLeadCategory, type LeadCategoryId } from "@/lib/leads/categories";
-import { migrateLegacyLeadStatus } from "@/lib/leads/status-labels";
+import { runLeadsBackgroundMaintenance } from "@/lib/leads/backfill";
 import { maybeAutoSyncGoogleSheets, LEADS_SYNC_INTERVAL_LABEL } from "@/lib/leads/auto-sync";
 import { ensureLeadConnections } from "@/lib/leads/ingest";
 import { parseLeadsListParams } from "@/lib/leads/list-params";
@@ -22,9 +19,9 @@ import {
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { listLeadServiceCatalog } from "@/lib/leads/service-catalog";
-import { inferLeadStageFromRequirement } from "@/lib/leads/stage-ai";
 import { listWorkspaceMembers } from "@/lib/workspace";
 import { prisma } from "@/lib/db";
+import Link from "next/link";
 
 type PageProps = {
   searchParams: Promise<LeadsListSearchParams>;
@@ -131,83 +128,27 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
   const user = await requireSession(undefined, { module: "FMS" });
   await ensureLeadConnections(user.organizationId);
 
-  try {
-    const leadsToNormalize = await prisma.inboundLead.findMany({
-      where: { organizationId: user.organizationId },
-      select: { id: true, requirement: true, category: true, status: true },
-      take: 250,
-    });
-    const patchById = new Map<
-      string,
-      { category?: LeadCategoryId; status?: InboundLeadStatus }
-    >();
-    for (const lead of leadsToNormalize) {
-      const patch = patchById.get(lead.id) ?? {};
-      if (!lead.category) {
-        patch.category = categorizeLeadRequirement(lead.requirement);
-      } else {
-        const migratedCategory = migrateLegacyLeadCategory(lead.category);
-        if (migratedCategory && migratedCategory !== lead.category) {
-          patch.category = migratedCategory;
-        }
-      }
-      const migratedStatus = migrateLegacyLeadStatus(lead.status);
-      if (migratedStatus && migratedStatus !== lead.status) {
-        patch.status = migratedStatus;
-      }
-      if (patch.category || patch.status) {
-        patchById.set(lead.id, patch);
-      }
-    }
-    if (patchById.size > 0) {
-      await Promise.all(
-        Array.from(patchById.entries()).map(([id, patch]) =>
-          prisma.inboundLead.update({
-            where: { id },
-            data: patch,
-          }),
-        ),
-      );
-    }
-  } catch (error) {
-    console.error("leads category backfill", error);
-  }
-
-  try {
-    const missingAi = await prisma.inboundLead.findMany({
-      where: { organizationId: user.organizationId, aiSuggestedStatus: null },
-      select: { id: true, requirement: true },
-      take: 200,
-    });
-    if (missingAi.length > 0) {
-      await Promise.all(
-        missingAi.map((lead) =>
-          prisma.inboundLead.update({
-            where: { id: lead.id },
-            data: { aiSuggestedStatus: inferLeadStageFromRequirement(lead.requirement) },
-          }),
-        ),
-      );
-    }
-  } catch (error) {
-    console.error("leads ai status backfill", error);
-  }
-
   const params = await searchParams;
   const period = parseLeadsPeriodParams(params);
   const listParams = parseLeadsListParams(params);
   const canManage = hasMinimumRole(user.role, "MANAGER");
   const isAdmin = hasMinimumRole(user.role, "ADMIN");
 
-  if (isAdmin) {
-    after(async () => {
+  after(async () => {
+    try {
+      await runLeadsBackgroundMaintenance(user.organizationId);
+    } catch (error) {
+      console.error("leads background maintenance", error);
+    }
+
+    if (isAdmin) {
       try {
         await maybeAutoSyncGoogleSheets(user.organizationId);
       } catch (error) {
         console.error("leads auto-sync", error);
       }
-    });
-  }
+    }
+  });
 
   const [periodStats, pipeMetrics, leadPage, teamMembers, sheetsConnection, workspaceTotal, serviceCatalog, organization] =
     await Promise.all([

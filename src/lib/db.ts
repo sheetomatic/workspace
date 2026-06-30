@@ -45,9 +45,9 @@ function resolveDatabaseUrl() {
 
   const isDev = process.env.NODE_ENV === "development";
   const limit =
-    process.env.DATABASE_CONNECTION_LIMIT ?? (isDev ? "10" : "1");
+    process.env.DATABASE_CONNECTION_LIMIT ?? (isDev ? "10" : "5");
   const poolTimeout =
-    process.env.DATABASE_POOL_TIMEOUT ?? (isDev ? "30" : "15");
+    process.env.DATABASE_POOL_TIMEOUT ?? (isDev ? "30" : "30");
   const separator = base.includes("?") ? "&" : "?";
   return `${base}${separator}connection_limit=${limit}&pool_timeout=${poolTimeout}`;
 }

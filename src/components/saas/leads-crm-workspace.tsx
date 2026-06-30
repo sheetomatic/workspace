@@ -135,10 +135,14 @@ export function LeadsCrmWorkspace({
     if (!selectedId) {
       return;
     }
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const scrollRoot = document.getElementById("main");
+    if (!scrollRoot) {
+      return;
+    }
+    const previous = scrollRoot.style.overflow;
+    scrollRoot.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = previous;
+      scrollRoot.style.overflow = previous;
     };
   }, [selectedId]);
 

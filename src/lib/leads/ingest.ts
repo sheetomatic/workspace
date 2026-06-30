@@ -3,8 +3,9 @@ import type {
   LeadCallingStatus,
   LeadSourceChannel,
   Prisma,
+  PrismaClient,
 } from "@prisma/client";
-import { prisma } from "@/lib/db";
+import { prisma, withDbRetry } from "@/lib/db";
 import { bridgeInboundLeadToFms } from "@/lib/leads/fms-bridge";
 import {
   LEAD_CHANNEL_DEFAULTS,
@@ -51,34 +52,39 @@ function normalizePhone(phone: string | null | undefined) {
 }
 
 export async function ensureLeadConnections(organizationId: string) {
-  const existing = await prisma.leadIngestConnection.count({
-    where: { organizationId },
-  });
-
-  if (existing === 0) {
-    const defaults = LEAD_CHANNEL_DEFAULTS;
-
-    await prisma.leadIngestConnection.createMany({
-      data: defaults.map((item) => ({
-        organizationId,
-        channel: item.channel,
-        label: item.label,
-        enabled: item.channel === LEAD_SOURCE_PRIORITY_CHANNEL,
-        config:
-          item.channel === LEAD_SOURCE_PRIORITY_CHANNEL
-            ? (defaultGoogleSheetsLeadConfig() as object)
-            : undefined,
-      })),
-      skipDuplicates: true,
+  await withDbRetry(async (client) => {
+    const existing = await client.leadIngestConnection.count({
+      where: { organizationId },
     });
-  }
 
-  await enforceLeadSourcePhase(organizationId);
-  await migrateGoogleSheetsLeadConfig(organizationId);
+    if (existing === 0) {
+      const defaults = LEAD_CHANNEL_DEFAULTS;
+
+      await client.leadIngestConnection.createMany({
+        data: defaults.map((item) => ({
+          organizationId,
+          channel: item.channel,
+          label: item.label,
+          enabled: item.channel === LEAD_SOURCE_PRIORITY_CHANNEL,
+          config:
+            item.channel === LEAD_SOURCE_PRIORITY_CHANNEL
+              ? (defaultGoogleSheetsLeadConfig() as object)
+              : undefined,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    await enforceLeadSourcePhase(organizationId, client);
+    await migrateGoogleSheetsLeadConfig(organizationId, client);
+  });
 }
 
-async function migrateGoogleSheetsLeadConfig(organizationId: string) {
-  const connection = await prisma.leadIngestConnection.findUnique({
+async function migrateGoogleSheetsLeadConfig(
+  organizationId: string,
+  client: PrismaClient = prisma,
+) {
+  const connection = await client.leadIngestConnection.findUnique({
     where: {
       organizationId_channel: {
         organizationId,
@@ -110,15 +116,18 @@ async function migrateGoogleSheetsLeadConfig(organizationId: string) {
     return;
   }
 
-  await prisma.leadIngestConnection.update({
+  await client.leadIngestConnection.update({
     where: { id: connection.id },
     data: { config: resolved as object },
   });
 }
 
 /** Phase 1: Google Sheets only — disable coming-soon connectors. */
-export async function enforceLeadSourcePhase(organizationId: string) {
-  await prisma.leadIngestConnection.updateMany({
+export async function enforceLeadSourcePhase(
+  organizationId: string,
+  client: PrismaClient = prisma,
+) {
+  await client.leadIngestConnection.updateMany({
     where: {
       organizationId,
       channel: { in: LEAD_SOURCE_COMING_SOON_CHANNELS },

@@ -695,7 +695,9 @@
 }
 
 .leads-crm-table-wrap {
-  overflow-x: auto;
+  overflow: auto;
+  max-height: min(70vh, calc(100dvh - 18rem));
+  -webkit-overflow-scrolling: touch;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
   background: #fff;
@@ -962,6 +964,7 @@
   z-index: 60;
   display: flex;
   justify-content: flex-end;
+  overflow-y: auto;
   overscroll-behavior: contain;
 }
 

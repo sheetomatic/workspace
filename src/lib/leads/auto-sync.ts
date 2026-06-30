@@ -1,18 +1,20 @@
-import { prisma } from "@/lib/db";
+import { withDbRetry } from "@/lib/db";
 import { pullLeadsFromConnection } from "@/lib/leads/sync-sources";
 
 const AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000;
 
 /** Sync Google Sheets if last sync is older than 15 minutes. */
 export async function maybeAutoSyncGoogleSheets(organizationId: string) {
-  const connection = await prisma.leadIngestConnection.findUnique({
-    where: {
-      organizationId_channel: {
-        organizationId,
-        channel: "GOOGLE_SHEETS",
+  const connection = await withDbRetry((client) =>
+    client.leadIngestConnection.findUnique({
+      where: {
+        organizationId_channel: {
+          organizationId,
+          channel: "GOOGLE_SHEETS",
+        },
       },
-    },
-  });
+    }),
+  );
 
   if (!connection?.enabled) {
     return { synced: false as const, reason: "disabled" as const };
