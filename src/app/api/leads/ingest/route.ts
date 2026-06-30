@@ -3,6 +3,7 @@ import type { InboundLeadStatus, Prisma } from "@prisma/client";
 import { verifyLeadIngestRequest } from "@/lib/leads/api-auth";
 import { parseLeadSourceChannel } from "@/lib/leads/channels";
 import { ingestInboundLead } from "@/lib/leads/ingest";
+import { LEAD_STATUS_ORDER } from "@/lib/leads/status-labels";
 
 type IngestBody = {
   channel?: string;
@@ -20,14 +21,7 @@ type IngestBody = {
   raw?: Record<string, unknown>;
 };
 
-const ALLOWED_STATUSES: InboundLeadStatus[] = [
-  "NEW",
-  "CONTACTED",
-  "FOLLOW_UP",
-  "QUALIFIED",
-  "WON",
-  "LOST",
-];
+const ALLOWED_STATUSES = LEAD_STATUS_ORDER;
 
 export async function POST(request: Request) {
   const auth = await verifyLeadIngestRequest(request);

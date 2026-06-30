@@ -18,15 +18,9 @@ import {
   type LeadDashboardSourceFilter,
 } from "@/lib/leads/channels";
 import { fmsInstanceHref } from "@/lib/fms/navigation";
+import { LEAD_STATUS_LABELS } from "@/lib/leads/status-labels";
 
-const STATUS_LABELS: Record<InboundLeadStatus, string> = {
-  NEW: "New",
-  CONTACTED: "Contacted",
-  FOLLOW_UP: "Follow-up",
-  QUALIFIED: "Qualified",
-  WON: "Won",
-  LOST: "Lost",
-};
+const STATUS_LABELS = LEAD_STATUS_LABELS;
 
 type TeamMember = {
   user: { id: string; name: string | null; email: string };

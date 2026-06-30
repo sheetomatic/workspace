@@ -28,20 +28,10 @@ export function parseLeadsListParams(params: LeadsListSearchParams) {
   return { page, sort, status, category, q, pageSize: LEADS_PAGE_SIZE };
 }
 
+import { LEAD_STATUS_ORDER } from "@/lib/leads/status-labels";
+
 function parseStatus(value: string | undefined): InboundLeadStatus | undefined {
-  const allowed: InboundLeadStatus[] = [
-    "NEW",
-    "SCHEDULE_MEETING",
-    "MEETING_NOTES",
-    "CONTACTED",
-    "FOLLOW_UP",
-    "QUALIFIED",
-    "PROPOSAL_INVOICE",
-    "PAYMENT",
-    "PROJECT_ACTIVE",
-    "WON",
-    "LOST",
-  ];
+  const allowed = LEAD_STATUS_ORDER;
   const normalized = value?.trim().toUpperCase() as InboundLeadStatus | undefined;
   return normalized && allowed.includes(normalized) ? normalized : undefined;
 }
