@@ -28,19 +28,23 @@ function revalidateHr() {
 export async function recordCheckInAction(formData: FormData): Promise<void> {
   const user = await getSessionUser();
   if (!user) {
-    return;
+    throw new Error("Sign in required.");
   }
 
   const geoLat = Number(formData.get("geoLat"));
   const geoLng = Number(formData.get("geoLng"));
 
-  await checkInAttendance({
-    user,
-    geoLat: Number.isFinite(geoLat) ? geoLat : undefined,
-    geoLng: Number.isFinite(geoLng) ? geoLng : undefined,
-    method: Number.isFinite(geoLat) ? "GEO" : "WEB",
-  });
-  revalidateHr();
+  try {
+    await checkInAttendance({
+      user,
+      geoLat: Number.isFinite(geoLat) ? geoLat : undefined,
+      geoLng: Number.isFinite(geoLng) ? geoLng : undefined,
+      method: Number.isFinite(geoLat) ? "GEO" : "WEB",
+    });
+    revalidateHr();
+  } catch (error) {
+    throw error instanceof Error ? error : new Error("Could not check in.");
+  }
 }
 
 export async function recordCheckOutAction(): Promise<void> {

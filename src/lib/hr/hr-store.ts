@@ -62,22 +62,66 @@ export async function checkInAttendance(params: {
     return existing;
   }
 
-  const settings = await getOrCreateHrSettings(params.user.organizationId);
+  const [settings, membership] = await Promise.all([
+    getOrCreateHrSettings(params.user.organizationId),
+    prisma.membership.findUnique({
+      where: {
+        userId_organizationId: {
+          userId: params.user.id,
+          organizationId: params.user.organizationId,
+        },
+      },
+      select: { geoFenceRequired: true },
+    }),
+  ]);
+
+  const officeConfigured =
+    settings.officeLat != null && settings.officeLng != null;
+  const geoFenceRequired =
+    membership?.geoFenceRequired === true || officeConfigured;
+
   let geoFenceOk: boolean | null = null;
 
-  if (
+  if (geoFenceRequired) {
+    if (params.geoLat == null || params.geoLng == null) {
+      throw new Error(
+        "GPS location is required. Use “Check in with GPS” and allow location access.",
+      );
+    }
+    if (!officeConfigured) {
+      throw new Error(
+        "Office geo-fence is not configured yet. Ask your admin to set office coordinates in Team settings.",
+      );
+    }
+    const distance = haversineMeters(
+      params.geoLat,
+      params.geoLng,
+      settings.officeLat!,
+      settings.officeLng!,
+    );
+    geoFenceOk = distance <= settings.geoFenceRadiusM;
+    if (!geoFenceOk) {
+      throw new Error(
+        "You are outside the office geo-fence. Check-in is not allowed from this location.",
+      );
+    }
+  } else if (
     params.geoLat != null &&
     params.geoLng != null &&
-    settings.officeLat != null &&
-    settings.officeLng != null
+    officeConfigured
   ) {
     const distance = haversineMeters(
       params.geoLat,
       params.geoLng,
-      settings.officeLat,
-      settings.officeLng,
+      settings.officeLat!,
+      settings.officeLng!,
     );
     geoFenceOk = distance <= settings.geoFenceRadiusM;
+    if (!geoFenceOk) {
+      throw new Error(
+        "You are outside the office geo-fence. Check-in is not allowed from this location.",
+      );
+    }
   }
 
   return prisma.attendanceRecord.upsert({

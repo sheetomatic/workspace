@@ -3,12 +3,32 @@ import { AttendancePunchPanel } from "@/components/hr/attendance-punch-panel";
 import { HrSubNav } from "@/components/hr/hr-sub-nav";
 import { requireSession } from "@/lib/require-session";
 import { listTodayAttendance } from "@/lib/hr/hr-store";
+import { prisma } from "@/lib/db";
 import { attendanceLeaveModule } from "@/app/hr-module-content";
 
 export default async function HrAttendancePage() {
   const user = await requireSession(undefined, { module: "HR" });
-  const records = await listTodayAttendance(user.organizationId);
+  const [records, membership, hrSettings] = await Promise.all([
+    listTodayAttendance(user.organizationId),
+    prisma.membership.findUnique({
+      where: {
+        userId_organizationId: {
+          userId: user.id,
+          organizationId: user.organizationId,
+        },
+      },
+      select: { geoFenceRequired: true },
+    }),
+    prisma.workspaceHrSettings.findUnique({
+      where: { organizationId: user.organizationId },
+      select: { officeLat: true, officeLng: true },
+    }),
+  ]);
   const myRecord = records.find((r) => r.userId === user.id);
+  const officeConfigured =
+    hrSettings?.officeLat != null && hrSettings?.officeLng != null;
+  const geoFenceRequired =
+    membership?.geoFenceRequired === true || officeConfigured;
 
   const todayLabel = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
@@ -30,6 +50,7 @@ export default async function HrAttendancePage() {
         checkInAt={myRecord?.checkInAt ?? null}
         checkOutAt={myRecord?.checkOutAt ?? null}
         geoFenceOk={myRecord?.geoFenceOk ?? null}
+        geoFenceRequired={geoFenceRequired}
         method={myRecord?.method ?? null}
         todayLabel={todayLabel}
       />

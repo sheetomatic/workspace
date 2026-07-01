@@ -39,40 +39,33 @@ export function AttendancePunchPanel({
   geoFenceOk,
   method,
   todayLabel,
+  geoFenceRequired = false,
 }: {
   checkInAt: Date | null;
   checkOutAt: Date | null;
   geoFenceOk: boolean | null;
   method: string | null;
   todayLabel: string;
+  geoFenceRequired?: boolean;
 }) {
   const router = useRouter();
   const punchState = getPunchState(checkInAt, checkOutAt);
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
-
-  function runCheckIn(formData: FormData) {
-    startTransition(async () => {
-      setMessage(null);
-      try {
-        await recordCheckInAction(formData);
-        setMessage("Checked in successfully.");
-        router.refresh();
-      } catch {
-        setMessage("Could not check in. You may already be clocked in.");
-      }
-    });
-  }
+  const [isError, setIsError] = useState(false);
 
   function runCheckOut() {
     startTransition(async () => {
       setMessage(null);
+      setIsError(false);
       try {
         await recordCheckOutAction();
         setMessage("Checked out successfully.");
+        setIsError(false);
         router.refresh();
       } catch {
         setMessage("Check in first before checking out.");
+        setIsError(true);
       }
     });
   }
@@ -99,14 +92,33 @@ export function AttendancePunchPanel({
       </div>
 
       <div className="ws-attendance-punch-actions">
-        <button
-          type="button"
-          className="btn-cta btn-primary ws-attendance-punch-btn"
-          disabled={punchState !== "not_started" || pending}
-          onClick={() => runCheckIn(new FormData())}
-        >
-          {pending && punchState === "not_started" ? "Checking in..." : "Check in"}
-        </button>
+        {!geoFenceRequired && punchState === "not_started" ? (
+          <button
+            type="button"
+            className="btn-cta btn-primary ws-attendance-punch-btn"
+            disabled={pending}
+            onClick={() => {
+              startTransition(async () => {
+                setMessage(null);
+                setIsError(false);
+                try {
+                  await recordCheckInAction(new FormData());
+                  setMessage("Checked in successfully.");
+                  router.refresh();
+                } catch (error) {
+                  setMessage(
+                    error instanceof Error
+                      ? error.message
+                      : "Could not check in.",
+                  );
+                  setIsError(true);
+                }
+              });
+            }}
+          >
+            {pending ? "Checking in..." : "Check in"}
+          </button>
+        ) : null}
         <button
           type="button"
           className="btn-cta btn-secondary ws-attendance-punch-btn"
@@ -129,17 +141,24 @@ export function AttendancePunchPanel({
         </p>
       ) : null}
 
-      {message ? <p className="ws-hr-feedback">{message}</p> : null}
+      {message ? (
+        <p className={isError ? "ws-hr-feedback ws-hr-feedback-error" : "ws-hr-feedback"}>
+          {message}
+        </p>
+      ) : null}
 
       {punchState === "not_started" ? (
         <div className="ws-attendance-punch-geo">
           <p className="ws-hr-help">
-            Optional: capture GPS for geo-fenced office check-in.
+            {geoFenceRequired
+              ? "GPS check-in is required. You must be inside the office geo-fence."
+              : "Optional: capture GPS for geo-fenced office check-in."}
           </p>
           <GeoPunchForm
             action={recordCheckInAction}
-            submitLabel="Check in with GPS"
-            successMessage="Checked in with location."
+            requireGeo={geoFenceRequired}
+            submitLabel={geoFenceRequired ? "Check in with GPS" : "Check in with GPS"}
+            successMessage="Checked in successfully."
           />
         </div>
       ) : null}

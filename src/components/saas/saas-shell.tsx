@@ -13,7 +13,7 @@ import {
   type WorkspaceAppearance,
 } from "@/lib/workspace-appearance";
 import {
-  flattenWorkspaceNavItems,
+  mobileWorkspaceNavItems,
   getWorkspaceNavSections,
   navGroupHasActiveChild,
   navIsActive,
@@ -136,8 +136,7 @@ function NavLinks({
   depth?: number;
 }) {
   if (variant === "mobile") {
-    const flat = flattenWorkspaceNavItems(items);
-    return flat.map((item) => (
+    return items.map((item) => (
       <NavLink key={item.href} pathname={pathname} variant="mobile" {...item} />
     ));
   }
@@ -296,8 +295,8 @@ export function SaasShell({
   const settingsItems = settingsSection
     ? visibleWorkspaceNavItems(user, settingsSection.items)
     : [];
-  const mobileNavItems = flattenWorkspaceNavItems(
-    sections.flatMap((section) => visibleWorkspaceNavItems(user, section.items)),
+  const mobileNavItems = mobileWorkspaceNavItems(
+    mainSections.flatMap((section) => visibleWorkspaceNavItems(user, section.items)),
   );
 
   const productName = resolvedAppearance.productName;

@@ -70,8 +70,10 @@ export function GeoPunchForm({
       setMessage(successMessage);
       setIsError(false);
       router.refresh();
-    } catch {
-      setMessage("Could not save. Try again.");
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Could not save. Try again.",
+      );
       setIsError(true);
     } finally {
       setPending(false);

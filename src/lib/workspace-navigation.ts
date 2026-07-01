@@ -180,18 +180,21 @@ const MODULE_ITEMS: WorkspaceNavItem[] = [
     href: "/app/leads",
     label: "Leads",
     icon: Megaphone,
+    module: "FMS",
     matchPrefix: "/app/leads",
   },
   {
     href: "/app/hr",
     label: "HR",
     icon: MapPin,
+    module: "HR",
     matchPrefix: "/app/hr",
   },
   {
     href: "/app/approvals",
     label: "Approvals",
     icon: ClipboardCheck,
+    module: "APPROVALS",
     minRole: "MANAGER",
     matchPrefix: "/app/approvals",
   },
@@ -220,6 +223,9 @@ function filterNavItem(user: SessionUser, item: WorkspaceNavItem): WorkspaceNavI
     const children = item.children
       .map((child) => filterNavItem(user, child))
       .filter((child): child is WorkspaceNavItem => child !== null);
+    if (children.length === 0) {
+      return null;
+    }
     return { ...item, children };
   }
 
@@ -232,13 +238,18 @@ export function visibleWorkspaceNavItems(user: SessionUser, items: WorkspaceNavI
     .filter((item): item is WorkspaceNavItem => item !== null);
 }
 
-/** Flat list for mobile bottom nav — expands nested groups to leaf links. */
-export function flattenWorkspaceNavItems(items: WorkspaceNavItem[]): WorkspaceNavItem[] {
-  return items.flatMap((item) => {
+/** Top-level links for mobile bottom nav — no nested child explosion. */
+export function mobileWorkspaceNavItems(items: WorkspaceNavItem[]): WorkspaceNavItem[] {
+  return items.map((item) => {
     if (item.children?.length) {
-      return flattenWorkspaceNavItems(item.children);
+      const firstChild = item.children[0];
+      return {
+        ...item,
+        href: firstChild?.href ?? item.href,
+        matchPrefix: item.matchPrefix ?? firstChild?.matchPrefix ?? item.href,
+      };
     }
-    return [item];
+    return item;
   });
 }
 
