@@ -10,7 +10,7 @@ import {
   readSheetSyncProgress,
   type SheetSyncProgress,
 } from "@/lib/leads/sheet-sync-progress";
-import type { LeadSyncCounts } from "@/lib/leads/sync-messages";
+import type { LeadPullResult, LeadSyncCounts } from "@/lib/leads/sync-messages";
 
 export type ExternalLeadRow = {
   externalId: string;
@@ -44,7 +44,7 @@ export type ExternalLeadRow = {
 export async function pullLeadsFromConnection(params: {
   organizationId: string;
   channel: LeadSourceChannel;
-}) {
+}): Promise<LeadPullResult> {
   const connection = await prisma.leadIngestConnection.findUnique({
     where: {
       organizationId_channel: {
@@ -225,7 +225,7 @@ export async function syncAllEnabledLeadConnections(organizationId: string) {
 async function pullGoogleSheetsLeads(
   organizationId: string,
   connection: { id: string; config: unknown },
-) {
+): Promise<LeadPullResult> {
   const sheetConfig = resolveGoogleSheetsLeadConfig(connection.config);
   if (!sheetConfig) {
     await prisma.leadIngestConnection.update({

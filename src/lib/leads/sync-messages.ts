@@ -13,6 +13,13 @@ export type LeadSyncResult = {
   partial?: SheetSyncProgress;
 };
 
+export type LeadSyncFailure = {
+  ok: false;
+  reason: string;
+};
+
+export type LeadPullResult = LeadSyncResult | LeadSyncFailure;
+
 export function formatLeadSyncCounts(
   counts: LeadSyncCounts,
   partial?: SheetSyncProgress,
