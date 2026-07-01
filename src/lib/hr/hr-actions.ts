@@ -9,6 +9,7 @@ import {
   checkOutAttendance,
   getOrCreateHrSettings,
 } from "@/lib/hr/hr-store";
+import type { HrActionResult } from "@/lib/hr/hr-result";
 
 const HR_PATHS = [
   "/app/hr",
@@ -25,25 +26,30 @@ function revalidateHr() {
   }
 }
 
-export async function recordCheckInAction(formData: FormData): Promise<void> {
+export async function recordCheckInAction(
+  formData: FormData,
+): Promise<HrActionResult> {
   const user = await getSessionUser();
   if (!user) {
-    throw new Error("Sign in required.");
+    return mapCheckInError(new Error("Sign in required."));
   }
 
   const geoLat = Number(formData.get("geoLat"));
   const geoLng = Number(formData.get("geoLng"));
+  const siteId = String(formData.get("siteId") ?? "").trim() || null;
 
   try {
     await checkInAttendance({
       user,
+      siteId,
       geoLat: Number.isFinite(geoLat) ? geoLat : undefined,
       geoLng: Number.isFinite(geoLng) ? geoLng : undefined,
       method: Number.isFinite(geoLat) ? "GEO" : "WEB",
     });
     revalidateHr();
+    return { ok: true };
   } catch (error) {
-    throw error instanceof Error ? error : new Error("Could not check in.");
+    return mapCheckInError(error);
   }
 }
 
@@ -384,4 +390,66 @@ export async function deleteAttendanceRecordAction(recordId: string): Promise<vo
   }
 
   revalidateHr();
+}
+
+export async function saveHrWorkSiteAction(formData: FormData): Promise<void> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "ADMIN")) {
+    throw new Error("Admin only.");
+  }
+
+  const id = String(formData.get("id") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const lat = Number(formData.get("lat"));
+  const lng = Number(formData.get("lng"));
+  const geoFenceRadiusM = Number(formData.get("geoFenceRadiusM") ?? 200);
+
+  if (!name) {
+    throw new Error("Site name is required.");
+  }
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    throw new Error("Latitude and longitude are required.");
+  }
+
+  const data = {
+    name,
+    lat,
+    lng,
+    geoFenceRadiusM: Number.isFinite(geoFenceRadiusM) ? geoFenceRadiusM : 200,
+  };
+
+  if (id) {
+    await prisma.hrWorkSite.updateMany({
+      where: { id, organizationId: user.organizationId },
+      data,
+    });
+  } else {
+    const count = await prisma.hrWorkSite.count({
+      where: { organizationId: user.organizationId },
+    });
+    await prisma.hrWorkSite.create({
+      data: {
+        organizationId: user.organizationId,
+        sortOrder: count,
+        ...data,
+      },
+    });
+  }
+
+  revalidateHr();
+  revalidatePath("/app/team");
+}
+
+export async function deleteHrWorkSiteAction(siteId: string): Promise<void> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "ADMIN")) {
+    throw new Error("Admin only.");
+  }
+
+  await prisma.hrWorkSite.deleteMany({
+    where: { id: siteId.trim(), organizationId: user.organizationId },
+  });
+
+  revalidateHr();
+  revalidatePath("/app/team");
 }

@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/db";
 import type { SessionUser } from "@/lib/auth";
+import { HR_OUT_OF_LOCATION_MESSAGE } from "@/lib/hr/hr-result";
+import {
+  listActiveHrWorkSites,
+  resolveHrSiteGeo,
+} from "@/lib/hr/sites";
 
 function startOfToday(timeZone = "Asia/Kolkata") {
   const formatted = new Date().toLocaleDateString("en-CA", { timeZone });
@@ -30,12 +35,20 @@ export async function getOrCreateHrSettings(organizationId: string) {
   });
 }
 
-export async function listTodayAttendance(organizationId: string) {
+export async function listTodayAttendance(
+  organizationId: string,
+  siteId?: string | null,
+) {
   const workDate = startOfToday();
   return prisma.attendanceRecord.findMany({
-    where: { organizationId, workDate },
+    where: {
+      organizationId,
+      workDate,
+      ...(siteId ? { siteId } : {}),
+    },
     include: {
       user: { select: { id: true, name: true, email: true } },
+      site: { select: { id: true, name: true } },
     },
     orderBy: { checkInAt: "desc" },
   });
@@ -43,6 +56,7 @@ export async function listTodayAttendance(organizationId: string) {
 
 export async function checkInAttendance(params: {
   user: SessionUser;
+  siteId?: string | null;
   geoLat?: number;
   geoLng?: number;
   method?: "WEB" | "GEO" | "FACE";
@@ -62,8 +76,7 @@ export async function checkInAttendance(params: {
     return existing;
   }
 
-  const [settings, membership] = await Promise.all([
-    getOrCreateHrSettings(params.user.organizationId),
+  const [membership, sites, siteGeo] = await Promise.all([
     prisma.membership.findUnique({
       where: {
         userId_organizationId: {
@@ -73,56 +86,55 @@ export async function checkInAttendance(params: {
       },
       select: { geoFenceRequired: true },
     }),
+    listActiveHrWorkSites(params.user.organizationId),
+    resolveHrSiteGeo(params.user.organizationId, params.siteId),
   ]);
 
-  const officeConfigured =
-    settings.officeLat != null && settings.officeLng != null;
+  if (sites.length > 1 && !params.siteId) {
+    throw new Error("Select your work site before checking in.");
+  }
+
+  if (!siteGeo) {
+    throw new Error(
+      "Office location is not configured yet. Ask your admin to add a work site in Team settings.",
+    );
+  }
+
   const geoFenceRequired =
-    membership?.geoFenceRequired === true || officeConfigured;
+    membership?.geoFenceRequired === true || sites.length > 0 || siteGeo.id != null;
 
   let geoFenceOk: boolean | null = null;
 
   if (geoFenceRequired) {
     if (params.geoLat == null || params.geoLng == null) {
       throw new Error(
-        "GPS location is required. Use “Check in with GPS” and allow location access.",
-      );
-    }
-    if (!officeConfigured) {
-      throw new Error(
-        "Office geo-fence is not configured yet. Ask your admin to set office coordinates in Team settings.",
+        "GPS location is required. Tap “Use my location”, then check in with GPS.",
       );
     }
     const distance = haversineMeters(
       params.geoLat,
       params.geoLng,
-      settings.officeLat!,
-      settings.officeLng!,
+      siteGeo.lat,
+      siteGeo.lng,
     );
-    geoFenceOk = distance <= settings.geoFenceRadiusM;
+    geoFenceOk = distance <= siteGeo.geoFenceRadiusM;
     if (!geoFenceOk) {
-      throw new Error(
-        "You are outside the office geo-fence. Check-in is not allowed from this location.",
-      );
+      throw new Error(HR_OUT_OF_LOCATION_MESSAGE);
     }
-  } else if (
-    params.geoLat != null &&
-    params.geoLng != null &&
-    officeConfigured
-  ) {
+  } else if (params.geoLat != null && params.geoLng != null) {
     const distance = haversineMeters(
       params.geoLat,
       params.geoLng,
-      settings.officeLat!,
-      settings.officeLng!,
+      siteGeo.lat,
+      siteGeo.lng,
     );
-    geoFenceOk = distance <= settings.geoFenceRadiusM;
+    geoFenceOk = distance <= siteGeo.geoFenceRadiusM;
     if (!geoFenceOk) {
-      throw new Error(
-        "You are outside the office geo-fence. Check-in is not allowed from this location.",
-      );
+      throw new Error(HR_OUT_OF_LOCATION_MESSAGE);
     }
   }
+
+  const resolvedSiteId = params.siteId ?? siteGeo.id ?? null;
 
   return prisma.attendanceRecord.upsert({
     where: {
@@ -135,6 +147,7 @@ export async function checkInAttendance(params: {
     create: {
       organizationId: params.user.organizationId,
       userId: params.user.id,
+      siteId: resolvedSiteId,
       workDate,
       checkInAt: new Date(),
       status: "PRESENT",
@@ -145,6 +158,7 @@ export async function checkInAttendance(params: {
       faceVerified: params.method === "FACE",
     },
     update: {
+      siteId: resolvedSiteId,
       checkInAt: new Date(),
       status: "PRESENT",
       method: params.method ?? (params.geoLat != null ? "GEO" : "WEB"),
@@ -154,6 +168,7 @@ export async function checkInAttendance(params: {
     },
     include: {
       user: { select: { name: true, email: true } },
+      site: { select: { id: true, name: true } },
     },
   });
 }

@@ -11,6 +11,7 @@ import {
 export type AttendanceTableRow = {
   id: string;
   employeeName: string;
+  siteName: string;
   checkInAt: string | null;
   checkOutAt: string | null;
   method: string;
@@ -57,7 +58,7 @@ export function AttendanceAdminTable({
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
 
-  const colSpan = canManage ? 6 : 5;
+  const colSpan = canManage ? 7 : 6;
 
   function runDelete(record: AttendanceTableRow) {
     const label = record.employeeName;
@@ -93,6 +94,7 @@ export function AttendanceAdminTable({
           <thead>
             <tr>
               <th>Employee</th>
+              <th>Site</th>
               <th>Check in</th>
               <th>Check out</th>
               <th>Method</th>
@@ -110,6 +112,7 @@ export function AttendanceAdminTable({
                 <Fragment key={row.id}>
                   <tr>
                     <td>{row.employeeName}</td>
+                    <td>{row.siteName}</td>
                     <td>{formatTime(row.checkInAt)}</td>
                     <td>{formatTime(row.checkOutAt)}</td>
                     <td>{row.method}</td>

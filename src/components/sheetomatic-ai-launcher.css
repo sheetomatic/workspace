@@ -1,11 +1,26 @@
+.sheetomatic-ai-launcher-wrap {
+  position: fixed;
+  z-index: 70;
+  touch-action: none;
+  cursor: grab;
+}
+
+.sheetomatic-ai-launcher-wrap.is-dragging {
+  cursor: grabbing;
+}
+
+.sheetomatic-ai-launcher-wrap.is-dragging .sheetomatic-ai-launcher {
+  transform: scale(1.04);
+  box-shadow:
+    0 10px 28px rgba(24, 169, 87, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.9) inset;
+}
+
 .sheetomatic-ai-launcher {
   --launcher-size: 2.5rem;
   --launcher-icon: 18px;
 
-  position: fixed;
-  right: 1rem;
-  bottom: 1rem;
-  z-index: 70;
+  position: relative;
   display: inline-flex;
   flex-direction: row-reverse;
   align-items: center;
@@ -32,6 +47,7 @@
     transform 0.18s ease,
     box-shadow 0.18s ease,
     border-color 0.18s ease;
+  user-select: none;
 }
 
 .sheetomatic-ai-launcher::before {
@@ -45,8 +61,8 @@
   animation: sheetomatic-ai-launcher-ring 3.2s ease-in-out 1.6s infinite;
 }
 
-.sheetomatic-ai-launcher:hover,
-.sheetomatic-ai-launcher:focus-visible {
+.sheetomatic-ai-launcher-wrap:not(.is-dragging) .sheetomatic-ai-launcher:hover,
+.sheetomatic-ai-launcher-wrap:not(.is-dragging) .sheetomatic-ai-launcher:focus-visible {
   width: auto;
   max-width: min(11rem, calc(100vw - 2rem));
   padding: 0 0.55rem 0 0.7rem;
@@ -58,8 +74,8 @@
   transform: translateY(-1px);
 }
 
-.sheetomatic-ai-launcher:hover::before,
-.sheetomatic-ai-launcher:focus-visible::before {
+.sheetomatic-ai-launcher-wrap:not(.is-dragging) .sheetomatic-ai-launcher:hover::before,
+.sheetomatic-ai-launcher-wrap:not(.is-dragging) .sheetomatic-ai-launcher:focus-visible::before {
   animation: none;
   opacity: 0;
 }
@@ -83,8 +99,8 @@
     opacity 0.2s ease;
 }
 
-.sheetomatic-ai-launcher:hover .sheetomatic-ai-launcher-label,
-.sheetomatic-ai-launcher:focus-visible .sheetomatic-ai-launcher-label {
+.sheetomatic-ai-launcher-wrap:not(.is-dragging) .sheetomatic-ai-launcher:hover .sheetomatic-ai-launcher-label,
+.sheetomatic-ai-launcher-wrap:not(.is-dragging) .sheetomatic-ai-launcher:focus-visible .sheetomatic-ai-launcher-label {
   max-width: 7.5rem;
   opacity: 1;
 }
@@ -143,12 +159,10 @@
   .sheetomatic-ai-launcher {
     --launcher-size: 2.375rem;
     --launcher-icon: 17px;
-    right: 0.875rem;
-    bottom: 0.875rem;
   }
 
-  .sheetomatic-ai-launcher:hover,
-  .sheetomatic-ai-launcher:focus-visible {
+  .sheetomatic-ai-launcher-wrap:not(.is-dragging) .sheetomatic-ai-launcher:hover,
+  .sheetomatic-ai-launcher-wrap:not(.is-dragging) .sheetomatic-ai-launcher:focus-visible {
     width: var(--launcher-size);
     max-width: var(--launcher-size);
     padding: 0;
@@ -181,8 +195,8 @@
     animation: none;
   }
 
-  .sheetomatic-ai-launcher:hover,
-  .sheetomatic-ai-launcher:focus-visible {
+  .sheetomatic-ai-launcher-wrap:not(.is-dragging) .sheetomatic-ai-launcher:hover,
+  .sheetomatic-ai-launcher-wrap:not(.is-dragging) .sheetomatic-ai-launcher:focus-visible {
     transform: none;
   }
 

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { TeamManagementPanel } from "@/components/saas/team-management-panel";
 import { SuperAdminPanel } from "@/components/saas/super-admin-panel";
 import { WorkplaceHrSettingsPanel } from "@/components/saas/workplace-hr-settings-panel";
+import { HrWorkSitesPanel } from "@/components/saas/hr-work-sites-panel";
 import { PageHeader } from "@/components/saas/page-header";
 import {
   LegalTeamInvitePanel,
@@ -13,6 +14,7 @@ import { listSuperAdmins } from "@/app/app/team/platform-actions";
 import { canManageSuperAdmins } from "@/lib/platform";
 import { requireSession } from "@/lib/require-session";
 import { getOrCreateHrSettings } from "@/lib/hr/hr-store";
+import { listActiveHrWorkSites } from "@/lib/hr/sites";
 import {
   canManageTeam,
   canViewTeamPage,
@@ -106,7 +108,7 @@ export default async function TeamPage() {
   }
 
   const canManage = canManageTeam(user);
-  const [allMembers, hrSettings, organization] = await Promise.all([
+  const [allMembers, hrSettings, organization, workSites] = await Promise.all([
     listWorkspaceMembers(user.organizationId),
     canManage ? getOrCreateHrSettings(user.organizationId) : Promise.resolve(null),
     canManage
@@ -115,6 +117,7 @@ export default async function TeamPage() {
           select: { allowedModules: true, isPrimary: true },
         })
       : Promise.resolve(null),
+    canManage ? listActiveHrWorkSites(user.organizationId) : Promise.resolve([]),
   ]);
   const orgAllowedModules = organization
     ? resolveOrgAllowedModules(organization.allowedModules, {
@@ -168,6 +171,15 @@ export default async function TeamPage() {
             description="Office geo-fence and face recognition policy."
           >
             <WorkplaceHrSettingsPanel settings={hrSettings} />
+            <HrWorkSitesPanel
+              sites={workSites.map((site) => ({
+                id: site.id,
+                name: site.name,
+                lat: site.lat,
+                lng: site.lng,
+                geoFenceRadiusM: site.geoFenceRadiusM,
+              }))}
+            />
           </TeamCollapsibleSection>
         ) : null}
         <TeamManagementPanel

@@ -6,6 +6,7 @@ import {
   recordCheckInAction,
   recordCheckOutAction,
 } from "@/lib/hr/hr-actions";
+import { HR_OUT_OF_LOCATION_MESSAGE } from "@/lib/hr/hr-result";
 import { GeoPunchForm } from "@/components/hr/geo-punch-form";
 
 export type PunchState = "not_started" | "clocked_in" | "completed";
@@ -40,6 +41,7 @@ export function AttendancePunchPanel({
   method,
   todayLabel,
   geoFenceRequired = false,
+  sites = [],
 }: {
   checkInAt: Date | null;
   checkOutAt: Date | null;
@@ -47,6 +49,7 @@ export function AttendancePunchPanel({
   method: string | null;
   todayLabel: string;
   geoFenceRequired?: boolean;
+  sites?: Array<{ id: string; name: string }>;
 }) {
   const router = useRouter();
   const punchState = getPunchState(checkInAt, checkOutAt);
@@ -61,7 +64,6 @@ export function AttendancePunchPanel({
       try {
         await recordCheckOutAction();
         setMessage("Checked out successfully.");
-        setIsError(false);
         router.refresh();
       } catch {
         setMessage("Check in first before checking out.");
@@ -101,18 +103,18 @@ export function AttendancePunchPanel({
               startTransition(async () => {
                 setMessage(null);
                 setIsError(false);
-                try {
-                  await recordCheckInAction(new FormData());
-                  setMessage("Checked in successfully.");
-                  router.refresh();
-                } catch (error) {
+                const result = await recordCheckInAction(new FormData());
+                if (!result.ok) {
                   setMessage(
-                    error instanceof Error
-                      ? error.message
-                      : "Could not check in.",
+                    result.code === "OUT_OF_LOCATION"
+                      ? HR_OUT_OF_LOCATION_MESSAGE
+                      : result.message,
                   );
                   setIsError(true);
+                  return;
                 }
+                setMessage("Checked in successfully.");
+                router.refresh();
               });
             }}
           >
@@ -131,7 +133,7 @@ export function AttendancePunchPanel({
 
       {punchState === "clocked_in" && geoFenceOk === false ? (
         <p className="ws-hr-feedback ws-hr-feedback-error">
-          Last check-in was outside the office geo-fence.
+          {HR_OUT_OF_LOCATION_MESSAGE}
         </p>
       ) : null}
 
@@ -157,7 +159,8 @@ export function AttendancePunchPanel({
           <GeoPunchForm
             action={recordCheckInAction}
             requireGeo={geoFenceRequired}
-            submitLabel={geoFenceRequired ? "Check in with GPS" : "Check in with GPS"}
+            sites={sites}
+            submitLabel="Check in with GPS"
             successMessage="Checked in successfully."
           />
         </div>

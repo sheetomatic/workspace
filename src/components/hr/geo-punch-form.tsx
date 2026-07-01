@@ -2,13 +2,17 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import type { HrActionResult } from "@/lib/hr/hr-result";
+import { HR_OUT_OF_LOCATION_MESSAGE } from "@/lib/hr/hr-result";
 
 type GeoPunchFormProps = {
-  action: (formData: FormData) => Promise<void>;
+  action: (formData: FormData) => Promise<HrActionResult>;
   children?: React.ReactNode;
   submitLabel: string;
   requireGeo?: boolean;
   successMessage?: string;
+  siteId?: string | null;
+  sites?: Array<{ id: string; name: string }>;
 };
 
 export function GeoPunchForm({
@@ -16,7 +20,9 @@ export function GeoPunchForm({
   children,
   submitLabel,
   requireGeo = false,
-  successMessage = "Saved.",
+  successMessage = "Checked in successfully.",
+  siteId,
+  sites = [],
 }: GeoPunchFormProps) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
@@ -24,6 +30,9 @@ export function GeoPunchForm({
   const [pending, setPending] = useState(false);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
     null,
+  );
+  const [selectedSiteId, setSelectedSiteId] = useState(
+    siteId ?? (sites.length === 1 ? sites[0]?.id ?? "" : ""),
   );
 
   function captureLocation() {
@@ -59,29 +68,60 @@ export function GeoPunchForm({
       formData.set("geoLat", String(coords.lat));
       formData.set("geoLng", String(coords.lng));
     }
+    if (selectedSiteId) {
+      formData.set("siteId", selectedSiteId);
+    }
     if (requireGeo && !coords) {
       setMessage("Capture location before submitting.");
       setIsError(true);
       setPending(false);
       return;
     }
-    try {
-      await action(formData);
-      setMessage(successMessage);
-      setIsError(false);
-      router.refresh();
-    } catch (error) {
+    if (sites.length > 1 && !selectedSiteId) {
+      setMessage("Select your work site before checking in.");
+      setIsError(true);
+      setPending(false);
+      return;
+    }
+
+    const result = await action(formData);
+    if (!result.ok) {
       setMessage(
-        error instanceof Error ? error.message : "Could not save. Try again.",
+        result.code === "OUT_OF_LOCATION"
+          ? HR_OUT_OF_LOCATION_MESSAGE
+          : result.message,
       );
       setIsError(true);
-    } finally {
       setPending(false);
+      return;
     }
+
+    setMessage(successMessage);
+    setIsError(false);
+    setPending(false);
+    router.refresh();
   }
 
   return (
     <form onSubmit={handleSubmit} className="ws-hr-form">
+      {sites.length > 1 ? (
+        <label className="ws-attendance-site-select">
+          Work site
+          <select
+            name="siteId"
+            required
+            value={selectedSiteId}
+            onChange={(event) => setSelectedSiteId(event.target.value)}
+          >
+            <option value="">Select site</option>
+            {sites.map((site) => (
+              <option key={site.id} value={site.id}>
+                {site.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
       {children}
       <div className="ws-hr-form-actions">
         <button
