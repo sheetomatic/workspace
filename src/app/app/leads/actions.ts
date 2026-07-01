@@ -399,6 +399,7 @@ export async function syncLeadChannelNow(channel: LeadSourceChannel) {
         created: result.imported,
         updated: 0,
       },
+      result.partial,
     ),
   };
 }
@@ -536,6 +537,7 @@ export async function updateGoogleSheetsLeadConfig(params: {
         created: sync.imported,
         updated: 0,
       },
+      sync.partial,
     )}`,
     imported: sync.imported,
     counts: sync.counts,

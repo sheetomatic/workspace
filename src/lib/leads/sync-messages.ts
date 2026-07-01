@@ -1,21 +1,44 @@
+import type { SheetSyncProgress } from "@/lib/leads/sheet-sync-progress";
+
 export type LeadSyncCounts = {
   processed: number;
   created: number;
   updated: number;
 };
 
-export function formatLeadSyncCounts(counts: LeadSyncCounts) {
-  if (counts.processed === 0) {
+export type LeadSyncResult = {
+  ok: true;
+  imported: number;
+  counts: LeadSyncCounts;
+  partial?: SheetSyncProgress;
+};
+
+export function formatLeadSyncCounts(
+  counts: LeadSyncCounts,
+  partial?: SheetSyncProgress,
+) {
+  if (counts.processed === 0 && !partial) {
     return "No lead rows found in the sheet.";
   }
 
-  const parts = [`Synced ${counts.processed} row${counts.processed === 1 ? "" : "s"}`];
+  const parts: string[] = [];
+  if (partial && partial.cursor < partial.total) {
+    parts.push(`Imported ${partial.cursor} of ${partial.total} sheet rows`);
+  } else if (counts.processed > 0) {
+    parts.push(`Synced ${counts.processed} row${counts.processed === 1 ? "" : "s"}`);
+  }
+
   if (counts.created > 0) {
     parts.push(`${counts.created} new`);
   }
   if (counts.updated > 0) {
     parts.push(`${counts.updated} updated`);
   }
+
+  if (partial && partial.cursor < partial.total) {
+    parts.push("sync continues automatically every 15 min");
+  }
+
   return parts.join(" · ");
 }
 

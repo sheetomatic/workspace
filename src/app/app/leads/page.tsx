@@ -5,7 +5,8 @@ import { LeadsPipelineCards } from "@/components/saas/leads-pipeline-cards";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import "@/components/saas/leads-machine.css";
 import { runLeadsBackgroundMaintenance } from "@/lib/leads/backfill";
-import { maybeAutoSyncGoogleSheets, LEADS_SYNC_INTERVAL_LABEL } from "@/lib/leads/auto-sync";
+import { LEADS_SYNC_INTERVAL_LABEL } from "@/lib/leads/auto-sync";
+import { readSheetSyncProgress } from "@/lib/leads/sheet-sync-progress";
 import { ensureLeadConnections } from "@/lib/leads/ingest";
 import { parseLeadsListParams } from "@/lib/leads/list-params";
 import { parseLeadsPeriodParams } from "@/lib/leads/period";
@@ -132,21 +133,12 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
   const period = parseLeadsPeriodParams(params);
   const listParams = parseLeadsListParams(params);
   const canManage = hasMinimumRole(user.role, "MANAGER");
-  const isAdmin = hasMinimumRole(user.role, "ADMIN");
 
   after(async () => {
     try {
       await runLeadsBackgroundMaintenance(user.organizationId);
     } catch (error) {
       console.error("leads background maintenance", error);
-    }
-
-    if (isAdmin) {
-      try {
-        await maybeAutoSyncGoogleSheets(user.organizationId);
-      } catch (error) {
-        console.error("leads auto-sync", error);
-      }
     }
   });
 
@@ -173,6 +165,12 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
         minute: "2-digit",
       })
     : "Not synced yet";
+  const sheetSyncProgress = readSheetSyncProgress(sheetsConnection?.config);
+  const syncPillLabel = sheetSyncProgress
+    ? `Importing ${sheetSyncProgress.cursor}/${sheetSyncProgress.total}`
+    : lastSyncLabel === "Not synced yet"
+      ? "Not synced"
+      : lastSyncLabel;
 
   return (
     <div className="saas-page leads-machine-page">
@@ -181,7 +179,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
         actions={
           <div className="leads-header-actions">
             <span className="leads-sync-pill" title={`Auto sync ${LEADS_SYNC_INTERVAL_LABEL}`}>
-              {lastSyncLabel === "Not synced yet" ? "Not synced" : lastSyncLabel}
+              {syncPillLabel}
             </span>
             {canManage ? (
               <Link

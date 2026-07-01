@@ -60,7 +60,7 @@
       "maxDuration": 60
     },
     "src/app/api/cron/leads-sync/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     }
   }
 }

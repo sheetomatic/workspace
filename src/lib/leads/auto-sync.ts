@@ -1,5 +1,6 @@
 import { withDbRetry } from "@/lib/db";
 import { pullLeadsFromConnection } from "@/lib/leads/sync-sources";
+import { readSheetSyncProgress } from "@/lib/leads/sheet-sync-progress";
 
 const AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000;
 
@@ -20,8 +21,9 @@ export async function maybeAutoSyncGoogleSheets(organizationId: string) {
     return { synced: false as const, reason: "disabled" as const };
   }
 
+  const inProgress = readSheetSyncProgress(connection.config);
   const lastSyncAt = connection.lastSyncAt?.getTime() ?? 0;
-  if (Date.now() - lastSyncAt < AUTO_SYNC_INTERVAL_MS) {
+  if (!inProgress && Date.now() - lastSyncAt < AUTO_SYNC_INTERVAL_MS) {
     return { synced: false as const, reason: "fresh" as const };
   }
 

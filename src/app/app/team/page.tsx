@@ -112,12 +112,14 @@ export default async function TeamPage() {
     canManage
       ? prisma.organization.findUnique({
           where: { id: user.organizationId },
-          select: { allowedModules: true },
+          select: { allowedModules: true, isPrimary: true },
         })
       : Promise.resolve(null),
   ]);
   const orgAllowedModules = organization
-    ? resolveOrgAllowedModules(organization.allowedModules)
+    ? resolveOrgAllowedModules(organization.allowedModules, {
+        isPrimary: organization.isPrimary,
+      })
     : undefined;
   const visibleMembers = canManage
     ? allMembers

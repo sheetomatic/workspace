@@ -43,6 +43,10 @@ export type LeadIngestInput = {
   waContactId?: string | null;
   rawPayload?: Prisma.InputJsonValue;
   createFmsJob?: boolean;
+  /** Skip ensureLeadConnections when the caller already bootstrapped connections. */
+  skipConnectionSetup?: boolean;
+  /** Known connection row — avoids a lookup per lead during bulk sheet sync. */
+  connectionId?: string | null;
   actorUserId?: string;
 };
 
@@ -118,7 +122,12 @@ async function migrateGoogleSheetsLeadConfig(
 
   await client.leadIngestConnection.update({
     where: { id: connection.id },
-    data: { config: resolved as object },
+    data: {
+      config: {
+        ...current,
+        ...resolved,
+      } as object,
+    },
   });
 }
 
@@ -137,16 +146,23 @@ export async function enforceLeadSourcePhase(
 }
 
 export async function ingestInboundLead(input: LeadIngestInput) {
-  await ensureLeadConnections(input.organizationId);
+  if (!input.skipConnectionSetup) {
+    await ensureLeadConnections(input.organizationId);
+  }
 
-  const connection = await prisma.leadIngestConnection.findUnique({
-    where: {
-      organizationId_channel: {
-        organizationId: input.organizationId,
-        channel: input.channel,
-      },
-    },
-  });
+  const connection =
+    input.connectionId !== undefined
+      ? input.connectionId
+        ? { id: input.connectionId }
+        : null
+      : await prisma.leadIngestConnection.findUnique({
+          where: {
+            organizationId_channel: {
+              organizationId: input.organizationId,
+              channel: input.channel,
+            },
+          },
+        });
 
   const phone = normalizePhone(input.phone);
   const externalId = input.externalId?.trim() || null;

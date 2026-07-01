@@ -316,7 +316,7 @@ export const getSessionUser = cache(async function getSessionUser() {
 
     const organization = await db.organization.findUnique({
       where: { id: membership.organizationId },
-      select: { allowedModules: true },
+      select: { allowedModules: true, isPrimary: true },
     });
 
     const memberRole = membershipRecord?.role ?? membership.role;
@@ -335,6 +335,7 @@ export const getSessionUser = cache(async function getSessionUser() {
         memberRole,
         membershipRecord?.modules,
         organization?.allowedModules,
+        { isPrimary: organization?.isPrimary },
       ),
       staffCode: membershipRecord?.staffCode?.trim() || null,
     };

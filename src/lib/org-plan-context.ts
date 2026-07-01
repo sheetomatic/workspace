@@ -31,6 +31,7 @@ export async function getOrganizationPlanContext(
         allowedModules: true,
         maxMembers: true,
         maxFmsTemplates: true,
+        isPrimary: true,
         _count: {
           select: {
             memberships: true,
@@ -57,7 +58,9 @@ export async function getOrganizationPlanContext(
     maxMembers: organization.maxMembers,
     maxFmsTemplates: organization.maxFmsTemplates,
     tierEnforced: isOrgTierEnforced(organization.allowedModules),
-    orgAllowedModules: resolveOrgAllowedModules(organization.allowedModules),
+    orgAllowedModules: resolveOrgAllowedModules(organization.allowedModules, {
+      isPrimary: organization.isPrimary,
+    }),
     memberCount: organization._count.memberships,
     fmsTemplateCount: organization._count.fmsTemplates,
   };

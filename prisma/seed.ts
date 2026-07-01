@@ -16,6 +16,7 @@ import bcrypt from "bcryptjs";
 import { seedHingoraniCases } from "./seed-hingorani";
 import { seedBciDemo } from "./seed-bci-demo";
 import { DEFAULT_BCI_ORG_MODULES } from "../src/lib/workspace-addons.shared";
+import { WORKSPACE_MODULES } from "../src/lib/workspace-modules";
 
 const prisma = new PrismaClient();
 
@@ -162,8 +163,8 @@ const organizations = [
     industry: "Automation & AI consultancy",
     status: OrganizationStatus.ACTIVE,
     isPrimary: true,
-    plan: OrgPlan.BCI_STARTER,
-    allowedModules: DEFAULT_BCI_ORG_MODULES,
+    plan: OrgPlan.ENTERPRISE,
+    allowedModules: [...WORKSPACE_MODULES],
   },
   {
     name: "Acme Manufacturing",
@@ -1043,7 +1044,7 @@ async function main() {
       role: Role.OWNER,
       department: TaskDepartment.ADMIN,
       designation: "Founder & Super Admin",
-      modules: DEFAULT_BCI_ORG_MODULES,
+      modules: [...WORKSPACE_MODULES],
     },
     create: {
       userId: superAdminUser.id,
@@ -1051,7 +1052,7 @@ async function main() {
       role: Role.OWNER,
       department: TaskDepartment.ADMIN,
       designation: "Founder & Super Admin",
-      modules: DEFAULT_BCI_ORG_MODULES,
+      modules: [...WORKSPACE_MODULES],
     },
   });
 

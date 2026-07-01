@@ -1,8 +1,15 @@
 import type { InboundLeadStatus, LeadCallingStatus, LeadSourceChannel, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { ingestInboundLead } from "@/lib/leads/ingest";
+import { ensureLeadConnections, ingestInboundLead } from "@/lib/leads/ingest";
 import { pullLeadsFromGoogleSheet } from "@/lib/leads/google-sheets";
 import { resolveGoogleSheetsLeadConfig } from "@/lib/leads/sheet-config";
+import {
+  GOOGLE_SHEETS_SYNC_BATCH_SIZE,
+  GOOGLE_SHEETS_SYNC_TIME_BUDGET_MS,
+  mergeSheetSyncProgress,
+  readSheetSyncProgress,
+  type SheetSyncProgress,
+} from "@/lib/leads/sheet-sync-progress";
 import type { LeadSyncCounts } from "@/lib/leads/sync-messages";
 
 export type ExternalLeadRow = {
@@ -231,6 +238,8 @@ async function pullGoogleSheetsLeads(
     return { ok: false as const, reason: "missing_spreadsheet" };
   }
 
+  await ensureLeadConnections(organizationId);
+
   await prisma.leadIngestConnection.update({
     where: { id: connection.id },
     data: { syncStatus: "SYNCING", lastSyncError: null },
@@ -238,47 +247,78 @@ async function pullGoogleSheetsLeads(
 
   try {
     const rows = await pullLeadsFromGoogleSheet(sheetConfig);
-    let counts: LeadSyncCounts = { processed: 0, created: 0, updated: 0 };
-    for (const row of rows) {
-      const result = await ingestInboundLead({
-        organizationId,
-        channel: "GOOGLE_SHEETS",
-        externalId: row.externalId,
-        name: row.name,
-        phone: row.phone,
-        email: row.email,
-        city: row.city,
-        company: row.company,
-        address: row.address,
-        zipCode: row.zipCode,
-        requirement: row.requirement,
-        sourceDetail: row.sourceDetail,
-        meetingNotes: row.meetingNotes,
-        callingStatus: row.callingStatus,
-        capturedAt: row.capturedAt ?? undefined,
-        nextFollowUpAt: row.nextFollowUpAt ?? undefined,
-        status: row.status,
-        rawPayload: row.raw as Prisma.InputJsonValue,
-        createFmsJob: true,
-      });
-      counts.processed += 1;
-      if (result.created) {
-        counts.created += 1;
-      } else {
-        counts.updated += 1;
+    const savedProgress = readSheetSyncProgress(connection.config);
+    let cursor =
+      savedProgress && savedProgress.total === rows.length
+        ? savedProgress.cursor
+        : 0;
+
+    const counts: LeadSyncCounts = { processed: 0, created: 0, updated: 0 };
+    const deadline = Date.now() + GOOGLE_SHEETS_SYNC_TIME_BUDGET_MS;
+
+    while (cursor < rows.length && Date.now() < deadline) {
+      const batchEnd = Math.min(cursor + GOOGLE_SHEETS_SYNC_BATCH_SIZE, rows.length);
+      for (let index = cursor; index < batchEnd; index += 1) {
+        const row = rows[index]!;
+        const result = await ingestInboundLead({
+          organizationId,
+          channel: "GOOGLE_SHEETS",
+          connectionId: connection.id,
+          skipConnectionSetup: true,
+          createFmsJob: false,
+          externalId: row.externalId,
+          name: row.name,
+          phone: row.phone,
+          email: row.email,
+          city: row.city,
+          company: row.company,
+          address: row.address,
+          zipCode: row.zipCode,
+          requirement: row.requirement,
+          sourceDetail: row.sourceDetail,
+          meetingNotes: row.meetingNotes,
+          callingStatus: row.callingStatus,
+          capturedAt: row.capturedAt ?? undefined,
+          nextFollowUpAt: row.nextFollowUpAt ?? undefined,
+          status: row.status,
+          rawPayload: row.raw as Prisma.InputJsonValue,
+        });
+        counts.processed += 1;
+        if (result.created) {
+          counts.created += 1;
+        } else {
+          counts.updated += 1;
+        }
       }
+      cursor = batchEnd;
     }
+
+    const partial: SheetSyncProgress | null =
+      cursor < rows.length ? { cursor, total: rows.length } : null;
+    const mergedConfig = mergeSheetSyncProgress(connection.config, partial);
 
     await prisma.leadIngestConnection.update({
       where: { id: connection.id },
       data: {
         syncStatus: "IDLE",
-        lastSyncAt: new Date(),
-        lastSyncError: null,
+        config: mergedConfig as Prisma.InputJsonValue,
+        ...(partial
+          ? {
+              lastSyncError: null,
+            }
+          : {
+              lastSyncAt: new Date(),
+              lastSyncError: null,
+            }),
       },
     });
 
-    return { ok: true as const, imported: counts.processed, counts };
+    return {
+      ok: true as const,
+      imported: counts.processed,
+      counts,
+      partial: partial ?? undefined,
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Google Sheets sync failed";
     await prisma.leadIngestConnection.update({

@@ -56,7 +56,9 @@ export default async function SettingsPage() {
     organization.logoUrl,
     organization.updatedAt.getTime(),
   );
-  const allowedModules = resolveOrgAllowedModules(organization.allowedModules);
+  const allowedModules = resolveOrgAllowedModules(organization.allowedModules, {
+    isPrimary: organization.isPrimary,
+  });
 
   return (
     <div className="saas-page saas-settings-page">
@@ -75,7 +77,7 @@ export default async function SettingsPage() {
           <>
             <WorkspaceAddonsPanel
               allowedModules={allowedModules}
-              canEdit={user.isSuperAdmin}
+              canEdit={user.isSuperAdmin || (hasMinimumRole(user.role, "OWNER") && organization.isPrimary)}
               plan={organization.plan}
             />
             <WorkspaceAppearancePanel appearance={appearance} />

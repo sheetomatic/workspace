@@ -1,8 +1,8 @@
 import type { OrgPlan, Role, WorkspaceModule } from "@prisma/client";
 import {
+  WORKSPACE_MODULES,
   defaultModulesForRole,
   resolveMemberModules,
-  WORKSPACE_MODULES,
 } from "@/lib/workspace-modules";
 
 /** BCI FMS core — split flows, EM Ready, approvals, MIS. Tasks sold separately. */
@@ -39,7 +39,11 @@ export const TASKS_ADDON_LIMITS = {
 /** Legacy orgs keep empty allowedModules until migrated - no tier clamping. */
 export function resolveOrgAllowedModules(
   allowedModules: WorkspaceModule[] | null | undefined,
+  options?: { isPrimary?: boolean },
 ): WorkspaceModule[] {
+  if (options?.isPrimary) {
+    return [...WORKSPACE_MODULES];
+  }
   if (!allowedModules || allowedModules.length === 0) {
     return [...WORKSPACE_MODULES];
   }
@@ -112,9 +116,14 @@ export function effectiveMemberModules(
   role: Role,
   membershipModules: WorkspaceModule[] | null | undefined,
   orgAllowedModules: WorkspaceModule[] | null | undefined,
+  options?: { isPrimary?: boolean },
 ): WorkspaceModule[] {
+  const orgAllowed = resolveOrgAllowedModules(orgAllowedModules, options);
+  if (role === "OWNER") {
+    return [...orgAllowed];
+  }
   const resolved = resolveMemberModules(role, membershipModules);
-  return clampModulesToOrg(resolved, orgAllowedModules);
+  return clampModulesToOrg(resolved, orgAllowed);
 }
 
 export const ORG_PLAN_LABELS: Record<OrgPlan, string> = {

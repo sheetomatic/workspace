@@ -3,6 +3,8 @@
 import type { OrgPlan, WorkspaceModule } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { hasMinimumRole } from "@/lib/permissions";
+import { isPrimaryOrganization } from "@/lib/platform";
 import { requireSession } from "@/lib/require-session";
 import {
   clampModulesToOrg,
@@ -54,8 +56,15 @@ async function syncMembershipModules(
 
 export async function saveWorkspaceAddons(formData: FormData) {
   const user = await requireSession();
-  if (!user.isSuperAdmin) {
-    return { ok: false, error: "Only super admins can change workspace add-ons." };
+  const canEdit =
+    user.isSuperAdmin ||
+    (hasMinimumRole(user.role, "OWNER") &&
+      (await isPrimaryOrganization(user.organizationId)));
+  if (!canEdit) {
+    return {
+      ok: false,
+      error: "Only workspace owners (primary workspace) or super admins can change add-ons.",
+    };
   }
 
   let allowedModules = parseAddonModulesFromForm(formData);
