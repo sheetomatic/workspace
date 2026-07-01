@@ -301,3 +301,87 @@ export async function createPayrollRunAction(formData: FormData): Promise<void> 
 
   revalidateHr();
 }
+
+async function requireSuperAdminAttendanceActor() {
+  const user = await getSessionUser();
+  if (!user?.isSuperAdmin) {
+    throw new Error("Only super admins can change attendance rows.");
+  }
+  return user;
+}
+
+function parseOptionalDateTime(raw: string | null | undefined) {
+  const value = raw?.trim() ?? "";
+  if (!value) {
+    return null;
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error("Enter a valid date and time.");
+  }
+  return parsed;
+}
+
+function parseGeoFenceOk(raw: string | null | undefined): boolean | null {
+  const value = raw?.trim() ?? "";
+  if (value === "true") {
+    return true;
+  }
+  if (value === "false") {
+    return false;
+  }
+  return null;
+}
+
+export async function updateAttendanceRecordAction(
+  formData: FormData,
+): Promise<void> {
+  const user = await requireSuperAdminAttendanceActor();
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) {
+    throw new Error("Attendance record not found.");
+  }
+
+  const existing = await prisma.attendanceRecord.findFirst({
+    where: { id, organizationId: user.organizationId },
+  });
+  if (!existing) {
+    throw new Error("Attendance record not found.");
+  }
+
+  const method = String(formData.get("method") ?? existing.method).trim();
+  if (!["WEB", "GEO", "FACE"].includes(method)) {
+    throw new Error("Invalid attendance method.");
+  }
+
+  await prisma.attendanceRecord.update({
+    where: { id },
+    data: {
+      checkInAt: parseOptionalDateTime(formData.get("checkInAt")?.toString()),
+      checkOutAt: parseOptionalDateTime(formData.get("checkOutAt")?.toString()),
+      method: method as "WEB" | "GEO" | "FACE",
+      geoFenceOk: parseGeoFenceOk(formData.get("geoFenceOk")?.toString()),
+      notes: String(formData.get("notes") ?? "").trim() || null,
+      markedById: user.id,
+    },
+  });
+
+  revalidateHr();
+}
+
+export async function deleteAttendanceRecordAction(recordId: string): Promise<void> {
+  const user = await requireSuperAdminAttendanceActor();
+  const id = recordId.trim();
+  if (!id) {
+    throw new Error("Attendance record not found.");
+  }
+
+  const deleted = await prisma.attendanceRecord.deleteMany({
+    where: { id, organizationId: user.organizationId },
+  });
+  if (deleted.count === 0) {
+    throw new Error("Attendance record not found.");
+  }
+
+  revalidateHr();
+}

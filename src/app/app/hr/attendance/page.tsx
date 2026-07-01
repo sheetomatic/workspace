@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/saas/page-header";
 import { AttendancePunchPanel } from "@/components/hr/attendance-punch-panel";
+import { AttendanceAdminTable } from "@/components/hr/attendance-admin-table";
 import { HrSubNav } from "@/components/hr/hr-sub-nav";
 import { requireSession } from "@/lib/require-session";
 import { listTodayAttendance } from "@/lib/hr/hr-store";
@@ -55,59 +56,18 @@ export default async function HrAttendancePage() {
         todayLabel={todayLabel}
       />
 
-      <section className="ws-hr-panel">
-        <h2>Today&apos;s attendance</h2>
-        <div className="ws-hr-table-wrap">
-          <table className="ws-hr-table">
-            <thead>
-              <tr>
-                <th>Employee</th>
-                <th>Check in</th>
-                <th>Check out</th>
-                <th>Method</th>
-                <th>Geo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {records.length === 0 ? (
-                <tr>
-                  <td colSpan={5}>No punches recorded today.</td>
-                </tr>
-              ) : (
-                records.map((row) => (
-                  <tr key={row.id}>
-                    <td>{row.user.name ?? row.user.email}</td>
-                    <td>
-                      {row.checkInAt
-                        ? row.checkInAt.toLocaleTimeString("en-IN", {
-                            hour: "numeric",
-                            minute: "2-digit",
-                          })
-                        : "-"}
-                    </td>
-                    <td>
-                      {row.checkOutAt
-                        ? row.checkOutAt.toLocaleTimeString("en-IN", {
-                            hour: "numeric",
-                            minute: "2-digit",
-                          })
-                        : "-"}
-                    </td>
-                    <td>{row.method}</td>
-                    <td>
-                      {row.geoFenceOk == null
-                        ? "-"
-                        : row.geoFenceOk
-                          ? "OK"
-                          : "Outside"}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <AttendanceAdminTable
+        canManage={user.isSuperAdmin}
+        records={records.map((row) => ({
+          id: row.id,
+          employeeName: row.user.name ?? row.user.email ?? "Unknown",
+          checkInAt: row.checkInAt?.toISOString() ?? null,
+          checkOutAt: row.checkOutAt?.toISOString() ?? null,
+          method: row.method,
+          geoFenceOk: row.geoFenceOk,
+          notes: row.notes,
+        }))}
+      />
 
       <p className="ws-hr-note">
         Workplace geo-fence and per-member attendance rules are configured under
