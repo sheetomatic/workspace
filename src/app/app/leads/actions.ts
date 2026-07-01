@@ -393,14 +393,7 @@ export async function syncLeadChannelNow(channel: LeadSourceChannel) {
     ok: true,
     imported: result.imported,
     counts: result.counts,
-    message: formatLeadSyncCounts(
-      result.counts ?? {
-        processed: result.imported,
-        created: result.imported,
-        updated: 0,
-      },
-      result.partial,
-    ),
+    message: formatLeadSyncCounts(result.counts, result.partial),
   };
 }
 
@@ -531,14 +524,7 @@ export async function updateGoogleSheetsLeadConfig(params: {
 
   return {
     ok: true,
-    message: `Live and connected. ${formatLeadSyncCounts(
-      sync.counts ?? {
-        processed: sync.imported,
-        created: sync.imported,
-        updated: 0,
-      },
-      sync.partial,
-    )}`,
+    message: `Live and connected. ${formatLeadSyncCounts(sync.counts, sync.partial)}`,
     imported: sync.imported,
     counts: sync.counts,
   };
