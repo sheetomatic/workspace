@@ -22,7 +22,7 @@ export function humanizeReminderSummary(summary: string): string {
         case "WhatsApp failed":
           return "WA could not be sent (check Channels settings or assignee must message your WA number first)";
         case "WhatsApp session required":
-          return "WA could not be sent (assignee must message your business number once, or add an approved task template in Channels)";
+          return "WA could not be sent (assignee must message your business number once, or check wa.sheetomatic.com wallet/API)";
         case "WhatsApp: no phone":
           return "WA skipped (add WhatsApp number in Team for assignee)";
         case "WhatsApp invalid phone":
@@ -31,7 +31,7 @@ export function humanizeReminderSummary(summary: string): string {
           if (part.startsWith("WhatsApp failed:")) {
             const detail = part.replace(/^WhatsApp failed:\s*/, "");
             if (detail.includes('"status":500') || detail.includes("Internal Server Error")) {
-              return "WA error: RedLava server error — template language must be en for assign_task_new";
+              return "WA error: Sheetomatic WhatsApp API error — retry or check wa.sheetomatic.com wallet";
             }
             return `WA error: ${detail}`;
           }

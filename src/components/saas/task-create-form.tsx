@@ -361,8 +361,11 @@ export function TaskCreateForm({
             ) : null}
             {!whatsappConfigured ? (
               <p className="ws-task-reminder-warning">
-                WhatsApp reminders are off — connect your RedLava API key in{" "}
-                <a href="/ai/app/settings">AI Settings</a>.
+                WhatsApp reminders are off — connect your API key from{" "}
+                <a href="https://wa.sheetomatic.com" rel="noreferrer" target="_blank">
+                  wa.sheetomatic.com
+                </a>{" "}
+                in <a href="/ai/app/settings">AI Settings</a>.
               </p>
             ) : null}
             {remindViaWhatsApp && assigneesMissingPhone.length > 0 ? (

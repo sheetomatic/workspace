@@ -217,13 +217,16 @@ async function deliverTaskMessage(params: DeliverTaskMessageParams) {
     metaPhoneId,
   };
 
-  // Template-first: assign_task_new works outside the 24h window for new assignees (Sheetomatic only).
+  // Template-first: assign_task_new works outside the 24h window for new assignees.
+  let templateAttempted = false;
+  let templateResult: WhatsAppSendResult | null = null;
   if (
     params.organizationId &&
     !params.skipTemplate &&
     providerKind === "sheetomatic"
   ) {
-    const templateResult = await sendTaskTemplate(templateParams);
+    templateAttempted = true;
+    templateResult = await sendTaskTemplate(templateParams);
     if (templateResult.sent || templateResult.reason === "phone_id_required") {
       return templateResult;
     }
@@ -240,12 +243,22 @@ async function deliverTaskMessage(params: DeliverTaskMessageParams) {
       (await hasActiveWhatsAppSession(params.organizationId, params.toPhone))
     : false;
 
+  if (templateAttempted && templateResult && !hasSession) {
+    return {
+      sent: false,
+      reason: templateResult.reason ?? "api_error",
+      detail:
+        templateResult.detail ??
+        `Could not deliver task assignment via ${PORTAL_BRAND}. Check wallet balance on wa.sheetomatic.com and API key in Settings.`,
+    };
+  }
+
   if (params.organizationId && !hasSession && providerKind === "sheetomatic") {
     return {
       sent: false,
       reason: "session_required",
       detail:
-        `Could not deliver task assignment. Confirm assign_task_new is approved (language en) in Meta / ${PORTAL_BRAND}.`,
+        `Could not deliver task assignment. Ask the assignee to message your business line once, or check ${PORTAL_BRAND} wallet and API settings.`,
     };
   }
 

@@ -437,7 +437,10 @@ function isTemplateLanguageMismatch(result: WhatsAppSendResult) {
 export async function sendTaskAssignmentTemplate(
   params: TaskTemplateParams,
 ): Promise<WhatsAppSendResult> {
-  const templates = await resolveTaskAssignmentTemplates(params.organizationId);
+  const templates = dedupeResolvedTemplates([
+    ...(await resolveTaskAssignmentTemplates(params.organizationId)),
+    buildAssignTaskNewFallback(),
+  ]);
 
   let lastResult: WhatsAppSendResult = { sent: false, reason: "api_error" };
 

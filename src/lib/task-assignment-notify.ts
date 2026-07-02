@@ -17,11 +17,10 @@ export async function resolveAssignmentReminderFlags(
     integration.emailConfigured && formData.get("remindViaEmail") === "1";
   const waFromForm = formData.get("remindViaWhatsApp");
 
-  // Task + WA product default: notify assignee on WhatsApp when integration is ready.
-  const remindViaWhatsApp =
-    integration.whatsappConfigured &&
-    waFromForm !== "0" &&
-    (waFromForm === "1" || waFromForm === null);
+  // Product default: always notify on WhatsApp when wa.sheetomatic.com is connected.
+  const remindViaWhatsApp = integration.whatsappConfigured
+    ? waFromForm !== "0"
+    : false;
 
   return {
     remindViaEmail,
