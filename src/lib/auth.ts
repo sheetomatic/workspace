@@ -7,8 +7,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { prisma, withDbRetry } from "@/lib/db";
 import { PRIMARY_ORG_SLUG } from "@/lib/platform";
-import { allWorkspaceModules } from "@/lib/workspace-modules";
-import { effectiveMemberModules } from "@/lib/org-plan-presets";
+import { resolveSessionModules } from "@/lib/dedicated-client-portals";
 
 export type SessionUser = {
   id: string;
@@ -284,6 +283,11 @@ export const getSessionUser = cache(async function getSessionUser() {
     const isSuperAdmin = dbUser?.isSuperAdmin ?? false;
 
     if (isSuperAdmin) {
+      const organization = await db.organization.findUnique({
+        where: { id: membership.organizationId },
+        select: { allowedModules: true, isPrimary: true, slug: true },
+      });
+
       return {
         id: tokenUser.id,
         email: tokenUser.email,
@@ -294,7 +298,13 @@ export const getSessionUser = cache(async function getSessionUser() {
         organizationSlug: membership.organization.slug,
         isSuperAdmin: true,
         isDepartmentHead: false,
-        modules: allWorkspaceModules(),
+        modules: resolveSessionModules({
+          isSuperAdmin: true,
+          role: membership.role,
+          organizationSlug: membership.organization.slug,
+          orgAllowedModules: organization?.allowedModules,
+          isPrimary: organization?.isPrimary,
+        }),
         staffCode: null,
       };
     }
@@ -316,10 +326,23 @@ export const getSessionUser = cache(async function getSessionUser() {
 
     const organization = await db.organization.findUnique({
       where: { id: membership.organizationId },
-      select: { allowedModules: true, isPrimary: true },
+      select: {
+        allowedModules: true,
+        isPrimary: true,
+        slug: true,
+      },
     });
 
     const memberRole = membershipRecord?.role ?? membership.role;
+
+    const modules = resolveSessionModules({
+      isSuperAdmin,
+      role: memberRole,
+      organizationSlug: membership.organization.slug,
+      membershipModules: membershipRecord?.modules,
+      orgAllowedModules: organization?.allowedModules,
+      isPrimary: organization?.isPrimary,
+    });
 
     return {
       id: tokenUser.id,
@@ -329,14 +352,9 @@ export const getSessionUser = cache(async function getSessionUser() {
       organizationId: membership.organizationId,
       organizationName: membership.organization.name,
       organizationSlug: membership.organization.slug,
-      isSuperAdmin: false,
+      isSuperAdmin,
       isDepartmentHead: membershipRecord?.isDepartmentHead ?? false,
-      modules: effectiveMemberModules(
-        memberRole,
-        membershipRecord?.modules,
-        organization?.allowedModules,
-        { isPrimary: organization?.isPrimary },
-      ),
+      modules,
       staffCode: membershipRecord?.staffCode?.trim() || null,
     };
   });

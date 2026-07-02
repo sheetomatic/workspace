@@ -254,6 +254,7 @@ export function SaasShell({
   organizationPlan,
   organizationPlanLabel,
   appearance,
+  hidePlanBadge = false,
   children,
 }: {
   user: SessionUser;
@@ -265,6 +266,7 @@ export function SaasShell({
     lockupSrc: string;
     lockupLightSrc: string;
   };
+  hidePlanBadge?: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -279,6 +281,7 @@ export function SaasShell({
     appearance ??
     mergeWorkspaceAppearance(null, user.organizationName, undefined, Date.now());
   const showPlanBadge =
+    !hidePlanBadge &&
     Boolean(organizationPlan) &&
     ROLE_ORDER.indexOf(user.role) >= ROLE_ORDER.indexOf("ADMIN");
   const planLabel =

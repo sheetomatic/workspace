@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import type { SessionUser } from "@/lib/auth";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
+import { isDedicatedClientPortal } from "@/lib/dedicated-client-portals";
 
 export type WorkspaceNavItem = {
   href: string;
@@ -253,12 +254,61 @@ export function mobileWorkspaceNavItems(items: WorkspaceNavItem[]): WorkspaceNav
   });
 }
 
+const HINGORANI_ITEMS: WorkspaceNavItem[] = [
+  {
+    href: "/app/cases",
+    label: "Hingorani",
+    icon: Briefcase,
+    module: "CASES",
+    matchPrefix: "/app/cases",
+  },
+];
+
 export function getWorkspaceNavSections(params: {
   user: SessionUser;
   organizationSlug: string;
 }): WorkspaceNavSection[] {
   const { user, organizationSlug } = params;
-  const isHingorani = organizationSlug === "hingorani";
+
+  if (isDedicatedClientPortal(organizationSlug)) {
+    return [
+      {
+        id: "hingorani",
+        label: "Hingorani",
+        items: HINGORANI_ITEMS,
+      },
+      {
+        id: "reports",
+        label: "Reports",
+        items: [
+          {
+            href: "/app/reports",
+            label: "Reports",
+            icon: BarChart3,
+            module: "REPORTS",
+          },
+        ],
+      },
+      {
+        id: "settings",
+        label: "Settings",
+        items: [
+          {
+            href: "/app/settings",
+            label: "Settings",
+            icon: Settings,
+          },
+          {
+            href: "/app/team",
+            label: "Team",
+            icon: Users,
+            minRole: "ADMIN",
+            allowDepartmentHead: true,
+          },
+        ],
+      },
+    ];
+  }
 
   const sections: WorkspaceNavSection[] = [
     {
@@ -277,23 +327,6 @@ export function getWorkspaceNavSections(params: {
       items: MODULE_ITEMS,
     },
   ];
-
-  if (isHingorani && hasWorkspaceModule(user, "CASES")) {
-    sections.push({
-      id: "hingorani",
-      label: "Hingorani",
-      items: [
-        {
-          href: "/app/cases",
-          label: "Hingorani",
-          icon: Briefcase,
-          module: "CASES",
-          matchPrefix: "/app/cases",
-          addon: true,
-        },
-      ],
-    });
-  }
 
   sections.push(
     {

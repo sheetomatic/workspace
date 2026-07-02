@@ -17,7 +17,8 @@ import { PageHeader } from "@/components/saas/page-header";
 import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
 import { ROLE_LABELS } from "@/lib/permissions";
 import { hasMinimumRole } from "@/lib/permissions";
-import { resolveOrgAllowedModules } from "@/lib/org-plan-presets";
+import { resolveDedicatedOrgAllowedModules } from "@/lib/dedicated-client-portals";
+import { isDedicatedClientPortal } from "@/lib/dedicated-client-portals";
 import { getOrCreateNotificationSettings } from "@/lib/notification-settings";
 import { requireSession } from "@/lib/require-session";
 import {
@@ -56,9 +57,12 @@ export default async function SettingsPage() {
     organization.logoUrl,
     organization.updatedAt.getTime(),
   );
-  const allowedModules = resolveOrgAllowedModules(organization.allowedModules, {
-    isPrimary: organization.isPrimary,
-  });
+  const isDedicatedPortal = isDedicatedClientPortal(user.organizationSlug);
+  const allowedModules = resolveDedicatedOrgAllowedModules(
+    user.organizationSlug,
+    organization.allowedModules,
+    { isPrimary: organization.isPrimary },
+  );
 
   return (
     <div className="saas-page saas-settings-page">
@@ -75,11 +79,13 @@ export default async function SettingsPage() {
         <NotificationSettingsPanel settings={notificationSettings} />
         {canManageAdmin ? (
           <>
-            <WorkspaceAddonsPanel
-              allowedModules={allowedModules}
-              canEdit={user.isSuperAdmin || (hasMinimumRole(user.role, "OWNER") && organization.isPrimary)}
-              plan={organization.plan}
-            />
+            {!isDedicatedPortal ? (
+              <WorkspaceAddonsPanel
+                allowedModules={allowedModules}
+                canEdit={user.isSuperAdmin || (hasMinimumRole(user.role, "OWNER") && organization.isPrimary)}
+                plan={organization.plan}
+              />
+            ) : null}
             <WorkspaceAppearancePanel appearance={appearance} />
             <article className="saas-panel">
               <h3>Company</h3>
@@ -101,11 +107,21 @@ export default async function SettingsPage() {
                 <div>
                   <dt>Workspace type</dt>
                   <dd>
-                    {organization.isPrimary
-                      ? "Primary platform workspace"
-                      : "Client workspace"}
+                    {isDedicatedPortal
+                      ? "Dedicated client portal"
+                      : organization.isPrimary
+                        ? "Primary platform workspace"
+                        : "Client workspace"}
                   </dd>
                 </div>
+                {isDedicatedPortal ? (
+                  <div>
+                    <dt>Portal URL</dt>
+                    <dd>
+                      <code>{user.organizationSlug}.sheetomatic.com</code>
+                    </dd>
+                  </div>
+                ) : null}
                 <div>
                   <dt>Your role</dt>
                   <dd>

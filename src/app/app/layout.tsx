@@ -9,12 +9,16 @@ import { WorkspacePwaRegister } from "@/components/saas/workspace-pwa-register";
 import { WorkspacePendingApproval } from "@/components/saas/workspace-pending-approval";
 import { listOrganizationsForUser } from "@/lib/auth-orgs";
 import { prisma } from "@/lib/db";
+import {
+  getDedicatedClientPortal,
+} from "@/lib/dedicated-client-portals";
+import {
+  mergeWorkspaceAppearance,
+  parseWorkspaceAppearance,
+} from "@/lib/workspace-appearance";
 import { ORG_PLAN_LABELS } from "@/lib/org-plan-presets";
 import { requireSession } from "@/lib/require-session";
 import { ensureSessionTenantHost } from "@/lib/tenant-host";
-import {
-  mergeWorkspaceAppearance,
-} from "@/lib/workspace-appearance";
 
 export const metadata: Metadata = {
   title: "Workspace | Sheetomatic",
@@ -48,8 +52,11 @@ export default async function AppLayout({
   let organization: {
     id: string;
     name: string;
+    slug: string;
     status: import("@prisma/client").OrganizationStatus;
     plan: import("@prisma/client").OrgPlan;
+    logoUrl: string | null;
+    workspaceAppearance: unknown;
     updatedAt: Date;
   } | null = null;
   let organizations: Awaited<ReturnType<typeof listOrganizationsForUser>> = [];
@@ -61,8 +68,11 @@ export default async function AppLayout({
         select: {
           id: true,
           name: true,
+          slug: true,
           status: true,
           plan: true,
+          logoUrl: true,
+          workspaceAppearance: true,
           updatedAt: true,
         },
       }),
@@ -91,7 +101,19 @@ export default async function AppLayout({
     ...sessionUser,
     organizationName: organization.name,
   };
-  const appearance = mergeWorkspaceAppearance(null, organization.name);
+  const dedicatedPortal = getDedicatedClientPortal(organization.slug);
+  const portalOrganizations = dedicatedPortal
+    ? organizations.filter((org) => org.slug === organization.slug)
+    : organizations;
+
+  const appearance = mergeWorkspaceAppearance(
+    parseWorkspaceAppearance(organization.workspaceAppearance) ??
+      dedicatedPortal?.defaultAppearance ??
+      null,
+    organization.name,
+    organization.logoUrl,
+    organization.updatedAt.getTime(),
+  );
 
   return (
     <AuthSessionProvider>
@@ -99,9 +121,10 @@ export default async function AppLayout({
       <WorkspacePwaRegister />
       <SaasShell
         appearance={appearance}
+        hidePlanBadge={Boolean(dedicatedPortal)}
         organizationPlan={organization.plan}
         organizationPlanLabel={ORG_PLAN_LABELS[organization.plan]}
-        organizations={organizations}
+        organizations={portalOrganizations}
         user={user}
       >
         <WorkspacePwaInstallBanner />

@@ -65,7 +65,7 @@ export function allowedModulesForPlan(plan: OrgPlan): WorkspaceModule[] {
     case "TASKS_ADDON":
       return [...TASKS_ADDON_ALLOWED];
     case "LEGAL_ADDON":
-      return ["CASES", "TASKS"];
+      return ["CASES", "REPORTS"];
     case "ENTERPRISE":
       return [...WORKSPACE_MODULES];
     default:

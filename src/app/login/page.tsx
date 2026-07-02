@@ -6,8 +6,13 @@ import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { siteBrand } from "@/app/site-content";
 import { prisma } from "@/lib/db";
+import { getDedicatedClientPortal } from "@/lib/dedicated-client-portals";
 import { getRequestTenantSlug } from "@/lib/tenant-host";
 import { workspaceLoginHref } from "@/lib/workspace-auth-links";
+import {
+  mergeWorkspaceAppearance,
+  parseWorkspaceAppearance,
+} from "@/lib/workspace-appearance";
 
 export const metadata = {
   title: "Sign in | Sheetomatic Workspace",
@@ -24,8 +29,25 @@ export default async function LoginPage({
   const tenantOrg = tenantSlug
     ? await prisma.organization.findUnique({
         where: { slug: tenantSlug },
-        select: { name: true, slug: true },
+        select: {
+          name: true,
+          slug: true,
+          logoUrl: true,
+          workspaceAppearance: true,
+          updatedAt: true,
+        },
       })
+    : null;
+  const dedicatedPortal = getDedicatedClientPortal(tenantSlug);
+  const tenantAppearance = tenantOrg
+    ? mergeWorkspaceAppearance(
+        parseWorkspaceAppearance(tenantOrg.workspaceAppearance) ??
+          dedicatedPortal?.defaultAppearance ??
+          null,
+        tenantOrg.name,
+        tenantOrg.logoUrl,
+        tenantOrg.updatedAt.getTime(),
+      )
     : null;
   const isAiProduct = product === "ai";
   const isAiLogin = isAiProduct && intent === "login";
@@ -40,7 +62,13 @@ export default async function LoginPage({
           <span className="logo-mark">
             <BrandIconMark size={26} priority theme="light" />
           </span>
-          <span>{isAiProduct ? "Sheetomatic AI" : "Sheetomatic"}</span>
+          <span>
+            {tenantAppearance?.productName && dedicatedPortal
+              ? tenantAppearance.productName
+              : isAiProduct
+                ? "Sheetomatic AI"
+                : "Sheetomatic"}
+          </span>
         </Link>
         <div className="login-brand-copy">
           <p className="login-kicker">

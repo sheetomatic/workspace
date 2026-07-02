@@ -17,6 +17,10 @@ import { seedHingoraniCases } from "./seed-hingorani";
 import { seedBciDemo } from "./seed-bci-demo";
 import { DEFAULT_BCI_ORG_MODULES } from "../src/lib/workspace-addons.shared";
 import { WORKSPACE_MODULES } from "../src/lib/workspace-modules";
+import {
+  DEDICATED_CLIENT_PORTALS,
+  HINGORANI_PORTAL_SLUG,
+} from "../src/lib/dedicated-client-portals";
 
 const prisma = new PrismaClient();
 
@@ -186,6 +190,8 @@ const organizations = [
     industry: "Law firm — MACT operations",
     status: OrganizationStatus.ACTIVE,
     isPrimary: false,
+    plan: OrgPlan.LEGAL_ADDON,
+    allowedModules: ["CASES", "REPORTS"] as WorkspaceModule[],
   },
 ];
 
@@ -918,6 +924,11 @@ async function main() {
   const userIds: Record<string, string> = {};
 
   for (const org of organizations) {
+    const dedicatedAppearance =
+      org.slug === HINGORANI_PORTAL_SLUG
+        ? DEDICATED_CLIENT_PORTALS[HINGORANI_PORTAL_SLUG].defaultAppearance
+        : undefined;
+
     const organization = await prisma.organization.upsert({
       where: { slug: org.slug },
       update: {
@@ -928,8 +939,16 @@ async function main() {
         ...("plan" in org && org.plan
           ? { plan: org.plan, allowedModules: org.allowedModules ?? [] }
           : {}),
+        ...(dedicatedAppearance
+          ? { workspaceAppearance: dedicatedAppearance }
+          : {}),
       },
-      create: org,
+      create: {
+        ...org,
+        ...(dedicatedAppearance
+          ? { workspaceAppearance: dedicatedAppearance }
+          : {}),
+      },
     });
 
     const links = workspaceLinks[org.slug] ?? [];
@@ -1069,7 +1088,7 @@ async function main() {
 
   console.log("Seed complete. Demo password for all accounts:", DEMO_PASSWORD);
   console.log("Super admin:", SUPER_ADMIN.email, "@ sheetomatic-technologies");
-  console.log("Hingorani cases workspace: admin@hingorani.demo @ hingorani");
+  console.log("Hingorani portal: https://hingorani.sheetomatic.com (admin@hingorani.demo)");
   console.log("BCI FMS demo: owner@bci.demo @ bci-demo (password:", DEMO_PASSWORD + ")");
   console.log("Accounts:");
   for (const entry of seedUsers) {
