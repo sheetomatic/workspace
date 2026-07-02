@@ -324,10 +324,13 @@ export function parseWhatsAppSendResponse(
   }
 
   if (messageType === "template" && response.ok) {
-    return {
-      sent: true,
-      messageId: undefined,
-    };
+    const messageId = extractWhatsAppMessageId(body);
+    if (messageId || isImplicitWhatsAppSendSuccess(body)) {
+      return {
+        sent: true,
+        messageId: messageId ?? undefined,
+      };
+    }
   }
 
   return {
@@ -452,6 +455,7 @@ export function resolveRedlavaCredentials(
 ): RedlavaCredentials | null {
   // When org/workspace creds are passed, never merge platform env (tenant isolation).
   const allowEnvFallback = input == null;
+  const allowPhoneIdEnvFallback = Boolean(input?.apiKey?.trim() && !input?.phoneId?.trim());
   const apiKey =
     input?.apiKey?.trim() ||
     (allowEnvFallback ? process.env.REDLAVA_API_KEY?.trim() : null);
@@ -463,7 +467,9 @@ export function resolveRedlavaCredentials(
     apiKey,
     phoneId:
       input?.phoneId?.trim() ||
-      (allowEnvFallback ? process.env.REDLAVA_PHONE_ID?.trim() : null) ||
+      (allowEnvFallback || allowPhoneIdEnvFallback
+        ? process.env.REDLAVA_PHONE_ID?.trim()
+        : null) ||
       null,
   };
 }

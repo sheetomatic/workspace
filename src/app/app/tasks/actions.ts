@@ -156,6 +156,8 @@ async function createDelegatedTaskInner(
         ? `Recurring task assigned to ${assigneeUserIds.length} people.`
         : `Task assigned to ${assigneeUserIds.length} people.`;
 
+  let waNotifyFailed = false;
+
   for (const assigneeUserId of assigneeUserIds) {
     const seriesId = isRecurring ? randomUUID() : null;
     const nextOccurrenceAt = isRecurring
@@ -210,10 +212,19 @@ async function createDelegatedTaskInner(
         data: {
           emailAssignmentSentAt: reminders.emailSent ? new Date() : null,
           whatsappAssignmentSentAt: reminders.whatsappSent ? new Date() : null,
+          remindViaWhatsApp,
         },
       });
 
       message = formatReminderSuccessMessage(message, reminders.summary);
+
+      if (
+        remindViaWhatsApp &&
+        !reminders.whatsappSent &&
+        task.assignee.phone?.trim()
+      ) {
+        waNotifyFailed = true;
+      }
     }
   }
 
@@ -221,7 +232,9 @@ async function createDelegatedTaskInner(
   revalidatePath("/app/tasks");
 
   const toast = encodeURIComponent(message);
-  redirect(`/app/tasks?assigned=1&toast=${toast}#execution-queue`);
+  redirect(
+    `/app/tasks?assigned=1&toast=${toast}${waNotifyFailed ? "&toastLevel=warning" : ""}#execution-queue`,
+  );
 }
 
 export async function updateTaskStatus(

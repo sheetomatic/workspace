@@ -2016,6 +2016,12 @@ body:has(.workspace-app.saas-app) {
   line-height: 1.45;
 }
 
+.workspace-app .ws-task-toast.is-warning {
+  border-color: #fcd34d;
+  background: #fffbeb;
+  color: #92400e;
+}
+
 .workspace-app .ws-assign-collapse {
   border: none;
   margin: 0;

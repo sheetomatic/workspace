@@ -7,6 +7,7 @@ export function TaskFeedbackToast() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [message, setMessage] = useState("");
+  const [isWarning, setIsWarning] = useState(false);
 
   useEffect(() => {
     const assigned = searchParams.get("assigned") === "1";
@@ -17,6 +18,7 @@ export function TaskFeedbackToast() {
     }
 
     const raw = searchParams.get("toast");
+    const level = searchParams.get("toastLevel");
     setMessage(
       raw
         ? decodeURIComponent(raw)
@@ -24,6 +26,7 @@ export function TaskFeedbackToast() {
           ? "Task assigned. See it in the execution queue below."
           : "Task updated.",
     );
+    setIsWarning(level === "warning");
 
     const queue = document.getElementById("execution-queue");
     queue?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -32,6 +35,7 @@ export function TaskFeedbackToast() {
     url.searchParams.delete("assigned");
     url.searchParams.delete("updated");
     url.searchParams.delete("toast");
+    url.searchParams.delete("toastLevel");
     router.replace(url.pathname + url.hash, { scroll: false });
   }, [searchParams, router]);
 
@@ -40,8 +44,11 @@ export function TaskFeedbackToast() {
   }
 
   return (
-    <div className="ws-task-toast" role="status">
-      <strong>Success</strong>
+    <div
+      className={isWarning ? "ws-task-toast is-warning" : "ws-task-toast"}
+      role="status"
+    >
+      <strong>{isWarning ? "Assigned — check WhatsApp" : "Success"}</strong>
       <p>{message}</p>
     </div>
   );

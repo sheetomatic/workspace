@@ -438,8 +438,8 @@ export async function sendTaskAssignmentTemplate(
   params: TaskTemplateParams,
 ): Promise<WhatsAppSendResult> {
   const templates = dedupeResolvedTemplates([
-    ...(await resolveTaskAssignmentTemplates(params.organizationId)),
     buildAssignTaskNewFallback(),
+    ...(await resolveTaskAssignmentTemplates(params.organizationId)),
   ]);
 
   let lastResult: WhatsAppSendResult = { sent: false, reason: "api_error" };

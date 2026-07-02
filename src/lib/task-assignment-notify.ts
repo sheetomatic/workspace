@@ -15,12 +15,11 @@ export async function resolveAssignmentReminderFlags(
   const integration = await getWorkspaceIntegrationStatus(organizationId);
   const remindViaEmail =
     integration.emailConfigured && formData.get("remindViaEmail") === "1";
-  const waFromForm = formData.get("remindViaWhatsApp");
 
-  // Product default: always notify on WhatsApp when wa.sheetomatic.com is connected.
-  const remindViaWhatsApp = integration.whatsappConfigured
-    ? waFromForm !== "0"
-    : false;
+  // Always notify on assign when wa.sheetomatic.com is connected for this workspace.
+  // Client checkbox only opts out via waOptOut=1 (avoids hidden-field false negatives).
+  const remindViaWhatsApp =
+    integration.whatsappConfigured && formData.get("waOptOut") !== "1";
 
   return {
     remindViaEmail,
