@@ -19,6 +19,11 @@ import {
   dispatchTaskReminders,
   formatReminderSuccessMessage,
 } from "@/lib/task-reminders";
+import {
+  notifyTaskAssignee,
+  resolveAssignmentReminderFlags,
+} from "@/lib/task-assignment-notify";
+import { getWorkspaceIntegrationStatus } from "@/lib/workspace-integration-status";
 import type { TaskActionState } from "@/lib/task-action-state";
 import { isNextRedirect } from "@/lib/next-redirect";
 import { isTaskActiveStatus } from "@/lib/task-due-urgency";
@@ -81,8 +86,8 @@ async function createDelegatedTaskInner(
   );
   const isRecurring =
     formData.get("isRecurring") === "1" || isRecurringFrequency(frequency);
-  const remindViaEmail = formData.get("remindViaEmail") === "1";
-  const remindViaWhatsApp = formData.get("remindViaWhatsApp") === "1";
+  const { remindViaEmail, remindViaWhatsApp } =
+    await resolveAssignmentReminderFlags(user.organizationId, formData);
 
   if (title.length < 3) {
     return { ok: false, message: "Task title is required." };
@@ -185,7 +190,7 @@ async function createDelegatedTaskInner(
     });
 
     if (remindViaEmail || remindViaWhatsApp) {
-      const reminders = await dispatchTaskReminders({
+      const reminders = await notifyTaskAssignee({
         taskId: task.id,
         taskTitle: title,
         taskDescription: instructions || null,
@@ -379,6 +384,9 @@ export async function updateDelegatedTask(
 
   const task = await prisma.delegatedTask.findFirst({
     where: { id: taskId, organizationId: user.organizationId },
+    include: {
+      assignee: { select: { name: true, email: true, phone: true } },
+    },
   });
 
   if (!task) {
@@ -438,6 +446,7 @@ export async function updateDelegatedTask(
   }
 
   const dueAtChanged = dueAt.getTime() !== task.dueAt.getTime();
+  const assigneeChanged = assigneeUserId !== task.assigneeUserId;
   const reopeningToActive =
     isTaskActiveStatus(status) && task.status === "COMPLETED";
 
@@ -482,9 +491,55 @@ export async function updateDelegatedTask(
     return { ok: false, message: "Task not found." };
   }
 
+  let message = "Task updated.";
+
+  if (assigneeChanged) {
+    const integration = await getWorkspaceIntegrationStatus(user.organizationId);
+    const nextAssignee = await prisma.user.findUnique({
+      where: { id: assigneeUserId },
+      select: { name: true, email: true, phone: true },
+    });
+
+    if (nextAssignee) {
+      const remindViaWhatsApp =
+        integration.whatsappConfigured || task.remindViaWhatsApp;
+      const remindViaEmail = task.remindViaEmail;
+
+      if (remindViaWhatsApp || remindViaEmail) {
+        const reminders = await notifyTaskAssignee({
+          taskId,
+          taskTitle: title,
+          taskDescription: instructions || null,
+          priority,
+          dueAt,
+          frequency: task.frequency,
+          isRecurring: task.isRecurring,
+          assignee: nextAssignee,
+          organizationName: user.organizationName,
+          organizationId: user.organizationId,
+          remindViaEmail,
+          remindViaWhatsApp,
+        });
+
+        await prisma.delegatedTask.update({
+          where: { id: taskId },
+          data: {
+            remindViaWhatsApp,
+            emailAssignmentSentAt: reminders.emailSent ? new Date() : null,
+            whatsappAssignmentSentAt: reminders.whatsappSent ? new Date() : null,
+          },
+        });
+
+        message = reminders.summary
+          ? formatReminderSuccessMessage("Task reassigned.", reminders.summary)
+          : "Task reassigned.";
+      }
+    }
+  }
+
   revalidatePath("/app");
   revalidatePath("/app/tasks");
-  return { ok: true, message: "Task updated." };
+  return { ok: true, message };
 }
 
 export async function deleteDelegatedTask(

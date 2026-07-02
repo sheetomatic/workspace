@@ -233,9 +233,6 @@ async function deliverTaskMessage(params: DeliverTaskMessageParams) {
     ) {
       return templateResult;
     }
-    if (templateResult.reason === "api_error") {
-      return templateResult;
-    }
   }
 
   const hasSession = params.organizationId

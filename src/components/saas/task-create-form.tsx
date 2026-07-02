@@ -314,6 +314,11 @@ export function TaskCreateForm({
           <div className="ws-form-section ws-form-section-inline">
             <h4 className="ws-form-section-title">Reminders</h4>
             <div className="ws-task-reminder-options" aria-label="Send reminders">
+              <input
+                name="remindViaWhatsApp"
+                type="hidden"
+                value={remindViaWhatsApp && whatsappConfigured ? "1" : "0"}
+              />
               <label
                 className={`ws-task-reminder-opt${!emailConfigured ? " is-disabled" : ""}`}
                 title={
@@ -343,9 +348,7 @@ export function TaskCreateForm({
                 <input
                   checked={remindViaWhatsApp && whatsappConfigured}
                   disabled={!whatsappConfigured}
-                  name="remindViaWhatsApp"
                   type="checkbox"
-                  value="1"
                   onChange={(e) => setRemindViaWhatsApp(e.target.checked)}
                 />
                 WhatsApp
