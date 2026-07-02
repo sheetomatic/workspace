@@ -57,6 +57,7 @@ export const ASSIGN_CRM_LEAD_TEMPLATE_LANGUAGE = "en";
 const REDLAVA_EN_ONLY_TEMPLATES = new Set([
   ASSIGN_TASK_NEW_TEMPLATE_NAME,
   ASSIGN_CRM_LEAD_TEMPLATE_NAME,
+  "task_assignment",
 ]);
 
 function withTemplateLanguageDetail(
@@ -176,17 +177,23 @@ function stripStaticHeaderComponents(
 export function enforceRedlavaTemplateLanguage(
   template: RedlavaWhatsAppTemplatePayload,
 ): RedlavaWhatsAppTemplatePayload {
-  if (!REDLAVA_EN_ONLY_TEMPLATES.has(template.name)) {
+  const templateName =
+    template.name === "task_assignment"
+      ? ASSIGN_TASK_NEW_TEMPLATE_NAME
+      : template.name;
+
+  if (!REDLAVA_EN_ONLY_TEMPLATES.has(template.name) && template.name !== "task_assignment") {
     return template;
   }
 
   const languageCode =
-    template.name === ASSIGN_CRM_LEAD_TEMPLATE_NAME
+    templateName === ASSIGN_CRM_LEAD_TEMPLATE_NAME
       ? ASSIGN_CRM_LEAD_TEMPLATE_LANGUAGE
       : ASSIGN_TASK_NEW_TEMPLATE_LANGUAGE;
 
   return {
     ...template,
+    name: templateName,
     language: { code: languageCode },
     components: stripStaticHeaderComponents(template.components),
   };

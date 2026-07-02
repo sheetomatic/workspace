@@ -43,6 +43,28 @@ type ResolvedTemplate = {
 export const TASK_ASSIGNMENT_TEMPLATE_NAME = ASSIGN_TASK_NEW_TEMPLATE_NAME;
 export const TASK_ASSIGNMENT_TEMPLATE_LANGUAGE = ASSIGN_TASK_NEW_TEMPLATE_LANGUAGE;
 
+/** Legacy synced / env names that must map to assign_task_new before send. */
+const TASK_ASSIGNMENT_TEMPLATE_ALIASES = new Set([
+  ASSIGN_TASK_NEW_TEMPLATE_NAME,
+  "task_assignment",
+]);
+
+function isTaskAssignmentTemplateName(name: string) {
+  return TASK_ASSIGNMENT_TEMPLATE_ALIASES.has(name.trim());
+}
+
+function canonicalTaskAssignmentTemplate(template: ResolvedTemplate): ResolvedTemplate {
+  if (!isTaskAssignmentTemplateName(template.name)) {
+    return template;
+  }
+  return {
+    ...template,
+    name: TASK_ASSIGNMENT_TEMPLATE_NAME,
+    language: TASK_ASSIGNMENT_TEMPLATE_LANGUAGE,
+    body: template.body?.trim() ? template.body : TASK_ASSIGNMENT_TEMPLATE_BODY,
+  };
+}
+
 /** Matches approved RedLava/Meta body for `assign_task_new` (header/footer/button are separate components). */
 export const TASK_ASSIGNMENT_TEMPLATE_BODY = `Hi {{1}},
 
@@ -61,18 +83,8 @@ Sheetomatic Automation Team`;
 export const TASK_ASSIGNMENT_TEMPLATE_BUTTON_URL =
   "https://sheetomatic.com/app/tasks";
 
-const ENGLISH_TEMPLATE_LANGUAGES = ["en", "en_US", "en_GB"] as const;
-
-function normalizeAssignTaskNewLanguage(language: string | undefined | null) {
-  const trimmed = language?.trim();
-  if (!trimmed || trimmed === "en" || trimmed.startsWith("en_")) {
-    return TASK_ASSIGNMENT_TEMPLATE_LANGUAGE;
-  }
-  return trimmed;
-}
-
 function resolveOutboundLanguageCode(templateName: string, languageCode: string) {
-  if (templateName === TASK_ASSIGNMENT_TEMPLATE_NAME) {
+  if (isTaskAssignmentTemplateName(templateName)) {
     return TASK_ASSIGNMENT_TEMPLATE_LANGUAGE;
   }
   return languageCode.trim() || TASK_ASSIGNMENT_TEMPLATE_LANGUAGE;
@@ -100,38 +112,6 @@ function dedupeResolvedTemplates(templates: ResolvedTemplate[]) {
     seen.add(key);
     return true;
   });
-}
-
-function templateLanguageCandidates(language: string) {
-  const trimmed = language.trim() || "en";
-  const candidates = new Set<string>([trimmed]);
-
-  const base = trimmed.split("_")[0];
-  if (base && base !== trimmed) {
-    candidates.add(base);
-  }
-
-  if (trimmed === "en" || trimmed.startsWith("en_")) {
-    for (const code of ENGLISH_TEMPLATE_LANGUAGES) {
-      candidates.add(code);
-    }
-  } else if (base === "en") {
-    candidates.add("en");
-    candidates.add("en_US");
-  }
-
-  return [...candidates];
-}
-
-function languagePreferenceScore(language: string) {
-  const normalized = language.trim() || "en";
-  const index = ENGLISH_TEMPLATE_LANGUAGES.indexOf(
-    normalized as (typeof ENGLISH_TEMPLATE_LANGUAGES)[number],
-  );
-  if (index >= 0) {
-    return index;
-  }
-  return ENGLISH_TEMPLATE_LANGUAGES.length + 1;
 }
 
 function buildTemplateValueMap(params: TaskTemplateParams) {
@@ -200,7 +180,7 @@ function buildAssignTaskNewBodyComponent(params: TaskTemplateParams) {
 }
 
 function buildTemplateComponents(template: ResolvedTemplate, params: TaskTemplateParams) {
-  if (template.name === TASK_ASSIGNMENT_TEMPLATE_NAME) {
+  if (isTaskAssignmentTemplateName(template.name)) {
     return [buildAssignTaskNewBodyComponent(params)];
   }
 
@@ -252,14 +232,15 @@ function toResolvedTemplate(record: {
 }
 
 function buildAssignTaskNewFallback(): ResolvedTemplate {
-  return {
-    name:
-      process.env.WHATSAPP_TASK_ASSIGNMENT_TEMPLATE?.trim() ||
-      TASK_ASSIGNMENT_TEMPLATE_NAME,
-    language: normalizeAssignTaskNewLanguage(
-      process.env.WHATSAPP_TASK_ASSIGNMENT_TEMPLATE_LANGUAGE?.trim() ||
-        TASK_ASSIGNMENT_TEMPLATE_LANGUAGE,
-    ),
+  const envName = process.env.WHATSAPP_TASK_ASSIGNMENT_TEMPLATE?.trim();
+  const resolvedName =
+    envName && isTaskAssignmentTemplateName(envName)
+      ? TASK_ASSIGNMENT_TEMPLATE_NAME
+      : TASK_ASSIGNMENT_TEMPLATE_NAME;
+
+  return canonicalTaskAssignmentTemplate({
+    name: resolvedName,
+    language: TASK_ASSIGNMENT_TEMPLATE_LANGUAGE,
     body: TASK_ASSIGNMENT_TEMPLATE_BODY,
     variables: [
       { name: "1", example: "Digeshwar" },
@@ -267,57 +248,35 @@ function buildAssignTaskNewFallback(): ResolvedTemplate {
       { name: "3", example: "Trim and export the product demo video." },
       { name: "4", example: "Mon, 2 Jun, 5:00 pm" },
     ],
-  };
-}
-
-function filterTaskAssignmentTemplates(
-  templates: ResolvedTemplate[],
-  templateName: string,
-): ResolvedTemplate[] {
-  const deduped = dedupeResolvedTemplates(templates);
-  if (templateName !== TASK_ASSIGNMENT_TEMPLATE_NAME) {
-    return deduped;
-  }
-
-  const englishOnly = deduped.filter(
-    (template) => template.language.trim() === TASK_ASSIGNMENT_TEMPLATE_LANGUAGE,
-  );
-  if (englishOnly.length > 0) {
-    return englishOnly;
-  }
-
-  return [buildAssignTaskNewFallback()];
+  });
 }
 
 async function resolveTaskAssignmentTemplates(
   organizationId: string,
 ): Promise<ResolvedTemplate[]> {
-  const templateName =
-    process.env.WHATSAPP_TASK_ASSIGNMENT_TEMPLATE?.trim() ||
-    TASK_ASSIGNMENT_TEMPLATE_NAME;
-
   const fromDb = await prisma.whatsAppTemplate.findMany({
     where: {
       organizationId,
-      name: templateName,
+      name: { in: [...TASK_ASSIGNMENT_TEMPLATE_ALIASES] },
       status: "APPROVED",
     },
     orderBy: [{ approvedAt: "desc" }, { submittedAt: "desc" }],
   });
 
   if (fromDb.length > 0) {
-    return filterTaskAssignmentTemplates(
-      fromDb
-        .map(toResolvedTemplate)
-        .sort(
-          (a, b) =>
-            languagePreferenceScore(a.language) - languagePreferenceScore(b.language),
-        ),
-      templateName,
-    );
+    const canonical = fromDb
+      .map(toResolvedTemplate)
+      .map(canonicalTaskAssignmentTemplate)
+      .filter(
+        (template) =>
+          template.name === TASK_ASSIGNMENT_TEMPLATE_NAME &&
+          template.language === TASK_ASSIGNMENT_TEMPLATE_LANGUAGE,
+      );
+    if (canonical.length > 0) {
+      return dedupeResolvedTemplates(canonical);
+    }
   }
 
-  // Meta-approved template may exist before Channels sync; send with known body + language.
   return [buildAssignTaskNewFallback()];
 }
 
@@ -411,14 +370,6 @@ async function sendTemplatePayload(
   return result;
 }
 
-function taskAssignmentLanguageCodes(template: ResolvedTemplate): string[] {
-  if (template.name === TASK_ASSIGNMENT_TEMPLATE_NAME) {
-    // RedLava/Meta only has assign_task_new in `en`; en_US returns HTTP 500 from RedLava.
-    return [TASK_ASSIGNMENT_TEMPLATE_LANGUAGE];
-  }
-  return templateLanguageCandidates(template.language);
-}
-
 function isTemplateLanguageMismatch(result: WhatsAppSendResult) {
   if (result.sent) {
     return false;
@@ -440,21 +391,29 @@ export async function sendTaskAssignmentTemplate(
   const templates = dedupeResolvedTemplates([
     buildAssignTaskNewFallback(),
     ...(await resolveTaskAssignmentTemplates(params.organizationId)),
-  ]);
+  ]).map(canonicalTaskAssignmentTemplate);
 
   let lastResult: WhatsAppSendResult = { sent: false, reason: "api_error" };
 
   for (const template of templates) {
-    for (const languageCode of taskAssignmentLanguageCodes(template)) {
-      const result = await sendTemplatePayload(params, template, languageCode);
-      if (result.sent || result.reason === "phone_id_required") {
-        return result;
-      }
-      lastResult = result;
-      if (!isTemplateLanguageMismatch(result)) {
-        break;
-      }
+    if (template.name !== TASK_ASSIGNMENT_TEMPLATE_NAME) {
+      continue;
     }
+
+    const result = await sendTemplatePayload(
+      params,
+      template,
+      TASK_ASSIGNMENT_TEMPLATE_LANGUAGE,
+    );
+    if (result.sent || result.reason === "phone_id_required") {
+      return result;
+    }
+    lastResult = result;
+
+    if (isTemplateLanguageMismatch(result)) {
+      continue;
+    }
+    break;
   }
 
   return lastResult;
