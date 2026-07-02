@@ -1,5 +1,8 @@
 import type { TaskFrequency, TaskPriority } from "@prisma/client";
-import { dispatchTaskReminders } from "@/lib/task-reminders";
+import {
+  dispatchTaskReminders,
+  type TaskReminderDispatchResult,
+} from "@/lib/task-reminders";
 import { getWorkspaceIntegrationStatus } from "@/lib/workspace-integration-status";
 
 type AssigneeContact = {
@@ -41,12 +44,14 @@ export async function notifyTaskAssignee(params: {
   organizationName: string;
   remindViaEmail: boolean;
   remindViaWhatsApp: boolean;
-}) {
+}): Promise<TaskReminderDispatchResult> {
   if (!params.remindViaEmail && !params.remindViaWhatsApp) {
     return {
       emailSent: false,
       whatsappSent: false,
       summary: "",
+      whatsappDetail: undefined,
+      emailDetail: undefined,
     };
   }
 

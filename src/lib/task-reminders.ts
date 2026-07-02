@@ -16,6 +16,14 @@ type Assignee = {
 
 export type TaskReminderKind = "assignment" | "due";
 
+export type TaskReminderDispatchResult = {
+  emailSent: boolean;
+  whatsappSent: boolean;
+  summary: string;
+  whatsappDetail?: string;
+  emailDetail?: string;
+};
+
 export async function dispatchTaskReminders(params: {
   taskId: string;
   taskTitle: string;
@@ -135,13 +143,14 @@ export async function dispatchTaskReminders(params: {
     }
   }
 
-  return {
+  const result: TaskReminderDispatchResult = {
     emailSent,
     whatsappSent,
     summary: parts.length ? parts.join(", ") : "",
     whatsappDetail,
     emailDetail,
   };
+  return result;
 }
 
 export function formatReminderSuccessMessage(

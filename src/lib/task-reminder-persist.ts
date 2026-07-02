@@ -1,7 +1,7 @@
-import type { dispatchTaskReminders } from "@/lib/task-reminders";
+import type { TaskReminderDispatchResult } from "@/lib/task-reminders";
 import { humanizeReminderSummary } from "@/lib/task-assign-feedback";
 
-type ReminderResult = Awaited<ReturnType<typeof dispatchTaskReminders>>;
+type ReminderResult = TaskReminderDispatchResult;
 
 function assignmentWhatsappError(
   reminders: ReminderResult,
