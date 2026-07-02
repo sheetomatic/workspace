@@ -80,12 +80,10 @@ export function isWhatsAppProviderConfigured(
     });
   }
 
+  const phoneId = credentials.redlavaPhoneId?.trim();
   return (
-    isRedlavaConfigured({
-      apiKey: credentials.redlavaApiKey,
-      phoneId: credentials.redlavaPhoneId,
-    }) ||
-    Boolean(credentials.metaAccessToken?.trim() && credentials.redlavaPhoneId?.trim())
+    Boolean(credentials.redlavaApiKey?.trim() && phoneId) ||
+    Boolean(credentials.metaAccessToken?.trim() && phoneId)
   );
 }
 

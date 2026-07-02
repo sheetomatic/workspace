@@ -103,6 +103,9 @@ export async function dispatchTaskReminders(params: {
         parts.push("WhatsApp");
       } else if (wa.reason === "phone_id_required") {
         parts.push("WA not configured");
+        whatsappDetail =
+          wa.detail ??
+          "Phone ID missing — add the active Cloud Phone ID from wa.sheetomatic.com in AI Settings.";
         console.error("[task-reminders] WhatsApp phone_id_required", wa.detail);
       } else if (wa.reason === "not_configured") {
         parts.push("WhatsApp not configured");

@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import type { ParsedTaskDraft } from "@/lib/integrations/openai";
 import { prisma } from "@/lib/db";
 import { dispatchTaskReminders } from "@/lib/task-reminders";
+import { buildAssignmentReminderUpdate } from "@/lib/task-reminder-persist";
 import {
   alignDueAtForRecurrence,
   computeNextDueAt,
@@ -140,10 +141,10 @@ export async function createDelegatedTaskFromDraft(params: {
 
     await prisma.delegatedTask.update({
       where: { id: task.id },
-      data: {
-        emailAssignmentSentAt: reminders.emailSent ? new Date() : null,
-        whatsappAssignmentSentAt: reminders.whatsappSent ? new Date() : null,
-      },
+      data: buildAssignmentReminderUpdate(reminders, {
+        remindViaWhatsApp,
+        assigneeHasPhone: Boolean(task.assignee.phone?.trim()),
+      }),
     });
   }
 

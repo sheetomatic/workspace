@@ -21,6 +21,7 @@ import {
   type WhatsAppTemplateVariable,
 } from "@/lib/whatsapp-templates";
 import { normalizeWhatsAppPhone } from "@/lib/phone";
+import { verifyRedlavaPhoneCredentials } from "@/lib/integrations/redlava";
 import { resolveWorkspaceWhatsAppCredentials } from "@/lib/whatsapp-settings";
 import {
   formatWhatsAppTestPhoneLabel,
@@ -391,6 +392,14 @@ export async function saveWhatsAppSettings(
         ok: false,
         message: "API key and Phone ID are required for WhatsApp API.",
       };
+    }
+
+    const verification = await verifyRedlavaPhoneCredentials({
+      apiKey: nextApiKey,
+      phoneId: nextPhoneId,
+    });
+    if (!verification.ok) {
+      return { ok: false, message: verification.message };
     }
   }
 

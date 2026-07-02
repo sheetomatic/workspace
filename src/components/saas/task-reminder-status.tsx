@@ -88,6 +88,15 @@ export function TaskReminderStatus({
     (task.remindViaEmail && !task.emailAssignmentSentAt) ||
     (task.remindViaWhatsApp && !task.whatsappAssignmentSentAt);
 
+  const assignmentWhatsappError =
+    task.whatsappAssignmentError?.trim() ||
+    (task.remindViaWhatsApp &&
+    !task.whatsappAssignmentSentAt &&
+    assigneePhone &&
+    whatsappConfigured
+      ? "Delivery failed. Check API key and active Cloud Phone ID in AI Settings."
+      : null);
+
   const dueFailed =
     ACTIVE_STATUSES.includes(task.status) &&
     task.dueAt.getTime() <= Date.now() &&
@@ -184,13 +193,20 @@ export function TaskReminderStatus({
                     WhatsApp not connected.{" "}
                     <Link href="/ai/app/settings">Connect in AI Settings</Link>
                   </span>
-                ) : (
+                ) : assignmentWhatsappError ? (
                   <span className="ws-task-reminder-hint ws-task-reminder-hint-warn">
-                    Delivery failed. Use Resend after checking RedLava API key
-                    and Phone ID in{" "}
-                    <Link href="/ai/app/settings">AI Settings</Link>.
+                    {assignmentWhatsappError}{" "}
+                    <Link href="/ai/app/settings">AI Settings</Link>
+                    {" · "}
+                    <a
+                      href="https://wa.sheetomatic.com/ConnectedAccount"
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      wa.sheetomatic.com
+                    </a>
                   </span>
-                )}
+                ) : null}
               </>
             ) : null}
           </dd>

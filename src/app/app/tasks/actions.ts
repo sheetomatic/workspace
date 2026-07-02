@@ -23,6 +23,10 @@ import {
   notifyTaskAssignee,
   resolveAssignmentReminderFlags,
 } from "@/lib/task-assignment-notify";
+import {
+  buildAssignmentReminderUpdate,
+  buildResendAssignmentReminderUpdate,
+} from "@/lib/task-reminder-persist";
 import { getWorkspaceIntegrationStatus } from "@/lib/workspace-integration-status";
 import type { TaskActionState } from "@/lib/task-action-state";
 import { isNextRedirect } from "@/lib/next-redirect";
@@ -210,8 +214,10 @@ async function createDelegatedTaskInner(
       await prisma.delegatedTask.update({
         where: { id: task.id },
         data: {
-          emailAssignmentSentAt: reminders.emailSent ? new Date() : null,
-          whatsappAssignmentSentAt: reminders.whatsappSent ? new Date() : null,
+          ...buildAssignmentReminderUpdate(reminders, {
+            remindViaWhatsApp,
+            assigneeHasPhone: Boolean(task.assignee.phone?.trim()),
+          }),
           remindViaWhatsApp,
         },
       });
@@ -355,10 +361,10 @@ async function updateTaskStatusInner(
         });
         await prisma.delegatedTask.update({
           where: { id: nextTask.id },
-          data: {
-            emailAssignmentSentAt: reminders.emailSent ? new Date() : null,
-            whatsappAssignmentSentAt: reminders.whatsappSent ? new Date() : null,
-          },
+          data: buildAssignmentReminderUpdate(reminders, {
+            remindViaWhatsApp: task.remindViaWhatsApp,
+            assigneeHasPhone: Boolean(task.assignee.phone?.trim()),
+          }),
         });
       }
 
@@ -537,9 +543,11 @@ export async function updateDelegatedTask(
         await prisma.delegatedTask.update({
           where: { id: taskId },
           data: {
+            ...buildAssignmentReminderUpdate(reminders, {
+              remindViaWhatsApp,
+              assigneeHasPhone: Boolean(nextAssignee.phone?.trim()),
+            }),
             remindViaWhatsApp,
-            emailAssignmentSentAt: reminders.emailSent ? new Date() : null,
-            whatsappAssignmentSentAt: reminders.whatsappSent ? new Date() : null,
           },
         });
 
@@ -628,14 +636,12 @@ export async function resendTaskAssignmentReminders(
 
   await prisma.delegatedTask.updateMany({
     where: { id: task.id, organizationId: user.organizationId },
-    data: {
-      emailAssignmentSentAt: reminders.emailSent
-        ? new Date()
-        : task.emailAssignmentSentAt,
-      whatsappAssignmentSentAt: reminders.whatsappSent
-        ? new Date()
-        : task.whatsappAssignmentSentAt,
-    },
+    data: buildResendAssignmentReminderUpdate(reminders, {
+      remindViaWhatsApp: task.remindViaWhatsApp,
+      assigneeHasPhone: Boolean(task.assignee.phone?.trim()),
+      previousWhatsappSentAt: task.whatsappAssignmentSentAt,
+      previousEmailSentAt: task.emailAssignmentSentAt,
+    }),
   });
 
   revalidatePath("/app/tasks");

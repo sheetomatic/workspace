@@ -67,6 +67,7 @@ export type TaskRow = {
   remindViaWhatsApp: boolean;
   emailAssignmentSentAt: Date | null;
   whatsappAssignmentSentAt: Date | null;
+  whatsappAssignmentError: string | null;
   emailReminderSentAt: Date | null;
   whatsappReminderSentAt: Date | null;
   nextOccurrenceAt: Date | null;

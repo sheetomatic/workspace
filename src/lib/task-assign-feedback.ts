@@ -18,7 +18,7 @@ export function humanizeReminderSummary(summary: string): string {
           return "Email could not be sent";
         case "WhatsApp not configured":
         case "WA not configured":
-          return "WA skipped (not set up)";
+          return "WA skipped — add API key and active Cloud Phone ID in AI Settings";
         case "WhatsApp failed":
           return "WA could not be sent (check Channels settings or assignee must message your WA number first)";
         case "WhatsApp session required":
@@ -30,6 +30,15 @@ export function humanizeReminderSummary(summary: string): string {
         default:
           if (part.startsWith("WhatsApp failed:")) {
             const detail = part.replace(/^WhatsApp failed:\s*/, "");
+            if (
+              detail.toLowerCase().includes("unspecified_phone_number") ||
+              detail.toLowerCase().includes("multiple phone numbers")
+            ) {
+              return "WA error: Phone ID missing or wrong — use the active Cloud line from wa.sheetomatic.com → Connected Accounts";
+            }
+            if (detail.toLowerCase().includes("payment_required")) {
+              return "WA error: Phone ID expired — switch to your active Cloud account on wa.sheetomatic.com";
+            }
             if (detail.includes('"status":500') || detail.includes("Internal Server Error")) {
               return "WA error: Sheetomatic WhatsApp API error — retry or check wa.sheetomatic.com wallet";
             }

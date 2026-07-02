@@ -120,6 +120,16 @@ export function formatWhatsAppApiErrorDetail(
   const haystack = `${message} ${trimmed}`.toLowerCase();
   const isText = messageType === "text" || !messageType;
 
+  if (haystack.includes("unspecified_phone_number")) {
+    message +=
+      " Add the active Cloud Phone ID from wa.sheetomatic.com → Connected Accounts in AI Settings (not the expired SMB line).";
+  }
+
+  if (haystack.includes("payment_required")) {
+    message +=
+      " This Phone ID is expired or unpaid — switch to your active Cloud account on wa.sheetomatic.com → Connected Accounts.";
+  }
+
   if (
     isText &&
     (haystack.includes("(#100)") ||
@@ -666,6 +676,53 @@ export async function getRedlavaAiWallet(credentials?: RedlavaCredentials | null
   }
 
   return { ok: true as const, wallet };
+}
+
+/** Validate API key + Phone ID before saving workspace settings. */
+export async function verifyRedlavaPhoneCredentials(
+  credentials?: RedlavaCredentials | null,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  const resolved = resolveRedlavaCredentials(credentials);
+  if (!resolved?.apiKey) {
+    return { ok: false, message: "API key is required." };
+  }
+  if (!resolved.phoneId) {
+    return {
+      ok: false,
+      message:
+        "Phone ID is required. Copy the active Cloud line Phone ID from wa.sheetomatic.com → Connected Accounts (not an expired SMB line).",
+    };
+  }
+
+  const wallet = await getRedlavaWaWallet(resolved);
+  if (!wallet.ok) {
+    return {
+      ok: false,
+      message: `Phone ID ${resolved.phoneId} is not valid for this API key. ${wallet.error}`,
+    };
+  }
+
+  const templates = await redlavaRequest(
+    redlavaTemplateListEndpoint(),
+    {
+      method: "POST",
+      body: { pagination: { current: 1, pageSize: 1 }, search: [] },
+    },
+    resolved,
+  );
+  const templateTotal =
+    templates.ok && typeof templates.body.total === "number"
+      ? templates.body.total
+      : 0;
+
+  if (wallet.wallet.balance <= 0 && templateTotal === 0) {
+    return {
+      ok: false,
+      message: `Phone ID ${resolved.phoneId} looks expired (no wallet balance and no templates). Use the active Cloud account from wa.sheetomatic.com → Connected Accounts.`,
+    };
+  }
+
+  return { ok: true };
 }
 
 /** Download inbound WhatsApp media (voice notes, images) via RedLava's Meta proxy. */
