@@ -9,7 +9,10 @@ import {
   checkOutAttendance,
   getOrCreateHrSettings,
 } from "@/lib/hr/hr-store";
-import type { HrActionResult } from "@/lib/hr/hr-result";
+import {
+  mapCheckInError,
+  type HrActionResult,
+} from "@/lib/hr/hr-result";
 
 const HR_PATHS = [
   "/app/hr",
@@ -120,33 +123,40 @@ export async function reviewLeaveRequestAction(formData: FormData): Promise<void
   revalidateHr();
 }
 
-export async function recordFieldCheckInAction(formData: FormData): Promise<void> {
+export async function recordFieldCheckInAction(
+  formData: FormData,
+): Promise<HrActionResult> {
   const user = await getSessionUser();
   if (!user) {
-    return;
+    return mapCheckInError(new Error("Sign in required."));
   }
 
   const geoLat = Number(formData.get("geoLat"));
   const geoLng = Number(formData.get("geoLng"));
-  if (!Number.isFinite(geoLat) || !Number.isFinite(geoLng)) {
-    throw new Error("Location required");
-  }
-
   const clientName = String(formData.get("clientName") ?? "").trim();
   const activityNote = String(formData.get("activityNote") ?? "").trim();
 
-  await prisma.fieldCheckIn.create({
-    data: {
-      organizationId: user.organizationId,
-      userId: user.id,
-      geoLat,
-      geoLng,
-      clientName: clientName || null,
-      activityNote: activityNote || null,
-    },
-  });
+  try {
+    if (!Number.isFinite(geoLat) || !Number.isFinite(geoLng)) {
+      throw new Error("GPS location is required for field check-in.");
+    }
 
-  revalidateHr();
+    await prisma.fieldCheckIn.create({
+      data: {
+        organizationId: user.organizationId,
+        userId: user.id,
+        geoLat,
+        geoLng,
+        clientName: clientName || null,
+        activityNote: activityNote || null,
+      },
+    });
+
+    revalidateHr();
+    return { ok: true };
+  } catch (error) {
+    return mapCheckInError(error);
+  }
 }
 
 export async function createFieldVisitAction(formData: FormData): Promise<void> {
