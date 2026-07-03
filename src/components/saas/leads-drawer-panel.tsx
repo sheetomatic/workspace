@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Trash2, X } from "lucide-react";
 import type {
   InboundLeadStatus,
   LeadCallingStatus,
@@ -18,6 +19,8 @@ import {
   addLeadOfferedService,
   applyAiSuggestedLeadStatus,
   assignInboundLead,
+  clearInboundLeadHistory,
+  deleteInboundLeadActivity,
   scheduleInboundLeadFollowUp,
   updateInboundLeadDetails,
   updateInboundLeadStatus,
@@ -173,6 +176,7 @@ export function LeadDrawerPanel({
   onClose: () => void;
   onDeleted?: () => void;
 }) {
+  const router = useRouter();
   const [tab, setTab] = useState<"details" | "meeting" | "services" | "payments" | "quote">(
     "details",
   );
@@ -195,6 +199,11 @@ export function LeadDrawerPanel({
   );
   const [paymentType, setPaymentType] = useState<LeadPaymentType>("ADVANCE");
   const [paymentMethod, setPaymentMethod] = useState<LeadPaymentMethod>("UPI");
+  const [activities, setActivities] = useState(lead.activities);
+
+  useEffect(() => {
+    setActivities(lead.activities);
+  }, [lead.id, lead.activities]);
 
   const aiStatus = lead.aiSuggestedStatus ?? null;
   const showAiHint = aiStatus && aiStatus !== lead.status && canManage;
@@ -661,19 +670,73 @@ export function LeadDrawerPanel({
       ) : null}
 
       <section className="leads-drawer-section">
-        <h3>History & logs</h3>
+        <div className="leads-history-head">
+          <h3>History & logs</h3>
+          {canManage && activities.length > 0 ? (
+            <button
+              type="button"
+              className="btn-secondary btn-sm leads-history-clear-btn"
+              disabled={pending}
+              onClick={() => {
+                if (
+                  !window.confirm(
+                    "Delete all history entries for this lead? This cannot be undone.",
+                  )
+                ) {
+                  return;
+                }
+                startTransition(async () => {
+                  const result = await clearInboundLeadHistory(lead.id);
+                  if (result.ok) {
+                    setActivities([]);
+                    router.refresh();
+                  }
+                });
+              }}
+            >
+              Clear all
+            </button>
+          ) : null}
+        </div>
         <ul className="leads-history-list">
-          {lead.activities.length === 0 ? (
+          {activities.length === 0 ? (
             <li className="leads-machine-muted">No activity yet.</li>
           ) : (
-            lead.activities.map((item) => (
-              <li key={item.id}>
-                <strong>{item.type.replaceAll("_", " ")}</strong>
-                <span>{item.body}</span>
-                <em>
-                  {new Date(item.createdAt).toLocaleString("en-IN")} ·{" "}
-                  {item.createdBy?.name || item.createdBy?.email || "System"}
-                </em>
+            activities.map((item) => (
+              <li key={item.id} className="leads-history-item">
+                <div className="leads-history-item-body">
+                  <strong>{item.type.replaceAll("_", " ")}</strong>
+                  <span>{item.body}</span>
+                  <em>
+                    {new Date(item.createdAt).toLocaleString("en-IN")} ·{" "}
+                    {item.createdBy?.name || item.createdBy?.email || "System"}
+                  </em>
+                </div>
+                {canManage ? (
+                  <button
+                    type="button"
+                    className="leads-history-delete-btn"
+                    disabled={pending}
+                    title="Delete entry"
+                    aria-label="Delete history entry"
+                    onClick={() => {
+                      startTransition(async () => {
+                        const result = await deleteInboundLeadActivity({
+                          leadId: lead.id,
+                          activityId: item.id,
+                        });
+                        if (result.ok) {
+                          setActivities((current) =>
+                            current.filter((entry) => entry.id !== item.id),
+                          );
+                          router.refresh();
+                        }
+                      });
+                    }}
+                  >
+                    <Trash2 size={14} aria-hidden />
+                  </button>
+                ) : null}
               </li>
             ))
           )}

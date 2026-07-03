@@ -1085,10 +1085,63 @@
   gap: 0.55rem;
 }
 
+.leads-history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.55rem;
+}
+
+.leads-history-head h3 {
+  margin: 0;
+}
+
+.leads-history-clear-btn {
+  flex-shrink: 0;
+}
+
 .leads-history-list li {
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   padding: 0.6rem 0.7rem;
+}
+
+.leads-history-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.leads-history-item-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.leads-history-delete-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.leads-history-delete-btn:hover:not(:disabled) {
+  color: #dc2626;
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.leads-history-delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .leads-history-list strong {

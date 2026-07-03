@@ -239,6 +239,48 @@ export async function deleteInboundLead(leadId: string) {
   return { ok: true };
 }
 
+export async function deleteInboundLeadActivity(params: {
+  leadId: string;
+  activityId: string;
+}) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  const deleted = await prisma.inboundLeadActivity.deleteMany({
+    where: {
+      id: params.activityId,
+      leadId: params.leadId,
+      organizationId: user.organizationId,
+    },
+  });
+
+  if (deleted.count === 0) {
+    return { ok: false, message: "Activity not found." };
+  }
+
+  revalidatePath("/app/leads");
+  return { ok: true };
+}
+
+export async function clearInboundLeadHistory(leadId: string) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  await prisma.inboundLeadActivity.deleteMany({
+    where: {
+      leadId,
+      organizationId: user.organizationId,
+    },
+  });
+
+  revalidatePath("/app/leads");
+  return { ok: true };
+}
+
 export async function addInboundLeadNote(leadId: string, note: string) {
   const user = await requireSession(undefined, { module: "FMS" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
