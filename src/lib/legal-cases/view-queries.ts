@@ -67,7 +67,7 @@ export type RunningInsights = {
   withChequeBook: number;
 };
 
-function matchesCategory(legalCase: LegalCase, category: string) {
+function matchesCategory(legalCase: LegalViewFilterRow, category: string) {
   if (!category) return true;
   return (legalCase.category ?? "").toLowerCase() === category.toLowerCase();
 }
@@ -82,7 +82,7 @@ function stageMatchesPfDue(stage: string) {
   return /\bPF\b|PF\s*OD|PF\s*COM|PF\s*DRIVER|PF\s*NOTICE/i.test(stage);
 }
 
-function assigneeMatches(legalCase: LegalCase, assignee?: string) {
+function assigneeMatches(legalCase: LegalViewFilterRow, assignee?: string) {
   if (!assignee?.trim()) return true;
   const needle = assignee.trim().toUpperCase();
   const haystack = [
@@ -100,7 +100,7 @@ function assigneeMatches(legalCase: LegalCase, assignee?: string) {
 }
 
 function sectionMatches(
-  legalCase: LegalCase,
+  legalCase: LegalViewFilterRow,
   section: string | undefined,
   context: { admin: boolean; staffCode: string },
 ) {
@@ -111,17 +111,21 @@ function sectionMatches(
   }
   const workSection = sectionNum as (typeof WORK_SECTIONS)[number];
   if (context.admin) {
-    return Boolean(sectionResponsibleCode(legalCase, workSection));
+    return Boolean(sectionResponsibleCode(legalCase as unknown as LegalCase, workSection));
   }
   if (!context.staffCode) return false;
-  return isAssignedToSection(legalCase, workSection, context.staffCode);
+  return isAssignedToSection(
+    legalCase as unknown as LegalCase,
+    workSection,
+    context.staffCode,
+  );
 }
 
-function applyCommonViewFilters(
-  rows: LegalViewFilterRow[],
+function applyCommonViewFilters<T extends LegalViewFilterRow>(
+  rows: T[],
   options: LegalViewListFilter,
   context: { admin: boolean; staffCode: string },
-): LegalViewFilterRow[] {
+): T[] {
   const assigneeCode = options.assignee?.trim()
     ? normalizeStaffCode(options.assignee)
     : null;
@@ -148,7 +152,7 @@ function applyCommonViewFilters(
       if (hasWorkSection) {
         if (
           !isAssignedToSection(
-            item,
+            item as unknown as LegalCase,
             sectionNum as (typeof WORK_SECTIONS)[number],
             assigneeCode,
           )
@@ -167,12 +171,12 @@ function applyCommonViewFilters(
   });
 }
 
-function filterViewCases(
-  cases: LegalViewFilterRow[],
+function filterViewCases<T extends LegalViewFilterRow>(
+  cases: T[],
   viewKey: LegalViewKey,
   options: LegalViewListFilter = {},
   context: { admin: boolean; staffCode: string } = { admin: true, staffCode: "" },
-): LegalViewFilterRow[] {
+): T[] {
   let rows = cases.filter((item) => matchesCategory(item, options.category ?? ""));
 
   switch (viewKey) {
@@ -264,7 +268,7 @@ function filterViewCases(
           !filed ||
           status.includes("TO BE FILED") ||
           status.includes("NOT FILED") ||
-          item.caseStage?.toUpperCase().includes("FILE")
+          (item.caseStage?.toUpperCase() ?? "").includes("FILE")
         );
       });
       break;
@@ -333,7 +337,7 @@ function matchesLegalViewNavCase(
         !filed ||
         status.includes("TO BE FILED") ||
         status.includes("NOT FILED") ||
-        item.caseStage?.toUpperCase().includes("FILE")
+        (item.caseStage?.toUpperCase() ?? "").includes("FILE")
       );
     }
     case "follow-fatal":
