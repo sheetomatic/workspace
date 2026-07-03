@@ -115,10 +115,10 @@ export async function importLegalCasesFromGoogleSheet(organizationId: string) {
 }
 
 export async function listOrganizationLegalCases(organizationId: string) {
-  return prisma.legalCase.findMany({
-    where: { organizationId },
-    orderBy: [{ fileNumber: "asc" }, { mccNumber: "asc" }],
-  });
+  const { loadAllLegalCasesForExport } = await import(
+    "@/lib/legal-cases/file-import-export"
+  );
+  return loadAllLegalCasesForExport(organizationId);
 }
 
 export async function exportLegalCasesToGoogleSheet(organizationId: string) {
@@ -159,7 +159,7 @@ export async function exportLegalCasesToGoogleSheet(organizationId: string) {
     });
   }
 
-  const dataRows = legalCasesToSheetRows(header, cases);
+  const dataRows = legalCasesToSheetRows(header, cases as import("@prisma/client").LegalCase[]);
   const lastColumn = columnIndexToLetter(Math.max(header.length, 1) - 1);
 
   if (dataRows.length === 0) {

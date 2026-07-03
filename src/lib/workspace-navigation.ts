@@ -6,6 +6,7 @@ import {
   CheckSquare,
   ClipboardCheck,
   ClipboardList,
+  FileSpreadsheet,
   GitBranch,
   LayoutDashboard,
   ListChecks,
@@ -294,6 +295,13 @@ export function getWorkspaceNavSections(params: {
         id: "settings",
         label: "Settings",
         items: [
+          {
+            href: "/app/cases/settings",
+            label: "Import & export",
+            icon: FileSpreadsheet,
+            minRole: "MANAGER",
+            matchPrefix: "/app/cases/settings",
+          },
           {
             href: "/app/settings",
             label: "Settings",

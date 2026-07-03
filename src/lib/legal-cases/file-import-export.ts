@@ -1,5 +1,6 @@
 import type { LegalCase } from "@prisma/client";
 import * as XLSX from "xlsx";
+import { prisma } from "@/lib/db";
 import { findHeaderRowIndex } from "@/lib/legal-cases/header-aliases";
 import { parseCsv, parseLegalCasesRows } from "@/lib/legal-cases/import-csv";
 import { getLegalCasesExportHeader } from "@/lib/legal-cases/export-template";
@@ -13,6 +14,41 @@ import {
 const ACCEPTED_EXTENSIONS = new Set([".csv", ".xlsx", ".xls"]);
 
 export const LEGAL_CASES_FILE_MAX_BYTES = 25 * 1024 * 1024;
+export const LEGAL_CASES_EXPORT_BATCH_SIZE = 400;
+
+export const LEGAL_CASE_EXPORT_SELECT = {
+  id: true,
+  fileNumber: true,
+  mccNumber: true,
+  applicant: true,
+  nonApplicant: true,
+  category: true,
+  caseStage: true,
+  fileStatus: true,
+  court: true,
+  company: true,
+  coAdvocate: true,
+  prevDate: true,
+  nextDate: true,
+  remarks: true,
+  amdCcStatus: true,
+  fNo: true,
+  signingDate: true,
+  caseFiled: true,
+  clientAdvance: true,
+  s2Responsible: true,
+  s3Responsible: true,
+  s4Responsible: true,
+  s5Responsible: true,
+  s6Responsible: true,
+  s7Responsible: true,
+  sectionData: true,
+} as const;
+
+export type LegalCaseExportRow = Pick<
+  LegalCase,
+  keyof typeof LEGAL_CASE_EXPORT_SELECT
+>;
 
 function escapeCsvCell(value: string) {
   if (/[",\n\r]/.test(value)) {
@@ -25,7 +61,7 @@ export function rowsToCsv(rows: string[][]): string {
   return rows.map((row) => row.map((cell) => escapeCsvCell(cell ?? "")).join(",")).join("\n");
 }
 
-function sortCasesForExport(cases: LegalCase[]): LegalCase[] {
+function sortCasesForExport(cases: LegalCaseExportRow[]): LegalCaseExportRow[] {
   return [...cases].sort((left, right) => {
     const leftRow = Number(asSectionData(left.sectionData)[SHEET_ROW_NUMBER_KEY] ?? 0);
     const rightRow = Number(asSectionData(right.sectionData)[SHEET_ROW_NUMBER_KEY] ?? 0);
@@ -45,21 +81,24 @@ function sortCasesForExport(cases: LegalCase[]): LegalCase[] {
   });
 }
 
-export function legalCasesToExportRows(cases: LegalCase[], header?: string[]) {
+export function legalCasesToExportRows(
+  cases: LegalCaseExportRow[],
+  header?: string[],
+) {
   const exportHeader = header ?? getLegalCasesExportHeader();
   const sorted = sortCasesForExport(cases);
   return {
     header: exportHeader,
-    rows: legalCasesToSheetRows(exportHeader, sorted),
+    rows: legalCasesToSheetRows(exportHeader, sorted as LegalCase[]),
   };
 }
 
-export function legalCasesToCsv(cases: LegalCase[]): string {
+export function legalCasesToCsv(cases: LegalCaseExportRow[]): string {
   const { header, rows } = legalCasesToExportRows(cases);
   return rowsToCsv([header, ...rows]);
 }
 
-export function legalCasesToXlsxBuffer(cases: LegalCase[]): Buffer {
+export function legalCasesToXlsxBuffer(cases: LegalCaseExportRow[]): Buffer {
   const { header, rows } = legalCasesToExportRows(cases);
   const worksheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
   const workbook = XLSX.utils.book_new();
@@ -67,6 +106,42 @@ export function legalCasesToXlsxBuffer(cases: LegalCase[]): Buffer {
   return Buffer.from(
     XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }),
   );
+}
+
+export async function* iterateLegalCaseExportBatches(
+  organizationId: string,
+  batchSize = LEGAL_CASES_EXPORT_BATCH_SIZE,
+): AsyncGenerator<LegalCaseExportRow[]> {
+  let skip = 0;
+
+  while (true) {
+    const batch = await prisma.legalCase.findMany({
+      where: { organizationId },
+      select: LEGAL_CASE_EXPORT_SELECT,
+      orderBy: [{ fileNumber: "asc" }, { mccNumber: "asc" }],
+      skip,
+      take: batchSize,
+    });
+
+    if (batch.length === 0) {
+      return;
+    }
+
+    yield batch;
+    skip += batch.length;
+
+    if (batch.length < batchSize) {
+      return;
+    }
+  }
+}
+
+export async function loadAllLegalCasesForExport(organizationId: string) {
+  const cases: LegalCaseExportRow[] = [];
+  for await (const batch of iterateLegalCaseExportBatches(organizationId)) {
+    cases.push(...batch);
+  }
+  return cases;
 }
 
 function extensionForFilename(filename: string) {

@@ -1,12 +1,9 @@
 "use client";
 
-import { Suspense, useState, useTransition } from "react";
+import { Suspense } from "react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Plus, X } from "lucide-react";
-import {
-  exportLegalCasesToGoogleSheetAction,
-  syncLegalCasesFromGoogleSheet,
-} from "@/app/app/cases/actions";
 import { LegalCaseCreateForm } from "@/components/legal/legal-case-create-form";
 
 export function NewLegalCaseTrigger({
@@ -87,49 +84,14 @@ export function LegalCaseCreatePanel({ canCreate }: { canCreate: boolean }) {
 }
 
 export function LegalSheetSyncButton() {
-  const [message, setMessage] = useState("");
-  const [ok, setOk] = useState(false);
-  const [pending, startTransition] = useTransition();
-
-  function runSync(
-    action: () => Promise<{ ok: boolean; message: string }>,
-  ) {
-    startTransition(async () => {
-      const result = await action();
-      setOk(result.ok);
-      setMessage(result.message);
-    });
-  }
-
   return (
     <div className="legal-sync-wrap">
-      <div className="legal-sync-actions">
-        <button
-          className="btn-cta btn-secondary legal-sync-btn"
-          disabled={pending}
-          type="button"
-          onClick={() => runSync(syncLegalCasesFromGoogleSheet)}
-        >
-          {pending ? "Syncing..." : "Import"}
-        </button>
-        <button
-          className="btn-cta btn-secondary legal-sync-btn"
-          disabled={pending}
-          type="button"
-          onClick={() => runSync(exportLegalCasesToGoogleSheetAction)}
-        >
-          {pending ? "Syncing..." : "Export"}
-        </button>
-      </div>
-      {message ? (
-        <p className={ok ? "saas-form-message ok" : "saas-form-message error"}>
-          {message}
-        </p>
-      ) : (
-        <p className="saas-sheets-hint">
-          Set your CRM sheet URL in Settings, then import or export cases here.
-        </p>
-      )}
+      <Link className="btn-cta btn-secondary legal-sync-btn" href="/app/cases/settings">
+        Import & export
+      </Link>
+      <p className="saas-sheets-hint">
+        Upload CSV or Excel, download backups, and restore previous imports.
+      </p>
     </div>
   );
 }

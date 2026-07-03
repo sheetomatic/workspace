@@ -14,6 +14,7 @@ import {
   getSpreadsheetIdForOrganization,
 } from "@/lib/integrations/google-sheets-dashboard";
 import { PageHeader } from "@/components/saas/page-header";
+import { ModuleSettingsLinks } from "@/components/saas/module-settings-links";
 import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
 import { ROLE_LABELS } from "@/lib/permissions";
 import { hasMinimumRole } from "@/lib/permissions";
@@ -78,6 +79,7 @@ export default async function SettingsPage() {
       <div className="saas-settings-grid">
         <ChangePasswordPanel />
         <NotificationSettingsPanel settings={notificationSettings} />
+        <ModuleSettingsLinks user={user} />
         {canManageAdmin ? (
           <>
             {!isDedicatedPortal ? (

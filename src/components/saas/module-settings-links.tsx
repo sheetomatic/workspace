@@ -21,7 +21,7 @@ export function ModuleSettingsLinks({ user }: { user: SessionUser }) {
       key: "cases",
       href: "/app/cases/settings",
       label: "Cases workbook",
-      description: "Import/export CSV or Excel, restore backups, edit case rows.",
+      description: "Import & export CSV or Excel, restore backups, edit case rows.",
       icon: Briefcase,
     });
   }

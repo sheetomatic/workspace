@@ -18,16 +18,27 @@ export default async function CasesSettingsPage() {
     );
   }
 
-  const [organization, caseCount, backup] = await Promise.all([
-    prisma.organization.findUnique({
-      where: { id: user.organizationId },
-      select: {
-        legalSheetHeaderRow: true,
-      },
-    }),
-    prisma.legalCase.count({ where: { organizationId: user.organizationId } }),
-    loadLegalCasesSettingsBackupMeta(),
-  ]);
+  let organization: {
+    legalSheetHeaderRow: number;
+  } | null = null;
+  let caseCount = 0;
+  let backup: Awaited<ReturnType<typeof loadLegalCasesSettingsBackupMeta>> = null;
+
+  try {
+    [organization, caseCount, backup] = await Promise.all([
+      prisma.organization.findUnique({
+        where: { id: user.organizationId },
+        select: {
+          legalSheetHeaderRow: true,
+        },
+      }),
+      prisma.legalCase.count({ where: { organizationId: user.organizationId } }),
+      loadLegalCasesSettingsBackupMeta(),
+    ]);
+  } catch (error) {
+    console.error("[cases-settings] bootstrap failed", error);
+    throw error;
+  }
 
   return (
     <div className="saas-page legal-cases-settings-page">
