@@ -315,13 +315,14 @@ export const taskWhatsappPlans: PricingPlan[] = [
     name: "Task on WhatsApp",
     monthlyInr: null,
     annualInr: null,
-    perUserAnnualInr: 2500,
+    perUserAnnualInr: 2400,
     setupFeeInr: 25000,
     description:
       "Voice or text on WhatsApp → task created → assignee notified. Best for owner-led MSME teams.",
     featured: true,
     badge: "Delegation",
     limits: [
+      "Minimum 8 users",
       "WhatsApp voice + text task delegation",
       "Assign tasks to team from WhatsApp",
       "WhatsApp alerts to assignees",
@@ -436,7 +437,7 @@ export function getTaskPlanPriceLabel() {
   if (!plan?.perUserAnnualInr) {
     return "Task + WhatsApp Messages";
   }
-  return `${formatInr(plan.perUserAnnualInr)}/user/year`;
+  return `${formatInr(plan.perUserAnnualInr)}/user/year (min 8 users)`;
 }
 
 export function getAiProPlanPriceLabel() {

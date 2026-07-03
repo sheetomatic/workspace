@@ -21,8 +21,8 @@ import {
   SiteHeader,
 } from "@/app/components";
 import {
+  ContactButtons,
   MarketingLinkButton,
-  WhatsAppButton,
 } from "@/components/marketing/marketing-buttons";
 import { RelatedServicesSection } from "@/components/marketing/related-services-section";
 import { ServicesBreadcrumb } from "@/components/marketing/services-breadcrumb";
@@ -105,9 +105,12 @@ function HrModulePanel({ mod }: { mod: HrServicesModule }) {
       ) : null}
 
       <div className="services-hr-module-actions">
-        <WhatsAppButton
-          className="btn-block"
-          label={mod.ctaLabel}
+        <ContactButtons
+          className="services-hr-card-v2-contact"
+          whatsappClassName="services-hr-card-v2-cta services-hr-card-v2-cta-whatsapp"
+          whatsappLabel={mod.ctaLabel}
+          callClassName="services-hr-card-v2-cta services-hr-card-v2-cta-call"
+          callLabel="Call our team"
           message={mod.whatsappMessage}
         />
         <MarketingLinkButton href={mod.marketingHref} variant="secondary">
@@ -151,8 +154,9 @@ function GenericServiceDetail({ category }: { category: ServiceCategory }) {
             </h1>
             <p className="services-hero-lead">{category.lead}</p>
             <div className="services-hero-actions marketing-actions">
-              <WhatsAppButton
-                label={category.ctaLabel}
+              <ContactButtons
+                whatsappLabel={category.ctaLabel}
+                callLabel="Call now"
                 message={category.whatsappMessage}
               />
               {category.workspaceHref ? (
@@ -223,9 +227,12 @@ function GenericServiceDetail({ category }: { category: ServiceCategory }) {
                 </li>
               ))}
             </ul>
-            <WhatsAppButton
-              className="btn-block services-detail-outcomes-cta"
-              label={whatsappDisplayNumber}
+            <ContactButtons
+              className="services-detail-outcomes-cta"
+              whatsappClassName="btn-block"
+              whatsappLabel={whatsappDisplayNumber}
+              callClassName="btn-block"
+              callLabel="Call now"
               message={category.whatsappMessage}
             />
           </div>
@@ -261,8 +268,9 @@ function HrServiceDetail({ category }: { category: ServiceCategory }) {
             </h1>
             <p className="services-hero-lead">{hrModuleOverview.lead}</p>
             <div className="services-hero-actions marketing-actions">
-              <WhatsAppButton
-                label={category.ctaLabel}
+              <ContactButtons
+                whatsappLabel={category.ctaLabel}
+                callLabel="Call now"
                 message={category.whatsappMessage}
               />
               <MarketingLinkButton
@@ -327,9 +335,12 @@ function HrServiceDetail({ category }: { category: ServiceCategory }) {
             We enable modules per organization after a short call  -  attendance
             first, field or hiring when you are ready.
           </p>
-          <WhatsAppButton
-            className="btn-block mx-auto mt-6 max-w-sm"
-            label={whatsappDisplayNumber}
+          <ContactButtons
+            className="mx-auto mt-6 max-w-sm"
+            whatsappClassName="btn-block"
+            whatsappLabel={whatsappDisplayNumber}
+            callClassName="btn-block"
+            callLabel="Call now"
             message={category.whatsappMessage}
           />
         </div>

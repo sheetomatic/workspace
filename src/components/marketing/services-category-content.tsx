@@ -19,8 +19,8 @@ import {
   SiteHeader,
 } from "@/app/components";
 import {
+  ContactButtons,
   MarketingLinkButton,
-  WhatsAppButton,
 } from "@/components/marketing/marketing-buttons";
 import { HrModuleCard } from "@/components/marketing/hr-module-card";
 import { RelatedServicesSection } from "@/components/marketing/related-services-section";
@@ -91,8 +91,9 @@ export function ServicesCategoryContent({ slug }: ServicesCategoryContentProps) 
                 </h1>
                 <p className="services-hero-lead">{category.lead}</p>
                 <div className="services-hero-actions marketing-actions">
-                  <WhatsAppButton
-                    label={category.ctaLabel}
+                  <ContactButtons
+                    whatsappLabel={category.ctaLabel}
+                    callLabel="Call now"
                     message={category.whatsappMessage}
                   />
                   {category.workspaceHref ? (
@@ -211,13 +212,14 @@ export function ServicesCategoryContent({ slug }: ServicesCategoryContentProps) 
                 <CheckCircle2 size={18} aria-hidden />
                 Ready to scope {category.name.toLowerCase()}?
               </p>
-              <div className="contact-actions centered cta-stack">
-                <WhatsAppButton
-                  className="btn-block"
-                  label={whatsappDisplayNumber}
-                  message={category.whatsappMessage}
-                />
-              </div>
+              <ContactButtons
+                className="contact-actions centered cta-stack"
+                whatsappClassName="btn-block"
+                whatsappLabel={whatsappDisplayNumber}
+                callClassName="btn-block"
+                callLabel="Call now"
+                message={category.whatsappMessage}
+              />
             </div>
           </div>
         </section>

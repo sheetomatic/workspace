@@ -15,7 +15,7 @@ import "@/components/marketing/whatsapp-plans.css";
 export const metadata: Metadata = marketingMetadata({
   title: "WhatsApp API Subscription",
   description:
-    "Sheetomatic unofficial WhatsApp API — FREE API, Google Sheets setup INR 3000+, annual INR 1499, and recharge plans from INR 1499.",
+    "Compare Sheetomatic unofficial WhatsApp recharge plans and official WhatsApp Business plans for task delegation, AI replies, inbox, and CRM.",
   path: "/whatsapp-plans",
 });
 

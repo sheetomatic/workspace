@@ -2,11 +2,16 @@ import "./focus-offers.css";
 import { AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
 import { focusOffers } from "@/app/marketing-content";
 import { offerVideos } from "@/app/video-content";
-import { WhatsAppButton } from "@/components/marketing/marketing-buttons";
+import { ContactButtons } from "@/components/marketing/marketing-buttons";
 import { whatsappDisplayNumber } from "@/app/site-content";
 import { VideoEmbed } from "./video-embed";
 
 export function FocusOffersSection() {
+  const offerMessage = (offerId: string) =>
+    offerId === "ai-workspace"
+      ? "Hi Sheetomatic, I want to know more about your workspace systems like FMS, IMS, Checklist, and Tasks for my business."
+      : "Hi Sheetomatic, I want to know more about your official WhatsApp AI, CRM, and team inbox setup for my business.";
+
   return (
     <section className="section bg-white" id="offers">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
@@ -61,9 +66,12 @@ export function FocusOffersSection() {
               </ul>
 
               <p className="focus-offer-note">{offer.ctaNote}</p>
-              <WhatsAppButton
-                className={offer.featured ? "btn-primary" : "btn-secondary"}
-                label={whatsappDisplayNumber}
+              <ContactButtons
+                whatsappClassName={offer.featured ? "btn-primary" : "btn-secondary"}
+                whatsappLabel={whatsappDisplayNumber}
+                callClassName="btn-secondary"
+                callLabel="Call now"
+                message={offerMessage(offer.id)}
               />
             </article>
           ))}

@@ -6,7 +6,7 @@ import {
   SiteFooter,
   SiteHeader,
 } from "../components";
-import { WhatsAppButton } from "@/components/marketing/marketing-buttons";
+import { ContactButtons } from "@/components/marketing/marketing-buttons";
 import { SocialLinks } from "@/components/marketing/social-links";
 import { contactDetails, contactPage } from "../page-content";
 import { marketingMetadata } from "@/lib/marketing-metadata";
@@ -32,12 +32,13 @@ export default function ContactPage() {
       <section className="contact-page minimal-strip bg-white pb-20">
         <div className="mx-auto max-w-3xl px-5 sm:px-8">
           <p className="type-kicker text-center text-sky-700">WhatsApp</p>
-          <div className="contact-actions centered cta-stack mx-auto mt-4">
-            <WhatsAppButton
-              className="btn-block"
-              label={contactDetails.whatsappNumber}
-            />
-          </div>
+          <ContactButtons
+            className="contact-actions centered cta-stack mx-auto mt-4"
+            whatsappClassName="btn-block"
+            whatsappLabel={contactDetails.whatsappNumber}
+            callClassName="btn-block"
+            message="Hi Sheetomatic, I want to discuss automation for my business."
+          />
           <p className="contact-website-link mt-6 text-center">
             <a href={contactDetails.websiteUrl} target="_blank" rel="noopener noreferrer">
               {contactDetails.website}

@@ -15,8 +15,8 @@ import {
   SiteHeader,
 } from "@/app/components";
 import {
+  ContactButtons,
   MarketingLinkButton,
-  WhatsAppButton,
 } from "@/components/marketing/marketing-buttons";
 import { ServicesBreadcrumb } from "@/components/marketing/services-breadcrumb";
 import { ServicesSubNav } from "@/components/marketing/services-sub-nav";
@@ -91,8 +91,9 @@ export function HrServiceDetailContent({ moduleSlug }: HrServiceDetailContentPro
                 <p className="services-hr-detail-tagline">{mod.tagline}</p>
                 <p className="services-hero-lead">{mod.heroLead}</p>
                 <div className="services-hero-actions marketing-actions">
-                  <WhatsAppButton
-                    label={mod.ctaLabel}
+                  <ContactButtons
+                    whatsappLabel={mod.ctaLabel}
+                    callLabel="Call now"
                     message={mod.whatsappMessage}
                   />
                   <MarketingLinkButton
@@ -167,13 +168,14 @@ export function HrServiceDetailContent({ moduleSlug }: HrServiceDetailContentPro
                 <CheckCircle2 size={18} aria-hidden />
                 Scope {mod.name.toLowerCase()} on a short WhatsApp call
               </p>
-              <div className="contact-actions centered cta-stack">
-                <WhatsAppButton
-                  className="btn-block"
-                  label={whatsappDisplayNumber}
-                  message={mod.whatsappMessage}
-                />
-              </div>
+              <ContactButtons
+                className="contact-actions centered cta-stack"
+                whatsappClassName="btn-block"
+                whatsappLabel={whatsappDisplayNumber}
+                callClassName="btn-block"
+                callLabel="Call now"
+                message={mod.whatsappMessage}
+              />
             </div>
           </div>
         </section>

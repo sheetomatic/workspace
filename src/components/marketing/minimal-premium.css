@@ -1,7 +1,9 @@
 .minimal-hero {
   padding: clamp(4rem, 12vw, 7rem) 0 clamp(3rem, 8vw, 5rem);
   border-bottom: 1px solid #e2e8f0;
-  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 70%);
+  background:
+    radial-gradient(circle at top left, rgba(56, 189, 248, 0.14), transparent 26%),
+    linear-gradient(180deg, #f8fafc 0%, #ffffff 70%);
 }
 
 .minimal-hero-inner {
@@ -121,7 +123,9 @@
 
 .minimal-strip.soft-section,
 .minimal-strip.soft {
-  background: #f8fafc;
+  background:
+    linear-gradient(180deg, rgba(239, 246, 255, 0.85), rgba(248, 250, 252, 0.98)),
+    #f8fafc;
 }
 
 .minimal-section-title {

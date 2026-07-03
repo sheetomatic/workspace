@@ -1,7 +1,7 @@
 import "./mis-careers.css";
 import { Briefcase, CheckCircle2 } from "lucide-react";
 import { misTalentCareers } from "@/app/marketing-content";
-import { WhatsAppButton } from "@/components/marketing/marketing-buttons";
+import { ContactButtons } from "@/components/marketing/marketing-buttons";
 
 export function MisCareersSection() {
   const content = misTalentCareers;
@@ -18,8 +18,9 @@ export function MisCareersSection() {
             <h2 className="mis-careers-title">{content.title}</h2>
             <p className="mis-careers-lead">{content.lead}</p>
             <div className="mis-careers-actions">
-              <WhatsAppButton
-                label="Apply on WhatsApp"
+              <ContactButtons
+                whatsappLabel="Apply on WhatsApp"
+                callLabel="Call us"
                 message={content.whatsappApplyMessage}
               />
             </div>

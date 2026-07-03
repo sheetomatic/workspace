@@ -1750,6 +1750,51 @@
 
 .services-hr-card-v2-cta {
   width: 100%;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: center;
+  justify-content: stretch;
+  min-height: 48px;
+  padding: 12px 16px;
+  column-gap: 10px;
+  text-align: left;
+  font-size: 0.875rem;
+  line-height: 1.2;
+  border-radius: 14px;
+}
+
+.services-hr-card-v2-contact {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.services-hr-card-v2-cta > span:last-child {
+  min-width: 0;
+  text-align: left;
+}
+
+.services-hr-card-v2-contact .services-hr-card-v2-cta-whatsapp {
+  background: var(--primary-blue) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--primary-blue-dark) !important;
+  box-shadow: 0 10px 22px rgba(0, 113, 227, 0.16) !important;
+}
+
+.services-hr-card-v2-contact .services-hr-card-v2-cta-whatsapp .btn-cta-icon-wrap,
+.services-hr-card-v2-contact .services-hr-card-v2-cta-whatsapp .btn-cta-icon {
+  color: #ffffff !important;
+}
+
+.services-hr-card-v2-contact .services-hr-card-v2-cta-call {
+  background: #ffffff !important;
+  color: #16a34a !important;
+  border: 1px solid #bbf7d0 !important;
+  box-shadow: none !important;
+}
+
+.services-hr-card-v2-contact .services-hr-card-v2-cta-call .btn-cta-icon-wrap,
+.services-hr-card-v2-contact .services-hr-card-v2-cta-call .btn-cta-icon {
+  color: #16a34a !important;
 }
 
 .services-hr-card-v2.compact .services-hr-card-v2-body {

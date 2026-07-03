@@ -3,7 +3,7 @@ import {
   videoSalesStory,
 } from "@/app/sales-framework-content";
 import { homePainHook } from "@/app/page-content";
-import { WhatsAppButton } from "@/components/marketing/marketing-buttons";
+import { ContactButtons } from "@/components/marketing/marketing-buttons";
 import { ExecutionSnapshot } from "@/components/marketing/execution-snapshot";
 import { whatsappDisplayNumber } from "@/app/site-content";
 import "./pace-framework.css";
@@ -19,7 +19,10 @@ export function SalesHeroSection() {
             <h1 className="minimal-hero-title">{videoSalesStory.title}</h1>
             <p className="minimal-hero-lead">{videoSalesStory.lead}</p>
             <div className="minimal-hero-actions">
-              <WhatsAppButton label={whatsappDisplayNumber} />
+              <ContactButtons
+                whatsappLabel={whatsappDisplayNumber}
+                callLabel="Call now"
+              />
             </div>
           </div>
           <div className="sales-hero-preview" aria-label="Workspace preview">

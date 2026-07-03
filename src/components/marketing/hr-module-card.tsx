@@ -7,7 +7,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { HrServicesModule } from "@/app/hr-module-content";
-import { WhatsAppButton } from "@/components/marketing/marketing-buttons";
+import { ContactButtons } from "@/components/marketing/marketing-buttons";
 
 const hrModuleIcons: Record<
   string,
@@ -66,9 +66,12 @@ export function HrModuleCard({ mod, variant = "hub" }: HrModuleCardProps) {
             <span>View module details</span>
             <ArrowRight size={16} aria-hidden />
           </Link>
-          <WhatsAppButton
-            className="services-hr-card-v2-cta"
-            label={mod.ctaLabel}
+          <ContactButtons
+            className="services-hr-card-v2-contact"
+            whatsappClassName="services-hr-card-v2-cta services-hr-card-v2-cta-whatsapp"
+            whatsappLabel={mod.ctaLabel}
+            callClassName="services-hr-card-v2-cta services-hr-card-v2-cta-call"
+            callLabel="Call our team"
             message={mod.whatsappMessage}
           />
         </div>

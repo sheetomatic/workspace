@@ -59,7 +59,7 @@ export const attendanceLeaveModule: HrServicesModule = {
     "Shift-friendly hours with late and early flags",
     "Payroll-ready attendance summaries for salary runs",
   ],
-  ctaLabel: "Scope attendance on WhatsApp",
+  ctaLabel: "Ask about attendance",
   whatsappMessage:
     "Hi Sheetomatic, I want to scope Attendance & Leave for our team - geo check-in, leave approvals, and payroll-ready summaries.",
   features: [
@@ -111,7 +111,7 @@ export const fieldTrackingModule: HrServicesModule = {
     "Manager view of today's field team",
     "Separate from office punch - field-only KPIs",
   ],
-  ctaLabel: "Scope field tracking on WhatsApp",
+  ctaLabel: "Ask about field tracking",
   whatsappMessage:
     "Hi Sheetomatic, I want to scope Field Executive Tracking for our sales or service team - client geo check-ins and manager visibility.",
   features: [
@@ -161,7 +161,7 @@ export const hrHiringModule: HrServicesModule = {
     "Interview tracking from applied to hired",
     "Owner assignment and handoff per candidate",
   ],
-  ctaLabel: "Scope hiring workflow on WhatsApp",
+  ctaLabel: "Ask about hiring workflow",
   whatsappMessage:
     "Hi Sheetomatic, I want to scope a simple hiring and documentation workflow for our HR team.",
   features: [

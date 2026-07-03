@@ -1,7 +1,7 @@
 import "@/components/marketing/minimal-premium.css";
 import Link from "next/link";
 import {
-  WhatsAppButton,
+  ContactButtons,
 } from "@/components/marketing/marketing-buttons";
 import { SocialLinks } from "@/components/marketing/social-links";
 import {
@@ -58,7 +58,13 @@ export function SiteHeader() {
             <Link className="ab-header-workspace" href="/login">
               Workspace
             </Link>
-            <WhatsAppButton className="header-cta" label={whatsappDisplayNumber} />
+            <ContactButtons
+              callLabel="Call"
+              className="header-cta-group"
+              whatsappClassName="header-cta"
+              whatsappLabel="WhatsApp"
+              callClassName="header-cta"
+            />
           </div>
         </div>
         <SiteHeaderNav variant="mobile" />
@@ -76,7 +82,12 @@ export function SiteFooter() {
             <SiteBrand variant="footer" />
             <p>{siteBrand.footerDescription}</p>
             <SocialLinks variant="footer" />
-            <WhatsAppButton className="btn-footer-cta" label={whatsappDisplayNumber} />
+            <ContactButtons
+              className="footer-reach-stack"
+              whatsappClassName="btn-footer-cta"
+              whatsappLabel={whatsappDisplayNumber}
+              callClassName="btn-footer-cta"
+            />
           </div>
           <div className="site-footer-links">
             <p className="site-footer-col-label">Product</p>
@@ -101,9 +112,12 @@ export function SiteFooter() {
           <div className="site-footer-reach">
             <p className="site-footer-col-label">Reach us</p>
             <div className="footer-reach-stack">
-              <WhatsAppButton
-                className="footer-inline-btn footer-whatsapp-btn"
-                label={contactDetails.whatsappNumber}
+              <ContactButtons
+                className="footer-reach-stack"
+                whatsappClassName="footer-inline-btn footer-whatsapp-btn"
+                whatsappLabel={contactDetails.whatsappNumber}
+                callClassName="footer-inline-btn"
+                callLabel="Call now"
               />
               <a
                 className="footer-website-link"
@@ -164,12 +178,12 @@ export function FinalCta({
             Official API, AI follow-ups, and deep ties to FMS, IMS, and your
             operating systems — so sales and ops scale without you.
           </p>
-          <div className="wa-final-cta-actions cta-stack">
-            <WhatsAppButton
-              className="wa-final-btn"
-              label={whatsappDisplayNumber}
-            />
-          </div>
+          <ContactButtons
+            className="wa-final-cta-actions cta-stack"
+            whatsappClassName="wa-final-btn"
+            whatsappLabel={whatsappDisplayNumber}
+            callClassName="wa-final-btn"
+          />
         </div>
       </section>
     );
@@ -181,12 +195,12 @@ export function FinalCta({
         <p className="saas-final-kicker">{content.kicker}</p>
         <h2>{content.title}</h2>
         <p className="saas-final-cta-copy">{content.text}</p>
-        <div className="saas-final-cta-actions cta-stack">
-          <WhatsAppButton
-            className="saas-final-cta-btn"
-            label={whatsappDisplayNumber}
-          />
-        </div>
+        <ContactButtons
+          className="saas-final-cta-actions cta-stack"
+          whatsappClassName="saas-final-cta-btn"
+          whatsappLabel={whatsappDisplayNumber}
+          callClassName="saas-final-cta-btn"
+        />
       </div>
     </section>
   );

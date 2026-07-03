@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { siteBrand, whatsappDisplayNumber } from "@/app/site-content";
 import { BrandIconMark } from "@/components/brand/brand-icon-mark";
-import { WhatsAppButton } from "@/components/marketing/marketing-buttons";
+import { ContactButtons } from "@/components/marketing/marketing-buttons";
 import { AI_LOGIN_HREF, AI_START_FREE_HREF } from "@/lib/ai-auth-links";
 
 const aiNav = [
@@ -108,9 +108,12 @@ export function AiSiteFooter() {
               <Link href="/career">Careers</Link>
               <Link href="/contact">Contact</Link>
             </nav>
-            <WhatsAppButton
-              className="footer-inline-btn footer-whatsapp-btn mt-3"
-              label={whatsappDisplayNumber}
+            <ContactButtons
+              className="mt-3"
+              whatsappClassName="footer-inline-btn footer-whatsapp-btn"
+              whatsappLabel={whatsappDisplayNumber}
+              callClassName="footer-inline-btn"
+              callLabel="Call"
             />
           </div>
         </div>

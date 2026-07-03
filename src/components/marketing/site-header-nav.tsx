@@ -14,6 +14,8 @@ function navIsActive(pathname: string, href: string) {
 
 export function SiteHeaderNav({ variant }: { variant: "desktop" | "mobile" }) {
   const pathname = usePathname();
+  const isServicesSection =
+    pathname === "/services" || pathname.startsWith("/services/");
 
   if (variant === "mobile") {
     return (
@@ -45,7 +47,7 @@ export function SiteHeaderNav({ variant }: { variant: "desktop" | "mobile" }) {
     >
       {mainNav.map((item) => {
         const active = navIsActive(pathname, item.href);
-        if (item.href === "/services") {
+        if (item.href === "/services" && !isServicesSection) {
           return (
             <div className="site-nav-dropdown" key={item.href}>
               <Link

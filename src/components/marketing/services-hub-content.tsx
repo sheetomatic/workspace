@@ -27,8 +27,8 @@ import {
   SiteHeader,
 } from "@/app/components";
 import {
+  ContactButtons,
   MarketingLinkButton,
-  WhatsAppButton,
 } from "@/components/marketing/marketing-buttons";
 import { HrModuleCard } from "@/components/marketing/hr-module-card";
 import { ServicesSubNav } from "@/components/marketing/services-sub-nav";
@@ -128,7 +128,10 @@ export function ServicesHubContent() {
               </h1>
               <p className="services-hero-lead">{servicesHub.lead}</p>
               <div className="services-hero-actions marketing-actions centered">
-                <WhatsAppButton label={whatsappDisplayNumber} />
+                <ContactButtons
+                  whatsappLabel={whatsappDisplayNumber}
+                  callLabel="Call"
+                />
                 <MarketingLinkButton href="/products" variant="secondary">
                   <span>See products</span>
                   <ArrowRight size={18} aria-hidden />
@@ -408,9 +411,12 @@ export function ServicesHubContent() {
                 <CheckCircle2 size={18} aria-hidden />
                 {servicesPage.processCtaLead}
               </p>
-              <div className="contact-actions centered cta-stack">
-                <WhatsAppButton className="btn-block" label={whatsappDisplayNumber} />
-              </div>
+              <ContactButtons
+                className="contact-actions centered cta-stack"
+                whatsappClassName="btn-block"
+                whatsappLabel={whatsappDisplayNumber}
+                callClassName="btn-block"
+              />
             </div>
           </div>
         </section>

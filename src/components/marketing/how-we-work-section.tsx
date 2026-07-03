@@ -1,6 +1,6 @@
 import { howWeWork } from "@/app/sales-framework-content";
 import { ExecutionSnapshot } from "./execution-snapshot";
-import { WhatsAppButton } from "./marketing-buttons";
+import { ContactButtons } from "./marketing-buttons";
 import { whatsappDisplayNumber } from "@/app/site-content";
 import "./how-we-work.css";
 
@@ -52,7 +52,10 @@ export function HowWeWorkSection() {
                 <li key={principle}>{principle}</li>
               ))}
             </ul>
-            <WhatsAppButton label={whatsappDisplayNumber} />
+            <ContactButtons
+              whatsappLabel={whatsappDisplayNumber}
+              callLabel="Call now"
+            />
           </aside>
         </div>
       </div>

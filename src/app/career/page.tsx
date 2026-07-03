@@ -9,7 +9,7 @@ import {
 } from "../components";
 import { careerPage } from "../page-content";
 import { misTalentCareers } from "../marketing-content";
-import { WhatsAppButton } from "@/components/marketing/marketing-buttons";
+import { ContactButtons } from "@/components/marketing/marketing-buttons";
 import { marketingMetadata } from "@/lib/marketing-metadata";
 import "@/components/marketing/mis-careers.css";
 
@@ -42,8 +42,9 @@ export default function CareerPage() {
               <h2 className="mis-careers-title">{content.title}</h2>
               <p className="mis-careers-lead">{content.lead}</p>
               <div className="mis-careers-actions">
-                <WhatsAppButton
-                  label="Apply on WhatsApp"
+                <ContactButtons
+                  whatsappLabel="Apply on WhatsApp"
+                  callLabel="Call us"
                   message={content.whatsappApplyMessage}
                 />
               </div>

@@ -14,7 +14,7 @@ import {
   Workflow,
   type LucideIcon,
 } from "lucide-react";
-import { WhatsAppButton } from "./marketing-buttons";
+import { ContactButtons } from "./marketing-buttons";
 import { whatsappDisplayNumber } from "@/app/site-content";
 
 const productIconByName: Record<string, { icon: LucideIcon; tone: string }> = {
@@ -81,9 +81,12 @@ export function ProductsPageContent() {
           <p className="type-body-sm mx-auto max-w-xl text-slate-500">
             Scope and delivery timeline are confirmed on WhatsApp.
           </p>
-          <div className="contact-actions centered cta-stack mx-auto mt-6">
-            <WhatsAppButton className="btn-block" label={whatsappDisplayNumber} />
-          </div>
+          <ContactButtons
+            className="contact-actions centered cta-stack mx-auto mt-6"
+            whatsappClassName="btn-block"
+            whatsappLabel={whatsappDisplayNumber}
+            callClassName="btn-block"
+          />
         </div>
       </section>
 

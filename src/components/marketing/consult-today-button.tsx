@@ -1,5 +1,6 @@
 export {
   CallButton,
+  ContactButtons,
   ConsultTodayButton,
   ContactLinkButton,
   EmailButton,
