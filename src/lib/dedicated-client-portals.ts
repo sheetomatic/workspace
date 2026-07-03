@@ -12,18 +12,20 @@ export type DedicatedClientPortal = {
   name: string;
   allowedModules: WorkspaceModule[];
   defaultAppearance: WorkspaceAppearance;
+  /** Landing route after sign-in (TOPS-style dedicated product). */
+  homePath: string;
 };
 
 export const HINGORANI_PORTAL_SLUG = "hingorani";
 
 const HINGORANI_DEFAULT_APPEARANCE: WorkspaceAppearance = {
   preset: "royal",
-  primary: "#7c3aed",
-  sidebar: "#1e1b4b",
-  sidebarHover: "#312e81",
-  background: "#f5f3ff",
+  primary: "#4c1d95",
+  sidebar: "#1e1033",
+  sidebarHover: "#4c1d95",
+  background: "#f8f5ff",
   productName: "Hingorani Law Chamber",
-  brandName: "Hingorani",
+  brandName: "MACT Operations",
 };
 
 export const DEDICATED_CLIENT_PORTALS: Record<string, DedicatedClientPortal> = {
@@ -32,6 +34,7 @@ export const DEDICATED_CLIENT_PORTALS: Record<string, DedicatedClientPortal> = {
     name: "Hingorani Law Firm",
     allowedModules: ["CASES", "REPORTS"],
     defaultAppearance: HINGORANI_DEFAULT_APPEARANCE,
+    homePath: "/app/cases",
   },
 };
 
@@ -48,6 +51,10 @@ export function isDedicatedClientPortal(
   organizationSlug: string | null | undefined,
 ): boolean {
   return Boolean(getDedicatedClientPortal(organizationSlug));
+}
+
+export function dedicatedPortalHomePath(organizationSlug: string | null | undefined) {
+  return getDedicatedClientPortal(organizationSlug)?.homePath ?? null;
 }
 
 export function dedicatedPortalLoginUrl(slug: string) {

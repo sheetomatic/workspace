@@ -176,11 +176,27 @@ function WorkspaceBrandLogo({
   logoSrc,
   alt,
   light = false,
+  productName,
 }: {
   logoSrc: string;
   alt: string;
   light?: boolean;
+  productName?: string;
 }) {
+  if (!logoSrc?.trim()) {
+    const initials = (productName ?? alt)
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((word) => word[0]?.toUpperCase() ?? "")
+      .join("");
+    return (
+      <span aria-hidden className="logo-mark ws-brand-initials">
+        {initials || "?"}
+      </span>
+    );
+  }
+
   const src =
     !isCustomWorkspaceLogo(logoSrc) && light
       ? "/images/sheetomatic-icon-light.svg"
@@ -203,6 +219,7 @@ function WorkspaceBrandLogo({
 function WorkspaceSidebarBrand({
   appearance,
   organizationName,
+  dedicatedPortal = false,
 }: {
   appearance: WorkspaceAppearance & {
     logoSrc: string;
@@ -210,6 +227,7 @@ function WorkspaceSidebarBrand({
     lockupLightSrc: string;
   };
   organizationName: string;
+  dedicatedPortal?: boolean;
 }) {
   const custom = isCustomWorkspaceLogo(appearance.logoSrc);
 
@@ -222,6 +240,19 @@ function WorkspaceSidebarBrand({
           src={appearance.lockupSrc}
         />
         <span className="ws-sidebar-org-name">{appearance.brandName}</span>
+      </div>
+    );
+  }
+
+  if (dedicatedPortal) {
+    return (
+      <div className="saas-sidebar-brand saas-sidebar-brand--dedicated">
+        <strong className="ws-dedicated-product-name">
+          {appearance.productName}
+        </strong>
+        <span className="ws-sidebar-org-name">
+          {appearance.brandName || organizationName}
+        </span>
       </div>
     );
   }
@@ -255,6 +286,7 @@ export function SaasShell({
   organizationPlanLabel,
   appearance,
   hidePlanBadge = false,
+  isDedicatedPortal = false,
   children,
 }: {
   user: SessionUser;
@@ -267,6 +299,7 @@ export function SaasShell({
     lockupLightSrc: string;
   };
   hidePlanBadge?: boolean;
+  isDedicatedPortal?: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -304,27 +337,31 @@ export function SaasShell({
 
   const productName = resolvedAppearance.productName;
   const brandSubtitle = resolvedAppearance.brandName || user.organizationName;
-  const customBrand = isCustomWorkspaceLogo(resolvedAppearance.logoSrc);
+  const customBrand =
+    isCustomWorkspaceLogo(resolvedAppearance.logoSrc) || isDedicatedPortal;
 
   return (
     <div className="saas-app workspace-app">
       <header className="ws-mobile-shell-header">
         <div className="ws-mobile-shell-brand">
           <WorkspaceBrandLogo
-            alt="Sheetomatic"
-            light
+            alt={productName}
+            light={!isDedicatedPortal}
             logoSrc={resolvedAppearance.logoSrc}
+            productName={productName}
           />
           <div className="ws-mobile-shell-brand-text">
             <strong>{customBrand ? productName : user.organizationName}</strong>
             {customBrand ? <span>{brandSubtitle}</span> : null}
           </div>
         </div>
-        <OrganizationSwitcher
-          className="ws-mobile-shell-org-switcher"
-          currentSlug={user.organizationSlug}
-          organizations={organizations}
-        />
+        {!isDedicatedPortal ? (
+          <OrganizationSwitcher
+            className="ws-mobile-shell-org-switcher"
+            currentSlug={user.organizationSlug}
+            organizations={organizations}
+          />
+        ) : null}
         <div className="ws-mobile-shell-actions">
           <button
             aria-label="Sign out"
@@ -345,14 +382,17 @@ export function SaasShell({
         <div className="crm-sidebar-head">
           <WorkspaceSidebarBrand
             appearance={resolvedAppearance}
+            dedicatedPortal={isDedicatedPortal}
             organizationName={user.organizationName}
           />
         </div>
 
-        <OrganizationSwitcher
-          currentSlug={user.organizationSlug}
-          organizations={organizations}
-        />
+        {!isDedicatedPortal ? (
+          <OrganizationSwitcher
+            currentSlug={user.organizationSlug}
+            organizations={organizations}
+          />
+        ) : null}
 
         <nav className="saas-nav" aria-label="Workspace">
           {mainSections.map((section) => {

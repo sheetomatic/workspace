@@ -177,6 +177,42 @@ body:has(.workspace-app.saas-app) {
   gap: 6px;
 }
 
+.workspace-app .saas-sidebar-brand--dedicated {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding-top: 4px;
+}
+
+.workspace-app .ws-dedicated-product-name {
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  max-width: 168px;
+}
+
+.workspace-app .ws-brand-initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.login-page .login-logo-text {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
 .workspace-app .ws-sidebar-brand-lockup {
   display: block;
   width: auto;

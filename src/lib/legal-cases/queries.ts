@@ -7,7 +7,6 @@ import {
   type LegalSectionNumber,
 } from "@/lib/legal-cases/constants";
 import {
-  hasTrackableNextDate,
   trackableNextDateWhere,
 } from "@/lib/legal-cases/next-date";
 import {
@@ -450,7 +449,7 @@ export async function getLegalDashboardStats(
     running,
     closed,
     appealFiled,
-    nextDateRows,
+    nextDateCount,
     recentCases,
     statuses,
     stages,
@@ -472,9 +471,11 @@ export async function getLegalDashboardStats(
     prisma.legalCase.count({
       where: { ...scopedWhere, fileStatus: "APPEAL FILED" },
     }),
-    prisma.legalCase.findMany({
-      where: scopedWhere,
-      select: { nextDate: true },
+    prisma.legalCase.count({
+      where: {
+        ...scopedWhere,
+        AND: [trackableNextDateWhere()],
+      },
     }),
     prisma.legalCase.findMany({
       where: scopedWhere,
@@ -517,9 +518,7 @@ export async function getLegalDashboardStats(
     !admin && code ? buildMySectionCounts(orgId, code) : Promise.resolve([]),
   ]);
 
-  const hearingsSoon = nextDateRows.filter((row) =>
-    hasTrackableNextDate(row.nextDate),
-  ).length;
+  const hearingsSoon = nextDateCount;
 
   return {
     visibleTotal,

@@ -4,12 +4,11 @@ import {
   LegalCasesPageActions,
 } from "@/components/legal/legal-cases-action-bar";
 import { LegalRunningInsights } from "@/components/legal/legal-running-insights";
-import { LegalViewsNav } from "@/components/legal/legal-views-nav";
+import { LegalViewsNavLoader } from "@/components/legal/legal-views-nav-loader";
 import { PageHeader } from "@/components/saas/page-header";
 import { isLegalAdmin } from "@/lib/legal-cases/access";
 import { getLegalDashboardStats } from "@/lib/legal-cases/queries";
 import {
-  getLegalViewNavCounts,
   getRunningInsights,
 } from "@/lib/legal-cases/view-queries";
 import { requireSession } from "@/lib/require-session";
@@ -27,11 +26,19 @@ export default async function CasesPage() {
     : admin
       ? "Cases dashboard"
       : "My work";
-  const [stats, counts, runningInsights] = await Promise.all([
-    getLegalDashboardStats(user),
-    getLegalViewNavCounts(user),
-    admin ? getRunningInsights(user) : Promise.resolve(null),
-  ]);
+
+  let stats: Awaited<ReturnType<typeof getLegalDashboardStats>>;
+  let runningInsights: Awaited<ReturnType<typeof getRunningInsights>> | null = null;
+
+  try {
+    [stats, runningInsights] = await Promise.all([
+      getLegalDashboardStats(user),
+      admin ? getRunningInsights(user) : Promise.resolve(null),
+    ]);
+  } catch (error) {
+    console.error("[cases-page] dashboard load failed", error);
+    throw error;
+  }
 
   return (
     <div className="saas-page">
@@ -55,8 +62,8 @@ export default async function CasesPage() {
         ) : null}
       </div>
 
-      <Suspense fallback={null}>
-        <LegalViewsNav counts={counts} />
+      <Suspense fallback={<div className="legal-views-nav-skeleton" aria-hidden />}>
+        <LegalViewsNavLoader user={user} />
       </Suspense>
 
       {runningInsights ? <LegalRunningInsights insights={runningInsights} /> : null}

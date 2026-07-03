@@ -9,33 +9,55 @@ import { WorkspacePwaRegister } from "@/components/saas/workspace-pwa-register";
 import { WorkspacePendingApproval } from "@/components/saas/workspace-pending-approval";
 import { listOrganizationsForUser } from "@/lib/auth-orgs";
 import { prisma } from "@/lib/db";
-import {
-  getDedicatedClientPortal,
-} from "@/lib/dedicated-client-portals";
+import { getDedicatedClientPortal } from "@/lib/dedicated-client-portals";
 import {
   mergeWorkspaceAppearance,
   parseWorkspaceAppearance,
 } from "@/lib/workspace-appearance";
 import { ORG_PLAN_LABELS } from "@/lib/org-plan-presets";
 import { requireSession } from "@/lib/require-session";
-import { ensureSessionTenantHost } from "@/lib/tenant-host";
+import { ensureSessionTenantHost, getRequestTenantSlug } from "@/lib/tenant-host";
 
-export const metadata: Metadata = {
-  title: "Workspace | Sheetomatic",
-  description: "Client business control workspace for Sheetomatic customers.",
-  manifest: "/app/manifest.webmanifest",
-  appleWebApp: {
-    capable: true,
-    title: "Sheetomatic Workspace",
-    statusBarStyle: "default",
-  },
-  icons: {
-    apple: "/icons/workspace-icon-192.png?v=5",
-  },
-  other: {
-    "mobile-web-app-capable": "yes",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const tenantSlug = await getRequestTenantSlug();
+  const portal = getDedicatedClientPortal(tenantSlug);
+  if (portal) {
+    const productName = portal.defaultAppearance.productName ?? portal.name;
+    return {
+      title: `${productName} | Workspace`,
+      description: `${productName} client workspace.`,
+      manifest: "/app/manifest.webmanifest",
+      appleWebApp: {
+        capable: true,
+        title: productName,
+        statusBarStyle: "default",
+      },
+      icons: {
+        apple: "/icons/workspace-icon-192.png?v=5",
+      },
+      other: {
+        "mobile-web-app-capable": "yes",
+      },
+    };
+  }
+
+  return {
+    title: "Workspace | Sheetomatic",
+    description: "Client business control workspace for Sheetomatic customers.",
+    manifest: "/app/manifest.webmanifest",
+    appleWebApp: {
+      capable: true,
+      title: "Sheetomatic Workspace",
+      statusBarStyle: "default",
+    },
+    icons: {
+      apple: "/icons/workspace-icon-192.png?v=5",
+    },
+    other: {
+      "mobile-web-app-capable": "yes",
+    },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#111111",
@@ -113,6 +135,7 @@ export default async function AppLayout({
     organization.name,
     organization.logoUrl,
     organization.updatedAt.getTime(),
+    { dedicatedPortal: Boolean(dedicatedPortal) },
   );
 
   return (
@@ -122,6 +145,7 @@ export default async function AppLayout({
       <SaasShell
         appearance={appearance}
         hidePlanBadge={Boolean(dedicatedPortal)}
+        isDedicatedPortal={Boolean(dedicatedPortal)}
         organizationPlan={organization.plan}
         organizationPlanLabel={ORG_PLAN_LABELS[organization.plan]}
         organizations={portalOrganizations}

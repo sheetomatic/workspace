@@ -21,6 +21,27 @@ import { LEGAL_VIEWS, type LegalViewKey } from "@/lib/legal-cases/views";
 const VIEW_PAGE_SIZE = 100;
 const WORK_SECTIONS = [2, 3, 4, 5, 6, 7] as const;
 
+/** Lean row shape for in-memory legal view filters (nav counts, exports). */
+const LEGAL_VIEW_FILTER_SELECT = {
+  category: true,
+  fileStatus: true,
+  caseStage: true,
+  nextDate: true,
+  caseFiled: true,
+  sectionData: true,
+  s2Responsible: true,
+  s3Responsible: true,
+  s4Responsible: true,
+  s5Responsible: true,
+  s6Responsible: true,
+  s7Responsible: true,
+} as const;
+
+type LegalViewFilterRow = Pick<
+  LegalCase,
+  keyof typeof LEGAL_VIEW_FILTER_SELECT
+>;
+
 export type LegalViewListFilter = {
   category?: string;
   assignee?: string;
@@ -97,10 +118,10 @@ function sectionMatches(
 }
 
 function applyCommonViewFilters(
-  rows: LegalCase[],
+  rows: LegalViewFilterRow[],
   options: LegalViewListFilter,
   context: { admin: boolean; staffCode: string },
-): LegalCase[] {
+): LegalViewFilterRow[] {
   const assigneeCode = options.assignee?.trim()
     ? normalizeStaffCode(options.assignee)
     : null;
@@ -147,11 +168,11 @@ function applyCommonViewFilters(
 }
 
 function filterViewCases(
-  cases: LegalCase[],
+  cases: LegalViewFilterRow[],
   viewKey: LegalViewKey,
   options: LegalViewListFilter = {},
   context: { admin: boolean; staffCode: string } = { admin: true, staffCode: "" },
-): LegalCase[] {
+): LegalViewFilterRow[] {
   let rows = cases.filter((item) => matchesCategory(item, options.category ?? ""));
 
   switch (viewKey) {
@@ -254,6 +275,72 @@ function filterViewCases(
   rows = rows.filter((item) => item.fileStatus?.toUpperCase() === "RUNNING");
 
   return applyCommonViewFilters(rows, options, context);
+}
+
+/** Nav badge counts: same rules as filterViewCases with empty filters (no sort). */
+function matchesLegalViewNavCase(
+  item: LegalViewFilterRow,
+  viewKey: LegalViewKey,
+): boolean {
+  switch (viewKey) {
+    case "running":
+      return true;
+    case "as-due":
+      return sectionFieldMatches(item, "AGREEMENT", /as\s*due/i);
+    case "diary":
+      return Boolean(item.nextDate?.trim());
+    case "statement":
+      return stageMatchesStatement(item.caseStage?.toUpperCase() ?? "");
+    case "pf-due":
+      return stageMatchesPfDue(item.caseStage?.toUpperCase() ?? "");
+    case "order-deposits": {
+      const stage = item.caseStage?.toUpperCase() ?? "";
+      const status = item.fileStatus?.toUpperCase() ?? "";
+      return (
+        stage.includes("ORDER") ||
+        stage.includes("DEPOSIT") ||
+        status === "ORDER" ||
+        Boolean(sectionField(item, "ORDER DATE")) ||
+        parseAmount(sectionField(item, "AMOUNT")) > 0
+      );
+    }
+    case "simple-fracture": {
+      const categoryValue = item.category?.toUpperCase() ?? "";
+      const injury = sectionField(
+        item,
+        "INJURY DETAILS/ INCOME PROOF",
+      ).toUpperCase();
+      const isFracture =
+        /FRACTURE|^F$|^SF$|^SI$|^I$/.test(categoryValue) ||
+        injury.includes("FRACTURE");
+      const assignees = [
+        item.s2Responsible,
+        item.s3Responsible,
+        item.s4Responsible,
+        item.s5Responsible,
+        item.s6Responsible,
+        item.s7Responsible,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toUpperCase();
+      return isFracture && assignees.includes("AT");
+    }
+    case "new-cases": {
+      const status = item.fileStatus?.toUpperCase() ?? "";
+      const filed = item.caseFiled?.trim() ?? "";
+      return (
+        !filed ||
+        status.includes("TO BE FILED") ||
+        status.includes("NOT FILED") ||
+        item.caseStage?.toUpperCase().includes("FILE")
+      );
+    }
+    case "follow-fatal":
+      return true;
+    default:
+      return false;
+  }
 }
 
 export function buildLegalViewListQuery(
@@ -437,19 +524,36 @@ export async function getLegalViewNavCounts(
   user: SessionUser,
 ): Promise<LegalViewNavCounts> {
   const admin = isLegalAdmin(user);
-  const staffCode = userStaffCode(user);
-  const context = { admin, staffCode };
-
   const baseWhere = buildLegalListWhere(user, { mineOnly: !admin });
-  const cases = await prisma.legalCase.findMany({ where: baseWhere });
+
+  const [allCount, runningCases] = await Promise.all([
+    prisma.legalCase.count({ where: baseWhere }),
+    prisma.legalCase.findMany({
+      where: {
+        ...baseWhere,
+        fileStatus: { equals: "RUNNING", mode: "insensitive" },
+      },
+      select: LEGAL_VIEW_FILTER_SELECT,
+    }),
+  ]);
 
   const counts = {} as LegalViewNavCounts;
-  for (const view of LEGAL_VIEWS) {
-    if (view.key === "all") {
-      counts.all = cases.length;
-    } else {
-      counts[view.key] = filterViewCases(cases, view.key, {}, context).length;
+  counts.all = allCount;
+
+  const viewKeys = LEGAL_VIEWS.filter((view) => view.key !== "all").map(
+    (view) => view.key,
+  );
+  for (const key of viewKeys) {
+    counts[key] = 0;
+  }
+
+  for (const item of runningCases) {
+    for (const key of viewKeys) {
+      if (matchesLegalViewNavCase(item, key)) {
+        counts[key] += 1;
+      }
     }
   }
+
   return counts;
 }

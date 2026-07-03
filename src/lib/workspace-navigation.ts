@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import type { SessionUser } from "@/lib/auth";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
-import { isDedicatedClientPortal } from "@/lib/dedicated-client-portals";
+import { getDedicatedClientPortal, isDedicatedClientPortal } from "@/lib/dedicated-client-portals";
 
 export type WorkspaceNavItem = {
   href: string;
@@ -254,15 +254,6 @@ export function mobileWorkspaceNavItems(items: WorkspaceNavItem[]): WorkspaceNav
   });
 }
 
-const HINGORANI_ITEMS: WorkspaceNavItem[] = [
-  {
-    href: "/app/cases",
-    label: "Hingorani",
-    icon: Briefcase,
-    module: "CASES",
-    matchPrefix: "/app/cases",
-  },
-];
 
 export function getWorkspaceNavSections(params: {
   user: SessionUser;
@@ -271,11 +262,21 @@ export function getWorkspaceNavSections(params: {
   const { user, organizationSlug } = params;
 
   if (isDedicatedClientPortal(organizationSlug)) {
+    const portal = getDedicatedClientPortal(organizationSlug)!;
+    const mainLabel = portal.defaultAppearance.productName ?? portal.name;
     return [
       {
-        id: "hingorani",
-        label: "Hingorani",
-        items: HINGORANI_ITEMS,
+        id: portal.slug,
+        label: mainLabel,
+        items: [
+          {
+            href: portal.homePath,
+            label: "Dashboard",
+            icon: Briefcase,
+            module: "CASES",
+            matchPrefix: "/app/cases",
+          },
+        ],
       },
       {
         id: "reports",

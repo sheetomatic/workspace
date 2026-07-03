@@ -1,5 +1,6 @@
 import type { Role, WorkspaceModule } from "@prisma/client";
 import type { SessionUser } from "@/lib/auth";
+import { dedicatedPortalHomePath } from "@/lib/dedicated-client-portals";
 import { hasMinimumRole } from "@/lib/permissions";
 
 export const WORKSPACE_MODULES: WorkspaceModule[] = [
@@ -85,8 +86,13 @@ export function formatModuleList(modules: WorkspaceModule[]) {
 
 /** Default landing: staff → my work, managers → team board / lines. */
 export function resolveWorkspaceHomeHref(
-  user: Pick<SessionUser, "modules" | "isSuperAdmin" | "role">,
+  user: Pick<SessionUser, "modules" | "isSuperAdmin" | "role" | "organizationSlug">,
 ) {
+  const dedicatedHome = dedicatedPortalHomePath(user.organizationSlug);
+  if (dedicatedHome) {
+    return dedicatedHome;
+  }
+
   for (const module of WORKSPACE_MODULES) {
     if (hasWorkspaceModule(user, module)) {
       if (module === "TASKS") {

@@ -1,10 +1,11 @@
 import "@/components/saas/workspace-theme.css";
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { BrandIconMark } from "@/components/brand/brand-icon-mark";
 import { LoginForm } from "@/components/saas/login-form";
+import { WorkspaceThemeStyles } from "@/components/saas/workspace-theme-styles";
 import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
-import { siteBrand } from "@/app/site-content";
 import { prisma } from "@/lib/db";
 import { getDedicatedClientPortal } from "@/lib/dedicated-client-portals";
 import { getRequestTenantSlug } from "@/lib/tenant-host";
@@ -14,10 +15,22 @@ import {
   parseWorkspaceAppearance,
 } from "@/lib/workspace-appearance";
 
-export const metadata = {
-  title: "Sign in | Sheetomatic Workspace",
-  description: "Secure client login for Sheetomatic business control systems.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const tenantSlug = await getRequestTenantSlug();
+  const portal = getDedicatedClientPortal(tenantSlug);
+  if (portal) {
+    const productName = portal.defaultAppearance.productName ?? portal.name;
+    return {
+      title: `Sign in | ${productName}`,
+      description: `Secure sign in for ${productName}.`,
+    };
+  }
+
+  return {
+    title: "Sign in | Sheetomatic Workspace",
+    description: "Secure client login for Sheetomatic business control systems.",
+  };
+}
 
 export default async function LoginPage({
   searchParams,
@@ -47,8 +60,17 @@ export default async function LoginPage({
         tenantOrg.name,
         tenantOrg.logoUrl,
         tenantOrg.updatedAt.getTime(),
+        { dedicatedPortal: Boolean(dedicatedPortal) },
       )
-    : null;
+    : dedicatedPortal
+      ? mergeWorkspaceAppearance(
+          dedicatedPortal.defaultAppearance,
+          dedicatedPortal.name,
+          null,
+          Date.now(),
+          { dedicatedPortal: true },
+        )
+      : null;
   const isAiProduct = product === "ai";
   const isAiLogin = isAiProduct && intent === "login";
   const isAiSignup = isAiProduct && intent === "start";
@@ -57,22 +79,32 @@ export default async function LoginPage({
 
   return (
     <main className="login-page workspace-login">
+      {tenantAppearance ? (
+        <WorkspaceThemeStyles appearance={tenantAppearance} />
+      ) : null}
       <section className="login-brand">
-        <Link className="login-logo" href={isAiProduct ? "/ai" : "/"}>
-          <span className="logo-mark">
-            <BrandIconMark size={26} priority theme="light" />
-          </span>
-          <span>
-            {tenantAppearance?.productName && dedicatedPortal
-              ? tenantAppearance.productName
-              : isAiProduct
-                ? "Sheetomatic AI"
-                : "Sheetomatic"}
-          </span>
+        <Link
+          className="login-logo"
+          href={dedicatedPortal ? "/login" : isAiProduct ? "/ai" : "/"}
+        >
+          {dedicatedPortal ? (
+            <span className="login-logo-text">{tenantAppearance?.productName}</span>
+          ) : (
+            <>
+              <span className="logo-mark">
+                <BrandIconMark size={26} priority theme="light" />
+              </span>
+              <span>{isAiProduct ? "Sheetomatic AI" : "Sheetomatic"}</span>
+            </>
+          )}
         </Link>
         <div className="login-brand-copy">
           <p className="login-kicker">
-            {isAiProduct ? "WhatsApp AI workspace" : "Client workspace"}
+            {dedicatedPortal
+              ? "MACT case management"
+              : isAiProduct
+                ? "WhatsApp AI workspace"
+                : "Client workspace"}
           </p>
           <h1>
             {isAiLogin
@@ -154,8 +186,8 @@ export default async function LoginPage({
         {tenantSlug && !tenantOrg ? (
           <div className="login-card">
             <p className="login-error">
-              This company subdomain is not set up yet. Contact Sheetomatic
-              support if you expected access here.
+              This workspace is not set up yet. Contact your administrator if you
+              expected access here.
             </p>
             <p className="login-switch-mode">
               <Link href={workspaceLoginHref()}>Go to workspace login</Link>

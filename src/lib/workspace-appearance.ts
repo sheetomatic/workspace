@@ -87,6 +87,7 @@ export function mergeWorkspaceAppearance(
   organizationName: string,
   logoUrl?: string | null,
   logoVersion?: string | number,
+  options?: { dedicatedPortal?: boolean },
 ): WorkspaceAppearance & { logoSrc: string; lockupSrc: string; lockupLightSrc: string } {
   const preset =
     stored?.preset && listThemePresets().includes(stored.preset)
@@ -100,17 +101,22 @@ export function mergeWorkspaceAppearance(
       ? `${WORKSPACE_LOGO_API_PATH}?v=${logoVersion}`
       : null;
 
+  const dedicated = options?.dedicatedPortal ?? false;
+  const platformLogo = "/images/sheetomatic-icon.svg";
+  const platformLockup = siteBrand.logoSrc;
+  const platformLockupLight = "/images/sheetomatic-logo-light.svg";
+
   return {
     preset,
     primary: stored?.primary ?? presetColors.primary,
     sidebar: stored?.sidebar ?? presetColors.sidebar,
     sidebarHover: stored?.sidebarHover ?? presetColors.sidebarHover,
     background: stored?.background ?? presetColors.background,
-    productName: stored?.productName?.trim() || "Sheetomatic",
+    productName: stored?.productName?.trim() || organizationName,
     brandName: stored?.brandName?.trim() || organizationName,
-    logoSrc: customLogo ?? "/images/sheetomatic-icon.svg",
-    lockupSrc: customLogo ?? siteBrand.logoSrc,
-    lockupLightSrc: customLogo ?? "/images/sheetomatic-logo-light.svg",
+    logoSrc: customLogo ?? (dedicated ? "" : platformLogo),
+    lockupSrc: customLogo ?? (dedicated ? "" : platformLockup),
+    lockupLightSrc: customLogo ?? (dedicated ? "" : platformLockupLight),
   };
 }
 

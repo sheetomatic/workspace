@@ -51,13 +51,14 @@ export default async function SettingsPage() {
   const sheetsConnection = getGoogleSheetsConnectionStatus(spreadsheetId);
   const statusLabel =
     organization.status === "ACTIVE" ? "Active" : "Onboarding";
+  const isDedicatedPortal = isDedicatedClientPortal(user.organizationSlug);
   const appearance = mergeWorkspaceAppearance(
     parseWorkspaceAppearance(organization.workspaceAppearance),
     organization.name,
     organization.logoUrl,
     organization.updatedAt.getTime(),
+    { dedicatedPortal: isDedicatedPortal },
   );
-  const isDedicatedPortal = isDedicatedClientPortal(user.organizationSlug);
   const allowedModules = resolveDedicatedOrgAllowedModules(
     user.organizationSlug,
     organization.allowedModules,
