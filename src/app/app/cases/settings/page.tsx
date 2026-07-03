@@ -3,6 +3,7 @@ import { LegalCasesSettingsPanel } from "@/components/legal/legal-cases-settings
 import { PageHeader } from "@/components/saas/page-header";
 import { loadLegalCasesSettingsBackupMeta } from "@/app/app/cases/settings-actions";
 import { isLegalAdmin } from "@/lib/legal-cases/access";
+import { getDedicatedClientPortal } from "@/lib/dedicated-client-portals";
 import { requireSession } from "@/lib/require-session";
 import { prisma } from "@/lib/db";
 import "@/components/legal/legal-cases.css";
@@ -17,6 +18,8 @@ export default async function CasesSettingsPage() {
       </div>
     );
   }
+
+  const dedicatedPortal = getDedicatedClientPortal(user.organizationSlug);
 
   let organization: {
     legalSheetHeaderRow: number;
@@ -49,8 +52,12 @@ export default async function CasesSettingsPage() {
       </div>
 
       <PageHeader
-        description="Import, export, restore, and edit cases for the whole firm."
-        title="Global settings"
+        description={
+          dedicatedPortal
+            ? "Upload your master workbook, download backups, or edit individual case rows."
+            : "Import, export, restore, and edit cases for the whole firm."
+        }
+        title={dedicatedPortal ? "Import & export" : "Global settings"}
       />
 
       <LegalCasesSettingsPanel
