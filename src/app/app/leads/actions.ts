@@ -25,6 +25,7 @@ import {
 } from "@/lib/leads/categories";
 import { bridgeInboundLeadToFms } from "@/lib/leads/fms-bridge";
 import { testLeadsGoogleSheetAccess } from "@/lib/leads/google-sheets";
+import { pushLeadToGoogleSheet, syncLeadsTwoWay } from "@/lib/leads/google-sheets-export";
 import { ensureLeadConnections } from "@/lib/leads/ingest";
 import { buildGoogleSheetsLeadConfigFromInput } from "@/lib/leads/sheet-config";
 import {
@@ -52,6 +53,13 @@ import { inferLeadStageFromRequirement } from "@/lib/leads/stage-ai";
 import { leadStatusLabel } from "@/lib/leads/status-labels";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
+
+async function exportLeadToGoogleSheetAfterSave(
+  organizationId: string,
+  leadId: string,
+) {
+  await pushLeadToGoogleSheet(organizationId, leadId);
+}
 
 export async function assignInboundLead(leadId: string, assigneeUserId: string | null) {
   const user = await requireSession(undefined, { module: "FMS" });
@@ -97,6 +105,8 @@ export async function updateInboundLeadStatus(leadId: string, status: InboundLea
     createdByUserId: user.id,
   });
 
+  await exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
+
   revalidatePath("/app/leads");
   return { ok: true };
 }
@@ -136,6 +146,8 @@ export async function updateInboundLeadCategory(leadId: string, category: string
     createdByUserId: user.id,
   });
 
+  await exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
+
   revalidatePath("/app/leads");
   return { ok: true };
 }
@@ -145,6 +157,9 @@ export async function updateInboundLeadDetails(params: {
   name: string;
   phone: string;
   email: string;
+  company: string;
+  address: string;
+  zipCode: string;
   requirement: string;
   discussionNotes: string;
   quotationValue: string;
@@ -181,6 +196,9 @@ export async function updateInboundLeadDetails(params: {
       name: params.name.trim() || null,
       phone: params.phone.trim() || null,
       email: params.email.trim() || null,
+      company: params.company.trim() || null,
+      address: params.address.trim() || null,
+      zipCode: params.zipCode.trim() || null,
       requirement: params.requirement.trim() || null,
       discussionNotes: params.discussionNotes.trim() || null,
       category,
@@ -199,6 +217,8 @@ export async function updateInboundLeadDetails(params: {
     body: "Lead details updated",
     createdByUserId: user.id,
   });
+
+  await exportLeadToGoogleSheetAfterSave(user.organizationId, params.leadId);
 
   revalidatePath("/app/leads");
   return { ok: true };
@@ -251,6 +271,8 @@ export async function addInboundLeadNote(leadId: string, note: string) {
     body: trimmed,
     createdByUserId: user.id,
   });
+
+  await exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
 
   revalidatePath("/app/leads");
   return { ok: true };
@@ -316,6 +338,8 @@ export async function scheduleInboundLeadFollowUp(params: {
     createdByUserId: user.id,
   });
 
+  await exportLeadToGoogleSheetAfterSave(user.organizationId, params.leadId);
+
   revalidatePath("/app/leads");
   return { ok: true };
 }
@@ -379,23 +403,42 @@ export async function syncLeadChannelNow(channel: LeadSourceChannel) {
     return { ok: false, message: "This connector is coming soon." };
   }
 
-  const result = await pullLeadsFromConnection({
-    organizationId: user.organizationId,
-    channel,
-  });
+  const result =
+    channel === "GOOGLE_SHEETS"
+      ? await syncLeadsTwoWay(user.organizationId)
+      : await pullLeadsFromConnection({
+          organizationId: user.organizationId,
+          channel,
+        });
 
   revalidatePath("/app/leads");
   revalidatePath("/app/leads/settings");
 
   if (!result.ok) {
-    return { ok: false, message: formatLeadSyncError(result.reason) };
+    return {
+      ok: false,
+      message:
+        result.reason === "export_failed" && "message" in result && result.message
+          ? result.message
+          : formatLeadSyncError(result.reason),
+    };
   }
+
+  const exported =
+    "exported" in result && typeof result.exported === "number"
+      ? result.exported
+      : 0;
+  const baseMessage = formatLeadSyncCounts(result.counts, result.partial);
+  const message =
+    exported > 0
+      ? `${baseMessage} · Pushed ${exported} row${exported === 1 ? "" : "s"} to sheet`
+      : baseMessage;
 
   return {
     ok: true,
     imported: result.imported,
     counts: result.counts,
-    message: formatLeadSyncCounts(result.counts, result.partial),
+    message,
   };
 }
 
@@ -641,6 +684,8 @@ export async function updateLeadMeetingNotes(leadId: string, meetingNotes: strin
     });
   }
 
+  await exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
+
   revalidatePath("/app/leads");
   return { ok: true };
 }
@@ -661,6 +706,8 @@ export async function updateLeadProjectStatus(
       ...(projectStatus === "IN_PROGRESS" ? { status: "PROJECT_ACTIVE" as const } : {}),
     },
   });
+
+  await exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
 
   revalidatePath("/app/leads");
   return { ok: true };

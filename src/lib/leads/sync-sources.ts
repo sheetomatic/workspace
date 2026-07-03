@@ -282,6 +282,7 @@ async function pullGoogleSheetsLeads(
           nextFollowUpAt: row.nextFollowUpAt ?? undefined,
           status: row.status,
           rawPayload: row.raw as Prisma.InputJsonValue,
+          sheetPull: true,
         });
         counts.processed += 1;
         if (result.created) {

@@ -57,6 +57,8 @@ export function formatLeadSyncError(reason: string) {
       return "Add a spreadsheet URL before syncing.";
     case "missing_api_url":
       return "API URL is not configured for this connector.";
+    case "export_failed":
+      return "Imported from sheet but could not push CRM updates back to Google Sheets.";
     default:
       return reason;
   }

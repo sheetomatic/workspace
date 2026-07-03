@@ -62,7 +62,7 @@ export function LeadsSettingsPanel({
             ← Back to leads
           </Link>
           <h1>Google Sheets setup</h1>
-          <p>Connect your form responses sheet. Sync runs automatically every 15 minutes.</p>
+          <p>Two-way sync with your form responses sheet — new rows import in and CRM edits push back out. Auto sync every 15 minutes.</p>
         </div>
       </header>
 
@@ -227,7 +227,7 @@ function GoogleSheetsConnectionCard({
       </div>
 
       <p className="leads-settings-sync-line">
-        Last sync: <strong>{lastSyncLabel}</strong> · Auto every 15 min
+        Last sync: <strong>{lastSyncLabel}</strong> · Two-way auto sync every 15 min
       </p>
       <p className="leads-machine-muted">
         Service account: {sheetsAuthConfigured ? "configured on server" : "missing on server"}

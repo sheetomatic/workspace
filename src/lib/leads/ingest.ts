@@ -47,6 +47,8 @@ export type LeadIngestInput = {
   skipConnectionSetup?: boolean;
   /** Known connection row — avoids a lookup per lead during bulk sheet sync. */
   connectionId?: string | null;
+  /** When true, empty sheet cells must not wipe CRM fields already saved in the app. */
+  sheetPull?: boolean;
   actorUserId?: string;
 };
 
@@ -205,27 +207,47 @@ export async function ingestInboundLead(input: LeadIngestInput) {
   const resolvedStatus =
     input.status ?? (isNewLead ? aiSuggestedStatus : lead?.status ?? "NEW");
 
+  const pickString = (
+    incoming: string | null | undefined,
+    existing: string | null | undefined,
+  ) => {
+    const trimmed = incoming?.trim();
+    if (trimmed) {
+      return trimmed;
+    }
+    if (input.sheetPull && existing?.trim()) {
+      return existing.trim();
+    }
+    return trimmed || undefined;
+  };
+
   const data = {
     connectionId: connection?.id ?? null,
-    name: input.name?.trim() || undefined,
-    phone: phone ?? undefined,
-    email: input.email?.trim() || undefined,
-    city: input.city?.trim() || undefined,
-    company: input.company?.trim() || undefined,
-    address: input.address?.trim() || undefined,
-    zipCode: input.zipCode?.trim() || undefined,
-    requirement,
-    sourceDetail: input.sourceDetail?.trim() || undefined,
-    meetingNotes: input.meetingNotes?.trim() || undefined,
-    callingStatus: input.callingStatus ?? undefined,
+    name: pickString(input.name, lead?.name),
+    phone: phone ?? (input.sheetPull ? lead?.phone ?? undefined : undefined),
+    email: pickString(input.email, lead?.email),
+    city: pickString(input.city, lead?.city),
+    company: pickString(input.company, lead?.company),
+    address: pickString(input.address, lead?.address),
+    zipCode: pickString(input.zipCode, lead?.zipCode),
+    requirement: pickString(input.requirement, lead?.requirement) ?? requirement,
+    sourceDetail: pickString(input.sourceDetail, lead?.sourceDetail),
+    meetingNotes: pickString(input.meetingNotes, lead?.meetingNotes),
+    callingStatus:
+      input.callingStatus ??
+      (input.sheetPull ? lead?.callingStatus : undefined),
     category,
-    pipeValue,
+    pipeValue: input.sheetPull ? lead?.pipeValue ?? pipeValue : pipeValue,
+    quotationValue: input.sheetPull ? lead?.quotationValue : undefined,
+    discussionNotes: input.sheetPull ? lead?.discussionNotes : undefined,
     aiSuggestedStatus,
     status: resolvedStatus,
-    assignedToId: input.assignedToId ?? undefined,
-    nextFollowUpAt: input.nextFollowUpAt ?? undefined,
-    capturedAt: input.capturedAt ?? undefined,
-    waContactId: input.waContactId ?? undefined,
+    assignedToId: input.sheetPull ? lead?.assignedToId ?? undefined : input.assignedToId ?? undefined,
+    nextFollowUpAt:
+      input.nextFollowUpAt ??
+      (input.sheetPull ? lead?.nextFollowUpAt ?? undefined : undefined),
+    capturedAt: input.capturedAt ?? (input.sheetPull ? lead?.capturedAt ?? undefined : undefined),
+    waContactId: input.waContactId ?? (input.sheetPull ? lead?.waContactId ?? undefined : undefined),
     rawPayload: input.rawPayload,
     externalId: externalId ?? undefined,
   };

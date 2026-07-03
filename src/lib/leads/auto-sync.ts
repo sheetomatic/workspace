@@ -1,5 +1,5 @@
 import { withDbRetry } from "@/lib/db";
-import { pullLeadsFromConnection } from "@/lib/leads/sync-sources";
+import { syncLeadsTwoWay } from "@/lib/leads/google-sheets-export";
 import { readSheetSyncProgress } from "@/lib/leads/sheet-sync-progress";
 
 const AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000;
@@ -27,10 +27,7 @@ export async function maybeAutoSyncGoogleSheets(organizationId: string) {
     return { synced: false as const, reason: "fresh" as const };
   }
 
-  const result = await pullLeadsFromConnection({
-    organizationId,
-    channel: "GOOGLE_SHEETS",
-  });
+  const result = await syncLeadsTwoWay(organizationId);
 
   return {
     synced: result.ok,

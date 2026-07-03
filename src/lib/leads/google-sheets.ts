@@ -14,7 +14,7 @@ import {
   type GoogleSheetsLeadConfig,
 } from "@/lib/leads/sheet-config";
 
-const HEADER_ALIASES = {
+export const HEADER_ALIASES = {
   externalId: ["id", "lead id", "lead_id", "s.no", "s no", "sr no", "sr. no", "row"],
   capturedAt: [
     "date",
