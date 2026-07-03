@@ -18,7 +18,10 @@ import {
   leadWhatsAppHref,
 } from "@/lib/leads/contact-links";
 import {
-  DEFAULT_QUOTATION_PAYMENT_TERMS,
+  computeQuotationEndDate,
+  formatQuotationProjectDate,
+  isoDateInputValue,
+  paymentTermsForRequestType,
   quotationStatusLabel,
 } from "@/lib/leads/quotation-content";
 import { QuotationPrintView } from "@/components/saas/quotation-print-view";
@@ -176,10 +179,13 @@ export function QuotationBuilderPanel({
   startTransition: (callback: () => Promise<void>) => void;
 }) {
   const [quoteType, setQuoteType] = useState<QuotationRequestType>("PROPOSAL");
+  const [quoteStartDate, setQuoteStartDate] = useState(() => isoDateInputValue());
   const [quoteDuration, setQuoteDuration] = useState("30");
   const [quoteNotes, setQuoteNotes] = useState("");
   const [scopeNotes, setScopeNotes] = useState(leadRequirement ?? "");
-  const [paymentTerms, setPaymentTerms] = useState(DEFAULT_QUOTATION_PAYMENT_TERMS);
+  const [paymentTerms, setPaymentTerms] = useState(() =>
+    paymentTermsForRequestType("PROPOSAL"),
+  );
   const [advanceRequired, setAdvanceRequired] = useState("");
   const [billCompany, setBillCompany] = useState(leadCompany ?? "");
   const [billAddress, setBillAddress] = useState(leadAddress ?? "");
@@ -215,6 +221,15 @@ export function QuotationBuilderPanel({
       }, 0),
     [validLines],
   );
+
+  const projectEndDate = useMemo(() => {
+    const durationDays = Number.parseInt(quoteDuration, 10);
+    const start = new Date(`${quoteStartDate}T12:00:00`);
+    if (Number.isNaN(start.getTime()) || !Number.isFinite(durationDays)) {
+      return null;
+    }
+    return computeQuotationEndDate(start, durationDays);
+  }, [quoteDuration, quoteStartDate]);
 
   const previewQuote = quotations.find((item) => item.id === previewId) ?? null;
   const isLocked = (quote: QuotationRow) =>
@@ -275,18 +290,40 @@ export function QuotationBuilderPanel({
             Type
             <select
               value={quoteType}
-              onChange={(e) => setQuoteType(e.target.value as QuotationRequestType)}
+              onChange={(e) => {
+                const next = e.target.value as QuotationRequestType;
+                setQuoteType(next);
+                setPaymentTerms(paymentTermsForRequestType(next));
+              }}
             >
               <option value="PROPOSAL">Proposal</option>
               <option value="INVOICE">Invoice</option>
             </select>
           </label>
           <label>
-            Duration (days)
+            Project start
+            <input
+              type="date"
+              value={quoteStartDate}
+              onChange={(e) => setQuoteStartDate(e.target.value)}
+            />
+          </label>
+          <label>
+            No. of days
             <input
               type="number"
+              min="0"
               value={quoteDuration}
               onChange={(e) => setQuoteDuration(e.target.value)}
+            />
+          </label>
+          <label>
+            End date
+            <input
+              type="text"
+              readOnly
+              value={formatQuotationProjectDate(projectEndDate)}
+              className="leads-quote-end-date"
             />
           </label>
           <label>
@@ -433,6 +470,7 @@ export function QuotationBuilderPanel({
                 const result = await createLeadQuotation({
                   leadId,
                   requestType: quoteType,
+                  projectStartDate: quoteStartDate,
                   durationDays: quoteDuration,
                   notes: quoteNotes,
                   scopeNotes,

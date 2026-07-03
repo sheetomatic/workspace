@@ -1302,6 +1302,12 @@
   grid-column: 1 / -1;
 }
 
+.leads-quote-end-date {
+  background: #f8fafc;
+  color: #0f172a;
+  cursor: default;
+}
+
 .leads-quote-lines-label {
   margin: 0 0 0.35rem;
   font-size: 0.82rem;

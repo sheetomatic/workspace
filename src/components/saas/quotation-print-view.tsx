@@ -4,9 +4,10 @@ import type { ReactNode } from "react";
 import { formatInr } from "@/lib/leads/categories";
 import { formatInrInWords } from "@/lib/inr-words";
 import {
-  DEFAULT_QUOTATION_TERMS,
   QUOTATION_FOOTER_CONTACT,
+  formatQuotationProjectDate,
   formatQuotationTermsBlock,
+  quotationTermsForRequestType,
 } from "@/lib/leads/quotation-content";
 import { siteBrand } from "@/app/site-content";
 
@@ -169,18 +170,13 @@ export function QuotationPrintView({
 
         <section className="quotation-print-timeline">
           <p>
-            Project start:{" "}
-            {quotation.projectStartDate
-              ? new Date(quotation.projectStartDate).toLocaleDateString("en-IN")
-              : "—"}
+            Project start: {formatQuotationProjectDate(quotation.projectStartDate)}
           </p>
-          <p>Duration: {quotation.durationDays ? `${quotation.durationDays} days` : "—"}</p>
           <p>
-            End date:{" "}
-            {quotation.endDate
-              ? new Date(quotation.endDate).toLocaleDateString("en-IN")
-              : "—"}
+            Duration:{" "}
+            {quotation.durationDays != null ? `${quotation.durationDays} days` : "—"}
           </p>
+          <p>End date: {formatQuotationProjectDate(quotation.endDate)}</p>
           {quotation.advanceRequired ? (
             <p>
               Advance required: <strong>{formatInr(quotation.advanceRequired)}</strong>
@@ -204,7 +200,11 @@ export function QuotationPrintView({
 
         <section className="quotation-print-terms">
           <h3>Terms &amp; conditions</h3>
-          <pre>{formatQuotationTermsBlock(DEFAULT_QUOTATION_TERMS)}</pre>
+          <pre>
+            {formatQuotationTermsBlock(
+              quotationTermsForRequestType(quotation.requestType),
+            )}
+          </pre>
           <p className="quotation-print-terms-link">
             Full terms: sheetomatic.com/terms
           </p>
@@ -297,7 +297,14 @@ export function QuotationPrintView({
         }
         .quotation-print-client,
         .quotation-print-scope,
-        .quotation-print-timeline,
+        .quotation-print-timeline {
+          margin-bottom: 1rem;
+          font-size: 0.95rem;
+          line-height: 1.65;
+        }
+        .quotation-print-timeline p {
+          margin: 0;
+        }
         .quotation-print-notes,
         .quotation-print-terms {
           margin-bottom: 1rem;

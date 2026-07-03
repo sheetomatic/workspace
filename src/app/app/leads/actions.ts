@@ -35,7 +35,9 @@ import { pullLeadsFromConnection } from "@/lib/leads/sync-sources";
 import { ingestInboundLead } from "@/lib/leads/ingest";
 import { sendPlainEmail } from "@/lib/integrations/email";
 import {
-  DEFAULT_QUOTATION_PAYMENT_TERMS,
+  computeQuotationEndDate,
+  parseQuotationStartDate,
+  paymentTermsForRequestType,
 } from "@/lib/leads/quotation-content";
 import {
   buildQuotationPublicUrl,
@@ -772,6 +774,7 @@ export async function addLeadOfferedService(params: {
 export async function createLeadQuotation(params: {
   leadId: string;
   requestType: QuotationRequestType;
+  projectStartDate?: string;
   durationDays?: string;
   notes?: string;
   scopeNotes?: string;
@@ -849,10 +852,8 @@ export async function createLeadQuotation(params: {
   const quotationNumber = await nextQuotationNumber(user.organizationId);
   const durationDays = Number.parseInt(params.durationDays ?? "", 10);
   const quotationDate = new Date();
-  const projectStartDate = quotationDate;
-  const endDate = Number.isFinite(durationDays)
-    ? new Date(projectStartDate.getTime() + durationDays * 86400000)
-    : null;
+  const projectStartDate = parseQuotationStartDate(params.projectStartDate, quotationDate);
+  const endDate = computeQuotationEndDate(projectStartDate, durationDays);
 
   const advanceRequired = Number.parseFloat(params.advanceRequired ?? "");
   const quotation = await prisma.inboundLeadQuotation.create({
@@ -875,7 +876,8 @@ export async function createLeadQuotation(params: {
       advanceRequired: Number.isFinite(advanceRequired) ? advanceRequired : null,
       scopeNotes: params.scopeNotes?.trim() || lead.requirement || null,
       paymentTerms:
-        params.paymentTerms?.trim() || DEFAULT_QUOTATION_PAYMENT_TERMS,
+        params.paymentTerms?.trim() ||
+        paymentTermsForRequestType(params.requestType),
       notes: params.notes?.trim() || null,
       shareToken: createQuotationShareToken(),
       createdByUserId: user.id,
