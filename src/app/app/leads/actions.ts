@@ -31,6 +31,7 @@ import { buildGoogleSheetsLeadConfigFromInput } from "@/lib/leads/sheet-config";
 import {
   formatLeadSyncCounts,
   formatLeadSyncError,
+  type LeadSyncCounts,
 } from "@/lib/leads/sync-messages";
 import { pullLeadsFromConnection } from "@/lib/leads/sync-sources";
 import { ingestInboundLead } from "@/lib/leads/ingest";
@@ -393,7 +394,13 @@ export async function bridgeLeadToFmsAction(leadId: string) {
   return { ok: true, instanceId: result.instanceId };
 }
 
-export async function syncLeadChannelNow(channel: LeadSourceChannel) {
+export type LeadSyncActionResult =
+  | { ok: true; message: string; imported: number; counts: LeadSyncCounts }
+  | { ok: false; message: string };
+
+export async function syncLeadChannelNow(
+  channel: LeadSourceChannel,
+): Promise<LeadSyncActionResult> {
   const user = await requireSession(undefined, { module: "FMS" });
   if (!hasMinimumRole(user.role, "ADMIN")) {
     return { ok: false, message: "Admin only." };
@@ -415,12 +422,16 @@ export async function syncLeadChannelNow(channel: LeadSourceChannel) {
   revalidatePath("/app/leads/settings");
 
   if (!result.ok) {
+    const exportMessage =
+      result.reason === "export_failed" &&
+      "message" in result &&
+      typeof result.message === "string"
+        ? result.message
+        : null;
+
     return {
       ok: false,
-      message:
-        result.reason === "export_failed" && "message" in result && result.message
-          ? result.message
-          : formatLeadSyncError(result.reason),
+      message: exportMessage ?? formatLeadSyncError(result.reason),
     };
   }
 
