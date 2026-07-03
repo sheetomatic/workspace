@@ -1,40 +1,25 @@
 import Link from "next/link";
-import { ContactButtons } from "@/components/marketing/marketing-buttons";
 import {
-  taskWhatsappPlans,
-  formatInr,
-} from "@/app/product-content";
+  ContactButtons,
+} from "@/components/marketing/marketing-buttons";
 import { WhatsappPlansGrid } from "@/components/marketing/whatsapp-plans-grid";
-import { whatsappPlansPage } from "@/lib/content/whatsapp-plans-content";
+import {
+  officialWhatsappPlans,
+  whatsappPlansPage,
+  type OfficialWhatsappPlanCard,
+} from "@/lib/content/whatsapp-plans-content";
 
-const officialPlans = [
-  {
-    id: "task-on-whatsapp",
-    category: "Official",
-    badge: "Live",
-    name: "Task on WhatsApp",
-    meta: "Minimum 8 users",
-    price: "₹2,400",
-    duration: " / user / year",
-    note: "Voice or text task delegation, assignee alerts, and task board access.",
-    href: "https://wa.me/919329103106?text=Hi%20Sheetomatic%2C%20I%20want%20Task%20on%20WhatsApp%20pricing%20for%20my%20team.",
-  },
-  {
-    id: "ai-fms",
-    category: "Official",
-    badge: "Custom",
-    name: "AI FMS",
-    meta: "Price on request",
-    price: "Custom",
-    duration: " / quote",
-    note: "Official WhatsApp with AI replies, CRM, inbox, lead capture, and FMS workflows.",
-    href: "https://wa.me/919329103106?text=Hi%20Sheetomatic%2C%20I%20want%20pricing%20for%20AI%20FMS%20on%20official%20WhatsApp.",
-  },
-] as const;
+function officialPlanPrice(plan: OfficialWhatsappPlanCard) {
+  return String(plan.price);
+}
 
 export function WhatsappPlansShowcase() {
   const page = whatsappPlansPage;
   const waMessage = "Hi Sheetomatic, I want to subscribe to WhatsApp API plan.";
+  const panelUrl = "https://wa.sheetomatic.com";
+  const panelSignupUrl = "https://wa.sheetomatic.com/Signup";
+  const monthlyOfficialPlans = officialWhatsappPlans.plans.filter((plan) => plan.cycle === "monthly");
+  const yearlyOfficialPlans = officialWhatsappPlans.plans.filter((plan) => plan.cycle === "yearly");
 
   return (
     <>
@@ -70,44 +55,134 @@ export function WhatsappPlansShowcase() {
       <section className="section wa-plans-official-surface pb-16">
         <div className="mx-auto max-w-6xl px-5 sm:px-8">
           <div className="wa-plans-section-head">
-            <h2>Official WhatsApp Business plans from our panel</h2>
+            <h2>Official WhatsApp plans from our panel</h2>
             <p>
-              Only the plans we actively offer on `wa.sheetomatic.com`, shown in the
-              same quick-scan style as the unofficial recharge cards.
+              Monthly and yearly panel plans are shown here exactly as the current
+              `wa.sheetomatic.com` catalog structure.
             </p>
           </div>
 
-          <div className="wa-plans-grid">
-            {officialPlans.map((plan) => (
-              <a
-                key={plan.id}
-                className={`wa-plan-card wa-plan-card-link${
-                  plan.id === "task-on-whatsapp" ? " wa-plan-card-highlight" : ""
-                }`}
-                href={plan.href}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                <div className="wa-plan-card-top">
-                  <span className="wa-plan-category">{plan.category}</span>
-                  <span className="wa-plan-badge">{plan.badge}</span>
+          <div className="wa-official-tabs-shell">
+            <fieldset className="wa-official-tabs-head" aria-label="Official WhatsApp plan billing">
+              <legend className="sr-only">Official WhatsApp plan billing</legend>
+              <input
+                className="wa-official-tab-input"
+                id="wa-official-cycle-monthly"
+                type="radio"
+                name="wa-official-cycle"
+                defaultChecked
+              />
+              <label className="wa-official-tab" htmlFor="wa-official-cycle-monthly">
+                {officialWhatsappPlans.tabs[0].label}
+              </label>
+              <input
+                className="wa-official-tab-input"
+                id="wa-official-cycle-yearly"
+                type="radio"
+                name="wa-official-cycle"
+              />
+              <label className="wa-official-tab" htmlFor="wa-official-cycle-yearly">
+                {officialWhatsappPlans.tabs[1].label}
+              </label>
+            </fieldset>
+
+            <div className="wa-official-panels">
+              <div className="wa-official-panel" data-cycle="monthly">
+                <div className="wa-official-cards">
+                  {monthlyOfficialPlans.map((plan) => (
+                    <article key={plan.id} className="wa-plan-card wa-official-plan-card">
+                      <div className="wa-plan-card-top">
+                        <span className="wa-plan-category">Official API</span>
+                        <span className="wa-plan-badge">Monthly</span>
+                      </div>
+                      <h3 className="wa-plan-name">{plan.title}</h3>
+                      <p className="wa-plan-meta">Validity: {plan.validityLabel}</p>
+                      {plan.planId ? (
+                        <p className="wa-plan-meta wa-official-plan-id">Plan ID: {plan.planId}</p>
+                      ) : null}
+                      <p className="wa-plan-price" aria-label={`Price ${plan.price}`}>
+                        ₹{officialPlanPrice(plan)}
+                      </p>
+                      <div className="wa-official-card-actions">
+                        <a
+                          className="wa-official-apply"
+                          href={panelUrl}
+                          rel="noopener noreferrer"
+                          target="_blank"
+                        >
+                          Apply Plan
+                        </a>
+                      </div>
+                      <ul className="wa-official-features">
+                        {plan.features.map((feature) => (
+                          <li key={feature}>{feature}</li>
+                        ))}
+                      </ul>
+                    </article>
+                  ))}
                 </div>
-                <h3 className="wa-plan-name">{plan.name}</h3>
-                <p className="wa-plan-meta">{plan.meta}</p>
-                <p className="wa-plan-price">
-                  {plan.price}
-                  <span className="wa-plan-duration">{plan.duration}</span>
-                </p>
-                <p className="wa-plan-meta">{plan.note}</p>
-              </a>
-            ))}
+              </div>
+
+              <div className="wa-official-panel" data-cycle="yearly">
+                <div className="wa-official-cards">
+                  {yearlyOfficialPlans.map((plan) => (
+                    <article key={plan.id} className="wa-plan-card wa-official-plan-card">
+                      <div className="wa-plan-card-top">
+                        <span className="wa-plan-category">Official API</span>
+                        <span className="wa-plan-badge">Yearly</span>
+                      </div>
+                      <h3 className="wa-plan-name">{plan.title}</h3>
+                      <p className="wa-plan-meta">Validity: {plan.validityLabel}</p>
+                      {plan.planId ? (
+                        <p className="wa-plan-meta wa-official-plan-id">Plan ID: {plan.planId}</p>
+                      ) : null}
+                      <p className="wa-plan-price" aria-label={`Price ${plan.price}`}>
+                        ₹{officialPlanPrice(plan)}
+                      </p>
+                      <div className="wa-official-card-actions">
+                        <a
+                          className="wa-official-apply"
+                          href={panelUrl}
+                          rel="noopener noreferrer"
+                          target="_blank"
+                        >
+                          Apply Plan
+                        </a>
+                      </div>
+                      <ul className="wa-official-features">
+                        {plan.features.map((feature) => (
+                          <li key={feature}>{feature}</li>
+                        ))}
+                      </ul>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
 
           <p className="wa-plan-official-note">
-            Task plan is {formatInr(taskWhatsappPlans[0]!.perUserAnnualInr ?? 2400)}
-            /user/year with a minimum of 8 users. AI FMS is quoted based on scope,
-            message volume, and rollout support.
+            Open `wa.sheetomatic.com` to apply one of these official plans, or create a
+            panel account below if you are signing up for the first time.
           </p>
+          <div className="wa-plan-official-actions">
+            <a
+              className="btn-cta btn-secondary wa-plan-official-btn"
+              href={panelUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Open wa.sheetomatic.com
+            </a>
+            <a
+              className="btn-cta btn-primary wa-plan-official-btn"
+              href={panelSignupUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Create panel account
+            </a>
+          </div>
         </div>
       </section>
 

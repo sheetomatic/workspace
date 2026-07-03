@@ -186,6 +186,139 @@
   transform: translateY(-1px);
 }
 
+.wa-official-tabs-shell {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.wa-official-tabs-head {
+  margin: 0 auto;
+  padding: 0.25rem;
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 12px 32px rgba(37, 99, 235, 0.08);
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.15rem;
+  min-width: min(100%, 360px);
+}
+
+.wa-official-tab-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.wa-official-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 1.1rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.wa-official-tabs-head:has(#wa-official-cycle-monthly:checked) label[for="wa-official-cycle-monthly"],
+.wa-official-tabs-head:has(#wa-official-cycle-yearly:checked) label[for="wa-official-cycle-yearly"] {
+  background: linear-gradient(180deg, #2f7df6 0%, #2563eb 100%);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.24);
+}
+
+.wa-official-panels {
+  display: grid;
+}
+
+.wa-official-panel {
+  display: none;
+}
+
+.wa-official-tabs-shell:has(#wa-official-cycle-monthly:checked) .wa-official-panel[data-cycle="monthly"],
+.wa-official-tabs-shell:has(#wa-official-cycle-yearly:checked) .wa-official-panel[data-cycle="yearly"] {
+  display: block;
+}
+
+.wa-official-cards {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.wa-official-plan-card {
+  min-height: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  gap: 0.7rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.wa-official-plan-card:hover {
+  border-color: #38bdf8;
+  box-shadow: 0 10px 30px rgba(14, 165, 233, 0.1);
+  transform: translateY(-1px);
+}
+
+.wa-official-plan-id {
+  word-break: break-all;
+}
+
+.wa-official-card-actions {
+  margin-top: 0.15rem;
+}
+
+.wa-official-apply {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 1rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #2f7df6 0%, #2563eb 100%);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.22);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.wa-official-apply:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 36px rgba(37, 99, 235, 0.28);
+}
+
+.wa-official-features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.42rem;
+  color: #334155;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.wa-official-features li {
+  position: relative;
+  padding-left: 1rem;
+}
+
+.wa-official-features li::before {
+  content: "";
+  position: absolute;
+  top: 0.62rem;
+  left: 0.1rem;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: #38bdf8;
+}
+
 .wa-plan-official-note {
   margin: 1.2rem auto 0;
   max-width: 42rem;
@@ -193,6 +326,34 @@
   font-size: 0.92rem;
   line-height: 1.6;
   color: #64748b;
+}
+
+.wa-plan-official-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.85rem;
+  margin-top: 1.35rem;
+}
+
+.wa-plan-official-btn {
+  min-width: 220px;
+}
+
+@media (max-width: 640px) {
+  .wa-official-tabs-head {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .wa-official-tab {
+    padding-inline: 0.75rem;
+    font-size: 0.88rem;
+  }
+
+  .wa-official-features {
+    font-size: 0.88rem;
+  }
 }
 
 .wa-plans-contact-panel {
