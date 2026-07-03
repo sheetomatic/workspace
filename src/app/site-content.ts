@@ -1,8 +1,8 @@
-export const whatsappPhone = "919685788980";
+export const whatsappPhone = "919329103106";
 
-export const whatsappDisplayNumber = "+91 96857 88980";
+export const whatsappDisplayNumber = "+91 93291 03106";
 
-export const whatsappTel = "+919685788980";
+export const whatsappTel = "+919329103106";
 
 export function buildWhatsAppUrl(message: string) {
   return `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(message)}`;

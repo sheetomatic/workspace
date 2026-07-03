@@ -120,7 +120,7 @@ export function WhatsAppSettingsPanel({
           <input
             defaultValue={initialValues.businessPhone}
             name="businessPhone"
-            placeholder="9685788980"
+            placeholder="9329103106"
             type="text"
           />
         </label>

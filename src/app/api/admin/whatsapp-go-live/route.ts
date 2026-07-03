@@ -28,14 +28,14 @@ export async function POST(request: Request) {
     where: { organizationId: org.id },
     create: {
       organizationId: org.id,
-      businessPhone: process.env.WHATSAPP_FALLBACK_PHONE?.trim() || "919685788980",
+      businessPhone: process.env.WHATSAPP_FALLBACK_PHONE?.trim() || "919329103106",
       redlavaPhoneId: process.env.REDLAVA_PHONE_ID?.trim() || "1102997926228862",
       botLiveAt: new Date(),
     },
     update: {
       botLiveAt: new Date(),
       businessPhone:
-        process.env.WHATSAPP_FALLBACK_PHONE?.trim() || "919685788980",
+        process.env.WHATSAPP_FALLBACK_PHONE?.trim() || "919329103106",
       redlavaPhoneId: process.env.REDLAVA_PHONE_ID?.trim() || "1102997926228862",
     },
   });

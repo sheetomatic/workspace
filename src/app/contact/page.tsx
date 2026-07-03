@@ -15,7 +15,7 @@ import "@/components/marketing/minimal-premium.css";
 export const metadata: Metadata = marketingMetadata({
   title: "Contact",
   description:
-    "WhatsApp Sheetomatic at +91 96857 88980 for MIS, automation, and AI workflows.",
+    "WhatsApp Sheetomatic at +91 93291 03106 for MIS, automation, and AI workflows.",
   path: "/contact",
 });
 

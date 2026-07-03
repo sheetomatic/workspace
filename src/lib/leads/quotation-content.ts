@@ -40,7 +40,7 @@ export function quotationTermsForRequestType(requestType: QuotationRequestType |
 }
 
 export const QUOTATION_FOOTER_CONTACT =
-  "For queries, reply on WhatsApp +91 96857 88980 or email sheetomatic@gmail.com";
+  "For queries, reply on WhatsApp +91 93291 03106 or email sheetomatic@gmail.com";
 
 export function formatQuotationTermsBlock(
   terms: readonly string[] = DEFAULT_QUOTATION_TERMS,

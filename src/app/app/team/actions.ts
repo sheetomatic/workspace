@@ -184,7 +184,7 @@ export async function inviteTeamMember(
   if (whatsappRaw.trim() && !phone) {
     return {
       ok: false,
-      message: "WhatsApp number must be at least 10 digits (e.g. 9685788980).",
+      message: "WhatsApp number must be at least 10 digits (e.g. 9329103106).",
     };
   }
 
