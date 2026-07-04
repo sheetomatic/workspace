@@ -3,23 +3,23 @@ import { CheckCircle2, Circle, Clock3 } from "lucide-react";
 
 const queue = [
   {
-    title: "Demo follow-up - Rahul Mehta",
-    meta: "Assigned to sales team",
-    time: "4:30 PM",
+    title: "Sales order approved",
+    meta: "Owner: Sales coordinator",
+    time: "Step 3",
+    status: "Done",
+    tone: "done",
+  },
+  {
+    title: "Design and BOM review",
+    meta: "Owner: Design team",
+    time: "Step 6",
     status: "In progress",
     tone: "progress",
   },
   {
-    title: "Quote sent - Metro Retail",
-    meta: "CRM stage updated",
-    time: "Done",
-    status: "Completed",
-    tone: "done",
-  },
-  {
-    title: "New lead - pricing inquiry",
-    meta: "AI captured overnight",
-    time: "New",
+    title: "Dispatch planning pending",
+    meta: "Owner: Dispatch team",
+    time: "Step 10",
     status: "Pending",
     tone: "pending",
   },
@@ -30,16 +30,19 @@ export function ExecutionSnapshot() {
     <div className="execution-snapshot">
       <div className="execution-snapshot-head">
         <div>
-          <p>Converting sales</p>
-          <h3>Follow-up system</h3>
+          <p>Sales order processing</p>
+          <h3>Workflow tracker</h3>
         </div>
-        <span className="execution-snapshot-score">12 hot leads</span>
+        <span className="execution-snapshot-score">1 live workflow</span>
       </div>
 
       <div className="execution-snapshot-progress">
-        <span>Pipeline progress</span>
+        <span>All workflows</span>
+        <strong>FMS tracker</strong>
+        <h4>Sales Order Processing Workflow workflow</h4>
+        <small>1 lead | 12 steps</small>
         <div className="execution-progress-track">
-          <i style={{ width: "76%" }} />
+          <i style={{ width: "58%" }} />
         </div>
       </div>
 
@@ -68,8 +71,8 @@ export function ExecutionSnapshot() {
       </ul>
 
       <p className="execution-snapshot-foot">
-        AI captured the lead. CRM assigned follow-ups. Your team closes - no manual
-        chasing.
+        MSME teams see the real working style here: owner, step, and live status in one
+        workflow view instead of scattered Google Sheets follow-up.
       </p>
     </div>
   );

@@ -48,14 +48,38 @@
 }
 
 .execution-snapshot-progress > span {
+  display: block;
   font-size: var(--text-kicker);
+  font-weight: var(--weight-strong);
+  color: #64748b;
+}
+
+.execution-snapshot-progress strong {
+  display: block;
+  margin-top: 0.45rem;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
+  color: #0f172a;
+}
+
+.execution-snapshot-progress h4 {
+  margin: 0.35rem 0 0;
+  font-size: 1rem;
+  font-weight: var(--weight-heading);
+  color: #0f172a;
+}
+
+.execution-snapshot-progress small {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: var(--text-tag);
   font-weight: var(--weight-strong);
   color: #64748b;
 }
 
 .execution-progress-track {
   height: 8px;
-  margin-top: 8px;
+  margin-top: 12px;
   border-radius: 999px;
   background: #e2e8f0;
   overflow: hidden;
