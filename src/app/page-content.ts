@@ -15,9 +15,6 @@ export const mainNav = [
 ];
 
 export const footerCompanyLinks = [
-  { href: "/services", label: "Services" },
-  { href: "/products", label: "Products" },
-  { href: "/whatsapp-plans", label: "WhatsApp API plans" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
   { href: "/career", label: "Careers" },
@@ -26,15 +23,16 @@ export const footerCompanyLinks = [
 ];
 
 export const footerProductLinks = [
-  { href: "/login", label: "Workspace" },
+  { href: "/products", label: "BCI Suite" },
+  { href: "/login", label: "Sheetomatic Workspace" },
   { href: "/ai", label: "Sheetomatic AI" },
+  { href: "/whatsapp-plans", label: "WhatsApp API" },
   { href: "/services/flow", label: "FMS" },
   { href: "/services/inventory", label: "IMS" },
-  { href: "/services/checklist", label: "Process Coordinator" },
-  { href: "/services/tasks", label: "Executive Assistant" },
-  { href: "/services/mis", label: "Executive Meeting (Weekly)" },
+  { href: "/services/checklist", label: "Checklist (PC Module)" },
+  { href: "/services/tasks", label: "Tasks (EA Module)" },
+  { href: "/services/mis", label: "Executive Meeting" },
   { href: "/services/automation", label: "Custom Software" },
-  { href: "/ai/pricing", label: "AI pricing" },
 ];
 
 /** Services hub industry cards — each links to a relevant module, not generic anchors */
