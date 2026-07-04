@@ -23,8 +23,9 @@ export const youtubeChannelName = "Sheetomatic Videos";
 
 export const siteBrand = {
   name: "Sheetomatic",
-  tagline: "BCI - Business Control & Intelligence",
-  headerTagline: "BCI - Business Control & Intelligence",
+  tagline: "BCI Suite",
+  headerTagline: "BCI Suite",
+  descriptor: "Business Control & Intelligence",
   /** Icon-only mark for headers, sidebars, and app tiles */
   iconSrc: "/images/sheetomatic-icon.svg",
   /** White icon for dark backgrounds (login, footer) */

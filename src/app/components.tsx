@@ -37,7 +37,10 @@ export function SiteBrand({
       <span className="site-brand-text">
         <strong>{siteBrand.name}</strong>
         <small>
-          {variant === "footer" ? siteBrand.tagline : siteBrand.headerTagline}
+          <span className="site-brand-kicker">
+            {variant === "footer" ? siteBrand.tagline : siteBrand.headerTagline}
+          </span>
+          <span className="site-brand-micro">{siteBrand.descriptor}</span>
         </small>
       </span>
     </Link>
