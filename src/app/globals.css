@@ -3227,11 +3227,29 @@ strong {
   background: #ffffff;
 }
 
+.ab-header-call {
+  font-weight: 700;
+}
+
+.ab-header-call-short {
+  display: none;
+}
+
 .header-cta .btn-cta-icon-wrap {
   width: 18px;
   min-width: 18px;
   max-width: 18px;
   height: 18px;
+}
+
+@media (max-width: 1180px) {
+  .ab-header-call-full {
+    display: none;
+  }
+
+  .ab-header-call-short {
+    display: inline;
+  }
 }
 
 @media (max-width: 768px) {

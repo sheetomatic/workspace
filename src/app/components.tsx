@@ -2,7 +2,9 @@ import "@/components/marketing/minimal-premium.css";
 import Link from "next/link";
 import {
   ContactButtons,
+  marketingButtonClass,
 } from "@/components/marketing/marketing-buttons";
+import { PhoneIcon } from "@/components/marketing/marketing-icons";
 import { SocialLinks } from "@/components/marketing/social-links";
 import {
   contactDetails,
@@ -14,6 +16,7 @@ import { BrandIconMark } from "@/components/brand/brand-icon-mark";
 import {
   finalCtaContent,
   siteBrand,
+  whatsappTel,
   whatsappDisplayNumber,
 } from "./site-content";
 
@@ -55,6 +58,17 @@ export function SiteHeader() {
           <SiteBrand variant="header" />
           <SiteHeaderNav variant="desktop" />
           <div className="site-header-actions">
+            <a
+              aria-label={`Call ${whatsappDisplayNumber}`}
+              className={marketingButtonClass("secondary", "header-cta ab-header-call")}
+              href={`tel:${whatsappTel}`}
+            >
+              <span className="btn-cta-icon-wrap" aria-hidden>
+                <PhoneIcon className="btn-cta-icon" size={18} strokeWidth={2.25} />
+              </span>
+              <span className="ab-header-call-full">Call {whatsappDisplayNumber}</span>
+              <span className="ab-header-call-short">Call</span>
+            </a>
             <Link className="ab-header-ai" href="/ai">
               Sheetomatic AI
             </Link>
