@@ -12,7 +12,7 @@ export const whatsappUrl = buildWhatsAppUrl(
   "Hi Sheetomatic, I want to automate my business workflow.",
 );
 
-export const consultationUrl = "https://calendar.app.google/MVmguFeQZpMNDTFo9";
+export const consultationUrl = "https://calendar.app.google/8vFzFEqam5koa1kx7";
 
 export const graphyStoreUrl = "https://sheetomatic.graphy.com/s/store";
 

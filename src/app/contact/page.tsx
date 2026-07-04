@@ -6,7 +6,10 @@ import {
   SiteFooter,
   SiteHeader,
 } from "../components";
-import { ContactButtons } from "@/components/marketing/marketing-buttons";
+import {
+  ContactButtons,
+  ConsultTodayButton,
+} from "@/components/marketing/marketing-buttons";
 import { SocialLinks } from "@/components/marketing/social-links";
 import { contactDetails, contactPage } from "../page-content";
 import { marketingMetadata } from "@/lib/marketing-metadata";
@@ -15,7 +18,7 @@ import "@/components/marketing/minimal-premium.css";
 export const metadata: Metadata = marketingMetadata({
   title: "Contact",
   description:
-    "WhatsApp Sheetomatic at +91 8766362949 for MIS, automation, and AI workflows.",
+    "WhatsApp Sheetomatic at +91 93291 03106 for MIS, automation, and AI workflows.",
   path: "/contact",
 });
 
@@ -39,6 +42,9 @@ export default function ContactPage() {
             callClassName="btn-block"
             message="Hi Sheetomatic, I want to discuss automation for my business."
           />
+          <div className="mx-auto mt-3 flex max-w-sm justify-center">
+            <ConsultTodayButton className="btn-block" label="Schedule a meeting" />
+          </div>
           <p className="contact-website-link mt-6 text-center">
             <a href={contactDetails.websiteUrl} target="_blank" rel="noopener noreferrer">
               {contactDetails.website}

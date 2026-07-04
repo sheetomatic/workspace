@@ -2,8 +2,8 @@ import "@/components/marketing/minimal-premium.css";
 import Link from "next/link";
 import {
   ContactButtons,
-  marketingButtonClass,
 } from "@/components/marketing/marketing-buttons";
+import { marketingButtonClass } from "@/components/marketing/marketing-button-class";
 import { PhoneIcon } from "@/components/marketing/marketing-icons";
 import { SocialLinks } from "@/components/marketing/social-links";
 import {
