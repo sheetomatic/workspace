@@ -233,6 +233,48 @@ export function ContactButtons({
   );
 }
 
+export function ContactPill({
+  className = "",
+  message,
+  buttonLabel = "Contact Us",
+  numberLabel = whatsappDisplayNumber,
+}: {
+  className?: string;
+  message?: string;
+  buttonLabel?: string;
+  numberLabel?: string;
+}) {
+  const pathname = usePathname();
+  const resolvedMessage = message ?? resolvePageWhatsAppMessage(pathname);
+  const href = buildWhatsAppUrl(resolvedMessage);
+
+  return (
+    <div className={`contact-pill ${className}`.trim()}>
+      <a
+        className="contact-pill-number"
+        href={`tel:${whatsappTel}`}
+        aria-label={`Call ${numberLabel}`}
+      >
+        <span className="contact-pill-icon" aria-hidden>
+          <PhoneIcon className="contact-pill-phone-icon" size={18} strokeWidth={2.25} />
+        </span>
+        <span className="contact-pill-copy">
+          <span className="contact-pill-label">Call us</span>
+          <strong>{numberLabel}</strong>
+        </span>
+      </a>
+      <a
+        className={marketingButtonClass("primary", "contact-pill-button")}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <span>{buttonLabel}</span>
+      </a>
+    </div>
+  );
+}
+
 export function ContactLinkButton({
   className = "",
   label = "Contact",

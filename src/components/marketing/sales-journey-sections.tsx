@@ -4,8 +4,8 @@ import {
 } from "@/app/sales-framework-content";
 import { homePainHook } from "@/app/page-content";
 import {
+  ContactPill,
   ConsultTodayButton,
-  WhatsAppButton,
 } from "@/components/marketing/marketing-buttons";
 import { ExecutionSnapshot } from "@/components/marketing/execution-snapshot";
 import "./pace-framework.css";
@@ -22,12 +22,11 @@ export function SalesHeroSection() {
             <p className="minimal-hero-lead">{videoSalesStory.lead}</p>
             <div className="minimal-hero-actions">
               <ConsultTodayButton label={videoSalesStory.ctaPrimary} />
-              <WhatsAppButton
-                className="sales-hero-whatsapp"
-                label="WhatsApp now"
-                message="Hi Sheetomatic, I want to scope a workspace for my business."
-              />
             </div>
+            <ContactPill
+              className="sales-hero-contact-pill"
+              message="Hi Sheetomatic, I want to scope a workspace for my business."
+            />
             <div className="sales-hero-proof">
               <span className="sales-hero-proof-kicker">Live ops stack</span>
               <strong>Owners + TAT + Plan vs Actual</strong>
