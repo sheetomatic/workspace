@@ -23,8 +23,8 @@ export const youtubeChannelName = "Sheetomatic Videos";
 
 export const siteBrand = {
   name: "Sheetomatic",
-  tagline: "P.A.C.E. systems that scale without you",
-  headerTagline: "P.A.C.E. for MSME operations",
+  tagline: "BCI systems that scale without you",
+  headerTagline: "BCI for MSME operations",
   /** Icon-only mark for headers, sidebars, and app tiles */
   iconSrc: "/images/sheetomatic-icon.svg",
   /** White icon for dark backgrounds (login, footer) */

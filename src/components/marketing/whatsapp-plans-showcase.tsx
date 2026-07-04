@@ -97,9 +97,6 @@ export function WhatsappPlansShowcase() {
                       </div>
                       <h3 className="wa-plan-name">{plan.title}</h3>
                       <p className="wa-plan-meta">Validity: {plan.validityLabel}</p>
-                      {plan.planId ? (
-                        <p className="wa-plan-meta wa-official-plan-id">Plan ID: {plan.planId}</p>
-                      ) : null}
                       <p className="wa-plan-price" aria-label={`Price ${plan.price}`}>
                         ₹{officialPlanPrice(plan)}
                       </p>
@@ -133,9 +130,6 @@ export function WhatsappPlansShowcase() {
                       </div>
                       <h3 className="wa-plan-name">{plan.title}</h3>
                       <p className="wa-plan-meta">Validity: {plan.validityLabel}</p>
-                      {plan.planId ? (
-                        <p className="wa-plan-meta wa-official-plan-id">Plan ID: {plan.planId}</p>
-                      ) : null}
                       <p className="wa-plan-price" aria-label={`Price ${plan.price}`}>
                         ₹{officialPlanPrice(plan)}
                       </p>

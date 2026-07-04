@@ -58,13 +58,6 @@ export function SiteHeader() {
             <Link className="ab-header-workspace" href="/login">
               Workspace
             </Link>
-            <ContactButtons
-              callLabel="Call"
-              className="header-cta-group"
-              whatsappClassName="header-cta"
-              whatsappLabel="WhatsApp"
-              callClassName="header-cta"
-            />
           </div>
         </div>
         <SiteHeaderNav variant="mobile" />
