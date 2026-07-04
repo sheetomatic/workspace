@@ -34,14 +34,14 @@ export const siteBrand = {
   logoSrc: "/images/sheetomatic-logo.svg",
   logoAlt: "Sheetomatic logo",
   footerDescription:
-    "Sheetomatic Workspace and Sheetomatic AI — the P.A.C.E. framework for Indian MSMEs. Systems (FMS, IMS, CRM, EM, WhatsApp AI) plus Process Coordinator and Executive Assistant roles so you scale without the owner.",
+    "Sheetomatic Workspace and Sheetomatic AI — BCI Suite: Business Control & Intelligence for system-driven MSMEs. FMS, IMS, Full Kitting, Process Coordinator, Executive Assistant, and Review Rhythm in one operating system.",
   footerBottomLine: "Sheetomatic · sheetomatic.com",
 };
 
 export const finalCtaContent = {
   kicker: "Start on WhatsApp",
   title: "Build a business that scales without you.",
-  text: "P.A.C.E. systems — FMS, IMS, CRM, EM, and WhatsApp AI — with Process Coordinator and Executive Assistant roles in one workspace. One conversation to stop spreadsheet firefighting.",
+  text: "BCI Suite brings FMS, IMS, Full Kitting, Process Coordinator, Executive Assistant, and Review Rhythm into one operating system. One conversation to replace spreadsheet firefighting with owner clarity.",
   buttonLabel: "WhatsApp",
 };
 

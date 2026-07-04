@@ -9,11 +9,11 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sheetomatic.com";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Sheetomatic | P.A.C.E. Framework for Indian MSMEs",
+    default: "Sheetomatic | BCI Suite for Indian MSMEs",
     template: "%s | Sheetomatic",
   },
   description:
-    "P.A.C.E. framework for Indian MSMEs — FMS, IMS, CRM, Executive Meeting, and WhatsApp AI systems with Process Coordinator and Executive Assistant roles. Scale without the owner; stop spreadsheet firefighting.",
+    "BCI Suite: Business Control & Intelligence for system-driven MSMEs — FMS, IMS, Full Kitting, Process Coordinator, Executive Assistant, and Review Rhythm in one operating system.",
   icons: {
     icon: [
       { url: "/favicon.ico?v=5", sizes: "any" },
@@ -26,9 +26,9 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_IN",
     siteName: "Sheetomatic",
-    title: "Sheetomatic | P.A.C.E. Framework for Indian MSMEs",
+    title: "Sheetomatic | BCI Suite for Indian MSMEs",
     description:
-      "P.A.C.E. for MSMEs: systems (FMS, IMS, CRM, EM, WhatsApp AI) and role-based operations (Process Coordinator, Executive Assistant). Scale without the owner in one workspace.",
+      "BCI Suite for system-driven MSMEs: FMS, IMS, Full Kitting, Process Coordinator, Executive Assistant, and Review Rhythm in one operating system.",
     images: [
       {
         url: "/images/og-default.png",

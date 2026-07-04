@@ -16,7 +16,7 @@ import { marketingMetadata } from "@/lib/marketing-metadata";
 export const metadata: Metadata = marketingMetadata({
   title: "About",
   description:
-    "Founder-led AI SaaS for Indian MSMEs — the P.A.C.E. framework with FMS, IMS, CRM, EM, and WhatsApp AI systems, plus Process Coordinator and Executive Assistant roles. Scale without the owner.",
+    "Founder-led AI SaaS for Indian MSMEs — BCI Suite with FMS, IMS, Full Kitting, Process Coordinator, Executive Assistant, and Review Rhythm. Scale without the owner.",
   path: "/about",
 });
 

@@ -31,7 +31,7 @@ export const founderVideo: MarketingVideo = {
   label: "Founder",
   title: "Message from Shyam Kumar Banjare",
   description:
-    "How Sheetomatic applies the P.A.C.E. framework so MSMEs scale without the owner — systems and role-based operations, not founder firefighting.",
+    "How Sheetomatic applies the BCI Suite so MSMEs scale without the owner — systems, role clarity, and review discipline instead of founder firefighting.",
   youtubeId: "",
 };
 

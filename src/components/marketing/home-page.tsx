@@ -1,9 +1,9 @@
 import { FinalCta, SiteFooter, SiteHeader } from "@/app/components";
 import { WorkShowcaseSection } from "./client-projects-showcase";
+import { BciFrameworkSection } from "./bci-framework-section";
 import { FocusOffersSection } from "./focus-offers-section";
 import { HowWeWorkSection } from "./how-we-work-section";
 import { AiEnabledTasksSection } from "./ai-enabled-tasks-section";
-import { PaceFrameworkSection } from "./pace-framework-section";
 import { UspSection } from "./usp-section";
 import {
   AudienceFilterSection,
@@ -24,7 +24,7 @@ export function HomePage() {
 
       <HowWeWorkSection />
 
-      <PaceFrameworkSection />
+      <BciFrameworkSection />
 
       <WorkShowcaseSection />
 

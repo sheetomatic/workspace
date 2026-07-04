@@ -4,19 +4,20 @@ import { marketingMetadata } from "@/lib/marketing-metadata";
 
 export const metadata: Metadata = {
   ...marketingMetadata({
-    title: "Scale Without the Owner | P.A.C.E. for MSMEs",
+    title: "Scale Without the Owner | BCI Suite for MSMEs",
     description:
-      "For running MSMEs: P.A.C.E. your business on Sheetomatic — systems for profit (FMS, IMS), leads (WhatsApp AI), conversions (CRM), and review (EM). Process Coordinator and Executive Assistant roles hold teams accountable. Build, Manage, Scale without spreadsheet firefighting.",
+      "BCI Suite: Business Control & Intelligence for system-driven MSMEs. FMS, IMS, Full Kitting, Process Coordinator, Executive Assistant, and Review Rhythm give owner-led teams visible control without spreadsheet firefighting.",
     path: "/",
   }),
   keywords: [
     "MSME",
     "scale without owner",
-    "P.A.C.E framework",
-    "FMS IMS CRM",
-    "role-based operations",
-    "WhatsApp AI MSME",
-    "Executive Meeting weekly",
+    "BCI Suite",
+    "Business Control and Intelligence",
+    "FMS IMS",
+    "system-driven MSME",
+    "process coordinator executive assistant",
+    "review rhythm",
     "Sheetomatic Workspace",
   ],
 };
