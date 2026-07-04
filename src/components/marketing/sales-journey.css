@@ -20,6 +20,42 @@
   max-width: 46rem;
 }
 
+.sales-hero-whatsapp {
+  min-width: 180px;
+}
+
+.sales-hero-proof {
+  display: inline-grid;
+  gap: 0.25rem;
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(191, 219, 254, 0.9);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.96));
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.08);
+}
+
+.sales-hero-proof-kicker {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #2563eb;
+}
+
+.sales-hero-proof strong {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.sales-hero-proof small {
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
 .sales-hero-preview {
   width: 100%;
   max-width: 28rem;
@@ -28,6 +64,12 @@
 @media (min-width: 1024px) {
   .sales-hero-preview {
     justify-self: end;
+  }
+}
+
+@media (max-width: 640px) {
+  .sales-hero-proof {
+    width: 100%;
   }
 }
 

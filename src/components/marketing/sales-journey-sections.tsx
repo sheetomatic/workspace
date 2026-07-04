@@ -3,9 +3,11 @@ import {
   videoSalesStory,
 } from "@/app/sales-framework-content";
 import { homePainHook } from "@/app/page-content";
-import { ContactButtons } from "@/components/marketing/marketing-buttons";
+import {
+  ConsultTodayButton,
+  WhatsAppButton,
+} from "@/components/marketing/marketing-buttons";
 import { ExecutionSnapshot } from "@/components/marketing/execution-snapshot";
-import { whatsappDisplayNumber } from "@/app/site-content";
 import "./pace-framework.css";
 import "./sales-journey.css";
 
@@ -19,10 +21,17 @@ export function SalesHeroSection() {
             <h1 className="minimal-hero-title">{videoSalesStory.title}</h1>
             <p className="minimal-hero-lead">{videoSalesStory.lead}</p>
             <div className="minimal-hero-actions">
-              <ContactButtons
-                whatsappLabel={whatsappDisplayNumber}
-                callLabel="Call now"
+              <ConsultTodayButton label={videoSalesStory.ctaPrimary} />
+              <WhatsAppButton
+                className="sales-hero-whatsapp"
+                label="WhatsApp now"
+                message="Hi Sheetomatic, I want to scope a workspace for my business."
               />
+            </div>
+            <div className="sales-hero-proof">
+              <span className="sales-hero-proof-kicker">Live ops stack</span>
+              <strong>Owners + TAT + Plan vs Actual</strong>
+              <small>FMS, IMS, Checklist, Tasks, and WhatsApp AI in one workflow view.</small>
             </div>
           </div>
           <div className="sales-hero-preview" aria-label="Workspace preview">
