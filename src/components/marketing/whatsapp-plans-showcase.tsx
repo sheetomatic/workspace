@@ -200,7 +200,7 @@ export function WhatsappPlansShowcase() {
             </p>
             <p className="wa-plans-contact-terms">{page.termsNote}</p>
             <p className="wa-plans-contact-terms-link">
-              <Link className="text-sky-700 underline" href={page.termsHref}>
+              <Link className="text-emerald-700 underline" href={page.termsHref}>
                 Read WhatsApp API terms &amp; conditions
               </Link>
             </p>
