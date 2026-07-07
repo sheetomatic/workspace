@@ -26,24 +26,39 @@ export const DEFAULT_SERVICE_CATALOG: ServiceCatalogSeed[] = [
   { serviceCategory: "Developement", subCategory: "Apps Script + Google Sheets", unitPrice: 55000 },
   { serviceCategory: "MIS Service", subCategory: "Monthly", unitPrice: 15000, durationDays: 30 },
   { serviceCategory: "MIS Service", subCategory: "Quarterly", unitPrice: 40000, durationDays: 90 },
+  { serviceCategory: "Remote DME Services", subCategory: "10 Hours - Monthly", unitPrice: 10000, durationDays: 30 },
+  { serviceCategory: "Remote DME Services", subCategory: "20 Hours - Monthly", unitPrice: 20000, durationDays: 30 },
+  { serviceCategory: "Remote DME Services", subCategory: "30 Hours - Monthly", unitPrice: 30000, durationDays: 30 },
+  { serviceCategory: "Remote DME Services", subCategory: "40 Hours - Monthly", unitPrice: 35000, durationDays: 30 },
 ];
 
 export async function ensureLeadServiceCatalog(organizationId: string) {
-  const count = await prisma.leadServiceCatalog.count({
+  const existing = await prisma.leadServiceCatalog.findMany({
     where: { organizationId },
+    select: { serviceCategory: true, subCategory: true, sortOrder: true },
   });
-  if (count > 0) {
+
+  const existingKeys = new Set(
+    existing.map((item) => `${item.serviceCategory}|||${item.subCategory}`),
+  );
+  const missing = DEFAULT_SERVICE_CATALOG.filter(
+    (item) => !existingKeys.has(`${item.serviceCategory}|||${item.subCategory}`),
+  );
+
+  if (missing.length === 0) {
     return;
   }
 
+  const maxSort = existing.reduce((max, item) => Math.max(max, item.sortOrder), -1);
+
   await prisma.leadServiceCatalog.createMany({
-    data: DEFAULT_SERVICE_CATALOG.map((item, index) => ({
+    data: missing.map((item, index) => ({
       organizationId,
       serviceCategory: item.serviceCategory,
       subCategory: item.subCategory,
       unitPrice: item.unitPrice ?? null,
       durationDays: item.durationDays ?? null,
-      sortOrder: index,
+      sortOrder: existing.length === 0 ? index : maxSort + 1 + index,
     })),
     skipDuplicates: true,
   });
