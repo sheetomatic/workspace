@@ -871,6 +871,78 @@ export async function addLeadOfferedService(params: {
   return { ok: true };
 }
 
+export async function createLeadServiceCatalogItem(params: {
+  serviceCategory: string;
+  subCategory: string;
+  unitPrice?: string;
+}) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  const serviceCategory = params.serviceCategory.trim();
+  const subCategory = params.subCategory.trim();
+  if (!serviceCategory || !subCategory) {
+    return { ok: false, message: "Category and service name are required." };
+  }
+
+  const parsedPrice = params.unitPrice?.trim()
+    ? Number.parseFloat(params.unitPrice)
+    : null;
+  const unitPrice =
+    parsedPrice != null && Number.isFinite(parsedPrice) && parsedPrice >= 0
+      ? parsedPrice
+      : null;
+
+  const existing = await prisma.leadServiceCatalog.findFirst({
+    where: {
+      organizationId: user.organizationId,
+      serviceCategory,
+      subCategory,
+    },
+  });
+  if (existing) {
+    revalidatePath("/app/leads");
+    return {
+      ok: true,
+      item: {
+        id: existing.id,
+        serviceCategory: existing.serviceCategory,
+        subCategory: existing.subCategory,
+        unitPrice: existing.unitPrice != null ? Number(existing.unitPrice) : null,
+      },
+      message: "Service already exists in catalog.",
+    };
+  }
+
+  const maxSort = await prisma.leadServiceCatalog.aggregate({
+    where: { organizationId: user.organizationId },
+    _max: { sortOrder: true },
+  });
+
+  const item = await prisma.leadServiceCatalog.create({
+    data: {
+      organizationId: user.organizationId,
+      serviceCategory,
+      subCategory,
+      unitPrice,
+      sortOrder: (maxSort._max.sortOrder ?? -1) + 1,
+    },
+  });
+
+  revalidatePath("/app/leads");
+  return {
+    ok: true,
+    item: {
+      id: item.id,
+      serviceCategory: item.serviceCategory,
+      subCategory: item.subCategory,
+      unitPrice: item.unitPrice != null ? Number(item.unitPrice) : null,
+    },
+  };
+}
+
 export async function createLeadQuotation(params: {
   leadId: string;
   requestType: QuotationRequestType;

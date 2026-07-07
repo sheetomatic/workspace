@@ -1498,6 +1498,64 @@
   margin-top: 0.5rem;
 }
 
+.leads-quote-line-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.leads-quote-empty-services {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.leads-quote-new-service {
+  margin-top: 0.75rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(239, 246, 255, 0.9), rgba(255, 255, 255, 0.96));
+}
+
+.leads-quote-new-service-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.leads-quote-new-service-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.leads-quote-new-service-grid label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: #475569;
+}
+
+.leads-quote-new-service-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.leads-quote-new-service-msg {
+  margin: 0.55rem 0 0;
+  font-size: 0.82rem;
+  color: #1d4ed8;
+}
+
+@media (max-width: 900px) {
+  .leads-quote-new-service-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .quotation-print-standalone {
   min-height: 100vh;
   background: #f8fafc;

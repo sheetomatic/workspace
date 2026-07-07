@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { FileText, MessageCircle, Phone, Plus, Trash2 } from "lucide-react";
 import type { QuotationRequestType, QuotationStatus } from "@prisma/client";
 import {
   createLeadQuotation,
+  createLeadServiceCatalogItem,
   deleteLeadQuotation,
   logLeadContactAction,
   reviseLeadQuotation,
@@ -116,7 +118,7 @@ function buildLineDrafts(
   }
 
   if (serviceCatalog.length === 0) {
-    return [];
+    return [{ id: createLineId(), catalogId: "", amount: "" }];
   }
 
   return [{ id: createLineId(), catalogId: "", amount: "" }];
@@ -178,6 +180,21 @@ export function QuotationBuilderPanel({
   pending: boolean;
   startTransition: (callback: () => Promise<void>) => void;
 }) {
+  const router = useRouter();
+  const [addedCatalogItems, setAddedCatalogItems] = useState<CatalogItem[]>([]);
+  const catalogItems = useMemo(() => {
+    const byId = new Map(serviceCatalog.map((item) => [item.id, item]));
+    for (const item of addedCatalogItems) {
+      byId.set(item.id, item);
+    }
+    return Array.from(byId.values());
+  }, [addedCatalogItems, serviceCatalog]);
+  const [showNewServiceForm, setShowNewServiceForm] = useState(false);
+  const [newServiceCategory, setNewServiceCategory] = useState("");
+  const [newServiceName, setNewServiceName] = useState("");
+  const [newServicePrice, setNewServicePrice] = useState("");
+  const [newServiceTargetLineId, setNewServiceTargetLineId] = useState<string | null>(null);
+  const [newServiceMessage, setNewServiceMessage] = useState<string | null>(null);
   const [quoteType, setQuoteType] = useState<QuotationRequestType>("PROPOSAL");
   const [quoteStartDate, setQuoteStartDate] = useState(() => isoDateInputValue());
   const [quoteDuration, setQuoteDuration] = useState("30");
@@ -241,10 +258,66 @@ export function QuotationBuilderPanel({
     );
   }
 
+  function openNewServiceForm(lineId?: string) {
+    setNewServiceTargetLineId(lineId ?? lineDrafts[lineDrafts.length - 1]?.id ?? null);
+    setNewServiceMessage(null);
+    setShowNewServiceForm(true);
+  }
+
+  function saveNewService() {
+    setNewServiceMessage(null);
+    startTransition(async () => {
+      const result = await createLeadServiceCatalogItem({
+        serviceCategory: newServiceCategory,
+        subCategory: newServiceName,
+        unitPrice: newServicePrice,
+      });
+      if (!result.ok || !result.item) {
+        setNewServiceMessage(result.message ?? "Could not add service.");
+        return;
+      }
+
+      const item = result.item;
+      const defaultAmount =
+        result.item.unitPrice != null ? String(result.item.unitPrice) : "";
+
+      setAddedCatalogItems((current) => {
+        if (current.some((entry) => entry.id === item.id)) {
+          return current;
+        }
+        return [...current, item];
+      });
+
+      const targetLineId = newServiceTargetLineId ?? lineDrafts[0]?.id;
+      if (targetLineId) {
+        updateLineDraft(targetLineId, {
+          catalogId: item.id,
+          amount: defaultAmount,
+        });
+      } else {
+        setLineDrafts([
+          {
+            id: createLineId(),
+            catalogId: item.id,
+            amount: defaultAmount,
+          },
+        ]);
+      }
+
+      setNewServiceCategory("");
+      setNewServiceName("");
+      setNewServicePrice("");
+      setShowNewServiceForm(false);
+      setNewServiceTargetLineId(null);
+      setNewServiceMessage(result.message ?? "Service added.");
+      router.refresh();
+    });
+  }
+
   function addLineDraft() {
     const used = new Set(lineDrafts.map((line) => line.catalogId).filter(Boolean));
     const nextCatalog =
-      serviceCatalog.find((item) => !used.has(item.id))?.id ?? "";
+      catalogItems.find((item) => !used.has(item.id))?.id ?? "";
     setLineDrafts((current) => [
       ...current,
       {
@@ -374,8 +447,20 @@ export function QuotationBuilderPanel({
 
           <div className="leads-form-span-2">
             <p className="leads-quote-lines-label">Line items</p>
-            {serviceCatalog.length === 0 ? (
-              <p className="leads-machine-muted">Add services on the Services tab first.</p>
+            {catalogItems.length === 0 && !showNewServiceForm ? (
+              <div className="leads-quote-empty-services">
+                <p className="leads-machine-muted">
+                  No catalog services yet. Add a custom service for this client.
+                </p>
+                <button
+                  type="button"
+                  className="btn-secondary btn-sm leads-quote-add-line"
+                  onClick={() => openNewServiceForm()}
+                >
+                  <Plus size={14} />
+                  Add new service
+                </button>
+              </div>
             ) : (
               <>
                 <div className="leads-quote-line-table-wrap">
@@ -390,7 +475,7 @@ export function QuotationBuilderPanel({
                     <tbody>
                       {lineDrafts.map((line) => {
                         const options = catalogOptionsForLine(
-                          serviceCatalog,
+                          catalogItems,
                           lineDrafts,
                           line.id,
                           line.catalogId,
@@ -401,9 +486,13 @@ export function QuotationBuilderPanel({
                               <select
                                 className="leads-quote-line-select"
                                 value={line.catalogId}
-                                onChange={(e) =>
-                                  updateLineDraft(line.id, { catalogId: e.target.value })
-                                }
+                                onChange={(e) => {
+                                  if (e.target.value === "__new__") {
+                                    openNewServiceForm(line.id);
+                                    return;
+                                  }
+                                  updateLineDraft(line.id, { catalogId: e.target.value });
+                                }}
                               >
                                 <option value="">Select service</option>
                                 {options.map((item) => (
@@ -411,6 +500,7 @@ export function QuotationBuilderPanel({
                                     {catalogLabel(item)}
                                   </option>
                                 ))}
+                                <option value="__new__">+ Add new service…</option>
                               </select>
                             </td>
                             <td>
@@ -443,15 +533,85 @@ export function QuotationBuilderPanel({
                     </tbody>
                   </table>
                 </div>
-                <button
-                  type="button"
-                  className="btn-secondary btn-sm leads-quote-add-line"
-                  disabled={lineDrafts.length >= serviceCatalog.length}
-                  onClick={addLineDraft}
-                >
-                  <Plus size={14} />
-                  Add line item
-                </button>
+                <div className="leads-quote-line-actions-row">
+                  <button
+                    type="button"
+                    className="btn-secondary btn-sm leads-quote-add-line"
+                    onClick={addLineDraft}
+                  >
+                    <Plus size={14} />
+                    Add line item
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary btn-sm leads-quote-add-line"
+                    onClick={() => openNewServiceForm()}
+                  >
+                    <Plus size={14} />
+                    Add new service
+                  </button>
+                </div>
+                {showNewServiceForm ? (
+                  <div className="leads-quote-new-service">
+                    <p className="leads-quote-new-service-title">New service for this client</p>
+                    <div className="leads-quote-new-service-grid">
+                      <label>
+                        Category
+                        <input
+                          value={newServiceCategory}
+                          onChange={(e) => setNewServiceCategory(e.target.value)}
+                          placeholder="e.g. Training, Development"
+                        />
+                      </label>
+                      <label>
+                        Service name
+                        <input
+                          value={newServiceName}
+                          onChange={(e) => setNewServiceName(e.target.value)}
+                          placeholder="e.g. Custom Google Sheets setup"
+                        />
+                      </label>
+                      <label>
+                        Default price (₹)
+                        <input
+                          type="number"
+                          min="0"
+                          value={newServicePrice}
+                          onChange={(e) => setNewServicePrice(e.target.value)}
+                          placeholder="Optional"
+                        />
+                      </label>
+                    </div>
+                    <div className="leads-quote-new-service-actions">
+                      <button
+                        type="button"
+                        className="btn-primary btn-sm"
+                        disabled={
+                          pending ||
+                          !newServiceCategory.trim() ||
+                          !newServiceName.trim()
+                        }
+                        onClick={saveNewService}
+                      >
+                        Save service
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-secondary btn-sm"
+                        disabled={pending}
+                        onClick={() => {
+                          setShowNewServiceForm(false);
+                          setNewServiceMessage(null);
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    {newServiceMessage ? (
+                      <p className="leads-quote-new-service-msg">{newServiceMessage}</p>
+                    ) : null}
+                  </div>
+                ) : null}
               </>
             )}
             {manualTotal > 0 ? (
