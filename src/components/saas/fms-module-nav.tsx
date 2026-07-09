@@ -13,6 +13,7 @@ import {
   PanelLeftOpen,
   Radar,
   Settings2,
+  ShoppingCart,
   Sparkles,
   TrainFront,
 } from "lucide-react";
@@ -21,6 +22,7 @@ import { canApproveFmsFlow, canSubmitFmsFlow } from "@/lib/fms/access";
 import { canAccessEmReady } from "@/lib/em/em-access";
 import { hasMinimumRole } from "@/lib/permissions";
 import { FmsInAppNotificationsBell } from "@/components/saas/fms-in-app-notifications-bell";
+import { FMS_FULFILLMENT_BASE_PATH } from "@/lib/fms/sales-fulfillment";
 
 export type FmsQueueTemplateNav = {
   id: string;
@@ -31,6 +33,12 @@ export type FmsQueueTemplateNav = {
 function navIsActive(pathname: string, href: string) {
   if (href === "/app/fms") {
     return pathname === "/app/fms";
+  }
+  if (href === FMS_FULFILLMENT_BASE_PATH) {
+    return (
+      pathname === FMS_FULFILLMENT_BASE_PATH ||
+      pathname.startsWith(`${FMS_FULFILLMENT_BASE_PATH}/`)
+    );
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
@@ -161,6 +169,24 @@ export function FmsModuleNav({
             </ul>
           ) : null}
         </li>
+
+        {isManager ? (
+          <li>
+            <Link
+              href={FMS_FULFILLMENT_BASE_PATH}
+              className={`ws-module-subnav-link${navIsActive(pathname, FMS_FULFILLMENT_BASE_PATH) ? " is-active" : ""}`}
+              title="Sales fulfillment"
+            >
+              <ShoppingCart size={16} aria-hidden />
+              {!collapsed ? (
+                <span>
+                  Sales fulfillment
+                  <small>SO, PO, and dispatch FMS</small>
+                </span>
+              ) : null}
+            </Link>
+          </li>
+        ) : null}
 
         {isManager ? (
           <li>

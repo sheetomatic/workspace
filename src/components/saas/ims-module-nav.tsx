@@ -10,9 +10,11 @@ import {
   LayoutDashboard,
   Package,
   PackageSearch,
+  ShoppingCart,
   SlidersHorizontal,
   Truck,
 } from "lucide-react";
+import { IMS_SALES_ORDER_STOCK_PATH } from "@/lib/ims/sales-order-stock";
 
 type NavItem = {
   href: string;
@@ -33,6 +35,12 @@ const items: NavItem[] = [
     label: "Items",
     icon: Package,
     description: "Master data and QC policy",
+  },
+  {
+    href: IMS_SALES_ORDER_STOCK_PATH,
+    label: "Sales order stock",
+    icon: ShoppingCart,
+    description: "IMS check for open orders",
   },
   {
     href: "/app/ims/vendors",

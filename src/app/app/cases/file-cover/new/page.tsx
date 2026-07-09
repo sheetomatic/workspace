@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { FileCoverWizard } from "@/components/legal/file-cover-wizard";
 import { isLegalAdmin } from "@/lib/legal-cases/access";
-import { requireSession } from "@/lib/require-session";
+import { requireLegalCasesSession } from "@/lib/require-session";
 import "@/components/legal/legal-cases.css";
 
 export default async function NewFileCoverPage() {
-  const user = await requireSession(undefined, { module: "CASES" });
+  const user = await requireLegalCasesSession();
   if (!isLegalAdmin(user)) {
     return (
       <div className="saas-page">

@@ -24,7 +24,7 @@ import {
   legalViewColumns,
   type LegalViewKey,
 } from "@/lib/legal-cases/views";
-import { requireSession } from "@/lib/require-session";
+import { requireLegalCasesSession } from "@/lib/require-session";
 import "@/components/legal/legal-cases.css";
 
 type ViewPageProps = {
@@ -57,7 +57,7 @@ export default async function LegalCaseViewPage({
   params,
   searchParams,
 }: ViewPageProps) {
-  const user = await requireSession(undefined, { module: "CASES" });
+  const user = await requireLegalCasesSession();
   const { viewKey: rawKey } = await params;
   const view = legalViewByKey(rawKey);
   if (!view || view.key === "all") {

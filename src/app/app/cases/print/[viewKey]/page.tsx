@@ -3,7 +3,7 @@ import {
   buildViewPrintList,
 } from "@/lib/legal-cases/print-list";
 import type { LegalViewKey } from "@/lib/legal-cases/views";
-import { requireSession } from "@/lib/require-session";
+import { requireLegalCasesSession } from "@/lib/require-session";
 import { notFound } from "next/navigation";
 import "@/components/legal/legal-cases.css";
 
@@ -25,7 +25,7 @@ function parseAsOf(value: string | undefined): Date {
 }
 
 export default async function LegalViewPrintPage({ params, searchParams }: PageProps) {
-  const user = await requireSession(undefined, { module: "CASES" });
+  const user = await requireLegalCasesSession();
   const { viewKey: rawKey } = await params;
   if (!ALLOWED.includes(rawKey as LegalViewKey)) {
     notFound();

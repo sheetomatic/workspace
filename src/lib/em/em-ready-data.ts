@@ -12,6 +12,7 @@ import { listChecklistOccurrencesForMis } from "@/lib/checklists/queries";
 import { buildChecklistMisRows } from "@/lib/checklists/mis";
 import { buildPcMisDetailRows } from "@/lib/checklists/pc-mis";
 import { listDelegatedTasks } from "@/lib/tasks";
+import { listDelayedDispatchSalesOrders } from "@/lib/sales-orders/queries";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
 import {
   fmsJobFallsInEmPeriod,
@@ -24,7 +25,7 @@ import {
 
 export type EmExceptionRow = {
   id: string;
-  kind: "task" | "fms" | "checklist";
+  kind: "task" | "fms" | "checklist" | "sales_order";
   title: string;
   owner: string;
   detail: string;
@@ -147,6 +148,7 @@ function buildExceptions(
   taskRows: MisDetailRow[],
   fmsOverdue: Awaited<ReturnType<typeof getFmsOpsPage>>["overdue"],
   checklistRows: ReturnType<typeof buildChecklistMisRows>,
+  delayedSalesOrders: Awaited<ReturnType<typeof listDelayedDispatchSalesOrders>>,
 ) {
   const taskExceptions: EmExceptionRow[] = taskRows
     .filter((row) => row.delayed)
@@ -188,7 +190,23 @@ function buildExceptions(
       href: row.href,
     }));
 
-  return [...fmsExceptions, ...checklistExceptions, ...taskExceptions].slice(0, 14);
+  const salesOrderExceptions: EmExceptionRow[] = delayedSalesOrders
+    .slice(0, 6)
+    .map((order) => ({
+      id: order.id,
+      kind: "sales_order" as const,
+      title: order.orderNumber,
+      owner: order.lead.name ?? "Customer",
+      detail: `Dispatch delayed — ${order.status.replaceAll("_", " ").toLowerCase()}`,
+      href: `/app/leads?leadId=${order.leadId}`,
+    }));
+
+  return [
+    ...fmsExceptions,
+    ...salesOrderExceptions,
+    ...checklistExceptions,
+    ...taskExceptions,
+  ].slice(0, 14);
 }
 
 export async function getEmReadyPayload(
@@ -203,7 +221,7 @@ export async function getEmReadyPayload(
   const fmsEnabled = hasWorkspaceModule(user, "FMS");
   const checklistsEnabled = tasksEnabled;
 
-  const [taskPage, fmsPage, fmsOps, pipelineCounts, checklistOccurrences] =
+  const [taskPage, fmsPage, fmsOps, pipelineCounts, checklistOccurrences, delayedSalesOrders] =
     await Promise.all([
     tasksEnabled
       ? listDelegatedTasks(user, { includeCompleted: false }, { page: 1, pageSize: 200 })
@@ -237,6 +255,9 @@ export async function getEmReadyPayload(
           start: period.start,
           end: period.end,
         })
+      : Promise.resolve([]),
+    fmsEnabled
+      ? listDelayedDispatchSalesOrders(user.organizationId)
       : Promise.resolve([]),
   ]);
 
@@ -276,7 +297,12 @@ export async function getEmReadyPayload(
       ? categorySummary("PC", buildPcMisDetailRows(checklistOccurrences))
       : null,
     personKra: buildPersonKra(taskRows, fmsRows, checklistRows),
-    exceptions: buildExceptions(taskRows, filteredOverdue, checklistRows),
+    exceptions: buildExceptions(
+      taskRows,
+      filteredOverdue,
+      checklistRows,
+      delayedSalesOrders,
+    ),
   };
 }
 

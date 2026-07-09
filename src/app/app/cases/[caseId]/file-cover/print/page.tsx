@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { FileCoverPrintView } from "@/components/legal/file-cover-print-view";
 import { PrintFileCoverButton } from "@/components/legal/file-cover-print-toolbar";
 import { getLegalCaseForUser } from "@/lib/legal-cases/queries";
-import { requireSession } from "@/lib/require-session";
+import { requireLegalCasesSession } from "@/lib/require-session";
 import "@/components/legal/legal-cases.css";
 
 type PageProps = {
@@ -11,7 +11,7 @@ type PageProps = {
 };
 
 export default async function FileCoverPrintPage({ params }: PageProps) {
-  const user = await requireSession(undefined, { module: "CASES" });
+  const user = await requireLegalCasesSession();
   const { caseId } = await params;
   const legalCase = await getLegalCaseForUser(user, caseId);
 

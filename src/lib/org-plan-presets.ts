@@ -1,7 +1,7 @@
 import type { OrgPlan, Role, WorkspaceModule } from "@prisma/client";
 import {
-  WORKSPACE_MODULES,
   defaultModulesForRole,
+  platformWorkspaceModules,
   resolveMemberModules,
 } from "@/lib/workspace-modules";
 
@@ -42,10 +42,10 @@ export function resolveOrgAllowedModules(
   options?: { isPrimary?: boolean },
 ): WorkspaceModule[] {
   if (options?.isPrimary) {
-    return [...WORKSPACE_MODULES];
+    return platformWorkspaceModules();
   }
   if (!allowedModules || allowedModules.length === 0) {
-    return [...WORKSPACE_MODULES];
+    return platformWorkspaceModules();
   }
   return [...allowedModules];
 }
@@ -67,9 +67,9 @@ export function allowedModulesForPlan(plan: OrgPlan): WorkspaceModule[] {
     case "LEGAL_ADDON":
       return ["CASES", "REPORTS"];
     case "ENTERPRISE":
-      return [...WORKSPACE_MODULES];
+      return platformWorkspaceModules();
     default:
-      return [...WORKSPACE_MODULES];
+      return platformWorkspaceModules();
   }
 }
 

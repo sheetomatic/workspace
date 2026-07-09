@@ -52,7 +52,7 @@ function mapTrackerBlock(
 }
 
 type PageProps = {
-  searchParams: Promise<{ completedPage?: string }>;
+  searchParams: Promise<{ completedPage?: string; q?: string }>;
 };
 
 const COMPLETED_PAGE_SIZE = 20;
@@ -67,14 +67,21 @@ export default async function FmsLinesPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const completedPage = Math.max(1, Number(params.completedPage ?? "1") || 1);
   const completedSkip = (completedPage - 1) * COMPLETED_PAGE_SIZE;
+  const referenceQuery = params.q?.trim() || undefined;
+
+  const trackerFilter = {
+    instanceStatus: "ACTIVE" as const,
+    ...(referenceQuery ? { referenceQuery } : {}),
+  };
 
   const [activeBlocks, completedBlocks, completedTotal, pipelineCounts] =
     await Promise.all([
-    listFmsTrackerBlocks(user.organizationId, { instanceStatus: "ACTIVE" }),
+    listFmsTrackerBlocks(user.organizationId, trackerFilter),
     listFmsTrackerBlocks(user.organizationId, {
       instanceStatus: "COMPLETED",
       limit: COMPLETED_PAGE_SIZE,
       skip: completedSkip,
+      ...(referenceQuery ? { referenceQuery } : {}),
     }),
     countCompletedFmsInstances(user.organizationId),
     getFmsPipelineCounts(user.organizationId),
@@ -109,6 +116,26 @@ export default async function FmsLinesPage({ searchParams }: PageProps) {
           </>
         }
       />
+
+      <form action="/app/fms/lines" method="get" className="ws-fms-reference-search">
+        <input
+          name="q"
+          type="search"
+          placeholder="Filter by SO# or reference…"
+          defaultValue={referenceQuery ?? ""}
+          aria-label="Filter pipelines by reference"
+        />
+        <button type="submit" className="btn-secondary btn-sm">
+          Search
+        </button>
+      </form>
+
+      {referenceQuery ? (
+        <p className="ws-fms-muted ws-fms-search-hint">
+          Filtering pipelines by reference: <strong>{referenceQuery}</strong>{" "}
+          <Link href="/app/fms/lines">Clear</Link>
+        </p>
+      ) : null}
 
       <div className="ws-sf-metrics ws-fms-metrics">
         <div className="ws-sf-metric-tile">

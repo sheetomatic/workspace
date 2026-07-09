@@ -13,6 +13,11 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
   "REPORTS",
 ];
 
+/** BCI / platform modules — legal Cases is a dedicated-portal product only (Hingorani). */
+export const PLATFORM_WORKSPACE_MODULES: WorkspaceModule[] = WORKSPACE_MODULES.filter(
+  (module) => module !== "CASES",
+);
+
 export const WORKSPACE_MODULE_LABELS: Record<WorkspaceModule, string> = {
   CASES: "Cases",
   TASKS: "Tasks",
@@ -36,7 +41,7 @@ export const WORKSPACE_MODULE_HREFS: Partial<Record<WorkspaceModule, string>> = 
 /** Defaults when admin leaves modules empty (legacy rows use migration backfill). */
 export function defaultModulesForRole(role: Role): WorkspaceModule[] {
   if (hasMinimumRole(role, "ADMIN")) {
-    return [...WORKSPACE_MODULES];
+    return [...PLATFORM_WORKSPACE_MODULES];
   }
   if (role === "MANAGER") {
     return ["TASKS", "FMS", "IMS", "APPROVALS", "REPORTS"];
@@ -59,6 +64,10 @@ export function resolveMemberModules(
 
 export function allWorkspaceModules(): WorkspaceModule[] {
   return [...WORKSPACE_MODULES];
+}
+
+export function platformWorkspaceModules(): WorkspaceModule[] {
+  return [...PLATFORM_WORKSPACE_MODULES];
 }
 
 export function hasWorkspaceModule(
@@ -99,8 +108,10 @@ export function resolveWorkspaceHomeHref(
         return "/app/today";
       }
       if (module === "FMS") {
+        // Managers land on the widget dashboard (business at a glance);
+        // staff go straight to their 2-tap step queue.
         return hasMinimumRole(user.role, "MANAGER")
-          ? "/app/fms/lines"
+          ? "/app"
           : "/app/fms/my-stops";
       }
       const href = WORKSPACE_MODULE_HREFS[module];

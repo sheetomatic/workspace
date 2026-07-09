@@ -4,7 +4,7 @@ import { FileCoverWizard } from "@/components/legal/file-cover-wizard";
 import { fileCoverFromLegalCase } from "@/lib/legal-cases/file-cover";
 import { isLegalAdmin } from "@/lib/legal-cases/access";
 import { getLegalCaseForUser } from "@/lib/legal-cases/queries";
-import { requireSession } from "@/lib/require-session";
+import { requireLegalCasesSession } from "@/lib/require-session";
 import "@/components/legal/legal-cases.css";
 
 type PageProps = {
@@ -13,7 +13,7 @@ type PageProps = {
 };
 
 export default async function EditFileCoverPage({ params, searchParams }: PageProps) {
-  const user = await requireSession(undefined, { module: "CASES" });
+  const user = await requireLegalCasesSession();
   const { caseId } = await params;
   const query = await searchParams;
   const legalCase = await getLegalCaseForUser(user, caseId);

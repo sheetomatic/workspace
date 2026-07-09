@@ -24,8 +24,8 @@ export async function generateMetadata(): Promise<Metadata> {
   if (portal) {
     const productName = portal.defaultAppearance.productName ?? portal.name;
     return {
-      title: `${productName} | Workspace`,
-      description: `${productName} client workspace.`,
+      title: `${productName} | Sheetomatic`,
+      description: `Secure portal for ${productName}.`,
       manifest: "/app/manifest.webmanifest",
       appleWebApp: {
         capable: true,

@@ -16,6 +16,8 @@ import {
   PlusCircle,
   Presentation,
   Settings,
+  ShoppingCart,
+  Truck,
   Users,
   Wrench,
 } from "lucide-react";
@@ -111,13 +113,6 @@ const BCI_ITEMS: WorkspaceNavItem[] = [
     matchPrefix: "/app/fms",
   },
   {
-    href: "/app/ims",
-    label: "IMS",
-    icon: Package,
-    module: "IMS",
-    matchPrefix: "/app/ims",
-  },
-  {
     href: "/app/checklists",
     label: "Check List",
     icon: CheckSquare,
@@ -161,7 +156,7 @@ const TASK_DELEGATION_ITEMS: WorkspaceNavItem[] = [
   },
   {
     href: "/app/tasks/create",
-    label: "Add task",
+    label: "Add Task",
     icon: PlusCircle,
     module: "TASKS",
     minRole: "MANAGER",
@@ -177,20 +172,163 @@ const TASK_DELEGATION_ITEMS: WorkspaceNavItem[] = [
   },
 ];
 
-const MODULE_ITEMS: WorkspaceNavItem[] = [
+/** Each business process = ops queue + its own FMS tracker (status / who / delay). */
+const SALES_FULFILLMENT_ITEMS: WorkspaceNavItem[] = [
   {
     href: "/app/leads",
     label: "Leads",
     icon: Megaphone,
     module: "FMS",
     matchPrefix: "/app/leads",
+    children: [
+      {
+        href: "/app/leads",
+        label: "All Leads",
+        icon: Megaphone,
+        module: "FMS",
+        matchPrefix: "/app/leads",
+      },
+      {
+        href: "/app/fms/fulfillment?flow=leads",
+        label: "Leads FMS",
+        icon: GitBranch,
+        module: "FMS",
+        minRole: "MANAGER",
+        matchPrefix: "/app/fms/fulfillment",
+      },
+    ],
   },
+  {
+    href: "/app/sales-orders",
+    label: "Sales Orders",
+    icon: ShoppingCart,
+    module: "FMS",
+    minRole: "MANAGER",
+    matchPrefix: "/app/sales-orders",
+    children: [
+      {
+        href: "/app/sales-orders",
+        label: "All Orders",
+        icon: ShoppingCart,
+        module: "FMS",
+        minRole: "MANAGER",
+        matchPrefix: "/app/sales-orders",
+      },
+      {
+        href: "/app/fms/fulfillment",
+        label: "Sales Order FMS",
+        icon: GitBranch,
+        module: "FMS",
+        minRole: "MANAGER",
+        matchPrefix: "/app/fms/fulfillment",
+      },
+    ],
+  },
+  {
+    href: "/app/ims",
+    label: "Inventory (IMS)",
+    icon: Package,
+    module: "IMS",
+    minRole: "MANAGER",
+    matchPrefix: "/app/ims",
+    children: [
+      {
+        href: "/app/ims",
+        label: "IMS Dashboard",
+        icon: Package,
+        module: "IMS",
+        minRole: "MANAGER",
+        matchPrefix: "/app/ims",
+      },
+      {
+        href: "/app/fms/fulfillment?flow=stock-check",
+        label: "Stock Check FMS",
+        icon: GitBranch,
+        module: "FMS",
+        minRole: "MANAGER",
+        matchPrefix: "/app/fms/fulfillment",
+      },
+    ],
+  },
+  {
+    href: "/app/sales-orders?status=PO_PENDING",
+    label: "Purchase Orders",
+    icon: ClipboardList,
+    module: "FMS",
+    minRole: "MANAGER",
+    matchPrefix: "/app/sales-orders",
+    children: [
+      {
+        href: "/app/sales-orders?status=PO_PENDING",
+        label: "PO Queue",
+        icon: ClipboardList,
+        module: "FMS",
+        minRole: "MANAGER",
+        matchPrefix: "/app/sales-orders",
+      },
+      {
+        href: "/app/fms/fulfillment?flow=purchase-order",
+        label: "PO FMS",
+        icon: GitBranch,
+        module: "FMS",
+        minRole: "MANAGER",
+        matchPrefix: "/app/fms/fulfillment",
+      },
+    ],
+  },
+  {
+    href: "/app/sales-orders?status=DISPATCH_PENDING",
+    label: "Dispatch",
+    icon: Truck,
+    module: "FMS",
+    minRole: "MANAGER",
+    matchPrefix: "/app/sales-orders",
+    children: [
+      {
+        href: "/app/sales-orders?status=DISPATCH_PENDING",
+        label: "Dispatch Queue",
+        icon: Truck,
+        module: "FMS",
+        minRole: "MANAGER",
+        matchPrefix: "/app/sales-orders",
+      },
+      {
+        href: "/app/fms/fulfillment?flow=dispatch",
+        label: "Dispatch FMS",
+        icon: GitBranch,
+        module: "FMS",
+        minRole: "MANAGER",
+        matchPrefix: "/app/fms/fulfillment",
+      },
+    ],
+  },
+];
+
+const MODULE_ITEMS: WorkspaceNavItem[] = [
+  ...SALES_FULFILLMENT_ITEMS,
   {
     href: "/app/hr",
     label: "HR",
     icon: MapPin,
     module: "HR",
     matchPrefix: "/app/hr",
+    children: [
+      {
+        href: "/app/hr",
+        label: "HR Dashboard",
+        icon: MapPin,
+        module: "HR",
+        matchPrefix: "/app/hr",
+      },
+      {
+        href: "/app/fms/fulfillment?flow=recruitment",
+        label: "Recruitment FMS",
+        icon: GitBranch,
+        module: "FMS",
+        minRole: "MANAGER",
+        matchPrefix: "/app/fms/fulfillment",
+      },
+    ],
   },
   {
     href: "/app/approvals",
@@ -297,7 +435,7 @@ export function getWorkspaceNavSections(params: {
         items: [
           {
             href: "/app/cases/settings",
-            label: "Import & export",
+            label: "Import & Export",
             icon: FileSpreadsheet,
             minRole: "MANAGER",
             matchPrefix: "/app/cases/settings",
@@ -332,7 +470,7 @@ export function getWorkspaceNavSections(params: {
     },
     {
       id: "modules",
-      label: "Modules",
+      label: "Sales & Fulfillment",
       items: MODULE_ITEMS,
     },
   ];
@@ -373,8 +511,15 @@ export function getWorkspaceNavSections(params: {
   return sections;
 }
 
-export function navIsActive(pathname: string, href: string, matchPrefix?: string) {
-  const base = matchPrefix ?? href;
+export function navIsActive(
+  pathname: string,
+  href: string,
+  matchPrefix?: string,
+  currentSearch = "",
+) {
+  const hrefPath = href.split("?")[0] ?? href;
+  const hrefQuery = href.includes("?") ? href.split("?")[1] ?? "" : "";
+  const base = matchPrefix ?? hrefPath;
   if (base === "/app") {
     return pathname === "/app";
   }
@@ -382,16 +527,16 @@ export function navIsActive(pathname: string, href: string, matchPrefix?: string
     return false;
   }
   if (
-    href === "/app/tasks" &&
+    hrefPath === "/app/tasks" &&
     base === "/app/tasks" &&
     (pathname === "/app/tasks/today" || pathname === "/app/tasks/all")
   ) {
     return false;
   }
-  if (href === "/app/pc/today" && (matchPrefix ?? href) === "/app/pc") {
+  if (hrefPath === "/app/pc/today" && (matchPrefix ?? hrefPath) === "/app/pc") {
     return pathname === "/app/pc/today";
   }
-  if (href === "/app/checklists" && base === "/app/checklists") {
+  if (hrefPath === "/app/checklists" && base === "/app/checklists") {
     return pathname === "/app/checklists";
   }
   if (
@@ -409,19 +554,43 @@ export function navIsActive(pathname: string, href: string, matchPrefix?: string
   if (base === "/app/fms" && pathname.startsWith("/app/fms/setup")) {
     return false;
   }
-  return pathname === base || pathname.startsWith(`${base}/`);
+
+  const pathMatch = pathname === base || pathname.startsWith(`${base}/`);
+  if (!pathMatch) {
+    return false;
+  }
+
+  const currentParams = new URLSearchParams(currentSearch);
+  if (!hrefQuery) {
+    if (base === "/app/sales-orders" && currentParams.get("status")) {
+      return false;
+    }
+    if (base === "/app/fms/fulfillment" && currentParams.get("flow")) {
+      return false;
+    }
+    return true;
+  }
+
+  const expectedParams = new URLSearchParams(hrefQuery);
+  for (const [key, value] of expectedParams.entries()) {
+    if (currentParams.get(key) !== value) {
+      return false;
+    }
+  }
+  return true;
 }
 
 export function navGroupHasActiveChild(
   pathname: string,
   item: WorkspaceNavItem,
+  currentSearch = "",
 ): boolean {
   if (!item.children?.length) {
     return false;
   }
   return item.children.some(
     (child) =>
-      navIsActive(pathname, child.href, child.matchPrefix) ||
-      navGroupHasActiveChild(pathname, child),
+      navIsActive(pathname, child.href, child.matchPrefix, currentSearch) ||
+      navGroupHasActiveChild(pathname, child, currentSearch),
   );
 }

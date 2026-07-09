@@ -2,6 +2,7 @@ import type { Role, WorkspaceModule } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { AI_APP_MIN_ROLE } from "@/lib/ai-auth-links";
+import { isLegalCasesOrganization } from "@/lib/dedicated-client-portals";
 import { hasMinimumRole } from "@/lib/permissions";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
 
@@ -36,4 +37,18 @@ export async function requireAiSession(options?: { redirectTo?: string }) {
   return requireSession(AI_APP_MIN_ROLE, {
     redirectTo: options?.redirectTo ?? "/app",
   });
+}
+
+export async function requireLegalCasesSession(
+  minRole?: Role,
+  options?: { redirectTo?: string },
+) {
+  const user = await requireSession(minRole, {
+    module: "CASES",
+    redirectTo: options?.redirectTo,
+  });
+  if (!isLegalCasesOrganization(user.organizationSlug)) {
+    redirect(options?.redirectTo ?? "/app");
+  }
+  return user;
 }

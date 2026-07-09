@@ -3,7 +3,7 @@ import {
   buildToBeFiledPrintList,
   type PrintListSortKey,
 } from "@/lib/legal-cases/print-list";
-import { requireSession } from "@/lib/require-session";
+import { requireLegalCasesSession } from "@/lib/require-session";
 import "@/components/legal/legal-cases.css";
 
 type PageProps = {
@@ -33,7 +33,7 @@ function toDateInputValue(date: Date): string {
 }
 
 export default async function CasesToBeFiledPrintPage({ searchParams }: PageProps) {
-  const user = await requireSession(undefined, { module: "CASES" });
+  const user = await requireLegalCasesSession();
   const params = await searchParams;
   const sort = parseSort(params.sort);
   const asOfDate = parseAsOf(params.asOf);

@@ -19,7 +19,7 @@ import {
 } from "@/lib/legal-cases/list-filters";
 import { getLegalAssigneeCounts, getLegalSectionCounts, listLegalCases } from "@/lib/legal-cases/queries";
 import { getLegalViewNavCounts } from "@/lib/legal-cases/view-queries";
-import { requireSession } from "@/lib/require-session";
+import { requireLegalCasesSession } from "@/lib/require-session";
 import "@/components/legal/legal-cases.css";
 
 type CasesListPageProps = {
@@ -37,7 +37,7 @@ type CasesListPageProps = {
 };
 
 export default async function CasesListPage({ searchParams }: CasesListPageProps) {
-  const user = await requireSession(undefined, { module: "CASES" });
+  const user = await requireLegalCasesSession();
   const params = await searchParams;
   const admin = isLegalAdmin(user);
   const filter = parseLegalListSearchParams(params);

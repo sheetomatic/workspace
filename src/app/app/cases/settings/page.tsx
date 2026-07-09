@@ -4,12 +4,12 @@ import { PageHeader } from "@/components/saas/page-header";
 import { loadLegalCasesSettingsBackupMeta } from "@/app/app/cases/settings-actions";
 import { isLegalAdmin } from "@/lib/legal-cases/access";
 import { getDedicatedClientPortal } from "@/lib/dedicated-client-portals";
-import { requireSession } from "@/lib/require-session";
+import { requireLegalCasesSession } from "@/lib/require-session";
 import { prisma } from "@/lib/db";
 import "@/components/legal/legal-cases.css";
 
 export default async function CasesSettingsPage() {
-  const user = await requireSession(undefined, { module: "CASES" });
+  const user = await requireLegalCasesSession();
   if (!isLegalAdmin(user)) {
     return (
       <div className="saas-page">

@@ -4,7 +4,7 @@ import { CaseDetailView } from "@/components/legal/case-detail-view";
 import type { LegalSectionNumber } from "@/lib/legal-cases/constants";
 import { canViewLegalSection, viewableSectionsForUser } from "@/lib/legal-cases/access";
 import { getLegalCaseForUser } from "@/lib/legal-cases/queries";
-import { requireSession } from "@/lib/require-session";
+import { requireLegalCasesSession } from "@/lib/require-session";
 
 type CaseDetailPageProps = {
   params: Promise<{ caseId: string }>;
@@ -23,7 +23,7 @@ export default async function CaseDetailPage({
   params,
   searchParams,
 }: CaseDetailPageProps) {
-  const user = await requireSession(undefined, { module: "CASES" });
+  const user = await requireLegalCasesSession();
   const { caseId } = await params;
   const query = await searchParams;
   const legalCase = await getLegalCaseForUser(user, caseId);

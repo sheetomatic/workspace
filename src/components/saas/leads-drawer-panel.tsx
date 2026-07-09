@@ -28,6 +28,10 @@ import {
   updateLeadProjectStatus,
 } from "@/app/app/leads/actions";
 import { QuotationBuilderPanel } from "@/components/saas/quotation-builder-panel";
+import type { LeadDeliveryInput } from "@/lib/leads/delivery-journey";
+import { deliveryJourneySummary, buildDeliveryJourney } from "@/lib/leads/delivery-journey";
+import { SalesOrderPanel } from "@/components/saas/sales-order-panel";
+import type { LeadSalesOrderData } from "@/lib/leads/sales-order-types";
 import { formatInr, leadCategoryLabel, listLeadCategoryOptions, resolveLeadCategoryId, type LeadCategoryId } from "@/lib/leads/categories";
 import {
   CALLING_STATUS_LABELS,
@@ -143,6 +147,7 @@ export type LeadDrawerData = {
   quotations: QuotationRow[];
   offeredServices: OfferedServiceRow[];
   activities: ActivityRow[];
+  salesOrder?: LeadSalesOrderData | null;
 };
 
 function defaultFollowUpLocal() {
@@ -177,9 +182,9 @@ export function LeadDrawerPanel({
   onDeleted?: () => void;
 }) {
   const router = useRouter();
-  const [tab, setTab] = useState<"details" | "meeting" | "services" | "payments" | "quote">(
-    "details",
-  );
+  const [tab, setTab] = useState<
+    "details" | "meeting" | "services" | "payments" | "quote" | "order"
+  >("details");
   const [name, setName] = useState(lead.name ?? "");
   const [phone, setPhone] = useState(lead.phone ?? "");
   const [email, setEmail] = useState(lead.email ?? "");
@@ -207,6 +212,13 @@ export function LeadDrawerPanel({
 
   const aiStatus = lead.aiSuggestedStatus ?? null;
   const showAiHint = aiStatus && aiStatus !== lead.status && canManage;
+
+  const leadDelivery: LeadDeliveryInput = {
+    quotations: lead.quotations,
+    payments: lead.payments,
+    salesOrder: lead.salesOrder ?? null,
+  };
+  const deliverySummary = deliveryJourneySummary(buildDeliveryJourney(leadDelivery));
 
   return (
     <aside
@@ -248,6 +260,21 @@ export function LeadDrawerPanel({
           ) : null}
         </div>
         <div className="leads-drawer-head-actions">
+          {lead.salesOrder ? (
+            <Link
+              href={`/app/sales-orders/${lead.salesOrder.id}`}
+              className="btn-secondary btn-sm leads-drawer-so-link"
+            >
+              {lead.salesOrder.orderNumber}
+            </Link>
+          ) : (
+            <Link
+              href="/app/sales-orders"
+              className="btn-secondary btn-sm leads-drawer-so-link"
+            >
+              Sales orders
+            </Link>
+          )}
           <button
             type="button"
             className="leads-icon-btn"
@@ -260,26 +287,30 @@ export function LeadDrawerPanel({
         </div>
       </header>
 
-      <div className="leads-drawer-tabs">
-        {(["details", "meeting", "services", "payments", "quote"] as const).map((key) => (
+      <nav className="leads-drawer-tabs" aria-label="Lead sections">
+        {(
+          [
+            { key: "details", label: "Details" },
+            { key: "meeting", label: "Meeting" },
+            { key: "services", label: "Services" },
+            { key: "payments", label: "Payments" },
+            { key: "quote", label: "Quotation" },
+            { key: "order", label: "Delivery" },
+          ] as const
+        ).map((item) => (
           <button
-            key={key}
+            key={item.key}
             type="button"
-            className={tab === key ? "active" : ""}
-            onClick={() => setTab(key)}
+            className={tab === item.key ? "active" : ""}
+            onClick={() => setTab(item.key)}
           >
-            {key === "details"
-              ? "Details"
-              : key === "meeting"
-                ? "Meeting"
-                : key === "services"
-                  ? "Services"
-                  : key === "payments"
-                    ? "Payments"
-                    : "Quotation"}
+            {item.label}
+            {item.key === "order" ? (
+              <span className="leads-drawer-tab-meta">{deliverySummary}</span>
+            ) : null}
           </button>
         ))}
-      </div>
+      </nav>
 
       {tab === "details" ? (
         <>
@@ -648,6 +679,17 @@ export function LeadDrawerPanel({
         </section>
       ) : null}
 
+      {tab === "order" ? (
+        <SalesOrderPanel
+          leadDelivery={leadDelivery}
+          salesOrder={lead.salesOrder ?? null}
+          canManage={canManage}
+          pending={pending}
+          startTransition={startTransition}
+          onGoToLeadTab={(leadTab) => setTab(leadTab)}
+        />
+      ) : null}
+
       {tab === "quote" ? (
         <QuotationBuilderPanel
           leadId={lead.id}
@@ -669,6 +711,7 @@ export function LeadDrawerPanel({
         />
       ) : null}
 
+      {tab !== "order" ? (
       <section className="leads-drawer-section">
         <div className="leads-history-head">
           <h3>History & logs</h3>
@@ -742,6 +785,7 @@ export function LeadDrawerPanel({
           )}
         </ul>
       </section>
+      ) : null}
     </aside>
   );
 }

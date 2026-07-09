@@ -20,91 +20,8 @@
   max-width: 46rem;
 }
 
-.sales-hero-contact-pill {
-  margin-top: 1rem;
-  width: 100%;
-  max-width: 31rem;
-}
-
-.contact-pill {
-  display: inline-flex;
-  width: 100%;
-  max-width: 100%;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.55rem;
-  border: 1px solid rgba(191, 219, 254, 0.95);
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(239, 246, 255, 0.96));
-  box-shadow: 0 18px 40px rgba(37, 99, 235, 0.12);
-}
-
-.contact-pill-number {
-  display: inline-flex;
-  min-width: 0;
-  flex: 1 1 auto;
-  align-items: center;
-  gap: 0.9rem;
-  padding: 0.35rem 0.35rem 0.35rem 0.55rem;
-  color: #0f172a;
-  text-decoration: none;
-}
-
-.contact-pill-number:hover {
-  color: #1d4ed8;
-}
-
-.contact-pill-number:focus-visible,
-.contact-pill-button:focus-visible {
-  outline: 2px solid #2563eb;
-  outline-offset: 2px;
-}
-
-.contact-pill-icon {
-  display: inline-flex;
-  flex: 0 0 2.65rem;
-  align-items: center;
-  justify-content: center;
-  width: 2.65rem;
-  height: 2.65rem;
-  border-radius: 999px;
-  background: #dbeafe;
-  color: #2563eb;
-}
-
-.contact-pill-phone-icon {
-  display: block;
-}
-
-.contact-pill-copy {
-  display: grid;
-  min-width: 0;
-  gap: 0.15rem;
-}
-
-.contact-pill-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #64748b;
-}
-
-.contact-pill-copy strong {
-  display: block;
-  min-width: 0;
-  overflow-wrap: anywhere;
-  font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: inherit;
-}
-
-.contact-pill-button {
-  flex: 0 0 auto;
-  min-height: 44px;
-  padding-inline: 1.25rem;
+.sales-hero-whatsapp {
+  min-width: 180px;
 }
 
 .sales-hero-proof {
@@ -151,20 +68,6 @@
 }
 
 @media (max-width: 640px) {
-  .contact-pill {
-    flex-direction: column;
-    align-items: stretch;
-    border-radius: 24px;
-  }
-
-  .contact-pill-number {
-    padding-right: 0.55rem;
-  }
-
-  .contact-pill-button {
-    width: 100%;
-  }
-
   .sales-hero-proof {
     width: 100%;
   }

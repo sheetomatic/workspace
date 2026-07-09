@@ -13,7 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import type { EmReadyPayload } from "@/lib/em/em-ready-data";
-import { formatDeficitPct } from "@/lib/em/em-ready-data";
+import { formatDeficitPct } from "@/lib/mis/reports-data";
 import { KRA_KPI_SURFACE_HIDDEN } from "@/lib/pms-surface";
 
 function DeficitBadge({

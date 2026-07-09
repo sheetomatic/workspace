@@ -8,6 +8,7 @@ import Credentials from "next-auth/providers/credentials";
 import { prisma, withDbRetry } from "@/lib/db";
 import { PRIMARY_ORG_SLUG } from "@/lib/platform";
 import { resolveSessionModules } from "@/lib/dedicated-client-portals";
+import { getRequestTenantSlug } from "@/lib/tenant-host";
 
 export type SessionUser = {
   id: string;
@@ -264,12 +265,23 @@ export const getSessionUser = cache(async function getSessionUser() {
   }
 
   const tokenUser = session.user as SessionUser;
+  const requestTenantSlug = await getRequestTenantSlug();
+  const requestedOrgSlug = requestTenantSlug ?? tokenUser.organizationSlug;
 
   return withDbRetry(async (db) => {
-    const membership = await resolveMembership(
-      tokenUser.id,
-      tokenUser.organizationSlug,
-    );
+    let membership = await resolveMembership(tokenUser.id, requestedOrgSlug);
+
+    // Tenant hosts should win when the user can access that org, but preserve the
+    // existing session org on invalid tenant-host attempts so the caller can
+    // redirect back instead of forcing a logout.
+    if (
+      !membership &&
+      requestTenantSlug &&
+      tokenUser.organizationSlug &&
+      requestTenantSlug !== tokenUser.organizationSlug
+    ) {
+      membership = await resolveMembership(tokenUser.id, tokenUser.organizationSlug);
+    }
 
     if (!membership) {
       return null;

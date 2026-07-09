@@ -5,7 +5,7 @@ import { LegalViewsNav } from "@/components/legal/legal-views-nav";
 import { PageHeader } from "@/components/saas/page-header";
 import { parseLegalNextDate } from "@/lib/legal-cases/parse-next-date";
 import { getLegalViewNavCounts, listAllLegalViewCases } from "@/lib/legal-cases/view-queries";
-import { requireSession } from "@/lib/require-session";
+import { requireLegalCasesSession } from "@/lib/require-session";
 import "@/components/legal/legal-cases.css";
 
 function sortByNextDate(cases: Awaited<ReturnType<typeof listAllLegalViewCases>>) {
@@ -20,7 +20,7 @@ function sortByNextDate(cases: Awaited<ReturnType<typeof listAllLegalViewCases>>
 }
 
 export default async function DiaryQuickUpdatePage() {
-  const user = await requireSession(undefined, { module: "CASES" });
+  const user = await requireLegalCasesSession();
 
   const [cases, counts] = await Promise.all([
     listAllLegalViewCases(user, "diary"),

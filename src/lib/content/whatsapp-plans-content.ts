@@ -1,4 +1,3 @@
-import { whatsappDisplayNumber, whatsappTel } from "@/app/site-content";
 import { formatInr } from "@/lib/leads/categories";
 
 export type WhatsappPlanCard = {
@@ -91,8 +90,8 @@ export const whatsappPlansPage = {
     },
   ] satisfies WhatsappPlanCard[],
   contact: {
-    phone: whatsappTel,
-    phoneDisplay: whatsappDisplayNumber,
+    phone: "+919329103106",
+    phoneDisplay: "+91 93291 03106",
     email: "sheetomatic@gmail.com",
     enquiryFormUrl: "https://forms.gle/aLUcf4fcAKdUXf3o6",
   },

@@ -141,6 +141,23 @@ const INTAKE_FIELDS: Record<string, IntakeFieldDef[]> = {
     { fieldKey: "customer", label: "Customer", fieldType: "TEXT", required: true, sortOrder: 1 },
     { fieldKey: "packed_qty", label: "Packed qty", fieldType: "NUMBER", required: true, sortOrder: 2 },
   ],
+  "sales-order": [
+    { fieldKey: "customer_name", label: "Customer name", fieldType: "TEXT", required: true, sortOrder: 0 },
+    { fieldKey: "sales_order_number", label: "Sales order number", fieldType: "TEXT", required: true, sortOrder: 1 },
+    { fieldKey: "delivery_date", label: "Delivery date", fieldType: "DATE", required: true, sortOrder: 2 },
+  ],
+  "stock-check-fulfillment": [
+    { fieldKey: "sales_order_number", label: "Sales order number", fieldType: "TEXT", required: true, sortOrder: 0 },
+    { fieldKey: "delivery_date", label: "Delivery date", fieldType: "DATE", required: true, sortOrder: 1 },
+  ],
+  "dispatch-to-delivery": [
+    { fieldKey: "sales_order_number", label: "Sales order number", fieldType: "TEXT", required: true, sortOrder: 0 },
+    { fieldKey: "customer_name", label: "Customer name", fieldType: "TEXT", required: true, sortOrder: 1 },
+  ],
+  "purchase-order": [
+    { fieldKey: "sales_order_number", label: "Sales Order #", fieldType: "TEXT", sortOrder: 0 },
+    { fieldKey: "vendor_name", label: "Vendor name", fieldType: "TEXT", required: true, sortOrder: 1 },
+  ],
 };
 
 const OWNER_BY_ROLE: Record<string, BciUserKey> = {
@@ -154,6 +171,10 @@ const OWNER_BY_ROLE: Record<string, BciUserKey> = {
   Packing: "ops",
   Logistics: "ops",
   Warehouse: "ops",
+  Store: "ops",
+  Inventory: "ops",
+  Quality: "manager",
+  Dispatch: "ops",
 };
 
 function hoursAgo(hours: number) {
@@ -489,6 +510,13 @@ export async function seedBciDemo(client: PrismaClient = prisma) {
 
   const leadTpl = FMS_WORKFLOW_TEMPLATES.find((t) => t.id === "sales-lead-to-closure")!;
   const dispatchTpl = FMS_WORKFLOW_TEMPLATES.find((t) => t.id === "packing-to-dispatch")!;
+  const salesOrderTpl = FMS_WORKFLOW_TEMPLATES.find((t) => t.id === "sales-order")!;
+  const stockCheckTpl = FMS_WORKFLOW_TEMPLATES.find(
+    (t) => t.id === "stock-check-fulfillment",
+  )!;
+  const dispatchDeliveryTpl = FMS_WORKFLOW_TEMPLATES.find(
+    (t) => t.id === "dispatch-to-delivery",
+  )!;
 
   const lead = await provisionWorkflow({
     organizationId: organization.id,
@@ -502,6 +530,30 @@ export async function seedBciDemo(client: PrismaClient = prisma) {
     organizationId: organization.id,
     templateId: PAYMENT_COLLECTION_TEMPLATE.id,
     template: PAYMENT_COLLECTION_TEMPLATE,
+    users,
+    creatorId: users.owner,
+  });
+
+  await provisionWorkflow({
+    organizationId: organization.id,
+    templateId: salesOrderTpl.id,
+    template: salesOrderTpl,
+    users,
+    creatorId: users.owner,
+  });
+
+  await provisionWorkflow({
+    organizationId: organization.id,
+    templateId: stockCheckTpl.id,
+    template: stockCheckTpl,
+    users,
+    creatorId: users.owner,
+  });
+
+  await provisionWorkflow({
+    organizationId: organization.id,
+    templateId: dispatchDeliveryTpl.id,
+    template: dispatchDeliveryTpl,
     users,
     creatorId: users.owner,
   });

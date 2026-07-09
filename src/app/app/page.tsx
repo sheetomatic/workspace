@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { UserDashboard } from "@/components/saas/user-dashboard";
+import { WorkspaceWidgetDashboard } from "@/components/saas/workspace-widget-dashboard";
 import { prisma } from "@/lib/db";
 import type { DashboardPayload } from "@/lib/dashboard-types";
+import { getWidgetDashboardData } from "@/lib/dashboard/widgets";
 import { requireSession } from "@/lib/require-session";
 import { hasWorkspaceModule, resolveWorkspaceHomeHref } from "@/lib/workspace-modules";
 import { getUserDashboard } from "@/lib/workspace-data";
@@ -44,24 +46,50 @@ export default async function AppDashboardPage() {
 
   const displayName = user.name ?? user.email.split("@")[0];
 
-  let dashboard;
-  try {
-    dashboard = await getUserDashboard(user);
-  } catch (error) {
-    console.error("getUserDashboard", error);
-    dashboard = emptyDashboardForUser(user.role);
-  }
+  // BCI-style platform orgs get the widget grid; AI-CRM orgs keep the
+  // classic metric-cards dashboard.
+  const isWidgetHome =
+    hasWorkspaceModule(user, "FMS") || hasWorkspaceModule(user, "IMS");
 
-  const organization = await prisma.organization.findUnique({
-    where: { id: user.organizationId },
-    select: { name: true },
-  });
+  const [dashboard, widgets, organization] = await Promise.all([
+    getUserDashboard(user).catch((error) => {
+      console.error("getUserDashboard", error);
+      return emptyDashboardForUser(user.role);
+    }),
+    isWidgetHome
+      ? getWidgetDashboardData(user).catch((error) => {
+          console.error("getWidgetDashboardData", error);
+          return null;
+        })
+      : Promise.resolve(null),
+    prisma.organization.findUnique({
+      where: { id: user.organizationId },
+      select: { name: true },
+    }),
+  ]);
+
+  const organizationName = organization?.name ?? user.organizationName;
+
+  if (widgets) {
+    return (
+      <div className="saas-page">
+        <WorkspaceWidgetDashboard
+          data={widgets}
+          organizationName={organizationName}
+          pendingPayments={dashboard.pendingPayments}
+          taskStats={dashboard.taskStats}
+          tasksEnabled={hasWorkspaceModule(user, "TASKS")}
+          userName={displayName}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="saas-page crm-dashboard-page">
       <UserDashboard
         {...dashboard}
-        organizationName={organization?.name ?? user.organizationName}
+        organizationName={organizationName}
         userName={displayName}
         userRole={user.role}
       />

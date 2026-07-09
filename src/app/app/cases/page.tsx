@@ -6,23 +6,24 @@ import {
 import { LegalRunningInsights } from "@/components/legal/legal-running-insights";
 import { LegalViewsNavLoader } from "@/components/legal/legal-views-nav-loader";
 import { PageHeader } from "@/components/saas/page-header";
+import { getDedicatedClientPortal } from "@/lib/dedicated-client-portals";
 import { isLegalAdmin } from "@/lib/legal-cases/access";
 import { getLegalDashboardStats } from "@/lib/legal-cases/queries";
 import {
   getRunningInsights,
 } from "@/lib/legal-cases/view-queries";
-import { requireSession } from "@/lib/require-session";
+import { requireLegalCasesSession } from "@/lib/require-session";
 import "@/components/legal/legal-cases.css";
 import { Suspense } from "react";
 
 export default async function CasesPage() {
-  const user = await requireSession(undefined, { module: "CASES" });
-  const isHingorani = user.organizationSlug === "hingorani";
+  const user = await requireLegalCasesSession();
+  const dedicatedPortal = getDedicatedClientPortal(user.organizationSlug);
   const admin = isLegalAdmin(user);
-  const pageTitle = isHingorani
+  const pageTitle = dedicatedPortal
     ? admin
-      ? "Hingorani dashboard"
-      : "My work"
+      ? "Case command center"
+      : "My cases"
     : admin
       ? "Cases dashboard"
       : "My work";
@@ -47,7 +48,9 @@ export default async function CasesPage() {
           <PageHeader
             description={
               admin
-                ? "Manage all MACT case files, hearings, and documents."
+                ? dedicatedPortal
+                  ? "Track MACT case files, hearings, and documents in one dedicated portal."
+                  : "Manage all MACT case files, hearings, and documents."
                 : `Your assigned cases${user.staffCode ? ` (${user.staffCode})` : ""}.`
             }
             title={pageTitle}

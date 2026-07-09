@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { SessionUser } from "@/lib/auth";
+import { isDedicatedClientPortal } from "@/lib/dedicated-client-portals";
 import { parseHost } from "@/lib/subdomain";
 import { tenantPortalOrigin } from "@/lib/workspace-auth-links";
 
@@ -62,10 +63,21 @@ export async function ensureSessionTenantHost(sessionUser: SessionUser) {
 
   const headerStore = await headers();
   const tenantSlug = await getRequestTenantSlug();
-  if (!tenantSlug || tenantSlug === sessionUser.organizationSlug) {
-    return;
+  const pathname = await getRequestPathname();
+
+  if (tenantSlug) {
+    if (tenantSlug === sessionUser.organizationSlug) {
+      return;
+    }
+
+    redirect(tenantRedirectOrigin(sessionUser.organizationSlug, headerStore) + pathname);
   }
 
-  const pathname = await getRequestPathname();
-  redirect(tenantRedirectOrigin(sessionUser.organizationSlug, headerStore) + pathname);
+  const host = parseHost(headerStore.get("host"));
+  if (
+    host.kind !== "tenant" &&
+    isDedicatedClientPortal(sessionUser.organizationSlug)
+  ) {
+    redirect(tenantRedirectOrigin(sessionUser.organizationSlug, headerStore) + pathname);
+  }
 }

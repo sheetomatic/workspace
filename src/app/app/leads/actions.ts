@@ -49,6 +49,7 @@ import {
   nextQuotationNumber,
   revisionQuotationNumber,
 } from "@/lib/leads/quotations";
+import { createSalesOrderFromLockedQuotation } from "@/lib/sales-orders/create-from-quotation";
 import { createQuotationShareToken } from "@/lib/leads/quotation-tokens";
 import { inferLeadStageFromRequirement } from "@/lib/leads/stage-ai";
 import { leadStatusLabel } from "@/lib/leads/status-labels";
@@ -801,7 +802,29 @@ export async function addInboundLeadPayment(params: {
   });
 
   let lockedQuotationNumber: string | null = null;
+  let salesOrderNumber: string | null = null;
   if (params.paymentType === "ADVANCE") {
+    const latestQuotation = await prisma.inboundLeadQuotation.findFirst({
+      where: {
+        organizationId: user.organizationId,
+        leadId: params.leadId,
+        status: { in: ["DRAFT", "SENT", "REVISED"] },
+        lockedAt: null,
+      },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, advanceRequired: true, quotationNumber: true },
+    });
+
+    if (latestQuotation?.advanceRequired != null) {
+      const required = Number(latestQuotation.advanceRequired);
+      if (amount < required) {
+        return {
+          ok: false,
+          message: `Advance must be at least ₹${required.toLocaleString("en-IN")} per ${latestQuotation.quotationNumber}.`,
+        };
+      }
+    }
+
     const locked = await lockLatestLeadQuotation(
       user.organizationId,
       params.leadId,
@@ -817,6 +840,19 @@ export async function addInboundLeadPayment(params: {
         createdByUserId: user.id,
         metadata: { quotationId: locked.id, locked: true },
       });
+
+      try {
+        const salesOrder = await createSalesOrderFromLockedQuotation({
+          organizationId: user.organizationId,
+          leadId: params.leadId,
+          quotationId: locked.id,
+          advanceAmount: amount,
+          actorUserId: user.id,
+        });
+        salesOrderNumber = salesOrder.orderNumber;
+      } catch (error) {
+        console.error("createSalesOrderFromLockedQuotation", error);
+      }
     }
   }
 
@@ -834,9 +870,11 @@ export async function addInboundLeadPayment(params: {
   });
 
   revalidatePath("/app/leads");
+  revalidatePath("/app/sales-orders");
   return {
     ok: true,
     lockedQuotationNumber,
+    salesOrderNumber,
   };
 }
 

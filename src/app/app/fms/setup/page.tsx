@@ -40,6 +40,16 @@ export default async function FmsSetupPage() {
       <TaskPageToolbar
         title="Setup"
         description="AI-powered flow design, forms, and workflow launch."
+        actions={
+          canDesign ? (
+            <Link
+              href="/app/fms/setup/business"
+              className="btn-primary btn-sm ws-sf-btn-primary"
+            >
+              Business setup wizard
+            </Link>
+          ) : undefined
+        }
       />
 
       {canDesign ? <FmsAiSetupPanel /> : null}

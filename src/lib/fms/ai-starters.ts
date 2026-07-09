@@ -54,6 +54,33 @@ export const FMS_AI_STARTERS: FmsAiStarter[] = [
       "Inquiry to Quotation FMS: Inquiry Form, Quotation Preparation, Quotation Approval. Customer, product/service, quantity, requirement, target date, quotation amount, prepared by, approved by. Start: customer inquiry. End: approved quotation sent.",
   },
   {
+    id: "sales-order-entry",
+    department: "sales",
+    label: "Sales Order",
+    summary: "Order entry and sales approval",
+    templateId: "sales-order",
+    prompt:
+      "Sales Order FMS after quotation lock: Order Entry and Order Approval. Intake: customer name, phone, email, delivery address, quotation number, customer PO, delivery date, payment terms, line items table, advance received, balance due. Start: advance received. End: order approved for fulfillment.",
+  },
+  {
+    id: "stock-check-fulfillment",
+    department: "inventory",
+    label: "Stock Check Fulfillment",
+    summary: "Stock check and dispatch vs PO decision",
+    templateId: "stock-check-fulfillment",
+    prompt:
+      "Stock Check Fulfillment FMS: Stock Availability and Fulfillment Decision. Intake: sales order number, delivery date. Decision marks ready_for_dispatch or records shortage for purchase. Start: confirmed sales order. End: ready for dispatch or PO required.",
+  },
+  {
+    id: "dispatch-to-delivery",
+    department: "dispatch",
+    label: "Dispatch to Delivery",
+    summary: "Pack through customer confirmation",
+    templateId: "dispatch-to-delivery",
+    prompt:
+      "Dispatch to Delivery FMS: Packing List, Pre-dispatch QC, Loading, Dispatch, Unloading, Customer Confirmation, Notify Parties. Intake: sales order number, customer name, delivery address. Start: goods ready. End: delivered and parties notified.",
+  },
+  {
     id: "purchase-po",
     department: "purchase",
     label: "Purchase Order",
@@ -61,6 +88,15 @@ export const FMS_AI_STARTERS: FmsAiStarter[] = [
     templateId: "purchase-order",
     prompt:
       "Purchase Order FMS: vendor shortlist, founder approval, accounts payment, warehouse goods receipt. Intake form must include vendor name, PO number, expected delivery date, and a TABLE field named Line items with columns item name, quantity, UOM, size, and color. Include TAT per stage and distinct owners for ops, founder, accounts, warehouse.",
+  },
+  {
+    id: "recruitment",
+    department: "hr",
+    label: "Recruitment",
+    summary: "Resume sourcing to department handover",
+    templateId: "recruitment",
+    prompt:
+      "Recruitment FMS: Resume Sourcing, Resume Shortlisting, Interview Call, Interview Shortlist, Final Round, Offer Letter, Joining, Appointment Letter, Induction, OJT via Recorded Videos, Department Handover. Intake: position, department, candidate name, phone, email, source, expected CTC, target joining date. Owners: HR, HR Manager, Department Head. Start: open position. End: trained candidate handed over to department head.",
   },
   {
     id: "purchase-requisition",

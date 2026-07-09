@@ -65,6 +65,24 @@ enum FmsInstanceStatus {
   CANCELLED
 }
 
+enum SalesOrderStatus {
+  DRAFT
+  CONFIRMED
+  STOCK_CHECK
+  PO_PENDING
+  READY_TO_DISPATCH
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
+
+enum SalesOrderFmsRole {
+  SALES_ORDER
+  STOCK_CHECK
+  PURCHASE_ORDER
+  DISPATCH
+}
+
 enum FmsStepStatus {
   PENDING
   IN_PROGRESS
@@ -191,6 +209,8 @@ model Organization {
   inboundLeadActivities InboundLeadActivity[]
   inboundLeadPayments InboundLeadPayment[]
   inboundLeadQuotations InboundLeadQuotation[]
+  salesOrders          SalesOrder[]
+  salesOrderFmsLinks   SalesOrderFmsLink[]
   leadServiceCatalog   LeadServiceCatalog[]
   leadMachineApiKeyHint String?
   leadMachineApiKeyHash String?
@@ -1385,11 +1405,15 @@ model FmsInstance {
   status         FmsInstanceStatus @default(ACTIVE)
   stepStates     FmsStepState[]
   inboundLead    InboundLead?
+  salesOrderId   String?
+  salesOrder     SalesOrder?       @relation(fields: [salesOrderId], references: [id], onDelete: SetNull)
+  salesOrderFmsLink SalesOrderFmsLink?
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
   @@index([organizationId, status])
   @@index([templateId, createdAt])
+  @@index([salesOrderId])
 }
 
 model FmsStepState {
@@ -1956,6 +1980,7 @@ model InboundLead {
   activities     InboundLeadActivity[]
   payments       InboundLeadPayment[]
   quotations     InboundLeadQuotation[]
+  salesOrders    SalesOrder[]
   offeredServices InboundLeadOfferedService[]
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
@@ -2090,6 +2115,7 @@ model InboundLeadQuotation {
   createdByUserId         String?
   createdBy               User?                    @relation("InboundLeadQuotationCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
   lines                   InboundLeadQuotationLine[]
+  salesOrders             SalesOrder[]
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
 
@@ -2110,4 +2136,43 @@ model InboundLeadQuotationLine {
   lineTotal       Decimal              @db.Decimal(14, 2)
 
   @@index([quotationId])
+}
+
+model SalesOrder {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  leadId             String
+  lead               InboundLead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  quotationId        String
+  quotation          InboundLeadQuotation @relation(fields: [quotationId], references: [id], onDelete: Restrict)
+  orderNumber        String
+  status             SalesOrderStatus  @default(DRAFT)
+  lineItems          Json              @default("[]")
+  shortageSnapshot   Json?
+  dispatchShareToken String?           @unique
+  fmsInstances       FmsInstance[]
+  fmsLinks           SalesOrderFmsLink[]
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@unique([organizationId, orderNumber])
+  @@index([organizationId, status])
+  @@index([leadId])
+  @@index([quotationId])
+}
+
+model SalesOrderFmsLink {
+  id             String            @id @default(cuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  salesOrderId   String
+  salesOrder     SalesOrder        @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  fmsInstanceId  String            @unique
+  fmsInstance    FmsInstance       @relation(fields: [fmsInstanceId], references: [id], onDelete: Cascade)
+  role           SalesOrderFmsRole
+  createdAt      DateTime          @default(now())
+
+  @@index([organizationId, salesOrderId])
+  @@index([salesOrderId])
 }

@@ -5,7 +5,7 @@ import {
   resolveOrgAllowedModules,
 } from "@/lib/org-plan-presets";
 import type { Role } from "@prisma/client";
-import { allWorkspaceModules } from "@/lib/workspace-modules";
+import { platformWorkspaceModules } from "@/lib/workspace-modules";
 
 export type DedicatedClientPortal = {
   slug: string;
@@ -61,6 +61,12 @@ export function dedicatedPortalLoginUrl(slug: string) {
   return `https://${slug}.sheetomatic.com/login?org=${encodeURIComponent(slug)}`;
 }
 
+export function isLegalCasesOrganization(
+  organizationSlug: string | null | undefined,
+): boolean {
+  return Boolean(getDedicatedClientPortal(organizationSlug));
+}
+
 /** Module list for session users — clamps super-admins on dedicated client portals. */
 export function resolveSessionModules(params: {
   isSuperAdmin: boolean;
@@ -84,7 +90,7 @@ export function resolveSessionModules(params: {
   }
 
   if (params.isSuperAdmin) {
-    return allWorkspaceModules();
+    return platformWorkspaceModules();
   }
 
   return effectiveMemberModules(

@@ -1,5 +1,9 @@
 import type { FmsTemplate, FmsTemplateStep, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import {
+  handleFmsInstanceCompleted,
+  handleFmsStepCompletedWithValues,
+} from "@/lib/fms/handoff-engine";
 import { notifyFmsStepAssigned } from "@/lib/fms/notify-step-assigned";
 import { computePlannedAt, computeDelayMinutes } from "@/lib/fms/sla";
 import {
@@ -82,7 +86,9 @@ async function advancePipelineAfterStep(params: {
   instance: InstanceWithPipeline;
   currentStepId: string;
   completedAt: Date;
-}) {
+  organizationId: string;
+  completedByUserId: string;
+}): Promise<boolean> {
   const { instance, currentStepId, completedAt } = params;
   const planMode = parseAlertConfig(instance.template.alertConfig).planMode;
   const currentIndex = instance.template.steps.findIndex(
@@ -149,12 +155,29 @@ async function advancePipelineAfterStep(params: {
       });
       void notifyFmsStepAssigned(nextState.id);
     }
-  } else {
-    await prisma.fmsInstance.update({
-      where: { id: instance.id },
-      data: { status: "COMPLETED" },
-    });
+    return false;
   }
+
+  await prisma.fmsInstance.update({
+    where: { id: instance.id },
+    data: { status: "COMPLETED" },
+  });
+  await handleFmsInstanceCompleted(
+    instance.id,
+    params.organizationId,
+    params.completedByUserId,
+  );
+  return true;
+}
+
+export async function handleFmsStepHandoffAfterComplete(params: {
+  instanceId: string;
+  organizationId: string;
+  completedByUserId: string;
+  stepName: string;
+  completionValues: Record<string, unknown>;
+}) {
+  await handleFmsStepCompletedWithValues(params);
 }
 
 async function loadInstancePipeline(stepStateId: string, organizationId: string) {
@@ -271,6 +294,16 @@ export async function completeFmsStep(params: {
     instance: stepState.instance,
     currentStepId: stepState.stepId,
     completedAt: now,
+    organizationId: params.organizationId,
+    completedByUserId: params.userId,
+  });
+
+  await handleFmsStepHandoffAfterComplete({
+    instanceId: stepState.instance.id,
+    organizationId: params.organizationId,
+    completedByUserId: params.userId,
+    stepName: stepState.step.stepName,
+    completionValues: params.completionValues ?? {},
   });
 }
 
@@ -310,6 +343,8 @@ export async function skipFmsStep(params: {
     instance: stepState.instance,
     currentStepId: stepState.stepId,
     completedAt: now,
+    organizationId: params.organizationId,
+    completedByUserId: params.userId,
   });
 }
 
@@ -404,3 +439,5 @@ export async function updateFmsStepPlannedAt(params: {
     },
   });
 }
+
+export { handleFmsStepCompletedWithValues } from "@/lib/fms/handoff-engine";

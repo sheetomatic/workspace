@@ -8,6 +8,7 @@ import {
   logLeadContactAction,
 } from "@/app/app/leads/actions";
 import { LeadDrawerPanel, type LeadDrawerData } from "@/components/saas/leads-drawer-panel";
+import { LeadDeliveryStagePill } from "@/components/saas/lead-delivery-journey";
 import { LeadCategorySelect } from "@/components/saas/lead-category-select";
 import { LeadStatusSelect } from "@/components/saas/lead-status-select";
 import { formatInr } from "@/lib/leads/categories";
@@ -102,6 +103,7 @@ export function LeadsCrmWorkspace({
   serviceCatalog,
   organizationName,
   organizationLogoUrl,
+  initialSelectedLeadId = null,
 }: {
   leads: LeadRow[];
   total: number;
@@ -121,8 +123,9 @@ export function LeadsCrmWorkspace({
   }>;
   organizationName: string;
   organizationLogoUrl: string | null;
+  initialSelectedLeadId?: string | null;
 }) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(initialSelectedLeadId);
   const [searchDraft, setSearchDraft] = useState(listParams.q ?? "");
   const [pending, startTransition] = useTransition();
 
@@ -190,6 +193,7 @@ export function LeadsCrmWorkspace({
               <th>Time</th>
               <th>Category</th>
               <th>Status</th>
+              <th>Lead Stage</th>
               <th className="leads-col-quoted">Quoted</th>
               <th className="leads-col-actions" aria-label="Actions" />
             </tr>
@@ -197,7 +201,7 @@ export function LeadsCrmWorkspace({
           <tbody>
             {leads.length === 0 ? (
               <tr>
-                <td colSpan={6}>
+                <td colSpan={7}>
                   <div className="leads-empty-state">
                     <p className="leads-machine-muted">No leads match this filter.</p>
                     {workspaceTotal > 0 && period !== "all" ? (
@@ -254,6 +258,15 @@ export function LeadsCrmWorkspace({
                         disabled={!canManage}
                         leadId={lead.id}
                         value={lead.status}
+                      />
+                    </td>
+                    <td className="leads-row-delivery">
+                      <LeadDeliveryStagePill
+                        lead={{
+                          quotations: lead.quotations,
+                          payments: lead.payments,
+                          salesOrder: lead.salesOrder ?? null,
+                        }}
                       />
                     </td>
                     <td className="leads-row-quoted">

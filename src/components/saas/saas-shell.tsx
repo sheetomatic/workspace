@@ -2,8 +2,8 @@
 
 import { ChevronDown, LogOut } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { signOut } from "next-auth/react";
 import { OrganizationSwitcher } from "@/components/saas/organization-switcher";
 import type { OrganizationOption } from "@/components/saas/organization-switcher";
@@ -29,16 +29,18 @@ function NavLink({
   icon: Icon,
   matchPrefix,
   pathname,
+  currentSearch,
   variant,
   nested = false,
   nestedDeep = false,
 }: WorkspaceNavItem & {
   pathname: string;
+  currentSearch: string;
   variant: "desktop" | "mobile";
   nested?: boolean;
   nestedDeep?: boolean;
 }) {
-  const active = navIsActive(pathname, href, matchPrefix);
+  const active = navIsActive(pathname, href, matchPrefix, currentSearch);
 
   if (variant === "mobile") {
     return (
@@ -74,23 +76,20 @@ function NavLink({
 function NavGroup({
   item,
   pathname,
+  currentSearch,
   depth,
 }: {
   item: WorkspaceNavItem;
   pathname: string;
+  currentSearch: string;
   depth: number;
 }) {
   const Icon = item.icon;
-  const hasActiveChild = navGroupHasActiveChild(pathname, item);
-  const selfActive = navIsActive(pathname, item.href, item.matchPrefix);
+  const hasActiveChild = navGroupHasActiveChild(pathname, item, currentSearch);
+  const selfActive = navIsActive(pathname, item.href, item.matchPrefix, currentSearch);
   const groupActive = selfActive || hasActiveChild;
-  const [open, setOpen] = useState(groupActive);
-
-  useEffect(() => {
-    if (groupActive) {
-      setOpen(true);
-    }
-  }, [groupActive, pathname]);
+  const [manualOpen, setManualOpen] = useState(groupActive);
+  const open = groupActive || manualOpen;
 
   return (
     <div
@@ -99,7 +98,7 @@ function NavGroup({
       <button
         type="button"
         className={`saas-nav-link saas-nav-group-toggle${depth > 0 ? " saas-nav-link-nested" : ""}${selfActive && !hasActiveChild ? " active" : ""}`}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => setManualOpen((value) => !value)}
         aria-expanded={open}
         aria-controls={`nav-group-${item.href.replace(/\//g, "-")}`}
       >
@@ -116,6 +115,7 @@ function NavGroup({
             depth={depth + 1}
             items={item.children ?? []}
             pathname={pathname}
+            currentSearch={currentSearch}
             variant="desktop"
           />
         </div>
@@ -127,30 +127,45 @@ function NavGroup({
 function NavLinks({
   items,
   pathname,
+  currentSearch,
   variant,
   depth = 0,
 }: {
   items: WorkspaceNavItem[];
   pathname: string;
+  currentSearch: string;
   variant: "desktop" | "mobile";
   depth?: number;
 }) {
   if (variant === "mobile") {
     return items.map((item) => (
-      <NavLink key={item.href} pathname={pathname} variant="mobile" {...item} />
+      <NavLink
+        key={item.href}
+        currentSearch={currentSearch}
+        pathname={pathname}
+        variant="mobile"
+        {...item}
+      />
     ));
   }
 
   return items.map((item) => {
     if (item.children?.length) {
       return (
-        <NavGroup key={item.href} depth={depth} item={item} pathname={pathname} />
+        <NavGroup
+          key={item.href}
+          currentSearch={currentSearch}
+          depth={depth}
+          item={item}
+          pathname={pathname}
+        />
       );
     }
 
     return (
       <NavLink
         key={item.href}
+        currentSearch={currentSearch}
         nested={depth > 0}
         nestedDeep={depth > 1}
         pathname={pathname}
@@ -303,6 +318,8 @@ export function SaasShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentSearch = searchParams.toString();
   const isQuotationPrint =
     /^\/app\/leads\/quotations\/[^/]+\/print\/?$/.test(pathname);
 
@@ -312,7 +329,7 @@ export function SaasShell({
 
   const resolvedAppearance =
     appearance ??
-    mergeWorkspaceAppearance(null, user.organizationName, undefined, Date.now());
+    mergeWorkspaceAppearance(null, user.organizationName, undefined, user.organizationSlug);
   const showPlanBadge =
     !hidePlanBadge &&
     Boolean(organizationPlan) &&
@@ -339,6 +356,11 @@ export function SaasShell({
   const brandSubtitle = resolvedAppearance.brandName || user.organizationName;
   const customBrand =
     isCustomWorkspaceLogo(resolvedAppearance.logoSrc) || isDedicatedPortal;
+  const navigationLabel = isDedicatedPortal ? `${productName} navigation` : "Workspace";
+  const mobileNavigationLabel = isDedicatedPortal
+    ? `${productName} navigation`
+    : "Workspace navigation";
+  const signOutPath = isDedicatedPortal ? "/login" : "/";
 
   return (
     <div className="saas-app workspace-app">
@@ -367,15 +389,20 @@ export function SaasShell({
             aria-label="Sign out"
             className="ws-mobile-shell-signout"
             type="button"
-            onClick={() => signOut({ callbackUrl: "/" })}
+            onClick={() => signOut({ callbackUrl: signOutPath })}
           >
             <LogOut size={18} />
           </button>
         </div>
       </header>
 
-      <nav className="ws-mobile-shell-nav" aria-label="Workspace navigation">
-        <NavLinks items={mobileNavItems} pathname={pathname} variant="mobile" />
+      <nav className="ws-mobile-shell-nav" aria-label={mobileNavigationLabel}>
+        <NavLinks
+          currentSearch={currentSearch}
+          items={mobileNavItems}
+          pathname={pathname}
+          variant="mobile"
+        />
       </nav>
 
       <aside className="saas-sidebar ws-shell-desktop">
@@ -394,7 +421,7 @@ export function SaasShell({
           />
         ) : null}
 
-        <nav className="saas-nav" aria-label="Workspace">
+        <nav className="saas-nav" aria-label={navigationLabel}>
           {mainSections.map((section) => {
             const items = visibleWorkspaceNavItems(user, section.items);
             if (items.length === 0) {
@@ -405,7 +432,12 @@ export function SaasShell({
                 {section.label ? (
                   <p className="saas-nav-section">{section.label}</p>
                 ) : null}
-                <NavLinks items={items} pathname={pathname} variant="desktop" />
+                <NavLinks
+                  currentSearch={currentSearch}
+                  items={items}
+                  pathname={pathname}
+                  variant="desktop"
+                />
               </div>
             );
           })}
@@ -414,7 +446,12 @@ export function SaasShell({
         {settingsItems.length > 0 && settingsSection ? (
           <div className="saas-sidebar-setup">
             <p className="saas-nav-section">{settingsSection.label}</p>
-            <NavLinks items={settingsItems} pathname={pathname} variant="desktop" />
+            <NavLinks
+              currentSearch={currentSearch}
+              items={settingsItems}
+              pathname={pathname}
+              variant="desktop"
+            />
           </div>
         ) : null}
 
@@ -430,7 +467,7 @@ export function SaasShell({
           <button
             className="saas-signout"
             type="button"
-            onClick={() => signOut({ callbackUrl: "/" })}
+            onClick={() => signOut({ callbackUrl: signOutPath })}
           >
             <LogOut size={16} />
             Sign out

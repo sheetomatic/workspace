@@ -20,6 +20,7 @@ import {
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { listLeadServiceCatalog } from "@/lib/leads/service-catalog";
+import { getSalesOrderByLeadId } from "@/lib/leads/sales-orders";
 import { listWorkspaceMembers } from "@/lib/workspace";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
@@ -39,6 +40,7 @@ type LeadsListSearchParams = {
   page?: string;
   sort?: string;
   q?: string;
+  leadId?: string;
 };
 
 function serializeLead(lead: Awaited<ReturnType<typeof listInboundLeadsForPeriodPaginated>>["leads"][number]) {
@@ -172,6 +174,16 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
       ? "Not synced"
       : lastSyncLabel;
 
+  const leadsWithSalesOrders = await Promise.all(
+    leadPage.leads.map(async (lead) => {
+      const salesOrder = await getSalesOrderByLeadId(user.organizationId, lead.id);
+      return {
+        ...serializeLead(lead),
+        salesOrder,
+      };
+    }),
+  );
+
   return (
     <div className="saas-page leads-machine-page">
       <TaskPageToolbar
@@ -207,7 +219,8 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
 
       <LeadsCrmWorkspace
         canManage={canManage}
-        leads={leadPage.leads.map(serializeLead)}
+        initialSelectedLeadId={params.leadId ?? null}
+        leads={leadsWithSalesOrders}
         listParams={params}
         organizationLogoUrl={organization?.logoUrl ?? null}
         organizationName={organization?.name ?? "Sheetomatic"}

@@ -16,7 +16,9 @@ import bcrypt from "bcryptjs";
 import { seedHingoraniCases } from "./seed-hingorani";
 import { seedBciDemo } from "./seed-bci-demo";
 import { DEFAULT_BCI_ORG_MODULES } from "../src/lib/workspace-addons.shared";
-import { WORKSPACE_MODULES } from "../src/lib/workspace-modules";
+import {
+  PLATFORM_WORKSPACE_MODULES,
+} from "../src/lib/workspace-modules";
 import {
   DEDICATED_CLIENT_PORTALS,
   HINGORANI_PORTAL_SLUG,
@@ -168,7 +170,7 @@ const organizations = [
     status: OrganizationStatus.ACTIVE,
     isPrimary: true,
     plan: OrgPlan.ENTERPRISE,
-    allowedModules: [...WORKSPACE_MODULES],
+    allowedModules: [...PLATFORM_WORKSPACE_MODULES],
   },
   {
     name: "Acme Manufacturing",
@@ -1063,7 +1065,7 @@ async function main() {
       role: Role.OWNER,
       department: TaskDepartment.ADMIN,
       designation: "Founder & Super Admin",
-      modules: [...WORKSPACE_MODULES],
+      modules: [...PLATFORM_WORKSPACE_MODULES],
     },
     create: {
       userId: superAdminUser.id,
@@ -1071,7 +1073,7 @@ async function main() {
       role: Role.OWNER,
       department: TaskDepartment.ADMIN,
       designation: "Founder & Super Admin",
-      modules: [...WORKSPACE_MODULES],
+      modules: [...PLATFORM_WORKSPACE_MODULES],
     },
   });
 

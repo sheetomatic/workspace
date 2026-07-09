@@ -396,9 +396,29 @@ export async function getFmsOnboardingStatus(organizationId: string) {
   };
 }
 
-export async function countCompletedFmsInstances(organizationId: string) {
+function templateKeywordWhere(keywords?: string[]) {
+  if (!keywords?.length) {
+    return {};
+  }
+  return {
+    OR: keywords.map((keyword) => ({
+      name: { contains: keyword, mode: "insensitive" as const },
+    })),
+  };
+}
+
+export async function countCompletedFmsInstances(
+  organizationId: string,
+  templateKeywords?: string[],
+) {
   return prisma.fmsInstance.count({
-    where: { organizationId, status: "COMPLETED" },
+    where: {
+      organizationId,
+      status: "COMPLETED",
+      ...(templateKeywords?.length
+        ? { template: templateKeywordWhere(templateKeywords) }
+        : {}),
+    },
   });
 }
 
@@ -408,16 +428,30 @@ export async function listFmsTrackerBlocks(
     instanceStatus: "ACTIVE" | "COMPLETED";
     limit?: number;
     skip?: number;
+    referenceQuery?: string;
+    templateKeywords?: string[];
   },
 ) {
   const limit = filter.limit ?? 50;
   const skip = filter.skip ?? 0;
+  const instanceWhere = {
+    status: filter.instanceStatus,
+    ...(filter.referenceQuery
+      ? {
+          referenceLabel: {
+            contains: filter.referenceQuery,
+            mode: "insensitive" as const,
+          },
+        }
+      : {}),
+  };
 
   return prisma.fmsTemplate.findMany({
     where: {
       organizationId,
       status: "ACTIVE",
-      instances: { some: { status: filter.instanceStatus } },
+      ...templateKeywordWhere(filter.templateKeywords),
+      instances: { some: instanceWhere },
     },
     include: {
       form: {
@@ -434,7 +468,7 @@ export async function listFmsTrackerBlocks(
         },
       },
       instances: {
-        where: { status: filter.instanceStatus },
+        where: instanceWhere,
         include: {
           submission: true,
           stepStates: {
@@ -563,6 +597,95 @@ export async function getFmsTrackerBlockByTemplate(
       },
     },
   });
+}
+
+/** Lightweight counts for the workspace home widget grid. */
+export async function getFmsWidgetCounts(
+  organizationId: string,
+  ownerUserId?: string,
+) {
+  const now = new Date();
+  const ownerFilter = ownerUserId ? { ownerUserId } : {};
+  const delayedWhere = {
+    status: "IN_PROGRESS" as const,
+    plannedAt: { lt: now },
+    ...ownerFilter,
+    instance: { organizationId, status: "ACTIVE" as const },
+  };
+
+  const [activeInstances, delayedSteps, delayedSample] = await Promise.all([
+    prisma.fmsInstance.count({
+      where: {
+        organizationId,
+        status: "ACTIVE",
+        ...(ownerUserId
+          ? {
+              stepStates: {
+                some: { ownerUserId, status: { in: ["PENDING", "IN_PROGRESS"] } },
+              },
+            }
+          : {}),
+      },
+    }),
+    prisma.fmsStepState.count({ where: delayedWhere }),
+    prisma.fmsStepState.findMany({
+      where: delayedWhere,
+      select: {
+        instance: { select: { template: { select: { name: true } } } },
+      },
+      take: 200,
+    }),
+  ]);
+
+  const delayedByTemplate = new Map<string, number>();
+  for (const row of delayedSample) {
+    const name = row.instance.template.name;
+    delayedByTemplate.set(name, (delayedByTemplate.get(name) ?? 0) + 1);
+  }
+  let bottleneck: { name: string; delayed: number } | null = null;
+  for (const [name, delayed] of delayedByTemplate) {
+    if (!bottleneck || delayed > bottleneck.delayed) {
+      bottleneck = { name, delayed };
+    }
+  }
+
+  return { activeInstances, delayedSteps, bottleneck };
+}
+
+/** Recruitment FMS counts for the HR widget (template matched by keywords). */
+export async function getRecruitmentFmsWidgetCounts(
+  organizationId: string,
+  templateKeywords: string[],
+) {
+  const instances = await prisma.fmsInstance.findMany({
+    where: {
+      organizationId,
+      status: "ACTIVE",
+      template: templateKeywordWhere(templateKeywords),
+    },
+    select: {
+      stepStates: {
+        where: { status: "IN_PROGRESS" },
+        select: { step: { select: { stepName: true } } },
+        take: 1,
+      },
+    },
+    take: 100,
+  });
+
+  const stageCounts = new Map<string, number>();
+  for (const instance of instances) {
+    const stage = instance.stepStates[0]?.step.stepName ?? "Waiting";
+    stageCounts.set(stage, (stageCounts.get(stage) ?? 0) + 1);
+  }
+
+  return {
+    active: instances.length,
+    stages: [...stageCounts.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3),
+  };
 }
 
 export async function getFmsPerformanceSummary(organizationId: string) {

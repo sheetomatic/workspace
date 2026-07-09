@@ -24,6 +24,8 @@ const demoAccounts = [
   { email: "owner@acme.demo", label: "Owner - Acme" },
   { email: "manager@acme.demo", label: "Manager - Acme" },
   { email: "owner@bakery.demo", label: "Owner - Bakery" },
+  { email: "admin@hingorani.demo", label: "Admin - Hingorani", orgSlug: "hingorani" },
+  { email: "manager@hingorani.demo", label: "Manager - Hingorani", orgSlug: "hingorani" },
 ];
 
 const registerInitialState: RegisterActionState = {
@@ -264,12 +266,23 @@ export function LoginForm() {
     };
   }, [callbackUrl, email, orgSlug, password, registerPending, registerState]);
 
-  function fillDemo(accountEmail: string) {
+  function fillDemo(accountEmail: string, organization?: string) {
     setEmail(accountEmail);
     setPassword("demo1234");
     setError(null);
-    setOrgOptions(null);
-    setSelectedOrg("");
+    if (organization) {
+      setOrgOptions([
+        {
+          slug: organization,
+          name: organization === "hingorani" ? "Hingorani Law Firm" : organization,
+          role: "OWNER",
+        },
+      ]);
+      setSelectedOrg(organization);
+    } else {
+      setOrgOptions(null);
+      setSelectedOrg("");
+    }
   }
 
   const signupTitle = isAiProduct
@@ -554,7 +567,7 @@ export function LoginForm() {
                 key={account.email}
                 className="login-demo-btn"
                 type="button"
-                onClick={() => fillDemo(account.email)}
+                onClick={() => fillDemo(account.email, "orgSlug" in account ? account.orgSlug : undefined)}
               >
                 {account.label}
               </button>

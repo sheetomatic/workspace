@@ -11,7 +11,7 @@ import { isLegalAdmin } from "@/lib/legal-cases/access";
 import { buildFollowFatalList } from "@/lib/legal-cases/follow-fatal";
 import { doaMonthKey } from "@/lib/legal-cases/intake-fields";
 import { getLegalViewNavCounts } from "@/lib/legal-cases/view-queries";
-import { requireSession } from "@/lib/require-session";
+import { requireLegalCasesSession } from "@/lib/require-session";
 import "@/components/legal/legal-cases.css";
 
 type PageProps = {
@@ -19,7 +19,7 @@ type PageProps = {
 };
 
 export default async function FollowFatalPage({ searchParams }: PageProps) {
-  const user = await requireSession(undefined, { module: "CASES" });
+  const user = await requireLegalCasesSession();
   const params = await searchParams;
   const admin = isLegalAdmin(user);
   const month =

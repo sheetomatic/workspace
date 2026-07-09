@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
+import { ImsSalesOrderStockList } from "@/components/ims/ims-sales-order-stock-list";
 import { ImsTeamAccessPanel } from "@/components/ims/ims-team-access-panel";
 import { requireSession } from "@/lib/require-session";
 import { countManagersMissingIms, getImsDashboardStats } from "@/lib/ims/ims-store";
+import { listSalesOrders } from "@/lib/leads/sales-orders";
+import { IMS_SALES_ORDER_STOCK_PATH } from "@/lib/ims/sales-order-stock";
 import { hasMinimumRole } from "@/lib/permissions";
 import {
   formatImsCurrency,
@@ -12,11 +15,12 @@ import {
 
 export default async function ImsDashboardPage() {
   const user = await requireSession(undefined, { module: "IMS" });
-  const [stats, membersMissingIms] = await Promise.all([
+  const [stats, membersMissingIms, stockOrders] = await Promise.all([
     getImsDashboardStats(user.organizationId),
     hasMinimumRole(user.role, "ADMIN")
       ? countManagersMissingIms(user.organizationId)
       : Promise.resolve(0),
+    listSalesOrders(user.organizationId, { pipeline: "stock_fulfillment", limit: 5 }),
   ]);
 
   return (
@@ -29,6 +33,18 @@ export default async function ImsDashboardPage() {
       {hasMinimumRole(user.role, "ADMIN") ? (
         <ImsTeamAccessPanel membersMissingIms={membersMissingIms} />
       ) : null}
+
+      <section className="ws-ims-panel">
+        <div className="ws-ims-panel-head">
+          <h2>Sales order stock check</h2>
+          <Link href={IMS_SALES_ORDER_STOCK_PATH}>Open IMS orders queue</Link>
+        </div>
+        <p className="ws-ims-help">
+          Stock verification for sales orders runs in IMS — compare on-hand levels, then
+          complete the Stock Check FMS on the order.
+        </p>
+        <ImsSalesOrderStockList orders={stockOrders.orders} />
+      </section>
 
       <div className="ws-task-stats">
         <div className="ws-stat-card">
