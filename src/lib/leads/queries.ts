@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { mergeLeadContactWhere } from "@/lib/leads/contact-validation";
 import { getFmsStepSummaryForLead } from "@/lib/leads/fms-bridge";
 import type { LeadsSortOrder } from "@/lib/leads/list-params";
 import { computePipeMetrics } from "@/lib/leads/pipe-metrics";
@@ -6,7 +7,7 @@ import {
   leadCapturedAtWhere,
   type LeadsPeriodRange,
 } from "@/lib/leads/period";
-import type { InboundLeadStatus, Prisma } from "@prisma/client";
+import type { InboundLeadStatus } from "@prisma/client";
 import { OPEN_LEAD_STATUSES } from "@/lib/leads/status-labels";
 
 function startOfToday() {
@@ -22,17 +23,19 @@ function startOfTomorrow() {
 }
 
 export async function getInboundLeadWorkspaceTotal(organizationId: string) {
-  return prisma.inboundLead.count({ where: { organizationId } });
+  return prisma.inboundLead.count({
+    where: mergeLeadContactWhere({ organizationId }),
+  });
 }
 
 export async function getLeadsMachineStatsForPeriod(
   organizationId: string,
   period: LeadsPeriodRange,
 ) {
-  const periodWhere = {
+  const periodWhere = mergeLeadContactWhere({
     organizationId,
     ...leadCapturedAtWhere(period),
-  };
+  });
 
   const [
     total,
@@ -100,7 +103,7 @@ export async function listInboundLeadsForPeriodPaginated(
     q?: string;
   },
 ) {
-  const where: Prisma.InboundLeadWhereInput = {
+  const where = mergeLeadContactWhere({
     organizationId,
     ...leadCapturedAtWhere(period),
     ...(options.status ? { status: options.status } : {}),
@@ -115,12 +118,18 @@ export async function listInboundLeadsForPeriodPaginated(
           ],
         }
       : {}),
-  };
+  });
 
   const orderBy =
     options.sort === "oldest"
-      ? [{ capturedAt: "asc" as const }, { createdAt: "asc" as const }]
-      : [{ capturedAt: "desc" as const }, { createdAt: "desc" as const }];
+      ? [
+          { capturedAt: { sort: "asc" as const, nulls: "last" as const } },
+          { createdAt: "asc" as const },
+        ]
+      : [
+          { capturedAt: { sort: "desc" as const, nulls: "last" as const } },
+          { createdAt: "desc" as const },
+        ];
 
   const skip = (options.page - 1) * options.pageSize;
 
@@ -188,10 +197,10 @@ export async function getLeadsPipeMetricsForPeriod(
   period: LeadsPeriodRange,
 ) {
   const leads = await prisma.inboundLead.findMany({
-    where: {
+    where: mergeLeadContactWhere({
       organizationId,
       ...leadCapturedAtWhere(period),
-    },
+    }),
     select: {
       status: true,
       category: true,
@@ -209,10 +218,10 @@ export async function getLeadsCategoryBreakdown(
 ) {
   const rows = await prisma.inboundLead.groupBy({
     by: ["category"],
-    where: {
+    where: mergeLeadContactWhere({
       organizationId,
       ...leadCapturedAtWhere(period),
-    },
+    }),
     _count: { _all: true },
   });
 
@@ -227,10 +236,10 @@ export async function listInboundLeadsForPeriod(
   period: LeadsPeriodRange,
 ) {
   const leads = await prisma.inboundLead.findMany({
-    where: {
+    where: mergeLeadContactWhere({
       organizationId,
       ...leadCapturedAtWhere(period),
-    },
+    }),
     orderBy: [{ capturedAt: "desc" }, { createdAt: "desc" }],
     include: {
       assignedTo: { select: { id: true, name: true, email: true } },
@@ -264,6 +273,8 @@ export async function getLeadsMachineStats(organizationId: string) {
   const todayStart = startOfToday();
   const todayEnd = startOfTomorrow();
 
+  const leadScope = mergeLeadContactWhere({ organizationId });
+
   const [
     total,
     byChannel,
@@ -273,14 +284,18 @@ export async function getLeadsMachineStats(organizationId: string) {
     withFms,
     openPipeline,
   ] = await Promise.all([
-    prisma.inboundLead.count({ where: { organizationId } }),
+    prisma.inboundLead.count({ where: leadScope }),
     prisma.inboundLead.groupBy({
       by: ["channel"],
-      where: { organizationId },
+      where: leadScope,
       _count: { _all: true },
     }),
     prisma.inboundLead.count({
-      where: { organizationId, assignedToId: null, status: { notIn: ["WON", "LOST"] } },
+      where: mergeLeadContactWhere({
+        organizationId,
+        assignedToId: null,
+        status: { notIn: ["WON", "LOST"] },
+      }),
     }),
     prisma.inboundLeadFollowUp.count({
       where: {
@@ -297,13 +312,16 @@ export async function getLeadsMachineStats(organizationId: string) {
       },
     }),
     prisma.inboundLead.count({
-      where: { organizationId, fmsInstanceId: { not: null } },
+      where: mergeLeadContactWhere({
+        organizationId,
+        fmsInstanceId: { not: null },
+      }),
     }),
     prisma.inboundLead.count({
-      where: {
+      where: mergeLeadContactWhere({
         organizationId,
         status: { in: OPEN_LEAD_STATUSES },
-      },
+      }),
     }),
   ]);
 
@@ -322,7 +340,7 @@ export async function getLeadsMachineStats(organizationId: string) {
 
 export async function listInboundLeads(organizationId: string) {
   const leads = await prisma.inboundLead.findMany({
-    where: { organizationId },
+    where: mergeLeadContactWhere({ organizationId }),
     orderBy: [{ nextFollowUpAt: "asc" }, { createdAt: "desc" }],
     include: {
       assignedTo: { select: { id: true, name: true, email: true } },

@@ -16,6 +16,8 @@ import {
   categorizeLeadRequirement,
 } from "@/lib/leads/categories";
 import { inferLeadStageFromRequirement } from "@/lib/leads/stage-ai";
+import { leadHasRequiredContact, leadPhoneDigits } from "@/lib/leads/contact-validation";
+import { triggerLeadNurtureEvent } from "@/lib/leads/nurture/run";
 import {
   defaultGoogleSheetsLeadConfig,
   resolveGoogleSheetsLeadConfig,
@@ -53,8 +55,7 @@ export type LeadIngestInput = {
 };
 
 function normalizePhone(phone: string | null | undefined) {
-  const digits = phone?.replace(/\D/g, "") ?? "";
-  return digits || null;
+  return leadPhoneDigits(phone);
 }
 
 export async function ensureLeadConnections(organizationId: string) {
@@ -185,6 +186,15 @@ export async function ingestInboundLead(input: LeadIngestInput) {
     return { lead: null, fmsBridge: null, created: false, skipped: true as const };
   }
 
+  if (lead && !phone && !input.sheetPull) {
+    return { lead: null, fmsBridge: null, created: false, skipped: true as const };
+  }
+
+  if (lead && input.sheetPull && !phone && !leadHasRequiredContact(lead.phone)) {
+    await prisma.inboundLead.delete({ where: { id: lead.id } });
+    return { lead: null, fmsBridge: null, created: false, skipped: true as const };
+  }
+
   if (!lead && phone) {
     lead = await prisma.inboundLead.findFirst({
       where: {
@@ -289,6 +299,16 @@ export async function ingestInboundLead(input: LeadIngestInput) {
       organizationId: input.organizationId,
       lead,
       actorUserId: input.actorUserId,
+    });
+  }
+
+  if (created && phone) {
+    void triggerLeadNurtureEvent({
+      organizationId: input.organizationId,
+      leadId: lead.id,
+      event: "welcome",
+    }).catch((error) => {
+      console.error("lead welcome nurture", error);
     });
   }
 

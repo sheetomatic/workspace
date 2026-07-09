@@ -1976,6 +1976,8 @@ model InboundLead {
   assignedTo     User?                @relation("InboundLeadAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
   nextFollowUpAt DateTime?
   capturedAt     DateTime?
+  /** Set when a team member edits the lead in CRM — not updated on passive sheet sync. */
+  modifiedAt     DateTime?
   followUps      InboundLeadFollowUp[]
   activities     InboundLeadActivity[]
   payments       InboundLeadPayment[]
@@ -1992,6 +1994,7 @@ model InboundLead {
   @@index([organizationId, assignedToId])
   @@index([organizationId, capturedAt])
   @@index([organizationId, category])
+  @@index([organizationId, modifiedAt])
 }
 
 model InboundLeadActivity {

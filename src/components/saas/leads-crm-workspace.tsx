@@ -24,6 +24,7 @@ type TeamMember = {
 type LeadRow = LeadDrawerData & {
   channel: LeadSourceChannel;
   capturedAt: string | null;
+  modifiedAt: string | null;
   createdAt: string;
   pipeValue: string | number | null;
   followUps: Array<{
@@ -33,8 +34,14 @@ type LeadRow = LeadDrawerData & {
   }>;
 };
 
-function formatCompactTimestamp(value: string | null, fallback: string) {
-  const date = new Date(value ?? fallback);
+function formatInquiryTime(capturedAt: string | null) {
+  if (!capturedAt) {
+    return "—";
+  }
+  const date = new Date(capturedAt);
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
   return date.toLocaleString("en-IN", {
     day: "numeric",
     month: "short",
@@ -193,7 +200,7 @@ export function LeadsCrmWorkspace({
           <thead>
             <tr>
               <th>Lead</th>
-              <th>Time</th>
+              <th>Inquiry time</th>
               <th>Lead Source</th>
               <th>Category</th>
               <th>Status</th>
@@ -241,14 +248,22 @@ export function LeadsCrmWorkspace({
                   >
                     <td className="leads-row-lead">
                       <div className="leads-row-lead-copy">
-                        <strong className="leads-row-name">{primary}</strong>
+                        <strong className="leads-row-name">
+                          {primary}
+                          {!lead.modifiedAt ? (
+                            <span className="leads-untouched-pill" title="Not yet worked by team">
+                              {" "}
+                              · New
+                            </span>
+                          ) : null}
+                        </strong>
                         {secondary ? (
                           <span className="leads-row-contact">{secondary}</span>
                         ) : null}
                       </div>
                     </td>
                     <td className="leads-row-time">
-                      {formatCompactTimestamp(lead.capturedAt, lead.createdAt)}
+                      {formatInquiryTime(lead.capturedAt)}
                     </td>
                     <td className="leads-row-source">
                       <span className="leads-source-pill">

@@ -11,6 +11,10 @@ import {
 } from "@/app/app/leads/actions";
 import { GoogleSheetsSetupSteps } from "@/components/saas/leads-google-sheets-setup";
 import {
+  LeadsWebBasedApiSettingsPanel,
+  type LeadsWebBasedApiSettingsProps,
+} from "@/components/saas/leads-web-based-api-settings";
+import {
   isLeadSourceComingSoon,
   LEAD_CHANNEL_LABELS,
   LEAD_SOURCE_PRIORITY_CHANNEL,
@@ -43,12 +47,14 @@ export function LeadsSettingsPanel({
   ingestUrl,
   sheetsAuthConfigured,
   serviceAccountEmail,
+  webBasedApi,
 }: {
   connections: ConnectionRow[];
   apiKeyHint: string | null;
   ingestUrl: string;
   sheetsAuthConfigured: boolean;
   serviceAccountEmail: string | null;
+  webBasedApi: LeadsWebBasedApiSettingsProps;
 }) {
   const [pending, startTransition] = useTransition();
   const [freshKey, setFreshKey] = useState<string | null>(null);
@@ -61,14 +67,19 @@ export function LeadsSettingsPanel({
           <Link className="btn-secondary btn-sm" href="/app/leads">
             ← Back to leads
           </Link>
-          <h1>Google Sheets setup</h1>
-          <p>Two-way sync with your form responses sheet — new rows import in and CRM edits push back out. Auto sync every 15 minutes.</p>
+          <h1>Leads settings</h1>
+          <p>
+            Google Sheets sync, Web Based API for lead nurture WhatsApp, and ingest
+            options.
+          </p>
         </div>
       </header>
 
       {notice ? (
         <div className={`leads-settings-notice is-${notice.type}`}>{notice.message}</div>
       ) : null}
+
+      <LeadsWebBasedApiSettingsPanel {...webBasedApi} />
 
       <div className="leads-settings-grid">
         {connections

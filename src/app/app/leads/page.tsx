@@ -65,6 +65,7 @@ function serializeLead(lead: Awaited<ReturnType<typeof listInboundLeadsForPeriod
     pipeValue: lead.pipeValue?.toString() ?? null,
     nextFollowUpAt: lead.nextFollowUpAt?.toISOString() ?? null,
     capturedAt: lead.capturedAt?.toISOString() ?? null,
+    modifiedAt: lead.modifiedAt?.toISOString() ?? null,
     createdAt: lead.createdAt.toISOString(),
     assignedTo: lead.assignedTo,
     followUps: lead.followUps.map((item) => ({

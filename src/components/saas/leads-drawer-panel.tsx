@@ -25,6 +25,7 @@ import {
   updateInboundLeadDetails,
   updateInboundLeadStatus,
   updateLeadMeetingNotes,
+  updateLeadCallingStatus,
   updateLeadProjectStatus,
 } from "@/app/app/leads/actions";
 import { QuotationBuilderPanel } from "@/components/saas/quotation-builder-panel";
@@ -142,6 +143,8 @@ export type LeadDrawerData = {
   quotationValue: string | number | null;
   pipeValue: string | number | null;
   nextFollowUpAt: string | null;
+  modifiedAt: string | null;
+  capturedAt?: string | null;
   assignedTo: { id: string; name: string | null; email: string } | null;
   payments: PaymentRow[];
   quotations: QuotationRow[];
@@ -461,10 +464,32 @@ export function LeadDrawerPanel({
 
       {tab === "meeting" ? (
         <section className="leads-drawer-section">
-          <h3>Meeting notes</h3>
-          <p className="leads-machine-muted">
-            Calling: {CALLING_STATUS_LABELS[lead.callingStatus]}
-          </p>
+          <h3>Call & meeting</h3>
+          {canManage ? (
+            <label className="leads-drawer-field">
+              Calling status
+              <select
+                value={lead.callingStatus}
+                disabled={pending}
+                onChange={(e) => {
+                  const next = e.target.value as LeadCallingStatus;
+                  startTransition(async () => {
+                    await updateLeadCallingStatus(lead.id, next, meetingNotes || undefined);
+                  });
+                }}
+              >
+                {(Object.keys(CALLING_STATUS_LABELS) as LeadCallingStatus[]).map((key) => (
+                  <option key={key} value={key}>
+                    {CALLING_STATUS_LABELS[key]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <p className="leads-machine-muted">
+              Calling: {CALLING_STATUS_LABELS[lead.callingStatus]}
+            </p>
+          )}
           <textarea
             value={meetingNotes}
             onChange={(e) => setMeetingNotes(e.target.value)}

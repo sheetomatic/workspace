@@ -173,7 +173,12 @@ function stableExternalId(params: {
   }
 
   const phoneDigits = params.phone.replace(/\D/g, "");
-  const timestampKey = params.capturedAtRaw.trim().toLowerCase().replace(/\s+/g, "-");
+  const parsedAt = params.capturedAtRaw.trim()
+    ? parseSheetDate(params.capturedAtRaw)
+    : null;
+  const timestampKey = parsedAt
+    ? parsedAt.toISOString()
+    : params.capturedAtRaw.trim().toLowerCase().replace(/\s+/g, "-");
   if (timestampKey && phoneDigits) {
     return `sheet-${timestampKey}-${phoneDigits}`;
   }
@@ -264,6 +269,10 @@ export function parseLeadsSheetRows(
         raw[header] = value;
       }
     });
+
+    if (capturedAtRaw) {
+      raw.capturedAtRaw = capturedAtRaw;
+    }
 
     parsed.push({
       externalId,

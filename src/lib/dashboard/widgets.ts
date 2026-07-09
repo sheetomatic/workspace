@@ -10,6 +10,7 @@ import {
 } from "@/lib/fms/queries";
 import { RECRUITMENT_FMS_FLOW, SALES_FULFILLMENT_FMS_FLOWS } from "@/lib/fms/sales-fulfillment";
 import { getStockRows } from "@/lib/ims/ims-store";
+import { mergeLeadContactWhere } from "@/lib/leads/contact-validation";
 import { hasMinimumRole } from "@/lib/permissions";
 import { getSalesOrderWidgetStats } from "@/lib/sales-orders/queries";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
@@ -75,17 +76,20 @@ async function loadLeadsWidget(
   endOfToday.setHours(23, 59, 59, 999);
   const weekStart = currentWeekRange().start;
   const scopeFilter = assignedToId ? { assignedToId } : {};
-  const openWhere = {
+  const openWhere = mergeLeadContactWhere({
     organizationId,
     status: { notIn: [...OPEN_LEAD_STATUSES_EXCLUDED] },
     ...scopeFilter,
-  };
+  });
+  const weekWhere = mergeLeadContactWhere({
+    organizationId,
+    createdAt: { gte: weekStart },
+    ...scopeFilter,
+  });
 
   const [open, newThisWeek, followUpsDue] = await Promise.all([
     prisma.inboundLead.count({ where: openWhere }),
-    prisma.inboundLead.count({
-      where: { organizationId, createdAt: { gte: weekStart }, ...scopeFilter },
-    }),
+    prisma.inboundLead.count({ where: weekWhere }),
     prisma.inboundLead.count({
       where: { ...openWhere, nextFollowUpAt: { lte: endOfToday } },
     }),

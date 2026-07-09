@@ -24,6 +24,7 @@ import {
   resolveLeadCategoryId,
 } from "@/lib/leads/categories";
 import { bridgeInboundLeadToFms } from "@/lib/leads/fms-bridge";
+import { leadPhoneDigits } from "@/lib/leads/contact-validation";
 import { testLeadsGoogleSheetAccess } from "@/lib/leads/google-sheets";
 import { pushLeadToGoogleSheet, syncLeadsTwoWay } from "@/lib/leads/google-sheets-export";
 import { ensureLeadConnections } from "@/lib/leads/ingest";
@@ -51,6 +52,13 @@ import {
 } from "@/lib/leads/quotations";
 import { createSalesOrderFromLockedQuotation } from "@/lib/sales-orders/create-from-quotation";
 import { createQuotationShareToken } from "@/lib/leads/quotation-tokens";
+import { sendLeadNurtureStep } from "@/lib/leads/nurture/run";
+import type { LeadNurtureEventId } from "@/lib/leads/nurture/templates";
+import {
+  queueLeadNurtureAfterAssign,
+  queueLeadNurtureAfterCall,
+  queueLeadNurtureAfterStatusChange,
+} from "@/lib/leads/nurture/triggers";
 import { inferLeadStageFromRequirement } from "@/lib/leads/stage-ai";
 import { leadStatusLabel } from "@/lib/leads/status-labels";
 import { hasMinimumRole } from "@/lib/permissions";
@@ -81,8 +89,29 @@ export async function assignInboundLead(leadId: string, assigneeUserId: string |
 
   await prisma.inboundLead.updateMany({
     where: { id: leadId, organizationId: user.organizationId },
-    data: { assignedToId: assigneeUserId || null },
+    data: { assignedToId: assigneeUserId || null, modifiedAt: new Date() },
   });
+
+  if (assigneeUserId) {
+    const assignee = await prisma.user.findFirst({
+      where: { id: assigneeUserId },
+      select: { name: true },
+    });
+    await logInboundLeadActivity({
+      organizationId: user.organizationId,
+      leadId,
+      type: "EDIT",
+      body: `Assigned to ${assignee?.name ?? "team member"}`,
+      createdByUserId: user.id,
+    });
+    queueLeadNurtureAfterAssign({
+      organizationId: user.organizationId,
+      leadId,
+      assigneeUserId,
+      assigneeName: assignee?.name,
+      actorUserId: user.id,
+    });
+  }
 
   revalidatePath("/app/leads");
   return { ok: true };
@@ -96,7 +125,7 @@ export async function updateInboundLeadStatus(leadId: string, status: InboundLea
 
   await prisma.inboundLead.updateMany({
     where: { id: leadId, organizationId: user.organizationId },
-    data: { status },
+    data: { status, modifiedAt: new Date() },
   });
 
   await logInboundLeadActivity({
@@ -105,6 +134,13 @@ export async function updateInboundLeadStatus(leadId: string, status: InboundLea
     type: "STATUS_CHANGE",
     body: `Status changed to ${status.replaceAll("_", " ")}`,
     createdByUserId: user.id,
+  });
+
+  queueLeadNurtureAfterStatusChange({
+    organizationId: user.organizationId,
+    leadId,
+    status,
+    actorUserId: user.id,
   });
 
   await exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
@@ -137,7 +173,7 @@ export async function updateInboundLeadCategory(leadId: string, category: string
 
   await prisma.inboundLead.updateMany({
     where: { id: leadId, organizationId: user.organizationId },
-    data: { category },
+    data: { category, modifiedAt: new Date() },
   });
 
   await logInboundLeadActivity({
@@ -209,6 +245,7 @@ export async function updateInboundLeadDetails(params: {
         Number.isFinite(pipe) && pipe > 0
           ? pipe
           : defaultPipeValueForCategory(category),
+      modifiedAt: new Date(),
     },
   });
 
@@ -340,6 +377,50 @@ export async function logLeadContactAction(leadId: string, type: "CALL" | "WHATS
   });
 
   return { ok: true };
+}
+
+const NURTURE_EVENT_IDS = new Set<LeadNurtureEventId>([
+  "welcome",
+  "assigned",
+  "post_call",
+  "stage_schedule_meeting",
+  "stage_proposal",
+  "stage_follow_up",
+  "stage_qualified",
+]);
+
+export async function sendLeadNurtureWhatsAppAction(
+  leadId: string,
+  stepId: LeadNurtureEventId,
+) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  if (!NURTURE_EVENT_IDS.has(stepId)) {
+    return { ok: false, message: "Invalid nurture step." };
+  }
+
+  const result = await sendLeadNurtureStep({
+    organizationId: user.organizationId,
+    leadId,
+    stepId,
+    actorUserId: user.id,
+  });
+
+  if (!result.sent) {
+    const reason =
+      result.reason === "web_based_api_not_configured"
+        ? "Configure Web Based API under Leads → Settings (username, password, API key)."
+        : result.reason === "web_based_api_disabled"
+          ? "Web Based API is disabled in this environment."
+          : result.reason ?? "Could not send message.";
+    return { ok: false, message: reason };
+  }
+
+  revalidatePath("/app/leads");
+  return { ok: true, message: "Nurture message sent on WhatsApp." };
 }
 
 export async function scheduleInboundLeadFollowUp(params: {
@@ -659,8 +740,11 @@ export async function createManualInboundLead(formData: FormData) {
   const phone = formData.get("phone")?.toString().trim() || "";
   const requirement = formData.get("requirement")?.toString().trim() || "";
 
-  if (!phone) {
-    return { ok: false, message: "Contact number is required to save a lead." };
+  if (!leadPhoneDigits(phone)) {
+    return {
+      ok: false,
+      message: "Enter a valid contact number (at least 10 digits).",
+    };
   }
 
   await ingestInboundLead({
@@ -720,10 +804,19 @@ export async function updateLeadMeetingNotes(leadId: string, meetingNotes: strin
   }
 
   const trimmed = meetingNotes.trim();
+  const existing = await prisma.inboundLead.findFirst({
+    where: { id: leadId, organizationId: user.organizationId },
+    select: { callingStatus: true },
+  });
+  if (!existing) {
+    return { ok: false, message: "Lead not found." };
+  }
+
   await prisma.inboundLead.updateMany({
     where: { id: leadId, organizationId: user.organizationId },
     data: {
       meetingNotes: trimmed || null,
+      modifiedAt: new Date(),
       ...(trimmed ? { status: "MEETING_NOTES" as const } : {}),
     },
   });
@@ -735,6 +828,92 @@ export async function updateLeadMeetingNotes(leadId: string, meetingNotes: strin
       type: "MEETING",
       body: trimmed,
       createdByUserId: user.id,
+    });
+
+    if (existing.callingStatus !== "NOT_CALLED") {
+      queueLeadNurtureAfterCall({
+        organizationId: user.organizationId,
+        leadId,
+        discussionSummary: trimmed,
+        actorUserId: user.id,
+      });
+    }
+  }
+
+  await exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
+
+  revalidatePath("/app/leads");
+  return { ok: true };
+}
+
+export async function updateLeadCallingStatus(
+  leadId: string,
+  callingStatus: LeadCallingStatus,
+  callNotes?: string,
+) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  const existing = await prisma.inboundLead.findFirst({
+    where: { id: leadId, organizationId: user.organizationId },
+    select: {
+      callingStatus: true,
+      meetingNotes: true,
+      discussionNotes: true,
+      status: true,
+    },
+  });
+  if (!existing) {
+    return { ok: false, message: "Lead not found." };
+  }
+
+  const notes = callNotes?.trim();
+  const patch: {
+    callingStatus: LeadCallingStatus;
+    modifiedAt: Date;
+    meetingNotes?: string | null;
+    status?: InboundLeadStatus;
+  } = {
+    callingStatus,
+    modifiedAt: new Date(),
+  };
+
+  if (notes) {
+    patch.meetingNotes = notes;
+  }
+
+  if (callingStatus === "CONNECTED") {
+    patch.status = existing.status === "NEW" ? "CONTACTED" : existing.status;
+  }
+
+  await prisma.inboundLead.updateMany({
+    where: { id: leadId, organizationId: user.organizationId },
+    data: patch,
+  });
+
+  await logInboundLeadActivity({
+    organizationId: user.organizationId,
+    leadId,
+    type: "CALL",
+    body: notes
+      ? `Call status: ${callingStatus.replaceAll("_", " ")} — ${notes}`
+      : `Call status: ${callingStatus.replaceAll("_", " ")}`,
+    createdByUserId: user.id,
+  });
+
+  const shouldSendPostCall =
+    callingStatus === "CONNECTED" ||
+    callingStatus === "NO_ANSWER" ||
+    (callingStatus === "NOT_INTERESTED" && notes);
+
+  if (shouldSendPostCall && callingStatus !== existing.callingStatus) {
+    queueLeadNurtureAfterCall({
+      organizationId: user.organizationId,
+      leadId,
+      discussionSummary: notes ?? existing.meetingNotes ?? existing.discussionNotes,
+      actorUserId: user.id,
     });
   }
 
@@ -1370,4 +1549,92 @@ export async function deleteLeadQuotation(quotationId: string) {
 
   revalidatePath("/app/leads");
   return { ok: true };
+}
+
+function pickLeadsSecretField(next: string, existing: string | null | undefined) {
+  const trimmed = next.trim();
+  if (!trimmed) {
+    return existing ?? null;
+  }
+  return trimmed;
+}
+
+export async function saveLeadsWebBasedApiSettings(
+  _prev: { ok: boolean; message: string },
+  formData: FormData,
+): Promise<{ ok: boolean; message: string }> {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Admin only." };
+  }
+
+  const existing = await prisma.workspaceWhatsAppSettings.findUnique({
+    where: { organizationId: user.organizationId },
+  });
+
+  const masUsername =
+    formData.get("masUsername")?.toString().trim() ||
+    existing?.masUsername ||
+    "";
+  const masPassword = pickLeadsSecretField(
+    formData.get("masPassword")?.toString() ?? "",
+    existing?.masPassword,
+  );
+  const masApiKey = pickLeadsSecretField(
+    formData.get("masApiKey")?.toString() ?? "",
+    existing?.masApiKey,
+  );
+
+  const businessRaw = formData.get("businessPhone")?.toString() ?? "";
+  const businessDigits = leadPhoneDigits(businessRaw);
+  if (businessRaw.trim() && !businessDigits) {
+    return {
+      ok: false,
+      message: "Business WhatsApp number must be at least 10 digits.",
+    };
+  }
+
+  if (!masUsername) {
+    return { ok: false, message: "Username is required." };
+  }
+  if (!masPassword) {
+    return {
+      ok: false,
+      message: "Password is required (or save once and leave blank later).",
+    };
+  }
+  if (!masApiKey) {
+    return {
+      ok: false,
+      message: "API key is required (or save once and leave blank later).",
+    };
+  }
+
+  await prisma.workspaceWhatsAppSettings.upsert({
+    where: { organizationId: user.organizationId },
+    create: {
+      organizationId: user.organizationId,
+      businessPhone: businessDigits || null,
+      whatsappProvider: "MESSAGEAUTOSENDER",
+      masUsername,
+      masPassword,
+      masApiKey,
+    },
+    update: {
+      businessPhone: businessDigits || existing?.businessPhone || null,
+      whatsappProvider: "MESSAGEAUTOSENDER",
+      masUsername,
+      masPassword,
+      masApiKey,
+    },
+  });
+
+  revalidatePath("/app/leads");
+  revalidatePath("/app/leads/settings");
+  revalidatePath("/ai/app/settings");
+
+  return {
+    ok: true,
+    message: "Web Based API credentials saved. Lead nurture can send WhatsApp messages.",
+  };
 }

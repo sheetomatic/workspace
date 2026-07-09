@@ -59,7 +59,7 @@ describe("parseLeadsSheetRows", () => {
       ["29/03/2026 10:15:00", "Asha", "919900001111"],
     ];
     const parsed = parseLeadsSheetRows(rows);
-    expect(parsed[0]?.externalId).toBe("sheet-29/03/2026-10:15:00-919900001111");
+    expect(parsed[0]?.externalId).toBe("sheet-2026-03-29T04:45:00.000Z-919900001111");
   });
 
   it("falls back to row number when no stable key exists", () => {

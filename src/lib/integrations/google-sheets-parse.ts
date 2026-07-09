@@ -56,6 +56,32 @@ export function parseSheetDate(value: string | undefined): Date | null {
     }
   }
 
+  const dmyTimeComma = raw.match(
+    /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4}),\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?$/i,
+  );
+  if (dmyTimeComma) {
+    const day = Number(dmyTimeComma[1]);
+    const month = Number(dmyTimeComma[2]) - 1;
+    let year = Number(dmyTimeComma[3]);
+    if (year < 100) {
+      year += 2000;
+    }
+    let hours = Number(dmyTimeComma[4]);
+    const minutes = Number(dmyTimeComma[5]);
+    const seconds = dmyTimeComma[6] ? Number(dmyTimeComma[6]) : 0;
+    const meridiem = dmyTimeComma[7]?.toLowerCase();
+    if (meridiem === "pm" && hours < 12) {
+      hours += 12;
+    }
+    if (meridiem === "am" && hours === 12) {
+      hours = 0;
+    }
+    const d = new Date(year, month, day, hours, minutes, seconds, 0);
+    if (!Number.isNaN(d.getTime())) {
+      return d;
+    }
+  }
+
   const dmyTime = raw.match(
     /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?$/i,
   );

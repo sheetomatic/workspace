@@ -2965,3 +2965,31 @@
   color: #64748b;
 }
 
+.leads-wba-form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.leads-wba-form-foot {
+  display: flex;
+  justify-content: flex-start;
+  gap: 0.75rem;
+}
+
+.leads-wba-status-pill {
+  align-self: flex-start;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  background: #f1f5f9;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.leads-wba-status-pill.is-ready {
+  background: #dcfce7;
+  color: #166534;
+}
+
