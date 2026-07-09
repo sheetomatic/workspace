@@ -343,4 +343,17 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 
 **Hard-refresh in prod:** `/app/leads`, `/app/leads/settings` (Web Based API panel, inquiry time column, calling status).
 
+**Deployed (2026-07-09):** Lead nurture config, customizable templates, leads settings restructure.
+
+| Item | Detail |
+|------|--------|
+| Commit | `cb39e24` — Ship customizable lead nurture messages and restructured leads settings. |
+| Branch | `main` → `origin/main` (pushed) |
+| Build | `npm run test:unit` 53/53 pass; `next build` pass (local `prisma migrate deploy` skipped — empty `DATABASE_URL`/`DIRECT_URL`; Vercel runs migrate on deploy) |
+| Migration | `20260709230000_lead_nurture_config` — adds `Organization.leadNurtureConfig` JSONB |
+| Vercel | Production **Ready** — Vercel – sheetomatic-redesign: success |
+| Changes | Nurture message customization; lead sources roadmap (Meta/Instagram/Telegram); `isLeadNurtureSendingEnabled` credential-based; Google Sheets removed from settings page |
+
+**Hard-refresh in prod:** `/app/leads/settings` (nurture messages panel, lead sources roadmap, Web Based API credentials).
+
 ---
