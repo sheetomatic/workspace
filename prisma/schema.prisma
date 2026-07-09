@@ -214,6 +214,7 @@ model Organization {
   leadServiceCatalog   LeadServiceCatalog[]
   leadMachineApiKeyHint String?
   leadMachineApiKeyHash String?
+  leadNurtureConfig     Json?
   logoUrl               String?
   workspaceAppearance   Json?
   organizationPlan     OrganizationPlan?

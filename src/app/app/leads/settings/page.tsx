@@ -1,11 +1,7 @@
 import { LeadsSettingsPanel } from "@/components/saas/leads-settings-panel";
-import {
-  getGoogleSheetsServiceAccountEmail,
-  isGoogleSheetsAuthConfigured,
-} from "@/lib/integrations/google-sheets-auth";
 import { ensureLeadConnections } from "@/lib/leads/ingest";
-import { listLeadConnections } from "@/lib/leads/queries";
-import { isWebBasedApiUiEnabled } from "@/lib/web-based-api-ui";
+import { getLeadNurtureConfig } from "@/lib/leads/nurture/config";
+import { isLeadNurtureSendingEnabled } from "@/lib/leads/nurture/sending-enabled";
 import {
   resolveWorkspaceWhatsAppCredentials,
   toWhatsAppSettingsFormValues,
@@ -27,15 +23,17 @@ export default async function LeadsSettingsPage() {
 
   await ensureLeadConnections(user.organizationId);
 
-  const [connections, org, waSaved, waCredentials] = await Promise.all([
-    listLeadConnections(user.organizationId),
-    prisma.organization.findUnique({
-      where: { id: user.organizationId },
-      select: { leadMachineApiKeyHint: true },
-    }),
-    getWorkspaceWhatsAppSettings(user.organizationId),
-    resolveWorkspaceWhatsAppCredentials(user.organizationId),
-  ]);
+  const [org, waSaved, waCredentials, nurtureConfig, nurtureSendingActive] =
+    await Promise.all([
+      prisma.organization.findUnique({
+        where: { id: user.organizationId },
+        select: { leadMachineApiKeyHint: true },
+      }),
+      getWorkspaceWhatsAppSettings(user.organizationId),
+      resolveWorkspaceWhatsAppCredentials(user.organizationId),
+      getLeadNurtureConfig(user.organizationId),
+      isLeadNurtureSendingEnabled(user.organizationId),
+    ]);
 
   const waForm = toWhatsAppSettingsFormValues(waSaved, waCredentials);
   const masCreds = masCredentialsFromWorkspace(waCredentials);
@@ -44,10 +42,9 @@ export default async function LeadsSettingsPage() {
   return (
     <LeadsSettingsPanel
       apiKeyHint={org?.leadMachineApiKeyHint ?? null}
-      connections={connections}
       ingestUrl={`${siteUrl}/api/leads/ingest`}
-      serviceAccountEmail={getGoogleSheetsServiceAccountEmail()}
-      sheetsAuthConfigured={isGoogleSheetsAuthConfigured()}
+      nurtureConfig={nurtureConfig}
+      nurtureSendingActive={nurtureSendingActive}
       webBasedApi={{
         masUsername: waForm.masUsername,
         businessPhone: waForm.businessPhone
@@ -56,7 +53,7 @@ export default async function LeadsSettingsPage() {
         hasSavedPassword: Boolean(waSaved?.masPassword),
         hasSavedApiKey: Boolean(waSaved?.masApiKey),
         credentialsConfigured: isMasConfigured(masCreds),
-        webBasedApiEnabled: isWebBasedApiUiEnabled(),
+        nurtureSendingActive,
       }}
     />
   );

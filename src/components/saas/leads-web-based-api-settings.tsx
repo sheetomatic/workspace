@@ -15,7 +15,7 @@ export type LeadsWebBasedApiSettingsProps = {
   hasSavedPassword: boolean;
   hasSavedApiKey: boolean;
   credentialsConfigured: boolean;
-  webBasedApiEnabled: boolean;
+  nurtureSendingActive: boolean;
 };
 
 export function LeadsWebBasedApiSettingsPanel({
@@ -24,7 +24,7 @@ export function LeadsWebBasedApiSettingsPanel({
   hasSavedPassword,
   hasSavedApiKey,
   credentialsConfigured,
-  webBasedApiEnabled,
+  nurtureSendingActive,
 }: LeadsWebBasedApiSettingsProps) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(
@@ -42,11 +42,10 @@ export function LeadsWebBasedApiSettingsPanel({
     <section className="saas-panel leads-settings-card" id="web-based-api">
       <div className="leads-settings-card-head">
         <div>
-          <h3>Lead nurture — Web Based API</h3>
+          <h3>Web Based API credentials</h3>
           <p className="leads-machine-muted">
-            WhatsApp welcome, assignment, and follow-up messages use your Web Based
-            API account. Save username, password, and API key from your provider
-            portal.
+            Username, password, and API key from your Web Based API provider portal.
+            Used to send nurture WhatsApp messages to leads.
           </p>
         </div>
         <span
@@ -56,11 +55,15 @@ export function LeadsWebBasedApiSettingsPanel({
         </span>
       </div>
 
-      {!webBasedApiEnabled ? (
+      {credentialsConfigured && nurtureSendingActive ? (
+        <p className="leads-settings-notice is-success">
+          Nurture WhatsApp is active — welcome, assign, and follow-up messages will
+          send when leads move through your pipeline.
+        </p>
+      ) : credentialsConfigured ? (
         <p className="leads-settings-notice is-error">
-          Web Based API sending is disabled in this environment. Ask your admin to
-          set <code>NEXT_PUBLIC_ENABLE_WEB_BASED_API=true</code> on production after
-          credentials are saved.
+          Credentials saved. Turn on &quot;Enable automatic nurture&quot; below to
+          start sending messages.
         </p>
       ) : null}
 
@@ -127,7 +130,7 @@ export function LeadsWebBasedApiSettingsPanel({
 
         <div className="leads-wba-form-foot">
           <button className="btn-primary" disabled={pending} type="submit">
-            {pending ? "Saving…" : "Save Web Based API credentials"}
+            {pending ? "Saving…" : "Save credentials"}
           </button>
         </div>
 

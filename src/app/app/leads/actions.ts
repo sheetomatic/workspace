@@ -53,6 +53,13 @@ import {
 import { createSalesOrderFromLockedQuotation } from "@/lib/sales-orders/create-from-quotation";
 import { createQuotationShareToken } from "@/lib/leads/quotation-tokens";
 import { sendLeadNurtureStep } from "@/lib/leads/nurture/run";
+import {
+  getLeadNurtureConfig,
+  NURTURE_EVENT_ORDER,
+  parseLeadNurtureConfig,
+  saveLeadNurtureConfig,
+  type LeadNurtureOrgConfig,
+} from "@/lib/leads/nurture/config";
 import type { LeadNurtureEventId } from "@/lib/leads/nurture/templates";
 import {
   queueLeadNurtureAfterAssign,
@@ -411,10 +418,11 @@ export async function sendLeadNurtureWhatsAppAction(
 
   if (!result.sent) {
     const reason =
-      result.reason === "web_based_api_not_configured"
-        ? "Configure Web Based API under Leads → Settings (username, password, API key)."
+      result.reason === "web_based_api_not_configured" ||
+      result.reason === "nurture_disabled_or_not_configured"
+        ? "Save Web Based API credentials and enable nurture under Leads → Settings."
         : result.reason === "web_based_api_disabled"
-          ? "Web Based API is disabled in this environment."
+          ? "Enable nurture messages under Leads → Settings."
           : result.reason ?? "Could not send message.";
     return { ok: false, message: reason };
   }
@@ -1635,6 +1643,53 @@ export async function saveLeadsWebBasedApiSettings(
 
   return {
     ok: true,
-    message: "Web Based API credentials saved. Lead nurture can send WhatsApp messages.",
+    message: "Web Based API credentials saved.",
+  };
+}
+
+export async function saveLeadsNurtureSettings(
+  _prev: { ok: boolean; message: string },
+  formData: FormData,
+): Promise<{ ok: boolean; message: string }> {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Admin only." };
+  }
+
+  const existing = await getLeadNurtureConfig(user.organizationId);
+  const enabled = formData.get("nurtureEnabled") === "true";
+  const gapRaw = Number.parseInt(
+    formData.get("stageMinGapHours")?.toString() ?? "",
+    10,
+  );
+  const stageMinGapHours =
+    Number.isFinite(gapRaw) && gapRaw >= 0 ? Math.min(gapRaw, 168) : existing.stageMinGapHours;
+
+  const templates: Partial<Record<LeadNurtureEventId, string>> = {
+    ...existing.templates,
+  };
+  for (const eventId of NURTURE_EVENT_ORDER) {
+    const value = formData.get(`template_${eventId}`)?.toString() ?? "";
+    if (value.trim()) {
+      templates[eventId] = value.trim();
+    }
+  }
+
+  const config: LeadNurtureOrgConfig = parseLeadNurtureConfig({
+    enabled,
+    stageMinGapHours,
+    templates,
+  });
+
+  await saveLeadNurtureConfig(user.organizationId, config);
+
+  revalidatePath("/app/leads");
+  revalidatePath("/app/leads/settings");
+
+  return {
+    ok: true,
+    message: enabled
+      ? "Nurture messages saved. WhatsApp will send on lead events."
+      : "Nurture messages saved. Automatic sending is paused.",
   };
 }

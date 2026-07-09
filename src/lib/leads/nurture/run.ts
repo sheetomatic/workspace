@@ -3,16 +3,16 @@ import { prisma, withDbRetry } from "@/lib/db";
 import { logInboundLeadActivity } from "@/lib/leads/activity";
 import type { LeadCategoryId } from "@/lib/leads/categories";
 import { leadHasRequiredContact } from "@/lib/leads/contact-validation";
+import { getLeadNurtureConfig } from "@/lib/leads/nurture/config";
+import { isLeadNurtureSendingEnabled } from "@/lib/leads/nurture/sending-enabled";
 import {
   buildLeadNurtureMessage,
   LEAD_NURTURE_EVENT_LABELS,
-  STAGE_NURTURE_MIN_GAP_HOURS,
   type LeadNurtureEventId,
 } from "@/lib/leads/nurture/templates";
 import { leadStatusLabel } from "@/lib/leads/status-labels";
 import { masCredentialsFromWorkspace } from "@/lib/integrations/whatsapp-provider";
 import { sendMasTextMessage } from "@/lib/integrations/messageautosender";
-import { isWebBasedApiUiEnabled } from "@/lib/web-based-api-ui";
 import { resolveWorkspaceWhatsAppCredentials } from "@/lib/whatsapp-settings";
 
 const WELCOME_RETRY_BATCH = 10;
@@ -66,14 +66,18 @@ function isStageEvent(event: LeadNurtureEventId) {
   return event.startsWith("stage_");
 }
 
-function canSendEvent(state: LeadNurtureState, event: LeadNurtureEventId) {
+function canSendEvent(
+  state: LeadNurtureState,
+  event: LeadNurtureEventId,
+  stageMinGapHours: number,
+) {
   if (state.paused) {
     return false;
   }
   if (eventAlreadySent(state, event)) {
     return false;
   }
-  if (isStageEvent(event) && hoursSince(state.lastSentAt) < STAGE_NURTURE_MIN_GAP_HOURS) {
+  if (isStageEvent(event) && hoursSince(state.lastSentAt) < stageMinGapHours) {
     return false;
   }
   return true;
@@ -90,9 +94,12 @@ export async function triggerLeadNurtureEvent(params: {
   actorUserId?: string | null;
   force?: boolean;
 }): Promise<{ sent: boolean; reason?: string; body?: string }> {
-  if (!isWebBasedApiUiEnabled()) {
-    return { sent: false, reason: "web_based_api_disabled" };
+  const sendingEnabled = await isLeadNurtureSendingEnabled(params.organizationId);
+  if (!sendingEnabled) {
+    return { sent: false, reason: "nurture_disabled_or_not_configured" };
   }
+
+  const nurtureConfig = await getLeadNurtureConfig(params.organizationId);
 
   const lead = await prisma.inboundLead.findFirst({
     where: { id: params.leadId, organizationId: params.organizationId },
@@ -133,7 +140,10 @@ export async function triggerLeadNurtureEvent(params: {
     ) {
       return { sent: false, reason: "already_sent_for_assignee" };
     }
-  } else if (!params.force && !canSendEvent(state, params.event)) {
+  } else if (
+    !params.force &&
+    !canSendEvent(state, params.event, nurtureConfig.stageMinGapHours)
+  ) {
     return { sent: false, reason: "skipped_cooldown_or_duplicate" };
   }
 
@@ -167,6 +177,7 @@ export async function triggerLeadNurtureEvent(params: {
     discussionSummary,
     nextStepLabel: params.nextStepLabel ?? leadStatusLabel(lead.status),
     status: lead.status,
+    nurtureConfig,
   });
 
   const result = await sendMasTextMessage({ toPhone: lead.phone!, body }, mas);
@@ -224,7 +235,7 @@ export async function sendLeadNurtureStep(params: {
 
 /** Retry welcome for new leads if the instant send failed (e.g. API down). */
 export async function retryPendingWelcomeMessages(organizationId: string): Promise<number> {
-  if (!isWebBasedApiUiEnabled()) {
+  if (!(await isLeadNurtureSendingEnabled(organizationId))) {
     return 0;
   }
 

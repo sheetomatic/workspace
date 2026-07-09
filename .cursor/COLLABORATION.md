@@ -327,3 +327,20 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Phase 1 audit reference:** Many `AUDIT_ACTIONS.md` items are stale (Postgres, approvals, team, crons done). Treat this section + AC table as source of truth for Phase 2.
 
 ---
+
+## Release & Deploy Ops
+
+**Deployed (2026-07-09):** Leads timestamps, phone validation, nurture WhatsApp, CRM touches.
+
+| Item | Detail |
+|------|--------|
+| Commit | `7375514` — Ship lead timestamps, phone validation, nurture WhatsApp, and CRM touches. |
+| Branch | `main` → `origin/main` (pushed) |
+| Build | `npm run test:unit` 53/53 pass; `npm run build` pass (prisma migrate deploy + next build) |
+| Migration | `20260709180000_inbound_lead_modified_at` — adds `InboundLead.modifiedAt` + index `(organizationId, modifiedAt)` |
+| Vercel | Production **Ready** — https://sheetomatic.com / https://app.sheetomatic.com |
+| Pre-flight fixes | `CATEGORY_BATCH` in backfill.ts; removed invalid `PROPOSAL_INVOICE` nurture mapping; google-sheets test ISO external id |
+
+**Hard-refresh in prod:** `/app/leads`, `/app/leads/settings` (Web Based API panel, inquiry time column, calling status).
+
+---

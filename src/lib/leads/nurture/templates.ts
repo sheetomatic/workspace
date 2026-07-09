@@ -2,6 +2,11 @@ import type { InboundLeadStatus } from "@prisma/client";
 import type { LeadCategoryId } from "@/lib/leads/categories";
 import { LEAD_CATEGORIES } from "@/lib/leads/categories";
 import { leadStatusLabel } from "@/lib/leads/status-labels";
+import {
+  interpolateNurtureTemplate,
+  resolveNurtureTemplate,
+  type LeadNurtureOrgConfig,
+} from "@/lib/leads/nurture/config";
 
 /** Event-driven nurture — triggered by lead lifecycle, not time drips. */
 export type LeadNurtureEventId =
@@ -77,6 +82,7 @@ export function buildLeadNurtureMessage(params: {
   discussionSummary?: string | null;
   nextStepLabel?: string | null;
   status?: InboundLeadStatus | null;
+  nurtureConfig?: LeadNurtureOrgConfig | null;
 }): string {
   const firstName = leadFirstName(params.name);
   const topic = categoryLabel(params.category ?? null);
@@ -85,6 +91,25 @@ export function buildLeadNurtureMessage(params: {
   const counsellor = assigneeDisplay(params.assigneeName);
   const summary = trimSummary(params.discussionSummary);
   const stage = params.nextStepLabel ?? (params.status ? leadStatusLabel(params.status) : null);
+
+  const vars: Record<string, string> = {
+    "{{firstName}}": firstName,
+    "{{requirement}}": requirement
+      ? requirement.length > 150
+        ? `${requirement.slice(0, 150)}…`
+        : requirement
+      : topic,
+    "{{company}}": company || "your company",
+    "{{topic}}": topic,
+    "{{counsellor}}": counsellor,
+    "{{discussion}}": summary || "Thank you for your time on the call today.",
+    "{{nextStep}}": stage || "We will share the next steps with you shortly.",
+  };
+
+  if (params.nurtureConfig) {
+    const template = resolveNurtureTemplate(params.event, params.nurtureConfig);
+    return interpolateNurtureTemplate(template, vars);
+  }
 
   switch (params.event) {
     case "welcome":
