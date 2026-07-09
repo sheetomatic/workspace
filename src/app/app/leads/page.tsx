@@ -46,6 +46,7 @@ type LeadsListSearchParams = {
 function serializeLead(lead: Awaited<ReturnType<typeof listInboundLeadsForPeriodPaginated>>["leads"][number]) {
   return {
     id: lead.id,
+    channel: lead.channel,
     name: lead.name,
     phone: lead.phone,
     email: lead.email,

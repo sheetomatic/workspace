@@ -122,22 +122,30 @@ export default async function FmsFulfillmentPage({ searchParams }: PageProps) {
     <div className="saas-page ws-fms-page ws-fms-sf ws-ffp">
       <header className="ws-ffp-header">
         <div className="ws-ffp-header-title">
-          <h1>Process FMS</h1>
-          <p>Who owns each stop, planned vs actual, and where time is lost.</p>
+          <h1>{flow === "recruitment" ? "Recruitment FMS" : "Process FMS"}</h1>
+          <p>{flowMeta.description}</p>
         </div>
         <div className="ws-ffp-header-actions">
-          <Link href="/app/sales-orders" className="btn-secondary btn-sm">
-            Sales orders
-          </Link>
+          {flow === "recruitment" ? (
+            <Link href="/app/hr" className="btn-secondary btn-sm">
+              HR Dashboard
+            </Link>
+          ) : (
+            <Link href="/app/sales-orders" className="btn-secondary btn-sm">
+              Sales orders
+            </Link>
+          )}
           <Link href="/app/fms/lines" className="btn-secondary btn-sm">
             All pipelines
           </Link>
         </div>
       </header>
 
-      <Suspense fallback={null}>
-        <FmsFulfillmentFlowNav />
-      </Suspense>
+      {flow !== "recruitment" ? (
+        <Suspense fallback={null}>
+          <FmsFulfillmentFlowNav />
+        </Suspense>
+      ) : null}
 
       <div className="ws-ffp-toolbar">
         <form action="/app/fms/fulfillment" method="get" className="ws-ffp-search">

@@ -8,7 +8,7 @@ import {
   getFmsWidgetCounts,
   getRecruitmentFmsWidgetCounts,
 } from "@/lib/fms/queries";
-import { SALES_FULFILLMENT_FMS_FLOWS } from "@/lib/fms/sales-fulfillment";
+import { RECRUITMENT_FMS_FLOW, SALES_FULFILLMENT_FMS_FLOWS } from "@/lib/fms/sales-fulfillment";
 import { getStockRows } from "@/lib/ims/ims-store";
 import { hasMinimumRole } from "@/lib/permissions";
 import { getSalesOrderWidgetStats } from "@/lib/sales-orders/queries";
@@ -178,9 +178,7 @@ export async function getWidgetDashboardData(
   const emEnabled = hasWorkspaceModule(user, "REPORTS") && isManager;
   const hrEnabled = hasWorkspaceModule(user, "HR") && fmsEnabled && isManager;
 
-  const recruitmentKeywords =
-    SALES_FULFILLMENT_FMS_FLOWS.find((flow) => flow.id === "recruitment")
-      ?.matchKeywords ?? ["recruit", "hiring"];
+  const recruitmentKeywords = RECRUITMENT_FMS_FLOW.matchKeywords;
 
   const [leads, salesOrders, fms, ims, checklists, em, recruitment] =
     await Promise.all([

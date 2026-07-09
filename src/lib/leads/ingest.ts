@@ -181,6 +181,10 @@ export async function ingestInboundLead(input: LeadIngestInput) {
       })
     : null;
 
+  if (!lead && !phone) {
+    return { lead: null, fmsBridge: null, created: false, skipped: true as const };
+  }
+
   if (!lead && phone) {
     lead = await prisma.inboundLead.findFirst({
       where: {

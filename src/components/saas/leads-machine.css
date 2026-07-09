@@ -7,7 +7,48 @@
 .leads-header-actions {
   display: inline-flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.5rem;
+  margin-left: auto;
+}
+
+.workspace-app .leads-machine-page .ws-sf-page-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--sf-card-border, #e2e8f0);
+}
+
+.workspace-app .leads-machine-page .ws-sf-page-toolbar-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.workspace-app .leads-machine-page .ws-sf-page-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-top: 0.15rem;
+}
+
+.leads-source-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.22rem 0.55rem;
+  white-space: nowrap;
 }
 
 .leads-sync-pill {

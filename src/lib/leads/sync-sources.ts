@@ -125,6 +125,9 @@ export async function pullLeadsFromConnection(params: {
         rawPayload: (row.raw ?? row) as Prisma.InputJsonValue,
         createFmsJob: true,
       });
+      if (result.skipped) {
+        continue;
+      }
       counts.processed += 1;
       if (result.created) {
         counts.created += 1;
@@ -284,6 +287,9 @@ async function pullGoogleSheetsLeads(
           rawPayload: row.raw as Prisma.InputJsonValue,
           sheetPull: true,
         });
+        if (result.skipped) {
+          continue;
+        }
         counts.processed += 1;
         if (result.created) {
           counts.created += 1;

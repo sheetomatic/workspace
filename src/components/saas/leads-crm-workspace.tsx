@@ -12,6 +12,8 @@ import { LeadDeliveryStagePill } from "@/components/saas/lead-delivery-journey";
 import { LeadCategorySelect } from "@/components/saas/lead-category-select";
 import { LeadStatusSelect } from "@/components/saas/lead-status-select";
 import { formatInr } from "@/lib/leads/categories";
+import { LEAD_CHANNEL_LABELS } from "@/lib/leads/channels";
+import type { LeadSourceChannel } from "@prisma/client";
 import { leadTelHref, leadWhatsAppHref } from "@/lib/leads/contact-links";
 import { buildLeadsListQuery, type LeadsListSearchParams } from "@/lib/leads/list-params";
 
@@ -20,6 +22,7 @@ type TeamMember = {
 };
 
 type LeadRow = LeadDrawerData & {
+  channel: LeadSourceChannel;
   capturedAt: string | null;
   createdAt: string;
   pipeValue: string | number | null;
@@ -191,6 +194,7 @@ export function LeadsCrmWorkspace({
             <tr>
               <th>Lead</th>
               <th>Time</th>
+              <th>Lead Source</th>
               <th>Category</th>
               <th>Status</th>
               <th>Lead Stage</th>
@@ -201,7 +205,7 @@ export function LeadsCrmWorkspace({
           <tbody>
             {leads.length === 0 ? (
               <tr>
-                <td colSpan={7}>
+                <td colSpan={8}>
                   <div className="leads-empty-state">
                     <p className="leads-machine-muted">No leads match this filter.</p>
                     {workspaceTotal > 0 && period !== "all" ? (
@@ -245,6 +249,11 @@ export function LeadsCrmWorkspace({
                     </td>
                     <td className="leads-row-time">
                       {formatCompactTimestamp(lead.capturedAt, lead.createdAt)}
+                    </td>
+                    <td className="leads-row-source">
+                      <span className="leads-source-pill">
+                        {LEAD_CHANNEL_LABELS[lead.channel] ?? lead.channel}
+                      </span>
                     </td>
                     <td className="leads-row-category">
                       <LeadCategorySelect

@@ -21,7 +21,7 @@ export const SALES_OPS_DISPATCH_QUEUE_PATH =
 export const FMS_FULFILLMENT_BASE_PATH = "/app/fms/fulfillment";
 
 export const SALES_FULFILLMENT_FMS_FLOWS: {
-  id: SalesFulfillmentFmsFlow;
+  id: Exclude<SalesFulfillmentFmsFlow, "recruitment">;
   presetId: string;
   label: string;
   description: string;
@@ -63,14 +63,19 @@ export const SALES_FULFILLMENT_FMS_FLOWS: {
     description: "Track pack → dispatch → delivery delays",
     matchKeywords: ["dispatch", "delivery"],
   },
-  {
-    id: "recruitment",
-    presetId: "recruitment",
-    label: "Recruitment",
-    description: "Track hiring from resume sourcing to department handover",
-    matchKeywords: ["recruit", "hiring"],
-  },
 ];
+
+/** HR-only board — not shown on the sales fulfillment tab bar. */
+export const RECRUITMENT_FMS_FLOW = {
+  id: "recruitment" as const,
+  presetId: "recruitment",
+  label: "Recruitment",
+  description: "Track hiring from resume sourcing to department handover",
+  matchKeywords: ["recruit", "hiring"],
+};
+
+/** Tabs on /app/fms/fulfillment (sales → dispatch only). */
+export const PROCESS_FMS_TAB_FLOWS = SALES_FULFILLMENT_FMS_FLOWS;
 
 export function fmsFulfillmentPath(flow?: SalesFulfillmentFmsFlow) {
   if (!flow) {
@@ -93,6 +98,9 @@ export function resolveFulfillmentPresetId(
 }
 
 export function resolveFulfillmentFlowMeta(flow: SalesFulfillmentFmsFlow | string) {
+  if (flow === RECRUITMENT_FMS_FLOW.id) {
+    return RECRUITMENT_FMS_FLOW;
+  }
   return (
     SALES_FULFILLMENT_FMS_FLOWS.find((item) => item.id === flow) ??
     SALES_FULFILLMENT_FMS_FLOWS[0]
@@ -102,5 +110,12 @@ export function resolveFulfillmentFlowMeta(flow: SalesFulfillmentFmsFlow | strin
 export function isSalesFulfillmentFmsFlow(
   value: string | undefined,
 ): value is SalesFulfillmentFmsFlow {
+  return (
+    SALES_FULFILLMENT_FMS_FLOWS.some((item) => item.id === value) ||
+    value === RECRUITMENT_FMS_FLOW.id
+  );
+}
+
+export function isProcessFmsTabFlow(value: string | undefined): boolean {
   return SALES_FULFILLMENT_FMS_FLOWS.some((item) => item.id === value);
 }

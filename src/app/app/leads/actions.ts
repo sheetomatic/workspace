@@ -659,8 +659,8 @@ export async function createManualInboundLead(formData: FormData) {
   const phone = formData.get("phone")?.toString().trim() || "";
   const requirement = formData.get("requirement")?.toString().trim() || "";
 
-  if (!name && !phone) {
-    return { ok: false, message: "Name or phone required." };
+  if (!phone) {
+    return { ok: false, message: "Contact number is required to save a lead." };
   }
 
   await ingestInboundLead({

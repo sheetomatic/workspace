@@ -61,6 +61,13 @@ export async function POST(request: Request) {
     createFmsJob: body.createFmsJob,
   });
 
+  if (result.skipped || !result.lead) {
+    return NextResponse.json(
+      { error: "Contact number is required to save a lead." },
+      { status: 400 },
+    );
+  }
+
   return NextResponse.json({
     ok: true,
     leadId: result.lead.id,

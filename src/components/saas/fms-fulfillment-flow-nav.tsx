@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   FMS_FULFILLMENT_BASE_PATH,
-  SALES_FULFILLMENT_FMS_FLOWS,
+  PROCESS_FMS_TAB_FLOWS,
   type SalesFulfillmentFmsFlow,
 } from "@/lib/fms/sales-fulfillment";
 
@@ -25,7 +25,7 @@ export function FmsFulfillmentFlowNav() {
 
   return (
     <nav className="ws-ffp-tabs" aria-label="Process FMS flows">
-      {SALES_FULFILLMENT_FMS_FLOWS.map((item) => {
+      {PROCESS_FMS_TAB_FLOWS.map((item) => {
         const href =
           item.id === "sales-order"
             ? FMS_FULFILLMENT_BASE_PATH
