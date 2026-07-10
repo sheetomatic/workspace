@@ -439,3 +439,19 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/hr`, `/app/hr/holidays`, `/app/hr/leave`, `/app/hr/field`, `/app/hr/employees`, `/app/hr/attendance`, `/app/team`.
 
 ---
+
+**Deployed (2026-07-11):** HRMS Phase 2 — swap leave/off-day, live field GPS pings, visit geofence, weekend OD comp-off.
+
+| Item | Detail |
+|------|--------|
+| Commit | `1bc96f4` — Ship HRMS Phase 2: swap leave/off-day, live field GPS pings, visit geofence, and weekend OD comp-off. |
+| Branch | `main` → `origin/main` (pushed) |
+| Build | `npm run test:unit` 54/54 pass; local `npm run build` pass; Vercel production **Ready** |
+| Migration | `20260711010000_hrms_phase2` — present in build (84 migrations); already applied in `_prisma_migrations` (`finished_at` 2026-07-10T18:40:52Z); Vercel `migrate deploy` reported no pending |
+| Vercel | Production **Ready** — https://sheetomatic.com / https://app.sheetomatic.com |
+| Deploy | `dpl_8s9LeQCaGnNhETf9de94fxqTCxvg` — https://sheetomatic-redesign-14ue4r11i-sheetomatic.vercel.app |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops. |
+
+**Hard-refresh in prod:** `/app/hr/leave` (swap panel), `/app/hr/field` (live GPS + geofence), `/app/hr/holidays`, `/app/hr/attendance`.
+
+---
