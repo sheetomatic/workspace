@@ -28,6 +28,8 @@ export function computePipeMetrics(leads: LeadValueRow[]) {
   let wonCount = 0;
   let wonValue = 0;
   let lostCount = 0;
+  let invoiceCount = 0;
+  let invoiceValue = 0;
 
   const byCategory = new Map<
     string,
@@ -46,6 +48,11 @@ export function computePipeMetrics(leads: LeadValueRow[]) {
     bucket.count += 1;
     bucket.value += value;
     byCategory.set(categoryKey, bucket);
+
+    if (lead.status === "INVOICE") {
+      invoiceCount += 1;
+      invoiceValue += value;
+    }
 
     if (openStatuses.includes(lead.status)) {
       pipeCount += 1;
@@ -73,6 +80,9 @@ export function computePipeMetrics(leads: LeadValueRow[]) {
     wonCount,
     wonValue,
     wonValueLabel: formatInr(wonValue),
+    invoiceCount,
+    invoiceValue,
+    invoiceValueLabel: formatInr(invoiceValue),
     lostCount,
     conversionRate,
     conversionValueRate,

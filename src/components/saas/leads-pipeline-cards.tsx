@@ -17,6 +17,8 @@ export function LeadsPipelineCards({
     pipeValueLabel: string;
     wonCount: number;
     wonValueLabel: string;
+    invoiceCount: number;
+    invoiceValueLabel: string;
     conversionRate: number;
     conversionValueRate: number;
     totalValueLabel: string;
@@ -43,6 +45,20 @@ export function LeadsPipelineCards({
           <span>Quoted value</span>
           <strong>{pipeMetrics.pipeValueLabel}</strong>
         </article>
+        <Link
+          className="hs-quick-stat accent-purple leads-pipeline-card"
+          href={`/app/leads?${buildLeadsListQuery(baseParams, { status: "INVOICE", page: "1" })}`}
+        >
+          <span>Invoice count</span>
+          <strong>{pipeMetrics.invoiceCount}</strong>
+        </Link>
+        <Link
+          className="hs-quick-stat accent-indigo leads-pipeline-card"
+          href={`/app/leads?${buildLeadsListQuery(baseParams, { status: "INVOICE", page: "1" })}`}
+        >
+          <span>Invoice value</span>
+          <strong>{pipeMetrics.invoiceValueLabel}</strong>
+        </Link>
         <Link
           className="hs-quick-stat accent-success leads-pipeline-card"
           href={`/app/leads?${buildLeadsListQuery(baseParams, { status: "WON", page: "1" })}`}

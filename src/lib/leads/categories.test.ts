@@ -50,6 +50,18 @@ describe("computePipeMetrics", () => {
 
     expect(metrics.pipeCount).toBe(1);
     expect(metrics.wonCount).toBe(1);
+    expect(metrics.invoiceCount).toBe(0);
     expect(metrics.byCategory[0]?.count).toBe(2);
+  });
+
+  it("aggregates invoice count and value", () => {
+    const metrics = computePipeMetrics([
+      { status: "INVOICE", category: "TASKS_MANAGEMENT", pipeValue: null, quotationValue: 45000 },
+      { status: "PROPOSAL", category: "TASKS_MANAGEMENT", pipeValue: null, quotationValue: 20000 },
+    ]);
+
+    expect(metrics.invoiceCount).toBe(1);
+    expect(metrics.invoiceValue).toBe(45000);
+    expect(metrics.pipeCount).toBe(2);
   });
 });

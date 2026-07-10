@@ -148,6 +148,14 @@
   border-left-color: #2563eb;
 }
 
+.workspace-app .leads-machine-page .hs-quick-stat.accent-purple {
+  border-left-color: #7c3aed;
+}
+
+.workspace-app .leads-machine-page .hs-quick-stat.accent-indigo {
+  border-left-color: #4f46e5;
+}
+
 .leads-kpi-sub {
   margin-left: 0.35rem;
   font-size: 0.72rem;

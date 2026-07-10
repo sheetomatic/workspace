@@ -216,6 +216,7 @@ model Organization {
   imsFieldSettings     ImsFieldSetting[]
   checklistTemplates   ChecklistTemplate[]
   checklistOccurrences ChecklistOccurrence[]
+  orgExpenseEntries    OrgExpenseEntry[]
   leadIngestConnections LeadIngestConnection[]
   inboundLeads         InboundLead[]
   inboundLeadFollowUps InboundLeadFollowUp[]
@@ -929,6 +930,7 @@ model User {
   imsPhysicalStockCountsCreated ImsPhysicalStockCount[] @relation("ImsPhysicalStockCountCreator")
   imsGatePassesCreated     ImsGatePass[]           @relation("ImsGatePassCreator")
   imsGatePassesIssued      ImsGatePass[]           @relation("ImsGatePassIssuer")
+  orgExpenseEntriesCreated OrgExpenseEntry[]       @relation("OrgExpenseEntryCreator")
   imsQcInspected         ImsQcInspection[]     @relation("ImsQcInspector")
   imsAttachmentsUploaded ImsAttachment[]       @relation("ImsAttachmentUploader")
   assignedInboundLeads         InboundLead[]         @relation("InboundLeadAssignee")
@@ -2524,4 +2526,53 @@ model SalesOrderFmsLink {
 
   @@index([organizationId, salesOrderId])
   @@index([salesOrderId])
+}
+
+/// Owner ops cost tracker — API, team, office, vehicles, subscriptions.
+enum OrgExpenseCategory {
+  API_CURSOR
+  API_OPENAI
+  API_WHATSAPP
+  MARKETING
+  SALARY
+  OFFICE_RENT
+  MOBILE
+  ELECTRICITY
+  SUBSCRIPTION_NETFLIX
+  SUBSCRIPTION_PRIME
+  SUBSCRIPTION_OTHER
+  PHONE_NUMBERS_PLAN
+  FUEL
+  VEHICLE_CAR
+  VEHICLE_BIKE
+  VEHICLE_SCOOTY
+  OTHER
+}
+
+enum OrgExpenseRecurrence {
+  ONE_TIME
+  MONTHLY
+}
+
+model OrgExpenseEntry {
+  id             String              @id @default(cuid())
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category       OrgExpenseCategory
+  title          String
+  amount         Decimal             @db.Decimal(14, 2)
+  currency       String              @default("INR")
+  expenseDate    DateTime
+  recurrence     OrgExpenseRecurrence @default(ONE_TIME)
+  /// For PHONE_NUMBERS_PLAN — active numbers on plan this month
+  quantity       Int?
+  vendor         String?
+  notes          String?
+  createdById    String
+  createdBy      User                @relation("OrgExpenseEntryCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([organizationId, expenseDate])
+  @@index([organizationId, category])
 }

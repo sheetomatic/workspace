@@ -29,6 +29,7 @@ const REQUIRED_DELEGATES = [
   "imsRackSection",
   "imsPhysicalStockCount",
   "imsGatePass",
+  "orgExpenseEntry",
 ] as const;
 
 function createPrismaClient() {

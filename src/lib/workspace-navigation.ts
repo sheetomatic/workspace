@@ -23,6 +23,7 @@ import {
   TrendingUp,
   Truck,
   Users,
+  Wallet,
   Wrench,
 } from "lucide-react";
 import type { SessionUser } from "@/lib/auth";
@@ -665,6 +666,34 @@ export function getWorkspaceNavSections(params: {
       ],
     },
     {
+      id: "my-space",
+      label: "My Space",
+      items: [
+        {
+          href: "/app/my-space",
+          label: "My Space",
+          icon: Wallet,
+          minRole: "MANAGER",
+          matchPrefix: "/app/my-space",
+          children: [
+            {
+              href: "/app/my-space",
+              label: "Overview",
+              icon: LayoutDashboard,
+              minRole: "MANAGER",
+            },
+            {
+              href: "/app/my-space/expenses",
+              label: "Expenses",
+              icon: Wallet,
+              minRole: "MANAGER",
+              matchPrefix: "/app/my-space/expenses",
+            },
+          ],
+        },
+      ],
+    },
+    {
       id: "settings",
       label: "Settings",
       items: [
@@ -714,6 +743,9 @@ export function navIsActive(
   }
   if (hrefPath === "/app/checklists" && base === "/app/checklists") {
     return pathname === "/app/checklists";
+  }
+  if (hrefPath === "/app/my-space" && base === "/app/my-space") {
+    return pathname === "/app/my-space";
   }
   if (
     base === "/app/checklists" &&
