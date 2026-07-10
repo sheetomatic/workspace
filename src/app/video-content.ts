@@ -70,6 +70,6 @@ export const offerVideos: Record<string, MarketingVideo> = {
     label: "WhatsApp AI",
     title: "WhatsApp AI and team inbox",
     description: "Official API, AI replies, and tasks from real conversations.",
-    youtubeId: "",
+    youtubeId: "acTJOocmuZM",
   },
 };
