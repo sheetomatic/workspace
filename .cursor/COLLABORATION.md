@@ -357,3 +357,19 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/leads/settings` (nurture messages panel, lead sources roadmap, Web Based API credentials).
 
 ---
+
+**Deployed (2026-07-10):** IMS Store modules — purchase orders, PEB seed, Apple UI polish.
+
+| Item | Detail |
+|------|--------|
+| Commit | `55bcade` — Ship IMS Store modules with purchase orders, PEB seed, and Apple UI polish. |
+| Branch | `main` → `origin/main` (pushed) |
+| Build | `npm run test:unit` 53/53 pass; local `next build` pass (prisma migrate deploy skipped — Neon unreachable locally; Vercel runs migrate on deploy) |
+| Migrations | `20260710120000_ims_store_nway_phase1`, `20260710140000_ims_store_phase2`, `20260710160000_ims_store_phase3`, `20260710180000_ims_purchase_orders` |
+| Vercel | Production **Ready / PROMOTED** — https://sheetomatic.com / https://app.sheetomatic.com |
+| Deploy | `dpl_GzaxtsP1j7JTYCFQTQRjmgEnnuj1` — https://vercel.com/sheetomatic/sheetomatic-redesign/GzaxtsP1j7JTYCFQTQRjmgEnnuj1 |
+| Pre-flight fixes | Added `WASTAGE`/`GATE_PASS` labels in `ims-movement-form.tsx`; narrowed PO status action types in list |
+
+**Hard-refresh in prod:** `/app/ims` (store module grid), `/app/ims/purchase-orders`, `/app/ims/indents`, `/app/ims/requisitions`, sidebar IMS nav.
+
+---
