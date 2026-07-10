@@ -921,6 +921,16 @@
   max-width: 280px;
 }
 
+.workspace-app .ws-myspace-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.workspace-app .ws-myspace-period {
+  margin-bottom: 4px;
+}
+
 .workspace-app .ws-ims-panel > .ws-ims-help {
   padding: 16px 20px 0;
   margin: 0;

@@ -48,6 +48,7 @@ export async function createOrgExpenseAction(
       expenseDate: new Date(formData.get("expenseDate")?.toString() || Date.now()),
       recurrence,
       quantity: Number.isFinite(quantity) ? quantity : null,
+      assetLabel: formData.get("assetLabel")?.toString(),
       vendor: formData.get("vendor")?.toString(),
       notes: formData.get("notes")?.toString(),
     });

@@ -2546,6 +2546,14 @@ enum OrgExpenseCategory {
   VEHICLE_CAR
   VEHICLE_BIKE
   VEHICLE_SCOOTY
+  EMI
+  SCHOOL
+  GROCERY
+  VEGETABLES
+  DRINKS
+  MEAT
+  KIDS_DAILY
+  INTERNET_WIFI
   OTHER
 }
 
@@ -2566,6 +2574,8 @@ model OrgExpenseEntry {
   recurrence     OrgExpenseRecurrence @default(ONE_TIME)
   /// For PHONE_NUMBERS_PLAN — active numbers on plan this month
   quantity       Int?
+  /// For EMI — asset under EMI (car, home, laptop, etc.)
+  assetLabel     String?
   vendor         String?
   notes          String?
   createdById    String
