@@ -21,6 +21,14 @@ const REQUIRED_DELEGATES = [
   "userNotificationSettings",
   "legalCase",
   "legalCaseDocument",
+  "imsItem",
+  "imsMaterialRequisition",
+  "imsIndent",
+  "imsPurchaseOrder",
+  "imsPurchaseBill",
+  "imsRackSection",
+  "imsPhysicalStockCount",
+  "imsGatePass",
 ] as const;
 
 function createPrismaClient() {
@@ -123,7 +131,10 @@ function isConnectionError(error: unknown) {
     message.includes("p1017") ||
     message.includes("p2024") ||
     message.includes("econnreset") ||
-    message.includes("socket")
+    message.includes("socket") ||
+    message.includes("response from the engine was empty") ||
+    message.includes("engine is not yet connected") ||
+    message.includes("prismaclientunknownrequesterror")
   );
 }
 

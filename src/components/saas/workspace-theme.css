@@ -19239,6 +19239,63 @@ body:has(.workspace-app.saas-app) {
   opacity: 0.85;
 }
 
+.workspace-app .ws-module-subnav-section {
+  margin-top: 12px;
+}
+
+.workspace-app .ws-module-subnav-section-title {
+  display: block;
+  padding: 0 12px 6px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sf-text-secondary);
+}
+
+.workspace-app .ws-ims-module-card-phase2 {
+  opacity: 0.92;
+}
+
+.workspace-app .ws-ims-inline-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.8125rem;
+}
+
+.workspace-app .ws-ims-inline-list li + li {
+  margin-top: 2px;
+}
+
+.workspace-app .ws-ims-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.workspace-app .ws-ims-dashboard-stats {
+  margin-bottom: 16px;
+}
+
+.workspace-app .ws-ims-master-counts {
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+
+.workspace-app .ws-module-subnav-link-phase2 {
+  opacity: 0.88;
+}
+
+.workspace-app .ws-ims-nav-phase-tag {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sf-text-secondary);
+}
+
 /* FMS train track */
 .workspace-app .ws-fms-train-track {
   display: flex;
@@ -23802,12 +23859,6 @@ body:has(.workspace-app.saas-app) {
   display: flex;
   flex-direction: column;
   gap: 20px;
-}
-
-.workspace-app .ws-ims-subnav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
 }
 
 .workspace-app .ws-ims-subnav-link {

@@ -50,6 +50,19 @@ const IMS_PATHS = [
   "/app/ims/move",
   "/app/ims/movements",
   "/app/ims/qc",
+  "/app/ims/grn",
+  "/app/ims/min",
+  "/app/ims/register",
+  "/app/ims/groups",
+  "/app/ims/requisitions",
+  "/app/ims/indents",
+  "/app/ims/purchase-orders",
+  "/app/ims/racks",
+  "/app/ims/purchase",
+  "/app/ims/consumption",
+  "/app/ims/physical-stock",
+  "/app/ims/wastage",
+  "/app/ims/gate-pass",
 ];
 
 function revalidateIms() {
@@ -614,5 +627,400 @@ export async function enableImsModuleForTeamAction(
     };
   } catch (error) {
     return actionError(error, "Could not enable IMS for the team.");
+  }
+}
+
+export async function createImsItemGroupAction(
+  _prev: ImsActionState,
+  formData: FormData,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const { createImsItemGroup } = await import("@/lib/ims/requisitions");
+    await createImsItemGroup({
+      organizationId: user.organizationId,
+      name: formData.get("name")?.toString() ?? "",
+      parentId: formData.get("parentId")?.toString() || null,
+    });
+    revalidateIms();
+    return { ok: true, message: "Item group created." };
+  } catch (error) {
+    return actionError(error, "Could not create item group.");
+  }
+}
+
+export async function createMaterialRequisitionAction(
+  _prev: ImsActionState,
+  formData: FormData,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const { createMaterialRequisition } = await import("@/lib/ims/requisitions");
+
+    const linesJson = formData.get("lines")?.toString() ?? "[]";
+    const lines = JSON.parse(linesJson) as Array<{
+      itemId: string;
+      quantityRequested: number;
+      notes?: string;
+    }>;
+
+    await createMaterialRequisition({
+      organizationId: user.organizationId,
+      requestedById: user.id,
+      siteName: formData.get("siteName")?.toString(),
+      department: formData.get("department")?.toString(),
+      purpose: formData.get("purpose")?.toString(),
+      notes: formData.get("notes")?.toString(),
+      submitForApproval: formData.get("submit") === "true",
+      lines,
+    });
+
+    revalidateIms();
+    return { ok: true, message: "Material requisition saved." };
+  } catch (error) {
+    return actionError(error, "Could not save requisition.");
+  }
+}
+
+export async function updateRequisitionStatusAction(
+  requisitionId: string,
+  status: "APPROVED" | "REJECTED" | "PENDING",
+  rejectedReason?: string,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const { updateRequisitionStatus } = await import("@/lib/ims/requisitions");
+    await updateRequisitionStatus({
+      organizationId: user.organizationId,
+      requisitionId,
+      status,
+      actorUserId: user.id,
+      rejectedReason,
+    });
+    revalidateIms();
+    return { ok: true, message: `Requisition ${status.toLowerCase()}.` };
+  } catch (error) {
+    return actionError(error, "Could not update requisition.");
+  }
+}
+
+export async function createIndentAction(
+  _prev: ImsActionState,
+  formData: FormData,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const { createIndent } = await import("@/lib/ims/indents");
+    const linesJson = formData.get("lines")?.toString() ?? "[]";
+    const lines = JSON.parse(linesJson) as Array<{
+      itemId: string;
+      quantity: number;
+      rate?: number;
+      notes?: string;
+    }>;
+
+    await createIndent({
+      organizationId: user.organizationId,
+      createdById: user.id,
+      requisitionId: formData.get("requisitionId")?.toString() || null,
+      vendorId: formData.get("vendorId")?.toString() || null,
+      siteName: formData.get("siteName")?.toString(),
+      notes: formData.get("notes")?.toString(),
+      submitForApproval: formData.get("submit") === "true",
+      lines,
+    });
+
+    revalidateIms();
+    return { ok: true, message: "Indent saved." };
+  } catch (error) {
+    return actionError(error, "Could not save indent.");
+  }
+}
+
+export async function updateIndentStatusAction(
+  indentId: string,
+  status: "APPROVED" | "CANCELLED" | "PENDING",
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const { updateIndentStatus } = await import("@/lib/ims/indents");
+    await updateIndentStatus({
+      organizationId: user.organizationId,
+      indentId,
+      status,
+      actorUserId: user.id,
+    });
+    revalidateIms();
+    return { ok: true, message: `Indent ${status.toLowerCase()}.` };
+  } catch (error) {
+    return actionError(error, "Could not update indent.");
+  }
+}
+
+export async function createPurchaseOrderAction(
+  _prev: ImsActionState,
+  formData: FormData,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const { createPurchaseOrder } = await import("@/lib/ims/purchase-orders");
+    const linesJson = formData.get("lines")?.toString() ?? "[]";
+    const lines = JSON.parse(linesJson) as Array<{
+      itemId: string;
+      quantity: number;
+      rate?: number;
+      notes?: string;
+    }>;
+    const deliveryRaw = formData.get("expectedDeliveryDate")?.toString();
+    const expectedDeliveryDate = deliveryRaw ? new Date(deliveryRaw) : null;
+
+    await createPurchaseOrder({
+      organizationId: user.organizationId,
+      createdById: user.id,
+      indentId: formData.get("indentId")?.toString() || null,
+      siteName: formData.get("siteName")?.toString(),
+      expectedDeliveryDate,
+      notes: formData.get("notes")?.toString(),
+      submitForApproval: formData.get("submit") === "true",
+      lines,
+    });
+
+    revalidateIms();
+    return { ok: true, message: "Purchase order saved." };
+  } catch (error) {
+    return actionError(error, "Could not save purchase order.");
+  }
+}
+
+export async function updatePurchaseOrderAction(
+  _prev: ImsActionState,
+  formData: FormData,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const { updatePurchaseOrder } = await import("@/lib/ims/purchase-orders");
+    const purchaseOrderId = formData.get("purchaseOrderId")?.toString();
+    if (!purchaseOrderId) {
+      return { ok: false, message: "Purchase order not found." };
+    }
+
+    const linesJson = formData.get("lines")?.toString() ?? "[]";
+    const lines = JSON.parse(linesJson) as Array<{
+      itemId: string;
+      quantity: number;
+      rate?: number;
+      notes?: string;
+    }>;
+    const deliveryRaw = formData.get("expectedDeliveryDate")?.toString();
+    const expectedDeliveryDate = deliveryRaw ? new Date(deliveryRaw) : null;
+
+    await updatePurchaseOrder({
+      organizationId: user.organizationId,
+      purchaseOrderId,
+      indentId: formData.get("indentId")?.toString() || null,
+      siteName: formData.get("siteName")?.toString(),
+      expectedDeliveryDate,
+      notes: formData.get("notes")?.toString(),
+      submitForApproval: formData.get("submit") === "true",
+      lines,
+    });
+
+    revalidateIms();
+    return { ok: true, message: "Purchase order updated." };
+  } catch (error) {
+    return actionError(error, "Could not update purchase order.");
+  }
+}
+
+export async function updatePurchaseOrderStatusAction(
+  purchaseOrderId: string,
+  status: "APPROVED" | "SENT" | "CANCELLED" | "PENDING",
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const { updatePurchaseOrderStatus } = await import("@/lib/ims/purchase-orders");
+    await updatePurchaseOrderStatus({
+      organizationId: user.organizationId,
+      purchaseOrderId,
+      status,
+      actorUserId: user.id,
+    });
+
+    revalidateIms();
+    return { ok: true, message: `Purchase order ${status.toLowerCase()}.` };
+  } catch (error) {
+    return actionError(error, "Could not update purchase order.");
+  }
+}
+
+export async function createRackSectionAction(
+  _prev: ImsActionState,
+  formData: FormData,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const { createImsRackSection } = await import("@/lib/ims/racks");
+    await createImsRackSection({
+      organizationId: user.organizationId,
+      code: formData.get("code")?.toString() ?? "",
+      name: formData.get("name")?.toString() ?? "",
+      siteName: formData.get("siteName")?.toString(),
+    });
+    revalidateIms();
+    return { ok: true, message: "Rack section created." };
+  } catch (error) {
+    return actionError(error, "Could not create rack section.");
+  }
+}
+
+export async function createPurchaseBillAction(
+  _prev: ImsActionState,
+  formData: FormData,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const { createPurchaseBill } = await import("@/lib/ims/purchase-bills");
+    const billDateRaw = formData.get("billDate")?.toString() ?? "";
+    const billDate = billDateRaw ? new Date(billDateRaw) : new Date();
+    if (Number.isNaN(billDate.getTime())) {
+      throw new Error("Invalid bill date.");
+    }
+
+    await createPurchaseBill({
+      organizationId: user.organizationId,
+      createdById: user.id,
+      vendorId: formData.get("vendorId")?.toString() ?? "",
+      billDate,
+      amount: parseNumber(formData.get("amount")),
+      grnReference: formData.get("grnReference")?.toString(),
+      invoiceNumber: formData.get("invoiceNumber")?.toString(),
+      notes: formData.get("notes")?.toString(),
+      post: formData.get("post") === "true",
+    });
+
+    revalidateIms();
+    return { ok: true, message: "Purchase bill saved." };
+  } catch (error) {
+    return actionError(error, "Could not save purchase bill.");
+  }
+}
+
+export async function postPurchaseBillAction(billId: string): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const { postPurchaseBill } = await import("@/lib/ims/purchase-bills");
+    await postPurchaseBill(user.organizationId, billId);
+    revalidateIms();
+    return { ok: true, message: "Purchase bill posted." };
+  } catch (error) {
+    return actionError(error, "Could not post purchase bill.");
+  }
+}
+
+export async function createPhysicalStockCountAction(
+  _prev: ImsActionState,
+  formData: FormData,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const { createPhysicalStockCount } = await import("@/lib/ims/physical-stock");
+    const lines = JSON.parse(formData.get("lines")?.toString() ?? "[]") as Array<{
+      itemId: string;
+      physicalQty: number;
+    }>;
+    await createPhysicalStockCount({
+      organizationId: user.organizationId,
+      createdById: user.id,
+      siteName: formData.get("siteName")?.toString(),
+      notes: formData.get("notes")?.toString(),
+      lines,
+    });
+    revalidateIms();
+    return { ok: true, message: "Physical stock count saved as draft." };
+  } catch (error) {
+    return actionError(error, "Could not save stock count.");
+  }
+}
+
+export async function postPhysicalStockCountAction(countId: string): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const { postPhysicalStockCount } = await import("@/lib/ims/physical-stock");
+    await postPhysicalStockCount({
+      organizationId: user.organizationId,
+      countId,
+      userId: user.id,
+    });
+    revalidateIms();
+    return { ok: true, message: "Stock count posted — variances adjusted." };
+  } catch (error) {
+    return actionError(error, "Could not post stock count.");
+  }
+}
+
+export async function recordWastageAction(
+  _prev: ImsActionState,
+  formData: FormData,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    await recordStockMovement({
+      organizationId: user.organizationId,
+      userId: user.id,
+      itemId: formData.get("itemId")?.toString() ?? "",
+      movementType: "WASTAGE",
+      quantity: parseNumber(formData.get("quantity")),
+      reference: formData.get("reference")?.toString(),
+      notes: formData.get("notes")?.toString(),
+    });
+    revalidateIms();
+    return { ok: true, message: "Wastage recorded." };
+  } catch (error) {
+    return actionError(error, "Could not record wastage.");
+  }
+}
+
+export async function createGatePassAction(
+  _prev: ImsActionState,
+  formData: FormData,
+): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const { createGatePass } = await import("@/lib/ims/gate-pass");
+    const lines = JSON.parse(formData.get("lines")?.toString() ?? "[]") as Array<{
+      itemId: string;
+      quantity: number;
+      notes?: string;
+    }>;
+    await createGatePass({
+      organizationId: user.organizationId,
+      createdById: user.id,
+      siteName: formData.get("siteName")?.toString(),
+      partyName: formData.get("partyName")?.toString(),
+      vehicleNo: formData.get("vehicleNo")?.toString(),
+      purpose: formData.get("purpose")?.toString(),
+      notes: formData.get("notes")?.toString(),
+      lines,
+    });
+    revalidateIms();
+    return { ok: true, message: "Gate pass saved as draft." };
+  } catch (error) {
+    return actionError(error, "Could not save gate pass.");
+  }
+}
+
+export async function issueGatePassAction(gatePassId: string): Promise<ImsActionState> {
+  try {
+    const user = await requireSession("MANAGER", { module: "IMS" });
+    const { issueGatePass } = await import("@/lib/ims/gate-pass");
+    await issueGatePass({
+      organizationId: user.organizationId,
+      gatePassId,
+      userId: user.id,
+    });
+    revalidateIms();
+    return { ok: true, message: "Gate pass issued — stock deducted." };
+  } catch (error) {
+    return actionError(error, "Could not issue gate pass.");
   }
 }

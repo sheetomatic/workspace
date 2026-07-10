@@ -29,6 +29,8 @@ const MOVEMENT_LABELS: Record<ImsMovementType, string> = {
   QC_PASS: "QC pass",
   QC_FAIL: "QC fail",
   ADJUSTMENT: "Adjustment",
+  WASTAGE: "Wastage",
+  GATE_PASS: "Gate pass",
 };
 
 function itemsForMovement(items: ItemOption[], movementType: ImsMovementType) {

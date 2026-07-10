@@ -194,6 +194,19 @@ model Organization {
   fmsAuditEvents    FmsAuditEvent[]
   userAppNotifications UserAppNotification[]
   imsItems             ImsItem[]
+  imsItemGroups        ImsItemGroup[]
+  imsMaterialRequisitions ImsMaterialRequisition[]
+  imsMaterialRequisitionLines ImsMaterialRequisitionLine[]
+  imsIndents               ImsIndent[]
+  imsIndentLines           ImsIndentLine[]
+  imsPurchaseOrders        ImsPurchaseOrder[]
+  imsPurchaseOrderLines    ImsPurchaseOrderLine[]
+  imsRackSections          ImsRackSection[]
+  imsPurchaseBills         ImsPurchaseBill[]
+  imsPhysicalStockCounts   ImsPhysicalStockCount[]
+  imsPhysicalStockCountLines ImsPhysicalStockCountLine[]
+  imsGatePasses            ImsGatePass[]
+  imsGatePassLines         ImsGatePassLine[]
   imsStockBalances     ImsStockBalance[]
   imsStockMovements    ImsStockMovement[]
   imsQcInspections     ImsQcInspection[]
@@ -906,6 +919,16 @@ model User {
   checklistOccurrencesOwned ChecklistOccurrence[] @relation("ChecklistOccurrenceAssignee")
   checklistOccurrencesDone  ChecklistOccurrence[] @relation("ChecklistOccurrenceCompleter")
   imsMovementsCreated    ImsStockMovement[]    @relation("ImsMovementCreator")
+  imsRequisitionsRequested ImsMaterialRequisition[] @relation("ImsRequisitionRequester")
+  imsRequisitionsApproved  ImsMaterialRequisition[] @relation("ImsRequisitionApprover")
+  imsIndentsCreated        ImsIndent[]             @relation("ImsIndentCreator")
+  imsIndentsApproved       ImsIndent[]             @relation("ImsIndentApprover")
+  imsPurchaseOrdersCreated ImsPurchaseOrder[]      @relation("ImsPurchaseOrderCreator")
+  imsPurchaseOrdersApproved ImsPurchaseOrder[]     @relation("ImsPurchaseOrderApprover")
+  imsPurchaseBillsCreated  ImsPurchaseBill[]       @relation("ImsPurchaseBillCreator")
+  imsPhysicalStockCountsCreated ImsPhysicalStockCount[] @relation("ImsPhysicalStockCountCreator")
+  imsGatePassesCreated     ImsGatePass[]           @relation("ImsGatePassCreator")
+  imsGatePassesIssued      ImsGatePass[]           @relation("ImsGatePassIssuer")
   imsQcInspected         ImsQcInspection[]     @relation("ImsQcInspector")
   imsAttachmentsUploaded ImsAttachment[]       @relation("ImsAttachmentUploader")
   assignedInboundLeads         InboundLead[]         @relation("InboundLeadAssignee")
@@ -1537,6 +1560,14 @@ enum ImsStockBucket {
   QC_PENDING
 }
 
+enum ImsRequisitionStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  CLOSED
+}
+
 enum ImsMovementType {
   RM_IN
   ISSUE_TO_PRODUCTION
@@ -1545,6 +1576,8 @@ enum ImsMovementType {
   QC_PASS
   QC_FAIL
   ADJUSTMENT
+  WASTAGE
+  GATE_PASS
 }
 
 enum ImsQcStatus {
@@ -1571,6 +1604,10 @@ model ImsItem {
   id             String       @id @default(cuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  groupId        String?
+  group          ImsItemGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  rackSectionId  String?
+  rackSection    ImsRackSection? @relation(fields: [rackSectionId], references: [id], onDelete: SetNull)
   code           String
   name           String
   description    String?
@@ -1589,11 +1626,316 @@ model ImsItem {
   balances       ImsStockBalance[]
   movements      ImsStockMovement[]
   qcInspections  ImsQcInspection[]
+  requisitionLines ImsMaterialRequisitionLine[]
+  indentLines      ImsIndentLine[]
+  purchaseOrderLines ImsPurchaseOrderLine[]
+  physicalStockCountLines ImsPhysicalStockCountLine[]
+  gatePassLines    ImsGatePassLine[]
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
   @@unique([organizationId, code])
   @@index([organizationId, itemType, isActive])
+  @@index([organizationId, groupId])
+  @@index([organizationId, rackSectionId])
+}
+
+model ImsItemGroup {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  parentId       String?
+  parent         ImsItemGroup?  @relation("ImsItemGroupTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children       ImsItemGroup[] @relation("ImsItemGroupTree")
+  sortOrder      Int          @default(0)
+  isActive       Boolean      @default(true)
+  items          ImsItem[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, name])
+  @@index([organizationId, parentId])
+}
+
+model ImsMaterialRequisition {
+  id                String                   @id @default(cuid())
+  organizationId    String
+  organization      Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  requisitionNumber String
+  status            ImsRequisitionStatus     @default(DRAFT)
+  siteName          String?
+  department        String?
+  purpose           String?
+  notes             String?
+  requestedById     String
+  requestedBy       User                     @relation("ImsRequisitionRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  approvedById      String?
+  approvedBy        User?                    @relation("ImsRequisitionApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedAt        DateTime?
+  rejectedReason    String?
+  lines             ImsMaterialRequisitionLine[]
+  indents           ImsIndent[]
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  @@unique([organizationId, requisitionNumber])
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+}
+
+model ImsMaterialRequisitionLine {
+  id                String                 @id @default(cuid())
+  organizationId    String
+  organization      Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  requisitionId     String
+  requisition       ImsMaterialRequisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  itemId            String
+  item              ImsItem                @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  quantityRequested Decimal                @db.Decimal(18, 4)
+  quantityApproved  Decimal?               @db.Decimal(18, 4)
+  notes             String?
+  sortOrder         Int                    @default(0)
+
+  @@index([requisitionId])
+  @@index([organizationId, itemId])
+}
+
+enum ImsIndentStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  CLOSED
+  CANCELLED
+}
+
+model ImsIndent {
+  id             String          @id @default(cuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  indentNumber   String
+  status         ImsIndentStatus @default(DRAFT)
+  requisitionId  String?
+  requisition    ImsMaterialRequisition? @relation(fields: [requisitionId], references: [id], onDelete: SetNull)
+  vendorId       String?
+  vendor         ImsVendor?      @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  siteName       String?
+  notes          String?
+  createdById    String
+  createdBy      User            @relation("ImsIndentCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  approvedById   String?
+  approvedBy     User?           @relation("ImsIndentApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedAt     DateTime?
+  lines          ImsIndentLine[]
+  purchaseOrders ImsPurchaseOrder[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@unique([organizationId, indentNumber])
+  @@index([organizationId, status])
+  @@index([organizationId, requisitionId])
+}
+
+model ImsIndentLine {
+  id             String    @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  indentId       String
+  indent         ImsIndent @relation(fields: [indentId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           ImsItem   @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  quantity       Decimal   @db.Decimal(18, 4)
+  rate           Decimal?  @db.Decimal(18, 4)
+  notes          String?
+  sortOrder      Int       @default(0)
+
+  @@index([indentId])
+  @@index([organizationId, itemId])
+}
+
+enum ImsPurchaseOrderStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  SENT
+  CLOSED
+  CANCELLED
+}
+
+model ImsPurchaseOrder {
+  id                   String                 @id @default(cuid())
+  organizationId       String
+  organization         Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  poNumber             String
+  status               ImsPurchaseOrderStatus @default(DRAFT)
+  indentId             String?
+  indent               ImsIndent?             @relation(fields: [indentId], references: [id], onDelete: SetNull)
+  vendorId             String?
+  vendor               ImsVendor?             @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  siteName             String?
+  expectedDeliveryDate DateTime?
+  notes                String?
+  createdById          String
+  createdBy            User                   @relation("ImsPurchaseOrderCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  approvedById         String?
+  approvedBy           User?                  @relation("ImsPurchaseOrderApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedAt           DateTime?
+  lines                ImsPurchaseOrderLine[]
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+
+  @@unique([organizationId, poNumber])
+  @@index([organizationId, status])
+  @@index([organizationId, indentId])
+}
+
+model ImsPurchaseOrderLine {
+  id             String           @id @default(cuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  purchaseOrderId String
+  purchaseOrder  ImsPurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           ImsItem          @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  quantity       Decimal          @db.Decimal(18, 4)
+  rate           Decimal?         @db.Decimal(18, 4)
+  notes          String?
+  sortOrder      Int              @default(0)
+
+  @@index([purchaseOrderId])
+  @@index([organizationId, itemId])
+}
+
+model ImsRackSection {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  code           String
+  name           String
+  siteName       String?
+  sortOrder      Int          @default(0)
+  isActive       Boolean      @default(true)
+  items          ImsItem[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, code])
+  @@index([organizationId, isActive])
+}
+
+enum ImsPurchaseBillStatus {
+  DRAFT
+  POSTED
+}
+
+model ImsPurchaseBill {
+  id             String                @id @default(cuid())
+  organizationId String
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  billNumber     String
+  status         ImsPurchaseBillStatus @default(DRAFT)
+  vendorId       String
+  vendor         ImsVendor             @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  billDate       DateTime
+  amount         Decimal               @db.Decimal(18, 2)
+  grnReference   String?
+  invoiceNumber  String?
+  notes          String?
+  createdById    String
+  createdBy      User                  @relation("ImsPurchaseBillCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@unique([organizationId, billNumber])
+  @@index([organizationId, billDate])
+  @@index([organizationId, vendorId])
+}
+
+enum ImsStockCountStatus {
+  DRAFT
+  POSTED
+}
+
+model ImsPhysicalStockCount {
+  id             String              @id @default(cuid())
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  countNumber    String
+  status         ImsStockCountStatus @default(DRAFT)
+  siteName       String?
+  notes          String?
+  countedAt      DateTime            @default(now())
+  createdById    String
+  createdBy      User                @relation("ImsPhysicalStockCountCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  postedAt       DateTime?
+  lines          ImsPhysicalStockCountLine[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@unique([organizationId, countNumber])
+  @@index([organizationId, status])
+}
+
+model ImsPhysicalStockCountLine {
+  id             String                @id @default(cuid())
+  organizationId String
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  countId        String
+  count          ImsPhysicalStockCount @relation(fields: [countId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           ImsItem               @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  systemQty      Decimal               @db.Decimal(18, 4)
+  physicalQty    Decimal               @db.Decimal(18, 4)
+  sortOrder      Int                   @default(0)
+
+  @@index([countId])
+  @@index([organizationId, itemId])
+}
+
+enum ImsGatePassStatus {
+  DRAFT
+  ISSUED
+  CANCELLED
+}
+
+model ImsGatePass {
+  id             String            @id @default(cuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  passNumber     String
+  status         ImsGatePassStatus @default(DRAFT)
+  siteName       String?
+  partyName      String?
+  vehicleNo      String?
+  purpose        String?
+  notes          String?
+  createdById    String
+  createdBy      User              @relation("ImsGatePassCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  issuedById     String?
+  issuedBy       User?             @relation("ImsGatePassIssuer", fields: [issuedById], references: [id], onDelete: SetNull)
+  issuedAt       DateTime?
+  lines          ImsGatePassLine[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@unique([organizationId, passNumber])
+  @@index([organizationId, status])
+}
+
+model ImsGatePassLine {
+  id             String    @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  gatePassId     String
+  gatePass       ImsGatePass @relation(fields: [gatePassId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           ImsItem   @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  quantity       Decimal   @db.Decimal(18, 4)
+  notes          String?
+  sortOrder      Int       @default(0)
+
+  @@index([gatePassId])
+  @@index([organizationId, itemId])
 }
 
 model ImsStockBalance {
@@ -1695,6 +2037,9 @@ model ImsVendor {
   isActive       Boolean      @default(true)
   sortOrder      Int          @default(0)
   customValues   Json?
+  indents        ImsIndent[]
+  purchaseOrders ImsPurchaseOrder[]
+  purchaseBills  ImsPurchaseBill[]
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 

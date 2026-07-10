@@ -2,96 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Package } from "lucide-react";
 import {
-  ArrowLeftRight,
-  BarChart3,
-  ClipboardCheck,
-  History,
-  LayoutDashboard,
-  Package,
-  PackageSearch,
-  ShoppingCart,
-  SlidersHorizontal,
-  Truck,
-} from "lucide-react";
-import { IMS_SALES_ORDER_STOCK_PATH } from "@/lib/ims/sales-order-stock";
-
-type NavItem = {
-  href: string;
-  label: string;
-  icon: typeof Package;
-  description: string;
-};
-
-const items: NavItem[] = [
-  {
-    href: "/app/ims",
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    description: "Value, alerts, ABC split",
-  },
-  {
-    href: "/app/ims/items",
-    label: "Items",
-    icon: Package,
-    description: "Master data and QC policy",
-  },
-  {
-    href: IMS_SALES_ORDER_STOCK_PATH,
-    label: "Sales order stock",
-    icon: ShoppingCart,
-    description: "IMS check for open orders",
-  },
-  {
-    href: "/app/ims/vendors",
-    label: "Vendors",
-    icon: Truck,
-    description: "Supplier master data",
-  },
-  {
-    href: "/app/ims/stock",
-    label: "Stock",
-    icon: PackageSearch,
-    description: "Levels and status colours",
-  },
-  {
-    href: "/app/ims/move",
-    label: "Record movement",
-    icon: ArrowLeftRight,
-    description: "RM In, issue, FG In/Out, adjust",
-  },
-  {
-    href: "/app/ims/movements",
-    label: "History",
-    icon: History,
-    description: "All movements with filters",
-  },
-  {
-    href: "/app/ims/qc",
-    label: "QC queue",
-    icon: ClipboardCheck,
-    description: "Pass or fail receipts",
-  },
-  {
-    href: "/app/ims/reports",
-    label: "Reports",
-    icon: BarChart3,
-    description: "Valuation, ABC, trends",
-  },
-  {
-    href: "/app/ims/settings",
-    label: "Form settings",
-    icon: SlidersHorizontal,
-    description: "Customise item & vendor forms",
-  },
-];
-
-function navIsActive(pathname: string, href: string) {
-  if (href === "/app/ims") {
-    return pathname === "/app/ims";
-  }
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
+  IMS_NAV_SECTIONS,
+  imsNavIsActive,
+  imsNavItemKey,
+  type ImsNavItem,
+} from "@/lib/ims/store-nav";
 
 export function ImsModuleNav() {
   const pathname = usePathname();
@@ -101,31 +18,44 @@ export function ImsModuleNav() {
       <div className="ws-module-subnav-brand">
         <Package size={18} aria-hidden />
         <div>
-          <strong>Inventory</strong>
-          <span>IMS - RM and FG stores</span>
+          <strong>Store</strong>
+          <span>IMS — MR, GRN, MIN, stock</span>
         </div>
       </div>
-      <ul className="ws-module-subnav-list">
-        {items.map((item) => {
-          const Icon = item.icon;
-          const active = navIsActive(pathname, item.href);
-          return (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                className={`ws-module-subnav-link${active ? " is-active" : ""}`}
-                aria-current={active ? "page" : undefined}
-              >
-                <Icon size={16} aria-hidden />
-                <span>
-                  {item.label}
-                  <small>{item.description}</small>
-                </span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+      {IMS_NAV_SECTIONS.map((section) => (
+        <div key={section.title} className="ws-module-subnav-section">
+          <span className="ws-module-subnav-section-title">{section.title}</span>
+          <ul className="ws-module-subnav-list">
+            {section.items.map((item) => (
+              <ImsNavLink key={imsNavItemKey(item)} item={item} pathname={pathname} />
+            ))}
+          </ul>
+        </div>
+      ))}
     </nav>
+  );
+}
+
+function ImsNavLink({ item, pathname }: { item: ImsNavItem; pathname: string }) {
+  const Icon = item.icon;
+  const active = imsNavIsActive(pathname, item.href);
+
+  return (
+    <li>
+      <Link
+        href={item.href}
+        className={`ws-module-subnav-link${active ? " is-active" : ""}${item.phase2 ? " ws-module-subnav-link-phase2" : ""}`}
+        aria-current={active ? "page" : undefined}
+      >
+        <Icon size={16} aria-hidden />
+        <span>
+          {item.label}
+          <small>
+            {item.description}
+            {item.phase2 ? " · Soon" : ""}
+          </small>
+        </span>
+      </Link>
+    </li>
   );
 }

@@ -562,7 +562,410 @@
   letter-spacing: var(--tracking-kicker);
 }
 
+/* ── Workspace overrides (load after workspace-theme in /app layout) ── */
+
+/* IMS + shared ws-btn — Apple pill buttons */
+.workspace-app .ws-btn,
+.workspace-app a.ws-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 6px 16px;
+  border-radius: var(--apple-radius-pill);
+  font-family: var(--apple-font);
+  font-size: var(--apple-font-body);
+  font-weight: var(--apple-weight-regular);
+  letter-spacing: -0.011em;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  box-shadow: none;
+}
+
+.workspace-app .ws-btn-primary {
+  border: none;
+  background: var(--apple-blue);
+  color: #fff;
+}
+
+.workspace-app .ws-btn-primary:hover {
+  background: var(--apple-blue-hover);
+  box-shadow: none;
+}
+
+.workspace-app .ws-btn-primary:disabled {
+  background: var(--apple-border);
+  color: #fff;
+  cursor: not-allowed;
+}
+
+.workspace-app .ws-btn-secondary {
+  border: 1px solid var(--apple-border);
+  background: #fff;
+  color: var(--apple-blue);
+}
+
+.workspace-app .ws-btn-secondary:hover {
+  background: var(--apple-fill);
+  border-color: var(--apple-border);
+}
+
+.workspace-app .ws-btn-ghost {
+  border: none;
+  background: transparent;
+  color: var(--apple-blue);
+}
+
+.workspace-app .ws-btn-ghost:hover {
+  background: rgba(0, 113, 227, 0.08);
+}
+
+.workspace-app .ws-btn-small,
+.workspace-app .ws-btn-sm {
+  min-height: 28px;
+  padding: 4px 12px;
+  font-size: var(--apple-font-footnote);
+}
+
+/* IMS shell */
+.workspace-app .ws-ims-sf .ws-sf-page-toolbar {
+  margin-bottom: 24px;
+  padding: 0 0 20px;
+  border-bottom: 1px solid var(--apple-border-light);
+}
+
+.workspace-app .ws-ims-sf .ws-sf-page-toolbar h1 {
+  font-size: var(--apple-font-title2);
+  font-weight: var(--apple-weight-semibold);
+  letter-spacing: var(--apple-tracking-tight);
+  color: var(--apple-text);
+}
+
+.workspace-app .ws-ims-sf .ws-sf-page-toolbar p {
+  margin-top: 6px;
+  font-size: var(--apple-font-subhead);
+  font-weight: var(--apple-weight-regular);
+  color: var(--apple-text-secondary);
+  line-height: var(--apple-leading-normal);
+}
+
+.workspace-app .ws-ims-page {
+  gap: 24px;
+}
+
+.workspace-app .ws-ims-panel {
+  border-radius: var(--apple-radius);
+  border: 1px solid var(--apple-border-light);
+  background: #fff;
+  box-shadow: var(--apple-shadow);
+  padding: 0;
+  overflow: hidden;
+}
+
+.workspace-app .ws-ims-panel-head {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--apple-border-light);
+  background: var(--apple-bg-secondary);
+}
+
+.workspace-app .ws-ims-panel-head h2,
+.workspace-app .ws-ims-panel h2 {
+  font-size: var(--apple-font-headline);
+  font-weight: var(--apple-weight-semibold);
+  color: var(--apple-text);
+}
+
+.workspace-app .ws-ims-help,
+.workspace-app .ws-ims-note {
+  font-size: var(--apple-font-footnote);
+  color: var(--apple-text-secondary);
+  line-height: var(--apple-leading-normal);
+}
+
+.workspace-app .ws-ims-success {
+  color: #248a3d;
+  font-size: var(--apple-font-footnote);
+}
+
+.workspace-app .ws-ims-error {
+  color: #d70015;
+  font-size: var(--apple-font-footnote);
+}
+
+/* IMS tables */
+.workspace-app .ws-ims-table-wrap {
+  overflow-x: auto;
+}
+
+.workspace-app .ws-ims-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--apple-font-body);
+}
+
+.workspace-app .ws-ims-table th,
+.workspace-app .ws-ims-table td {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--apple-border-light);
+  text-align: left;
+  vertical-align: top;
+}
+
+.workspace-app .ws-ims-table th {
+  font-size: var(--apple-font-caption1);
+  font-weight: var(--apple-weight-semibold);
+  color: var(--apple-text-secondary);
+  background: var(--apple-bg-secondary);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.workspace-app .ws-ims-table tbody tr:hover {
+  background: var(--apple-fill);
+}
+
+.workspace-app .ws-ims-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.workspace-app .ws-ims-table strong {
+  font-weight: var(--apple-weight-semibold);
+  color: var(--apple-text);
+}
+
+/* Status pills */
+.workspace-app .ws-ims-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--apple-radius-pill);
+  font-size: var(--apple-font-caption2);
+  font-weight: var(--apple-weight-semibold);
+  letter-spacing: 0.02em;
+  text-transform: none;
+  border: none;
+}
+
+.workspace-app .ws-ims-pill-green {
+  background: rgba(52, 199, 89, 0.14);
+  color: #248a3d;
+}
+
+.workspace-app .ws-ims-pill-orange {
+  background: rgba(255, 149, 0, 0.14);
+  color: #c93400;
+}
+
+.workspace-app .ws-ims-pill-red {
+  background: rgba(255, 59, 48, 0.12);
+  color: #d70015;
+}
+
+.workspace-app .ws-ims-pill-blue {
+  background: rgba(0, 113, 227, 0.1);
+  color: var(--apple-blue);
+}
+
+.workspace-app .ws-ims-inline-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--apple-font-footnote);
+  color: var(--apple-text-secondary);
+  line-height: 1.5;
+}
+
+.workspace-app .ws-ims-inline-list li + li {
+  margin-top: 4px;
+}
+
+.workspace-app .ws-ims-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Apple record cards (IMS lists) */
+.workspace-app .ws-apple-record-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.workspace-app .ws-apple-record-card {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--apple-border-light);
+  transition: background 0.15s ease;
+}
+
+.workspace-app .ws-apple-record-card:last-child {
+  border-bottom: none;
+}
+
+.workspace-app .ws-apple-record-card:hover {
+  background: var(--apple-fill);
+}
+
+.workspace-app .ws-apple-record-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.workspace-app .ws-apple-record-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.workspace-app .ws-apple-record-title h3 {
+  margin: 0;
+  font-size: var(--apple-font-headline);
+  font-weight: var(--apple-weight-semibold);
+  letter-spacing: -0.016em;
+  color: var(--apple-text);
+}
+
+.workspace-app .ws-apple-record-value {
+  font-size: var(--apple-font-headline);
+  font-weight: var(--apple-weight-semibold);
+  color: var(--apple-text);
+  white-space: nowrap;
+}
+
+.workspace-app .ws-apple-record-meta {
+  margin: 8px 0 0;
+  font-size: var(--apple-font-footnote);
+  color: var(--apple-text-secondary);
+  line-height: 1.45;
+}
+
+.workspace-app .ws-apple-record-lines {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  list-style: none;
+  border-radius: var(--apple-radius-sm);
+  background: var(--apple-bg-secondary);
+  font-size: var(--apple-font-footnote);
+  color: var(--apple-text-secondary);
+  line-height: 1.5;
+}
+
+.workspace-app .ws-apple-record-lines li + li {
+  margin-top: 4px;
+}
+
+.workspace-app .ws-apple-record-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.workspace-app .ws-apple-record-empty {
+  padding: 40px 24px;
+  text-align: center;
+  font-size: var(--apple-font-subhead);
+  color: var(--apple-text-secondary);
+}
+
+/* IMS forms */
+.workspace-app .ws-ims-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+.workspace-app .ws-ims-form-grid .ws-ims-form-full {
+  grid-column: 1 / -1;
+}
+
+.workspace-app .ws-apple-data-table {
+  font-size: var(--apple-font-footnote);
+}
+
+.workspace-app .ws-apple-data-table th {
+  font-size: var(--apple-font-caption1);
+  font-weight: var(--apple-weight-semibold);
+  color: var(--apple-text-secondary);
+  white-space: nowrap;
+}
+
+.workspace-app .ws-apple-data-table td {
+  font-size: var(--apple-font-footnote);
+  vertical-align: middle;
+}
+
+.workspace-app .ws-apple-cell-primary {
+  font-size: var(--apple-font-body);
+  font-weight: var(--apple-weight-semibold);
+  color: var(--apple-text);
+  letter-spacing: -0.011em;
+}
+
+.workspace-app .ws-apple-cell-secondary {
+  font-size: var(--apple-font-footnote);
+  color: var(--apple-text-secondary);
+}
+
+.workspace-app .ws-apple-cell-lines {
+  font-size: var(--apple-font-caption1);
+  color: var(--apple-text-secondary);
+  line-height: 1.45;
+  max-width: 280px;
+}
+
+.workspace-app .ws-ims-panel > .ws-ims-help {
+  padding: 16px 20px 0;
+  margin: 0;
+}
+
+.workspace-app .ws-ims-form {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.workspace-app .ws-ims-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--apple-font-footnote);
+  font-weight: var(--apple-weight-semibold);
+  color: var(--apple-text-secondary);
+}
+
+.workspace-app .ws-ims-form input,
+.workspace-app .ws-ims-form select,
+.workspace-app .ws-ims-form textarea {
+  font-family: var(--apple-font);
+  font-size: var(--apple-font-body);
+  border-radius: var(--apple-radius-sm);
+  border: 1px solid var(--apple-border);
+  padding: 10px 12px;
+  color: var(--apple-text);
+  background: #fff;
+}
+
+.workspace-app .ws-ims-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 4px;
+}
+
 @media (max-width: 768px) {
+  .workspace-app .ws-ims-form-grid {
+    grid-template-columns: 1fr;
+  }
+
   .workspace-app .saas-content {
     padding: 16px 16px 32px;
   }

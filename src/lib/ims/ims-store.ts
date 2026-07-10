@@ -1344,6 +1344,18 @@ export async function recordStockMovement(params: {
         "USABLE",
         qty.neg(),
       );
+    } else if (
+      params.movementType === "WASTAGE" ||
+      params.movementType === "GATE_PASS"
+    ) {
+      await adjustBalance(
+        tx,
+        params.organizationId,
+        item.id,
+        storeType,
+        "USABLE",
+        qty.neg(),
+      );
     } else if (isAdjustment) {
       await adjustBalance(
         tx,

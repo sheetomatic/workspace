@@ -23,6 +23,10 @@ import {
 
 const ROLE_ORDER = ["VIEWER", "STAFF", "MANAGER", "ADMIN", "OWNER"] as const;
 
+function navItemKey(item: Pick<WorkspaceNavItem, "label" | "href">) {
+  return `${item.label}::${item.href}`;
+}
+
 function NavLink({
   href,
   label,
@@ -45,7 +49,6 @@ function NavLink({
   if (variant === "mobile") {
     return (
       <Link
-        key={href}
         aria-current={active ? "page" : undefined}
         className={active ? "ws-mobile-nav-link active" : "ws-mobile-nav-link"}
         href={href}
@@ -58,7 +61,6 @@ function NavLink({
 
   return (
     <Link
-      key={href}
       aria-current={active ? "page" : undefined}
       className={
         active
@@ -100,7 +102,7 @@ function NavGroup({
         className={`saas-nav-link saas-nav-group-toggle${depth > 0 ? " saas-nav-link-nested" : ""}${selfActive && !hasActiveChild ? " active" : ""}`}
         onClick={() => setManualOpen((value) => !value)}
         aria-expanded={open}
-        aria-controls={`nav-group-${item.href.replace(/\//g, "-")}`}
+        aria-controls={`nav-group-${navItemKey(item).replace(/[^a-zA-Z0-9_-]/g, "-")}`}
       >
         <Icon size={depth > 0 ? 16 : 18} strokeWidth={2} />
         <span className="saas-nav-group-label">{item.label}</span>
@@ -108,7 +110,7 @@ function NavGroup({
       </button>
       {open ? (
         <div
-          id={`nav-group-${item.href.replace(/\//g, "-")}`}
+          id={`nav-group-${navItemKey(item).replace(/[^a-zA-Z0-9_-]/g, "-")}`}
           className={`saas-nav-children${depth > 0 ? " saas-nav-children-deep" : ""}`}
         >
           <NavLinks
@@ -140,7 +142,7 @@ function NavLinks({
   if (variant === "mobile") {
     return items.map((item) => (
       <NavLink
-        key={item.href}
+        key={navItemKey(item)}
         currentSearch={currentSearch}
         pathname={pathname}
         variant="mobile"
@@ -153,7 +155,7 @@ function NavLinks({
     if (item.children?.length) {
       return (
         <NavGroup
-          key={item.href}
+          key={navItemKey(item)}
           currentSearch={currentSearch}
           depth={depth}
           item={item}
@@ -164,7 +166,7 @@ function NavLinks({
 
     return (
       <NavLink
-        key={item.href}
+        key={navItemKey(item)}
         currentSearch={currentSearch}
         nested={depth > 0}
         nestedDeep={depth > 1}

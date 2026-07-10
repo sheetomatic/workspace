@@ -4,6 +4,7 @@ import { ImsSalesOrderStockList } from "@/components/ims/ims-sales-order-stock-l
 import { ImsTeamAccessPanel } from "@/components/ims/ims-team-access-panel";
 import { requireSession } from "@/lib/require-session";
 import { countManagersMissingIms, getImsDashboardStats } from "@/lib/ims/ims-store";
+import { getStoreWorkflowCounts } from "@/lib/ims/store-analytics";
 import { listSalesOrders } from "@/lib/leads/sales-orders";
 import { IMS_SALES_ORDER_STOCK_PATH } from "@/lib/ims/sales-order-stock";
 import { hasMinimumRole } from "@/lib/permissions";
@@ -15,8 +16,9 @@ import {
 
 export default async function ImsDashboardPage() {
   const user = await requireSession(undefined, { module: "IMS" });
-  const [stats, membersMissingIms, stockOrders] = await Promise.all([
+  const [stats, workflow, membersMissingIms, stockOrders] = await Promise.all([
     getImsDashboardStats(user.organizationId),
+    getStoreWorkflowCounts(user.organizationId),
     hasMinimumRole(user.role, "ADMIN")
       ? countManagersMissingIms(user.organizationId)
       : Promise.resolve(0),
@@ -26,43 +28,60 @@ export default async function ImsDashboardPage() {
   return (
     <div className="ws-ims-page">
       <TaskPageToolbar
-        title="Inventory"
-        description="Raw material and finished goods — stock levels, movements, and QC on receipt."
+        title="Store dashboard"
+        description="Exceptions-first numbers for EM — open modules from the sidebar."
       />
 
-      {hasMinimumRole(user.role, "ADMIN") ? (
-        <ImsTeamAccessPanel membersMissingIms={membersMissingIms} />
-      ) : null}
-
-      <section className="ws-ims-panel">
-        <div className="ws-ims-panel-head">
-          <h2>Sales order stock check</h2>
-          <Link href={IMS_SALES_ORDER_STOCK_PATH}>Open IMS orders queue</Link>
-        </div>
-        <p className="ws-ims-help">
-          Stock verification for sales orders runs in IMS — compare on-hand levels, then
-          complete the Stock Check FMS on the order.
-        </p>
-        <ImsSalesOrderStockList orders={stockOrders.orders} />
-      </section>
-
-      <div className="ws-task-stats">
+      <div className="ws-task-stats ws-ims-dashboard-stats">
         <div className="ws-stat-card">
-          <span>Total inventory value</span>
+          <span>Inventory value</span>
           <strong>{formatImsCurrency(stats.totalValue)}</strong>
         </div>
         <div className="ws-stat-card ws-stat-done">
           <span>Active items</span>
-          <strong>{stats.itemCount}</strong>
+          <strong>{stats.itemCount.toLocaleString("en-IN")}</strong>
         </div>
-        <Link href="/app/ims/qc" className="ws-stat-card ws-stat-pending">
-          <span>QC pending (inspections)</span>
-          <strong>{stats.pendingQcCount.toLocaleString("en-IN")}</strong>
-          <small>{formatImsQty(stats.pendingQcUnits)} units on hold</small>
-        </Link>
         <Link href="/app/ims/stock" className="ws-stat-card ws-stat-progress">
           <span>Below minimum</span>
-          <strong>{stats.statusCounts.red}</strong>
+          <strong>{stats.statusCounts.red.toLocaleString("en-IN")}</strong>
+          <small>{stats.statusCounts.orange} reorder soon</small>
+        </Link>
+        <Link href="/app/ims/qc" className="ws-stat-card ws-stat-pending">
+          <span>QC pending</span>
+          <strong>{stats.pendingQcCount.toLocaleString("en-IN")}</strong>
+          <small>{formatImsQty(stats.pendingQcUnits)} on hold</small>
+        </Link>
+      </div>
+
+      <div className="ws-task-stats ws-ims-dashboard-stats">
+        <Link href="/app/ims/requisitions" className="ws-stat-card ws-stat-pending">
+          <span>MR pending approval</span>
+          <strong>{workflow.mrPending.toLocaleString("en-IN")}</strong>
+          <small>{workflow.mrDraft} drafts</small>
+        </Link>
+        <Link href="/app/ims/indents" className="ws-stat-card ws-stat-progress">
+          <span>Indents pending</span>
+          <strong>{workflow.indentPending.toLocaleString("en-IN")}</strong>
+        </Link>
+        <Link href="/app/ims/purchase" className="ws-stat-card">
+          <span>Purchase bills (draft)</span>
+          <strong>{workflow.purchaseBillsDraft.toLocaleString("en-IN")}</strong>
+        </Link>
+        <Link href="/app/ims/movements" className="ws-stat-card ws-stat-done">
+          <span>Movements (7 days)</span>
+          <strong>{workflow.movementsLast7Days.toLocaleString("en-IN")}</strong>
+        </Link>
+        <Link href="/app/ims/physical-stock" className="ws-stat-card">
+          <span>Stock counts (draft)</span>
+          <strong>{workflow.physicalCountsDraft.toLocaleString("en-IN")}</strong>
+        </Link>
+        <Link href="/app/ims/gate-pass" className="ws-stat-card ws-stat-progress">
+          <span>Gate passes (draft)</span>
+          <strong>{workflow.gatePassesDraft.toLocaleString("en-IN")}</strong>
+        </Link>
+        <Link href="/app/ims/wastage" className="ws-stat-card ws-stat-pending">
+          <span>Wastage (7 days)</span>
+          <strong>{workflow.wastageLast7Days.toLocaleString("en-IN")}</strong>
         </Link>
       </div>
 
@@ -97,13 +116,16 @@ export default async function ImsDashboardPage() {
               <strong>{formatImsCurrency(stats.abcValue.C)}</strong>
             </li>
           </ul>
+          <p className="ws-ims-help ws-ims-master-counts">
+            {workflow.vendorCount} vendors · {workflow.rackSections} rack sections
+          </p>
         </section>
       </div>
 
       <section className="ws-ims-panel">
         <div className="ws-ims-panel-head">
-          <h2>Reorder soon</h2>
-          <Link href="/app/ims/stock">View all stock</Link>
+          <h2>Reorder exceptions</h2>
+          <Link href="/app/ims/stock">Stock on screen</Link>
         </div>
         {stats.reorderList.length === 0 ? (
           <p className="ws-ims-help">All items are at healthy levels.</p>
@@ -145,7 +167,7 @@ export default async function ImsDashboardPage() {
         <section className="ws-ims-panel">
           <div className="ws-ims-panel-head">
             <h2>Top items by value</h2>
-            <Link href="/app/ims/stock">View all stock</Link>
+            <Link href="/app/ims/register">Stock register</Link>
           </div>
           <div className="ws-ims-table-wrap">
             <table className="ws-ims-table">
@@ -160,7 +182,7 @@ export default async function ImsDashboardPage() {
               <tbody>
                 {stats.topItems.length === 0 ? (
                   <tr>
-                    <td colSpan={4}>No items yet - add items to get started.</td>
+                    <td colSpan={4}>No items yet — add items to get started.</td>
                   </tr>
                 ) : (
                   stats.topItems.map((row) => (
@@ -208,7 +230,7 @@ export default async function ImsDashboardPage() {
                     <tr key={row.id}>
                       <td>{row.createdAt.toLocaleDateString("en-IN")}</td>
                       <td>
-                        {row.item.code} - {row.item.name}
+                        {row.item.code} — {row.item.name}
                       </td>
                       <td>{row.movementType.replaceAll("_", " ")}</td>
                       <td>{Number(row.quantity).toLocaleString("en-IN")}</td>
@@ -221,20 +243,17 @@ export default async function ImsDashboardPage() {
         </section>
       </div>
 
-      <div className="ws-ims-module-grid">
-        <Link className="ws-ims-module-card" href="/app/ims/items">
-          <strong>Item master</strong>
-          <p>Codes, min/reorder/max, unit cost, ABC class, and QC policy per item.</p>
-        </Link>
-        <Link className="ws-ims-module-card" href="/app/ims/move">
-          <strong>Movements</strong>
-          <p>RM In, issue to production, FG In, and FG Out with optional QC on receipt.</p>
-        </Link>
-        <Link className="ws-ims-module-card" href="/app/ims/qc">
-          <strong>QC queue</strong>
-          <p>Pass or fail pending inspections - pass moves stock to usable.</p>
-        </Link>
-      </div>
+      <section className="ws-ims-panel">
+        <div className="ws-ims-panel-head">
+          <h2>Sales order stock check</h2>
+          <Link href={IMS_SALES_ORDER_STOCK_PATH}>Open queue</Link>
+        </div>
+        <ImsSalesOrderStockList orders={stockOrders.orders} />
+      </section>
+
+      {hasMinimumRole(user.role, "ADMIN") ? (
+        <ImsTeamAccessPanel membersMissingIms={membersMissingIms} />
+      ) : null}
     </div>
   );
 }

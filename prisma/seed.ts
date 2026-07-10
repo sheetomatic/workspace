@@ -15,6 +15,7 @@ import {
 import bcrypt from "bcryptjs";
 import { seedHingoraniCases } from "./seed-hingorani";
 import { seedBciDemo } from "./seed-bci-demo";
+import { seedAcmeIms } from "./seed-acme-ims";
 import { DEFAULT_BCI_ORG_MODULES } from "../src/lib/workspace-addons.shared";
 import {
   PLATFORM_WORKSPACE_MODULES,
@@ -1022,6 +1023,18 @@ async function main() {
   await seedTeamHierarchy();
   await seedMultiOrgConsultant(passwordHash);
 
+  const acmeOrg = await prisma.organization.findUnique({
+    where: { slug: "acme-manufacturing" },
+  });
+  if (acmeOrg) {
+    const ownerId = userIds["owner@acme.demo"];
+    const managerId = userIds["manager@acme.demo"];
+    const staffId = userIds["staff@acme.demo"];
+    if (ownerId && managerId && staffId) {
+      await seedAcmeIms(prisma, acmeOrg.id, { ownerId, managerId, staffId });
+    }
+  }
+
   for (const org of organizations) {
     const organization = await prisma.organization.findUniqueOrThrow({
       where: { slug: org.slug },
@@ -1092,6 +1105,7 @@ async function main() {
   console.log("Super admin:", SUPER_ADMIN.email, "@ sheetomatic-technologies");
   console.log("Hingorani portal: https://hingorani.sheetomatic.com (admin@hingorani.demo)");
   console.log("BCI FMS demo: owner@bci.demo @ bci-demo (password:", DEMO_PASSWORD + ")");
+  console.log("Acme IMS / Store: owner@acme.demo @ acme-manufacturing (npm run db:seed-acme-ims)");
   console.log("Accounts:");
   for (const entry of seedUsers) {
     console.log(`  ${entry.email} (${entry.role} @ ${entry.orgSlug})`);
