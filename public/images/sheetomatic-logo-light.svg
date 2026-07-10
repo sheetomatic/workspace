@@ -1,27 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 72" fill="none" role="img" aria-label="Sheetomatic">
-  <rect x="4" y="38" width="12" height="22" rx="2.5" fill="#06B6D4"/>
-  <rect x="22" y="24" width="12" height="36" rx="2.5" fill="#2563EB"/>
-  <rect x="40" y="10" width="12" height="50" rx="2.5" fill="#60A5FA"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 64" fill="none" role="img" aria-label="Sheetomatic">
+  <rect x="4" y="36" width="11" height="20" rx="2.5" fill="#67E8F9"/>
+  <rect x="20" y="22" width="11" height="34" rx="2.5" fill="#60A5FA"/>
+  <rect x="36" y="8" width="11" height="48" rx="2.5" fill="#93C5FD"/>
   <path
-    d="M6 52 C14 42, 26 28, 42 14 L48 20 L56 6 L40 10 L46 16 C32 28, 20 40, 12 50 Z"
-    fill="#10B981"
+    d="M10 48 L24 30 L33 38 L44 12 L50 14 L36 46 L27 36 L16 50 Z"
+    fill="#34D399"
   />
   <text
-    x="72"
-    y="40"
+    x="62"
+    y="36"
     font-family="Poppins, Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-    font-size="28"
+    font-size="26"
     font-weight="700"
     letter-spacing="-0.02em"
     fill="#FFFFFF"
   >sheetomatic</text>
   <text
-    x="72"
-    y="58"
+    x="62"
+    y="54"
     font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-    font-size="11"
+    font-size="10"
     font-weight="500"
-    letter-spacing="0.01em"
-    fill="#E2E8F0"
+    letter-spacing="0.02em"
+    fill="#CBD5E1"
   >AI-Powered Business Automation</text>
 </svg>

@@ -32,10 +32,11 @@ export const siteBrand = {
   iconLightSrc: "/images/sheetomatic-icon-light.svg",
   /** Full lockup for exports and standalone brand use */
   logoSrc: "/images/sheetomatic-logo.svg",
-  /** Raster lockups from finalized brand kit */
+  /** Raster lockups from finalized brand kit (`public/brand/kit/`) */
   logoPngSrc: "/brand/sheetomatic-logo-primary-horizontal.png",
   logoDarkPngSrc: "/brand/sheetomatic-logo-primary-dark.png",
   symbolPngSrc: "/brand/sheetomatic-logo-symbol.png",
+  brandKitPath: "/brand/kit",
   logoAlt: "Sheetomatic logo",
   footerDescription:
     "Sheetomatic Workspace and Sheetomatic AI — AI-Powered Business Automation for system-driven MSMEs. FMS, IMS, Full Kitting, Process Coordinator, Executive Assistant, and Review Rhythm in one operating system.",

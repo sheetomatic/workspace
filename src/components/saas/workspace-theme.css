@@ -18155,16 +18155,23 @@ body:has(.workspace-app.saas-app) {
   height: var(--sheetomatic-ai-mark-height, 28px);
   padding: 3px;
   box-sizing: border-box;
-  border-radius: 7px;
-  background: linear-gradient(145deg, #ffffff 0%, #f0fdf4 100%);
-  border: 1px solid rgba(24, 169, 87, 0.22);
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
   overflow: hidden;
+}
+
+.sheetomatic-ai-mark-wrap--on-dark {
+  background: #ffffff;
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.2);
 }
 
 .sheetomatic-ai-mark--lockup .sheetomatic-ai-mark-wrap {
   width: auto;
   min-width: var(--sheetomatic-ai-mark-width, 42px);
-  padding: 2px 5px;
+  padding: 3px 6px;
 }
 
 .sheetomatic-ai-mark-logo {
@@ -18176,21 +18183,22 @@ body:has(.workspace-app.saas-app) {
   min-height: 0;
   max-width: none;
   object-fit: contain;
+  image-rendering: -webkit-optimize-contrast;
 }
 
 .sheetomatic-ai-mark--lockup .sheetomatic-ai-mark-logo {
-  width: var(--sheetomatic-ai-mark-width, 42px);
-  height: var(--sheetomatic-ai-mark-height, 28px);
-  min-width: var(--sheetomatic-ai-mark-width, 42px);
-  min-height: var(--sheetomatic-ai-mark-height, 28px);
+  width: var(--sheetomatic-ai-mark-width, 72px);
+  height: var(--sheetomatic-ai-mark-height, 24px);
+  min-width: var(--sheetomatic-ai-mark-width, 72px);
+  min-height: var(--sheetomatic-ai-mark-height, 24px);
 }
 
 .sheetomatic-ai-mark--icon .sheetomatic-ai-mark-logo {
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 .sheetomatic-ai-mark--lockup .sheetomatic-ai-mark-logo {
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 .sheetomatic-ai-mark-label {
@@ -18206,19 +18214,26 @@ body:has(.workspace-app.saas-app) {
   gap: 8px;
 }
 
-.workspace-app .btn-cta .ws-fms-ai-btn-mark {
+.workspace-app .btn-cta .ws-fms-ai-btn-mark,
+.workspace-app .btn-primary .ws-fms-ai-btn-mark {
   flex-shrink: 0;
   line-height: 0;
 }
 
-.workspace-app .btn-cta .ws-fms-ai-btn-mark.sheetomatic-ai-mark--on-dark .sheetomatic-ai-mark-logo {
-  display: block;
-  width: var(--sheetomatic-ai-mark-width, 16px);
-  height: var(--sheetomatic-ai-mark-height, 16px);
-  object-fit: contain;
+.workspace-app .btn-cta .ws-fms-ai-btn-mark .sheetomatic-ai-mark-wrap,
+.workspace-app .btn-primary .ws-fms-ai-btn-mark .sheetomatic-ai-mark-wrap {
+  width: var(--sheetomatic-ai-mark-width, 18px);
+  height: var(--sheetomatic-ai-mark-height, 18px);
+  padding: 2px;
+  border-radius: 5px;
 }
 
-.workspace-app .btn-primary .ws-fms-ai-btn-mark.sheetomatic-ai-mark--on-dark .sheetomatic-ai-mark-logo {
+.workspace-app .btn-cta .ws-fms-ai-btn-mark .sheetomatic-ai-mark-logo,
+.workspace-app .btn-primary .ws-fms-ai-btn-mark .sheetomatic-ai-mark-logo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   filter: none;
 }
 
