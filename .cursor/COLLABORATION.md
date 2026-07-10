@@ -405,3 +405,20 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/my-space`, `/app/my-space/expenses` (period KPIs, fixed expenses, EMI asset details, Internet/WiFi, household categories).
 
 ---
+
+**Deployed (2026-07-10):** Sell-ready HR — attendance → leave → payroll, employees, salary slips.
+
+| Item | Detail |
+|------|--------|
+| Commit | `a79fc7d` — Ship sell-ready HR: attendance through leave to payroll with employee registration and salary slips. |
+| Branch | `main` → `origin/main` (pushed) |
+| Build | `npm run test:unit` 54/54 pass; `npm run build` pass (prisma generate + migrate deploy + next build) |
+| Migrations | `20260710220000_hr_payroll_salary`, `20260710230000_employee_profile_docs` |
+| Vercel | Production **Ready** (Deployment has completed) — https://sheetomatic.com / https://app.sheetomatic.com |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/h4AY8XDq12xxMYtcoEygAKcHU2RF |
+| Target | Sheetomatic only (intended). Shared `sheetomatic/workspace` also triggered Hingorani/Tops hooks; both **failed** (not promoted). |
+| Caveat | Aadhaar/PAN still plaintext — demo OK, not a DPDP-sell claim. |
+
+**Hard-refresh in prod:** `/app/hr`, `/app/hr/attendance`, `/app/hr/leave`, `/app/hr/payroll`, `/app/hr/employees`, `/app/hr/payroll/slip/[lineId]`.
+
+---
