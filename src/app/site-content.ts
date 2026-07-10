@@ -23,8 +23,8 @@ export const youtubeChannelName = "Sheetomatic Videos";
 
 export const siteBrand = {
   name: "Sheetomatic",
-  tagline: "BCI Suite",
-  headerTagline: "BCI Suite",
+  tagline: "AI-Powered Business Automation",
+  headerTagline: "AI-Powered Business Automation",
   descriptor: "Business Control & Intelligence",
   /** Icon-only mark for headers, sidebars, and app tiles */
   iconSrc: "/images/sheetomatic-icon.svg",
@@ -32,9 +32,13 @@ export const siteBrand = {
   iconLightSrc: "/images/sheetomatic-icon-light.svg",
   /** Full lockup for exports and standalone brand use */
   logoSrc: "/images/sheetomatic-logo.svg",
+  /** Raster lockups from finalized brand kit */
+  logoPngSrc: "/brand/sheetomatic-logo-primary-horizontal.png",
+  logoDarkPngSrc: "/brand/sheetomatic-logo-primary-dark.png",
+  symbolPngSrc: "/brand/sheetomatic-logo-symbol.png",
   logoAlt: "Sheetomatic logo",
   footerDescription:
-    "Sheetomatic Workspace and Sheetomatic AI — BCI Suite: Business Control & Intelligence for system-driven MSMEs. FMS, IMS, Full Kitting, Process Coordinator, Executive Assistant, and Review Rhythm in one operating system.",
+    "Sheetomatic Workspace and Sheetomatic AI — AI-Powered Business Automation for system-driven MSMEs. FMS, IMS, Full Kitting, Process Coordinator, Executive Assistant, and Review Rhythm in one operating system.",
   footerBottomLine: "Sheetomatic · sheetomatic.com",
 };
 

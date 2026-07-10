@@ -1,7 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Sheetomatic">
-  <rect x="8" y="8" width="48" height="48" rx="12" stroke="#000" stroke-width="3" fill="none"/>
-  <circle cx="24" cy="24" r="4" fill="#000"/>
-  <circle cx="40" cy="24" r="4" fill="#000"/>
-  <circle cx="24" cy="40" r="4" fill="#000"/>
-  <circle cx="40" cy="40" r="4" fill="#000"/>
+  <!-- Growth bars: cyan → blue → deep blue -->
+  <rect x="10" y="36" width="10" height="18" rx="2.5" fill="#06B6D4"/>
+  <rect x="27" y="24" width="10" height="30" rx="2.5" fill="#2563EB"/>
+  <rect x="44" y="12" width="10" height="42" rx="2.5" fill="#1D4ED8"/>
+  <!-- Growth arrow -->
+  <path
+    d="M12 48 C18 40, 28 28, 42 16 L48 22 L54 8 L40 12 L46 18 C34 28, 24 38, 18 46 Z"
+    fill="#10B981"
+  />
 </svg>
