@@ -176,12 +176,14 @@ model Organization {
   leaveRequests     LeaveRequest[]
   leaveBalances     LeaveBalance[]
   leavePolicies     LeavePolicy[]
+  hrSwapRequests    HrSwapRequest[]
   payrollRuns       PayrollRun[]
   payrollLines      PayrollLine[]
   employeeProfiles  EmployeeProfile[]
   employeeDocuments EmployeeDocument[]
   fieldCheckIns     FieldCheckIn[]
   fieldVisits       FieldVisit[]
+  fieldLocationPings FieldLocationPing[]
   jobOpenings       JobOpening[]
   candidates        Candidate[]
   legalCases        LegalCase[]
@@ -905,11 +907,14 @@ model User {
   attendanceExceptionReviews  AttendanceExceptionRequest[] @relation("AttendanceExceptionReviewer")
   leaveRequests        LeaveRequest[]           @relation("LeaveRequester")
   leaveReviews         LeaveRequest[]           @relation("LeaveReviewer")
+  hrSwapRequests       HrSwapRequest[]          @relation("HrSwapRequester")
+  hrSwapReviews        HrSwapRequest[]          @relation("HrSwapReviewer")
   payrollLines         PayrollLine[]            @relation("PayrollLineEmployee")
   employeeProfiles     EmployeeProfile[]        @relation("EmployeeProfileUser")
   employeeDocumentsUploaded EmployeeDocument[]  @relation("EmployeeDocumentUploader")
   fieldCheckIns        FieldCheckIn[]
   fieldVisitsAssigned  FieldVisit[]             @relation("FieldVisitAssignee")
+  fieldLocationPings   FieldLocationPing[]
   candidatesOwned      Candidate[]              @relation("CandidateOwner")
   legalCaseDocuments   LegalCaseDocument[]      @relation("LegalCaseDocumentUploader")
   notificationSettings UserNotificationSettings[]
@@ -1011,6 +1016,8 @@ model Membership {
   locationMode       EmployeeLocationMode @default(FIXED_SITE)
   primarySiteId      String?
   primarySite        HrWorkSite?          @relation("MembershipPrimarySite", fields: [primarySiteId], references: [id], onDelete: SetNull)
+  /** Preferred weekly off: 0=Sun … 6=Sat. Null = Sunday (0). */
+  weeklyOffDay       Int?
   geoFenceRequired   Boolean              @default(false)
   faceRequired       Boolean              @default(false)
   staffCode          String?
@@ -1126,6 +1133,11 @@ enum FieldVisitStatus {
   IN_PROGRESS
   COMPLETED
   CANCELLED
+}
+
+enum HrSwapType {
+  LEAVE_SWAP
+  OFF_DAY_SWAP
 }
 
 enum CandidateStage {
@@ -1311,6 +1323,35 @@ model LeaveRequest {
   @@index([organizationId, userId])
 }
 
+/**
+ * Swap leave day or weekly off.
+ * LEAVE_SWAP: move a single-day PENDING/APPROVED leave fromDate → toDate.
+ * OFF_DAY_SWAP: work on fromDate (usual off), take toDate as off (HOLIDAY + "Weekly off").
+ */
+model HrSwapRequest {
+  id             String             @id @default(cuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User               @relation("HrSwapRequester", fields: [userId], references: [id], onDelete: Cascade)
+  swapType       HrSwapType
+  fromDate       DateTime           @db.Date
+  toDate         DateTime           @db.Date
+  reason         String?
+  /** Optional link to the leave being moved (LEAVE_SWAP). */
+  leaveRequestId String?
+  status         LeaveRequestStatus @default(PENDING)
+  reviewedById   String?
+  reviewedBy     User?              @relation("HrSwapReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt     DateTime?
+  reviewNotes    String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([organizationId, status])
+  @@index([organizationId, userId])
+}
+
 model PayrollRun {
   id             String           @id @default(cuid())
   organizationId String
@@ -1430,6 +1471,10 @@ model FieldVisit {
   assignee       User             @relation("FieldVisitAssignee", fields: [assigneeUserId], references: [id], onDelete: Cascade)
   clientName     String
   locationLabel  String?
+  /** Optional visit geofence centre + radius (metres). */
+  geoLat         Float?
+  geoLng         Float?
+  radiusM        Int?
   plannedAt      DateTime?
   status         FieldVisitStatus @default(PLANNED)
   purpose        String?
@@ -1456,8 +1501,28 @@ model FieldCheckIn {
   clientName     String?
   activityNote   String?
   photoUrl       String?
+  /** Set when visit has a geofence; null if no fence configured. */
+  geoFenceOk     Boolean?
 
   @@index([organizationId, userId, checkedInAt])
+}
+
+/** Lightweight live GPS ping while Field page is open (not native background tracking). */
+model FieldLocationPing {
+  id              String       @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  geoLat          Float
+  geoLng          Float
+  recordedAt      DateTime     @default(now())
+  accuracyM       Float?
+  batteryPct      Int?
+  isMockLocation  Boolean?
+
+  @@index([organizationId, recordedAt])
+  @@index([organizationId, userId, recordedAt])
 }
 
 model JobOpening {

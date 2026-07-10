@@ -13,6 +13,7 @@ import {
   getAttendanceSiteStats,
   listActiveHrWorkSites,
 } from "@/lib/hr/sites";
+import { listHolidays } from "@/lib/hr/holidays";
 import { prisma } from "@/lib/db";
 import { attendanceLeaveModule } from "@/app/hr-module-content";
 
@@ -57,7 +58,7 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
 
   const monthKey = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
 
-  const [records, membership, hrSettings, sites, stats, monthRecords, members] =
+  const [records, membership, hrSettings, sites, stats, monthRecords, members, yearHolidays] =
     await Promise.all([
       listTodayAttendance(user.organizationId, siteFilter),
       prisma.membership.findUnique({
@@ -87,6 +88,7 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
         },
         orderBy: { user: { name: "asc" } },
       }),
+      listHolidays(user.organizationId, year),
     ]);
 
   const myRecord = records.find((r) => r.userId === user.id);
@@ -125,6 +127,17 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
     status: row.status,
     notes: row.notes,
   }));
+
+  const monthHolidays = yearHolidays
+    .filter((h) => {
+      const d = new Date(h.date);
+      return d.getUTCFullYear() === year && d.getUTCMonth() === monthIndex;
+    })
+    .map((h) => ({
+      day: new Date(h.date).getUTCDate(),
+      name: h.name,
+      isOptional: h.isOptional,
+    }));
 
   return (
     <div className="saas-page ws-hr-page ws-attendance-page">
@@ -166,6 +179,7 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
         cells={monthCells}
         daysInMonth={daysInMonth}
         employees={employees}
+        holidays={monthHolidays}
         monthIndex={monthIndex}
         siteId={siteFilter}
         year={year}

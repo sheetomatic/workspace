@@ -180,20 +180,89 @@ export async function recordFieldCheckInAction(
   const geoLng = Number(formData.get("geoLng"));
   const clientName = String(formData.get("clientName") ?? "").trim();
   const activityNote = String(formData.get("activityNote") ?? "").trim();
+  const visitId = String(formData.get("visitId") ?? "").trim() || null;
+  const accuracyMRaw = Number(formData.get("accuracyM"));
+  const accuracyM = Number.isFinite(accuracyMRaw) ? accuracyMRaw : null;
 
   try {
     if (!Number.isFinite(geoLat) || !Number.isFinite(geoLng)) {
       throw new Error("GPS location is required for field check-in.");
     }
 
+    let geoFenceOk: boolean | null = null;
+    if (visitId) {
+      const visit = await prisma.fieldVisit.findFirst({
+        where: {
+          id: visitId,
+          organizationId: user.organizationId,
+          assigneeUserId: user.id,
+        },
+        select: {
+          id: true,
+          purpose: true,
+          geoLat: true,
+          geoLng: true,
+          radiusM: true,
+        },
+      });
+      if (!visit) {
+        throw new Error("Visit not found or not assigned to you.");
+      }
+
+      const { visitGeoFenceOk, haversineMeters } = await import(
+        "@/lib/hr/field-pings"
+      );
+      const {
+        parseVisitGeofence,
+        isWithinVisitGeofence,
+      } = await import("@/lib/hr/field-geofence");
+
+      if (visit.geoLat != null && visit.geoLng != null && visit.radiusM != null) {
+        geoFenceOk = visitGeoFenceOk({
+          visitGeoLat: visit.geoLat,
+          visitGeoLng: visit.geoLng,
+          radiusM: visit.radiusM,
+          checkLat: geoLat,
+          checkLng: geoLng,
+        });
+        if (geoFenceOk === false) {
+          const distanceM = haversineMeters(
+            geoLat,
+            geoLng,
+            visit.geoLat,
+            visit.geoLng,
+          );
+          return hrActionFailure(
+            "OUT_OF_LOCATION",
+            `Outside visit geofence (${Math.round(distanceM)}m away; allowed ${visit.radiusM}m). Move closer to the client location and try again.`,
+          );
+        }
+      } else {
+        const fence = parseVisitGeofence(visit.purpose);
+        if (fence) {
+          const check = isWithinVisitGeofence(geoLat, geoLng, fence);
+          geoFenceOk = check.ok;
+          if (!check.ok) {
+            return hrActionFailure(
+              "OUT_OF_LOCATION",
+              `Outside visit geofence (${Math.round(check.distanceM)}m away; allowed ${fence.geoFenceRadiusM}m). Move closer to the client location and try again.`,
+            );
+          }
+        }
+      }
+    }
+
     await prisma.fieldCheckIn.create({
       data: {
         organizationId: user.organizationId,
         userId: user.id,
+        visitId,
         geoLat,
         geoLng,
+        accuracyM,
         clientName: clientName || null,
         activityNote: activityNote || null,
+        geoFenceOk,
       },
     });
 
@@ -201,6 +270,52 @@ export async function recordFieldCheckInAction(
     return { ok: true };
   } catch (error) {
     return mapCheckInError(error);
+  }
+}
+
+export async function postFieldLocationPingAction(
+  formData: FormData,
+): Promise<HrActionResult> {
+  const user = await getSessionUser();
+  if (!user) {
+    return hrActionFailure("FORBIDDEN", "Sign in required.");
+  }
+
+  const geoLat = Number(formData.get("geoLat"));
+  const geoLng = Number(formData.get("geoLng"));
+  const accuracyM = Number(formData.get("accuracyM"));
+  const batteryPct = Number(formData.get("batteryPct"));
+  const isMockRaw = formData.get("isMockLocation");
+
+  if (!Number.isFinite(geoLat) || !Number.isFinite(geoLng)) {
+    return hrActionFailure("GEO_REQUIRED", "GPS location is required for live ping.");
+  }
+
+  try {
+    const { postFieldLocationPing } = await import("@/lib/hr/field-pings");
+    await postFieldLocationPing({
+      organizationId: user.organizationId,
+      userId: user.id,
+      geoLat,
+      geoLng,
+      accuracyM: Number.isFinite(accuracyM) ? accuracyM : null,
+      batteryPct: Number.isFinite(batteryPct) ? batteryPct : null,
+      isMockLocation:
+        isMockRaw === "true" || isMockRaw === "1" || isMockRaw === "on"
+          ? true
+          : isMockRaw === "false" || isMockRaw === "0"
+            ? false
+            : null,
+    });
+    revalidateHr();
+    return { ok: true };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not post location ping.";
+    if (message.toLowerCase().includes("rate limited")) {
+      return hrActionFailure("RATE_LIMITED", message);
+    }
+    return hrActionFailure("PING_FAILED", message);
   }
 }
 
@@ -214,6 +329,13 @@ export async function createFieldVisitAction(formData: FormData): Promise<void> 
   const clientName = String(formData.get("clientName") ?? "").trim();
   const purpose = String(formData.get("purpose") ?? "").trim();
   const locationLabel = String(formData.get("locationLabel") ?? "").trim();
+  const geoLat = Number(formData.get("geoLat"));
+  const geoLng = Number(formData.get("geoLng"));
+  const radiusRaw = Number(
+    formData.get("radiusM") ?? formData.get("geoFenceRadiusM"),
+  );
+  const radiusM =
+    Number.isFinite(radiusRaw) && radiusRaw > 0 ? Math.round(radiusRaw) : null;
 
   if (!clientName || !assigneeUserId) {
     return;
@@ -232,13 +354,20 @@ export async function createFieldVisitAction(formData: FormData): Promise<void> 
     return;
   }
 
+  const hasFence = Number.isFinite(geoLat) && Number.isFinite(geoLng);
+  const { displayVisitPurpose } = await import("@/lib/hr/field-geofence");
+  const cleanPurpose = displayVisitPurpose(purpose) ?? (purpose || null);
+
   await prisma.fieldVisit.create({
     data: {
       organizationId: user.organizationId,
       assigneeUserId,
       clientName,
-      purpose: purpose || null,
+      purpose: cleanPurpose,
       locationLabel: locationLabel || null,
+      geoLat: hasFence ? geoLat : null,
+      geoLng: hasFence ? geoLng : null,
+      radiusM: hasFence ? radiusM ?? 200 : null,
       status: "PLANNED",
     },
   });
@@ -904,6 +1033,10 @@ export async function submitAttendanceExceptionAction(
   const endRaw = String(formData.get("endDate") ?? "").trim();
   const reason = String(formData.get("reason") ?? "").trim();
 
+  // Swaps use submitSwapRequestAction — keep OD/WFH here only.
+  if (exceptionType === "LEAVE_SWAP" || exceptionType === "OFF_DAY_SWAP") {
+    return submitSwapRequestAction(formData);
+  }
   if (exceptionType !== "OD" && exceptionType !== "WFH") {
     return hrActionFailure("INVALID_INPUT", "Select OD or WFH.");
   }
@@ -918,7 +1051,7 @@ export async function submitAttendanceExceptionAction(
     await submitAttendanceException({
       organizationId: user.organizationId,
       userId: user.id,
-      exceptionType,
+      exceptionType: exceptionType as "OD" | "WFH",
       startDate: new Date(startRaw),
       endDate: new Date(endRaw),
       reason: reason || null,
@@ -937,7 +1070,7 @@ export async function reviewAttendanceExceptionAction(
 ): Promise<HrActionResult> {
   const user = await getSessionUser();
   if (!user || !hasMinimumRole(user.role, "MANAGER")) {
-    return hrActionFailure("FORBIDDEN", "Manager access required to review OD/WFH.");
+    return hrActionFailure("FORBIDDEN", "Manager access required to review requests.");
   }
 
   const id = String(formData.get("id") ?? "").trim();
@@ -946,6 +1079,15 @@ export async function reviewAttendanceExceptionAction(
 
   if (!id || (decision !== "APPROVED" && decision !== "REJECTED")) {
     return hrActionFailure("INVALID_INPUT", "Invalid review decision.");
+  }
+
+  // If id is a swap request, route to swap review (Frontend may share one queue).
+  const swap = await prisma.hrSwapRequest.findFirst({
+    where: { id, organizationId: user.organizationId },
+    select: { id: true },
+  });
+  if (swap) {
+    return reviewSwapRequestAction(formData);
   }
 
   try {
@@ -974,6 +1116,104 @@ export async function reviewAttendanceExceptionAction(
     const message =
       error instanceof Error ? error.message : "Could not review request.";
     return hrActionFailure("EXCEPTION_REVIEW_FAILED", message);
+  }
+}
+
+// ── Leave / off-day swap ──────────────────────────────────────────────────
+
+export async function submitSwapRequestAction(
+  formData: FormData,
+): Promise<HrActionResult> {
+  const user = await getSessionUser();
+  if (!user) {
+    return hrActionFailure("FORBIDDEN", "Sign in required.");
+  }
+
+  const swapType = String(
+    formData.get("swapType") ?? formData.get("exceptionType") ?? "",
+  )
+    .trim()
+    .toUpperCase();
+  const fromRaw = String(
+    formData.get("fromDate") ?? formData.get("startDate") ?? "",
+  ).trim();
+  const toRaw = String(
+    formData.get("toDate") ?? formData.get("endDate") ?? "",
+  ).trim();
+  const reason = String(formData.get("reason") ?? "").trim();
+  const leaveRequestId = String(formData.get("leaveRequestId") ?? "").trim();
+
+  if (swapType !== "LEAVE_SWAP" && swapType !== "OFF_DAY_SWAP") {
+    return hrActionFailure(
+      "INVALID_INPUT",
+      "Select LEAVE_SWAP or OFF_DAY_SWAP.",
+    );
+  }
+  if (!fromRaw || !toRaw) {
+    return hrActionFailure("INVALID_INPUT", "From and to dates are required.");
+  }
+
+  try {
+    const { submitSwapRequest } = await import("@/lib/hr/swap-requests");
+    await submitSwapRequest({
+      organizationId: user.organizationId,
+      userId: user.id,
+      swapType: swapType as "LEAVE_SWAP" | "OFF_DAY_SWAP",
+      fromDate: new Date(fromRaw),
+      toDate: new Date(toRaw),
+      reason: reason || null,
+      leaveRequestId: leaveRequestId || null,
+    });
+    revalidateHr();
+    return { ok: true };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not submit swap request.";
+    return hrActionFailure("SWAP_FAILED", message);
+  }
+}
+
+export async function reviewSwapRequestAction(
+  formData: FormData,
+): Promise<HrActionResult> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "MANAGER")) {
+    return hrActionFailure("FORBIDDEN", "Manager access required to review swaps.");
+  }
+
+  const id = String(formData.get("id") ?? "").trim();
+  const decision = String(formData.get("decision") ?? "").trim().toUpperCase();
+  const reviewNotes = String(formData.get("reviewNotes") ?? "").trim();
+
+  if (!id || (decision !== "APPROVED" && decision !== "REJECTED")) {
+    return hrActionFailure("INVALID_INPUT", "Invalid review decision.");
+  }
+
+  try {
+    const { approveSwapRequest, rejectSwapRequest } = await import(
+      "@/lib/hr/swap-requests"
+    );
+    if (decision === "APPROVED") {
+      await approveSwapRequest({
+        organizationId: user.organizationId,
+        requestId: id,
+        reviewerId: user.id,
+        reviewNotes: reviewNotes || null,
+      });
+    } else {
+      await rejectSwapRequest({
+        organizationId: user.organizationId,
+        requestId: id,
+        reviewerId: user.id,
+        reviewNotes: reviewNotes || null,
+      });
+    }
+    revalidateHr();
+    return { ok: true };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not review swap request.";
+    return hrActionFailure("SWAP_REVIEW_FAILED", message);
   }
 }
 
@@ -1123,3 +1363,4 @@ export async function completeOnboardingAction(
     return hrActionFailure("ONBOARDING_FAILED", message);
   }
 }
+

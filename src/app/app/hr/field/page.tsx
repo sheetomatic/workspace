@@ -3,6 +3,7 @@ import { GeoPunchForm } from "@/components/hr/geo-punch-form";
 import { HrSubNav } from "@/components/hr/hr-sub-nav";
 import { FieldLiveBoard } from "@/components/hr/field-live-board";
 import { FieldDayTrail } from "@/components/hr/field-day-trail";
+import { FieldLivePinger } from "@/components/hr/field-live-pinger";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import { listAssignableMembers } from "@/lib/tasks";
@@ -14,6 +15,10 @@ import {
   createFieldVisitAction,
   recordFieldCheckInAction,
 } from "@/lib/hr/hr-actions";
+import {
+  listMyDayTrail,
+  listTodayPings,
+} from "@/lib/hr/field-pings";
 import { fieldTrackingModule } from "@/app/hr-module-content";
 
 function startOfTodayIst() {
@@ -28,17 +33,44 @@ export default async function HrFieldPage() {
   const isManager = hasMinimumRole(user.role, "MANAGER");
   const todayStart = startOfTodayIst();
 
-  const [checkIns, visits, members] = await Promise.all([
+  const [checkIns, visits, members, todayPings, myPingTrail] = await Promise.all([
     listFieldCheckIns(user.organizationId, 80),
     listFieldVisits(user.organizationId),
     isManager ? listAssignableMembers(user.organizationId) : Promise.resolve([]),
+    isManager
+      ? listTodayPings(user.organizationId)
+      : Promise.resolve([]),
+    listMyDayTrail(user.organizationId, user.id),
   ]);
 
   const todayCheckIns = checkIns.filter(
     (row) => row.checkedInAt.getTime() >= todayStart.getTime(),
   );
 
-  const liveByUser = new Map<
+  // Latest live ping per user (manager board).
+  const latestPingByUser = new Map<
+    string,
+    {
+      userId: string;
+      name: string;
+      checkedInAt: Date;
+      geoLat: number;
+      geoLng: number;
+    }
+  >();
+  for (const ping of todayPings) {
+    if (latestPingByUser.has(ping.userId)) continue;
+    latestPingByUser.set(ping.userId, {
+      userId: ping.userId,
+      name: ping.user.name ?? ping.user.email,
+      checkedInAt: ping.recordedAt,
+      geoLat: ping.geoLat,
+      geoLng: ping.geoLng,
+    });
+  }
+
+  // Visit check-in aggregates for today.
+  const checkInAgg = new Map<
     string,
     {
       userId: string;
@@ -50,11 +82,10 @@ export default async function HrFieldPage() {
       checkInCount: number;
     }
   >();
-
   for (const row of todayCheckIns) {
-    const existing = liveByUser.get(row.userId);
+    const existing = checkInAgg.get(row.userId);
     if (!existing) {
-      liveByUser.set(row.userId, {
+      checkInAgg.set(row.userId, {
         userId: row.userId,
         name: row.user.name ?? row.user.email,
         checkedInAt: row.checkedInAt,
@@ -84,11 +115,32 @@ export default async function HrFieldPage() {
     }
   }
 
-  const livePings = [...liveByUser.values()]
-    .map((ping) => ({
-      ...ping,
-      openVisits: openVisitsByUser.get(ping.userId) ?? 0,
-    }))
+  const allUserIds = new Set([
+    ...latestPingByUser.keys(),
+    ...checkInAgg.keys(),
+  ]);
+
+  const livePings = [...allUserIds]
+    .map((userId) => {
+      const ping = latestPingByUser.get(userId);
+      const check = checkInAgg.get(userId);
+      // Prefer live ping timestamp when newer; else last check-in.
+      const usePing =
+        ping &&
+        (!check || ping.checkedInAt.getTime() >= check.checkedInAt.getTime());
+      const source = usePing ? ping! : check!;
+      return {
+        userId,
+        name: source.name,
+        checkedInAt: source.checkedInAt,
+        clientName: usePing ? null : (check?.clientName ?? null),
+        geoLat: source.geoLat,
+        geoLng: source.geoLng,
+        checkInCount: check?.checkInCount ?? 0,
+        openVisits: openVisitsByUser.get(userId) ?? 0,
+        isLivePing: Boolean(usePing),
+      };
+    })
     .sort((a, b) => b.checkedInAt.getTime() - a.checkedInAt.getTime());
 
   // STAFF: only own check-ins (lat/lng privacy). MANAGER+: full team list.
@@ -96,10 +148,8 @@ export default async function HrFieldPage() {
     ? checkIns
     : checkIns.filter((row) => row.userId === user.id);
 
-  const myTodayTrail = todayCheckIns
+  const myCheckInTrail = todayCheckIns
     .filter((row) => row.userId === user.id)
-    .slice()
-    .sort((a, b) => a.checkedInAt.getTime() - b.checkedInAt.getTime())
     .map((row) => ({
       id: row.id,
       checkedInAt: row.checkedInAt,
@@ -107,7 +157,23 @@ export default async function HrFieldPage() {
       activityNote: row.activityNote,
       geoLat: row.geoLat,
       geoLng: row.geoLng,
+      isLivePing: false as const,
     }));
+
+  const myLiveTrail = myPingTrail.map((p) => ({
+    id: p.id,
+    checkedInAt: p.recordedAt,
+    clientName: null as string | null,
+    activityNote: null as string | null,
+    geoLat: p.geoLat,
+    geoLng: p.geoLng,
+    isLivePing: true as const,
+  }));
+
+  const myTodayTrail = [...myCheckInTrail, ...myLiveTrail].sort(
+    (a, b) =>
+      new Date(a.checkedInAt).getTime() - new Date(b.checkedInAt).getTime(),
+  );
 
   const trailUserId =
     isManager && livePings[0] && livePings[0].userId !== user.id
@@ -116,22 +182,61 @@ export default async function HrFieldPage() {
   const trailName =
     trailUserId === user.id
       ? "My day trail"
-      : `Day trail — ${liveByUser.get(trailUserId)?.name ?? "executive"}`;
-  const managerTrail =
-    isManager && trailUserId !== user.id
-      ? todayCheckIns
-          .filter((row) => row.userId === trailUserId)
-          .slice()
-          .sort((a, b) => a.checkedInAt.getTime() - b.checkedInAt.getTime())
-          .map((row) => ({
-            id: row.id,
-            checkedInAt: row.checkedInAt,
-            clientName: row.clientName ?? row.visit?.clientName ?? null,
-            activityNote: row.activityNote,
-            geoLat: row.geoLat,
-            geoLng: row.geoLng,
-          }))
-      : [];
+      : `Day trail — ${livePings.find((p) => p.userId === trailUserId)?.name ?? "executive"}`;
+
+  let managerTrail: typeof myTodayTrail = [];
+  if (isManager && trailUserId !== user.id) {
+    const [peerPings, peerChecks] = await Promise.all([
+      listMyDayTrail(user.organizationId, trailUserId),
+      Promise.resolve(
+        todayCheckIns.filter((row) => row.userId === trailUserId),
+      ),
+    ]);
+    managerTrail = [
+      ...peerChecks.map((row) => ({
+        id: row.id,
+        checkedInAt: row.checkedInAt,
+        clientName: row.clientName ?? row.visit?.clientName ?? null,
+        activityNote: row.activityNote,
+        geoLat: row.geoLat,
+        geoLng: row.geoLng,
+        isLivePing: false as const,
+      })),
+      ...peerPings.map((p) => ({
+        id: p.id,
+        checkedInAt: p.recordedAt,
+        clientName: null as string | null,
+        activityNote: null as string | null,
+        geoLat: p.geoLat,
+        geoLng: p.geoLng,
+        isLivePing: true as const,
+      })),
+    ].sort(
+      (a, b) =>
+        new Date(a.checkedInAt).getTime() - new Date(b.checkedInAt).getTime(),
+    );
+  }
+
+  const myOpenVisits = visits
+    .filter(
+      (v) =>
+        v.assigneeUserId === user.id &&
+        (v.status === "PLANNED" || v.status === "IN_PROGRESS"),
+    )
+    .map((v) => ({
+      id: v.id,
+      clientName: v.clientName,
+      locationLabel: v.locationLabel,
+      status: v.status,
+      geofence:
+        v.geoLat != null && v.geoLng != null && v.radiusM != null && v.radiusM > 0
+          ? {
+              geoLat: v.geoLat,
+              geoLng: v.geoLng,
+              geoFenceRadiusM: v.radiusM,
+            }
+          : null,
+    }));
 
   return (
     <div className="saas-page ws-hr-page">
@@ -146,6 +251,8 @@ export default async function HrFieldPage() {
         collection teams checking in at client locations.
       </p>
 
+      <FieldLivePinger enabled />
+
       {isManager ? <FieldLiveBoard pings={livePings} /> : null}
 
       <div className="ws-hr-split">
@@ -156,6 +263,7 @@ export default async function HrFieldPage() {
             submitLabel="Save field check-in"
             requireGeo
             successMessage="Field check-in saved."
+            visits={myOpenVisits}
           >
             <label>
               Client / site name
@@ -197,6 +305,38 @@ export default async function HrFieldPage() {
                 Location label
                 <input name="locationLabel" type="text" placeholder="Area / city" />
               </label>
+              <label>
+                Geofence latitude (optional)
+                <input
+                  name="geoLat"
+                  type="number"
+                  step="any"
+                  placeholder="e.g. 19.0760"
+                />
+              </label>
+              <label>
+                Geofence longitude (optional)
+                <input
+                  name="geoLng"
+                  type="number"
+                  step="any"
+                  placeholder="e.g. 72.8777"
+                />
+              </label>
+              <label>
+                Geofence radius (metres)
+                <input
+                  name="radiusM"
+                  type="number"
+                  min={50}
+                  max={5000}
+                  defaultValue={200}
+                />
+              </label>
+              <p className="ws-hr-help">
+                If lat/lng are set, check-in against this visit must be inside
+                the radius.
+              </p>
               <label>
                 Purpose
                 <textarea name="purpose" rows={2} />
@@ -264,6 +404,7 @@ export default async function HrFieldPage() {
                   <th>Assignee</th>
                   <th>Client</th>
                   <th>Location</th>
+                  <th>Geofence</th>
                   <th>Status</th>
                   <th>Purpose</th>
                 </tr>
@@ -271,7 +412,7 @@ export default async function HrFieldPage() {
               <tbody>
                 {visits.length === 0 ? (
                   <tr>
-                    <td colSpan={5}>No visits planned.</td>
+                    <td colSpan={6}>No visits planned.</td>
                   </tr>
                 ) : (
                   visits.map((visit) => (
@@ -279,6 +420,13 @@ export default async function HrFieldPage() {
                       <td>{visit.assignee.name ?? visit.assignee.email}</td>
                       <td>{visit.clientName}</td>
                       <td>{visit.locationLabel ?? "-"}</td>
+                      <td>
+                        {visit.geoLat != null &&
+                        visit.geoLng != null &&
+                        visit.radiusM != null
+                          ? `${visit.radiusM}m @ ${visit.geoLat.toFixed(4)}, ${visit.geoLng.toFixed(4)}`
+                          : "—"}
+                      </td>
                       <td>{visit.status}</td>
                       <td>{visit.purpose ?? "-"}</td>
                     </tr>

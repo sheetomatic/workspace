@@ -422,3 +422,20 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/hr`, `/app/hr/attendance`, `/app/hr/leave`, `/app/hr/payroll`, `/app/hr/employees`, `/app/hr/payroll/slip/[lineId]`.
 
 ---
+
+**Deployed (2026-07-10/11):** HRMS Phase 1 — onboarding docs, OD/WFH, holidays, leave allocation, flexible location, field board.
+
+| Item | Detail |
+|------|--------|
+| Commit | `86ccb94` — Ship HRMS Phase 1: onboarding docs, OD/WFH, holidays, leave allocation, flexible location, and field board. |
+| Branch | `main` → `origin/main` (pushed) |
+| Build | `npm run test:unit` 54/54 pass; Vercel production build Ready (build script runs `prisma migrate deploy`) |
+| Migration | `20260710240000_hrms_phase1` |
+| Vercel | Production **Ready** — https://sheetomatic.com / https://app.sheetomatic.com |
+| Deploy | `dpl_3hmQ8dj7JHbwYAKQ95QJ7YEEt4EJ` — https://sheetomatic-redesign-k6v2jbm71-sheetomatic.vercel.app |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops. |
+| Note | Phase 2 HR work ships in a follow-up deploy. |
+
+**Hard-refresh in prod:** `/app/hr`, `/app/hr/holidays`, `/app/hr/leave`, `/app/hr/field`, `/app/hr/employees`, `/app/hr/attendance`, `/app/team`.
+
+---

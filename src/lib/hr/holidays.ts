@@ -32,7 +32,14 @@ export async function clearSyncedHolidayAttendance(params: {
   return { cleared: result.count };
 }
 
-/** Upsert HOLIDAY attendance for all active non-VIEWER members on a weekday holiday. */
+/**
+ * Upsert HOLIDAY attendance for all active non-VIEWER members on a weekday holiday.
+ *
+ * Optional holidays (`isOptional`): employees may work or take leave —
+ * do NOT force HOLIDAY attendance. If they punch PRESENT they stay present;
+ * if they take leave it counts as leave. Restricted (dept-scoped) holidays
+ * are deferred to Phase 2b.
+ */
 export async function syncHolidayAttendance(params: {
   organizationId: string;
   date: Date;

@@ -1,9 +1,21 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import type { HrActionResult } from "@/lib/hr/hr-result";
 import { HR_OUT_OF_LOCATION_MESSAGE } from "@/lib/hr/hr-result";
+import {
+  isWithinVisitGeofence,
+  type VisitGeofence,
+} from "@/lib/hr/field-geofence";
+
+export type FieldVisitOption = {
+  id: string;
+  clientName: string;
+  locationLabel: string | null;
+  status: string;
+  geofence: VisitGeofence | null;
+};
 
 type GeoPunchFormProps = {
   action: (formData: FormData) => Promise<HrActionResult>;
@@ -13,6 +25,8 @@ type GeoPunchFormProps = {
   successMessage?: string;
   siteId?: string | null;
   sites?: Array<{ id: string; name: string }>;
+  /** Optional planned visits for field check-in + geofence UX. */
+  visits?: FieldVisitOption[];
 };
 
 export function GeoPunchForm({
@@ -23,6 +37,7 @@ export function GeoPunchForm({
   successMessage = "Checked in successfully.",
   siteId,
   sites = [],
+  visits = [],
 }: GeoPunchFormProps) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
@@ -33,6 +48,12 @@ export function GeoPunchForm({
   );
   const [selectedSiteId, setSelectedSiteId] = useState(
     siteId ?? (sites.length === 1 ? sites[0]?.id ?? "" : ""),
+  );
+  const [selectedVisitId, setSelectedVisitId] = useState("");
+
+  const selectedVisit = useMemo(
+    () => visits.find((v) => v.id === selectedVisitId) ?? null,
+    [visits, selectedVisitId],
   );
 
   function captureLocation() {
@@ -71,6 +92,9 @@ export function GeoPunchForm({
     if (selectedSiteId) {
       formData.set("siteId", selectedSiteId);
     }
+    if (selectedVisitId) {
+      formData.set("visitId", selectedVisitId);
+    }
     if (requireGeo && !coords) {
       setMessage("Capture location before submitting.");
       setIsError(true);
@@ -84,11 +108,27 @@ export function GeoPunchForm({
       return;
     }
 
+    if (coords && selectedVisit?.geofence) {
+      const check = isWithinVisitGeofence(
+        coords.lat,
+        coords.lng,
+        selectedVisit.geofence,
+      );
+      if (!check.ok) {
+        setMessage(
+          `Outside visit geofence (${Math.round(check.distanceM)}m away; allowed ${selectedVisit.geofence.geoFenceRadiusM}m). Move closer to the client location and try again.`,
+        );
+        setIsError(true);
+        setPending(false);
+        return;
+      }
+    }
+
     const result = await action(formData);
     if (!result.ok) {
       setMessage(
         result.code === "OUT_OF_LOCATION"
-          ? HR_OUT_OF_LOCATION_MESSAGE
+          ? result.message || HR_OUT_OF_LOCATION_MESSAGE
           : result.message,
       );
       setIsError(true);
@@ -121,6 +161,35 @@ export function GeoPunchForm({
             ))}
           </select>
         </label>
+      ) : null}
+      {visits.length > 0 ? (
+        <label>
+          Planned visit (optional)
+          <select
+            name="visitId"
+            value={selectedVisitId}
+            onChange={(event) => setSelectedVisitId(event.target.value)}
+          >
+            <option value="">No linked visit</option>
+            {visits.map((visit) => (
+              <option key={visit.id} value={visit.id}>
+                {visit.clientName}
+                {visit.locationLabel ? ` · ${visit.locationLabel}` : ""}
+                {visit.geofence
+                  ? ` · fence ${visit.geofence.geoFenceRadiusM}m`
+                  : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      {selectedVisit?.geofence ? (
+        <p className="ws-hr-help">
+          Visit geofence: {selectedVisit.geofence.geoFenceRadiusM}m around{" "}
+          {selectedVisit.geofence.geoLat.toFixed(4)},{" "}
+          {selectedVisit.geofence.geoLng.toFixed(4)}. Check-in must be inside
+          this radius.
+        </p>
       ) : null}
       {children}
       <div className="ws-hr-form-actions">

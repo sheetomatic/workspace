@@ -1,5 +1,6 @@
 import type { AttendanceExceptionType, LeaveRequestStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { ensureLeaveBalances } from "@/lib/hr/payroll";
 
 function noonDate(date: Date): Date {
   const d = new Date(date);
@@ -21,6 +22,10 @@ function eachDateInclusive(start: Date, end: Date): Date[] {
 function isWeekday(date: Date) {
   const day = date.getUTCDay();
   return day !== 0 && day !== 6;
+}
+
+function isWeekend(date: Date) {
+  return !isWeekday(date);
 }
 
 function exceptionNotes(type: AttendanceExceptionType, reason: string | null) {
@@ -109,7 +114,11 @@ export async function submitAttendanceException(params: {
   });
 }
 
-/** On approve: upsert PRESENT attendance for weekdays with OD/WFH tag in notes. */
+/**
+ * On approve: upsert PRESENT for applicable days with OD/WFH tag.
+ * WFH: weekdays only.
+ * OD: weekdays + weekends; each weekend day credits +1 COMP_OFF balanceDays when COMP_OFF exists.
+ */
 export async function approveAttendanceException(params: {
   organizationId: string;
   requestId: string;
@@ -126,14 +135,22 @@ export async function approveAttendanceException(params: {
     throw new Error("You cannot approve your own OD/WFH request.");
   }
 
-  const dates = eachDateInclusive(request.startDate, request.endDate).filter(isWeekday);
-  if (dates.length < 1) {
-    throw new Error("Date range has no working days.");
+  const allDates = eachDateInclusive(request.startDate, request.endDate);
+  const applyDates =
+    request.exceptionType === "OD"
+      ? allDates
+      : allDates.filter(isWeekday);
+  if (applyDates.length < 1) {
+    throw new Error("Date range has no applicable days.");
   }
 
+  const weekendOdDates =
+    request.exceptionType === "OD" ? applyDates.filter(isWeekend) : [];
   const notes = exceptionNotes(request.exceptionType, request.reason);
 
   let appliedDays = 0;
+  let compOffCredited = 0;
+
   await prisma.$transaction(async (tx) => {
     await tx.attendanceExceptionRequest.update({
       where: { id: request.id },
@@ -145,7 +162,7 @@ export async function approveAttendanceException(params: {
       },
     });
 
-    for (const workDate of dates) {
+    for (const workDate of applyDates) {
       // Skip days already ON_LEAVE — do not overwrite approved leave with OD/WFH PRESENT.
       const existing = await tx.attendanceRecord.findUnique({
         where: {
@@ -186,9 +203,73 @@ export async function approveAttendanceException(params: {
       });
       appliedDays += 1;
     }
+
+    // Weekend OD → credit COMP_OFF (+1 balanceDays per weekend day applied).
+    if (weekendOdDates.length > 0) {
+      const year = request.startDate.getUTCFullYear();
+      // ensureLeaveBalances uses prisma root; call outside nested if needed — use tx upsert.
+      const existingComp = await tx.leaveBalance.findUnique({
+        where: {
+          organizationId_userId_leaveType_year: {
+            organizationId: params.organizationId,
+            userId: request.userId,
+            leaveType: "COMP_OFF",
+            year,
+          },
+        },
+      });
+      // Only credit when COMP_OFF leave type row exists or can be created (enum always exists).
+      // Policy: create/upsert COMP_OFF balance then increment.
+      let credited = 0;
+      for (const workDate of weekendOdDates) {
+        const existing = await tx.attendanceRecord.findUnique({
+          where: {
+            organizationId_userId_workDate: {
+              organizationId: params.organizationId,
+              userId: request.userId,
+              workDate,
+            },
+          },
+          select: { status: true, notes: true },
+        });
+        // Count only days we actually marked PRESENT with OD notes (not skipped ON_LEAVE).
+        if (existing?.status === "PRESENT" && existing.notes?.startsWith("[OD]")) {
+          credited += 1;
+        }
+      }
+      if (credited > 0) {
+        if (existingComp) {
+          await tx.leaveBalance.update({
+            where: { id: existingComp.id },
+            data: { balanceDays: { increment: credited } },
+          });
+        } else {
+          await tx.leaveBalance.create({
+            data: {
+              organizationId: params.organizationId,
+              userId: request.userId,
+              leaveType: "COMP_OFF",
+              year,
+              balanceDays: credited,
+              usedDays: 0,
+            },
+          });
+        }
+        compOffCredited = credited;
+      }
+    }
   });
 
-  return { ok: true as const, days: appliedDays };
+  // Keep ensureLeaveBalances available for other types without fighting the credit.
+  if (weekendOdDates.length > 0) {
+    await ensureLeaveBalances(
+      params.organizationId,
+      request.userId,
+      request.startDate.getUTCFullYear(),
+    ).catch(() => undefined);
+  }
+
+  return { ok: true as const, days: appliedDays, compOffCredited };
 }
 
 export async function rejectAttendanceException(params: {

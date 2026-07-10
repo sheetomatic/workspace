@@ -258,12 +258,14 @@ export async function seedAcmeHr(prisma: PrismaClient, organizationId: string) {
   }
 
   // Org holidays for the calendar year (Republic Day, Independence Day, Diwali approx, Holi approx).
+  // Optional = employee may work (PRESENT) or take leave — no forced HOLIDAY attendance.
   const holidays: Array<{ month: number; day: number; name: string; isOptional?: boolean }> = [
     { month: 0, day: 26, name: "Republic Day" },
     { month: 2, day: 14, name: "Holi", isOptional: true },
     { month: 7, day: 15, name: "Independence Day" },
     { month: 9, day: 20, name: "Diwali" },
     { month: 9, day: 2, name: "Gandhi Jayanti" },
+    { month: 10, day: 1, name: "Diwali (optional)", isOptional: true },
   ];
   for (const h of holidays) {
     const date = utcNoon(year, h.month, h.day);
@@ -511,6 +513,91 @@ export async function seedAcmeHr(prisma: PrismaClient, organizationId: string) {
         },
       });
     }
+
+    // Pending OFF_DAY_SWAP (Sunday → next Wednesday)
+    const existingSwap = await prisma.hrSwapRequest.findFirst({
+      where: {
+        organizationId,
+        userId: staff.userId,
+        status: "PENDING",
+        swapType: "OFF_DAY_SWAP",
+      },
+    });
+    if (!existingSwap) {
+      const fromOff = new Date();
+      fromOff.setUTCHours(12, 0, 0, 0);
+      while (fromOff.getUTCDay() !== 0) {
+        fromOff.setUTCDate(fromOff.getUTCDate() + 1);
+      }
+      const toWork = new Date(fromOff);
+      toWork.setUTCDate(toWork.getUTCDate() + 3); // Wed
+      await prisma.membership.update({
+        where: { id: staff.id },
+        data: { weeklyOffDay: 0 },
+      });
+      await prisma.hrSwapRequest.create({
+        data: {
+          organizationId,
+          userId: staff.userId,
+          swapType: "OFF_DAY_SWAP",
+          fromDate: fromOff,
+          toDate: toWork,
+          reason: "Family event on Wednesday — Acme HR seed swap",
+          status: "PENDING",
+        },
+      });
+    }
+
+    // A few live GPS pings for field board / day trail demos
+    const pingCount = await prisma.fieldLocationPing.count({
+      where: { organizationId, userId: staff.userId },
+    });
+    if (pingCount < 3) {
+      const base = Date.now();
+      const coords = [
+        { lat: 28.4744, lng: 77.504, ago: 0 },
+        { lat: 28.4751, lng: 77.5052, ago: 45_000 },
+        { lat: 28.476, lng: 77.5065, ago: 90_000 },
+      ];
+      for (const c of coords) {
+        await prisma.fieldLocationPing.create({
+          data: {
+            organizationId,
+            userId: staff.userId,
+            geoLat: c.lat,
+            geoLng: c.lng,
+            recordedAt: new Date(base - c.ago),
+            accuracyM: 12,
+            batteryPct: 78,
+            isMockLocation: false,
+          },
+        });
+      }
+    }
+
+    // Sample field visit with geofence for staff
+    const existingVisit = await prisma.fieldVisit.findFirst({
+      where: {
+        organizationId,
+        assigneeUserId: staff.userId,
+        clientName: "Acme Client Site — seed",
+      },
+    });
+    if (!existingVisit) {
+      await prisma.fieldVisit.create({
+        data: {
+          organizationId,
+          assigneeUserId: staff.userId,
+          clientName: "Acme Client Site — seed",
+          locationLabel: "Greater Noida Phase 2",
+          purpose: "Demo visit with 150m geofence",
+          geoLat: 28.4744,
+          geoLng: 77.504,
+          radiusM: 150,
+          status: "PLANNED",
+        },
+      });
+    }
   }
 
   // Draft payroll run for salary slip demos (idempotent: one seed run per month start)
@@ -669,6 +756,10 @@ export async function seedAcmeHr(prisma: PrismaClient, organizationId: string) {
     pendingOdWfh: await prisma.attendanceExceptionRequest.count({
       where: { organizationId, status: "PENDING" },
     }),
+    pendingSwaps: await prisma.hrSwapRequest.count({
+      where: { organizationId, status: "PENDING" },
+    }),
+    fieldPings: await prisma.fieldLocationPing.count({ where: { organizationId } }),
     payrollRuns: await prisma.payrollRun.count({ where: { organizationId } }),
     payrollLines: await prisma.payrollLine.count({ where: { organizationId } }),
   };

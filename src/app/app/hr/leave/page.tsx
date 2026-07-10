@@ -6,6 +6,7 @@ import {
   leaveTypeShort,
 } from "@/components/hr/leave-balance-cards";
 import { OdWfhPanel } from "@/components/hr/od-wfh-panel";
+import { LeaveSwapPanel } from "@/components/hr/leave-swap-panel";
 import { LeaveAllocationPanel } from "@/components/hr/leave-allocation-panel";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
@@ -15,6 +16,7 @@ import {
 } from "@/lib/hr/hr-store";
 import { listLeaveBalances, listLeavePolicies } from "@/lib/hr/payroll";
 import { listAttendanceExceptions } from "@/lib/hr/attendance-exceptions";
+import { listSwapRequests } from "@/lib/hr/swap-requests";
 import {
   reviewLeaveRequestAction,
   submitLeaveRequestAction,
@@ -33,11 +35,15 @@ export default async function HrLeavePage() {
   const isAdmin = hasMinimumRole(user.role, "ADMIN");
   const year = new Date().getFullYear();
 
-  const [requests, balances, exceptions, policies, allocBalances, members] =
+  const [requests, balances, exceptions, swaps, policies, allocBalances, members] =
     await Promise.all([
       listLeaveRequests(user.organizationId, isManager ? undefined : user.id),
       listLeaveBalances(user.organizationId, user.id, year),
       listAttendanceExceptions(
+        user.organizationId,
+        isManager ? undefined : { userId: user.id },
+      ),
+      listSwapRequests(
         user.organizationId,
         isManager ? undefined : { userId: user.id },
       ),
@@ -60,7 +66,7 @@ export default async function HrLeavePage() {
     <div className="saas-page ws-hr-page">
       <PageHeader
         title="Leave"
-        description="Balances, leave & OD/WFH requests, and manager approvals."
+        description="Balances, leave, OD/WFH, leave/off-day swaps, and manager approvals."
       />
       <HrSubNav activePath="/app/hr/leave" isAdmin={isAdmin} />
 
@@ -211,6 +217,21 @@ export default async function HrLeavePage() {
           exceptionType: req.exceptionType,
           startDate: req.startDate,
           endDate: req.endDate,
+          reason: req.reason,
+          status: req.status,
+          user: req.user,
+        }))}
+      />
+
+      <LeaveSwapPanel
+        isManager={isManager}
+        viewerUserId={user.id}
+        requests={swaps.map((req) => ({
+          id: req.id,
+          userId: req.userId,
+          swapType: req.swapType,
+          fromDate: req.fromDate,
+          toDate: req.toDate,
           reason: req.reason,
           status: req.status,
           user: req.user,

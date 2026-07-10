@@ -13,6 +13,12 @@ export type AttendanceMonthEmployee = {
   name: string;
 };
 
+export type AttendanceMonthHoliday = {
+  day: number;
+  name: string;
+  isOptional: boolean;
+};
+
 const STATUS_SHORT: Record<string, string> = {
   PRESENT: "P",
   ABSENT: "A",
@@ -66,6 +72,7 @@ export function AttendanceMonthCalendar({
   employees,
   cells,
   siteId,
+  holidays = [],
 }: {
   year: number;
   monthIndex: number;
@@ -73,6 +80,7 @@ export function AttendanceMonthCalendar({
   employees: AttendanceMonthEmployee[];
   cells: AttendanceMonthCell[];
   siteId: string | null;
+  holidays?: AttendanceMonthHoliday[];
 }) {
   const monthKey = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
   const prevMonth = shiftMonth(year, monthIndex, -1);
@@ -85,6 +93,11 @@ export function AttendanceMonthCalendar({
       status: cell.status,
       notes: cell.notes ?? null,
     });
+  }
+
+  const holidayByDay = new Map<number, AttendanceMonthHoliday>();
+  for (const h of holidays) {
+    holidayByDay.set(h.day, h);
   }
 
   const totals = { PRESENT: 0, ABSENT: 0, HALF_DAY: 0, ON_LEAVE: 0 };
@@ -145,6 +158,9 @@ export function AttendanceMonthCalendar({
         <span>
           <em className="ws-att-cell status-WFH">WFH</em> Work from home
         </span>
+        <span>
+          <span className="ws-hr-optional-badge">Opt</span> Optional holiday
+        </span>
         <span className="ws-apple-cell-secondary">
           Month totals · P {totals.PRESENT} · A {totals.ABSENT} · H{" "}
           {totals.HALF_DAY} · L {totals.ON_LEAVE}
@@ -156,11 +172,22 @@ export function AttendanceMonthCalendar({
           <thead>
             <tr>
               <th className="ws-attendance-month-name">Employee</th>
-              {days.map((day) => (
-                <th key={day} className="ws-attendance-month-day">
-                  {day}
-                </th>
-              ))}
+              {days.map((day) => {
+                const holiday = holidayByDay.get(day);
+                return (
+                  <th key={day} className="ws-attendance-month-day">
+                    {day}
+                    {holiday?.isOptional ? (
+                      <span
+                        className="ws-hr-optional-badge ws-hr-optional-badge-cal"
+                        title={`Optional: ${holiday.name}`}
+                      >
+                        Opt
+                      </span>
+                    ) : null}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>

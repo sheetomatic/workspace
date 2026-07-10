@@ -29,7 +29,7 @@ export default async function HrHolidaysPage({ searchParams }: PageProps) {
     <div className="saas-page ws-hr-page">
       <PageHeader
         title="Holidays"
-        description="Org holiday calendar. Weekday holidays auto-mark attendance as Holiday for payroll."
+        description="Org holiday calendar. Mandatory weekday holidays auto-mark attendance; optional holidays show on the calendar only."
       />
       <HrSubNav activePath="/app/hr/holidays" isAdmin />
 

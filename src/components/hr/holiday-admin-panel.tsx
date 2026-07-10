@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import {
   createHolidayAction,
   deleteHolidayAction,
+  updateHolidayAction,
 } from "@/lib/hr/hr-actions";
 
 export type HolidayRow = {
@@ -70,6 +71,24 @@ export function HolidayAdminPanel({
     });
   }
 
+  function onToggleOptional(id: string, next: boolean) {
+    startTransition(async () => {
+      setMessage(null);
+      setIsError(false);
+      const fd = new FormData();
+      fd.set("id", id);
+      fd.set("isOptional", next ? "true" : "false");
+      const result = await updateHolidayAction(fd);
+      if (!result.ok) {
+        setMessage(result.message);
+        setIsError(true);
+        return;
+      }
+      setMessage(next ? "Marked optional." : "Marked mandatory.");
+      router.refresh();
+    });
+  }
+
   return (
     <>
       <div className="ws-attendance-month-nav" aria-label="Year navigation">
@@ -121,6 +140,10 @@ export function HolidayAdminPanel({
 
         <section className="ws-hr-panel">
           <h2>Holidays in {year}</h2>
+          <p className="ws-hr-help">
+            Toggle optional anytime. Optional holidays stay on the calendar but
+            do not auto-mark attendance as Holiday.
+          </p>
           <div className="ws-hr-table-wrap">
             <table className="ws-hr-table">
               <thead>
@@ -128,20 +151,42 @@ export function HolidayAdminPanel({
                   <th>Date</th>
                   <th>Name</th>
                   <th>Type</th>
+                  <th>Optional</th>
                   <th>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {holidays.length === 0 ? (
                   <tr>
-                    <td colSpan={4}>No holidays for this year yet.</td>
+                    <td colSpan={5}>No holidays for this year yet.</td>
                   </tr>
                 ) : (
                   holidays.map((row) => (
                     <tr key={row.id}>
                       <td>{formatDate(row.date)}</td>
-                      <td>{row.name}</td>
+                      <td>
+                        {row.name}{" "}
+                        {row.isOptional ? (
+                          <span className="ws-hr-optional-badge">Optional</span>
+                        ) : null}
+                      </td>
                       <td>{row.isOptional ? "Optional" : "Mandatory"}</td>
+                      <td>
+                        <label className="ws-hr-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={row.isOptional}
+                            disabled={pending}
+                            onChange={(e) =>
+                              onToggleOptional(row.id, e.target.checked)
+                            }
+                            aria-label={`Mark ${row.name} as optional`}
+                          />
+                          <span className="ws-apple-cell-secondary">
+                            {row.isOptional ? "On" : "Off"}
+                          </span>
+                        </label>
+                      </td>
                       <td>
                         <button
                           type="button"

@@ -5,6 +5,7 @@ export type FieldTrailPoint = {
   activityNote: string | null;
   geoLat: number;
   geoLng: number;
+  isLivePing?: boolean;
 };
 
 function formatStamp(value: Date | string) {
@@ -29,7 +30,7 @@ export function FieldDayTrail({
     <section className="ws-hr-panel" aria-label="Field day trail">
       <h2>{title}</h2>
       {points.length === 0 ? (
-        <p className="ws-hr-note">No check-ins on this trail yet.</p>
+        <p className="ws-hr-note">No check-ins or live pings on this trail yet.</p>
       ) : (
         <ol className="ws-hr-field-trail">
           {points.map((point, index) => (
@@ -39,11 +40,18 @@ export function FieldDayTrail({
               </span>
               <div>
                 <strong>{formatStamp(point.checkedInAt)}</strong>
+                {point.isLivePing ? (
+                  <span className="ws-hr-live-badge">Live while app open</span>
+                ) : null}
                 <div className="ws-apple-cell-secondary">
-                  {point.clientName ?? "Field ping"} · {point.geoLat.toFixed(4)},{" "}
-                  {point.geoLng.toFixed(4)}
+                  {point.isLivePing
+                    ? "Live ping"
+                    : (point.clientName ?? "Field check-in")}{" "}
+                  · {point.geoLat.toFixed(4)}, {point.geoLng.toFixed(4)}
                 </div>
-                {point.activityNote ? <p>{point.activityNote}</p> : null}
+                {point.activityNote && !point.isLivePing ? (
+                  <p>{point.activityNote}</p>
+                ) : null}
                 <a
                   className="btn-secondary btn-sm"
                   href={`https://www.google.com/maps?q=${point.geoLat},${point.geoLng}`}
