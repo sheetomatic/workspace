@@ -45,7 +45,7 @@ export function VideoEmbed({ video, variant = "default" }: VideoEmbedProps) {
           {video.label}
         </span>
         <strong>{video.title}</strong>
-        {variant !== "compact" ? <p>{video.description}</p> : null}
+        {video.description ? <p>{video.description}</p> : null}
       </figcaption>
     </figure>
   );

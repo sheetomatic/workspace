@@ -59,17 +59,20 @@ export const servicesDemoVideos = {
 export const offerVideos: Record<string, MarketingVideo> = {
   "ai-workspace": {
     id: "video-ai-workspace",
-    label: "Workspace",
-    title: "Sheetomatic Workspace walkthrough",
+    label: "FMS",
+    title:
+      "AI Enabled Flow Monitoring System (FMS) for MSMEs | AI FMS: Dashboard for PC & EA | BCI",
     description:
-      "FMS, IMS, CRM, Executive Meeting, and WhatsApp AI systems — with Process Coordinator and Executive Assistant roles — in one SaaS login.",
-    youtubeId: "n-bHn6kFuaA",
+      "See how AI-enabled FMS gives Process Coordinators and Executive Assistants a live dashboard — planned vs actual, delays, and BCI-style flow control for MSMEs.",
+    youtubeId: "acTJOocmuZM",
   },
   "whatsapp-ai": {
     id: "video-whatsapp-ai",
     label: "WhatsApp AI",
-    title: "WhatsApp AI and team inbox",
-    description: "Official API, AI replies, and tasks from real conversations.",
-    youtubeId: "acTJOocmuZM",
+    title:
+      "Assign Tasks Automatically Using AI + WhatsApp | Employees Can Update Tasks Directly from WhatsApp",
+    description:
+      "Speak or type on WhatsApp — Sheetomatic creates tasks, assigns owners, and lets employees update progress from WhatsApp without spreadsheets.",
+    youtubeId: "n-bHn6kFuaA",
   },
 };
