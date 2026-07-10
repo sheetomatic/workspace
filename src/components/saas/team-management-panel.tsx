@@ -50,6 +50,7 @@ export type TeamMemberRow = {
   attendanceWorkMode: AttendanceWorkMode;
   geoFenceRequired: boolean;
   faceRequired: boolean;
+  monthlySalary: number | null;
   modules: WorkspaceModule[];
   joinedAt: Date;
   user: {
@@ -356,7 +357,7 @@ function MemberEditForm({
       />
 
       <fieldset className="ws-member-hr-settings">
-        <legend>Attendance settings</legend>
+        <legend>Attendance &amp; payroll</legend>
         <div className="form-grid-premium">
           <label>
             Work mode
@@ -373,6 +374,17 @@ function MemberEditForm({
                 </option>
               ))}
             </select>
+          </label>
+          <label>
+            Monthly salary (₹)
+            <input
+              name="monthlySalary"
+              type="number"
+              min="0"
+              step="1"
+              defaultValue={member.monthlySalary ?? ""}
+              placeholder="e.g. 35000"
+            />
           </label>
         </div>
         <div className="ws-attendance-checklist">
@@ -490,6 +502,10 @@ export function TeamManagementPanel({
             const deptLabel = member.department
               ? TASK_DEPARTMENT_LABELS[member.department]
               : null;
+            const salaryHint =
+              canManage && member.monthlySalary != null && member.monthlySalary > 0
+                ? `Salary ₹${Math.round(member.monthlySalary).toLocaleString("en-IN")}/mo`
+                : null;
             const metaParts = [
               deptLabel,
               member.designation,
@@ -498,6 +514,7 @@ export function TeamManagementPanel({
                 : null,
               member.isDepartmentHead ? "Department head" : null,
               ATTENDANCE_WORK_MODE_LABELS[member.attendanceWorkMode],
+              salaryHint,
             ].filter(Boolean);
             const displayName =
               member.user.name ?? member.user.email.split("@")[0];

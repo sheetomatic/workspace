@@ -2,6 +2,7 @@ import Link from "next/link";
 
 const links = [
   { href: "/app/hr", label: "Overview" },
+  { href: "/app/hr/employees", label: "Employees" },
   { href: "/app/hr/attendance", label: "Attendance" },
   { href: "/app/hr/leave", label: "Leave" },
   { href: "/app/hr/payroll", label: "Payroll" },
@@ -22,6 +23,7 @@ export function HrSubNav({ activePath }: { activePath: string }) {
             key={link.href}
             href={link.href}
             className={active ? "ws-hr-subnav-link active" : "ws-hr-subnav-link"}
+            aria-current={active ? "page" : undefined}
           >
             {link.label}
           </Link>

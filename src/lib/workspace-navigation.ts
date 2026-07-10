@@ -266,6 +266,13 @@ const DEPARTMENT_NAV_ITEMS: WorkspaceNavItem[] = [
         matchPrefix: "/app/hr",
       },
       {
+        href: "/app/hr/employees",
+        label: "Employees",
+        icon: Users,
+        module: "HR",
+        matchPrefix: "/app/hr/employees",
+      },
+      {
         href: "/app/fms/fulfillment?flow=recruitment",
         label: "Recruitment FMS",
         icon: GitBranch,

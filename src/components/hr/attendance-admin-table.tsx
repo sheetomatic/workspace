@@ -15,6 +15,7 @@ export type AttendanceTableRow = {
   checkInAt: string | null;
   checkOutAt: string | null;
   method: string;
+  status?: string;
   geoFenceOk: boolean | null;
   notes: string | null;
 };
@@ -58,7 +59,7 @@ export function AttendanceAdminTable({
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
 
-  const colSpan = canManage ? 7 : 6;
+  const colSpan = canManage ? 8 : 7;
 
   function runDelete(record: AttendanceTableRow) {
     const label = record.employeeName;
@@ -95,6 +96,7 @@ export function AttendanceAdminTable({
             <tr>
               <th>Employee</th>
               <th>Site</th>
+              <th>Status</th>
               <th>Check in</th>
               <th>Check out</th>
               <th>Method</th>
@@ -113,6 +115,11 @@ export function AttendanceAdminTable({
                   <tr>
                     <td>{row.employeeName}</td>
                     <td>{row.siteName}</td>
+                    <td>
+                      <span className={`ws-leave-status status-day-${(row.status ?? "PRESENT").toLowerCase()}`}>
+                        {(row.status ?? "PRESENT").replaceAll("_", " ")}
+                      </span>
+                    </td>
                     <td>{formatTime(row.checkInAt)}</td>
                     <td>{formatTime(row.checkOutAt)}</td>
                     <td>{row.method}</td>

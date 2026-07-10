@@ -1,28 +1,51 @@
 import { PageHeader } from "@/components/saas/page-header";
 import { HrSubNav } from "@/components/hr/hr-sub-nav";
+import {
+  LeaveBalanceCards,
+  leaveTypeLabel,
+  leaveTypeShort,
+} from "@/components/hr/leave-balance-cards";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import { listLeaveRequests } from "@/lib/hr/hr-store";
+import { listLeaveBalances } from "@/lib/hr/payroll";
 import {
   reviewLeaveRequestAction,
   submitLeaveRequestAction,
 } from "@/lib/hr/hr-actions";
 
+function statusClass(status: string) {
+  if (status === "APPROVED") return "ws-leave-status is-approved";
+  if (status === "REJECTED") return "ws-leave-status is-rejected";
+  return "ws-leave-status is-pending";
+}
+
 export default async function HrLeavePage() {
   const user = await requireSession(undefined, { module: "HR" });
   const isManager = hasMinimumRole(user.role, "MANAGER");
-  const requests = await listLeaveRequests(
-    user.organizationId,
-    isManager ? undefined : user.id,
-  );
+  const year = new Date().getFullYear();
+
+  const [requests, balances] = await Promise.all([
+    listLeaveRequests(user.organizationId, isManager ? undefined : user.id),
+    listLeaveBalances(user.organizationId, user.id, year),
+  ]);
 
   return (
     <div className="saas-page ws-hr-page">
       <PageHeader
         title="Leave"
-        description="Apply for leave and approve team requests from one place."
+        description="Balances, apply for leave, and approve team requests from one place."
       />
       <HrSubNav activePath="/app/hr/leave" />
+
+      <LeaveBalanceCards
+        year={year}
+        balances={balances.map((row) => ({
+          leaveType: row.leaveType,
+          balanceDays: row.balanceDays,
+          usedDays: row.usedDays,
+        }))}
+      />
 
       <div className="ws-hr-split">
         <section className="ws-hr-panel">
@@ -31,9 +54,9 @@ export default async function HrLeavePage() {
             <label>
               Type
               <select name="leaveType" defaultValue="CASUAL">
-                <option value="CASUAL">Casual</option>
-                <option value="SICK">Sick</option>
-                <option value="EARNED">Earned</option>
+                <option value="CASUAL">Casual (CL)</option>
+                <option value="SICK">Sick (SL)</option>
+                <option value="EARNED">Earned (EL)</option>
                 <option value="UNPAID">Unpaid</option>
                 <option value="COMP_OFF">Comp off</option>
               </select>
@@ -82,14 +105,21 @@ export default async function HrLeavePage() {
                     {isManager ? (
                       <td>{req.user.name ?? req.user.email}</td>
                     ) : null}
-                    <td>{req.leaveType}</td>
                     <td>
-                      {req.startDate.toLocaleDateString()} to{" "}
-                      {req.endDate.toLocaleDateString()}
+                      <span className="ws-leave-type-pill">
+                        {leaveTypeShort(req.leaveType)}
+                      </span>{" "}
+                      {leaveTypeLabel(req.leaveType)}
+                    </td>
+                    <td>
+                      {req.startDate.toLocaleDateString("en-IN")} to{" "}
+                      {req.endDate.toLocaleDateString("en-IN")}
                     </td>
                     <td>{req.days}</td>
-                    <td>{req.status}</td>
-                    {isManager && req.status === "PENDING" ? (
+                    <td>
+                      <span className={statusClass(req.status)}>{req.status}</span>
+                    </td>
+                    {isManager && req.status === "PENDING" && req.userId !== user.id ? (
                       <td className="ws-hr-actions">
                         <form action={reviewLeaveRequestAction}>
                           <input type="hidden" name="id" value={req.id} />
@@ -110,7 +140,7 @@ export default async function HrLeavePage() {
                         </form>
                       </td>
                     ) : isManager ? (
-                      <td>-</td>
+                      <td>{req.userId === user.id && req.status === "PENDING" ? "Awaiting another approver" : "-"}</td>
                     ) : null}
                   </tr>
                 ))

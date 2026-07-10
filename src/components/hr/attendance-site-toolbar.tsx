@@ -1,14 +1,26 @@
-"use client";
-
 import Link from "next/link";
+
+function attendanceHref(opts: { siteId?: string | null; month?: string | null }) {
+  const params = new URLSearchParams();
+  if (opts.month) {
+    params.set("month", opts.month);
+  }
+  if (opts.siteId) {
+    params.set("site", opts.siteId);
+  }
+  const qs = params.toString();
+  return qs ? `/app/hr/attendance?${qs}` : "/app/hr/attendance";
+}
 
 export function AttendanceSiteToolbar({
   sites,
   activeSiteId,
+  month,
   stats,
 }: {
   sites: Array<{ id: string; name: string }>;
   activeSiteId: string | null;
+  month?: string | null;
   stats: { present: number; absent: number; onLeave: number };
 }) {
   return (
@@ -21,7 +33,7 @@ export function AttendanceSiteToolbar({
               ? "ws-attendance-site-pill"
               : "ws-attendance-site-pill is-active"
           }
-          href="/app/hr/attendance"
+          href={attendanceHref({ month })}
         >
           All sites
         </Link>
@@ -33,7 +45,7 @@ export function AttendanceSiteToolbar({
                 ? "ws-attendance-site-pill is-active"
                 : "ws-attendance-site-pill"
             }
-            href={`/app/hr/attendance?site=${site.id}`}
+            href={attendanceHref({ siteId: site.id, month })}
           >
             {site.name}
           </Link>

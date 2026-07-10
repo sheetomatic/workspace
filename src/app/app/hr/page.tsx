@@ -39,11 +39,24 @@ export default async function HrOverviewPage() {
       </div>
 
       <div className="ws-hr-module-grid">
+        <Link className="ws-hr-module-card" href="/app/hr/employees">
+          <strong>Employee registration</strong>
+          <p>
+            Profiles, salary components, ESI/PF/TDS, bank details, and KYC documents
+            for payroll-ready staff.
+          </p>
+        </Link>
         <Link className="ws-hr-module-card" href="/app/hr/attendance">
           <strong>Attendance & Leave</strong>
           <p>
             Geo-fenced check-in, facial recognition ready, leave workflow, payroll
             inputs.
+          </p>
+        </Link>
+        <Link className="ws-hr-module-card" href="/app/hr/payroll">
+          <strong>Payroll & salary slips</strong>
+          <p>
+            Attendance-based salary runs with printable slips (org logo letterhead).
           </p>
         </Link>
         <Link className="ws-hr-module-card" href="/app/hr/field">

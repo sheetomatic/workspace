@@ -324,9 +324,14 @@ export function SaasShell({
   const currentSearch = searchParams.toString();
   const isQuotationPrint =
     /^\/app\/leads\/quotations\/[^/]+\/print\/?$/.test(pathname);
+  const isSalarySlipPrint =
+    /^\/app\/hr\/payroll\/slip\/[^/]+\/?$/.test(pathname);
 
   if (isQuotationPrint) {
     return <div className="quotation-print-standalone">{children}</div>;
+  }
+  if (isSalarySlipPrint) {
+    return <div className="salary-slip-standalone">{children}</div>;
   }
 
   const resolvedAppearance =

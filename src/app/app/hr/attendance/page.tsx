@@ -2,9 +2,13 @@ import { PageHeader } from "@/components/saas/page-header";
 import { AttendancePunchPanel } from "@/components/hr/attendance-punch-panel";
 import { AttendanceAdminTable } from "@/components/hr/attendance-admin-table";
 import { AttendanceSiteToolbar } from "@/components/hr/attendance-site-toolbar";
+import { AttendanceMonthCalendar } from "@/components/hr/attendance-month-calendar";
+import { MarkAttendanceDayForm } from "@/components/hr/mark-attendance-day-form";
 import { HrSubNav } from "@/components/hr/hr-sub-nav";
 import { requireSession } from "@/lib/require-session";
+import { hasMinimumRole } from "@/lib/permissions";
 import { listTodayAttendance } from "@/lib/hr/hr-store";
+import { listAttendanceForPeriod } from "@/lib/hr/payroll";
 import {
   getAttendanceSiteStats,
   listActiveHrWorkSites,
@@ -13,7 +17,7 @@ import { prisma } from "@/lib/db";
 import { attendanceLeaveModule } from "@/app/hr-module-content";
 
 type PageProps = {
-  searchParams: Promise<{ site?: string }>;
+  searchParams: Promise<{ site?: string; month?: string }>;
 };
 
 function startOfToday(timeZone = "Asia/Kolkata") {
@@ -21,30 +25,69 @@ function startOfToday(timeZone = "Asia/Kolkata") {
   return new Date(`${formatted}T12:00:00.000Z`);
 }
 
+function parseMonthParam(raw: string | undefined) {
+  const now = new Date();
+  const fallback = {
+    year: now.getFullYear(),
+    monthIndex: now.getMonth(),
+  };
+  if (!raw || !/^\d{4}-\d{2}$/.test(raw)) {
+    return fallback;
+  }
+  const [y, m] = raw.split("-").map(Number);
+  if (!y || !m || m < 1 || m > 12) {
+    return fallback;
+  }
+  return { year: y, monthIndex: m - 1 };
+}
+
 export default async function HrAttendancePage({ searchParams }: PageProps) {
   const user = await requireSession(undefined, { module: "HR" });
   const params = await searchParams;
   const siteFilter = params.site?.trim() || null;
   const workDate = startOfToday();
+  const { year, monthIndex } = parseMonthParam(params.month);
+  const periodStart = new Date(Date.UTC(year, monthIndex, 1, 12, 0, 0, 0));
+  const periodEnd = new Date(Date.UTC(year, monthIndex + 1, 0, 12, 0, 0, 0));
+  const daysInMonth = periodEnd.getUTCDate();
+  const canMark = hasMinimumRole(user.role, "MANAGER");
+  const todayIso = new Date().toLocaleDateString("en-CA", {
+    timeZone: "Asia/Kolkata",
+  });
 
-  const [records, membership, hrSettings, sites, stats] = await Promise.all([
-    listTodayAttendance(user.organizationId, siteFilter),
-    prisma.membership.findUnique({
-      where: {
-        userId_organizationId: {
-          userId: user.id,
-          organizationId: user.organizationId,
+  const monthKey = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
+
+  const [records, membership, hrSettings, sites, stats, monthRecords, members] =
+    await Promise.all([
+      listTodayAttendance(user.organizationId, siteFilter),
+      prisma.membership.findUnique({
+        where: {
+          userId_organizationId: {
+            userId: user.id,
+            organizationId: user.organizationId,
+          },
         },
-      },
-      select: { geoFenceRequired: true },
-    }),
-    prisma.workspaceHrSettings.findUnique({
-      where: { organizationId: user.organizationId },
-      select: { officeLat: true, officeLng: true },
-    }),
-    listActiveHrWorkSites(user.organizationId),
-    getAttendanceSiteStats(user.organizationId, workDate, siteFilter),
-  ]);
+        select: { geoFenceRequired: true },
+      }),
+      prisma.workspaceHrSettings.findUnique({
+        where: { organizationId: user.organizationId },
+        select: { officeLat: true, officeLng: true },
+      }),
+      listActiveHrWorkSites(user.organizationId),
+      getAttendanceSiteStats(user.organizationId, workDate, siteFilter),
+      listAttendanceForPeriod(user.organizationId, periodStart, periodEnd),
+      prisma.membership.findMany({
+        where: {
+          organizationId: user.organizationId,
+          deactivatedAt: null,
+        },
+        select: {
+          userId: true,
+          user: { select: { name: true, email: true } },
+        },
+        orderBy: { user: { name: "asc" } },
+      }),
+    ]);
 
   const myRecord = records.find((r) => r.userId === user.id);
   const officeConfigured =
@@ -64,6 +107,21 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
 
   const siteOptions = sites.map((site) => ({ id: site.id, name: site.name }));
 
+  const employees = members.map((m) => ({
+    userId: m.userId,
+    name: m.user.name ?? m.user.email ?? "Unknown",
+  }));
+
+  const filteredMonth = siteFilter
+    ? monthRecords.filter((row) => !row.siteId || row.siteId === siteFilter)
+    : monthRecords;
+
+  const monthCells = filteredMonth.map((row) => ({
+    userId: row.userId,
+    day: new Date(row.workDate).getUTCDate(),
+    status: row.status,
+  }));
+
   return (
     <div className="saas-page ws-hr-page ws-attendance-page">
       <PageHeader
@@ -74,6 +132,7 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
 
       <AttendanceSiteToolbar
         activeSiteId={siteFilter}
+        month={monthKey}
         sites={siteOptions}
         stats={{
           present: stats.present,
@@ -92,6 +151,22 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
         todayLabel={todayLabel}
       />
 
+      {canMark ? (
+        <MarkAttendanceDayForm
+          defaultDate={todayIso}
+          employees={employees}
+        />
+      ) : null}
+
+      <AttendanceMonthCalendar
+        cells={monthCells}
+        daysInMonth={daysInMonth}
+        employees={employees}
+        monthIndex={monthIndex}
+        siteId={siteFilter}
+        year={year}
+      />
+
       <AttendanceAdminTable
         canManage={user.isSuperAdmin}
         records={records.map((row) => ({
@@ -101,6 +176,7 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
           checkInAt: row.checkInAt?.toISOString() ?? null,
           checkOutAt: row.checkOutAt?.toISOString() ?? null,
           method: row.method,
+          status: row.status,
           geoFenceOk: row.geoFenceOk,
           notes: row.notes,
         }))}

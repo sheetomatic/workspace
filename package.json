@@ -18,6 +18,7 @@
     "db:seed": "prisma db seed",
     "db:seed-bci": "tsx prisma/seed-bci-demo.ts",
     "db:seed-acme-ims": "tsx prisma/seed-acme-ims.ts",
+    "db:seed-acme-hr": "tsx prisma/seed-acme-hr.ts",
     "db:sync-hingorani": "tsx prisma/sync-hingorani-sheet.ts",
     "db:reset": "prisma migrate reset --force",
     "postinstall": "prisma generate",

@@ -1106,6 +1106,7 @@ async function main() {
   console.log("Hingorani portal: https://hingorani.sheetomatic.com (admin@hingorani.demo)");
   console.log("BCI FMS demo: owner@bci.demo @ bci-demo (password:", DEMO_PASSWORD + ")");
   console.log("Acme IMS / Store: owner@acme.demo @ acme-manufacturing (npm run db:seed-acme-ims)");
+  console.log("Acme HR: salaries / attendance / leave (npm run db:seed-acme-hr)");
   console.log("Accounts:");
   for (const entry of seedUsers) {
     console.log(`  ${entry.email} (${entry.role} @ ${entry.orgSlug})`);

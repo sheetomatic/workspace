@@ -139,6 +139,9 @@ export async function listWorkspaceMembers(organizationId: string) {
     attendanceWorkMode: membership.attendanceWorkMode,
     geoFenceRequired: membership.geoFenceRequired,
     faceRequired: membership.faceRequired,
+    monthlySalary:
+      membership.monthlySalary == null ? null : Number(membership.monthlySalary),
+    dateOfJoining: membership.dateOfJoining,
     modules: resolveMemberModules(membership.role, membership.modules),
     joinedAt: membership.createdAt,
     user: membership.user,

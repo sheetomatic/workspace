@@ -382,6 +382,13 @@ export async function updateTeamMemberDetails(
   );
   const geoFenceRequired = formData.get("geoFenceRequired") === "on";
   const faceRequired = formData.get("faceRequired") === "on";
+  const monthlySalaryRaw = formData.get("monthlySalary")?.toString().trim() ?? "";
+  const monthlySalary =
+    monthlySalaryRaw === ""
+      ? null
+      : Number.isFinite(Number(monthlySalaryRaw))
+        ? Number(monthlySalaryRaw)
+        : null;
   const whatsappRaw = formData.get("whatsapp")?.toString() ?? "";
   const phone = normalizeWhatsAppPhone(whatsappRaw);
   const reportingManagerId = parseReportingManagerId(
@@ -463,12 +470,14 @@ export async function updateTeamMemberDetails(
       attendanceWorkMode,
       geoFenceRequired,
       faceRequired,
+      monthlySalary,
       modules,
     },
   });
 
   revalidatePath("/app/team");
   revalidatePath("/app/hr/attendance");
+  revalidatePath("/app/hr/payroll");
   return { ok: true, message: "Member details updated." };
 }
 

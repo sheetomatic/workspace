@@ -174,6 +174,9 @@ model Organization {
   leaveRequests     LeaveRequest[]
   leaveBalances     LeaveBalance[]
   payrollRuns       PayrollRun[]
+  payrollLines      PayrollLine[]
+  employeeProfiles  EmployeeProfile[]
+  employeeDocuments EmployeeDocument[]
   fieldCheckIns     FieldCheckIn[]
   fieldVisits       FieldVisit[]
   jobOpenings       JobOpening[]
@@ -897,6 +900,9 @@ model User {
   attendanceMarked     AttendanceRecord[]       @relation("AttendanceMarker")
   leaveRequests        LeaveRequest[]           @relation("LeaveRequester")
   leaveReviews         LeaveRequest[]           @relation("LeaveReviewer")
+  payrollLines         PayrollLine[]            @relation("PayrollLineEmployee")
+  employeeProfiles     EmployeeProfile[]        @relation("EmployeeProfileUser")
+  employeeDocumentsUploaded EmployeeDocument[]  @relation("EmployeeDocumentUploader")
   fieldCheckIns        FieldCheckIn[]
   fieldVisitsAssigned  FieldVisit[]             @relation("FieldVisitAssignee")
   candidatesOwned      Candidate[]              @relation("CandidateOwner")
@@ -993,6 +999,9 @@ model Membership {
   geoFenceRequired   Boolean             @default(false)
   faceRequired       Boolean             @default(false)
   staffCode          String?
+  /** Monthly CTC / gross used for attendance-based payroll (INR). */
+  monthlySalary      Decimal?            @db.Decimal(14, 2)
+  dateOfJoining      DateTime?
   modules            WorkspaceModule[]   @default([])
   userId             String
   organizationId     String
@@ -1000,6 +1009,7 @@ model Membership {
   lastTaskDigestAt     DateTime?
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employeeProfile EmployeeProfile?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
@@ -1099,6 +1109,25 @@ enum CandidateStage {
   OFFER
   HIRED
   REJECTED
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  EXITED
+}
+
+enum EmployeeDocumentType {
+  AADHAAR
+  PAN
+  OFFER_LETTER
+  CONTRACT
+  OTHER
 }
 
 model WorkspaceHrSettings {
@@ -1203,11 +1232,103 @@ model PayrollRun {
   periodEnd      DateTime         @db.Date
   status         PayrollRunStatus @default(DRAFT)
   employeeCount  Int              @default(0)
+  totalGross     Decimal?         @db.Decimal(14, 2)
+  totalNet       Decimal?         @db.Decimal(14, 2)
   notes          String?
+  lines          PayrollLine[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
   @@index([organizationId, periodStart])
+}
+
+model PayrollLine {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  payrollRunId   String
+  payrollRun     PayrollRun   @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation("PayrollLineEmployee", fields: [userId], references: [id], onDelete: Cascade)
+  presentDays    Float        @default(0)
+  leaveDays      Float        @default(0)
+  absentDays     Float        @default(0)
+  halfDays       Float        @default(0)
+  payableDays    Float        @default(0)
+  workingDays    Float        @default(0)
+  monthlySalary  Decimal      @db.Decimal(14, 2)
+  earnedSalary   Decimal      @db.Decimal(14, 2)
+  deductions     Decimal      @default(0) @db.Decimal(14, 2)
+  netPay         Decimal      @db.Decimal(14, 2)
+  notes          String?
+
+  @@unique([payrollRunId, userId])
+  @@index([organizationId, payrollRunId])
+}
+
+/** HR employee master — 1:1 with Membership. Job title/dept/DOJ/gross live on Membership. */
+model EmployeeProfile {
+  id                 String         @id @default(cuid())
+  organizationId     String
+  organization       Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  membershipId       String         @unique
+  membership         Membership     @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  userId             String
+  user               User           @relation("EmployeeProfileUser", fields: [userId], references: [id], onDelete: Cascade)
+  employeeCode       String
+  employmentType     EmploymentType @default(FULL_TIME)
+  status             EmployeeStatus @default(ACTIVE)
+  phone              String?
+  emergencyContact   String?
+  address            String?
+  dateOfBirth        DateTime?      @db.Date
+  gender             String?
+  /** Full PAN — ADMIN+ read only in queries. */
+  pan                String?
+  /** Full Aadhaar string — ADMIN+ read only; prefer aadhaarLast4 for display. */
+  aadhaar            String?
+  aadhaarLast4       String?
+  basic              Decimal?       @db.Decimal(14, 2)
+  hra                Decimal?       @db.Decimal(14, 2)
+  specialAllowance   Decimal?       @db.Decimal(14, 2)
+  esiApplicable      Boolean        @default(false)
+  esiNumber          String?
+  pfApplicable       Boolean        @default(false)
+  uan                String?
+  pfNumber           String?
+  /** OLD | NEW — informational for v1. */
+  taxRegime          String?
+  /** Fixed monthly TDS amount (INR) for slip deductions. */
+  tdsMonthly         Decimal?       @db.Decimal(14, 2)
+  bankName           String?
+  bankAccountNumber  String?
+  ifsc               String?
+  documents          EmployeeDocument[]
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@unique([organizationId, employeeCode])
+  @@index([organizationId, userId])
+  @@index([organizationId, status])
+}
+
+model EmployeeDocument {
+  id                String               @id @default(cuid())
+  organizationId    String
+  organization      Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employeeProfileId String
+  employeeProfile   EmployeeProfile      @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+  docType           EmployeeDocumentType @default(OTHER)
+  fileName          String
+  mimeType          String
+  fileSize          Int
+  data              Bytes
+  uploadedById      String
+  uploadedBy        User                 @relation("EmployeeDocumentUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+  uploadedAt        DateTime             @default(now())
+
+  @@index([employeeProfileId])
+  @@index([organizationId, employeeProfileId])
 }
 
 model FieldVisit {

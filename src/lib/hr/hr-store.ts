@@ -220,6 +220,72 @@ export async function listLeaveRequests(organizationId: string, userId?: string)
   });
 }
 
+/** Leave balances for one user (ensures defaults for the year). */
+export async function getLeaveBalancesForUser(
+  organizationId: string,
+  userId: string,
+  year = new Date().getFullYear(),
+) {
+  const { listLeaveBalances } = await import("@/lib/hr/payroll");
+  return listLeaveBalances(organizationId, userId, year);
+}
+
+/**
+ * Balances for the current year. Staff: self only. Managers: all active members.
+ */
+export async function listLeaveBalancesForPage(
+  organizationId: string,
+  options: { viewerUserId: string; includeAllMembers: boolean; year?: number },
+) {
+  const year = options.year ?? new Date().getFullYear();
+  const { ensureLeaveBalances } = await import("@/lib/hr/payroll");
+
+  if (!options.includeAllMembers) {
+    await ensureLeaveBalances(organizationId, options.viewerUserId, year);
+    const rows = await prisma.leaveBalance.findMany({
+      where: { organizationId, userId: options.viewerUserId, year },
+      orderBy: { leaveType: "asc" },
+    });
+    return rows.map((row) => ({
+      ...row,
+      remainingDays: row.balanceDays - row.usedDays,
+      user: null as { id: string; name: string | null; email: string } | null,
+    }));
+  }
+
+  const members = await prisma.membership.findMany({
+    where: {
+      organizationId,
+      deactivatedAt: null,
+      role: { not: "VIEWER" },
+    },
+    select: {
+      userId: true,
+      user: { select: { id: true, name: true, email: true } },
+    },
+  });
+
+  for (const member of members) {
+    await ensureLeaveBalances(organizationId, member.userId, year);
+  }
+
+  const rows = await prisma.leaveBalance.findMany({
+    where: {
+      organizationId,
+      year,
+      userId: { in: members.map((m) => m.userId) },
+    },
+    orderBy: [{ userId: "asc" }, { leaveType: "asc" }],
+  });
+
+  const userById = new Map(members.map((m) => [m.userId, m.user]));
+  return rows.map((row) => ({
+    ...row,
+    remainingDays: row.balanceDays - row.usedDays,
+    user: userById.get(row.userId) ?? null,
+  }));
+}
+
 export async function listFieldCheckIns(organizationId: string, limit = 30) {
   return prisma.fieldCheckIn.findMany({
     where: { organizationId },
