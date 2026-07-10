@@ -389,3 +389,19 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/leads` (Invoice count/value KPIs), `/app/my-space`, `/app/my-space/expenses` (My Space nav).
 
 ---
+
+**Deployed (2026-07-10):** My Space expense redesign — fixed costs, EMI/wifi, period KPIs, household categories.
+
+| Item | Detail |
+|------|--------|
+| Commit | `5c8e2ed` — Ship My Space expense redesign with fixed costs, EMI/wifi fields, and period KPIs. |
+| Branch | `main` → `origin/main` (pushed) |
+| Build | `npm run test:unit` 54/54 pass; `npm run build` pass (prisma generate + migrate deploy + next build) |
+| Migrations | `20260710200000_org_expense_household`, `20260710210000_org_expense_emi_wifi` |
+| Vercel | Production **Ready** — https://sheetomatic.com / https://app.sheetomatic.com (HTTP 200) |
+| Deploy | `dpl_8K37iAhq4zsYhQ4xx7z4s3i1nWD9` — https://sheetomatic-redesign-525jezbxq-sheetomatic.vercel.app |
+| Target | Sheetomatic only (verified aliases include sheetomatic.com / app.sheetomatic.com) |
+
+**Hard-refresh in prod:** `/app/my-space`, `/app/my-space/expenses` (period KPIs, fixed expenses, EMI asset details, Internet/WiFi, household categories).
+
+---
