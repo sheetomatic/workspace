@@ -2,11 +2,13 @@ import Link from "next/link";
 import { PageHeader } from "@/components/saas/page-header";
 import { HrSubNav } from "@/components/hr/hr-sub-nav";
 import { requireSession } from "@/lib/require-session";
+import { hasMinimumRole } from "@/lib/permissions";
 import { getHrDashboardStats } from "@/lib/hr/hr-store";
 import { hrModuleOverview } from "@/app/hr-module-content";
 
 export default async function HrOverviewPage() {
   const user = await requireSession(undefined, { module: "HR" });
+  const isAdmin = hasMinimumRole(user.role, "ADMIN");
   const stats = await getHrDashboardStats(user.organizationId);
 
   return (
@@ -15,7 +17,7 @@ export default async function HrOverviewPage() {
         title="HR & workforce"
         description={hrModuleOverview.lead}
       />
-      <HrSubNav activePath="/app/hr" />
+      <HrSubNav activePath="/app/hr" isAdmin={isAdmin} />
 
       <div className="ws-task-stats">
         <div className="ws-stat-card ws-stat-done">

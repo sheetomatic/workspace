@@ -54,8 +54,14 @@ function TeamCollapsibleSection({
   );
 }
 
-export default async function TeamPage() {
+export default async function TeamPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ invite?: string }>;
+}) {
   const user = await requireSession();
+  const params = searchParams ? await searchParams : {};
+  const openInvite = params.invite === "1";
   const viewerMembership = await getViewerMembership(
     user.id,
     user.organizationId,
@@ -185,8 +191,13 @@ export default async function TeamPage() {
         <TeamManagementPanel
           canManage={canManage}
           currentUserId={user.id}
+          defaultInviteOpen={openInvite}
           members={visibleMembers}
           orgAllowedModules={orgAllowedModules}
+          workSites={workSites.map((site) => ({
+            id: site.id,
+            name: site.name,
+          }))}
         />
       </div>
     </div>

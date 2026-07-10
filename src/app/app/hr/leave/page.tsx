@@ -5,14 +5,21 @@ import {
   leaveTypeLabel,
   leaveTypeShort,
 } from "@/components/hr/leave-balance-cards";
+import { OdWfhPanel } from "@/components/hr/od-wfh-panel";
+import { LeaveAllocationPanel } from "@/components/hr/leave-allocation-panel";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
-import { listLeaveRequests } from "@/lib/hr/hr-store";
-import { listLeaveBalances } from "@/lib/hr/payroll";
+import {
+  listLeaveBalancesForPage,
+  listLeaveRequests,
+} from "@/lib/hr/hr-store";
+import { listLeaveBalances, listLeavePolicies } from "@/lib/hr/payroll";
+import { listAttendanceExceptions } from "@/lib/hr/attendance-exceptions";
 import {
   reviewLeaveRequestAction,
   submitLeaveRequestAction,
 } from "@/lib/hr/hr-actions";
+import { listAssignableMembers } from "@/lib/tasks";
 
 function statusClass(status: string) {
   if (status === "APPROVED") return "ws-leave-status is-approved";
@@ -23,20 +30,39 @@ function statusClass(status: string) {
 export default async function HrLeavePage() {
   const user = await requireSession(undefined, { module: "HR" });
   const isManager = hasMinimumRole(user.role, "MANAGER");
+  const isAdmin = hasMinimumRole(user.role, "ADMIN");
   const year = new Date().getFullYear();
 
-  const [requests, balances] = await Promise.all([
-    listLeaveRequests(user.organizationId, isManager ? undefined : user.id),
-    listLeaveBalances(user.organizationId, user.id, year),
-  ]);
+  const [requests, balances, exceptions, policies, allocBalances, members] =
+    await Promise.all([
+      listLeaveRequests(user.organizationId, isManager ? undefined : user.id),
+      listLeaveBalances(user.organizationId, user.id, year),
+      listAttendanceExceptions(
+        user.organizationId,
+        isManager ? undefined : { userId: user.id },
+      ),
+      isAdmin
+        ? listLeavePolicies(user.organizationId, year)
+        : Promise.resolve([]),
+      isAdmin
+        ? listLeaveBalancesForPage(user.organizationId, {
+            viewerUserId: user.id,
+            includeAllMembers: true,
+            year,
+          })
+        : Promise.resolve([]),
+      isAdmin
+        ? listAssignableMembers(user.organizationId)
+        : Promise.resolve([]),
+    ]);
 
   return (
     <div className="saas-page ws-hr-page">
       <PageHeader
         title="Leave"
-        description="Balances, apply for leave, and approve team requests from one place."
+        description="Balances, leave & OD/WFH requests, and manager approvals."
       />
-      <HrSubNav activePath="/app/hr/leave" />
+      <HrSubNav activePath="/app/hr/leave" isAdmin={isAdmin} />
 
       <LeaveBalanceCards
         year={year}
@@ -46,6 +72,28 @@ export default async function HrLeavePage() {
           usedDays: row.usedDays,
         }))}
       />
+
+      {isAdmin ? (
+        <LeaveAllocationPanel
+          year={year}
+          policies={policies.map((p) => ({
+            leaveType: p.leaveType,
+            defaultDays: p.defaultDays,
+          }))}
+          members={members.map((m) => ({
+            userId: m.id,
+            name: m.name,
+          }))}
+          balances={allocBalances
+            .filter((row) => row.leaveType !== "UNPAID")
+            .map((row) => ({
+              userId: row.userId,
+              leaveType: row.leaveType,
+              balanceDays: row.balanceDays,
+              usedDays: row.usedDays,
+            }))}
+        />
+      ) : null}
 
       <div className="ws-hr-split">
         <section className="ws-hr-panel">
@@ -140,7 +188,11 @@ export default async function HrLeavePage() {
                         </form>
                       </td>
                     ) : isManager ? (
-                      <td>{req.userId === user.id && req.status === "PENDING" ? "Awaiting another approver" : "-"}</td>
+                      <td>
+                        {req.userId === user.id && req.status === "PENDING"
+                          ? "Awaiting another approver"
+                          : "-"}
+                      </td>
                     ) : null}
                   </tr>
                 ))
@@ -149,6 +201,21 @@ export default async function HrLeavePage() {
           </table>
         </div>
       </section>
+
+      <OdWfhPanel
+        isManager={isManager}
+        viewerUserId={user.id}
+        requests={exceptions.map((req) => ({
+          id: req.id,
+          userId: req.userId,
+          exceptionType: req.exceptionType,
+          startDate: req.startDate,
+          endDate: req.endDate,
+          reason: req.reason,
+          status: req.status,
+          user: req.user,
+        }))}
+      />
     </div>
   );
 }

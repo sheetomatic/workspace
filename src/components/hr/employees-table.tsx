@@ -8,6 +8,18 @@ const STATUS_LABEL: Record<string, string> = {
   EXITED: "Exited",
 };
 
+const ONBOARDING_LABEL: Record<string, string> = {
+  PENDING_DOCS: "Pending docs",
+  COMPLETE: "Onboarded",
+  SKIPPED: "Skipped",
+};
+
+function onboardingClass(status: string) {
+  if (status === "COMPLETE") return "ws-leave-status is-approved";
+  if (status === "SKIPPED") return "ws-leave-status is-rejected";
+  return "ws-leave-status is-pending";
+}
+
 export function EmployeesTable({
   employees,
   isAdmin,
@@ -41,6 +53,7 @@ export function EmployeesTable({
               <th>Statutory</th>
               {isAdmin ? <th>Salary</th> : null}
               <th>Status</th>
+              <th>Onboarding</th>
               <th>Action</th>
             </tr>
           </thead>
@@ -58,6 +71,7 @@ export function EmployeesTable({
                 .filter(Boolean)
                 .join(" · ");
               const href = `/app/hr/employees/${row.membershipId}`;
+              const onboard = row.profile?.onboardingStatus;
               return (
                 <tr key={row.membershipId}>
                   <td>
@@ -86,6 +100,15 @@ export function EmployeesTable({
                       </span>
                     ) : (
                       <span className="ws-leave-status is-pending">Not registered</span>
+                    )}
+                  </td>
+                  <td>
+                    {onboard ? (
+                      <span className={onboardingClass(onboard)}>
+                        {ONBOARDING_LABEL[onboard] ?? onboard}
+                      </span>
+                    ) : (
+                      <span className="ws-apple-cell-secondary">—</span>
                     )}
                   </td>
                   <td>

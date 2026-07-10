@@ -8,12 +8,25 @@ import {
 } from "@/lib/hr/hr-actions";
 
 const DOC_TYPE_LABELS: Record<string, string> = {
+  EDUCATION_QUALIFICATION: "Education Qualification",
+  CV: "CV / Resume",
+  WORK_EXPERIENCE: "Work Experience",
+  NOC_RESIGNATION: "NOC / Resignation",
   AADHAAR: "Aadhaar",
   PAN: "PAN",
   OFFER_LETTER: "Offer letter",
   CONTRACT: "Contract",
   OTHER: "Other",
 };
+
+const REQUIRED_DOC_TYPES = [
+  "EDUCATION_QUALIFICATION",
+  "CV",
+  "WORK_EXPERIENCE",
+  "NOC_RESIGNATION",
+  "AADHAAR",
+  "PAN",
+] as const;
 
 type DocRow = {
   id: string;
@@ -92,8 +105,8 @@ export function EmployeeDocumentsPanel({
     <section className="ws-hr-form-section">
       <h3>Documents</h3>
       <p className="ws-hr-help">
-        Store KYC and joining papers on the employee record. Files stay in this
-        workspace only.
+        Required on join: Education, CV, Work Experience, NOC/Resignation,
+        Aadhaar, PAN. Optional: offer letter and contract.
       </p>
 
       {documents.length > 0 ? (
@@ -138,12 +151,21 @@ export function EmployeeDocumentsPanel({
           <input type="hidden" name="employeeProfileId" value={employeeProfileId} />
           <label>
             Type
-            <select name="docType" defaultValue="AADHAAR" required>
-              {Object.entries(DOC_TYPE_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
+            <select name="docType" defaultValue="EDUCATION_QUALIFICATION" required>
+              <optgroup label="Required">
+                {REQUIRED_DOC_TYPES.map((value) => (
+                  <option key={value} value={value}>
+                    {DOC_TYPE_LABELS[value]}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Optional">
+                {(["OFFER_LETTER", "CONTRACT", "OTHER"] as const).map((value) => (
+                  <option key={value} value={value}>
+                    {DOC_TYPE_LABELS[value]}
+                  </option>
+                ))}
+              </optgroup>
             </select>
           </label>
           <label>

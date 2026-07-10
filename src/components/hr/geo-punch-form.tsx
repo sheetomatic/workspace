@@ -77,7 +77,7 @@ export function GeoPunchForm({
       setPending(false);
       return;
     }
-    if (sites.length > 1 && !selectedSiteId) {
+    if (requireGeo && sites.length > 1 && !selectedSiteId) {
       setMessage("Select your work site before checking in.");
       setIsError(true);
       setPending(false);
@@ -104,7 +104,7 @@ export function GeoPunchForm({
 
   return (
     <form onSubmit={handleSubmit} className="ws-hr-form">
-      {sites.length > 1 ? (
+      {requireGeo && sites.length > 1 ? (
         <label className="ws-attendance-site-select">
           Work site
           <select

@@ -30,7 +30,7 @@ export default async function HrEmployeesPage() {
             : "Your employee profile for this workspace."
         }
       />
-      <HrSubNav activePath="/app/hr/employees" />
+      <HrSubNav activePath="/app/hr/employees" isAdmin={isAdmin} />
 
       {isAdmin ? (
         <section className="hs-quick-stats" aria-label="Employee readiness">
@@ -49,10 +49,14 @@ export default async function HrEmployeesPage() {
         </section>
       ) : null}
 
-      {isAdmin && employees.some((e) => !e.profile) ? (
+      {isAdmin ? (
         <p className="ws-hr-note">
-          Open <strong>Register</strong> on any row to create the HR profile. Invite new
-          people from <Link href="/app/team">Team</Link> first.
+          <Link href="/app/team?invite=1" className="btn-cta btn-primary btn-compact">
+            Invite employee
+          </Link>{" "}
+          from Team (email + manager + onboarding). Then open{" "}
+          <strong>Register</strong> here to complete the HR profile and required
+          docs (Education, CV, Experience, NOC, Aadhaar, PAN).
         </p>
       ) : null}
 

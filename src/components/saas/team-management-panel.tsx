@@ -2,7 +2,13 @@
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { KeyRound, Mail, Pencil, Trash2 } from "lucide-react";
-import type { AttendanceWorkMode, Role, TaskDepartment, WorkspaceModule } from "@prisma/client";
+import type {
+  AttendanceWorkMode,
+  EmployeeLocationMode,
+  Role,
+  TaskDepartment,
+  WorkspaceModule,
+} from "@prisma/client";
 import {
   inviteTeamMember,
   removeTeamMember,
@@ -32,6 +38,16 @@ const ATTENDANCE_WORK_MODE_LABELS: Record<AttendanceWorkMode, string> = {
   HYBRID: "Office + field",
 };
 
+const LOCATION_MODE_LABELS: Record<EmployeeLocationMode, string> = {
+  FIXED_SITE: "Fixed site (geo-fence)",
+  FLEXIBLE: "Flexible (no fence)",
+};
+
+export type TeamWorkSiteOption = {
+  id: string;
+  name: string;
+};
+
 export type TeamMemberRow = {
   id: string;
   role: Role;
@@ -48,6 +64,8 @@ export type TeamMemberRow = {
     };
   } | null;
   attendanceWorkMode: AttendanceWorkMode;
+  locationMode: EmployeeLocationMode;
+  primarySiteId: string | null;
   geoFenceRequired: boolean;
   faceRequired: boolean;
   monthlySalary: number | null;
@@ -223,11 +241,13 @@ function TeamLoginCredentials({
 function MemberEditForm({
   member,
   members,
+  workSites,
   onCancel,
   orgAllowedModules,
 }: {
   member: TeamMemberRow;
   members: TeamMemberRow[];
+  workSites: TeamWorkSiteOption[];
   onCancel: () => void;
   orgAllowedModules?: WorkspaceModule[];
 }) {
@@ -386,7 +406,41 @@ function MemberEditForm({
               placeholder="e.g. 35000"
             />
           </label>
+          <label>
+            Location mode
+            <select
+              defaultValue={member.locationMode ?? "FIXED_SITE"}
+              name="locationMode"
+              required
+            >
+              {(Object.entries(LOCATION_MODE_LABELS) as Array<
+                [EmployeeLocationMode, string]
+              >).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Primary work site
+            <select
+              defaultValue={member.primarySiteId ?? ""}
+              name="primarySiteId"
+            >
+              <option value="">None</option>
+              {workSites.map((site) => (
+                <option key={site.id} value={site.id}>
+                  {site.name}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
+        <p className="ws-hr-help">
+          Fixed site enforces the primary (or selected) site fence. Flexible never
+          blocks check-in on geo-fence.
+        </p>
         <div className="ws-attendance-checklist">
           <label className="ws-attendance-check">
             <input
@@ -394,7 +448,7 @@ function MemberEditForm({
               name="geoFenceRequired"
               type="checkbox"
             />
-            <span>Require geo-fenced check-in for this member</span>
+            <span>Legacy: require geo-fenced check-in</span>
           </label>
           <label className="ws-attendance-check">
             <input
@@ -429,11 +483,15 @@ export function TeamManagementPanel({
   currentUserId,
   canManage = true,
   orgAllowedModules,
+  workSites = [],
+  defaultInviteOpen = false,
 }: {
   members: TeamMemberRow[];
   currentUserId: string;
   canManage?: boolean;
   orgAllowedModules?: WorkspaceModule[];
+  workSites?: TeamWorkSiteOption[];
+  defaultInviteOpen?: boolean;
 }) {
   const [inviteState, inviteAction, invitePending] = useActionState(
     inviteTeamMember,
@@ -443,7 +501,7 @@ export function TeamManagementPanel({
   const [inviteRole, setInviteRole] = useState<Role>("STAFF");
   const [pending, startTransition] = useTransition();
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(defaultInviteOpen);
   const inviteReportingRequired = inviteRole !== "OWNER";
   const managerOptions = managerOptionsForMember(members);
 
@@ -514,6 +572,7 @@ export function TeamManagementPanel({
                 : null,
               member.isDepartmentHead ? "Department head" : null,
               ATTENDANCE_WORK_MODE_LABELS[member.attendanceWorkMode],
+              LOCATION_MODE_LABELS[member.locationMode ?? "FIXED_SITE"],
               salaryHint,
             ].filter(Boolean);
             const displayName =
@@ -530,6 +589,7 @@ export function TeamManagementPanel({
                   <MemberEditForm
                     member={member}
                     members={members}
+                    workSites={workSites}
                     onCancel={() => setEditingId(null)}
                     orgAllowedModules={orgAllowedModules}
                   />
@@ -766,6 +826,36 @@ export function TeamManagementPanel({
                     placeholder="Leave blank to auto-generate"
                     type="text"
                   />
+                </label>
+                <label>
+                  Location mode
+                  <select name="locationMode" defaultValue="FIXED_SITE" required>
+                    {(Object.entries(LOCATION_MODE_LABELS) as Array<
+                      [EmployeeLocationMode, string]
+                    >).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Primary work site
+                  <select name="primarySiteId" defaultValue="">
+                    <option value="">None</option>
+                    {workSites.map((site) => (
+                      <option key={site.id} value={site.id}>
+                        {site.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Require onboarding docs
+                  <select name="requireOnboarding" defaultValue="on">
+                    <option value="on">Yes — Education, CV, Experience, NOC, Aadhaar, PAN</option>
+                    <option value="off">No — skip doc checklist</option>
+                  </select>
                 </label>
               </div>
 

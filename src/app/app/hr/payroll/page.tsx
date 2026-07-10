@@ -50,7 +50,7 @@ export default async function HrPayrollPage() {
             : "Your attendance-based payslip lines for this workspace."
         }
       />
-      <HrSubNav activePath="/app/hr/payroll" />
+      <HrSubNav activePath="/app/hr/payroll" isAdmin={isAdmin} />
 
       {isAdmin ? (
         <section className="hs-quick-stats" aria-label="Payroll readiness">

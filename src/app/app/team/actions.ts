@@ -2,7 +2,13 @@
 
 import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
-import type { AttendanceWorkMode, Role, TaskDepartment, WorkspaceModule } from "@prisma/client";
+import type {
+  AttendanceWorkMode,
+  EmployeeLocationMode,
+  Role,
+  TaskDepartment,
+  WorkspaceModule,
+} from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { getSessionUser } from "@/lib/auth";
 import { normalizeStaffCode } from "@/lib/legal-cases/access";
@@ -47,12 +53,20 @@ const DEPARTMENTS: TaskDepartment[] = [
 ];
 
 const WORK_MODES: AttendanceWorkMode[] = ["OFFICE", "FIELD", "HYBRID"];
+const LOCATION_MODES: EmployeeLocationMode[] = ["FIXED_SITE", "FLEXIBLE"];
 
 function parseWorkMode(raw: string | null | undefined): AttendanceWorkMode {
   const value = raw?.trim().toUpperCase() ?? "OFFICE";
   return WORK_MODES.includes(value as AttendanceWorkMode)
     ? (value as AttendanceWorkMode)
     : "OFFICE";
+}
+
+function parseLocationMode(raw: string | null | undefined): EmployeeLocationMode {
+  const value = raw?.trim().toUpperCase() ?? "FIXED_SITE";
+  return LOCATION_MODES.includes(value as EmployeeLocationMode)
+    ? (value as EmployeeLocationMode)
+    : "FIXED_SITE";
 }
 
 function parseDepartment(raw: string | null | undefined): TaskDepartment | null {
@@ -164,6 +178,27 @@ export async function inviteTeamMember(
   const isDepartmentHead = formData.get("isDepartmentHead") === "on";
   const staffCode =
     normalizeStaffCode(formData.get("staffCode")?.toString()) || null;
+  const requireOnboarding = formData.get("requireOnboarding") !== "off";
+  const locationMode = parseLocationMode(
+    formData.get("locationMode")?.toString(),
+  );
+  const primarySiteIdRaw =
+    formData.get("primarySiteId")?.toString().trim() || null;
+  let primarySiteId: string | null = null;
+  if (primarySiteIdRaw) {
+    const site = await prisma.hrWorkSite.findFirst({
+      where: {
+        id: primarySiteIdRaw,
+        organizationId: user.organizationId,
+        isActive: true,
+      },
+      select: { id: true },
+    });
+    if (!site) {
+      return { ok: false, message: "Selected primary work site was not found." };
+    }
+    primarySiteId = site.id;
+  }
 
   if (!email.includes("@")) {
     return { ok: false, message: "Enter a valid email." };
@@ -263,7 +298,7 @@ export async function inviteTeamMember(
       });
     }
 
-    await prisma.membership.create({
+    const membership = await prisma.membership.create({
       data: {
         userId: memberUser.id,
         organizationId: user.organizationId,
@@ -274,6 +309,47 @@ export async function inviteTeamMember(
         isDepartmentHead,
         modules,
         staffCode,
+        locationMode,
+        primarySiteId,
+      },
+    });
+
+    const { ensureOnboardingAfterInvite } = await import("@/lib/hr/onboarding");
+    await ensureOnboardingAfterInvite({
+      organizationId: user.organizationId,
+      membershipId: membership.id,
+      userId: memberUser.id,
+      requireOnboarding,
+      staffCode,
+    });
+
+    await prisma.invitation.upsert({
+      where: {
+        email_organizationId: {
+          email,
+          organizationId: user.organizationId,
+        },
+      },
+      create: {
+        email,
+        role,
+        organizationId: user.organizationId,
+        invitedById: user.id,
+        token: randomBytes(24).toString("hex"),
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        acceptedAt: new Date(),
+        reportingManagerId: resolvedReportingManagerId,
+        department,
+        designation,
+        requireOnboarding,
+      },
+      update: {
+        role,
+        reportingManagerId: resolvedReportingManagerId,
+        department,
+        designation,
+        requireOnboarding,
+        acceptedAt: new Date(),
       },
     });
 
@@ -286,6 +362,7 @@ export async function inviteTeamMember(
     });
 
     revalidatePath("/app/team");
+    revalidatePath("/app/hr/employees");
     revalidatePath("/app/fms/setup");
     revalidatePath("/app/fms/design/new");
     return {
@@ -303,7 +380,7 @@ export async function inviteTeamMember(
   }
 
   const tempPassword = initialPassword || randomBytes(12).toString("base64url");
-  memberUser = await prisma.user.create({
+  const createdUser = await prisma.user.create({
     data: {
       email,
       name,
@@ -319,19 +396,59 @@ export async function inviteTeamMember(
           isDepartmentHead,
           modules,
           staffCode,
+          locationMode,
+          primarySiteId,
         },
       },
     },
+    include: {
+      memberships: {
+        where: { organizationId: user.organizationId },
+        select: { id: true },
+        take: 1,
+      },
+    },
   });
+  memberUser = createdUser;
 
-  await prisma.invitation.create({
-    data: {
+  const newMembershipId = createdUser.memberships[0]?.id;
+  if (newMembershipId) {
+    const { ensureOnboardingAfterInvite } = await import("@/lib/hr/onboarding");
+    await ensureOnboardingAfterInvite({
+      organizationId: user.organizationId,
+      membershipId: newMembershipId,
+      userId: createdUser.id,
+      requireOnboarding,
+      staffCode,
+    });
+  }
+
+  await prisma.invitation.upsert({
+    where: {
+      email_organizationId: {
+        email,
+        organizationId: user.organizationId,
+      },
+    },
+    create: {
       email,
       role,
       organizationId: user.organizationId,
       invitedById: user.id,
       token: randomBytes(24).toString("hex"),
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      acceptedAt: new Date(),
+      reportingManagerId: resolvedReportingManagerId,
+      department,
+      designation,
+      requireOnboarding,
+    },
+    update: {
+      role,
+      reportingManagerId: resolvedReportingManagerId,
+      department,
+      designation,
+      requireOnboarding,
       acceptedAt: new Date(),
     },
   });
@@ -346,6 +463,7 @@ export async function inviteTeamMember(
   });
 
   revalidatePath("/app/team");
+  revalidatePath("/app/hr/employees");
   revalidatePath("/app/fms/setup");
   revalidatePath("/app/fms/design/new");
   return {
@@ -380,6 +498,11 @@ export async function updateTeamMemberDetails(
   const attendanceWorkMode = parseWorkMode(
     formData.get("attendanceWorkMode")?.toString(),
   );
+  const locationMode = parseLocationMode(
+    formData.get("locationMode")?.toString(),
+  );
+  const primarySiteIdRaw =
+    formData.get("primarySiteId")?.toString().trim() || null;
   const geoFenceRequired = formData.get("geoFenceRequired") === "on";
   const faceRequired = formData.get("faceRequired") === "on";
   const monthlySalaryRaw = formData.get("monthlySalary")?.toString().trim() ?? "";
@@ -435,6 +558,22 @@ export async function updateTeamMemberDetails(
     return { ok: false, message: reportingManagerError };
   }
 
+  let primarySiteId: string | null = null;
+  if (primarySiteIdRaw) {
+    const site = await prisma.hrWorkSite.findFirst({
+      where: {
+        id: primarySiteIdRaw,
+        organizationId: user.organizationId,
+        isActive: true,
+      },
+      select: { id: true },
+    });
+    if (!site) {
+      return { ok: false, message: "Selected primary work site was not found." };
+    }
+    primarySiteId = site.id;
+  }
+
   const orgPlan = await getOrganizationPlanContext(user.organizationId);
   if (!orgPlan) {
     return { ok: false, message: "Workspace not found." };
@@ -468,6 +607,8 @@ export async function updateTeamMemberDetails(
       reportingManagerId: role === "OWNER" ? null : reportingManagerId,
       isDepartmentHead,
       attendanceWorkMode,
+      locationMode,
+      primarySiteId,
       geoFenceRequired,
       faceRequired,
       monthlySalary,

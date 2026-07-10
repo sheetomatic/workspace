@@ -230,6 +230,60 @@ export async function seedAcmeHr(prisma: PrismaClient, organizationId: string) {
     update: {},
   });
 
+  // Leave policies for the year (ensureLeaveBalances will prefer these).
+  const leavePolicyDefaults: Array<{ leaveType: "CASUAL" | "SICK" | "EARNED" | "UNPAID" | "COMP_OFF"; defaultDays: number }> = [
+    { leaveType: "CASUAL", defaultDays: 12 },
+    { leaveType: "SICK", defaultDays: 12 },
+    { leaveType: "EARNED", defaultDays: 15 },
+    { leaveType: "UNPAID", defaultDays: 0 },
+    { leaveType: "COMP_OFF", defaultDays: 0 },
+  ];
+  for (const policy of leavePolicyDefaults) {
+    await prisma.leavePolicy.upsert({
+      where: {
+        organizationId_leaveType_year: {
+          organizationId,
+          leaveType: policy.leaveType,
+          year,
+        },
+      },
+      create: {
+        organizationId,
+        leaveType: policy.leaveType,
+        year,
+        defaultDays: policy.defaultDays,
+      },
+      update: { defaultDays: policy.defaultDays },
+    });
+  }
+
+  // Org holidays for the calendar year (Republic Day, Independence Day, Diwali approx, Holi approx).
+  const holidays: Array<{ month: number; day: number; name: string; isOptional?: boolean }> = [
+    { month: 0, day: 26, name: "Republic Day" },
+    { month: 2, day: 14, name: "Holi", isOptional: true },
+    { month: 7, day: 15, name: "Independence Day" },
+    { month: 9, day: 20, name: "Diwali" },
+    { month: 9, day: 2, name: "Gandhi Jayanti" },
+  ];
+  for (const h of holidays) {
+    const date = utcNoon(year, h.month, h.day);
+    await prisma.hrHoliday.upsert({
+      where: {
+        organizationId_date: { organizationId, date },
+      },
+      create: {
+        organizationId,
+        date,
+        name: h.name,
+        isOptional: h.isOptional === true,
+      },
+      update: {
+        name: h.name,
+        isOptional: h.isOptional === true,
+      },
+    });
+  }
+
   const memberships = await prisma.membership.findMany({
     where: { organizationId, deactivatedAt: null },
     include: { user: { select: { id: true, email: true, name: true } } },
@@ -277,6 +331,9 @@ export async function seedAcmeHr(prisma: PrismaClient, organizationId: string) {
           employeeCode: seedProfile.code,
           employmentType: seedProfile.employmentType,
           status: "ACTIVE",
+          onboardingStatus: "COMPLETE",
+          educationSummary: "B.Tech / Graduate — Acme seed",
+          experienceSummary: "3+ years operations — Acme seed",
           phone: seedProfile.phone,
           emergencyContact: "Family · +91 98000 00000",
           address: "Acme Plant, Greater Noida, UP",
@@ -301,6 +358,9 @@ export async function seedAcmeHr(prisma: PrismaClient, organizationId: string) {
           employeeCode: seedProfile.code,
           employmentType: seedProfile.employmentType,
           status: "ACTIVE",
+          onboardingStatus: "COMPLETE",
+          educationSummary: "B.Tech / Graduate — Acme seed",
+          experienceSummary: "3+ years operations — Acme seed",
           phone: seedProfile.phone,
           pan: seedProfile.pan,
           aadhaar: seedProfile.aadhaar,
@@ -423,6 +483,34 @@ export async function seedAcmeHr(prisma: PrismaClient, organizationId: string) {
         },
       });
     }
+
+    const existingOd = await prisma.attendanceExceptionRequest.findFirst({
+      where: {
+        organizationId,
+        userId: staff.userId,
+        status: "PENDING",
+        exceptionType: "OD",
+      },
+    });
+    if (!existingOd) {
+      const odStart = new Date(start);
+      odStart.setUTCDate(odStart.getUTCDate() + 7);
+      while (odStart.getUTCDay() === 0 || odStart.getUTCDay() === 6) {
+        odStart.setUTCDate(odStart.getUTCDate() + 1);
+      }
+      odStart.setUTCHours(12, 0, 0, 0);
+      await prisma.attendanceExceptionRequest.create({
+        data: {
+          organizationId,
+          userId: staff.userId,
+          exceptionType: "OD",
+          startDate: odStart,
+          endDate: odStart,
+          reason: "Client site visit — Acme HR seed",
+          status: "PENDING",
+        },
+      });
+    }
   }
 
   // Draft payroll run for salary slip demos (idempotent: one seed run per month start)
@@ -528,12 +616,47 @@ export async function seedAcmeHr(prisma: PrismaClient, organizationId: string) {
     }
   }
 
+  // Sync HOLIDAY attendance for non-optional weekday holidays
+  const activeMembers = memberships.filter((m) => m.role !== "VIEWER");
+  const seededHolidays = await prisma.hrHoliday.findMany({
+    where: { organizationId, isOptional: false, date: { gte: utcNoon(year, 0, 1), lte: utcNoon(year, 11, 31) } },
+  });
+  for (const holiday of seededHolidays) {
+    const dow = holiday.date.getUTCDay();
+    if (dow === 0 || dow === 6) continue;
+    for (const membership of activeMembers) {
+      await prisma.attendanceRecord.upsert({
+        where: {
+          organizationId_userId_workDate: {
+            organizationId,
+            userId: membership.userId,
+            workDate: holiday.date,
+          },
+        },
+        create: {
+          organizationId,
+          userId: membership.userId,
+          workDate: holiday.date,
+          status: "HOLIDAY",
+          method: "WEB",
+          notes: `Holiday: ${holiday.name}`,
+        },
+        update: {
+          status: "HOLIDAY",
+          notes: `Holiday: ${holiday.name}`,
+        },
+      });
+    }
+  }
+
   const counts = {
     salaries: await prisma.membership.count({
       where: { organizationId, monthlySalary: { gt: 0 } },
     }),
     profiles: await prisma.employeeProfile.count({ where: { organizationId } }),
     leaveBalances: await prisma.leaveBalance.count({ where: { organizationId, year } }),
+    leavePolicies: await prisma.leavePolicy.count({ where: { organizationId, year } }),
+    holidays: await prisma.hrHoliday.count({ where: { organizationId } }),
     attendance: await prisma.attendanceRecord.count({
       where: {
         organizationId,
@@ -541,6 +664,9 @@ export async function seedAcmeHr(prisma: PrismaClient, organizationId: string) {
       },
     }),
     pendingLeave: await prisma.leaveRequest.count({
+      where: { organizationId, status: "PENDING" },
+    }),
+    pendingOdWfh: await prisma.attendanceExceptionRequest.count({
       where: { organizationId, status: "PENDING" },
     }),
     payrollRuns: await prisma.payrollRun.count({ where: { organizationId } }),

@@ -64,10 +64,15 @@ export type EmployeeProfileFormData = {
 export function EmployeeProfileForm({
   data,
   canEdit,
+  canEditDocs,
 }: {
   data: EmployeeProfileFormData;
+  /** Salary / sensitive profile fields — ADMIN only. */
   canEdit: boolean;
+  /** Document upload/delete — ADMIN or self. Defaults to canEdit. */
+  canEditDocs?: boolean;
 }) {
+  const docsEditable = canEditDocs ?? canEdit;
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
@@ -100,7 +105,11 @@ export function EmployeeProfileForm({
           </p>
         </div>
         {!canEdit ? (
-          <p className="ws-hr-note">View only — ask an admin to update this record.</p>
+          <p className="ws-hr-note">
+            {docsEditable
+              ? "Profile fields are view only — you can still upload onboarding documents below."
+              : "View only — ask an admin to update this record."}
+          </p>
         ) : null}
       </div>
 
@@ -449,7 +458,7 @@ export function EmployeeProfileForm({
       <EmployeeDocumentsPanel
         employeeProfileId={p?.id ?? null}
         documents={p?.documents ?? []}
-        canEdit={canEdit}
+        canEdit={docsEditable}
       />
     </div>
   );

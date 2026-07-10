@@ -45,7 +45,7 @@ function minDate(a: Date, b: Date) {
   return a.getTime() <= b.getTime() ? a : b;
 }
 
-const DEFAULT_LEAVE_BALANCE: Record<LeaveType, number> = {
+export const DEFAULT_LEAVE_BALANCE: Record<LeaveType, number> = {
   CASUAL: 12,
   SICK: 12,
   EARNED: 15,
@@ -53,12 +53,29 @@ const DEFAULT_LEAVE_BALANCE: Record<LeaveType, number> = {
   COMP_OFF: 0,
 };
 
+/** Resolve default days from LeavePolicy when present, else hardcoded defaults. */
+export async function resolveLeavePolicyDays(
+  organizationId: string,
+  year: number,
+): Promise<Record<LeaveType, number>> {
+  const policies = await prisma.leavePolicy.findMany({
+    where: { organizationId, year },
+    select: { leaveType: true, defaultDays: true },
+  });
+  const resolved = { ...DEFAULT_LEAVE_BALANCE };
+  for (const policy of policies) {
+    resolved[policy.leaveType] = policy.defaultDays;
+  }
+  return resolved;
+}
+
 export async function ensureLeaveBalances(
   organizationId: string,
   userId: string,
   year: number,
 ) {
-  for (const [leaveType, balanceDays] of Object.entries(DEFAULT_LEAVE_BALANCE) as Array<
+  const defaults = await resolveLeavePolicyDays(organizationId, year);
+  for (const [leaveType, balanceDays] of Object.entries(defaults) as Array<
     [LeaveType, number]
   >) {
     await prisma.leaveBalance.upsert({
@@ -81,6 +98,65 @@ export async function ensureLeaveBalances(
       update: {},
     });
   }
+}
+
+/** ADMIN: set LeaveBalance.balanceDays for a member (allocation). */
+export async function setLeaveBalanceAllocation(params: {
+  organizationId: string;
+  userId: string;
+  leaveType: LeaveType;
+  year: number;
+  balanceDays: number;
+}) {
+  if (!Number.isFinite(params.balanceDays) || params.balanceDays < 0) {
+    throw new Error("Balance days must be a non-negative number.");
+  }
+  await ensureLeaveBalances(params.organizationId, params.userId, params.year);
+  return prisma.leaveBalance.update({
+    where: {
+      organizationId_userId_leaveType_year: {
+        organizationId: params.organizationId,
+        userId: params.userId,
+        leaveType: params.leaveType,
+        year: params.year,
+      },
+    },
+    data: { balanceDays: params.balanceDays },
+  });
+}
+
+export async function upsertLeavePolicy(params: {
+  organizationId: string;
+  leaveType: LeaveType;
+  year: number;
+  defaultDays: number;
+}) {
+  if (!Number.isFinite(params.defaultDays) || params.defaultDays < 0) {
+    throw new Error("Default days must be a non-negative number.");
+  }
+  return prisma.leavePolicy.upsert({
+    where: {
+      organizationId_leaveType_year: {
+        organizationId: params.organizationId,
+        leaveType: params.leaveType,
+        year: params.year,
+      },
+    },
+    create: {
+      organizationId: params.organizationId,
+      leaveType: params.leaveType,
+      year: params.year,
+      defaultDays: params.defaultDays,
+    },
+    update: { defaultDays: params.defaultDays },
+  });
+}
+
+export async function listLeavePolicies(organizationId: string, year: number) {
+  return prisma.leavePolicy.findMany({
+    where: { organizationId, year },
+    orderBy: { leaveType: "asc" },
+  });
 }
 
 export async function listLeaveBalances(organizationId: string, userId: string, year: number) {

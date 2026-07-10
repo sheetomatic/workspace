@@ -170,9 +170,12 @@ model Organization {
   aiKnowledgeItems  AiKnowledgeItem[]
   hrSettings        WorkspaceHrSettings?
   hrWorkSites         HrWorkSite[]
+  hrHolidays          HrHoliday[]
   attendanceRecords AttendanceRecord[]
+  attendanceExceptionRequests AttendanceExceptionRequest[]
   leaveRequests     LeaveRequest[]
   leaveBalances     LeaveBalance[]
+  leavePolicies     LeavePolicy[]
   payrollRuns       PayrollRun[]
   payrollLines      PayrollLine[]
   employeeProfiles  EmployeeProfile[]
@@ -898,6 +901,8 @@ model User {
   aiKnowledgeCreated   AiKnowledgeItem[]        @relation("AiKnowledgeCreator")
   attendanceRecords    AttendanceRecord[]       @relation("AttendanceUser")
   attendanceMarked     AttendanceRecord[]       @relation("AttendanceMarker")
+  attendanceExceptionRequests AttendanceExceptionRequest[] @relation("AttendanceExceptionRequester")
+  attendanceExceptionReviews  AttendanceExceptionRequest[] @relation("AttendanceExceptionReviewer")
   leaveRequests        LeaveRequest[]           @relation("LeaveRequester")
   leaveReviews         LeaveRequest[]           @relation("LeaveReviewer")
   payrollLines         PayrollLine[]            @relation("PayrollLineEmployee")
@@ -970,39 +975,49 @@ model UserNotificationSettings {
 }
 
 model Invitation {
-  id             String       @id @default(cuid())
-  email          String
-  role           Role         @default(STAFF)
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  token          String       @unique
-  invitedById    String
-  invitedBy      User         @relation("InvitationSender", fields: [invitedById], references: [id], onDelete: Cascade)
-  expiresAt      DateTime
-  acceptedAt     DateTime?
-  createdAt      DateTime     @default(now())
+  id                    String          @id @default(cuid())
+  email                 String
+  role                  Role            @default(STAFF)
+  organizationId        String
+  organization          Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  token                 String          @unique
+  invitedById           String
+  invitedBy             User            @relation("InvitationSender", fields: [invitedById], references: [id], onDelete: Cascade)
+  /** Membership id of reporting manager (optional pre-assign). */
+  reportingManagerId    String?
+  department            TaskDepartment?
+  designation           String?
+  requireOnboarding     Boolean         @default(true)
+  onboardingCompletedAt DateTime?
+  expiresAt             DateTime
+  acceptedAt            DateTime?
+  createdAt             DateTime        @default(now())
 
   @@unique([email, organizationId])
   @@index([organizationId])
 }
 
 model Membership {
-  id                 String              @id @default(cuid())
-  role               Role                @default(STAFF)
+  id                 String               @id @default(cuid())
+  role               Role                 @default(STAFF)
   department         TaskDepartment?
   designation        String?
-  isDepartmentHead   Boolean             @default(false)
+  isDepartmentHead   Boolean              @default(false)
   reportingManagerId String?
-  reportingManager   Membership?         @relation("MembershipReportsTo", fields: [reportingManagerId], references: [id], onDelete: SetNull)
-  directReports      Membership[]        @relation("MembershipReportsTo")
-  attendanceWorkMode AttendanceWorkMode  @default(OFFICE)
-  geoFenceRequired   Boolean             @default(false)
-  faceRequired       Boolean             @default(false)
+  reportingManager   Membership?          @relation("MembershipReportsTo", fields: [reportingManagerId], references: [id], onDelete: SetNull)
+  directReports      Membership[]         @relation("MembershipReportsTo")
+  attendanceWorkMode AttendanceWorkMode   @default(OFFICE)
+  /** FIXED_SITE enforces primary/selected site fence; FLEXIBLE never blocks on fence. */
+  locationMode       EmployeeLocationMode @default(FIXED_SITE)
+  primarySiteId      String?
+  primarySite        HrWorkSite?          @relation("MembershipPrimarySite", fields: [primarySiteId], references: [id], onDelete: SetNull)
+  geoFenceRequired   Boolean              @default(false)
+  faceRequired       Boolean              @default(false)
   staffCode          String?
   /** Monthly CTC / gross used for attendance-based payroll (INR). */
-  monthlySalary      Decimal?            @db.Decimal(14, 2)
+  monthlySalary      Decimal?             @db.Decimal(14, 2)
   dateOfJoining      DateTime?
-  modules            WorkspaceModule[]   @default([])
+  modules            WorkspaceModule[]    @default([])
   userId             String
   organizationId     String
   deactivatedAt      DateTime?
@@ -1016,6 +1031,7 @@ model Membership {
   @@unique([userId, organizationId])
   @@index([organizationId, isDepartmentHead])
   @@index([reportingManagerId])
+  @@index([primarySiteId])
 }
 
 model Account {
@@ -1074,6 +1090,11 @@ enum AttendanceWorkMode {
   HYBRID
 }
 
+enum EmployeeLocationMode {
+  FIXED_SITE
+  FLEXIBLE
+}
+
 enum LeaveType {
   CASUAL
   SICK
@@ -1087,6 +1108,11 @@ enum LeaveRequestStatus {
   APPROVED
   REJECTED
   CANCELLED
+}
+
+enum AttendanceExceptionType {
+  OD
+  WFH
 }
 
 enum PayrollRunStatus {
@@ -1122,11 +1148,21 @@ enum EmployeeStatus {
   EXITED
 }
 
+enum EmployeeOnboardingStatus {
+  PENDING_DOCS
+  COMPLETE
+  SKIPPED
+}
+
 enum EmployeeDocumentType {
   AADHAAR
   PAN
   OFFER_LETTER
   CONTRACT
+  EDUCATION_QUALIFICATION
+  CV
+  WORK_EXPERIENCE
+  NOC_RESIGNATION
   OTHER
 }
 
@@ -1156,8 +1192,23 @@ model HrWorkSite {
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
   attendanceRecords AttendanceRecord[]
+  primaryMembers  Membership[]       @relation("MembershipPrimarySite")
 
   @@index([organizationId, isActive])
+}
+
+model HrHoliday {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  date           DateTime     @db.Date
+  name           String
+  isOptional     Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, date])
+  @@index([organizationId, date])
 }
 
 model AttendanceRecord {
@@ -1187,6 +1238,28 @@ model AttendanceRecord {
   @@index([organizationId, workDate])
 }
 
+model AttendanceExceptionRequest {
+  id             String                   @id @default(cuid())
+  organizationId String
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User                     @relation("AttendanceExceptionRequester", fields: [userId], references: [id], onDelete: Cascade)
+  exceptionType  AttendanceExceptionType
+  startDate      DateTime                 @db.Date
+  endDate        DateTime                 @db.Date
+  reason         String?
+  status         LeaveRequestStatus       @default(PENDING)
+  reviewedById   String?
+  reviewedBy     User?                    @relation("AttendanceExceptionReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt     DateTime?
+  reviewNotes    String?
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+
+  @@index([organizationId, status])
+  @@index([organizationId, userId])
+}
+
 model LeaveBalance {
   id             String       @id @default(cuid())
   organizationId String
@@ -1199,6 +1272,20 @@ model LeaveBalance {
   updatedAt      DateTime     @updatedAt
 
   @@unique([organizationId, userId, leaveType, year])
+}
+
+model LeavePolicy {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  leaveType      LeaveType
+  year           Int
+  defaultDays    Float
+  updatedAt      DateTime     @updatedAt
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, leaveType, year])
+  @@index([organizationId, year])
 }
 
 model LeaveRequest {
@@ -1268,48 +1355,52 @@ model PayrollLine {
 
 /** HR employee master — 1:1 with Membership. Job title/dept/DOJ/gross live on Membership. */
 model EmployeeProfile {
-  id                 String         @id @default(cuid())
+  id                 String                   @id @default(cuid())
   organizationId     String
-  organization       Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  membershipId       String         @unique
-  membership         Membership     @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  organization       Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  membershipId       String                   @unique
+  membership         Membership               @relation(fields: [membershipId], references: [id], onDelete: Cascade)
   userId             String
-  user               User           @relation("EmployeeProfileUser", fields: [userId], references: [id], onDelete: Cascade)
+  user               User                     @relation("EmployeeProfileUser", fields: [userId], references: [id], onDelete: Cascade)
   employeeCode       String
-  employmentType     EmploymentType @default(FULL_TIME)
-  status             EmployeeStatus @default(ACTIVE)
+  employmentType     EmploymentType           @default(FULL_TIME)
+  status             EmployeeStatus           @default(ACTIVE)
+  onboardingStatus   EmployeeOnboardingStatus @default(COMPLETE)
+  educationSummary   String?
+  experienceSummary  String?
   phone              String?
   emergencyContact   String?
   address            String?
-  dateOfBirth        DateTime?      @db.Date
+  dateOfBirth        DateTime?                @db.Date
   gender             String?
   /** Full PAN — ADMIN+ read only in queries. */
   pan                String?
   /** Full Aadhaar string — ADMIN+ read only; prefer aadhaarLast4 for display. */
   aadhaar            String?
   aadhaarLast4       String?
-  basic              Decimal?       @db.Decimal(14, 2)
-  hra                Decimal?       @db.Decimal(14, 2)
-  specialAllowance   Decimal?       @db.Decimal(14, 2)
-  esiApplicable      Boolean        @default(false)
+  basic              Decimal?                 @db.Decimal(14, 2)
+  hra                Decimal?                 @db.Decimal(14, 2)
+  specialAllowance   Decimal?                 @db.Decimal(14, 2)
+  esiApplicable      Boolean                  @default(false)
   esiNumber          String?
-  pfApplicable       Boolean        @default(false)
+  pfApplicable       Boolean                  @default(false)
   uan                String?
   pfNumber           String?
   /** OLD | NEW — informational for v1. */
   taxRegime          String?
   /** Fixed monthly TDS amount (INR) for slip deductions. */
-  tdsMonthly         Decimal?       @db.Decimal(14, 2)
+  tdsMonthly         Decimal?                 @db.Decimal(14, 2)
   bankName           String?
   bankAccountNumber  String?
   ifsc               String?
   documents          EmployeeDocument[]
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
 
   @@unique([organizationId, employeeCode])
   @@index([organizationId, userId])
   @@index([organizationId, status])
+  @@index([organizationId, onboardingStatus])
 }
 
 model EmployeeDocument {

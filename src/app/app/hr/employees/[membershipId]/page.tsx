@@ -3,9 +3,11 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/saas/page-header";
 import { HrSubNav } from "@/components/hr/hr-sub-nav";
 import { EmployeeProfileForm } from "@/components/hr/employee-profile-form";
+import { OnboardingChecklist } from "@/components/hr/onboarding-checklist";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import { getEmployeeForForm } from "@/lib/hr/employees";
+import { getOnboardingChecklist } from "@/lib/hr/onboarding";
 
 type PageProps = {
   params: Promise<{ membershipId: string }>;
@@ -27,24 +29,59 @@ export default async function HrEmployeeDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  const checklist = data.profile
+    ? await getOnboardingChecklist({
+        organizationId: user.organizationId,
+        employeeProfileId: data.profile.id,
+      })
+    : null;
+
+  const canCompleteOnboarding =
+    Boolean(data.profile) && (isAdmin || data.userId === user.id);
+
   return (
     <div className="saas-page ws-hr-page">
       <PageHeader
         title={data.profile ? "Employee profile" : "Register employee"}
         description={
           data.profile
-            ? "Personal, job, compensation, statutory, bank, and documents."
+            ? "Personal, job, compensation, statutory, bank, documents, and onboarding."
             : "Complete registration to enable payroll, ESI/PF, and salary slips."
         }
       />
-      <HrSubNav activePath="/app/hr/employees" />
+      <HrSubNav activePath="/app/hr/employees" isAdmin={isAdmin} />
 
       <p className="ws-hr-note">
         <Link href="/app/hr/employees">← All employees</Link>
+        {isAdmin ? (
+          <>
+            {" · "}
+            <Link href="/app/team?invite=1">Invite another employee</Link>
+          </>
+        ) : null}
       </p>
 
+      {checklist && data.profile ? (
+        <section className="ws-hr-panel">
+          <OnboardingChecklist
+            employeeProfileId={data.profile.id}
+            onboardingStatus={checklist.onboardingStatus}
+            educationSummary={checklist.educationSummary}
+            experienceSummary={checklist.experienceSummary}
+            items={checklist.items}
+            allRequiredUploaded={checklist.allRequiredUploaded}
+            canComplete={canCompleteOnboarding}
+            canSkip={isAdmin}
+          />
+        </section>
+      ) : null}
+
       <section className="ws-hr-panel">
-        <EmployeeProfileForm data={data} canEdit={isAdmin} />
+        <EmployeeProfileForm
+          data={data}
+          canEdit={isAdmin}
+          canEditDocs={isAdmin || data.userId === user.id}
+        />
       </section>
     </div>
   );

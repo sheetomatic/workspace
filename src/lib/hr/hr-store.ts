@@ -76,36 +76,56 @@ export async function checkInAttendance(params: {
     return existing;
   }
 
-  const [membership, sites, siteGeo] = await Promise.all([
-    prisma.membership.findUnique({
-      where: {
-        userId_organizationId: {
-          userId: params.user.id,
-          organizationId: params.user.organizationId,
-        },
+  const membership = await prisma.membership.findUnique({
+    where: {
+      userId_organizationId: {
+        userId: params.user.id,
+        organizationId: params.user.organizationId,
       },
-      select: { geoFenceRequired: true },
-    }),
+    },
+    select: {
+      geoFenceRequired: true,
+      locationMode: true,
+      primarySiteId: true,
+    },
+  });
+
+  const locationMode = membership?.locationMode ?? "FIXED_SITE";
+  const isFlexible = locationMode === "FLEXIBLE";
+
+  // FIXED_SITE: prefer selected site, else primarySite, else org default.
+  const preferredSiteId =
+    params.siteId ??
+    (!isFlexible ? membership?.primarySiteId ?? null : null);
+
+  const [sites, siteGeo] = await Promise.all([
     listActiveHrWorkSites(params.user.organizationId),
-    resolveHrSiteGeo(params.user.organizationId, params.siteId),
+    resolveHrSiteGeo(params.user.organizationId, preferredSiteId),
   ]);
 
-  if (sites.length > 1 && !params.siteId) {
+  if (!isFlexible && sites.length > 1 && !preferredSiteId) {
     throw new Error("Select your work site before checking in.");
   }
 
-  if (!siteGeo) {
+  if (!isFlexible && !siteGeo) {
     throw new Error(
       "Office location is not configured yet. Ask your admin to add a work site in Team settings.",
     );
   }
 
-  const geoFenceRequired =
-    membership?.geoFenceRequired === true || sites.length > 0 || siteGeo.id != null;
+  // FIXED_SITE always enforces fence when a site/office geo exists.
+  // FLEXIBLE never blocks on fence (optional GPS still recorded).
+  const enforceFence =
+    !isFlexible &&
+    siteGeo != null &&
+    (membership?.geoFenceRequired === true ||
+      sites.length > 0 ||
+      siteGeo.id != null ||
+      membership?.primarySiteId != null);
 
   let geoFenceOk: boolean | null = null;
 
-  if (geoFenceRequired) {
+  if (enforceFence && siteGeo) {
     if (params.geoLat == null || params.geoLng == null) {
       throw new Error(
         "GPS location is required. Tap “Use my location”, then check in with GPS.",
@@ -121,7 +141,7 @@ export async function checkInAttendance(params: {
     if (!geoFenceOk) {
       throw new Error(HR_OUT_OF_LOCATION_MESSAGE);
     }
-  } else if (params.geoLat != null && params.geoLng != null) {
+  } else if (params.geoLat != null && params.geoLng != null && siteGeo) {
     const distance = haversineMeters(
       params.geoLat,
       params.geoLng,
@@ -129,12 +149,13 @@ export async function checkInAttendance(params: {
       siteGeo.lng,
     );
     geoFenceOk = distance <= siteGeo.geoFenceRadiusM;
-    if (!geoFenceOk) {
+    // FLEXIBLE: record geoFenceOk but never block.
+    if (!isFlexible && !geoFenceOk) {
       throw new Error(HR_OUT_OF_LOCATION_MESSAGE);
     }
   }
 
-  const resolvedSiteId = params.siteId ?? siteGeo.id ?? null;
+  const resolvedSiteId = preferredSiteId ?? siteGeo?.id ?? null;
 
   return prisma.attendanceRecord.upsert({
     where: {

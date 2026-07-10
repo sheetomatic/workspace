@@ -26,7 +26,7 @@ export default async function HrHiringPage() {
         title="Hiring & documentation"
         description={hrHiringModule.tagline}
       />
-      <HrSubNav activePath="/app/hr/hiring" />
+      <HrSubNav activePath="/app/hr/hiring" isAdmin={isAdmin} />
 
       <p className="ws-hr-note">
         Lightweight ATS for MSME HR: job openings, candidate stages, and document

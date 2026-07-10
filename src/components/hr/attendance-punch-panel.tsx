@@ -154,7 +154,7 @@ export function AttendancePunchPanel({
           <p className="ws-hr-help">
             {geoFenceRequired
               ? "GPS check-in is required. You must be inside the office geo-fence."
-              : "Optional: capture GPS for geo-fenced office check-in."}
+              : "Optional: capture GPS with check-in (not required for flexible / remote)."}
           </p>
           <GeoPunchForm
             action={recordCheckInAction}

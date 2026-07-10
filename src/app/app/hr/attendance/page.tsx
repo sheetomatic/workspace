@@ -67,7 +67,7 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
             organizationId: user.organizationId,
           },
         },
-        select: { geoFenceRequired: true },
+        select: { geoFenceRequired: true, locationMode: true },
       }),
       prisma.workspaceHrSettings.findUnique({
         where: { organizationId: user.organizationId },
@@ -92,10 +92,13 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
   const myRecord = records.find((r) => r.userId === user.id);
   const officeConfigured =
     hrSettings?.officeLat != null && hrSettings?.officeLng != null;
+  // FLEXIBLE never forces fence UI (matches server: optional GPS, never blocks).
+  const isFlexible = membership?.locationMode === "FLEXIBLE";
   const geoFenceRequired =
-    membership?.geoFenceRequired === true ||
-    sites.length > 0 ||
-    officeConfigured;
+    !isFlexible &&
+    (membership?.geoFenceRequired === true ||
+      sites.length > 0 ||
+      officeConfigured);
 
   const todayLabel = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
@@ -120,6 +123,7 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
     userId: row.userId,
     day: new Date(row.workDate).getUTCDate(),
     status: row.status,
+    notes: row.notes,
   }));
 
   return (
@@ -128,7 +132,7 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
         title="Attendance"
         description={attendanceLeaveModule.tagline}
       />
-      <HrSubNav activePath="/app/hr/attendance" />
+      <HrSubNav activePath="/app/hr/attendance" isAdmin={hasMinimumRole(user.role, "ADMIN")} />
 
       <AttendanceSiteToolbar
         activeSiteId={siteFilter}

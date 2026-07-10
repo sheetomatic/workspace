@@ -273,6 +273,14 @@ const DEPARTMENT_NAV_ITEMS: WorkspaceNavItem[] = [
         matchPrefix: "/app/hr/employees",
       },
       {
+        href: "/app/hr/holidays",
+        label: "Holidays",
+        icon: MapPin,
+        module: "HR",
+        minRole: "ADMIN",
+        matchPrefix: "/app/hr/holidays",
+      },
+      {
         href: "/app/fms/fulfillment?flow=recruitment",
         label: "Recruitment FMS",
         icon: GitBranch,

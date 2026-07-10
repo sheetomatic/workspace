@@ -88,6 +88,7 @@ export type EmployeeListItem = {
     employeeCode: string;
     employmentType: EmploymentType;
     status: EmployeeStatus;
+    onboardingStatus: string;
     phone: string | null;
     gender: string | null;
     dateOfBirth: string | null;
@@ -141,6 +142,7 @@ function mapListItem(
       employeeCode: string;
       employmentType: EmploymentType;
       status: EmployeeStatus;
+      onboardingStatus: string;
       phone: string | null;
       gender: string | null;
       dateOfBirth: Date | null;
@@ -175,6 +177,7 @@ function mapListItem(
           employeeCode: profile.employeeCode,
           employmentType: profile.employmentType,
           status: profile.status,
+          onboardingStatus: profile.onboardingStatus,
           phone: profile.phone,
           gender: profile.gender,
           dateOfBirth: ymd(profile.dateOfBirth),
@@ -228,6 +231,7 @@ export async function listEmployees(
           employeeCode: true,
           employmentType: true,
           status: true,
+          onboardingStatus: true,
           phone: true,
           gender: true,
           dateOfBirth: true,
@@ -316,6 +320,7 @@ export async function getEmployeeForForm(
           employeeCode: p.employeeCode,
           employmentType: p.employmentType,
           status: p.status,
+          onboardingStatus: p.onboardingStatus,
           phone: p.phone,
           emergencyContact: p.emergencyContact,
           address: p.address,
@@ -376,6 +381,7 @@ export async function getEmployee(
       employeeCode: form.profile.employeeCode,
       employmentType: form.profile.employmentType,
       status: form.profile.status,
+      onboardingStatus: form.profile.onboardingStatus,
       phone: form.profile.phone,
       gender: form.profile.gender,
       dateOfBirth: ymd(form.profile.dateOfBirth),

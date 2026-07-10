@@ -137,6 +137,8 @@ export async function listWorkspaceMembers(organizationId: string) {
     reportingManagerId: membership.reportingManagerId,
     reportingManager: membership.reportingManager,
     attendanceWorkMode: membership.attendanceWorkMode,
+    locationMode: membership.locationMode,
+    primarySiteId: membership.primarySiteId,
     geoFenceRequired: membership.geoFenceRequired,
     faceRequired: membership.faceRequired,
     monthlySalary:

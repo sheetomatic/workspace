@@ -4,6 +4,8 @@ export type AttendanceMonthCell = {
   userId: string;
   day: number;
   status: string;
+  /** Attendance notes — used to badge OD/WFH on PRESENT days. */
+  notes?: string | null;
 };
 
 export type AttendanceMonthEmployee = {
@@ -26,6 +28,13 @@ const STATUS_TITLE: Record<string, string> = {
   ON_LEAVE: "On leave",
   HOLIDAY: "Holiday",
 };
+
+function exceptionBadge(notes: string | null | undefined): "OD" | "WFH" | null {
+  if (!notes) return null;
+  if (notes.includes("[OD]")) return "OD";
+  if (notes.includes("[WFH]")) return "WFH";
+  return null;
+}
 
 function monthLabel(year: number, monthIndex: number) {
   return new Date(Date.UTC(year, monthIndex, 1)).toLocaleDateString("en-IN", {
@@ -70,9 +79,12 @@ export function AttendanceMonthCalendar({
   const nextMonth = shiftMonth(year, monthIndex, 1);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-  const cellMap = new Map<string, string>();
+  const cellMap = new Map<string, { status: string; notes: string | null }>();
   for (const cell of cells) {
-    cellMap.set(`${cell.userId}:${cell.day}`, cell.status);
+    cellMap.set(`${cell.userId}:${cell.day}`, {
+      status: cell.status,
+      notes: cell.notes ?? null,
+    });
   }
 
   const totals = { PRESENT: 0, ABSENT: 0, HALF_DAY: 0, ON_LEAVE: 0 };
@@ -127,6 +139,12 @@ export function AttendanceMonthCalendar({
         <span>
           <em className="ws-att-cell status-HOLIDAY">O</em> Holiday
         </span>
+        <span>
+          <em className="ws-att-cell status-OD">OD</em> On duty
+        </span>
+        <span>
+          <em className="ws-att-cell status-WFH">WFH</em> Work from home
+        </span>
         <span className="ws-apple-cell-secondary">
           Month totals · P {totals.PRESENT} · A {totals.ABSENT} · H{" "}
           {totals.HALF_DAY} · L {totals.ON_LEAVE}
@@ -155,21 +173,26 @@ export function AttendanceMonthCalendar({
                 <tr key={employee.userId}>
                   <td className="ws-attendance-month-name">{employee.name}</td>
                   {days.map((day) => {
-                    const status = cellMap.get(`${employee.userId}:${day}`);
-                    if (!status) {
+                    const cell = cellMap.get(`${employee.userId}:${day}`);
+                    if (!cell) {
                       return (
                         <td key={day} className="ws-attendance-month-day">
                           <span className="ws-att-cell is-empty">·</span>
                         </td>
                       );
                     }
+                    const badge = exceptionBadge(cell.notes);
+                    const label = badge ?? STATUS_SHORT[cell.status] ?? "?";
+                    const title = badge
+                      ? `${badge === "OD" ? "On duty" : "Work from home"} (present)`
+                      : (STATUS_TITLE[cell.status] ?? cell.status);
+                    const className = badge
+                      ? `ws-att-cell status-${badge}`
+                      : `ws-att-cell status-${cell.status}`;
                     return (
                       <td key={day} className="ws-attendance-month-day">
-                        <span
-                          className={`ws-att-cell status-${status}`}
-                          title={STATUS_TITLE[status] ?? status}
-                        >
-                          {STATUS_SHORT[status] ?? "?"}
+                        <span className={className} title={title}>
+                          {label}
                         </span>
                       </td>
                     );

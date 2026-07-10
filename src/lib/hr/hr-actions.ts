@@ -22,6 +22,7 @@ const HR_PATHS = [
   "/app/hr/leave",
   "/app/hr/payroll",
   "/app/hr/employees",
+  "/app/hr/holidays",
   "/app/hr/field",
   "/app/hr/hiring",
 ];
@@ -661,12 +662,8 @@ export async function uploadEmployeeDocumentAction(
   formData: FormData,
 ): Promise<HrActionResult> {
   const user = await getSessionUser();
-  if (
-    !user ||
-    !hasWorkspaceModule(user, "HR") ||
-    !hasMinimumRole(user.role, "ADMIN")
-  ) {
-    return hrActionFailure("FORBIDDEN", "Admin access required to upload employee documents.");
+  if (!user || !hasWorkspaceModule(user, "HR")) {
+    return hrActionFailure("FORBIDDEN", "HR access required to upload documents.");
   }
 
   const employeeProfileId = String(formData.get("employeeProfileId") ?? "").trim();
@@ -674,8 +671,25 @@ export async function uploadEmployeeDocumentAction(
   if (!employeeProfileId) {
     return hrActionFailure("INVALID_INPUT", "Employee profile is required.");
   }
-  if (!["AADHAAR", "PAN", "OFFER_LETTER", "CONTRACT", "OTHER"].includes(docTypeRaw)) {
+  if (!["AADHAAR", "PAN", "OFFER_LETTER", "CONTRACT", "EDUCATION_QUALIFICATION", "CV", "WORK_EXPERIENCE", "NOC_RESIGNATION", "OTHER"].includes(docTypeRaw)) {
     return hrActionFailure("INVALID_INPUT", "Invalid document type.");
+  }
+
+  const profile = await prisma.employeeProfile.findFirst({
+    where: { id: employeeProfileId, organizationId: user.organizationId },
+    select: { userId: true },
+  });
+  if (!profile) {
+    return hrActionFailure("INVALID_INPUT", "Employee profile not found.");
+  }
+
+  const isAdmin = hasMinimumRole(user.role, "ADMIN");
+  const isSelf = profile.userId === user.id;
+  if (!isAdmin && !isSelf) {
+    return hrActionFailure(
+      "FORBIDDEN",
+      "Only an admin or the employee can upload documents on this profile.",
+    );
   }
 
   const file = formData.get("file");
@@ -695,6 +709,10 @@ export async function uploadEmployeeDocumentAction(
         | "PAN"
         | "OFFER_LETTER"
         | "CONTRACT"
+        | "EDUCATION_QUALIFICATION"
+        | "CV"
+        | "WORK_EXPERIENCE"
+        | "NOC_RESIGNATION"
         | "OTHER",
       fileName: file.name,
       mimeType: file.type || "application/octet-stream",
@@ -714,17 +732,33 @@ export async function deleteEmployeeDocumentAction(
   formData: FormData,
 ): Promise<HrActionResult> {
   const user = await getSessionUser();
-  if (
-    !user ||
-    !hasWorkspaceModule(user, "HR") ||
-    !hasMinimumRole(user.role, "ADMIN")
-  ) {
-    return hrActionFailure("FORBIDDEN", "Admin access required to delete employee documents.");
+  if (!user || !hasWorkspaceModule(user, "HR")) {
+    return hrActionFailure("FORBIDDEN", "HR access required to delete documents.");
   }
 
   const documentId = String(formData.get("documentId") ?? "").trim();
   if (!documentId) {
     return hrActionFailure("INVALID_INPUT", "Document id is required.");
+  }
+
+  const document = await prisma.employeeDocument.findFirst({
+    where: { id: documentId, organizationId: user.organizationId },
+    select: {
+      id: true,
+      employeeProfile: { select: { userId: true } },
+    },
+  });
+  if (!document) {
+    return hrActionFailure("INVALID_INPUT", "Document not found.");
+  }
+
+  const isAdmin = hasMinimumRole(user.role, "ADMIN");
+  const isSelf = document.employeeProfile.userId === user.id;
+  if (!isAdmin && !isSelf) {
+    return hrActionFailure(
+      "FORBIDDEN",
+      "Only an admin or the employee can delete documents on this profile.",
+    );
   }
 
   try {
@@ -755,4 +789,337 @@ export async function getSalarySlipAction(
     userId: user.id,
     role: user.role,
   });
+}
+
+// ── Holidays ──────────────────────────────────────────────────────────────
+
+export async function createHolidayAction(
+  formData: FormData,
+): Promise<HrActionResult> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "ADMIN")) {
+    return hrActionFailure("FORBIDDEN", "Admin access required to manage holidays.");
+  }
+
+  const name = String(formData.get("name") ?? "").trim();
+  const dateRaw = String(formData.get("date") ?? "").trim();
+  const isOptional = formData.get("isOptional") === "on" || formData.get("isOptional") === "true";
+  if (!name || !dateRaw) {
+    return hrActionFailure("INVALID_INPUT", "Holiday name and date are required.");
+  }
+
+  try {
+    const { createHoliday } = await import("@/lib/hr/holidays");
+    await createHoliday({
+      organizationId: user.organizationId,
+      date: new Date(dateRaw),
+      name,
+      isOptional,
+    });
+    revalidateHr();
+    return { ok: true };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not create holiday.";
+    return hrActionFailure("HOLIDAY_FAILED", message);
+  }
+}
+
+export async function deleteHolidayAction(
+  formData: FormData,
+): Promise<HrActionResult> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "ADMIN")) {
+    return hrActionFailure("FORBIDDEN", "Admin access required to manage holidays.");
+  }
+
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) {
+    return hrActionFailure("INVALID_INPUT", "Holiday id is required.");
+  }
+
+  try {
+    const { deleteHoliday } = await import("@/lib/hr/holidays");
+    await deleteHoliday({ organizationId: user.organizationId, id });
+    revalidateHr();
+    return { ok: true };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not delete holiday.";
+    return hrActionFailure("HOLIDAY_FAILED", message);
+  }
+}
+
+export async function updateHolidayAction(
+  formData: FormData,
+): Promise<HrActionResult> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "ADMIN")) {
+    return hrActionFailure("FORBIDDEN", "Admin access required to manage holidays.");
+  }
+
+  const id = String(formData.get("id") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const isOptionalRaw = formData.get("isOptional");
+  if (!id) {
+    return hrActionFailure("INVALID_INPUT", "Holiday id is required.");
+  }
+
+  try {
+    const { updateHoliday } = await import("@/lib/hr/holidays");
+    await updateHoliday({
+      organizationId: user.organizationId,
+      id,
+      ...(name ? { name } : {}),
+      ...(isOptionalRaw != null
+        ? {
+            isOptional:
+              isOptionalRaw === "on" ||
+              isOptionalRaw === "true" ||
+              isOptionalRaw === "1",
+          }
+        : {}),
+    });
+    revalidateHr();
+    return { ok: true };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not update holiday.";
+    return hrActionFailure("HOLIDAY_FAILED", message);
+  }
+}
+
+// ── OD / WFH exceptions ───────────────────────────────────────────────────
+
+export async function submitAttendanceExceptionAction(
+  formData: FormData,
+): Promise<HrActionResult> {
+  const user = await getSessionUser();
+  if (!user) {
+    return hrActionFailure("FORBIDDEN", "Sign in required.");
+  }
+
+  const exceptionType = String(formData.get("exceptionType") ?? "").trim().toUpperCase();
+  const startRaw = String(formData.get("startDate") ?? "").trim();
+  const endRaw = String(formData.get("endDate") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim();
+
+  if (exceptionType !== "OD" && exceptionType !== "WFH") {
+    return hrActionFailure("INVALID_INPUT", "Select OD or WFH.");
+  }
+  if (!startRaw || !endRaw) {
+    return hrActionFailure("INVALID_INPUT", "Start and end dates are required.");
+  }
+
+  try {
+    const { submitAttendanceException } = await import(
+      "@/lib/hr/attendance-exceptions"
+    );
+    await submitAttendanceException({
+      organizationId: user.organizationId,
+      userId: user.id,
+      exceptionType,
+      startDate: new Date(startRaw),
+      endDate: new Date(endRaw),
+      reason: reason || null,
+    });
+    revalidateHr();
+    return { ok: true };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not submit request.";
+    return hrActionFailure("EXCEPTION_FAILED", message);
+  }
+}
+
+export async function reviewAttendanceExceptionAction(
+  formData: FormData,
+): Promise<HrActionResult> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "MANAGER")) {
+    return hrActionFailure("FORBIDDEN", "Manager access required to review OD/WFH.");
+  }
+
+  const id = String(formData.get("id") ?? "").trim();
+  const decision = String(formData.get("decision") ?? "").trim().toUpperCase();
+  const reviewNotes = String(formData.get("reviewNotes") ?? "").trim();
+
+  if (!id || (decision !== "APPROVED" && decision !== "REJECTED")) {
+    return hrActionFailure("INVALID_INPUT", "Invalid review decision.");
+  }
+
+  try {
+    const {
+      approveAttendanceException,
+      rejectAttendanceException,
+    } = await import("@/lib/hr/attendance-exceptions");
+    if (decision === "APPROVED") {
+      await approveAttendanceException({
+        organizationId: user.organizationId,
+        requestId: id,
+        reviewerId: user.id,
+        reviewNotes: reviewNotes || null,
+      });
+    } else {
+      await rejectAttendanceException({
+        organizationId: user.organizationId,
+        requestId: id,
+        reviewerId: user.id,
+        reviewNotes: reviewNotes || null,
+      });
+    }
+    revalidateHr();
+    return { ok: true };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not review request.";
+    return hrActionFailure("EXCEPTION_REVIEW_FAILED", message);
+  }
+}
+
+// ── Leave allocation + policy ─────────────────────────────────────────────
+
+export async function setLeaveBalanceAction(
+  formData: FormData,
+): Promise<HrActionResult> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "ADMIN")) {
+    return hrActionFailure("FORBIDDEN", "Admin access required to allocate leave.");
+  }
+
+  const targetUserId = String(formData.get("userId") ?? "").trim();
+  const leaveType = String(formData.get("leaveType") ?? "").trim().toUpperCase();
+  const year = Number(formData.get("year") ?? new Date().getUTCFullYear());
+  const balanceDays = Number(formData.get("balanceDays"));
+
+  const validTypes = ["CASUAL", "SICK", "EARNED", "UNPAID", "COMP_OFF"];
+  if (!targetUserId || !validTypes.includes(leaveType)) {
+    return hrActionFailure("INVALID_INPUT", "Employee and leave type are required.");
+  }
+  if (!Number.isFinite(year) || !Number.isFinite(balanceDays)) {
+    return hrActionFailure("INVALID_INPUT", "Year and balance days are required.");
+  }
+
+  const membership = await prisma.membership.findUnique({
+    where: {
+      userId_organizationId: {
+        userId: targetUserId,
+        organizationId: user.organizationId,
+      },
+    },
+    select: { id: true },
+  });
+  if (!membership) {
+    return hrActionFailure("INVALID_INPUT", "Employee not found in this workspace.");
+  }
+
+  try {
+    const { setLeaveBalanceAllocation } = await import("@/lib/hr/payroll");
+    await setLeaveBalanceAllocation({
+      organizationId: user.organizationId,
+      userId: targetUserId,
+      leaveType: leaveType as "CASUAL" | "SICK" | "EARNED" | "UNPAID" | "COMP_OFF",
+      year,
+      balanceDays,
+    });
+    revalidateHr();
+    return { ok: true };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not update leave balance.";
+    return hrActionFailure("LEAVE_ALLOC_FAILED", message);
+  }
+}
+
+export async function upsertLeavePolicyAction(
+  formData: FormData,
+): Promise<HrActionResult> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "ADMIN")) {
+    return hrActionFailure("FORBIDDEN", "Admin access required to edit leave policy.");
+  }
+
+  const leaveType = String(formData.get("leaveType") ?? "").trim().toUpperCase();
+  const year = Number(formData.get("year") ?? new Date().getUTCFullYear());
+  const defaultDays = Number(formData.get("defaultDays"));
+  const validTypes = ["CASUAL", "SICK", "EARNED", "UNPAID", "COMP_OFF"];
+  if (!validTypes.includes(leaveType)) {
+    return hrActionFailure("INVALID_INPUT", "Invalid leave type.");
+  }
+  if (!Number.isFinite(year) || !Number.isFinite(defaultDays)) {
+    return hrActionFailure("INVALID_INPUT", "Year and default days are required.");
+  }
+
+  try {
+    const { upsertLeavePolicy } = await import("@/lib/hr/payroll");
+    await upsertLeavePolicy({
+      organizationId: user.organizationId,
+      leaveType: leaveType as "CASUAL" | "SICK" | "EARNED" | "UNPAID" | "COMP_OFF",
+      year,
+      defaultDays,
+    });
+    revalidateHr();
+    return { ok: true };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not save leave policy.";
+    return hrActionFailure("LEAVE_POLICY_FAILED", message);
+  }
+}
+
+// ── Onboarding ────────────────────────────────────────────────────────────
+
+export async function completeOnboardingAction(
+  formData: FormData,
+): Promise<HrActionResult> {
+  const user = await getSessionUser();
+  if (!user) {
+    return hrActionFailure("FORBIDDEN", "Sign in required.");
+  }
+
+  const employeeProfileId = String(formData.get("employeeProfileId") ?? "").trim();
+  const skipIncomplete =
+    formData.get("skipIncomplete") === "on" ||
+    formData.get("skipIncomplete") === "true";
+  const educationSummary = String(formData.get("educationSummary") ?? "").trim();
+  const experienceSummary = String(formData.get("experienceSummary") ?? "").trim();
+
+  if (!employeeProfileId) {
+    return hrActionFailure("INVALID_INPUT", "Employee profile is required.");
+  }
+
+  const profile = await prisma.employeeProfile.findFirst({
+    where: { id: employeeProfileId, organizationId: user.organizationId },
+    select: { userId: true },
+  });
+  if (!profile) {
+    return hrActionFailure("INVALID_INPUT", "Employee profile not found.");
+  }
+
+  const isAdmin = hasMinimumRole(user.role, "ADMIN");
+  const isSelf = profile.userId === user.id;
+  if (!isAdmin && !isSelf) {
+    return hrActionFailure("FORBIDDEN", "Not allowed to complete this onboarding.");
+  }
+  if (skipIncomplete && !isAdmin) {
+    return hrActionFailure("FORBIDDEN", "Only admins can skip incomplete documents.");
+  }
+
+  try {
+    const { completeOnboarding } = await import("@/lib/hr/onboarding");
+    await completeOnboarding({
+      organizationId: user.organizationId,
+      employeeProfileId,
+      skipIncomplete,
+      educationSummary: educationSummary || null,
+      experienceSummary: experienceSummary || null,
+      actorIsAdmin: isAdmin,
+    });
+    revalidateHr();
+    return { ok: true };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not complete onboarding.";
+    return hrActionFailure("ONBOARDING_FAILED", message);
+  }
 }

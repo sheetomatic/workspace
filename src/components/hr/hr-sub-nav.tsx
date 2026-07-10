@@ -1,19 +1,29 @@
 import Link from "next/link";
 
 const links = [
-  { href: "/app/hr", label: "Overview" },
-  { href: "/app/hr/employees", label: "Employees" },
-  { href: "/app/hr/attendance", label: "Attendance" },
-  { href: "/app/hr/leave", label: "Leave" },
-  { href: "/app/hr/payroll", label: "Payroll" },
-  { href: "/app/hr/field", label: "Field tracking" },
-  { href: "/app/hr/hiring", label: "Hiring" },
+  { href: "/app/hr", label: "Overview", adminOnly: false },
+  { href: "/app/hr/employees", label: "Employees", adminOnly: false },
+  { href: "/app/hr/attendance", label: "Attendance", adminOnly: false },
+  { href: "/app/hr/leave", label: "Leave", adminOnly: false },
+  { href: "/app/hr/holidays", label: "Holidays", adminOnly: true },
+  { href: "/app/hr/payroll", label: "Payroll", adminOnly: false },
+  { href: "/app/hr/field", label: "Field tracking", adminOnly: false },
+  { href: "/app/hr/hiring", label: "Hiring", adminOnly: false },
 ];
 
-export function HrSubNav({ activePath }: { activePath: string }) {
+export function HrSubNav({
+  activePath,
+  isAdmin = false,
+}: {
+  activePath: string;
+  /** Holidays (and other admin-only links) show only when true. */
+  isAdmin?: boolean;
+}) {
+  const visible = links.filter((link) => !link.adminOnly || isAdmin);
+
   return (
     <nav className="ws-hr-subnav" aria-label="HR modules">
-      {links.map((link) => {
+      {visible.map((link) => {
         const active =
           link.href === "/app/hr"
             ? activePath === "/app/hr"
