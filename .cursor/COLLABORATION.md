@@ -373,3 +373,19 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/ims` (store module grid), `/app/ims/purchase-orders`, `/app/ims/indents`, `/app/ims/requisitions`, sidebar IMS nav.
 
 ---
+
+**Deployed (2026-07-10):** Leads invoice KPIs + My Space org expense tracker.
+
+| Item | Detail |
+|------|--------|
+| Commit | `cea3995` — Ship Leads invoice KPIs and My Space org expense tracker. |
+| Branch | `main` → `origin/main` (pushed) |
+| Build | `npm run test:unit` 54/54 pass; `npm run build` pass (prisma generate + migrate deploy + next build) |
+| Migration | `20260710190000_org_expense_tracker` — `OrgExpenseEntry` + category/recurrence enums |
+| Vercel | Production **Ready** (Deployment has completed) — https://sheetomatic.com / https://app.sheetomatic.com |
+| Deploy URL | https://sheetomatic-redesign-bzgzgzakk-sheetomatic.vercel.app |
+| Note | Shared `sheetomatic/workspace` GitHub also triggered Hingorani/Tops production deploys for the same SHA (pre-existing multi-project wiring; Sheetomatic was the intended target). |
+
+**Hard-refresh in prod:** `/app/leads` (Invoice count/value KPIs), `/app/my-space`, `/app/my-space/expenses` (My Space nav).
+
+---
