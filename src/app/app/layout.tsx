@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import "@/components/saas/workspace-theme.css";
 import "@/components/saas/apple-design-system.css";
 import { redirect } from "next/navigation";
@@ -153,7 +154,44 @@ export default async function AppLayout({
         user={user}
       >
         <WorkspacePwaInstallBanner />
-        {children}
+        <Suspense
+          fallback={
+            <div
+              className="saas-page ws-page-loading"
+              aria-busy="true"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 16,
+                minHeight: 320,
+                padding: "8px 0",
+              }}
+            >
+              <div
+                style={{
+                  height: 3,
+                  borderRadius: 999,
+                  background:
+                    "linear-gradient(90deg, #0176d3 0%, #7eb6ff 50%, #0176d3 100%)",
+                }}
+              />
+              <div
+                style={{
+                  width: "min(240px, 60%)",
+                  height: 28,
+                  borderRadius: 8,
+                  background: "#e2e8f0",
+                }}
+              />
+              <div
+                style={{ height: 220, borderRadius: 12, background: "#e2e8f0" }}
+              />
+              <span className="sr-only">Loading workspace…</span>
+            </div>
+          }
+        >
+          {children}
+        </Suspense>
       </SaasShell>
     </AuthSessionProvider>
   );

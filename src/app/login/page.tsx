@@ -86,6 +86,10 @@ export default async function LoginPage({
 
   return (
     <main className="login-page workspace-login">
+      {/* Warm the post-login route so /app paints faster after sign-in. */}
+      <Link className="sr-only" href="/app" prefetch>
+        Workspace
+      </Link>
       {tenantAppearance ? (
         <WorkspaceThemeStyles appearance={tenantAppearance} />
       ) : null}
