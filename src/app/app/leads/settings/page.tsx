@@ -17,7 +17,7 @@ import { hasMinimumRole } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 
 export default async function LeadsSettingsPage() {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "ADMIN")) {
     redirect("/app/leads");
   }

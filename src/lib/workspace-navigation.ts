@@ -116,7 +116,7 @@ const EA_CHILD_ITEMS: WorkspaceNavItem[] = [
   },
 ];
 
-const BCI_ITEMS: WorkspaceNavItem[] = [
+const BCI_CHILD_ITEMS: WorkspaceNavItem[] = [
   {
     id: "fms",
     href: "/app/fms",
@@ -128,9 +128,9 @@ const BCI_ITEMS: WorkspaceNavItem[] = [
   {
     id: "leads",
     href: "/app/leads",
-    label: "Leads",
+    label: "CRM",
     icon: Megaphone,
-    module: "FMS",
+    module: "CRM",
     matchPrefix: "/app/leads",
   },
   {
@@ -171,6 +171,121 @@ const BCI_ITEMS: WorkspaceNavItem[] = [
   },
 ];
 
+/** Collapsible BCI suite — children keep focus-pref ids (fms, leads, …). */
+const BCI_GROUP: WorkspaceNavItem = {
+  href: "/app/fms",
+  label: "BCI",
+  icon: Briefcase,
+  children: BCI_CHILD_ITEMS,
+};
+
+const HRMS_NAV_ITEM: WorkspaceNavItem = {
+  id: "dept-hr",
+  href: "/app/hr",
+  label: "HRMS",
+  icon: Users,
+  module: "HR",
+  matchPrefix: "/app/hr",
+  children: [
+    {
+      href: "/app/hr",
+      label: "HR Dashboard",
+      icon: MapPin,
+      module: "HR",
+      matchPrefix: "/app/hr",
+    },
+    {
+      href: "/app/hr/employees",
+      label: "Employees",
+      icon: Users,
+      module: "HR",
+      matchPrefix: "/app/hr/employees",
+    },
+    {
+      href: "/app/hr/holidays",
+      label: "Holidays",
+      icon: MapPin,
+      module: "HR",
+      minRole: "ADMIN",
+      matchPrefix: "/app/hr/holidays",
+    },
+    {
+      href: "/app/fms/fulfillment?flow=recruitment",
+      label: "Recruitment FMS",
+      icon: GitBranch,
+      module: "FMS",
+      minRole: "MANAGER",
+      matchPrefix: "/app/fms/fulfillment",
+    },
+    {
+      href: "/app/checklists/hr",
+      label: "HR Check List",
+      icon: ClipboardCheck,
+      module: "TASKS",
+      matchPrefix: "/app/checklists/hr",
+    },
+    {
+      href: "/app/tasks/today",
+      label: "EA · Today",
+      icon: ClipboardList,
+      module: "TASKS",
+      matchPrefix: "/app/tasks/today",
+    },
+    {
+      href: "/app/approvals",
+      label: "Approvals",
+      icon: ClipboardCheck,
+      module: "APPROVALS",
+      minRole: "MANAGER",
+      matchPrefix: "/app/approvals",
+    },
+    {
+      href: "/app/team",
+      label: "Team",
+      icon: Users,
+      minRole: "ADMIN",
+      allowDepartmentHead: true,
+      matchPrefix: "/app/team",
+    },
+  ],
+};
+
+const IMS_STOCK_NAV_ITEM: WorkspaceNavItem = {
+  id: "dept-store",
+  href: "/app/ims",
+  label: "IMS / Stock",
+  icon: Package,
+  module: "IMS",
+  minRole: "MANAGER",
+  matchPrefix: "/app/ims",
+  children: [
+    {
+      href: "/app/ims",
+      label: "IMS Dashboard",
+      icon: Package,
+      module: "IMS",
+      minRole: "MANAGER",
+      matchPrefix: "/app/ims",
+    },
+    {
+      href: "/app/ims/orders",
+      label: "Stock Orders",
+      icon: ShoppingCart,
+      module: "IMS",
+      minRole: "MANAGER",
+      matchPrefix: "/app/ims/orders",
+    },
+    {
+      href: "/app/fms/fulfillment?flow=stock-check",
+      label: "Stock Check FMS",
+      icon: GitBranch,
+      module: "FMS",
+      minRole: "MANAGER",
+      matchPrefix: "/app/fms/fulfillment",
+    },
+  ],
+};
+
 const TASK_DELEGATION_ITEMS: WorkspaceNavItem[] = [
   {
     id: "tasks",
@@ -200,21 +315,20 @@ const TASK_DELEGATION_ITEMS: WorkspaceNavItem[] = [
   },
 ];
 
-/** MSME department-wise ops + FMS trackers (Leads → dispatch spine). */
+/** MSME department-wise ops + FMS trackers (CRM → dispatch spine). */
 const DEPARTMENT_NAV_ITEMS: WorkspaceNavItem[] = [
   {
     id: "dept-sales",
     href: "/app/leads",
     label: "Sales",
     icon: ShoppingCart,
-    module: "FMS",
     matchPrefix: "/app/leads",
     children: [
       {
         href: "/app/leads",
-        label: "All Leads",
+        label: "CRM",
         icon: Megaphone,
-        module: "FMS",
+        module: "CRM",
         matchPrefix: "/app/leads",
       },
       {
@@ -248,21 +362,20 @@ const DEPARTMENT_NAV_ITEMS: WorkspaceNavItem[] = [
     href: "/app/leads",
     label: "Marketing",
     icon: TrendingUp,
-    module: "FMS",
     matchPrefix: "/app/leads",
     children: [
       {
         href: "/app/leads",
-        label: "Lead Pipeline",
+        label: "CRM Pipeline",
         icon: TrendingUp,
-        module: "FMS",
+        module: "CRM",
         matchPrefix: "/app/leads",
       },
       {
         href: "/app/leads/settings",
         label: "Lead Sources",
         icon: Megaphone,
-        module: "FMS",
+        module: "CRM",
         minRole: "MANAGER",
         matchPrefix: "/app/leads/settings",
       },
@@ -273,76 +386,6 @@ const DEPARTMENT_NAV_ITEMS: WorkspaceNavItem[] = [
         module: "FMS",
         minRole: "MANAGER",
         matchPrefix: "/app/fms/fulfillment",
-      },
-    ],
-  },
-  {
-    id: "dept-hr",
-    href: "/app/hr",
-    label: "HR & Admin",
-    icon: Users,
-    module: "HR",
-    matchPrefix: "/app/hr",
-    children: [
-      {
-        href: "/app/hr",
-        label: "HR Dashboard",
-        icon: MapPin,
-        module: "HR",
-        matchPrefix: "/app/hr",
-      },
-      {
-        href: "/app/hr/employees",
-        label: "Employees",
-        icon: Users,
-        module: "HR",
-        matchPrefix: "/app/hr/employees",
-      },
-      {
-        href: "/app/hr/holidays",
-        label: "Holidays",
-        icon: MapPin,
-        module: "HR",
-        minRole: "ADMIN",
-        matchPrefix: "/app/hr/holidays",
-      },
-      {
-        href: "/app/fms/fulfillment?flow=recruitment",
-        label: "Recruitment FMS",
-        icon: GitBranch,
-        module: "FMS",
-        minRole: "MANAGER",
-        matchPrefix: "/app/fms/fulfillment",
-      },
-      {
-        href: "/app/checklists/hr",
-        label: "HR Check List",
-        icon: ClipboardCheck,
-        module: "TASKS",
-        matchPrefix: "/app/checklists/hr",
-      },
-      {
-        href: "/app/tasks/today",
-        label: "EA · Today",
-        icon: ClipboardList,
-        module: "TASKS",
-        matchPrefix: "/app/tasks/today",
-      },
-      {
-        href: "/app/approvals",
-        label: "Approvals",
-        icon: ClipboardCheck,
-        module: "APPROVALS",
-        minRole: "MANAGER",
-        matchPrefix: "/app/approvals",
-      },
-      {
-        href: "/app/team",
-        label: "Team",
-        icon: Users,
-        minRole: "ADMIN",
-        allowDepartmentHead: true,
-        matchPrefix: "/app/team",
       },
     ],
   },
@@ -409,41 +452,6 @@ const DEPARTMENT_NAV_ITEMS: WorkspaceNavItem[] = [
       {
         href: "/app/fms/fulfillment?flow=purchase-order",
         label: "PO FMS",
-        icon: GitBranch,
-        module: "FMS",
-        minRole: "MANAGER",
-        matchPrefix: "/app/fms/fulfillment",
-      },
-    ],
-  },
-  {
-    id: "dept-store",
-    href: "/app/ims",
-    label: "Store",
-    icon: Package,
-    module: "IMS",
-    minRole: "MANAGER",
-    matchPrefix: "/app/ims",
-    children: [
-      {
-        href: "/app/ims",
-        label: "IMS Dashboard",
-        icon: Package,
-        module: "IMS",
-        minRole: "MANAGER",
-        matchPrefix: "/app/ims",
-      },
-      {
-        href: "/app/ims/orders",
-        label: "Stock Orders",
-        icon: ShoppingCart,
-        module: "IMS",
-        minRole: "MANAGER",
-        matchPrefix: "/app/ims/orders",
-      },
-      {
-        href: "/app/fms/fulfillment?flow=stock-check",
-        label: "Stock Check FMS",
         icon: GitBranch,
         module: "FMS",
         minRole: "MANAGER",
@@ -564,6 +572,11 @@ const DEPARTMENT_NAV_ITEMS: WorkspaceNavItem[] = [
 ];
 
 const MODULE_ITEMS: WorkspaceNavItem[] = [...DEPARTMENT_NAV_ITEMS];
+
+const SELLABLE_MODULE_ITEMS: WorkspaceNavItem[] = [
+  HRMS_NAV_ITEM,
+  IMS_STOCK_NAV_ITEM,
+];
 
 export function canAccessWorkspaceNav(user: SessionUser, item: WorkspaceNavItem) {
   if (item.minRole) {
@@ -690,12 +703,17 @@ export function getWorkspaceNavSections(params: {
   const sections: WorkspaceNavSection[] = [
     {
       id: "bci",
-      label: "BCI",
-      items: BCI_ITEMS,
+      label: "",
+      items: [BCI_GROUP],
+    },
+    {
+      id: "sellable",
+      label: "",
+      items: SELLABLE_MODULE_ITEMS,
     },
     {
       id: "task-delegation",
-      label: "Task Delegation",
+      label: "Tasks",
       items: TASK_DELEGATION_ITEMS,
     },
     {
@@ -777,7 +795,57 @@ export function filterNavItemsByPrefs(
   items: WorkspaceNavItem[],
   prefs: WorkspaceNavPrefs,
 ): WorkspaceNavItem[] {
-  return items.filter((item) => isNavIdVisible(prefs, item.id));
+  return items
+    .map((item) => {
+      if (item.children?.length) {
+        // Parent with its own focus id (Check List, EA, HRMS, …): gate whole group.
+        if (item.id) {
+          if (!isNavIdVisible(prefs, item.id)) {
+            return null;
+          }
+          return item;
+        }
+        // Parent without id (BCI suite): filter preference-bearing children.
+        const children = filterNavItemsByPrefs(item.children, prefs);
+        if (children.length === 0) {
+          return null;
+        }
+        return { ...item, children };
+      }
+      if (!isNavIdVisible(prefs, item.id)) {
+        return null;
+      }
+      return item;
+    })
+    .filter((item): item is WorkspaceNavItem => item !== null);
+}
+
+function collectNavPreferenceOptions(
+  items: WorkspaceNavItem[],
+  section: WorkspaceNavSection,
+  options: NavPreferenceOption[],
+) {
+  const sectionLabel =
+    section.id === "bci"
+      ? "BCI"
+      : section.id === "sellable"
+        ? "Modules"
+        : section.label || "Workspace";
+
+  for (const item of items) {
+    if (item.id) {
+      options.push({
+        id: item.id,
+        label: item.label,
+        sectionId: section.id,
+        sectionLabel,
+      });
+      continue;
+    }
+    if (item.children?.length) {
+      collectNavPreferenceOptions(item.children, section, options);
+    }
+  }
 }
 
 /** Top-level customizable options for Settings → Modules (role/module gated). */
@@ -796,17 +864,11 @@ export function listNavPreferenceOptions(params: {
     if (section.id === "settings" || section.id === "reports") {
       continue;
     }
-    for (const item of visibleWorkspaceNavItems(params.user, section.items)) {
-      if (!item.id) {
-        continue;
-      }
-      options.push({
-        id: item.id,
-        label: item.label,
-        sectionId: section.id,
-        sectionLabel: section.label,
-      });
-    }
+    collectNavPreferenceOptions(
+      visibleWorkspaceNavItems(params.user, section.items),
+      section,
+      options,
+    );
   }
 
   return options;

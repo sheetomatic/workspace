@@ -185,8 +185,8 @@ export function WorkspaceWidgetDashboard({
             }
             href="/app/leads"
             icon={<Megaphone size={15} />}
-            linkLabel={"Open Leads \u2192"}
-            title="Leads"
+            linkLabel={"Open CRM \u2192"}
+            title="CRM"
           >
             <div className="ws-widget-kpis">
               <Kpi label="Open" value={String(data.leads.open)} />

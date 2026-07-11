@@ -7,6 +7,7 @@ import {
 export type WorkspaceAddonKey =
   | "bci_fms"
   | "tasks"
+  | "crm"
   | "ims"
   | "hr"
   | "approvals"
@@ -57,19 +58,27 @@ export const WORKSPACE_ADDON_CATALOG: WorkspaceAddonDefinition[] = [
     isBciCore: false,
   },
   {
+    key: "crm",
+    module: "CRM",
+    label: "CRM add-on",
+    shortLabel: "CRM",
+    description: "Leads Machine, pipeline, follow-ups, and quotations.",
+    isBciCore: false,
+  },
+  {
     key: "ims",
     module: "IMS",
-    label: "IMS add-on",
-    shortLabel: "IMS",
+    label: "IMS / Stock add-on",
+    shortLabel: "IMS / Stock",
     description: "Inventory, reorder alerts, and stock control.",
     isBciCore: false,
   },
   {
     key: "hr",
     module: "HR",
-    label: "HR add-on",
-    shortLabel: "HR",
-    description: "Attendance, field staff, and hiring workflows.",
+    label: "HRMS add-on",
+    shortLabel: "HRMS",
+    description: "Attendance, payroll, field staff, and hiring workflows.",
     isBciCore: false,
   },
   {

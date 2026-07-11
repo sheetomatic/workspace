@@ -208,7 +208,7 @@ export async function seedAcmeHr(prisma: PrismaClient, organizationId: string) {
     if (allowed.size === 0 || !allowed.has("HR")) {
       const next =
         allowed.size === 0
-          ? (["TASKS", "FMS", "HR", "IMS", "APPROVALS", "REPORTS"] as WorkspaceModule[])
+          ? (["TASKS", "FMS", "CRM", "HR", "IMS", "APPROVALS", "REPORTS"] as WorkspaceModule[])
           : ([...allowed, "HR"] as WorkspaceModule[]);
       await prisma.organization.update({
         where: { id: organizationId },

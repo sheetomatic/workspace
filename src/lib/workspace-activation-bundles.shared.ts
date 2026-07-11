@@ -40,14 +40,14 @@ export const ACTIVATION_BUNDLE_OPTIONS: ActivationBundleOption[] = [
   {
     value: "bci_growth",
     label: "BCI Growth",
-    description: "BCI FMS + IMS + HR. No Tasks unless added later.",
-    modules: ["FMS", "REPORTS", "APPROVALS", "IMS", "HR"],
+    description: "BCI FMS + CRM + IMS / Stock + HRMS. No Tasks unless added later.",
+    modules: ["FMS", "REPORTS", "APPROVALS", "CRM", "IMS", "HR"],
   },
   {
     value: "client_50",
     label: "Full client (50 users)",
-    description: "Growth modules + Tasks + Legal. Enterprise rollout.",
-    modules: ["FMS", "REPORTS", "APPROVALS", "IMS", "HR", "TASKS", "CASES"],
+    description: "Growth modules + Tasks + Legal (HRMS sold separately). Enterprise rollout.",
+    modules: ["FMS", "REPORTS", "APPROVALS", "CRM", "IMS", "TASKS", "CASES"],
   },
 ];
 

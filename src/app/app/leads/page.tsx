@@ -146,7 +146,7 @@ function serializeLead(lead: Awaited<ReturnType<typeof listInboundLeadsForPeriod
 }
 
 export default async function LeadsMachinePage({ searchParams }: PageProps) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   await ensureLeadConnections(user.organizationId);
 
   const params = await searchParams;
@@ -212,7 +212,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
   return (
     <div className="saas-page leads-machine-page">
       <TaskPageToolbar
-        title="Leads"
+        title="CRM"
         actions={
           <div className="leads-header-actions">
             <span className="leads-sync-pill" title={`Auto sync ${LEADS_SYNC_INTERVAL_LABEL}`}>

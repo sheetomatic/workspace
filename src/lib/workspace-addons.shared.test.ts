@@ -27,7 +27,19 @@ describe("workspace add-ons", () => {
   });
 
   it("lists optional add-ons separately from core", () => {
-    const optional = listOptionalAddons(["FMS", "REPORTS", "APPROVALS", "TASKS"]);
-    expect(optional.map((item) => item.key)).toEqual(["tasks"]);
+    const optional = listOptionalAddons([
+      "FMS",
+      "REPORTS",
+      "APPROVALS",
+      "TASKS",
+      "CRM",
+    ]);
+    expect(optional.map((item) => item.key)).toEqual(["tasks", "crm"]);
+  });
+
+  it("parses CRM add-on from form", () => {
+    const formData = new FormData();
+    formData.set("addon_crm", "on");
+    expect(parseAddonModulesFromForm(formData)).toEqual(["CRM"]);
   });
 });

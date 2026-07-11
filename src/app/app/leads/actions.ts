@@ -109,7 +109,7 @@ async function exportLeadToGoogleSheetAfterSave(
 }
 
 export async function assignInboundLead(leadId: string, assigneeUserId: string | null) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -155,7 +155,7 @@ export async function assignInboundLead(leadId: string, assigneeUserId: string |
 }
 
 export async function updateInboundLeadStatus(leadId: string, status: InboundLeadStatus) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -207,7 +207,7 @@ export async function updateInboundLeadStatus(leadId: string, status: InboundLea
 }
 
 export async function updateInboundLeadCategory(leadId: string, category: string) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -270,7 +270,7 @@ export async function updateInboundLeadDetails(params: {
   expectedCloseAt?: string;
   winProbability?: string;
 }) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -417,7 +417,7 @@ export async function updateInboundLeadDetails(params: {
 }
 
 export async function deleteInboundLead(leadId: string) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "ADMIN")) {
     return { ok: false, message: "Admin only." };
   }
@@ -434,7 +434,7 @@ export async function deleteInboundLeadActivity(params: {
   leadId: string;
   activityId: string;
 }) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -456,7 +456,7 @@ export async function deleteInboundLeadActivity(params: {
 }
 
 export async function clearInboundLeadHistory(leadId: string) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -473,7 +473,7 @@ export async function clearInboundLeadHistory(leadId: string) {
 }
 
 export async function addInboundLeadNote(leadId: string, note: string) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -513,7 +513,7 @@ export async function addInboundLeadNote(leadId: string, note: string) {
 }
 
 export async function logLeadContactAction(leadId: string, type: "CALL" | "WHATSAPP") {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -546,7 +546,7 @@ export async function sendLeadNurtureWhatsAppAction(
   leadId: string,
   stepId: LeadNurtureEventId,
 ) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -583,7 +583,7 @@ export async function scheduleInboundLeadFollowUp(params: {
   notes?: string;
   assigneeUserId?: string | null;
 }) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -624,7 +624,7 @@ export async function scheduleInboundLeadFollowUp(params: {
 }
 
 export async function completeInboundLeadFollowUp(followUpId: string) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -639,7 +639,7 @@ export async function completeInboundLeadFollowUp(followUpId: string) {
 }
 
 export async function bridgeLeadToFmsAction(leadId: string) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -679,7 +679,7 @@ export type LeadSyncActionResult =
 export async function syncLeadChannelNow(
   channel: LeadSourceChannel,
 ): Promise<LeadSyncActionResult> {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "ADMIN")) {
     return { ok: false, message: "Admin only." };
   }
@@ -736,7 +736,7 @@ export async function testGoogleSheetsLeadConnection(params: {
   sheetTab: string;
   headerRow: number;
 }) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "ADMIN")) {
     return { ok: false, message: "Admin only." };
   }
@@ -768,7 +768,7 @@ export async function updateLeadConnection(params: {
   enabled: boolean;
   configJson: string;
 }) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "ADMIN")) {
     return { ok: false, message: "Admin only." };
   }
@@ -808,7 +808,7 @@ export async function updateGoogleSheetsLeadConfig(params: {
   sheetTab: string;
   headerRow: number;
 }) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "ADMIN")) {
     return { ok: false, message: "Admin only." };
   }
@@ -865,7 +865,7 @@ export async function updateGoogleSheetsLeadConfig(params: {
 }
 
 export async function regenerateLeadsApiKey() {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "ADMIN")) {
     return { ok: false, message: "Admin only." };
   }
@@ -885,7 +885,7 @@ export async function regenerateLeadsApiKey() {
 }
 
 export async function createManualInboundLead(formData: FormData) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -955,7 +955,7 @@ export async function createManualInboundLead(formData: FormData) {
 }
 
 export async function archiveInboundLeadAction(leadId: string) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -993,7 +993,7 @@ export async function archiveInboundLeadAction(leadId: string) {
 }
 
 export async function unarchiveInboundLeadAction(leadId: string) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -1040,7 +1040,7 @@ export async function mergeInboundLeadsAction(params: {
   primaryId: string;
   secondaryId: string;
 }) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false as const, message: "Not allowed." };
   }
@@ -1063,7 +1063,7 @@ export async function mergeInboundLeadsAction(params: {
 
 /** Soft company + hard phone/email duplicates for merge UI (same org). */
 export async function listLeadDuplicateMatchesAction(leadId: string) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "STAFF")) {
     return { ok: false as const, message: "Not allowed.", matches: [] };
   }
@@ -1103,7 +1103,7 @@ export async function generateLeadAiSummaryAction(
   leadId: string,
   opts?: { force?: boolean },
 ) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false as const, message: "Not allowed." };
   }
@@ -1237,7 +1237,7 @@ export async function generateLeadAiSummaryAction(
 }
 
 export async function applyAiSuggestedLeadStatus(leadId: string) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -1273,7 +1273,7 @@ export async function applyAiSuggestedLeadStatus(leadId: string) {
 }
 
 export async function updateLeadMeetingNotes(leadId: string, meetingNotes: string) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -1326,7 +1326,7 @@ export async function updateLeadCallingStatus(
   callingStatus: LeadCallingStatus,
   callNotes?: string,
 ) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -1408,7 +1408,7 @@ export async function updateLeadProjectStatus(
   leadId: string,
   projectStatus: LeadProjectStatus,
 ) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -1435,7 +1435,7 @@ export async function addInboundLeadPayment(params: {
   paymentMethod: LeadPaymentMethod;
   notes?: string;
 }) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -1542,7 +1542,7 @@ export async function addLeadOfferedService(params: {
   leadId: string;
   catalogId: string;
 }) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -1574,7 +1574,7 @@ export async function createLeadServiceCatalogItem(params: {
   subCategory: string;
   unitPrice?: string;
 }) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -1656,7 +1656,7 @@ export async function createLeadQuotation(params: {
   lineCatalogIds: string[];
   lineItems?: Array<{ catalogId: string; unitPrice: string; quantity?: string }>;
 }) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -1777,7 +1777,7 @@ export async function createLeadQuotation(params: {
 }
 
 export async function markLeadQuotationSent(quotationId: string) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -1807,7 +1807,7 @@ export async function markLeadQuotationSent(quotationId: string) {
 }
 
 export async function reviseLeadQuotation(quotationId: string) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -1895,7 +1895,7 @@ async function getQuotationForShare(organizationId: string, quotationId: string)
 }
 
 export async function sendLeadQuotationWhatsApp(quotationId: string) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -1940,7 +1940,7 @@ export async function sendLeadQuotationWhatsApp(quotationId: string) {
 }
 
 export async function sendLeadQuotationEmail(quotationId: string) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -2010,7 +2010,7 @@ export async function sendLeadQuotationEmail(quotationId: string) {
 }
 
 export async function deleteLeadQuotation(quotationId: string) {
-  const user = await requireSession("MANAGER", { module: "FMS" });
+  const user = await requireSession("MANAGER", { module: "CRM" });
 
   const quotation = await prisma.inboundLeadQuotation.findFirst({
     where: { id: quotationId, organizationId: user.organizationId },
@@ -2044,7 +2044,7 @@ export async function saveLeadsWebBasedApiSettings(
   _prev: { ok: boolean; message: string },
   formData: FormData,
 ): Promise<{ ok: boolean; message: string }> {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "ADMIN")) {
     return { ok: false, message: "Admin only." };
   }
@@ -2124,7 +2124,7 @@ export async function saveLeadsNurtureSettings(
   _prev: { ok: boolean; message: string },
   formData: FormData,
 ): Promise<{ ok: boolean; message: string }> {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "ADMIN")) {
     return { ok: false, message: "Admin only." };
   }
@@ -2168,7 +2168,7 @@ export async function saveLeadsNurtureSettings(
 }
 
 export async function setWhatsAppLeadIngestEnabled(enabled: boolean) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "ADMIN")) {
     return { ok: false, message: "Admin only." };
   }
@@ -2224,7 +2224,7 @@ export async function saveMetaLeadAdsConnection(params: {
   formIds: string;
   appSecret: string;
 }) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "ADMIN")) {
     return { ok: false, message: "Admin only." };
   }
@@ -2310,7 +2310,7 @@ export async function saveMetaLeadAdsConnection(params: {
 }
 
 export async function verifyMetaLeadAdsConnection(channel: "FACEBOOK" | "INSTAGRAM") {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "ADMIN")) {
     return { ok: false, message: "Admin only." };
   }
@@ -2354,7 +2354,7 @@ export async function saveTelegramLeadConnection(params: {
   botToken: string;
   registerWebhook: boolean;
 }) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "ADMIN")) {
     return { ok: false, message: "Admin only." };
   }
@@ -2429,7 +2429,7 @@ export async function saveTelegramLeadConnection(params: {
 }
 
 export async function importLeadsFromCsvAction(formData: FormData) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false as const, message: "Not allowed." };
   }

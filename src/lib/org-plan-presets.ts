@@ -5,7 +5,7 @@ import {
   resolveMemberModules,
 } from "@/lib/workspace-modules";
 
-/** BCI FMS core — split flows, EM Ready, approvals, MIS. Tasks sold separately. */
+/** BCI FMS core — split flows, EM Ready, approvals, MIS. Tasks/CRM sold separately. */
 export const BCI_STARTER_ALLOWED: WorkspaceModule[] = [
   "FMS",
   "REPORTS",
@@ -14,12 +14,16 @@ export const BCI_STARTER_ALLOWED: WorkspaceModule[] = [
 
 export const BCI_GROWTH_ALLOWED: WorkspaceModule[] = [
   ...BCI_STARTER_ALLOWED,
+  "CRM",
   "IMS",
   "HR",
 ];
 
 /** Executive Assistant / PC / checklists — standalone module anyone can buy. */
 export const TASKS_ADDON_ALLOWED: WorkspaceModule[] = ["TASKS"];
+
+/** CRM / Leads Machine — sellable separate from full BCI/FMS. */
+export const CRM_ADDON_ALLOWED: WorkspaceModule[] = ["CRM"];
 
 export const BCI_STARTER_LIMITS = {
   maxMembers: 8,
@@ -137,6 +141,9 @@ export const ORG_PLAN_LABELS: Record<OrgPlan, string> = {
 /** Product packaging labels for sales / onboarding UI. */
 export const MODULE_SKU_LABELS = {
   bciCore: "BCI FMS Bundle (FMS + Reports + Approvals)",
-  tasksAddon: "Executive Assistant / Tasks add-on",
-  bciGrowth: "BCI Growth (+ IMS + HR)",
+  tasksAddon: "Tasks / EA add-on",
+  crmAddon: "CRM add-on (Leads Machine)",
+  imsAddon: "IMS / Stock add-on",
+  hrAddon: "HRMS add-on",
+  bciGrowth: "BCI Growth (+ CRM + IMS / Stock + HRMS)",
 } as const;

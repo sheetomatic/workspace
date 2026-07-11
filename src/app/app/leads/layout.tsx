@@ -5,6 +5,6 @@ export default async function LeadsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  await requireSession(undefined, { module: "FMS" });
+  await requireSession(undefined, { module: "CRM" });
   return <div className="ws-module-layout-main">{children}</div>;
 }

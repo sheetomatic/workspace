@@ -19,10 +19,15 @@ describe("module bundling", () => {
     expect(BCI_STARTER_ALLOWED).not.toContain("TASKS");
   });
 
-  it("BCI Growth adds IMS and HR but not Tasks", () => {
+  it("BCI Growth adds CRM, IMS, and HR but not Tasks", () => {
+    expect(BCI_GROWTH_ALLOWED).toContain("CRM");
     expect(BCI_GROWTH_ALLOWED).toContain("IMS");
     expect(BCI_GROWTH_ALLOWED).toContain("HR");
     expect(BCI_GROWTH_ALLOWED).not.toContain("TASKS");
+  });
+
+  it("BCI Starter excludes CRM (sold as separate add-on)", () => {
+    expect(BCI_STARTER_ALLOWED).not.toContain("CRM");
   });
 
   it("Tasks add-on is standalone", () => {

@@ -38,7 +38,7 @@ export function LeadsSettingsPanel({
           <Link className="btn-secondary btn-sm" href="/app/leads">
             ← Back to leads
           </Link>
-          <h1>Leads settings</h1>
+          <h1>CRM settings</h1>
           <p>
             Web Based API credentials for nurture sends, message templates, and
             live lead source connectors (Official WhatsApp, Meta Lead Ads,

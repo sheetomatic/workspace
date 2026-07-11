@@ -183,6 +183,7 @@ export async function getWidgetDashboardData(
   const personalUserId = isManager ? undefined : user.id;
 
   const fmsEnabled = hasWorkspaceModule(user, "FMS");
+  const crmEnabled = hasWorkspaceModule(user, "CRM");
   const imsEnabled = hasWorkspaceModule(user, "IMS") && isManager;
   const tasksEnabled = hasWorkspaceModule(user, "TASKS");
   const emEnabled = hasWorkspaceModule(user, "REPORTS") && isManager;
@@ -209,7 +210,7 @@ export async function getWidgetDashboardData(
 
   const [leads, salesOrders, fms, ims, checklists, em, recruitment] =
     await Promise.all([
-      fmsEnabled && show("leads")
+      crmEnabled && show("leads")
         ? loadLeadsWidget(organizationId, personalUserId)
         : Promise.resolve(null),
       fmsEnabled && isManager && show("salesOrders")

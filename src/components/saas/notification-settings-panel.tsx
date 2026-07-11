@@ -81,7 +81,7 @@ export function NotificationSettingsPanel({
           </section>
 
           <section className="ws-notification-card">
-            <h4>Inventory (IMS)</h4>
+            <h4>IMS / Stock</h4>
             <label className="ws-notification-toggle">
               <input
                 defaultChecked={settings.imsReorderAlert}

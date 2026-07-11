@@ -24,6 +24,7 @@ enum WorkspaceModule {
   CASES
   FMS
   IMS
+  CRM
 }
 
 enum FmsFormFieldType {

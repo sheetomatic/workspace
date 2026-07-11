@@ -7,6 +7,7 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
   "CASES",
   "TASKS",
   "FMS",
+  "CRM",
   "HR",
   "IMS",
   "APPROVALS",
@@ -22,8 +23,9 @@ export const WORKSPACE_MODULE_LABELS: Record<WorkspaceModule, string> = {
   CASES: "Cases",
   TASKS: "Tasks",
   FMS: "FMS",
-  HR: "HR (attendance, field, hiring)",
-  IMS: "Inventory (IMS)",
+  CRM: "CRM",
+  HR: "HRMS",
+  IMS: "IMS / Stock",
   APPROVALS: "Approvals",
   REPORTS: "Reports & MIS",
 };
@@ -32,6 +34,7 @@ export const WORKSPACE_MODULE_HREFS: Partial<Record<WorkspaceModule, string>> = 
   CASES: "/app/cases",
   TASKS: "/app/tasks",
   FMS: "/app/fms",
+  CRM: "/app/leads",
   HR: "/app/hr",
   IMS: "/app/ims",
   APPROVALS: "/app/approvals",
@@ -44,12 +47,12 @@ export function defaultModulesForRole(role: Role): WorkspaceModule[] {
     return [...PLATFORM_WORKSPACE_MODULES];
   }
   if (role === "MANAGER") {
-    return ["TASKS", "FMS", "IMS", "APPROVALS", "REPORTS"];
+    return ["TASKS", "FMS", "CRM", "IMS", "APPROVALS", "REPORTS"];
   }
   if (role === "STAFF") {
-    return ["TASKS", "FMS"];
+    return ["TASKS", "FMS", "CRM"];
   }
-  return ["TASKS", "FMS"];
+  return ["TASKS", "FMS", "CRM"];
 }
 
 export function resolveMemberModules(
@@ -125,6 +128,9 @@ export function resolveWorkspaceHomeHref(
           ? "/app"
           : "/app/fms/my-stops";
       }
+      if (module === "CRM") {
+        return "/app/leads";
+      }
       const href = WORKSPACE_MODULE_HREFS[module];
       if (href) {
         return href;
@@ -152,6 +158,9 @@ export function pathnameRequiresModule(pathname: string): WorkspaceModule | null
   }
   if (pathname.startsWith("/app/ims")) {
     return "IMS";
+  }
+  if (pathname.startsWith("/app/leads")) {
+    return "CRM";
   }
   if (pathname.startsWith("/app/reports") || pathname.startsWith("/app/em")) {
     return "REPORTS";

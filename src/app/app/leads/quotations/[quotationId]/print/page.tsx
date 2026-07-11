@@ -43,7 +43,7 @@ function mapQuotationForView(quotation: NonNullable<Awaited<ReturnType<typeof ge
 }
 
 export default async function QuotationPrintPage({ params, searchParams }: PageProps) {
-  const user = await requireSession(undefined, { module: "FMS" });
+  const user = await requireSession(undefined, { module: "CRM" });
   const { quotationId } = await params;
   const { embed } = await searchParams;
   const isEmbed = embed === "1";
