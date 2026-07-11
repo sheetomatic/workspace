@@ -9,7 +9,7 @@ import {
 } from "@/lib/workspace-nav-prefs";
 
 describe("workspace-nav-prefs", () => {
-  it("defaults to focus mode with BCI core modules", () => {
+  it("defaults to focus mode with BCI suite + CRM + Tasks", () => {
     const prefs = parseWorkspaceNavPrefs(null);
     expect(prefs).toEqual(DEFAULT_WORKSPACE_NAV_PREFS);
     expect(prefs.mode).toBe("focus");

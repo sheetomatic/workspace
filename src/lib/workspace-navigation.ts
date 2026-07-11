@@ -126,14 +126,6 @@ const BCI_CHILD_ITEMS: WorkspaceNavItem[] = [
     matchPrefix: "/app/fms",
   },
   {
-    id: "leads",
-    href: "/app/leads",
-    label: "CRM",
-    icon: Megaphone,
-    module: "CRM",
-    matchPrefix: "/app/leads",
-  },
-  {
     id: "checklists",
     href: "/app/checklists",
     label: "Check List",
@@ -171,12 +163,22 @@ const BCI_CHILD_ITEMS: WorkspaceNavItem[] = [
   },
 ];
 
-/** Collapsible BCI suite — children keep focus-pref ids (fms, leads, …). */
+/** Collapsible BCI suite — children keep focus-pref ids (fms, checklists, ea, …). CRM is a separate SKU. */
 const BCI_GROUP: WorkspaceNavItem = {
   href: "/app/fms",
   label: "BCI",
   icon: Briefcase,
   children: BCI_CHILD_ITEMS,
+};
+
+/** Sellable CRM — top-level sibling of BCI, not nested under it. */
+const CRM_NAV_ITEM: WorkspaceNavItem = {
+  id: "leads",
+  href: "/app/leads",
+  label: "CRM",
+  icon: Megaphone,
+  module: "CRM",
+  matchPrefix: "/app/leads",
 };
 
 const HRMS_NAV_ITEM: WorkspaceNavItem = {
@@ -574,6 +576,7 @@ const DEPARTMENT_NAV_ITEMS: WorkspaceNavItem[] = [
 const MODULE_ITEMS: WorkspaceNavItem[] = [...DEPARTMENT_NAV_ITEMS];
 
 const SELLABLE_MODULE_ITEMS: WorkspaceNavItem[] = [
+  CRM_NAV_ITEM,
   HRMS_NAV_ITEM,
   IMS_STOCK_NAV_ITEM,
 ];

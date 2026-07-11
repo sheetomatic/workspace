@@ -12,7 +12,11 @@ export type WorkspaceNavPrefs = {
   visibleIds: string[];
 };
 
-/** BCI core + Tasks — calm first experience; departments tucked behind Customize. */
+/**
+ * Calm first experience: BCI suite ids + CRM (`leads`, separate SKU) + Tasks.
+ * CRM show/hide is independent — not nested under BCI in the sidebar.
+ * Departments stay tucked behind Customize.
+ */
 export const DEFAULT_FOCUSED_NAV_IDS = [
   "fms",
   "leads",
