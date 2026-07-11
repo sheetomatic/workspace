@@ -1,4 +1,4 @@
-import "@/components/saas/workspace-theme.css";
+import "@/components/saas/workspace-login.css";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { BrandIconMark } from "@/components/brand/brand-icon-mark";
@@ -6,7 +6,6 @@ import { LoginForm } from "@/components/saas/login-form";
 import { WorkspaceThemeStyles } from "@/components/saas/workspace-theme-styles";
 import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
-import { prisma } from "@/lib/db";
 import { getDedicatedClientPortal } from "@/lib/dedicated-client-portals";
 import { getRequestTenantSlug } from "@/lib/tenant-host";
 import { workspaceLoginHref } from "@/lib/workspace-auth-links";
@@ -14,6 +13,25 @@ import {
   mergeWorkspaceAppearance,
   parseWorkspaceAppearance,
 } from "@/lib/workspace-appearance";
+
+async function loadTenantOrg(tenantSlug: string | null) {
+  if (!tenantSlug) {
+    return null;
+  }
+  // Defer Prisma until a tenant host/query needs branding — keeps default
+  // workspace.sheetomatic.com/login off the DB cold-start path.
+  const { prisma } = await import("@/lib/db");
+  return prisma.organization.findUnique({
+    where: { slug: tenantSlug },
+    select: {
+      name: true,
+      slug: true,
+      logoUrl: true,
+      workspaceAppearance: true,
+      updatedAt: true,
+    },
+  });
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   const tenantSlug = await getRequestTenantSlug();
@@ -39,18 +57,7 @@ export default async function LoginPage({
 }) {
   const { product, intent, org: orgFromQuery } = await searchParams;
   const tenantSlug = orgFromQuery?.trim() || (await getRequestTenantSlug());
-  const tenantOrg = tenantSlug
-    ? await prisma.organization.findUnique({
-        where: { slug: tenantSlug },
-        select: {
-          name: true,
-          slug: true,
-          logoUrl: true,
-          workspaceAppearance: true,
-          updatedAt: true,
-        },
-      })
-    : null;
+  const tenantOrg = await loadTenantOrg(tenantSlug);
   const dedicatedPortal = getDedicatedClientPortal(tenantSlug);
   const tenantAppearance = tenantOrg
     ? mergeWorkspaceAppearance(

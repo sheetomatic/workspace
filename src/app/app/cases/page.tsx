@@ -15,6 +15,27 @@ import {
 import { requireLegalCasesSession } from "@/lib/require-session";
 import "@/components/legal/legal-cases.css";
 import { Suspense } from "react";
+import type { SessionUser } from "@/lib/auth";
+
+async function CasesDashboardBody({
+  user,
+  admin,
+}: {
+  user: SessionUser;
+  admin: boolean;
+}) {
+  const [stats, runningInsights] = await Promise.all([
+    getLegalDashboardStats(user),
+    admin ? getRunningInsights(user) : Promise.resolve(null),
+  ]);
+
+  return (
+    <>
+      {runningInsights ? <LegalRunningInsights insights={runningInsights} /> : null}
+      <LegalDashboard stats={stats} user={user} />
+    </>
+  );
+}
 
 export default async function CasesPage() {
   const user = await requireLegalCasesSession();
@@ -27,19 +48,6 @@ export default async function CasesPage() {
     : admin
       ? "Cases dashboard"
       : "My work";
-
-  let stats: Awaited<ReturnType<typeof getLegalDashboardStats>>;
-  let runningInsights: Awaited<ReturnType<typeof getRunningInsights>> | null = null;
-
-  try {
-    [stats, runningInsights] = await Promise.all([
-      getLegalDashboardStats(user),
-      admin ? getRunningInsights(user) : Promise.resolve(null),
-    ]);
-  } catch (error) {
-    console.error("[cases-page] dashboard load failed", error);
-    throw error;
-  }
 
   return (
     <div className="saas-page">
@@ -69,12 +77,20 @@ export default async function CasesPage() {
         <LegalViewsNavLoader user={user} />
       </Suspense>
 
-      {runningInsights ? <LegalRunningInsights insights={runningInsights} /> : null}
-
       <LegalCaseCreatePanel canCreate={admin} />
 
-      <Suspense fallback={<div className="legal-panel">Loading dashboard...</div>}>
-        <LegalDashboard stats={stats} user={user} />
+      <Suspense
+        fallback={
+          <div
+            className="legal-panel"
+            aria-busy="true"
+            style={{ minHeight: 200, background: "#f8fafc", borderRadius: 12 }}
+          >
+            Loading dashboard…
+          </div>
+        }
+      >
+        <CasesDashboardBody admin={admin} user={user} />
       </Suspense>
     </div>
   );

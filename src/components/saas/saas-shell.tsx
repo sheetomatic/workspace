@@ -2,8 +2,8 @@
 
 import { ChevronDown, LogOut } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
 import { OrganizationSwitcher } from "@/components/saas/organization-switcher";
 import type { OrganizationOption } from "@/components/saas/organization-switcher";
@@ -22,6 +22,17 @@ import {
 } from "@/lib/workspace-navigation";
 
 const ROLE_ORDER = ["VIEWER", "STAFF", "MANAGER", "ADMIN", "OWNER"] as const;
+
+/** Avoid useSearchParams() — it suspends the whole shell and blanks the main pane. */
+function useLocationSearch(pathname: string) {
+  const [currentSearch, setCurrentSearch] = useState("");
+  useEffect(() => {
+    setCurrentSearch(
+      typeof window !== "undefined" ? window.location.search.replace(/^\?/, "") : "",
+    );
+  }, [pathname]);
+  return currentSearch;
+}
 
 function navItemKey(item: Pick<WorkspaceNavItem, "label" | "href">) {
   return `${item.label}::${item.href}`;
@@ -320,8 +331,7 @@ export function SaasShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const currentSearch = searchParams.toString();
+  const currentSearch = useLocationSearch(pathname);
   const isQuotationPrint =
     /^\/app\/leads\/quotations\/[^/]+\/print\/?$/.test(pathname);
   const isSalarySlipPrint =

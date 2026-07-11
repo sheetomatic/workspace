@@ -19,7 +19,10 @@ import {
   whatsappTel,
   whatsappDisplayNumber,
 } from "./site-content";
-import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
+import {
+  WORKSPACE_LOGIN_HREF,
+  workspacePortalOrigin,
+} from "@/lib/workspace-auth-links";
 
 export function SiteBrand({
   variant = "header",
@@ -52,8 +55,12 @@ export function SiteBrand({
 }
 
 export function SiteHeader() {
+  const workspaceOrigin = workspacePortalOrigin();
+
   return (
     <header className="site-header-saas">
+      <link rel="dns-prefetch" href={workspaceOrigin} />
+      <link rel="preconnect" href={workspaceOrigin} crossOrigin="" />
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <div className="site-header-bar flex items-center justify-between gap-3 py-3.5">
           <SiteBrand variant="header" />
@@ -73,9 +80,13 @@ export function SiteHeader() {
             <Link className="ab-header-ai" href="/ai">
               Sheetomatic AI
             </Link>
-            <Link className="ab-header-workspace" href={WORKSPACE_LOGIN_HREF}>
+            <a
+              className="ab-header-workspace"
+              href={WORKSPACE_LOGIN_HREF}
+              rel="noopener"
+            >
               Workspace
-            </Link>
+            </a>
           </div>
         </div>
         <SiteHeaderNav variant="mobile" />

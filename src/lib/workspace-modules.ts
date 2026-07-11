@@ -102,9 +102,20 @@ export function resolveWorkspaceHomeHref(
     return dedicatedHome;
   }
 
-  for (const module of WORKSPACE_MODULES) {
+  // Platform orgs never land on /app/cases. CASES is dedicated-portal only
+  // (Hingorani). Super-admins have every module via hasWorkspaceModule, so
+  // iterating WORKSPACE_MODULES would send them to /app/cases and bounce
+  // forever with requireLegalCasesSession → /app.
+  for (const module of PLATFORM_WORKSPACE_MODULES) {
     if (hasWorkspaceModule(user, module)) {
       if (module === "TASKS") {
+        // FMS managers stay on the widget home; task-only users go to Today.
+        if (
+          hasWorkspaceModule(user, "FMS") &&
+          hasMinimumRole(user.role, "MANAGER")
+        ) {
+          return "/app";
+        }
         return "/app/today";
       }
       if (module === "FMS") {
@@ -120,7 +131,7 @@ export function resolveWorkspaceHomeHref(
       }
     }
   }
-  return "/app/tasks/today";
+  return "/app/today";
 }
 
 export function isCasesOnlyWorkspace(

@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import "@/components/saas/workspace-theme.css";
+import "@/components/saas/workspace-login.css";
 import { BrandIconMark } from "@/components/brand/brand-icon-mark";
 import { ForgotPasswordForm } from "@/components/saas/forgot-password-form";
 import Link from "next/link";

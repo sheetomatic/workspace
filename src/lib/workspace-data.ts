@@ -32,19 +32,24 @@ function sheetRowsHaveData(
   );
 }
 
-export async function getUserDashboard(user: SessionUser): Promise<DashboardPayload> {
-  try {
-    const fromSheets = await fetchDashboardRowsFromGoogleSheets(
-      user.organizationId,
-    );
-    if (sheetRowsHaveData(fromSheets)) {
-      return buildDashboardPayload(user, fromSheets!.rows, {
-        dataSource: "google_sheets",
-        spreadsheetId: fromSheets!.spreadsheetId,
-      });
+export async function getUserDashboard(
+  user: SessionUser,
+  options?: { skipSheets?: boolean },
+): Promise<DashboardPayload> {
+  if (!options?.skipSheets) {
+    try {
+      const fromSheets = await fetchDashboardRowsFromGoogleSheets(
+        user.organizationId,
+      );
+      if (sheetRowsHaveData(fromSheets)) {
+        return buildDashboardPayload(user, fromSheets!.rows, {
+          dataSource: "google_sheets",
+          spreadsheetId: fromSheets!.spreadsheetId,
+        });
+      }
+    } catch {
+      // Fall back to database when Sheets is misconfigured or unreachable
     }
-  } catch {
-    // Fall back to database when Sheets is misconfigured or unreachable
   }
 
   const dbRows = await loadDashboardRowsFromDatabase(user.organizationId);

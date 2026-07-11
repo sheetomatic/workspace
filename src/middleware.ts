@@ -157,6 +157,14 @@ function redirectMarketingToWorkspacePortal(request: NextRequest) {
     const target = request.nextUrl.clone();
     target.hostname = workspacePortalHost(request);
     target.protocol = "https:";
+    // Unauthed apex /app → login directly (skip workspace /app → /login hop).
+    // Apex rarely has the session cookie (host-scoped), so this is the common path.
+    if (!hasSessionCookie(request)) {
+      const callbackUrl = pathname + request.nextUrl.search;
+      target.pathname = "/login";
+      target.search = "";
+      target.searchParams.set("callbackUrl", callbackUrl);
+    }
     return NextResponse.redirect(target);
   }
 

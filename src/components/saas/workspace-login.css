@@ -1,0 +1,221 @@
+/* Slim login overrides — do not import full workspace-theme.css on /login */
+
+.workspace-login.login-page {
+  background: #fff;
+}
+
+.workspace-login .login-brand {
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+.workspace-login .login-kicker {
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+}
+
+.workspace-login .login-brand-copy h1 {
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.workspace-login .login-brand-copy p {
+  color: #cbd5e1;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.workspace-login .login-trust-list {
+  gap: 8px;
+}
+
+.workspace-login .login-trust-list li {
+  font-weight: 500;
+  font-size: 0.9375rem;
+  color: #e2e8f0;
+}
+
+.workspace-login .login-trust-badges {
+  display: none;
+}
+
+.workspace-login .login-card {
+  box-shadow: none;
+  border: none;
+  max-width: 400px;
+  padding: 0;
+}
+
+.workspace-login .login-card-head h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.workspace-login .login-card-head p {
+  font-weight: 500;
+}
+
+.workspace-login .login-switch-mode {
+  margin: 1rem 0 0;
+  font-size: 0.875rem;
+  color: #64748b;
+  text-align: center;
+}
+
+.workspace-login .login-switch-mode a {
+  color: #2563eb;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.workspace-login .login-switch-mode a:hover {
+  text-decoration: underline;
+}
+
+.workspace-login .login-team-hint {
+  margin: 0.75rem 0 0;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: #64748b;
+  text-align: center;
+}
+
+.workspace-login .login-form input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.workspace-login .login-submit.btn-primary {
+  background: #2563eb;
+  box-shadow: none;
+}
+
+.workspace-login .login-demo {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.workspace-login .login-demo summary {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  list-style: none;
+}
+
+.workspace-login .login-demo summary::-webkit-details-marker {
+  display: none;
+}
+
+.workspace-login .login-demo-grid {
+  margin-top: 10px;
+}
+
+.workspace-login .login-demo-btn {
+  font-weight: 600;
+}
+
+.login-page .login-logo-text {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.workspace-login .login-demo-hint {
+  margin: 8px 0 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.workspace-login .login-forgot-link {
+  margin: -0.2rem 0 0.15rem;
+  text-align: right;
+  font-size: 0.82rem;
+}
+
+.workspace-login .login-forgot-link a {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.workspace-login .login-forgot-link a:hover {
+  text-decoration: underline;
+}
+
+.workspace-login .login-org-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+/* Instant feedback while the login RSC stream resolves */
+.login-page-loading {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  padding: 2rem 1.25rem;
+}
+
+.login-page-loading-card {
+  width: 100%;
+  max-width: 400px;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.login-page-loading-bar {
+  height: 3px;
+  width: 100%;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    #e2e8f0 0%,
+    #93c5fd 40%,
+    #e2e8f0 80%
+  );
+  background-size: 200% 100%;
+  animation: login-loading-shift 1.1s linear infinite;
+}
+
+.login-page-loading-skel {
+  height: 2.75rem;
+  border-radius: 0.75rem;
+  background: #f1f5f9;
+}
+
+.login-page-loading-skel--title {
+  height: 1.75rem;
+  width: 55%;
+}
+
+.login-page-loading-skel--copy {
+  height: 0.9rem;
+  width: 80%;
+}
+
+.login-page-loading-skel--btn {
+  margin-top: 0.5rem;
+  height: 2.75rem;
+  background: #dbeafe;
+}
+
+@keyframes login-loading-shift {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}

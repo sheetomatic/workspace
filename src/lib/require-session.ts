@@ -4,7 +4,10 @@ import { getSessionUser } from "@/lib/auth";
 import { AI_APP_MIN_ROLE } from "@/lib/ai-auth-links";
 import { isLegalCasesOrganization } from "@/lib/dedicated-client-portals";
 import { hasMinimumRole } from "@/lib/permissions";
-import { hasWorkspaceModule } from "@/lib/workspace-modules";
+import {
+  hasWorkspaceModule,
+  resolveWorkspaceHomeHref,
+} from "@/lib/workspace-modules";
 
 export async function requireSession(
   minRole?: Role,
@@ -45,10 +48,11 @@ export async function requireLegalCasesSession(
 ) {
   const user = await requireSession(minRole, {
     module: "CASES",
-    redirectTo: options?.redirectTo,
+    // Avoid /app ↔ /app/cases bounce for platform orgs / super-admins.
+    redirectTo: options?.redirectTo ?? "/app/today",
   });
   if (!isLegalCasesOrganization(user.organizationSlug)) {
-    redirect(options?.redirectTo ?? "/app");
+    redirect(options?.redirectTo ?? resolveWorkspaceHomeHref(user));
   }
   return user;
 }

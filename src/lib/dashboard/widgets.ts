@@ -184,6 +184,19 @@ export async function getWidgetDashboardData(
 
   const recruitmentKeywords = RECRUITMENT_FMS_FLOW.matchKeywords;
 
+  const emPromise = emEnabled
+    ? Promise.race([
+        loadEmWidget(user).catch((error) => {
+          console.error("[widgets] em widget failed", error);
+          return null;
+        }),
+        // Cap EM so a slow scoreboard never blanks the whole home pane.
+        new Promise<null>((resolve) => {
+          setTimeout(() => resolve(null), 1200);
+        }),
+      ])
+    : Promise.resolve(null);
+
   const [leads, salesOrders, fms, ims, checklists, em, recruitment] =
     await Promise.all([
       fmsEnabled
@@ -199,7 +212,7 @@ export async function getWidgetDashboardData(
       tasksEnabled
         ? loadChecklistsWidget(organizationId, personalUserId)
         : Promise.resolve(null),
-      emEnabled ? loadEmWidget(user) : Promise.resolve(null),
+      emPromise,
       hrEnabled
         ? getRecruitmentFmsWidgetCounts(organizationId, recruitmentKeywords)
         : Promise.resolve(null),

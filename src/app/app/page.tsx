@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { UserDashboard } from "@/components/saas/user-dashboard";
 import { WorkspaceWidgetDashboard } from "@/components/saas/workspace-widget-dashboard";
@@ -34,16 +35,48 @@ function emptyDashboardForUser(role: import("@prisma/client").Role): DashboardPa
   };
 }
 
-export default async function AppDashboardPage() {
-  const user = await requireSession();
+function DashboardSkeleton() {
+  return (
+    <div
+      className="saas-page ws-page-loading"
+      aria-busy="true"
+      aria-live="polite"
+      style={{ display: "flex", flexDirection: "column", gap: 16, minHeight: 320 }}
+    >
+      <div
+        style={{
+          height: 3,
+          borderRadius: 999,
+          background: "linear-gradient(90deg,#0176d3,#7eb6ff,#0176d3)",
+          backgroundSize: "200% 100%",
+        }}
+      />
+      <div style={{ width: "min(280px,60%)", height: 28, borderRadius: 8, background: "#e2e8f0" }} />
+      <div style={{ width: "min(420px,85%)", height: 16, borderRadius: 6, background: "#e2e8f0" }} />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3,minmax(0,1fr))",
+          gap: 12,
+        }}
+      >
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div
+            key={index}
+            style={{ height: 88, borderRadius: 10, background: "#e2e8f0" }}
+          />
+        ))}
+      </div>
+      <div style={{ height: 220, borderRadius: 12, background: "#e2e8f0" }} />
+    </div>
+  );
+}
 
-  if (
-    hasWorkspaceModule(user, "CASES") ||
-    hasWorkspaceModule(user, "TASKS")
-  ) {
-    redirect(resolveWorkspaceHomeHref(user));
-  }
-
+async function DashboardHome({
+  user,
+}: {
+  user: Awaited<ReturnType<typeof requireSession>>;
+}) {
   const displayName = user.name ?? user.email.split("@")[0];
 
   // BCI-style platform orgs get the widget grid; AI-CRM orgs keep the
@@ -52,10 +85,16 @@ export default async function AppDashboardPage() {
     hasWorkspaceModule(user, "FMS") || hasWorkspaceModule(user, "IMS");
 
   const [dashboard, widgets, organization] = await Promise.all([
-    getUserDashboard(user).catch((error) => {
-      console.error("getUserDashboard", error);
-      return emptyDashboardForUser(user.role);
-    }),
+    // Widget home only needs task/payment strips — skip Sheets round-trip.
+    isWidgetHome
+      ? getUserDashboard(user, { skipSheets: true }).catch((error) => {
+          console.error("getUserDashboard", error);
+          return emptyDashboardForUser(user.role);
+        })
+      : getUserDashboard(user).catch((error) => {
+          console.error("getUserDashboard", error);
+          return emptyDashboardForUser(user.role);
+        }),
     isWidgetHome
       ? getWidgetDashboardData(user).catch((error) => {
           console.error("getWidgetDashboardData", error);
@@ -94,5 +133,21 @@ export default async function AppDashboardPage() {
         userRole={user.role}
       />
     </div>
+  );
+}
+
+export default async function AppDashboardPage() {
+  const user = await requireSession();
+  const home = resolveWorkspaceHomeHref(user);
+
+  // Only bounce away when home is a different route — never /app ↔ /app/cases.
+  if (home !== "/app") {
+    redirect(home);
+  }
+
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardHome user={user} />
+    </Suspense>
   );
 }
