@@ -15,11 +15,16 @@ import { LeadDeliveryStagePill } from "@/components/saas/lead-delivery-journey";
 import { LeadCategorySelect } from "@/components/saas/lead-category-select";
 import { LeadStatusSelect } from "@/components/saas/lead-status-select";
 import { LeadTemperatureBadge } from "@/components/saas/lead-temperature-badge";
+import { LeadsKanbanBoard } from "@/components/saas/leads-kanban-board";
 import { formatInr } from "@/lib/leads/categories";
 import { LEAD_CHANNEL_LABELS } from "@/lib/leads/channels";
 import type { LeadSourceChannel } from "@prisma/client";
 import { leadTelHref, leadWhatsAppHref } from "@/lib/leads/contact-links";
-import { buildLeadsListQuery, type LeadsListSearchParams } from "@/lib/leads/list-params";
+import {
+  buildLeadsListQuery,
+  type LeadsListSearchParams,
+  type LeadsViewMode,
+} from "@/lib/leads/list-params";
 
 type TeamMember = {
   user: { id: string; name: string | null; email: string };
@@ -123,6 +128,7 @@ export function LeadsCrmWorkspace({
   teamMembers,
   canManage,
   sort,
+  view = "list",
   serviceCatalog,
   organizationName,
   organizationLogoUrl,
@@ -139,6 +145,7 @@ export function LeadsCrmWorkspace({
   teamMembers: TeamMember[];
   canManage: boolean;
   sort: "newest" | "oldest";
+  view?: LeadsViewMode;
   serviceCatalog: Array<{
     id: string;
     serviceCategory: string;
@@ -161,6 +168,9 @@ export function LeadsCrmWorkspace({
   const [createDuplicate, setCreateDuplicate] = useState<DuplicateMatch | null>(null);
 
   const showArchived = listParams.archived === "1";
+  const isBoard = view === "board";
+  const listViewHref = `/app/leads?${buildLeadsListQuery(listParams, { view: "", page: "1" })}`;
+  const boardViewHref = `/app/leads?${buildLeadsListQuery(listParams, { view: "board", page: "1" })}`;
 
   const selected = useMemo(
     () => leads.find((lead) => lead.id === selectedId) ?? null,
@@ -213,6 +223,20 @@ export function LeadsCrmWorkspace({
         </form>
         <div className="leads-crm-toolbar-actions">
           <span className="leads-crm-period">{periodLabel}</span>
+          <div className="leads-view-toggle" role="group" aria-label="Leads view">
+            <Link
+              className={`btn-secondary btn-sm${!isBoard ? " is-active" : ""}`}
+              href={listViewHref}
+            >
+              List
+            </Link>
+            <Link
+              className={`btn-secondary btn-sm${isBoard ? " is-active" : ""}`}
+              href={boardViewHref}
+            >
+              Board
+            </Link>
+          </div>
           <Link
             className={`btn-secondary btn-sm${showArchived ? " is-active" : ""}`}
             href={archivedHref}
@@ -239,7 +263,9 @@ export function LeadsCrmWorkspace({
             </>
           ) : null}
           <span className="leads-crm-count">
-            {total} leads · p{page}/{totalPages}
+            {isBoard
+              ? `${Math.min(leads.length, total)} of ${total} on board`
+              : `${total} leads · p${page}/${totalPages}`}
           </span>
         </div>
       </div>
@@ -323,19 +349,43 @@ export function LeadsCrmWorkspace({
             <div className="leads-duplicate-alert" role="alert">
               <p>{createError}</p>
               {createDuplicate ? (
-                <Link
-                  href={leadDeepLink(listParams, createDuplicate.id)}
-                  onClick={() => setSelectedId(createDuplicate.id)}
-                >
-                  Open existing lead
-                  {createDuplicate.name ? ` · ${createDuplicate.name}` : ""}
-                </Link>
+                <div className="leads-duplicate-alert-actions">
+                  <Link
+                    href={leadDeepLink(listParams, createDuplicate.id)}
+                    onClick={() => setSelectedId(createDuplicate.id)}
+                  >
+                    Open existing lead
+                    {createDuplicate.name ? ` · ${createDuplicate.name}` : ""}
+                  </Link>
+                  <span className="leads-machine-muted">
+                    Open it to merge from the lead drawer if needed.
+                  </span>
+                </div>
               ) : null}
             </div>
           ) : null}
         </form>
       ) : null}
 
+      {isBoard ? (
+        leads.length === 0 ? (
+          <div className="leads-empty-state leads-board-empty">
+            <p className="leads-machine-muted">No leads match this filter.</p>
+            {workspaceTotal > 0 && period !== "all" ? (
+              <p className="leads-machine-muted">
+                {workspaceTotal} in workspace.{" "}
+                <Link href="/app/leads?period=all&view=board">View all</Link>
+              </p>
+            ) : null}
+          </div>
+        ) : (
+          <LeadsKanbanBoard
+            canManage={canManage}
+            leads={leads}
+            onOpenLead={setSelectedId}
+          />
+        )
+      ) : (
       <div className="leads-crm-table-wrap">
         <table className="leads-crm-table leads-crm-table-pro">
           <thead>
@@ -525,7 +575,9 @@ export function LeadsCrmWorkspace({
           </tbody>
         </table>
       </div>
+      )}
 
+      {!isBoard ? (
       <div className="leads-crm-pagination">
         {page > 1 ? (
           <Link
@@ -546,6 +598,12 @@ export function LeadsCrmWorkspace({
           </Link>
         ) : null}
       </div>
+      ) : total > leads.length ? (
+        <p className="leads-machine-muted leads-board-cap-note">
+          Showing first {leads.length} of {total}. Narrow the period or filter, or use List
+          for pagination.
+        </p>
+      ) : null}
 
       {selected ? (
         <div

@@ -37,8 +37,16 @@ import {
 import { pullLeadsFromConnection } from "@/lib/leads/sync-sources";
 import { ingestInboundLead } from "@/lib/leads/ingest";
 import { findDuplicateLeads } from "@/lib/leads/duplicates";
+import { generateLeadQualificationSummary } from "@/lib/leads/ai-summary";
+import { mergeInboundLeads } from "@/lib/leads/merge";
 import { computeLeadScore, recomputeAndSaveScore } from "@/lib/leads/scoring";
 import { sendPlainEmail } from "@/lib/integrations/email";
+import {
+  checkTaskAiOrgQuota,
+  recordTaskAiUsage,
+} from "@/lib/integrations/task-ai-settings";
+import { getIntegrationStatus } from "@/lib/integrations/status";
+import { checkRateLimit } from "@/lib/rate-limit";
 import {
   computeQuotationEndDate,
   parseQuotationStartDate,
@@ -1022,6 +1030,210 @@ export async function unarchiveInboundLeadAction(leadId: string) {
 
   revalidatePath("/app/leads");
   return { ok: true };
+}
+
+/**
+ * Merge secondary into primary (same org only). Soft-archives secondary with mergedIntoId.
+ * GST/PAN not on InboundLead — phone/email/company field fill only.
+ */
+export async function mergeInboundLeadsAction(params: {
+  primaryId: string;
+  secondaryId: string;
+}) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false as const, message: "Not allowed." };
+  }
+
+  const result = await mergeInboundLeads({
+    organizationId: user.organizationId,
+    primaryId: params.primaryId,
+    secondaryId: params.secondaryId,
+    actorUserId: user.id,
+  });
+
+  if (!result.ok) {
+    return result;
+  }
+
+  await exportLeadToGoogleSheetAfterSave(user.organizationId, result.primaryId);
+  revalidatePath("/app/leads");
+  return result;
+}
+
+/** Soft company + hard phone/email duplicates for merge UI (same org). */
+export async function listLeadDuplicateMatchesAction(leadId: string) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "STAFF")) {
+    return { ok: false as const, message: "Not allowed.", matches: [] };
+  }
+
+  const lead = await prisma.inboundLead.findFirst({
+    where: { id: leadId, organizationId: user.organizationId },
+    select: { phone: true, email: true, company: true },
+  });
+  if (!lead) {
+    return { ok: false as const, message: "Lead not found.", matches: [] };
+  }
+
+  const matches = await findDuplicateLeads(user.organizationId, {
+    phone: lead.phone,
+    email: lead.email,
+    company: lead.company,
+    excludeLeadId: leadId,
+    includeCompanySoft: true,
+  });
+
+  return {
+    ok: true as const,
+    matches: matches.filter((m) => !m.archivedAt).map((m) => ({
+      id: m.id,
+      name: m.name,
+      phone: m.phone,
+      email: m.email,
+      company: m.company,
+      status: m.status,
+      matchKind: m.matchKind,
+    })),
+  };
+}
+
+/** GPT qualification summary — cached on lead.aiSummary. Soft-fails without API key. */
+export async function generateLeadAiSummaryAction(
+  leadId: string,
+  opts?: { force?: boolean },
+) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false as const, message: "Not allowed." };
+  }
+
+  const lead = await prisma.inboundLead.findFirst({
+    where: { id: leadId, organizationId: user.organizationId },
+    select: {
+      id: true,
+      name: true,
+      company: true,
+      phone: true,
+      email: true,
+      requirement: true,
+      discussionNotes: true,
+      meetingNotes: true,
+      category: true,
+      status: true,
+      pipeValue: true,
+      quotationValue: true,
+      temperature: true,
+      score: true,
+      sourceDetail: true,
+      campaign: true,
+      aiSummary: true,
+      aiSummaryAt: true,
+    },
+  });
+  if (!lead) {
+    return { ok: false as const, message: "Lead not found." };
+  }
+
+  const cacheFreshMs = 6 * 60 * 60 * 1000;
+  if (
+    !opts?.force &&
+    lead.aiSummary?.trim() &&
+    lead.aiSummaryAt &&
+    Date.now() - lead.aiSummaryAt.getTime() < cacheFreshMs
+  ) {
+    return {
+      ok: true as const,
+      summary: lead.aiSummary,
+      cached: true as const,
+      aiSummaryAt: lead.aiSummaryAt.toISOString(),
+    };
+  }
+
+  const rate = await checkRateLimit(
+    `leads-ai:${user.organizationId}:${user.id}`,
+    20,
+    60_000,
+  );
+  if (!rate.allowed) {
+    return {
+      ok: false as const,
+      message: `Rate limit exceeded. Retry in ${rate.retryAfterSec}s.`,
+    };
+  }
+
+  const orgQuota = await checkTaskAiOrgQuota(user.organizationId);
+  if (!orgQuota.allowed) {
+    return { ok: false as const, message: orgQuota.message };
+  }
+
+  if (!getIntegrationStatus().openai) {
+    return {
+      ok: false as const,
+      message:
+        "AI summary unavailable — add OPENAI_API_KEY or try again later.",
+    };
+  }
+
+  try {
+    const { summary, usage } = await generateLeadQualificationSummary({
+      name: lead.name,
+      company: lead.company,
+      phone: lead.phone,
+      email: lead.email,
+      requirement: lead.requirement,
+      discussionNotes: lead.discussionNotes,
+      meetingNotes: lead.meetingNotes,
+      category: lead.category,
+      status: lead.status,
+      pipeValue: lead.pipeValue?.toString() ?? null,
+      quotationValue: lead.quotationValue?.toString() ?? null,
+      temperature: lead.temperature,
+      score: lead.score,
+      sourceDetail: lead.sourceDetail,
+      campaign: lead.campaign,
+    });
+
+    const aiSummaryAt = new Date();
+    await prisma.inboundLead.updateMany({
+      where: { id: leadId, organizationId: user.organizationId },
+      data: { aiSummary: summary, aiSummaryAt, modifiedAt: new Date() },
+    });
+
+    await recordTaskAiUsage({
+      organizationId: user.organizationId,
+      userId: user.id,
+      route: "parse",
+      usage: {
+        promptTokens: usage.promptTokens,
+        completionTokens: usage.completionTokens,
+        totalTokens: usage.totalTokens,
+      },
+    });
+
+    revalidatePath("/app/leads");
+    return {
+      ok: true as const,
+      summary,
+      cached: false as const,
+      aiSummaryAt: aiSummaryAt.toISOString(),
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "AI failed";
+    if (message === "OPENAI_NOT_CONFIGURED") {
+      return {
+        ok: false as const,
+        message:
+          "AI summary unavailable — add OPENAI_API_KEY or try again later.",
+      };
+    }
+    return {
+      ok: false as const,
+      message: message.startsWith("OPENAI_ERROR:")
+        ? message.replace(/^OPENAI_ERROR:/, "")
+        : "Could not generate AI summary.",
+    };
+  }
 }
 
 export async function applyAiSuggestedLeadStatus(leadId: string) {

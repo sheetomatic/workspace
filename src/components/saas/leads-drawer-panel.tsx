@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Trash2, X } from "lucide-react";
 import type {
   InboundLeadStatus,
@@ -23,6 +23,9 @@ import {
   assignInboundLead,
   clearInboundLeadHistory,
   deleteInboundLeadActivity,
+  generateLeadAiSummaryAction,
+  listLeadDuplicateMatchesAction,
+  mergeInboundLeadsAction,
   scheduleInboundLeadFollowUp,
   unarchiveInboundLeadAction,
   updateInboundLeadDetails,
@@ -38,6 +41,12 @@ import { deliveryJourneySummary, buildDeliveryJourney } from "@/lib/leads/delive
 import { SalesOrderPanel } from "@/components/saas/sales-order-panel";
 import type { LeadSalesOrderData } from "@/lib/leads/sales-order-types";
 import { formatInr, leadCategoryLabel, listLeadCategoryOptions, resolveLeadCategoryId, type LeadCategoryId } from "@/lib/leads/categories";
+import {
+  buildDemoIcsContent,
+  buildGoogleCalendarUrl,
+  buildOutlookWebUrl,
+  downloadIcsFilename,
+} from "@/lib/leads/calendar-links";
 import { buildLeadsListQuery, type LeadsListSearchParams } from "@/lib/leads/list-params";
 import {
   CALLING_STATUS_LABELS,
@@ -155,6 +164,8 @@ export type LeadDrawerData = {
   expectedCloseAt: string | null;
   winProbability: number | null;
   archivedAt: string | null;
+  aiSummary: string | null;
+  aiSummaryAt: string | null;
   discussionNotes: string | null;
   meetingNotes: string | null;
   quotationValue: string | number | null;
@@ -236,6 +247,20 @@ export function LeadDrawerPanel({
     id: string;
     name: string | null;
   } | null>(null);
+  const [dupCandidates, setDupCandidates] = useState<
+    Array<{
+      id: string;
+      name: string | null;
+      phone: string | null;
+      email: string | null;
+      company: string | null;
+      status: InboundLeadStatus;
+      matchKind: string;
+    }>
+  >([]);
+  const [aiSummaryText, setAiSummaryText] = useState(lead.aiSummary ?? "");
+  const [aiSummaryError, setAiSummaryError] = useState<string | null>(null);
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
   const [followUpAt, setFollowUpAt] = useState(defaultFollowUpLocal());
   const [noteDraft, setNoteDraft] = useState("");
   const [selectedCatalogId, setSelectedCatalogId] = useState(serviceCatalog[0]?.id ?? "");
@@ -250,6 +275,39 @@ export function LeadDrawerPanel({
   const aiStatus = lead.aiSuggestedStatus ?? null;
   const showAiHint = aiStatus && aiStatus !== lead.status && canManage;
   const isArchived = Boolean(lead.archivedAt);
+  const isDemoScheduled = resolveLeadStatus(lead.status) === "DEMO_SCHEDULED";
+
+  useEffect(() => {
+    setAiSummaryText(lead.aiSummary ?? "");
+  }, [lead.id, lead.aiSummary]);
+
+  useEffect(() => {
+    if (!canManage) return;
+    let cancelled = false;
+    void listLeadDuplicateMatchesAction(lead.id).then((result) => {
+      if (cancelled || !result.ok) return;
+      setDupCandidates(result.matches);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [lead.id, canManage, lead.phone, lead.email, lead.company]);
+
+  const demoStartsAt = lead.nextFollowUpAt
+    ? new Date(lead.nextFollowUpAt)
+    : followUpAt
+      ? new Date(followUpAt)
+      : null;
+  const demoCalendarInput =
+    demoStartsAt && !Number.isNaN(demoStartsAt.getTime())
+      ? {
+          leadName: lead.name,
+          company: lead.company,
+          requirement: lead.requirement,
+          meetingNotes: meetingNotes || lead.meetingNotes,
+          startsAt: demoStartsAt,
+        }
+      : null;
 
   const leadDelivery: LeadDeliveryInput = {
     quotations: lead.quotations,
@@ -303,6 +361,102 @@ export function LeadDrawerPanel({
             >
               AI: {leadStatusLabel(aiStatus)} — Apply
             </button>
+          ) : null}
+          <div className="leads-ai-summary">
+            <div className="leads-ai-summary-head">
+              <h3>AI qualification</h3>
+              {canManage ? (
+                <button
+                  type="button"
+                  className="btn-secondary btn-sm"
+                  disabled={pending || aiSummaryLoading}
+                  onClick={() => {
+                    setAiSummaryError(null);
+                    setAiSummaryLoading(true);
+                    startTransition(async () => {
+                      const result = await generateLeadAiSummaryAction(lead.id, {
+                        force: Boolean(aiSummaryText),
+                      });
+                      setAiSummaryLoading(false);
+                      if (!result.ok) {
+                        setAiSummaryError(result.message);
+                        return;
+                      }
+                      setAiSummaryText(result.summary);
+                    });
+                  }}
+                >
+                  {aiSummaryLoading
+                    ? "Generating…"
+                    : aiSummaryText
+                      ? "Refresh"
+                      : "Generate"}
+                </button>
+              ) : null}
+            </div>
+            {aiSummaryText ? (
+              <p className="leads-ai-summary-body">{aiSummaryText}</p>
+            ) : (
+              <p className="leads-machine-muted">
+                Need, budget signals, and next action — generate when ready.
+              </p>
+            )}
+            {aiSummaryError ? (
+              <p className="leads-ai-summary-error" role="alert">
+                {aiSummaryError}
+              </p>
+            ) : null}
+          </div>
+          {canManage && dupCandidates.length > 0 ? (
+            <div className="leads-merge-panel" role="region" aria-label="Duplicate leads">
+              <h3>Possible duplicates</h3>
+              <p className="leads-machine-muted">
+                Phone/email matches are hard; company name is soft. GST/PAN merge is not
+                available yet. Merge keeps this lead and archives the other.
+              </p>
+              <ul className="leads-merge-list">
+                {dupCandidates.map((dup) => (
+                  <li key={dup.id}>
+                    <span>
+                      <strong>{dup.name || "Unnamed"}</strong>
+                      {dup.company ? ` · ${dup.company}` : ""}
+                      <span className="leads-merge-kind"> · {dup.matchKind}</span>
+                    </span>
+                    <button
+                      type="button"
+                      className="btn-secondary btn-sm"
+                      disabled={pending}
+                      onClick={() => {
+                        const label = dup.name || dup.phone || dup.id;
+                        if (
+                          !window.confirm(
+                            `Merge “${label}” into this lead? Activities and quotes move here; the other lead is archived.`,
+                          )
+                        ) {
+                          return;
+                        }
+                        startTransition(async () => {
+                          const result = await mergeInboundLeadsAction({
+                            primaryId: lead.id,
+                            secondaryId: dup.id,
+                          });
+                          if (!result.ok) {
+                            window.alert(result.message);
+                            return;
+                          }
+                          setDupCandidates((prev) =>
+                            prev.filter((item) => item.id !== dup.id),
+                          );
+                          router.refresh();
+                        });
+                      }}
+                    >
+                      Merge into this
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ) : null}
         </div>
         <div className="leads-drawer-head-actions">
@@ -576,16 +730,49 @@ export function LeadDrawerPanel({
                 <div className="leads-duplicate-alert" role="alert">
                   <p>{saveError}</p>
                   {duplicateMatch ? (
-                    <Link
-                      href={`/app/leads?${buildLeadsListQuery(listParams, {
-                        leadId: duplicateMatch.id,
-                        page: "1",
-                      })}`}
-                      onClick={onClose}
-                    >
-                      Open existing lead
-                      {duplicateMatch.name ? ` · ${duplicateMatch.name}` : ""}
-                    </Link>
+                    <div className="leads-duplicate-alert-actions">
+                      <Link
+                        href={`/app/leads?${buildLeadsListQuery(listParams, {
+                          leadId: duplicateMatch.id,
+                          page: "1",
+                        })}`}
+                        onClick={onClose}
+                      >
+                        Open existing lead
+                        {duplicateMatch.name ? ` · ${duplicateMatch.name}` : ""}
+                      </Link>
+                      {canManage ? (
+                        <button
+                          type="button"
+                          className="btn-secondary btn-sm"
+                          disabled={pending}
+                          onClick={() => {
+                            if (
+                              !window.confirm(
+                                `Merge the other lead into this one? The duplicate will be archived.`,
+                              )
+                            ) {
+                              return;
+                            }
+                            startTransition(async () => {
+                              const result = await mergeInboundLeadsAction({
+                                primaryId: lead.id,
+                                secondaryId: duplicateMatch.id,
+                              });
+                              if (!result.ok) {
+                                setSaveError(result.message);
+                                return;
+                              }
+                              setSaveError(null);
+                              setDuplicateMatch(null);
+                              router.refresh();
+                            });
+                          }}
+                        >
+                          Merge into this lead
+                        </button>
+                      ) : null}
+                    </div>
                   ) : null}
                 </div>
               ) : null}
@@ -736,6 +923,57 @@ export function LeadDrawerPanel({
               Save meeting notes
             </button>
           ) : null}
+          {(isDemoScheduled || demoCalendarInput) && (
+            <div className="leads-calendar-links">
+              <h4>Add demo to calendar</h4>
+              <p className="leads-machine-muted">
+                Opens Google/Outlook or downloads an ICS file. Full Google Calendar OAuth sync
+                is not wired yet — set Next follow-up as the demo time first.
+              </p>
+              {demoCalendarInput ? (
+                <div className="leads-calendar-actions">
+                  <a
+                    className="btn-secondary btn-sm"
+                    href={buildGoogleCalendarUrl(demoCalendarInput)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Google Calendar
+                  </a>
+                  <a
+                    className="btn-secondary btn-sm"
+                    href={buildOutlookWebUrl(demoCalendarInput)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Outlook web
+                  </a>
+                  <button
+                    type="button"
+                    className="btn-secondary btn-sm"
+                    onClick={() => {
+                      const blob = new Blob(
+                        [buildDemoIcsContent(demoCalendarInput)],
+                        { type: "text/calendar;charset=utf-8" },
+                      );
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = downloadIcsFilename(lead.name);
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                  >
+                    Download ICS
+                  </button>
+                </div>
+              ) : (
+                <p className="leads-machine-muted">
+                  Schedule a follow-up datetime below, then use calendar links.
+                </p>
+              )}
+            </div>
+          )}
           <section className="leads-drawer-section leads-drawer-section-nested">
             <h3>Follow-up</h3>
             <div className="leads-drawer-grid">

@@ -42,6 +42,7 @@ type LeadsListSearchParams = {
   q?: string;
   archived?: string;
   leadId?: string;
+  view?: string;
 };
 
 function serializeLead(lead: Awaited<ReturnType<typeof listInboundLeadsForPeriodPaginated>>["leads"][number]) {
@@ -72,6 +73,8 @@ function serializeLead(lead: Awaited<ReturnType<typeof listInboundLeadsForPeriod
     expectedCloseAt: lead.expectedCloseAt?.toISOString() ?? null,
     winProbability: lead.winProbability ?? null,
     archivedAt: lead.archivedAt?.toISOString() ?? null,
+    aiSummary: lead.aiSummary ?? null,
+    aiSummaryAt: lead.aiSummaryAt?.toISOString() ?? null,
     discussionNotes: lead.discussionNotes,
     meetingNotes: lead.meetingNotes,
     quotationValue: lead.quotationValue?.toString() ?? null,
@@ -164,7 +167,12 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
       getLeadsMachineStatsForPeriod(user.organizationId, period),
       getLeadsPipeMetricsForPeriod(user.organizationId, period),
       listInboundLeadsForPeriodPaginated(user.organizationId, period, {
-        ...listParams,
+        page: listParams.page,
+        pageSize: listParams.pageSize,
+        sort: listParams.sort,
+        status: listParams.status,
+        category: listParams.category,
+        q: listParams.q,
         includeArchived: listParams.includeArchived,
       }),
       listWorkspaceMembers(user.organizationId),
@@ -246,6 +254,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
         period={period.type}
         periodLabel={period.periodLabel}
         sort={listParams.sort}
+        view={listParams.view}
         teamMembers={teamMembers}
         total={leadPage.total}
         totalPages={leadPage.totalPages}

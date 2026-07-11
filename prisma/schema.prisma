@@ -2616,6 +2616,13 @@ model InboundLead {
   /** Win probability 0–100; null = use stage default. */
   winProbability Int?
   archivedAt     DateTime?
+  /** Soft-merge: secondary lead points at the surviving primary. */
+  mergedIntoId   String?
+  mergedInto     InboundLead?         @relation("InboundLeadMerge", fields: [mergedIntoId], references: [id], onDelete: SetNull)
+  mergedFrom     InboundLead[]        @relation("InboundLeadMerge")
+  /** Cached GPT qualification summary (need / budget / next action). */
+  aiSummary      String?
+  aiSummaryAt    DateTime?
   rawPayload     Json?
   fmsInstanceId  String?              @unique
   fmsInstance    FmsInstance?         @relation(fields: [fmsInstanceId], references: [id], onDelete: SetNull)
@@ -2649,6 +2656,7 @@ model InboundLead {
   @@index([organizationId, phone])
   @@index([organizationId, email])
   @@index([organizationId, archivedAt])
+  @@index([organizationId, mergedIntoId])
 }
 
 model InboundLeadActivity {

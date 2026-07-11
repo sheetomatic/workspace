@@ -43,7 +43,7 @@ export function mergeLeadContactWhere(
   const contact = inboundLeadWithPhoneWhere();
   const archived: Prisma.InboundLeadWhereInput = options?.includeArchived
     ? {}
-    : { archivedAt: null };
+    : { archivedAt: null, mergedIntoId: null };
   if (!where.AND) {
     return { ...where, ...contact, ...archived };
   }

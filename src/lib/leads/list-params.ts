@@ -1,8 +1,11 @@
 import type { InboundLeadStatus } from "@prisma/client";
+import { LEAD_STATUS_ORDER } from "@/lib/leads/status-labels";
 
 export const LEADS_PAGE_SIZE = 20;
+export const LEADS_BOARD_PAGE_SIZE = 120;
 
 export type LeadsSortOrder = "newest" | "oldest";
+export type LeadsViewMode = "list" | "board";
 
 export type LeadsListSearchParams = {
   status?: string;
@@ -18,6 +21,8 @@ export type LeadsListSearchParams = {
   month?: string;
   quarter?: string;
   year?: string;
+  /** list (default) | board */
+  view?: string;
 };
 
 export function parseLeadsListParams(params: LeadsListSearchParams) {
@@ -28,19 +33,20 @@ export function parseLeadsListParams(params: LeadsListSearchParams) {
   const category = params.category?.trim() || undefined;
   const q = params.q?.trim() || undefined;
   const includeArchived = params.archived === "1";
+  const view: LeadsViewMode = params.view === "board" ? "board" : "list";
+  const pageSize = view === "board" ? LEADS_BOARD_PAGE_SIZE : LEADS_PAGE_SIZE;
 
   return {
-    page,
+    page: view === "board" ? 1 : page,
     sort,
     status,
     category,
     q,
     includeArchived,
-    pageSize: LEADS_PAGE_SIZE,
+    view,
+    pageSize,
   };
 }
-
-import { LEAD_STATUS_ORDER } from "@/lib/leads/status-labels";
 
 function parseStatus(value: string | undefined): InboundLeadStatus | undefined {
   const allowed = LEAD_STATUS_ORDER;
