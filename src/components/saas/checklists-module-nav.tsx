@@ -23,21 +23,21 @@ export function ChecklistsModuleNav({ user }: { user: SessionUser }) {
   const items = [
     {
       href: "/app/checklists/accounts",
-      label: "Accounts Check List",
+      label: "Accounts",
       icon: ClipboardCheck,
       visible: true,
       description: "GST, recon & collections",
     },
     {
       href: "/app/checklists/hr",
-      label: "HR Check List",
+      label: "HR",
       icon: Users,
       visible: true,
       description: "Onboarding & attendance",
     },
     {
       href: "/app/checklists/maintenance",
-      label: "Maintenance (Machine)",
+      label: "Maintenance",
       icon: Wrench,
       visible: true,
       description: "Plant & PM rounds",
@@ -52,9 +52,14 @@ export function ChecklistsModuleNav({ user }: { user: SessionUser }) {
   ].filter((item) => item.visible);
 
   return (
-    <nav className="ws-module-subnav ws-checklists-subnav" aria-label="Check List navigation">
+    <nav
+      className="ws-module-subnav ws-checklists-subnav ws-pc-subnav"
+      aria-label="Check List navigation"
+    >
       <div className="ws-module-subnav-brand">
-        <CheckSquare size={18} aria-hidden />
+        <span className="ws-checklists-subnav-brand-icon" aria-hidden>
+          <CheckSquare size={16} strokeWidth={1.75} />
+        </span>
         <div>
           <strong>Check List</strong>
           <span>Department SOP checklists</span>
@@ -71,7 +76,7 @@ export function ChecklistsModuleNav({ user }: { user: SessionUser }) {
                 className={`ws-module-subnav-link${active ? " is-active" : ""}`}
                 aria-current={active ? "page" : undefined}
               >
-                <Icon size={16} aria-hidden />
+                <Icon size={16} aria-hidden strokeWidth={1.75} />
                 <span>
                   {item.label}
                   <small>{item.description}</small>

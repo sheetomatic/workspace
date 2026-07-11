@@ -1,5 +1,12 @@
 import Link from "next/link";
 import type { ChecklistTeam } from "@prisma/client";
+import {
+  CalendarClock,
+  CheckCircle2,
+  ClipboardList,
+  ListChecks,
+  Settings2,
+} from "lucide-react";
 import { ChecklistMyRunsBoard } from "@/components/saas/checklist-my-runs-board";
 import {
   CHECKLIST_FREQUENCY_LABELS,
@@ -57,11 +64,12 @@ export function TeamChecklistBoard({
 
   return (
     <div className="saas-page ws-checklists-page ws-tasks-sf ws-team-checklist-page">
-      <header className="ws-page-header ws-team-checklist-hero">
-        <div>
+      <header className="ws-page-header has-actions ws-team-checklist-hero">
+        <div className="ws-page-header-copy">
+          <p className="ws-team-checklist-eyebrow">Department checklist</p>
           <h1>{profile.title}</h1>
           <p>{profile.description}</p>
-          <ul className="ws-team-checklist-focus">
+          <ul className="ws-team-checklist-focus" aria-label="Focus areas">
             {profile.focusAreas.map((area) => (
               <li key={area}>{area}</li>
             ))}
@@ -69,6 +77,13 @@ export function TeamChecklistBoard({
         </div>
         {canConfigure ? (
           <div className="ws-page-header-actions">
+            <Link
+              href="/app/checklists/setup"
+              className="btn-primary btn-sm ws-sf-btn-primary"
+            >
+              <Settings2 size={14} aria-hidden />
+              Add from Setup
+            </Link>
             <Link href="/app/checklists/setup" className="btn-secondary btn-sm">
               Setup
             </Link>
@@ -77,7 +92,7 @@ export function TeamChecklistBoard({
       </header>
 
       {myRuns.length > 0 ? (
-        <section className="ws-sf-list-view ws-team-checklist-mine">
+        <section className="ws-sf-list-view ws-team-checklist-panel ws-team-checklist-mine">
           <header className="ws-sf-list-view-header">
             <div className="ws-sf-list-view-title">
               <h2>Your {teamLabel} items due</h2>
@@ -88,124 +103,133 @@ export function TeamChecklistBoard({
         </section>
       ) : null}
 
-      <section className="ws-sf-list-view ws-team-checklist-examples">
+      <section className="ws-sf-list-view ws-team-checklist-panel ws-team-checklist-examples">
         <header className="ws-sf-list-view-header">
           <div className="ws-sf-list-view-title">
             <h2>Typical {teamLabel} activities</h2>
           </div>
-          <p className="ws-em-section-lead">
-            Use Setup to turn these into recurring checklists with owners and proof.
+          <p className="ws-team-checklist-section-lead">
+            Reference activities — turn them into recurring checklists with owners
+            and proof in Setup.
           </p>
         </header>
-        <div className="ws-sf-table-wrap">
-          <table className="ws-fms-data-table ws-sf-data-table">
-            <thead>
-              <tr>
-                <th>Activity</th>
-                <th>Frequency</th>
-                <th>Owner role</th>
-              </tr>
-            </thead>
-            <tbody>
-              {profile.sampleActivities.map((row) => (
-                <tr key={row.activity}>
-                  <td>{row.activity}</td>
-                  <td>{row.frequency}</td>
-                  <td>{row.ownerRole}</td>
-                </tr>
+        <ul className="ws-team-checklist-activity-grid">
+          {profile.sampleActivities.map((row) => (
+            <li key={row.activity} className="ws-team-checklist-activity-card">
+              <div className="ws-team-checklist-activity-icon" aria-hidden>
+                <ListChecks size={16} strokeWidth={1.75} />
+              </div>
+              <div className="ws-team-checklist-activity-body">
+                <strong>{row.activity}</strong>
+                <div className="ws-team-checklist-activity-meta">
+                  <span>{row.frequency}</span>
+                  <span aria-hidden>·</span>
+                  <span>{row.ownerRole}</span>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <div className="ws-team-checklist-split">
+        <section className="ws-sf-list-view ws-team-checklist-panel ws-team-checklist-open">
+          <header className="ws-sf-list-view-header">
+            <div className="ws-sf-list-view-title">
+              <h2>Open {teamLabel} runs</h2>
+              <span className="ws-sf-list-view-count">{openRuns.length}</span>
+            </div>
+          </header>
+          {openRuns.length === 0 ? (
+            <div className="ws-team-checklist-empty is-clear">
+              <div className="ws-team-checklist-empty-icon" aria-hidden>
+                <CheckCircle2 size={22} strokeWidth={1.75} />
+              </div>
+              <strong>All clear</strong>
+              <p>
+                No open {teamLabel.toLowerCase()} checklist runs right now.
+                Scheduled runs will appear here when due.
+              </p>
+            </div>
+          ) : (
+            <ul className="ws-team-checklist-run-list">
+              {openRuns.map((run) => (
+                <li
+                  key={run.id}
+                  className={`ws-team-checklist-run-row${run.overdue ? " is-overdue" : ""}`}
+                >
+                  <div className="ws-team-checklist-run-main">
+                    <strong>{run.title}</strong>
+                    <span className="ws-team-checklist-run-owner">{run.owner}</span>
+                  </div>
+                  <div className="ws-team-checklist-run-side">
+                    <span className="ws-team-checklist-run-due">{run.dueLabel}</span>
+                    <span
+                      className={`ws-team-checklist-status${run.overdue ? " is-overdue" : ""}`}
+                    >
+                      {run.status}
+                    </span>
+                  </div>
+                </li>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+            </ul>
+          )}
+        </section>
 
-      <section className="ws-sf-list-view ws-team-checklist-open">
-        <header className="ws-sf-list-view-header">
-          <div className="ws-sf-list-view-title">
-            <h2>Open {teamLabel} runs</h2>
-            <span className="ws-sf-list-view-count">{openRuns.length}</span>
-          </div>
-        </header>
-        {openRuns.length === 0 ? (
-          <div className="ws-empty-state ws-fms-empty-state">
-            <p>No open {teamLabel.toLowerCase()} checklist runs right now.</p>
-          </div>
-        ) : (
-          <div className="ws-sf-table-wrap">
-            <table className="ws-fms-data-table ws-sf-data-table">
-              <thead>
-                <tr>
-                  <th>Checklist</th>
-                  <th>Doer</th>
-                  <th>Due</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {openRuns.map((run) => (
-                  <tr key={run.id} className={run.overdue ? "is-overdue" : undefined}>
-                    <td>
-                      <strong>{run.title}</strong>
-                    </td>
-                    <td>{run.owner}</td>
-                    <td>{run.dueLabel}</td>
-                    <td>{run.status}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      <section className="ws-sf-list-view ws-team-checklist-schedules">
-        <header className="ws-sf-list-view-header">
-          <div className="ws-sf-list-view-title">
-            <h2>Live {teamLabel} schedules</h2>
-            <span className="ws-sf-list-view-count">{templates.length}</span>
-          </div>
-        </header>
-        {templates.length === 0 ? (
-          <div className="ws-empty-state ws-fms-empty-state">
-            <p>No {teamLabel.toLowerCase()} checklists configured yet.</p>
-            {canConfigure ? (
-              <Link href="/app/checklists/setup" className="btn-primary btn-sm ws-sf-btn-primary">
-                Add from Setup
-              </Link>
-            ) : null}
-          </div>
-        ) : (
-          <div className="ws-sf-table-wrap">
-            <table className="ws-fms-data-table ws-sf-data-table ws-pc-schedules-table">
-              <thead>
-                <tr>
-                  <th>Checklist</th>
-                  <th>Schedule</th>
-                  <th>Doer</th>
-                  <th>Runs</th>
-                </tr>
-              </thead>
-              <tbody>
-                {templates.map((template) => (
-                  <tr key={template.id}>
-                    <td>
-                      <strong>{template.title}</strong>
-                      {template.instructions ? (
-                        <p className="ws-fms-muted">{template.instructions}</p>
-                      ) : null}
-                    </td>
-                    <td>{formatDueRule(template)}</td>
-                    <td>
-                      {template.assignee.name ?? template.assignee.email.split("@")[0]}
-                    </td>
-                    <td>{template._count.occurrences}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+        <section className="ws-sf-list-view ws-team-checklist-panel ws-team-checklist-schedules">
+          <header className="ws-sf-list-view-header">
+            <div className="ws-sf-list-view-title">
+              <h2>Live {teamLabel} schedules</h2>
+              <span className="ws-sf-list-view-count">{templates.length}</span>
+            </div>
+          </header>
+          {templates.length === 0 ? (
+            <div className="ws-team-checklist-empty">
+              <div className="ws-team-checklist-empty-icon" aria-hidden>
+                <CalendarClock size={22} strokeWidth={1.75} />
+              </div>
+              <strong>No schedules yet</strong>
+              <p>
+                No {teamLabel.toLowerCase()} checklists configured. Add a
+                template with owner, frequency, and proof from Setup.
+              </p>
+              {canConfigure ? (
+                <Link
+                  href="/app/checklists/setup"
+                  className="btn-primary btn-sm ws-sf-btn-primary"
+                >
+                  <ClipboardList size={14} aria-hidden />
+                  Add from Setup
+                </Link>
+              ) : null}
+            </div>
+          ) : (
+            <ul className="ws-team-checklist-schedule-list">
+              {templates.map((template) => (
+                <li key={template.id} className="ws-team-checklist-schedule-row">
+                  <div className="ws-team-checklist-schedule-main">
+                    <strong>{template.title}</strong>
+                    {template.instructions ? (
+                      <p className="ws-fms-muted">{template.instructions}</p>
+                    ) : null}
+                  </div>
+                  <div className="ws-team-checklist-schedule-meta">
+                    <span>{formatDueRule(template)}</span>
+                    <span>
+                      {template.assignee.name ??
+                        template.assignee.email.split("@")[0]}
+                    </span>
+                    <span className="ws-team-checklist-run-count">
+                      {template._count.occurrences}{" "}
+                      {template._count.occurrences === 1 ? "run" : "runs"}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

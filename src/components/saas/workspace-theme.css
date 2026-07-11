@@ -12760,26 +12760,320 @@ body:has(.workspace-app.saas-app) {
   }
 }
 
+.workspace-app .ws-team-checklist-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 22px 28px;
+  max-width: 1120px;
+}
+
 .workspace-app .ws-team-checklist-hero {
-  margin-bottom: 14px;
+  margin-bottom: 0;
+  padding-bottom: 4px;
+}
+
+.workspace-app .ws-team-checklist-eyebrow {
+  margin: 0 0 6px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--apple-text-tertiary, #86868b);
+}
+
+.workspace-app .ws-team-checklist-hero .ws-page-header-copy p:not(.ws-team-checklist-eyebrow) {
+  max-width: 42rem;
+}
+
+.workspace-app .ws-team-checklist-hero .ws-page-header-actions .btn-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .workspace-app .ws-team-checklist-focus {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 10px 0 0;
+  margin: 14px 0 0;
   padding: 0;
   list-style: none;
 }
 
 .workspace-app .ws-team-checklist-focus li {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #eff6ff;
-  color: #1d4ed8;
+  padding: 5px 11px;
+  border-radius: var(--apple-radius-pill, 980px);
+  border: 1px solid var(--apple-border-light, #e8e8ed);
+  background: var(--apple-bg-secondary, #f5f5f7);
+  color: var(--apple-text-secondary, #6e6e73);
   font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.workspace-app .ws-team-checklist-panel {
+  margin: 0;
+}
+
+.workspace-app .ws-team-checklist-section-lead {
+  margin: 0;
+  max-width: 28rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--apple-text-secondary, #6e6e73);
+}
+
+.workspace-app .ws-team-checklist-activity-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 14px 16px 16px;
+  list-style: none;
+}
+
+.workspace-app .ws-team-checklist-activity-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 14px;
+  border: 1px solid var(--apple-border-light, #e8e8ed);
+  border-radius: var(--apple-radius, 12px);
+  background: var(--apple-bg, #fbfbfd);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.workspace-app .ws-team-checklist-activity-card:hover {
+  border-color: var(--apple-border, #d2d2d7);
+  box-shadow: var(--apple-shadow, 0 1px 3px rgba(0, 0, 0, 0.06));
+}
+
+.workspace-app .ws-team-checklist-activity-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: #f0fdfa;
+  color: #0f766e;
+}
+
+.workspace-app .ws-team-checklist-activity-body {
+  min-width: 0;
+}
+
+.workspace-app .ws-team-checklist-activity-body strong {
+  display: block;
+  font-size: 0.875rem;
   font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--apple-text, #1d1d1f);
+  line-height: 1.35;
+}
+
+.workspace-app .ws-team-checklist-activity-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: var(--apple-text-secondary, #6e6e73);
+}
+
+.workspace-app .ws-team-checklist-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.workspace-app .ws-team-checklist-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  margin: 0;
+  padding: 36px 24px;
+  border: none;
+  border-radius: 0;
+  background: linear-gradient(180deg, #fafafa 0%, #fff 100%);
+}
+
+.workspace-app .ws-team-checklist-empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 4px;
+  border-radius: 50%;
+  background: var(--apple-bg-secondary, #f5f5f7);
+  color: var(--apple-text-tertiary, #86868b);
+}
+
+.workspace-app .ws-team-checklist-empty.is-clear .ws-team-checklist-empty-icon {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.workspace-app .ws-team-checklist-empty strong {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--apple-text, #1d1d1f);
+  letter-spacing: -0.01em;
+}
+
+.workspace-app .ws-team-checklist-empty p {
+  margin: 0;
+  max-width: 22rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--apple-text-secondary, #6e6e73);
+}
+
+.workspace-app .ws-team-checklist-empty .btn-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.workspace-app .ws-team-checklist-run-list,
+.workspace-app .ws-team-checklist-schedule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.workspace-app .ws-team-checklist-run-row,
+.workspace-app .ws-team-checklist-schedule-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--apple-border-light, #e8e8ed);
+}
+
+.workspace-app .ws-team-checklist-run-row:first-child,
+.workspace-app .ws-team-checklist-schedule-row:first-child {
+  border-top: none;
+}
+
+.workspace-app .ws-team-checklist-run-row.is-overdue {
+  background: #fff8f7;
+}
+
+.workspace-app .ws-team-checklist-run-main,
+.workspace-app .ws-team-checklist-schedule-main {
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+
+.workspace-app .ws-team-checklist-run-main strong,
+.workspace-app .ws-team-checklist-schedule-main strong {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--apple-text, #1d1d1f);
+  letter-spacing: -0.01em;
+}
+
+.workspace-app .ws-team-checklist-run-owner {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: var(--apple-text-secondary, #6e6e73);
+}
+
+.workspace-app .ws-team-checklist-schedule-main .ws-fms-muted {
+  margin: 4px 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.workspace-app .ws-team-checklist-run-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.workspace-app .ws-team-checklist-run-due {
+  font-size: 0.75rem;
+  color: var(--apple-text-secondary, #6e6e73);
+}
+
+.workspace-app .ws-team-checklist-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: var(--apple-radius-pill, 980px);
+  background: var(--apple-bg-secondary, #f5f5f7);
+  color: var(--apple-text-secondary, #6e6e73);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.workspace-app .ws-team-checklist-status.is-overdue {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.workspace-app .ws-team-checklist-schedule-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px 12px;
+  font-size: 0.75rem;
+  color: var(--apple-text-secondary, #6e6e73);
+  text-align: right;
+}
+
+.workspace-app .ws-team-checklist-run-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: var(--apple-radius-pill, 980px);
+  background: #f0fdfa;
+  color: #0f766e;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .workspace-app .ws-team-checklist-activity-grid,
+  .workspace-app .ws-team-checklist-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .workspace-app .ws-team-checklist-page {
+    padding: 16px 14px 24px;
+  }
+
+  .workspace-app .ws-team-checklist-activity-grid {
+    padding: 12px;
+  }
+
+  .workspace-app .ws-team-checklist-run-side,
+  .workspace-app .ws-team-checklist-schedule-meta {
+    align-items: flex-start;
+    justify-content: flex-start;
+    text-align: left;
+  }
 }
 
 .workspace-app .ws-tasks-sf .ws-sf-list-view {
@@ -26668,6 +26962,77 @@ a.workspace-app .ws-stat-card,
   --pc-accent-soft: #f0fdfa;
 }
 
+.workspace-app .ws-checklists-subnav {
+  background: var(--apple-bg-secondary, #f5f5f7);
+  padding: 14px 10px;
+}
+
+.workspace-app .ws-checklists-subnav .ws-module-subnav-brand {
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px 14px;
+  margin-bottom: 10px;
+  border-bottom-color: var(--apple-border-light, #e8e8ed);
+}
+
+.workspace-app .ws-checklists-subnav-brand-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  background: #fff;
+  border: 1px solid var(--apple-border-light, #e8e8ed);
+  color: #0f766e;
+  box-shadow: var(--apple-shadow, 0 1px 3px rgba(0, 0, 0, 0.06));
+}
+
+.workspace-app .ws-checklists-subnav .ws-module-subnav-brand strong {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--apple-text, #1d1d1f);
+}
+
+.workspace-app .ws-checklists-subnav .ws-module-subnav-brand span {
+  font-size: 0.6875rem;
+  color: var(--apple-text-tertiary, #86868b);
+}
+
+.workspace-app .ws-checklists-subnav .ws-module-subnav-list {
+  gap: 2px;
+}
+
+.workspace-app .ws-checklists-subnav .ws-module-subnav-link {
+  padding: 9px 10px;
+  border-radius: var(--apple-radius-sm, 8px);
+  font-weight: 500;
+  color: var(--apple-text-secondary, #6e6e73);
+}
+
+.workspace-app .ws-checklists-subnav .ws-module-subnav-link:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--apple-text, #1d1d1f);
+}
+
+.workspace-app .ws-checklists-subnav .ws-module-subnav-link.is-active {
+  background: #fff;
+  color: var(--apple-text, #1d1d1f);
+  font-weight: 600;
+  box-shadow: var(--apple-shadow, 0 1px 3px rgba(0, 0, 0, 0.06));
+}
+
+.workspace-app .ws-checklists-subnav .ws-module-subnav-link.is-active small {
+  color: #0f766e;
+  opacity: 1;
+}
+
+.workspace-app .ws-checklists-subnav .ws-module-subnav-link small {
+  color: var(--apple-text-tertiary, #86868b);
+}
+
 .workspace-app .ws-pc-subnav .ws-module-subnav-link.is-active {
   background: var(--pc-accent-soft);
   color: var(--pc-accent);
@@ -26676,6 +27041,17 @@ a.workspace-app .ws-stat-card,
 .workspace-app .ws-pc-subnav .ws-module-subnav-link.is-active small {
   color: var(--pc-accent);
   opacity: 0.9;
+}
+
+/* Checklists module: white active pill overrides teal wash for calmer nav */
+.workspace-app .ws-checklists-subnav.ws-pc-subnav .ws-module-subnav-link.is-active {
+  background: #fff;
+  color: var(--apple-text, #1d1d1f);
+}
+
+.workspace-app .ws-checklists-subnav.ws-pc-subnav .ws-module-subnav-link.is-active small {
+  color: #0f766e;
+  opacity: 1;
 }
 
 .workspace-app .ws-accounts-checklist-page .ws-accounts-deploy-section {
