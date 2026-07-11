@@ -36,6 +36,8 @@ import {
 } from "@/lib/leads/sync-messages";
 import { pullLeadsFromConnection } from "@/lib/leads/sync-sources";
 import { ingestInboundLead } from "@/lib/leads/ingest";
+import { findDuplicateLeads } from "@/lib/leads/duplicates";
+import { computeLeadScore, recomputeAndSaveScore } from "@/lib/leads/scoring";
 import { sendPlainEmail } from "@/lib/integrations/email";
 import {
   computeQuotationEndDate,
@@ -130,9 +132,29 @@ export async function updateInboundLeadStatus(leadId: string, status: InboundLea
     return { ok: false, message: "Not allowed." };
   }
 
+  const existing = await prisma.inboundLead.findFirst({
+    where: { id: leadId, organizationId: user.organizationId },
+    select: {
+      phone: true,
+      email: true,
+      company: true,
+      requirement: true,
+      callingStatus: true,
+      pipeValue: true,
+    },
+  });
+  if (!existing) {
+    return { ok: false, message: "Lead not found." };
+  }
+
+  const { score, temperature } = computeLeadScore({
+    ...existing,
+    status,
+  });
+
   await prisma.inboundLead.updateMany({
     where: { id: leadId, organizationId: user.organizationId },
-    data: { status, modifiedAt: new Date() },
+    data: { status, score, temperature, modifiedAt: new Date() },
   });
 
   await logInboundLeadActivity({
@@ -153,7 +175,7 @@ export async function updateInboundLeadStatus(leadId: string, status: InboundLea
   await exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
 
   revalidatePath("/app/leads");
-  return { ok: true };
+  return { ok: true, score, temperature };
 }
 
 export async function updateInboundLeadCategory(leadId: string, category: string) {
@@ -210,6 +232,13 @@ export async function updateInboundLeadDetails(params: {
   quotationValue: string;
   pipeValue: string;
   category?: string;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmContent?: string;
+  utmTerm?: string;
+  campaign?: string;
+  landingPage?: string;
 }) {
   const user = await requireSession(undefined, { module: "FMS" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
@@ -218,10 +247,34 @@ export async function updateInboundLeadDetails(params: {
 
   const existing = await prisma.inboundLead.findFirst({
     where: { id: params.leadId, organizationId: user.organizationId },
-    select: { requirement: true, category: true },
+    select: {
+      requirement: true,
+      category: true,
+      status: true,
+      callingStatus: true,
+    },
   });
   if (!existing) {
     return { ok: false, message: "Lead not found." };
+  }
+
+  const phoneNormalized =
+    leadPhoneDigits(params.phone) ?? (params.phone.trim() || null);
+  const emailTrimmed = params.email.trim() || null;
+
+  const duplicates = await findDuplicateLeads(user.organizationId, {
+    phone: phoneNormalized,
+    email: emailTrimmed,
+    excludeLeadId: params.leadId,
+  });
+  const activeDuplicates = duplicates.filter((m) => !m.archivedAt);
+  if (activeDuplicates.length > 0) {
+    return {
+      ok: false as const,
+      duplicate: true as const,
+      message: `Another lead already uses this phone or email (${activeDuplicates[0].name ?? activeDuplicates[0].id}).`,
+      matches: activeDuplicates,
+    };
   }
 
   const requirementTrimmed = params.requirement.trim() || null;
@@ -234,13 +287,51 @@ export async function updateInboundLeadDetails(params: {
         : resolveLeadCategoryId(existing.category);
   const quotation = Number.parseFloat(params.quotationValue);
   const pipe = Number.parseFloat(params.pipeValue);
+  const pipeValue =
+    Number.isFinite(pipe) && pipe > 0
+      ? pipe
+      : defaultPipeValueForCategory(category);
+
+  const { score, temperature } = computeLeadScore({
+    phone: phoneNormalized,
+    email: emailTrimmed,
+    company: params.company.trim() || null,
+    requirement: requirementTrimmed,
+    status: existing.status,
+    callingStatus: existing.callingStatus,
+    pipeValue,
+  });
+
+  const utmPatch = {
+    ...(params.utmSource !== undefined
+      ? { utmSource: params.utmSource.trim() || null }
+      : {}),
+    ...(params.utmMedium !== undefined
+      ? { utmMedium: params.utmMedium.trim() || null }
+      : {}),
+    ...(params.utmCampaign !== undefined
+      ? { utmCampaign: params.utmCampaign.trim() || null }
+      : {}),
+    ...(params.utmContent !== undefined
+      ? { utmContent: params.utmContent.trim() || null }
+      : {}),
+    ...(params.utmTerm !== undefined
+      ? { utmTerm: params.utmTerm.trim() || null }
+      : {}),
+    ...(params.campaign !== undefined
+      ? { campaign: params.campaign.trim() || null }
+      : {}),
+    ...(params.landingPage !== undefined
+      ? { landingPage: params.landingPage.trim() || null }
+      : {}),
+  };
 
   await prisma.inboundLead.updateMany({
     where: { id: params.leadId, organizationId: user.organizationId },
     data: {
       name: params.name.trim() || null,
-      phone: params.phone.trim() || null,
-      email: params.email.trim() || null,
+      phone: phoneNormalized,
+      email: emailTrimmed,
       company: params.company.trim() || null,
       address: params.address.trim() || null,
       zipCode: params.zipCode.trim() || null,
@@ -248,10 +339,10 @@ export async function updateInboundLeadDetails(params: {
       discussionNotes: params.discussionNotes.trim() || null,
       category,
       quotationValue: Number.isFinite(quotation) && quotation > 0 ? quotation : null,
-      pipeValue:
-        Number.isFinite(pipe) && pipe > 0
-          ? pipe
-          : defaultPipeValueForCategory(category),
+      pipeValue,
+      score,
+      temperature,
+      ...utmPatch,
       modifiedAt: new Date(),
     },
   });
@@ -267,7 +358,7 @@ export async function updateInboundLeadDetails(params: {
   await exportLeadToGoogleSheetAfterSave(user.organizationId, params.leadId);
 
   revalidatePath("/app/leads");
-  return { ok: true };
+  return { ok: true, score, temperature };
 }
 
 export async function deleteInboundLead(leadId: string) {
@@ -746,7 +837,16 @@ export async function createManualInboundLead(formData: FormData) {
 
   const name = formData.get("name")?.toString().trim() || "";
   const phone = formData.get("phone")?.toString().trim() || "";
+  const email = formData.get("email")?.toString().trim() || "";
   const requirement = formData.get("requirement")?.toString().trim() || "";
+  const company = formData.get("company")?.toString().trim() || "";
+  const utmSource = formData.get("utmSource")?.toString().trim() || "";
+  const utmMedium = formData.get("utmMedium")?.toString().trim() || "";
+  const utmCampaign = formData.get("utmCampaign")?.toString().trim() || "";
+  const utmContent = formData.get("utmContent")?.toString().trim() || "";
+  const utmTerm = formData.get("utmTerm")?.toString().trim() || "";
+  const campaign = formData.get("campaign")?.toString().trim() || "";
+  const landingPage = formData.get("landingPage")?.toString().trim() || "";
 
   if (!leadPhoneDigits(phone)) {
     return {
@@ -755,17 +855,123 @@ export async function createManualInboundLead(formData: FormData) {
     };
   }
 
-  await ingestInboundLead({
+  const result = await ingestInboundLead({
     organizationId: user.organizationId,
     channel: "MANUAL",
     externalId: `manual-${Date.now()}`,
     name,
     phone,
+    email: email || undefined,
+    company: company || undefined,
     requirement,
+    utmSource: utmSource || undefined,
+    utmMedium: utmMedium || undefined,
+    utmCampaign: utmCampaign || undefined,
+    utmContent: utmContent || undefined,
+    utmTerm: utmTerm || undefined,
+    campaign: campaign || undefined,
+    landingPage: landingPage || undefined,
     capturedAt: new Date(),
     actorUserId: user.id,
+    createdByUserId: user.id,
     createFmsJob: true,
+    hardBlockDuplicates: true,
   });
+
+  if (result.duplicate && !result.lead) {
+    const match = result.matches?.[0];
+    return {
+      ok: false as const,
+      duplicate: true as const,
+      message: match
+        ? `Duplicate lead: ${match.name ?? "existing lead"} already uses this phone or email. Open that lead instead of creating another.`
+        : "A lead with this phone or email already exists.",
+      matches: result.matches ?? [],
+    };
+  }
+
+  revalidatePath("/app/leads");
+  return {
+    ok: true as const,
+    leadId: result.lead?.id,
+    score: result.lead?.score ?? null,
+    temperature: result.lead?.temperature ?? null,
+  };
+}
+
+export async function archiveInboundLeadAction(leadId: string) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  const updated = await prisma.inboundLead.updateMany({
+    where: {
+      id: leadId,
+      organizationId: user.organizationId,
+      archivedAt: null,
+    },
+    data: { archivedAt: new Date(), modifiedAt: new Date() },
+  });
+
+  if (updated.count === 0) {
+    const exists = await prisma.inboundLead.findFirst({
+      where: { id: leadId, organizationId: user.organizationId },
+      select: { id: true, archivedAt: true },
+    });
+    if (!exists) {
+      return { ok: false, message: "Lead not found." };
+    }
+    return { ok: true, alreadyArchived: true };
+  }
+
+  await logInboundLeadActivity({
+    organizationId: user.organizationId,
+    leadId,
+    type: "EDIT",
+    body: "Lead archived",
+    createdByUserId: user.id,
+  });
+
+  revalidatePath("/app/leads");
+  return { ok: true };
+}
+
+export async function unarchiveInboundLeadAction(leadId: string) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  const updated = await prisma.inboundLead.updateMany({
+    where: {
+      id: leadId,
+      organizationId: user.organizationId,
+      archivedAt: { not: null },
+    },
+    data: { archivedAt: null, modifiedAt: new Date() },
+  });
+
+  if (updated.count === 0) {
+    const exists = await prisma.inboundLead.findFirst({
+      where: { id: leadId, organizationId: user.organizationId },
+      select: { id: true },
+    });
+    if (!exists) {
+      return { ok: false, message: "Lead not found." };
+    }
+    return { ok: true, alreadyActive: true };
+  }
+
+  await logInboundLeadActivity({
+    organizationId: user.organizationId,
+    leadId,
+    type: "EDIT",
+    body: "Lead unarchived",
+    createdByUserId: user.id,
+  });
+
+  await recomputeAndSaveScore(leadId, user.organizationId);
 
   revalidatePath("/app/leads");
   return { ok: true };
@@ -792,6 +998,8 @@ export async function applyAiSuggestedLeadStatus(leadId: string) {
     where: { id: leadId, organizationId: user.organizationId },
     data: { status: nextStatus },
   });
+
+  await recomputeAndSaveScore(leadId, user.organizationId);
 
   await logInboundLeadActivity({
     organizationId: user.organizationId,
@@ -901,6 +1109,8 @@ export async function updateLeadCallingStatus(
     data: patch,
   });
 
+  const scored = await recomputeAndSaveScore(leadId, user.organizationId);
+
   await logInboundLeadActivity({
     organizationId: user.organizationId,
     leadId,
@@ -928,7 +1138,11 @@ export async function updateLeadCallingStatus(
   await exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
 
   revalidatePath("/app/leads");
-  return { ok: true };
+  return {
+    ok: true,
+    score: scored?.score ?? null,
+    temperature: scored?.temperature ?? null,
+  };
 }
 
 export async function updateLeadProjectStatus(

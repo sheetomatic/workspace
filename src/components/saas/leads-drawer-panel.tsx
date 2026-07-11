@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Trash2, X } from "lucide-react";
 import type {
   InboundLeadStatus,
@@ -10,6 +10,7 @@ import type {
   LeadPaymentMethod,
   LeadPaymentType,
   LeadProjectStatus,
+  LeadTemperature,
   QuotationRequestType,
   QuotationStatus,
 } from "@prisma/client";
@@ -18,10 +19,12 @@ import {
   addInboundLeadPayment,
   addLeadOfferedService,
   applyAiSuggestedLeadStatus,
+  archiveInboundLeadAction,
   assignInboundLead,
   clearInboundLeadHistory,
   deleteInboundLeadActivity,
   scheduleInboundLeadFollowUp,
+  unarchiveInboundLeadAction,
   updateInboundLeadDetails,
   updateInboundLeadStatus,
   updateLeadMeetingNotes,
@@ -29,11 +32,13 @@ import {
   updateLeadProjectStatus,
 } from "@/app/app/leads/actions";
 import { QuotationBuilderPanel } from "@/components/saas/quotation-builder-panel";
+import { LeadTemperatureBadge } from "@/components/saas/lead-temperature-badge";
 import type { LeadDeliveryInput } from "@/lib/leads/delivery-journey";
 import { deliveryJourneySummary, buildDeliveryJourney } from "@/lib/leads/delivery-journey";
 import { SalesOrderPanel } from "@/components/saas/sales-order-panel";
 import type { LeadSalesOrderData } from "@/lib/leads/sales-order-types";
 import { formatInr, leadCategoryLabel, listLeadCategoryOptions, resolveLeadCategoryId, type LeadCategoryId } from "@/lib/leads/categories";
+import { buildLeadsListQuery, type LeadsListSearchParams } from "@/lib/leads/list-params";
 import {
   CALLING_STATUS_LABELS,
   listLeadStatusOptions,
@@ -138,6 +143,16 @@ export type LeadDrawerData = {
   aiSuggestedStatus: InboundLeadStatus | null;
   callingStatus: LeadCallingStatus;
   projectStatus: LeadProjectStatus;
+  score: number | null;
+  temperature: LeadTemperature | null;
+  utmSource: string | null;
+  utmMedium: string | null;
+  utmCampaign: string | null;
+  utmContent: string | null;
+  utmTerm: string | null;
+  campaign: string | null;
+  landingPage: string | null;
+  archivedAt: string | null;
   discussionNotes: string | null;
   meetingNotes: string | null;
   quotationValue: string | number | null;
@@ -171,7 +186,8 @@ export function LeadDrawerPanel({
   pending,
   startTransition,
   onClose,
-  onDeleted,
+  onDeleted: _onDeleted,
+  listParams = {},
 }: {
   lead: LeadDrawerData;
   canManage: boolean;
@@ -183,7 +199,9 @@ export function LeadDrawerPanel({
   startTransition: (callback: () => Promise<void>) => void;
   onClose: () => void;
   onDeleted?: () => void;
+  listParams?: LeadsListSearchParams;
 }) {
+  void _onDeleted;
   const router = useRouter();
   const [tab, setTab] = useState<
     "details" | "meeting" | "services" | "payments" | "quote" | "order"
@@ -198,6 +216,18 @@ export function LeadDrawerPanel({
   const [category, setCategory] = useState<LeadCategoryId>(resolveLeadCategoryId(lead.category));
   const [meetingNotes, setMeetingNotes] = useState(lead.meetingNotes ?? "");
   const [quotationValue, setQuotationValue] = useState(String(lead.quotationValue ?? ""));
+  const [utmSource, setUtmSource] = useState(lead.utmSource ?? "");
+  const [utmMedium, setUtmMedium] = useState(lead.utmMedium ?? "");
+  const [utmCampaign, setUtmCampaign] = useState(lead.utmCampaign ?? "");
+  const [utmContent, setUtmContent] = useState(lead.utmContent ?? "");
+  const [utmTerm, setUtmTerm] = useState(lead.utmTerm ?? "");
+  const [campaign, setCampaign] = useState(lead.campaign ?? "");
+  const [landingPage, setLandingPage] = useState(lead.landingPage ?? "");
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [duplicateMatch, setDuplicateMatch] = useState<{
+    id: string;
+    name: string | null;
+  } | null>(null);
   const [followUpAt, setFollowUpAt] = useState(defaultFollowUpLocal());
   const [noteDraft, setNoteDraft] = useState("");
   const [selectedCatalogId, setSelectedCatalogId] = useState(serviceCatalog[0]?.id ?? "");
@@ -209,12 +239,9 @@ export function LeadDrawerPanel({
   const [paymentMethod, setPaymentMethod] = useState<LeadPaymentMethod>("UPI");
   const [activities, setActivities] = useState(lead.activities);
 
-  useEffect(() => {
-    setActivities(lead.activities);
-  }, [lead.id, lead.activities]);
-
   const aiStatus = lead.aiSuggestedStatus ?? null;
   const showAiHint = aiStatus && aiStatus !== lead.status && canManage;
+  const isArchived = Boolean(lead.archivedAt);
 
   const leadDelivery: LeadDeliveryInput = {
     quotations: lead.quotations,
@@ -232,10 +259,18 @@ export function LeadDrawerPanel({
     >
       <header className="leads-drawer-head">
         <div className="leads-drawer-head-copy">
-          <h2>{lead.name || "Lead details"}</h2>
+          <h2>
+            {lead.name || "Lead details"}
+            {isArchived ? (
+              <span className="leads-archived-pill"> · Archived</span>
+            ) : null}
+          </h2>
           <p className="leads-machine-muted">
             {leadCategoryLabel(lead.category)} · {leadStatusLabel(lead.status)}
           </p>
+          <div className="leads-drawer-score-row">
+            <LeadTemperatureBadge score={lead.score} temperature={lead.temperature} />
+          </div>
           {lead.nextFollowUpAt ? (
             <p className="leads-machine-muted leads-drawer-followup-line">
               Next follow-up:{" "}
@@ -263,6 +298,26 @@ export function LeadDrawerPanel({
           ) : null}
         </div>
         <div className="leads-drawer-head-actions">
+          {canManage ? (
+            <button
+              type="button"
+              className="btn-secondary btn-sm"
+              disabled={pending}
+              onClick={() =>
+                startTransition(async () => {
+                  if (isArchived) {
+                    await unarchiveInboundLeadAction(lead.id);
+                  } else {
+                    await archiveInboundLeadAction(lead.id);
+                    onClose();
+                  }
+                  router.refresh();
+                })
+              }
+            >
+              {isArchived ? "Unarchive" : "Archive"}
+            </button>
+          ) : null}
           {lead.salesOrder ? (
             <Link
               href={`/app/sales-orders/${lead.salesOrder.id}`}
@@ -432,13 +487,90 @@ export function LeadDrawerPanel({
                   onChange={(e) => setQuotationValue(e.target.value)}
                 />
               </label>
+              <details className="leads-attribution">
+                <summary>Attribution</summary>
+                <div className="leads-drawer-grid">
+                  <label>
+                    Campaign
+                    <input
+                      value={campaign}
+                      onChange={(e) => setCampaign(e.target.value)}
+                      placeholder="Campaign name"
+                    />
+                  </label>
+                  <label>
+                    Landing page
+                    <input
+                      value={landingPage}
+                      onChange={(e) => setLandingPage(e.target.value)}
+                      placeholder="https://…"
+                    />
+                  </label>
+                  <label>
+                    UTM source
+                    <input
+                      value={utmSource}
+                      onChange={(e) => setUtmSource(e.target.value)}
+                      placeholder="google"
+                    />
+                  </label>
+                  <label>
+                    UTM medium
+                    <input
+                      value={utmMedium}
+                      onChange={(e) => setUtmMedium(e.target.value)}
+                      placeholder="cpc"
+                    />
+                  </label>
+                  <label>
+                    UTM campaign
+                    <input
+                      value={utmCampaign}
+                      onChange={(e) => setUtmCampaign(e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    UTM content
+                    <input
+                      value={utmContent}
+                      onChange={(e) => setUtmContent(e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    UTM term
+                    <input
+                      value={utmTerm}
+                      onChange={(e) => setUtmTerm(e.target.value)}
+                    />
+                  </label>
+                </div>
+              </details>
+              {saveError ? (
+                <div className="leads-duplicate-alert" role="alert">
+                  <p>{saveError}</p>
+                  {duplicateMatch ? (
+                    <Link
+                      href={`/app/leads?${buildLeadsListQuery(listParams, {
+                        leadId: duplicateMatch.id,
+                        page: "1",
+                      })}`}
+                      onClick={onClose}
+                    >
+                      Open existing lead
+                      {duplicateMatch.name ? ` · ${duplicateMatch.name}` : ""}
+                    </Link>
+                  ) : null}
+                </div>
+              ) : null}
               <button
                 type="button"
                 className="btn-primary"
                 disabled={pending}
                 onClick={() =>
                   startTransition(async () => {
-                    await updateInboundLeadDetails({
+                    setSaveError(null);
+                    setDuplicateMatch(null);
+                    const result = await updateInboundLeadDetails({
                       leadId: lead.id,
                       name,
                       phone,
@@ -451,14 +583,79 @@ export function LeadDrawerPanel({
                       discussionNotes: lead.discussionNotes ?? "",
                       quotationValue,
                       pipeValue: quotationValue,
+                      utmSource,
+                      utmMedium,
+                      utmCampaign,
+                      utmContent,
+                      utmTerm,
+                      campaign,
+                      landingPage,
                     });
+                    if (!result.ok) {
+                      setSaveError(result.message ?? "Could not save lead.");
+                      if (
+                        "duplicate" in result &&
+                        result.duplicate &&
+                        result.matches?.[0]
+                      ) {
+                        setDuplicateMatch({
+                          id: result.matches[0].id,
+                          name: result.matches[0].name,
+                        });
+                      }
+                    }
                   })
                 }
               >
                 Save lead
               </button>
             </div>
-          ) : null}
+          ) : (
+            <div className="leads-drawer-readonly">
+              <LeadTemperatureBadge score={lead.score} temperature={lead.temperature} />
+              {(lead.campaign ||
+                lead.landingPage ||
+                lead.utmSource ||
+                lead.utmMedium ||
+                lead.utmCampaign) && (
+                <details className="leads-attribution">
+                  <summary>Attribution</summary>
+                  <dl className="leads-attribution-dl">
+                    {lead.campaign ? (
+                      <>
+                        <dt>Campaign</dt>
+                        <dd>{lead.campaign}</dd>
+                      </>
+                    ) : null}
+                    {lead.landingPage ? (
+                      <>
+                        <dt>Landing page</dt>
+                        <dd>{lead.landingPage}</dd>
+                      </>
+                    ) : null}
+                    {lead.utmSource ? (
+                      <>
+                        <dt>UTM source</dt>
+                        <dd>{lead.utmSource}</dd>
+                      </>
+                    ) : null}
+                    {lead.utmMedium ? (
+                      <>
+                        <dt>UTM medium</dt>
+                        <dd>{lead.utmMedium}</dd>
+                      </>
+                    ) : null}
+                    {lead.utmCampaign ? (
+                      <>
+                        <dt>UTM campaign</dt>
+                        <dd>{lead.utmCampaign}</dd>
+                      </>
+                    ) : null}
+                  </dl>
+                </details>
+              )}
+            </div>
+          )}
         </>
       ) : null}
 

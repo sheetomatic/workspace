@@ -101,24 +101,29 @@ export async function listInboundLeadsForPeriodPaginated(
     status?: InboundLeadStatus;
     category?: string;
     q?: string;
+    /** When true, include soft-archived leads. Default excludes them. */
+    includeArchived?: boolean;
   },
 ) {
-  const where = mergeLeadContactWhere({
-    organizationId,
-    ...leadCapturedAtWhere(period),
-    ...(options.status ? { status: options.status } : {}),
-    ...(options.category ? { category: options.category } : {}),
-    ...(options.q
-      ? {
-          OR: [
-            { name: { contains: options.q, mode: "insensitive" } },
-            { phone: { contains: options.q, mode: "insensitive" } },
-            { email: { contains: options.q, mode: "insensitive" } },
-            { requirement: { contains: options.q, mode: "insensitive" } },
-          ],
-        }
-      : {}),
-  });
+  const where = mergeLeadContactWhere(
+    {
+      organizationId,
+      ...leadCapturedAtWhere(period),
+      ...(options.status ? { status: options.status } : {}),
+      ...(options.category ? { category: options.category } : {}),
+      ...(options.q
+        ? {
+            OR: [
+              { name: { contains: options.q, mode: "insensitive" } },
+              { phone: { contains: options.q, mode: "insensitive" } },
+              { email: { contains: options.q, mode: "insensitive" } },
+              { requirement: { contains: options.q, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    },
+    { includeArchived: options.includeArchived },
+  );
 
   const orderBy =
     options.sort === "oldest"

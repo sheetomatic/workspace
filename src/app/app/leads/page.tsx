@@ -40,6 +40,7 @@ type LeadsListSearchParams = {
   page?: string;
   sort?: string;
   q?: string;
+  archived?: string;
   leadId?: string;
 };
 
@@ -59,6 +60,16 @@ function serializeLead(lead: Awaited<ReturnType<typeof listInboundLeadsForPeriod
     aiSuggestedStatus: lead.aiSuggestedStatus,
     callingStatus: lead.callingStatus,
     projectStatus: lead.projectStatus,
+    score: lead.score ?? null,
+    temperature: lead.temperature ?? null,
+    utmSource: lead.utmSource ?? null,
+    utmMedium: lead.utmMedium ?? null,
+    utmCampaign: lead.utmCampaign ?? null,
+    utmContent: lead.utmContent ?? null,
+    utmTerm: lead.utmTerm ?? null,
+    campaign: lead.campaign ?? null,
+    landingPage: lead.landingPage ?? null,
+    archivedAt: lead.archivedAt?.toISOString() ?? null,
     discussionNotes: lead.discussionNotes,
     meetingNotes: lead.meetingNotes,
     quotationValue: lead.quotationValue?.toString() ?? null,
@@ -150,7 +161,10 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
     await Promise.all([
       getLeadsMachineStatsForPeriod(user.organizationId, period),
       getLeadsPipeMetricsForPeriod(user.organizationId, period),
-      listInboundLeadsForPeriodPaginated(user.organizationId, period, listParams),
+      listInboundLeadsForPeriodPaginated(user.organizationId, period, {
+        ...listParams,
+        includeArchived: listParams.includeArchived,
+      }),
       listWorkspaceMembers(user.organizationId),
       getGoogleSheetsLeadConnection(user.organizationId),
       getInboundLeadWorkspaceTotal(user.organizationId),

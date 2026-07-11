@@ -950,6 +950,7 @@ model User {
   imsQcInspected         ImsQcInspection[]     @relation("ImsQcInspector")
   imsAttachmentsUploaded ImsAttachment[]       @relation("ImsAttachmentUploader")
   assignedInboundLeads         InboundLead[]         @relation("InboundLeadAssignee")
+  createdInboundLeads          InboundLead[]         @relation("InboundLeadCreator")
   assignedInboundLeadFollowUps InboundLeadFollowUp[] @relation("InboundLeadFollowUpAssignee")
   createdInboundLeadFollowUps  InboundLeadFollowUp[] @relation("InboundLeadFollowUpCreator")
   inboundLeadActivities        InboundLeadActivity[] @relation("InboundLeadActivityCreator")
@@ -2503,6 +2504,12 @@ enum LeadCallingStatus {
   NOT_INTERESTED
 }
 
+enum LeadTemperature {
+  HOT
+  WARM
+  COLD
+}
+
 enum LeadProjectStatus {
   NOT_STARTED
   IN_PROGRESS
@@ -2592,6 +2599,16 @@ model InboundLead {
   projectStatus  LeadProjectStatus    @default(NOT_STARTED)
   aiSuggestedStatus InboundLeadStatus?
   status         InboundLeadStatus    @default(NEW)
+  score          Int?
+  temperature    LeadTemperature?
+  utmSource      String?
+  utmMedium      String?
+  utmCampaign    String?
+  utmContent     String?
+  utmTerm        String?
+  campaign       String?
+  landingPage    String?
+  archivedAt     DateTime?
   rawPayload     Json?
   fmsInstanceId  String?              @unique
   fmsInstance    FmsInstance?         @relation(fields: [fmsInstanceId], references: [id], onDelete: SetNull)
@@ -2599,6 +2616,8 @@ model InboundLead {
   waContact      WaContact?           @relation(fields: [waContactId], references: [id], onDelete: SetNull)
   assignedToId   String?
   assignedTo     User?                @relation("InboundLeadAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdByUserId String?
+  createdBy      User?                @relation("InboundLeadCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
   nextFollowUpAt DateTime?
   capturedAt     DateTime?
   /** Set when a team member edits the lead in CRM — not updated on passive sheet sync. */
@@ -2620,6 +2639,9 @@ model InboundLead {
   @@index([organizationId, capturedAt])
   @@index([organizationId, category])
   @@index([organizationId, modifiedAt])
+  @@index([organizationId, phone])
+  @@index([organizationId, email])
+  @@index([organizationId, archivedAt])
 }
 
 model InboundLeadActivity {

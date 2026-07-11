@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { MessageCircle, Phone, Trash2 } from "lucide-react";
 import {
+  createManualInboundLead,
   deleteInboundLead,
   logLeadContactAction,
 } from "@/app/app/leads/actions";
@@ -11,6 +13,7 @@ import { LeadDrawerPanel, type LeadDrawerData } from "@/components/saas/leads-dr
 import { LeadDeliveryStagePill } from "@/components/saas/lead-delivery-journey";
 import { LeadCategorySelect } from "@/components/saas/lead-category-select";
 import { LeadStatusSelect } from "@/components/saas/lead-status-select";
+import { LeadTemperatureBadge } from "@/components/saas/lead-temperature-badge";
 import { formatInr } from "@/lib/leads/categories";
 import { LEAD_CHANNEL_LABELS } from "@/lib/leads/channels";
 import type { LeadSourceChannel } from "@prisma/client";
@@ -32,6 +35,11 @@ type LeadRow = LeadDrawerData & {
     scheduledAt: string;
     notes: string | null;
   }>;
+};
+
+type DuplicateMatch = {
+  id: string;
+  name: string | null;
 };
 
 function formatInquiryTime(capturedAt: string | null) {
@@ -98,6 +106,10 @@ function leadSecondaryLabel(lead: LeadRow) {
   return null;
 }
 
+function leadDeepLink(listParams: LeadsListSearchParams, leadId: string) {
+  return `/app/leads?${buildLeadsListQuery(listParams, { leadId, page: "1" })}`;
+}
+
 export function LeadsCrmWorkspace({
   leads,
   total,
@@ -135,9 +147,19 @@ export function LeadsCrmWorkspace({
   organizationLogoUrl: string | null;
   initialSelectedLeadId?: string | null;
 }) {
+  const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedLeadId);
   const [searchDraft, setSearchDraft] = useState(listParams.q ?? "");
   const [pending, startTransition] = useTransition();
+  const [showCreate, setShowCreate] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [createPhone, setCreatePhone] = useState("");
+  const [createEmail, setCreateEmail] = useState("");
+  const [createRequirement, setCreateRequirement] = useState("");
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createDuplicate, setCreateDuplicate] = useState<DuplicateMatch | null>(null);
+
+  const showArchived = listParams.archived === "1";
 
   const selected = useMemo(
     () => leads.find((lead) => lead.id === selectedId) ?? null,
@@ -164,6 +186,10 @@ export function LeadsCrmWorkspace({
       ? `/app/leads?${buildLeadsListQuery(listParams, { sort: "oldest", page: "1" })}`
       : `/app/leads?${buildLeadsListQuery(listParams, { sort: "newest", page: "1" })}`;
 
+  const archivedHref = showArchived
+    ? `/app/leads?${buildLeadsListQuery(listParams, { archived: "", page: "1" })}`
+    : `/app/leads?${buildLeadsListQuery(listParams, { archived: "1", page: "1" })}`;
+
   return (
     <div className="leads-crm">
       <div className="leads-crm-toolbar">
@@ -186,14 +212,125 @@ export function LeadsCrmWorkspace({
         </form>
         <div className="leads-crm-toolbar-actions">
           <span className="leads-crm-period">{periodLabel}</span>
+          <Link
+            className={`btn-secondary btn-sm${showArchived ? " is-active" : ""}`}
+            href={archivedHref}
+          >
+            {showArchived ? "Hide archived" : "Show archived"}
+          </Link>
           <Link className="btn-secondary btn-sm" href={sortHref}>
             {sort === "newest" ? "Newest" : "Oldest"}
           </Link>
+          {canManage ? (
+            <button
+              type="button"
+              className="btn-primary btn-sm"
+              onClick={() => {
+                setShowCreate((open) => !open);
+                setCreateError(null);
+                setCreateDuplicate(null);
+              }}
+            >
+              {showCreate ? "Cancel" : "Add lead"}
+            </button>
+          ) : null}
           <span className="leads-crm-count">
             {total} leads · p{page}/{totalPages}
           </span>
         </div>
       </div>
+
+      {showCreate && canManage ? (
+        <form
+          className="leads-create-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setCreateError(null);
+            setCreateDuplicate(null);
+            const formData = new FormData();
+            formData.set("name", createName);
+            formData.set("phone", createPhone);
+            formData.set("email", createEmail);
+            formData.set("requirement", createRequirement);
+            startTransition(async () => {
+              const result = await createManualInboundLead(formData);
+              if (!result.ok) {
+                setCreateError(result.message ?? "Could not create lead.");
+                if ("duplicate" in result && result.duplicate && result.matches?.[0]) {
+                  setCreateDuplicate({
+                    id: result.matches[0].id,
+                    name: result.matches[0].name,
+                  });
+                }
+                return;
+              }
+              setShowCreate(false);
+              setCreateName("");
+              setCreatePhone("");
+              setCreateEmail("");
+              setCreateRequirement("");
+              if (result.leadId) {
+                setSelectedId(result.leadId);
+                router.push(leadDeepLink(listParams, result.leadId));
+              } else {
+                router.refresh();
+              }
+            });
+          }}
+        >
+          <label>
+            Name
+            <input
+              value={createName}
+              onChange={(e) => setCreateName(e.target.value)}
+              placeholder="Lead name"
+            />
+          </label>
+          <label>
+            Phone
+            <input
+              value={createPhone}
+              onChange={(e) => setCreatePhone(e.target.value)}
+              placeholder="10-digit mobile"
+              required
+            />
+          </label>
+          <label>
+            Email
+            <input
+              type="email"
+              value={createEmail}
+              onChange={(e) => setCreateEmail(e.target.value)}
+              placeholder="Optional"
+            />
+          </label>
+          <label className="leads-create-requirement">
+            Requirement
+            <input
+              value={createRequirement}
+              onChange={(e) => setCreateRequirement(e.target.value)}
+              placeholder="What do they need?"
+            />
+          </label>
+          <button type="submit" className="btn-primary btn-sm" disabled={pending}>
+            Create
+          </button>
+          {createError ? (
+            <div className="leads-duplicate-alert" role="alert">
+              <p>{createError}</p>
+              {createDuplicate ? (
+                <Link
+                  href={leadDeepLink(listParams, createDuplicate.id)}
+                  onClick={() => setSelectedId(createDuplicate.id)}
+                >
+                  Open existing lead
+                  {createDuplicate.name ? ` · ${createDuplicate.name}` : ""}
+                </Link>
+              ) : null}
+            </div>
+          ) : null}
+        </form>
+      ) : null}
 
       <div className="leads-crm-table-wrap">
         <table className="leads-crm-table leads-crm-table-pro">
@@ -236,14 +373,17 @@ export function LeadsCrmWorkspace({
                 const waHref = leadWhatsAppHref(lead.phone, lead.name);
                 const primary = leadPrimaryLabel(lead);
                 const secondary = leadSecondaryLabel(lead);
+                const isArchived = Boolean(lead.archivedAt);
                 return (
                   <tr
                     key={lead.id}
-                    className={
-                      selectedId === lead.id
-                        ? "leads-crm-row is-selected"
-                        : "leads-crm-row"
-                    }
+                    className={[
+                      "leads-crm-row",
+                      selectedId === lead.id ? "is-selected" : "",
+                      isArchived ? "is-archived" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
                     onClick={() => setSelectedId(lead.id)}
                   >
                     <td className="leads-row-lead">
@@ -256,10 +396,23 @@ export function LeadsCrmWorkspace({
                               · New
                             </span>
                           ) : null}
+                          {isArchived ? (
+                            <span className="leads-archived-pill" title="Archived">
+                              {" "}
+                              · Archived
+                            </span>
+                          ) : null}
                         </strong>
-                        {secondary ? (
-                          <span className="leads-row-contact">{secondary}</span>
-                        ) : null}
+                        <div className="leads-row-meta">
+                          {secondary ? (
+                            <span className="leads-row-contact">{secondary}</span>
+                          ) : null}
+                          <LeadTemperatureBadge
+                            compact
+                            score={lead.score}
+                            temperature={lead.temperature}
+                          />
+                        </div>
                       </div>
                     </td>
                     <td className="leads-row-time">
@@ -397,8 +550,10 @@ export function LeadsCrmWorkspace({
           onClick={() => setSelectedId(null)}
         >
           <LeadDrawerPanel
+            key={selected.id}
             canManage={canManage}
             lead={selected}
+            listParams={listParams}
             onClose={() => setSelectedId(null)}
             onDeleted={() => setSelectedId(null)}
             organizationLogoUrl={organizationLogoUrl}

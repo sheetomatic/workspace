@@ -10,6 +10,9 @@ export type LeadsListSearchParams = {
   page?: string;
   sort?: string;
   q?: string;
+  /** "1" = include soft-archived leads in the list */
+  archived?: string;
+  leadId?: string;
   period?: string;
   week?: string;
   month?: string;
@@ -24,8 +27,17 @@ export function parseLeadsListParams(params: LeadsListSearchParams) {
   const status = parseStatus(params.status);
   const category = params.category?.trim() || undefined;
   const q = params.q?.trim() || undefined;
+  const includeArchived = params.archived === "1";
 
-  return { page, sort, status, category, q, pageSize: LEADS_PAGE_SIZE };
+  return {
+    page,
+    sort,
+    status,
+    category,
+    q,
+    includeArchived,
+    pageSize: LEADS_PAGE_SIZE,
+  };
 }
 
 import { LEAD_STATUS_ORDER } from "@/lib/leads/status-labels";

@@ -17,7 +17,12 @@ import {
 } from "@/lib/leads/categories";
 import { inferLeadStageFromRequirement } from "@/lib/leads/stage-ai";
 import { leadHasRequiredContact, leadPhoneDigits } from "@/lib/leads/contact-validation";
+import {
+  findDuplicateLeads,
+  type DuplicateLeadMatch,
+} from "@/lib/leads/duplicates";
 import { triggerLeadNurtureEvent } from "@/lib/leads/nurture/run";
+import { computeLeadScore } from "@/lib/leads/scoring";
 import {
   defaultGoogleSheetsLeadConfig,
   resolveGoogleSheetsLeadConfig,
@@ -43,6 +48,14 @@ export type LeadIngestInput = {
   nextFollowUpAt?: Date | null;
   capturedAt?: Date | null;
   waContactId?: string | null;
+  utmSource?: string | null;
+  utmMedium?: string | null;
+  utmCampaign?: string | null;
+  utmContent?: string | null;
+  utmTerm?: string | null;
+  campaign?: string | null;
+  landingPage?: string | null;
+  createdByUserId?: string | null;
   rawPayload?: Prisma.InputJsonValue;
   createFmsJob?: boolean;
   /** Skip ensureLeadConnections when the caller already bootstrapped connections. */
@@ -52,6 +65,11 @@ export type LeadIngestInput = {
   /** When true, empty sheet cells must not wipe CRM fields already saved in the app. */
   sheetPull?: boolean;
   actorUserId?: string;
+  /**
+   * When true (manual create), refuse to create if phone/email matches another lead.
+   * Ingest/API soft-links to the best match instead.
+   */
+  hardBlockDuplicates?: boolean;
 };
 
 function normalizePhone(phone: string | null | undefined) {
@@ -148,7 +166,19 @@ export async function enforceLeadSourcePhase(
   });
 }
 
-export async function ingestInboundLead(input: LeadIngestInput) {
+export type LeadIngestResult = {
+  lead: Awaited<ReturnType<typeof prisma.inboundLead.create>> | null;
+  fmsBridge: Awaited<ReturnType<typeof bridgeInboundLeadToFms>> | null;
+  created: boolean;
+  skipped?: true;
+  duplicate?: boolean;
+  matches?: DuplicateLeadMatch[];
+  linkedExisting?: boolean;
+};
+
+export async function ingestInboundLead(
+  input: LeadIngestInput,
+): Promise<LeadIngestResult> {
   if (!input.skipConnectionSetup) {
     await ensureLeadConnections(input.organizationId);
   }
@@ -206,6 +236,38 @@ export async function ingestInboundLead(input: LeadIngestInput) {
     });
   }
 
+  let duplicateMatches: DuplicateLeadMatch[] = [];
+  let linkedExisting = false;
+
+  if (!lead) {
+    duplicateMatches = await findDuplicateLeads(input.organizationId, {
+      phone,
+      email: input.email,
+    });
+    const activeMatches = duplicateMatches.filter((m) => !m.archivedAt);
+
+    if (activeMatches.length > 0) {
+      if (input.hardBlockDuplicates) {
+        return {
+          lead: null,
+          fmsBridge: null,
+          created: false,
+          duplicate: true,
+          matches: activeMatches,
+        };
+      }
+
+      // Soft-link: update the newest active match instead of creating a parallel lead.
+      const linked = await prisma.inboundLead.findFirst({
+        where: { id: activeMatches[0].id, organizationId: input.organizationId },
+      });
+      if (linked) {
+        lead = linked;
+        linkedExisting = true;
+      }
+    }
+  }
+
   const requirement = input.requirement?.trim() || lead?.requirement || undefined;
   const requirementChanged =
     Boolean(input.requirement?.trim()) &&
@@ -235,27 +297,60 @@ export async function ingestInboundLead(input: LeadIngestInput) {
     return trimmed || undefined;
   };
 
+  const resolvedPhone =
+    phone ?? (input.sheetPull ? lead?.phone ?? undefined : undefined);
+  const resolvedEmail = pickString(input.email, lead?.email);
+  const resolvedCompany = pickString(input.company, lead?.company);
+  const resolvedRequirement =
+    pickString(input.requirement, lead?.requirement) ?? requirement;
+  const resolvedCalling =
+    input.callingStatus ??
+    (input.sheetPull ? lead?.callingStatus : undefined) ??
+    lead?.callingStatus ??
+    "NOT_CALLED";
+  const resolvedPipe =
+    input.sheetPull ? lead?.pipeValue ?? pipeValue : pipeValue;
+
+  const { score, temperature } = computeLeadScore({
+    phone: resolvedPhone,
+    email: resolvedEmail,
+    company: resolvedCompany,
+    requirement: resolvedRequirement,
+    status: resolvedStatus,
+    callingStatus: resolvedCalling,
+    pipeValue: resolvedPipe,
+  });
+
   const data = {
     connectionId: connection?.id ?? null,
     name: pickString(input.name, lead?.name),
-    phone: phone ?? (input.sheetPull ? lead?.phone ?? undefined : undefined),
-    email: pickString(input.email, lead?.email),
+    phone: resolvedPhone,
+    email: resolvedEmail,
     city: pickString(input.city, lead?.city),
-    company: pickString(input.company, lead?.company),
+    company: resolvedCompany,
     address: pickString(input.address, lead?.address),
     zipCode: pickString(input.zipCode, lead?.zipCode),
-    requirement: pickString(input.requirement, lead?.requirement) ?? requirement,
+    requirement: resolvedRequirement,
     sourceDetail: pickString(input.sourceDetail, lead?.sourceDetail),
     meetingNotes: pickString(input.meetingNotes, lead?.meetingNotes),
     callingStatus:
       input.callingStatus ??
       (input.sheetPull ? lead?.callingStatus : undefined),
     category,
-    pipeValue: input.sheetPull ? lead?.pipeValue ?? pipeValue : pipeValue,
+    pipeValue: resolvedPipe,
     quotationValue: input.sheetPull ? lead?.quotationValue : undefined,
     discussionNotes: input.sheetPull ? lead?.discussionNotes : undefined,
     aiSuggestedStatus,
     status: resolvedStatus,
+    score,
+    temperature,
+    utmSource: pickString(input.utmSource, lead?.utmSource),
+    utmMedium: pickString(input.utmMedium, lead?.utmMedium),
+    utmCampaign: pickString(input.utmCampaign, lead?.utmCampaign),
+    utmContent: pickString(input.utmContent, lead?.utmContent),
+    utmTerm: pickString(input.utmTerm, lead?.utmTerm),
+    campaign: pickString(input.campaign, lead?.campaign),
+    landingPage: pickString(input.landingPage, lead?.landingPage),
     assignedToId: input.sheetPull ? lead?.assignedToId ?? undefined : input.assignedToId ?? undefined,
     nextFollowUpAt:
       input.nextFollowUpAt ??
@@ -269,10 +364,19 @@ export async function ingestInboundLead(input: LeadIngestInput) {
   let created = false;
 
   if (lead) {
+    const crossChannelLink = linkedExisting && lead.channel !== input.channel;
     lead = await prisma.inboundLead.update({
       where: { id: lead.id },
       data: {
         ...data,
+        // Do not overwrite identity fields when soft-linking a cross-channel duplicate.
+        ...(crossChannelLink
+          ? {
+              connectionId: undefined,
+              externalId: undefined,
+              channel: undefined,
+            }
+          : {}),
         capturedAt:
           input.capturedAt !== undefined && input.capturedAt !== null
             ? input.capturedAt
@@ -289,6 +393,7 @@ export async function ingestInboundLead(input: LeadIngestInput) {
         ...data,
         status: resolvedStatus,
         capturedAt: input.capturedAt ?? undefined,
+        createdByUserId: input.createdByUserId ?? input.actorUserId ?? undefined,
       },
     });
   }
@@ -312,7 +417,14 @@ export async function ingestInboundLead(input: LeadIngestInput) {
     });
   }
 
-  return { lead, fmsBridge, created };
+  return {
+    lead,
+    fmsBridge,
+    created,
+    ...(duplicateMatches.length > 0
+      ? { duplicate: true, matches: duplicateMatches, linkedExisting }
+      : {}),
+  };
 }
 
 export function queueLeadSyncFromWhatsApp(params: {

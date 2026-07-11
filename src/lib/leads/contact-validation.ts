@@ -38,11 +38,22 @@ export function inboundLeadWithPhoneWhere(): Prisma.InboundLeadWhereInput {
 
 export function mergeLeadContactWhere(
   where: Prisma.InboundLeadWhereInput,
+  options?: { includeArchived?: boolean },
 ): Prisma.InboundLeadWhereInput {
   const contact = inboundLeadWithPhoneWhere();
+  const archived: Prisma.InboundLeadWhereInput = options?.includeArchived
+    ? {}
+    : { archivedAt: null };
   if (!where.AND) {
-    return { ...where, ...contact };
+    return { ...where, ...contact, ...archived };
   }
   const and = Array.isArray(where.AND) ? where.AND : [where.AND];
-  return { ...where, AND: [...and, ...(contact.AND as Prisma.InboundLeadWhereInput[])] };
+  return {
+    ...where,
+    AND: [
+      ...and,
+      ...(contact.AND as Prisma.InboundLeadWhereInput[]),
+      ...(options?.includeArchived ? [] : [archived]),
+    ],
+  };
 }

@@ -72,6 +72,18 @@ export async function POST(request: Request) {
     ok: true,
     leadId: result.lead.id,
     created: result.created,
+    duplicate: result.duplicate ?? false,
+    linkedExisting: result.linkedExisting ?? false,
+    matches: result.matches?.map((m) => ({
+      id: m.id,
+      name: m.name,
+      phone: m.phone,
+      email: m.email,
+      status: m.status,
+      channel: m.channel,
+    })),
+    score: result.lead.score,
+    temperature: result.lead.temperature,
     fmsInstanceId:
       result.fmsBridge && result.fmsBridge.ok ? result.fmsBridge.instanceId : null,
     fmsBridgeSkipped:
