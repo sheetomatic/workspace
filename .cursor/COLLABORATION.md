@@ -455,3 +455,86 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/hr/leave` (swap panel), `/app/hr/field` (live GPS + geofence), `/app/hr/holidays`, `/app/hr/attendance`.
 
 ---
+
+**Deployed (2026-07-11):** WhatsApp AI homepage video embed + finalized logo/favicon (already on main via prior commits).
+
+| Item | Detail |
+|------|--------|
+| Commit | `8d5bfd4` — Embed WhatsApp AI homepage video and ship finalized Sheetomatic logo favicon. |
+| Prior logo | `dd01013` / `c6603e6` — growth-bars logo, real ICO favicon, AI marks, layout `?v=7` |
+| Branch | `main` → `origin/main` (pushed; working tree clean) |
+| Build | `npm run test:unit` 54/54 pass; Vercel production **Ready** / **PROMOTED** |
+| Vercel | Production **Ready** — https://sheetomatic.com / https://app.sheetomatic.com |
+| Deploy | `dpl_5cwx8AWidfptLP5vvtcvVJRGtTJ1` — https://sheetomatic-redesign-2d6lhrgnq-sheetomatic.vercel.app |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops. |
+| Live check | Homepage embeds `youtube.com/embed/acTJOocmuZM` for WhatsApp AI |
+
+**Hard-refresh in prod:** `/` (homepage 2nd video), favicon/`?v=7` assets, AI launcher mark.
+
+---
+
+**Deployed (2026-07-11):** Finalized Sheetomatic growth-bars logo, crisp favicon, AI marks (Sheetomatic only).
+
+| Item | Detail |
+|------|--------|
+| Commits | `dd01013` — Apply finalized Sheetomatic growth-bars logo, crisp favicon, and AI button marks. · `e663437` — Sync App Router favicon assets so production serves the crisp growth-bars icons. |
+| Branch | `main` → `origin/main` (pushed) |
+| Build | `npm run test:unit` 54/54 pass; Vercel production **Ready** |
+| Vercel | Production **Ready** — https://sheetomatic.com / https://app.sheetomatic.com |
+| Deploy | `dpl_7ekbrL42rQ2zUyN6JvWRFqQ2RVNp` — https://sheetomatic-redesign-2i70a1em9-sheetomatic.vercel.app |
+| Live check | `/favicon.ico?v=7` 285478B · `/icon.png?v=7` 23377B · `/apple-icon.png?v=7` 7519B |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops. |
+| Note | Next.js served stale `src/app/{favicon.ico,icon.png,apple-icon.png}` over `public/`; follow-up sync required for crisp icons. |
+
+**Hard-refresh in prod:** hard-refresh (Cmd/Ctrl+Shift+R) on https://sheetomatic.com and https://app.sheetomatic.com — browsers cache favicons aggressively even with `?v=7`.
+
+---
+
+**Deployed (2026-07-11):** Leads LMS P0 — score/temperature, UTM attribution, archive, duplicates (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| Commit | `c21fc70` — Ship Leads LMS P0: score/temperature, UTM attribution, archive, and duplicate detection. |
+| Branch | `main` → `origin/main` (pushed) |
+| Build | `npm run test:unit` 54/54 pass; Vercel production **Ready** (GitHub deployment success) |
+| Migration | `20260711120000_inbound_lead_lms_p0` — auto-applied via `prisma migrate deploy` in Vercel `build` |
+| Vercel | Production **Ready** — https://sheetomatic.com / https://workspace.sheetomatic.com |
+| Deploy | GitHub deploy `5401308013` — https://sheetomatic-redesign-6nomih4w9-sheetomatic.vercel.app |
+| Target | Sheetomatic verified Ready. Note: shared-repo Vercel also queued Hingorani/Tops for same SHA (not intentionally promoted). |
+| Excluded | EM pricing docs/plans, BCI sales-kit pricing edit, `.tmp-screenrec/` |
+
+**Hard-refresh in prod:** `/app/leads` (Hot/Warm/Cold, attribution, archive filter, duplicates).
+
+---
+
+**Deployed (2026-07-11):** Leads dashboard/nav fix — card + sidebar open `/app/leads` (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| Commit | `fbe1f98` — Make dashboard Leads card and sidebar open /app/leads. |
+| Branch | `main` → `origin/main` (already up-to-date; push confirmed) |
+| Vercel | Production **Ready** — https://sheetomatic.com / https://app.sheetomatic.com (HTTP 200) |
+| Deploy | `dpl_7PMeEYfiFhVpLrw3z4HuPjxH8Bb4` — https://sheetomatic-redesign-74u67rp76-sheetomatic.vercel.app |
+| Target | Sheetomatic only. Did not touch Hingorani/Tops. |
+| Excluded | Unrelated WIP left uncommitted (telegram/meta leads, EM pricing docs, prisma, COLLABORATION.md, `.tmp-screenrec/`) |
+
+**Hard-refresh in prod:** `/app` dashboard Leads card and sidebar → `/app/leads`.
+
+---
+
+**Deployed (2026-07-11):** Leads PDF gaps — source connectors, Demo/Negotiation, forecast, CSV import (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| Commit | `9bc296a` — Ship Leads PDF gaps: source connectors, Demo/Negotiation, forecast, CSV import. |
+| Branch | `main` → `origin/main` (pushed) |
+| Build | Local `next build` pass; Vercel production **Ready** |
+| Migrations | `20260711140000_lead_source_telegram`, `20260711150000_lead_demo_negotiation_forecast` (via `prisma migrate deploy` in Vercel build) |
+| Vercel | Production **Ready** — https://sheetomatic.com / https://app.sheetomatic.com |
+| Deploy | `dpl_DDHovGbH7osdw2SmMwwnCHZaureK` — https://sheetomatic-redesign-f7hih23ey-sheetomatic.vercel.app |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops. |
+| Excluded | EM pricing docs/plans, BCI sales-kit pricing edit, `.tmp-screenrec/` |
+
+**Hard-refresh in prod:** `/app/leads` (CSV import, Forecast KPI, Demo/Negotiation stages) and `/app/leads/settings` (WA / Meta / Telegram connectors).
+
+---
