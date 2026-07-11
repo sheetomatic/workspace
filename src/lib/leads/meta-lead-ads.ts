@@ -51,6 +51,27 @@ export async function findMetaLeadConnectionByVerifyToken(verifyToken: string) {
   const token = verifyToken.trim();
   if (!token) return null;
 
+  const byPath = await prisma.leadIngestConnection.findMany({
+    where: {
+      channel: { in: ["FACEBOOK", "INSTAGRAM"] },
+      config: { path: ["verifyToken"], equals: token },
+    },
+    select: {
+      id: true,
+      organizationId: true,
+      channel: true,
+      enabled: true,
+      config: true,
+    },
+  });
+
+  const match = byPath.find((row) => {
+    const config = parseMetaLeadAdsConfig(row.config);
+    return config?.verifyToken === token;
+  });
+  if (match) return match;
+
+  // Fallback for configs that stored verifyToken under alternate shapes.
   const rows = await prisma.leadIngestConnection.findMany({
     where: {
       channel: { in: ["FACEBOOK", "INSTAGRAM"] },
@@ -75,6 +96,27 @@ export async function findMetaLeadConnectionByVerifyToken(verifyToken: string) {
 export async function findMetaLeadConnectionsByPageId(pageId: string) {
   const id = pageId.trim();
   if (!id) return [];
+
+  const byPath = await prisma.leadIngestConnection.findMany({
+    where: {
+      channel: { in: ["FACEBOOK", "INSTAGRAM"] },
+      enabled: true,
+      config: { path: ["pageId"], equals: id },
+    },
+    select: {
+      id: true,
+      organizationId: true,
+      channel: true,
+      enabled: true,
+      config: true,
+    },
+  });
+
+  const filtered = byPath.filter((row) => {
+    const config = parseMetaLeadAdsConfig(row.config);
+    return config?.pageId === id;
+  });
+  if (filtered.length > 0) return filtered;
 
   const rows = await prisma.leadIngestConnection.findMany({
     where: {
@@ -101,14 +143,15 @@ export function verifyMetaLeadSignature(
   signatureHeader: string | null,
   appSecret: string | undefined,
 ) {
-  if (!appSecret?.trim()) {
+  const secret = appSecret?.trim() || process.env.META_APP_SECRET?.trim();
+  if (!secret) {
     // App secret optional — page token + verify token still bind the tenant.
     return true;
   }
   if (!signatureHeader?.startsWith("sha256=")) {
     return false;
   }
-  const expected = createHmac("sha256", appSecret.trim())
+  const expected = createHmac("sha256", secret)
     .update(rawBody)
     .digest("hex");
   const provided = signatureHeader.slice("sha256=".length);
@@ -120,6 +163,16 @@ export function verifyMetaLeadSignature(
   } catch {
     return false;
   }
+}
+
+/** Resolve app secret for webhook HMAC from matching connections or env. */
+export function resolveMetaWebhookAppSecret(
+  connections: Array<{ config: unknown }>,
+) {
+  const fromConnection = connections
+    .map((row) => parseMetaLeadAdsConfig(row.config)?.appSecret)
+    .find((s) => s?.trim());
+  return fromConnection?.trim() || process.env.META_APP_SECRET?.trim() || undefined;
 }
 
 async function fetchMetaLeadDetails(
@@ -265,11 +318,11 @@ export async function processMetaLeadgenEvent(params: {
 
       // When both channels are enabled for the same page, only ingest once.
       if (connections.length > 1) {
-      const wantsInstagram = Boolean(
-        platform &&
-          (platform.toLowerCase().includes("instagram") ||
-            platform.toLowerCase() === "ig"),
-      );
+        const wantsInstagram = Boolean(
+          platform &&
+            (platform.toLowerCase().includes("instagram") ||
+              platform.toLowerCase() === "ig"),
+        );
         const targetChannel: LeadSourceChannel = wantsInstagram
           ? "INSTAGRAM"
           : "FACEBOOK";

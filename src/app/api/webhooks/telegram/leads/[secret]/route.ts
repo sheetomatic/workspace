@@ -14,6 +14,12 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  // When setWebhook registered secret_token, Telegram sends this header.
+  const headerSecret = request.headers.get("x-telegram-bot-api-secret-token");
+  if (headerSecret && headerSecret !== secret) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   let payload: unknown;
   try {
     payload = await request.json();

@@ -505,26 +505,54 @@ export async function syncLeadFromWhatsAppContact(params: {
     return null;
   }
 
-  return ingestInboundLead({
-    organizationId: params.organizationId,
-    channel: "WHATSAPP",
-    connectionId: connection.id,
-    skipConnectionSetup: true,
-    externalId: contact.phone,
-    name: contact.name,
-    phone: contact.phone,
-    email: contact.email,
-    city: contact.city,
-    requirement: contact.requirementDescription,
-    sourceDetail: contact.intent ?? undefined,
-    capturedAt: contact.createdAt,
-    waContactId: contact.id,
-    assignedToId: contact.assignedToId,
-    nextFollowUpAt: contact.nextFollowUpAt,
-    rawPayload: {
-      pipelineStage: contact.pipelineStage,
-      leadCaptureComplete: contact.leadCaptureComplete,
-    },
-    createFmsJob: true,
-  });
+  try {
+    const result = await ingestInboundLead({
+      organizationId: params.organizationId,
+      channel: "WHATSAPP",
+      connectionId: connection.id,
+      skipConnectionSetup: true,
+      externalId: contact.phone,
+      name: contact.name,
+      phone: contact.phone,
+      email: contact.email,
+      city: contact.city,
+      requirement: contact.requirementDescription,
+      sourceDetail: contact.intent ?? undefined,
+      capturedAt: contact.createdAt,
+      waContactId: contact.id,
+      assignedToId: contact.assignedToId,
+      nextFollowUpAt: contact.nextFollowUpAt,
+      rawPayload: {
+        pipelineStage: contact.pipelineStage,
+        leadCaptureComplete: contact.leadCaptureComplete,
+      },
+      createFmsJob: true,
+    });
+
+    await prisma.leadIngestConnection.update({
+      where: { id: connection.id },
+      data: {
+        lastSyncAt: new Date(),
+        lastSyncError: result.lead
+          ? null
+          : result.skipped
+            ? "Skipped: contact has no usable phone"
+            : null,
+        syncStatus: result.lead || result.skipped ? "IDLE" : "ERROR",
+      },
+    });
+
+    return result;
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "WhatsApp lead sync failed";
+    await prisma.leadIngestConnection.update({
+      where: { id: connection.id },
+      data: {
+        lastSyncError: message,
+        syncStatus: "ERROR",
+      },
+    });
+    throw error;
+  }
 }

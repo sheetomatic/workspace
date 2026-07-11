@@ -33,7 +33,7 @@ export const LEAD_DASHBOARD_SOURCE_FILTERS = [
 
 export type LeadDashboardSourceFilter = (typeof LEAD_DASHBOARD_SOURCE_FILTERS)[number];
 
-/** Connectors shown in UI but not yet available for setup. */
+/** Connectors not available for setup toggle (Manual create uses createManualInboundLead). */
 export const LEAD_SOURCE_COMING_SOON_CHANNELS: LeadSourceChannel[] = ["MANUAL"];
 
 export function isLeadSourceComingSoon(channel: LeadSourceChannel) {

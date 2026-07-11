@@ -777,6 +777,24 @@ export async function updateLeadConnection(params: {
     return { ok: false, message: "This connector is coming soon." };
   }
 
+  // Channel-specific validators own credential shape — do not bypass via raw JSON.
+  if (params.channel === "WHATSAPP") {
+    return setWhatsAppLeadIngestEnabled(params.enabled);
+  }
+  if (params.channel === "FACEBOOK" || params.channel === "INSTAGRAM") {
+    return {
+      ok: false,
+      message:
+        "Use saveMetaLeadAdsConnection for Facebook/Instagram Lead Ads credentials.",
+    };
+  }
+  if (params.channel === "TELEGRAM") {
+    return {
+      ok: false,
+      message: "Use saveTelegramLeadConnection for Telegram bot credentials.",
+    };
+  }
+
   await ensureLeadConnections(user.organizationId);
 
   let config: Record<string, unknown> = {};
@@ -2178,14 +2196,14 @@ export async function setWhatsAppLeadIngestEnabled(enabled: boolean) {
   if (enabled) {
     const creds = await resolveWorkspaceWhatsAppCredentials(user.organizationId);
     const phoneId = creds.redlavaPhoneId?.trim();
-    const hasOfficial =
-      Boolean(phoneId) &&
-      Boolean(creds.metaAccessToken?.trim() || creds.redlavaApiKey?.trim());
+    const hasOfficial = Boolean(
+      phoneId && creds.metaAccessToken?.trim(),
+    );
     if (!hasOfficial) {
       return {
         ok: false,
         message:
-          "Configure Official API (access token + phone number ID) in WhatsApp settings first.",
+          "Configure Official API (Meta Cloud access token + phone number ID) in WhatsApp settings first.",
       };
     }
   }
@@ -2389,6 +2407,7 @@ export async function saveTelegramLeadConnection(params: {
     const set = await setTelegramWebhook({
       botToken,
       webhookUrl,
+      secretToken: webhook.secret,
     });
     if (!set.ok) {
       return { ok: false, message: `setWebhook failed: ${set.message}` };

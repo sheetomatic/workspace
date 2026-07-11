@@ -46,14 +46,12 @@ function statusFrom(params: {
   return { status: "connected", statusLabel: "Connected" };
 }
 
-function isOfficialApiReady(
+/** Official API = Meta Cloud access token + phone number ID (not Web Based API alone). */
+export function isOfficialApiReady(
   credentials: Awaited<ReturnType<typeof resolveWorkspaceWhatsAppCredentials>>,
 ) {
   const phoneId = credentials.redlavaPhoneId?.trim();
-  return Boolean(
-    phoneId &&
-      (credentials.metaAccessToken?.trim() || credentials.redlavaApiKey?.trim()),
-  );
+  return Boolean(phoneId && credentials.metaAccessToken?.trim());
 }
 
 export async function getLeadSourceCardModels(

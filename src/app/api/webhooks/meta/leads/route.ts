@@ -1,11 +1,11 @@
 import { after } from "next/server";
 import { NextResponse } from "next/server";
-import { parseMetaLeadAdsConfig } from "@/lib/leads/connection-config";
 import {
   extractMetaLeadgenJobs,
   findMetaLeadConnectionByVerifyToken,
   findMetaLeadConnectionsByPageId,
   processMetaLeadgenEvent,
+  resolveMetaWebhookAppSecret,
   verifyMetaLeadSignature,
 } from "@/lib/leads/meta-lead-ads";
 
@@ -49,9 +49,7 @@ export async function POST(request: Request) {
     for (const job of jobs) {
       try {
         const connections = await findMetaLeadConnectionsByPageId(job.pageId);
-        const appSecret = connections
-          .map((row) => parseMetaLeadAdsConfig(row.config)?.appSecret)
-          .find(Boolean);
+        const appSecret = resolveMetaWebhookAppSecret(connections);
         if (!verifyMetaLeadSignature(rawBody, signature, appSecret)) {
           console.warn("meta leads webhook: bad signature", job.pageId);
           continue;
