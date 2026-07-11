@@ -25,6 +25,7 @@ import {
   visibleWorkspaceNavItems,
   type WorkspaceNavItem,
 } from "@/lib/workspace-navigation";
+import { resolveWorkspaceHomeHref } from "@/lib/workspace-modules";
 
 const ROLE_ORDER = ["VIEWER", "STAFF", "MANAGER", "ADMIN", "OWNER"] as const;
 
@@ -267,6 +268,7 @@ function WorkspaceSidebarBrand({
   appearance,
   organizationName,
   dedicatedPortal = false,
+  homeHref,
 }: {
   appearance: WorkspaceAppearance & {
     logoSrc: string;
@@ -275,39 +277,57 @@ function WorkspaceSidebarBrand({
   };
   organizationName: string;
   dedicatedPortal?: boolean;
+  homeHref: string;
 }) {
   const custom = isCustomWorkspaceLogo(appearance.logoSrc);
 
   if (custom) {
     return (
-      <div className="saas-sidebar-brand">
+      <Link
+        aria-label="Home"
+        className="saas-sidebar-brand saas-sidebar-brand--link"
+        href={homeHref}
+        prefetch
+      >
         <img
-          alt={appearance.productName}
+          alt=""
+          aria-hidden
           className="ws-sidebar-brand-lockup ws-sidebar-brand-lockup--custom"
           src={appearance.lockupSrc}
         />
         <span className="ws-sidebar-org-name">{appearance.brandName}</span>
-      </div>
+      </Link>
     );
   }
 
   if (dedicatedPortal) {
     return (
-      <div className="saas-sidebar-brand saas-sidebar-brand--dedicated">
+      <Link
+        aria-label="Home"
+        className="saas-sidebar-brand saas-sidebar-brand--dedicated saas-sidebar-brand--link"
+        href={homeHref}
+        prefetch
+      >
         <strong className="ws-dedicated-product-name">
           {appearance.productName}
         </strong>
         <span className="ws-sidebar-org-name">
           {appearance.brandName || organizationName}
         </span>
-      </div>
+      </Link>
     );
   }
 
   return (
-    <div className="saas-sidebar-brand saas-sidebar-brand--lockup">
+    <Link
+      aria-label="Home"
+      className="saas-sidebar-brand saas-sidebar-brand--lockup saas-sidebar-brand--link"
+      href={homeHref}
+      prefetch
+    >
       <img
-        alt="Sheetomatic"
+        alt=""
+        aria-hidden
         className="ws-sidebar-brand-lockup ws-sidebar-brand-lockup--on-dark"
         height={24}
         src={appearance.lockupLightSrc}
@@ -322,7 +342,7 @@ function WorkspaceSidebarBrand({
         width={168}
       />
       <span className="ws-sidebar-org-name">{organizationName}</span>
-    </div>
+    </Link>
   );
 }
 
@@ -406,11 +426,21 @@ export function SaasShell({
     : "Workspace navigation";
   const signOutPath = isDedicatedPortal ? "/login" : "/";
   const showCustomize = !isDedicatedPortal;
+  // Platform logo always opens the widget home at /app (staff may redirect from
+  // the page). Dedicated portals use their portal home — never /app/cases loop.
+  const homeHref = isDedicatedPortal
+    ? resolveWorkspaceHomeHref(user)
+    : "/app";
 
   return (
     <div className="saas-app workspace-app">
       <header className="ws-mobile-shell-header">
-        <div className="ws-mobile-shell-brand">
+        <Link
+          aria-label="Home"
+          className="ws-mobile-shell-brand"
+          href={homeHref}
+          prefetch
+        >
           <WorkspaceBrandLogo
             alt={productName}
             light={!isDedicatedPortal}
@@ -421,7 +451,7 @@ export function SaasShell({
             <strong>{customBrand ? productName : user.organizationName}</strong>
             {customBrand ? <span>{brandSubtitle}</span> : null}
           </div>
-        </div>
+        </Link>
         {!isDedicatedPortal ? (
           <OrganizationSwitcher
             className="ws-mobile-shell-org-switcher"
@@ -455,6 +485,7 @@ export function SaasShell({
           <WorkspaceSidebarBrand
             appearance={resolvedAppearance}
             dedicatedPortal={isDedicatedPortal}
+            homeHref={homeHref}
             organizationName={user.organizationName}
           />
         </div>

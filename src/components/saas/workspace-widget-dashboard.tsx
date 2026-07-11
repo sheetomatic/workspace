@@ -69,7 +69,7 @@ function Widget(props: {
       <Link className="ws-widget-hit" href={props.href}>
         <header className="ws-widget-head">
           <span className="ws-widget-icon">{props.icon}</span>
-          <h2>{props.title}</h2>
+          <h3>{props.title}</h3>
           <span className="ws-widget-link">
             {props.linkLabel ?? "View all \u2192"}
           </span>
@@ -128,14 +128,20 @@ export function WorkspaceWidgetDashboard({
     <div className="ws-widget-dash">
       <header className="ws-widget-hero">
         <div className="ws-widget-hero-title">
-          <p className="ws-widget-hero-kicker">{organizationName}</p>
+          <p className="ws-widget-hero-kicker">
+            <span className="ws-widget-hero-home">Home</span>
+            <span className="ws-widget-hero-sep" aria-hidden>
+              ·
+            </span>
+            {organizationName}
+          </p>
           <h1>Hello, {userName}</h1>
           <p className="ws-widget-hero-date">
             {today}
-            {data.scope === "personal" ? " \u00B7 Your queue" : ""}
+            {data.scope === "personal" ? " \u00B7 Your queue" : " \u00B7 Business at a glance"}
           </p>
         </div>
-        <div className="ws-widget-hero-stats">
+        <div className="ws-widget-hero-stats" aria-label="Key metrics">
           {openOrders !== null && show("salesOrders") ? (
             <div className="ws-widget-hero-stat">
               <strong>{openOrders}</strong>
@@ -169,7 +175,14 @@ export function WorkspaceWidgetDashboard({
         </div>
       </header>
 
-      <div className="ws-widget-grid">
+      <section aria-label="Module overview" className="ws-widget-section">
+        <div className="ws-widget-section-head">
+          <h2 className="ws-widget-section-title">Modules</h2>
+          <p className="ws-widget-section-sub">
+            Open a module to review exceptions and follow-ups
+          </p>
+        </div>
+        <div className="ws-widget-grid">
         {data.leads && show("leads") ? (
           <Widget
             footer={
@@ -439,7 +452,8 @@ export function WorkspaceWidgetDashboard({
             ) : null}
           </Widget>
         ) : null}
-      </div>
+        </div>
+      </section>
     </div>
   );
 }
