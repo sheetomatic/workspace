@@ -6,6 +6,13 @@ import { leadHasRequiredContact } from "@/lib/leads/contact-validation";
 import { getLeadNurtureConfig } from "@/lib/leads/nurture/config";
 import { isLeadNurtureSendingEnabled } from "@/lib/leads/nurture/sending-enabled";
 import {
+  canSendEvent,
+  eventAlreadySent,
+  readNurtureState,
+  WELCOME_COOLDOWN_HOURS,
+  type LeadNurtureState,
+} from "@/lib/leads/nurture/state";
+import {
   buildLeadNurtureMessage,
   LEAD_NURTURE_EVENT_LABELS,
   type LeadNurtureEventId,
@@ -15,27 +22,17 @@ import { masCredentialsFromWorkspace } from "@/lib/integrations/whatsapp-provide
 import { sendMasTextMessage } from "@/lib/integrations/messageautosender";
 import { resolveWorkspaceWhatsAppCredentials } from "@/lib/whatsapp-settings";
 
+export {
+  canSendEvent,
+  eventAlreadySent,
+  readNurtureState,
+  WELCOME_COOLDOWN_HOURS,
+  type LeadNurtureState,
+};
+
 const WELCOME_RETRY_BATCH = 10;
 
 const NURTURE_STOP_STATUSES: InboundLeadStatus[] = ["WON", "LOST", "PROJECT_ACTIVE", "PAYMENT"];
-
-export type LeadNurtureState = {
-  sentEvents?: Partial<Record<LeadNurtureEventId, string>>;
-  lastAssignedNurtureId?: string;
-  lastSentAt?: string;
-  paused?: boolean;
-};
-
-function readNurtureState(rawPayload: unknown): LeadNurtureState {
-  if (!rawPayload || typeof rawPayload !== "object") {
-    return {};
-  }
-  const nurture = (rawPayload as Record<string, unknown>).nurture;
-  if (!nurture || typeof nurture !== "object") {
-    return {};
-  }
-  return nurture as LeadNurtureState;
-}
 
 function mergeNurtureState(
   rawPayload: unknown,
@@ -50,37 +47,105 @@ function mergeNurtureState(
   return base as Prisma.InputJsonValue;
 }
 
-function eventAlreadySent(state: LeadNurtureState, event: LeadNurtureEventId) {
-  return Boolean(state.sentEvents?.[event]);
+async function healWelcomeSentState(params: {
+  leadId: string;
+  rawPayload: unknown;
+  sentAt?: string;
+}) {
+  const state = readNurtureState(params.rawPayload);
+  if (eventAlreadySent(state, "welcome")) {
+    return;
+  }
+  const sentAt = params.sentAt ?? new Date().toISOString();
+  await prisma.inboundLead.update({
+    where: { id: params.leadId },
+    data: {
+      rawPayload: mergeNurtureState(params.rawPayload, {
+        sentEvents: { ...state.sentEvents, welcome: sentAt },
+        lastSentAt: state.lastSentAt ?? sentAt,
+      }),
+    },
+  });
 }
 
-function hoursSince(iso: string | undefined) {
-  if (!iso) {
-    return Number.POSITIVE_INFINITY;
+/** True if this lead (or same phone recently) already got a welcome WA. */
+export async function welcomeAlreadyDelivered(params: {
+  organizationId: string;
+  leadId: string;
+  phone: string;
+  rawPayload: unknown;
+}): Promise<{ delivered: boolean; reason?: string }> {
+  const state = readNurtureState(params.rawPayload);
+  if (eventAlreadySent(state, "welcome")) {
+    return { delivered: true, reason: "sent_events" };
   }
-  const ms = Date.now() - new Date(iso).getTime();
-  return ms / (60 * 60 * 1000);
-}
 
-function isStageEvent(event: LeadNurtureEventId) {
-  return event.startsWith("stage_");
-}
+  const leadActivity = await prisma.inboundLeadActivity.findFirst({
+    where: {
+      organizationId: params.organizationId,
+      leadId: params.leadId,
+      type: "WHATSAPP",
+      metadata: { path: ["nurtureEvent"], equals: "welcome" },
+    },
+    select: { id: true, createdAt: true },
+    orderBy: { createdAt: "desc" },
+  });
 
-function canSendEvent(
-  state: LeadNurtureState,
-  event: LeadNurtureEventId,
-  stageMinGapHours: number,
-) {
-  if (state.paused) {
-    return false;
+  if (leadActivity) {
+    await healWelcomeSentState({
+      leadId: params.leadId,
+      rawPayload: params.rawPayload,
+      sentAt: leadActivity.createdAt.toISOString(),
+    });
+    return { delivered: true, reason: "activity_log" };
   }
-  if (eventAlreadySent(state, event)) {
-    return false;
+
+  const since = new Date(Date.now() - WELCOME_COOLDOWN_HOURS * 60 * 60 * 1000);
+  const phoneActivity = await prisma.inboundLeadActivity.findFirst({
+    where: {
+      organizationId: params.organizationId,
+      type: "WHATSAPP",
+      createdAt: { gte: since },
+      metadata: { path: ["nurtureEvent"], equals: "welcome" },
+      lead: {
+        organizationId: params.organizationId,
+        phone: params.phone,
+      },
+    },
+    select: { id: true, leadId: true, createdAt: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (phoneActivity) {
+    await healWelcomeSentState({
+      leadId: params.leadId,
+      rawPayload: params.rawPayload,
+      sentAt: phoneActivity.createdAt.toISOString(),
+    });
+    return { delivered: true, reason: "phone_cooldown" };
   }
-  if (isStageEvent(event) && hoursSince(state.lastSentAt) < stageMinGapHours) {
-    return false;
+
+  const siblingLeads = await prisma.inboundLead.findMany({
+    where: {
+      organizationId: params.organizationId,
+      phone: params.phone,
+      id: { not: params.leadId },
+    },
+    select: { id: true, rawPayload: true },
+    take: 25,
+  });
+
+  for (const sibling of siblingLeads) {
+    if (eventAlreadySent(readNurtureState(sibling.rawPayload), "welcome")) {
+      await healWelcomeSentState({
+        leadId: params.leadId,
+        rawPayload: params.rawPayload,
+      });
+      return { delivered: true, reason: "sibling_lead" };
+    }
   }
-  return true;
+
+  return { delivered: false };
 }
 
 export async function triggerLeadNurtureEvent(params: {
@@ -147,6 +212,18 @@ export async function triggerLeadNurtureEvent(params: {
     return { sent: false, reason: "skipped_cooldown_or_duplicate" };
   }
 
+  if (params.event === "welcome" && !params.force) {
+    const prior = await welcomeAlreadyDelivered({
+      organizationId: params.organizationId,
+      leadId: lead.id,
+      phone: lead.phone!,
+      rawPayload: lead.rawPayload,
+    });
+    if (prior.delivered) {
+      return { sent: false, reason: prior.reason ?? "welcome_already_delivered" };
+    }
+  }
+
   if (params.event === "post_call") {
     const summary =
       params.discussionSummary?.trim() ||
@@ -180,8 +257,50 @@ export async function triggerLeadNurtureEvent(params: {
     nurtureConfig,
   });
 
+  // Claim before send so concurrent sync/retry cannot double-fire the same welcome.
+  let welcomeClaimAt: string | null = null;
+  if (params.event === "welcome" && !params.force) {
+    welcomeClaimAt = new Date().toISOString();
+    const fresh = await prisma.inboundLead.findFirst({
+      where: { id: lead.id, organizationId: params.organizationId },
+      select: { rawPayload: true },
+    });
+    const freshState = readNurtureState(fresh?.rawPayload);
+    if (eventAlreadySent(freshState, "welcome")) {
+      return { sent: false, reason: "skipped_cooldown_or_duplicate" };
+    }
+    await prisma.inboundLead.update({
+      where: { id: lead.id },
+      data: {
+        rawPayload: mergeNurtureState(fresh?.rawPayload ?? lead.rawPayload, {
+          sentEvents: { ...freshState.sentEvents, welcome: `claim:${welcomeClaimAt}` },
+        }),
+      },
+    });
+  }
+
   const result = await sendMasTextMessage({ toPhone: lead.phone!, body }, mas);
   if (!result.sent) {
+    if (welcomeClaimAt) {
+      const failed = await prisma.inboundLead.findFirst({
+        where: { id: lead.id },
+        select: { rawPayload: true },
+      });
+      const failedState = readNurtureState(failed?.rawPayload);
+      const claimed = failedState.sentEvents?.welcome;
+      if (typeof claimed === "string" && claimed.startsWith("claim:")) {
+        const { welcome: _drop, ...restSent } = failedState.sentEvents ?? {};
+        void _drop;
+        await prisma.inboundLead.update({
+          where: { id: lead.id },
+          data: {
+            rawPayload: mergeNurtureState(failed?.rawPayload, {
+              sentEvents: restSent,
+            }),
+          },
+        });
+      }
+    }
     return { sent: false, reason: result.reason ?? "send_failed", body };
   }
 
@@ -189,17 +308,26 @@ export async function triggerLeadNurtureEvent(params: {
   const sentEvents = { ...state.sentEvents, [params.event]: sentAt };
   const assigneeId = params.assigneeUserId ?? lead.assignedTo?.id;
 
+  // Re-read payload so we do not wipe fields written concurrently (e.g. WA sync).
+  const latest = await prisma.inboundLead.findFirst({
+    where: { id: lead.id },
+    select: { rawPayload: true, status: true },
+  });
+
   await prisma.inboundLead.update({
     where: { id: lead.id },
     data: {
-      rawPayload: mergeNurtureState(lead.rawPayload, {
-        sentEvents,
+      rawPayload: mergeNurtureState(latest?.rawPayload ?? lead.rawPayload, {
+        sentEvents: {
+          ...readNurtureState(latest?.rawPayload).sentEvents,
+          ...sentEvents,
+        },
         lastSentAt: sentAt,
         ...(params.event === "assigned" && assigneeId
           ? { lastAssignedNurtureId: assigneeId }
           : {}),
       }),
-      ...(lead.status === "NEW" && params.event === "welcome"
+      ...(latest?.status === "NEW" && params.event === "welcome"
         ? { status: "CONTACTED" as const }
         : {}),
     },
@@ -246,7 +374,8 @@ export async function retryPendingWelcomeMessages(organizationId: string): Promi
         organizationId,
         phone: { not: null },
         capturedAt: { gte: weekAgo },
-        status: { notIn: NURTURE_STOP_STATUSES },
+        // Only NEW — CONTACTED+ already received (or should not get) welcome.
+        status: "NEW",
       },
       select: { id: true, rawPayload: true, phone: true },
       orderBy: { capturedAt: "desc" },
@@ -261,6 +390,15 @@ export async function retryPendingWelcomeMessages(organizationId: string): Promi
     }
     const state = readNurtureState(lead.rawPayload);
     if (eventAlreadySent(state, "welcome") || state.paused) {
+      continue;
+    }
+    const prior = await welcomeAlreadyDelivered({
+      organizationId,
+      leadId: lead.id,
+      phone: lead.phone!,
+      rawPayload: lead.rawPayload,
+    });
+    if (prior.delivered) {
       continue;
     }
     const result = await triggerLeadNurtureEvent({

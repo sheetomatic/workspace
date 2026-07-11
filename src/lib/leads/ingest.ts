@@ -22,6 +22,7 @@ import {
   type DuplicateLeadMatch,
 } from "@/lib/leads/duplicates";
 import { triggerLeadNurtureEvent } from "@/lib/leads/nurture/run";
+import { mergeLeadRawPayload } from "@/lib/leads/merge-raw-payload";
 import { computeLeadScore } from "@/lib/leads/scoring";
 import {
   defaultGoogleSheetsLeadConfig,
@@ -294,6 +295,13 @@ export async function ingestInboundLead(
   const isNewLead = !lead;
   const resolvedStatus =
     input.status ?? (isNewLead ? aiSuggestedStatus : lead?.status ?? "NEW");
+  /** Never clobber CRM status on sync updates unless the caller set it explicitly. */
+  const statusUpdate =
+    input.status !== undefined
+      ? { status: input.status }
+      : isNewLead
+        ? { status: resolvedStatus }
+        : {};
 
   const pickString = (
     incoming: string | null | undefined,
@@ -357,7 +365,7 @@ export async function ingestInboundLead(
     quotationValue: input.sheetPull ? lead?.quotationValue : undefined,
     discussionNotes: input.sheetPull ? lead?.discussionNotes : undefined,
     aiSuggestedStatus,
-    status: resolvedStatus,
+    ...statusUpdate,
     score,
     temperature,
     utmSource: pickString(input.utmSource, lead?.utmSource),
@@ -385,7 +393,9 @@ export async function ingestInboundLead(
       (input.sheetPull ? lead?.nextFollowUpAt ?? undefined : undefined),
     capturedAt: input.capturedAt ?? (input.sheetPull ? lead?.capturedAt ?? undefined : undefined),
     waContactId: input.waContactId ?? (input.sheetPull ? lead?.waContactId ?? undefined : undefined),
-    rawPayload: input.rawPayload,
+    rawPayload: isNewLead
+      ? input.rawPayload
+      : mergeLeadRawPayload(lead?.rawPayload, input.rawPayload),
     externalId: externalId ?? undefined,
   };
 
@@ -409,7 +419,7 @@ export async function ingestInboundLead(
           input.capturedAt !== undefined && input.capturedAt !== null
             ? input.capturedAt
             : undefined,
-        rawPayload: input.rawPayload ?? lead.rawPayload ?? undefined,
+        rawPayload: mergeLeadRawPayload(lead.rawPayload, input.rawPayload),
       },
     });
   } else {
