@@ -1,5 +1,9 @@
 /** Service category hub + sub-page content for /services and /services/[slug] */
 
+import {
+  workspaceLoginHref,
+  workspacePortalOrigin,
+} from "@/lib/workspace-auth-links";
 import { hrWorkspaceModules } from "./hr-module-content";
 
 export type ServiceCategorySlug =
@@ -346,7 +350,7 @@ export const serviceCategories: ServiceCategory[] = [
     ctaLabel: "Scope Executive Assistant on WhatsApp",
     whatsappMessage:
       "Hi Sheetomatic, I want to scope Executive Assistant task delegation and WhatsApp follow-up for our team.",
-    workspaceHref: "/login",
+    workspaceHref: workspaceLoginHref(),
     workspaceCta: "Open workspace",
     relatedSlugs: ["checklist", "mis", "whatsapp-ai"],
   },
@@ -394,7 +398,7 @@ export const serviceCategories: ServiceCategory[] = [
     ctaLabel: "Scope HR modules on WhatsApp",
     whatsappMessage:
       "Hi Sheetomatic, I want to scope HR modules — attendance, field tracking, and/or hiring for our team.",
-    workspaceHref: "/login?callbackUrl=%2Fapp%2Fhr",
+    workspaceHref: `${workspacePortalOrigin()}/login?callbackUrl=${encodeURIComponent("/app/hr")}`,
     workspaceCta: "Open HR workspace",
     relatedSlugs: ["tasks", "mis", "checklist"],
   },

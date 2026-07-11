@@ -28,6 +28,7 @@ import { RelatedServicesSection } from "@/components/marketing/related-services-
 import { ServicesBreadcrumb } from "@/components/marketing/services-breadcrumb";
 import { ServicesSubNav } from "@/components/marketing/services-sub-nav";
 import { whatsappDisplayNumber } from "@/app/site-content";
+import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
 import { aiEnabledTasksVideo } from "@/app/video-content";
 import {
   serviceCategoryBySlug,
@@ -274,7 +275,10 @@ function HrServiceDetail({ category }: { category: ServiceCategory }) {
                 message={category.whatsappMessage}
               />
               <MarketingLinkButton
-                href={category.workspaceHref ?? "/login?callbackUrl=%2Fapp%2Fhr"}
+                href={
+                  category.workspaceHref ??
+                  `${WORKSPACE_LOGIN_HREF}?callbackUrl=${encodeURIComponent("/app/hr")}`
+                }
                 variant="secondary"
               >
                 <span>{category.workspaceCta ?? "Open HR workspace"}</span>

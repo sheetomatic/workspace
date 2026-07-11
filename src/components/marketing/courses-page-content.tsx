@@ -22,6 +22,7 @@ import {
   paidCourses,
 } from "@/app/page-content";
 import { graphyStoreUrl, youtubeChannelName, youtubeChannelUrl } from "@/app/site-content";
+import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
 import Link from "next/link";
 import "./minimal-premium.css";
 import "./courses-page.css";
@@ -143,7 +144,7 @@ export function CoursesPageContent() {
             >
               {coursesPage.paidStoreButtonLabel}
             </a>
-            <Link className="courses-members-signin" href="/login">
+            <Link className="courses-members-signin" href={WORKSPACE_LOGIN_HREF}>
               Already a member? Sign in
             </Link>
           </div>

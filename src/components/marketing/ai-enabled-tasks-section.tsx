@@ -1,5 +1,6 @@
 import { aiEnabledTasksVideo } from "@/app/video-content";
 import { AI_START_FREE_HREF } from "@/lib/ai-auth-links";
+import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
 import { MarketingLinkButton } from "./marketing-buttons";
 import { VideoEmbed } from "./video-embed";
 import "./videos.css";
@@ -29,7 +30,7 @@ export function AiEnabledTasksSection() {
               <li>Manager task board in Workspace</li>
             </ul>
             <div className="minimal-hero-actions mt-6">
-              <MarketingLinkButton href="/login" variant="primary">
+              <MarketingLinkButton href={WORKSPACE_LOGIN_HREF} variant="primary">
                 Open Workspace
               </MarketingLinkButton>
               <MarketingLinkButton href={AI_START_FREE_HREF} variant="secondary">

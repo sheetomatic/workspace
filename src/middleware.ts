@@ -136,6 +136,43 @@ function workspacePortalHost(request: NextRequest) {
   return `workspace.${root}`;
 }
 
+/** Apex/www marketing only — skip localhost and preview hosts (no workspace subdomain). */
+function isApexMarketingHost(hostname: string) {
+  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "sheetomatic.com";
+  return hostname === root || hostname === `www.${root}`;
+}
+
+/** Send apex /app and non-AI /login to the workspace portal host. */
+function redirectMarketingToWorkspacePortal(request: NextRequest) {
+  const hostname =
+    request.headers.get("host")?.split(":")[0]?.toLowerCase() ?? "";
+  if (!isApexMarketingHost(hostname)) {
+    return null;
+  }
+
+  const { pathname } = request.nextUrl;
+  const product = request.nextUrl.searchParams.get("product");
+
+  if (pathname.startsWith("/app")) {
+    const target = request.nextUrl.clone();
+    target.hostname = workspacePortalHost(request);
+    target.protocol = "https:";
+    return NextResponse.redirect(target);
+  }
+
+  if (
+    (pathname === "/login" || pathname.startsWith("/login/")) &&
+    product !== "ai"
+  ) {
+    const target = request.nextUrl.clone();
+    target.hostname = workspacePortalHost(request);
+    target.protocol = "https:";
+    return NextResponse.redirect(target);
+  }
+
+  return null;
+}
+
 function handleWorkspacePortalHost(request: NextRequest, isLoggedIn: boolean) {
   const host = request.headers.get("host")?.split(":")[0] ?? "";
   if (host.startsWith("app.")) {
@@ -273,6 +310,11 @@ export function middleware(request: NextRequest) {
 
   if (parsedHost.kind === "tenant" && parsedHost.tenantSlug) {
     return handleTenantHost(request, parsedHost.tenantSlug, isLoggedIn);
+  }
+
+  const marketingWorkspaceRedirect = redirectMarketingToWorkspacePortal(request);
+  if (marketingWorkspaceRedirect) {
+    return marketingWorkspaceRedirect;
   }
 
   const protectedResponse = handleProtectedAppRoutes(request, isLoggedIn);

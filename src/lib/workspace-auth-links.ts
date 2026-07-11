@@ -1,9 +1,5 @@
 import { ROOT_DOMAIN } from "@/lib/subdomain";
 
-/** Sheetomatic Workspace marketing → auth entry points */
-export const WORKSPACE_LOGIN_HREF = "/login";
-export const WORKSPACE_SIGNUP_HREF = "/login?intent=start";
-
 /** Generic workspace portal — workspace.sheetomatic.com (app. redirects in middleware). */
 export function workspacePortalOrigin(protocol = "https") {
   return `${protocol}://workspace.${ROOT_DOMAIN}`;
@@ -28,3 +24,7 @@ export function workspaceLoginHref(options?: { org?: string }) {
   }
   return `${workspacePortalOrigin()}/login`;
 }
+
+/** Sheetomatic Workspace marketing → auth entry points (always workspace portal). */
+export const WORKSPACE_LOGIN_HREF = workspaceLoginHref();
+export const WORKSPACE_SIGNUP_HREF = `${workspacePortalOrigin()}/login?intent=start`;

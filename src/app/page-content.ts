@@ -1,3 +1,4 @@
+import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
 import { whatsappDisplayNumber, whatsappTel } from "./site-content";
 
 export const knowledgeTransferLinks = {
@@ -24,7 +25,7 @@ export const footerCompanyLinks = [
 
 export const footerProductLinks = [
   { href: "/products", label: "BCI Suite" },
-  { href: "/login", label: "Sheetomatic Workspace" },
+  { href: WORKSPACE_LOGIN_HREF, label: "Sheetomatic Workspace" },
   { href: "/ai", label: "Sheetomatic AI" },
   { href: "/whatsapp-plans", label: "WhatsApp API" },
   { href: "/services/flow", label: "FMS" },

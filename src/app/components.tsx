@@ -19,6 +19,7 @@ import {
   whatsappTel,
   whatsappDisplayNumber,
 } from "./site-content";
+import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
 
 export function SiteBrand({
   variant = "header",
@@ -72,7 +73,7 @@ export function SiteHeader() {
             <Link className="ab-header-ai" href="/ai">
               Sheetomatic AI
             </Link>
-            <Link className="ab-header-workspace" href="/login">
+            <Link className="ab-header-workspace" href={WORKSPACE_LOGIN_HREF}>
               Workspace
             </Link>
           </div>
