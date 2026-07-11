@@ -23,21 +23,21 @@ export function ChecklistsModuleNav({ user }: { user: SessionUser }) {
   const items = [
     {
       href: "/app/checklists/accounts",
-      label: "Accounts",
+      label: "Accounts Check List",
       icon: ClipboardCheck,
       visible: true,
       description: "GST, recon & collections",
     },
     {
       href: "/app/checklists/hr",
-      label: "HR",
+      label: "HR Check List",
       icon: Users,
       visible: true,
       description: "Onboarding & attendance",
     },
     {
       href: "/app/checklists/maintenance",
-      label: "Maintenance",
+      label: "Maintenance (Machine)",
       icon: Wrench,
       visible: true,
       description: "Plant & PM rounds",

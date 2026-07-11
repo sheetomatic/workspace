@@ -30,13 +30,13 @@ export const TEAM_CHECKLIST_PROFILES: Record<
   HR: {
     title: "HR Check List",
     description:
-      "People operations — onboarding, attendance, leave, and policy compliance for every joiner and shift.",
+      "People operations Process Checklists — onboarding, attendance, leave, and policy compliance.",
     focusAreas: ["Onboarding & KYC", "Attendance exceptions", "Leave balances", "Policy acknowledgement"],
     sampleActivities: [
-      { activity: "Collect KYC, bank, and emergency contact", frequency: "Daily", ownerRole: "HR executive" },
-      { activity: "Issue ID card and system login", frequency: "Daily", ownerRole: "HR / IT" },
+      { activity: "Collect KYC, bank, and emergency contact", frequency: "Weekly", ownerRole: "HR executive" },
+      { activity: "Issue ID card and system login", frequency: "Weekly", ownerRole: "HR / IT" },
       { activity: "Explain KRA/KPI and weekly review rhythm", frequency: "Weekly", ownerRole: "Department head" },
-      { activity: "Attendance and field policy briefing", frequency: "Daily", ownerRole: "HR" },
+      { activity: "Attendance and field policy briefing", frequency: "Monthly", ownerRole: "HR" },
     ],
   },
   MAINTENANCE: {

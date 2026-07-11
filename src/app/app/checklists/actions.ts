@@ -16,6 +16,7 @@ import {
 } from "@/lib/checklists/template-import";
 import { resolveChecklistAssigneeForOrg, activeAssigneeMembershipWhere } from "@/lib/checklists/assignee-validation";
 import { deployAccountsChecklistPack } from "@/lib/checklists/accounts-deploy";
+import { deployHrChecklistPack } from "@/lib/checklists/hr-deploy";
 import { canCreateTasks } from "@/lib/tasks";
 
 const fmsInitialState: FmsActionState = { ok: false };
@@ -325,6 +326,67 @@ export async function deployAccountsChecklistAction(
     return {
       ok: false,
       message: error instanceof Error ? error.message : "Could not deploy accounts checklist.",
+    };
+  }
+}
+
+export async function deployHrChecklistAction(
+  _prev: FmsActionState,
+  formData: FormData,
+): Promise<FmsActionState> {
+  try {
+    const actor = await getChecklistActor();
+    if (!actor.ok) {
+      return { ok: false, message: actor.message };
+    }
+    const user = actor.user;
+    if (!canCreateTasks(user.role)) {
+      return { ok: false, message: "Only managers can deploy the HR checklist pack." };
+    }
+
+    const assigneeUserId = formData.get("assigneeUserId")?.toString().trim() ?? "";
+    const focusId = formData.get("focusId")?.toString().trim() || undefined;
+
+    const assigneeResult = await resolveChecklistAssigneeForOrg(
+      user.organizationId,
+      assigneeUserId,
+      (args) =>
+        prisma.membership.findFirst({
+          where: {
+            organizationId: args.organizationId,
+            userId: args.userId,
+            ...activeAssigneeMembershipWhere,
+          },
+          select: { id: true, deactivatedAt: true },
+        }),
+    );
+    if (!assigneeResult.ok) {
+      return { ok: false, message: assigneeResult.message };
+    }
+
+    const result = await deployHrChecklistPack({
+      organizationId: user.organizationId,
+      createdById: user.id,
+      assigneeUserId: assigneeResult.assigneeUserId,
+      focusId,
+    });
+
+    [
+      "/app/checklists",
+      "/app/checklists/hr",
+      "/app/checklists/setup",
+      "/app/checklists/my-tasks",
+    ].forEach((path) => revalidatePath(path));
+
+    return {
+      ok: true,
+      message: `HR checklist deployed: ${result.created} created, ${result.skipped} already existed.`,
+    };
+  } catch (error) {
+    console.error("deployHrChecklistAction", error);
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "Could not deploy HR checklist.",
     };
   }
 }
