@@ -7,16 +7,18 @@ export const LEAD_CHANNEL_LABELS: Record<LeadSourceChannel, string> = {
   GOOGLE_SHEETS: "Google Sheets",
   MANUAL: "Manual",
   API: "API",
+  TELEGRAM: "Telegram",
 };
 
 export const LEAD_CHANNEL_DEFAULTS: Array<{
   channel: LeadSourceChannel;
   label: string;
 }> = [
-  { channel: "GOOGLE_SHEETS", label: "Google Sheets intake (Phase 1)" },
-  { channel: "WHATSAPP", label: "WhatsApp Business" },
-  { channel: "INSTAGRAM", label: "Instagram DMs / Lead ads" },
-  { channel: "FACEBOOK", label: "Facebook / Meta Lead forms" },
+  { channel: "GOOGLE_SHEETS", label: "Google Sheets intake" },
+  { channel: "WHATSAPP", label: "WhatsApp Official API intake" },
+  { channel: "INSTAGRAM", label: "Instagram Lead Ads" },
+  { channel: "FACEBOOK", label: "Facebook Lead Ads" },
+  { channel: "TELEGRAM", label: "Telegram Bot intake" },
 ];
 
 export const LEAD_DASHBOARD_SOURCE_FILTERS = [
@@ -25,18 +27,14 @@ export const LEAD_DASHBOARD_SOURCE_FILTERS = [
   "WHATSAPP",
   "INSTAGRAM",
   "FACEBOOK",
+  "TELEGRAM",
   "MANUAL",
 ] as const;
 
 export type LeadDashboardSourceFilter = (typeof LEAD_DASHBOARD_SOURCE_FILTERS)[number];
 
 /** Connectors shown in UI but not yet available for setup. */
-export const LEAD_SOURCE_COMING_SOON_CHANNELS: LeadSourceChannel[] = [
-  "WHATSAPP",
-  "INSTAGRAM",
-  "FACEBOOK",
-  "MANUAL",
-];
+export const LEAD_SOURCE_COMING_SOON_CHANNELS: LeadSourceChannel[] = ["MANUAL"];
 
 export function isLeadSourceComingSoon(channel: LeadSourceChannel) {
   return LEAD_SOURCE_COMING_SOON_CHANNELS.includes(channel);
@@ -56,6 +54,8 @@ export function fmsSourceLabelForChannel(channel: LeadSourceChannel): string {
       return "Facebook";
     case "GOOGLE_SHEETS":
       return "Google Sheets";
+    case "TELEGRAM":
+      return "Telegram";
     case "MANUAL":
       return "Walk-in";
     default:
@@ -77,6 +77,7 @@ export function parseLeadSourceChannel(
     "GOOGLE_SHEETS",
     "MANUAL",
     "API",
+    "TELEGRAM",
   ];
   return allowed.includes(normalized as LeadSourceChannel)
     ? (normalized as LeadSourceChannel)

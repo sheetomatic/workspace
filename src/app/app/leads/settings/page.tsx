@@ -2,6 +2,7 @@ import { LeadsSettingsPanel } from "@/components/saas/leads-settings-panel";
 import { ensureLeadConnections } from "@/lib/leads/ingest";
 import { getLeadNurtureConfig } from "@/lib/leads/nurture/config";
 import { isLeadNurtureSendingEnabled } from "@/lib/leads/nurture/sending-enabled";
+import { getLeadSourceCardModels } from "@/lib/leads/source-settings";
 import {
   resolveWorkspaceWhatsAppCredentials,
   toWhatsAppSettingsFormValues,
@@ -23,17 +24,24 @@ export default async function LeadsSettingsPage() {
 
   await ensureLeadConnections(user.organizationId);
 
-  const [org, waSaved, waCredentials, nurtureConfig, nurtureSendingActive] =
-    await Promise.all([
-      prisma.organization.findUnique({
-        where: { id: user.organizationId },
-        select: { leadMachineApiKeyHint: true },
-      }),
-      getWorkspaceWhatsAppSettings(user.organizationId),
-      resolveWorkspaceWhatsAppCredentials(user.organizationId),
-      getLeadNurtureConfig(user.organizationId),
-      isLeadNurtureSendingEnabled(user.organizationId),
-    ]);
+  const [
+    org,
+    waSaved,
+    waCredentials,
+    nurtureConfig,
+    nurtureSendingActive,
+    leadSources,
+  ] = await Promise.all([
+    prisma.organization.findUnique({
+      where: { id: user.organizationId },
+      select: { leadMachineApiKeyHint: true },
+    }),
+    getWorkspaceWhatsAppSettings(user.organizationId),
+    resolveWorkspaceWhatsAppCredentials(user.organizationId),
+    getLeadNurtureConfig(user.organizationId),
+    isLeadNurtureSendingEnabled(user.organizationId),
+    getLeadSourceCardModels(user.organizationId),
+  ]);
 
   const waForm = toWhatsAppSettingsFormValues(waSaved, waCredentials);
   const masCreds = masCredentialsFromWorkspace(waCredentials);
@@ -43,6 +51,7 @@ export default async function LeadsSettingsPage() {
     <LeadsSettingsPanel
       apiKeyHint={org?.leadMachineApiKeyHint ?? null}
       ingestUrl={`${siteUrl}/api/leads/ingest`}
+      leadSources={leadSources}
       nurtureConfig={nurtureConfig}
       nurtureSendingActive={nurtureSendingActive}
       webBasedApi={{

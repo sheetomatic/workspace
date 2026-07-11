@@ -345,6 +345,10 @@
   border-left-color: #4f46e5;
 }
 
+.workspace-app .leads-machine-page .hs-quick-stat.accent-teal {
+  border-left-color: #0d9488;
+}
+
 .leads-kpi-sub {
   margin-left: 0.35rem;
   font-size: 0.72rem;
@@ -3248,4 +3252,85 @@
   color: #94a3b8;
   font-style: italic;
 }
+
+.leads-source-status-pill {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+  background: #f1f5f9;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.leads-source-status-pill.is-connected {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.leads-source-status-pill.is-disabled {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.leads-source-status-pill.is-needs_setup {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.leads-source-status-pill.is-error {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.leads-source-form {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.leads-source-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.leads-source-webhook {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #475569;
+  word-break: break-all;
+}
+
+.leads-source-webhook code {
+  font-size: 0.72rem;
+}
+
+.leads-csv-import {
+  position: relative;
+}
+
+.leads-csv-import-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  z-index: 20;
+  width: min(22rem, 80vw);
+  padding: 0.85rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  display: grid;
+  gap: 0.65rem;
+}
+
+.leads-csv-import-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
 

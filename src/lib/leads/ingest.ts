@@ -55,6 +55,9 @@ export type LeadIngestInput = {
   utmTerm?: string | null;
   campaign?: string | null;
   landingPage?: string | null;
+  pipeValue?: number | null;
+  expectedCloseAt?: Date | null;
+  winProbability?: number | null;
   createdByUserId?: string | null;
   rawPayload?: Prisma.InputJsonValue;
   createFmsJob?: boolean;
@@ -78,19 +81,25 @@ function normalizePhone(phone: string | null | undefined) {
 
 export async function ensureLeadConnections(organizationId: string) {
   await withDbRetry(async (client) => {
-    const existing = await client.leadIngestConnection.count({
+    const existing = await client.leadIngestConnection.findMany({
       where: { organizationId },
+      select: { channel: true },
     });
+    const existingChannels = new Set(existing.map((row) => row.channel));
 
-    if (existing === 0) {
-      const defaults = LEAD_CHANNEL_DEFAULTS;
+    const missing = LEAD_CHANNEL_DEFAULTS.filter(
+      (item) => !existingChannels.has(item.channel),
+    );
 
+    if (missing.length > 0) {
       await client.leadIngestConnection.createMany({
-        data: defaults.map((item) => ({
+        data: missing.map((item) => ({
           organizationId,
           channel: item.channel,
           label: item.label,
-          enabled: item.channel === LEAD_SOURCE_PRIORITY_CHANNEL,
+          enabled:
+            existing.length === 0 &&
+            item.channel === LEAD_SOURCE_PRIORITY_CHANNEL,
           config:
             item.channel === LEAD_SOURCE_PRIORITY_CHANNEL
               ? (defaultGoogleSheetsLeadConfig() as object)
@@ -152,11 +161,14 @@ async function migrateGoogleSheetsLeadConfig(
   });
 }
 
-/** Phase 1: Google Sheets only — disable coming-soon connectors. */
+/** Keep non-live connectors disabled (currently MANUAL only). */
 export async function enforceLeadSourcePhase(
   organizationId: string,
   client: PrismaClient = prisma,
 ) {
+  if (LEAD_SOURCE_COMING_SOON_CHANNELS.length === 0) {
+    return;
+  }
   await client.leadIngestConnection.updateMany({
     where: {
       organizationId,
@@ -309,7 +321,11 @@ export async function ingestInboundLead(
     lead?.callingStatus ??
     "NOT_CALLED";
   const resolvedPipe =
-    input.sheetPull ? lead?.pipeValue ?? pipeValue : pipeValue;
+    input.pipeValue != null && Number.isFinite(input.pipeValue)
+      ? input.pipeValue
+      : input.sheetPull
+        ? lead?.pipeValue ?? pipeValue
+        : pipeValue;
 
   const { score, temperature } = computeLeadScore({
     phone: resolvedPhone,
@@ -351,6 +367,18 @@ export async function ingestInboundLead(
     utmTerm: pickString(input.utmTerm, lead?.utmTerm),
     campaign: pickString(input.campaign, lead?.campaign),
     landingPage: pickString(input.landingPage, lead?.landingPage),
+    expectedCloseAt:
+      input.expectedCloseAt !== undefined
+        ? input.expectedCloseAt
+        : input.sheetPull
+          ? lead?.expectedCloseAt ?? undefined
+          : undefined,
+    winProbability:
+      input.winProbability !== undefined && input.winProbability !== null
+        ? input.winProbability
+        : input.sheetPull
+          ? lead?.winProbability ?? undefined
+          : undefined,
     assignedToId: input.sheetPull ? lead?.assignedToId ?? undefined : input.assignedToId ?? undefined,
     nextFollowUpAt:
       input.nextFollowUpAt ??
@@ -440,6 +468,22 @@ export async function syncLeadFromWhatsAppContact(params: {
   organizationId: string;
   contactId: string;
 }) {
+  await ensureLeadConnections(params.organizationId);
+
+  const connection = await prisma.leadIngestConnection.findUnique({
+    where: {
+      organizationId_channel: {
+        organizationId: params.organizationId,
+        channel: "WHATSAPP",
+      },
+    },
+    select: { id: true, enabled: true },
+  });
+
+  if (!connection?.enabled) {
+    return null;
+  }
+
   const contact = await prisma.waContact.findFirst({
     where: {
       id: params.contactId,
@@ -454,6 +498,8 @@ export async function syncLeadFromWhatsAppContact(params: {
   return ingestInboundLead({
     organizationId: params.organizationId,
     channel: "WHATSAPP",
+    connectionId: connection.id,
+    skipConnectionSetup: true,
     externalId: contact.phone,
     name: contact.name,
     phone: contact.phone,

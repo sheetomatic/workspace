@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "LeadSourceChannel" ADD VALUE IF NOT EXISTS 'TELEGRAM';

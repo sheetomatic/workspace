@@ -2466,6 +2466,7 @@ enum LeadSourceChannel {
   GOOGLE_SHEETS
   MANUAL
   API
+  TELEGRAM
 }
 
 enum InboundLeadActivityType {
@@ -2488,7 +2489,9 @@ enum InboundLeadStatus {
   CONTACTED
   FOLLOW_UP
   QUALIFIED
+  DEMO_SCHEDULED
   PROPOSAL
+  NEGOTIATION
   INVOICE
   PAYMENT
   PROJECT_ACTIVE
@@ -2608,6 +2611,10 @@ model InboundLead {
   utmTerm        String?
   campaign       String?
   landingPage    String?
+  /** Expected close date for pipeline forecast (PDF Phase 13). */
+  expectedCloseAt DateTime?
+  /** Win probability 0–100; null = use stage default. */
+  winProbability Int?
   archivedAt     DateTime?
   rawPayload     Json?
   fmsInstanceId  String?              @unique

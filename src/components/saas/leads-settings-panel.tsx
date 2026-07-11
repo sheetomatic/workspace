@@ -10,6 +10,7 @@ import {
   type LeadsWebBasedApiSettingsProps,
 } from "@/components/saas/leads-web-based-api-settings";
 import type { LeadNurtureOrgConfig } from "@/lib/leads/nurture/config";
+import type { LeadSourceCardModel } from "@/lib/leads/source-settings";
 import "@/components/saas/leads-machine.css";
 
 export function LeadsSettingsPanel({
@@ -18,12 +19,14 @@ export function LeadsSettingsPanel({
   webBasedApi,
   nurtureConfig,
   nurtureSendingActive,
+  leadSources,
 }: {
   apiKeyHint: string | null;
   ingestUrl: string;
   webBasedApi: LeadsWebBasedApiSettingsProps;
   nurtureConfig: LeadNurtureOrgConfig;
   nurtureSendingActive: boolean;
+  leadSources: LeadSourceCardModel[];
 }) {
   const [pending, startTransition] = useTransition();
   const [freshKey, setFreshKey] = useState<string | null>(null);
@@ -37,8 +40,9 @@ export function LeadsSettingsPanel({
           </Link>
           <h1>Leads settings</h1>
           <p>
-            Web Based API credentials, nurture message templates, and upcoming lead
-            source connectors. Sheet sync runs from the Leads page toolbar.
+            Web Based API credentials for nurture sends, message templates, and
+            live lead source connectors (Official WhatsApp, Meta Lead Ads,
+            Telegram). Sheet sync runs from the Leads page toolbar.
           </p>
         </div>
       </header>
@@ -52,7 +56,7 @@ export function LeadsSettingsPanel({
           config={nurtureConfig}
           sendingActive={nurtureSendingActive}
         />
-        <LeadsSourceSettingsPanel />
+        <LeadsSourceSettingsPanel sources={leadSources} />
 
         <section className="saas-panel leads-settings-api">
           <details>

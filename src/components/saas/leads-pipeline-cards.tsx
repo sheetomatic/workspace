@@ -15,6 +15,7 @@ export function LeadsPipelineCards({
   pipeMetrics: {
     pipeCount: number;
     pipeValueLabel: string;
+    forecastValueLabel: string;
     wonCount: number;
     wonValueLabel: string;
     invoiceCount: number;
@@ -44,6 +45,10 @@ export function LeadsPipelineCards({
         <article className="hs-quick-stat accent-warning leads-pipeline-card is-static">
           <span>Quoted value</span>
           <strong>{pipeMetrics.pipeValueLabel}</strong>
+        </article>
+        <article className="hs-quick-stat accent-teal leads-pipeline-card is-static">
+          <span>Forecast</span>
+          <strong>{pipeMetrics.forecastValueLabel}</strong>
         </article>
         <Link
           className="hs-quick-stat accent-purple leads-pipeline-card"

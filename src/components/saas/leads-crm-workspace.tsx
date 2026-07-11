@@ -9,6 +9,7 @@ import {
   deleteInboundLead,
   logLeadContactAction,
 } from "@/app/app/leads/actions";
+import { LeadsCsvImportButton } from "@/components/saas/leads-csv-import";
 import { LeadDrawerPanel, type LeadDrawerData } from "@/components/saas/leads-drawer-panel";
 import { LeadDeliveryStagePill } from "@/components/saas/lead-delivery-journey";
 import { LeadCategorySelect } from "@/components/saas/lead-category-select";
@@ -222,17 +223,20 @@ export function LeadsCrmWorkspace({
             {sort === "newest" ? "Newest" : "Oldest"}
           </Link>
           {canManage ? (
-            <button
-              type="button"
-              className="btn-primary btn-sm"
-              onClick={() => {
-                setShowCreate((open) => !open);
-                setCreateError(null);
-                setCreateDuplicate(null);
-              }}
-            >
-              {showCreate ? "Cancel" : "Add lead"}
-            </button>
+            <>
+              <LeadsCsvImportButton />
+              <button
+                type="button"
+                className="btn-primary btn-sm"
+                onClick={() => {
+                  setShowCreate((open) => !open);
+                  setCreateError(null);
+                  setCreateDuplicate(null);
+                }}
+              >
+                {showCreate ? "Cancel" : "Add lead"}
+              </button>
+            </>
           ) : null}
           <span className="leads-crm-count">
             {total} leads · p{page}/{totalPages}

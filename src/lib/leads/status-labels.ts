@@ -7,7 +7,9 @@ export const LEAD_STATUS_LABELS: Record<InboundLeadStatus, string> = {
   CONTACTED: "Contacted",
   FOLLOW_UP: "Follow-up",
   QUALIFIED: "Qualified",
+  DEMO_SCHEDULED: "Demo scheduled",
   PROPOSAL: "Proposal",
+  NEGOTIATION: "Negotiation",
   INVOICE: "Invoice",
   PAYMENT: "Payment",
   PROJECT_ACTIVE: "Project active",
@@ -27,7 +29,9 @@ export const LEAD_STATUS_ORDER: InboundLeadStatus[] = [
   "CONTACTED",
   "FOLLOW_UP",
   "QUALIFIED",
+  "DEMO_SCHEDULED",
   "PROPOSAL",
+  "NEGOTIATION",
   "INVOICE",
   "PAYMENT",
   "PROJECT_ACTIVE",
@@ -42,11 +46,31 @@ export const OPEN_LEAD_STATUSES: InboundLeadStatus[] = [
   "CONTACTED",
   "FOLLOW_UP",
   "QUALIFIED",
+  "DEMO_SCHEDULED",
   "PROPOSAL",
+  "NEGOTIATION",
   "INVOICE",
   "PAYMENT",
   "PROJECT_ACTIVE",
 ];
+
+/** Default win % by stage when lead.winProbability is null (PDF Phase 13). */
+export const LEAD_STATUS_WIN_PROBABILITY: Record<InboundLeadStatus, number> = {
+  NEW: 10,
+  SCHEDULE_MEETING: 20,
+  MEETING_NOTES: 30,
+  CONTACTED: 25,
+  FOLLOW_UP: 35,
+  QUALIFIED: 45,
+  DEMO_SCHEDULED: 50,
+  PROPOSAL: 60,
+  NEGOTIATION: 70,
+  INVOICE: 80,
+  PAYMENT: 90,
+  PROJECT_ACTIVE: 95,
+  WON: 100,
+  LOST: 0,
+};
 
 export const CALLING_STATUS_LABELS: Record<LeadCallingStatus, string> = {
   NOT_CALLED: "Not called",
@@ -96,4 +120,19 @@ export function listLeadStatusOptions(): Array<{ id: InboundLeadStatus; label: s
     id,
     label: LEAD_STATUS_LABELS[id],
   }));
+}
+
+export function resolveWinProbability(
+  status: InboundLeadStatus,
+  override: number | null | undefined,
+): number {
+  if (
+    typeof override === "number" &&
+    Number.isFinite(override) &&
+    override >= 0 &&
+    override <= 100
+  ) {
+    return Math.round(override);
+  }
+  return LEAD_STATUS_WIN_PROBABILITY[status] ?? 10;
 }

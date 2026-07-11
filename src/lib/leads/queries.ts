@@ -211,6 +211,7 @@ export async function getLeadsPipeMetricsForPeriod(
       category: true,
       pipeValue: true,
       quotationValue: true,
+      winProbability: true,
     },
   });
 

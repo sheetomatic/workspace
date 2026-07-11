@@ -152,6 +152,8 @@ export type LeadDrawerData = {
   utmTerm: string | null;
   campaign: string | null;
   landingPage: string | null;
+  expectedCloseAt: string | null;
+  winProbability: number | null;
   archivedAt: string | null;
   discussionNotes: string | null;
   meetingNotes: string | null;
@@ -223,6 +225,12 @@ export function LeadDrawerPanel({
   const [utmTerm, setUtmTerm] = useState(lead.utmTerm ?? "");
   const [campaign, setCampaign] = useState(lead.campaign ?? "");
   const [landingPage, setLandingPage] = useState(lead.landingPage ?? "");
+  const [expectedCloseAt, setExpectedCloseAt] = useState(
+    lead.expectedCloseAt ? lead.expectedCloseAt.slice(0, 10) : "",
+  );
+  const [winProbability, setWinProbability] = useState(
+    lead.winProbability != null ? String(lead.winProbability) : "",
+  );
   const [saveError, setSaveError] = useState<string | null>(null);
   const [duplicateMatch, setDuplicateMatch] = useState<{
     id: string;
@@ -487,6 +495,25 @@ export function LeadDrawerPanel({
                   onChange={(e) => setQuotationValue(e.target.value)}
                 />
               </label>
+              <label>
+                Expected close
+                <input
+                  type="date"
+                  value={expectedCloseAt}
+                  onChange={(e) => setExpectedCloseAt(e.target.value)}
+                />
+              </label>
+              <label>
+                Win probability %
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={winProbability}
+                  onChange={(e) => setWinProbability(e.target.value)}
+                  placeholder="Stage default if blank"
+                />
+              </label>
               <details className="leads-attribution">
                 <summary>Attribution</summary>
                 <div className="leads-drawer-grid">
@@ -590,6 +617,8 @@ export function LeadDrawerPanel({
                       utmTerm,
                       campaign,
                       landingPage,
+                      expectedCloseAt,
+                      winProbability,
                     });
                     if (!result.ok) {
                       setSaveError(result.message ?? "Could not save lead.");

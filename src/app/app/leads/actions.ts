@@ -70,6 +70,26 @@ import {
 } from "@/lib/leads/nurture/triggers";
 import { inferLeadStageFromRequirement } from "@/lib/leads/stage-ai";
 import { leadStatusLabel } from "@/lib/leads/status-labels";
+import {
+  asConfigRecord,
+  metaLeadWebhookUrl,
+  parseMetaLeadAdsConfig,
+  readString,
+  telegramLeadWebhookUrl,
+} from "@/lib/leads/connection-config";
+import {
+  mergeMetaLeadAdsConfig,
+  verifyMetaPageAccessToken,
+} from "@/lib/leads/meta-lead-ads";
+import {
+  defaultMetaVerifyTokenForOrg,
+  ensureTelegramWebhookSecret,
+} from "@/lib/leads/source-settings";
+import {
+  setTelegramWebhook,
+  verifyTelegramBotToken,
+} from "@/lib/leads/telegram-leads";
+import { resolveWorkspaceWhatsAppCredentials } from "@/lib/whatsapp-settings";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 
@@ -239,6 +259,8 @@ export async function updateInboundLeadDetails(params: {
   utmTerm?: string;
   campaign?: string;
   landingPage?: string;
+  expectedCloseAt?: string;
+  winProbability?: string;
 }) {
   const user = await requireSession(undefined, { module: "FMS" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
@@ -302,6 +324,29 @@ export async function updateInboundLeadDetails(params: {
     pipeValue,
   });
 
+  let expectedCloseAt: Date | null | undefined;
+  if (params.expectedCloseAt !== undefined) {
+    const raw = params.expectedCloseAt.trim();
+    if (!raw) {
+      expectedCloseAt = null;
+    } else {
+      const parsed = new Date(raw);
+      expectedCloseAt = Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+  }
+
+  let winProbability: number | null | undefined;
+  if (params.winProbability !== undefined) {
+    const raw = params.winProbability.trim();
+    if (!raw) {
+      winProbability = null;
+    } else {
+      const n = Number.parseInt(raw, 10);
+      winProbability =
+        Number.isFinite(n) && n >= 0 && n <= 100 ? n : null;
+    }
+  }
+
   const utmPatch = {
     ...(params.utmSource !== undefined
       ? { utmSource: params.utmSource.trim() || null }
@@ -324,6 +369,8 @@ export async function updateInboundLeadDetails(params: {
     ...(params.landingPage !== undefined
       ? { landingPage: params.landingPage.trim() || null }
       : {}),
+    ...(expectedCloseAt !== undefined ? { expectedCloseAt } : {}),
+    ...(winProbability !== undefined ? { winProbability } : {}),
   };
 
   await prisma.inboundLead.updateMany({
@@ -1905,5 +1952,354 @@ export async function saveLeadsNurtureSettings(
     message: enabled
       ? "Nurture messages saved. WhatsApp will send on lead events."
       : "Nurture messages saved. Automatic sending is paused.",
+  };
+}
+
+export async function setWhatsAppLeadIngestEnabled(enabled: boolean) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Admin only." };
+  }
+
+  await ensureLeadConnections(user.organizationId);
+
+  if (enabled) {
+    const creds = await resolveWorkspaceWhatsAppCredentials(user.organizationId);
+    const phoneId = creds.redlavaPhoneId?.trim();
+    const hasOfficial =
+      Boolean(phoneId) &&
+      Boolean(creds.metaAccessToken?.trim() || creds.redlavaApiKey?.trim());
+    if (!hasOfficial) {
+      return {
+        ok: false,
+        message:
+          "Configure Official API (access token + phone number ID) in WhatsApp settings first.",
+      };
+    }
+  }
+
+  await prisma.leadIngestConnection.update({
+    where: {
+      organizationId_channel: {
+        organizationId: user.organizationId,
+        channel: "WHATSAPP",
+      },
+    },
+    data: {
+      enabled,
+      lastSyncError: null,
+      syncStatus: "IDLE",
+      label: "WhatsApp Official API intake",
+    },
+  });
+
+  revalidatePath("/app/leads/settings");
+  revalidatePath("/app/leads");
+  return {
+    ok: true,
+    message: enabled
+      ? "WhatsApp Official API lead intake enabled."
+      : "WhatsApp lead intake disabled.",
+  };
+}
+
+export async function saveMetaLeadAdsConnection(params: {
+  channel: "FACEBOOK" | "INSTAGRAM";
+  enabled: boolean;
+  pageId: string;
+  pageAccessToken: string;
+  verifyToken: string;
+  formIds: string;
+  appSecret: string;
+}) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Admin only." };
+  }
+
+  if (params.channel !== "FACEBOOK" && params.channel !== "INSTAGRAM") {
+    return { ok: false, message: "Invalid channel." };
+  }
+
+  await ensureLeadConnections(user.organizationId);
+
+  const existing = await prisma.leadIngestConnection.findUnique({
+    where: {
+      organizationId_channel: {
+        organizationId: user.organizationId,
+        channel: params.channel,
+      },
+    },
+  });
+
+  const verifyToken =
+    params.verifyToken.trim() ||
+    defaultMetaVerifyTokenForOrg(existing?.config);
+
+  const config = mergeMetaLeadAdsConfig({
+    existing: existing?.config,
+    pageId: params.pageId,
+    pageAccessToken: params.pageAccessToken,
+    verifyToken,
+    formIds: params.formIds,
+    appSecret: params.appSecret,
+    keepExistingToken: true,
+  });
+
+  if (!config.pageId) {
+    return { ok: false, message: "Page ID is required." };
+  }
+  if (!config.pageAccessToken) {
+    return { ok: false, message: "Page access token is required." };
+  }
+
+  if (params.enabled) {
+    const verified = await verifyMetaPageAccessToken({
+      pageId: config.pageId,
+      pageAccessToken: config.pageAccessToken,
+    });
+    if (!verified.ok) {
+      return {
+        ok: false,
+        message: `Token check failed: ${verified.message}`,
+      };
+    }
+  }
+
+  await prisma.leadIngestConnection.update({
+    where: {
+      organizationId_channel: {
+        organizationId: user.organizationId,
+        channel: params.channel,
+      },
+    },
+    data: {
+      enabled: params.enabled,
+      config: config as Prisma.InputJsonValue,
+      lastSyncError: null,
+      syncStatus: "IDLE",
+      label:
+        params.channel === "FACEBOOK"
+          ? "Facebook Lead Ads"
+          : "Instagram Lead Ads",
+    },
+  });
+
+  revalidatePath("/app/leads/settings");
+  revalidatePath("/app/leads");
+  return {
+    ok: true,
+    message: params.enabled
+      ? `${params.channel === "FACEBOOK" ? "Facebook" : "Instagram"} Lead Ads connected.`
+      : "Settings saved (intake disabled).",
+    verifyToken: config.verifyToken,
+    webhookUrl: metaLeadWebhookUrl(),
+  };
+}
+
+export async function verifyMetaLeadAdsConnection(channel: "FACEBOOK" | "INSTAGRAM") {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Admin only." };
+  }
+
+  const connection = await prisma.leadIngestConnection.findUnique({
+    where: {
+      organizationId_channel: {
+        organizationId: user.organizationId,
+        channel,
+      },
+    },
+  });
+  const config = parseMetaLeadAdsConfig(connection?.config);
+  if (!config) {
+    return { ok: false, message: "Save Page ID and access token first." };
+  }
+
+  const verified = await verifyMetaPageAccessToken({
+    pageId: config.pageId,
+    pageAccessToken: config.pageAccessToken,
+  });
+
+  await prisma.leadIngestConnection.update({
+    where: { id: connection!.id },
+    data: verified.ok
+      ? { lastSyncError: null, syncStatus: "IDLE" }
+      : {
+          lastSyncError: verified.message,
+          syncStatus: "ERROR",
+        },
+  });
+
+  revalidatePath("/app/leads/settings");
+  return verified.ok
+    ? { ok: true, message: `Verified page: ${verified.pageName}` }
+    : { ok: false, message: verified.message };
+}
+
+export async function saveTelegramLeadConnection(params: {
+  enabled: boolean;
+  botToken: string;
+  registerWebhook: boolean;
+}) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Admin only." };
+  }
+
+  await ensureLeadConnections(user.organizationId);
+
+  const existing = await prisma.leadIngestConnection.findUnique({
+    where: {
+      organizationId_channel: {
+        organizationId: user.organizationId,
+        channel: "TELEGRAM",
+      },
+    },
+  });
+
+  const current = asConfigRecord(existing?.config);
+  const botToken =
+    params.botToken.trim() || readString(current, "botToken");
+  if (!botToken) {
+    return { ok: false, message: "Bot token is required." };
+  }
+
+  const verified = await verifyTelegramBotToken(botToken);
+  if (!verified.ok) {
+    return { ok: false, message: `Bot check failed: ${verified.message}` };
+  }
+
+  const webhook = ensureTelegramWebhookSecret(existing?.config);
+  const webhookUrl = telegramLeadWebhookUrl(webhook.secret);
+
+  if (params.enabled && params.registerWebhook) {
+    const set = await setTelegramWebhook({
+      botToken,
+      webhookUrl,
+    });
+    if (!set.ok) {
+      return { ok: false, message: `setWebhook failed: ${set.message}` };
+    }
+  }
+
+  await prisma.leadIngestConnection.update({
+    where: {
+      organizationId_channel: {
+        organizationId: user.organizationId,
+        channel: "TELEGRAM",
+      },
+    },
+    data: {
+      enabled: params.enabled,
+      ingestSecretHash: webhook.hash,
+      config: {
+        botToken,
+        webhookSecret: webhook.secret,
+        botUsername: verified.botUsername,
+        botName: verified.botName,
+      } as Prisma.InputJsonValue,
+      lastSyncError: null,
+      syncStatus: "IDLE",
+      label: "Telegram Bot intake",
+    },
+  });
+
+  revalidatePath("/app/leads/settings");
+  revalidatePath("/app/leads");
+  return {
+    ok: true,
+    message: params.enabled
+      ? `Telegram connected${verified.botUsername ? ` (@${verified.botUsername})` : ""}.`
+      : "Telegram settings saved (intake disabled).",
+    webhookUrl,
+  };
+}
+
+export async function importLeadsFromCsvAction(formData: FormData) {
+  const user = await requireSession(undefined, { module: "FMS" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false as const, message: "Not allowed." };
+  }
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false as const, message: "Choose a CSV file to import." };
+  }
+  if (!file.name.toLowerCase().endsWith(".csv")) {
+    return { ok: false as const, message: "Upload a .csv file." };
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    return { ok: false as const, message: "CSV must be under 5 MB." };
+  }
+
+  const content = await file.text();
+  const { parseLeadsCsv } = await import("@/lib/leads/csv-import");
+  const { rows, errors } = parseLeadsCsv(content);
+  if (!rows.length) {
+    return {
+      ok: false as const,
+      message: errors[0] ?? "No valid lead rows found in the CSV.",
+      errors,
+    };
+  }
+
+  let created = 0;
+  let updated = 0;
+  let skipped = 0;
+  const rowErrors = [...errors];
+
+  for (const row of rows.slice(0, 500)) {
+    try {
+      const result = await ingestInboundLead({
+        organizationId: user.organizationId,
+        channel: row.channel,
+        externalId: row.externalId,
+        name: row.name,
+        phone: row.phone,
+        email: row.email,
+        company: row.company,
+        city: row.city,
+        requirement: row.requirement,
+        status: row.status ?? undefined,
+        campaign: row.campaign,
+        utmSource: row.utmSource,
+        utmMedium: row.utmMedium,
+        utmCampaign: row.utmCampaign,
+        landingPage: row.landingPage,
+        pipeValue: row.pipeValue,
+        expectedCloseAt: row.expectedCloseAt,
+        winProbability: row.winProbability,
+        capturedAt: new Date(),
+        actorUserId: user.id,
+        createdByUserId: user.id,
+        createFmsJob: false,
+        hardBlockDuplicates: false,
+      });
+      if (!result.lead) {
+        skipped += 1;
+        continue;
+      }
+      if (result.created) {
+        created += 1;
+      } else {
+        updated += 1;
+      }
+    } catch (error) {
+      skipped += 1;
+      rowErrors.push(
+        `Row ${row.rowNumber}: ${error instanceof Error ? error.message : "import failed"}`,
+      );
+    }
+  }
+
+  revalidatePath("/app/leads");
+  return {
+    ok: true as const,
+    message: `Imported ${created} new, updated ${updated}, skipped ${skipped}.`,
+    created,
+    updated,
+    skipped,
+    errors: rowErrors.slice(0, 20),
   };
 }

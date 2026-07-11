@@ -32,6 +32,14 @@ export function inferLeadStageFromRequirement(
     return "MEETING_NOTES";
   }
 
+  if (/demo scheduled|book demo|product demo/i.test(text)) {
+    return "DEMO_SCHEDULED";
+  }
+
+  if (/negotiat|discount|counter offer|revise quote/i.test(text)) {
+    return "NEGOTIATION";
+  }
+
   if (/schedule meeting|book meeting|call scheduled|demo call/i.test(text)) {
     return "SCHEDULE_MEETING";
   }
@@ -67,9 +75,14 @@ export function mapSheetStageToStatus(value: string): InboundLeadStatus | undefi
     "follow up": "FOLLOW_UP",
     followup: "FOLLOW_UP",
     qualified: "QUALIFIED",
+    demo: "DEMO_SCHEDULED",
+    "demo scheduled": "DEMO_SCHEDULED",
+    "discovery scheduled": "DEMO_SCHEDULED",
     "make proposal | invoice": "PROPOSAL",
     "make proposal": "PROPOSAL",
     proposal: "PROPOSAL",
+    negotiation: "NEGOTIATION",
+    negotiating: "NEGOTIATION",
     invoice: "INVOICE",
     "tax invoice": "INVOICE",
     payment: "PAYMENT",

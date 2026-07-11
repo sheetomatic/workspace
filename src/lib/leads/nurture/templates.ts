@@ -35,7 +35,9 @@ export const STATUS_TO_NURTURE_EVENT: Partial<
   Record<InboundLeadStatus, LeadNurtureEventId>
 > = {
   SCHEDULE_MEETING: "stage_schedule_meeting",
+  DEMO_SCHEDULED: "stage_schedule_meeting",
   PROPOSAL: "stage_proposal",
+  NEGOTIATION: "stage_proposal",
   INVOICE: "stage_proposal",
   FOLLOW_UP: "stage_follow_up",
   QUALIFIED: "stage_qualified",

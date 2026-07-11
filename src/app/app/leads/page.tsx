@@ -69,6 +69,8 @@ function serializeLead(lead: Awaited<ReturnType<typeof listInboundLeadsForPeriod
     utmTerm: lead.utmTerm ?? null,
     campaign: lead.campaign ?? null,
     landingPage: lead.landingPage ?? null,
+    expectedCloseAt: lead.expectedCloseAt?.toISOString() ?? null,
+    winProbability: lead.winProbability ?? null,
     archivedAt: lead.archivedAt?.toISOString() ?? null,
     discussionNotes: lead.discussionNotes,
     meetingNotes: lead.meetingNotes,

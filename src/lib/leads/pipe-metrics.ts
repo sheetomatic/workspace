@@ -1,12 +1,16 @@
 import type { InboundLeadStatus } from "@prisma/client";
 import { formatInr, leadCategoryLabel, resolveLeadCategoryId } from "@/lib/leads/categories";
-import { OPEN_LEAD_STATUSES } from "@/lib/leads/status-labels";
+import {
+  OPEN_LEAD_STATUSES,
+  resolveWinProbability,
+} from "@/lib/leads/status-labels";
 
 type LeadValueRow = {
   status: InboundLeadStatus;
   category: string | null;
   pipeValue: { toNumber(): number } | number | null;
   quotationValue: { toNumber(): number } | number | null;
+  winProbability?: number | null;
 };
 
 function toNumber(value: LeadValueRow["pipeValue"]) {
@@ -25,6 +29,7 @@ export function computePipeMetrics(leads: LeadValueRow[]) {
 
   let pipeCount = 0;
   let pipeValue = 0;
+  let forecastValue = 0;
   let wonCount = 0;
   let wonValue = 0;
   let lostCount = 0;
@@ -57,6 +62,8 @@ export function computePipeMetrics(leads: LeadValueRow[]) {
     if (openStatuses.includes(lead.status)) {
       pipeCount += 1;
       pipeValue += value;
+      const probability = resolveWinProbability(lead.status, lead.winProbability);
+      forecastValue += (value * probability) / 100;
     } else if (lead.status === "WON") {
       wonCount += 1;
       wonValue += value;
@@ -77,6 +84,8 @@ export function computePipeMetrics(leads: LeadValueRow[]) {
     pipeCount,
     pipeValue,
     pipeValueLabel: formatInr(pipeValue),
+    forecastValue,
+    forecastValueLabel: formatInr(Math.round(forecastValue)),
     wonCount,
     wonValue,
     wonValueLabel: formatInr(wonValue),

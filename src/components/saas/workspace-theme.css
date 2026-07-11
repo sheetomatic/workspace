@@ -4270,6 +4270,9 @@ body:has(.workspace-app.saas-app) {
 .workspace-app .hs-quick-stat.accent-indigo {
   border-left-color: #4f46e5;
 }
+.workspace-app .hs-quick-stat.accent-teal {
+  border-left-color: #0d9488;
+}
 
 .workspace-app .hs-metric-grid {
   display: grid;
