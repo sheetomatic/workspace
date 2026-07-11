@@ -1,8 +1,8 @@
 "use client";
 
-import { ChevronDown, LogOut } from "lucide-react";
+import { ChevronDown, LogOut, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
 import { OrganizationSwitcher } from "@/components/saas/organization-switcher";
@@ -13,6 +13,11 @@ import {
   type WorkspaceAppearance,
 } from "@/lib/workspace-appearance";
 import {
+  DEFAULT_WORKSPACE_NAV_PREFS,
+  type WorkspaceNavPrefs,
+} from "@/lib/workspace-nav-prefs";
+import {
+  filterNavItemsByPrefs,
   mobileWorkspaceNavItems,
   getWorkspaceNavSections,
   navGroupHasActiveChild,
@@ -55,7 +60,15 @@ function NavLink({
   nested?: boolean;
   nestedDeep?: boolean;
 }) {
+  const router = useRouter();
   const active = navIsActive(pathname, href, matchPrefix, currentSearch);
+  const prefetchHref = href.split("?")[0] ?? href;
+
+  function prefetch() {
+    if (prefetchHref.startsWith("/app")) {
+      router.prefetch(prefetchHref);
+    }
+  }
 
   if (variant === "mobile") {
     return (
@@ -63,6 +76,9 @@ function NavLink({
         aria-current={active ? "page" : undefined}
         className={active ? "ws-mobile-nav-link active" : "ws-mobile-nav-link"}
         href={href}
+        onFocus={prefetch}
+        onMouseEnter={prefetch}
+        prefetch
       >
         <Icon size={20} strokeWidth={2} />
         <span>{label}</span>
@@ -79,6 +95,9 @@ function NavLink({
           : `saas-nav-link${nested ? " saas-nav-link-nested" : ""}${nestedDeep ? " saas-nav-link-nested-deep" : ""}`
       }
       href={href}
+      onFocus={prefetch}
+      onMouseEnter={prefetch}
+      prefetch
     >
       <Icon size={nested ? 16 : 18} strokeWidth={2} />
       {label}
@@ -315,6 +334,7 @@ export function SaasShell({
   appearance,
   hidePlanBadge = false,
   isDedicatedPortal = false,
+  navPrefs = DEFAULT_WORKSPACE_NAV_PREFS,
   children,
 }: {
   user: SessionUser;
@@ -328,6 +348,7 @@ export function SaasShell({
   };
   hidePlanBadge?: boolean;
   isDedicatedPortal?: boolean;
+  navPrefs?: WorkspaceNavPrefs;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -365,8 +386,14 @@ export function SaasShell({
   const settingsItems = settingsSection
     ? visibleWorkspaceNavItems(user, settingsSection.items)
     : [];
+
+  function sectionItems(sectionItemsRaw: WorkspaceNavItem[]) {
+    const allowed = visibleWorkspaceNavItems(user, sectionItemsRaw);
+    return isDedicatedPortal ? allowed : filterNavItemsByPrefs(allowed, navPrefs);
+  }
+
   const mobileNavItems = mobileWorkspaceNavItems(
-    mainSections.flatMap((section) => visibleWorkspaceNavItems(user, section.items)),
+    mainSections.flatMap((section) => sectionItems(section.items)),
   );
 
   const productName = resolvedAppearance.productName;
@@ -378,6 +405,7 @@ export function SaasShell({
     ? `${productName} navigation`
     : "Workspace navigation";
   const signOutPath = isDedicatedPortal ? "/login" : "/";
+  const showCustomize = !isDedicatedPortal;
 
   return (
     <div className="saas-app workspace-app">
@@ -440,7 +468,7 @@ export function SaasShell({
 
         <nav className="saas-nav" aria-label={navigationLabel}>
           {mainSections.map((section) => {
-            const items = visibleWorkspaceNavItems(user, section.items);
+            const items = sectionItems(section.items);
             if (items.length === 0) {
               return null;
             }
@@ -469,6 +497,16 @@ export function SaasShell({
               pathname={pathname}
               variant="desktop"
             />
+            {showCustomize ? (
+              <Link
+                className="saas-nav-link saas-nav-customize"
+                href="/app/settings#focus-modules"
+                prefetch
+              >
+                <SlidersHorizontal size={16} strokeWidth={2} />
+                Customize
+              </Link>
+            ) : null}
           </div>
         ) : null}
 

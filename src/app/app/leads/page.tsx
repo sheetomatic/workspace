@@ -20,7 +20,7 @@ import {
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { listLeadServiceCatalog } from "@/lib/leads/service-catalog";
-import { getSalesOrderByLeadId } from "@/lib/leads/sales-orders";
+import { getSalesOrdersByLeadIds } from "@/lib/leads/sales-orders";
 import { listWorkspaceMembers } from "@/lib/workspace";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
@@ -200,15 +200,14 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
       ? "Not synced"
       : lastSyncLabel;
 
-  const leadsWithSalesOrders = await Promise.all(
-    leadPage.leads.map(async (lead) => {
-      const salesOrder = await getSalesOrderByLeadId(user.organizationId, lead.id);
-      return {
-        ...serializeLead(lead),
-        salesOrder,
-      };
-    }),
+  const salesOrdersByLead = await getSalesOrdersByLeadIds(
+    user.organizationId,
+    leadPage.leads.map((lead) => lead.id),
   );
+  const leadsWithSalesOrders = leadPage.leads.map((lead) => ({
+    ...serializeLead(lead),
+    salesOrder: salesOrdersByLead.get(lead.id) ?? null,
+  }));
 
   return (
     <div className="saas-page leads-machine-page">

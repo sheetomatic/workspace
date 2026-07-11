@@ -170,6 +170,31 @@ export async function getSalesOrderByLeadId(
   return order ? toLeadSalesOrderData(order) : null;
 }
 
+/** Batch lookup — avoids N+1 on leads list pages. */
+export async function getSalesOrdersByLeadIds(
+  organizationId: string,
+  leadIds: string[],
+): Promise<Map<string, LeadSalesOrderData>> {
+  const unique = [...new Set(leadIds.filter(Boolean))];
+  const map = new Map<string, LeadSalesOrderData>();
+  if (unique.length === 0) {
+    return map;
+  }
+
+  const results = await Promise.all(
+    unique.map(async (leadId) => {
+      const order = await getSalesOrderByLeadId(organizationId, leadId);
+      return [leadId, order] as const;
+    }),
+  );
+  for (const [leadId, order] of results) {
+    if (order) {
+      map.set(leadId, order);
+    }
+  }
+  return map;
+}
+
 export async function getSalesOrderById(
   organizationId: string,
   orderId: string,

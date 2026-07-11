@@ -8,6 +8,7 @@ import { getWidgetDashboardData } from "@/lib/dashboard/widgets";
 import { requireSession } from "@/lib/require-session";
 import { hasWorkspaceModule, resolveWorkspaceHomeHref } from "@/lib/workspace-modules";
 import { getUserDashboard } from "@/lib/workspace-data";
+import { parseWorkspaceNavPrefs } from "@/lib/workspace-nav-prefs";
 
 function emptyDashboardForUser(role: import("@prisma/client").Role): DashboardPayload {
   return {
@@ -84,6 +85,17 @@ async function DashboardHome({
   const isWidgetHome =
     hasWorkspaceModule(user, "FMS") || hasWorkspaceModule(user, "IMS");
 
+  const membershipPrefs = await prisma.membership.findUnique({
+    where: {
+      userId_organizationId: {
+        userId: user.id,
+        organizationId: user.organizationId,
+      },
+    },
+    select: { workspacePrefs: true },
+  });
+  const navPrefs = parseWorkspaceNavPrefs(membershipPrefs?.workspacePrefs);
+
   const [dashboard, widgets, organization] = await Promise.all([
     // Widget home only needs task/payment strips — skip Sheets round-trip.
     isWidgetHome
@@ -96,7 +108,7 @@ async function DashboardHome({
           return emptyDashboardForUser(user.role);
         }),
     isWidgetHome
-      ? getWidgetDashboardData(user).catch((error) => {
+      ? getWidgetDashboardData(user, navPrefs).catch((error) => {
           console.error("getWidgetDashboardData", error);
           return null;
         })
@@ -114,6 +126,7 @@ async function DashboardHome({
       <div className="saas-page">
         <WorkspaceWidgetDashboard
           data={widgets}
+          navPrefs={navPrefs}
           organizationName={organizationName}
           pendingPayments={dashboard.pendingPayments}
           taskStats={dashboard.taskStats}

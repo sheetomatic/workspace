@@ -1,5 +1,5 @@
 import { WorkspaceRouteSkeleton } from "@/components/saas/workspace-route-skeleton";
 
 export default function Loading() {
-  return <WorkspaceRouteSkeleton label="Loading workspace…" cards={3} />;
+  return <WorkspaceRouteSkeleton label="Loading PC…" cards={3} />;
 }

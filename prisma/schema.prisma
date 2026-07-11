@@ -1026,6 +1026,8 @@ model Membership {
   monthlySalary      Decimal?             @db.Decimal(14, 2)
   dateOfJoining      DateTime?
   modules            WorkspaceModule[]    @default([])
+  /** Per-user sidebar/home visibility: { mode, visibleIds }. */
+  workspacePrefs     Json?
   userId             String
   organizationId     String
   deactivatedAt      DateTime?

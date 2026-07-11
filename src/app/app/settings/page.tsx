@@ -4,6 +4,7 @@ import { ChangePasswordPanel } from "@/components/saas/change-password-panel";
 import { TaskAiSettingsPanel } from "@/components/saas/task-ai-settings-panel";
 import { WorkspaceLinksPanel } from "@/components/saas/workspace-links-panel";
 import { WorkspaceAppearancePanel } from "@/components/saas/workspace-appearance-panel";
+import { WorkspaceModulesPanel } from "@/components/saas/workspace-modules-panel";
 import { WorkspaceAddonsPanel } from "@/components/saas/workspace-addons-panel";
 import { WorkspaceSettingsForm } from "@/components/saas/workspace-settings-form";
 import { getIntegrationStatus } from "@/lib/integrations/status";
@@ -30,6 +31,9 @@ import {
   mergeWorkspaceAppearance,
   parseWorkspaceAppearance,
 } from "@/lib/workspace-appearance";
+import { parseWorkspaceNavPrefs } from "@/lib/workspace-nav-prefs";
+import { listNavPreferenceOptions } from "@/lib/workspace-navigation";
+import { prisma } from "@/lib/db";
 
 export default async function SettingsPage() {
   const user = await requireSession();
@@ -37,7 +41,7 @@ export default async function SettingsPage() {
   const canViewTaskAi =
     hasWorkspaceModule(user, "TASKS") && hasMinimumRole(user.role, "MANAGER");
   const platformStatus = getIntegrationStatus();
-  const [{ organization }, links, spreadsheetId, notificationSettings, taskAiSummary] =
+  const [{ organization }, links, spreadsheetId, notificationSettings, taskAiSummary, membershipPrefs] =
     await Promise.all([
       getWorkspaceSummary(user.organizationId),
       canManageAdmin ? listWorkspaceLinks(user.organizationId) : Promise.resolve([]),
@@ -48,6 +52,15 @@ export default async function SettingsPage() {
       canViewTaskAi
         ? getTaskAiUsageSummary(user.organizationId)
         : Promise.resolve(null),
+      prisma.membership.findUnique({
+        where: {
+          userId_organizationId: {
+            userId: user.id,
+            organizationId: user.organizationId,
+          },
+        },
+        select: { workspacePrefs: true },
+      }),
     ]);
   const sheetsConnection = getGoogleSheetsConnectionStatus(spreadsheetId);
   const statusLabel =
@@ -65,6 +78,11 @@ export default async function SettingsPage() {
     organization.allowedModules,
     { isPrimary: organization.isPrimary },
   );
+  const navPrefs = parseWorkspaceNavPrefs(membershipPrefs?.workspacePrefs);
+  const navOptions = listNavPreferenceOptions({
+    user,
+    organizationSlug: user.organizationSlug,
+  });
 
   return (
     <div className="saas-page saas-settings-page">
@@ -79,6 +97,11 @@ export default async function SettingsPage() {
       <div className="saas-settings-grid">
         <ChangePasswordPanel />
         <NotificationSettingsPanel settings={notificationSettings} />
+        {!isDedicatedPortal && navOptions.length > 0 ? (
+          <div id="focus-modules">
+            <WorkspaceModulesPanel options={navOptions} prefs={navPrefs} />
+          </div>
+        ) : null}
         <ModuleSettingsLinks user={user} />
         {canManageAdmin ? (
           <>

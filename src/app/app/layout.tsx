@@ -16,6 +16,10 @@ import {
   mergeWorkspaceAppearance,
   parseWorkspaceAppearance,
 } from "@/lib/workspace-appearance";
+import {
+  DEFAULT_WORKSPACE_NAV_PREFS,
+  parseWorkspaceNavPrefs,
+} from "@/lib/workspace-nav-prefs";
 import { ORG_PLAN_LABELS } from "@/lib/org-plan-presets";
 import { requireSession } from "@/lib/require-session";
 import { ensureSessionTenantHost, getRequestTenantSlug } from "@/lib/tenant-host";
@@ -84,9 +88,10 @@ export default async function AppLayout({
     updatedAt: Date;
   } | null = null;
   let organizations: Awaited<ReturnType<typeof listOrganizationsForUser>> = [];
+  let navPrefs = DEFAULT_WORKSPACE_NAV_PREFS;
 
   try {
-    [organization, organizations] = await Promise.all([
+    const [orgResult, orgsResult, membershipPrefs] = await Promise.all([
       prisma.organization.findUnique({
         where: { id: sessionUser.organizationId },
         select: {
@@ -101,7 +106,19 @@ export default async function AppLayout({
         },
       }),
       listOrganizationsForUser(sessionUser.id),
+      prisma.membership.findUnique({
+        where: {
+          userId_organizationId: {
+            userId: sessionUser.id,
+            organizationId: sessionUser.organizationId,
+          },
+        },
+        select: { workspacePrefs: true },
+      }),
     ]);
+    organization = orgResult;
+    organizations = orgsResult;
+    navPrefs = parseWorkspaceNavPrefs(membershipPrefs?.workspacePrefs);
   } catch (error) {
     console.error("[app-layout] workspace bootstrap failed", error);
     redirect(
@@ -148,6 +165,7 @@ export default async function AppLayout({
         appearance={appearance}
         hidePlanBadge={Boolean(dedicatedPortal)}
         isDedicatedPortal={Boolean(dedicatedPortal)}
+        navPrefs={navPrefs}
         organizationPlan={organization.plan}
         organizationPlanLabel={ORG_PLAN_LABELS[organization.plan]}
         organizations={portalOrganizations}

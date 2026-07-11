@@ -29,8 +29,15 @@ import {
 import type { SessionUser } from "@/lib/auth";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
 import { getDedicatedClientPortal, isDedicatedClientPortal } from "@/lib/dedicated-client-portals";
+import {
+  isNavIdVisible,
+  type NavPreferenceOption,
+  type WorkspaceNavPrefs,
+} from "@/lib/workspace-nav-prefs";
 
 export type WorkspaceNavItem = {
+  /** Stable id for show/hide prefs (top-level items only). */
+  id?: string;
   href: string;
   label: string;
   icon: LucideIcon;
@@ -111,6 +118,7 @@ const EA_CHILD_ITEMS: WorkspaceNavItem[] = [
 
 const BCI_ITEMS: WorkspaceNavItem[] = [
   {
+    id: "fms",
     href: "/app/fms",
     label: "FMS",
     icon: GitBranch,
@@ -118,6 +126,7 @@ const BCI_ITEMS: WorkspaceNavItem[] = [
     matchPrefix: "/app/fms",
   },
   {
+    id: "leads",
     href: "/app/leads",
     label: "Leads",
     icon: Megaphone,
@@ -125,6 +134,7 @@ const BCI_ITEMS: WorkspaceNavItem[] = [
     matchPrefix: "/app/leads",
   },
   {
+    id: "checklists",
     href: "/app/checklists",
     label: "Check List",
     icon: CheckSquare,
@@ -133,6 +143,7 @@ const BCI_ITEMS: WorkspaceNavItem[] = [
     children: CHECK_LIST_CHILD_ITEMS,
   },
   {
+    id: "ea",
     href: "/app/tasks/today",
     label: "EA",
     icon: ClipboardList,
@@ -141,6 +152,7 @@ const BCI_ITEMS: WorkspaceNavItem[] = [
     children: EA_CHILD_ITEMS,
   },
   {
+    id: "pc",
     href: "/app/pc/today",
     label: "PC",
     icon: ListChecks,
@@ -149,6 +161,7 @@ const BCI_ITEMS: WorkspaceNavItem[] = [
     children: PC_CHILD_ITEMS,
   },
   {
+    id: "em",
     href: "/app/em",
     label: "EM",
     icon: Presentation,
@@ -160,6 +173,7 @@ const BCI_ITEMS: WorkspaceNavItem[] = [
 
 const TASK_DELEGATION_ITEMS: WorkspaceNavItem[] = [
   {
+    id: "tasks",
     href: "/app/tasks",
     label: "Tasks Management",
     icon: LayoutDashboard,
@@ -167,6 +181,7 @@ const TASK_DELEGATION_ITEMS: WorkspaceNavItem[] = [
     matchPrefix: "/app/tasks",
   },
   {
+    id: "tasks-create",
     href: "/app/tasks/create",
     label: "Add Task",
     icon: PlusCircle,
@@ -175,6 +190,7 @@ const TASK_DELEGATION_ITEMS: WorkspaceNavItem[] = [
     matchPrefix: "/app/tasks/create",
   },
   {
+    id: "tasks-scores",
     href: "/app/tasks/scores",
     label: "Reports",
     icon: BarChart3,
@@ -187,6 +203,7 @@ const TASK_DELEGATION_ITEMS: WorkspaceNavItem[] = [
 /** MSME department-wise ops + FMS trackers (Leads → dispatch spine). */
 const DEPARTMENT_NAV_ITEMS: WorkspaceNavItem[] = [
   {
+    id: "dept-sales",
     href: "/app/leads",
     label: "Sales",
     icon: ShoppingCart,
@@ -227,6 +244,7 @@ const DEPARTMENT_NAV_ITEMS: WorkspaceNavItem[] = [
     ],
   },
   {
+    id: "dept-marketing",
     href: "/app/leads",
     label: "Marketing",
     icon: TrendingUp,
@@ -259,6 +277,7 @@ const DEPARTMENT_NAV_ITEMS: WorkspaceNavItem[] = [
     ],
   },
   {
+    id: "dept-hr",
     href: "/app/hr",
     label: "HR & Admin",
     icon: Users,
@@ -328,6 +347,7 @@ const DEPARTMENT_NAV_ITEMS: WorkspaceNavItem[] = [
     ],
   },
   {
+    id: "dept-ops",
     href: "/app/sales-orders?status=DISPATCH_PENDING",
     label: "Operations",
     icon: Truck,
@@ -370,6 +390,7 @@ const DEPARTMENT_NAV_ITEMS: WorkspaceNavItem[] = [
     ],
   },
   {
+    id: "dept-purchase",
     href: "/app/sales-orders?status=PO_PENDING",
     label: "Purchase",
     icon: ClipboardList,
@@ -396,6 +417,7 @@ const DEPARTMENT_NAV_ITEMS: WorkspaceNavItem[] = [
     ],
   },
   {
+    id: "dept-store",
     href: "/app/ims",
     label: "Store",
     icon: Package,
@@ -430,6 +452,7 @@ const DEPARTMENT_NAV_ITEMS: WorkspaceNavItem[] = [
     ],
   },
   {
+    id: "dept-design",
     href: "/app/fms/setup/business",
     label: "Design",
     icon: PenTool,
@@ -449,6 +472,7 @@ const DEPARTMENT_NAV_ITEMS: WorkspaceNavItem[] = [
     ],
   },
   {
+    id: "dept-rd",
     href: "/app/fms/setup/business",
     label: "R&D",
     icon: FlaskConical,
@@ -468,6 +492,7 @@ const DEPARTMENT_NAV_ITEMS: WorkspaceNavItem[] = [
     ],
   },
   {
+    id: "dept-mdo",
     href: "/app/em",
     label: "MDO",
     icon: Presentation,
@@ -509,6 +534,7 @@ const DEPARTMENT_NAV_ITEMS: WorkspaceNavItem[] = [
     ],
   },
   {
+    id: "dept-production",
     href: "/app/fms/fulfillment?flow=stock-check",
     label: "Production",
     icon: Factory,
@@ -608,6 +634,7 @@ export function getWorkspaceNavSections(params: {
         label: mainLabel,
         items: [
           {
+            id: "cases-home",
             href: portal.homePath,
             label: "Dashboard",
             icon: Briefcase,
@@ -621,6 +648,7 @@ export function getWorkspaceNavSections(params: {
         label: "Reports",
         items: [
           {
+            id: "reports",
             href: "/app/reports",
             label: "Reports",
             icon: BarChart3,
@@ -633,6 +661,7 @@ export function getWorkspaceNavSections(params: {
         label: "Settings",
         items: [
           {
+            id: "cases-import",
             href: "/app/cases/settings",
             label: "Import & Export",
             icon: FileSpreadsheet,
@@ -640,11 +669,13 @@ export function getWorkspaceNavSections(params: {
             matchPrefix: "/app/cases/settings",
           },
           {
+            id: "settings",
             href: "/app/settings",
             label: "Settings",
             icon: Settings,
           },
           {
+            id: "team",
             href: "/app/team",
             label: "Team",
             icon: Users,
@@ -680,6 +711,7 @@ export function getWorkspaceNavSections(params: {
       label: "Reports",
       items: [
         {
+          id: "reports",
           href: "/app/reports",
           label: "Reports",
           icon: BarChart3,
@@ -692,6 +724,7 @@ export function getWorkspaceNavSections(params: {
       label: "My Space",
       items: [
         {
+          id: "my-space",
           href: "/app/my-space",
           label: "My Space",
           icon: Wallet,
@@ -720,11 +753,13 @@ export function getWorkspaceNavSections(params: {
       label: "Settings",
       items: [
         {
+          id: "settings",
           href: "/app/settings",
           label: "Settings",
           icon: Settings,
         },
         {
+          id: "team",
           href: "/app/team",
           label: "Team",
           icon: Users,
@@ -736,6 +771,45 @@ export function getWorkspaceNavSections(params: {
   );
 
   return sections;
+}
+
+export function filterNavItemsByPrefs(
+  items: WorkspaceNavItem[],
+  prefs: WorkspaceNavPrefs,
+): WorkspaceNavItem[] {
+  return items.filter((item) => isNavIdVisible(prefs, item.id));
+}
+
+/** Top-level customizable options for Settings → Modules (role/module gated). */
+export function listNavPreferenceOptions(params: {
+  user: SessionUser;
+  organizationSlug: string;
+}): NavPreferenceOption[] {
+  if (isDedicatedClientPortal(params.organizationSlug)) {
+    return [];
+  }
+
+  const sections = getWorkspaceNavSections(params);
+  const options: NavPreferenceOption[] = [];
+
+  for (const section of sections) {
+    if (section.id === "settings" || section.id === "reports") {
+      continue;
+    }
+    for (const item of visibleWorkspaceNavItems(params.user, section.items)) {
+      if (!item.id) {
+        continue;
+      }
+      options.push({
+        id: item.id,
+        label: item.label,
+        sectionId: section.id,
+        sectionLabel: section.label,
+      });
+    }
+  }
+
+  return options;
 }
 
 export function navIsActive(

@@ -16,6 +16,11 @@ import type {
 } from "@/lib/dashboard-types";
 import type { WidgetDashboardData } from "@/lib/dashboard/widgets";
 import { formatDeficitPct } from "@/lib/mis/reports-data";
+import {
+  DEFAULT_WORKSPACE_NAV_PREFS,
+  isDashboardWidgetVisible,
+  type WorkspaceNavPrefs,
+} from "@/lib/workspace-nav-prefs";
 
 type WorkspaceWidgetDashboardProps = {
   organizationName: string;
@@ -24,6 +29,7 @@ type WorkspaceWidgetDashboardProps = {
   taskStats: DashboardTaskStats;
   pendingPayments: DashboardPaymentRow[];
   tasksEnabled: boolean;
+  navPrefs?: WorkspaceNavPrefs;
 };
 
 function formatInr(value: number) {
@@ -100,6 +106,7 @@ export function WorkspaceWidgetDashboard({
   taskStats,
   pendingPayments,
   tasksEnabled,
+  navPrefs = DEFAULT_WORKSPACE_NAV_PREFS,
 }: WorkspaceWidgetDashboardProps) {
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
@@ -114,6 +121,8 @@ export function WorkspaceWidgetDashboard({
   );
   const delayedProcesses = data.fms?.delayedSteps ?? 0;
   const openOrders = data.salesOrders?.open ?? null;
+  const show = (id: Parameters<typeof isDashboardWidgetVisible>[1]) =>
+    isDashboardWidgetVisible(navPrefs, id);
 
   return (
     <div className="ws-widget-dash">
@@ -127,19 +136,21 @@ export function WorkspaceWidgetDashboard({
           </p>
         </div>
         <div className="ws-widget-hero-stats">
-          {openOrders !== null ? (
+          {openOrders !== null && show("salesOrders") ? (
             <div className="ws-widget-hero-stat">
               <strong>{openOrders}</strong>
               <span>Open orders</span>
             </div>
           ) : null}
-          <div
-            className={`ws-widget-hero-stat${delayedProcesses > 0 ? " is-danger" : ""}`}
-          >
-            <strong>{delayedProcesses}</strong>
-            <span>Delayed steps</span>
-          </div>
-          {tasksEnabled ? (
+          {show("fms") ? (
+            <div
+              className={`ws-widget-hero-stat${delayedProcesses > 0 ? " is-danger" : ""}`}
+            >
+              <strong>{delayedProcesses}</strong>
+              <span>Delayed steps</span>
+            </div>
+          ) : null}
+          {tasksEnabled && show("tasks") ? (
             <div
               className={`ws-widget-hero-stat${taskStats.overdue > 0 ? " is-danger" : ""}`}
             >
@@ -147,17 +158,19 @@ export function WorkspaceWidgetDashboard({
               <span>Overdue tasks</span>
             </div>
           ) : null}
-          <div
-            className={`ws-widget-hero-stat${pendingPayments.length > 0 ? " is-danger" : ""}`}
-          >
-            <strong>{formatInr(pendingCollectionsTotal)}</strong>
-            <span>To collect</span>
-          </div>
+          {show("collection") ? (
+            <div
+              className={`ws-widget-hero-stat${pendingPayments.length > 0 ? " is-danger" : ""}`}
+            >
+              <strong>{formatInr(pendingCollectionsTotal)}</strong>
+              <span>To collect</span>
+            </div>
+          ) : null}
         </div>
       </header>
 
       <div className="ws-widget-grid">
-        {data.leads ? (
+        {data.leads && show("leads") ? (
           <Widget
             footer={
               data.leads.followUpsDue > 0
@@ -187,7 +200,7 @@ export function WorkspaceWidgetDashboard({
           </Widget>
         ) : null}
 
-        {data.salesOrders ? (
+        {data.salesOrders && show("salesOrders") ? (
           <Widget
             footer={
               data.salesOrders.delayedFms > 0
@@ -218,7 +231,7 @@ export function WorkspaceWidgetDashboard({
           </Widget>
         ) : null}
 
-        {data.fms ? (
+        {data.fms && show("fms") ? (
           <Widget
             footer={
               data.fms.bottleneck
@@ -245,7 +258,7 @@ export function WorkspaceWidgetDashboard({
           </Widget>
         ) : null}
 
-        {data.ims ? (
+        {data.ims && show("ims") ? (
           <Widget
             footer={
               data.ims.stockOuts > 0
@@ -277,7 +290,7 @@ export function WorkspaceWidgetDashboard({
           </Widget>
         ) : null}
 
-        {tasksEnabled ? (
+        {tasksEnabled && show("tasks") ? (
           <Widget
             footer={
               taskStats.overdue > 0
@@ -305,7 +318,7 @@ export function WorkspaceWidgetDashboard({
           </Widget>
         ) : null}
 
-        {data.checklists ? (
+        {data.checklists && show("checklists") ? (
           <Widget
             footer={
               data.checklists.overdue > 0
@@ -332,7 +345,7 @@ export function WorkspaceWidgetDashboard({
           </Widget>
         ) : null}
 
-        {data.em ? (
+        {data.em && show("em") ? (
           <Widget
             footer={
               data.em.people.length === 0
@@ -368,7 +381,7 @@ export function WorkspaceWidgetDashboard({
           </Widget>
         ) : null}
 
-        {data.recruitment ? (
+        {data.recruitment && show("recruitment") ? (
           <Widget
             footer={data.recruitment.active === 0 ? EMPTY_FOOTER : null}
             href="/app/fms/fulfillment?flow=recruitment"
@@ -391,39 +404,41 @@ export function WorkspaceWidgetDashboard({
           </Widget>
         ) : null}
 
-        <Widget
-          footer={pendingPayments.length === 0 ? EMPTY_FOOTER : null}
-          href="/app/reports"
-          icon={<IndianRupee size={15} />}
-          title="Collection follow-up"
-        >
-          <div className="ws-widget-kpis">
-            <Kpi
-              danger={pendingPayments.length > 0}
-              label="Pending"
-              value={String(pendingPayments.length)}
-            />
-            <Kpi label="Amount" value={formatInr(pendingCollectionsTotal)} />
-          </div>
-          {pendingPayments.length > 0 ? (
-            <ul className="ws-widget-list">
-              {pendingPayments.slice(0, 3).map((row) => (
-                <li key={row.id}>
-                  <span className="ws-widget-list-label">{row.clientName}</span>
-                  <span
-                    className={
-                      row.urgency === "overdue"
-                        ? "ws-widget-deficit"
-                        : "ws-widget-list-value"
-                    }
-                  >
-                    {row.amount}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </Widget>
+        {show("collection") ? (
+          <Widget
+            footer={pendingPayments.length === 0 ? EMPTY_FOOTER : null}
+            href="/app/reports"
+            icon={<IndianRupee size={15} />}
+            title="Collection follow-up"
+          >
+            <div className="ws-widget-kpis">
+              <Kpi
+                danger={pendingPayments.length > 0}
+                label="Pending"
+                value={String(pendingPayments.length)}
+              />
+              <Kpi label="Amount" value={formatInr(pendingCollectionsTotal)} />
+            </div>
+            {pendingPayments.length > 0 ? (
+              <ul className="ws-widget-list">
+                {pendingPayments.slice(0, 3).map((row) => (
+                  <li key={row.id}>
+                    <span className="ws-widget-list-label">{row.clientName}</span>
+                    <span
+                      className={
+                        row.urgency === "overdue"
+                          ? "ws-widget-deficit"
+                          : "ws-widget-list-value"
+                      }
+                    >
+                      {row.amount}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </Widget>
+        ) : null}
       </div>
     </div>
   );

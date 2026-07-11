@@ -14,6 +14,11 @@ import { mergeLeadContactWhere } from "@/lib/leads/contact-validation";
 import { hasMinimumRole } from "@/lib/permissions";
 import { getSalesOrderWidgetStats } from "@/lib/sales-orders/queries";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
+import {
+  DEFAULT_WORKSPACE_NAV_PREFS,
+  isDashboardWidgetVisible,
+  type WorkspaceNavPrefs,
+} from "@/lib/workspace-nav-prefs";
 
 export type LeadsWidgetData = {
   open: number;
@@ -171,6 +176,7 @@ async function loadEmWidget(user: SessionUser): Promise<EmWidgetData> {
  */
 export async function getWidgetDashboardData(
   user: SessionUser,
+  navPrefs: WorkspaceNavPrefs = DEFAULT_WORKSPACE_NAV_PREFS,
 ): Promise<WidgetDashboardData> {
   const organizationId = user.organizationId;
   const isManager = hasMinimumRole(user.role, "MANAGER");
@@ -182,38 +188,44 @@ export async function getWidgetDashboardData(
   const emEnabled = hasWorkspaceModule(user, "REPORTS") && isManager;
   const hrEnabled = hasWorkspaceModule(user, "HR") && fmsEnabled && isManager;
 
+  const show = (id: Parameters<typeof isDashboardWidgetVisible>[1]) =>
+    isDashboardWidgetVisible(navPrefs, id);
+
   const recruitmentKeywords = RECRUITMENT_FMS_FLOW.matchKeywords;
 
-  const emPromise = emEnabled
-    ? Promise.race([
-        loadEmWidget(user).catch((error) => {
-          console.error("[widgets] em widget failed", error);
-          return null;
-        }),
-        // Cap EM so a slow scoreboard never blanks the whole home pane.
-        new Promise<null>((resolve) => {
-          setTimeout(() => resolve(null), 1200);
-        }),
-      ])
-    : Promise.resolve(null);
+  const emPromise =
+    emEnabled && show("em")
+      ? Promise.race([
+          loadEmWidget(user).catch((error) => {
+            console.error("[widgets] em widget failed", error);
+            return null;
+          }),
+          // Cap EM so a slow scoreboard never blanks the whole home pane.
+          new Promise<null>((resolve) => {
+            setTimeout(() => resolve(null), 1200);
+          }),
+        ])
+      : Promise.resolve(null);
 
   const [leads, salesOrders, fms, ims, checklists, em, recruitment] =
     await Promise.all([
-      fmsEnabled
+      fmsEnabled && show("leads")
         ? loadLeadsWidget(organizationId, personalUserId)
         : Promise.resolve(null),
-      fmsEnabled && isManager
+      fmsEnabled && isManager && show("salesOrders")
         ? getSalesOrderWidgetStats(organizationId)
         : Promise.resolve(null),
-      fmsEnabled
+      fmsEnabled && show("fms")
         ? getFmsWidgetCounts(organizationId, personalUserId)
         : Promise.resolve(null),
-      imsEnabled ? loadImsWidget(organizationId) : Promise.resolve(null),
-      tasksEnabled
+      imsEnabled && show("ims")
+        ? loadImsWidget(organizationId)
+        : Promise.resolve(null),
+      tasksEnabled && show("checklists")
         ? loadChecklistsWidget(organizationId, personalUserId)
         : Promise.resolve(null),
       emPromise,
-      hrEnabled
+      hrEnabled && show("recruitment")
         ? getRecruitmentFmsWidgetCounts(organizationId, recruitmentKeywords)
         : Promise.resolve(null),
     ]);

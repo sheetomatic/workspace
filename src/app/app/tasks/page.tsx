@@ -70,7 +70,14 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
     includeCompleted: params.status === "COMPLETED" || params.all === "1",
   };
 
-  const taskPage = await listDelegatedTasks(user, filter, { page });
+  const [taskPage, trackerData, members, integrationStatus] = await Promise.all([
+    listDelegatedTasks(user, filter, { page }),
+    getTaskTrackerDashboardData(user),
+    canCreateTasks(user.role)
+      ? listAssignableMembers(user.organizationId)
+      : Promise.resolve([]),
+    getWorkspaceIntegrationStatus(user.organizationId),
+  ]);
   const verifierByAssignee = await buildTaskVerifierIndex(
     user.organizationId,
     [...new Set(taskPage.items.map((task) => task.assigneeUserId))],
@@ -117,14 +124,6 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
   const showEmReady = canAccessEmReady(user);
   const showAssigneeFilter =
     hasMinimumRole(user.role, "MANAGER") || user.role === "VIEWER";
-
-  const [trackerData, members, integrationStatus] = await Promise.all([
-    getTaskTrackerDashboardData(user),
-    canCreateTasks(user.role)
-      ? listAssignableMembers(user.organizationId)
-      : Promise.resolve([]),
-    getWorkspaceIntegrationStatus(user.organizationId),
-  ]);
   const displayName = user.name?.trim() || user.email.split("@")[0];
   const filterMembers = members.map((member) => ({
     id: member.id,

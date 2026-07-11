@@ -425,6 +425,113 @@ body:has(.workspace-app.saas-app) {
   color: rgba(255, 255, 255, 0.55);
 }
 
+.workspace-app .saas-nav-customize {
+  margin-top: 4px;
+  opacity: 0.85;
+  font-size: 0.8125rem;
+}
+
+.workspace-app .saas-nav-customize:hover {
+  opacity: 1;
+}
+
+.workspace-app .ws-modules-panel .saas-panel-lead {
+  margin-bottom: 14px;
+}
+
+.workspace-app .ws-modules-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.workspace-app .ws-modules-group {
+  margin-bottom: 14px;
+}
+
+.workspace-app .ws-modules-group-label {
+  margin: 0 0 8px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.workspace-app .ws-modules-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.workspace-app .ws-modules-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.workspace-app .ws-modules-toggle:hover:not(:disabled) {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.workspace-app .ws-modules-toggle.is-on {
+  border-color: color-mix(in srgb, var(--ws-primary, #2563eb) 35%, #e2e8f0);
+  background: color-mix(in srgb, var(--ws-primary, #2563eb) 6%, #fff);
+}
+
+.workspace-app .ws-modules-toggle:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.workspace-app .ws-modules-toggle-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.workspace-app .ws-modules-toggle.is-on .ws-modules-toggle-state {
+  color: var(--ws-primary, #2563eb);
+}
+
+.workspace-app .ws-modules-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.workspace-app .ws-modules-msg {
+  margin: 10px 0 0;
+  font-size: 0.8125rem;
+  color: #15803d;
+}
+
+.workspace-app .ws-modules-err {
+  margin: 10px 0 0;
+  font-size: 0.8125rem;
+  color: #b91c1c;
+}
+
+
 .workspace-app .saas-nav-group {
   display: flex;
   flex-direction: column;
