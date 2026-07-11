@@ -118,6 +118,13 @@ const BCI_ITEMS: WorkspaceNavItem[] = [
     matchPrefix: "/app/fms",
   },
   {
+    href: "/app/leads",
+    label: "Leads",
+    icon: Megaphone,
+    module: "FMS",
+    matchPrefix: "/app/leads",
+  },
+  {
     href: "/app/checklists",
     label: "Check List",
     icon: CheckSquare,

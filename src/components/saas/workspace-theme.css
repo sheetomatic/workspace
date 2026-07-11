@@ -14528,6 +14528,29 @@ body:has(.workspace-app.saas-app) {
   grid-column: span 2;
 }
 
+.workspace-app .ws-widget-hit {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.workspace-app .ws-widget-hit:hover {
+  background: color-mix(in srgb, var(--sf-accent) 4%, transparent);
+}
+
+.workspace-app .ws-widget-hit:hover .ws-widget-link {
+  text-decoration: underline;
+}
+
+.workspace-app .ws-widget-hit:focus-visible {
+  outline: 2px solid var(--sf-accent);
+  outline-offset: -2px;
+}
+
 .workspace-app .ws-widget-head {
   display: flex;
   align-items: center;
@@ -14665,6 +14688,21 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-widget-foot.is-muted {
   color: var(--sf-text-muted);
+}
+
+.workspace-app .ws-widget-foot.is-link {
+  display: block;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.workspace-app .ws-widget-foot.is-link:hover {
+  filter: brightness(0.97);
+}
+
+.workspace-app .ws-widget-foot.is-link:focus-visible {
+  outline: 2px solid var(--sf-accent);
+  outline-offset: -2px;
 }
 
 @media (max-width: 1180px) {

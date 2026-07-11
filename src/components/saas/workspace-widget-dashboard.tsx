@@ -47,26 +47,36 @@ function Widget(props: {
   linkLabel?: string;
   span2?: boolean;
   children: React.ReactNode;
-  footer?: { text: string; tone: "danger" | "muted" } | null;
+  footer?: {
+    text: string;
+    tone: "danger" | "muted";
+    /** When set, the alert bar is a real link (e.g. follow-ups → filtered leads). */
+    href?: string;
+  } | null;
 }) {
+  const footClass = `ws-widget-foot ${
+    props.footer?.tone === "danger" ? "is-danger" : "is-muted"
+  }`;
+
   return (
     <section className={`ws-widget${props.span2 ? " ws-widget--span2" : ""}`}>
-      <header className="ws-widget-head">
-        <span className="ws-widget-icon">{props.icon}</span>
-        <h2>{props.title}</h2>
-        <Link className="ws-widget-link" href={props.href}>
-          {props.linkLabel ?? "View all \u2192"}
-        </Link>
-      </header>
-      <div className="ws-widget-body">{props.children}</div>
+      <Link className="ws-widget-hit" href={props.href}>
+        <header className="ws-widget-head">
+          <span className="ws-widget-icon">{props.icon}</span>
+          <h2>{props.title}</h2>
+          <span className="ws-widget-link">
+            {props.linkLabel ?? "View all \u2192"}
+          </span>
+        </header>
+        <div className="ws-widget-body">{props.children}</div>
+      </Link>
       {props.footer ? (
-        <footer
-          className={`ws-widget-foot ${
-            props.footer.tone === "danger" ? "is-danger" : "is-muted"
-          }`}
+        <Link
+          className={`${footClass} is-link`}
+          href={props.footer.href ?? props.href}
         >
           {props.footer.text}
-        </footer>
+        </Link>
       ) : null}
     </section>
   );
@@ -154,6 +164,7 @@ export function WorkspaceWidgetDashboard({
                 ? {
                     text: `${data.leads.followUpsDue} follow-up${data.leads.followUpsDue === 1 ? "" : "s"} due today`,
                     tone: "danger",
+                    href: "/app/leads?status=FOLLOW_UP",
                   }
                 : data.leads.open === 0
                   ? EMPTY_FOOTER
@@ -161,6 +172,7 @@ export function WorkspaceWidgetDashboard({
             }
             href="/app/leads"
             icon={<Megaphone size={15} />}
+            linkLabel={"Open Leads \u2192"}
             title="Leads"
           >
             <div className="ws-widget-kpis">
