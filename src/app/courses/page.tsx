@@ -3,9 +3,9 @@ import { CoursesPageContent } from "@/components/marketing/courses-page-content"
 import { marketingMetadata } from "@/lib/marketing-metadata";
 
 export const metadata: Metadata = marketingMetadata({
-  title: "Courses for MSME Owners | 24 × 1.5h Live 1:1 Systems Training",
+  title: "1:1 Coaching | Google Sheets, AppSheet & Looker Studio",
   description:
-    "Live 1:1 owner training — FMS, IMS, Task Delegation, Attendance, AppSheet, and EM-ready MIS. 24 classes × 1.5 hours (36 hours). ₹35,000. Build systems to run the business one day a week.",
+    "Live 1:1 coaching on Google Sheets, AppSheet, and Looker Studio — use cases based on your business. 24 classes × 1.5 hours. Weekly Mon+Fri or Tue+Sat, 8:30–10:00 AM IST. ₹35,000 — pay on this page.",
   path: "/courses",
 });
 

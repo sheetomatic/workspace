@@ -1,4 +1,4 @@
-import { Clock3, IndianRupee, Play, UserRound } from "lucide-react";
+import { CalendarDays, Clock3, IndianRupee, Play, UserRound } from "lucide-react";
 import {
   FinalCta,
   MarketingPage,
@@ -19,11 +19,9 @@ import {
 } from "@/app/video-content";
 import { youtubeChannelName, youtubeChannelUrl } from "@/app/site-content";
 import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
-import { ContactButtons } from "@/components/marketing/marketing-buttons";
-import { ProblemSolutionVisualSection } from "@/components/marketing/problem-solution-visual";
+import { CoursesEnrollPay } from "@/components/marketing/courses-enroll-pay";
 import { VideoEmbed } from "@/components/marketing/video-embed";
 import Link from "next/link";
-import { problemSolutionPresets } from "@/app/page-content";
 import "./minimal-premium.css";
 import "./courses-page.css";
 import "./videos.css";
@@ -40,9 +38,7 @@ export function CoursesPageContent() {
             <h1 className="minimal-hero-title">{coursesPage.title}</h1>
             <p className="minimal-hero-lead">{coursesPage.lead}</p>
             <div className="courses-hero-actions">
-              <a className="btn-cta btn-primary" href={coursesWhatsAppUrl}>
-                {coursesPage.ctaLabel}
-              </a>
+              <CoursesEnrollPay triggerLabel={coursesPage.ctaLabel} />
               <Link className="btn-cta btn-secondary" href={WORKSPACE_LOGIN_HREF}>
                 {coursesPage.ctaSecondaryLabel}
               </Link>
@@ -59,6 +55,13 @@ export function CoursesPageContent() {
               </div>
             </div>
             <div className="courses-stat">
+              <CalendarDays size={20} aria-hidden />
+              <div>
+                <strong>{coursesPage.scheduleLabel}</strong>
+                <span>{coursesPage.scheduleDetail}</span>
+              </div>
+            </div>
+            <div className="courses-stat">
               <IndianRupee size={20} aria-hidden />
               <div>
                 <strong>{coursesPage.priceLabel}</strong>
@@ -68,18 +71,22 @@ export function CoursesPageContent() {
             <div className="courses-stat">
               <UserRound size={20} aria-hidden />
               <div>
-                <strong>Small &amp; medium business owners</strong>
-                <span>Not a jobseeker MIS career track</span>
+                <strong>Built around your use cases</strong>
+                <span>Sheets · AppSheet · Looker Studio</span>
               </div>
             </div>
-            <ContactButtons
-              className="courses-hero-card-cta"
-              whatsappClassName="btn-block"
-              whatsappLabel={coursesPage.ctaLabel}
-              callClassName="btn-block"
-              callLabel="Call now"
-              message={coursesPage.whatsappMessage}
-            />
+            <div className="courses-hero-card-cta">
+              <CoursesEnrollPay
+                triggerLabel={coursesPage.ctaLabel}
+                triggerClassName="btn-cta btn-primary btn-block"
+              />
+              <a
+                className="btn-cta btn-secondary btn-block"
+                href={coursesWhatsAppUrl}
+              >
+                {coursesPage.ctaQuestionsLabel}
+              </a>
+            </div>
           </aside>
         </div>
       </section>
@@ -140,34 +147,29 @@ export function CoursesPageContent() {
             <div>
               <p className="type-kicker text-sky-700">Enroll</p>
               <h3>{coursesPage.priceLabel} · 36 hours live 1:1</h3>
-              <p>{coursesPage.priceNote}</p>
+              <p>
+                {coursesPage.scheduleDetail}. {coursesPage.priceNote}
+              </p>
             </div>
-            <a className="btn-cta btn-primary" href={coursesWhatsAppUrl}>
-              {coursesPage.ctaLabel}
-            </a>
+            <CoursesEnrollPay triggerLabel={coursesPage.ctaLabel} />
           </div>
         </div>
       </section>
-
-      <ProblemSolutionVisualSection
-        cardIds={problemSolutionPresets.courses}
-        eyebrow="What you build"
-        title="FMS, IMS, and EM Ready"
-        lead="Three systems from the curriculum — then enroll or open Workspace."
-      />
 
       <section className="minimal-strip bg-white pb-16" id="watch">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
           <div className="courses-section-head">
             <p className="type-kicker text-sky-700">Free previews</p>
-            <h2 className="minimal-section-title mt-2">{coursesPage.videosTitle}</h2>
+            <h2 className="minimal-section-title mt-2">
+              Sheets, AppSheet, and Looker Studio
+            </h2>
             <p className="minimal-section-lead">{coursesPage.videosLead}</p>
           </div>
           <div className="courses-featured-videos">
             {coursesFeaturedVideos.map((video) => (
               <div
                 id={
-                  video.id === "courses-fms"
+                  video.id === "courses-sheets"
                     ? "topic-flow-monitoring"
                     : video.id === "courses-looker"
                       ? "topic-dashboards"
@@ -237,9 +239,7 @@ export function CoursesPageContent() {
             <h2 className="minimal-section-title mt-2">{coursesPage.funnelTitle}</h2>
             <p className="minimal-section-lead">{coursesPage.funnelLead}</p>
             <div className="courses-hero-actions">
-              <a className="btn-cta btn-primary" href={coursesWhatsAppUrl}>
-                {coursesPage.ctaLabel}
-              </a>
+              <CoursesEnrollPay triggerLabel={coursesPage.ctaLabel} />
               <Link className="btn-cta btn-secondary" href={WORKSPACE_LOGIN_HREF}>
                 {coursesPage.ctaSecondaryLabel}
               </Link>

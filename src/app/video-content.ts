@@ -376,17 +376,17 @@ export const coursesFeaturedVideos: MarketingVideo[] = [
   toMarketingVideo("oOTerA_lpAo", {
     id: "courses-appsheet",
     label: "AppSheet",
-    description: "No-code apps from Google Sheets — foundation of the owner program.",
+    description: "No-code apps from Google Sheets — forms, views, and staff UX.",
   }),
   toMarketingVideo("acTJOocmuZM", {
-    id: "courses-fms",
-    label: "FMS",
-    description: "AI-enabled Flow Monitoring with PC & EA panels — core of weekly EM.",
+    id: "courses-sheets",
+    label: "Google Sheets",
+    description: "Clean backends, owners, and stage tracking — system thinking in Sheets.",
   }),
   toMarketingVideo("F31UoU94CoU", {
     id: "courses-looker",
-    label: "EM / MIS",
-    description: "Raw data to smart dashboard — Looker Studio boards owners can read.",
+    label: "Looker Studio",
+    description: "Raw data to smart dashboard — management boards owners can read.",
   }),
 ];
 
