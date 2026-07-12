@@ -29,7 +29,7 @@ import { ServicesBreadcrumb } from "@/components/marketing/services-breadcrumb";
 import { ServicesSubNav } from "@/components/marketing/services-sub-nav";
 import { whatsappDisplayNumber } from "@/app/site-content";
 import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
-import { aiEnabledTasksVideo } from "@/app/video-content";
+import { serviceDetailVideos } from "@/app/video-content";
 import {
   serviceCategoryBySlug,
   serviceCategories,
@@ -183,10 +183,16 @@ function GenericServiceDetail({ category }: { category: ServiceCategory }) {
         </div>
       </section>
 
-      {category.slug === "tasks" ? (
-        <section className="services-detail-video" aria-label="AI Enabled Tasks demo">
+      {serviceDetailVideos[category.slug] ? (
+        <section
+          className="services-detail-video"
+          aria-label={`${category.name} demo video`}
+        >
           <div className="mx-auto max-w-5xl px-5 py-10 sm:px-8">
-            <VideoEmbed video={aiEnabledTasksVideo} variant="featured" />
+            <VideoEmbed
+              video={serviceDetailVideos[category.slug]!}
+              variant="featured"
+            />
           </div>
         </section>
       ) : null}

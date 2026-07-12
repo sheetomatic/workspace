@@ -77,9 +77,6 @@ export function SiteHeader() {
               <span className="ab-header-call-full">Call {whatsappDisplayNumber}</span>
               <span className="ab-header-call-short">Call</span>
             </a>
-            <Link className="ab-header-ai" href="/ai">
-              Sheetomatic AI
-            </Link>
             <a
               className="ab-header-workspace"
               href={WORKSPACE_LOGIN_HREF}

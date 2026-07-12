@@ -47,7 +47,10 @@ import {
   servicesIndustryCards,
   servicesPage,
 } from "@/app/page-content";
+import { servicesHubVideos } from "@/app/video-content";
+import { VideoEmbed } from "@/components/marketing/video-embed";
 import "@/components/marketing/minimal-premium.css";
+import "@/components/marketing/videos.css";
 import "@/components/marketing/services-page.css";
 
 const categoryIcons: Record<
@@ -207,6 +210,12 @@ export function ServicesHubContent() {
               <p className="services-section-eyebrow">Service categories</p>
               <h2 className="services-section-title">{servicesHub.browseTitle}</h2>
               <p className="services-section-lead">{servicesHub.browseLead}</p>
+            </div>
+
+            <div className="video-hub-grid" style={{ marginBottom: "2rem" }}>
+              {servicesHubVideos.map((video) => (
+                <VideoEmbed key={video.id} video={video} variant="compact" />
+              ))}
             </div>
 
             <div className="services-hub-grid">

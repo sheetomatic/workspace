@@ -10,7 +10,7 @@ export const knowledgeTransferLinks = {
 export const mainNav = [
   { href: "/services", label: "Services" },
   { href: "/products", label: "Products" },
-  { href: "/ai", label: "Sheetomatic AI" },
+  { href: "/courses", label: "Courses" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];
@@ -19,7 +19,7 @@ export const footerCompanyLinks = [
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
   { href: "/career", label: "Careers" },
-  { href: "/courses", label: "Training" },
+  { href: "/courses", label: "Courses" },
   { href: "/terms", label: "Terms" },
 ];
 
@@ -449,63 +449,35 @@ export const careerPage = {
     "We hire for operations, AI, and client success roles — remote or at client sites when the placement requires it.",
 };
 
-export const coursesPage = {
-  eyebrow: "Knowledge Transfer",
-  title: "Learn operational systems on your schedule.",
-  lead:
-    "Free playlists on Sheetomatic Videos (YouTube) or paid programs on the Sheetomatic store — practical skills for owners, managers, and teams.",
-  freeTitle: "Free video library",
-  freeLead:
-    "Sheetomatic Videos on YouTube — flow monitoring, WhatsApp automation, MIS structure, and operational best practices.",
-  paidTitle: "Paid programs",
-  paidLead:
-    "Structured programs on the Sheetomatic learning store — enroll after you choose a program.",
-  paidStoreButtonLabel: "View paid programs on store",
-  watchYoutubeLabel: "Watch on YouTube",
-};
+/** @deprecated Prefer `@/app/courses-content` — kept for any legacy imports */
+export {
+  coursesPage,
+  coursePhases,
+  courseFormatBullets,
+  coursesWhatsAppUrl,
+} from "./courses-content";
 
+/** Anchor targets still used by knowledgeTransferLinks */
 export const freeCourseTopics = [
   {
     id: "topic-flow-monitoring",
     title: "Flow Monitoring Systems",
     text: "How work moves from enquiry to dispatch, payment, and closure with visible status and owners.",
-    href: "https://youtu.be/bXYleWCg200",
+    href: "https://youtu.be/PM8E3mCw67Q",
     tag: "Flow Monitoring",
   },
   {
     id: "topic-whatsapp",
     title: "WhatsApp Automations",
     text: "Connect WhatsApp workflows with reminders and follow-ups for MSME teams.",
-    href: "https://www.youtube.com/playlist?list=PLJ2nwPX6W6AGRshLErzQNK5l9J_V6Nffx",
+    href: "https://youtu.be/wOdr9JT4oM8",
     tag: "WhatsApp",
   },
   {
     id: "topic-dashboards",
     title: "Executive dashboards",
     text: "Build owner-level dashboards for daily control and weekly executive meeting reporting.",
-    href: "https://www.youtube.com/playlist?list=PLJ2nwPX6W6AEGRsuLRVQjkCpwEpTibZv_",
+    href: "https://youtu.be/QrgmCt-LIYA",
     tag: "Dashboards",
-  },
-];
-
-export const paidCourses = [
-  {
-    title: "Flow Monitoring for MSME Owners",
-    tag: "FMS",
-    text: "Stage-based flow design, owners, proofs, and pipeline visibility from enquiry to closure.",
-    level: "Foundation",
-    featured: true,
-  },
-  {
-    title: "MIS Reporting for MSME Owners",
-    tag: "MIS",
-    text: "Monthly MIS structure, validation, and presentation owners can read in minutes.",
-    level: "Advanced",
-  },
-  {
-    title: "Automation with AI",
-    tag: "Automation",
-    text: "AI-assisted workflows for reminders, approvals, and recurring reports without manual follow-up chaos.",
-    level: "Advanced",
   },
 ];
