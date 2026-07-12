@@ -46,7 +46,14 @@ function PlanCard({
 
       <div className="em-plan-price-block">
         <p className="em-plan-price">
-          <span>{price.amountLabel}</span>
+          {price.amountLabel.startsWith("₹") ? (
+            <>
+              <span className="em-plan-currency">₹</span>
+              <span>{price.amountLabel.replace(/^₹\s*/, "")}</span>
+            </>
+          ) : (
+            <span>{price.amountLabel}</span>
+          )}
           {price.periodLabel ? (
             <span className="em-plan-price-period">{price.periodLabel}</span>
           ) : null}

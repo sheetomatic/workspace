@@ -104,7 +104,7 @@ export const emReadyPlans: EmReadyPlan[] = [
     shortName: "Scale",
     tagline: "Mid-market — 50 seats, object storage, more FMS",
     publicListing: true,
-    badge: "Up to 50 users",
+    badge: "Recommended",
     cta: "enquire",
     priceMonthlyInr: 24999,
     priceAnnualInr: 249990,
