@@ -4,7 +4,7 @@ import {
   courseEnrollmentSchedule,
 } from "@/lib/content/courses-enrollment";
 
-/** Owner-facing 1:1 training — 24 live classes × 1.5h = 36 hours */
+/** 1:1 Google Sheets | AppSheet | Looker Studio coaching — 24 × 1.5h */
 
 export const coursesPage = {
   eyebrow: "For MSME owners",
@@ -26,9 +26,9 @@ export const coursesPage = {
   formatTitle: "How the program works",
   formatLead:
     "Not a jobseeker career course. Built for owners who want clean data, staff-ready apps, and live management views — taught on Google Sheets, AppSheet, and Looker Studio. No Graphy checkout — enroll and pay here.",
-  curriculumTitle: "24 classes, owner outcomes",
+  curriculumTitle: "24 classes across Sheets, AppSheet, and Looker",
   curriculumLead:
-    "Each class is 1.5 hours. You leave with a working piece of your own system — shaped around your business, not a one-size curriculum brand.",
+    "Each class is 1.5 hours. Outcomes follow your use cases — inventory, attendance, CRM, tasks, and more — on Google Sheets, AppSheet, and Looker Studio.",
   videosTitle: "Watch before you enroll",
   videosLead:
     "Free Sheetomatic Videos that match the stack — Google Sheets discipline, AppSheet apps, and Looker Studio dashboards.",
@@ -57,253 +57,241 @@ export type CoursePhase = {
 
 export const coursePhases: CoursePhase[] = [
   {
-    id: "sheets-backend",
-    label: "Google Sheets as the system backend",
-    range: "Classes 1–6",
-    summary:
-      "Masters, transactions, and data discipline so apps and dashboards stay trustworthy.",
+    id: "sheets",
+    label: "Google Sheets foundations",
+    range: "Classes 1–8",
+    summary: "Clean data models, formulas, and structures you can trust for daily ops and reporting.",
     classes: [
       {
         number: 1,
-        title: "System thinking for owners",
+        title: "Map your use cases on paper",
         outcomes: [
-          "Name the leaks that keep you in daily firefighting",
-          "Separate masters, transactions, and status from ad-hoc tabs",
-          "Pick 1–2 client use cases to build through the program",
+          "List the workflows and reports you actually need",
+          "Prioritize what to build first in Sheets",
+          "Agree scope for the 24-class program",
         ],
       },
       {
         number: 2,
-        title: "Map your real process on paper, then Sheets",
+        title: "Sheet structure that scales",
         outcomes: [
-          "Draw Who / How / When / proof for each stage",
-          "Spot missing owners and invisible delays",
-          "Get a one-page flow map your team understands",
+          "Design master tables vs working tabs",
+          "Use IDs, statuses, and owners cleanly",
+          "Avoid broken IMPORTRANGE / formula sprawl",
         ],
       },
       {
         number: 3,
-        title: "Clean tables owners can trust",
+        title: "Core formulas for MSME ops",
         outcomes: [
-          "Structure headers, types, and naming conventions",
-          "Stop broken IMPORTRANGE / formula chaos",
-          "Prepare data that AppSheet and Looker can use",
+          "LOOKUP, FILTER, QUERY, and ARRAY patterns",
+          "Date math and status logic",
+          "Validation that staff can enter safely",
         ],
       },
       {
         number: 4,
-        title: "Masters vs transactions",
+        title: "Ops tracker build (your use case)",
         outcomes: [
-          "Design IDs, relationships, and status fields",
-          "Keep staff entry simple and audit-ready",
-          "Freeze a schema for the use cases you chose",
+          "Build one live tracker from your data",
+          "Add planned vs actual style columns if useful",
+          "Hand off a sheet your team can update daily",
         ],
       },
       {
         number: 5,
-        title: "Lookups, validation, and controlled entry",
+        title: "Multi-sheet architecture",
         outcomes: [
-          "Use data validation and protected ranges wisely",
-          "Prevent duplicate and orphan records",
-          "Make wrong data hard to enter on purpose",
+          "Split intake, master, and dashboard data",
+          "Keep one source of truth",
+          "Document how staff should enter data",
         ],
       },
       {
         number: 6,
-        title: "Backend ready for apps & dashboards",
+        title: "Automation light in Sheets",
         outcomes: [
-          "Document the sheet map for your team",
-          "Define status vocabulary everyone shares",
-          "Hand off a backend AppSheet and Looker can connect to",
+          "Simple Apps Script or native automation hooks",
+          "Reminders and status flags",
+          "Protect ranges without blocking work",
         ],
       },
-    ],
-  },
-  {
-    id: "appsheet-apps",
-    label: "AppSheet apps for your use case",
-    range: "Classes 7–14",
-    summary:
-      "No-code apps your team will open on mobile — UX, expressions, roles, and automation around the client-chosen flow.",
-    classes: [
       {
         number: 7,
-        title: "AppSheet fundamentals from Sheets",
+        title: "Team-ready entry forms",
         outcomes: [
-          "Stand up a working app from your backend tables",
-          "Know when Sheets alone is enough vs when an app helps",
-          "Ship a first internal form your staff can use today",
+          "Design easy entry tabs for non-technical staff",
+          "Dropdowns, checks, and required fields",
+          "Reduce training time for new joiners",
         ],
       },
       {
         number: 8,
-        title: "UX staff will actually use",
+        title: "Sheets review & harden",
         outcomes: [
-          "Build views and forms for shop-floor reality",
-          "Reduce clicks for daily updates",
-          "Make proof capture (photo / note) part of the step",
+          "Fix edge cases from real data",
+          "Lock what must not break",
+          "Decide what moves to AppSheet next",
         ],
       },
+    ],
+  },
+  {
+    id: "appsheet",
+    label: "AppSheet mobile apps",
+    range: "Classes 9–16",
+    summary: "Turn your Sheets into mobile apps your team will actually open.",
+    classes: [
       {
         number: 9,
-        title: "Expressions & actions that enforce process",
+        title: "AppSheet from your Sheet",
         outcomes: [
-          "Block incomplete handoffs",
-          "Auto-stamp planned vs actual timestamps",
-          "Trigger the next step without WhatsApp chasing",
+          "Connect the right tables",
+          "Choose views for phone vs desktop",
+          "Ship a first working prototype",
         ],
       },
       {
         number: 10,
-        title: "Security & roles — who sees what",
+        title: "Forms and actions",
         outcomes: [
-          "Separate owner, manager, and staff access",
-          "Protect salary / cost / customer data",
-          "Set a go-live permission checklist",
+          "Capture entries on mobile",
+          "Buttons for common status updates",
+          "Photos / files when proof is needed",
         ],
       },
       {
         number: 11,
-        title: "Example build: attendance or leave",
+        title: "Security and roles",
         outcomes: [
-          "Capture present / leave without Excel arguments",
-          "Give managers a clear exception list",
-          "Reuse the pattern for other HR-style apps",
+          "Who can see or edit what",
+          "Slice data by person or team",
+          "Keep owner visibility without chaos",
         ],
       },
       {
         number: 12,
-        title: "Example build: tasks or CRM follow-up",
+        title: "Workflows and notifications",
         outcomes: [
-          "Assign owners, due dates, and status in one place",
-          "Track enquiry → quote → order without lost leads",
-          "Surface stalled work for your weekly review",
+          "Bots for status changes",
+          "Email / push where useful",
+          "Avoid alert spam",
         ],
       },
       {
         number: 13,
-        title: "Example build: inventory or purchase",
+        title: "Use-case app deep dive (part 1)",
         outcomes: [
-          "Replace shadow stock sheets with one balance",
-          "Raise and track purchase lines with owners",
-          "Connect receipts to movement where it matters",
+          "Build the primary app for your business",
+          "Refine UX with real staff feedback",
+          "Fix slow views and clutter",
         ],
       },
       {
         number: 14,
-        title: "Automations & reminders for your app",
+        title: "Use-case app deep dive (part 2)",
         outcomes: [
-          "Automate due / overdue alerts to staff",
-          "Keep WhatsApp for internal ops nudges — not chaos",
-          "Cut manual follow-up messages from your day",
+          "Add secondary flows (approvals, follow-ups)",
+          "Offline / field realities",
+          "Go-live checklist for the team",
         ],
       },
-    ],
-  },
-  {
-    id: "looker-dashboards",
-    label: "Looker Studio for management views",
-    range: "Classes 15–20",
-    summary:
-      "Live dashboards so owners and managers review exceptions and numbers — without Sunday prep in a new spreadsheet.",
-    classes: [
       {
         number: 15,
-        title: "Looker Studio foundations",
+        title: "AppSheet admin habits",
         outcomes: [
-          "Connect Sheets / AppSheet data to a live board",
-          "Design pages leadership can read in minutes",
-          "Avoid vanity charts that hide leaks",
+          "Version and backup discipline",
+          "Change requests without breaking production",
+          "Train one internal app owner",
         ],
       },
       {
         number: 16,
-        title: "Metrics that match how you manage",
+        title: "AppSheet review & harden",
         outcomes: [
-          "Define KPIs from your chosen use cases",
-          "Show pending, overdue, and late work clearly",
-          "Build person-wise and team views that drive action",
-        ],
-      },
-      {
-        number: 17,
-        title: "Exceptions-first dashboards",
-        outcomes: [
-          "Build views that show only overdue / pending / stock risk",
-          "Give managers a daily queue, not a data dump",
-          "Prepare the habit of reviewing exceptions, not everything",
-        ],
-      },
-      {
-        number: 18,
-        title: "Planned vs actual & delay visibility",
-        outcomes: [
-          "Track stage timing and delay where SLA matters",
-          "Make delay visible before the weekly meeting",
-          "Stop the blame game with shared timestamps",
-        ],
-      },
-      {
-        number: 19,
-        title: "Escalations & approval trails",
-        outcomes: [
-          "Route breaches to the right manager",
-          "Keep approval trails without email ping-pong",
-          "Define what must escalate same-day vs next review",
-        ],
-      },
-      {
-        number: 20,
-        title: "Owner weekly board",
-        outcomes: [
-          "Assemble the weekly review from live systems",
-          "Run the meeting on delays and ownership gaps",
-          "Leave with actions — not a new spreadsheet homework list",
+          "Performance and error pass",
+          "Document how to add a column safely",
+          "Decide Looker reporting needs",
         ],
       },
     ],
   },
   {
-    id: "capstone",
-    label: "Capstone: deploy your app + dashboard",
-    range: "Classes 21–24",
-    summary:
-      "Ship one live Sheets + AppSheet + Looker system for your company and hand it to your team.",
+    id: "looker",
+    label: "Looker Studio dashboards",
+    range: "Classes 17–24",
+    summary: "Owner-ready dashboards from your Sheets — exceptions and KPIs without spreadsheet archaeology.",
     classes: [
       {
-        number: 21,
-        title: "Blueprint your client system",
+        number: 17,
+        title: "Dashboard goals for owners",
         outcomes: [
-          "Prioritize the 2–3 flows that unlock calmer ops",
-          "Define daily / weekly rituals for owners and managers",
-          "Lock scope for go-live — no endless rebuild",
+          "Pick the 5–7 numbers that matter weekly",
+          "Exceptions first, not every row",
+          "Match charts to decisions",
+        ],
+      },
+      {
+        number: 18,
+        title: "Connect Looker to Sheets",
+        outcomes: [
+          "Stable data ranges for Looker",
+          "Refresh and cache basics",
+          "Avoid fragile pivot exports",
+        ],
+      },
+      {
+        number: 19,
+        title: "Build your first Looker report",
+        outcomes: [
+          "Scorecards, tables, and filters",
+          "Date controls that work",
+          "Share with the right people",
+        ],
+      },
+      {
+        number: 20,
+        title: "Multi-page owner pack",
+        outcomes: [
+          "Ops, sales, and inventory-style pages as needed",
+          "Consistent branding and layout",
+          "Mobile-friendly viewing",
+        ],
+      },
+      {
+        number: 21,
+        title: "Calculated fields & blends",
+        outcomes: [
+          "Rates, deficits, and comparisons",
+          "Blend only when necessary",
+          "Keep metrics explainable",
         ],
       },
       {
         number: 22,
-        title: "Harden security, data, and SOPs",
+        title: "Use-case dashboards deep dive",
         outcomes: [
-          "Stress-test permissions and backups",
-          "Write the two-page SOP staff can follow",
-          "Fix the top failure modes before launch",
+          "Finish dashboards for your real data",
+          "Validate numbers against Sheets",
+          "Owner walkthrough script",
         ],
       },
       {
         number: 23,
-        title: "Go-live with your team",
+        title: "Weekly review rhythm",
         outcomes: [
-          "Launch with a 7-day hypercare checklist",
-          "Train staff on the exception queue and app views",
-          "Confirm Looker boards match how you run reviews",
+          "How to run a short review from Looker",
+          "What staff prepare vs what auto-updates",
+          "Close the loop back into Sheets / AppSheet",
         ],
       },
       {
         number: 24,
-        title: "Handoff & next steps",
+        title: "Go-live & handoff",
         outcomes: [
-          "Document owners for sheets, app, and dashboards",
-          "Plan the next use case after the first is stable",
-          "Decide next: deepen Sheets apps or move to Sheetomatic Workspace",
+          "Hypercare checklist for 7 days",
+          "Train your internal Sheets / AppSheet / Looker owner",
+          "Document next builds after the program",
         ],
       },
     ],
