@@ -20,8 +20,10 @@ import {
 import { youtubeChannelName, youtubeChannelUrl } from "@/app/site-content";
 import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
 import { ContactButtons } from "@/components/marketing/marketing-buttons";
+import { ProblemSolutionVisualSection } from "@/components/marketing/problem-solution-visual";
 import { VideoEmbed } from "@/components/marketing/video-embed";
 import Link from "next/link";
+import { problemSolutionPresets } from "@/app/page-content";
 import "./minimal-premium.css";
 import "./courses-page.css";
 import "./videos.css";
@@ -146,6 +148,13 @@ export function CoursesPageContent() {
           </div>
         </div>
       </section>
+
+      <ProblemSolutionVisualSection
+        cardIds={problemSolutionPresets.courses}
+        eyebrow="What you build"
+        title="Owner systems — before and after"
+        lead="Same leaks the curriculum fixes — then enroll or open Workspace."
+      />
 
       <section className="minimal-strip bg-white pb-16" id="watch">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">

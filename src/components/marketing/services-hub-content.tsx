@@ -42,6 +42,7 @@ import {
   servicesHub,
 } from "@/app/services-content";
 import {
+  problemSolutionPresets,
   serviceProblemSolutions,
   servicesIndustryCards,
   servicesPage,
@@ -257,17 +258,16 @@ export function ServicesHubContent() {
 
         <section className="services-ps-section">
           <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-14">
-            <ProblemSolutionVisualSection embedded />
+            <ProblemSolutionVisualSection
+              embedded
+              cardIds={problemSolutionPresets.servicesHub}
+            />
 
             <div className="services-ps-more">
-              <p className="services-ps-more-label">More leaks we close</p>
+              <p className="services-ps-more-label">Also available</p>
               <ul className="services-ps-more-list">
                 {serviceProblemSolutions
-                  .filter(
-                    (item) =>
-                      !item.solution.startsWith("FMS") &&
-                      !item.solution.startsWith("IMS"),
-                  )
+                  .filter((item) => item.solution === "Custom Software")
                   .map((item) => {
                     const href =
                       solutionHrefOverrides[item.solution] ?? item.href;

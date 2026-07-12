@@ -1,5 +1,10 @@
 import { FinalCta, MarketingPage, SiteFooter, SiteHeader } from "@/app/components";
-import { clientProblems, productCategories, productsPage } from "@/app/page-content";
+import {
+  clientProblems,
+  problemSolutionPresets,
+  productCategories,
+  productsPage,
+} from "@/app/page-content";
 import "./minimal-premium.css";
 import {
   BarChart3,
@@ -15,6 +20,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { ContactButtons } from "./marketing-buttons";
+import { ProblemSolutionVisualSection } from "./problem-solution-visual";
 import { whatsappDisplayNumber } from "@/app/site-content";
 
 const productIconByName: Record<string, { icon: LucideIcon; tone: string }> = {
@@ -69,6 +75,12 @@ export function ProductsPageContent() {
           </div>
         </div>
       </section>
+
+      <ProblemSolutionVisualSection
+        cardIds={problemSolutionPresets.products}
+        title="See each module close a leak"
+        lead="Before → after for every core product — watch the demo, then open the workspace."
+      />
 
       <section className="resolution-blue-strip" aria-label="How Sheetomatic works">
         <div className="mx-auto max-w-5xl px-5 text-center sm:px-8">

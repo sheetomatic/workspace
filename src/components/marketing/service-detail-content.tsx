@@ -30,6 +30,7 @@ import { ServicesSubNav } from "@/components/marketing/services-sub-nav";
 import { whatsappDisplayNumber } from "@/app/site-content";
 import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
 import { serviceDetailVideos } from "@/app/video-content";
+import { serviceSlugToVisualCard } from "@/app/page-content";
 import {
   serviceCategoryBySlug,
   serviceCategories,
@@ -44,6 +45,7 @@ import {
   hrServicesSection,
   type HrServicesModule,
 } from "@/app/hr-module-content";
+import { ProblemSolutionVisualSection } from "@/components/marketing/problem-solution-visual";
 import "@/components/marketing/minimal-premium.css";
 import "@/components/marketing/services-page.css";
 import { VideoEmbed } from "@/components/marketing/video-embed";
@@ -197,6 +199,18 @@ function GenericServiceDetail({ category }: { category: ServiceCategory }) {
         </section>
       ) : null}
 
+      {serviceSlugToVisualCard[category.slug] ? (
+        <section className="services-detail-ps" aria-label="Problem to solution">
+          <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-12">
+            <ProblemSolutionVisualSection
+              embedded
+              hideHead
+              cardIds={[serviceSlugToVisualCard[category.slug]!]}
+            />
+          </div>
+        </section>
+      ) : null}
+
       <section className="services-detail-features">
         <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-16">
           <div className="services-section-head services-section-head-center">
@@ -305,6 +319,16 @@ function HrServiceDetail({ category }: { category: ServiceCategory }) {
               ))}
             </ul>
           </aside>
+        </div>
+      </section>
+
+      <section className="services-detail-ps" aria-label="Problem to solution">
+        <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-12">
+          <ProblemSolutionVisualSection
+            embedded
+            hideHead
+            cardIds={["hr"]}
+          />
         </div>
       </section>
 

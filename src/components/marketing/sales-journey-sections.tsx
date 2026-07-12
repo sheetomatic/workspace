@@ -2,7 +2,7 @@ import {
   audienceFilter,
   videoSalesStory,
 } from "@/app/sales-framework-content";
-import { homePainHook } from "@/app/page-content";
+import { homePainHook, problemSolutionPresets } from "@/app/page-content";
 import {
   ConsultTodayButton,
   WhatsAppButton,
@@ -89,7 +89,7 @@ export function SpreadsheetPainSection() {
           </div>
         </div>
       </section>
-      <ProblemSolutionVisualSection />
+      <ProblemSolutionVisualSection cardIds={problemSolutionPresets.home} />
     </>
   );
 }

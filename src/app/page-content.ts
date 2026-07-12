@@ -65,7 +65,31 @@ export const homePainHook = {
   ],
 } as const;
 
-/** Visual-first FMS + IMS problem → solution cards (home + services). */
+/** Offering ids for problem → solution visual cards */
+export type ProblemSolutionCardId =
+  | "fms"
+  | "ims"
+  | "checklist"
+  | "tasks"
+  | "em"
+  | "whatsapp"
+  | "crm"
+  | "hr";
+
+export type ProblemSolutionCard = {
+  id: ProblemSolutionCardId;
+  imageSrc: string;
+  imageAlt: string;
+  problem: string;
+  solution: string;
+  youtubeId: string;
+  youtubeLabel: string;
+  exploreHref: string;
+  exploreLabel: string;
+  workspaceLabel: string;
+};
+
+/** Visual-first problem → solution catalog (shared across marketing pages). */
 export const problemSolutionVisual = {
   eyebrow: "Problem → Solution",
   title: "Leaks closed with systems",
@@ -97,8 +121,131 @@ export const problemSolutionVisual = {
       exploreLabel: "Explore IMS",
       workspaceLabel: "Open Workspace",
     },
-  ],
+    {
+      id: "checklist",
+      imageSrc: "/marketing/problem-solution/checklist-before-after.jpg",
+      imageAlt:
+        "Before: paper SOPs skipped. After: Process Coordinator checklists with photo proof and scores.",
+      problem: "SOPs slip every shift",
+      solution: "PC — checklists scored",
+      youtubeId: "pAJMkk0taIo",
+      youtubeLabel: "Watch on YouTube",
+      exploreHref: "/services/checklist",
+      exploreLabel: "Explore Process Coordinator",
+      workspaceLabel: "Open Workspace",
+    },
+    {
+      id: "tasks",
+      imageSrc: "/marketing/problem-solution/tasks-before-after.jpg",
+      imageAlt:
+        "Before: tasks lost in WhatsApp. After: EA Tasks module with owners, due dates, and status.",
+      problem: "Tasks lost in chats",
+      solution: "EA — owned tasks & proof",
+      youtubeId: "Z8deRw4ywgU",
+      youtubeLabel: "Watch on YouTube",
+      exploreHref: "/services/tasks",
+      exploreLabel: "Explore Executive Assistant",
+      workspaceLabel: "Open Workspace",
+    },
+    {
+      id: "em",
+      imageSrc: "/marketing/problem-solution/em-before-after.jpg",
+      imageAlt:
+        "Before: Sunday MIS prep chaos. After: EM Ready Monday board with person-wise deficit %.",
+      problem: "Sunday spent building MIS",
+      solution: "EM — ready Monday board",
+      youtubeId: "fyOHfU9F8jo",
+      youtubeLabel: "Watch on YouTube",
+      exploreHref: "/services/mis",
+      exploreLabel: "Explore Executive Meeting",
+      workspaceLabel: "Open Workspace",
+    },
+    {
+      id: "whatsapp",
+      imageSrc: "/marketing/problem-solution/whatsapp-before-after.jpg",
+      imageAlt:
+        "Before: night WhatsApp leads go cold. After: Official API AI reply, qualify, and handoff to tasks.",
+      problem: "Night leads go cold",
+      solution: "WhatsApp AI — reply & handoff",
+      youtubeId: "n-bHn6kFuaA",
+      youtubeLabel: "Watch on YouTube",
+      exploreHref: "/services/whatsapp-ai",
+      exploreLabel: "Explore WhatsApp AI",
+      workspaceLabel: "Open Workspace",
+    },
+    {
+      id: "crm",
+      imageSrc: "/marketing/problem-solution/crm-before-after.jpg",
+      imageAlt:
+        "Before: leads scattered in personal chats. After: Sheetomatic CRM pipeline with one record per lead.",
+      problem: "Leads live in personal chats",
+      solution: "CRM — one pipeline record",
+      youtubeId: "UkXRQoG1mEA",
+      youtubeLabel: "Watch on YouTube",
+      exploreHref: "/services/crm",
+      exploreLabel: "Explore CRM",
+      workspaceLabel: "Open Workspace",
+    },
+    {
+      id: "hr",
+      imageSrc: "/marketing/problem-solution/hr-before-after.jpg",
+      imageAlt:
+        "Before: paper attendance fights. After: Sheetomatic HR with geo attendance and leave clarity.",
+      problem: "Attendance is an argument",
+      solution: "HR — geo attendance & leave",
+      youtubeId: "OL2yL76OOUQ",
+      youtubeLabel: "Watch on YouTube",
+      exploreHref: "/services/hr",
+      exploreLabel: "Explore HR",
+      workspaceLabel: "Open Workspace",
+    },
+  ] satisfies ProblemSolutionCard[],
 } as const;
+
+/** Page presets — which cards to show (order preserved). */
+export const problemSolutionPresets = {
+  home: ["fms", "ims", "tasks", "em"] as const satisfies readonly ProblemSolutionCardId[],
+  servicesHub: [
+    "fms",
+    "ims",
+    "checklist",
+    "tasks",
+    "em",
+    "whatsapp",
+    "crm",
+    "hr",
+  ] as const satisfies readonly ProblemSolutionCardId[],
+  products: [
+    "fms",
+    "ims",
+    "checklist",
+    "tasks",
+    "em",
+    "whatsapp",
+    "crm",
+  ] as const satisfies readonly ProblemSolutionCardId[],
+  courses: [
+    "fms",
+    "ims",
+    "checklist",
+    "tasks",
+    "em",
+  ] as const satisfies readonly ProblemSolutionCardId[],
+} as const;
+
+/** Map /services/[slug] → visual card id (omit automation — no visual). */
+export const serviceSlugToVisualCard: Partial<
+  Record<string, ProblemSolutionCardId>
+> = {
+  flow: "fms",
+  inventory: "ims",
+  checklist: "checklist",
+  tasks: "tasks",
+  mis: "em",
+  "whatsapp-ai": "whatsapp",
+  crm: "crm",
+  hr: "hr",
+};
 
 export const clientProblems = {
   eyebrow: "The problem",
