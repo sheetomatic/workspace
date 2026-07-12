@@ -34,6 +34,10 @@ export function AiPricingEnquirePage() {
               Every business is a little different. Tell us your team size and how you
               use WhatsApp, and we will share a clear quote with no surprises.
             </p>
+            <p className="wa-pricing-workspace-crosslink">
+              Looking for Workspace / EM Ready plans?{" "}
+              <Link href="/pricing">See EM Ready pricing</Link>
+            </p>
           </div>
         </div>
       </section>

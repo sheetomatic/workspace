@@ -1159,6 +1159,21 @@
   color: var(--wa-muted);
 }
 
+.wa-pricing-workspace-crosslink {
+  margin: 1rem auto 0;
+  max-width: 34rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--wa-muted);
+}
+
+.wa-pricing-workspace-crosslink a {
+  font-weight: 700;
+  color: var(--wa-ink, #0f172a);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .wa-pricing-sweet-main {
   padding: 1.25rem 0 2rem;
 }

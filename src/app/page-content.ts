@@ -10,6 +10,7 @@ export const knowledgeTransferLinks = {
 export const mainNav = [
   { href: "/services", label: "Services" },
   { href: "/products", label: "Products" },
+  { href: "/pricing", label: "Pricing" },
   { href: "/courses", label: "Courses" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
@@ -17,6 +18,7 @@ export const mainNav = [
 
 export const footerCompanyLinks = [
   { href: "/about", label: "About" },
+  { href: "/pricing", label: "Pricing" },
   { href: "/contact", label: "Contact" },
   { href: "/career", label: "Careers" },
   { href: "/courses", label: "Courses" },
@@ -25,6 +27,7 @@ export const footerCompanyLinks = [
 
 export const footerProductLinks = [
   { href: "/products", label: "BCI Suite" },
+  { href: "/pricing", label: "EM Ready plans" },
   { href: WORKSPACE_LOGIN_HREF, label: "Sheetomatic Workspace" },
   { href: "/ai", label: "Sheetomatic AI" },
   { href: "/whatsapp-plans", label: "WhatsApp API" },
