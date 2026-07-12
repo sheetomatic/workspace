@@ -5,6 +5,9 @@
   --em-blue: #2563eb;
   --em-cyan: #06b6d4;
   --em-green: #10b981;
+  --em-wa: #25d366;
+  --em-wa-mid: #18a957;
+  --em-wa-dark: #08733f;
   --em-ink: #0a1b2e;
   --em-muted: #64748b;
   --em-border: #e2e8f0;
@@ -352,22 +355,48 @@
   justify-content: center;
 }
 
-.em-plan-actions-secondary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem 1rem;
-  font-size: 0.875rem;
+/* Override site-wide blue .btn-whatsapp — pricing CTAs use WA green */
+.em-pricing-page a.btn-cta.btn-whatsapp.em-plan-wa,
+.em-pricing-page a.btn-cta.btn-whatsapp.em-contact-wa {
+  background: linear-gradient(135deg, var(--em-wa) 0%, var(--em-wa-mid) 55%, var(--em-wa-dark) 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 8px 24px rgba(24, 169, 87, 0.28) !important;
 }
 
-.em-plan-actions-secondary a {
+.em-pricing-page a.btn-cta.btn-whatsapp.em-plan-wa:hover,
+.em-pricing-page a.btn-cta.btn-whatsapp.em-contact-wa:hover {
+  background: linear-gradient(135deg, #2ee06a 0%, var(--em-wa-mid) 50%, var(--em-wa-dark) 100%) !important;
+  color: #ffffff !important;
+}
+
+.em-pricing-page a.btn-cta.btn-primary.em-plan-contact {
+  background: var(--em-blue);
+  border: none;
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.22);
+}
+
+.em-pricing-page a.btn-cta.btn-primary.em-plan-contact:hover {
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+.em-plan-login-hint {
+  margin: 0.15rem 0 0;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--em-muted);
+  line-height: 1.45;
+}
+
+.em-plan-login {
   color: var(--em-blue);
   font-weight: 700;
   text-decoration: none;
 }
 
-.em-plan-actions-secondary a:hover {
+.em-plan-login:hover {
   text-decoration: underline;
 }
 
@@ -443,15 +472,21 @@
   justify-content: center;
 }
 
-.em-contact-actions .btn-secondary {
+/* Beat globals `a.btn-cta.btn-secondary { color: var(--foreground) }` on dark band */
+.em-pricing-page .em-contact-actions a.btn-cta.btn-secondary.em-contact-message {
   background: transparent;
-  border-color: rgba(148, 163, 184, 0.45);
-  color: #f8fafc;
+  border: 1.5px solid rgba(226, 232, 240, 0.65);
+  color: #ffffff !important;
+  box-shadow: none;
 }
 
-.em-contact-actions .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(191, 219, 254, 0.55);
+.em-pricing-page .em-contact-actions a.btn-cta.btn-secondary.em-contact-message:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #ffffff;
+  color: #ffffff !important;
+}
+
+.em-pricing-page .em-contact-actions a.btn-cta.btn-secondary.em-contact-message .btn-cta-icon-wrap {
   color: #ffffff;
 }
 

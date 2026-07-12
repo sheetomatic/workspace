@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, MessageCircle } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import {
   emReadyContactOffer,
   emReadyPricingFootnotes,
@@ -14,6 +14,8 @@ import {
   type EmReadyPlan,
 } from "@/app/em-ready-plans";
 import { buildWhatsAppUrl } from "@/app/site-content";
+import { marketingButtonClass } from "@/components/marketing/marketing-button-class";
+import { WhatsAppIcon } from "@/components/marketing/marketing-icons";
 import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
 import "./em-ready-pricing.css";
 
@@ -105,18 +107,28 @@ function PlanCard({
 
       <div className="em-plan-actions">
         <a
-          className="btn-cta"
+          className={marketingButtonClass("whatsapp", "em-plan-wa")}
           href={whatsappHref}
           rel="noopener noreferrer"
           target="_blank"
         >
-          <MessageCircle size={16} aria-hidden />
-          Chat on WhatsApp
+          <span className="btn-cta-icon-wrap" aria-hidden>
+            <WhatsAppIcon className="btn-cta-icon" size={18} strokeWidth={1.7} />
+          </span>
+          <span>Chat on WhatsApp</span>
         </a>
-        <div className="em-plan-actions-secondary">
-          <Link href="/contact">Contact us</Link>
-          <Link href={WORKSPACE_LOGIN_HREF}>Workspace login</Link>
-        </div>
+        <Link
+          className={marketingButtonClass("primary", "em-plan-contact")}
+          href="/contact"
+        >
+          Contact us
+        </Link>
+        <p className="em-plan-login-hint">
+          Already a customer?{" "}
+          <Link className="em-plan-login" href={WORKSPACE_LOGIN_HREF}>
+            Workspace login (existing users)
+          </Link>
+        </p>
       </div>
     </article>
   );
@@ -194,15 +206,20 @@ export function EmReadyPricing() {
             </div>
             <div className="em-contact-actions">
               <a
-                className="btn-cta"
+                className={marketingButtonClass("whatsapp", "em-contact-wa")}
                 href={contactHref}
                 rel="noopener noreferrer"
                 target="_blank"
               >
-                <MessageCircle size={16} aria-hidden />
-                Contact us on WhatsApp
+                <span className="btn-cta-icon-wrap" aria-hidden>
+                  <WhatsAppIcon className="btn-cta-icon" size={18} strokeWidth={1.7} />
+                </span>
+                <span>Contact us on WhatsApp</span>
               </a>
-              <Link className="btn-cta btn-secondary" href="/contact">
+              <Link
+                className={marketingButtonClass("secondary", "em-contact-message")}
+                href="/contact"
+              >
                 Send a message
               </Link>
             </div>
