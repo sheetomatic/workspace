@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { SiteAssistant } from "@/components/marketing/site-assistant";
 import { SheetomaticAiLauncher } from "@/components/sheetomatic-ai-launcher";
 import "@/components/saas/apple-design-system.css";
 import "./globals.css";
@@ -68,6 +69,7 @@ export default function RootLayout({
           Skip to content
         </a>
         {children}
+        <SiteAssistant />
         <SheetomaticAiLauncher />
       </body>
     </html>

@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { shouldShowSiteAssistant } from "@/lib/site-assistant/visibility";
 import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
 import { parseHost } from "@/lib/subdomain";
 import { aiPortalOrigin } from "@/lib/workspace-auth-links";
@@ -91,11 +93,19 @@ function clampPosition(position: LauncherPosition, size: number): LauncherPositi
 }
 
 export function SheetomaticAiLauncher() {
+  const pathname = usePathname() || "/";
   const href = useSyncExternalStore(
     subscribeToHostname,
     getLauncherSnapshot,
     getLauncherServerSnapshot,
   );
+  const hostname = useSyncExternalStore(
+    subscribeToHostname,
+    () => window.location.hostname,
+    () => "sheetomatic.com",
+  );
+  /** Avoid two FABs on marketing — Ask Sheetomatic owns that surface. */
+  const hideForSiteGuide = shouldShowSiteAssistant(pathname, hostname);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<LauncherPosition | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -191,7 +201,7 @@ export function SheetomaticAiLauncher() {
     setIsDragging(false);
   }
 
-  if (!position) {
+  if (!position || hideForSiteGuide) {
     return null;
   }
 
