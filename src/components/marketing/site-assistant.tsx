@@ -13,6 +13,7 @@ import {
 } from "react";
 import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
 import { whatsappUrl } from "@/app/site-content";
+import { isAllowedSiteAssistantHref } from "@/lib/site-assistant/links";
 import { shouldShowSiteAssistant } from "@/lib/site-assistant/visibility";
 import "./site-assistant.css";
 
@@ -73,11 +74,11 @@ function renderInlineMarkdown(text: string): ReactNode[] {
     } else {
       const m = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(token);
       if (m) {
-        const href = m[2];
+        const href = m[2].trim();
         const label = m[1];
-        const external =
-          href.startsWith("http://") || href.startsWith("https://");
-        if (external) {
+        if (!isAllowedSiteAssistantHref(href)) {
+          parts.push(label);
+        } else if (href.startsWith("https://")) {
           parts.push(
             <a key={key++} href={href} target="_blank" rel="noopener noreferrer">
               {label}

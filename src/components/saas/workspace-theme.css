@@ -15074,8 +15074,10 @@ body:has(.workspace-app.saas-app) {
   --wd-danger: #b91c1c;
   --wd-danger-bg: #fff1f2;
   --wd-danger-border: #fecdd3;
-  --wd-clear-bg: #f8fafc;
-  --wd-clear-border: #e2e8f0;
+  --wd-clear: #047857;
+  --wd-clear-bg: #f0fdf4;
+  --wd-clear-border: #bbf7d0;
+  --wd-muted: var(--sf-text-secondary, #64748b);
   display: grid;
   gap: 24px;
   max-width: 78rem;
@@ -15101,7 +15103,7 @@ body:has(.workspace-app.saas-app) {
   font-weight: 650;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--sf-text-muted);
+  color: var(--wd-muted);
 }
 
 .workspace-app .ws-widget-hero-home {
@@ -15125,7 +15127,7 @@ body:has(.workspace-app.saas-app) {
   margin: 7px 0 0;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--sf-text-muted);
+  color: var(--wd-muted);
 }
 
 .workspace-app .ws-widget-hero-stats {
@@ -15135,15 +15137,34 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .ws-widget-hero-stat {
-  display: grid;
-  gap: 3px;
-  min-width: 7rem;
-  padding: 10px 14px 11px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 7.5rem;
+  padding: 9px 14px 9px 10px;
   border: 1px solid color-mix(in srgb, var(--wd-blue) 12%, #e2e8f0);
   border-radius: 999px;
   background:
     linear-gradient(180deg, #fff 0%, color-mix(in srgb, var(--wd-blue) 3.5%, #fff) 100%);
   box-shadow: 0 1px 2px rgba(10, 27, 46, 0.04);
+}
+
+.workspace-app .ws-widget-hero-stat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--wd-blue) 12%, #fff);
+  color: var(--wd-blue);
+}
+
+.workspace-app .ws-widget-hero-stat-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
 }
 
 .workspace-app .ws-widget-hero-stat strong {
@@ -15152,15 +15173,16 @@ body:has(.workspace-app.saas-app) {
   letter-spacing: -0.02em;
   color: var(--wd-navy);
   font-variant-numeric: tabular-nums;
-  line-height: 1.1;
+  line-height: 1.15;
 }
 
-.workspace-app .ws-widget-hero-stat span {
+.workspace-app .ws-widget-hero-stat-copy > span {
   font-size: 0.64rem;
   font-weight: 650;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: var(--sf-text-muted);
+  color: var(--wd-muted);
+  white-space: nowrap;
 }
 
 .workspace-app .ws-widget-hero-stat.is-danger {
@@ -15168,6 +15190,11 @@ body:has(.workspace-app.saas-app) {
   background:
     linear-gradient(180deg, #fff 0%, var(--wd-danger-bg) 100%);
   box-shadow: 0 1px 2px rgba(185, 28, 28, 0.06);
+}
+
+.workspace-app .ws-widget-hero-stat.is-danger .ws-widget-hero-stat-icon {
+  background: color-mix(in srgb, var(--wd-danger) 12%, #fff);
+  color: var(--wd-danger);
 }
 
 .workspace-app .ws-widget-hero-stat.is-danger strong {
@@ -15191,14 +15218,14 @@ body:has(.workspace-app.saas-app) {
   font-weight: 750;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--wd-navy) 55%, var(--sf-text-muted));
+  color: color-mix(in srgb, var(--wd-navy) 55%, var(--wd-muted));
 }
 
 .workspace-app .ws-widget-section-sub {
   margin: 0;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--sf-text-muted);
+  color: var(--wd-muted);
 }
 
 .workspace-app .ws-widget-grid {
@@ -15418,7 +15445,7 @@ body:has(.workspace-app.saas-app) {
   font-weight: 650;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: var(--sf-text-muted);
+  color: var(--wd-muted);
 }
 
 .workspace-app .ws-widget-kpi.is-danger strong {
@@ -15474,21 +15501,45 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .ws-widget-foot.is-danger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: var(--wd-danger);
   font-weight: 650;
   background: color-mix(in srgb, var(--wd-danger-bg) 85%, #fff);
   border-top-color: var(--wd-danger-border);
 }
 
+.workspace-app .ws-widget-foot.is-danger::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: var(--wd-danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--wd-danger) 16%, transparent);
+}
+
 .workspace-app .ws-widget-foot.is-muted {
-  color: color-mix(in srgb, var(--wd-collection) 45%, var(--sf-text-muted));
-  background: color-mix(in srgb, var(--wd-collection) 4%, #f8fafc);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--wd-clear);
+  background: var(--wd-clear-bg);
   border-top-color: var(--wd-clear-border);
   font-weight: 550;
 }
 
+.workspace-app .ws-widget-foot.is-muted::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: var(--wd-clear);
+}
+
 .workspace-app .ws-widget-foot.is-link {
-  display: block;
   text-decoration: none;
   cursor: pointer;
 }
@@ -15548,6 +15599,7 @@ body:has(.workspace-app.saas-app) {
   .workspace-app .ws-widget-hero-stat {
     min-width: 0;
     border-radius: 12px;
+    padding: 10px 12px;
   }
 
   .workspace-app .ws-widget-section-sub {

@@ -1,4 +1,5 @@
 import { formatOpenAiError } from "@/lib/integrations/openai-errors";
+import { isAllowedSiteAssistantHref } from "@/lib/site-assistant/links";
 import { SITE_ASSISTANT_SYSTEM_PROMPT } from "@/lib/site-assistant/knowledge";
 
 export type SiteAssistantMessage = {
@@ -48,18 +49,7 @@ function parseLinks(raw: unknown): SiteAssistantLink[] {
     if (!item || typeof item !== "object") continue;
     const label = String((item as { label?: unknown }).label ?? "").trim();
     const href = String((item as { href?: unknown }).href ?? "").trim();
-    if (!label || !href) continue;
-    if (
-      !(
-        href.startsWith("/") ||
-        href.startsWith("https://workspace.") ||
-        href.startsWith("https://wa.me/") ||
-        href.startsWith("https://calendar.") ||
-        href.startsWith("https://sheetomatic.")
-      )
-    ) {
-      continue;
-    }
+    if (!label || !href || !isAllowedSiteAssistantHref(href)) continue;
     out.push({ label: label.slice(0, 60), href: href.slice(0, 300) });
     if (out.length >= 4) break;
   }

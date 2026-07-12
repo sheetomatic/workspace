@@ -171,32 +171,52 @@ export function WorkspaceWidgetDashboard({
         <div className="ws-widget-hero-stats" aria-label="Key metrics">
           {openOrders !== null && show("salesOrders") ? (
             <div className="ws-widget-hero-stat">
-              <strong>{openOrders}</strong>
-              <span>Open orders</span>
+              <span className="ws-widget-hero-stat-icon" aria-hidden>
+                <ShoppingCart size={14} />
+              </span>
+              <div className="ws-widget-hero-stat-copy">
+                <strong>{openOrders}</strong>
+                <span>Open orders</span>
+              </div>
             </div>
           ) : null}
           {show("fms") ? (
             <div
               className={`ws-widget-hero-stat${delayedProcesses > 0 ? " is-danger" : ""}`}
             >
-              <strong>{delayedProcesses}</strong>
-              <span>Delayed steps</span>
+              <span className="ws-widget-hero-stat-icon" aria-hidden>
+                <GitBranch size={14} />
+              </span>
+              <div className="ws-widget-hero-stat-copy">
+                <strong>{delayedProcesses}</strong>
+                <span>Delayed steps</span>
+              </div>
             </div>
           ) : null}
           {tasksEnabled && show("tasks") ? (
             <div
               className={`ws-widget-hero-stat${taskStats.overdue > 0 ? " is-danger" : ""}`}
             >
-              <strong>{taskStats.overdue}</strong>
-              <span>Overdue tasks</span>
+              <span className="ws-widget-hero-stat-icon" aria-hidden>
+                <ClipboardList size={14} />
+              </span>
+              <div className="ws-widget-hero-stat-copy">
+                <strong>{taskStats.overdue}</strong>
+                <span>Overdue tasks</span>
+              </div>
             </div>
           ) : null}
           {show("collection") ? (
             <div
               className={`ws-widget-hero-stat${pendingPayments.length > 0 ? " is-danger" : ""}`}
             >
-              <strong>{formatInr(pendingCollectionsTotal)}</strong>
-              <span>To collect</span>
+              <span className="ws-widget-hero-stat-icon" aria-hidden>
+                <IndianRupee size={14} />
+              </span>
+              <div className="ws-widget-hero-stat-copy">
+                <strong>{formatInr(pendingCollectionsTotal)}</strong>
+                <span>To collect</span>
+              </div>
             </div>
           ) : null}
         </div>
