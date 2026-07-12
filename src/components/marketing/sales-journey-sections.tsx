@@ -8,6 +8,7 @@ import {
   WhatsAppButton,
 } from "@/components/marketing/marketing-buttons";
 import { ExecutionSnapshot } from "@/components/marketing/execution-snapshot";
+import { ProblemSolutionVisualSection } from "@/components/marketing/problem-solution-visual";
 import "./pace-framework.css";
 import "./sales-journey.css";
 
@@ -75,25 +76,20 @@ export function AudienceFilterSection() {
 
 export function SpreadsheetPainSection() {
   return (
-    <section
-      aria-label="Why teams switch from spreadsheets"
-      className="sales-pain section bg-white"
-    >
-      <div className="mx-auto max-w-7xl px-5 sm:px-8">
-        <div className="home-pain-hook">
-          <p className="home-pain-hook-eyebrow">{homePainHook.eyebrow}</p>
-          <h2 className="home-pain-hook-title">{homePainHook.title}</h2>
-          <p className="home-pain-hook-lead">{homePainHook.lead}</p>
-          <ul className="home-pain-pills">
-            {homePainHook.pains.map((pain) => (
-              <li key={pain.title}>
-                <strong>{pain.title}</strong>
-                <span>{pain.text}</span>
-              </li>
-            ))}
-          </ul>
+    <>
+      <section
+        aria-label="Why teams switch from spreadsheets"
+        className="sales-pain section bg-white"
+      >
+        <div className="mx-auto max-w-7xl px-5 sm:px-8">
+          <div className="home-pain-hook home-pain-hook--compact">
+            <p className="home-pain-hook-eyebrow">{homePainHook.eyebrow}</p>
+            <h2 className="home-pain-hook-title">{homePainHook.title}</h2>
+            <p className="home-pain-hook-lead">{homePainHook.lead}</p>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+      <ProblemSolutionVisualSection />
+    </>
   );
 }

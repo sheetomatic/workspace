@@ -151,8 +151,19 @@
 }
 
 .sales-pain .home-pain-hook {
-  max-width: 48rem;
+  max-width: 40rem;
+  margin-inline: auto;
   padding-bottom: 0;
   margin-bottom: 0;
   border-bottom: none;
+  text-align: center;
+}
+
+.sales-pain {
+  padding-bottom: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+.sales-pain + .ps-visual {
+  border-top: none;
+  padding-top: clamp(1rem, 3vw, 1.5rem);
 }

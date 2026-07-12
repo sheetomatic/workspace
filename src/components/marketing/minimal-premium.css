@@ -17,6 +17,19 @@
   border-bottom: 1px solid #e2e8f0;
 }
 
+.home-pain-hook--compact {
+  max-width: 40rem;
+  margin-inline: auto;
+  padding-bottom: 0;
+  margin-bottom: 0;
+  border-bottom: none;
+  text-align: center;
+}
+
+.home-pain-hook--compact .home-pain-hook-lead {
+  margin-inline: auto;
+}
+
 .home-pain-hook-eyebrow {
   margin: 0;
   font-size: var(--text-tag);

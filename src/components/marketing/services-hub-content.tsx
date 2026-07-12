@@ -11,7 +11,6 @@ import {
   ClipboardList,
   GitBranch,
   ListChecks,
-  MapPin,
   Package,
   Stethoscope,
   Store,
@@ -49,6 +48,7 @@ import {
 } from "@/app/page-content";
 import { servicesHubVideos } from "@/app/video-content";
 import { VideoEmbed } from "@/components/marketing/video-embed";
+import { ProblemSolutionVisualSection } from "@/components/marketing/problem-solution-visual";
 import "@/components/marketing/minimal-premium.css";
 import "@/components/marketing/videos.css";
 import "@/components/marketing/services-page.css";
@@ -75,18 +75,6 @@ const ownerGlanceIcons: Record<string, { icon: LucideIcon; tone: string }> = {
   Ops: { icon: ListChecks, tone: "tone-emerald" },
 };
 
-const solutionIcons: Record<string, LucideIcon> = {
-  "AI task delegation": ClipboardList,
-  "Attendance & leave system": CalendarCheck,
-  "Field executive tracking": MapPin,
-  "AI-powered CRM": Users,
-  "WhatsApp AI chatbot": Bot,
-  "AI-assisted MIS": BarChart3,
-  "Inventory management": Package,
-  "Flow monitoring": GitBranch,
-  "Custom Software": Wrench,
-};
-
 const solutionHrefOverrides: Record<string, string> = {
   "Attendance & leave system": "/services/hr/attendance-leave",
   "Field executive tracking": "/services/hr/field-tracking",
@@ -97,6 +85,13 @@ const solutionHrefOverrides: Record<string, string> = {
   "Inventory management": "/services/inventory",
   "Flow monitoring": "/services/flow",
   "Custom Software": "/services/automation",
+  "FMS — Flow Monitoring": "/services/flow",
+  "IMS — Inventory Management": "/services/inventory",
+  "Process Coordinator": "/services/checklist",
+  "Executive Assistant": "/services/tasks",
+  "Executive Meeting (Weekly)": "/services/mis",
+  "WhatsApp AI + CRM": "/services/whatsapp-ai",
+  "Custom automation": "/services/automation",
 };
 
 const industryIcons: Record<string, LucideIcon> = {
@@ -261,53 +256,38 @@ export function ServicesHubContent() {
         </section>
 
         <section className="services-ps-section">
-          <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-14">
-            <div className="services-section-head services-section-head-center">
-              <p className="services-section-eyebrow">Problem ? Solution</p>
-              <h2 className="services-section-title">
-                {servicesPage.problemSolutionTitle}
-              </h2>
-              <p className="services-section-lead">
-                {servicesPage.problemSolutionLead}
-              </p>
-            </div>
+          <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-14">
+            <ProblemSolutionVisualSection embedded />
 
-            <div className="services-ps-list">
-              {serviceProblemSolutions.map((item) => {
-                const Icon = solutionIcons[item.solution] ?? Wrench;
-                const href =
-                  solutionHrefOverrides[item.solution] ?? item.href;
-                return (
-                  <article className="services-ps-card" key={item.solution}>
-                    <div className="services-ps-problem">
-                      <span className="services-ps-label">Problem</span>
-                      <h3>{item.problem}</h3>
-                      <p>{item.problemDetail}</p>
-                    </div>
-                    <div className="services-ps-arrow" aria-hidden>
-                      <ArrowRight size={20} />
-                    </div>
-                    <div className="services-ps-solution">
-                      <span className="services-ps-label solution">Solution</span>
-                      <div className="services-ps-solution-head">
-                        <span className="services-ps-icon" aria-hidden>
-                          <Icon size={18} />
-                        </span>
-                        <h3>{item.solution}</h3>
-                      </div>
-                      <p>{item.solutionDetail}</p>
-                      <MarketingLinkButton
-                        className="services-ps-link"
-                        href={href}
-                        variant="secondary"
-                      >
-                        <span>{item.cta}</span>
-                        <ArrowRight size={16} aria-hidden />
-                      </MarketingLinkButton>
-                    </div>
-                  </article>
-                );
-              })}
+            <div className="services-ps-more">
+              <p className="services-ps-more-label">More leaks we close</p>
+              <ul className="services-ps-more-list">
+                {serviceProblemSolutions
+                  .filter(
+                    (item) =>
+                      !item.solution.startsWith("FMS") &&
+                      !item.solution.startsWith("IMS"),
+                  )
+                  .map((item) => {
+                    const href =
+                      solutionHrefOverrides[item.solution] ?? item.href;
+                    return (
+                      <li key={item.solution}>
+                        <Link href={href}>
+                          <span className="services-ps-more-problem">
+                            {item.problem}
+                          </span>
+                          <span className="services-ps-more-arrow" aria-hidden>
+                            →
+                          </span>
+                          <span className="services-ps-more-solution">
+                            {item.solution}
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+              </ul>
             </div>
           </div>
         </section>

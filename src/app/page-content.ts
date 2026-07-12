@@ -65,6 +65,41 @@ export const homePainHook = {
   ],
 } as const;
 
+/** Visual-first FMS + IMS problem → solution cards (home + services). */
+export const problemSolutionVisual = {
+  eyebrow: "Problem → Solution",
+  title: "Leaks closed with systems",
+  lead: "See the fix in under a minute — then open the workspace.",
+  cards: [
+    {
+      id: "fms",
+      imageSrc: "/marketing/problem-solution/fms-before-after.jpg",
+      imageAlt:
+        "Before: stalled orders in WhatsApp chaos. After: FMS stage flow with owners and green progress.",
+      problem: "Orders stall between steps",
+      solution: "FMS — owners, stages, SLA",
+      youtubeId: "acTJOocmuZM",
+      youtubeLabel: "Watch on YouTube",
+      exploreHref: "/services/flow",
+      exploreLabel: "Explore FMS",
+      workspaceLabel: "Open Workspace",
+    },
+    {
+      id: "ims",
+      imageSrc: "/marketing/problem-solution/ims-before-after.jpg",
+      imageAlt:
+        "Before: mismatched paper stock register. After: live IMS stock with reorder signal.",
+      problem: "Stock on paper ≠ reality",
+      solution: "IMS — live stock & reorder",
+      youtubeId: "GFas19FF3fs",
+      youtubeLabel: "Watch on YouTube",
+      exploreHref: "/services/inventory",
+      exploreLabel: "Explore IMS",
+      workspaceLabel: "Open Workspace",
+    },
+  ],
+} as const;
+
 export const clientProblems = {
   eyebrow: "The problem",
   title: "Google Sheets, AppSheet, and WhatsApp were never meant to run a business.",
@@ -220,7 +255,7 @@ export const servicesPage = {
   ],
   problemSolutionTitle: "Leaks closed with systems",
   problemSolutionLead:
-    "FMS, IMS, and Executive Meeting are running systems — Checklist and Tasks modules empower Process Coordinator and Executive Assistant roles to monitor performance through their portals so you manage the board, not every task.",
+    "Watch FMS and IMS demos — then open the workspace and run the board.",
 };
 
 export type ServiceProblemSolution = {
