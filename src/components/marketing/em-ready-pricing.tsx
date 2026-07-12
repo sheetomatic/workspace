@@ -123,12 +123,15 @@ function PlanCard({
         >
           Contact us
         </Link>
-        <p className="em-plan-login-hint">
-          Already a customer?{" "}
-          <Link className="em-plan-login" href={WORKSPACE_LOGIN_HREF}>
-            Workspace login (existing users)
+        <div className="em-plan-existing">
+          <span className="em-plan-existing-label">Existing users</span>
+          <Link
+            className={marketingButtonClass("secondary", "em-plan-login-btn")}
+            href={WORKSPACE_LOGIN_HREF}
+          >
+            Workspace login
           </Link>
-        </p>
+        </div>
       </div>
     </article>
   );
@@ -232,7 +235,7 @@ export function EmReadyPricing() {
           </ul>
 
           <p className="em-pricing-workspace-note">
-            Already a customer?{" "}
+            Existing users:{" "}
             <Link href={WORKSPACE_LOGIN_HREF}>Sign in to Workspace</Link>
           </p>
           <p className="em-pricing-ai-link">

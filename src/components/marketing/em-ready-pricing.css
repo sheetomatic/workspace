@@ -144,8 +144,8 @@
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  padding: 1.55rem 1.45rem 1.4rem;
-  border: 1px solid color-mix(in srgb, var(--em-blue) 10%, var(--em-border));
+  padding: 1.65rem 1.45rem 1.4rem;
+  border: 1px solid color-mix(in srgb, var(--em-blue) 12%, var(--em-border));
   border-radius: var(--em-radius);
   background: var(--em-card);
   box-shadow: var(--em-shadow);
@@ -158,37 +158,40 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
+  height: 5px;
   background: linear-gradient(90deg, var(--em-blue), var(--em-cyan));
-  opacity: 0.85;
+  opacity: 1;
 }
 
 .em-plan-card.is-starter {
-  border-color: color-mix(in srgb, var(--em-blue) 32%, var(--em-border));
+  border-color: color-mix(in srgb, var(--em-blue) 38%, var(--em-border));
   background:
-    linear-gradient(180deg, var(--em-blue-wash) 0%, #ffffff 42%);
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--em-blue) 9%, #ffffff) 0%,
+      #ffffff 48%
+    );
   box-shadow:
     0 1px 2px rgba(10, 27, 46, 0.04),
-    0 16px 36px -16px rgba(37, 99, 235, 0.28);
+    0 16px 36px -16px rgba(37, 99, 235, 0.3);
 }
 
 .em-plan-card.is-starter::before {
-  height: 4px;
-  opacity: 1;
-  background: linear-gradient(90deg, var(--em-blue), #3b82f6);
+  height: 5px;
+  background: linear-gradient(90deg, #1d4ed8, var(--em-blue), #60a5fa);
 }
 
 .em-plan-card.is-scale {
-  border-color: color-mix(in srgb, var(--em-blue) 55%, #93c5fd);
+  border-color: color-mix(in srgb, var(--em-blue) 58%, #93c5fd);
+  border-width: 1.5px;
   background:
-    linear-gradient(180deg, #eff6ff 0%, #ffffff 38%);
+    linear-gradient(180deg, #dbeafe 0%, #eff6ff 22%, #ffffff 48%);
   box-shadow: var(--em-shadow-lift);
 }
 
 .em-plan-card.is-scale::before {
-  height: 5px;
-  opacity: 1;
-  background: linear-gradient(90deg, #1d4ed8, var(--em-blue), var(--em-cyan));
+  height: 6px;
+  background: linear-gradient(90deg, #1e3a8a, #1d4ed8, var(--em-blue), var(--em-cyan));
 }
 
 .em-plan-badge {
@@ -346,7 +349,7 @@
 
 .em-plan-actions {
   display: grid;
-  gap: 0.65rem;
+  gap: 0.6rem;
   margin-top: 1.4rem;
 }
 
@@ -358,7 +361,12 @@
 /* Override site-wide blue .btn-whatsapp — pricing CTAs use WA green */
 .em-pricing-page a.btn-cta.btn-whatsapp.em-plan-wa,
 .em-pricing-page a.btn-cta.btn-whatsapp.em-contact-wa {
-  background: linear-gradient(135deg, var(--em-wa) 0%, var(--em-wa-mid) 55%, var(--em-wa-dark) 100%) !important;
+  background: linear-gradient(
+    135deg,
+    var(--em-wa) 0%,
+    var(--em-wa-mid) 55%,
+    var(--em-wa-dark) 100%
+  ) !important;
   color: #ffffff !important;
   border: none !important;
   box-shadow: 0 8px 24px rgba(24, 169, 87, 0.28) !important;
@@ -366,38 +374,64 @@
 
 .em-pricing-page a.btn-cta.btn-whatsapp.em-plan-wa:hover,
 .em-pricing-page a.btn-cta.btn-whatsapp.em-contact-wa:hover {
-  background: linear-gradient(135deg, #2ee06a 0%, var(--em-wa-mid) 50%, var(--em-wa-dark) 100%) !important;
+  background: linear-gradient(
+    135deg,
+    #2ee06a 0%,
+    var(--em-wa-mid) 50%,
+    var(--em-wa-dark) 100%
+  ) !important;
   color: #ffffff !important;
 }
 
+.em-pricing-page a.btn-cta.btn-whatsapp.em-plan-wa .btn-cta-icon-wrap,
+.em-pricing-page a.btn-cta.btn-whatsapp.em-contact-wa .btn-cta-icon-wrap,
+.em-pricing-page a.btn-cta.btn-whatsapp.em-plan-wa .btn-cta-icon,
+.em-pricing-page a.btn-cta.btn-whatsapp.em-contact-wa .btn-cta-icon {
+  color: #ffffff !important;
+  fill: currentColor !important;
+}
+
 .em-pricing-page a.btn-cta.btn-primary.em-plan-contact {
-  background: var(--em-blue);
-  border: none;
-  color: #ffffff;
+  background: var(--em-blue) !important;
+  border: none !important;
+  color: #ffffff !important;
   box-shadow: 0 8px 20px rgba(37, 99, 235, 0.22);
 }
 
 .em-pricing-page a.btn-cta.btn-primary.em-plan-contact:hover {
-  background: #1d4ed8;
-  color: #ffffff;
+  background: #1d4ed8 !important;
+  color: #ffffff !important;
 }
 
-.em-plan-login-hint {
-  margin: 0.15rem 0 0;
+.em-plan-existing {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.2rem;
+}
+
+.em-plan-existing-label {
   text-align: center;
-  font-size: 0.8125rem;
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--em-muted);
-  line-height: 1.45;
 }
 
-.em-plan-login {
-  color: var(--em-blue);
-  font-weight: 700;
-  text-decoration: none;
+.em-pricing-page a.btn-cta.btn-secondary.em-plan-login-btn {
+  min-height: 42px;
+  padding: 0.55rem 1rem;
+  background: transparent !important;
+  border: 1.5px solid color-mix(in srgb, var(--em-blue) 28%, var(--em-border)) !important;
+  color: var(--em-navy) !important;
+  box-shadow: none !important;
+  font-size: 0.875rem;
 }
 
-.em-plan-login:hover {
-  text-decoration: underline;
+.em-pricing-page a.btn-cta.btn-secondary.em-plan-login-btn:hover {
+  background: var(--em-blue-soft) !important;
+  border-color: color-mix(in srgb, var(--em-blue) 45%, var(--em-border)) !important;
+  color: var(--em-blue) !important;
 }
 
 .em-contact-band {
@@ -474,20 +508,21 @@
 
 /* Beat globals `a.btn-cta.btn-secondary { color: var(--foreground) }` on dark band */
 .em-pricing-page .em-contact-actions a.btn-cta.btn-secondary.em-contact-message {
-  background: transparent;
-  border: 1.5px solid rgba(226, 232, 240, 0.65);
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.72) !important;
   color: #ffffff !important;
-  box-shadow: none;
+  box-shadow: none !important;
 }
 
 .em-pricing-page .em-contact-actions a.btn-cta.btn-secondary.em-contact-message:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: #ffffff;
+  background: rgba(255, 255, 255, 0.16) !important;
+  border-color: #ffffff !important;
   color: #ffffff !important;
 }
 
-.em-pricing-page .em-contact-actions a.btn-cta.btn-secondary.em-contact-message .btn-cta-icon-wrap {
-  color: #ffffff;
+.em-pricing-page .em-contact-actions a.btn-cta.btn-secondary.em-contact-message,
+.em-pricing-page .em-contact-actions a.btn-cta.btn-secondary.em-contact-message * {
+  color: #ffffff !important;
 }
 
 .em-pricing-footnotes {
