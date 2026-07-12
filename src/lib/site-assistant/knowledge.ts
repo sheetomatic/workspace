@@ -36,8 +36,11 @@ WORKSPACE vs MARKETING:
 - Do not invent app URLs. Prefer Workspace login link above.
 
 COURSES:
-- Owner systems program: 24 live 1:1 classes × 1.5 hours (36 hours), Hindi/English. Price shown on site: ₹35,000. Instructor: Shyam Kumar Banjare.
-- Built for MSME owners (not a jobseeker MIS career course). Enroll via WhatsApp. Page: /courses
+- Google Sheets | AppSheet | Looker Studio 1:1 coaching: 24 live classes × 1.5 hours (36 hours), Hindi/English. Price: ₹35,000. Instructor: Shyam Kumar Banjare.
+- Use cases follow the client's business needs — not a fixed BCI/FMS curriculum.
+- Schedule: weekly 2 sessions at 8:30 AM – 10:00 AM IST. Buyer chooses Monday + Friday OR Tuesday + Saturday.
+- Enroll and pay on /courses (UPI / PhonePe) — no Graphy redirect. Owner confirms payment, then slots are booked.
+- Page: /courses
 
 SHEETOMATIC AI (separate product):
 - WhatsApp Official API + AI inbox / campaigns — product page /ai, plans /whatsapp-plans.

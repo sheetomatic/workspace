@@ -2903,3 +2903,34 @@ model OrgExpenseEntry {
   @@index([organizationId, expenseDate])
   @@index([organizationId, category])
 }
+
+/// Marketing 1:1 courses enrollment — platform-level (no tenant org).
+enum CourseCohort {
+  MON_FRI
+  TUE_SAT
+}
+
+enum CourseEnrollmentStatus {
+  PAYMENT_PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model CourseEnrollment {
+  id            String                 @id @default(cuid())
+  name          String
+  phone         String
+  email         String
+  amountInr     Int                    @default(35000)
+  cohort        CourseCohort
+  status        CourseEnrollmentStatus @default(PAYMENT_PENDING)
+  slotNotes     String?
+  confirmedAt   DateTime?
+  confirmedById String?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  @@index([status, createdAt])
+  @@index([email])
+  @@index([phone])
+}
