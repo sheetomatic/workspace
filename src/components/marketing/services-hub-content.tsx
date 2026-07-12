@@ -261,6 +261,9 @@ export function ServicesHubContent() {
             <ProblemSolutionVisualSection
               embedded
               cardIds={problemSolutionPresets.servicesHub}
+              eyebrow="Core ops proofs"
+              title="Flow and stock — before and after"
+              lead="Each service page has its own visual. Here are the two owners open first."
             />
 
             <div className="services-ps-more">

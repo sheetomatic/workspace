@@ -1,8 +1,10 @@
+import Image from "next/image";
 import { FinalCta, MarketingPage, SiteFooter, SiteHeader } from "@/app/components";
 import {
   clientProblems,
-  problemSolutionPresets,
+  getProblemSolutionCard,
   productCategories,
+  productNameToVisualCard,
   productsPage,
 } from "@/app/page-content";
 import "./minimal-premium.css";
@@ -20,7 +22,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { ContactButtons } from "./marketing-buttons";
-import { ProblemSolutionVisualSection } from "./problem-solution-visual";
 import { whatsappDisplayNumber } from "@/app/site-content";
 
 const productIconByName: Record<string, { icon: LucideIcon; tone: string }> = {
@@ -57,17 +58,42 @@ export function ProductsPageContent() {
                   tone: "tone-sky",
                 };
               const Icon = meta.icon;
+              const visualId = productNameToVisualCard[product.name];
+              const visual = visualId
+                ? getProblemSolutionCard(visualId)
+                : undefined;
               return (
                 <article
-                  className={`product-minimal-card ${product.featured ? "featured" : ""}`}
+                  className={`product-minimal-card${product.featured ? " featured" : ""}${visual ? " has-visual" : ""}`}
                   key={product.name}
                 >
-                  <span className={`marketing-icon ${meta.tone}`} aria-hidden>
-                    <Icon size={22} />
-                  </span>
-                  <div className="product-minimal-card-body">
-                    <h3>{product.name}</h3>
-                    <p>{product.text}</p>
+                  {visual ? (
+                    <div className="product-minimal-card-visual">
+                      <Image
+                        src={visual.imageSrc}
+                        alt={visual.imageAlt}
+                        width={900}
+                        height={600}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="product-minimal-card-image"
+                      />
+                    </div>
+                  ) : null}
+                  <div className="product-minimal-card-inner">
+                    <span className={`marketing-icon ${meta.tone}`} aria-hidden>
+                      <Icon size={22} />
+                    </span>
+                    <div className="product-minimal-card-body">
+                      <h3>{product.name}</h3>
+                      <p>{product.text}</p>
+                      {visual ? (
+                        <p className="product-minimal-card-proof">
+                          <span>Problem</span> {visual.problem}
+                          <span aria-hidden> → </span>
+                          <span>Solution</span> {visual.solution}
+                        </p>
+                      ) : null}
+                    </div>
                   </div>
                 </article>
               );
@@ -75,12 +101,6 @@ export function ProductsPageContent() {
           </div>
         </div>
       </section>
-
-      <ProblemSolutionVisualSection
-        cardIds={problemSolutionPresets.products}
-        title="See each module close a leak"
-        lead="Before → after for every core product — watch the demo, then open the workspace."
-      />
 
       <section className="resolution-blue-strip" aria-label="How Sheetomatic works">
         <div className="mx-auto max-w-5xl px-5 text-center sm:px-8">

@@ -202,36 +202,32 @@ export const problemSolutionVisual = {
   ] satisfies ProblemSolutionCard[],
 } as const;
 
-/** Page presets — which cards to show (order preserved). */
+/** Page presets — sparse, contextual (never dump the full catalog). */
 export const problemSolutionPresets = {
-  home: ["fms", "ims", "tasks", "em"] as const satisfies readonly ProblemSolutionCardId[],
-  servicesHub: [
-    "fms",
-    "ims",
-    "checklist",
-    "tasks",
-    "em",
-    "whatsapp",
-    "crm",
-    "hr",
-  ] as const satisfies readonly ProblemSolutionCardId[],
-  products: [
-    "fms",
-    "ims",
-    "checklist",
-    "tasks",
-    "em",
-    "whatsapp",
-    "crm",
-  ] as const satisfies readonly ProblemSolutionCardId[],
-  courses: [
-    "fms",
-    "ims",
-    "checklist",
-    "tasks",
-    "em",
-  ] as const satisfies readonly ProblemSolutionCardId[],
+  /** Strongest two ops proofs after the pain hook */
+  home: ["fms", "ims"] as const satisfies readonly ProblemSolutionCardId[],
+  /** Tight band on services hub — detail pages own the rest 1:1 */
+  servicesHub: ["fms", "ims"] as const satisfies readonly ProblemSolutionCardId[],
+  /** Featured product-card embeds only (not a separate gallery) */
+  products: ["fms", "ims", "em"] as const satisfies readonly ProblemSolutionCardId[],
+  /** Systems the curriculum builds */
+  courses: ["fms", "ims", "em"] as const satisfies readonly ProblemSolutionCardId[],
 } as const;
+
+/** Product catalog name → visual card (featured embeds only). */
+export const productNameToVisualCard: Partial<
+  Record<string, ProblemSolutionCardId>
+> = {
+  "FMS — Flow Monitoring": "fms",
+  "IMS — Inventory Management": "ims",
+  "Executive Meeting (Weekly)": "em",
+};
+
+export function getProblemSolutionCard(
+  id: ProblemSolutionCardId,
+): ProblemSolutionCard | undefined {
+  return problemSolutionVisual.cards.find((card) => card.id === id);
+}
 
 /** Map /services/[slug] → visual card id (omit automation — no visual). */
 export const serviceSlugToVisualCard: Partial<

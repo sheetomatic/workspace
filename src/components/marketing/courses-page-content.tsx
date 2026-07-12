@@ -152,8 +152,8 @@ export function CoursesPageContent() {
       <ProblemSolutionVisualSection
         cardIds={problemSolutionPresets.courses}
         eyebrow="What you build"
-        title="Owner systems — before and after"
-        lead="Same leaks the curriculum fixes — then enroll or open Workspace."
+        title="FMS, IMS, and EM Ready"
+        lead="Three systems from the curriculum — then enroll or open Workspace."
       />
 
       <section className="minimal-strip bg-white pb-16" id="watch">
