@@ -15060,8 +15060,24 @@ body:has(.workspace-app.saas-app) {
 
 /* Widget dashboard (workspace home) */
 .workspace-app .ws-widget-dash {
+  --wd-navy: #0a1b2e;
+  --wd-blue: #2563eb;
+  --wd-crm: #2563eb;
+  --wd-orders: #0284c7;
+  --wd-fms: #4338ca;
+  --wd-ims: #0f766e;
+  --wd-tasks: #d97706;
+  --wd-checklists: #0d9488;
+  --wd-em: #0a1b2e;
+  --wd-recruitment: #6d28d9;
+  --wd-collection: #059669;
+  --wd-danger: #b91c1c;
+  --wd-danger-bg: #fff1f2;
+  --wd-danger-border: #fecdd3;
+  --wd-clear-bg: #f8fafc;
+  --wd-clear-border: #e2e8f0;
   display: grid;
-  gap: 22px;
+  gap: 24px;
   max-width: 78rem;
 }
 
@@ -15070,9 +15086,9 @@ body:has(.workspace-app.saas-app) {
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 16px 20px;
-  padding: 4px 2px 18px;
-  border-bottom: 1px solid var(--sf-card-border);
+  gap: 18px 24px;
+  padding: 6px 2px 20px;
+  border-bottom: 1px solid color-mix(in srgb, var(--sf-card-border) 80%, transparent);
 }
 
 .workspace-app .ws-widget-hero-kicker {
@@ -15081,33 +15097,34 @@ body:has(.workspace-app.saas-app) {
   flex-wrap: wrap;
   gap: 6px;
   margin: 0;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.68rem;
+  font-weight: 650;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   color: var(--sf-text-muted);
 }
 
 .workspace-app .ws-widget-hero-home {
-  color: var(--sf-accent);
+  color: var(--wd-blue);
 }
 
 .workspace-app .ws-widget-hero-sep {
-  opacity: 0.55;
+  opacity: 0.45;
 }
 
 .workspace-app .ws-widget-hero-title h1 {
-  margin: 6px 0 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--sf-text);
-  line-height: 1.2;
+  margin: 8px 0 0;
+  font-size: clamp(1.55rem, 2.2vw, 1.85rem);
+  font-weight: 750;
+  letter-spacing: -0.035em;
+  color: var(--wd-navy);
+  line-height: 1.15;
 }
 
 .workspace-app .ws-widget-hero-date {
-  margin: 6px 0 0;
+  margin: 7px 0 0;
   font-size: 0.8125rem;
+  font-weight: 500;
   color: var(--sf-text-muted);
 }
 
@@ -15119,61 +15136,68 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-widget-hero-stat {
   display: grid;
-  gap: 2px;
-  min-width: 6.75rem;
-  padding: 10px 14px;
-  border: 1px solid var(--sf-card-border);
-  border-radius: 10px;
-  background: #fff;
+  gap: 3px;
+  min-width: 7rem;
+  padding: 10px 14px 11px;
+  border: 1px solid color-mix(in srgb, var(--wd-blue) 12%, #e2e8f0);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, #fff 0%, color-mix(in srgb, var(--wd-blue) 3.5%, #fff) 100%);
+  box-shadow: 0 1px 2px rgba(10, 27, 46, 0.04);
 }
 
 .workspace-app .ws-widget-hero-stat strong {
-  font-size: 1.125rem;
-  letter-spacing: -0.01em;
-  color: var(--sf-text);
+  font-size: 1.05rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: var(--wd-navy);
   font-variant-numeric: tabular-nums;
+  line-height: 1.1;
 }
 
 .workspace-app .ws-widget-hero-stat span {
-  font-size: 0.68rem;
-  font-weight: 600;
+  font-size: 0.64rem;
+  font-weight: 650;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   color: var(--sf-text-muted);
 }
 
 .workspace-app .ws-widget-hero-stat.is-danger {
-  border-color: #fecaca;
-  background: #fef2f2;
+  border-color: var(--wd-danger-border);
+  background:
+    linear-gradient(180deg, #fff 0%, var(--wd-danger-bg) 100%);
+  box-shadow: 0 1px 2px rgba(185, 28, 28, 0.06);
 }
 
 .workspace-app .ws-widget-hero-stat.is-danger strong {
-  color: #b91c1c;
+  color: var(--wd-danger);
 }
 
 .workspace-app .ws-widget-section {
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 .workspace-app .ws-widget-section-head {
   display: grid;
-  gap: 2px;
+  gap: 3px;
   padding: 0 2px;
 }
 
 .workspace-app .ws-widget-section-title {
   margin: 0;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--sf-text-muted);
+  color: color-mix(in srgb, var(--wd-navy) 55%, var(--sf-text-muted));
 }
 
 .workspace-app .ws-widget-section-sub {
   margin: 0;
   font-size: 0.8125rem;
+  font-weight: 500;
   color: var(--sf-text-muted);
 }
 
@@ -15185,18 +15209,83 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .ws-widget {
+  --wd-accent: var(--wd-blue);
   display: flex;
   flex-direction: column;
-  min-height: 10rem;
-  border: 1px solid var(--sf-card-border);
-  border-radius: 12px;
+  min-height: 10.25rem;
+  border: 1px solid color-mix(in srgb, var(--wd-accent) 14%, #e2e8f0);
+  border-radius: 14px;
   background: #fff;
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  box-shadow:
+    0 1px 2px rgba(10, 27, 46, 0.04),
+    0 8px 20px -14px rgba(10, 27, 46, 0.18);
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.workspace-app .ws-widget:hover {
+  border-color: color-mix(in srgb, var(--wd-accent) 28%, #cbd5e1);
+  box-shadow:
+    0 1px 2px rgba(10, 27, 46, 0.05),
+    0 12px 24px -14px rgba(10, 27, 46, 0.22);
 }
 
 .workspace-app .ws-widget--span2 {
   grid-column: span 2;
+}
+
+.workspace-app .ws-widget--crm {
+  --wd-accent: var(--wd-crm);
+}
+
+.workspace-app .ws-widget--orders {
+  --wd-accent: var(--wd-orders);
+}
+
+.workspace-app .ws-widget--fms {
+  --wd-accent: var(--wd-fms);
+}
+
+.workspace-app .ws-widget--ims {
+  --wd-accent: var(--wd-ims);
+}
+
+.workspace-app .ws-widget--tasks {
+  --wd-accent: var(--wd-tasks);
+}
+
+.workspace-app .ws-widget--checklists {
+  --wd-accent: var(--wd-checklists);
+}
+
+.workspace-app .ws-widget--em {
+  --wd-accent: var(--wd-em);
+}
+
+.workspace-app .ws-widget--recruitment {
+  --wd-accent: var(--wd-recruitment);
+}
+
+.workspace-app .ws-widget--collection {
+  --wd-accent: var(--wd-collection);
+}
+
+.workspace-app .ws-widget.is-alert {
+  border-color: color-mix(in srgb, var(--wd-danger) 28%, #fecdd3);
+  background:
+    linear-gradient(180deg, #fff 0%, color-mix(in srgb, var(--wd-danger-bg) 55%, #fff) 100%);
+  box-shadow:
+    0 1px 2px rgba(185, 28, 28, 0.05),
+    0 10px 22px -14px rgba(185, 28, 28, 0.22);
+}
+
+.workspace-app .ws-widget.is-clear {
+  border-color: var(--wd-clear-border);
+  background:
+    linear-gradient(180deg, #fff 0%, var(--wd-clear-bg) 100%);
 }
 
 .workspace-app .ws-widget-hit {
@@ -15210,7 +15299,7 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .ws-widget-hit:hover {
-  background: color-mix(in srgb, var(--sf-accent) 4%, transparent);
+  background: color-mix(in srgb, var(--wd-accent) 4%, transparent);
 }
 
 .workspace-app .ws-widget-hit:hover .ws-widget-link {
@@ -15218,48 +15307,77 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .ws-widget-hit:focus-visible {
-  outline: 2px solid var(--sf-accent);
+  outline: 2px solid var(--wd-blue);
   outline-offset: -2px;
 }
 
 .workspace-app .ws-widget-head {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   padding: 12px 14px;
-  border-bottom: 1px solid var(--sf-card-border);
+  border-bottom: 1px solid color-mix(in srgb, var(--wd-accent) 10%, #eef2f7);
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--wd-accent) 9%, #fff) 0%,
+      color-mix(in srgb, var(--wd-accent) 3%, #fff) 100%
+    );
+  box-shadow: inset 3px 0 0 var(--wd-accent);
+}
+
+.workspace-app .ws-widget.is-alert .ws-widget-head {
+  border-bottom-color: color-mix(in srgb, var(--wd-danger) 14%, #fee2e2);
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--wd-danger) 7%, #fff) 0%,
+      color-mix(in srgb, var(--wd-accent) 4%, #fff) 100%
+    );
+  box-shadow: inset 3px 0 0 var(--wd-danger);
 }
 
 .workspace-app .ws-widget-head h3 {
   flex: 1;
   margin: 0;
   font-size: 0.875rem;
-  font-weight: 650;
-  letter-spacing: 0.01em;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--sf-text);
+  color: var(--wd-navy);
 }
 
 .workspace-app .ws-widget-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
   flex-shrink: 0;
-  background: color-mix(in srgb, var(--sf-accent) 10%, transparent);
-  color: var(--sf-accent);
+  background: color-mix(in srgb, var(--wd-accent) 14%, #fff);
+  color: var(--wd-accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--wd-accent) 16%, transparent);
+}
+
+.workspace-app .ws-widget.is-alert .ws-widget-icon {
+  background: color-mix(in srgb, var(--wd-danger) 10%, #fff);
+  color: var(--wd-danger);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--wd-danger) 18%, transparent);
 }
 
 .workspace-app .ws-widget-link {
-  font-size: 0.73rem;
-  font-weight: 600;
-  color: var(--sf-accent);
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: var(--wd-accent);
   text-decoration: none;
   white-space: nowrap;
+}
+
+.workspace-app .ws-widget.is-alert .ws-widget-link {
+  color: var(--wd-danger);
 }
 
 .workspace-app .ws-widget-link:hover {
@@ -15271,40 +15389,40 @@ body:has(.workspace-app.saas-app) {
   display: grid;
   gap: 10px;
   align-content: start;
-  padding: 14px;
+  padding: 14px 14px 15px;
 }
 
 .workspace-app .ws-widget-kpis {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 20px;
+  gap: 10px 22px;
 }
 
 .workspace-app .ws-widget-kpi {
   display: grid;
-  gap: 2px;
+  gap: 3px;
   min-width: 4.5rem;
 }
 
 .workspace-app .ws-widget-kpi strong {
-  font-size: 1.3rem;
-  font-weight: 650;
-  letter-spacing: -0.02em;
-  color: var(--sf-text);
+  font-size: 1.4rem;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  color: var(--wd-navy);
   font-variant-numeric: tabular-nums;
-  line-height: 1.15;
+  line-height: 1.1;
 }
 
 .workspace-app .ws-widget-kpi span {
-  font-size: 0.68rem;
-  font-weight: 600;
+  font-size: 0.66rem;
+  font-weight: 650;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   color: var(--sf-text-muted);
 }
 
 .workspace-app .ws-widget-kpi.is-danger strong {
-  color: #b91c1c;
+  color: var(--wd-danger);
 }
 
 .workspace-app .ws-widget-list {
@@ -15319,9 +15437,9 @@ body:has(.workspace-app.saas-app) {
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
-  padding: 6px 0;
+  padding: 7px 0;
   font-size: 0.8125rem;
-  border-bottom: 1px dashed color-mix(in srgb, var(--sf-card-border) 70%, transparent);
+  border-bottom: 1px dashed color-mix(in srgb, var(--sf-card-border) 75%, transparent);
 }
 
 .workspace-app .ws-widget-list li:last-child {
@@ -15336,33 +15454,37 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .ws-widget-list-value {
-  font-weight: 600;
-  color: var(--sf-text);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--wd-navy);
   white-space: nowrap;
 }
 
 .workspace-app .ws-widget-deficit {
-  font-weight: 700;
+  font-weight: 750;
   font-variant-numeric: tabular-nums;
-  color: #b91c1c;
+  color: var(--wd-danger);
   white-space: nowrap;
 }
 
 .workspace-app .ws-widget-foot {
   padding: 9px 14px;
   font-size: 0.74rem;
-  border-top: 1px solid var(--sf-card-border);
+  border-top: 1px solid color-mix(in srgb, var(--wd-accent) 10%, #eef2f7);
 }
 
 .workspace-app .ws-widget-foot.is-danger {
-  color: #b91c1c;
-  font-weight: 600;
-  background: #fef2f2;
-  border-top-color: #fecaca;
+  color: var(--wd-danger);
+  font-weight: 650;
+  background: color-mix(in srgb, var(--wd-danger-bg) 85%, #fff);
+  border-top-color: var(--wd-danger-border);
 }
 
 .workspace-app .ws-widget-foot.is-muted {
-  color: var(--sf-text-muted);
+  color: color-mix(in srgb, var(--wd-collection) 45%, var(--sf-text-muted));
+  background: color-mix(in srgb, var(--wd-collection) 4%, #f8fafc);
+  border-top-color: var(--wd-clear-border);
+  font-weight: 550;
 }
 
 .workspace-app .ws-widget-foot.is-link {
@@ -15372,11 +15494,11 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .ws-widget-foot.is-link:hover {
-  filter: brightness(0.97);
+  filter: brightness(0.98);
 }
 
 .workspace-app .ws-widget-foot.is-link:focus-visible {
-  outline: 2px solid var(--sf-accent);
+  outline: 2px solid var(--wd-blue);
   outline-offset: -2px;
 }
 
@@ -15414,7 +15536,7 @@ body:has(.workspace-app.saas-app) {
   }
 
   .workspace-app .ws-widget-hero-title h1 {
-    font-size: 1.35rem;
+    font-size: 1.4rem;
   }
 
   .workspace-app .ws-widget-hero-stats {
@@ -15425,6 +15547,7 @@ body:has(.workspace-app.saas-app) {
 
   .workspace-app .ws-widget-hero-stat {
     min-width: 0;
+    border-radius: 12px;
   }
 
   .workspace-app .ws-widget-section-sub {

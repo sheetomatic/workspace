@@ -46,10 +46,24 @@ function formatInr(value: number) {
   });
 }
 
+type WidgetAccent =
+  | "crm"
+  | "orders"
+  | "fms"
+  | "ims"
+  | "tasks"
+  | "checklists"
+  | "em"
+  | "recruitment"
+  | "collection";
+
 function Widget(props: {
   icon: React.ReactNode;
   title: string;
   href: string;
+  accent?: WidgetAccent;
+  /** Force urgent card chrome when footer is not already danger. */
+  alert?: boolean;
   linkLabel?: string;
   span2?: boolean;
   children: React.ReactNode;
@@ -60,15 +74,28 @@ function Widget(props: {
     href?: string;
   } | null;
 }) {
+  const isDanger = props.footer?.tone === "danger" || Boolean(props.alert);
+  const isClear = props.footer?.tone === "muted" && !props.alert;
   const footClass = `ws-widget-foot ${
     props.footer?.tone === "danger" ? "is-danger" : "is-muted"
   }`;
+  const widgetClass = [
+    "ws-widget",
+    props.span2 ? "ws-widget--span2" : "",
+    props.accent ? `ws-widget--${props.accent}` : "",
+    isDanger ? "is-alert" : "",
+    isClear ? "is-clear" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
-    <section className={`ws-widget${props.span2 ? " ws-widget--span2" : ""}`}>
+    <section className={widgetClass}>
       <Link className="ws-widget-hit" href={props.href}>
         <header className="ws-widget-head">
-          <span className="ws-widget-icon">{props.icon}</span>
+          <span className="ws-widget-icon" aria-hidden>
+            {props.icon}
+          </span>
           <h3>{props.title}</h3>
           <span className="ws-widget-link">
             {props.linkLabel ?? "View all \u2192"}
@@ -185,6 +212,7 @@ export function WorkspaceWidgetDashboard({
         <div className="ws-widget-grid">
         {data.leads && show("leads") ? (
           <Widget
+            accent="crm"
             footer={
               data.leads.followUpsDue > 0
                 ? {
@@ -215,6 +243,7 @@ export function WorkspaceWidgetDashboard({
 
         {data.salesOrders && show("salesOrders") ? (
           <Widget
+            accent="orders"
             footer={
               data.salesOrders.delayedFms > 0
                 ? {
@@ -246,6 +275,7 @@ export function WorkspaceWidgetDashboard({
 
         {data.fms && show("fms") ? (
           <Widget
+            accent="fms"
             footer={
               data.fms.bottleneck
                 ? {
@@ -273,6 +303,7 @@ export function WorkspaceWidgetDashboard({
 
         {data.ims && show("ims") ? (
           <Widget
+            accent="ims"
             footer={
               data.ims.stockOuts > 0
                 ? {
@@ -305,6 +336,7 @@ export function WorkspaceWidgetDashboard({
 
         {tasksEnabled && show("tasks") ? (
           <Widget
+            accent="tasks"
             footer={
               taskStats.overdue > 0
                 ? {
@@ -333,6 +365,7 @@ export function WorkspaceWidgetDashboard({
 
         {data.checklists && show("checklists") ? (
           <Widget
+            accent="checklists"
             footer={
               data.checklists.overdue > 0
                 ? {
@@ -360,6 +393,8 @@ export function WorkspaceWidgetDashboard({
 
         {data.em && show("em") ? (
           <Widget
+            accent="em"
+            alert={data.em.people.length > 0 || data.em.exceptions > 0}
             footer={
               data.em.people.length === 0
                 ? { text: "No deficits this week", tone: "muted" }
@@ -396,6 +431,7 @@ export function WorkspaceWidgetDashboard({
 
         {data.recruitment && show("recruitment") ? (
           <Widget
+            accent="recruitment"
             footer={data.recruitment.active === 0 ? EMPTY_FOOTER : null}
             href="/app/fms/fulfillment?flow=recruitment"
             icon={<Users size={15} />}
@@ -419,7 +455,16 @@ export function WorkspaceWidgetDashboard({
 
         {show("collection") ? (
           <Widget
-            footer={pendingPayments.length === 0 ? EMPTY_FOOTER : null}
+            accent="collection"
+            alert={pendingPayments.length > 0}
+            footer={
+              pendingPayments.length > 0
+                ? {
+                    text: `${pendingPayments.length} payment${pendingPayments.length === 1 ? "" : "s"} to collect`,
+                    tone: "danger",
+                  }
+                : EMPTY_FOOTER
+            }
             href="/app/reports"
             icon={<IndianRupee size={15} />}
             title="Collection follow-up"
