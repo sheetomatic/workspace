@@ -9,10 +9,10 @@ export function HomeProofVideosSection() {
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <div className="section-heading">
           <p>See the systems</p>
-          <h2 id="owner-videos-title">Owner-proof clips — FMS, IMS, EM</h2>
+          <h2 id="owner-videos-title">More owner clips — IMS, EM, Tasks</h2>
           <div className="section-subcopy">
-            Watch how flow delays, inventory, and dashboards work — then enroll in
-            live 1:1 Courses or open Workspace.
+            Inventory, collections dashboards, and task delegation — FMS and
+            WhatsApp→Tasks are in Core Offers above.
           </div>
         </div>
 

@@ -1,6 +1,8 @@
 /**
  * Marketing YouTube catalog + page placements.
  * Add IDs here (youtu.be / watch?v=). Empty youtubeId shows a placeholder.
+ * Rule: when multiple videos share a topic, prefer the newest published.
+ * Channel: @sheetomatic (UCVwyRDGxu0967mnYnGNNnLQ) — RSS + oEmbed Jul 2026.
  */
 
 export type VideoCategory =
@@ -32,8 +34,75 @@ export type ChannelVideo = {
   available?: boolean;
 };
 
-/** Full channel catalog from owner-provided IDs (oEmbed titles, Jul 2026). */
+/** Full channel catalog — newest first within recent uploads, then legacy catalog. */
 export const channelVideos: ChannelVideo[] = [
+  // --- Latest uploads (RSS Jul 2026) ---
+  {
+    youtubeId: "acTJOocmuZM",
+    title:
+      "AI Enabled Flow Monitoring System (FMS) for MSMEs | AI FMS: Dashboard for PC & EA | BCI",
+    category: "FMS",
+  },
+  {
+    youtubeId: "n-bHn6kFuaA",
+    title:
+      "Assign Tasks Automatically Using AI + WhatsApp | Employees Can Update Tasks Directly from WhatsApp",
+    category: "WhatsApp",
+  },
+  {
+    youtubeId: "fyOHfU9F8jo",
+    title:
+      "Build a Payment & Follow-up Dashboard in Google Sheets | Step-by-Step Automation Guide",
+    category: "EM/MIS",
+  },
+  {
+    youtubeId: "fc4pR7oppZc",
+    title: "Add Chart Filter in Data Studio | Interactive Dashboard Tutorial | Easy Guide",
+    category: "EM/MIS",
+  },
+  {
+    youtubeId: "CYq7JpqZ7mo",
+    title: "Auto Data Refresh in Data Studio | No Manual Update | Live Dashboard Guide",
+    category: "EM/MIS",
+  },
+  {
+    youtubeId: "Po9fnDvGBeY",
+    title:
+      "Add Custom Fields in Looker Studio | Create Calculated Fields (Step-by-Step Hindi)",
+    category: "EM/MIS",
+  },
+  {
+    youtubeId: "bXYleWCg200",
+    title:
+      "How to Build FMS System in AppSheet | Stop Manual Work | Without Script & Formula",
+    category: "FMS",
+  },
+  {
+    youtubeId: "JL0WqfO3LdA",
+    title: "Edit Charts in Looker Studio | Customize Dashboard Like a Pro (Hindi)",
+    category: "EM/MIS",
+  },
+  {
+    youtubeId: "F31UoU94CoU",
+    title: "Raw Data to Smart Dashboard | Google Sheets / Looker Studio (Hindi)",
+    category: "EM/MIS",
+  },
+  {
+    youtubeId: "Z8deRw4ywgU",
+    title: "Build Your Own Task Manager | Google Sheets + AppSheet (No Coding)",
+    category: "Tasks/EA",
+  },
+  {
+    youtubeId: "pnlC4YoBz2Y",
+    title: "Make Your Configuration Template | Google Form + AppSheet Automation (Hindi)",
+    category: "Checklists/PC",
+  },
+  {
+    youtubeId: "6Udyudnbddc",
+    title: "Track Your Income & Expense Easily | AppSheet + Google Sheets Tutorial (Hindi)",
+    category: "AppSheet/Sheets",
+  },
+  // --- Legacy catalog ---
   {
     youtubeId: "GFas19FF3fs",
     title: "Inventory Management System in AppSheet | Google Sheets + AppSheet + Looker Studio",
@@ -214,13 +283,17 @@ function toMarketingVideo(
   };
 }
 
-/** Homepage / tasks strip — task delegation for owners */
-export const aiEnabledTasksVideo: MarketingVideo = toMarketingVideo("SZu5X-Z34kc", {
+/**
+ * Homepage Tasks strip — WhatsApp→Tasks (same topic as Core Offers WhatsApp card;
+ * Home page omits this section to keep a clean dual pair in Focus Offers).
+ */
+export const aiEnabledTasksVideo: MarketingVideo = toMarketingVideo("n-bHn6kFuaA", {
   id: "ai-enabled-tasks",
-  label: "Tasks / EA",
-  title: "Task delegation system owners can run from AppSheet",
+  label: "WhatsApp → Tasks",
+  title: "Assign tasks with AI + WhatsApp — team updates from chat",
   description:
-    "Assign work, track status, and stop chasing updates on WhatsApp — the EA module pattern in action.",
+    "Delegate work and let employees update status from WhatsApp — syncs to Sheets, owner sees exceptions.",
+  category: "WhatsApp",
 });
 
 export const aiSectionVideo: MarketingVideo = aiEnabledTasksVideo;
@@ -235,60 +308,66 @@ export const founderVideo: MarketingVideo = {
   youtubeId: "",
 };
 
-/** Services hero stack — YouTube demos */
+/** Services hero stack — YouTube demos (latest per topic) */
 export const servicesDemoVideos = {
   fms: {
-    href: youtubeWatchUrl("PM8E3mCw67Q"),
-    label: "Watch how FMS works",
+    href: youtubeWatchUrl("acTJOocmuZM"),
+    label: "Watch how AI FMS works",
   },
   emReports: {
-    href: youtubeWatchUrl("QrgmCt-LIYA"),
-    label: "Executive reporting demos",
+    href: youtubeWatchUrl("fyOHfU9F8jo"),
+    label: "Payment & follow-up dashboards",
   },
   whatsapp: {
-    href: youtubeWatchUrl("wOdr9JT4oM8"),
-    label: "WhatsApp reminders from Sheets",
+    href: youtubeWatchUrl("n-bHn6kFuaA"),
+    label: "WhatsApp → Tasks automation",
   },
   aiTasks: {
-    href: youtubeWatchUrl("SZu5X-Z34kc"),
-    label: "Watch task delegation",
+    href: youtubeWatchUrl("Z8deRw4ywgU"),
+    label: "Watch task manager build",
   },
 } as const;
 
-/** Per-offer videos (matches focusOffers ids in marketing-content.ts) */
+/**
+ * Per-offer videos (matches focusOffers ids) — Home’s primary dual pair:
+ * FMS + WhatsApp→Tasks (newest published for each topic).
+ */
 export const offerVideos: Record<string, MarketingVideo> = {
-  "ai-workspace": toMarketingVideo("PM8E3mCw67Q", {
+  "ai-workspace": toMarketingVideo("acTJOocmuZM", {
     id: "video-ai-workspace",
     label: "FMS",
-    title: "Build FMS in Sheets — track delays stage by stage",
+    title: "AI-enabled FMS — PC & EA dashboards for MSMEs",
     description:
-      "See planned vs actual, owners, and delay tracking — the Flow Monitoring habit MSME owners need before EM.",
+      "Live ops board, delay alerts, and PC/EA panels — Flow Monitoring without chasing updates before EM.",
   }),
-  "whatsapp-ai": toMarketingVideo("wOdr9JT4oM8", {
+  "whatsapp-ai": toMarketingVideo("n-bHn6kFuaA", {
     id: "video-whatsapp-ai",
-    label: "WhatsApp",
-    title: "Send Google Sheets reminders to WhatsApp",
+    label: "WhatsApp → Tasks",
+    title: "Assign tasks with AI + WhatsApp — updates from chat",
     description:
-      "Internal ops nudges from your system — due dates and follow-ups where the team already works.",
+      "Employees update work from WhatsApp; data syncs to Sheets — conversations become owned tasks.",
   }),
 };
 
-/** Homepage proof clips (visual, not a text wall) */
+/**
+ * Homepage proof clips — supporting systems only (no FMS / WhatsApp→Tasks;
+ * those live once in Core Offers).
+ */
 export const homeProofVideos: MarketingVideo[] = [
-  toMarketingVideo("PM8E3mCw67Q", {
-    id: "home-fms",
-    label: "FMS",
-    description: "Flow monitoring with delay tracking — owner control without chasing.",
-  }),
   toMarketingVideo("GFas19FF3fs", {
     id: "home-ims",
     label: "IMS",
     description: "Inventory in AppSheet + Sheets + Looker — stock truth for EM.",
   }),
-  toMarketingVideo("ezEqmrtIHtE", {
+  toMarketingVideo("fyOHfU9F8jo", {
     id: "home-mis",
     label: "EM / MIS",
-    description: "Owner dashboards from Sheets — pivot, charts, slicers.",
+    description: "Payment & follow-up dashboard — collections without spreadsheet chaos.",
+  }),
+  toMarketingVideo("Z8deRw4ywgU", {
+    id: "home-tasks",
+    label: "Tasks / EA",
+    description: "Task manager in Sheets + AppSheet — owners and status without coding.",
   }),
 ];
 
@@ -299,15 +378,15 @@ export const coursesFeaturedVideos: MarketingVideo[] = [
     label: "AppSheet",
     description: "No-code apps from Google Sheets — foundation of the owner program.",
   }),
-  toMarketingVideo("PM8E3mCw67Q", {
+  toMarketingVideo("acTJOocmuZM", {
     id: "courses-fms",
     label: "FMS",
-    description: "Build Flow Monitoring with stage delays — core of weekly EM.",
+    description: "AI-enabled Flow Monitoring with PC & EA panels — core of weekly EM.",
   }),
-  toMarketingVideo("QrgmCt-LIYA", {
+  toMarketingVideo("F31UoU94CoU", {
     id: "courses-looker",
     label: "EM / MIS",
-    description: "Looker Studio for beginners — executive boards owners can read.",
+    description: "Raw data to smart dashboard — Looker Studio boards owners can read.",
   }),
 ];
 
@@ -316,18 +395,18 @@ export const coursesLibraryVideos: ChannelVideo[] = channelVideos.filter(
   (v) =>
     v.available !== false &&
     [
-      "JNyOlDI4TwY",
+      "acTJOocmuZM",
+      "n-bHn6kFuaA",
+      "Z8deRw4ywgU",
       "ajVRGjaOMhI",
       "pAJMkk0taIo",
       "UkXRQoG1mEA",
       "l2gd7ENfpww",
-      "wOdr9JT4oM8",
+      "fyOHfU9F8jo",
       "sjbnrQgorm8",
       "BpCzXblijEk",
-      "UgeuufRYTlo",
+      "bXYleWCg200",
       "hXGuRjKkMDM",
-      "SZu5X-Z34kc",
-      "OL2yL76OOUQ",
     ].includes(v.youtubeId),
 );
 
@@ -346,10 +425,10 @@ export const serviceDetailVideos: Partial<
     MarketingVideo
   >
 > = {
-  flow: toMarketingVideo("PM8E3mCw67Q", {
+  flow: toMarketingVideo("acTJOocmuZM", {
     id: "service-flow",
     label: "FMS",
-    description: "Stage owners, proofs, and delay tracking from enquiry to closure.",
+    description: "AI FMS with PC & EA dashboards — stage owners, proofs, and delay alerts.",
   }),
   inventory: toMarketingVideo("GFas19FF3fs", {
     id: "service-inventory",
@@ -361,20 +440,20 @@ export const serviceDetailVideos: Partial<
     label: "PC / Process",
     description: "Attendance & leave as a process checklist discipline — owners, exceptions, proof.",
   }),
-  tasks: toMarketingVideo("SZu5X-Z34kc", {
+  tasks: toMarketingVideo("Z8deRw4ywgU", {
     id: "service-tasks",
     label: "Tasks / EA",
-    description: "Task delegation with clear owners and status — EA module pattern.",
+    description: "Task manager with clear owners and status — Sheets + AppSheet, no coding.",
   }),
-  mis: toMarketingVideo("QrgmCt-LIYA", {
+  mis: toMarketingVideo("fyOHfU9F8jo", {
     id: "service-mis",
     label: "EM / MIS",
-    description: "Looker Studio for executive reporting — Monday board without MIS prep hire.",
+    description: "Payment & follow-up dashboard — Monday board without MIS prep hire.",
   }),
-  "whatsapp-ai": toMarketingVideo("hXGuRjKkMDM", {
+  "whatsapp-ai": toMarketingVideo("n-bHn6kFuaA", {
     id: "service-whatsapp",
-    label: "WhatsApp",
-    description: "Product catalogs on WhatsApp via QR — ops where customers and teams already are.",
+    label: "WhatsApp → Tasks",
+    description: "Assign and update tasks from WhatsApp — ops where the team already works.",
   }),
   crm: toMarketingVideo("UkXRQoG1mEA", {
     id: "service-crm",
@@ -390,19 +469,19 @@ export const serviceDetailVideos: Partial<
 
 /** Compact band on /services hub */
 export const servicesHubVideos: MarketingVideo[] = [
-  toMarketingVideo("PM8E3mCw67Q", {
+  toMarketingVideo("acTJOocmuZM", {
     id: "hub-fms",
     label: "FMS",
-    description: "Flow monitoring with delay tracking.",
+    description: "AI-enabled flow monitoring with PC & EA panels.",
   }),
   toMarketingVideo("ajVRGjaOMhI", {
     id: "hub-ims",
     label: "IMS",
     description: "Smart inventory app on AppSheet.",
   }),
-  toMarketingVideo("BUodhwB6y4I", {
+  toMarketingVideo("fyOHfU9F8jo", {
     id: "hub-mis",
     label: "EM / MIS",
-    description: "Owner dashboards from Google Sheets.",
+    description: "Payment & follow-up dashboards from Google Sheets.",
   }),
 ];

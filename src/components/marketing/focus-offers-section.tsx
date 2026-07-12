@@ -17,10 +17,11 @@ export function FocusOffersSection() {
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <div className="section-heading">
           <p>Core offers</p>
-          <h2>Workspace and WhatsApp AI</h2>
+          <h2>Watch FMS and WhatsApp → Tasks</h2>
           <div className="section-subcopy">
-            Two products on one operating system - margin protected, Monday
-            clarity, team accountability without owner firefighting.
+            Two latest demos — AI-enabled Flow Monitoring, then tasks assigned
+            and updated from WhatsApp. Same operating system: Monday clarity
+            without owner firefighting.
           </div>
         </div>
 

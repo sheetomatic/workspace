@@ -14,19 +14,18 @@ export function AiEnabledTasksSection() {
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <div className="video-hero-strip-inner">
           <div className="video-hero-strip-copy">
-            <p className="video-hero-strip-kicker">Tasks / EA</p>
+            <p className="video-hero-strip-kicker">WhatsApp → Tasks</p>
             <h2 id="ai-enabled-tasks-title">
-              Delegate work. See pending as deficit — not chatter.
+              Assign from AI. Update from WhatsApp.
             </h2>
             <p>
-              Task delegation with clear owners and status. Train the EA habit
-              in Courses, then run it in Sheetomatic Workspace with WhatsApp
-              alerts for staff.
+              Conversations become owned tasks — employees update status in chat,
+              data syncs to Sheets, and the owner reviews exceptions on EM.
             </p>
             <ul className="ai-tasks-feature-list">
-              <li>Owners, due dates, and status in one system</li>
+              <li>Assign tasks with AI + WhatsApp automation</li>
+              <li>Employees update work directly from WhatsApp</li>
               <li>Pending and delayed work visible for EM</li>
-              <li>WhatsApp nudges for staff — owner reviews exceptions</li>
             </ul>
             <div className="minimal-hero-actions mt-6">
               <MarketingLinkButton href={WORKSPACE_LOGIN_HREF} variant="primary">

@@ -3,7 +3,6 @@ import { WorkShowcaseSection } from "./client-projects-showcase";
 import { BciFrameworkSection } from "./bci-framework-section";
 import { FocusOffersSection } from "./focus-offers-section";
 import { HowWeWorkSection } from "./how-we-work-section";
-import { AiEnabledTasksSection } from "./ai-enabled-tasks-section";
 import { HomeProofVideosSection } from "./home-proof-videos-section";
 import { UspSection } from "./usp-section";
 import {
@@ -27,15 +26,15 @@ export function HomePage() {
 
       <BciFrameworkSection />
 
+      {/* Primary dual pair: FMS + WhatsApp→Tasks */}
+      <FocusOffersSection />
+
+      {/* Supporting clips only — no FMS / WhatsApp→Tasks duplicates */}
       <HomeProofVideosSection />
 
       <WorkShowcaseSection />
 
       <UspSection />
-
-      <AiEnabledTasksSection />
-
-      <FocusOffersSection />
 
       <FinalCta />
       <SiteFooter />
