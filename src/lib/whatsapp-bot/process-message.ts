@@ -801,7 +801,9 @@ async function maybeAcknowledgeFormResponse(
     organizationName: org.name,
     fromPhone: message.from,
     contactId: contact.id,
-    sendReply: (text) => replyText(org.id, message.from, text),
+    sendReply: async (text) => {
+      await replyText(org.id, message.from, text);
+    },
   });
 
   if (!acked) {
