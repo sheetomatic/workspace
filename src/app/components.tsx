@@ -7,7 +7,6 @@ import { marketingButtonClass } from "@/components/marketing/marketing-button-cl
 import { PhoneIcon } from "@/components/marketing/marketing-icons";
 import { SocialLinks } from "@/components/marketing/social-links";
 import {
-  contactDetails,
   footerCompanyLinks,
   footerProductLinks,
 } from "./page-content";
@@ -16,6 +15,7 @@ import { BrandIconMark } from "@/components/brand/brand-icon-mark";
 import {
   finalCtaContent,
   siteBrand,
+  whatsappPhone,
   whatsappTel,
   whatsappDisplayNumber,
 } from "./site-content";
@@ -93,6 +93,8 @@ export function SiteHeader() {
 }
 
 export function SiteFooter() {
+  const year = new Date().getFullYear();
+
   return (
     <footer className="site-footer-saas">
       <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8">
@@ -101,12 +103,6 @@ export function SiteFooter() {
             <SiteBrand variant="footer" />
             <p>{siteBrand.footerDescription}</p>
             <SocialLinks variant="footer" />
-            <ContactButtons
-              className="footer-reach-stack"
-              whatsappClassName="btn-footer-cta"
-              whatsappLabel={whatsappDisplayNumber}
-              callClassName="btn-footer-cta"
-            />
           </div>
           <div className="site-footer-links">
             <p className="site-footer-col-label">Product</p>
@@ -129,29 +125,34 @@ export function SiteFooter() {
             </nav>
           </div>
           <div className="site-footer-reach">
-            <p className="site-footer-col-label">Reach us</p>
+            <p className="site-footer-col-label">Contact</p>
             <div className="footer-reach-stack">
-              <ContactButtons
-                className="footer-reach-stack"
-                whatsappClassName="footer-inline-btn footer-whatsapp-btn"
-                whatsappLabel={contactDetails.whatsappNumber}
-                callClassName="footer-inline-btn"
-                callLabel="Call now"
-              />
               <a
-                className="footer-website-link"
-                href={contactDetails.websiteUrl}
-                target="_blank"
+                className="footer-contact-line"
+                href={`https://wa.me/${whatsappPhone}`}
                 rel="noopener noreferrer"
+                target="_blank"
               >
-                {contactDetails.website}
+                {whatsappDisplayNumber}
               </a>
+              <Link className="footer-demo-link" href="/contact">
+                Book a demo →
+              </Link>
             </div>
           </div>
         </div>
         <div className="site-footer-bottom">
-          <span>{siteBrand.footerBottomLine}</span>
-          <span>{siteBrand.tagline}</span>
+          <div className="site-footer-legal">
+            <span>
+              © {year} {siteBrand.name}. All rights reserved.
+            </span>
+            <span className="site-footer-updated">
+              Last updated {siteBrand.footerLastUpdated}
+            </span>
+          </div>
+          <nav aria-label="Legal" className="site-footer-legal-links">
+            <Link href="/terms">Terms &amp; Conditions</Link>
+          </nav>
         </div>
       </div>
     </footer>

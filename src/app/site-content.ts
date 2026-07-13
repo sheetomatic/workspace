@@ -39,8 +39,10 @@ export const siteBrand = {
   brandKitPath: "/brand/kit",
   logoAlt: "Sheetomatic logo",
   footerDescription:
-    "Sheetomatic Workspace and Sheetomatic AI — AI-Powered Business Automation for system-driven MSMEs. FMS, IMS, Full Kitting, Process Coordinator, Executive Assistant, and Review Rhythm in one operating system.",
+    "EM Ready ops for Indian MSMEs — FMS, IMS, tasks, checklists, and weekly reviews in one system.",
   footerBottomLine: "Sheetomatic · sheetomatic.com",
+  /** Shown in marketing footer legal row — update when terms or legal pages change. */
+  footerLastUpdated: "13 July 2026",
 };
 
 export const finalCtaContent = {

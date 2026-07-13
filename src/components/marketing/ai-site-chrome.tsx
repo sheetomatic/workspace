@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { siteBrand, whatsappDisplayNumber } from "@/app/site-content";
 import { BrandIconMark } from "@/components/brand/brand-icon-mark";
-import { ContactButtons } from "@/components/marketing/marketing-buttons";
 import { AI_LOGIN_HREF, AI_START_FREE_HREF } from "@/lib/ai-auth-links";
 
 const aiNav = [
@@ -71,6 +70,8 @@ export function AiSiteHeader() {
 }
 
 export function AiSiteFooter() {
+  const year = new Date().getFullYear();
+
   return (
     <footer className="site-footer-saas ai-site-footer">
       <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8">
@@ -86,19 +87,21 @@ export function AiSiteFooter() {
               </span>
             </Link>
             <p>
-              Automate WhatsApp with AI replies, team inbox, and lead capture -
+              Automate WhatsApp with AI replies, team inbox, and lead capture —
               built for Indian MSMEs.
             </p>
           </div>
-          <div>
+          <div className="site-footer-links">
             <p className="site-footer-col-label">Product</p>
-            <Link href="/ai/chatbot">AI Chatbot</Link>
-            <Link href="/ai/crm">CRM & Inbox</Link>
-            <Link href="/ai/pricing">Pricing</Link>
-            <Link href={AI_START_FREE_HREF}>Start free</Link>
-            <Link href={AI_LOGIN_HREF}>Sign in</Link>
+            <nav aria-label="AI product links">
+              <Link href="/ai/chatbot">AI Chatbot</Link>
+              <Link href="/ai/crm">CRM & Inbox</Link>
+              <Link href="/ai/pricing">Pricing</Link>
+              <Link href={AI_START_FREE_HREF}>Start free</Link>
+              <Link href={AI_LOGIN_HREF}>Sign in</Link>
+            </nav>
           </div>
-          <div>
+          <div className="site-footer-links">
             <p className="site-footer-col-label">Company</p>
             <nav aria-label="Sheetomatic company links">
               <Link href="/">Main website</Link>
@@ -108,18 +111,29 @@ export function AiSiteFooter() {
               <Link href="/career">Careers</Link>
               <Link href="/contact">Contact</Link>
             </nav>
-            <ContactButtons
-              className="mt-3"
-              whatsappClassName="footer-inline-btn footer-whatsapp-btn"
-              whatsappLabel={whatsappDisplayNumber}
-              callClassName="footer-inline-btn"
-              callLabel="Call"
-            />
+          </div>
+          <div className="site-footer-reach">
+            <p className="site-footer-col-label">Contact</p>
+            <div className="footer-reach-stack">
+              <span className="footer-contact-line">{whatsappDisplayNumber}</span>
+              <Link className="footer-demo-link" href="/contact">
+                Book a demo →
+              </Link>
+            </div>
           </div>
         </div>
         <div className="site-footer-bottom">
-          <span>Sheetomatic AI by {siteBrand.name}</span>
-          <span>WhatsApp automation for growing businesses</span>
+          <div className="site-footer-legal">
+            <span>
+              © {year} {siteBrand.name}. All rights reserved.
+            </span>
+            <span className="site-footer-updated">
+              Last updated {siteBrand.footerLastUpdated}
+            </span>
+          </div>
+          <nav aria-label="Legal" className="site-footer-legal-links">
+            <Link href="/terms">Terms &amp; Conditions</Link>
+          </nav>
         </div>
       </div>
     </footer>

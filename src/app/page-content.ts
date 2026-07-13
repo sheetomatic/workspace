@@ -22,21 +22,17 @@ export const footerCompanyLinks = [
   { href: "/contact", label: "Contact" },
   { href: "/career", label: "Careers" },
   { href: "/courses", label: "Courses" },
-  { href: "/terms", label: "Terms" },
 ];
 
 export const footerProductLinks = [
   { href: "/products", label: "BCI Suite" },
-  { href: "/pricing", label: "EM Ready plans" },
-  { href: WORKSPACE_LOGIN_HREF, label: "Sheetomatic Workspace" },
-  { href: "/ai", label: "Sheetomatic AI" },
-  { href: "/whatsapp-plans", label: "WhatsApp API" },
   { href: "/services/flow", label: "FMS" },
   { href: "/services/inventory", label: "IMS" },
-  { href: "/services/checklist", label: "Checklist (PC Module)" },
-  { href: "/services/tasks", label: "Tasks (EA Module)" },
-  { href: "/services/mis", label: "Executive Meeting" },
-  { href: "/services/automation", label: "Custom Software" },
+  { href: "/services/checklist", label: "Checklists" },
+  { href: "/services/tasks", label: "Tasks" },
+  { href: "/ai", label: "Sheetomatic AI" },
+  { href: "/pricing", label: "Pricing" },
+  { href: WORKSPACE_LOGIN_HREF, label: "Sign in" },
 ];
 
 /** Services hub industry cards — each links to a relevant module, not generic anchors */
