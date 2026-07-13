@@ -41,18 +41,20 @@ export const WORKSPACE_MODULE_HREFS: Partial<Record<WorkspaceModule, string>> = 
   REPORTS: "/app/reports",
 };
 
-/** Defaults when admin leaves modules empty (legacy rows use migration backfill). */
+/** Defaults when admin leaves modules empty (legacy rows use migration backfill).
+ * HR is included for managers/staff so invites inherit HRMS when the org allows it
+ * (clamped by org `allowedModules` / invite form). */
 export function defaultModulesForRole(role: Role): WorkspaceModule[] {
   if (hasMinimumRole(role, "ADMIN")) {
     return [...PLATFORM_WORKSPACE_MODULES];
   }
   if (role === "MANAGER") {
-    return ["TASKS", "FMS", "CRM", "IMS", "APPROVALS", "REPORTS"];
+    return ["TASKS", "FMS", "CRM", "HR", "IMS", "APPROVALS", "REPORTS"];
   }
   if (role === "STAFF") {
-    return ["TASKS", "FMS", "CRM"];
+    return ["TASKS", "FMS", "CRM", "HR"];
   }
-  return ["TASKS", "FMS", "CRM"];
+  return ["TASKS", "FMS", "CRM", "HR"];
 }
 
 export function resolveMemberModules(

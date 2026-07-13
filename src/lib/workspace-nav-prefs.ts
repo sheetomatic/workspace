@@ -13,13 +13,14 @@ export type WorkspaceNavPrefs = {
 };
 
 /**
- * Calm first experience: BCI suite ids + CRM (`leads`, separate SKU) + Tasks.
- * CRM show/hide is independent — not nested under BCI in the sidebar.
- * Departments stay tucked behind Customize.
+ * Calm first experience: BCI suite ids + sellable SKUs (CRM, HRMS) + Tasks.
+ * CRM/HRMS show/hide is independent — not nested under BCI in the sidebar.
+ * Departments / IMS stay tucked behind Customize (still module-gated).
  */
 export const DEFAULT_FOCUSED_NAV_IDS = [
   "fms",
   "leads",
+  "dept-hr",
   "checklists",
   "ea",
   "pc",

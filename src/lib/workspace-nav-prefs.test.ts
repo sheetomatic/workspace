@@ -9,14 +9,15 @@ import {
 } from "@/lib/workspace-nav-prefs";
 
 describe("workspace-nav-prefs", () => {
-  it("defaults to focus mode with BCI suite + CRM + Tasks", () => {
+  it("defaults to focus mode with BCI suite + CRM + HRMS + Tasks", () => {
     const prefs = parseWorkspaceNavPrefs(null);
     expect(prefs).toEqual(DEFAULT_WORKSPACE_NAV_PREFS);
     expect(prefs.mode).toBe("focus");
     for (const id of DEFAULT_FOCUSED_NAV_IDS) {
       expect(isNavIdVisible(prefs, id)).toBe(true);
     }
-    expect(isNavIdVisible(prefs, "dept-hr")).toBe(false);
+    expect(isNavIdVisible(prefs, "dept-hr")).toBe(true);
+    expect(isNavIdVisible(prefs, "dept-store")).toBe(false);
     expect(isNavIdVisible(prefs, "settings")).toBe(true);
   });
 
@@ -45,7 +46,7 @@ describe("workspace-nav-prefs", () => {
     expect(isDashboardWidgetVisible(prefs, "leads")).toBe(true);
     expect(isDashboardWidgetVisible(prefs, "fms")).toBe(true);
     expect(isDashboardWidgetVisible(prefs, "ims")).toBe(false);
-    expect(isDashboardWidgetVisible(prefs, "recruitment")).toBe(false);
+    expect(isDashboardWidgetVisible(prefs, "recruitment")).toBe(true);
     expect(isDashboardWidgetVisible(prefs, "collection")).toBe(true);
   });
 });

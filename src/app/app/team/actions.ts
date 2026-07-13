@@ -31,7 +31,11 @@ import {
   isAtMemberLimit,
   memberLimitMessage,
 } from "@/lib/org-plan-context";
-import { parseModulesFromForm, resolveMemberModules } from "@/lib/workspace-modules";
+import {
+  defaultModulesForRole,
+  parseModulesFromForm,
+  resolveMemberModules,
+} from "@/lib/workspace-modules";
 
 export type TeamActionState = {
   ok: boolean;
@@ -260,14 +264,21 @@ export async function inviteTeamMember(
   }
 
   const formModules = parseModulesFromForm(formData);
+  const roleDefaultModules = clampModulesToOrg(
+    defaultModulesForRole(role),
+    orgPlan.orgAllowedModules,
+  );
   let modules = resolveModulesForOrg({
     role,
     formModules,
-    fallbackModules: modulesForTierRole(orgPlan.plan, role),
+    fallbackModules: roleDefaultModules,
     orgAllowedModules: orgPlan.orgAllowedModules,
   });
   if (modules.length === 0) {
-    modules = modulesForTierRole(orgPlan.plan, role);
+    modules =
+      roleDefaultModules.length > 0
+        ? roleDefaultModules
+        : modulesForTierRole(orgPlan.plan, role);
   }
 
   await assertOrganizationAccess(user.organizationId, user.id);
@@ -580,6 +591,10 @@ export async function updateTeamMemberDetails(
   }
 
   const formModules = parseModulesFromForm(formData);
+  const roleDefaultModules = clampModulesToOrg(
+    defaultModulesForRole(role),
+    orgPlan.orgAllowedModules,
+  );
   let modules = resolveModulesForOrg({
     role,
     formModules,
@@ -587,7 +602,10 @@ export async function updateTeamMemberDetails(
     orgAllowedModules: orgPlan.orgAllowedModules,
   });
   if (modules.length === 0) {
-    modules = modulesForTierRole(orgPlan.plan, role);
+    modules =
+      roleDefaultModules.length > 0
+        ? roleDefaultModules
+        : modulesForTierRole(orgPlan.plan, role);
   }
 
   await prisma.user.update({
