@@ -160,12 +160,16 @@ export async function checkInAttendance(params: {
   }
 
   const resolvedSiteId = preferredSiteId ?? siteGeo?.id ?? null;
-  const settings = await getOrCreateHrSettings(params.user.organizationId);
+  const { resolveEmployeeTiming } = await import("@/lib/hr/shifts");
+  const timing = await resolveEmployeeTiming(
+    params.user.organizationId,
+    params.user.id,
+  );
   const checkInAt = new Date();
   const isLate = isCheckInLate({
     checkInAt,
-    workStartTime: settings.workStartTime,
-    lateGraceMinutes: settings.lateGraceMinutes,
+    workStartTime: timing.workStartTime,
+    lateGraceMinutes: timing.lateGraceMinutes,
   });
 
   return prisma.attendanceRecord.upsert({
@@ -232,19 +236,21 @@ export async function checkOutAttendance(user: SessionUser) {
   }
 
   const checkOutAt = new Date();
-  const [settings, profile] = await Promise.all([
-    getOrCreateHrSettings(user.organizationId),
+  const [{ resolveEmployeeTiming }, profile] = await Promise.all([
+    import("@/lib/hr/shifts"),
     prisma.employeeProfile.findFirst({
       where: { organizationId: user.organizationId, userId: user.id },
       select: { collarCategory: true },
     }),
   ]);
+  const timing = await resolveEmployeeTiming(user.organizationId, user.id);
 
   let otHours = existing.otHours ?? 0;
   if (profile?.collarCategory === "BLUE") {
     const autoOt = computeOtHoursFromCheckout({
       checkOutAt,
-      workEndTime: settings.workEndTime,
+      workStartTime: timing.workStartTime,
+      workEndTime: timing.workEndTime,
     });
     otHours = Math.max(otHours, autoOt);
   }

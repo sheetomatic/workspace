@@ -742,6 +742,52 @@ export async function deleteHrWorkSiteAction(siteId: string): Promise<void> {
   revalidatePath("/app/team");
 }
 
+export async function saveHrShiftAction(formData: FormData): Promise<void> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "ADMIN")) {
+    throw new Error("Admin only.");
+  }
+
+  const id = String(formData.get("id") ?? "").trim() || undefined;
+  const name = String(formData.get("name") ?? "").trim();
+  const code = String(formData.get("code") ?? "").trim() || null;
+  const startTime = String(formData.get("startTime") ?? "09:30").trim();
+  const endTime = String(formData.get("endTime") ?? "18:30").trim();
+  const isDefault = formData.get("isDefault") === "on";
+  const isActive = id
+    ? formData.get("isActive") === "on"
+    : true;
+
+  const { saveHrShift } = await import("@/lib/hr/shifts");
+  await saveHrShift(user.organizationId, {
+    id,
+    name,
+    code,
+    startTime,
+    endTime,
+    isDefault,
+    isActive,
+  });
+
+  revalidateHr();
+  revalidatePath("/app/team");
+  revalidatePath("/app/hr/employees");
+}
+
+export async function deleteHrShiftAction(shiftId: string): Promise<void> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "ADMIN")) {
+    throw new Error("Admin only.");
+  }
+
+  const { deleteHrShift } = await import("@/lib/hr/shifts");
+  await deleteHrShift(user.organizationId, shiftId.trim());
+
+  revalidateHr();
+  revalidatePath("/app/team");
+  revalidatePath("/app/hr/employees");
+}
+
 function parseOptionalNumber(raw: FormDataEntryValue | null): number | null | undefined {
   if (raw == null) return undefined;
   const s = String(raw).trim();
@@ -836,6 +882,7 @@ export async function upsertEmployeeProfileAction(
           ? "BLUE"
           : "WHITE",
       hourlyRate: parseOptionalNumber(formData.get("hourlyRate")),
+      shiftId: String(formData.get("shiftId") ?? "").trim() || null,
     });
     revalidateHr();
     revalidatePath("/app/team");

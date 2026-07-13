@@ -71,6 +71,8 @@ export type EmployeeProfileInput = {
   ifsc?: string | null;
   collarCategory?: "WHITE" | "BLUE";
   hourlyRate?: number | null;
+  /** Assigned shift; empty/null clears to org default timing. */
+  shiftId?: string | null;
 };
 
 export type EmployeeListItem = {
@@ -85,6 +87,8 @@ export type EmployeeListItem = {
   monthlySalary: number | null;
   dateOfJoining: string | null;
   deactivatedAt: string | null;
+  shiftId: string | null;
+  shiftName: string | null;
   profile: {
     id: string;
     employeeCode: string;
@@ -140,6 +144,8 @@ function mapListItem(
     monthlySalary: Decimal | null;
     dateOfJoining: Date | null;
     deactivatedAt: Date | null;
+    shiftId: string | null;
+    shift: { id: string; name: string } | null;
     user: { name: string | null; email: string };
     employeeProfile: {
       id: string;
@@ -177,6 +183,8 @@ function mapListItem(
     monthlySalary: num(row.monthlySalary),
     dateOfJoining: ymd(row.dateOfJoining),
     deactivatedAt: row.deactivatedAt ? row.deactivatedAt.toISOString() : null,
+    shiftId: row.shiftId,
+    shiftName: row.shift?.name ?? null,
     profile: profile
       ? {
           id: profile.id,
@@ -232,6 +240,8 @@ export async function listEmployees(
       monthlySalary: true,
       dateOfJoining: true,
       deactivatedAt: true,
+      shiftId: true,
+      shift: { select: { id: true, name: true } },
       user: { select: { name: true, email: true } },
       employeeProfile: {
         select: {
@@ -288,6 +298,7 @@ export async function getEmployeeForForm(
     where: { id: membershipId, organizationId },
     include: {
       user: { select: { name: true, email: true } },
+      shift: { select: { id: true, name: true, startTime: true, endTime: true } },
       employeeProfile: {
         include: {
           documents: {
@@ -324,6 +335,10 @@ export async function getEmployeeForForm(
     monthlySalary: num(row.monthlySalary),
     staffCode: row.staffCode,
     deactivatedAt: row.deactivatedAt,
+    shiftId: row.shiftId,
+    shiftName: row.shift?.name ?? null,
+    shiftStartTime: row.shift?.startTime ?? null,
+    shiftEndTime: row.shift?.endTime ?? null,
     profile: p
       ? {
           id: p.id,
@@ -388,6 +403,8 @@ export async function getEmployee(
     monthlySalary: form.monthlySalary,
     dateOfJoining: ymd(form.dateOfJoining),
     deactivatedAt: form.deactivatedAt ? form.deactivatedAt.toISOString() : null,
+    shiftId: form.shiftId,
+    shiftName: form.shiftName,
     profile: {
       id: form.profile.id,
       employeeCode: form.profile.employeeCode,
@@ -466,6 +483,23 @@ export async function upsertEmployeeProfile(
   const pan = input.pan?.trim().toUpperCase() || null;
   const staffCode = (input.staffCode?.trim() || code).toUpperCase();
 
+  let nextShiftId: string | null | undefined = input.shiftId;
+  if (input.shiftId !== undefined) {
+    const trimmed = input.shiftId?.trim() || null;
+    if (trimmed) {
+      const shift = await prisma.hrShift.findFirst({
+        where: { id: trimmed, organizationId, isActive: true },
+        select: { id: true },
+      });
+      if (!shift) {
+        throw new Error("Selected shift is not available in this workspace.");
+      }
+      nextShiftId = shift.id;
+    } else {
+      nextShiftId = null;
+    }
+  }
+
   const profileData = {
     employeeCode: code,
     employmentType: input.employmentType ?? "FULL_TIME",
@@ -519,6 +553,7 @@ export async function upsertEmployeeProfile(
         ...(input.monthlySalary !== undefined
           ? { monthlySalary: decOrNull(input.monthlySalary) }
           : {}),
+        ...(nextShiftId !== undefined ? { shiftId: nextShiftId } : {}),
         staffCode,
         ...(profileData.status === "EXITED"
           ? { deactivatedAt: new Date() }

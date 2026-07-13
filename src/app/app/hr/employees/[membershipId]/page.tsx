@@ -8,6 +8,7 @@ import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import { getEmployeeForForm } from "@/lib/hr/employees";
 import { getOnboardingChecklist } from "@/lib/hr/onboarding";
+import { listHrShifts } from "@/lib/hr/shifts";
 
 type PageProps = {
   params: Promise<{ membershipId: string }>;
@@ -29,12 +30,15 @@ export default async function HrEmployeeDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const checklist = data.profile
-    ? await getOnboardingChecklist({
-        organizationId: user.organizationId,
-        employeeProfileId: data.profile.id,
-      })
-    : null;
+  const [checklist, shifts] = await Promise.all([
+    data.profile
+      ? getOnboardingChecklist({
+          organizationId: user.organizationId,
+          employeeProfileId: data.profile.id,
+        })
+      : Promise.resolve(null),
+    listHrShifts(user.organizationId, true),
+  ]);
 
   const canCompleteOnboarding =
     Boolean(data.profile) && (isAdmin || data.userId === user.id);
@@ -81,6 +85,12 @@ export default async function HrEmployeeDetailPage({ params }: PageProps) {
           data={data}
           canEdit={isAdmin}
           canEditDocs={isAdmin || data.userId === user.id}
+          shifts={shifts.map((s) => ({
+            id: s.id,
+            name: s.name,
+            startTime: s.startTime,
+            endTime: s.endTime,
+          }))}
         />
       </section>
     </div>

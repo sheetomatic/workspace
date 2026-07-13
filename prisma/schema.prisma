@@ -171,6 +171,7 @@ model Organization {
   aiKnowledgeItems  AiKnowledgeItem[]
   hrSettings        WorkspaceHrSettings?
   hrWorkSites         HrWorkSite[]
+  hrShifts            HrShift[]
   hrHolidays          HrHoliday[]
   attendanceRecords AttendanceRecord[]
   attendanceExceptionRequests AttendanceExceptionRequest[]
@@ -1019,6 +1020,9 @@ model Membership {
   locationMode       EmployeeLocationMode @default(FIXED_SITE)
   primarySiteId      String?
   primarySite        HrWorkSite?          @relation("MembershipPrimarySite", fields: [primarySiteId], references: [id], onDelete: SetNull)
+  /** Assigned shift timing; null falls back to org default work hours. */
+  shiftId            String?
+  shift              HrShift?             @relation(fields: [shiftId], references: [id], onDelete: SetNull)
   /** Preferred weekly off: 0=Sun … 6=Sat. Null = Sunday (0). */
   weeklyOffDay       Int?
   geoFenceRequired   Boolean              @default(false)
@@ -1044,6 +1048,7 @@ model Membership {
   @@index([organizationId, isDepartmentHead])
   @@index([reportingManagerId])
   @@index([primarySiteId])
+  @@index([shiftId])
 }
 
 model Account {
@@ -1231,6 +1236,27 @@ model HrWorkSite {
   attendanceRecords AttendanceRecord[]
   primaryMembers  Membership[]       @relation("MembershipPrimarySite")
 
+  @@index([organizationId, isActive])
+}
+
+/** Named work shift (General / Morning / Night) with start/end timing. */
+model HrShift {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  /** Optional short code e.g. GEN, MOR, NIGHT. */
+  code           String?
+  startTime      String
+  endTime        String
+  isDefault      Boolean      @default(false)
+  isActive       Boolean      @default(true)
+  sortOrder      Int          @default(0)
+  members        Membership[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, name])
   @@index([organizationId, isActive])
 }
 

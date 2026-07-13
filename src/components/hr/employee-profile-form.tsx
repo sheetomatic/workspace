@@ -24,6 +24,8 @@ export type EmployeeProfileFormData = {
   dateOfJoining: Date | string | null;
   monthlySalary: number | null;
   staffCode: string | null;
+  shiftId?: string | null;
+  shiftName?: string | null;
   profile: {
     id: string;
     employeeCode: string;
@@ -63,16 +65,25 @@ export type EmployeeProfileFormData = {
   } | null;
 };
 
+export type EmployeeShiftOption = {
+  id: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+};
+
 export function EmployeeProfileForm({
   data,
   canEdit,
   canEditDocs,
+  shifts = [],
 }: {
   data: EmployeeProfileFormData;
   /** Salary / sensitive profile fields — ADMIN only. */
   canEdit: boolean;
   /** Document upload/delete — ADMIN or self. Defaults to canEdit. */
   canEditDocs?: boolean;
+  shifts?: EmployeeShiftOption[];
 }) {
   const docsEditable = canEditDocs ?? canEdit;
   const router = useRouter();
@@ -271,6 +282,21 @@ export function EmployeeProfileForm({
               />
             </label>
             <label>
+              Shift &amp; timing
+              <select
+                name="shiftId"
+                defaultValue={data.shiftId ?? ""}
+                disabled={!canEdit}
+              >
+                <option value="">Org default hours</option>
+                {shifts.map((shift) => (
+                  <option key={shift.id} value={shift.id}>
+                    {shift.name} ({shift.startTime}–{shift.endTime})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
               Category (White / Blue)
               <select
                 name="collarCategory"
@@ -295,8 +321,9 @@ export function EmployeeProfileForm({
             </label>
           </div>
           <p className="ws-hr-help">
-            Blue collar: OT hours from late checkout past work end, or manager entry.
-            Rate defaults to monthly salary ÷ (26 × daily hours) when blank.
+            Shift timing drives late flags and Blue OT (checkout past shift end).
+            Rate defaults to monthly salary ÷ (26 × shift daily hours) when blank.
+            Define shifts under Team → Workplace attendance settings.
           </p>
         </section>
 

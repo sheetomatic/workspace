@@ -22,8 +22,8 @@ export function WorkplaceHrSettingsPanel({
     <section className="saas-form-panel ws-workplace-hr-settings">
       <h3>Workplace attendance settings</h3>
       <p className="saas-team-invite-lead">
-        Working hours, short leave / half day policy, office geo-fence, and face
-        recognition. Per-member White/Blue category is set on the employee profile.
+        Working hours, shifts, short leave / half day policy, office geo-fence, and face
+        recognition. Assign a shift and White/Blue category on the employee profile.
       </p>
       <form action={updateHrSettingsAction} className="ws-hr-form">
         <div className="form-grid-premium">
@@ -118,8 +118,8 @@ export function WorkplaceHrSettingsPanel({
         </label>
         <p className="ws-hr-help">
           Self check-in creates Present pending manager verify. Unverified punches
-          are not payable. Blue-collar OT uses checkout past end time or manager
-          OT hours × hourly rate.
+          are not payable. Late and Blue OT use the employee&apos;s shift end time
+          (or org default hours). Manage named shifts in Shifts &amp; timing below.
         </p>
         <div className="form-actions">
           <button type="submit" className="btn-cta btn-primary">

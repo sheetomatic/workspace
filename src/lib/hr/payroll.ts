@@ -338,6 +338,14 @@ export async function generatePayrollFromAttendance(params: {
         userId: true,
         monthlySalary: true,
         user: { select: { id: true, name: true, email: true } },
+        shift: {
+          select: {
+            startTime: true,
+            endTime: true,
+            isActive: true,
+            name: true,
+          },
+        },
         employeeProfile: {
           select: {
             basic: true,
@@ -382,12 +390,6 @@ export async function generatePayrollFromAttendance(params: {
       update: {},
     }),
   ]);
-
-  const shortLeaveFraction = shortLeavePayableFraction({
-    shortLeaveHours: hrSettings.shortLeaveHours,
-    workStartTime: hrSettings.workStartTime,
-    workEndTime: hrSettings.workEndTime,
-  });
 
   const unpaidKeys = buildUnpaidLeaveKeys(unpaidLeaves);
 
@@ -436,6 +438,20 @@ export async function generatePayrollFromAttendance(params: {
     if (salary <= 0) {
       continue;
     }
+    const shiftTimes =
+      member.shift?.isActive !== false && member.shift
+        ? {
+            workStartTime: member.shift.startTime,
+            workEndTime: member.shift.endTime,
+          }
+        : {
+            workStartTime: hrSettings.workStartTime,
+            workEndTime: hrSettings.workEndTime,
+          };
+    const shortLeaveFraction = shortLeavePayableFraction({
+      shortLeaveHours: hrSettings.shortLeaveHours,
+      ...shiftTimes,
+    });
     const userMap = byUserDate.get(member.userId) ?? new Map();
     let presentDays = 0;
     let leaveDays = 0;
@@ -489,8 +505,7 @@ export async function generatePayrollFromAttendance(params: {
           ? Number(member.employeeProfile.hourlyRate)
           : null,
       monthlySalary: salary,
-      workStartTime: hrSettings.workStartTime,
-      workEndTime: hrSettings.workEndTime,
+      ...shiftTimes,
     });
     const otPay =
       member.employeeProfile?.collarCategory === "BLUE"
@@ -526,6 +541,9 @@ export async function generatePayrollFromAttendance(params: {
     }
     if (otHoursTotal > 0) {
       noteParts.push(`OT ${otHoursTotal}h × ₹${hourly.toFixed(2)} = ₹${otPay.toFixed(2)}`);
+    }
+    if (member.shift?.name) {
+      noteParts.push(`Shift: ${member.shift.name}`);
     }
 
     lines.push({

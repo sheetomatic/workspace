@@ -4,6 +4,7 @@ import { TeamManagementPanel } from "@/components/saas/team-management-panel";
 import { SuperAdminPanel } from "@/components/saas/super-admin-panel";
 import { WorkplaceHrSettingsPanel } from "@/components/saas/workplace-hr-settings-panel";
 import { HrWorkSitesPanel } from "@/components/saas/hr-work-sites-panel";
+import { HrShiftsPanel } from "@/components/saas/hr-shifts-panel";
 import { PageHeader } from "@/components/saas/page-header";
 import {
   LegalTeamInvitePanel,
@@ -15,6 +16,7 @@ import { canManageSuperAdmins } from "@/lib/platform";
 import { requireSession } from "@/lib/require-session";
 import { getOrCreateHrSettings } from "@/lib/hr/hr-store";
 import { listActiveHrWorkSites } from "@/lib/hr/sites";
+import { ensureDefaultHrShift, listHrShifts } from "@/lib/hr/shifts";
 import {
   canManageTeam,
   canViewTeamPage,
@@ -114,7 +116,7 @@ export default async function TeamPage({
   }
 
   const canManage = canManageTeam(user);
-  const [allMembers, hrSettings, organization, workSites] = await Promise.all([
+  const [allMembers, hrSettings, organization, workSites, hrShifts] = await Promise.all([
     listWorkspaceMembers(user.organizationId),
     canManage ? getOrCreateHrSettings(user.organizationId) : Promise.resolve(null),
     canManage
@@ -124,6 +126,11 @@ export default async function TeamPage({
         })
       : Promise.resolve(null),
     canManage ? listActiveHrWorkSites(user.organizationId) : Promise.resolve([]),
+    canManage
+      ? ensureDefaultHrShift(user.organizationId).then(() =>
+          listHrShifts(user.organizationId),
+        )
+      : Promise.resolve([]),
   ]);
   const orgAllowedModules = organization
     ? resolveOrgAllowedModules(organization.allowedModules, {
@@ -174,9 +181,20 @@ export default async function TeamPage({
         {canManage && hrSettings ? (
           <TeamCollapsibleSection
             title="Workplace attendance settings"
-            description="Working hours, short leave, geo-fence, and face recognition."
+            description="Working hours, shifts, short leave, geo-fence, and face recognition."
           >
             <WorkplaceHrSettingsPanel settings={hrSettings} />
+            <HrShiftsPanel
+              shifts={hrShifts.map((shift) => ({
+                id: shift.id,
+                name: shift.name,
+                code: shift.code,
+                startTime: shift.startTime,
+                endTime: shift.endTime,
+                isDefault: shift.isDefault,
+                isActive: shift.isActive,
+              }))}
+            />
             <HrWorkSitesPanel
               sites={workSites.map((site) => ({
                 id: site.id,
