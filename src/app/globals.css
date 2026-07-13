@@ -3026,7 +3026,7 @@ strong {
 }
 
 .site-brand-footer small {
-  color: #a8b3ba;
+  color: #94a3b8;
   max-width: 16rem;
 }
 
@@ -3967,9 +3967,11 @@ strong {
 }
 
 .site-footer-saas {
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  background: #1a2429;
-  color: #a8b3ba;
+  border-top: 1px solid rgba(59, 130, 246, 0.24);
+  background:
+    radial-gradient(circle at top, rgba(37, 99, 235, 0.2), transparent 26%),
+    linear-gradient(135deg, #0f172a 0%, #13203b 42%, #1e3a8a 100%);
+  color: #94a3b8;
   overflow-x: clip;
 }
 
@@ -4003,7 +4005,7 @@ strong {
   font-size: 0.9375rem;
   line-height: 1.55;
   font-weight: 400;
-  color: #a8b3ba;
+  color: #94a3b8;
 }
 
 .site-footer-brand .social-links {
@@ -4014,16 +4016,16 @@ strong {
   height: 36px;
   width: 36px;
   border-radius: 8px;
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: rgba(148, 163, 184, 0.35);
   background: transparent;
-  color: #c5d0d5;
+  color: #cbd5e1;
 }
 
 .site-footer-saas .social-links-footer .social-link:hover {
   transform: none;
-  border-color: rgba(255, 255, 255, 0.35);
-  background: rgba(255, 255, 255, 0.06);
-  color: #f1f5f7;
+  border-color: rgba(125, 211, 252, 0.55);
+  background: rgba(56, 189, 248, 0.1);
+  color: #f8fafc;
 }
 
 .store-actions-grid {
@@ -4115,7 +4117,7 @@ strong {
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #c9946a;
+  color: #7dd3fc;
 }
 
 .site-footer-links {
@@ -4129,7 +4131,7 @@ strong {
 .site-footer-grid > div:not(.site-footer-brand) a:not(.btn-cta):not(.footer-demo-link) {
   display: block;
   margin-bottom: 0;
-  color: #a8b3ba;
+  color: #94a3b8;
   font-size: 0.9375rem;
   font-weight: 400;
   line-height: 1.45;
@@ -4148,7 +4150,7 @@ strong {
 }
 
 .site-footer-grid > div:not(.site-footer-brand) a:not(.btn-cta):not(.footer-demo-link):hover {
-  color: #e8eef1;
+  color: #e2e8f0;
   transform: none;
 }
 
@@ -4161,26 +4163,26 @@ strong {
 
 .site-footer-reach .footer-contact-line {
   display: block;
-  color: #a8b3ba;
+  color: #94a3b8;
   font-size: 0.9375rem;
   font-weight: 400;
   text-decoration: none;
 }
 
 .site-footer-reach .footer-contact-line:hover {
-  color: #e8eef1;
+  color: #e2e8f0;
 }
 
 .site-footer-reach .footer-demo-link {
   display: inline-block;
-  color: #c9946a;
+  color: #7dd3fc;
   font-size: 0.9375rem;
   font-weight: 500;
   text-decoration: none;
 }
 
 .site-footer-reach .footer-demo-link:hover {
-  color: #dbad88;
+  color: #bae6fd;
 }
 
 .site-footer-reach .btn-cta {
@@ -4214,14 +4216,14 @@ strong {
   margin: 2px 0 4px;
   padding: 2px 4px;
   width: fit-content;
-  color: #a8b3ba;
+  color: #94a3b8;
   font-size: 15px;
   font-weight: 400;
   text-decoration: none;
 }
 
 .site-footer-reach .footer-website-link:hover {
-  color: #e8eef1;
+  color: #7dd3fc;
 }
 
 .site-footer-reach .footer-whatsapp-btn {
@@ -4231,7 +4233,7 @@ strong {
 .site-footer-bottom {
   margin-top: 36px;
   padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -4239,7 +4241,7 @@ strong {
   gap: 12px 24px;
   font-size: 0.8125rem;
   font-weight: 400;
-  color: #7a8790;
+  color: #64748b;
 }
 
 .site-footer-legal {
@@ -4250,7 +4252,7 @@ strong {
 }
 
 .site-footer-updated {
-  color: #6b7880;
+  color: #64748b;
 }
 
 .site-footer-legal-links {
@@ -4261,12 +4263,12 @@ strong {
 }
 
 .site-footer-legal-links a {
-  color: #7a8790;
+  color: #64748b;
   text-decoration: none;
 }
 
 .site-footer-legal-links a:hover {
-  color: #c5d0d5;
+  color: #cbd5e1;
 }
 
 @media (min-width: 768px) {
