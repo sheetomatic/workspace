@@ -93,33 +93,33 @@ async function listPaymentNotReceivedAlerts(
     take: 80,
   });
 
-  return leads
-    .map((lead) => {
-      const invoice = lead.quotations[0];
-      const anchor =
-        invoice?.sentAt ?? invoice?.quotationDate ?? lead.modifiedAt ?? new Date();
-      const days = daysBetween(anchor);
-      if (days < afterDays) {
-        return null;
-      }
-      const state = readNurtureState(lead.rawPayload);
-      const event = alertEventForKind("payment_not_received");
-      return {
-        id: `payment-${lead.id}`,
-        kind: "payment_not_received" as const,
-        event,
-        leadId: lead.id,
-        leadName: lead.name,
-        phone: lead.phone,
-        company: lead.company,
-        status: lead.status,
-        daysOverdue: days,
-        reason: `No payment recorded · ${days}d since invoice`,
-        anchorAt: anchor.toISOString(),
-        alreadyMessaged: eventAlreadySent(state, event),
-      };
-    })
-    .filter((item): item is CrmAlertItem => Boolean(item));
+  const items: CrmAlertItem[] = [];
+  for (const lead of leads) {
+    const invoice = lead.quotations[0];
+    const anchor =
+      invoice?.sentAt ?? invoice?.quotationDate ?? lead.modifiedAt ?? new Date();
+    const days = daysBetween(anchor);
+    if (days < afterDays) {
+      continue;
+    }
+    const state = readNurtureState(lead.rawPayload);
+    const event = alertEventForKind("payment_not_received");
+    items.push({
+      id: `payment-${lead.id}`,
+      kind: "payment_not_received",
+      event,
+      leadId: lead.id,
+      leadName: lead.name,
+      phone: lead.phone,
+      company: lead.company,
+      status: lead.status,
+      daysOverdue: days,
+      reason: `No payment recorded · ${days}d since invoice`,
+      anchorAt: anchor.toISOString(),
+      alreadyMessaged: eventAlreadySent(state, event),
+    });
+  }
+  return items;
 }
 
 async function listQuotationNotAcceptedAlerts(
@@ -167,35 +167,35 @@ async function listQuotationNotAcceptedAlerts(
     take: 80,
   });
 
-  return leads
-    .map((lead) => {
-      const quote = lead.quotations[0];
-      if (!quote) {
-        return null;
-      }
-      const anchor = quote.sentAt ?? quote.quotationDate;
-      const days = daysBetween(anchor);
-      if (days < afterDays) {
-        return null;
-      }
-      const state = readNurtureState(lead.rawPayload);
-      const event = alertEventForKind("quotation_not_accepted");
-      return {
-        id: `quotation-${lead.id}`,
-        kind: "quotation_not_accepted" as const,
-        event,
-        leadId: lead.id,
-        leadName: lead.name,
-        phone: lead.phone,
-        company: lead.company,
-        status: lead.status,
-        daysOverdue: days,
-        reason: `Quotation not accepted · ${days}d since sent`,
-        anchorAt: anchor.toISOString(),
-        alreadyMessaged: eventAlreadySent(state, event),
-      };
-    })
-    .filter((item): item is CrmAlertItem => Boolean(item));
+  const items: CrmAlertItem[] = [];
+  for (const lead of leads) {
+    const quote = lead.quotations[0];
+    if (!quote) {
+      continue;
+    }
+    const anchor = quote.sentAt ?? quote.quotationDate;
+    const days = daysBetween(anchor);
+    if (days < afterDays) {
+      continue;
+    }
+    const state = readNurtureState(lead.rawPayload);
+    const event = alertEventForKind("quotation_not_accepted");
+    items.push({
+      id: `quotation-${lead.id}`,
+      kind: "quotation_not_accepted",
+      event,
+      leadId: lead.id,
+      leadName: lead.name,
+      phone: lead.phone,
+      company: lead.company,
+      status: lead.status,
+      daysOverdue: days,
+      reason: `Quotation not accepted · ${days}d since sent`,
+      anchorAt: anchor.toISOString(),
+      alreadyMessaged: eventAlreadySent(state, event),
+    });
+  }
+  return items;
 }
 
 async function listNegotiationAlerts(
