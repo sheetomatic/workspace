@@ -3,7 +3,6 @@
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { saveLeadsNurtureSettings } from "@/app/app/leads/actions";
-import { saveLeadsNurtureSettings } from "@/app/app/leads/actions";
 import {
   ALERT_EVENT_ORDER,
   LEAD_NURTURE_EVENT_LABELS,
