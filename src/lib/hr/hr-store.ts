@@ -5,6 +5,10 @@ import {
   listActiveHrWorkSites,
   resolveHrSiteGeo,
 } from "@/lib/hr/sites";
+import {
+  computeOtHoursFromCheckout,
+  isCheckInLate,
+} from "@/lib/hr/working-hours";
 
 function startOfToday(timeZone = "Asia/Kolkata") {
   const formatted = new Date().toLocaleDateString("en-CA", { timeZone });
@@ -156,6 +160,13 @@ export async function checkInAttendance(params: {
   }
 
   const resolvedSiteId = preferredSiteId ?? siteGeo?.id ?? null;
+  const settings = await getOrCreateHrSettings(params.user.organizationId);
+  const checkInAt = new Date();
+  const isLate = isCheckInLate({
+    checkInAt,
+    workStartTime: settings.workStartTime,
+    lateGraceMinutes: settings.lateGraceMinutes,
+  });
 
   return prisma.attendanceRecord.upsert({
     where: {
@@ -170,8 +181,10 @@ export async function checkInAttendance(params: {
       userId: params.user.id,
       siteId: resolvedSiteId,
       workDate,
-      checkInAt: new Date(),
+      checkInAt,
       status: "PRESENT",
+      verifyStatus: "PENDING",
+      isLate,
       method: params.method ?? (params.geoLat != null ? "GEO" : "WEB"),
       geoLat: params.geoLat,
       geoLng: params.geoLng,
@@ -180,8 +193,12 @@ export async function checkInAttendance(params: {
     },
     update: {
       siteId: resolvedSiteId,
-      checkInAt: new Date(),
+      checkInAt,
       status: "PRESENT",
+      verifyStatus: "PENDING",
+      verifiedById: null,
+      verifiedAt: null,
+      isLate,
       method: params.method ?? (params.geoLat != null ? "GEO" : "WEB"),
       geoLat: params.geoLat,
       geoLng: params.geoLng,
@@ -214,6 +231,24 @@ export async function checkOutAttendance(user: SessionUser) {
     return existing;
   }
 
+  const checkOutAt = new Date();
+  const [settings, profile] = await Promise.all([
+    getOrCreateHrSettings(user.organizationId),
+    prisma.employeeProfile.findFirst({
+      where: { organizationId: user.organizationId, userId: user.id },
+      select: { collarCategory: true },
+    }),
+  ]);
+
+  let otHours = existing.otHours ?? 0;
+  if (profile?.collarCategory === "BLUE") {
+    const autoOt = computeOtHoursFromCheckout({
+      checkOutAt,
+      workEndTime: settings.workEndTime,
+    });
+    otHours = Math.max(otHours, autoOt);
+  }
+
   return prisma.attendanceRecord.update({
     where: {
       organizationId_userId_workDate: {
@@ -222,7 +257,73 @@ export async function checkOutAttendance(user: SessionUser) {
         workDate,
       },
     },
-    data: { checkOutAt: new Date() },
+    data: { checkOutAt, otHours },
+  });
+}
+
+export async function listPendingAttendanceVerifications(organizationId: string) {
+  return prisma.attendanceRecord.findMany({
+    where: {
+      organizationId,
+      verifyStatus: "PENDING",
+      status: { in: ["PRESENT", "HALF_DAY", "SHORT_LEAVE"] },
+    },
+    include: {
+      user: { select: { id: true, name: true, email: true } },
+      site: { select: { id: true, name: true } },
+    },
+    orderBy: [{ workDate: "desc" }, { checkInAt: "desc" }],
+    take: 100,
+  });
+}
+
+export async function verifyAttendanceRecord(params: {
+  organizationId: string;
+  recordId: string;
+  reviewerId: string;
+  approve: boolean;
+  otHours?: number | null;
+  notes?: string | null;
+}) {
+  const existing = await prisma.attendanceRecord.findFirst({
+    where: { id: params.recordId, organizationId: params.organizationId },
+    select: { id: true, verifyStatus: true, notes: true, otHours: true },
+  });
+  if (!existing) {
+    throw new Error("Attendance record not found.");
+  }
+  if (existing.verifyStatus !== "PENDING") {
+    throw new Error("This attendance record is not pending verification.");
+  }
+
+  const now = new Date();
+  if (params.approve) {
+    return prisma.attendanceRecord.update({
+      where: { id: existing.id },
+      data: {
+        verifyStatus: "VERIFIED",
+        verifiedById: params.reviewerId,
+        verifiedAt: now,
+        ...(params.otHours != null && Number.isFinite(params.otHours)
+          ? { otHours: Math.max(0, params.otHours) }
+          : {}),
+        ...(params.notes?.trim()
+          ? { notes: params.notes.trim() }
+          : {}),
+      },
+    });
+  }
+
+  return prisma.attendanceRecord.update({
+    where: { id: existing.id },
+    data: {
+      verifyStatus: "REJECTED",
+      verifiedById: params.reviewerId,
+      verifiedAt: now,
+      status: "ABSENT",
+      notes: params.notes?.trim() || existing.notes || "Check-in rejected by manager",
+      otHours: 0,
+    },
   });
 }
 

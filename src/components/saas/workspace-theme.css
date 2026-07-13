@@ -10923,6 +10923,11 @@ body:has(.workspace-app.saas-app) {
   color: #92400e;
 }
 
+.workspace-app .ws-att-cell.status-SHORT_LEAVE {
+  background: #fce7f3;
+  color: #9d174d;
+}
+
 .workspace-app .ws-att-cell.status-ON_LEAVE {
   background: #e0f2fe;
   color: #075985;
@@ -10931,6 +10936,19 @@ body:has(.workspace-app.saas-app) {
 .workspace-app .ws-att-cell.status-HOLIDAY {
   background: #f1f5f9;
   color: #475569;
+}
+
+.workspace-app .ws-att-cell.status-PENDING {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px dashed #fb923c;
+}
+
+.workspace-app .ws-att-cell.status-OT {
+  background: #dbeafe;
+  color: #1d4ed8;
+  min-width: 1.6rem;
+  font-size: 0.625rem;
 }
 
 .workspace-app .ws-att-cell.status-OD {
@@ -10945,6 +10963,24 @@ body:has(.workspace-app.saas-app) {
   color: #0e7490;
   min-width: 1.6rem;
   font-size: 0.625rem;
+}
+
+.workspace-app .ws-att-verify-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.workspace-app .ws-att-verify-ot {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.workspace-app .ws-att-verify-ot input {
+  width: 4rem;
 }
 
 .workspace-app .ws-hr-onboard-list {

@@ -2,6 +2,10 @@ import { Decimal } from "@prisma/client/runtime/library";
 import type { AttendanceDayStatus, LeaveType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { computePayrollPayAmounts } from "@/lib/hr/salary-slip";
+import {
+  resolveHourlyRate,
+  shortLeavePayableFraction,
+} from "@/lib/hr/working-hours";
 
 export const HR_TZ = "Asia/Kolkata";
 
@@ -270,7 +274,16 @@ export async function rejectLeaveRequest(params: {
   });
 }
 
-function payableFromStatus(status: AttendanceDayStatus, unpaidLeave: boolean): number {
+function payableFromStatus(
+  status: AttendanceDayStatus,
+  unpaidLeave: boolean,
+  shortLeaveFraction: number,
+  verified: boolean,
+): number {
+  // Unverified self-punches do not count as payable Present.
+  if (!verified && (status === "PRESENT" || status === "HALF_DAY" || status === "SHORT_LEAVE")) {
+    return 0;
+  }
   switch (status) {
     case "PRESENT":
     case "HOLIDAY":
@@ -280,6 +293,8 @@ function payableFromStatus(status: AttendanceDayStatus, unpaidLeave: boolean): n
       return unpaidLeave ? 0 : 1;
     case "HALF_DAY":
       return 0.5;
+    case "SHORT_LEAVE":
+      return shortLeaveFraction;
     case "ABSENT":
     default:
       return 0;
@@ -312,7 +327,7 @@ export async function generatePayrollFromAttendance(params: {
     throw new Error("Period has no working days through today.");
   }
 
-  const [members, attendance, unpaidLeaves] = await Promise.all([
+  const [members, attendance, unpaidLeaves, hrSettings] = await Promise.all([
     prisma.membership.findMany({
       where: {
         organizationId: params.organizationId,
@@ -331,6 +346,8 @@ export async function generatePayrollFromAttendance(params: {
             pfApplicable: true,
             esiApplicable: true,
             tdsMonthly: true,
+            collarCategory: true,
+            hourlyRate: true,
           },
         },
       },
@@ -340,7 +357,14 @@ export async function generatePayrollFromAttendance(params: {
         organizationId: params.organizationId,
         workDate: { gte: params.periodStart, lte: payThrough },
       },
-      select: { userId: true, status: true, workDate: true, notes: true },
+      select: {
+        userId: true,
+        status: true,
+        workDate: true,
+        notes: true,
+        verifyStatus: true,
+        otHours: true,
+      },
     }),
     prisma.leaveRequest.findMany({
       where: {
@@ -352,11 +376,28 @@ export async function generatePayrollFromAttendance(params: {
       },
       select: { userId: true, startDate: true, endDate: true },
     }),
+    prisma.workspaceHrSettings.upsert({
+      where: { organizationId: params.organizationId },
+      create: { organizationId: params.organizationId },
+      update: {},
+    }),
   ]);
+
+  const shortLeaveFraction = shortLeavePayableFraction({
+    shortLeaveHours: hrSettings.shortLeaveHours,
+    workStartTime: hrSettings.workStartTime,
+    workEndTime: hrSettings.workEndTime,
+  });
 
   const unpaidKeys = buildUnpaidLeaveKeys(unpaidLeaves);
 
-  const byUserDate = new Map<string, Map<string, { status: AttendanceDayStatus; notes: string | null }>>();
+  type DayRow = {
+    status: AttendanceDayStatus;
+    notes: string | null;
+    verifyStatus: string;
+    otHours: number;
+  };
+  const byUserDate = new Map<string, Map<string, DayRow>>();
   for (const row of attendance) {
     const ymd = dateYmdUtc(row.workDate);
     let userMap = byUserDate.get(row.userId);
@@ -364,7 +405,12 @@ export async function generatePayrollFromAttendance(params: {
       userMap = new Map();
       byUserDate.set(row.userId, userMap);
     }
-    userMap.set(ymd, { status: row.status, notes: row.notes });
+    userMap.set(ymd, {
+      status: row.status,
+      notes: row.notes,
+      verifyStatus: row.verifyStatus,
+      otHours: row.otHours ?? 0,
+    });
   }
 
   const lines: Array<{
@@ -373,8 +419,11 @@ export async function generatePayrollFromAttendance(params: {
     leaveDays: number;
     absentDays: number;
     halfDays: number;
+    shortLeaveDays: number;
     payableDays: number;
     workingDays: number;
+    otHours: number;
+    otPay: number;
     monthlySalary: number;
     earnedSalary: number;
     deductions: number;
@@ -392,9 +441,12 @@ export async function generatePayrollFromAttendance(params: {
     let leaveDays = 0;
     let absentDays = 0;
     let halfDays = 0;
+    let shortLeaveDays = 0;
     let payableDays = 0;
     let unmarked = 0;
     let unpaidLeaveDays = 0;
+    let pendingUnverified = 0;
+    let otHoursTotal = 0;
 
     for (const workDate of weekdayDates) {
       const ymd = dateYmdUtc(workDate);
@@ -404,21 +456,49 @@ export async function generatePayrollFromAttendance(params: {
         absentDays += 1;
         continue;
       }
-      const { status, notes } = row;
-      if (status === "PRESENT") presentDays += 1;
+      const { status, notes, verifyStatus, otHours } = row;
+      const verified = verifyStatus === "VERIFIED";
+      if (!verified && (status === "PRESENT" || status === "HALF_DAY" || status === "SHORT_LEAVE")) {
+        pendingUnverified += 1;
+      }
+      if (status === "PRESENT" && verified) presentDays += 1;
       if (status === "ON_LEAVE") leaveDays += 1;
-      if (status === "ABSENT") absentDays += 1;
-      if (status === "HALF_DAY") halfDays += 1;
+      if (status === "ABSENT" || verifyStatus === "REJECTED") absentDays += 1;
+      if (status === "HALF_DAY" && verified) halfDays += 1;
+      if (status === "SHORT_LEAVE" && verified) shortLeaveDays += 1;
 
       const unpaidLeave =
         status === "ON_LEAVE" &&
         (unpaidKeys.has(`${member.userId}:${ymd}`) ||
           (notes?.toUpperCase().includes("UNPAID") ?? false));
       if (unpaidLeave) unpaidLeaveDays += 1;
-      payableDays += payableFromStatus(status, unpaidLeave);
+      payableDays += payableFromStatus(status, unpaidLeave, shortLeaveFraction, verified);
+
+      if (
+        member.employeeProfile?.collarCategory === "BLUE" &&
+        verified &&
+        otHours > 0
+      ) {
+        otHoursTotal += otHours;
+      }
     }
 
-    const earnedSalary = (salary / workingDays) * payableDays;
+    const hourly = resolveHourlyRate({
+      hourlyRate:
+        member.employeeProfile?.hourlyRate != null
+          ? Number(member.employeeProfile.hourlyRate)
+          : null,
+      monthlySalary: salary,
+      workStartTime: hrSettings.workStartTime,
+      workEndTime: hrSettings.workEndTime,
+    });
+    const otPay =
+      member.employeeProfile?.collarCategory === "BLUE"
+        ? Math.round(otHoursTotal * hourly * 100) / 100
+        : 0;
+
+    const baseEarned = (salary / workingDays) * payableDays;
+    const earnedSalary = baseEarned + otPay;
     const profile = member.employeeProfile;
     const pay = computePayrollPayAmounts({
       monthlySalary: salary,
@@ -441,6 +521,12 @@ export async function generatePayrollFromAttendance(params: {
     const noteParts: string[] = [];
     if (unmarked > 0) noteParts.push(`${unmarked} unmarked weekday(s) treated as absent`);
     if (unpaidLeaveDays > 0) noteParts.push(`${unpaidLeaveDays} unpaid leave day(s) not payable`);
+    if (pendingUnverified > 0) {
+      noteParts.push(`${pendingUnverified} unverified punch(es) not payable`);
+    }
+    if (otHoursTotal > 0) {
+      noteParts.push(`OT ${otHoursTotal}h × ₹${hourly.toFixed(2)} = ₹${otPay.toFixed(2)}`);
+    }
 
     lines.push({
       userId: member.userId,
@@ -448,8 +534,11 @@ export async function generatePayrollFromAttendance(params: {
       leaveDays,
       absentDays,
       halfDays,
+      shortLeaveDays,
       payableDays,
       workingDays,
+      otHours: otHoursTotal,
+      otPay,
       monthlySalary: salary,
       earnedSalary,
       deductions: pay.totalDeductions,
@@ -476,7 +565,7 @@ export async function generatePayrollFromAttendance(params: {
       totalGross: dec(totalGross),
       totalNet: dec(totalNet),
       status: "DRAFT",
-      notes: `Attendance-based payroll · ${workingDays} working days through ${dateYmdUtc(payThrough)} · paid leave payable, unpaid leave not`,
+      notes: `Attendance-based payroll · ${workingDays} working days through ${dateYmdUtc(payThrough)} · paid leave payable, unpaid leave not · unverified punches excluded`,
       lines: {
         create: lines.map((line) => ({
           organizationId: params.organizationId,
@@ -485,8 +574,11 @@ export async function generatePayrollFromAttendance(params: {
           leaveDays: line.leaveDays,
           absentDays: line.absentDays,
           halfDays: line.halfDays,
+          shortLeaveDays: line.shortLeaveDays,
           payableDays: line.payableDays,
           workingDays: line.workingDays,
+          otHours: line.otHours,
+          otPay: dec(line.otPay),
           monthlySalary: dec(line.monthlySalary),
           earnedSalary: dec(line.earnedSalary),
           deductions: dec(line.deductions),
@@ -530,6 +622,7 @@ export async function markAttendanceDay(params: {
   workDate: Date;
   status: AttendanceDayStatus;
   notes?: string;
+  otHours?: number | null;
 }) {
   const membership = await prisma.membership.findUnique({
     where: {
@@ -546,6 +639,13 @@ export async function markAttendanceDay(params: {
 
   const workDate = new Date(params.workDate);
   workDate.setUTCHours(12, 0, 0, 0);
+  const now = new Date();
+  const punchStatuses: AttendanceDayStatus[] = ["PRESENT", "HALF_DAY", "SHORT_LEAVE"];
+  const setsCheckIn = punchStatuses.includes(params.status);
+  const otHours =
+    params.otHours != null && Number.isFinite(params.otHours)
+      ? Math.max(0, params.otHours)
+      : 0;
 
   return prisma.attendanceRecord.upsert({
     where: {
@@ -563,12 +663,21 @@ export async function markAttendanceDay(params: {
       method: "WEB",
       notes: params.notes?.trim() || null,
       markedById: params.actorUserId,
-      checkInAt: params.status === "PRESENT" || params.status === "HALF_DAY" ? new Date() : null,
+      verifyStatus: "VERIFIED",
+      verifiedById: params.actorUserId,
+      verifiedAt: now,
+      otHours,
+      checkInAt: setsCheckIn ? now : null,
     },
     update: {
       status: params.status,
       notes: params.notes?.trim() || null,
       markedById: params.actorUserId,
+      verifyStatus: "VERIFIED",
+      verifiedById: params.actorUserId,
+      verifiedAt: now,
+      otHours,
+      ...(setsCheckIn ? {} : { checkInAt: null }),
     },
   });
 }

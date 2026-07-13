@@ -42,6 +42,9 @@ export function AttendancePunchPanel({
   todayLabel,
   geoFenceRequired = false,
   sites = [],
+  verifyStatus = null,
+  isLate = false,
+  otHours = 0,
 }: {
   checkInAt: Date | null;
   checkOutAt: Date | null;
@@ -50,6 +53,9 @@ export function AttendancePunchPanel({
   todayLabel: string;
   geoFenceRequired?: boolean;
   sites?: Array<{ id: string; name: string }>;
+  verifyStatus?: string | null;
+  isLate?: boolean;
+  otHours?: number;
 }) {
   const router = useRouter();
   const punchState = getPunchState(checkInAt, checkOutAt);
@@ -79,6 +85,17 @@ export function AttendancePunchPanel({
         ? `Clocked in at ${formatTime(checkInAt)}`
         : `Day complete - In ${formatTime(checkInAt)} | Out ${formatTime(checkOutAt)}`;
 
+  const verifyLabel =
+    punchState === "not_started"
+      ? null
+      : verifyStatus === "PENDING"
+        ? "Pending manager verify — not payable until approved"
+        : verifyStatus === "REJECTED"
+          ? "Check-in rejected"
+          : verifyStatus === "VERIFIED"
+            ? "Verified"
+            : null;
+
   return (
     <section className="ws-attendance-punch-panel">
       <div className="ws-attendance-punch-head">
@@ -86,7 +103,12 @@ export function AttendancePunchPanel({
           <p className="ws-attendance-punch-date">{todayLabel}</p>
           <p className={`ws-attendance-punch-status status-${punchState}`}>
             {statusLabel}
+            {isLate ? " · Late" : ""}
+            {otHours > 0 ? ` · OT ${otHours}h` : ""}
           </p>
+          {verifyLabel ? (
+            <p className="ws-hr-help">{verifyLabel}</p>
+          ) : null}
         </div>
         {method ? (
           <span className="ws-attendance-punch-method">{method}</span>

@@ -174,7 +174,7 @@ export default async function TeamPage({
         {canManage && hrSettings ? (
           <TeamCollapsibleSection
             title="Workplace attendance settings"
-            description="Office geo-fence and face recognition policy."
+            description="Working hours, short leave, geo-fence, and face recognition."
           >
             <WorkplaceHrSettingsPanel settings={hrSettings} />
             <HrWorkSitesPanel

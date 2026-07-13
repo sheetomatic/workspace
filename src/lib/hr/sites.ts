@@ -75,6 +75,7 @@ export async function getAttendanceSiteStats(
         organizationId,
         workDate,
         checkInAt: { not: null },
+        verifyStatus: { not: "REJECTED" },
         ...(siteId ? { siteId } : {}),
       },
     }),

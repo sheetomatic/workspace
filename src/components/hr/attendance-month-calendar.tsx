@@ -6,6 +6,9 @@ export type AttendanceMonthCell = {
   status: string;
   /** Attendance notes — used to badge OD/WFH on PRESENT days. */
   notes?: string | null;
+  verifyStatus?: string | null;
+  otHours?: number | null;
+  isLate?: boolean;
 };
 
 export type AttendanceMonthEmployee = {
@@ -23,6 +26,7 @@ const STATUS_SHORT: Record<string, string> = {
   PRESENT: "P",
   ABSENT: "A",
   HALF_DAY: "H",
+  SHORT_LEAVE: "S",
   ON_LEAVE: "L",
   HOLIDAY: "O",
 };
@@ -31,6 +35,7 @@ const STATUS_TITLE: Record<string, string> = {
   PRESENT: "Present",
   ABSENT: "Absent",
   HALF_DAY: "Half day",
+  SHORT_LEAVE: "Short leave",
   ON_LEAVE: "On leave",
   HOLIDAY: "Holiday",
 };
@@ -87,11 +92,23 @@ export function AttendanceMonthCalendar({
   const nextMonth = shiftMonth(year, monthIndex, 1);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-  const cellMap = new Map<string, { status: string; notes: string | null }>();
+  const cellMap = new Map<
+    string,
+    {
+      status: string;
+      notes: string | null;
+      verifyStatus: string | null;
+      otHours: number;
+      isLate: boolean;
+    }
+  >();
   for (const cell of cells) {
     cellMap.set(`${cell.userId}:${cell.day}`, {
       status: cell.status,
       notes: cell.notes ?? null,
+      verifyStatus: cell.verifyStatus ?? null,
+      otHours: cell.otHours ?? 0,
+      isLate: cell.isLate ?? false,
     });
   }
 
@@ -100,11 +117,22 @@ export function AttendanceMonthCalendar({
     holidayByDay.set(h.day, h);
   }
 
-  const totals = { PRESENT: 0, ABSENT: 0, HALF_DAY: 0, ON_LEAVE: 0 };
+  const totals = {
+    PRESENT: 0,
+    ABSENT: 0,
+    HALF_DAY: 0,
+    SHORT_LEAVE: 0,
+    ON_LEAVE: 0,
+    PENDING: 0,
+    OT: 0,
+  };
   for (const cell of cells) {
-    if (cell.status in totals) {
+    if (cell.verifyStatus === "PENDING") {
+      totals.PENDING += 1;
+    } else if (cell.status in totals) {
       totals[cell.status as keyof typeof totals] += 1;
     }
+    if ((cell.otHours ?? 0) > 0) totals.OT += 1;
   }
 
   return (
@@ -147,10 +175,19 @@ export function AttendanceMonthCalendar({
           <em className="ws-att-cell status-HALF_DAY">H</em> Half day
         </span>
         <span>
+          <em className="ws-att-cell status-SHORT_LEAVE">S</em> Short leave
+        </span>
+        <span>
           <em className="ws-att-cell status-ON_LEAVE">L</em> Leave
         </span>
         <span>
           <em className="ws-att-cell status-HOLIDAY">O</em> Holiday
+        </span>
+        <span>
+          <em className="ws-att-cell status-PENDING">?</em> Pending verify
+        </span>
+        <span>
+          <em className="ws-att-cell status-OT">OT</em> Overtime (Blue)
         </span>
         <span>
           <em className="ws-att-cell status-OD">OD</em> On duty
@@ -163,7 +200,8 @@ export function AttendanceMonthCalendar({
         </span>
         <span className="ws-apple-cell-secondary">
           Month totals · P {totals.PRESENT} · A {totals.ABSENT} · H{" "}
-          {totals.HALF_DAY} · L {totals.ON_LEAVE}
+          {totals.HALF_DAY} · S {totals.SHORT_LEAVE} · L {totals.ON_LEAVE} · ?{" "}
+          {totals.PENDING} · OT {totals.OT}
         </span>
       </div>
 
@@ -209,13 +247,27 @@ export function AttendanceMonthCalendar({
                       );
                     }
                     const badge = exceptionBadge(cell.notes);
-                    const label = badge ?? STATUS_SHORT[cell.status] ?? "?";
-                    const title = badge
-                      ? `${badge === "OD" ? "On duty" : "Work from home"} (present)`
-                      : (STATUS_TITLE[cell.status] ?? cell.status);
-                    const className = badge
-                      ? `ws-att-cell status-${badge}`
-                      : `ws-att-cell status-${cell.status}`;
+                    const isPending = cell.verifyStatus === "PENDING";
+                    const hasOt = cell.otHours > 0 && !isPending;
+                    const label = isPending
+                      ? "?"
+                      : hasOt
+                        ? "OT"
+                        : (badge ?? STATUS_SHORT[cell.status] ?? "?");
+                    const title = isPending
+                      ? "Pending manager verify"
+                      : hasOt
+                        ? `Overtime ${cell.otHours}h (${STATUS_TITLE[cell.status] ?? cell.status})`
+                        : badge
+                          ? `${badge === "OD" ? "On duty" : "Work from home"} (present)`
+                          : `${STATUS_TITLE[cell.status] ?? cell.status}${cell.isLate ? " · Late" : ""}`;
+                    const className = isPending
+                      ? "ws-att-cell status-PENDING"
+                      : hasOt
+                        ? "ws-att-cell status-OT"
+                        : badge
+                          ? `ws-att-cell status-${badge}`
+                          : `ws-att-cell status-${cell.status}`;
                     return (
                       <td key={day} className="ws-attendance-month-day">
                         <span className={className} title={title}>

@@ -441,6 +441,12 @@ export async function updateHrSettingsAction(formData: FormData): Promise<void> 
   const officeLng = Number(formData.get("officeLng"));
   const geoFenceRadiusM = Number(formData.get("geoFenceRadiusM") ?? 200);
   const faceRecognitionEnabled = formData.get("faceRecognitionEnabled") === "on";
+  const workStartTime = String(formData.get("workStartTime") ?? "09:30").trim() || "09:30";
+  const workEndTime = String(formData.get("workEndTime") ?? "18:30").trim() || "18:30";
+  const lateGraceMinutes = Number(formData.get("lateGraceMinutes") ?? 15);
+  const halfDayEnabled = formData.get("halfDayEnabled") === "on";
+  const shortLeaveEnabled = formData.get("shortLeaveEnabled") === "on";
+  const shortLeaveHours = Number(formData.get("shortLeaveHours") ?? 2);
 
   await getOrCreateHrSettings(user.organizationId);
   await prisma.workspaceHrSettings.update({
@@ -450,6 +456,12 @@ export async function updateHrSettingsAction(formData: FormData): Promise<void> 
       officeLng: Number.isFinite(officeLng) ? officeLng : null,
       geoFenceRadiusM: Number.isFinite(geoFenceRadiusM) ? geoFenceRadiusM : 200,
       faceRecognitionEnabled,
+      workStartTime,
+      workEndTime,
+      lateGraceMinutes: Number.isFinite(lateGraceMinutes) ? Math.max(0, lateGraceMinutes) : 15,
+      halfDayEnabled,
+      shortLeaveEnabled,
+      shortLeaveHours: Number.isFinite(shortLeaveHours) ? Math.max(0.25, shortLeaveHours) : 2,
     },
   });
 
@@ -511,14 +523,20 @@ export async function markAttendanceDayAction(
     | "PRESENT"
     | "ABSENT"
     | "HALF_DAY"
+    | "SHORT_LEAVE"
     | "ON_LEAVE"
     | "HOLIDAY";
   const notes = String(formData.get("notes") ?? "").trim();
+  const otHoursRaw = Number(formData.get("otHours"));
 
   if (!targetUserId || !workDateRaw) {
     return hrActionFailure("INVALID_INPUT", "Employee and date are required.");
   }
-  if (!["PRESENT", "ABSENT", "HALF_DAY", "ON_LEAVE", "HOLIDAY"].includes(status)) {
+  if (
+    !["PRESENT", "ABSENT", "HALF_DAY", "SHORT_LEAVE", "ON_LEAVE", "HOLIDAY"].includes(
+      status,
+    )
+  ) {
     return hrActionFailure("INVALID_INPUT", "Invalid attendance status.");
   }
 
@@ -531,6 +549,7 @@ export async function markAttendanceDayAction(
       workDate: new Date(workDateRaw),
       status,
       notes: notes || undefined,
+      otHours: Number.isFinite(otHoursRaw) ? otHoursRaw : undefined,
     });
     revalidateHr();
     return { ok: true };
@@ -538,6 +557,42 @@ export async function markAttendanceDayAction(
     const message =
       error instanceof Error ? error.message : "Could not mark attendance.";
     return hrActionFailure("MARK_FAILED", message);
+  }
+}
+
+export async function verifyAttendanceAction(
+  formData: FormData,
+): Promise<HrActionResult> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "MANAGER")) {
+    return hrActionFailure("FORBIDDEN", "Manager access required to verify attendance.");
+  }
+
+  const recordId = String(formData.get("recordId") ?? "").trim();
+  const decision = String(formData.get("decision") ?? "").trim().toLowerCase();
+  const notes = String(formData.get("notes") ?? "").trim();
+  const otHoursRaw = Number(formData.get("otHours"));
+
+  if (!recordId || !["approve", "reject"].includes(decision)) {
+    return hrActionFailure("INVALID_INPUT", "Record and approve/reject decision are required.");
+  }
+
+  try {
+    const { verifyAttendanceRecord } = await import("@/lib/hr/hr-store");
+    await verifyAttendanceRecord({
+      organizationId: user.organizationId,
+      recordId,
+      reviewerId: user.id,
+      approve: decision === "approve",
+      otHours: Number.isFinite(otHoursRaw) ? otHoursRaw : undefined,
+      notes: notes || undefined,
+    });
+    revalidateHr();
+    return { ok: true };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not verify attendance.";
+    return hrActionFailure("VERIFY_FAILED", message);
   }
 }
 
@@ -776,6 +831,11 @@ export async function upsertEmployeeProfileAction(
       dateOfJoining: parseOptionalDate(formData.get("dateOfJoining")),
       monthlySalary: parseOptionalNumber(formData.get("monthlySalary")),
       staffCode: String(formData.get("staffCode") ?? employeeCode).trim() || employeeCode,
+      collarCategory:
+        String(formData.get("collarCategory") ?? "WHITE").trim() === "BLUE"
+          ? "BLUE"
+          : "WHITE",
+      hourlyRate: parseOptionalNumber(formData.get("hourlyRate")),
     });
     revalidateHr();
     revalidatePath("/app/team");

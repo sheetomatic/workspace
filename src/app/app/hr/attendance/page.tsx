@@ -1,13 +1,18 @@
 import { PageHeader } from "@/components/saas/page-header";
+import { WorkspaceGuideButton } from "@/components/saas/workspace-guide-button";
 import { AttendancePunchPanel } from "@/components/hr/attendance-punch-panel";
 import { AttendanceAdminTable } from "@/components/hr/attendance-admin-table";
 import { AttendanceSiteToolbar } from "@/components/hr/attendance-site-toolbar";
 import { AttendanceMonthCalendar } from "@/components/hr/attendance-month-calendar";
 import { MarkAttendanceDayForm } from "@/components/hr/mark-attendance-day-form";
+import { AttendanceVerifyQueue } from "@/components/hr/attendance-verify-queue";
 import { HrSubNav } from "@/components/hr/hr-sub-nav";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
-import { listTodayAttendance } from "@/lib/hr/hr-store";
+import {
+  listPendingAttendanceVerifications,
+  listTodayAttendance,
+} from "@/lib/hr/hr-store";
 import { listAttendanceForPeriod } from "@/lib/hr/payroll";
 import {
   getAttendanceSiteStats,
@@ -58,7 +63,7 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
 
   const monthKey = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
 
-  const [records, membership, hrSettings, sites, stats, monthRecords, members, yearHolidays] =
+  const [records, membership, hrSettings, sites, stats, monthRecords, members, yearHolidays, pendingVerify] =
     await Promise.all([
       listTodayAttendance(user.organizationId, siteFilter),
       prisma.membership.findUnique({
@@ -89,6 +94,9 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
         orderBy: { user: { name: "asc" } },
       }),
       listHolidays(user.organizationId, year),
+      canMark
+        ? listPendingAttendanceVerifications(user.organizationId)
+        : Promise.resolve([]),
     ]);
 
   const myRecord = records.find((r) => r.userId === user.id);
@@ -126,6 +134,9 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
     day: new Date(row.workDate).getUTCDate(),
     status: row.status,
     notes: row.notes,
+    verifyStatus: row.verifyStatus,
+    otHours: row.otHours,
+    isLate: row.isLate,
   }));
 
   const monthHolidays = yearHolidays
@@ -144,6 +155,7 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
       <PageHeader
         title="Attendance"
         description={attendanceLeaveModule.tagline}
+        actions={<WorkspaceGuideButton guideId="hr-attendance" />}
       />
       <HrSubNav activePath="/app/hr/attendance" isAdmin={hasMinimumRole(user.role, "ADMIN")} />
 
@@ -166,7 +178,25 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
         method={myRecord?.method ?? null}
         sites={siteOptions}
         todayLabel={todayLabel}
+        verifyStatus={myRecord?.verifyStatus ?? null}
+        isLate={myRecord?.isLate ?? false}
+        otHours={myRecord?.otHours ?? 0}
       />
+
+      {canMark ? (
+        <AttendanceVerifyQueue
+          rows={pendingVerify.map((row) => ({
+            id: row.id,
+            employeeName: row.user.name ?? row.user.email ?? "Unknown",
+            workDate: new Date(row.workDate).toISOString().slice(0, 10),
+            checkInAt: row.checkInAt?.toISOString() ?? null,
+            isLate: row.isLate,
+            otHours: row.otHours ?? 0,
+            siteName: row.site?.name ?? null,
+            status: row.status,
+          }))}
+        />
+      ) : null}
 
       {canMark ? (
         <MarkAttendanceDayForm

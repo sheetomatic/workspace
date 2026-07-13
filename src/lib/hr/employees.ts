@@ -69,6 +69,8 @@ export type EmployeeProfileInput = {
   bankName?: string | null;
   bankAccountNumber?: string | null;
   ifsc?: string | null;
+  collarCategory?: "WHITE" | "BLUE";
+  hourlyRate?: number | null;
 };
 
 export type EmployeeListItem = {
@@ -101,6 +103,8 @@ export type EmployeeListItem = {
     bankName: string | null;
     ifsc: string | null;
     aadhaarLast4: string | null;
+    collarCategory: "WHITE" | "BLUE";
+    hourlyRate: number | null;
   } | null;
 };
 
@@ -155,6 +159,8 @@ function mapListItem(
       bankName: string | null;
       ifsc: string | null;
       aadhaarLast4: string | null;
+      collarCategory: "WHITE" | "BLUE";
+      hourlyRate: Decimal | null;
     } | null;
   },
 ): EmployeeListItem {
@@ -190,6 +196,8 @@ function mapListItem(
           bankName: profile.bankName,
           ifsc: profile.ifsc,
           aadhaarLast4: profile.aadhaarLast4,
+          collarCategory: profile.collarCategory,
+          hourlyRate: num(profile.hourlyRate),
         }
       : null,
   };
@@ -244,6 +252,8 @@ export async function listEmployees(
           bankName: true,
           ifsc: true,
           aadhaarLast4: true,
+          collarCategory: true,
+          hourlyRate: true,
         },
       },
     },
@@ -344,6 +354,8 @@ export async function getEmployeeForForm(
             ? p.bankAccountNumber
             : maskAccount(p.bankAccountNumber),
           ifsc: p.ifsc,
+          collarCategory: p.collarCategory,
+          hourlyRate: num(p.hourlyRate),
           documents: p.documents,
         }
       : null,
@@ -394,6 +406,8 @@ export async function getEmployee(
       bankName: form.profile.bankName,
       ifsc: form.profile.ifsc,
       aadhaarLast4: form.profile.aadhaarLast4,
+      collarCategory: form.profile.collarCategory,
+      hourlyRate: form.profile.hourlyRate,
       emergencyContact: form.profile.emergencyContact,
       address: form.profile.address,
       pan: form.profile.pan,
@@ -477,6 +491,8 @@ export async function upsertEmployeeProfile(
     bankName: input.bankName?.trim() || null,
     bankAccountNumber: input.bankAccountNumber?.trim() || null,
     ifsc: input.ifsc?.trim().toUpperCase() || null,
+    collarCategory: input.collarCategory ?? "WHITE",
+    hourlyRate: decOrNull(input.hourlyRate),
   } satisfies Prisma.EmployeeProfileUncheckedUpdateInput;
 
   const [profile] = await prisma.$transaction([

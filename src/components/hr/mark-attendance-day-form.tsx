@@ -49,7 +49,8 @@ export function MarkAttendanceDayForm({
     <section className="ws-hr-panel">
       <h2>Mark attendance day</h2>
       <p className="ws-hr-help">
-        Managers can set Present, Absent, or Half day for payroll-ready records.
+        Manager marks are auto-verified. Self check-ins still need approval in the
+        verify queue. Use OT hours for Blue-collar overtime.
       </p>
       <form action={onSubmit} className="ws-hr-form ws-hr-form-inline">
         <label>
@@ -72,9 +73,20 @@ export function MarkAttendanceDayForm({
             <option value="PRESENT">Present</option>
             <option value="ABSENT">Absent</option>
             <option value="HALF_DAY">Half day</option>
+            <option value="SHORT_LEAVE">Short leave</option>
             <option value="ON_LEAVE">On leave</option>
             <option value="HOLIDAY">Holiday</option>
           </select>
+        </label>
+        <label>
+          OT hours (Blue)
+          <input
+            name="otHours"
+            type="number"
+            min={0}
+            step={0.25}
+            placeholder="0"
+          />
         </label>
         <label>
           Notes

@@ -50,6 +50,8 @@ export type EmployeeProfileFormData = {
     bankName: string | null;
     bankAccountNumber: string | null;
     ifsc: string | null;
+    collarCategory?: string;
+    hourlyRate?: number | null;
     documents: Array<{
       id: string;
       docType: string;
@@ -268,7 +270,34 @@ export function EmployeeProfileForm({
                 disabled={!canEdit}
               />
             </label>
+            <label>
+              Category (White / Blue)
+              <select
+                name="collarCategory"
+                defaultValue={p?.collarCategory ?? "WHITE"}
+                disabled={!canEdit}
+              >
+                <option value="WHITE">White — standard (no OT)</option>
+                <option value="BLUE">Blue — overtime eligible</option>
+              </select>
+            </label>
+            <label>
+              OT hourly rate (₹)
+              <input
+                name="hourlyRate"
+                type="number"
+                min={0}
+                step="0.01"
+                defaultValue={p?.hourlyRate ?? ""}
+                disabled={!canEdit}
+                placeholder="Blank = derive from salary"
+              />
+            </label>
           </div>
+          <p className="ws-hr-help">
+            Blue collar: OT hours from late checkout past work end, or manager entry.
+            Rate defaults to monthly salary ÷ (26 × daily hours) when blank.
+          </p>
         </section>
 
         <section className="ws-hr-form-section">

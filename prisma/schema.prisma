@@ -904,6 +904,7 @@ model User {
   aiKnowledgeCreated   AiKnowledgeItem[]        @relation("AiKnowledgeCreator")
   attendanceRecords    AttendanceRecord[]       @relation("AttendanceUser")
   attendanceMarked     AttendanceRecord[]       @relation("AttendanceMarker")
+  attendanceVerified   AttendanceRecord[]       @relation("AttendanceVerifier")
   attendanceExceptionRequests AttendanceExceptionRequest[] @relation("AttendanceExceptionRequester")
   attendanceExceptionReviews  AttendanceExceptionRequest[] @relation("AttendanceExceptionReviewer")
   leaveRequests        LeaveRequest[]           @relation("LeaveRequester")
@@ -1091,8 +1092,22 @@ enum AttendanceDayStatus {
   PRESENT
   ABSENT
   HALF_DAY
+  SHORT_LEAVE
   ON_LEAVE
   HOLIDAY
+}
+
+/** White-collar (standard) vs Blue-collar (OT-eligible). */
+enum EmployeeCollarCategory {
+  WHITE
+  BLUE
+}
+
+/** Self punch starts PENDING; manager mark or approve → VERIFIED. */
+enum AttendanceVerifyStatus {
+  PENDING
+  VERIFIED
+  REJECTED
 }
 
 enum AttendanceWorkMode {
@@ -1183,16 +1198,22 @@ enum EmployeeDocumentType {
 }
 
 model WorkspaceHrSettings {
-  organizationId       String       @id
-  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  officeLat            Float?
-  officeLng            Float?
-  geoFenceRadiusM      Int          @default(200)
-  workStartTime        String       @default("09:30")
-  workEndTime          String       @default("18:30")
-  faceRecognitionEnabled Boolean    @default(false)
-  fieldTrackingEnabled Boolean      @default(true)
-  updatedAt            DateTime     @updatedAt
+  organizationId         String       @id
+  organization           Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  officeLat              Float?
+  officeLng              Float?
+  geoFenceRadiusM        Int          @default(200)
+  workStartTime          String       @default("09:30")
+  workEndTime            String       @default("18:30")
+  /** Minutes after workStartTime before check-in counts as late. */
+  lateGraceMinutes       Int          @default(15)
+  halfDayEnabled         Boolean      @default(true)
+  shortLeaveEnabled      Boolean      @default(true)
+  /** Hours deducted from a full day when status is SHORT_LEAVE (payable fraction). */
+  shortLeaveHours        Float        @default(2)
+  faceRecognitionEnabled Boolean      @default(false)
+  fieldTrackingEnabled   Boolean      @default(true)
+  updatedAt              DateTime     @updatedAt
 }
 
 model HrWorkSite {
@@ -1228,30 +1249,38 @@ model HrHoliday {
 }
 
 model AttendanceRecord {
-  id              String              @id @default(cuid())
+  id              String                 @id @default(cuid())
   organizationId  String
-  organization    Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization    Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   userId          String
-  user            User                @relation("AttendanceUser", fields: [userId], references: [id], onDelete: Cascade)
+  user            User                   @relation("AttendanceUser", fields: [userId], references: [id], onDelete: Cascade)
   siteId          String?
-  site            HrWorkSite?         @relation(fields: [siteId], references: [id], onDelete: SetNull)
-  workDate        DateTime            @db.Date
+  site            HrWorkSite?            @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  workDate        DateTime               @db.Date
   checkInAt       DateTime?
   checkOutAt      DateTime?
-  status          AttendanceDayStatus @default(PRESENT)
-  method          AttendanceMethod    @default(WEB)
+  status          AttendanceDayStatus    @default(PRESENT)
+  verifyStatus    AttendanceVerifyStatus @default(VERIFIED)
+  verifiedById    String?
+  verifiedBy      User?                  @relation("AttendanceVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
+  verifiedAt      DateTime?
+  isLate          Boolean                @default(false)
+  /** Overtime hours (Blue collar). Manager-entered or auto from checkout past workEndTime. */
+  otHours         Float                  @default(0)
+  method          AttendanceMethod       @default(WEB)
   geoLat          Float?
   geoLng          Float?
   geoFenceOk      Boolean?
-  faceVerified    Boolean             @default(false)
+  faceVerified    Boolean                @default(false)
   notes           String?
   markedById      String?
-  markedBy        User?               @relation("AttendanceMarker", fields: [markedById], references: [id], onDelete: SetNull)
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  markedBy        User?                  @relation("AttendanceMarker", fields: [markedById], references: [id], onDelete: SetNull)
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
 
   @@unique([organizationId, userId, workDate])
   @@index([organizationId, workDate])
+  @@index([organizationId, verifyStatus])
 }
 
 model AttendanceExceptionRequest {
@@ -1386,8 +1415,11 @@ model PayrollLine {
   leaveDays      Float        @default(0)
   absentDays     Float        @default(0)
   halfDays       Float        @default(0)
+  shortLeaveDays Float        @default(0)
   payableDays    Float        @default(0)
   workingDays    Float        @default(0)
+  otHours        Float        @default(0)
+  otPay          Decimal      @default(0) @db.Decimal(14, 2)
   monthlySalary  Decimal      @db.Decimal(14, 2)
   earnedSalary   Decimal      @db.Decimal(14, 2)
   deductions     Decimal      @default(0) @db.Decimal(14, 2)
@@ -1411,6 +1443,10 @@ model EmployeeProfile {
   employmentType     EmploymentType           @default(FULL_TIME)
   status             EmployeeStatus           @default(ACTIVE)
   onboardingStatus   EmployeeOnboardingStatus @default(COMPLETE)
+  /** WHITE = standard (no OT). BLUE = overtime-eligible. */
+  collarCategory     EmployeeCollarCategory   @default(WHITE)
+  /** Optional explicit OT hourly rate; else derived from monthlySalary / monthly hours. */
+  hourlyRate         Decimal?                 @db.Decimal(14, 2)
   educationSummary   String?
   experienceSummary  String?
   phone              String?
