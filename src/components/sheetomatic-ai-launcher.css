@@ -1,209 +1,377 @@
-.sheetomatic-ai-launcher-wrap {
+/* Workspace guide FAB + panel (replaces dead /ai link on workspace). */
+
+.ws-guide {
   position: fixed;
-  z-index: 70;
-  touch-action: none;
-  cursor: grab;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 72;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+  pointer-events: none;
 }
 
-.sheetomatic-ai-launcher-wrap.is-dragging {
-  cursor: grabbing;
+.ws-guide > * {
+  pointer-events: auto;
 }
 
-.sheetomatic-ai-launcher-wrap.is-dragging .sheetomatic-ai-launcher {
-  transform: scale(1.04);
-  box-shadow:
-    0 10px 28px rgba(24, 169, 87, 0.22),
-    0 0 0 1px rgba(255, 255, 255, 0.9) inset;
-}
-
-.sheetomatic-ai-launcher {
-  --launcher-size: 2.5rem;
-  --launcher-icon: 18px;
-
-  position: relative;
+.ws-guide-fab {
   display: inline-flex;
-  flex-direction: row-reverse;
   align-items: center;
-  justify-content: center;
-  gap: 0;
-  width: var(--launcher-size);
-  height: var(--launcher-size);
-  padding: 0;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.95rem 0.55rem 0.65rem;
   border-radius: 999px;
-  border: 1px solid rgba(187, 247, 208, 0.9);
-  background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
-  color: #065f46;
-  text-decoration: none;
+  border: 1px solid rgba(15, 118, 110, 0.22);
+  background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+  color: #f0fdfa;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   box-shadow:
-    0 4px 14px rgba(15, 23, 42, 0.08),
-    0 0 0 1px rgba(255, 255, 255, 0.85) inset;
-  overflow: hidden;
-  isolation: isolate;
-  animation: sheetomatic-ai-launcher-enter 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both;
+    0 10px 28px rgba(15, 118, 110, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  cursor: pointer;
   transition:
-    width 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-    padding 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-    gap 0.28s cubic-bezier(0.16, 1, 0.3, 1),
     transform 0.18s ease,
     box-shadow 0.18s ease,
-    border-color 0.18s ease;
-  user-select: none;
+    background 0.18s ease;
 }
 
-.sheetomatic-ai-launcher::before {
-  content: "";
-  position: absolute;
-  inset: -2px;
-  border-radius: inherit;
-  border: 1.5px solid rgba(24, 169, 87, 0.28);
-  opacity: 0;
-  pointer-events: none;
-  animation: sheetomatic-ai-launcher-ring 3.2s ease-in-out 1.6s infinite;
-}
-
-.sheetomatic-ai-launcher-wrap:not(.is-dragging) .sheetomatic-ai-launcher:hover,
-.sheetomatic-ai-launcher-wrap:not(.is-dragging) .sheetomatic-ai-launcher:focus-visible {
-  width: auto;
-  max-width: min(11rem, calc(100vw - 2rem));
-  padding: 0 0.55rem 0 0.7rem;
-  gap: 0.45rem;
-  border-color: #86efac;
-  box-shadow:
-    0 8px 22px rgba(24, 169, 87, 0.16),
-    0 0 0 1px rgba(255, 255, 255, 0.9) inset;
+.ws-guide-fab:hover,
+.ws-guide-fab:focus-visible {
   transform: translateY(-1px);
+  box-shadow:
+    0 14px 32px rgba(15, 118, 110, 0.34),
+    0 0 0 1px rgba(255, 255, 255, 0.14) inset;
+  outline: none;
 }
 
-.sheetomatic-ai-launcher-wrap:not(.is-dragging) .sheetomatic-ai-launcher:hover::before,
-.sheetomatic-ai-launcher-wrap:not(.is-dragging) .sheetomatic-ai-launcher:focus-visible::before {
-  animation: none;
-  opacity: 0;
-}
-
-.sheetomatic-ai-launcher:focus-visible {
-  outline: 2px solid #18a957;
+.ws-guide-fab:focus-visible {
+  outline: 2px solid #2dd4bf;
   outline-offset: 3px;
 }
 
-.sheetomatic-ai-launcher-label {
-  max-width: 0;
-  opacity: 0;
-  overflow: hidden;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  transition:
-    max-width 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.2s ease;
-}
-
-.sheetomatic-ai-launcher-wrap:not(.is-dragging) .sheetomatic-ai-launcher:hover .sheetomatic-ai-launcher-label,
-.sheetomatic-ai-launcher-wrap:not(.is-dragging) .sheetomatic-ai-launcher:focus-visible .sheetomatic-ai-launcher-label {
-  max-width: 7.5rem;
-  opacity: 1;
-}
-
-.sheetomatic-ai-launcher .sheetomatic-ai-mark {
+.ws-guide-fab-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  line-height: 0;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 999px;
+  background: rgba(45, 212, 191, 0.22);
+  color: #ccfbf1;
+  font-size: 1rem;
+  line-height: 1;
 }
 
-.sheetomatic-ai-launcher .sheetomatic-ai-mark-wrap {
-  width: var(--sheetomatic-ai-mark-width, var(--launcher-icon));
-  height: var(--sheetomatic-ai-mark-height, var(--launcher-icon));
-  padding: 3px;
-  border-radius: 8px;
+.ws-guide-panel {
+  width: min(22.5rem, calc(100vw - 2rem));
+  max-height: min(34rem, calc(100vh - 6.5rem));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.1);
   background: #ffffff;
-  border: 1px solid rgba(37, 99, 235, 0.2);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  box-shadow:
+    0 24px 48px rgba(15, 23, 42, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.7) inset;
+  animation: ws-guide-panel-in 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.sheetomatic-ai-launcher .sheetomatic-ai-mark-logo {
-  display: block;
+.ws-guide-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 0.9rem 0.75rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  background: linear-gradient(180deg, #f0fdfa 0%, #ffffff 100%);
+}
+
+.ws-guide-kicker {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #0f766e;
+}
+
+.ws-guide-header h2 {
+  margin: 0.15rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.ws-guide-sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: #64748b;
+}
+
+.ws-guide-close {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #64748b;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ws-guide-close:hover,
+.ws-guide-close:focus-visible {
+  background: rgba(15, 23, 42, 0.06);
+  color: #0f172a;
+  outline: none;
+}
+
+.ws-guide-messages {
+  flex: 1;
+  min-height: 10rem;
+  overflow-y: auto;
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  background: #f8fafc;
+}
+
+.ws-guide-bubble {
+  max-width: 95%;
+}
+
+.ws-guide-bubble-user {
+  align-self: flex-end;
+}
+
+.ws-guide-bubble-assistant {
+  align-self: flex-start;
+}
+
+.ws-guide-bubble-text {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #0f172a;
+}
+
+.ws-guide-bubble-text p {
+  margin: 0;
+}
+
+.ws-guide-bubble-text p + p {
+  margin-top: 0.4rem;
+}
+
+.ws-guide-bubble-text a {
+  color: #0f766e;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.ws-guide-bubble-text strong {
+  font-weight: 650;
+}
+
+.ws-guide-bubble-user .ws-guide-bubble-text {
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.85rem 0.85rem 0.25rem 0.85rem;
+  background: #0f766e;
+  color: #f0fdfa;
+}
+
+.ws-guide-bubble-user .ws-guide-bubble-text a {
+  color: #ccfbf1;
+}
+
+.ws-guide-bubble-assistant .ws-guide-bubble-text {
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.85rem 0.85rem 0.85rem 0.25rem;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.ws-guide-links {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.ws-guide-links a {
+  display: inline-flex;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 118, 110, 0.25);
+  background: #ffffff;
+  color: #0f766e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ws-guide-links a:hover,
+.ws-guide-links a:focus-visible {
+  background: #f0fdfa;
+  outline: none;
+}
+
+.ws-guide-typing {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.ws-guide-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.55rem 0.85rem 0;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+  background: #ffffff;
+}
+
+.ws-guide-chip {
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.75rem;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.ws-guide-chip:hover:not(:disabled),
+.ws-guide-chip:focus-visible:not(:disabled) {
+  border-color: rgba(15, 118, 110, 0.35);
+  background: #f0fdfa;
+  outline: none;
+}
+
+.ws-guide-chip:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ws-guide-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem 0.85rem;
+  background: #ffffff;
+}
+
+.ws-guide-form textarea {
   width: 100%;
-  height: 100%;
-  min-width: 0;
-  min-height: 0;
-  object-fit: contain;
-  border-radius: 3px;
+  resize: none;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  padding: 0.55rem 0.65rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: #0f172a;
+  background: #f8fafc;
 }
 
-@keyframes sheetomatic-ai-launcher-enter {
+.ws-guide-form textarea:focus {
+  outline: 2px solid rgba(15, 118, 110, 0.35);
+  outline-offset: 1px;
+  border-color: rgba(15, 118, 110, 0.45);
+  background: #ffffff;
+}
+
+.ws-guide-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.ws-guide-quick {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0f766e;
+  text-decoration: none;
+}
+
+.ws-guide-quick:hover,
+.ws-guide-quick:focus-visible {
+  text-decoration: underline;
+  outline: none;
+}
+
+.ws-guide-form-actions button[type="submit"] {
+  margin-left: auto;
+  min-height: 2rem;
+  padding: 0.35rem 0.85rem;
+  border: none;
+  border-radius: 0.55rem;
+  background: #0f766e;
+  color: #f0fdfa;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.ws-guide-form-actions button[type="submit"]:hover:not(:disabled),
+.ws-guide-form-actions button[type="submit"]:focus-visible:not(:disabled) {
+  background: #115e59;
+  outline: none;
+}
+
+.ws-guide-form-actions button[type="submit"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ws-guide-error {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #b91c1c;
+}
+
+@keyframes ws-guide-panel-in {
   from {
     opacity: 0;
-    transform: translate(10px, 14px) scale(0.9);
+    transform: translateY(8px) scale(0.98);
   }
-
   to {
     opacity: 1;
-    transform: translate(0, 0) scale(1);
-  }
-}
-
-@keyframes sheetomatic-ai-launcher-ring {
-  0%,
-  100% {
-    opacity: 0;
-    transform: scale(1);
-  }
-
-  45% {
-    opacity: 0.55;
-    transform: scale(1.06);
+    transform: translateY(0) scale(1);
   }
 }
 
 @media (max-width: 640px) {
-  .sheetomatic-ai-launcher {
-    --launcher-size: 2.375rem;
-    --launcher-icon: 17px;
+  .ws-guide {
+    bottom: max(4.75rem, calc(env(safe-area-inset-bottom) + 3.75rem));
   }
 
-  .sheetomatic-ai-launcher-wrap:not(.is-dragging) .sheetomatic-ai-launcher:hover,
-  .sheetomatic-ai-launcher-wrap:not(.is-dragging) .sheetomatic-ai-launcher:focus-visible {
-    width: var(--launcher-size);
-    max-width: var(--launcher-size);
-    padding: 0;
-    gap: 0;
-    transform: none;
-  }
-
-  .sheetomatic-ai-launcher-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-    max-width: 0;
-    opacity: 0;
+  .ws-guide-panel {
+    max-height: min(28rem, calc(100vh - 9rem));
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sheetomatic-ai-launcher {
+  .ws-guide-panel,
+  .ws-guide-fab {
     animation: none;
     transition: none;
   }
 
-  .sheetomatic-ai-launcher::before {
-    animation: none;
-  }
-
-  .sheetomatic-ai-launcher-wrap:not(.is-dragging) .sheetomatic-ai-launcher:hover,
-  .sheetomatic-ai-launcher-wrap:not(.is-dragging) .sheetomatic-ai-launcher:focus-visible {
+  .ws-guide-fab:hover,
+  .ws-guide-fab:focus-visible {
     transform: none;
-  }
-
-  .sheetomatic-ai-launcher-label {
-    transition: none;
   }
 }

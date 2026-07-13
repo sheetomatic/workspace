@@ -2,236 +2,359 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { shouldShowSiteAssistant } from "@/lib/site-assistant/visibility";
-import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
-import { parseHost } from "@/lib/subdomain";
-import { aiPortalOrigin } from "@/lib/workspace-auth-links";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
+import { isAllowedWorkspaceAssistantHref } from "@/lib/workspace-assistant/links";
+import { shouldShowWorkspaceAssistant } from "@/lib/workspace-assistant/visibility";
 import "./sheetomatic-ai-launcher.css";
 
-const STORAGE_KEY = "sheetomatic-ai-launcher-pos";
-const LAUNCHER_SIZE = 40;
-const DRAG_THRESHOLD_PX = 6;
+type ChatLink = { label: string; href: string };
+type ChatMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  links?: ChatLink[];
+};
 
-type LauncherPosition = { x: number; y: number };
+const STARTER_CHIPS: { label: string; prompt: string }[] = [
+  { label: "FMS steps", prompt: "How do I complete my FMS steps in My stops?" },
+  { label: "IMS stock", prompt: "Where do I check IMS stock and reorder exceptions?" },
+  { label: "Tasks / EA", prompt: "How do I create a task and see my EA work for today?" },
+  { label: "EM Ready", prompt: "How do I open EM Ready for the weekly review?" },
+  { label: "Checklists", prompt: "How do I run my checklists or PC today?" },
+];
 
-function resolveAiLauncherHref(hostname: string, protocol: string): string {
-  const { kind } = parseHost(hostname);
+const WELCOME: ChatMessage = {
+  id: "welcome",
+  role: "assistant",
+  content:
+    "Hi — I'm **Workspace help** (Ask guide). Ask how to use FMS, IMS, Tasks, Checklists, HR, or EM Ready. I'll point you to the right screen — not WhatsApp AI sales.",
+  links: [
+    { label: "My FMS stops", href: "/app/fms/my-stops" },
+    { label: "IMS stock", href: "/app/ims/stock" },
+    { label: "EM Ready", href: "/app/em" },
+  ],
+};
 
-  if (kind === "ai") {
-    return "/ai/app";
-  }
-
-  if (kind === "workspace" || kind === "tenant") {
-    return `${aiPortalOrigin(protocol.replace(":", ""))}/ai/app`;
-  }
-
-  return "/ai";
-}
-
-function subscribeToHostname(onStoreChange: () => void) {
+function subscribeHost(onStoreChange: () => void) {
   window.addEventListener("popstate", onStoreChange);
   return () => window.removeEventListener("popstate", onStoreChange);
 }
 
-function getLauncherSnapshot() {
-  return resolveAiLauncherHref(window.location.hostname, window.location.protocol);
+function getHostSnapshot() {
+  return window.location.hostname;
 }
 
-function getLauncherServerSnapshot() {
-  return "/ai";
+function getHostServerSnapshot() {
+  return "workspace.sheetomatic.com";
 }
 
-function readStoredPosition(): LauncherPosition | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return null;
+function renderInlineMarkdown(text: string): ReactNode[] {
+  const parts: ReactNode[] = [];
+  const re = /(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g;
+  let last = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+  while ((match = re.exec(text)) !== null) {
+    if (match.index > last) {
+      parts.push(text.slice(last, match.index));
     }
-    const parsed = JSON.parse(raw) as LauncherPosition;
-    if (
-      typeof parsed.x === "number" &&
-      typeof parsed.y === "number" &&
-      Number.isFinite(parsed.x) &&
-      Number.isFinite(parsed.y)
-    ) {
-      return parsed;
+    const token = match[0];
+    if (token.startsWith("**")) {
+      parts.push(<strong key={key++}>{token.slice(2, -2)}</strong>);
+    } else {
+      const m = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(token);
+      if (m) {
+        const href = m[2].trim();
+        const label = m[1];
+        if (!isAllowedWorkspaceAssistantHref(href)) {
+          parts.push(label);
+        } else if (href.startsWith("https://")) {
+          parts.push(
+            <a key={key++} href={href} target="_blank" rel="noopener noreferrer">
+              {label}
+            </a>,
+          );
+        } else {
+          parts.push(
+            <Link key={key++} href={href}>
+              {label}
+            </Link>,
+          );
+        }
+      } else {
+        parts.push(token);
+      }
     }
-  } catch {
-    // ignore corrupt storage
+    last = match.index + token.length;
   }
-  return null;
+  if (last < text.length) {
+    parts.push(text.slice(last));
+  }
+  return parts;
 }
 
-function defaultPosition(): LauncherPosition {
-  const margin = 16;
-  const mobileNavOffset =
-    window.matchMedia("(max-width: 640px)").matches ? 68 : 0;
-  const safeBottom = Number.parseFloat(
-    getComputedStyle(document.documentElement).getPropertyValue(
-      "env(safe-area-inset-bottom)",
-    ) || "0",
-  );
-  const size =
-    window.matchMedia("(max-width: 640px)").matches ? 38 : LAUNCHER_SIZE;
-
-  return {
-    x: Math.max(margin, window.innerWidth - size - margin),
-    y: Math.max(
-      margin,
-      window.innerHeight - size - margin - mobileNavOffset - safeBottom,
-    ),
-  };
-}
-
-function clampPosition(position: LauncherPosition, size: number): LauncherPosition {
-  const margin = 8;
-  return {
-    x: Math.min(Math.max(margin, position.x), window.innerWidth - size - margin),
-    y: Math.min(Math.max(margin, position.y), window.innerHeight - size - margin),
-  };
-}
-
+/**
+ * Floating Workspace guide on workspace hosts and /app/*.
+ * Opens a chat panel (not a dead link to /ai). Separate from marketing Ask Sheetomatic.
+ */
 export function SheetomaticAiLauncher() {
   const pathname = usePathname() || "/";
-  const href = useSyncExternalStore(
-    subscribeToHostname,
-    getLauncherSnapshot,
-    getLauncherServerSnapshot,
-  );
   const hostname = useSyncExternalStore(
-    subscribeToHostname,
-    () => window.location.hostname,
-    () => "sheetomatic.com",
+    subscribeHost,
+    getHostSnapshot,
+    getHostServerSnapshot,
   );
-  /** Avoid two FABs on marketing — Ask Sheetomatic owns that surface. */
-  const hideForSiteGuide = shouldShowSiteAssistant(pathname, hostname);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState<LauncherPosition | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const blockClickRef = useRef(false);
-  const dragRef = useRef<{
-    pointerId: number;
-    startX: number;
-    startY: number;
-    originX: number;
-    originY: number;
-    moved: boolean;
-  } | null>(null);
+  const visible = shouldShowWorkspaceAssistant(pathname, hostname);
+
+  const panelId = useId();
+  const titleId = useId();
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
 
   useEffect(() => {
-    const stored = readStoredPosition();
-    const next = clampPosition(stored ?? defaultPosition(), LAUNCHER_SIZE);
-    setPosition(next);
-  }, []);
+    if (!open) return;
+    const t = window.setTimeout(() => inputRef.current?.focus(), 50);
+    return () => window.clearTimeout(t);
+  }, [open]);
 
   useEffect(() => {
-    function onResize() {
-      setPosition((current) =>
-        current ? clampPosition(current, LAUNCHER_SIZE) : current,
-      );
-    }
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
+    if (!listRef.current) return;
+    listRef.current.scrollTop = listRef.current.scrollHeight;
+  }, [messages, busy, open]);
 
-  const persistPosition = useCallback((next: LauncherPosition) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      // storage may be unavailable
+  useEffect(() => {
+    if (!open) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
     }
-  }, []);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
 
-  function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
-    if (event.button !== 0 || !position) {
-      return;
-    }
-    event.preventDefault();
-    dragRef.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      originX: position.x,
-      originY: position.y,
-      moved: false,
-    };
-    setIsDragging(true);
-    event.currentTarget.setPointerCapture(event.pointerId);
-  }
+  const send = useCallback(
+    async (raw: string) => {
+      const text = raw.trim();
+      if (!text || busy) return;
 
-  function onPointerMove(event: React.PointerEvent<HTMLDivElement>) {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) {
-      return;
-    }
-    const deltaX = event.clientX - drag.startX;
-    const deltaY = event.clientY - drag.startY;
-    if (
-      !drag.moved &&
-      Math.hypot(deltaX, deltaY) >= DRAG_THRESHOLD_PX
-    ) {
-      drag.moved = true;
-    }
-    const next = clampPosition(
-      { x: drag.originX + deltaX, y: drag.originY + deltaY },
-      LAUNCHER_SIZE,
-    );
-    setPosition(next);
-  }
+      setError(null);
+      setInput("");
+      const userMsg: ChatMessage = {
+        id: `u-${Date.now()}`,
+        role: "user",
+        content: text,
+      };
 
-  function endDrag(event: React.PointerEvent<HTMLDivElement>) {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) {
-      return;
-    }
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-    const deltaX = event.clientX - drag.startX;
-    const deltaY = event.clientY - drag.startY;
-    const next = clampPosition(
-      { x: drag.originX + deltaX, y: drag.originY + deltaY },
-      LAUNCHER_SIZE,
-    );
-    setPosition(next);
-    persistPosition(next);
-    dragRef.current = null;
-    blockClickRef.current = drag.moved;
-    setIsDragging(false);
-  }
+      setMessages((prev) => [...prev, userMsg]);
+      setBusy(true);
 
-  if (!position || hideForSiteGuide) {
+      const historyPayload = [...messages, userMsg]
+        .filter((m) => m.id !== "welcome")
+        .map((m) => ({ role: m.role, content: m.content }));
+
+      try {
+        const res = await fetch("/api/workspace-assistant", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: historyPayload }),
+        });
+        const data = (await res.json()) as {
+          reply?: string;
+          links?: ChatLink[];
+          error?: string;
+        };
+        if (!res.ok) {
+          throw new Error(data.error || "Something went wrong.");
+        }
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `a-${Date.now()}`,
+            role: "assistant",
+            content:
+              data.reply?.trim() ||
+              "I could not form an answer. Try again, or ask an Admin.",
+            links: data.links,
+          },
+        ]);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Could not reach Workspace help.";
+        setError(message);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `a-err-${Date.now()}`,
+            role: "assistant",
+            content:
+              "I hit a snag answering that. Try again, or open [Settings](/app/settings) and ask an Admin.",
+            links: [{ label: "Settings", href: "/app/settings" }],
+          },
+        ]);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [busy, messages],
+  );
+
+  if (!visible) {
     return null;
   }
 
   return (
-    <div
-      ref={wrapRef}
-      className={`sheetomatic-ai-launcher-wrap${isDragging ? " is-dragging" : ""}`}
-      style={{ left: position.x, top: position.y }}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={endDrag}
-      onPointerCancel={endDrag}
-    >
-      <Link
-        className="sheetomatic-ai-launcher"
-        href={href}
-        aria-label="Open Sheetomatic AI"
-        title="Sheetomatic AI — drag to move"
-        draggable={false}
-        onClick={(event) => {
-          if (blockClickRef.current) {
-            event.preventDefault();
-            blockClickRef.current = false;
-          }
-        }}
-        onDragStart={(event) => event.preventDefault()}
+    <div className="ws-guide" data-open={open ? "true" : "false"}>
+      {open ? (
+        <section
+          className="ws-guide-panel"
+          id={panelId}
+          role="dialog"
+          aria-modal="false"
+          aria-labelledby={titleId}
+        >
+          <header className="ws-guide-header">
+            <div className="ws-guide-header-copy">
+              <p className="ws-guide-kicker">Workspace guide</p>
+              <h2 id={titleId}>Ask guide</h2>
+              <p className="ws-guide-sub">
+                How to use FMS, IMS, Tasks, HR &amp; EM — not WhatsApp AI
+              </p>
+            </div>
+            <button
+              type="button"
+              className="ws-guide-close"
+              aria-label="Close Ask guide"
+              onClick={() => setOpen(false)}
+            >
+              ×
+            </button>
+          </header>
+
+          <div className="ws-guide-messages" ref={listRef} tabIndex={0}>
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`ws-guide-bubble ws-guide-bubble-${msg.role}`}
+              >
+                <div className="ws-guide-bubble-text">
+                  {msg.content.split("\n").map((line, i) => (
+                    <p key={`${msg.id}-${i}`}>{renderInlineMarkdown(line)}</p>
+                  ))}
+                </div>
+                {msg.links && msg.links.length > 0 ? (
+                  <ul className="ws-guide-links">
+                    {msg.links.map((link) => (
+                      <li key={`${msg.id}-${link.href}-${link.label}`}>
+                        <Link href={link.href} onClick={() => setOpen(false)}>
+                          {link.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ))}
+            {busy ? (
+              <p className="ws-guide-typing" aria-live="polite">
+                Thinking…
+              </p>
+            ) : null}
+          </div>
+
+          <div className="ws-guide-chips" aria-label="Suggested topics">
+            {STARTER_CHIPS.map((chip) => (
+              <button
+                key={chip.label}
+                type="button"
+                className="ws-guide-chip"
+                disabled={busy}
+                onClick={() => void send(chip.prompt)}
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
+
+          <form
+            className="ws-guide-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void send(input);
+            }}
+          >
+            <label className="sr-only" htmlFor={`${panelId}-input`}>
+              Ask how to use Workspace
+            </label>
+            <textarea
+              id={`${panelId}-input`}
+              ref={inputRef}
+              rows={2}
+              value={input}
+              disabled={busy}
+              placeholder="Ask how to use FMS, IMS, EM…"
+              onChange={(event) => setInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  void send(input);
+                }
+              }}
+            />
+            <div className="ws-guide-form-actions">
+              <Link
+                className="ws-guide-quick"
+                href="/app/fms/my-stops"
+                onClick={() => setOpen(false)}
+              >
+                My stops
+              </Link>
+              <Link
+                className="ws-guide-quick"
+                href="/app/em"
+                onClick={() => setOpen(false)}
+              >
+                EM Ready
+              </Link>
+              <button type="submit" disabled={busy || !input.trim()}>
+                Send
+              </button>
+            </div>
+            {error ? (
+              <p className="ws-guide-error" role="alert">
+                {error}
+              </p>
+            ) : null}
+          </form>
+        </section>
+      ) : null}
+
+      <button
+        type="button"
+        className="ws-guide-fab"
+        aria-expanded={open}
+        aria-controls={open ? panelId : undefined}
+        aria-label={open ? "Close Ask guide" : "Open Ask guide"}
+        onClick={() => setOpen((v) => !v)}
       >
-        <SheetomaticAiMark variant="icon" sizes="sm" />
-        <span className="sheetomatic-ai-launcher-label">Sheetomatic AI</span>
-      </Link>
+        <span className="ws-guide-fab-icon" aria-hidden>
+          {open ? "×" : "?"}
+        </span>
+        <span className="ws-guide-fab-label">Ask guide</span>
+      </button>
     </div>
   );
 }
