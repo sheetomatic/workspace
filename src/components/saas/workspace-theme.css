@@ -8129,6 +8129,29 @@ body:has(.workspace-app.saas-app) {
   color: #64748b;
 }
 
+.workspace-app .ws-inbox-clear-btn {
+  flex-shrink: 0;
+  margin-top: 2px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #64748b;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 5px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.workspace-app .ws-inbox-clear-btn:hover:not(:disabled) {
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.workspace-app .ws-inbox-clear-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .workspace-app .ws-inbox-list-hint {
   margin: 0 14px 10px;
   font-size: 0.6875rem;

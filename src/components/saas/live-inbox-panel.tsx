@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition, type KeyboardEvent } from "react";
 import {
+  clearAllInboxHistory,
   sendInboxReply,
   setInboxHumanTakeover,
 } from "@/app/ai/app/inbox/actions";
@@ -168,6 +169,20 @@ export function LiveInboxPanel({
     }
   }
 
+  function clearAllChats() {
+    const confirmed = window.confirm(
+      "Clear all WhatsApp chats, saved names, and history for this workspace? New messages will appear as fresh phone-only threads.",
+    );
+    if (!confirmed) {
+      return;
+    }
+    startTransition(async () => {
+      const result = await clearAllInboxHistory();
+      setFeedback(result.message);
+      router.refresh();
+    });
+  }
+
   if (conversations.length === 0) {
     return (
       <div className="ws-inbox-empty">
@@ -220,6 +235,14 @@ export function LiveInboxPanel({
             <h2>WhatsApp Inbox</h2>
             <p>{filtered.length} live conversation{filtered.length === 1 ? "" : "s"}</p>
           </div>
+          <button
+            type="button"
+            className="ws-inbox-clear-btn"
+            disabled={pending}
+            onClick={clearAllChats}
+          >
+            Clear all
+          </button>
         </div>
         <p className="ws-inbox-list-hint">
           Customer messages on your Official WhatsApp appear here. Type a reply below

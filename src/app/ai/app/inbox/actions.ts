@@ -6,6 +6,7 @@ import { getSessionUser } from "@/lib/auth";
 import { hasMinimumRole } from "@/lib/permissions";
 import { sendWhatsAppText } from "@/lib/whatsapp-bot/send";
 import {
+  clearAllWaInboxHistory,
   getWaConversation,
   markConversationRead,
   recordWaOutboundMessage,
@@ -14,6 +15,25 @@ import {
 import { hasActiveWhatsAppSession } from "@/lib/whatsapp-session";
 
 export type InboxActionState = { ok: boolean; message: string };
+
+/** Admin-only: wipe all WhatsApp chats, contact names, and inbound history for this org. */
+export async function clearAllInboxHistory(): Promise<InboxActionState> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, AI_APP_MIN_ROLE)) {
+    return { ok: false, message: "You cannot clear inbox history." };
+  }
+
+  const result = await clearAllWaInboxHistory(user.organizationId);
+
+  revalidatePath("/ai/app/inbox");
+  revalidatePath("/ai/app/contacts");
+  revalidatePath("/ai/app/crm");
+
+  return {
+    ok: true,
+    message: `Cleared ${result.conversations} chats, ${result.contacts} contacts, ${result.messages} messages. New messages will appear fresh.`,
+  };
+}
 
 export async function sendInboxReply(
   conversationId: string,

@@ -5,7 +5,6 @@ import { triggerWaCrmSheetSync } from "@/lib/integrations/google-sheets-wa-crm";
 import { queueLeadSyncFromWhatsApp } from "@/lib/leads/ingest";
 import { normalizeWhatsAppPhone } from "@/lib/phone";
 import { SCALE } from "@/lib/scale";
-import { safeCustomerDisplayName } from "@/lib/wa-safe-customer-name";
 
 export function waInboxListTag(organizationId: string) {
   return `wa-inbox-list-${organizationId}`;
@@ -77,7 +76,8 @@ export async function recordWaInboundMessage(params: {
     create: {
       organizationId: params.organizationId,
       phone,
-      name: safeCustomerDisplayName(params.contactName) ?? null,
+      // Never store WhatsApp profile push names — show phone until staff/form sets a real name.
+      name: null,
       intent: params.intent ?? "General",
       source: "whatsapp",
       lastMessageAt: new Date(),
@@ -435,6 +435,28 @@ export async function setWaContactAiEnabled(
   }
 
   return updated.count > 0;
+}
+
+/** Wipe inbox chats, contact names, and inbound event memory for one tenant. */
+export async function clearAllWaInboxHistory(organizationId: string) {
+  const [messages, conversations, followUps, contacts, inboundEvents] =
+    await prisma.$transaction([
+      prisma.waMessage.deleteMany({ where: { organizationId } }),
+      prisma.waConversation.deleteMany({ where: { organizationId } }),
+      prisma.waContactFollowUp.deleteMany({ where: { organizationId } }),
+      prisma.waContact.deleteMany({ where: { organizationId } }),
+      prisma.whatsAppInboundEvent.deleteMany({ where: { organizationId } }),
+    ]);
+
+  bustInboxListCache(organizationId);
+
+  return {
+    messages: messages.count,
+    conversations: conversations.count,
+    followUps: followUps.count,
+    contacts: contacts.count,
+    inboundEvents: inboundEvents.count,
+  };
 }
 
 export { parseContactTags } from "@/lib/wa-crm-shared";
