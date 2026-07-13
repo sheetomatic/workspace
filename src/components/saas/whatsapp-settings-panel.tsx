@@ -116,13 +116,18 @@ export function WhatsAppSettingsPanel({
         <input name="whatsappProvider" type="hidden" value={provider} />
 
         <label className="ws-wa-side-phone">
-          <span>Business WhatsApp number</span>
+          <span>Official API WhatsApp number</span>
           <input
             defaultValue={initialValues.businessPhone}
             name="businessPhone"
-            placeholder="9329103106"
+            placeholder="9685788980"
             type="text"
           />
+          <small className="ws-wa-field-hint">
+            Cloud API / inbox number only (e.g. +91 96857 88980). Website
+            communication number (+91 93291 03106) stays separate — do not put it
+            here.
+          </small>
         </label>
 
         {isOfficial ? (

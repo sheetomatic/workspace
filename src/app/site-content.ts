@@ -1,8 +1,13 @@
+/** Website / sales communication WhatsApp (not the Cloud Official API line). */
 export const whatsappPhone = "919329103106";
 
 export const whatsappDisplayNumber = "+91 93291 03106";
 
 export const whatsappTel = "+919329103106";
+
+/** Official Cloud API business number (inbox / Go Live). Do not use for site wa.me CTAs. */
+export const officialApiWhatsAppPhone = "919685788980";
+export const officialApiWhatsAppDisplay = "+91 96857 88980";
 
 export function buildWhatsAppUrl(message: string) {
   return `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(message)}`;
