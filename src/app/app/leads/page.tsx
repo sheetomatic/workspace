@@ -247,6 +247,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
         activeStatus={listParams.status}
         baseParams={params}
         byStatus={periodStats.byStatus}
+        numbersMetrics={numbersMetrics}
         pipeMetrics={pipeMetrics}
       />
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LeadsPipelineFilters } from "@/components/saas/leads-pipeline-filters";
+import type { CrmNumbersMetrics } from "@/components/saas/leads-numbers-dashboard";
 import { buildLeadsListQuery, type LeadsListSearchParams } from "@/lib/leads/list-params";
 
 export function LeadsPipelineCards({
@@ -7,6 +8,7 @@ export function LeadsPipelineCards({
   activeStatus,
   activeCategory,
   pipeMetrics,
+  numbersMetrics,
   byStatus,
 }: {
   baseParams: LeadsListSearchParams;
@@ -16,12 +18,6 @@ export function LeadsPipelineCards({
     pipeCount: number;
     pipeValueLabel: string;
     forecastValueLabel: string;
-    wonCount: number;
-    wonValueLabel: string;
-    invoiceCount: number;
-    invoiceValueLabel: string;
-    conversionRate: number;
-    conversionValueRate: number;
     totalValueLabel: string;
     byCategory: Array<{
       category: string;
@@ -30,6 +26,7 @@ export function LeadsPipelineCards({
       valueLabel: string;
     }>;
   };
+  numbersMetrics: CrmNumbersMetrics;
   byStatus: Record<string, number>;
 }) {
   return (
@@ -50,27 +47,31 @@ export function LeadsPipelineCards({
           <span>Forecast</span>
           <strong>{pipeMetrics.forecastValueLabel}</strong>
         </article>
-        <Link
-          className="hs-quick-stat accent-purple leads-pipeline-card"
-          href={`/app/leads?${buildLeadsListQuery(baseParams, { status: "INVOICE", page: "1" })}`}
-        >
-          <span>Invoice count</span>
-          <strong>{pipeMetrics.invoiceCount}</strong>
-        </Link>
-        <Link
-          className="hs-quick-stat accent-indigo leads-pipeline-card"
-          href={`/app/leads?${buildLeadsListQuery(baseParams, { status: "INVOICE", page: "1" })}`}
-        >
+        <article className="hs-quick-stat accent-success leads-pipeline-card is-static">
+          <span>Payment received</span>
+          <strong>
+            {numbersMetrics.paymentsReceivedValueLabel}
+            <small className="leads-kpi-sub">
+              {numbersMetrics.paymentsReceivedCount} by received date
+            </small>
+          </strong>
+        </article>
+        <article className="hs-quick-stat accent-indigo leads-pipeline-card is-static">
           <span>Invoice value</span>
-          <strong>{pipeMetrics.invoiceValueLabel}</strong>
-        </Link>
-        <Link
-          className="hs-quick-stat accent-success leads-pipeline-card"
-          href={`/app/leads?${buildLeadsListQuery(baseParams, { status: "WON", page: "1" })}`}
-        >
-          <span>Won · {pipeMetrics.conversionRate}%</span>
-          <strong>{pipeMetrics.wonValueLabel}</strong>
-        </Link>
+          <strong>
+            {numbersMetrics.invoicesGeneratedValueLabel}
+            <small className="leads-kpi-sub">
+              {numbersMetrics.invoicesGeneratedCount} generated
+            </small>
+          </strong>
+        </article>
+        <article className="hs-quick-stat accent-purple leads-pipeline-card is-static">
+          <span>New clients onboarded</span>
+          <strong>
+            {numbersMetrics.newClientsOnboardedCount}
+            <small className="leads-kpi-sub">First invoice or payment</small>
+          </strong>
+        </article>
         <article className="hs-quick-stat leads-pipeline-card is-static">
           <span>Total pipeline</span>
           <strong>{pipeMetrics.totalValueLabel}</strong>

@@ -236,39 +236,85 @@ export async function getLeadsPipeMetricsForPeriod(
 /**
  * CRM numbers dashboard: counts/values by document dates —
  * Quotation Generated Date, Invoice Generated Date (= quotationDate), Payment Received Date.
+ * New clients onboarded = first invoice or first payment ever falls in the period
+ * (repeat invoices/payments to regulars do not count again).
  */
 export async function getCrmNumbersMetricsForPeriod(
   organizationId: string,
   period: LeadsPeriodRange,
 ) {
-  const [quotations, invoices, payments] = await Promise.all([
-    prisma.inboundLeadQuotation.aggregate({
-      where: {
-        organizationId,
-        requestType: "PROPOSAL",
-        ...quotationGeneratedDateWhere(period),
-      },
-      _sum: { totalAmount: true },
-      _count: { _all: true },
-    }),
-    prisma.inboundLeadQuotation.aggregate({
-      where: {
-        organizationId,
-        requestType: "INVOICE",
-        ...quotationGeneratedDateWhere(period),
-      },
-      _sum: { totalAmount: true },
-      _count: { _all: true },
-    }),
-    prisma.inboundLeadPayment.aggregate({
-      where: {
-        organizationId,
-        ...paymentReceivedDateWhere(period),
-      },
-      _sum: { receivedAmount: true },
-      _count: { _all: true },
-    }),
+  const [quotations, invoices, payments, firstInvoices, firstPayments] =
+    await Promise.all([
+      prisma.inboundLeadQuotation.aggregate({
+        where: {
+          organizationId,
+          requestType: "PROPOSAL",
+          ...quotationGeneratedDateWhere(period),
+        },
+        _sum: { totalAmount: true },
+        _count: { _all: true },
+      }),
+      prisma.inboundLeadQuotation.aggregate({
+        where: {
+          organizationId,
+          requestType: "INVOICE",
+          ...quotationGeneratedDateWhere(period),
+        },
+        _sum: { totalAmount: true },
+        _count: { _all: true },
+      }),
+      prisma.inboundLeadPayment.aggregate({
+        where: {
+          organizationId,
+          ...paymentReceivedDateWhere(period),
+        },
+        _sum: { receivedAmount: true },
+        _count: { _all: true },
+      }),
+      prisma.inboundLeadQuotation.groupBy({
+        by: ["leadId"],
+        where: { organizationId, requestType: "INVOICE" },
+        _min: { quotationDate: true },
+      }),
+      prisma.inboundLeadPayment.groupBy({
+        by: ["leadId"],
+        where: { organizationId },
+        _min: { receivedDate: true },
+      }),
+    ]);
+
+  const firstInvoiceByLead = new Map(
+    firstInvoices.map((row) => [row.leadId, row._min.quotationDate]),
+  );
+  const firstPaymentByLead = new Map(
+    firstPayments.map((row) => [row.leadId, row._min.receivedDate]),
+  );
+  const leadIds = new Set([
+    ...firstInvoiceByLead.keys(),
+    ...firstPaymentByLead.keys(),
   ]);
+
+  let newClientsOnboardedCount = 0;
+  for (const leadId of leadIds) {
+    const invoiceAt = firstInvoiceByLead.get(leadId) ?? null;
+    const paymentAt = firstPaymentByLead.get(leadId) ?? null;
+    const onboardedAt =
+      invoiceAt && paymentAt
+        ? invoiceAt <= paymentAt
+          ? invoiceAt
+          : paymentAt
+        : (invoiceAt ?? paymentAt);
+    if (!onboardedAt) {
+      continue;
+    }
+    if (period.type === "all") {
+      newClientsOnboardedCount += 1;
+      continue;
+    }
+    if (onboardedAt >= period.start && onboardedAt <= period.end) {
+      newClientsOnboardedCount += 1;
+    }
+  }
 
   const quotationValue = Number(quotations._sum.totalAmount ?? 0);
   const invoiceValue = Number(invoices._sum.totalAmount ?? 0);
@@ -284,6 +330,7 @@ export async function getCrmNumbersMetricsForPeriod(
     paymentsReceivedCount: payments._count._all,
     paymentsReceivedValue: paymentValue,
     paymentsReceivedValueLabel: formatInr(paymentValue),
+    newClientsOnboardedCount,
   };
 }
 

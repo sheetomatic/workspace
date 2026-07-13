@@ -5,9 +5,10 @@ export type CrmNumbersMetrics = {
   invoicesGeneratedValueLabel: string;
   paymentsReceivedCount: number;
   paymentsReceivedValueLabel: string;
+  newClientsOnboardedCount: number;
 };
 
-/** Numbers dashboard keyed by Quotation/Invoice Generated Date and Payment Received Date. */
+/** Numbers dashboard keyed by generated/received dates + first-time clients. */
 export function LeadsNumbersDashboard({
   metrics,
   periodLabel,
@@ -20,8 +21,9 @@ export function LeadsNumbersDashboard({
       <header className="leads-numbers-dashboard-head">
         <h2>Numbers dashboard</h2>
         <p>
-          Period · {periodLabel}. Quotations and invoices by generated date;
-          payments by received date.
+          Period · {periodLabel}. Quotations/invoices by generated date; payments by
+          received date. New clients count only the first invoice or payment — repeat
+          billing to regulars is excluded.
         </p>
       </header>
       <div className="hs-quick-stats">
@@ -44,12 +46,19 @@ export function LeadsNumbersDashboard({
           </strong>
         </article>
         <article className="hs-quick-stat accent-success leads-pipeline-card is-static">
-          <span>Payments received</span>
+          <span>Payment received</span>
           <strong>
             {metrics.paymentsReceivedCount}
             <small className="leads-kpi-sub">
               {metrics.paymentsReceivedValueLabel}
             </small>
+          </strong>
+        </article>
+        <article className="hs-quick-stat accent-blue leads-pipeline-card is-static">
+          <span>New clients onboarded</span>
+          <strong>
+            {metrics.newClientsOnboardedCount}
+            <small className="leads-kpi-sub">First-time only</small>
           </strong>
         </article>
       </div>
