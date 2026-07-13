@@ -2,10 +2,22 @@ import type { LeadNurtureEventId } from "@/lib/leads/nurture/templates";
 import { LEAD_NURTURE_EVENT_LABELS, STAGE_NURTURE_MIN_GAP_HOURS } from "@/lib/leads/nurture/templates";
 import { prisma } from "@/lib/db";
 
+export type LeadAlertRuleConfig = {
+  enabled: boolean;
+  afterDays: number;
+};
+
+export type LeadAlertOrgConfig = {
+  paymentNotReceived: LeadAlertRuleConfig;
+  quotationNotAccepted: LeadAlertRuleConfig;
+  negotiationFollowUp: LeadAlertRuleConfig;
+};
+
 export type LeadNurtureOrgConfig = {
   enabled: boolean;
   stageMinGapHours: number;
   templates: Partial<Record<LeadNurtureEventId, string>>;
+  alerts: LeadAlertOrgConfig;
 };
 
 export const NURTURE_TEMPLATE_PLACEHOLDERS = [
@@ -83,6 +95,36 @@ Thank you — your requirement looks like a good fit for Sheetomatic.
 We will share the next steps (demo scope, timeline, and commercial) based on our discussion.
 
 — Team Sheetomatic`,
+
+  alert_payment_pending: `Hi {{firstName}},
+
+Friendly reminder — we are awaiting *payment* against your Sheetomatic invoice / commercial.
+
+Once payment is received, we can start / continue delivery without delay.
+
+Reply here if you need the invoice, bank details, or a payment link again.
+
+— Team Sheetomatic`,
+
+  alert_quotation_pending: `Hi {{firstName}},
+
+Just checking in — have you had a chance to review the *quotation / proposal* we shared?
+
+If anything needs clarification on scope, timeline, or pricing, reply here and we will adjust.
+
+Reply *OK* to proceed, or *DISCUSS* if you want a short negotiation call.
+
+— Team Sheetomatic`,
+
+  alert_negotiation: `Hi {{firstName}},
+
+Following up on our *pricing / scope discussion*.
+
+We are happy to refine the proposal so it fits your budget and priority modules.
+
+Share what you would like changed, or pick a quick call slot — we will close this together.
+
+— Team Sheetomatic`,
 };
 
 const NURTURE_EVENT_IDS = Object.keys(LEAD_NURTURE_EVENT_LABELS) as LeadNurtureEventId[];
@@ -95,10 +137,45 @@ export const NURTURE_EVENT_ORDER: LeadNurtureEventId[] = [
   "stage_proposal",
   "stage_follow_up",
   "stage_qualified",
+  "alert_payment_pending",
+  "alert_quotation_pending",
+  "alert_negotiation",
+];
+
+export const ALERT_EVENT_ORDER: LeadNurtureEventId[] = [
+  "alert_payment_pending",
+  "alert_quotation_pending",
+  "alert_negotiation",
 ];
 
 function isNurtureEventId(value: string): value is LeadNurtureEventId {
   return NURTURE_EVENT_IDS.includes(value as LeadNurtureEventId);
+}
+
+function defaultAlerts(): LeadAlertOrgConfig {
+  return {
+    paymentNotReceived: { enabled: true, afterDays: 3 },
+    quotationNotAccepted: { enabled: true, afterDays: 2 },
+    negotiationFollowUp: { enabled: true, afterDays: 3 },
+  };
+}
+
+function parseAlertRule(raw: unknown, fallback: LeadAlertRuleConfig): LeadAlertRuleConfig {
+  if (!raw || typeof raw !== "object") {
+    return { ...fallback };
+  }
+  const input = raw as Record<string, unknown>;
+  const afterDaysRaw =
+    typeof input.afterDays === "number"
+      ? input.afterDays
+      : Number.parseInt(String(input.afterDays ?? ""), 10);
+  return {
+    enabled: input.enabled !== false,
+    afterDays:
+      Number.isFinite(afterDaysRaw) && afterDaysRaw >= 1
+        ? Math.min(Math.floor(afterDaysRaw), 90)
+        : fallback.afterDays,
+  };
 }
 
 export function defaultLeadNurtureConfig(): LeadNurtureOrgConfig {
@@ -106,6 +183,7 @@ export function defaultLeadNurtureConfig(): LeadNurtureOrgConfig {
     enabled: true,
     stageMinGapHours: STAGE_NURTURE_MIN_GAP_HOURS,
     templates: { ...DEFAULT_NURTURE_TEMPLATES },
+    alerts: defaultAlerts(),
   };
 }
 
@@ -132,10 +210,29 @@ export function parseLeadNurtureConfig(raw: unknown): LeadNurtureOrgConfig {
       ? Math.min(input.stageMinGapHours, 168)
       : defaults.stageMinGapHours;
 
+  const alertsRaw =
+    input.alerts && typeof input.alerts === "object"
+      ? (input.alerts as Record<string, unknown>)
+      : {};
+
   return {
     enabled: input.enabled !== false,
     stageMinGapHours: gap,
     templates,
+    alerts: {
+      paymentNotReceived: parseAlertRule(
+        alertsRaw.paymentNotReceived,
+        defaults.alerts.paymentNotReceived,
+      ),
+      quotationNotAccepted: parseAlertRule(
+        alertsRaw.quotationNotAccepted,
+        defaults.alerts.quotationNotAccepted,
+      ),
+      negotiationFollowUp: parseAlertRule(
+        alertsRaw.negotiationFollowUp,
+        defaults.alerts.negotiationFollowUp,
+      ),
+    },
   };
 }
 

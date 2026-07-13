@@ -16,7 +16,10 @@ export type LeadNurtureEventId =
   | "stage_schedule_meeting"
   | "stage_proposal"
   | "stage_follow_up"
-  | "stage_qualified";
+  | "stage_qualified"
+  | "alert_payment_pending"
+  | "alert_quotation_pending"
+  | "alert_negotiation";
 
 export const LEAD_NURTURE_EVENT_LABELS: Record<LeadNurtureEventId, string> = {
   welcome: "Welcome — inquiry received",
@@ -26,6 +29,9 @@ export const LEAD_NURTURE_EVENT_LABELS: Record<LeadNurtureEventId, string> = {
   stage_proposal: "Stage — proposal shared",
   stage_follow_up: "Stage — follow-up reminder",
   stage_qualified: "Stage — qualified / next steps",
+  alert_payment_pending: "Alert — payment not received",
+  alert_quotation_pending: "Alert — quotation not accepted yet",
+  alert_negotiation: "Alert — negotiation follow-up",
 };
 
 /** Min hours between stage-wise messages so we do not irritate the lead. */
@@ -203,6 +209,45 @@ export function buildLeadNurtureMessage(params: {
         "Thank you — your requirement looks like a good fit for Sheetomatic.",
         "",
         "We will share the next steps (demo scope, timeline, and commercial) based on our discussion.",
+        "",
+        "— Team Sheetomatic",
+      ].join("\n");
+
+    case "alert_payment_pending":
+      return [
+        `Hi ${firstName},`,
+        "",
+        "Friendly reminder — we are awaiting *payment* against your Sheetomatic invoice / commercial.",
+        "",
+        "Once payment is received, we can start / continue delivery without delay.",
+        "",
+        "Reply here if you need the invoice, bank details, or a payment link again.",
+        "",
+        "— Team Sheetomatic",
+      ].join("\n");
+
+    case "alert_quotation_pending":
+      return [
+        `Hi ${firstName},`,
+        "",
+        "Just checking in — have you had a chance to review the *quotation / proposal* we shared?",
+        "",
+        "If anything needs clarification on scope, timeline, or pricing, reply here and we will adjust.",
+        "",
+        "Reply *OK* to proceed, or *DISCUSS* if you want a short negotiation call.",
+        "",
+        "— Team Sheetomatic",
+      ].join("\n");
+
+    case "alert_negotiation":
+      return [
+        `Hi ${firstName},`,
+        "",
+        "Following up on our *pricing / scope discussion*.",
+        "",
+        "We are happy to refine the proposal so it fits your budget and priority modules.",
+        "",
+        "Share what you would like changed, or pick a quick call slot — we will close this together.",
         "",
         "— Team Sheetomatic",
       ].join("\n");

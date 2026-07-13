@@ -45,7 +45,7 @@ function hoursSince(iso: string | undefined) {
 }
 
 function isStageEvent(event: LeadNurtureEventId) {
-  return event.startsWith("stage_");
+  return event.startsWith("stage_") || event.startsWith("alert_");
 }
 
 export function canSendEvent(

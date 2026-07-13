@@ -540,6 +540,9 @@ const NURTURE_EVENT_IDS = new Set<LeadNurtureEventId>([
   "stage_proposal",
   "stage_follow_up",
   "stage_qualified",
+  "alert_payment_pending",
+  "alert_quotation_pending",
+  "alert_negotiation",
 ]);
 
 export async function sendLeadNurtureWhatsAppAction(
@@ -2166,10 +2169,42 @@ export async function saveLeadsNurtureSettings(
     }
   }
 
+  const parseRule = (
+    key: "paymentNotReceived" | "quotationNotAccepted" | "negotiationFollowUp",
+    fallback: { enabled: boolean; afterDays: number },
+  ) => {
+    const enabled = formData.get(`alert_${key}_enabled`) === "true";
+    const daysRaw = Number.parseInt(
+      formData.get(`alert_${key}_days`)?.toString() ?? "",
+      10,
+    );
+    return {
+      enabled,
+      afterDays:
+        Number.isFinite(daysRaw) && daysRaw >= 1
+          ? Math.min(daysRaw, 90)
+          : fallback.afterDays,
+    };
+  };
+
   const config: LeadNurtureOrgConfig = parseLeadNurtureConfig({
     enabled,
     stageMinGapHours,
     templates,
+    alerts: {
+      paymentNotReceived: parseRule(
+        "paymentNotReceived",
+        existing.alerts.paymentNotReceived,
+      ),
+      quotationNotAccepted: parseRule(
+        "quotationNotAccepted",
+        existing.alerts.quotationNotAccepted,
+      ),
+      negotiationFollowUp: parseRule(
+        "negotiationFollowUp",
+        existing.alerts.negotiationFollowUp,
+      ),
+    },
   });
 
   await saveLeadNurtureConfig(user.organizationId, config);
@@ -2180,8 +2215,8 @@ export async function saveLeadsNurtureSettings(
   return {
     ok: true,
     message: enabled
-      ? "Nurture messages saved. WhatsApp will send on lead events."
-      : "Nurture messages saved. Automatic sending is paused.",
+      ? "Nurture + alert messages saved. WhatsApp will send on lead events and overdue commercial alerts."
+      : "Nurture + alert messages saved. Automatic sending is paused.",
   };
 }
 

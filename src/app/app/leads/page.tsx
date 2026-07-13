@@ -1,4 +1,5 @@
 import { after } from "next/server";
+import { LeadsAlertCenter } from "@/components/saas/leads-alert-center";
 import { LeadsCrmWorkspace } from "@/components/saas/leads-crm-workspace";
 import { LeadsNumbersDashboard } from "@/components/saas/leads-numbers-dashboard";
 import { LeadsPeriodToolbar } from "@/components/saas/leads-period-toolbar";
@@ -9,6 +10,7 @@ import { runLeadsBackgroundMaintenance } from "@/lib/leads/backfill";
 import { LEADS_SYNC_INTERVAL_LABEL } from "@/lib/leads/auto-sync";
 import { readSheetSyncProgress } from "@/lib/leads/sheet-sync-progress";
 import { ensureLeadConnections } from "@/lib/leads/ingest";
+import { listCrmAlertCenterItems } from "@/lib/leads/alerts/evaluate";
 import { parseLeadsListParams } from "@/lib/leads/list-params";
 import { parseLeadsPeriodParams } from "@/lib/leads/period";
 import {
@@ -164,11 +166,12 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
     }
   });
 
-  const [periodStats, pipeMetrics, numbersMetrics, leadPage, teamMembers, sheetsConnection, workspaceTotal, serviceCatalog, organization] =
+  const [periodStats, pipeMetrics, numbersMetrics, alertItems, leadPage, teamMembers, sheetsConnection, workspaceTotal, serviceCatalog, organization] =
     await Promise.all([
       getLeadsMachineStatsForPeriod(user.organizationId, period),
       getLeadsPipeMetricsForPeriod(user.organizationId, period),
       getCrmNumbersMetricsForPeriod(user.organizationId, period),
+      listCrmAlertCenterItems(user.organizationId, { limit: 40 }),
       listInboundLeadsForPeriodPaginated(user.organizationId, period, {
         page: listParams.page,
         pageSize: listParams.pageSize,
@@ -236,6 +239,12 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
       />
 
       <LeadsPeriodToolbar period={period} />
+
+      <LeadsAlertCenter
+        baseParams={params}
+        canSend={canManage}
+        items={alertItems}
+      />
 
       <LeadsNumbersDashboard
         metrics={numbersMetrics}
