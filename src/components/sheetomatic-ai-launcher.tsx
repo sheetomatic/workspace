@@ -13,6 +13,13 @@ import {
 } from "react";
 import { isAllowedWorkspaceAssistantHref } from "@/lib/workspace-assistant/links";
 import { shouldShowWorkspaceAssistant } from "@/lib/workspace-assistant/visibility";
+import {
+  openWorkspaceGuide,
+  WORKSPACE_GUIDE_ASSISTANT_EVENT,
+  type WorkspaceGuideAssistantDetail,
+} from "@/lib/workspace-guides/events";
+import type { WorkspaceGuideModuleId } from "@/lib/workspace-guides";
+import { WorkspaceGuideHost } from "@/components/saas/workspace-guide-host";
 import "./sheetomatic-ai-launcher.css";
 
 type ChatLink = { label: string; href: string };
@@ -21,6 +28,8 @@ type ChatMessage = {
   role: "user" | "assistant";
   content: string;
   links?: ChatLink[];
+  guideId?: WorkspaceGuideModuleId | null;
+  stepId?: string | null;
 };
 
 const STARTER_CHIPS: { label: string; prompt: string }[] = [
@@ -118,6 +127,7 @@ export function SheetomaticAiLauncher() {
   const titleId = useId();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const sendRef = useRef<(raw: string) => Promise<void>>(async () => undefined);
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -145,6 +155,27 @@ export function SheetomaticAiLauncher() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
+
+  useEffect(() => {
+    function onAssistantEvent(event: Event) {
+      const detail = (event as CustomEvent<WorkspaceGuideAssistantDetail>)
+        .detail;
+      if (detail?.open === false) {
+        setOpen(false);
+        return;
+      }
+      setOpen(true);
+      if (detail?.seedPrompt?.trim()) {
+        void sendRef.current(detail.seedPrompt.trim());
+      }
+    }
+    window.addEventListener(WORKSPACE_GUIDE_ASSISTANT_EVENT, onAssistantEvent);
+    return () =>
+      window.removeEventListener(
+        WORKSPACE_GUIDE_ASSISTANT_EVENT,
+        onAssistantEvent,
+      );
+  }, []);
 
   const send = useCallback(
     async (raw: string) => {
@@ -175,11 +206,15 @@ export function SheetomaticAiLauncher() {
         const data = (await res.json()) as {
           reply?: string;
           links?: ChatLink[];
+          guideId?: WorkspaceGuideModuleId | null;
+          stepId?: string | null;
           error?: string;
         };
         if (!res.ok) {
           throw new Error(data.error || "Something went wrong.");
         }
+        const guideId = data.guideId ?? null;
+        const stepId = data.stepId ?? null;
         setMessages((prev) => [
           ...prev,
           {
@@ -189,8 +224,13 @@ export function SheetomaticAiLauncher() {
               data.reply?.trim() ||
               "I could not form an answer. Try again, or ask an Admin.",
             links: data.links,
+            guideId,
+            stepId,
           },
         ]);
+        if (guideId) {
+          openWorkspaceGuide(guideId, stepId);
+        }
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Could not reach Workspace help.";
@@ -212,12 +252,16 @@ export function SheetomaticAiLauncher() {
     [busy, messages],
   );
 
+  sendRef.current = send;
+
   if (!visible) {
     return null;
   }
 
   return (
-    <div className="ws-guide" data-open={open ? "true" : "false"}>
+    <>
+      <WorkspaceGuideHost />
+      <div className="ws-guide" data-open={open ? "true" : "false"}>
       {open ? (
         <section
           className="ws-guide-panel"
@@ -265,6 +309,15 @@ export function SheetomaticAiLauncher() {
                       </li>
                     ))}
                   </ul>
+                ) : null}
+                {msg.role === "assistant" && msg.guideId ? (
+                  <button
+                    type="button"
+                    className="ws-guide-show-snapshot"
+                    onClick={() => openWorkspaceGuide(msg.guideId!, msg.stepId)}
+                  >
+                    Show snapshot guide
+                  </button>
                 ) : null}
               </div>
             ))}
@@ -356,5 +409,6 @@ export function SheetomaticAiLauncher() {
         <span className="ws-guide-fab-label">Ask guide</span>
       </button>
     </div>
+    </>
   );
 }

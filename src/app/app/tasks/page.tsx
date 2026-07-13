@@ -11,6 +11,7 @@ import { TaskTrackerDashboard } from "@/components/saas/task-tracker-dashboard";
 import { NewTaskTrigger } from "@/components/saas/tasks-action-bar";
 import { TaskPagination } from "@/components/saas/task-pagination";
 import { TaskTable } from "@/components/saas/task-table";
+import { WorkspaceGuideButton } from "@/components/saas/workspace-guide-button";
 import {
   hasQuickTaskFilter,
   taskFilterLabel,
@@ -151,6 +152,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
         description="Task distribution, performance, and team workload."
         actions={
           <>
+            <WorkspaceGuideButton guideId="tasks" />
             {showEmReady ? (
               <Link href="/app/em" className="btn-secondary btn-sm">
                 EM Ready

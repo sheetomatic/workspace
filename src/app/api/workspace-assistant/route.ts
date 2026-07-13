@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
-import { getIntegrationStatus } from "@/lib/integrations/status";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
   generateWorkspaceAssistantReply,
@@ -29,17 +28,6 @@ export async function POST(request: Request) {
         error: `Too many questions. Try again in ${rate.retryAfterSec}s.`,
       },
       { status: 429 },
-    );
-  }
-
-  const status = getIntegrationStatus();
-  if (!status.openai) {
-    return NextResponse.json(
-      {
-        error:
-          "Workspace help is temporarily unavailable. Try again shortly, or ask an Admin.",
-      },
-      { status: 503 },
     );
   }
 
@@ -75,6 +63,8 @@ export async function POST(request: Request) {
     const result = await generateWorkspaceAssistantReply(messages);
     return NextResponse.json({
       reply: result.reply,
+      guideId: result.guideId,
+      stepId: result.stepId,
       links: result.links,
     });
   } catch (error) {

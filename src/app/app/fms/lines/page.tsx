@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FmsMasterTrackerBlock } from "@/components/saas/fms-master-tracker-block";
 import { FmsPagination } from "@/components/saas/fms-pagination";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
+import { WorkspaceGuideButton } from "@/components/saas/workspace-guide-button";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import { canAccessEmReady } from "@/lib/em/em-access";
@@ -105,6 +106,7 @@ export default async function FmsLinesPage({ searchParams }: PageProps) {
         description="Click any row to open the full journey. Your active stop opens ready to mark done or upload proof."
         actions={
           <>
+            <WorkspaceGuideButton guideId="fms" />
             {showEmReady ? (
               <Link href="/app/em" className="btn-primary btn-sm ws-sf-btn-primary">
                 EM Ready

@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { EmPeriodFilter } from "@/components/saas/em-period-filter";
 import { EmReadyBoard } from "@/components/saas/em-ready-board";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
+import { WorkspaceGuideButton } from "@/components/saas/workspace-guide-button";
 import { getEmReadyPayload } from "@/lib/em/em-ready-data";
 import { parseEmPeriodParams } from "@/lib/em/em-period";
 import { requireSession } from "@/lib/require-session";
@@ -38,6 +39,7 @@ export default async function EmReadyPage({ searchParams }: PageProps) {
         description="Executive meeting board with period-wise exceptions and zero prep."
         actions={
           <>
+            <WorkspaceGuideButton guideId="em" />
             {payload.fmsEnabled ? (
               <Link href="/app/fms/lines" className="btn-secondary btn-sm">
                 Live pipelines

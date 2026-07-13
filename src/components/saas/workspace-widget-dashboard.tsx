@@ -21,6 +21,7 @@ import {
   isDashboardWidgetVisible,
   type WorkspaceNavPrefs,
 } from "@/lib/workspace-nav-prefs";
+import { WorkspaceGuideButton } from "@/components/saas/workspace-guide-button";
 
 type WorkspaceWidgetDashboardProps = {
   organizationName: string;
@@ -167,6 +168,9 @@ export function WorkspaceWidgetDashboard({
             {today}
             {data.scope === "personal" ? " \u00B7 Your queue" : " \u00B7 Business at a glance"}
           </p>
+          <div className="ws-widget-hero-guide">
+            <WorkspaceGuideButton guideId="home" variant="ghost" />
+          </div>
         </div>
         <div className="ws-widget-hero-stats" aria-label="Key metrics">
           {openOrders !== null && show("salesOrders") ? (

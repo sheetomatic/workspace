@@ -375,3 +375,16 @@
     transform: none;
   }
 }
+
+.ws-guide-bubble .ws-guide-show-snapshot {
+  margin-top: 0.45rem;
+  border: 0;
+  background: transparent;
+  color: #0f766e;
+  font-size: 0.78rem;
+  font-weight: 650;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

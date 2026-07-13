@@ -1,4 +1,9 @@
 import { formatOpenAiError } from "@/lib/integrations/openai-errors";
+import {
+  getWorkspaceGuide,
+  matchGuideFromQuery,
+  type WorkspaceGuideModuleId,
+} from "@/lib/workspace-guides";
 import { isAllowedWorkspaceAssistantHref } from "@/lib/workspace-assistant/links";
 import { WORKSPACE_ASSISTANT_SYSTEM_PROMPT } from "@/lib/workspace-assistant/knowledge";
 
@@ -14,6 +19,8 @@ export type WorkspaceAssistantLink = {
 
 export type WorkspaceAssistantReply = {
   reply: string;
+  guideId: WorkspaceGuideModuleId | null;
+  stepId: string | null;
   links: WorkspaceAssistantLink[];
   usage: {
     promptTokens: number;
@@ -21,6 +28,24 @@ export type WorkspaceAssistantReply = {
     totalTokens: number;
   };
 };
+
+const ALLOWED_GUIDE_IDS = new Set([
+  "home",
+  "fms",
+  "tasks",
+  "hr-attendance",
+  "em",
+  "ims",
+  "checklists",
+  "leads",
+]);
+
+function parseGuideId(raw: unknown): WorkspaceGuideModuleId | null {
+  if (raw == null || raw === "null") return null;
+  const id = String(raw).trim();
+  if (!ALLOWED_GUIDE_IDS.has(id)) return null;
+  return getWorkspaceGuide(id) ? (id as WorkspaceGuideModuleId) : null;
+}
 
 const MAX_HISTORY = 8;
 const MAX_CONTENT_CHARS = 1200;
@@ -61,14 +86,29 @@ function parseLinks(raw: unknown): WorkspaceAssistantLink[] {
 export async function generateWorkspaceAssistantReply(
   messages: WorkspaceAssistantMessage[],
 ): Promise<WorkspaceAssistantReply> {
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
-  if (!apiKey) {
-    throw new Error("OPENAI_NOT_CONFIGURED");
-  }
-
   const history = sanitizeHistory(messages);
   if (history.length === 0 || history[history.length - 1]?.role !== "user") {
     throw new Error("INVALID_MESSAGES");
+  }
+
+  const lastUser = history[history.length - 1]!.content;
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) {
+    const guide = matchGuideFromQuery(lastUser);
+    if (guide) {
+      const lines = guide.steps
+        .slice(0, 4)
+        .map((s, i) => `${i + 1}. **${s.title}** — ${s.body}`)
+        .join("\n");
+      return {
+        reply: `### ${guide.title}\n\n${guide.summary}\n\n${lines}`,
+        guideId: guide.id,
+        stepId: guide.steps[0]?.id ?? null,
+        links: [{ label: `Open ${guide.title}`, href: guide.primaryHref }],
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      };
+    }
+    throw new Error("OPENAI_NOT_CONFIGURED");
   }
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -108,9 +148,14 @@ export async function generateWorkspaceAssistantReply(
     throw new Error("OPENAI_EMPTY");
   }
 
-  let parsed: { reply?: unknown; links?: unknown };
+  let parsed: {
+    reply?: unknown;
+    links?: unknown;
+    guideId?: unknown;
+    stepId?: unknown;
+  };
   try {
-    parsed = JSON.parse(content) as { reply?: unknown; links?: unknown };
+    parsed = JSON.parse(content) as typeof parsed;
   } catch {
     throw new Error("OPENAI_EMPTY");
   }
@@ -121,8 +166,26 @@ export async function generateWorkspaceAssistantReply(
     throw new Error("OPENAI_EMPTY");
   }
 
+  let guideId = parseGuideId(parsed.guideId);
+  if (!guideId && /how\s+(do\s+i|to\s+use|can\s+i)/i.test(lastUser)) {
+    guideId = matchGuideFromQuery(lastUser)?.id ?? null;
+  }
+
+  const guide = guideId ? getWorkspaceGuide(guideId) : null;
+  let stepId =
+    typeof parsed.stepId === "string" && parsed.stepId.trim()
+      ? parsed.stepId.trim()
+      : null;
+  if (stepId && guide && !guide.steps.some((s) => s.id === stepId)) {
+    stepId = guide.steps[0]?.id ?? null;
+  } else if (!stepId && guide) {
+    stepId = guide.steps[0]?.id ?? null;
+  }
+
   return {
     reply: reply.slice(0, 2500),
+    guideId,
+    stepId,
     links: parseLinks(parsed.links),
     usage: {
       promptTokens: payload.usage?.prompt_tokens ?? 0,
