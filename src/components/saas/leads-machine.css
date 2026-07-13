@@ -836,6 +836,25 @@
   gap: 0.65rem;
 }
 
+.leads-numbers-dashboard {
+  display: grid;
+  gap: 0.55rem;
+  margin-bottom: 0.35rem;
+}
+
+.leads-numbers-dashboard-head h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.leads-numbers-dashboard-head p {
+  margin: 0.2rem 0 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
 .leads-pipeline-filters {
   display: flex;
   flex-wrap: wrap;

@@ -1106,7 +1106,7 @@ export function LeadDrawerPanel({
                 />
               </label>
               <label>
-                Received date
+                Payment received date
                 <input
                   type="date"
                   value={paymentDate}
@@ -1160,7 +1160,9 @@ export function LeadDrawerPanel({
                     {formatInr(Number(payment.receivedAmount))} ·{" "}
                     {PAYMENT_METHOD_LABELS[payment.paymentMethod]}
                   </span>
-                  <em>{new Date(payment.receivedDate).toLocaleDateString("en-IN")}</em>
+                  <em>
+                    Received {new Date(payment.receivedDate).toLocaleDateString("en-IN")}
+                  </em>
                 </li>
               ))
             )}

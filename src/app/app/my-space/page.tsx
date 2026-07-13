@@ -77,7 +77,7 @@ export default async function MySpacePage({ searchParams }: PageProps) {
       <div className="ws-ims-page">
         <TaskPageToolbar
           title="My Space"
-          description="Expense Incurred, Payment Received, Leads, Invoiced Value, and Proposal Value."
+          description="Expense Incurred, Payment Received (by received date), Leads, Invoices & Quotations (by generated date)."
           actions={
             <Link href="/app/my-space/expenses" className="ws-btn ws-btn-primary">
               Add Expense
@@ -100,20 +100,29 @@ export default async function MySpacePage({ searchParams }: PageProps) {
             </strong>
           </article>
           <article className="hs-quick-stat accent-success">
-            <span>Payment Received</span>
-            <strong>{snapshot.paymentReceivedLabel}</strong>
+            <span>Payment received</span>
+            <strong>
+              {snapshot.paymentReceivedLabel}
+              <small className="leads-kpi-sub">{snapshot.paymentCount} by received date</small>
+            </strong>
           </article>
           <article className="hs-quick-stat accent-blue">
             <span>{leadsLabel}</span>
             <strong>{snapshot.totalLeads}</strong>
           </article>
           <article className="hs-quick-stat accent-indigo">
-            <span>Invoiced Value</span>
-            <strong>{snapshot.invoicedValueLabel}</strong>
+            <span>Invoices generated</span>
+            <strong>
+              {snapshot.invoicedValueLabel}
+              <small className="leads-kpi-sub">{snapshot.invoiceCount} by generated date</small>
+            </strong>
           </article>
           <article className="hs-quick-stat accent-purple">
-            <span>Proposal Value</span>
-            <strong>{snapshot.proposalValueLabel}</strong>
+            <span>Quotations generated</span>
+            <strong>
+              {snapshot.proposalValueLabel}
+              <small className="leads-kpi-sub">{snapshot.proposalCount} by generated date</small>
+            </strong>
           </article>
         </section>
 
@@ -161,19 +170,19 @@ export default async function MySpacePage({ searchParams }: PageProps) {
                   </td>
                 </tr>
                 <tr>
-                  <td className="ws-apple-cell-secondary">Invoiced Value</td>
+                  <td className="ws-apple-cell-secondary">Invoices generated</td>
                   <td className="ws-apple-cell-primary">{snapshot.invoicedValueLabel}</td>
-                  <td className="ws-apple-cell-secondary">{snapshot.invoiceCount} invoices</td>
+                  <td className="ws-apple-cell-secondary">{snapshot.invoiceCount} by generated date</td>
                 </tr>
                 <tr>
-                  <td className="ws-apple-cell-secondary">Proposal Value</td>
+                  <td className="ws-apple-cell-secondary">Quotations generated</td>
                   <td className="ws-apple-cell-primary">{snapshot.proposalValueLabel}</td>
-                  <td className="ws-apple-cell-secondary">{snapshot.proposalCount} proposals</td>
+                  <td className="ws-apple-cell-secondary">{snapshot.proposalCount} by generated date</td>
                 </tr>
                 <tr>
-                  <td className="ws-apple-cell-secondary">Payment Received</td>
+                  <td className="ws-apple-cell-secondary">Payment received</td>
                   <td className="ws-apple-cell-primary">{snapshot.paymentReceivedLabel}</td>
-                  <td className="ws-apple-cell-secondary">{snapshot.paymentCount} payments</td>
+                  <td className="ws-apple-cell-secondary">{snapshot.paymentCount} by received date</td>
                 </tr>
                 <tr>
                   <td className="ws-apple-cell-secondary">Active Numbers · Plan</td>

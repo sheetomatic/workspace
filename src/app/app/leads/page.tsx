@@ -1,5 +1,6 @@
 import { after } from "next/server";
 import { LeadsCrmWorkspace } from "@/components/saas/leads-crm-workspace";
+import { LeadsNumbersDashboard } from "@/components/saas/leads-numbers-dashboard";
 import { LeadsPeriodToolbar } from "@/components/saas/leads-period-toolbar";
 import { LeadsPipelineCards } from "@/components/saas/leads-pipeline-cards";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
@@ -11,6 +12,7 @@ import { ensureLeadConnections } from "@/lib/leads/ingest";
 import { parseLeadsListParams } from "@/lib/leads/list-params";
 import { parseLeadsPeriodParams } from "@/lib/leads/period";
 import {
+  getCrmNumbersMetricsForPeriod,
   getGoogleSheetsLeadConnection,
   getInboundLeadWorkspaceTotal,
   getLeadsMachineStatsForPeriod,
@@ -162,10 +164,11 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
     }
   });
 
-  const [periodStats, pipeMetrics, leadPage, teamMembers, sheetsConnection, workspaceTotal, serviceCatalog, organization] =
+  const [periodStats, pipeMetrics, numbersMetrics, leadPage, teamMembers, sheetsConnection, workspaceTotal, serviceCatalog, organization] =
     await Promise.all([
       getLeadsMachineStatsForPeriod(user.organizationId, period),
       getLeadsPipeMetricsForPeriod(user.organizationId, period),
+      getCrmNumbersMetricsForPeriod(user.organizationId, period),
       listInboundLeadsForPeriodPaginated(user.organizationId, period, {
         page: listParams.page,
         pageSize: listParams.pageSize,
@@ -233,6 +236,11 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
       />
 
       <LeadsPeriodToolbar period={period} />
+
+      <LeadsNumbersDashboard
+        metrics={numbersMetrics}
+        periodLabel={period.periodLabel}
+      />
 
       <LeadsPipelineCards
         activeCategory={listParams.category}

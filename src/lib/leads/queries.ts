@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { mergeLeadContactWhere } from "@/lib/leads/contact-validation";
 import { getFmsStepSummaryForLead } from "@/lib/leads/fms-bridge";
 import type { LeadsSortOrder } from "@/lib/leads/list-params";
+import { formatInr } from "@/lib/leads/categories";
 import { computePipeMetrics } from "@/lib/leads/pipe-metrics";
 import {
   leadCapturedAtWhere,
@@ -9,6 +10,20 @@ import {
 } from "@/lib/leads/period";
 import type { InboundLeadStatus } from "@prisma/client";
 import { OPEN_LEAD_STATUSES } from "@/lib/leads/status-labels";
+
+function quotationGeneratedDateWhere(period: LeadsPeriodRange) {
+  if (period.type === "all") {
+    return {};
+  }
+  return { quotationDate: { gte: period.start, lte: period.end } };
+}
+
+function paymentReceivedDateWhere(period: LeadsPeriodRange) {
+  if (period.type === "all") {
+    return {};
+  }
+  return { receivedDate: { gte: period.start, lte: period.end } };
+}
 
 function startOfToday() {
   const d = new Date();
@@ -216,6 +231,60 @@ export async function getLeadsPipeMetricsForPeriod(
   });
 
   return computePipeMetrics(leads);
+}
+
+/**
+ * CRM numbers dashboard: counts/values by document dates —
+ * Quotation Generated Date, Invoice Generated Date (= quotationDate), Payment Received Date.
+ */
+export async function getCrmNumbersMetricsForPeriod(
+  organizationId: string,
+  period: LeadsPeriodRange,
+) {
+  const [quotations, invoices, payments] = await Promise.all([
+    prisma.inboundLeadQuotation.aggregate({
+      where: {
+        organizationId,
+        requestType: "PROPOSAL",
+        ...quotationGeneratedDateWhere(period),
+      },
+      _sum: { totalAmount: true },
+      _count: { _all: true },
+    }),
+    prisma.inboundLeadQuotation.aggregate({
+      where: {
+        organizationId,
+        requestType: "INVOICE",
+        ...quotationGeneratedDateWhere(period),
+      },
+      _sum: { totalAmount: true },
+      _count: { _all: true },
+    }),
+    prisma.inboundLeadPayment.aggregate({
+      where: {
+        organizationId,
+        ...paymentReceivedDateWhere(period),
+      },
+      _sum: { receivedAmount: true },
+      _count: { _all: true },
+    }),
+  ]);
+
+  const quotationValue = Number(quotations._sum.totalAmount ?? 0);
+  const invoiceValue = Number(invoices._sum.totalAmount ?? 0);
+  const paymentValue = Number(payments._sum.receivedAmount ?? 0);
+
+  return {
+    quotationsGeneratedCount: quotations._count._all,
+    quotationsGeneratedValue: quotationValue,
+    quotationsGeneratedValueLabel: formatInr(quotationValue),
+    invoicesGeneratedCount: invoices._count._all,
+    invoicesGeneratedValue: invoiceValue,
+    invoicesGeneratedValueLabel: formatInr(invoiceValue),
+    paymentsReceivedCount: payments._count._all,
+    paymentsReceivedValue: paymentValue,
+    paymentsReceivedValueLabel: formatInr(paymentValue),
+  };
 }
 
 export async function getLeadsCategoryBreakdown(

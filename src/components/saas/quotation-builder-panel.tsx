@@ -679,6 +679,11 @@ export function QuotationBuilderPanel({
                   <span>
                     {quote.requestType} · {formatInr(Number(quote.totalAmount))}
                     {quote.revisionNumber > 1 ? ` · R${quote.revisionNumber}` : ""}
+                    {" · "}
+                    {quote.requestType === "INVOICE"
+                      ? "Invoice Generated"
+                      : "Quotation Generated"}{" "}
+                    {new Date(quote.quotationDate).toLocaleDateString("en-IN")}
                   </span>
                   <em className={`leads-quote-status leads-quote-status-${quote.status.toLowerCase()}`}>
                     {quotationStatusLabel(quote.status)}

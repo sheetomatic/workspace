@@ -101,7 +101,12 @@ export function QuotationPrintView({
                 {revisionLabel}
               </strong>
             </p>
-            <p>Date: {new Date(quotation.quotationDate).toLocaleDateString("en-IN")}</p>
+            <p>
+              {quotation.requestType === "INVOICE"
+                ? "Invoice Generated Date"
+                : "Quotation Generated Date"}
+              : {new Date(quotation.quotationDate).toLocaleDateString("en-IN")}
+            </p>
           </div>
         </header>
 
