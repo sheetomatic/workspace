@@ -150,6 +150,7 @@ async function replyText(
       organizationId,
       toPhone.slice(-4),
     );
+    return result;
   }
   await recordWaOutboundMessage({
     organizationId,
@@ -159,6 +160,7 @@ async function replyText(
     aiConfidence: options?.aiConfidence ?? null,
     aiSourceTitles: options?.aiSourceTitles,
   });
+  return result;
 }
 
 function extractInboundBody(message: MetaMessage) {
@@ -1018,6 +1020,11 @@ async function handleCustomerMenuAction(
         messageType: message.type,
         status: "kb_menu_sent",
       });
+      await replyText(
+        org.id,
+        message.from,
+        `Hi! How can we help you today? Pick a topic below, or type your question.`,
+      );
       await sendCustomerKnowledgeMenu(org, message.from);
       return;
     case WA_CUSTOMER_MENU.ASK_QUESTION:
@@ -1174,6 +1181,18 @@ async function handleCustomerMessage(
   ) {
     customerMessage = await transcribeCustomerAudio(org.id, message);
     if (!customerMessage) {
+      await replyText(
+        org.id,
+        message.from,
+        "We couldn't hear that clearly. Please type your message, or reply *menu* to browse topics.",
+      );
+      await markEvent(message.id, {
+        organizationId: org.id,
+        fromPhone: message.from,
+        messageType: message.type,
+        status: "lead_audio_failed",
+        error: "Transcription failed",
+      });
       return;
     }
 
@@ -1195,6 +1214,11 @@ async function handleCustomerMessage(
       status: "unsupported",
       error: `Unsupported customer type: ${message.type}`,
     });
+    await replyText(
+      org.id,
+      message.from,
+      "Please send a text message, or reply *menu* to browse topics.",
+    );
     return;
   }
 
@@ -1205,6 +1229,11 @@ async function handleCustomerMessage(
       messageType: message.type,
       status: "lead_empty",
     });
+    await replyText(
+      org.id,
+      message.from,
+      "Please type a message, or reply *menu* to browse topics.",
+    );
     return;
   }
 

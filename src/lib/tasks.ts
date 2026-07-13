@@ -46,6 +46,7 @@ export const TASK_DEPARTMENT_LABELS: Record<TaskDepartment, string> = {
   GENERAL: "General",
 };
 
+/** Sync helper: manager+ org-wide, else self. Async lists use buildTaskVisibilityWhere. */
 export function taskVisibilityFilter(user: SessionUser) {
   if (hasMinimumRole(user.role, "MANAGER")) {
     return { organizationId: user.organizationId };
@@ -56,13 +57,16 @@ export function taskVisibilityFilter(user: SessionUser) {
   };
 }
 
-/** Managers+ may filter by assignee; staff/viewers always see only their own tasks. */
+/** Managers+ may filter by assignee; non-managers always stay on self when a filter is passed. */
 export function taskAssigneeListFilter(
   user: SessionUser,
   assigneeUserId?: string,
 ) {
-  if (!assigneeUserId || !hasMinimumRole(user.role, "MANAGER")) {
+  if (!assigneeUserId) {
     return {};
+  }
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { assigneeUserId: user.id };
   }
   return { assigneeUserId };
 }

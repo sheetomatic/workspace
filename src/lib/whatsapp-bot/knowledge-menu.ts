@@ -1,8 +1,5 @@
 import type { AiKnowledgeType } from "@prisma/client";
-import {
-  isWhatsAppMenuCommand,
-  normalizeWhatsAppCommand,
-} from "@/lib/whatsapp-bot/normalize-command";
+import { normalizeWhatsAppCommand } from "@/lib/whatsapp-bot/normalize-command";
 
 export type KnowledgeMenuItem = {
   id: string;
@@ -195,10 +192,13 @@ export function parseCustomerMenuAction(message: {
 }
 
 export function mapCustomerTextShortcut(command: string) {
+  const normalized = normalizeWhatsAppCommand(command);
+  // Do NOT treat greetings (hi/hello) as browse-topics — those get a dedicated Hi reply.
   if (
-    isWhatsAppMenuCommand(command) ||
-    normalizeWhatsAppCommand(command) === "topics" ||
-    normalizeWhatsAppCommand(command) === "help"
+    normalized === "menu" ||
+    normalized === "start" ||
+    normalized === "topics" ||
+    normalized === "help"
   ) {
     return WA_CUSTOMER_MENU.BROWSE_TOPICS;
   }

@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { MisScoreBadge } from "@/components/saas/mis-score-badge";
 import { TaskFeedbackToast } from "@/components/saas/task-feedback-toast";
@@ -8,7 +7,6 @@ import { requireSession } from "@/lib/require-session";
 import { checklistMisScore, taskMisScore } from "@/lib/mis/score";
 import { getTaskDueUrgency } from "@/lib/task-due-urgency";
 import {
-  canCreateTasks,
   canUpdateTask,
   formatTaskDueLabel,
   listDelegatedTasks,
@@ -58,7 +56,7 @@ async function loadEaTasks(user: Awaited<ReturnType<typeof requireSession>>, sco
         },
         verifierByAssignee,
       ),
-      isAssignee: true,
+      isAssignee: task.assigneeUserId === user.id,
       dueLabel: formatTaskDueLabel(task.dueAt, task.status),
       urgency,
       openRequest: open
