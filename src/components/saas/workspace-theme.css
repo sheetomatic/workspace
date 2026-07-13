@@ -13145,23 +13145,27 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-hr-checklist-metrics {
   margin: 0;
+  /* Override .ws-fms-sf auto-fit so 3 tiles stay equal (no orphan). */
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
 }
 
 .workspace-app .ws-hr-checklist-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  padding: 4px;
+  gap: 6px;
+  padding: 6px;
   border: 1px solid var(--sf-card-border, #e5e5e5);
-  border-radius: 6px;
+  border-radius: 8px;
   background: #f7f7f8;
 }
 
 .workspace-app .ws-hr-checklist-tab {
   display: inline-flex;
   align-items: center;
-  padding: 7px 12px;
-  border-radius: 4px;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 6px;
   color: var(--apple-text-secondary, #6e6e73);
   font-size: 0.8125rem;
   font-weight: 500;
@@ -13169,6 +13173,10 @@ body:has(.workspace-app.saas-app) {
   text-decoration: none;
   white-space: nowrap;
   transition: background 0.12s, color 0.12s;
+}
+
+.workspace-app .ws-hr-checklist-tab-short {
+  display: none;
 }
 
 .workspace-app .ws-hr-checklist-tab:hover {
@@ -13211,6 +13219,7 @@ body:has(.workspace-app.saas-app) {
 .workspace-app .ws-hr-checklist-empty .btn-sm {
   display: inline-flex;
   align-items: center;
+  min-height: 40px;
 }
 
 .workspace-app .ws-hr-status-pill {
@@ -13297,6 +13306,7 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-hr-checklist-deploy-form select {
   padding: 8px 10px;
+  min-height: 40px;
   border: 1px solid var(--sf-card-border, #d2d2d7);
   border-radius: 4px;
   background: #fff;
@@ -13306,6 +13316,7 @@ body:has(.workspace-app.saas-app) {
 
 .workspace-app .ws-hr-checklist-deploy-form .btn-primary {
   flex-shrink: 0;
+  min-height: 40px;
 }
 
 .workspace-app .ws-hr-checklist-deploy-form .ws-form-msg {
@@ -13314,22 +13325,173 @@ body:has(.workspace-app.saas-app) {
   font-size: 0.8125rem;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  .workspace-app .ws-hr-checklist-page {
+    gap: 18px;
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .workspace-app .ws-hr-checklist-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px;
+  }
+
+  .workspace-app .ws-hr-checklist-metrics .ws-sf-metric-tile {
+    padding: 10px 10px;
+    min-width: 0;
+  }
+
+  .workspace-app .ws-hr-checklist-metrics .ws-sf-metric-tile strong {
+    font-size: 1.25rem;
+  }
+
   .workspace-app .ws-hr-checklist-tabs {
-    gap: 2px;
-    overflow-x: auto;
     flex-wrap: nowrap;
+    gap: 8px;
+    padding: 8px 10px;
+    margin-inline: -4px;
+    padding-inline: 10px;
+    overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 10px;
+    scrollbar-width: none;
+  }
+
+  .workspace-app .ws-hr-checklist-tabs::-webkit-scrollbar {
+    display: none;
   }
 
   .workspace-app .ws-hr-checklist-tab {
-    padding: 8px 10px;
-    font-size: 0.75rem;
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    min-height: 44px;
+    padding: 10px 16px;
+    font-size: 0.8125rem;
+  }
+
+  .workspace-app .ws-hr-checklist-tab-full {
+    display: none;
+  }
+
+  .workspace-app .ws-hr-checklist-tab-short {
+    display: inline;
+  }
+
+  .workspace-app .ws-hr-checklist-page .ws-sf-table-wrap {
+    overflow: visible;
+  }
+
+  .workspace-app .ws-hr-checklist-page .ws-sf-data-table {
+    display: block;
+  }
+
+  .workspace-app .ws-hr-checklist-page .ws-sf-data-table thead {
+    display: none;
+  }
+
+  .workspace-app .ws-hr-checklist-page .ws-sf-data-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px 12px 12px;
+  }
+
+  .workspace-app .ws-hr-checklist-page .ws-sf-data-table tbody tr {
+    display: block;
+    border: 1px solid var(--sf-card-border, #e5e5e5);
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+  }
+
+  .workspace-app .ws-hr-checklist-page .ws-sf-data-table tbody tr td {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #ecebea;
+  }
+
+  .workspace-app .ws-hr-checklist-page .ws-sf-data-table tbody tr td:last-child {
+    border-bottom: none;
+  }
+
+  .workspace-app .ws-hr-checklist-page .ws-sf-data-table tbody tr td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    min-width: 4.5rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--sf-text-secondary, #6e6e73);
+  }
+
+  .workspace-app .ws-hr-checklist-page .ws-sf-data-table tbody tr td:first-child {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  .workspace-app .ws-hr-checklist-page .ws-sf-data-table tbody tr td:first-child::before {
+    display: none;
   }
 
   .workspace-app .ws-hr-checklist-deploy-form {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .workspace-app .ws-checklists-module-layout .ws-checklists-subnav {
+    padding: 10px 12px 12px;
+  }
+
+  .workspace-app .ws-checklists-module-layout .ws-module-subnav-brand {
+    padding: 4px 4px 10px;
+    margin-bottom: 6px;
+  }
+
+  .workspace-app .ws-checklists-module-layout .ws-module-subnav-brand span {
+    display: none;
+  }
+
+  .workspace-app .ws-checklists-module-layout .ws-module-subnav-list {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .workspace-app .ws-checklists-module-layout .ws-module-subnav-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .workspace-app .ws-checklists-module-layout .ws-module-subnav-list > li {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+
+  .workspace-app .ws-checklists-module-layout .ws-module-subnav-link {
+    min-height: 44px;
+    padding: 10px 14px;
+    white-space: nowrap;
+  }
+
+  .workspace-app .ws-checklists-module-layout .ws-module-subnav-link small {
+    display: none;
+  }
+}
+
+@media (max-width: 380px) {
+  .workspace-app .ws-hr-checklist-metrics {
+    grid-template-columns: 1fr !important;
   }
 }
 

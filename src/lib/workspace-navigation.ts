@@ -197,11 +197,25 @@ const HRMS_NAV_ITEM: WorkspaceNavItem = {
       matchPrefix: "/app/hr",
     },
     {
+      href: "/app/hr/attendance",
+      label: "Attendance",
+      icon: ClipboardCheck,
+      module: "HR",
+      matchPrefix: "/app/hr/attendance",
+    },
+    {
       href: "/app/hr/employees",
       label: "Employees",
       icon: Users,
       module: "HR",
       matchPrefix: "/app/hr/employees",
+    },
+    {
+      href: "/app/checklists/hr",
+      label: "HR Check List",
+      icon: ClipboardCheck,
+      module: "TASKS",
+      matchPrefix: "/app/checklists/hr",
     },
     {
       href: "/app/hr/holidays",
@@ -218,13 +232,6 @@ const HRMS_NAV_ITEM: WorkspaceNavItem = {
       module: "FMS",
       minRole: "MANAGER",
       matchPrefix: "/app/fms/fulfillment",
-    },
-    {
-      href: "/app/checklists/hr",
-      label: "HR Check List",
-      icon: ClipboardCheck,
-      module: "TASKS",
-      matchPrefix: "/app/checklists/hr",
     },
     {
       href: "/app/tasks/today",
@@ -619,19 +626,84 @@ export function visibleWorkspaceNavItems(user: SessionUser, items: WorkspaceNavI
     .filter((item): item is WorkspaceNavItem => item !== null);
 }
 
-/** Top-level links for mobile bottom nav — no nested child explosion. */
+/** Prefer these ids in the mobile bottom bar (HRMS before BCI suite leftovers). */
+const MOBILE_NAV_PRIORITY_IDS = [
+  "dept-hr",
+  "tasks",
+  "fms",
+  "checklists",
+  "leads",
+  "em",
+  "ea",
+  "pc",
+  "dept-store",
+] as const;
+
+const MOBILE_NAV_MAX_ITEMS = 5;
+
+const MOBILE_NAV_SHORT_LABELS: Record<string, string> = {
+  "Tasks Management": "Tasks",
+  "IMS / Stock": "IMS",
+};
+
+function collapseMobileNavItem(item: WorkspaceNavItem): WorkspaceNavItem {
+  const label = MOBILE_NAV_SHORT_LABELS[item.label] ?? item.label;
+  if (!item.children?.length) {
+    return label === item.label ? item : { ...item, label };
+  }
+  const firstChild = item.children[0];
+  return {
+    ...item,
+    label,
+    href: firstChild?.href ?? item.href,
+    matchPrefix: item.matchPrefix ?? firstChild?.matchPrefix ?? item.href,
+    children: undefined,
+  };
+}
+
+/**
+ * Bottom nav strip: expand the BCI suite into labeled children (never show "BCI"),
+ * keep HRMS as HRMS, prioritize HR/tasks/FMS, cap at five touch targets.
+ */
 export function mobileWorkspaceNavItems(items: WorkspaceNavItem[]): WorkspaceNavItem[] {
-  return items.map((item) => {
-    if (item.children?.length) {
-      const firstChild = item.children[0];
-      return {
-        ...item,
-        href: firstChild?.href ?? item.href,
-        matchPrefix: item.matchPrefix ?? firstChild?.matchPrefix ?? item.href,
-      };
+  const flattened: WorkspaceNavItem[] = [];
+
+  for (const item of items) {
+    // BCI suite has no preference id — expand children so mobile shows FMS / Checklists / etc.
+    if (item.children?.length && !item.id) {
+      for (const child of item.children) {
+        flattened.push(collapseMobileNavItem(child));
+      }
+      continue;
     }
-    return item;
+    flattened.push(collapseMobileNavItem(item));
+  }
+
+  const seen = new Set<string>();
+  const unique = flattened.filter((item) => {
+    const key = item.id ?? item.href;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
   });
+
+  const priorityIndex = new Map<string, number>(
+    MOBILE_NAV_PRIORITY_IDS.map((id, index) => [id, index]),
+  );
+
+  unique.sort((a, b) => {
+    const aRank = a.id != null && priorityIndex.has(a.id)
+      ? priorityIndex.get(a.id)!
+      : MOBILE_NAV_PRIORITY_IDS.length;
+    const bRank = b.id != null && priorityIndex.has(b.id)
+      ? priorityIndex.get(b.id)!
+      : MOBILE_NAV_PRIORITY_IDS.length;
+    return aRank - bRank;
+  });
+
+  return unique.slice(0, MOBILE_NAV_MAX_ITEMS);
 }
 
 
@@ -889,6 +961,20 @@ export function navIsActive(
   if (base === "/app") {
     return pathname === "/app";
   }
+  // HRMS bottom-nav / sidebar parent stays active on HR Check List.
+  if (
+    (base === "/app/hr" || hrefPath === "/app/hr") &&
+    (pathname === "/app/checklists/hr" || pathname.startsWith("/app/checklists/hr/"))
+  ) {
+    return true;
+  }
+  // Check List must not steal active from HRMS on the HR Check List route.
+  if (
+    base === "/app/checklists" &&
+    (pathname === "/app/checklists/hr" || pathname.startsWith("/app/checklists/hr/"))
+  ) {
+    return false;
+  }
   if (base === "/app/tasks" && pathname.startsWith("/app/tasks/")) {
     return false;
   }
@@ -903,7 +989,16 @@ export function navIsActive(
     return pathname === "/app/pc/today";
   }
   if (hrefPath === "/app/checklists" && base === "/app/checklists") {
-    return pathname === "/app/checklists";
+    if (
+      pathname.startsWith("/app/checklists/scores") ||
+      pathname.startsWith("/app/checklists/my-tasks") ||
+      pathname.startsWith("/app/checklists/hr")
+    ) {
+      return false;
+    }
+    return (
+      pathname === "/app/checklists" || pathname.startsWith("/app/checklists/")
+    );
   }
   if (hrefPath === "/app/my-space" && base === "/app/my-space") {
     return pathname === "/app/my-space";

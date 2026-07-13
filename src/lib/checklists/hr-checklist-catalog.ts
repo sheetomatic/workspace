@@ -21,6 +21,8 @@ export type HrChecklistParticular = {
 export type HrChecklistGroup = {
   id: HrFocusId;
   label: string;
+  /** Compact chip label for mobile focus tabs (full `label` stays in title/aria). */
+  shortLabel: string;
   description: string;
   items: HrChecklistParticular[];
 };
@@ -30,6 +32,7 @@ export const HR_CHECKLIST_GROUPS: HrChecklistGroup[] = [
   {
     id: "onboarding",
     label: "Onboarding & KYC",
+    shortLabel: "Onboarding",
     description: "Day-1 joiners — documents, access, and KRA briefing.",
     items: [
       {
@@ -64,6 +67,7 @@ export const HR_CHECKLIST_GROUPS: HrChecklistGroup[] = [
   {
     id: "attendance",
     label: "Attendance exceptions",
+    shortLabel: "Attendance",
     description: "Exceptions-first — late, missing punch, and field attendance.",
     items: [
       {
@@ -89,6 +93,7 @@ export const HR_CHECKLIST_GROUPS: HrChecklistGroup[] = [
   {
     id: "leave",
     label: "Leave balances",
+    shortLabel: "Leave",
     description: "Balance accuracy and pending leave approvals before payroll.",
     items: [
       {
@@ -114,6 +119,7 @@ export const HR_CHECKLIST_GROUPS: HrChecklistGroup[] = [
   {
     id: "policy",
     label: "Policy acknowledgement",
+    shortLabel: "Policy",
     description: "Handbook, POSH, and code-of-conduct acknowledgements on file.",
     items: [
       {

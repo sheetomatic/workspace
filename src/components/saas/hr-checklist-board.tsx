@@ -138,8 +138,12 @@ export function HrChecklistBoard({
           href={focusHref(null)}
           className={`ws-hr-checklist-tab${!activeTab ? " is-active" : ""}`}
           aria-current={!activeTab ? "page" : undefined}
+          title="All focus areas"
         >
-          All
+          <span className="ws-hr-checklist-tab-full">All</span>
+          <span className="ws-hr-checklist-tab-short" aria-hidden>
+            All
+          </span>
         </Link>
         {HR_CHECKLIST_GROUPS.map((group) => (
           <Link
@@ -147,8 +151,13 @@ export function HrChecklistBoard({
             href={focusHref(group.id)}
             className={`ws-hr-checklist-tab${activeTab === group.id ? " is-active" : ""}`}
             aria-current={activeTab === group.id ? "page" : undefined}
+            aria-label={group.label}
+            title={group.label}
           >
-            {group.label}
+            <span className="ws-hr-checklist-tab-full">{group.label}</span>
+            <span className="ws-hr-checklist-tab-short" aria-hidden>
+              {group.shortLabel}
+            </span>
           </Link>
         ))}
       </nav>
@@ -213,19 +222,19 @@ export function HrChecklistBoard({
                     key={run.id}
                     className={run.overdue ? "is-overdue" : undefined}
                   >
-                    <td>
+                    <td data-label="Name">
                       <strong>{run.title}</strong>
                     </td>
-                    <td>{run.owner}</td>
-                    <td>{run.dueLabel}</td>
-                    <td>
+                    <td data-label="Owner">{run.owner}</td>
+                    <td data-label="Due">{run.dueLabel}</td>
+                    <td data-label="Status">
                       <span
                         className={`ws-hr-status-pill${run.overdue ? " is-overdue" : ""}`}
                       >
                         {run.status}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Actions">
                       <Link href={run.href} className="btn-secondary btn-sm">
                         Open
                       </Link>
@@ -280,18 +289,18 @@ export function HrChecklistBoard({
               <tbody>
                 {filteredTemplates.map((template) => (
                   <tr key={template.id}>
-                    <td>
+                    <td data-label="Name">
                       <strong>{template.title}</strong>
                       {template.instructions ? (
                         <p className="ws-fms-muted">{template.instructions}</p>
                       ) : null}
                     </td>
-                    <td>
+                    <td data-label="Owner">
                       {template.assignee.name ??
                         template.assignee.email.split("@")[0]}
                     </td>
-                    <td>{formatDueRule(template)}</td>
-                    <td>{template._count.occurrences}</td>
+                    <td data-label="Schedule">{formatDueRule(template)}</td>
+                    <td data-label="Runs">{template._count.occurrences}</td>
                   </tr>
                 ))}
               </tbody>
@@ -333,19 +342,19 @@ export function HrChecklistBoard({
               <tbody>
                 {suggestedItems.map((item) => (
                   <tr key={item.id} className={item.installed ? "is-muted" : undefined}>
-                    <td>
+                    <td data-label="Activity">
                       <strong>{item.title}</strong>
                       {item.instructions ? (
                         <p className="ws-fms-muted">{item.instructions}</p>
                       ) : null}
                     </td>
-                    <td>{item.focusLabel}</td>
-                    <td>
+                    <td data-label="Focus">{item.focusLabel}</td>
+                    <td data-label="Frequency">
                       {CHECKLIST_FREQUENCY_LABELS[item.frequency] ??
                         item.frequency}
                     </td>
-                    <td>{item.ownerRole}</td>
-                    <td>
+                    <td data-label="Owner role">{item.ownerRole}</td>
+                    <td data-label="Status">
                       {item.installed ? (
                         <span className="ws-hr-status-pill is-done">Installed</span>
                       ) : (

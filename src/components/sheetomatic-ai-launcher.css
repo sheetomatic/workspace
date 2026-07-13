@@ -355,11 +355,50 @@
 
 @media (max-width: 640px) {
   .ws-guide {
-    bottom: max(4.75rem, calc(env(safe-area-inset-bottom) + 3.75rem));
+    right: max(0.75rem, env(safe-area-inset-right));
+    bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px) + 0.75rem);
+  }
+
+  .ws-guide-fab {
+    min-width: 3rem;
+    width: 3rem;
+    height: 3rem;
+    min-height: 3rem;
+    padding: 0;
+    justify-content: center;
+    border-radius: 999px;
+  }
+
+  .ws-guide-fab-label {
+    display: none;
+  }
+
+  .ws-guide-fab-icon {
+    width: 1.75rem;
+    height: 1.75rem;
   }
 
   .ws-guide-panel {
-    max-height: min(28rem, calc(100vh - 9rem));
+    max-height: min(26rem, calc(100vh - 11rem - env(safe-area-inset-bottom, 0px)));
+  }
+}
+
+@media (max-width: 768px) and (min-width: 641px) {
+  .ws-guide {
+    bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px) + 0.5rem);
+  }
+
+  .ws-guide-fab-label {
+    display: none;
+  }
+
+  .ws-guide-fab {
+    min-width: 3rem;
+    width: 3rem;
+    height: 3rem;
+    min-height: 3rem;
+    padding: 0;
+    justify-content: center;
   }
 }
 
