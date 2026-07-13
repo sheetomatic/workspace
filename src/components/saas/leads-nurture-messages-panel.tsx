@@ -3,13 +3,14 @@
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { saveLeadsNurtureSettings } from "@/app/app/leads/actions";
+import { saveLeadsNurtureSettings } from "@/app/app/leads/actions";
 import {
   ALERT_EVENT_ORDER,
-  NURTURE_TEMPLATE_PLACEHOLDERS,
+  LEAD_NURTURE_EVENT_LABELS,
   NURTURE_EVENT_ORDER,
+  NURTURE_TEMPLATE_PLACEHOLDERS,
   type LeadNurtureOrgConfig,
-} from "@/lib/leads/nurture/config";
-import { LEAD_NURTURE_EVENT_LABELS } from "@/lib/leads/nurture/templates";
+} from "@/lib/leads/nurture/events";
 
 type ActionState = { ok: boolean; message: string };
 

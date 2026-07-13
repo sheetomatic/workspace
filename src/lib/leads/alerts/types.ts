@@ -1,5 +1,7 @@
-import type { LeadNurtureEventId } from "@/lib/leads/nurture/templates";
-import { LEAD_NURTURE_EVENT_LABELS } from "@/lib/leads/nurture/templates";
+import {
+  LEAD_NURTURE_EVENT_LABELS,
+  type LeadNurtureEventId,
+} from "@/lib/leads/nurture/events";
 
 export type CrmAlertKind =
   | "payment_not_received"

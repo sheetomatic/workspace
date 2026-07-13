@@ -1,6 +1,6 @@
 import type { InboundLeadStatus } from "@prisma/client";
 import { triggerLeadNurtureEvent } from "@/lib/leads/nurture/run";
-import { STATUS_TO_NURTURE_EVENT } from "@/lib/leads/nurture/templates";
+import { STATUS_TO_NURTURE_EVENT } from "@/lib/leads/nurture/events";
 
 export function queueLeadNurtureAfterAssign(params: {
   organizationId: string;

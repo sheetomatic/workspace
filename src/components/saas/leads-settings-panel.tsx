@@ -9,7 +9,7 @@ import {
   LeadsWebBasedApiSettingsPanel,
   type LeadsWebBasedApiSettingsProps,
 } from "@/components/saas/leads-web-based-api-settings";
-import type { LeadNurtureOrgConfig } from "@/lib/leads/nurture/config";
+import type { LeadNurtureOrgConfig } from "@/lib/leads/nurture/events";
 import type { LeadSourceCardModel } from "@/lib/leads/source-settings";
 import "@/components/saas/leads-machine.css";
 

@@ -1,4 +1,5 @@
-import type { LeadNurtureEventId } from "@/lib/leads/nurture/templates";
+import type { LeadNurtureEventId } from "@/lib/leads/nurture/events";
+import { STAGE_NURTURE_MIN_GAP_HOURS } from "@/lib/leads/nurture/events";
 
 /** Do not re-send the same welcome acknowledgment within this window (per phone). */
 export const WELCOME_COOLDOWN_HOURS = 24;

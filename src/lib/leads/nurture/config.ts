@@ -1,34 +1,26 @@
-import type { LeadNurtureEventId } from "@/lib/leads/nurture/templates";
-import { LEAD_NURTURE_EVENT_LABELS, STAGE_NURTURE_MIN_GAP_HOURS } from "@/lib/leads/nurture/templates";
+import {
+  isLeadNurtureEventId,
+  STAGE_NURTURE_MIN_GAP_HOURS,
+  type LeadAlertOrgConfig,
+  type LeadAlertRuleConfig,
+  type LeadNurtureEventId,
+  type LeadNurtureOrgConfig,
+} from "@/lib/leads/nurture/events";
 import { prisma } from "@/lib/db";
 
-export type LeadAlertRuleConfig = {
-  enabled: boolean;
-  afterDays: number;
-};
-
-export type LeadAlertOrgConfig = {
-  paymentNotReceived: LeadAlertRuleConfig;
-  quotationNotAccepted: LeadAlertRuleConfig;
-  negotiationFollowUp: LeadAlertRuleConfig;
-};
-
-export type LeadNurtureOrgConfig = {
-  enabled: boolean;
-  stageMinGapHours: number;
-  templates: Partial<Record<LeadNurtureEventId, string>>;
-  alerts: LeadAlertOrgConfig;
-};
-
-export const NURTURE_TEMPLATE_PLACEHOLDERS = [
-  { key: "{{firstName}}", label: "Lead first name" },
-  { key: "{{requirement}}", label: "Requirement text" },
-  { key: "{{company}}", label: "Company name" },
-  { key: "{{topic}}", label: "Category / topic" },
-  { key: "{{counsellor}}", label: "Assigned team member" },
-  { key: "{{discussion}}", label: "Call / meeting notes" },
-  { key: "{{nextStep}}", label: "Next step / stage label" },
-] as const;
+export type {
+  LeadAlertOrgConfig,
+  LeadAlertRuleConfig,
+  LeadNurtureEventId,
+  LeadNurtureOrgConfig,
+} from "@/lib/leads/nurture/events";
+export {
+  ALERT_EVENT_ORDER,
+  LEAD_NURTURE_EVENT_LABELS,
+  NURTURE_EVENT_ORDER,
+  NURTURE_TEMPLATE_PLACEHOLDERS,
+  STAGE_NURTURE_MIN_GAP_HOURS,
+} from "@/lib/leads/nurture/events";
 
 export const DEFAULT_NURTURE_TEMPLATES: Record<LeadNurtureEventId, string> = {
   welcome: `Hi {{firstName}},
@@ -127,31 +119,6 @@ Share what you would like changed, or pick a quick call slot — we will close t
 — Team Sheetomatic`,
 };
 
-const NURTURE_EVENT_IDS = Object.keys(LEAD_NURTURE_EVENT_LABELS) as LeadNurtureEventId[];
-
-export const NURTURE_EVENT_ORDER: LeadNurtureEventId[] = [
-  "welcome",
-  "assigned",
-  "post_call",
-  "stage_schedule_meeting",
-  "stage_proposal",
-  "stage_follow_up",
-  "stage_qualified",
-  "alert_payment_pending",
-  "alert_quotation_pending",
-  "alert_negotiation",
-];
-
-export const ALERT_EVENT_ORDER: LeadNurtureEventId[] = [
-  "alert_payment_pending",
-  "alert_quotation_pending",
-  "alert_negotiation",
-];
-
-function isNurtureEventId(value: string): value is LeadNurtureEventId {
-  return NURTURE_EVENT_IDS.includes(value as LeadNurtureEventId);
-}
-
 function defaultAlerts(): LeadAlertOrgConfig {
   return {
     paymentNotReceived: { enabled: true, afterDays: 3 },
@@ -199,7 +166,7 @@ export function parseLeadNurtureConfig(raw: unknown): LeadNurtureOrgConfig {
 
   if (input.templates && typeof input.templates === "object") {
     for (const [key, value] of Object.entries(input.templates)) {
-      if (isNurtureEventId(key) && typeof value === "string" && value.trim()) {
+      if (isLeadNurtureEventId(key) && typeof value === "string" && value.trim()) {
         templates[key] = value.trim();
       }
     }
