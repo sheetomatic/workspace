@@ -42,6 +42,7 @@ export async function getOrCreateHrSettings(organizationId: string) {
 export async function listTodayAttendance(
   organizationId: string,
   siteId?: string | null,
+  userId?: string,
 ) {
   const workDate = startOfToday();
   return prisma.attendanceRecord.findMany({
@@ -49,6 +50,7 @@ export async function listTodayAttendance(
       organizationId,
       workDate,
       ...(siteId ? { siteId } : {}),
+      ...(userId ? { userId } : {}),
     },
     include: {
       user: { select: { id: true, name: true, email: true } },

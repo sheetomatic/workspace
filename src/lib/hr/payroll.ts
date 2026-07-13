@@ -618,11 +618,13 @@ export async function listAttendanceForPeriod(
   organizationId: string,
   periodStart: Date,
   periodEnd: Date,
+  userId?: string,
 ) {
   return prisma.attendanceRecord.findMany({
     where: {
       organizationId,
       workDate: { gte: periodStart, lte: periodEnd },
+      ...(userId ? { userId } : {}),
     },
     include: {
       user: { select: { id: true, name: true, email: true } },

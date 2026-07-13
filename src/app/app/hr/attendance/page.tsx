@@ -10,9 +10,11 @@ import { HrSubNav } from "@/components/hr/hr-sub-nav";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import {
+  getOrCreateHrSettings,
   listPendingAttendanceVerifications,
   listTodayAttendance,
 } from "@/lib/hr/hr-store";
+import { resolveEnabledHrSubModules, requireHrSubModule } from "@/lib/hr/hr-sub-modules";
 import { listAttendanceForPeriod } from "@/lib/hr/payroll";
 import {
   getAttendanceSiteStats,
@@ -21,6 +23,7 @@ import {
 import { listHolidays } from "@/lib/hr/holidays";
 import { prisma } from "@/lib/db";
 import { attendanceLeaveModule } from "@/app/hr-module-content";
+import { redirect } from "next/navigation";
 
 type PageProps = {
   searchParams: Promise<{ site?: string; month?: string }>;
@@ -57,6 +60,8 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
   const periodEnd = new Date(Date.UTC(year, monthIndex + 1, 0, 12, 0, 0, 0));
   const daysInMonth = periodEnd.getUTCDate();
   const canMark = hasMinimumRole(user.role, "MANAGER");
+  const selfOnly = !canMark;
+  const isAdmin = hasMinimumRole(user.role, "ADMIN");
   const todayIso = new Date().toLocaleDateString("en-CA", {
     timeZone: "Asia/Kolkata",
   });
@@ -65,7 +70,11 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
 
   const [records, membership, hrSettings, sites, stats, monthRecords, members, yearHolidays, pendingVerify] =
     await Promise.all([
-      listTodayAttendance(user.organizationId, siteFilter),
+      listTodayAttendance(
+        user.organizationId,
+        siteFilter,
+        selfOnly ? user.id : undefined,
+      ),
       prisma.membership.findUnique({
         where: {
           userId_organizationId: {
@@ -75,17 +84,22 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
         },
         select: { geoFenceRequired: true, locationMode: true },
       }),
-      prisma.workspaceHrSettings.findUnique({
-        where: { organizationId: user.organizationId },
-        select: { officeLat: true, officeLng: true },
-      }),
+      getOrCreateHrSettings(user.organizationId),
       listActiveHrWorkSites(user.organizationId),
-      getAttendanceSiteStats(user.organizationId, workDate, siteFilter),
-      listAttendanceForPeriod(user.organizationId, periodStart, periodEnd),
+      canMark
+        ? getAttendanceSiteStats(user.organizationId, workDate, siteFilter)
+        : Promise.resolve({ present: 0, absent: 0, onLeave: 0 }),
+      listAttendanceForPeriod(
+        user.organizationId,
+        periodStart,
+        periodEnd,
+        selfOnly ? user.id : undefined,
+      ),
       prisma.membership.findMany({
         where: {
           organizationId: user.organizationId,
           deactivatedAt: null,
+          ...(selfOnly ? { userId: user.id } : {}),
         },
         select: {
           userId: true,
@@ -98,6 +112,14 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
         ? listPendingAttendanceVerifications(user.organizationId)
         : Promise.resolve([]),
     ]);
+
+  if (!requireHrSubModule(hrSettings.enabledHrSubModules, "attendance")) {
+    redirect("/app/hr");
+  }
+
+  const enabledSubModules = resolveEnabledHrSubModules(
+    hrSettings.enabledHrSubModules,
+  );
 
   const myRecord = records.find((r) => r.userId === user.id);
   const officeConfigured =
@@ -125,9 +147,13 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
     name: m.user.name ?? m.user.email ?? "Unknown",
   }));
 
-  const filteredMonth = siteFilter
-    ? monthRecords.filter((row) => !row.siteId || row.siteId === siteFilter)
+  const scopedMonth = selfOnly
+    ? monthRecords.filter((row) => row.userId === user.id)
     : monthRecords;
+
+  const filteredMonth = siteFilter
+    ? scopedMonth.filter((row) => !row.siteId || row.siteId === siteFilter)
+    : scopedMonth;
 
   const monthCells = filteredMonth.map((row) => ({
     userId: row.userId,
@@ -157,18 +183,24 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
         description={attendanceLeaveModule.tagline}
         actions={<WorkspaceGuideButton guideId="hr-attendance" />}
       />
-      <HrSubNav activePath="/app/hr/attendance" isAdmin={hasMinimumRole(user.role, "ADMIN")} />
-
-      <AttendanceSiteToolbar
-        activeSiteId={siteFilter}
-        month={monthKey}
-        sites={siteOptions}
-        stats={{
-          present: stats.present,
-          absent: stats.absent,
-          onLeave: stats.onLeave,
-        }}
+      <HrSubNav
+        activePath="/app/hr/attendance"
+        isAdmin={isAdmin}
+        enabledSubModules={enabledSubModules}
       />
+
+      {canMark ? (
+        <AttendanceSiteToolbar
+          activeSiteId={siteFilter}
+          month={monthKey}
+          sites={siteOptions}
+          stats={{
+            present: stats.present,
+            absent: stats.absent,
+            onLeave: stats.onLeave,
+          }}
+        />
+      ) : null}
 
       <AttendancePunchPanel
         checkInAt={myRecord?.checkInAt ?? null}
@@ -215,20 +247,22 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
         year={year}
       />
 
-      <AttendanceAdminTable
-        canManage={user.isSuperAdmin}
-        records={records.map((row) => ({
-          id: row.id,
-          employeeName: row.user.name ?? row.user.email ?? "Unknown",
-          siteName: row.site?.name ?? "-",
-          checkInAt: row.checkInAt?.toISOString() ?? null,
-          checkOutAt: row.checkOutAt?.toISOString() ?? null,
-          method: row.method,
-          status: row.status,
-          geoFenceOk: row.geoFenceOk,
-          notes: row.notes,
-        }))}
-      />
+      {canMark ? (
+        <AttendanceAdminTable
+          canManage={user.isSuperAdmin}
+          records={records.map((row) => ({
+            id: row.id,
+            employeeName: row.user.name ?? row.user.email ?? "Unknown",
+            siteName: row.site?.name ?? "-",
+            checkInAt: row.checkInAt?.toISOString() ?? null,
+            checkOutAt: row.checkOutAt?.toISOString() ?? null,
+            method: row.method,
+            status: row.status,
+            geoFenceOk: row.geoFenceOk,
+            notes: row.notes,
+          }))}
+        />
+      ) : null}
 
       <p className="ws-hr-note">
         Workplace geo-fence and per-member attendance rules are configured under

@@ -11,6 +11,11 @@ import {
   getOrCreateHrSettings,
 } from "@/lib/hr/hr-store";
 import {
+  isHrSubModuleEnabled,
+  persistEnabledHrSubModules,
+  type HrSubModuleId,
+} from "@/lib/hr/hr-sub-modules";
+import {
   hrActionFailure,
   mapCheckInError,
   type HrActionResult,
@@ -33,12 +38,23 @@ function revalidateHr() {
   }
 }
 
+async function assertHrSubModuleEnabled(
+  organizationId: string,
+  id: HrSubModuleId,
+): Promise<boolean> {
+  const settings = await getOrCreateHrSettings(organizationId);
+  return isHrSubModuleEnabled(settings.enabledHrSubModules, id);
+}
+
 export async function recordCheckInAction(
   formData: FormData,
 ): Promise<HrActionResult> {
   const user = await getSessionUser();
   if (!user) {
     return mapCheckInError(new Error("Sign in required."));
+  }
+  if (!(await assertHrSubModuleEnabled(user.organizationId, "attendance"))) {
+    return hrActionFailure("FORBIDDEN", "Attendance is not enabled for this workspace.");
   }
 
   const geoLat = Number(formData.get("geoLat"));
@@ -65,6 +81,9 @@ export async function recordCheckOutAction(): Promise<void> {
   if (!user) {
     throw new Error("Sign in required.");
   }
+  if (!(await assertHrSubModuleEnabled(user.organizationId, "attendance"))) {
+    throw new Error("Attendance is not enabled for this workspace.");
+  }
 
   await checkOutAttendance(user);
   revalidateHr();
@@ -73,6 +92,9 @@ export async function recordCheckOutAction(): Promise<void> {
 export async function submitLeaveRequestAction(formData: FormData): Promise<void> {
   const user = await getSessionUser();
   if (!user) {
+    return;
+  }
+  if (!(await assertHrSubModuleEnabled(user.organizationId, "leave"))) {
     return;
   }
 
@@ -174,6 +196,9 @@ export async function recordFieldCheckInAction(
   const user = await getSessionUser();
   if (!user) {
     return mapCheckInError(new Error("Sign in required."));
+  }
+  if (!(await assertHrSubModuleEnabled(user.organizationId, "field"))) {
+    return hrActionFailure("FORBIDDEN", "Field tracking is not enabled for this workspace.");
   }
 
   const geoLat = Number(formData.get("geoLat"));
@@ -280,6 +305,9 @@ export async function postFieldLocationPingAction(
   if (!user) {
     return hrActionFailure("FORBIDDEN", "Sign in required.");
   }
+  if (!(await assertHrSubModuleEnabled(user.organizationId, "field"))) {
+    return hrActionFailure("FORBIDDEN", "Field tracking is not enabled for this workspace.");
+  }
 
   const geoLat = Number(formData.get("geoLat"));
   const geoLng = Number(formData.get("geoLng"));
@@ -322,6 +350,9 @@ export async function postFieldLocationPingAction(
 export async function createFieldVisitAction(formData: FormData): Promise<void> {
   const user = await getSessionUser();
   if (!user || !hasMinimumRole(user.role, "MANAGER")) {
+    return;
+  }
+  if (!(await assertHrSubModuleEnabled(user.organizationId, "field"))) {
     return;
   }
 
@@ -380,6 +411,9 @@ export async function createJobOpeningAction(formData: FormData): Promise<void> 
   if (!user || !hasMinimumRole(user.role, "ADMIN")) {
     return;
   }
+  if (!(await assertHrSubModuleEnabled(user.organizationId, "hiring"))) {
+    return;
+  }
 
   const title = String(formData.get("title") ?? "").trim();
   const location = String(formData.get("location") ?? "").trim();
@@ -404,6 +438,9 @@ export async function createJobOpeningAction(formData: FormData): Promise<void> 
 export async function addCandidateAction(formData: FormData): Promise<void> {
   const user = await getSessionUser();
   if (!user || !hasMinimumRole(user.role, "ADMIN")) {
+    return;
+  }
+  if (!(await assertHrSubModuleEnabled(user.organizationId, "hiring"))) {
     return;
   }
 
@@ -448,6 +485,11 @@ export async function updateHrSettingsAction(formData: FormData): Promise<void> 
   const shortLeaveEnabled = formData.get("shortLeaveEnabled") === "on";
   const shortLeaveHours = Number(formData.get("shortLeaveHours") ?? 2);
 
+  const enabledHrSubModules = persistEnabledHrSubModules(
+    formData.getAll("enabledHrSubModules").map((v) => String(v).trim()),
+  );
+  const fieldTrackingEnabled = enabledHrSubModules.includes("field");
+
   await getOrCreateHrSettings(user.organizationId);
   await prisma.workspaceHrSettings.update({
     where: { organizationId: user.organizationId },
@@ -462,6 +504,8 @@ export async function updateHrSettingsAction(formData: FormData): Promise<void> 
       halfDayEnabled,
       shortLeaveEnabled,
       shortLeaveHours: Number.isFinite(shortLeaveHours) ? Math.max(0.25, shortLeaveHours) : 2,
+      enabledHrSubModules,
+      fieldTrackingEnabled,
     },
   });
 
@@ -479,6 +523,9 @@ export async function createPayrollRunAction(
     !hasMinimumRole(user.role, "ADMIN")
   ) {
     return hrActionFailure("FORBIDDEN", "Admin access required to generate payroll.");
+  }
+  if (!(await assertHrSubModuleEnabled(user.organizationId, "payroll"))) {
+    return hrActionFailure("FORBIDDEN", "Payroll is not enabled for this workspace.");
   }
 
   const periodStart = new Date(String(formData.get("periodStart")));
@@ -515,6 +562,9 @@ export async function markAttendanceDayAction(
   const user = await getSessionUser();
   if (!user || !hasMinimumRole(user.role, "MANAGER")) {
     return hrActionFailure("FORBIDDEN", "Manager access required to mark attendance.");
+  }
+  if (!(await assertHrSubModuleEnabled(user.organizationId, "attendance"))) {
+    return hrActionFailure("FORBIDDEN", "Attendance is not enabled for this workspace.");
   }
 
   const targetUserId = String(formData.get("userId") ?? "").trim();
@@ -566,6 +616,9 @@ export async function verifyAttendanceAction(
   const user = await getSessionUser();
   if (!user || !hasMinimumRole(user.role, "MANAGER")) {
     return hrActionFailure("FORBIDDEN", "Manager access required to verify attendance.");
+  }
+  if (!(await assertHrSubModuleEnabled(user.organizationId, "attendance"))) {
+    return hrActionFailure("FORBIDDEN", "Attendance is not enabled for this workspace.");
   }
 
   const recordId = String(formData.get("recordId") ?? "").trim();
@@ -1020,6 +1073,9 @@ export async function getSalarySlipAction(
   if (!user || !hasWorkspaceModule(user, "HR")) {
     return null;
   }
+  if (!(await assertHrSubModuleEnabled(user.organizationId, "payroll"))) {
+    return null;
+  }
   const { getSalarySlipData } = await import("@/lib/hr/salary-slip");
   return getSalarySlipData(user.organizationId, lineId.trim(), {
     userId: user.id,
@@ -1035,6 +1091,9 @@ export async function createHolidayAction(
   const user = await getSessionUser();
   if (!user || !hasMinimumRole(user.role, "ADMIN")) {
     return hrActionFailure("FORBIDDEN", "Admin access required to manage holidays.");
+  }
+  if (!(await assertHrSubModuleEnabled(user.organizationId, "holidays"))) {
+    return hrActionFailure("FORBIDDEN", "Holidays is not enabled for this workspace.");
   }
 
   const name = String(formData.get("name") ?? "").trim();

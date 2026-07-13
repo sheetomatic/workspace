@@ -4,6 +4,11 @@ import { HolidayAdminPanel } from "@/components/hr/holiday-admin-panel";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import { listHolidays } from "@/lib/hr/holidays";
+import { getOrCreateHrSettings } from "@/lib/hr/hr-store";
+import {
+  requireHrSubModule,
+  resolveEnabledHrSubModules,
+} from "@/lib/hr/hr-sub-modules";
 import { redirect } from "next/navigation";
 
 type PageProps = {
@@ -12,6 +17,10 @@ type PageProps = {
 
 export default async function HrHolidaysPage({ searchParams }: PageProps) {
   const user = await requireSession(undefined, { module: "HR" });
+  const hrSettings = await getOrCreateHrSettings(user.organizationId);
+  if (!requireHrSubModule(hrSettings.enabledHrSubModules, "holidays")) {
+    redirect("/app/hr");
+  }
   if (!hasMinimumRole(user.role, "ADMIN")) {
     redirect("/app/hr");
   }
@@ -24,6 +33,9 @@ export default async function HrHolidaysPage({ searchParams }: PageProps) {
       : new Date().getFullYear();
 
   const holidays = await listHolidays(user.organizationId, year);
+  const enabledSubModules = resolveEnabledHrSubModules(
+    hrSettings.enabledHrSubModules,
+  );
 
   return (
     <div className="saas-page ws-hr-page">
@@ -31,7 +43,11 @@ export default async function HrHolidaysPage({ searchParams }: PageProps) {
         title="Holidays"
         description="Org holiday calendar. Mandatory weekday holidays auto-mark attendance; optional holidays show on the calendar only."
       />
-      <HrSubNav activePath="/app/hr/holidays" isAdmin />
+      <HrSubNav
+        activePath="/app/hr/holidays"
+        isAdmin
+        enabledSubModules={enabledSubModules}
+      />
 
       <HolidayAdminPanel
         year={year}

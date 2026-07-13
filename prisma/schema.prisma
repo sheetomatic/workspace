@@ -1218,6 +1218,8 @@ model WorkspaceHrSettings {
   shortLeaveHours        Float        @default(2)
   faceRecognitionEnabled Boolean      @default(false)
   fieldTrackingEnabled   Boolean      @default(true)
+  /** Org-enabled HR sub-modules (attendance, leave, …). Empty = all defaults for backward compat. */
+  enabledHrSubModules    String[]     @default([])
   updatedAt              DateTime     @updatedAt
 }
 

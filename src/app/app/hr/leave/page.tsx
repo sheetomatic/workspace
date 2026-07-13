@@ -11,9 +11,11 @@ import { LeaveAllocationPanel } from "@/components/hr/leave-allocation-panel";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import {
+  getOrCreateHrSettings,
   listLeaveBalancesForPage,
   listLeaveRequests,
 } from "@/lib/hr/hr-store";
+import { resolveEnabledHrSubModules, requireHrSubModule } from "@/lib/hr/hr-sub-modules";
 import { listLeaveBalances, listLeavePolicies } from "@/lib/hr/payroll";
 import { listAttendanceExceptions } from "@/lib/hr/attendance-exceptions";
 import { listSwapRequests } from "@/lib/hr/swap-requests";
@@ -22,6 +24,7 @@ import {
   submitLeaveRequestAction,
 } from "@/lib/hr/hr-actions";
 import { listAssignableMembers } from "@/lib/tasks";
+import { redirect } from "next/navigation";
 
 function statusClass(status: string) {
   if (status === "APPROVED") return "ws-leave-status is-approved";
@@ -35,7 +38,7 @@ export default async function HrLeavePage() {
   const isAdmin = hasMinimumRole(user.role, "ADMIN");
   const year = new Date().getFullYear();
 
-  const [requests, balances, exceptions, swaps, policies, allocBalances, members] =
+  const [requests, balances, exceptions, swaps, policies, allocBalances, members, hrSettings] =
     await Promise.all([
       listLeaveRequests(user.organizationId, isManager ? undefined : user.id),
       listLeaveBalances(user.organizationId, user.id, year),
@@ -60,7 +63,16 @@ export default async function HrLeavePage() {
       isAdmin
         ? listAssignableMembers(user.organizationId)
         : Promise.resolve([]),
+      getOrCreateHrSettings(user.organizationId),
     ]);
+
+  if (!requireHrSubModule(hrSettings.enabledHrSubModules, "leave")) {
+    redirect("/app/hr");
+  }
+
+  const enabledSubModules = resolveEnabledHrSubModules(
+    hrSettings.enabledHrSubModules,
+  );
 
   return (
     <div className="saas-page ws-hr-page">
@@ -68,7 +80,11 @@ export default async function HrLeavePage() {
         title="Leave"
         description="Balances, leave, OD/WFH, leave/off-day swaps, and manager approvals."
       />
-      <HrSubNav activePath="/app/hr/leave" isAdmin={isAdmin} />
+      <HrSubNav
+        activePath="/app/hr/leave"
+        isAdmin={isAdmin}
+        enabledSubModules={enabledSubModules}
+      />
 
       <LeaveBalanceCards
         year={year}

@@ -355,6 +355,7 @@ export function SaasShell({
   hidePlanBadge = false,
   isDedicatedPortal = false,
   navPrefs = DEFAULT_WORKSPACE_NAV_PREFS,
+  enabledHrSubModules = null,
   children,
 }: {
   user: SessionUser;
@@ -369,6 +370,8 @@ export function SaasShell({
   hidePlanBadge?: boolean;
   isDedicatedPortal?: boolean;
   navPrefs?: WorkspaceNavPrefs;
+  /** Resolved HR sub-module ids; when set, HRMS children are filtered. */
+  enabledHrSubModules?: string[] | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -404,11 +407,15 @@ export function SaasShell({
   );
   const settingsSection = sections.find((section) => section.id === "settings");
   const settingsItems = settingsSection
-    ? visibleWorkspaceNavItems(user, settingsSection.items)
+    ? visibleWorkspaceNavItems(user, settingsSection.items, enabledHrSubModules)
     : [];
 
   function sectionItems(sectionItemsRaw: WorkspaceNavItem[]) {
-    const allowed = visibleWorkspaceNavItems(user, sectionItemsRaw);
+    const allowed = visibleWorkspaceNavItems(
+      user,
+      sectionItemsRaw,
+      enabledHrSubModules,
+    );
     return isDedicatedPortal ? allowed : filterNavItemsByPrefs(allowed, navPrefs);
   }
 

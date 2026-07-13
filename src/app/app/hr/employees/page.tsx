@@ -1,19 +1,37 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/saas/page-header";
 import { HrSubNav } from "@/components/hr/hr-sub-nav";
 import { EmployeesTable } from "@/components/hr/employees-table";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import { listEmployees } from "@/lib/hr/employees";
+import { getOrCreateHrSettings } from "@/lib/hr/hr-store";
+import {
+  resolveEnabledHrSubModules,
+  requireHrSubModule,
+} from "@/lib/hr/hr-sub-modules";
 
 export default async function HrEmployeesPage() {
   const user = await requireSession(undefined, { module: "HR" });
   const isAdmin = hasMinimumRole(user.role, "ADMIN");
 
-  const all = await listEmployees(user.organizationId);
+  const [all, hrSettings] = await Promise.all([
+    listEmployees(user.organizationId),
+    getOrCreateHrSettings(user.organizationId),
+  ]);
+
+  if (!requireHrSubModule(hrSettings.enabledHrSubModules, "employees")) {
+    redirect("/app/hr");
+  }
+
   const employees = isAdmin
     ? all
     : all.filter((row) => row.userId === user.id);
+
+  const enabledSubModules = resolveEnabledHrSubModules(
+    hrSettings.enabledHrSubModules,
+  );
 
   const registered = employees.filter((e) => e.profile != null).length;
   const withSalary = isAdmin
@@ -30,7 +48,11 @@ export default async function HrEmployeesPage() {
             : "Your employee profile for this workspace."
         }
       />
-      <HrSubNav activePath="/app/hr/employees" isAdmin={isAdmin} />
+      <HrSubNav
+        activePath="/app/hr/employees"
+        isAdmin={isAdmin}
+        enabledSubModules={enabledSubModules}
+      />
 
       {isAdmin ? (
         <section className="hs-quick-stats" aria-label="Employee readiness">

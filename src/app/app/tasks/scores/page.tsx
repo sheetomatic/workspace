@@ -13,7 +13,6 @@ import {
   misDoerOptions,
 } from "@/lib/mis/reports-data";
 import { canCreateTasks, listDelegatedTasks } from "@/lib/tasks";
-import { redirect } from "next/navigation";
 
 type PageProps = {
   searchParams: Promise<{ category?: string; metric?: string; doer?: string }>;
@@ -22,14 +21,13 @@ type PageProps = {
 export default async function TasksScoresPage({ searchParams }: PageProps) {
   const user = await requireSession(undefined, { module: "TASKS" });
 
-  if (!canCreateTasks(user.role)) {
-    redirect("/app/tasks/today");
-  }
-
   const params = await searchParams;
   const taskPage = await listDelegatedTasks(
     user,
-    { includeCompleted: true },
+    {
+      includeCompleted: true,
+      ...(!canCreateTasks(user.role) ? { assigneeUserId: user.id } : {}),
+    },
     { page: 1, pageSize: 500 },
   );
 

@@ -62,33 +62,10 @@ export function canVerifyTask(
 }
 
 export async function buildTaskVisibilityWhere(user: SessionUser) {
-  if (hasMinimumRole(user.role, "MANAGER") || user.role === "VIEWER") {
+  if (hasMinimumRole(user.role, "MANAGER")) {
     return { organizationId: user.organizationId };
   }
-
-  const directReports = await prisma.membership.findMany({
-    where: {
-      organizationId: user.organizationId,
-      reportingManager: { userId: user.id },
-    },
-    select: { userId: true },
-  });
-  const reportIds = directReports.map((row) => row.userId);
-
-  if (reportIds.length === 0) {
-    return { organizationId: user.organizationId, assigneeUserId: user.id };
-  }
-
-  return {
-    organizationId: user.organizationId,
-    OR: [
-      { assigneeUserId: user.id },
-      {
-        status: "AWAITING_VERIFICATION" as const,
-        assigneeUserId: { in: reportIds },
-      },
-    ],
-  };
+  return { organizationId: user.organizationId, assigneeUserId: user.id };
 }
 
 export async function loadReportingManagerContact(

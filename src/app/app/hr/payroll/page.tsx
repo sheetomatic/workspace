@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/saas/page-header";
 import { HrSubNav } from "@/components/hr/hr-sub-nav";
 import { PayrollGenerateForm } from "@/components/hr/payroll-generate-form";
@@ -7,10 +8,22 @@ import { hasMinimumRole } from "@/lib/permissions";
 import { prisma } from "@/lib/db";
 import { formatInr } from "@/lib/leads/categories";
 import { istCalendarYmd } from "@/lib/hr/payroll";
+import { getOrCreateHrSettings } from "@/lib/hr/hr-store";
+import {
+  requireHrSubModule,
+  resolveEnabledHrSubModules,
+} from "@/lib/hr/hr-sub-modules";
 
 export default async function HrPayrollPage() {
   const user = await requireSession(undefined, { module: "HR" });
+  const hrSettings = await getOrCreateHrSettings(user.organizationId);
+  if (!requireHrSubModule(hrSettings.enabledHrSubModules, "payroll")) {
+    redirect("/app/hr");
+  }
   const isAdmin = hasMinimumRole(user.role, "ADMIN");
+  const enabledSubModules = resolveEnabledHrSubModules(
+    hrSettings.enabledHrSubModules,
+  );
 
   const [runs, salaryReadyCount] = await Promise.all([
     prisma.payrollRun.findMany({
@@ -50,7 +63,11 @@ export default async function HrPayrollPage() {
             : "Your attendance-based payslip lines for this workspace."
         }
       />
-      <HrSubNav activePath="/app/hr/payroll" isAdmin={isAdmin} />
+      <HrSubNav
+        activePath="/app/hr/payroll"
+        isAdmin={isAdmin}
+        enabledSubModules={enabledSubModules}
+      />
 
       {isAdmin ? (
         <section className="hs-quick-stats" aria-label="Payroll readiness">

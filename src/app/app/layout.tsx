@@ -23,6 +23,9 @@ import {
 import { ORG_PLAN_LABELS } from "@/lib/org-plan-presets";
 import { requireSession } from "@/lib/require-session";
 import { ensureSessionTenantHost, getRequestTenantSlug } from "@/lib/tenant-host";
+import { getOrCreateHrSettings } from "@/lib/hr/hr-store";
+import { resolveEnabledHrSubModules } from "@/lib/hr/hr-sub-modules";
+import { hasWorkspaceModule } from "@/lib/workspace-modules";
 
 export async function generateMetadata(): Promise<Metadata> {
   const tenantSlug = await getRequestTenantSlug();
@@ -89,9 +92,10 @@ export default async function AppLayout({
   } | null = null;
   let organizations: Awaited<ReturnType<typeof listOrganizationsForUser>> = [];
   let navPrefs = DEFAULT_WORKSPACE_NAV_PREFS;
+  let enabledHrSubModules: string[] | null = null;
 
   try {
-    const [orgResult, orgsResult, membershipPrefs] = await Promise.all([
+    const [orgResult, orgsResult, membershipPrefs, hrSettings] = await Promise.all([
       prisma.organization.findUnique({
         where: { id: sessionUser.organizationId },
         select: {
@@ -115,10 +119,18 @@ export default async function AppLayout({
         },
         select: { workspacePrefs: true },
       }),
+      hasWorkspaceModule(sessionUser, "HR")
+        ? getOrCreateHrSettings(sessionUser.organizationId)
+        : Promise.resolve(null),
     ]);
     organization = orgResult;
     organizations = orgsResult;
     navPrefs = parseWorkspaceNavPrefs(membershipPrefs?.workspacePrefs);
+    if (hrSettings) {
+      enabledHrSubModules = resolveEnabledHrSubModules(
+        hrSettings.enabledHrSubModules,
+      );
+    }
   } catch (error) {
     console.error("[app-layout] workspace bootstrap failed", error);
     redirect(
@@ -163,6 +175,7 @@ export default async function AppLayout({
       <WorkspacePwaRegister />
       <SaasShell
         appearance={appearance}
+        enabledHrSubModules={enabledHrSubModules}
         hidePlanBadge={Boolean(dedicatedPortal)}
         isDedicatedPortal={Boolean(dedicatedPortal)}
         navPrefs={navPrefs}

@@ -1,4 +1,8 @@
 import { updateHrSettingsAction } from "@/lib/hr/hr-actions";
+import {
+  HR_SUB_MODULES,
+  resolveEnabledHrSubModules,
+} from "@/lib/hr/hr-sub-modules";
 
 type WorkplaceHrSettings = {
   officeLat: number | null;
@@ -11,6 +15,8 @@ type WorkplaceHrSettings = {
   halfDayEnabled?: boolean;
   shortLeaveEnabled?: boolean;
   shortLeaveHours?: number;
+  enabledHrSubModules?: string[];
+  fieldTrackingEnabled?: boolean;
 };
 
 export function WorkplaceHrSettingsPanel({
@@ -18,6 +24,8 @@ export function WorkplaceHrSettingsPanel({
 }: {
   settings: WorkplaceHrSettings;
 }) {
+  const enabled = resolveEnabledHrSubModules(settings.enabledHrSubModules);
+
   return (
     <section className="saas-form-panel ws-workplace-hr-settings">
       <h3>Workplace attendance settings</h3>
@@ -26,6 +34,33 @@ export function WorkplaceHrSettingsPanel({
         recognition. Assign a shift and White/Blue category on the employee profile.
       </p>
       <form action={updateHrSettingsAction} className="ws-hr-form">
+        <div className="ws-hr-submodules-section">
+          <h4>HR sub-modules</h4>
+          <p className="saas-team-invite-lead">
+            Enable the HR areas your team can use. Disabled modules are hidden from
+            everyone. Staff only see their own attendance and salary slip; managers can
+            approve.
+          </p>
+          <div className="ws-hr-submodules-list">
+            {HR_SUB_MODULES.map((mod) => (
+              <label key={mod.id} className="ws-hr-checkbox">
+                <input
+                  type="checkbox"
+                  name="enabledHrSubModules"
+                  value={mod.id}
+                  defaultChecked={enabled.includes(mod.id)}
+                />
+                <span>
+                  <strong>{mod.label}</strong>
+                  {mod.description ? (
+                    <span className="ws-hr-help"> — {mod.description}</span>
+                  ) : null}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+
         <div className="form-grid-premium">
           <label>
             Work start time

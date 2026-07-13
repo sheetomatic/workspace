@@ -47,7 +47,7 @@ export const TASK_DEPARTMENT_LABELS: Record<TaskDepartment, string> = {
 };
 
 export function taskVisibilityFilter(user: SessionUser) {
-  if (hasMinimumRole(user.role, "MANAGER") || user.role === "VIEWER") {
+  if (hasMinimumRole(user.role, "MANAGER")) {
     return { organizationId: user.organizationId };
   }
   return {
@@ -56,15 +56,12 @@ export function taskVisibilityFilter(user: SessionUser) {
   };
 }
 
-/** Managers+ may filter by assignee; staff always see only their own tasks. */
+/** Managers+ may filter by assignee; staff/viewers always see only their own tasks. */
 export function taskAssigneeListFilter(
   user: SessionUser,
   assigneeUserId?: string,
 ) {
-  if (
-    !assigneeUserId ||
-    (!hasMinimumRole(user.role, "MANAGER") && user.role !== "VIEWER")
-  ) {
+  if (!assigneeUserId || !hasMinimumRole(user.role, "MANAGER")) {
     return {};
   }
   return { assigneeUserId };

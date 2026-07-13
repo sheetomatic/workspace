@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/saas/page-header";
 import { GeoPunchForm } from "@/components/hr/geo-punch-form";
 import { HrSubNav } from "@/components/hr/hr-sub-nav";
@@ -8,9 +9,14 @@ import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import { listAssignableMembers } from "@/lib/tasks";
 import {
+  getOrCreateHrSettings,
   listFieldCheckIns,
   listFieldVisits,
 } from "@/lib/hr/hr-store";
+import {
+  requireHrSubModule,
+  resolveEnabledHrSubModules,
+} from "@/lib/hr/hr-sub-modules";
 import {
   createFieldVisitAction,
   recordFieldCheckInAction,
@@ -30,6 +36,13 @@ function startOfTodayIst() {
 
 export default async function HrFieldPage() {
   const user = await requireSession(undefined, { module: "HR" });
+  const hrSettings = await getOrCreateHrSettings(user.organizationId);
+  if (!requireHrSubModule(hrSettings.enabledHrSubModules, "field")) {
+    redirect("/app/hr");
+  }
+  const enabledSubModules = resolveEnabledHrSubModules(
+    hrSettings.enabledHrSubModules,
+  );
   const isManager = hasMinimumRole(user.role, "MANAGER");
   const todayStart = startOfTodayIst();
 
@@ -244,7 +257,11 @@ export default async function HrFieldPage() {
         title="Field executive tracking"
         description={fieldTrackingModule.tagline}
       />
-      <HrSubNav activePath="/app/hr/field" isAdmin={hasMinimumRole(user.role, "ADMIN")} />
+      <HrSubNav
+        activePath="/app/hr/field"
+        isAdmin={hasMinimumRole(user.role, "ADMIN")}
+        enabledSubModules={enabledSubModules}
+      />
 
       <p className="ws-hr-note">
         Separate from office attendance. Use this module for sales, service, and

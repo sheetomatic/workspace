@@ -10372,6 +10372,26 @@ body:has(.workspace-app.saas-app) {
   accent-color: #2563eb;
 }
 
+.workspace-app .ws-hr-submodules-section {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.workspace-app .ws-hr-submodules-section h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.workspace-app .ws-hr-submodules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-top: 0.5rem;
+}
+
 .workspace-app .ws-hr-meta,
 .workspace-app .ws-hr-help,
 .workspace-app .ws-hr-note {

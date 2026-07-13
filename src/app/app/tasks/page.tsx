@@ -53,7 +53,7 @@ type TasksPageProps = {
 export default async function TasksPage({ searchParams }: TasksPageProps) {
   const user = await requireSession(undefined, { module: "TASKS" });
 
-  if (!canCreateTasks(user.role) && user.role !== "VIEWER") {
+  if (!canCreateTasks(user.role)) {
     redirect("/app/tasks/today");
   }
 

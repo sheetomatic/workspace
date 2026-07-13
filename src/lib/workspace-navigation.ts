@@ -43,6 +43,8 @@ export type WorkspaceNavItem = {
   icon: LucideIcon;
   minRole?: SessionUser["role"];
   module?: WorkspaceModule;
+  /** When set, item is hidden unless this HR sub-module is enabled for the org. */
+  hrSubModule?: string;
   allowDepartmentHead?: boolean;
   matchPrefix?: string;
   addon?: boolean;
@@ -201,6 +203,7 @@ const HRMS_NAV_ITEM: WorkspaceNavItem = {
       label: "Attendance",
       icon: ClipboardCheck,
       module: "HR",
+      hrSubModule: "attendance",
       matchPrefix: "/app/hr/attendance",
     },
     {
@@ -208,6 +211,7 @@ const HRMS_NAV_ITEM: WorkspaceNavItem = {
       label: "Employees",
       icon: Users,
       module: "HR",
+      hrSubModule: "employees",
       matchPrefix: "/app/hr/employees",
     },
     {
@@ -222,6 +226,7 @@ const HRMS_NAV_ITEM: WorkspaceNavItem = {
       label: "Holidays",
       icon: MapPin,
       module: "HR",
+      hrSubModule: "holidays",
       minRole: "ADMIN",
       matchPrefix: "/app/hr/holidays",
     },
@@ -588,11 +593,20 @@ const SELLABLE_MODULE_ITEMS: WorkspaceNavItem[] = [
   IMS_STOCK_NAV_ITEM,
 ];
 
-export function canAccessWorkspaceNav(user: SessionUser, item: WorkspaceNavItem) {
+export function canAccessWorkspaceNav(
+  user: SessionUser,
+  item: WorkspaceNavItem,
+  enabledHrSubModules?: string[] | null,
+) {
   if (item.minRole) {
     const roleOk =
       ROLE_ORDER.indexOf(user.role) >= ROLE_ORDER.indexOf(item.minRole);
     if (!roleOk && !(item.allowDepartmentHead && user.isDepartmentHead)) {
+      return false;
+    }
+  }
+  if (item.hrSubModule) {
+    if (enabledHrSubModules != null && !enabledHrSubModules.includes(item.hrSubModule)) {
       return false;
     }
   }
@@ -602,14 +616,18 @@ export function canAccessWorkspaceNav(user: SessionUser, item: WorkspaceNavItem)
   return hasWorkspaceModule(user, item.module);
 }
 
-function filterNavItem(user: SessionUser, item: WorkspaceNavItem): WorkspaceNavItem | null {
-  if (!canAccessWorkspaceNav(user, item)) {
+function filterNavItem(
+  user: SessionUser,
+  item: WorkspaceNavItem,
+  enabledHrSubModules?: string[] | null,
+): WorkspaceNavItem | null {
+  if (!canAccessWorkspaceNav(user, item, enabledHrSubModules)) {
     return null;
   }
 
   if (item.children?.length) {
     const children = item.children
-      .map((child) => filterNavItem(user, child))
+      .map((child) => filterNavItem(user, child, enabledHrSubModules))
       .filter((child): child is WorkspaceNavItem => child !== null);
     if (children.length === 0) {
       return null;
@@ -620,9 +638,13 @@ function filterNavItem(user: SessionUser, item: WorkspaceNavItem): WorkspaceNavI
   return item;
 }
 
-export function visibleWorkspaceNavItems(user: SessionUser, items: WorkspaceNavItem[]) {
+export function visibleWorkspaceNavItems(
+  user: SessionUser,
+  items: WorkspaceNavItem[],
+  enabledHrSubModules?: string[] | null,
+) {
   return items
-    .map((item) => filterNavItem(user, item))
+    .map((item) => filterNavItem(user, item, enabledHrSubModules))
     .filter((item): item is WorkspaceNavItem => item !== null);
 }
 

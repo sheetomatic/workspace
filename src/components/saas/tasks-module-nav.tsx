@@ -54,7 +54,7 @@ export function TasksModuleNav({ user }: { user: SessionUser }) {
       label: "All",
       icon: ListChecks,
       visible: true,
-      description: isManager ? "Team task queue" : "Full active queue",
+      description: isManager ? "Team task queue" : "Your tasks",
     },
     {
       href: "/app/tasks",
@@ -74,8 +74,8 @@ export function TasksModuleNav({ user }: { user: SessionUser }) {
       href: "/app/tasks/scores",
       label: "Reports",
       icon: BarChart3,
-      visible: isManager,
-      description: "MIS performance",
+      visible: true,
+      description: isManager ? "MIS performance" : "Your MIS scores",
     },
     {
       href: "/app/tasks#execution-queue",
