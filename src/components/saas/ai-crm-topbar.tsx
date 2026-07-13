@@ -141,10 +141,10 @@ const LABELS: Record<string, string> = {
   "/ai/app/inbox": "Chats",
   "/ai/app/contacts": "Contacts",
   "/ai/app/tickets": "Tickets",
-  "/ai/app/campaign": "Campaign",
+  "/ai/app/campaign": "Go Live",
   "/ai/app/templates": "Templates",
-  "/ai/app/channels": "Campaign",
-  "/ai/app/knowledge": "AI Training Data",
+  "/ai/app/channels": "Go Live",
+  "/ai/app/knowledge": "Training",
   "/ai/app/ai-brain": "AI Agents",
   "/ai/app/automations": "Workflows",
   "/ai/app/analytics": "Analytics",
@@ -155,7 +155,7 @@ const LABELS: Record<string, string> = {
 function breadcrumbTrail(pathname: string): Crumb[] {
   if (pathname === "/ai/app/knowledge") {
     return [
-      { label: "AI Training Data", href: "/ai/app/knowledge" },
+      { label: "Training", href: "/ai/app/knowledge" },
       { label: "Articles" },
     ];
   }

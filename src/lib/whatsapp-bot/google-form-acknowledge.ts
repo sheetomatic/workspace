@@ -2,16 +2,22 @@ import { findFormResponseForPhone } from "@/lib/integrations/google-form-respons
 import { isGoogleSheetsAuthConfigured } from "@/lib/integrations/google-sheets-auth";
 import { prisma } from "@/lib/db";
 import { normalizeWhatsAppPhone } from "@/lib/phone";
+import {
+  safeCustomerDisplayName,
+  safeCustomerFirstName,
+} from "@/lib/wa-safe-customer-name";
 import { updateWaContactFromFormResponse } from "@/lib/wa-inbox-store";
 
-function firstNameFrom(name: string) {
-  return name.trim().split(/\s+/)[0]?.replace(/[,.!?;:]+$/g, "") ?? name.trim();
-}
-
-export function googleFormAcknowledgmentText(name: string, organizationName: string) {
-  const firstName = firstNameFrom(name);
+export function googleFormAcknowledgmentText(
+  name: string | null | undefined,
+  organizationName: string,
+) {
+  const firstName = safeCustomerFirstName(name);
+  const thanks = firstName
+    ? `Thank you, ${firstName}! We've received your details.`
+    : `Thank you! We've received your details.`;
   return [
-    `Thank you, ${firstName}! We've received your details.`,
+    thanks,
     "",
     `Our team at *${organizationName}* will review your request and get back to you soon.`,
     "",
@@ -62,15 +68,17 @@ export async function maybeAcknowledgeGoogleFormSubmission(params: {
     return false;
   }
 
+  const safeName = safeCustomerDisplayName(response.name);
+
   await params.sendReply(
-    googleFormAcknowledgmentText(response.name, params.organizationName),
+    googleFormAcknowledgmentText(safeName, params.organizationName),
   );
 
   await updateWaContactFromFormResponse({
     contactId: params.contactId,
     organizationId: params.organizationId,
     data: {
-      name: response.name.trim(),
+      ...(safeName ? { name: safeName } : {}),
       email: response.email?.trim(),
       city: response.city?.trim(),
       requirementDescription: response.requirement?.trim(),

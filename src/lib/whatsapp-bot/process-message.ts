@@ -91,6 +91,10 @@ import {
   sendWhatsAppText,
 } from "@/lib/whatsapp-bot/send";
 import { recordWaInboundMessage, recordWaOutboundMessage, getWaContactByPhone, updateWaContactLeadCapture } from "@/lib/wa-inbox-store";
+import {
+  safeCustomerDisplayName,
+  safeCustomerFirstName,
+} from "@/lib/wa-safe-customer-name";
 
 type MetaMessage = {
   id: string;
@@ -778,7 +782,7 @@ async function maybeLeadCaptureKnowledgePrefix(
       organizationId: org.id,
       organizationName: org.name,
       customerMessage: customerMessage.trim(),
-      customerName: contactName,
+      customerName: safeCustomerDisplayName(contactName),
     });
     return `${reply.text.trim()}\n\n`;
   } catch {
@@ -1293,10 +1297,11 @@ async function handleCustomerMessage(
   }
 
   if (isWhatsAppGreeting(customerMessage)) {
+    const greetingName = safeCustomerFirstName(waContact?.name);
     await replyText(
       org.id,
       message.from,
-      `Hi${waContact?.name ? ` ${waContact.name}` : ""}! How can we help you today? Reply *menu* to browse topics.`,
+      `Hi${greetingName ? ` ${greetingName}` : ""}! How can we help you today? Reply *menu* to browse topics.`,
     );
     await sendCustomerKnowledgeMenu(org, message.from);
     await markEvent(message.id, {
@@ -1331,7 +1336,7 @@ async function handleCustomerMessage(
       organizationId: org.id,
       organizationName: org.name,
       customerMessage: customerMessage.trim(),
-      customerName: waContact?.name,
+      customerName: safeCustomerDisplayName(waContact?.name),
     });
 
     await replyText(org.id, message.from, reply.text, {

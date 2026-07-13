@@ -15,6 +15,8 @@ import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
 import { whatsappUrl } from "@/app/site-content";
 import { isAllowedSiteAssistantHref } from "@/lib/site-assistant/links";
 import { shouldShowSiteAssistant } from "@/lib/site-assistant/visibility";
+import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
+import { AssistantVoiceButton } from "@/components/saas/assistant-voice-button";
 import "./site-assistant.css";
 
 type ChatLink = { label: string; href: string };
@@ -37,7 +39,7 @@ const WELCOME: ChatMessage = {
   id: "welcome",
   role: "assistant",
   content:
-    "Hi — I'm **Ask Sheetomatic**, your site guide (not Sheetomatic AI). Ask about FMS, IMS, courses, Workspace, or how to buy. I'll point you to the right page.",
+    "Hi — I'm **Pulse**, Sheetomatic AI. Ask about FMS, IMS, courses, Workspace, or how to buy. I'll point you to the right page.",
   links: [
     { label: "Services", href: "/services" },
     { label: "Courses", href: "/courses" },
@@ -196,7 +198,7 @@ export function SiteAssistant() {
         const message =
           err instanceof Error
             ? err.message
-            : "Could not reach Ask Sheetomatic.";
+            : "Could not reach Pulse.";
         setError(message);
         setMessages((prev) => [
           ...prev,
@@ -234,16 +236,16 @@ export function SiteAssistant() {
         >
           <header className="site-assistant-header">
             <div className="site-assistant-header-copy">
-              <p className="site-assistant-kicker">Site guide</p>
-              <h2 id={titleId}>Ask Sheetomatic</h2>
+              <p className="site-assistant-kicker">Sheetomatic AI</p>
+              <h2 id={titleId}>Pulse</h2>
               <p className="site-assistant-sub">
-                Website help — separate from Sheetomatic AI (WhatsApp product)
+                Site guide — FMS, courses, Workspace &amp; how to buy
               </p>
             </div>
             <button
               type="button"
               className="site-assistant-close"
-              aria-label="Close Ask Sheetomatic"
+              aria-label="Close Pulse"
               onClick={() => setOpen(false)}
             >
               ×
@@ -313,7 +315,7 @@ export function SiteAssistant() {
             }}
           >
             <label className="sr-only" htmlFor={`${panelId}-input`}>
-              Ask about Sheetomatic
+              Ask Pulse
             </label>
             <textarea
               id={`${panelId}-input`}
@@ -321,7 +323,7 @@ export function SiteAssistant() {
               rows={2}
               value={input}
               disabled={busy}
-              placeholder="Ask about FMS, courses, Workspace…"
+              placeholder="Ask Pulse about FMS, courses, Workspace…"
               onChange={(event) => setInput(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) {
@@ -331,6 +333,12 @@ export function SiteAssistant() {
               }}
             />
             <div className="site-assistant-form-actions">
+              <AssistantVoiceButton
+                disabled={busy}
+                onTranscript={(text) =>
+                  setInput((prev) => (prev ? `${prev} ${text}` : text).trim())
+                }
+              />
               <a className="site-assistant-quick" href={WORKSPACE_LOGIN_HREF}>
                 Workspace
               </a>
@@ -360,13 +368,17 @@ export function SiteAssistant() {
         className="site-assistant-fab"
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
-        aria-label={open ? "Close Ask Sheetomatic" : "Open Ask Sheetomatic"}
+        aria-label={open ? "Close Pulse" : "Ask Pulse"}
         onClick={() => setOpen((v) => !v)}
       >
         <span className="site-assistant-fab-icon" aria-hidden>
-          {open ? "×" : "?"}
+          {open ? (
+            "×"
+          ) : (
+            <SheetomaticAiMark variant="icon" sizes="sm" onDark />
+          )}
         </span>
-        <span className="site-assistant-fab-label">Ask Sheetomatic</span>
+        <span className="site-assistant-fab-label">Ask Pulse</span>
       </button>
     </div>
   );

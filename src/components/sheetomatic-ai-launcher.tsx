@@ -20,6 +20,8 @@ import {
 } from "@/lib/workspace-guides/events";
 import type { WorkspaceGuideModuleId } from "@/lib/workspace-guides";
 import { WorkspaceGuideHost } from "@/components/saas/workspace-guide-host";
+import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
+import { AssistantVoiceButton } from "@/components/saas/assistant-voice-button";
 import "./sheetomatic-ai-launcher.css";
 
 type ChatLink = { label: string; href: string };
@@ -44,7 +46,7 @@ const WELCOME: ChatMessage = {
   id: "welcome",
   role: "assistant",
   content:
-    "Hi — I'm **Workspace help** (Ask guide). Ask how to use FMS, IMS, Tasks, Checklists, HR, or EM Ready. I'll point you to the right screen — not WhatsApp AI sales.",
+    "Hi — I'm **Pulse**, Sheetomatic AI for workspace help. Ask how to use FMS, IMS, Tasks, Checklists, HR, or EM Ready. I'll point you to the right screen.",
   links: [
     { label: "My FMS stops", href: "/app/fms/my-stops" },
     { label: "IMS stock", href: "/app/ims/stock" },
@@ -111,8 +113,8 @@ function renderInlineMarkdown(text: string): ReactNode[] {
 }
 
 /**
- * Floating Workspace guide on workspace hosts and /app/*.
- * Opens a chat panel (not a dead link to /ai). Separate from marketing Ask Sheetomatic.
+ * Floating Pulse (Sheetomatic AI) on workspace hosts and /app/*.
+ * Opens a chat panel (not a dead link to /ai). Name options reserved: Ready / Flow.
  */
 export function SheetomaticAiLauncher() {
   const pathname = usePathname() || "/";
@@ -233,7 +235,7 @@ export function SheetomaticAiLauncher() {
         }
       } catch (err) {
         const message =
-          err instanceof Error ? err.message : "Could not reach Workspace help.";
+          err instanceof Error ? err.message : "Could not reach Pulse.";
         setError(message);
         setMessages((prev) => [
           ...prev,
@@ -272,16 +274,14 @@ export function SheetomaticAiLauncher() {
         >
           <header className="ws-guide-header">
             <div className="ws-guide-header-copy">
-              <p className="ws-guide-kicker">Workspace guide</p>
-              <h2 id={titleId}>Ask guide</h2>
-              <p className="ws-guide-sub">
-                How to use FMS, IMS, Tasks, HR &amp; EM — not WhatsApp AI
-              </p>
+              <p className="ws-guide-kicker">Sheetomatic AI</p>
+              <h2 id={titleId}>Pulse</h2>
+              <p className="ws-guide-sub">Pulse — workspace help</p>
             </div>
             <button
               type="button"
               className="ws-guide-close"
-              aria-label="Close Ask guide"
+              aria-label="Close Pulse"
               onClick={() => setOpen(false)}
             >
               ×
@@ -350,7 +350,7 @@ export function SheetomaticAiLauncher() {
             }}
           >
             <label className="sr-only" htmlFor={`${panelId}-input`}>
-              Ask how to use Workspace
+              Ask Pulse
             </label>
             <textarea
               id={`${panelId}-input`}
@@ -358,7 +358,7 @@ export function SheetomaticAiLauncher() {
               rows={2}
               value={input}
               disabled={busy}
-              placeholder="Ask how to use FMS, IMS, EM…"
+              placeholder="Ask Pulse how to use FMS, IMS, EM…"
               onChange={(event) => setInput(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) {
@@ -368,6 +368,12 @@ export function SheetomaticAiLauncher() {
               }}
             />
             <div className="ws-guide-form-actions">
+              <AssistantVoiceButton
+                disabled={busy}
+                onTranscript={(text) =>
+                  setInput((prev) => (prev ? `${prev} ${text}` : text).trim())
+                }
+              />
               <Link
                 className="ws-guide-quick"
                 href="/app/fms/my-stops"
@@ -400,13 +406,17 @@ export function SheetomaticAiLauncher() {
         className="ws-guide-fab"
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
-        aria-label={open ? "Close Ask guide" : "Open Ask guide"}
+        aria-label={open ? "Close Pulse" : "Ask Pulse"}
         onClick={() => setOpen((v) => !v)}
       >
         <span className="ws-guide-fab-icon" aria-hidden>
-          {open ? "×" : "?"}
+          {open ? (
+            "×"
+          ) : (
+            <SheetomaticAiMark variant="icon" sizes="sm" onDark />
+          )}
         </span>
-        <span className="ws-guide-fab-label">Ask guide</span>
+        <span className="ws-guide-fab-label">Ask Pulse</span>
       </button>
     </div>
     </>

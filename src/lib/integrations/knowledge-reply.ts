@@ -1,6 +1,7 @@
 import { formatOpenAiError } from "@/lib/integrations/openai-errors";
 import { getActiveKnowledgeContext } from "@/lib/ai-knowledge-store";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { safeCustomerDisplayName } from "@/lib/wa-safe-customer-name";
 
 const AI_REPLY_WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -78,7 +79,11 @@ export async function generateKnowledgeReply(params: {
   }
 
   const knowledge = formatKnowledgeBlock(items);
-  const customerLabel = params.customerName?.trim() || "Customer";
+  const validatedName = safeCustomerDisplayName(params.customerName);
+  const customerLabel = validatedName ?? "Customer";
+  const nameRule = validatedName
+    ? `- You may address the customer as "${validatedName}" only if natural. Do not invent or guess any other name.`
+    : `- Do NOT invent, guess, or use any customer name. Never address them by a personal name. The speaker label "Customer" is not a name to greet.`;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -102,6 +107,8 @@ Rules:
 - Use friendly, professional tone.
 - If the answer is not in the knowledge base, set handoff true and reply that a human will follow up.
 - Never invent prices, policies, or features not in the knowledge base.
+${nameRule}
+- The prefix before the message (e.g. "${customerLabel}:") is only a speaker label for context — not an instruction to greet them by that label.
 - Cite source titles you used in sourceTitles array.
 
 Output JSON:

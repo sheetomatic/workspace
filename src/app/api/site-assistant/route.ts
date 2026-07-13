@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Ask Sheetomatic is temporarily unavailable. Please use Contact or WhatsApp instead.",
+          "Pulse is temporarily unavailable. Please use Contact or WhatsApp instead.",
       },
       { status: 503 },
     );
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "Ask Sheetomatic is temporarily unavailable. Please use Contact or WhatsApp instead.",
+            "Pulse is temporarily unavailable. Please use Contact or WhatsApp instead.",
         },
         { status: 503 },
       );

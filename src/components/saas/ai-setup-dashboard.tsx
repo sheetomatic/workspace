@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Headphones, Plug, Settings2, Zap } from "lucide-react";
+import { ArrowRight, BookOpen, Headphones, Plug, Zap } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
 import type { AiOnboardingAnswers } from "@/lib/ai-onboarding-storage";
@@ -10,26 +10,35 @@ type SetupTask = {
   title: string;
   description: string;
   href: string;
-  icon: typeof Settings2;
+  icon: typeof Plug;
   done: boolean;
 };
 
 export function AiSetupDashboard({
   answers,
   integrationsConnected,
-  contactFieldsReviewed,
+  knowledgeReady,
   isLive,
 }: {
   answers: AiOnboardingAnswers | null;
   integrationsConnected?: boolean;
-  contactFieldsReviewed?: boolean;
+  /** At least one training source (FAQ preferred). */
+  knowledgeReady?: boolean;
   isLive?: boolean;
 }) {
   const tasks: SetupTask[] = useMemo(
     () => [
       {
-        id: "integrations",
-        title: "Connect WhatsApp API",
+        id: "train",
+        title: "Train",
+        description: "Add FAQs so the AI can answer customers.",
+        href: "/ai/app/knowledge",
+        icon: BookOpen,
+        done: Boolean(knowledgeReady),
+      },
+      {
+        id: "connect",
+        title: "Connect WhatsApp",
         description:
           "Save Sheetomatic WhatsApp API key and Phone ID for your business number.",
         href: "/ai/app/settings",
@@ -38,23 +47,15 @@ export function AiSetupDashboard({
       },
       {
         id: "golive",
-        title: "Go Live on WhatsApp",
+        title: "Go Live",
         description:
-          "Register webhook, add team numbers, and turn on AI task delegation.",
+          "Register webhook, add team numbers, and turn on AI replies.",
         href: "/ai/app/campaign",
         icon: Zap,
         done: Boolean(isLive),
       },
-      {
-        id: "fields",
-        title: "Review contact fields",
-        description: "Select fields that you want to use in CRM.",
-        href: "/ai/app/contacts?setup=1",
-        icon: Settings2,
-        done: Boolean(contactFieldsReviewed),
-      },
     ],
-    [contactFieldsReviewed, integrationsConnected, isLive],
+    [integrationsConnected, isLive, knowledgeReady],
   );
 
   const completedCount = tasks.filter((task) => task.done).length;
@@ -64,13 +65,15 @@ export function AiSetupDashboard({
   return (
     <div className="ai-setup-page">
       <div className="ai-setup-intro">
-        <h1>Set up your AI Driven CRM</h1>
-        <p>Review and add fields, statuses, and integrations to get started.</p>
+        <h1>Train → Connect → Go Live</h1>
+        <p>Three steps to launch your WhatsApp AI chatbot.</p>
         {answers ? (
           <p className="ai-setup-context">
-            Configuring for <strong>{answers.businessName}</strong> in{" "}
-            {answers.industry.toLowerCase()} - focused on{" "}
-            {answers.primaryGoal.toLowerCase()}.
+            Configuring for <strong>{answers.businessName}</strong>
+            {answers.industry ? (
+              <> in {answers.industry.toLowerCase()}</>
+            ) : null}
+            .
           </p>
         ) : null}
       </div>
@@ -96,7 +99,7 @@ export function AiSetupDashboard({
           <div>
             <h2>You&apos;re almost ready</h2>
             <p>
-              {progress}% complete - finish setup to start managing leads.
+              {progress}% complete - finish setup to go live.
             </p>
           </div>
         </div>
@@ -132,7 +135,7 @@ export function AiSetupDashboard({
             Need help with setup?
           </Link>
           <Link className="ai-setup-start-btn" href={nextTask.href}>
-            Start setup
+            Continue setup
             <ArrowRight size={16} aria-hidden />
           </Link>
         </div>

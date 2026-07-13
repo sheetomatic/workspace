@@ -1,21 +1,6 @@
 "use client";
 
-import {
-  BarChart3,
-  Bot,
-  BookOpen,
-  ChevronDown,
-  FileCheck2,
-  LayoutDashboard,
-  LogOut,
-  MessageCircle,
-  Radio,
-  Plug,
-  Settings,
-  Ticket,
-  Users,
-  Workflow,
-} from "lucide-react";
+import { ChevronDown, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -24,78 +9,13 @@ import { OrganizationSwitcher } from "@/components/saas/organization-switcher";
 import { BrandIconMark } from "@/components/brand/brand-icon-mark";
 import type { OrganizationOption } from "@/components/saas/organization-switcher";
 import type { SessionUser } from "@/lib/auth";
-import { AI_APP_MIN_ROLE } from "@/lib/ai-auth-links";
 import { ROLE_LABELS } from "@/lib/permissions";
-
-const ROLE_ORDER = ["VIEWER", "STAFF", "MANAGER", "ADMIN", "OWNER"] as const;
-
-type NavItem = {
-  href: string;
-  label: string;
-  icon: typeof LayoutDashboard;
-  minRole?: (typeof ROLE_ORDER)[number];
-  badgeCount?: number;
-};
-
-const mainNavItems: NavItem[] = [
-  { href: "/ai/app", label: "Dashboard", icon: LayoutDashboard, minRole: AI_APP_MIN_ROLE },
-  { href: "/ai/app/inbox", label: "Chats", icon: MessageCircle, minRole: AI_APP_MIN_ROLE },
-  { href: "/ai/app/contacts", label: "CRM", icon: Users, minRole: AI_APP_MIN_ROLE },
-  { href: "/ai/app/tickets", label: "Support hub", icon: Ticket, minRole: AI_APP_MIN_ROLE },
-  {
-    href: "/ai/app/analytics",
-    label: "Analytics",
-    icon: BarChart3,
-    minRole: AI_APP_MIN_ROLE,
-  },
-  {
-    href: "/ai/app/campaign",
-    label: "Campaign",
-    icon: Radio,
-    minRole: "ADMIN",
-  },
-  {
-    href: "/ai/app/templates",
-    label: "Templates",
-    icon: FileCheck2,
-    minRole: "ADMIN",
-  },
-  {
-    href: "/ai/app/settings",
-    label: "Settings",
-    icon: Settings,
-    minRole: "ADMIN",
-  },
-];
-
-const automationNavItems: NavItem[] = [
-  {
-    href: "/ai/app/knowledge",
-    label: "AI Training Data",
-    icon: BookOpen,
-    minRole: "ADMIN",
-  },
-  { href: "/ai/app/ai-brain", label: "AI Agents", icon: Bot, minRole: "ADMIN" },
-  {
-    href: "/ai/app/integrations",
-    label: "Integrations",
-    icon: Plug,
-    minRole: "ADMIN",
-  },
-  {
-    href: "/ai/app/automations",
-    label: "Workflows",
-    icon: Workflow,
-    minRole: "ADMIN",
-  },
-];
-
-function canAccess(userRole: SessionUser["role"], minRole?: NavItem["minRole"]) {
-  if (!minRole) {
-    return true;
-  }
-  return ROLE_ORDER.indexOf(userRole) >= ROLE_ORDER.indexOf(minRole);
-}
+import {
+  AI_ADVANCED_NAV_ITEMS,
+  AI_MAIN_NAV_ITEMS,
+  canAccessAiNav,
+  type AiNavItem,
+} from "@/lib/ai-nav-config";
 
 function NavLink({
   href,
@@ -103,7 +23,7 @@ function NavLink({
   icon: Icon,
   pathname,
   badgeCount = 0,
-}: NavItem & { pathname: string }) {
+}: AiNavItem & { pathname: string; badgeCount?: number }) {
   const active =
     href === "/ai/app" ? pathname === "/ai/app" : pathname.startsWith(href);
 
@@ -141,10 +61,11 @@ export function AiShell({
   const pathname = usePathname();
   const isOnboarding = pathname.startsWith("/ai/app/onboarding");
 
-  const navItems = mainNavItems.map((item) =>
-    item.href === "/ai/app/inbox"
-      ? { ...item, badgeCount: inboxUnreadCount }
-      : item,
+  const essentialItems = AI_MAIN_NAV_ITEMS.filter((item) =>
+    canAccessAiNav(user.role, item.minRole),
+  );
+  const advancedItems = AI_ADVANCED_NAV_ITEMS.filter((item) =>
+    canAccessAiNav(user.role, item.minRole),
   );
 
   return (
@@ -167,18 +88,25 @@ export function AiShell({
           />
 
           <nav className="ai-crm-nav" aria-label="Sheetomatic AI">
-            {navItems
-              .filter((item) => canAccess(user.role, item.minRole))
-              .map((item) => (
-                <NavLink key={item.href} pathname={pathname} {...item} />
-              ))}
+            {essentialItems.map((item) => (
+              <NavLink
+                key={item.href}
+                pathname={pathname}
+                {...item}
+                badgeCount={
+                  item.href === "/ai/app/inbox" ? inboxUnreadCount : 0
+                }
+              />
+            ))}
 
-            <p className="ai-crm-nav-section">Automation</p>
-            {automationNavItems
-              .filter((item) => canAccess(user.role, item.minRole))
-              .map((item) => (
-                <NavLink key={item.href} pathname={pathname} {...item} />
-              ))}
+            {advancedItems.length > 0 ? (
+              <>
+                <p className="ai-crm-nav-section">Advanced</p>
+                {advancedItems.map((item) => (
+                  <NavLink key={item.href} pathname={pathname} {...item} />
+                ))}
+              </>
+            ) : null}
           </nav>
 
           <div className="ai-crm-sidebar-foot">

@@ -780,6 +780,9 @@
 
 .ai-joyz-add-wrap {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .ai-joyz-add-btn {

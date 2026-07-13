@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json(
-      { error: "Sign in to Workspace to use Ask guide." },
+      { error: "Sign in to Workspace to use Pulse." },
       { status: 401 },
     );
   }
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "Workspace help is temporarily unavailable. Try again shortly, or ask an Admin.",
+            "Pulse is temporarily unavailable. Try again shortly, or ask an Admin.",
         },
         { status: 503 },
       );

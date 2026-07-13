@@ -17,80 +17,10 @@ const industries = [
   "Other",
 ];
 
-const goals = [
-  "Capture and qualify leads",
-  "Answer customer support questions",
-  "Send order and appointment updates",
-  "Run WhatsApp marketing campaigns",
-];
-
-const teamSizes = ["Just me", "2-5 people", "6-20 people", "20+ people"];
-
-const whatsappStatuses = [
-  "Already on WhatsApp Business API",
-  "Using WhatsApp Business app only",
-  "Need to connect WhatsApp",
-  "Not sure yet",
-];
-
-type Step = {
-  id: string;
-  title: string;
-  description: string;
-  field: keyof FormState;
-  options?: string[];
-  inputType?: "text" | "choice";
-};
-
 type FormState = {
   businessName: string;
   industry: string;
-  primaryGoal: string;
-  teamSize: string;
-  whatsappStatus: string;
 };
-
-const steps: Step[] = [
-  {
-    id: "business",
-    title: "What is your business name?",
-    description: "We will use this in your AI replies and CRM workspace.",
-    field: "businessName",
-    inputType: "text",
-  },
-  {
-    id: "industry",
-    title: "Which industry best describes you?",
-    description: "This helps us suggest the right workflows and templates.",
-    field: "industry",
-    options: industries,
-    inputType: "choice",
-  },
-  {
-    id: "goal",
-    title: "What is your main goal with Sheetomatic AI?",
-    description: "Pick the outcome you want first - you can add more later.",
-    field: "primaryGoal",
-    options: goals,
-    inputType: "choice",
-  },
-  {
-    id: "team",
-    title: "How big is your team?",
-    description: "We will recommend inbox and assignment settings for your size.",
-    field: "teamSize",
-    options: teamSizes,
-    inputType: "choice",
-  },
-  {
-    id: "whatsapp",
-    title: "Where are you with WhatsApp today?",
-    description: "We will guide the right connection path in setup.",
-    field: "whatsappStatus",
-    options: whatsappStatuses,
-    inputType: "choice",
-  },
-];
 
 export function AiOnboardingFlow({
   defaultBusinessName,
@@ -103,37 +33,44 @@ export function AiOnboardingFlow({
   const [form, setForm] = useState<FormState>({
     businessName: defaultBusinessName,
     industry: "",
-    primaryGoal: "",
-    teamSize: "",
-    whatsappStatus: "",
   });
 
-  const step = steps[stepIndex];
-  const progress = Math.round(((stepIndex + 1) / steps.length) * 100);
-  const value = form[step.field];
+  const isBusinessStep = stepIndex === 0;
+  const progress = Math.round(((stepIndex + 1) / 2) * 100);
 
   function canContinue() {
-    return value.trim().length > 0;
+    if (isBusinessStep) {
+      return form.businessName.trim().length > 0;
+    }
+    return true;
+  }
+
+  function finish() {
+    startTransition(async () => {
+      saveAiOnboardingAnswers({
+        businessName: form.businessName.trim(),
+        industry: form.industry || "Other",
+        primaryGoal: "Answer customer support questions",
+        teamSize: "Just me",
+        whatsappStatus: "Not sure yet",
+      });
+      await completeAiOnboarding({
+        businessName: form.businessName.trim(),
+        industry: form.industry || "Other",
+      });
+      router.replace("/ai/app/knowledge");
+    });
   }
 
   function goNext() {
     if (!canContinue()) {
       return;
     }
-
-    if (stepIndex >= steps.length - 1) {
-      startTransition(async () => {
-        saveAiOnboardingAnswers(form);
-        await completeAiOnboarding({
-          businessName: form.businessName,
-          industry: form.industry,
-        });
-        router.replace("/ai/app/campaign");
-      });
+    if (stepIndex >= 1) {
+      finish();
       return;
     }
-
-    setStepIndex((current) => current + 1);
+    setStepIndex(1);
   }
 
   function goBack() {
@@ -152,48 +89,58 @@ export function AiOnboardingFlow({
         </div>
 
         <p className="ai-onboarding-step-count">
-          Step {stepIndex + 1} of {steps.length}
+          Step {stepIndex + 1} of 2
         </p>
-        <h1>{step.title}</h1>
-        <p className="ai-onboarding-lead">{step.description}</p>
 
-        {step.inputType === "text" ? (
-          <label className="ai-onboarding-field">
-            Business name
-            <input
-              autoFocus
-              value={form.businessName}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  businessName: event.target.value,
-                }))
-              }
-              placeholder="Your company name"
-            />
-          </label>
+        {isBusinessStep ? (
+          <>
+            <h1>What is your business name?</h1>
+            <p className="ai-onboarding-lead">
+              We will use this in your AI replies. Next: train → connect → go live.
+            </p>
+            <label className="ai-onboarding-field">
+              Business name
+              <input
+                autoFocus
+                value={form.businessName}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    businessName: event.target.value,
+                  }))
+                }
+                placeholder="Your company name"
+              />
+            </label>
+          </>
         ) : (
-          <div className="ai-onboarding-options">
-            {step.options?.map((option) => {
-              const selected = value === option;
-              return (
-                <button
-                  className={selected ? "is-selected" : undefined}
-                  key={option}
-                  type="button"
-                  onClick={() =>
-                    setForm((current) => ({
-                      ...current,
-                      [step.field]: option,
-                    }))
-                  }
-                >
-                  {selected ? <CheckCircle2 aria-hidden size={16} /> : null}
-                  <span>{option}</span>
-                </button>
-              );
-            })}
-          </div>
+          <>
+            <h1>Which industry best describes you?</h1>
+            <p className="ai-onboarding-lead">
+              Optional — skip if you are not sure. You can train FAQs next.
+            </p>
+            <div className="ai-onboarding-options">
+              {industries.map((option) => {
+                const selected = form.industry === option;
+                return (
+                  <button
+                    className={selected ? "is-selected" : undefined}
+                    key={option}
+                    type="button"
+                    onClick={() =>
+                      setForm((current) => ({
+                        ...current,
+                        industry: option,
+                      }))
+                    }
+                  >
+                    {selected ? <CheckCircle2 aria-hidden size={16} /> : null}
+                    <span>{option}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
         )}
 
         <div className="ai-onboarding-actions">
@@ -214,8 +161,8 @@ export function AiOnboardingFlow({
           >
             {pending
               ? "Saving..."
-              : stepIndex >= steps.length - 1
-                ? "Finish setup"
+              : stepIndex >= 1
+                ? "Start training"
                 : "Continue"}
             <ArrowRight size={16} aria-hidden />
           </button>

@@ -2,7 +2,7 @@ import { parseHost } from "@/lib/subdomain";
 
 /**
  * Workspace guide FAB: show on workspace/tenant hosts and /app/* routes.
- * Hidden on marketing (Ask Sheetomatic owns that) and on the AI product host.
+ * Hidden on marketing (Pulse site guide owns that) and on the AI product host.
  */
 export function shouldShowWorkspaceAssistant(pathname: string, hostname: string) {
   const { kind } = parseHost(hostname);

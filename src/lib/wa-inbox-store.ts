@@ -159,6 +159,8 @@ export async function updateWaContactLeadCapture(params: {
     requirementDescription?: string;
   };
 }) {
+  const nameChanging = params.data?.name !== undefined;
+
   const result = await prisma.waContact.updateMany({
     where: {
       id: params.contactId,
@@ -169,7 +171,7 @@ export async function updateWaContactLeadCapture(params: {
       ...(params.complete !== undefined
         ? { leadCaptureComplete: params.complete }
         : {}),
-      ...(params.data?.name !== undefined ? { name: params.data.name } : {}),
+      ...(nameChanging ? { name: params.data!.name } : {}),
       ...(params.data?.email !== undefined ? { email: params.data.email } : {}),
       ...(params.data?.city !== undefined ? { city: params.data.city } : {}),
       ...(params.data?.requirementDescription !== undefined
@@ -188,6 +190,9 @@ export async function updateWaContactLeadCapture(params: {
     result.count > 0 &&
     (params.complete || params.data !== undefined)
   ) {
+    if (nameChanging) {
+      bustInboxListCache(params.organizationId);
+    }
     triggerWaCrmSheetSync(params.organizationId);
     queueLeadSyncFromWhatsApp({
       organizationId: params.organizationId,
@@ -208,6 +213,8 @@ export async function updateWaContactFromFormResponse(params: {
     requirementDescription?: string;
   };
 }) {
+  const nameChanging = Boolean(params.data.name?.trim());
+
   const result = await prisma.waContact.updateMany({
     where: {
       id: params.contactId,
@@ -215,7 +222,7 @@ export async function updateWaContactFromFormResponse(params: {
       googleFormAckSentAt: null,
     },
     data: {
-      ...(params.data.name ? { name: params.data.name } : {}),
+      ...(nameChanging ? { name: params.data.name } : {}),
       ...(params.data.email ? { email: params.data.email } : {}),
       ...(params.data.city ? { city: params.data.city } : {}),
       ...(params.data.requirementDescription
@@ -230,6 +237,9 @@ export async function updateWaContactFromFormResponse(params: {
   });
 
   if (result.count > 0) {
+    if (nameChanging) {
+      bustInboxListCache(params.organizationId);
+    }
     triggerWaCrmSheetSync(params.organizationId);
   }
 

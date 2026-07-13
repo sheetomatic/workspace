@@ -45,7 +45,15 @@ const PHONE_HEADERS = [
   "your whatsapp",
 ];
 
-const NAME_HEADERS = ["name", "full name", "your name"];
+const NAME_HEADERS = [
+  "name",
+  "full name",
+  "your name",
+  "first name",
+  "last name",
+  "customer name",
+  "client name",
+];
 const EMAIL_HEADERS = ["email", "email address", "e-mail", "mail id"];
 const CITY_HEADERS = ["city", "location", "your city"];
 const REQUIREMENT_HEADERS = [
@@ -59,8 +67,16 @@ const REQUIREMENT_HEADERS = [
   "help with",
 ];
 
+const NON_PERSON_NAME_HEADER =
+  /\b(company|business|organisation|organization|user|file|brand|product|shop|store)\b/;
+
 function normalizeHeader(value: string) {
-  return value.trim().toLowerCase().replace(/\s+/g, " ");
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[*?:]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function phoneDigits(value: string) {
@@ -99,6 +115,34 @@ function pickField(
   return undefined;
 }
 
+/** Exact / word-boundary person-name headers only — never loose `includes("name")`. */
+function matchesPersonNameHeader(normalized: string): boolean {
+  if (NAME_HEADERS.includes(normalized)) {
+    return true;
+  }
+  if (NON_PERSON_NAME_HEADER.test(normalized)) {
+    return false;
+  }
+  return /(?:^|\s)((?:full|your|first|last|customer|client)\s+)?name$/.test(
+    normalized,
+  );
+}
+
+function pickPersonNameField(
+  row: Record<string, string>,
+): string | undefined {
+  for (const [header, value] of Object.entries(row)) {
+    if (!matchesPersonNameHeader(normalizeHeader(header))) {
+      continue;
+    }
+    const trimmed = value.trim();
+    if (trimmed) {
+      return trimmed;
+    }
+  }
+  return undefined;
+}
+
 function parseResponseRow(
   headers: string[],
   values: string[],
@@ -112,7 +156,7 @@ function parseResponseRow(
     row[header] = (values[index] ?? "").trim();
   }
 
-  const name = pickField(row, NAME_HEADERS);
+  const name = pickPersonNameField(row);
   if (!name) {
     return null;
   }
@@ -209,25 +253,22 @@ export async function findFormResponseForPhone(
       return row.allValues.some((value) => phonesMatch(value, phone));
     });
 
-    if (matches.length > 0) {
+    if (matches.length === 0) {
+      return null;
+    }
+
+    // Only return phone-matched rows. Never fall back to a recent unmatched row
+    // (that assigns another person's name to this contact).
+    if (!options.since) {
       return matches.at(-1) ?? null;
     }
 
-    if (options.since) {
-      const sinceMs = options.since.getTime();
-      const recent = [...rows]
-        .reverse()
-        .find((row) => {
-          if (!row.name?.trim()) {
-            return false;
-          }
-          const timestamp = parseSheetDate(row.timestamp);
-          return timestamp ? timestamp.getTime() >= sinceMs : false;
-        });
-      return recent ?? null;
-    }
-
-    return null;
+    const sinceMs = options.since.getTime();
+    const recentMatch = [...matches].reverse().find((row) => {
+      const timestamp = parseSheetDate(row.timestamp);
+      return timestamp ? timestamp.getTime() >= sinceMs : true;
+    });
+    return recentMatch ?? matches.at(-1) ?? null;
   } catch {
     return null;
   }

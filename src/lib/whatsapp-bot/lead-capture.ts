@@ -1,5 +1,13 @@
 import type { WaLeadCaptureStep } from "@prisma/client";
 import { formatWhatsAppPhone } from "@/lib/phone";
+import {
+  isCityOnlyName,
+  isPhoneLikeName,
+  safeCustomerDisplayName,
+  safeCustomerFirstName,
+} from "@/lib/wa-safe-customer-name";
+
+export { isPhoneLikeName };
 
 export type LeadCaptureContact = {
   id: string;
@@ -120,18 +128,6 @@ function removeExtractedEmail(line: string, email: string) {
   return `${line.slice(0, index)}${line.slice(index + email.length)}`.trim();
 }
 
-export function isPhoneLikeName(value: string | null | undefined) {
-  if (!value?.trim()) {
-    return false;
-  }
-  const trimmed = value.trim();
-  if (/^\+?\d[\d\s\-()]{8,}$/.test(trimmed)) {
-    return true;
-  }
-  const digits = trimmed.replace(/\D/g, "");
-  return digits.length >= 10 && digits.length / trimmed.length > 0.5;
-}
-
 function looksLikeRequirement(value: string) {
   const trimmed = value.trim();
   if (trimmed.length < 5) {
@@ -153,6 +149,7 @@ function looksLikePersonName(value: string) {
     trimmed.length > 80 ||
     isValidEmail(trimmed) ||
     isPhoneLikeName(trimmed) ||
+    isCityOnlyName(trimmed) ||
     looksLikeRequirement(trimmed) ||
     GREETING_WORDS.has(trimmed.toLowerCase())
   ) {
@@ -209,7 +206,7 @@ function isPlausibleCity(value: string) {
 }
 
 function firstNameFrom(value: string | undefined) {
-  return value?.split(/\s+/)[0]?.replace(/[,.!?;:]+$/g, "") ?? undefined;
+  return safeCustomerFirstName(value) ?? undefined;
 }
 
 function parseLabeledLine(
@@ -553,8 +550,7 @@ function inferSingleValue(
 
   const effectiveKnown = {
     ...known,
-    name:
-      known.name && !isPhoneLikeName(known.name) ? known.name : undefined,
+    name: safeCustomerDisplayName(known.name) ?? undefined,
   };
 
   if (looksLikeRequirement(trimmed) && !effectiveKnown.requirement) {
@@ -590,10 +586,7 @@ export function buildKnownLeadFields(
   >,
 ): Partial<LeadFormFields> {
   return {
-    name:
-      contact.name && !isPhoneLikeName(contact.name)
-        ? contact.name
-        : undefined,
+    name: safeCustomerDisplayName(contact.name) ?? undefined,
     email: contact.email ?? undefined,
     city: contact.city ?? undefined,
     requirement: contact.requirementDescription ?? undefined,
@@ -675,8 +668,7 @@ export function mergeLeadFormFields(
   >,
   parsed: Partial<LeadFormFields>,
 ): Partial<LeadFormFields> {
-  const existingName =
-    contact.name && !isPhoneLikeName(contact.name) ? contact.name : undefined;
+  const existingName = safeCustomerDisplayName(contact.name) ?? undefined;
 
   return {
     name: parsed.name ?? existingName ?? undefined,
@@ -702,6 +694,7 @@ function validateField(
         trimmed.length < 2 ||
         /^\d+$/.test(trimmed) ||
         isPhoneLikeName(trimmed) ||
+        isCityOnlyName(trimmed) ||
         GREETING_WORDS.has(trimmed.toLowerCase()) ||
         !isPlausibleName(trimmed)
       ) {

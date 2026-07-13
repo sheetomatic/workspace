@@ -6,6 +6,7 @@ import {
   openWorkspaceGuideAssistant,
 } from "@/lib/workspace-guides/events";
 import type { WorkspaceGuideModuleId } from "@/lib/workspace-guides";
+import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
 
 export function WorkspaceGuideButton({
   guideId,
@@ -16,7 +17,7 @@ export function WorkspaceGuideButton({
   guideId: WorkspaceGuideModuleId;
   label?: string;
   variant?: "primary" | "secondary" | "ghost";
-  /** When true, opens Ask guide chat seeded for this module instead of overlay. */
+  /** When true, opens Pulse chat seeded for this module instead of overlay. */
   openAssistant?: boolean;
 }) {
   const className =
@@ -38,7 +39,16 @@ export function WorkspaceGuideButton({
         openWorkspaceGuide(guideId);
       }}
     >
-      <CircleHelp size={15} aria-hidden />
+      {openAssistant ? (
+        <SheetomaticAiMark
+          variant="icon"
+          sizes="sm"
+          onDark={variant === "primary"}
+          className={variant === "primary" ? "ws-fms-ai-btn-mark" : undefined}
+        />
+      ) : (
+        <CircleHelp size={15} aria-hidden />
+      )}
       {label}
     </button>
   );

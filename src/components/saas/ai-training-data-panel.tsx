@@ -6,7 +6,6 @@ import {
   ArrowDownUp,
   Filter,
   Globe,
-  HelpCircle,
   Plus,
   RefreshCw,
   Search,
@@ -390,20 +389,20 @@ export function AiTrainingDataPanel({
               <button
                 className="ai-joyz-add-btn"
                 type="button"
-                onClick={() => setShowAddMenu((value) => !value)}
+                onClick={() => openAdd("faq")}
               >
                 <Plus size={16} aria-hidden />
-                Add
+                Add FAQ
+              </button>
+              <button
+                className="ai-joyz-text-btn"
+                type="button"
+                onClick={() => setShowAddMenu((value) => !value)}
+              >
+                More sources
               </button>
               {showAddMenu ? (
                 <div className="ai-joyz-add-menu">
-                  <button type="button" onClick={() => openAdd("faq")}>
-                    <HelpCircle size={16} aria-hidden />
-                    <span>
-                      FAQ article
-                      <small>{AI_KNOWLEDGE_ADD_MENU_HINTS.faq}</small>
-                    </span>
-                  </button>
                   <button type="button" onClick={() => openAdd("document")}>
                     <Upload size={16} aria-hidden />
                     <span>
@@ -505,7 +504,7 @@ export function AiTrainingDataPanel({
                   <td className="ai-joyz-empty-cell" colSpan={6}>
                     <strong>No articles found</strong>
                     <p>
-                      Click + Add to create your first FAQ, document, website, or YouTube channel.
+                      Click Add FAQ to create your first training article. More sources (docs, website, YouTube) are under More sources.
                     </p>
                   </td>
                 </tr>
@@ -593,7 +592,7 @@ export function AiTrainingDataPanel({
           <strong>No unanswered questions yet</strong>
           <p>
             Questions the AI could not answer will appear here. Add FAQs from this list
-            using + Add so the next customer gets an automatic reply.
+            using Add FAQ so the next customer gets an automatic reply.
           </p>
         </div>
       ) : null}
