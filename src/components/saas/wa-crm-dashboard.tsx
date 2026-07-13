@@ -18,6 +18,7 @@ import {
   updateWaLeadStage,
 } from "@/app/ai/app/contacts/actions";
 import { formatWhatsAppPhone } from "@/lib/phone";
+import { safeCustomerDisplayName } from "@/lib/wa-safe-customer-name";
 import {
   WA_PIPELINE_LABELS,
   followUpUrgency,
@@ -478,7 +479,7 @@ export function WaCrmDashboard({
                           {canManageLeads ? (
                             <td className="wa-crm-check-col">
                               <input
-                                aria-label={`Select ${lead.name ?? lead.phone}`}
+                                aria-label={`Select ${safeCustomerDisplayName(lead.name) ?? lead.phone}`}
                                 checked={selectedIds.has(lead.id)}
                                 type="checkbox"
                                 onChange={() => toggleLeadSelection(lead.id)}
@@ -494,7 +495,8 @@ export function WaCrmDashboard({
                               }
                             >
                               <strong>
-                                {lead.name ?? formatWhatsAppPhone(lead.phone)}
+                                {safeCustomerDisplayName(lead.name) ??
+                                  formatWhatsAppPhone(lead.phone)}
                               </strong>
                             </button>
                             <span className="wa-crm-lead-meta">
@@ -738,7 +740,7 @@ function FollowUpPanel({
               <li key={item.id}>
                 <div className="wa-crm-fu-item-head">
                   <strong>
-                    {item.contact.name ??
+                    {safeCustomerDisplayName(item.contact.name) ??
                       formatWhatsAppPhone(item.contact.phone)}
                   </strong>
                   <span>{formatFollowUpTime(item.scheduledAt)}</span>

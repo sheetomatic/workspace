@@ -17,6 +17,7 @@ import {
 } from "@/app/ai/app/inbox/actions";
 import { formatWhatsAppPhone } from "@/lib/phone";
 import { SCALE } from "@/lib/scale";
+import { safeCustomerDisplayName } from "@/lib/wa-safe-customer-name";
 
 export type InboxConversationRow = {
   id: string;
@@ -176,22 +177,34 @@ export function LiveInboxPanel({
           {emptyHint ??
             "When customers message your Official WhatsApp number, conversations appear here. You can reply from this inbox."}
         </p>
+        <p className="ws-inbox-empty-note">
+          Turn on Go Live + add FAQ for AI replies.{" "}
+          <Link href="/ai/app/campaign">Go Live</Link>
+          {" · "}
+          <Link href="/ai/app/knowledge">Training</Link>
+        </p>
         {!webhookReceived ? (
           <p className="ws-inbox-empty-note">
             Register the webhook in{" "}
-            <Link href="/ai/app/settings#official-api">Settings</Link> and send a
+            <Link href="/ai/app/settings#official-api">Connect</Link> and send a
             test message to your business number.
           </p>
         ) : null}
         <Link className="btn-cta btn-primary" href="/ai/app/campaign">
-          Open Campaign setup
+          Open Go Live
         </Link>
       </div>
     );
   }
 
-  const displayName = active?.contact.name ?? formatWhatsAppPhone(active?.contact.phone ?? "");
-  const initials = (active?.contact.name ?? active?.contact.phone ?? "?")
+  const displayName =
+    safeCustomerDisplayName(active?.contact.name) ??
+    formatWhatsAppPhone(active?.contact.phone ?? "");
+  const initialsSource =
+    safeCustomerDisplayName(active?.contact.name) ??
+    active?.contact.phone ??
+    "?";
+  const initials = initialsSource
     .split(/[\s@+]+/)
     .filter(Boolean)
     .map((part) => part[0])
@@ -211,6 +224,13 @@ export function LiveInboxPanel({
         <p className="ws-inbox-list-hint">
           Customer messages on your Official WhatsApp appear here. Type a reply below
           {whatsAppLive ? " — AI auto-replies until you send manually." : "."}
+          {!whatsAppLive ? (
+            <>
+              {" "}
+              Tip: <Link href="/ai/app/campaign">Turn on Go Live</Link> +{" "}
+              <Link href="/ai/app/knowledge">add FAQ</Link> for AI replies.
+            </>
+          ) : null}
         </p>
         <label className="ws-inbox-search">
           <Search size={16} aria-hidden />
@@ -234,7 +254,10 @@ export function LiveInboxPanel({
                 onClick={() => selectConversation(thread.id)}
               >
                 <span className="ws-inbox-thread-avatar" aria-hidden>
-                  {(thread.contact.name ?? thread.contact.phone)
+                  {(
+                    safeCustomerDisplayName(thread.contact.name) ??
+                    thread.contact.phone
+                  )
                     .split(/[\s@+]+/)
                     .filter(Boolean)
                     .map((part) => part[0])
@@ -244,7 +267,10 @@ export function LiveInboxPanel({
                 </span>
                 <span className="ws-inbox-thread-body">
                   <span className="ws-inbox-thread-top">
-                    <strong>{thread.contact.name ?? formatWhatsAppPhone(thread.contact.phone)}</strong>
+                    <strong>
+                      {safeCustomerDisplayName(thread.contact.name) ??
+                        formatWhatsAppPhone(thread.contact.phone)}
+                    </strong>
                     <span>{formatTime(thread.lastMessageAt)}</span>
                   </span>
                   <span className="ws-inbox-thread-preview">
@@ -282,7 +308,7 @@ export function LiveInboxPanel({
             {!webhookReceived ? (
               <p className="ws-inbox-alert is-warning">
                 Waiting for first inbound webhook. Point Meta / Sheetomatic WhatsApp to your callback URL in{" "}
-                <Link href="/ai/app/settings#official-api">Settings</Link>, then send a test
+                <Link href="/ai/app/settings#official-api">Connect</Link>, then send a test
                 message.
               </p>
             ) : null}
@@ -333,16 +359,32 @@ export function LiveInboxPanel({
 
             <footer className="ws-inbox-compose">
               <div className="ws-inbox-compose-tools">
-                <label className="ws-inbox-toggle">
-                  <input
-                    checked={pauseAi}
-                    type="checkbox"
+                {pauseAi ? (
+                  <button
+                    className="ws-inbox-text-btn"
+                    type="button"
                     disabled={pending}
-                    onChange={(event) => togglePauseAi(event.target.checked)}
-                  />
-                  <span>Pause AI for this chat</span>
-                </label>
+                    onClick={() => togglePauseAi(false)}
+                  >
+                    Resume AI for this chat
+                  </button>
+                ) : (
+                  <label className="ws-inbox-toggle">
+                    <input
+                      checked={false}
+                      type="checkbox"
+                      disabled={pending}
+                      onChange={(event) => togglePauseAi(event.target.checked)}
+                    />
+                    <span>Pause AI for this chat</span>
+                  </label>
+                )}
               </div>
+              {pauseAi ? (
+                <p className="ws-inbox-feedback">
+                  AI is paused — you reply manually. Click Resume AI to hand back to Pulse.
+                </p>
+              ) : null}
               {feedback ? (
                 <p
                   className={`ws-inbox-feedback${feedback.includes("sent") ? " is-ok" : ""}`}
@@ -386,7 +428,10 @@ export function LiveInboxPanel({
               <dl className="ws-inbox-detail-list">
                 <div>
                   <dt>Name</dt>
-                  <dd>{active.contact.name ?? "Not captured yet"}</dd>
+                  <dd>
+                    {safeCustomerDisplayName(active.contact.name) ??
+                      "Not captured yet"}
+                  </dd>
                 </div>
                 <div>
                   <dt>Phone</dt>

@@ -106,7 +106,11 @@ export function AiDashboardPanel({
         <Link className="ws-product-module-card ws-training-feature-card" href="/ai/app/inbox">
           <MessageCircle size={18} />
           <h2>Chats</h2>
-          <p>Live WhatsApp inbox and team replies.</p>
+          <p>
+            {stats.isLive && stats.knowledgeSources > 0
+              ? "Live WhatsApp inbox and team replies."
+              : "Turn on Go Live + add FAQ for AI replies."}
+          </p>
         </Link>
       </div>
 

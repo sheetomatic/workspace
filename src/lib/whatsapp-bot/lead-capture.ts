@@ -409,7 +409,9 @@ function parseMultilineStack(lines: string[]) {
 
   if (unassigned.length === 1) {
     const [only] = unassigned;
-    if (!parsed.name && isPlausibleName(only)) {
+    if (!parsed.city && isCityOnlyName(only) && isPlausibleCity(only)) {
+      parsed.city = cleanFieldValue(only, 120);
+    } else if (!parsed.name && isPlausibleName(only)) {
       parsed.name = cleanFieldValue(only, 120);
     } else if (!parsed.city && isPlausibleCity(only)) {
       parsed.city = cleanFieldValue(only, 120);
@@ -562,6 +564,11 @@ function inferSingleValue(
       return { requirement: cleanFieldValue(trimmed, 2000) };
     }
     return email ? { email } : {};
+  }
+
+  // Known cities before names — never save "Nashik" / phone-like as name.
+  if (!effectiveKnown.city && isCityOnlyName(trimmed) && isPlausibleCity(trimmed)) {
+    return { city: cleanFieldValue(trimmed, 120) };
   }
 
   if (!effectiveKnown.name && isPlausibleName(trimmed)) {
@@ -742,8 +749,17 @@ export function validateLeadFormFields(fields: Partial<LeadFormFields>) {
   return { validated, missingKeys };
 }
 
+/**
+ * Chat lead capture (name/email/city/requirement over WA) blocks AI replies while
+ * incomplete. Disabled by default so minimal AI can answer immediately.
+ * Re-enable with WA_CHAT_LEAD_CAPTURE_ENABLED=true. Google Form capture is handled
+ * separately in process-message when a form URL is configured.
+ */
 export function shouldRunLeadCapture(contact: LeadCaptureContact) {
-  return !contact.leadCaptureComplete;
+  if (contact.leadCaptureComplete) {
+    return false;
+  }
+  return process.env.WA_CHAT_LEAD_CAPTURE_ENABLED === "true";
 }
 
 export function isLeadCaptureFormStep(step: WaLeadCaptureStep) {

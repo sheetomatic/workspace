@@ -689,19 +689,21 @@ async function sendCustomerKnowledgeMenu(
     return;
   }
 
-  await sendWhatsAppInteractiveWithFallback({
+  const sent = await sendWhatsAppInteractiveWithFallback({
     organizationId: org.id,
     toPhone,
     interactive: wrapInteractive(buildCustomerKnowledgeMenu(org.name, items)),
     fallbackText: customerKnowledgeMenuFallback(org.name, items),
   });
 
-  await recordWaOutboundMessage({
-    organizationId: org.id,
-    toPhone,
-    body: `[Menu] ${items.length} training topic(s)`,
-    aiGenerated: false,
-  });
+  if (sent.sent) {
+    await recordWaOutboundMessage({
+      organizationId: org.id,
+      toPhone,
+      body: `[Menu] ${items.length} training topic(s)`,
+      aiGenerated: false,
+    });
+  }
 }
 
 async function sendCustomerFollowUpButtons(organizationId: string, toPhone: string) {
@@ -834,10 +836,11 @@ async function maybeHandleLeadCapture(
   contact: LeadCaptureContact,
   customerMessage: string | null,
 ): Promise<boolean> {
-  if (!shouldRunLeadCapture(contact)) {
+  if (contact.leadCaptureComplete) {
     return false;
   }
 
+  // Prefer Google Form when configured — one prompt, then AI is unblocked.
   const formUrl = await getLeadCaptureGoogleFormUrl(org.id);
   if (formUrl) {
     const isFirstPrompt = contact.leadCaptureStep === "PENDING";
@@ -874,6 +877,10 @@ async function maybeHandleLeadCapture(
         : "lead_capture_google_form_reminder",
     });
     return true;
+  }
+
+  if (!shouldRunLeadCapture(contact)) {
+    return false;
   }
 
   if (contact.leadCaptureStep === "PENDING") {
@@ -1063,7 +1070,7 @@ async function handleCustomerMessage(
   const botLive = await isBotLive(org.id);
   const phone = normalizeWhatsAppPhone(message.from);
   let contact = phone ? await loadLeadCaptureContact(org.id, message.from) : null;
-  const capturePending = contact ? shouldRunLeadCapture(contact) : true;
+  const capturePending = contact ? shouldRunLeadCapture(contact) : false;
 
   if (!botLive) {
     if (message.type === "text" || message.type === "interactive") {
@@ -1071,7 +1078,7 @@ async function handleCustomerMessage(
     }
     contact = phone ? await loadLeadCaptureContact(org.id, message.from) : contact;
 
-    if (contact && shouldRunLeadCapture(contact)) {
+    if (contact && !contact.leadCaptureComplete) {
       let customerMessage = extractInboundBody(message);
       if (
         !customerMessage &&
@@ -1244,7 +1251,7 @@ async function handleCustomerMessage(
   }
 
   contact = phone ? await loadLeadCaptureContact(org.id, message.from) : contact;
-  if (contact && shouldRunLeadCapture(contact)) {
+  if (contact && !contact.leadCaptureComplete) {
     const handled = await maybeHandleLeadCapture(
       org,
       message,

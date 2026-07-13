@@ -19,9 +19,20 @@ const CITY_ONLY_NAMES = new Set(
     "lucknow",
     "kanpur",
     "nagpur",
+    "nashik",
+    "nasik",
+    "aurangabad",
+    "chhatrapati sambhajinagar",
     "indore",
     "bhopal",
     "patna",
+    "ludhiana",
+    "amritsar",
+    "ranchi",
+    "guwahati",
+    "gauhati",
+    "bhubaneswar",
+    "bhubaneshwar",
     "chandigarh",
     "gurgaon",
     "gurugram",
@@ -39,7 +50,44 @@ const CITY_ONLY_NAMES = new Set(
     "rajkot",
     "visakhapatnam",
     "vizag",
+    "vijayawada",
+    "madurai",
+    "varanasi",
+    "agra",
+    "meerut",
+    "allahabad",
+    "prayagraj",
+    "jodhpur",
+    "raipur",
+    "dehradun",
+    "shimla",
+    "jammu",
+    "srinagar",
+    "jamshedpur",
+    "dhanbad",
+    "cuttack",
+    "siliguri",
+    "howrah",
+    "thane",
+    "navi mumbai",
+    "kalyan",
+    "pimpri",
+    "chinchwad",
+    "pimpri chinchwad",
+    "nanded",
+    "solapur",
+    "kolhapur",
+    "sangli",
     "goa",
+    "panaji",
+    "mangalore",
+    "mangaluru",
+    "hubli",
+    "hubballi",
+    "belgaum",
+    "belagavi",
+    "warangal",
+    "tirupati",
     "india",
   ].map((city) => city.toLowerCase()),
 );
@@ -98,4 +146,30 @@ export function safeCustomerFirstName(
     return null;
   }
   return safe.split(/\s+/)[0]?.replace(/[,.!?;:]+$/g, "") || null;
+}
+
+/**
+ * One-shot cleanup helper (not a migration). Clears phone-like / city-only values
+ * wrongly stored on WaContact.name. Run manually when needed, e.g.:
+ *
+ *   npx tsx -e "
+ *   import { prisma } from './src/lib/db';
+ *   import { isPhoneLikeName, isCityOnlyName } from './src/lib/wa-safe-customer-name';
+ *   const rows = await prisma.waContact.findMany({ where: { name: { not: null } }, select: { id: true, name: true } });
+ *   const bad = rows.filter((r) => isPhoneLikeName(r.name) || isCityOnlyName(r.name));
+ *   for (const row of bad) {
+ *     await prisma.waContact.update({ where: { id: row.id }, data: { name: null } });
+ *   }
+ *   console.log('cleared', bad.length);
+ *   "
+ */
+export function isBadStoredCustomerName(value: string | null | undefined): boolean {
+  if (!value?.trim()) {
+    return false;
+  }
+  return (
+    isPhoneLikeName(value) ||
+    isCityOnlyName(value) ||
+    /^\+?\d+$/.test(value.trim())
+  );
 }

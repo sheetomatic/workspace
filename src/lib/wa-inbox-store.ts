@@ -3,8 +3,9 @@ import { prisma } from "@/lib/db";
 import type { WaLeadCaptureStep } from "@prisma/client";
 import { triggerWaCrmSheetSync } from "@/lib/integrations/google-sheets-wa-crm";
 import { queueLeadSyncFromWhatsApp } from "@/lib/leads/ingest";
-import { formatWhatsAppPhone, normalizeWhatsAppPhone } from "@/lib/phone";
+import { normalizeWhatsAppPhone } from "@/lib/phone";
 import { SCALE } from "@/lib/scale";
+import { safeCustomerDisplayName } from "@/lib/wa-safe-customer-name";
 
 export function waInboxListTag(organizationId: string) {
   return `wa-inbox-list-${organizationId}`;
@@ -12,11 +13,6 @@ export function waInboxListTag(organizationId: string) {
 
 function bustInboxListCache(organizationId: string) {
   revalidateTag(waInboxListTag(organizationId), { expire: 0 });
-}
-
-function displayNameFromPhone(phone: string) {
-  const formatted = formatWhatsAppPhone(phone);
-  return formatted === "-" ? phone : formatted;
 }
 
 async function ensureOpenConversation(
@@ -81,7 +77,7 @@ export async function recordWaInboundMessage(params: {
     create: {
       organizationId: params.organizationId,
       phone,
-      name: params.contactName?.trim() || displayNameFromPhone(phone),
+      name: safeCustomerDisplayName(params.contactName) ?? null,
       intent: params.intent ?? "General",
       source: "whatsapp",
       lastMessageAt: new Date(),
@@ -278,7 +274,7 @@ export async function recordWaOutboundMessage(params: {
     create: {
       organizationId: params.organizationId,
       phone,
-      name: displayNameFromPhone(phone),
+      name: null,
       source: "whatsapp",
       lastMessageAt: new Date(),
       unreadCount: 0,

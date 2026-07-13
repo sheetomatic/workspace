@@ -7,7 +7,6 @@ import {
   MessageCircle,
   Plug,
   Radio,
-  Settings,
   Ticket,
   Users,
   Workflow,
@@ -27,18 +26,18 @@ export type AiNavItem = {
   advanced?: boolean;
 };
 
-/** Essentials: Train (knowledge) → Connect (settings) → Go Live (campaign) + inbox. */
+/** Essentials: Train → Connect → Go Live → Chats (+ Dashboard). */
 export const AI_MAIN_NAV_ITEMS: AiNavItem[] = [
   { href: "/ai/app", label: "Dashboard", icon: LayoutDashboard, minRole: AI_APP_MIN_ROLE },
   { href: "/ai/app/inbox", label: "Chats", icon: MessageCircle, minRole: AI_APP_MIN_ROLE },
   { href: "/ai/app/knowledge", label: "Training", icon: BookOpen, minRole: "ADMIN" },
   { href: "/ai/app/campaign", label: "Go Live", icon: Radio, minRole: "ADMIN" },
-  { href: "/ai/app/contacts", label: "CRM", icon: Users, minRole: AI_APP_MIN_ROLE },
-  { href: "/ai/app/settings", label: "Settings", icon: Settings, minRole: "ADMIN" },
+  { href: "/ai/app/settings", label: "Connect", icon: Plug, minRole: "ADMIN" },
 ];
 
-/** Advanced clutter — Agents, Workflows, Integrations, Analytics, Tickets, Templates. */
+/** Advanced clutter — CRM, Agents, Workflows, Integrations, Analytics, Tickets, Templates. */
 export const AI_ADVANCED_NAV_ITEMS: AiNavItem[] = [
+  { href: "/ai/app/contacts", label: "CRM", icon: Users, minRole: AI_APP_MIN_ROLE, advanced: true },
   { href: "/ai/app/tickets", label: "Support hub", icon: Ticket, minRole: AI_APP_MIN_ROLE, advanced: true },
   { href: "/ai/app/analytics", label: "Analytics", icon: BarChart3, minRole: AI_APP_MIN_ROLE, advanced: true },
   { href: "/ai/app/templates", label: "Templates", icon: FileCheck2, minRole: "ADMIN", advanced: true },

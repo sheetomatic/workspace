@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Ticket, MessageCircle, Clock, ChevronRight } from "lucide-react";
 import { formatWhatsAppPhone } from "@/lib/phone";
+import { safeCustomerDisplayName } from "@/lib/wa-safe-customer-name";
 import type { getSupportHubQueue } from "@/lib/ai-module-data";
 
 type SupportData = Awaited<ReturnType<typeof getSupportHubQueue>>;
@@ -60,7 +61,8 @@ export function AiSupportHubPanel({ data }: { data: SupportData }) {
                   <li key={contact.id}>
                     <div>
                       <strong>
-                        {contact.name ?? formatWhatsAppPhone(contact.phone)}
+                        {safeCustomerDisplayName(contact.name) ??
+                          formatWhatsAppPhone(contact.phone)}
                       </strong>
                       <span>{contact.unreadCount} unread - {contact.pipelineStage}</span>
                     </div>
@@ -95,7 +97,7 @@ export function AiSupportHubPanel({ data }: { data: SupportData }) {
                   <li key={item.id}>
                     <div>
                       <strong>
-                        {item.contact.name ??
+                        {safeCustomerDisplayName(item.contact.name) ??
                           formatWhatsAppPhone(item.contact.phone)}
                       </strong>
                       <span>
