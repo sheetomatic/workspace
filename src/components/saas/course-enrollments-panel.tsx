@@ -88,11 +88,26 @@ export function CourseEnrollmentsPanel({
               <form action={formAction} className="saas-list-actions" style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
                 <input name="enrollmentId" type="hidden" value={row.id} />
                 <label style={{ fontSize: 12 }}>
-                  First session date (optional)
+                  Start date / day (optional)
                   <input name="programStartYmd" type="date" />
                 </label>
                 <label style={{ fontSize: 12 }}>
-                  Meet link (optional)
+                  Time IST
+                  <input name="sessionTimeIst" type="time" defaultValue="08:30" />
+                </label>
+                <label style={{ fontSize: 12 }}>
+                  Frequency
+                  <select name="frequency" defaultValue="WEEKLY">
+                    <option value="WEEKLY">Weekly</option>
+                    <option value="BIWEEKLY">Every other week</option>
+                  </select>
+                </label>
+                <label style={{ fontSize: 12 }}>
+                  Total sessions needed
+                  <input name="totalSessions" type="number" min={1} max={48} defaultValue={24} />
+                </label>
+                <label style={{ fontSize: 12 }}>
+                  Standard Google Meet link
                   <input name="meetUrl" type="url" placeholder="https://meet.google.com/…" />
                 </label>
                 <button

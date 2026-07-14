@@ -2626,6 +2626,10 @@ export async function bookLeadTrainingSlotsAction(formData: FormData) {
   const cohortRaw = String(formData.get("cohort") ?? "MON_FRI").trim();
   const programStartYmd = String(formData.get("programStartYmd") ?? "").trim();
   const meetUrl = String(formData.get("meetUrl") ?? "").trim() || null;
+  const frequency = String(formData.get("frequency") ?? "WEEKLY").trim();
+  const sessionTimeIst = String(formData.get("sessionTimeIst") ?? "08:30").trim();
+  const totalSessionsRaw = String(formData.get("totalSessions") ?? "24").trim();
+  const sessionDurationRaw = String(formData.get("sessionDurationMin") ?? "90").trim();
   if (!leadId || !programStartYmd) {
     return { ok: false as const, message: "Lead and start date are required." };
   }
@@ -2646,7 +2650,7 @@ export async function bookLeadTrainingSlotsAction(formData: FormData) {
 
   const { isValidCourseCohort } = await import("@/lib/courses/enrollment");
   if (!isValidCourseCohort(cohortRaw)) {
-    return { ok: false as const, message: "Choose a valid cohort." };
+    return { ok: false as const, message: "Choose a valid day pair." };
   }
 
   const { bookTrainingSlotsForLead } = await import("@/lib/courses/slots");
@@ -2656,6 +2660,10 @@ export async function bookLeadTrainingSlotsAction(formData: FormData) {
     cohort: cohortRaw,
     programStartYmd,
     meetUrl,
+    frequency,
+    sessionTimeIst,
+    totalSessions: Number.parseInt(totalSessionsRaw, 10),
+    sessionDurationMin: Number.parseInt(sessionDurationRaw, 10),
     name: lead.name?.trim() || "Client",
     phone: lead.phone,
     email: lead.email,
@@ -2668,7 +2676,7 @@ export async function bookLeadTrainingSlotsAction(formData: FormData) {
       organizationId: user.organizationId,
       leadId: lead.id,
       type: "NOTE",
-      body: `Training course slots booked (${cohortRaw}) starting ${programStartYmd}. Email + WhatsApp alerts sent.`,
+      body: `Training course slots booked (${cohortRaw}, ${frequency}, ${sessionTimeIst} IST, ${totalSessionsRaw} sessions) starting ${programStartYmd}. Email + WhatsApp alerts sent.`,
       createdByUserId: user.id,
     });
   }

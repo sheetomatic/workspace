@@ -1,5 +1,9 @@
 import { randomBytes } from "node:crypto";
-import type { CourseCohort, TrainingCourseSlot } from "@prisma/client";
+import type {
+  CourseCohort,
+  TrainingCourseSlot,
+  TrainingFrequency,
+} from "@prisma/client";
 import { prisma } from "@/lib/db";
 import {
   COURSE_ENROLLMENT_PRICE_INR,
@@ -12,10 +16,10 @@ import {
   toIcsUtcStamp,
 } from "@/lib/leads/calendar-links";
 
-const SESSION_DURATION_MIN = 90;
-/** 8:30 AM IST = 03:00 UTC */
-const SESSION_UTC_HOUR = 3;
-const SESSION_UTC_MINUTE = 0;
+const DEFAULT_SESSION_DURATION_MIN = 90;
+const DEFAULT_SESSION_TIME_IST = "08:30";
+const DEFAULT_TOTAL_SESSIONS = courseEnrollmentSchedule.totalClasses;
+const DEFAULT_FREQUENCY: TrainingFrequency = "WEEKLY";
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -53,14 +57,93 @@ function addDaysYmd(ymd: string, days: number): string {
   return `${next.getUTCFullYear()}-${pad(next.getUTCMonth() + 1)}-${pad(next.getUTCDate())}`;
 }
 
-/** Session start Date for an IST calendar day at 8:30 AM IST. */
-export function sessionStartUtcFromYmd(ymd: string): Date {
-  const { y, m, d } = parseYmd(ymd);
-  return new Date(Date.UTC(y, m - 1, d, SESSION_UTC_HOUR, SESSION_UTC_MINUTE, 0));
+/** Normalize HH:mm (24h) IST time; falls back to 08:30. */
+export function normalizeSessionTimeIst(raw: string | null | undefined): string {
+  const match = String(raw ?? "")
+    .trim()
+    .match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return DEFAULT_SESSION_TIME_IST;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (
+    !Number.isFinite(hour) ||
+    !Number.isFinite(minute) ||
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59
+  ) {
+    return DEFAULT_SESSION_TIME_IST;
+  }
+  return `${pad(hour)}:${pad(minute)}`;
 }
 
-export function sessionEndUtc(startsAt: Date): Date {
-  return new Date(startsAt.getTime() + SESSION_DURATION_MIN * 60_000);
+export function normalizeTotalSessions(raw: unknown): number {
+  const n = typeof raw === "number" ? raw : Number.parseInt(String(raw ?? ""), 10);
+  if (!Number.isFinite(n)) return DEFAULT_TOTAL_SESSIONS;
+  return Math.min(48, Math.max(1, Math.round(n)));
+}
+
+export function normalizeSessionDurationMin(raw: unknown): number {
+  const n = typeof raw === "number" ? raw : Number.parseInt(String(raw ?? ""), 10);
+  if (!Number.isFinite(n)) return DEFAULT_SESSION_DURATION_MIN;
+  return Math.min(240, Math.max(30, Math.round(n)));
+}
+
+export function normalizeFrequency(
+  raw: string | null | undefined,
+): TrainingFrequency {
+  return raw === "BIWEEKLY" ? "BIWEEKLY" : DEFAULT_FREQUENCY;
+}
+
+/**
+ * Session start Date for an IST calendar day at the given HH:mm IST.
+ * IST is UTC+5:30.
+ */
+export function sessionStartUtcFromYmd(
+  ymd: string,
+  timeIst: string = DEFAULT_SESSION_TIME_IST,
+): Date {
+  const { y, m, d } = parseYmd(ymd);
+  const normalized = normalizeSessionTimeIst(timeIst);
+  const [hh, mm] = normalized.split(":").map(Number);
+  const totalMinutesIst = hh * 60 + mm;
+  let totalMinutesUtc = totalMinutesIst - (5 * 60 + 30);
+  let dayOffset = 0;
+  if (totalMinutesUtc < 0) {
+    dayOffset = -1;
+    totalMinutesUtc += 24 * 60;
+  } else if (totalMinutesUtc >= 24 * 60) {
+    dayOffset = 1;
+    totalMinutesUtc -= 24 * 60;
+  }
+  const utcH = Math.floor(totalMinutesUtc / 60);
+  const utcM = totalMinutesUtc % 60;
+  return new Date(Date.UTC(y, m - 1, d + dayOffset, utcH, utcM, 0));
+}
+
+export function sessionEndUtc(
+  startsAt: Date,
+  durationMin: number = DEFAULT_SESSION_DURATION_MIN,
+): Date {
+  return new Date(startsAt.getTime() + durationMin * 60_000);
+}
+
+export function formatSessionTimeLabel(
+  timeIst: string,
+  durationMin: number,
+): string {
+  const start = normalizeSessionTimeIst(timeIst);
+  const [hh, mm] = start.split(":").map(Number);
+  const endTotal = hh * 60 + mm + durationMin;
+  const endH = Math.floor(endTotal / 60) % 24;
+  const endM = endTotal % 60;
+  const fmt = (h: number, m: number) => {
+    const ampm = h >= 12 ? "PM" : "AM";
+    const hour12 = h % 12 || 12;
+    return `${hour12}:${pad(m)} ${ampm}`;
+  };
+  return `${fmt(hh, mm)} – ${fmt(endH, endM)} IST`;
 }
 
 export type GeneratedSession = {
@@ -75,10 +158,19 @@ export function generateTrainingSessions(params: {
   cohort: CourseCohort | CourseCohortId;
   programStartYmd: string;
   totalSessions?: number;
+  sessionTimeIst?: string;
+  sessionDurationMin?: number;
+  frequency?: TrainingFrequency;
   studentName?: string;
 }): GeneratedSession[] {
-  const total =
-    params.totalSessions ?? courseEnrollmentSchedule.totalClasses;
+  const total = normalizeTotalSessions(
+    params.totalSessions ?? DEFAULT_TOTAL_SESSIONS,
+  );
+  const timeIst = normalizeSessionTimeIst(params.sessionTimeIst);
+  const durationMin = normalizeSessionDurationMin(
+    params.sessionDurationMin ?? DEFAULT_SESSION_DURATION_MIN,
+  );
+  const frequency = normalizeFrequency(params.frequency);
   const weekdays = new Set(cohortWeekdays(params.cohort));
   let cursor = params.programStartYmd;
   // Walk forward until we land on a cohort weekday.
@@ -91,21 +183,29 @@ export function generateTrainingSessions(params: {
   }
 
   const sessions: GeneratedSession[] = [];
-  while (sessions.length < total) {
+  let daysSinceStart = 0;
+  let guard = 0;
+  while (sessions.length < total && guard < 800) {
+    guard += 1;
     if (weekdays.has(weekdayFromYmd(cursor))) {
-      const startsAt = sessionStartUtcFromYmd(cursor);
-      const n = sessions.length + 1;
-      sessions.push({
-        sessionNumber: n,
-        startsAt,
-        endsAt: sessionEndUtc(startsAt),
-        title: `Sheets/AppSheet/Looker 1:1 — Session ${n}${
-          params.studentName ? ` · ${params.studentName}` : ""
-        }`,
-        ymd: cursor,
-      });
+      const weekIndex = Math.floor(daysSinceStart / 7);
+      const include = frequency === "WEEKLY" || weekIndex % 2 === 0;
+      if (include) {
+        const startsAt = sessionStartUtcFromYmd(cursor, timeIst);
+        const n = sessions.length + 1;
+        sessions.push({
+          sessionNumber: n,
+          startsAt,
+          endsAt: sessionEndUtc(startsAt, durationMin),
+          title: `Sheets/AppSheet/Looker 1:1 — Session ${n}${
+            params.studentName ? ` · ${params.studentName}` : ""
+          }`,
+          ymd: cursor,
+        });
+      }
     }
     cursor = addDaysYmd(cursor, 1);
+    daysSinceStart += 1;
   }
   return sessions;
 }
@@ -197,6 +297,10 @@ export async function bookTrainingSlots(params: {
   enrollmentId: string;
   programStartYmd: string;
   meetUrl?: string | null;
+  frequency?: TrainingFrequency | string | null;
+  sessionTimeIst?: string | null;
+  sessionDurationMin?: number | null;
+  totalSessions?: number | null;
   organizationId?: string | null;
   inboundLeadId?: string | null;
   notify?: boolean;
@@ -223,10 +327,27 @@ export async function bookTrainingSlots(params: {
     return { ok: false as const, message: "Choose a valid program start date." };
   }
 
+  const frequency = normalizeFrequency(
+    params.frequency ?? enrollment.frequency,
+  );
+  const sessionTimeIst = normalizeSessionTimeIst(
+    params.sessionTimeIst ?? enrollment.sessionTimeIst,
+  );
+  const sessionDurationMin = normalizeSessionDurationMin(
+    params.sessionDurationMin ?? enrollment.sessionDurationMin,
+  );
+  const totalSessions = normalizeTotalSessions(
+    params.totalSessions ?? enrollment.totalSessions,
+  );
+
   const sessions = generateTrainingSessions({
     cohort: enrollment.cohort,
     programStartYmd: ymd,
     studentName: enrollment.name,
+    frequency,
+    sessionTimeIst,
+    sessionDurationMin,
+    totalSessions,
   });
   const meetUrl = params.meetUrl?.trim().slice(0, 500) || enrollment.meetUrl || null;
   const organizationId =
@@ -236,6 +357,7 @@ export async function bookTrainingSlots(params: {
   const bookingToken = enrollment.bookingToken || newBookingToken();
 
   const firstStart = sessions[0]!.startsAt;
+  const timeLabel = formatSessionTimeLabel(sessionTimeIst, sessionDurationMin);
 
   await prisma.$transaction([
     prisma.courseEnrollment.update({
@@ -246,8 +368,10 @@ export async function bookTrainingSlots(params: {
         bookingToken,
         organizationId,
         inboundLeadId,
-        // If still pending payment, keep status — slots can wait for confirm.
-        // Workspace/CRM booking from paid lead usually confirms first.
+        frequency,
+        sessionTimeIst,
+        sessionDurationMin,
+        totalSessions,
       },
     }),
     prisma.trainingCourseSlot.createMany({
@@ -280,7 +404,7 @@ export async function bookTrainingSlots(params: {
 
   return {
     ok: true as const,
-    message: `Booked ${slots.length} sessions starting ${toIstYmd(firstStart)} (${courseCohortLabel(enrollment.cohort)}, ${courseEnrollmentSchedule.sessionTimeLabel}).`,
+    message: `Booked ${slots.length} sessions starting ${toIstYmd(firstStart)} (${courseCohortLabel(enrollment.cohort)}, ${frequency.toLowerCase()}, ${timeLabel}).`,
     slots,
     bookingToken,
   };
@@ -367,12 +491,23 @@ export async function bookTrainingSlotsForLead(params: {
   cohort: CourseCohortId;
   programStartYmd: string;
   meetUrl?: string | null;
+  frequency?: TrainingFrequency | string | null;
+  sessionTimeIst?: string | null;
+  sessionDurationMin?: number | null;
+  totalSessions?: number | null;
   name: string;
   phone: string;
   email: string;
   markConfirmed?: boolean;
   confirmedById?: string;
 }) {
+  const frequency = normalizeFrequency(params.frequency);
+  const sessionTimeIst = normalizeSessionTimeIst(params.sessionTimeIst);
+  const sessionDurationMin = normalizeSessionDurationMin(
+    params.sessionDurationMin,
+  );
+  const totalSessions = normalizeTotalSessions(params.totalSessions);
+
   const existing = await prisma.courseEnrollment.findFirst({
     where: {
       OR: [
@@ -403,6 +538,10 @@ export async function bookTrainingSlotsForLead(params: {
         inboundLeadId: params.leadId,
         bookingToken: newBookingToken(),
         meetUrl: params.meetUrl?.trim() || null,
+        frequency,
+        sessionTimeIst,
+        sessionDurationMin,
+        totalSessions,
       },
     });
     enrollmentId = created.id;
@@ -414,6 +553,10 @@ export async function bookTrainingSlotsForLead(params: {
         inboundLeadId: params.leadId,
         cohort: params.cohort,
         meetUrl: params.meetUrl?.trim() || undefined,
+        frequency,
+        sessionTimeIst,
+        sessionDurationMin,
+        totalSessions,
         ...(params.markConfirmed && existing?.status !== "CONFIRMED"
           ? {
               status: "CONFIRMED" as const,
@@ -438,6 +581,10 @@ export async function bookTrainingSlotsForLead(params: {
     enrollmentId: enrollmentId!,
     programStartYmd: params.programStartYmd,
     meetUrl: params.meetUrl,
+    frequency,
+    sessionTimeIst,
+    sessionDurationMin,
+    totalSessions,
     organizationId: params.organizationId,
     inboundLeadId: params.leadId,
     notify: true,

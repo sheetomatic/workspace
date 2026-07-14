@@ -3008,6 +3008,11 @@ enum TrainingSlotStatus {
   CANCELLED
 }
 
+enum TrainingFrequency {
+  WEEKLY
+  BIWEEKLY
+}
+
 model CourseEnrollment {
   id               String                 @id @default(cuid())
   name             String
@@ -3021,6 +3026,14 @@ model CourseEnrollment {
   programStartDate DateTime?
   /** Optional Google Meet / Zoom link shared on all sessions. */
   meetUrl          String?
+  /** How often cohort days repeat. */
+  frequency        TrainingFrequency      @default(WEEKLY)
+  /** Session start time in Asia/Kolkata, HH:mm (24h). */
+  sessionTimeIst   String                 @default("08:30")
+  /** Session length in minutes. */
+  sessionDurationMin Int                  @default(90)
+  /** Total live sessions to generate. */
+  totalSessions    Int                    @default(24)
   /** Public token for /courses/book-slots?token=… */
   bookingToken     String?                @unique
   /** Optional CRM link when booked from workspace lead. */
