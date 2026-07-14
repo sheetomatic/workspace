@@ -136,7 +136,7 @@ export function LeadTrainingSlotsPanel({
           <h4 className="leads-training-form-title">Generate cohort calendar</h4>
           <div className="leads-drawer-grid">
             <label>
-              Cohort
+              Day
               <select name="cohort" defaultValue="MON_FRI" required>
                 {courseCohorts.map((cohort) => (
                   <option key={cohort.id} value={cohort.id}>
@@ -146,24 +146,61 @@ export function LeadTrainingSlotsPanel({
               </select>
             </label>
             <label>
-              First session date
+              Time (IST)
+              <input name="sessionTimeIst" type="time" defaultValue="08:30" required />
+            </label>
+            <label>
+              Frequency
+              <select name="frequency" defaultValue="WEEKLY" required>
+                <option value="WEEKLY">Weekly</option>
+                <option value="BIWEEKLY">Every other week</option>
+              </select>
+            </label>
+            <label>
+              Start date / day
               <input name="programStartYmd" type="date" required />
+            </label>
+            <label>
+              Total sessions needed
+              <input
+                name="totalSessions"
+                type="number"
+                min={1}
+                max={48}
+                step={1}
+                defaultValue={24}
+                required
+              />
+            </label>
+            <label>
+              Session length (min)
+              <input
+                name="sessionDurationMin"
+                type="number"
+                min={30}
+                max={240}
+                step={15}
+                defaultValue={90}
+              />
             </label>
           </div>
           <label>
-            Meet / Zoom link (optional)
+            Standard Google Meet link
             <input
               name="meetUrl"
               type="url"
-              placeholder="https://meet.google.com/…"
+              placeholder="https://meet.google.com/xxx-xxxx-xxx"
             />
+            <span className="leads-help">
+              Paste your standing Meet link — applied to every session. Leave blank if you will add later.
+            </span>
           </label>
           <button
             type="submit"
             className="btn-cta btn-secondary"
             disabled={pending}
           >
-            {pending ? "Booking…" : "Generate 24 slots"}
+            {pending ? "Booking…" : "Generate sessions"}
           </button>
         </form>
       ) : null}

@@ -117,9 +117,13 @@ export async function listRecentCourseEnrollments(limit = 30) {
 export async function confirmCourseEnrollment(params: {
   enrollmentId: string;
   confirmedById: string;
-  /** When set, generate 24 training slots and alert client + owner. */
+  /** When set, generate training slots and alert client + owner. */
   programStartYmd?: string;
   meetUrl?: string | null;
+  frequency?: string | null;
+  sessionTimeIst?: string | null;
+  totalSessions?: number | null;
+  sessionDurationMin?: number | null;
 }) {
   const existing = await prisma.courseEnrollment.findUnique({
     where: { id: params.enrollmentId },
@@ -159,6 +163,10 @@ export async function confirmCourseEnrollment(params: {
       enrollmentId: existing.id,
       programStartYmd: params.programStartYmd,
       meetUrl: params.meetUrl,
+      frequency: params.frequency,
+      sessionTimeIst: params.sessionTimeIst,
+      totalSessions: params.totalSessions,
+      sessionDurationMin: params.sessionDurationMin,
       notify: true,
     });
     if (!booked.ok) {

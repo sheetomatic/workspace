@@ -22,6 +22,12 @@ export async function confirmCourseEnrollmentAction(
   const enrollmentId = formData.get("enrollmentId")?.toString().trim();
   const programStartYmd = formData.get("programStartYmd")?.toString().trim();
   const meetUrl = formData.get("meetUrl")?.toString().trim() || null;
+  const frequency = formData.get("frequency")?.toString().trim() || "WEEKLY";
+  const sessionTimeIst = formData.get("sessionTimeIst")?.toString().trim() || "08:30";
+  const totalSessions = Number.parseInt(
+    formData.get("totalSessions")?.toString().trim() || "24",
+    10,
+  );
   if (!enrollmentId) {
     return { ok: false, message: "Enrollment not found." };
   }
@@ -31,6 +37,9 @@ export async function confirmCourseEnrollmentAction(
     confirmedById: user.id,
     programStartYmd: programStartYmd || undefined,
     meetUrl,
+    frequency,
+    sessionTimeIst,
+    totalSessions,
   });
 
   revalidatePath("/app/approvals");
@@ -51,6 +60,12 @@ export async function bookCourseSlotsAction(
   const enrollmentId = formData.get("enrollmentId")?.toString().trim();
   const programStartYmd = formData.get("programStartYmd")?.toString().trim();
   const meetUrl = formData.get("meetUrl")?.toString().trim() || null;
+  const frequency = formData.get("frequency")?.toString().trim() || "WEEKLY";
+  const sessionTimeIst = formData.get("sessionTimeIst")?.toString().trim() || "08:30";
+  const totalSessions = Number.parseInt(
+    formData.get("totalSessions")?.toString().trim() || "24",
+    10,
+  );
   if (!enrollmentId || !programStartYmd) {
     return { ok: false, message: "Enrollment and start date are required." };
   }
@@ -59,6 +74,9 @@ export async function bookCourseSlotsAction(
     enrollmentId,
     programStartYmd,
     meetUrl,
+    frequency,
+    sessionTimeIst,
+    totalSessions,
     notify: true,
   });
 
