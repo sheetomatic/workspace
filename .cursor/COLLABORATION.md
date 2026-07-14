@@ -600,3 +600,18 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/leads` Training tab (8:30–18:00 IST, optional Day 2, 3h sessions) + Approvals training booking.
 
 ---
+
+**Deployed (2026-07-14):** My Space Training — student-wise schedules and Meet join links (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| PR | https://github.com/sheetomatic/workspace/pull/13 (merged) |
+| Merge SHA | `412cd77` (tip `0c776f4`) |
+| Pre-flight | `TZ=Asia/Kolkata npm run test:unit` 84/84 pass |
+| Vercel | Production **SUCCESS** — sheetomatic-redesign |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/F1hopj3ajABELEqDu9evTbss9DBv — https://sheetomatic-redesign-fokq1akp6-sheetomatic.vercel.app |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops (their auto-deploys failed; ignored). |
+
+**Hard-refresh in prod:** `/app/my-space/training` (student-wise list; expand for schedule + Meet join).
+
+---
