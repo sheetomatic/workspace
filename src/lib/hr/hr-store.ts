@@ -522,7 +522,7 @@ export async function getHrDashboardStats(organizationId: string) {
     prisma.fieldCheckIn.count({
       where: {
         organizationId,
-        checkedInAt: { gte: workDate, lte: dayEnd },
+        checkedInAt: { gte: dayStart, lte: dayEnd },
       },
     }),
     prisma.jobOpening.count({ where: { organizationId, isOpen: true } }),
