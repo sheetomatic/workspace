@@ -3,6 +3,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
   Briefcase,
+  CalendarCheck2,
   CheckSquare,
   ClipboardCheck,
   ClipboardList,
@@ -858,6 +859,13 @@ export function getWorkspaceNavSections(params: {
               icon: Wallet,
               minRole: "MANAGER",
               matchPrefix: "/app/my-space/expenses",
+            },
+            {
+              href: "/app/my-space/training",
+              label: "Training slots",
+              icon: CalendarCheck2,
+              minRole: "MANAGER",
+              matchPrefix: "/app/my-space/training",
             },
           ],
         },

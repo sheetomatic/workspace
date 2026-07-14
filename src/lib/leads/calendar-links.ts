@@ -54,6 +54,27 @@ export function buildGoogleCalendarUrl(input: LeadDemoCalendarInput): string {
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
+/** Generic Google Calendar template URL for any titled event. */
+export function buildGoogleCalendarEventUrl(params: {
+  title: string;
+  startsAt: Date;
+  endsAt: Date;
+  details?: string;
+  location?: string;
+}): string {
+  const dates = `${toIcsUtcStamp(params.startsAt)}/${toIcsUtcStamp(params.endsAt)}`;
+  const search = new URLSearchParams({
+    action: "TEMPLATE",
+    text: params.title,
+    dates,
+    details: params.details ?? "",
+  });
+  if (params.location?.trim()) {
+    search.set("location", params.location.trim());
+  }
+  return `https://calendar.google.com/calendar/render?${search.toString()}`;
+}
+
 /** Outlook.com compose deep link (best-effort; Outlook desktop uses ICS). */
 export function buildOutlookWebUrl(input: LeadDemoCalendarInput): string {
   const duration = input.durationMinutes ?? 45;

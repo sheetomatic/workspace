@@ -48,6 +48,7 @@ export default async function ApprovalsPage() {
               cohort: row.cohort,
               status: row.status,
               createdAt: row.createdAt.toISOString(),
+              bookingToken: row.bookingToken,
             }))}
           />
         </>

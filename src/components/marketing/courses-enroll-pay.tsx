@@ -40,6 +40,7 @@ export function CoursesEnrollPay({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [enrollmentId, setEnrollmentId] = useState<string | null>(null);
+  const [bookingToken, setBookingToken] = useState<string | null>(null);
 
   const close = useCallback(() => {
     setOpen(false);
@@ -52,6 +53,7 @@ export function CoursesEnrollPay({
       setEmail("");
       setCohort("MON_FRI");
       setEnrollmentId(null);
+      setBookingToken(null);
     }
   }, [step]);
 
@@ -134,6 +136,7 @@ export function CoursesEnrollPay({
       const data = (await response.json()) as {
         ok?: boolean;
         enrollmentId?: string;
+        bookingToken?: string | null;
         error?: string;
       };
       if (!response.ok || !data.ok || !data.enrollmentId) {
@@ -141,6 +144,7 @@ export function CoursesEnrollPay({
         return;
       }
       setEnrollmentId(data.enrollmentId);
+      setBookingToken(data.bookingToken ?? null);
       setStep("done");
       const message = buildCourseEnrollmentWhatsAppMessage({
         name: name.trim(),
@@ -346,12 +350,13 @@ export function CoursesEnrollPay({
             {step === "done" ? (
               <div className="course-pay-body">
                 <p className="course-pay-success">
-                  Payment pending confirmation. After Shyam verifies your UPI
-                  payment, your{" "}
+                  Payment pending confirmation. After payment is verified, open
+                  your booking link to pick the first session date — we generate
+                  all {courseEnrollmentSchedule.totalClasses}{" "}
                   <strong>
                     {courseCohorts.find((item) => item.id === cohort)?.label}
                   </strong>{" "}
-                  slots ({courseEnrollmentSchedule.sessionTimeLabel}) are booked.
+                  slots ({courseEnrollmentSchedule.sessionTimeLabel}).
                 </p>
                 {enrollmentId ? (
                   <p className="course-pay-meta">Enrollment ID: {enrollmentId}</p>
@@ -373,6 +378,14 @@ export function CoursesEnrollPay({
                 >
                   Open WhatsApp · share screenshot
                 </a>
+                {bookingToken ? (
+                  <a
+                    className="btn-secondary btn-block"
+                    href={`/courses/book-slots?token=${bookingToken}`}
+                  >
+                    Book training slots (after confirmation)
+                  </a>
+                ) : null}
                 <button type="button" className="btn-secondary btn-block" onClick={close}>
                   Done
                 </button>

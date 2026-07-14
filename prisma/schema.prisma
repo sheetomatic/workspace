@@ -3002,21 +3002,63 @@ enum CourseEnrollmentStatus {
   CANCELLED
 }
 
+enum TrainingSlotStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
 model CourseEnrollment {
-  id            String                 @id @default(cuid())
-  name          String
-  phone         String
-  email         String
-  amountInr     Int                    @default(35000)
-  cohort        CourseCohort
-  status        CourseEnrollmentStatus @default(PAYMENT_PENDING)
-  slotNotes     String?
-  confirmedAt   DateTime?
-  confirmedById String?
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
+  id               String                 @id @default(cuid())
+  name             String
+  phone            String
+  email            String
+  amountInr        Int                    @default(35000)
+  cohort           CourseCohort
+  status           CourseEnrollmentStatus @default(PAYMENT_PENDING)
+  slotNotes        String?
+  /** First training session date (IST calendar day) once slots are booked. */
+  programStartDate DateTime?
+  /** Optional Google Meet / Zoom link shared on all sessions. */
+  meetUrl          String?
+  /** Public token for /courses/book-slots?token=… */
+  bookingToken     String?                @unique
+  /** Optional CRM link when booked from workspace lead. */
+  organizationId   String?
+  inboundLeadId    String?
+  confirmedAt      DateTime?
+  confirmedById    String?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  slots            TrainingCourseSlot[]
 
   @@index([status, createdAt])
   @@index([email])
   @@index([phone])
+  @@index([organizationId, inboundLeadId])
+  @@index([bookingToken])
+}
+
+/// Individual 1:1 training sessions generated from cohort + program start date.
+model TrainingCourseSlot {
+  id             String             @id @default(cuid())
+  enrollmentId   String
+  enrollment     CourseEnrollment   @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  organizationId String?
+  inboundLeadId  String?
+  sessionNumber  Int
+  startsAt       DateTime
+  endsAt         DateTime
+  title          String
+  meetUrl        String?
+  status         TrainingSlotStatus @default(SCHEDULED)
+  notes          String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@unique([enrollmentId, sessionNumber])
+  @@index([enrollmentId, startsAt])
+  @@index([organizationId, startsAt])
+  @@index([inboundLeadId, startsAt])
+  @@index([status, startsAt])
 }
