@@ -1,4 +1,10 @@
 import { prisma } from "@/lib/db";
+import {
+  getHolidayCatalog,
+  isHolidayRegion,
+  MAX_HOLIDAYS_PER_YEAR,
+  type HolidayRegion,
+} from "@/lib/hr/holiday-catalog";
 
 function isWeekday(date: Date) {
   const day = date.getUTCDay();
@@ -142,6 +148,31 @@ export async function createHoliday(params: {
     throw new Error("Invalid holiday date.");
   }
 
+  const existingForDate = await prisma.hrHoliday.findUnique({
+    where: {
+      organizationId_date: {
+        organizationId: params.organizationId,
+        date,
+      },
+    },
+    select: { id: true },
+  });
+  if (!existingForDate) {
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1, 12, 0, 0, 0));
+    const yearEnd = new Date(Date.UTC(date.getUTCFullYear(), 11, 31, 12, 0, 0, 0));
+    const existingCount = await prisma.hrHoliday.count({
+      where: {
+        organizationId: params.organizationId,
+        date: { gte: yearStart, lte: yearEnd },
+      },
+    });
+    if (existingCount >= MAX_HOLIDAYS_PER_YEAR) {
+      throw new Error(
+        `Holiday calendar already has ${MAX_HOLIDAYS_PER_YEAR} holidays for ${date.getUTCFullYear()}. Delete one before adding another.`,
+      );
+    }
+  }
+
   const holiday = await prisma.hrHoliday.upsert({
     where: {
       organizationId_date: {
@@ -169,6 +200,67 @@ export async function createHoliday(params: {
   });
 
   return holiday;
+}
+
+export async function importDefaultHolidays(params: {
+  organizationId: string;
+  year: number;
+  region: HolidayRegion;
+}) {
+  const year =
+    Number.isFinite(params.year) && params.year >= 2000 && params.year <= 2100
+      ? Math.trunc(params.year)
+      : new Date().getUTCFullYear();
+  const region = isHolidayRegion(params.region) ? params.region : "national";
+  const catalog = getHolidayCatalog(year, region);
+
+  if (catalog.length !== MAX_HOLIDAYS_PER_YEAR) {
+    throw new Error("Holiday catalog is incomplete for the selected year.");
+  }
+
+  const existing = await listHolidays(params.organizationId, year);
+  const existingDates = new Set(
+    existing.map((holiday) => holiday.date.toISOString().slice(0, 10)),
+  );
+  const newItems = catalog.filter(
+    (item) => !existingDates.has(item.date.toISOString().slice(0, 10)),
+  );
+  if (existing.length + newItems.length > MAX_HOLIDAYS_PER_YEAR) {
+    throw new Error(
+      `Import would exceed ${MAX_HOLIDAYS_PER_YEAR} holidays for ${year}. Delete extra holidays or import into an empty calendar.`,
+    );
+  }
+
+  const holidays = [];
+  for (const item of catalog) {
+    const holiday = await prisma.hrHoliday.upsert({
+      where: {
+        organizationId_date: {
+          organizationId: params.organizationId,
+          date: item.date,
+        },
+      },
+      create: {
+        organizationId: params.organizationId,
+        date: item.date,
+        name: item.name,
+        isOptional: item.isOptional,
+      },
+      update: {
+        name: item.name,
+        isOptional: item.isOptional,
+      },
+    });
+    await syncHolidayAttendance({
+      organizationId: params.organizationId,
+      date: holiday.date,
+      name: holiday.name,
+      isOptional: holiday.isOptional,
+    });
+    holidays.push(holiday);
+  }
+
+  return { imported: holidays.length, holidays };
 }
 
 export async function updateHoliday(params: {

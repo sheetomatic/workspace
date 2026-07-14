@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/saas/page-header";
 import { HrSubNav } from "@/components/hr/hr-sub-nav";
 import {
@@ -26,17 +27,101 @@ import {
 import { listAssignableMembers } from "@/lib/tasks";
 import { redirect } from "next/navigation";
 
+type PageProps = {
+  searchParams: Promise<{ tab?: string }>;
+};
+
+const LEAVE_TABS = [
+  {
+    id: "balances",
+    label: "Balances",
+    description: "Leave balances and yearly entitlement summary.",
+  },
+  {
+    id: "apply",
+    label: "Apply",
+    description: "Submit a new leave request.",
+  },
+  {
+    id: "requests",
+    label: "Requests",
+    description: "Review leave request status and approvals.",
+  },
+  {
+    id: "od-wfh",
+    label: "OD / WFH",
+    description: "On-duty and work-from-home requests.",
+  },
+  {
+    id: "swaps",
+    label: "Swaps",
+    description: "Leave swap and off-day swap requests.",
+  },
+] as const;
+
+type LeaveTabId = (typeof LEAVE_TABS)[number]["id"] | "allocation";
+
+function resolveLeaveTab(raw: string | undefined, isAdmin: boolean): LeaveTabId {
+  if (raw === "allocation" && isAdmin) {
+    return "allocation";
+  }
+  if (LEAVE_TABS.some((tab) => tab.id === raw)) {
+    return raw as LeaveTabId;
+  }
+  return "balances";
+}
+
+function LeaveTabNav({
+  activeTab,
+  isAdmin,
+}: {
+  activeTab: LeaveTabId;
+  isAdmin: boolean;
+}) {
+  const tabs = isAdmin
+    ? [
+        ...LEAVE_TABS,
+        {
+          id: "allocation",
+          label: "Policy & allocation",
+          description: "Admin leave policy and employee allocation.",
+        },
+      ]
+    : LEAVE_TABS;
+
+  return (
+    <nav className="ws-hr-leave-tabs" aria-label="Leave sub modules">
+      {tabs.map((tab) => (
+        <Link
+          key={tab.id}
+          href={`/app/hr/leave?tab=${tab.id}`}
+          className={
+            activeTab === tab.id
+              ? "ws-hr-leave-tab is-active"
+              : "ws-hr-leave-tab"
+          }
+        >
+          <strong>{tab.label}</strong>
+          <span>{tab.description}</span>
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
 function statusClass(status: string) {
   if (status === "APPROVED") return "ws-leave-status is-approved";
   if (status === "REJECTED") return "ws-leave-status is-rejected";
   return "ws-leave-status is-pending";
 }
 
-export default async function HrLeavePage() {
+export default async function HrLeavePage({ searchParams }: PageProps) {
   const user = await requireSession(undefined, { module: "HR" });
   const isManager = hasMinimumRole(user.role, "MANAGER");
   const isAdmin = hasMinimumRole(user.role, "ADMIN");
   const year = new Date().getFullYear();
+  const params = await searchParams;
+  const activeTab = resolveLeaveTab(params.tab, isAdmin);
 
   const [requests, balances, exceptions, swaps, policies, allocBalances, members, hrSettings] =
     await Promise.all([
@@ -86,16 +171,40 @@ export default async function HrLeavePage() {
         enabledSubModules={enabledSubModules}
       />
 
-      <LeaveBalanceCards
-        year={year}
-        balances={balances.map((row) => ({
-          leaveType: row.leaveType,
-          balanceDays: row.balanceDays,
-          usedDays: row.usedDays,
-        }))}
-      />
+      <LeaveTabNav activeTab={activeTab} isAdmin={isAdmin} />
 
-      {isAdmin ? (
+      {activeTab === "balances" ? (
+        <>
+          <LeaveBalanceCards
+            year={year}
+            balances={balances.map((row) => ({
+              leaveType: row.leaveType,
+              balanceDays: row.balanceDays,
+              usedDays: row.usedDays,
+            }))}
+          />
+          <div className="ws-hr-module-grid">
+            <Link className="ws-hr-module-card" href="/app/hr/leave?tab=apply">
+              <strong>Apply for leave</strong>
+              <p>Submit casual, sick, earned, unpaid, or comp-off leave.</p>
+            </Link>
+            <Link className="ws-hr-module-card" href="/app/hr/leave?tab=requests">
+              <strong>{isManager ? "Team requests" : "My requests"}</strong>
+              <p>Track request status and manager approvals without scrolling.</p>
+            </Link>
+            <Link className="ws-hr-module-card" href="/app/hr/leave?tab=od-wfh">
+              <strong>OD / WFH</strong>
+              <p>Mark client travel, official duty, or work-from-home separately.</p>
+            </Link>
+            <Link className="ws-hr-module-card" href="/app/hr/leave?tab=swaps">
+              <strong>Swaps</strong>
+              <p>Request leave-day and weekly-off swaps.</p>
+            </Link>
+          </div>
+        </>
+      ) : null}
+
+      {activeTab === "allocation" && isAdmin ? (
         <LeaveAllocationPanel
           year={year}
           policies={policies.map((p) => ({
@@ -117,7 +226,8 @@ export default async function HrLeavePage() {
         />
       ) : null}
 
-      <div className="ws-hr-split">
+      {activeTab === "apply" ? (
+        <div className="ws-hr-split">
         <section className="ws-hr-panel">
           <h2>Apply for leave</h2>
           <form action={submitLeaveRequestAction} className="ws-hr-form">
@@ -148,9 +258,11 @@ export default async function HrLeavePage() {
             </button>
           </form>
         </section>
-      </div>
+        </div>
+      ) : null}
 
-      <section className="ws-hr-panel">
+      {activeTab === "requests" ? (
+        <section className="ws-hr-panel">
         <h2>{isManager ? "Team leave requests" : "My leave requests"}</h2>
         <div className="ws-hr-table-wrap">
           <table className="ws-hr-table">
@@ -222,37 +334,42 @@ export default async function HrLeavePage() {
             </tbody>
           </table>
         </div>
-      </section>
+        </section>
+      ) : null}
 
-      <OdWfhPanel
-        isManager={isManager}
-        viewerUserId={user.id}
-        requests={exceptions.map((req) => ({
-          id: req.id,
-          userId: req.userId,
-          exceptionType: req.exceptionType,
-          startDate: req.startDate,
-          endDate: req.endDate,
-          reason: req.reason,
-          status: req.status,
-          user: req.user,
-        }))}
-      />
+      {activeTab === "od-wfh" ? (
+        <OdWfhPanel
+          isManager={isManager}
+          viewerUserId={user.id}
+          requests={exceptions.map((req) => ({
+            id: req.id,
+            userId: req.userId,
+            exceptionType: req.exceptionType,
+            startDate: req.startDate,
+            endDate: req.endDate,
+            reason: req.reason,
+            status: req.status,
+            user: req.user,
+          }))}
+        />
+      ) : null}
 
-      <LeaveSwapPanel
-        isManager={isManager}
-        viewerUserId={user.id}
-        requests={swaps.map((req) => ({
-          id: req.id,
-          userId: req.userId,
-          swapType: req.swapType,
-          fromDate: req.fromDate,
-          toDate: req.toDate,
-          reason: req.reason,
-          status: req.status,
-          user: req.user,
-        }))}
-      />
+      {activeTab === "swaps" ? (
+        <LeaveSwapPanel
+          isManager={isManager}
+          viewerUserId={user.id}
+          requests={swaps.map((req) => ({
+            id: req.id,
+            userId: req.userId,
+            swapType: req.swapType,
+            fromDate: req.fromDate,
+            toDate: req.toDate,
+            reason: req.reason,
+            status: req.status,
+            user: req.user,
+          }))}
+        />
+      ) : null}
     </div>
   );
 }

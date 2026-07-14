@@ -43,9 +43,9 @@ export function GeoPunchForm({
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
   const [pending, setPending] = useState(false);
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
-    null,
-  );
+  const [manualLat, setManualLat] = useState("");
+  const [manualLng, setManualLng] = useState("");
+  const [accuracyM, setAccuracyM] = useState<number | null>(null);
   const [selectedSiteId, setSelectedSiteId] = useState(
     siteId ?? (sites.length === 1 ? sites[0]?.id ?? "" : ""),
   );
@@ -64,10 +64,11 @@ export function GeoPunchForm({
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setCoords({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-        });
+        setManualLat(String(pos.coords.latitude));
+        setManualLng(String(pos.coords.longitude));
+        setAccuracyM(
+          Number.isFinite(pos.coords.accuracy) ? pos.coords.accuracy : null,
+        );
         setMessage("Location captured.");
         setIsError(false);
       },
@@ -85,9 +86,15 @@ export function GeoPunchForm({
     setMessage(null);
     setIsError(false);
     const formData = new FormData(event.currentTarget);
-    if (coords) {
-      formData.set("geoLat", String(coords.lat));
-      formData.set("geoLng", String(coords.lng));
+    const lat = Number(manualLat);
+    const lng = Number(manualLng);
+    const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
+    if (hasCoords) {
+      formData.set("geoLat", String(lat));
+      formData.set("geoLng", String(lng));
+      if (accuracyM != null && Number.isFinite(accuracyM)) {
+        formData.set("accuracyM", String(accuracyM));
+      }
     }
     if (selectedSiteId) {
       formData.set("siteId", selectedSiteId);
@@ -95,8 +102,8 @@ export function GeoPunchForm({
     if (selectedVisitId) {
       formData.set("visitId", selectedVisitId);
     }
-    if (requireGeo && !coords) {
-      setMessage("Capture location before submitting.");
+    if (requireGeo && !hasCoords) {
+      setMessage("Capture location or enter valid latitude/longitude before submitting.");
       setIsError(true);
       setPending(false);
       return;
@@ -108,19 +115,14 @@ export function GeoPunchForm({
       return;
     }
 
-    if (coords && selectedVisit?.geofence) {
+    if (hasCoords && selectedVisit?.geofence) {
       const check = isWithinVisitGeofence(
-        coords.lat,
-        coords.lng,
+        lat,
+        lng,
         selectedVisit.geofence,
       );
       if (!check.ok) {
-        setMessage(
-          `Outside visit geofence (${Math.round(check.distanceM)}m away; allowed ${selectedVisit.geofence.geoFenceRadiusM}m). Move closer to the client location and try again.`,
-        );
-        setIsError(true);
-        setPending(false);
-        return;
+        formData.set("geoFenceWarning", String(Math.round(check.distanceM)));
       }
     }
 
@@ -141,6 +143,10 @@ export function GeoPunchForm({
     setPending(false);
     router.refresh();
   }
+
+  const displayLat = Number(manualLat);
+  const displayLng = Number(manualLng);
+  const hasDisplayCoords = Number.isFinite(displayLat) && Number.isFinite(displayLng);
 
   return (
     <form onSubmit={handleSubmit} className="ws-hr-form">
@@ -185,10 +191,10 @@ export function GeoPunchForm({
       ) : null}
       {selectedVisit?.geofence ? (
         <p className="ws-hr-help">
-          Visit geofence: {selectedVisit.geofence.geoFenceRadiusM}m around{" "}
+          Reference location: {selectedVisit.geofence.geoFenceRadiusM}m around{" "}
           {selectedVisit.geofence.geoLat.toFixed(4)},{" "}
-          {selectedVisit.geofence.geoLng.toFixed(4)}. Check-in must be inside
-          this radius.
+          {selectedVisit.geofence.geoLng.toFixed(4)}. This is used for review,
+          but travelling check-ins are not blocked by radius.
         </p>
       ) : null}
       {children}
@@ -198,15 +204,48 @@ export function GeoPunchForm({
           className="btn-cta btn-secondary"
           onClick={captureLocation}
         >
-          {coords ? "Refresh location" : "Use my location"}
+          {manualLat && manualLng ? "Refresh location" : "Use my location"}
         </button>
         <button type="submit" className="btn-cta btn-primary" disabled={pending}>
           {pending ? "Saving..." : submitLabel}
         </button>
       </div>
-      {coords ? (
+      {requireGeo ? (
+        <div className="ws-hr-coordinate-grid">
+          <label>
+            Latitude
+            <input
+              name="manualGeoLat"
+              type="number"
+              step="any"
+              value={manualLat}
+              onChange={(event) => {
+                setManualLat(event.target.value);
+                setAccuracyM(null);
+              }}
+              placeholder="e.g. 19.0760"
+            />
+          </label>
+          <label>
+            Longitude
+            <input
+              name="manualGeoLng"
+              type="number"
+              step="any"
+              value={manualLng}
+              onChange={(event) => {
+                setManualLng(event.target.value);
+                setAccuracyM(null);
+              }}
+              placeholder="e.g. 72.8777"
+            />
+          </label>
+        </div>
+      ) : null}
+      {hasDisplayCoords ? (
         <p className="ws-hr-meta">
-          GPS: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
+          GPS: {displayLat.toFixed(5)}, {displayLng.toFixed(5)}
+          {accuracyM != null ? ` · accuracy ~${Math.round(accuracyM)}m` : " · edited"}
         </p>
       ) : null}
       {message ? (

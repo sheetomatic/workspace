@@ -265,7 +265,8 @@ export default async function HrFieldPage() {
 
       <p className="ws-hr-note">
         Separate from office attendance. Use this module for sales, service, and
-        collection teams checking in at client locations.
+        collection teams checking in at client locations. GPS is proof of visit;
+        client travel is not blocked by a fixed radius.
       </p>
 
       <FieldLivePinger enabled />
@@ -284,14 +285,65 @@ export default async function HrFieldPage() {
           >
             <label>
               Client / site name
-              <input name="clientName" type="text" placeholder="e.g. Sharma Traders" />
+              <input
+                name="clientName"
+                type="text"
+                placeholder="e.g. Sharma Traders, ABC Mobile, Metro Site"
+              />
             </label>
             <label>
-              Activity note
+              Visit type
+              <select name="visitType" defaultValue="CLIENT_VISIT">
+                <option value="CLIENT_VISIT">Client visit / service</option>
+                <option value="RETAIL_ORDER">Retail shop order</option>
+                <option value="DISTRIBUTION">Distribution / sample drop</option>
+                <option value="CONSTRUCTION_SITE">Construction site visit</option>
+                <option value="BD_PROSPECTING">Business development prospect</option>
+                <option value="COLLECTION">Payment collection</option>
+              </select>
+            </label>
+            <label>
+              Calling remarks
+              <textarea
+                name="callingRemarks"
+                rows={2}
+                placeholder="Call outcome, owner response, decision maker spoken to"
+              />
+            </label>
+            <label>
+              Visit notes
               <textarea
                 name="activityNote"
                 rows={3}
-                placeholder="Visit purpose, order taken, collection, etc."
+                placeholder="What happened at the visit, site observations, prospect details"
+              />
+            </label>
+            <label>
+              Next visit date
+              <input name="nextVisitDate" type="date" />
+            </label>
+            <label>
+              Order / requirement
+              <textarea
+                name="orderDetails"
+                rows={2}
+                placeholder="Order value/items, stock requirement, lead requirement"
+              />
+            </label>
+            <label>
+              Distribution / documents / photo notes
+              <textarea
+                name="distributionDetails"
+                rows={2}
+                placeholder="Samples delivered, documents collected, photos uploaded elsewhere"
+              />
+            </label>
+            <label>
+              Photo / document link
+              <input
+                name="photoUrl"
+                type="url"
+                placeholder="Paste Drive, WhatsApp, or site photo link"
               />
             </label>
           </GeoPunchForm>
@@ -323,7 +375,11 @@ export default async function HrFieldPage() {
                 <input name="locationLabel" type="text" placeholder="Area / city" />
               </label>
               <label>
-                Geofence latitude (optional)
+                Planned date/time
+                <input name="plannedAt" type="datetime-local" />
+              </label>
+              <label>
+                Reference latitude (optional)
                 <input
                   name="geoLat"
                   type="number"
@@ -332,7 +388,7 @@ export default async function HrFieldPage() {
                 />
               </label>
               <label>
-                Geofence longitude (optional)
+                Reference longitude (optional)
                 <input
                   name="geoLng"
                   type="number"
@@ -340,23 +396,18 @@ export default async function HrFieldPage() {
                   placeholder="e.g. 72.8777"
                 />
               </label>
-              <label>
-                Geofence radius (metres)
-                <input
-                  name="radiusM"
-                  type="number"
-                  min={50}
-                  max={5000}
-                  defaultValue={200}
-                />
-              </label>
               <p className="ws-hr-help">
-                If lat/lng are set, check-in against this visit must be inside
-                the radius.
+                Reference GPS is optional and used for review/maps only. Field
+                teams can check in while travelling, at client shops, or on sites
+                without a radius lock.
               </p>
               <label>
                 Purpose
-                <textarea name="purpose" rows={2} />
+                <textarea
+                  name="purpose"
+                  rows={3}
+                  placeholder="Retail order, site inspection, BD sourcing, distribution, collection"
+                />
               </label>
               <button type="submit" className="btn-cta btn-primary">
                 Plan visit
@@ -384,12 +435,13 @@ export default async function HrFieldPage() {
                 <th>Client</th>
                 <th>Location</th>
                 <th>Note</th>
+                <th>Proof</th>
               </tr>
             </thead>
             <tbody>
               {recentCheckIns.length === 0 ? (
                 <tr>
-                  <td colSpan={isManager ? 5 : 4}>No field check-ins yet.</td>
+                  <td colSpan={isManager ? 6 : 5}>No field check-ins yet.</td>
                 </tr>
               ) : (
                 recentCheckIns.map((row) => (
@@ -403,6 +455,19 @@ export default async function HrFieldPage() {
                       {row.geoLat.toFixed(4)}, {row.geoLng.toFixed(4)}
                     </td>
                     <td>{row.activityNote ?? "-"}</td>
+                    <td>
+                      {row.photoUrl ? (
+                        <a
+                          href={row.photoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Open
+                        </a>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
                   </tr>
                 ))
               )}
@@ -421,7 +486,7 @@ export default async function HrFieldPage() {
                   <th>Assignee</th>
                   <th>Client</th>
                   <th>Location</th>
-                  <th>Geofence</th>
+                  <th>Reference GPS</th>
                   <th>Status</th>
                   <th>Purpose</th>
                 </tr>
@@ -438,10 +503,8 @@ export default async function HrFieldPage() {
                       <td>{visit.clientName}</td>
                       <td>{visit.locationLabel ?? "-"}</td>
                       <td>
-                        {visit.geoLat != null &&
-                        visit.geoLng != null &&
-                        visit.radiusM != null
-                          ? `${visit.radiusM}m @ ${visit.geoLat.toFixed(4)}, ${visit.geoLng.toFixed(4)}`
+                        {visit.geoLat != null && visit.geoLng != null
+                          ? `${visit.geoLat.toFixed(4)}, ${visit.geoLng.toFixed(4)}`
                           : "—"}
                       </td>
                       <td>{visit.status}</td>
