@@ -46,6 +46,41 @@ async function assertHrSubModuleEnabled(
   return isHrSubModuleEnabled(settings.enabledHrSubModules, id);
 }
 
+async function assertHrActionAccess(
+  user: NonNullable<Awaited<ReturnType<typeof getSessionUser>>>,
+  id: HrSubModuleId,
+): Promise<boolean> {
+  return (
+    hasWorkspaceModule(user, "HR") &&
+    (await assertHrSubModuleEnabled(user.organizationId, id))
+  );
+}
+
+function appendFieldNote(
+  parts: string[],
+  label: string,
+  value: FormDataEntryValue | null,
+) {
+  const text = String(value ?? "").trim();
+  if (text) {
+    parts.push(`${label}: ${text}`);
+  }
+}
+
+function buildFieldActivityNote(formData: FormData) {
+  const parts: string[] = [];
+  appendFieldNote(parts, "Activity", formData.get("activityNote"));
+  appendFieldNote(parts, "Visit type", formData.get("visitType"));
+  appendFieldNote(parts, "Calling remarks", formData.get("callingRemarks"));
+  appendFieldNote(parts, "Notes", formData.get("notes"));
+  appendFieldNote(parts, "Next visit", formData.get("nextVisitDate"));
+  appendFieldNote(parts, "Order / requirement", formData.get("orderDetails"));
+  appendFieldNote(parts, "Distribution / sample", formData.get("distributionDetails"));
+  appendFieldNote(parts, "Documents / photos", formData.get("documentsNote"));
+  appendFieldNote(parts, "Geofence distance warning (m)", formData.get("geoFenceWarning"));
+  return parts.join("\n");
+}
+
 export async function recordCheckInAction(
   formData: FormData,
 ): Promise<HrActionResult> {
@@ -53,7 +88,7 @@ export async function recordCheckInAction(
   if (!user) {
     return mapCheckInError(new Error("Sign in required."));
   }
-  if (!(await assertHrSubModuleEnabled(user.organizationId, "attendance"))) {
+  if (!(await assertHrActionAccess(user, "attendance"))) {
     return hrActionFailure("FORBIDDEN", "Attendance is not enabled for this workspace.");
   }
 
@@ -81,7 +116,7 @@ export async function recordCheckOutAction(): Promise<void> {
   if (!user) {
     throw new Error("Sign in required.");
   }
-  if (!(await assertHrSubModuleEnabled(user.organizationId, "attendance"))) {
+  if (!(await assertHrActionAccess(user, "attendance"))) {
     throw new Error("Attendance is not enabled for this workspace.");
   }
 
@@ -94,7 +129,7 @@ export async function submitLeaveRequestAction(formData: FormData): Promise<void
   if (!user) {
     return;
   }
-  if (!(await assertHrSubModuleEnabled(user.organizationId, "leave"))) {
+  if (!(await assertHrActionAccess(user, "leave"))) {
     return;
   }
 
@@ -197,14 +232,15 @@ export async function recordFieldCheckInAction(
   if (!user) {
     return mapCheckInError(new Error("Sign in required."));
   }
-  if (!(await assertHrSubModuleEnabled(user.organizationId, "field"))) {
+  if (!(await assertHrActionAccess(user, "field"))) {
     return hrActionFailure("FORBIDDEN", "Field tracking is not enabled for this workspace.");
   }
 
   const geoLat = Number(formData.get("geoLat"));
   const geoLng = Number(formData.get("geoLng"));
   const clientName = String(formData.get("clientName") ?? "").trim();
-  const activityNote = String(formData.get("activityNote") ?? "").trim();
+  const activityNote = buildFieldActivityNote(formData);
+  const photoUrl = String(formData.get("photoUrl") ?? "").trim();
   const visitId = String(formData.get("visitId") ?? "").trim() || null;
   const accuracyMRaw = Number(formData.get("accuracyM"));
   const accuracyM = Number.isFinite(accuracyMRaw) ? accuracyMRaw : null;
@@ -234,7 +270,7 @@ export async function recordFieldCheckInAction(
         throw new Error("Visit not found or not assigned to you.");
       }
 
-      const { visitGeoFenceOk, haversineMeters } = await import(
+      const { visitGeoFenceOk } = await import(
         "@/lib/hr/field-pings"
       );
       const {
@@ -250,29 +286,11 @@ export async function recordFieldCheckInAction(
           checkLat: geoLat,
           checkLng: geoLng,
         });
-        if (geoFenceOk === false) {
-          const distanceM = haversineMeters(
-            geoLat,
-            geoLng,
-            visit.geoLat,
-            visit.geoLng,
-          );
-          return hrActionFailure(
-            "OUT_OF_LOCATION",
-            `Outside visit geofence (${Math.round(distanceM)}m away; allowed ${visit.radiusM}m). Move closer to the client location and try again.`,
-          );
-        }
       } else {
         const fence = parseVisitGeofence(visit.purpose);
         if (fence) {
           const check = isWithinVisitGeofence(geoLat, geoLng, fence);
           geoFenceOk = check.ok;
-          if (!check.ok) {
-            return hrActionFailure(
-              "OUT_OF_LOCATION",
-              `Outside visit geofence (${Math.round(check.distanceM)}m away; allowed ${fence.geoFenceRadiusM}m). Move closer to the client location and try again.`,
-            );
-          }
         }
       }
     }
@@ -287,6 +305,7 @@ export async function recordFieldCheckInAction(
         accuracyM,
         clientName: clientName || null,
         activityNote: activityNote || null,
+        photoUrl: photoUrl || null,
         geoFenceOk,
       },
     });
@@ -305,7 +324,7 @@ export async function postFieldLocationPingAction(
   if (!user) {
     return hrActionFailure("FORBIDDEN", "Sign in required.");
   }
-  if (!(await assertHrSubModuleEnabled(user.organizationId, "field"))) {
+  if (!(await assertHrActionAccess(user, "field"))) {
     return hrActionFailure("FORBIDDEN", "Field tracking is not enabled for this workspace.");
   }
 
@@ -352,7 +371,7 @@ export async function createFieldVisitAction(formData: FormData): Promise<void> 
   if (!user || !hasMinimumRole(user.role, "MANAGER")) {
     return;
   }
-  if (!(await assertHrSubModuleEnabled(user.organizationId, "field"))) {
+  if (!(await assertHrActionAccess(user, "field"))) {
     return;
   }
 
@@ -360,6 +379,7 @@ export async function createFieldVisitAction(formData: FormData): Promise<void> 
   const clientName = String(formData.get("clientName") ?? "").trim();
   const purpose = String(formData.get("purpose") ?? "").trim();
   const locationLabel = String(formData.get("locationLabel") ?? "").trim();
+  const plannedAtRaw = String(formData.get("plannedAt") ?? "").trim();
   const geoLat = Number(formData.get("geoLat"));
   const geoLng = Number(formData.get("geoLng"));
   const radiusRaw = Number(
@@ -386,6 +406,7 @@ export async function createFieldVisitAction(formData: FormData): Promise<void> 
   }
 
   const hasFence = Number.isFinite(geoLat) && Number.isFinite(geoLng);
+  const plannedAt = plannedAtRaw ? new Date(plannedAtRaw) : null;
   const { displayVisitPurpose } = await import("@/lib/hr/field-geofence");
   const cleanPurpose = displayVisitPurpose(purpose) ?? (purpose || null);
 
@@ -398,7 +419,9 @@ export async function createFieldVisitAction(formData: FormData): Promise<void> 
       locationLabel: locationLabel || null,
       geoLat: hasFence ? geoLat : null,
       geoLng: hasFence ? geoLng : null,
-      radiusM: hasFence ? radiusM ?? 200 : null,
+      radiusM: hasFence ? radiusM : null,
+      plannedAt:
+        plannedAt && !Number.isNaN(plannedAt.getTime()) ? plannedAt : null,
       status: "PLANNED",
     },
   });
@@ -411,7 +434,7 @@ export async function createJobOpeningAction(formData: FormData): Promise<void> 
   if (!user || !hasMinimumRole(user.role, "ADMIN")) {
     return;
   }
-  if (!(await assertHrSubModuleEnabled(user.organizationId, "hiring"))) {
+  if (!(await assertHrActionAccess(user, "hiring"))) {
     return;
   }
 
@@ -440,7 +463,7 @@ export async function addCandidateAction(formData: FormData): Promise<void> {
   if (!user || !hasMinimumRole(user.role, "ADMIN")) {
     return;
   }
-  if (!(await assertHrSubModuleEnabled(user.organizationId, "hiring"))) {
+  if (!(await assertHrActionAccess(user, "hiring"))) {
     return;
   }
 
@@ -524,7 +547,7 @@ export async function createPayrollRunAction(
   ) {
     return hrActionFailure("FORBIDDEN", "Admin access required to generate payroll.");
   }
-  if (!(await assertHrSubModuleEnabled(user.organizationId, "payroll"))) {
+  if (!(await assertHrActionAccess(user, "payroll"))) {
     return hrActionFailure("FORBIDDEN", "Payroll is not enabled for this workspace.");
   }
 
@@ -563,7 +586,7 @@ export async function markAttendanceDayAction(
   if (!user || !hasMinimumRole(user.role, "MANAGER")) {
     return hrActionFailure("FORBIDDEN", "Manager access required to mark attendance.");
   }
-  if (!(await assertHrSubModuleEnabled(user.organizationId, "attendance"))) {
+  if (!(await assertHrActionAccess(user, "attendance"))) {
     return hrActionFailure("FORBIDDEN", "Attendance is not enabled for this workspace.");
   }
 
@@ -617,7 +640,7 @@ export async function verifyAttendanceAction(
   if (!user || !hasMinimumRole(user.role, "MANAGER")) {
     return hrActionFailure("FORBIDDEN", "Manager access required to verify attendance.");
   }
-  if (!(await assertHrSubModuleEnabled(user.organizationId, "attendance"))) {
+  if (!(await assertHrActionAccess(user, "attendance"))) {
     return hrActionFailure("FORBIDDEN", "Attendance is not enabled for this workspace.");
   }
 
@@ -1073,7 +1096,7 @@ export async function getSalarySlipAction(
   if (!user || !hasWorkspaceModule(user, "HR")) {
     return null;
   }
-  if (!(await assertHrSubModuleEnabled(user.organizationId, "payroll"))) {
+  if (!(await assertHrActionAccess(user, "payroll"))) {
     return null;
   }
   const { getSalarySlipData } = await import("@/lib/hr/salary-slip");
@@ -1092,7 +1115,7 @@ export async function createHolidayAction(
   if (!user || !hasMinimumRole(user.role, "ADMIN")) {
     return hrActionFailure("FORBIDDEN", "Admin access required to manage holidays.");
   }
-  if (!(await assertHrSubModuleEnabled(user.organizationId, "holidays"))) {
+  if (!(await assertHrActionAccess(user, "holidays"))) {
     return hrActionFailure("FORBIDDEN", "Holidays is not enabled for this workspace.");
   }
 
@@ -1127,6 +1150,9 @@ export async function deleteHolidayAction(
   if (!user || !hasMinimumRole(user.role, "ADMIN")) {
     return hrActionFailure("FORBIDDEN", "Admin access required to manage holidays.");
   }
+  if (!(await assertHrActionAccess(user, "holidays"))) {
+    return hrActionFailure("FORBIDDEN", "Holidays is not enabled for this workspace.");
+  }
 
   const id = String(formData.get("id") ?? "").trim();
   if (!id) {
@@ -1151,6 +1177,9 @@ export async function updateHolidayAction(
   const user = await getSessionUser();
   if (!user || !hasMinimumRole(user.role, "ADMIN")) {
     return hrActionFailure("FORBIDDEN", "Admin access required to manage holidays.");
+  }
+  if (!(await assertHrActionAccess(user, "holidays"))) {
+    return hrActionFailure("FORBIDDEN", "Holidays is not enabled for this workspace.");
   }
 
   const id = String(formData.get("id") ?? "").trim();
@@ -1180,6 +1209,40 @@ export async function updateHolidayAction(
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Could not update holiday.";
+    return hrActionFailure("HOLIDAY_FAILED", message);
+  }
+}
+
+export async function importDefaultHolidaysAction(
+  formData: FormData,
+): Promise<HrActionResult> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "ADMIN")) {
+    return hrActionFailure("FORBIDDEN", "Admin access required to manage holidays.");
+  }
+  if (!(await assertHrActionAccess(user, "holidays"))) {
+    return hrActionFailure("FORBIDDEN", "Holidays is not enabled for this workspace.");
+  }
+
+  const year = Number(formData.get("year"));
+  const region = String(formData.get("region") ?? "national").trim();
+  if (!Number.isFinite(year)) {
+    return hrActionFailure("INVALID_INPUT", "Select a valid holiday year.");
+  }
+
+  try {
+    const { importDefaultHolidays } = await import("@/lib/hr/holidays");
+    const { isHolidayRegion } = await import("@/lib/hr/holiday-catalog");
+    await importDefaultHolidays({
+      organizationId: user.organizationId,
+      year,
+      region: isHolidayRegion(region) ? region : "national",
+    });
+    revalidateHr();
+    return { ok: true };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not import default holidays.";
     return hrActionFailure("HOLIDAY_FAILED", message);
   }
 }

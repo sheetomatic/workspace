@@ -6,8 +6,13 @@ import { useState, useTransition } from "react";
 import {
   createHolidayAction,
   deleteHolidayAction,
+  importDefaultHolidaysAction,
   updateHolidayAction,
 } from "@/lib/hr/hr-actions";
+import {
+  HOLIDAY_REGIONS,
+  MAX_HOLIDAYS_PER_YEAR,
+} from "@/lib/hr/holiday-catalog";
 
 export type HolidayRow = {
   id: string;
@@ -50,6 +55,21 @@ export function HolidayAdminPanel({
         return;
       }
       setMessage("Holiday saved.");
+      router.refresh();
+    });
+  }
+
+  function onImportDefaults(formData: FormData) {
+    startTransition(async () => {
+      setMessage(null);
+      setIsError(false);
+      const result = await importDefaultHolidaysAction(formData);
+      if (!result.ok) {
+        setMessage(result.message);
+        setIsError(true);
+        return;
+      }
+      setMessage("Standard holiday calendar imported for this year.");
       router.refresh();
     });
   }
@@ -109,7 +129,47 @@ export function HolidayAdminPanel({
 
       <div className="ws-hr-split">
         <section className="ws-hr-panel">
-          <h2>Add holiday</h2>
+          <h2>Import standard calendar</h2>
+          <p className="ws-hr-help">
+            Add {MAX_HOLIDAYS_PER_YEAR} holidays for {year}: core national
+            holidays plus region-wise optional days that can be toggled later.
+          </p>
+          <form action={onImportDefaults} className="ws-hr-form">
+            <input type="hidden" name="year" value={year} />
+            <label>
+              Region preset
+              <select name="region" defaultValue="national">
+                {HOLIDAY_REGIONS.map((region) => (
+                  <option key={region.id} value={region.id}>
+                    {region.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="submit"
+              className="btn-cta btn-secondary"
+              disabled={pending}
+            >
+              {pending ? "Importing…" : `Import ${MAX_HOLIDAYS_PER_YEAR} defaults`}
+            </button>
+          </form>
+          <div className="ws-hr-holiday-region-list">
+            {HOLIDAY_REGIONS.map((region) => (
+              <p key={region.id} className="ws-hr-help">
+                <strong>{region.label}:</strong> {region.description}
+              </p>
+            ))}
+          </div>
+        </section>
+
+        <section className="ws-hr-panel">
+          <h2>Add holiday manually</h2>
+          <p className="ws-hr-help">
+            {holidays.length}/{MAX_HOLIDAYS_PER_YEAR} holidays configured for{" "}
+            {year}. Manual additions are capped at {MAX_HOLIDAYS_PER_YEAR} per
+            year.
+          </p>
           <form action={onCreate} className="ws-hr-form">
             <label>
               Name
@@ -137,7 +197,9 @@ export function HolidayAdminPanel({
             </button>
           </form>
         </section>
+      </div>
 
+      <div className="ws-hr-split">
         <section className="ws-hr-panel">
           <h2>Holidays in {year}</h2>
           <p className="ws-hr-help">

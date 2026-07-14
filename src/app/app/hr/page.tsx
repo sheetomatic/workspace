@@ -20,6 +20,12 @@ export default async function HrOverviewPage() {
       ? getHrDashboardStats(user.organizationId)
       : Promise.resolve({
           presentToday: 0,
+          absentToday: 0,
+          odToday: 0,
+          wfhToday: 0,
+          onLeaveToday: 0,
+          holidayToday: 0,
+          activeHeadcount: 0,
           pendingLeave: 0,
           fieldCheckInsToday: 0,
           openJobs: 0,
@@ -46,34 +52,64 @@ export default async function HrOverviewPage() {
       />
 
       {canSeeTeamStats ? (
-      <div className="ws-task-stats">
-        {enabled("attendance") ? (
-          <div className="ws-stat-card ws-stat-done">
-            <span>Present today</span>
-            <strong>{stats.presentToday}</strong>
-          </div>
-        ) : null}
-        {enabled("leave") ? (
-          <div className="ws-stat-card ws-stat-pending">
-            <span>Pending leave</span>
-            <strong>{stats.pendingLeave}</strong>
-          </div>
-        ) : null}
-        {enabled("field") ? (
-          <div className="ws-stat-card ws-stat-progress">
-            <span>Field check-ins today</span>
-            <strong>{stats.fieldCheckInsToday}</strong>
-          </div>
-        ) : null}
-        {enabled("hiring") ? (
+        <div className="ws-task-stats ws-hr-overview-stats">
+          {enabled("attendance") ? (
+            <>
+              <div className="ws-stat-card ws-stat-done">
+                <span>Present</span>
+                <strong>{stats.presentToday}</strong>
+              </div>
+              <div className="ws-stat-card ws-stat-pending">
+                <span>Absent</span>
+                <strong>{stats.absentToday}</strong>
+              </div>
+              <div className="ws-stat-card ws-stat-progress">
+                <span>OD</span>
+                <strong>{stats.odToday}</strong>
+              </div>
+              <div className="ws-stat-card">
+                <span>WFH</span>
+                <strong>{stats.wfhToday}</strong>
+              </div>
+            </>
+          ) : null}
+          {enabled("leave") ? (
+            <>
+              <div className="ws-stat-card">
+                <span>On leave</span>
+                <strong>{stats.onLeaveToday}</strong>
+              </div>
+              <div className="ws-stat-card ws-stat-pending">
+                <span>Pending leave</span>
+                <strong>{stats.pendingLeave}</strong>
+              </div>
+            </>
+          ) : null}
+          {enabled("holidays") ? (
+            <div className="ws-stat-card">
+              <span>Holiday</span>
+              <strong>{stats.holidayToday}</strong>
+            </div>
+          ) : null}
+          {enabled("field") ? (
+            <div className="ws-stat-card ws-stat-progress">
+              <span>Field check-ins</span>
+              <strong>{stats.fieldCheckInsToday}</strong>
+            </div>
+          ) : null}
+          {enabled("hiring") ? (
+            <div className="ws-stat-card">
+              <span>Open jobs / candidates</span>
+              <strong>
+                {stats.openJobs} / {stats.activeCandidates}
+              </strong>
+            </div>
+          ) : null}
           <div className="ws-stat-card">
-            <span>Open jobs / active candidates</span>
-            <strong>
-              {stats.openJobs} / {stats.activeCandidates}
-            </strong>
+            <span>Active headcount</span>
+            <strong>{stats.activeHeadcount}</strong>
           </div>
-        ) : null}
-      </div>
+        </div>
       ) : null}
 
       <div className="ws-hr-module-grid">

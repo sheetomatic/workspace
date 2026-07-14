@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { hasMinimumRole } from "@/lib/permissions";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
+import { getOrCreateHrSettings } from "@/lib/hr/hr-store";
+import { isHrSubModuleEnabled } from "@/lib/hr/hr-sub-modules";
 import {
   listMyDayTrail,
   listTodayPings,
@@ -15,6 +17,11 @@ import {
  * GET /api/hr/field/ping — managers: today's org pings; staff: own day trail.
  * Query: ?mine=1 | ?date=YYYY-MM-DD (trail for self)
  */
+async function hasFieldTrackingAccess(organizationId: string) {
+  const settings = await getOrCreateHrSettings(organizationId);
+  return isHrSubModuleEnabled(settings.enabledHrSubModules, "field");
+}
+
 export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) {
@@ -25,6 +32,12 @@ export async function POST(request: Request) {
   }
   if (!hasWorkspaceModule(user, "HR")) {
     return NextResponse.json({ error: "HR access required" }, { status: 403 });
+  }
+  if (!(await hasFieldTrackingAccess(user.organizationId))) {
+    return NextResponse.json(
+      { error: "Field tracking is disabled" },
+      { status: 403 },
+    );
   }
 
   let body: Record<string, unknown>;
@@ -81,6 +94,12 @@ export async function GET(request: Request) {
   }
   if (!hasWorkspaceModule(user, "HR")) {
     return NextResponse.json({ error: "HR access required" }, { status: 403 });
+  }
+  if (!(await hasFieldTrackingAccess(user.organizationId))) {
+    return NextResponse.json(
+      { error: "Field tracking is disabled" },
+      { status: 403 },
+    );
   }
 
   const url = new URL(request.url);

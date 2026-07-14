@@ -465,15 +465,56 @@ export async function listCandidates(organizationId: string) {
 
 export async function getHrDashboardStats(organizationId: string) {
   const workDate = startOfToday();
+  const todayYmd = new Date().toLocaleDateString("en-CA", {
+    timeZone: "Asia/Kolkata",
+  });
+  const dayStart = new Date(`${todayYmd}T00:00:00.000+05:30`);
+  const dayEnd = new Date(`${todayYmd}T23:59:59.999+05:30`);
   const [
-    presentToday,
+    activeMembers,
+    todayRecords,
+    approvedLeavesToday,
+    approvedExceptionsToday,
     pendingLeave,
     fieldCheckInsToday,
     openJobs,
     activeCandidates,
   ] = await Promise.all([
-    prisma.attendanceRecord.count({
-      where: { organizationId, workDate, status: "PRESENT" },
+    prisma.membership.findMany({
+      where: {
+        organizationId,
+        deactivatedAt: null,
+        role: { not: "VIEWER" },
+      },
+      select: { userId: true },
+    }),
+    prisma.attendanceRecord.findMany({
+      where: { organizationId, workDate },
+      select: {
+        userId: true,
+        status: true,
+        notes: true,
+        checkInAt: true,
+        verifyStatus: true,
+      },
+    }),
+    prisma.leaveRequest.findMany({
+      where: {
+        organizationId,
+        status: "APPROVED",
+        startDate: { lte: workDate },
+        endDate: { gte: workDate },
+      },
+      select: { userId: true },
+    }),
+    prisma.attendanceExceptionRequest.findMany({
+      where: {
+        organizationId,
+        status: "APPROVED",
+        startDate: { lte: workDate },
+        endDate: { gte: workDate },
+      },
+      select: { userId: true, exceptionType: true },
     }),
     prisma.leaveRequest.count({
       where: { organizationId, status: "PENDING" },
@@ -481,7 +522,7 @@ export async function getHrDashboardStats(organizationId: string) {
     prisma.fieldCheckIn.count({
       where: {
         organizationId,
-        checkedInAt: { gte: workDate },
+        checkedInAt: { gte: dayStart, lte: dayEnd },
       },
     }),
     prisma.jobOpening.count({ where: { organizationId, isOpen: true } }),
@@ -493,8 +534,73 @@ export async function getHrDashboardStats(organizationId: string) {
     }),
   ]);
 
+  const activeUserIds = new Set(activeMembers.map((member) => member.userId));
+  const presentUserIds = new Set<string>();
+  const odUserIds = new Set<string>();
+  const wfhUserIds = new Set<string>();
+  const leaveUserIds = new Set<string>();
+  const holidayUserIds = new Set<string>();
+
+  for (const record of todayRecords) {
+    if (!activeUserIds.has(record.userId) || record.verifyStatus === "REJECTED") {
+      continue;
+    }
+    const notes = record.notes ?? "";
+    if (record.status === "HOLIDAY") {
+      holidayUserIds.add(record.userId);
+      continue;
+    }
+    if (record.status === "ON_LEAVE") {
+      leaveUserIds.add(record.userId);
+      continue;
+    }
+    if (record.status === "PRESENT") {
+      if (notes.startsWith("[OD]")) {
+        odUserIds.add(record.userId);
+      } else if (notes.startsWith("[WFH]")) {
+        wfhUserIds.add(record.userId);
+      } else {
+        presentUserIds.add(record.userId);
+      }
+    } else if (record.status === "HALF_DAY" || record.status === "SHORT_LEAVE") {
+      presentUserIds.add(record.userId);
+    }
+  }
+
+  for (const leave of approvedLeavesToday) {
+    if (activeUserIds.has(leave.userId)) {
+      leaveUserIds.add(leave.userId);
+    }
+  }
+
+  for (const exception of approvedExceptionsToday) {
+    if (!activeUserIds.has(exception.userId)) {
+      continue;
+    }
+    if (exception.exceptionType === "OD") {
+      odUserIds.add(exception.userId);
+    } else {
+      wfhUserIds.add(exception.userId);
+    }
+  }
+
+  const accountedUserIds = new Set([
+    ...presentUserIds,
+    ...odUserIds,
+    ...wfhUserIds,
+    ...leaveUserIds,
+    ...holidayUserIds,
+  ]);
+  const absentToday = Math.max(0, activeUserIds.size - accountedUserIds.size);
+
   return {
-    presentToday,
+    presentToday: presentUserIds.size,
+    absentToday,
+    odToday: odUserIds.size,
+    wfhToday: wfhUserIds.size,
+    onLeaveToday: leaveUserIds.size,
+    holidayToday: holidayUserIds.size,
+    activeHeadcount: activeUserIds.size,
     pendingLeave,
     fieldCheckInsToday,
     openJobs,
