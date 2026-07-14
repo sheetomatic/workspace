@@ -23,7 +23,6 @@ import {
   assignInboundLead,
   clearInboundLeadHistory,
   deleteInboundLeadActivity,
-  generateLeadAiSummaryAction,
   listLeadDuplicateMatchesAction,
   mergeInboundLeadsAction,
   scheduleInboundLeadFollowUp,
@@ -265,9 +264,6 @@ export function LeadDrawerPanel({
       matchKind: string;
     }>
   >([]);
-  const [aiSummaryText, setAiSummaryText] = useState(lead.aiSummary ?? "");
-  const [aiSummaryError, setAiSummaryError] = useState<string | null>(null);
-  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
   const [followUpAt, setFollowUpAt] = useState(defaultFollowUpLocal());
   const [noteDraft, setNoteDraft] = useState("");
   const [selectedCatalogId, setSelectedCatalogId] = useState(serviceCatalog[0]?.id ?? "");
@@ -283,10 +279,6 @@ export function LeadDrawerPanel({
   const showAiHint = aiStatus && aiStatus !== lead.status && canManage;
   const isArchived = Boolean(lead.archivedAt);
   const isDemoScheduled = resolveLeadStatus(lead.status) === "DEMO_SCHEDULED";
-
-  useEffect(() => {
-    setAiSummaryText(lead.aiSummary ?? "");
-  }, [lead.id, lead.aiSummary]);
 
   useEffect(() => {
     if (!canManage) return;
@@ -454,51 +446,6 @@ export function LeadDrawerPanel({
       <div className="leads-drawer-body">
       {tab === "details" ? (
         <>
-          <div className="leads-ai-summary">
-            <div className="leads-ai-summary-head">
-              <h3>AI qualification</h3>
-              {canManage ? (
-                <button
-                  type="button"
-                  className="btn-secondary btn-sm"
-                  disabled={pending || aiSummaryLoading}
-                  onClick={() => {
-                    setAiSummaryError(null);
-                    setAiSummaryLoading(true);
-                    startTransition(async () => {
-                      const result = await generateLeadAiSummaryAction(lead.id, {
-                        force: Boolean(aiSummaryText),
-                      });
-                      setAiSummaryLoading(false);
-                      if (!result.ok) {
-                        setAiSummaryError(result.message);
-                        return;
-                      }
-                      setAiSummaryText(result.summary);
-                    });
-                  }}
-                >
-                  {aiSummaryLoading
-                    ? "Generating…"
-                    : aiSummaryText
-                      ? "Refresh"
-                      : "Generate"}
-                </button>
-              ) : null}
-            </div>
-            {aiSummaryText ? (
-              <p className="leads-ai-summary-body">{aiSummaryText}</p>
-            ) : (
-              <p className="leads-machine-muted">
-                Need, budget signals, and next action — generate when ready.
-              </p>
-            )}
-            {aiSummaryError ? (
-              <p className="leads-ai-summary-error" role="alert">
-                {aiSummaryError}
-              </p>
-            ) : null}
-          </div>
           {canManage && dupCandidates.length > 0 ? (
             <div className="leads-merge-panel" role="region" aria-label="Duplicate leads">
               <h3>Possible duplicates</h3>

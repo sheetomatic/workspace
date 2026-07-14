@@ -1760,10 +1760,6 @@
   -webkit-overflow-scrolling: touch;
 }
 
-.leads-ai-summary {
-  margin-top: 0;
-}
-
 @media (max-width: 640px) {
   .leads-drawer-backdrop {
     align-items: stretch;
@@ -3878,8 +3874,7 @@
   color: #0f766e;
 }
 
-/* AI summary + merge + calendar */
-.leads-ai-summary,
+/* Merge + calendar */
 .leads-merge-panel,
 .leads-calendar-links {
   margin-top: 0;
@@ -3893,7 +3888,6 @@
   min-width: 0;
 }
 
-.leads-ai-summary-head,
 .leads-calendar-actions,
 .leads-duplicate-alert-actions {
   display: flex;
@@ -3902,30 +3896,12 @@
   gap: 0.5rem;
 }
 
-.leads-ai-summary-head h3,
 .leads-merge-panel h3,
 .leads-calendar-links h4 {
   margin: 0;
   font-size: 0.82rem;
   font-weight: 700;
   color: #0f172a;
-}
-
-.leads-ai-summary-body {
-  margin: 0;
-  font-size: 0.84rem;
-  line-height: 1.45;
-  color: #334155;
-  display: -webkit-box;
-  -webkit-line-clamp: 5;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.leads-ai-summary-error {
-  margin: 0;
-  font-size: 0.8rem;
-  color: #b91c1c;
 }
 
 .leads-merge-list {
