@@ -1,8 +1,9 @@
 import type { InboundLeadStatus } from "@prisma/client";
 import { LEAD_STATUS_ORDER } from "@/lib/leads/status-labels";
 
-export const LEADS_PAGE_SIZE = 20;
-export const LEADS_BOARD_PAGE_SIZE = 120;
+/** Larger page so name search can filter in-memory without a workspace reload. */
+export const LEADS_PAGE_SIZE = 100;
+export const LEADS_BOARD_PAGE_SIZE = 200;
 
 export type LeadsSortOrder = "newest" | "oldest";
 export type LeadsViewMode = "list" | "board";

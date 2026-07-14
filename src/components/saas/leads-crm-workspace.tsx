@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { MessageCircle, Phone, Trash2 } from "lucide-react";
 import {
   createManualInboundLead,
@@ -116,6 +116,23 @@ function leadDeepLink(listParams: LeadsListSearchParams, leadId: string) {
   return `/app/leads?${buildLeadsListQuery(listParams, { leadId, page: "1" })}`;
 }
 
+function leadMatchesSearch(lead: LeadRow, query: string) {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const haystack = [
+    lead.name,
+    lead.phone,
+    lead.email,
+    lead.company,
+    lead.requirement,
+    lead.category,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(q);
+}
+
 export function LeadsCrmWorkspace({
   leads,
   total,
@@ -177,33 +194,10 @@ export function LeadsCrmWorkspace({
     [leads, selectedId],
   );
 
-  useEffect(() => {
-    const scrollRoot =
-      document.getElementById("main") ??
-      document.querySelector<HTMLElement>(".saas-content, .saas-main");
-
-    const clearScrollLock = () => {
-      if (scrollRoot) {
-        scrollRoot.style.removeProperty("overflow");
-        scrollRoot.style.removeProperty("overflow-x");
-        scrollRoot.style.removeProperty("overflow-y");
-      }
-      document.body.style.removeProperty("overflow");
-    };
-
-    // Stuck overflow:hidden on #main leaves only the right-edge scrollbar gutter
-    // able to receive wheel — clear whenever the drawer is closed.
-    if (!selectedId) {
-      clearScrollLock();
-      return;
-    }
-
-    if (scrollRoot) {
-      scrollRoot.style.overflow = "hidden";
-    }
-    document.body.style.overflow = "hidden";
-    return clearScrollLock;
-  }, [selectedId]);
+  const visibleLeads = useMemo(
+    () => leads.filter((lead) => leadMatchesSearch(lead, searchDraft)),
+    [leads, searchDraft],
+  );
 
   const sortHref =
     sort === "newest"
@@ -217,23 +211,24 @@ export function LeadsCrmWorkspace({
   return (
     <div className="leads-crm">
       <div className="leads-crm-toolbar">
-        <form className="leads-crm-search" action="/app/leads" method="get">
-          {Object.entries(listParams).map(([key, value]) =>
-            key !== "q" && key !== "page" && value ? (
-              <input key={key} type="hidden" name={key} value={value} />
-            ) : null,
-          )}
+        <div className="leads-crm-search" role="search">
           <input
             type="search"
-            name="q"
             value={searchDraft}
             onChange={(event) => setSearchDraft(event.target.value)}
-            placeholder="Search leads…"
+            placeholder="Filter loaded leads…"
+            aria-label="Filter loaded leads by name, phone, email, or company"
           />
-          <button type="submit" className="btn-secondary btn-sm">
-            Search
-          </button>
-        </form>
+          {searchDraft.trim() ? (
+            <button
+              type="button"
+              className="btn-secondary btn-sm"
+              onClick={() => setSearchDraft("")}
+            >
+              Clear
+            </button>
+          ) : null}
+        </div>
         <div className="leads-crm-toolbar-actions">
           <span className="leads-crm-period">{periodLabel}</span>
           <div className="leads-view-toggle" role="group" aria-label="Leads view">
@@ -276,9 +271,11 @@ export function LeadsCrmWorkspace({
             </>
           ) : null}
           <span className="leads-crm-count">
-            {isBoard
-              ? `${Math.min(leads.length, total)} of ${total} on board`
-              : `${total} leads · p${page}/${totalPages}`}
+            {searchDraft.trim()
+              ? `${visibleLeads.length} match · ${leads.length} loaded`
+              : isBoard
+                ? `${Math.min(leads.length, total)} of ${total} on board`
+                : `${total} leads · p${page}/${totalPages}`}
           </span>
         </div>
       </div>
@@ -381,10 +378,14 @@ export function LeadsCrmWorkspace({
       ) : null}
 
       {isBoard ? (
-        leads.length === 0 ? (
+        visibleLeads.length === 0 ? (
           <div className="leads-empty-state leads-board-empty">
-            <p className="leads-machine-muted">No leads match this filter.</p>
-            {workspaceTotal > 0 && period !== "all" ? (
+            <p className="leads-machine-muted">
+              {searchDraft.trim()
+                ? "No loaded leads match this search."
+                : "No leads match this filter."}
+            </p>
+            {workspaceTotal > 0 && period !== "all" && !searchDraft.trim() ? (
               <p className="leads-machine-muted">
                 {workspaceTotal} in workspace.{" "}
                 <Link href="/app/leads?period=all&view=board">View all</Link>
@@ -394,7 +395,7 @@ export function LeadsCrmWorkspace({
         ) : (
           <LeadsKanbanBoard
             canManage={canManage}
-            leads={leads}
+            leads={visibleLeads}
             onOpenLead={setSelectedId}
           />
         )
@@ -414,18 +415,22 @@ export function LeadsCrmWorkspace({
             </tr>
           </thead>
           <tbody>
-            {leads.length === 0 ? (
+            {visibleLeads.length === 0 ? (
               <tr>
                 <td colSpan={8}>
                   <div className="leads-empty-state">
-                    <p className="leads-machine-muted">No leads match this filter.</p>
-                    {workspaceTotal > 0 && period !== "all" ? (
+                    <p className="leads-machine-muted">
+                      {searchDraft.trim()
+                        ? "No loaded leads match this search."
+                        : "No leads match this filter."}
+                    </p>
+                    {workspaceTotal > 0 && period !== "all" && !searchDraft.trim() ? (
                       <p className="leads-machine-muted">
                         {workspaceTotal} in workspace.{" "}
                         <Link href="/app/leads?period=all">View all</Link>
                       </p>
                     ) : null}
-                    {workspaceTotal === 0 ? (
+                    {workspaceTotal === 0 && !searchDraft.trim() ? (
                       <p className="leads-machine-muted">
                         <Link href="/app/leads/settings">Setup</Link> Google Sheets to import.
                       </p>
@@ -434,7 +439,7 @@ export function LeadsCrmWorkspace({
                 </td>
               </tr>
             ) : (
-              leads.map((lead) => {
+              visibleLeads.map((lead) => {
                 const quoted = quotationAmount(lead);
                 const telHref = leadTelHref(lead.phone);
                 const waHref = leadWhatsAppHref(lead.phone, lead.name);
@@ -590,12 +595,12 @@ export function LeadsCrmWorkspace({
       </div>
       )}
 
-      {!isBoard ? (
+      {!isBoard && !searchDraft.trim() ? (
       <div className="leads-crm-pagination">
         {page > 1 ? (
           <Link
             className="btn-secondary btn-sm"
-            href={`/app/leads?${buildLeadsListQuery(listParams, { page: String(page - 1) })}`}
+            href={`/app/leads?${buildLeadsListQuery(listParams, { page: String(page - 1), q: "" })}`}
           >
             Previous
           </Link>
@@ -605,13 +610,13 @@ export function LeadsCrmWorkspace({
         {page < totalPages ? (
           <Link
             className="btn-secondary btn-sm"
-            href={`/app/leads?${buildLeadsListQuery(listParams, { page: String(page + 1) })}`}
+            href={`/app/leads?${buildLeadsListQuery(listParams, { page: String(page + 1), q: "" })}`}
           >
             Next
           </Link>
         ) : null}
       </div>
-      ) : total > leads.length ? (
+      ) : total > leads.length && !searchDraft.trim() ? (
         <p className="leads-machine-muted leads-board-cap-note">
           Showing first {leads.length} of {total}. Narrow the period or filter, or use List
           for pagination.

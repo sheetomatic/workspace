@@ -2,6 +2,7 @@ import { after } from "next/server";
 import { LeadsAlertCenter } from "@/components/saas/leads-alert-center";
 import { LeadsCrmWorkspace } from "@/components/saas/leads-crm-workspace";
 import { LeadsNumbersDashboard } from "@/components/saas/leads-numbers-dashboard";
+import { LeadsPageScrollBridge } from "@/components/saas/leads-page-scroll-bridge";
 import { LeadsPeriodToolbar } from "@/components/saas/leads-period-toolbar";
 import { LeadsPipelineCards } from "@/components/saas/leads-pipeline-cards";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
@@ -176,7 +177,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
         sort: listParams.sort,
         status: listParams.status,
         category: listParams.category,
-        q: listParams.q,
+        // Text search filters client-side on the loaded page (no workspace reload).
         includeArchived: listParams.includeArchived,
       }),
       listWorkspaceMembers(user.organizationId),
@@ -215,6 +216,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
 
   return (
     <div className="saas-page leads-machine-page">
+      <LeadsPageScrollBridge />
       <TaskPageToolbar
         title="CRM"
         actions={
