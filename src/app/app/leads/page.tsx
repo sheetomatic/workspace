@@ -77,8 +77,6 @@ function serializeLead(lead: Awaited<ReturnType<typeof listInboundLeadsForPeriod
     expectedCloseAt: lead.expectedCloseAt?.toISOString() ?? null,
     winProbability: lead.winProbability ?? null,
     archivedAt: lead.archivedAt?.toISOString() ?? null,
-    aiSummary: lead.aiSummary ?? null,
-    aiSummaryAt: lead.aiSummaryAt?.toISOString() ?? null,
     discussionNotes: lead.discussionNotes,
     meetingNotes: lead.meetingNotes,
     quotationValue: lead.quotationValue?.toString() ?? null,
