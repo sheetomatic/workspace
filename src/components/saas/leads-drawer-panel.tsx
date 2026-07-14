@@ -300,6 +300,13 @@ export function LeadDrawerPanel({
     };
   }, [lead.id, canManage, lead.phone, lead.email, lead.company]);
 
+  useEffect(() => {
+    const body = document.querySelector(".leads-drawer-body");
+    if (body instanceof HTMLElement) {
+      body.scrollTop = 0;
+    }
+  }, [tab, lead.id]);
+
   const demoStartsAt = lead.nextFollowUpAt
     ? new Date(lead.nextFollowUpAt)
     : followUpAt
@@ -540,6 +547,7 @@ export function LeadDrawerPanel({
         ))}
       </nav>
 
+      <div className="leads-drawer-body">
       {tab === "details" ? (
         <>
           {canManage ? (
@@ -1289,6 +1297,7 @@ export function LeadDrawerPanel({
         </ul>
       </section>
       ) : null}
+      </div>
     </aside>
   );
 }

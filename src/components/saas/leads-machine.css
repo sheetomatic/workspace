@@ -1364,27 +1364,27 @@
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.35);
-  z-index: 60;
+  z-index: 80;
   display: flex;
   justify-content: flex-end;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  align-items: stretch;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 .leads-drawer {
   width: min(480px, 100%);
   max-width: 100%;
-  height: 100dvh;
+  height: 100%;
   max-height: 100dvh;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: #fff;
-  padding: 0.85rem;
-  padding-bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
+  padding: 0;
   box-shadow: -8px 0 30px rgba(15, 23, 42, 0.12);
   min-width: 0;
+  min-height: 0;
 }
 
 .leads-drawer-head {
@@ -1392,12 +1392,12 @@
   justify-content: space-between;
   gap: 0.65rem;
   align-items: flex-start;
-  margin-bottom: 0.75rem;
-  position: sticky;
-  top: 0;
+  margin: 0;
+  flex-shrink: 0;
   z-index: 2;
   background: #fff;
-  padding-bottom: 0.35rem;
+  padding: 0.85rem 0.85rem 0.5rem;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .leads-drawer-head-copy {
@@ -1648,17 +1648,38 @@
   -webkit-overflow-scrolling: touch;
   border-bottom: 1px solid #e2e8f0;
   margin: 0;
-  padding: 0;
+  padding: 0 0.35rem;
   scrollbar-width: thin;
   max-width: 100%;
-  position: sticky;
-  top: 3.25rem;
+  flex-shrink: 0;
   z-index: 1;
   background: #fff;
 }
 
+.leads-drawer-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 0.85rem;
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  touch-action: pan-y;
+}
+
 .leads-training-panel {
   min-width: 0;
+}
+
+.leads-training-panel .gcal-booking-frame-wrap {
+  height: 360px;
+  min-height: 280px;
+  max-height: 45dvh;
+}
+
+.leads-training-panel .gcal-booking-frame {
+  min-height: 480px;
 }
 
 .leads-training-table-wrap {
@@ -1678,7 +1699,7 @@
   .leads-drawer-wide {
     width: 100%;
     max-width: 100%;
-    height: 100dvh;
+    height: 100%;
     max-height: 100dvh;
     border-radius: 0;
   }
@@ -1701,6 +1722,11 @@
   .leads-drawer-section textarea {
     font-size: 16px;
     max-width: 100%;
+  }
+
+  .leads-training-panel .gcal-booking-frame-wrap {
+    height: 280px;
+    min-height: 220px;
   }
 }
 

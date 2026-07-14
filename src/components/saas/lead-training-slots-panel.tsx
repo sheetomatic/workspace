@@ -94,6 +94,7 @@ export function LeadTrainingSlotsPanel({
 
       <GoogleCalendarBookingEmbed
         compact
+        activateOnClick
         title="Google Calendar · book a slot"
       />
 
