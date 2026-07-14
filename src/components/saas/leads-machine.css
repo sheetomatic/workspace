@@ -1098,10 +1098,9 @@
 }
 
 .leads-crm-table-wrap {
-  /* Horizontal only — overflow-y:clip avoids the CSS “visible→auto” trap that
-     creates a nested vertical scrollport and eats wheel events in the center. */
+  /* No nested vertical scroll — #main owns page scroll (see LeadsPageScrollBridge). */
   overflow-x: auto;
-  overflow-y: clip;
+  overflow-y: visible;
   max-width: 100%;
   min-width: 0;
   -webkit-overflow-scrolling: touch;
