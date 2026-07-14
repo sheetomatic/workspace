@@ -6,7 +6,10 @@ import {
   confirmCourseEnrollmentAction,
   type CourseEnrollmentActionState,
 } from "@/app/app/approvals/course-enrollment-actions";
-import { courseCohortLabel } from "@/lib/content/courses-enrollment";
+import {
+  COURSE_GOOGLE_CALENDAR_BOOKING_URL,
+  courseCohortLabel,
+} from "@/lib/content/courses-enrollment";
 import { formatPendingAge } from "@/lib/workspace-format";
 
 export type CourseEnrollmentRow = {
@@ -47,8 +50,15 @@ export function CourseEnrollmentsPanel({
         <p className="ws-em-section-lead">
           Confirm UPI payment, optionally set the first session date to generate
           all 24 training slots, and alert the client + you on email/WhatsApp.
-          Clients can also book from <code>/courses/book-slots</code> after
-          confirmation.
+          Clients book live slots on{" "}
+          <a
+            href={COURSE_GOOGLE_CALENDAR_BOOKING_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Google Calendar
+          </a>{" "}
+          or <code>/courses/book-slots</code>.
         </p>
       </header>
 

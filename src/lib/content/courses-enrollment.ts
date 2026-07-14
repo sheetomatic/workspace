@@ -4,6 +4,17 @@ export type CourseCohortId = "MON_FRI" | "TUE_SAT";
 
 export const COURSE_ENROLLMENT_PRICE_INR = 35_000;
 
+/** Public short link for Sheetomatic training appointment booking. */
+export const COURSE_GOOGLE_CALENDAR_BOOKING_URL =
+  "https://calendar.app.google/kbDEB6xuqRYEdUue9";
+
+/**
+ * Inline embed URL (Google Appointment Schedule `?gv=true`).
+ * Resolved from calendar.app.google/kbDEB6xuqRYEdUue9.
+ */
+export const COURSE_GOOGLE_CALENDAR_EMBED_URL =
+  "https://calendar.google.com/calendar/appointments/schedules/AcZssZ1HRaqFe2jOG8jWUtnn-3SQqWG9HB6wcU5008k4lk70hW1qS5mFdJO-qGfAw7VaFKgldKHV3q88?gv=true";
+
 export const courseEnrollmentSchedule = {
   sessionsPerWeek: 2,
   sessionTimeLabel: "8:30 AM – 10:00 AM IST",

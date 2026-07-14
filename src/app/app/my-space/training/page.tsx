@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
+import { GoogleCalendarBookingEmbed } from "@/components/marketing/google-calendar-booking-embed";
 import { requireSession } from "@/lib/require-session";
 import { isPrimaryOrganization } from "@/lib/platform";
 import {
@@ -7,7 +8,10 @@ import {
   formatSlotWhen,
   listUpcomingTrainingSlots,
 } from "@/lib/courses/slots";
-import { courseCohortLabel } from "@/lib/content/courses-enrollment";
+import {
+  COURSE_GOOGLE_CALENDAR_BOOKING_URL,
+  courseCohortLabel,
+} from "@/lib/content/courses-enrollment";
 
 export default async function MySpaceTrainingPage() {
   const user = await requireSession("MANAGER");
@@ -25,13 +29,27 @@ export default async function MySpaceTrainingPage() {
       <div className="ws-ims-page">
         <TaskPageToolbar
           title="Booked training slots"
-          description="Upcoming 1:1 Sheets / AppSheet / Looker sessions. Clients and owners are alerted by email and WhatsApp when slots are booked."
+          description="Book on Google Calendar or review upcoming cohort sessions. Clients and owners get email + WhatsApp alerts when slots are booked."
           actions={
-            <Link href="/app/my-space" className="ws-btn ws-btn-secondary">
-              Back to My Space
-            </Link>
+            <>
+              <a
+                href={COURSE_GOOGLE_CALENDAR_BOOKING_URL}
+                className="ws-btn ws-btn-primary"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open Google Calendar
+              </a>
+              <Link href="/app/my-space" className="ws-btn ws-btn-secondary">
+                Back to My Space
+              </Link>
+            </>
           }
         />
+
+        <section className="ws-ims-panel" style={{ marginBottom: "1rem" }}>
+          <GoogleCalendarBookingEmbed title="Google Calendar · book training slots" />
+        </section>
 
         <section className="ws-ims-panel">
           <div className="ws-ims-panel-head">

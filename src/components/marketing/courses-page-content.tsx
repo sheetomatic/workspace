@@ -11,6 +11,7 @@ import {
   coursesPage,
   coursesWhatsAppUrl,
 } from "@/app/courses-content";
+import { COURSE_GOOGLE_CALENDAR_BOOKING_URL } from "@/lib/content/courses-enrollment";
 import {
   coursesFeaturedVideos,
   coursesLibraryVideos,
@@ -39,6 +40,17 @@ export function CoursesPageContent() {
             <p className="minimal-hero-lead">{coursesPage.lead}</p>
             <div className="courses-hero-actions">
               <CoursesEnrollPay triggerLabel={coursesPage.ctaLabel} />
+              <a
+                className="btn-cta btn-secondary"
+                href={COURSE_GOOGLE_CALENDAR_BOOKING_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Book slots
+              </a>
+              <Link className="btn-cta btn-secondary" href="/courses/book-slots">
+                Booking page
+              </Link>
               <Link className="btn-cta btn-secondary" href={WORKSPACE_LOGIN_HREF}>
                 {coursesPage.ctaSecondaryLabel}
               </Link>
@@ -80,6 +92,14 @@ export function CoursesPageContent() {
                 triggerLabel={coursesPage.ctaLabel}
                 triggerClassName="btn-cta btn-primary btn-block"
               />
+              <a
+                className="btn-cta btn-secondary btn-block"
+                href={COURSE_GOOGLE_CALENDAR_BOOKING_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Book slots on Google Calendar
+              </a>
               <a
                 className="btn-cta btn-secondary btn-block"
                 href={coursesWhatsAppUrl}
@@ -240,6 +260,14 @@ export function CoursesPageContent() {
             <p className="minimal-section-lead">{coursesPage.funnelLead}</p>
             <div className="courses-hero-actions">
               <CoursesEnrollPay triggerLabel={coursesPage.ctaLabel} />
+              <a
+                className="btn-cta btn-secondary"
+                href={COURSE_GOOGLE_CALENDAR_BOOKING_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Book slots
+              </a>
               <Link className="btn-cta btn-secondary" href={WORKSPACE_LOGIN_HREF}>
                 {coursesPage.ctaSecondaryLabel}
               </Link>
