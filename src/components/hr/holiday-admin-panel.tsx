@@ -69,7 +69,7 @@ export function HolidayAdminPanel({
         setIsError(true);
         return;
       }
-      setMessage(`Imported ${MAX_HOLIDAYS_PER_YEAR} recommended holidays.`);
+      setMessage("Standard holiday calendar imported for this year.");
       router.refresh();
     });
   }
