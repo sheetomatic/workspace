@@ -9,11 +9,11 @@
     "safari >= 16.4"
   ],
   "scripts": {
-    "dev": "prisma generate && next dev",
-    "build": "DIRECT_URL=\"${DIRECT_URL:-$DATABASE_URL}\" prisma generate && DIRECT_URL=\"${DIRECT_URL:-$DATABASE_URL}\" prisma migrate deploy && NODE_OPTIONS=--max-old-space-size=8192 next build --webpack",
+    "dev": "node scripts/prisma-with-env.mjs generate && next dev",
+    "build": "node scripts/prisma-with-env.mjs generate && node scripts/prisma-with-env.mjs migrate deploy && NODE_OPTIONS=--max-old-space-size=8192 next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "db:generate": "prisma generate",
+    "db:generate": "node scripts/prisma-with-env.mjs generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
     "db:seed-bci": "tsx prisma/seed-bci-demo.ts",
@@ -21,7 +21,7 @@
     "db:seed-acme-hr": "tsx prisma/seed-acme-hr.ts",
     "db:sync-hingorani": "tsx prisma/sync-hingorani-sheet.ts",
     "db:reset": "prisma migrate reset --force",
-    "postinstall": "DIRECT_URL=\"${DIRECT_URL:-$DATABASE_URL}\" prisma generate",
+    "postinstall": "node scripts/prisma-with-env.mjs generate",
     "test:e2e": "playwright test",
     "test:e2e:smoke": "playwright test tests/smoke",
     "test:e2e:tenant": "playwright test tests/e2e/tenant-isolation.spec.ts",
