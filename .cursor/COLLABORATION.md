@@ -630,3 +630,18 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/leads` Training tab (schedule + session + join form; no Google Calendar embed clutter).
 
 ---
+**Deployed (2026-07-14):** CRM lead save/status refresh + HRMS holiday Save & publish (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| PR | https://github.com/sheetomatic/workspace/pull/15 (merged) |
+| Merge SHA | `d984340` (tip `e1ea8dc`) |
+| Pre-flight | Unit tests: 83/84; remaining UTC flake on `google-sheets` timestamp test is pre-existing on main |
+| Vercel | Production **SUCCESS** — sheetomatic-redesign |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/8TB9qKfDM839AErzwbJpCwMs1yMX — https://sheetomatic-redesign-lej45t3ai-sheetomatic.vercel.app |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops (their auto-deploys failed; ignored). |
+
+**Hard-refresh in prod:** `/app/leads` (status/owner/save refresh) + HRMS holiday admin (Save & publish / plus-to-expand form).
+
+---
+
