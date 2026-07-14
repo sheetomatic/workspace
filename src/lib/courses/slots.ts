@@ -7,6 +7,7 @@ import type {
 import { prisma } from "@/lib/db";
 import {
   COURSE_ENROLLMENT_PRICE_INR,
+  courseCohortLabel,
   courseEnrollmentSchedule,
   type CourseCohortId,
 } from "@/lib/content/courses-enrollment";
@@ -493,6 +494,92 @@ export async function listUpcomingTrainingSlots(params: {
     },
     orderBy: { startsAt: "asc" },
     take,
+  });
+}
+
+/** Active students with booked schedules — student-first My Space training view. */
+export async function listActiveTrainingStudents(params: {
+  organizationId?: string | null;
+  platformWide?: boolean;
+  take?: number;
+}) {
+  const take = params.take ?? 80;
+  const orgFilter = params.organizationId
+    ? { organizationId: params.organizationId }
+    : params.platformWide
+      ? {}
+      : { organizationId: "__none__" };
+
+  const enrollments = await prisma.courseEnrollment.findMany({
+    where: {
+      status: { in: ["CONFIRMED", "PAYMENT_PENDING"] },
+      slots: {
+        some: {
+          status: "SCHEDULED",
+          ...orgFilter,
+        },
+      },
+      ...orgFilter,
+    },
+    include: {
+      slots: {
+        where: { status: { not: "CANCELLED" } },
+        orderBy: { sessionNumber: "asc" },
+      },
+    },
+    orderBy: [{ name: "asc" }, { createdAt: "desc" }],
+    take,
+  });
+
+  const now = Date.now();
+  return enrollments.map((enrollment) => {
+    const upcoming = enrollment.slots.filter(
+      (slot) =>
+        slot.status === "SCHEDULED" &&
+        slot.startsAt.getTime() >= now - 2 * 60 * 60 * 1000,
+    );
+    const nextSlot = upcoming[0] ?? null;
+    const joinUrl =
+      enrollment.meetUrl?.trim() ||
+      nextSlot?.meetUrl?.trim() ||
+      enrollment.slots.find((slot) => slot.meetUrl?.trim())?.meetUrl?.trim() ||
+      null;
+
+    return {
+      id: enrollment.id,
+      name: enrollment.name,
+      phone: enrollment.phone,
+      email: enrollment.email,
+      status: enrollment.status,
+      cohort: enrollment.cohort,
+      weekdaysCsv: enrollment.weekdaysCsv,
+      daysLabel: courseCohortLabel(enrollment.cohort, enrollment.weekdaysCsv),
+      frequency: enrollment.frequency,
+      sessionTimeIst: enrollment.sessionTimeIst,
+      sessionDurationMin: enrollment.sessionDurationMin,
+      totalSessions: enrollment.totalSessions,
+      programStartDate: enrollment.programStartDate,
+      meetUrl: enrollment.meetUrl,
+      joinUrl,
+      inboundLeadId: enrollment.inboundLeadId,
+      bookingToken: enrollment.bookingToken,
+      upcomingCount: upcoming.length,
+      completedCount: enrollment.slots.filter((slot) => slot.status === "COMPLETED")
+        .length,
+      totalBooked: enrollment.slots.length,
+      nextWhenLabel: nextSlot ? formatSlotWhen(nextSlot.startsAt) : null,
+      slots: enrollment.slots.map((slot) => ({
+        id: slot.id,
+        sessionNumber: slot.sessionNumber,
+        startsAt: slot.startsAt,
+        endsAt: slot.endsAt,
+        title: slot.title,
+        status: slot.status,
+        meetUrl: slot.meetUrl,
+        whenLabel: formatSlotWhen(slot.startsAt),
+        joinUrl: slot.meetUrl?.trim() || enrollment.meetUrl?.trim() || null,
+      })),
+    };
   });
 }
 
