@@ -615,3 +615,18 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/my-space/training` (student-wise list; expand for schedule + Meet join).
 
 ---
+
+**Deployed (2026-07-14):** CRM Training tab UI cleanup — calm standard form, no calendar clutter (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| PR | https://github.com/sheetomatic/workspace/pull/14 (merged) |
+| Merge SHA | `a9a0b9d` (tip `9801bcb`) |
+| Pre-flight | Unit tests: 83/84; remaining UTC flake on `google-sheets` timestamp test is pre-existing on main |
+| Vercel | Production **SUCCESS** — sheetomatic-redesign |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/BxBQG7qAxMfe5Jjr2Mk83joXi1gP |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops (their auto-deploys failed; ignored). |
+
+**Hard-refresh in prod:** `/app/leads` Training tab (schedule + session + join form; no Google Calendar embed clutter).
+
+---
