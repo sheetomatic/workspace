@@ -1,5 +1,8 @@
 import type { RedlavaCredentials } from "@/lib/integrations/redlava";
-import { deliverWhatsAppMessage } from "@/lib/integrations/whatsapp-provider";
+import {
+  credentialsForCustomerBot,
+  deliverWhatsAppMessage,
+} from "@/lib/integrations/whatsapp-provider";
 import { resolveWorkspaceWhatsAppCredentials } from "@/lib/whatsapp-settings";
 import type { WhatsAppInteractivePayload } from "@/lib/whatsapp-bot/interactive-menu";
 
@@ -10,12 +13,15 @@ async function deliverMessage(
   toPhone: string,
   payload: Record<string, unknown>,
 ): Promise<SendResult> {
-  const credentials = await resolveWorkspaceWhatsAppCredentials(organizationId);
+  const credentials = credentialsForCustomerBot(
+    await resolveWorkspaceWhatsAppCredentials(organizationId),
+  );
   return deliverWhatsAppMessage({
     organizationId,
     toPhone,
     message: payload,
     credentials,
+    preferOfficial: true,
   });
 }
 

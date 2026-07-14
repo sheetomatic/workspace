@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getSessionUser } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 import { hasMinimumRole } from "@/lib/permissions";
 import {
   getMasAccountDashboard,
@@ -13,7 +14,6 @@ import {
   type MasAccountDashboard,
 } from "@/lib/integrations/messageautosender";
 import { resolveWorkspaceWhatsAppCredentials } from "@/lib/whatsapp-settings";
-import { saveWhatsAppSettings } from "@/app/app/whatsapp/actions";
 
 export type MasConnectActionState = {
   ok: boolean;
@@ -21,6 +21,14 @@ export type MasConnectActionState = {
   qrImageUrl?: string | null;
   connected?: boolean;
 };
+
+function pickMasSecretField(incoming: string, existing: string | null | undefined) {
+  const trimmed = incoming.trim();
+  if (!trimmed) {
+    return existing ?? null;
+  }
+  return trimmed;
+}
 
 async function requireMasCredentials() {
   const user = await getSessionUser();
@@ -39,6 +47,7 @@ async function requireMasCredentials() {
 
   return {
     ok: true as const,
+    organizationId: user.organizationId,
     mas: {
       username: credentials.masUsername,
       password: credentials.masPassword,
@@ -73,36 +82,73 @@ export async function fetchMasAccountDashboard(): Promise<
   return getMasAccountDashboard(auth.mas);
 }
 
+/**
+ * Save / verify Web Based API login for nurture only.
+ * Does NOT flip whatsappProvider away from Official/SHEETOMATIC.
+ */
 export async function connectMasWebAccount(
   _prev: MasConnectActionState,
   formData: FormData,
 ): Promise<MasConnectActionState> {
-  formData.set("whatsappProvider", "messageautosender");
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Only admins can login." };
+  }
 
-  const saveResult = await saveWhatsAppSettings(
-    { ok: false, message: "" },
-    formData,
+  const existing = await prisma.workspaceWhatsAppSettings.findUnique({
+    where: { organizationId: user.organizationId },
+  });
+
+  const masUsername =
+    formData.get("masUsername")?.toString().trim() || existing?.masUsername || "";
+  const masPassword = pickMasSecretField(
+    formData.get("masPassword")?.toString() ?? "",
+    existing?.masPassword,
   );
-  if (!saveResult.ok) {
-    return { ok: false, message: saveResult.message };
+  const masApiKey = pickMasSecretField(
+    formData.get("masApiKey")?.toString() ?? "",
+    existing?.masApiKey,
+  );
+
+  if (!masUsername || !masPassword || !masApiKey) {
+    return {
+      ok: false,
+      message: "Username, password, and API key are required for Web Based API.",
+    };
   }
 
-  const auth = await requireMasCredentials();
-  if (!auth.ok) {
-    return { ok: false, message: auth.error };
-  }
+  await prisma.workspaceWhatsAppSettings.upsert({
+    where: { organizationId: user.organizationId },
+    create: {
+      organizationId: user.organizationId,
+      whatsappProvider: "SHEETOMATIC",
+      masUsername,
+      masPassword,
+      masApiKey,
+    },
+    update: {
+      masUsername,
+      masPassword,
+      masApiKey,
+    },
+  });
 
-  const login = await verifyMasCustomerLogin(auth.mas);
+  const login = await verifyMasCustomerLogin({
+    username: masUsername,
+    password: masPassword,
+    apiKey: masApiKey,
+  });
   if (!login.ok) {
     return { ok: false, message: login.error };
   }
 
   revalidatePath("/ai/app/settings");
+  revalidatePath("/app/leads/settings");
 
   if (login.dashboard.connected) {
     return {
       ok: true,
-      message: "Logged in. WhatsApp is connected.",
+      message: "Logged in. WhatsApp is connected (nurture channel).",
       connected: true,
       qrImageUrl: null,
     };
@@ -111,7 +157,7 @@ export async function connectMasWebAccount(
   if (login.qr.ok && login.qr.qrImageUrl) {
     return {
       ok: true,
-      message: "Logged in. Scan the QR code to link WhatsApp.",
+      message: "Logged in. Scan the QR code to link WhatsApp (nurture channel).",
       connected: false,
       qrImageUrl: login.qr.qrImageUrl,
     };

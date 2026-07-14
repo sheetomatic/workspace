@@ -68,11 +68,32 @@ export function resolveWhatsAppProviderKind(
     : "sheetomatic";
 }
 
+/** Official Cloud / RedLava identity is present (independent of whatsappProvider). */
+export function isOfficialWhatsAppConfigured(
+  credentials: Pick<
+    WorkspaceWhatsAppCredentials,
+    "redlavaApiKey" | "redlavaPhoneId" | "metaAccessToken"
+  >,
+): boolean {
+  const phoneId = credentials.redlavaPhoneId?.trim();
+  if (!phoneId) {
+    return false;
+  }
+  return (
+    Boolean(credentials.redlavaApiKey?.trim()) ||
+    Boolean(credentials.metaAccessToken?.trim())
+  );
+}
+
 export function isWhatsAppProviderConfigured(
   credentials: WorkspaceWhatsAppCredentials,
 ): boolean {
   const provider = resolveWhatsAppProviderKind(credentials);
   if (provider === "messageautosender") {
+    // Customer bot / Meta webhook still use Official when configured.
+    if (isOfficialWhatsAppConfigured(credentials)) {
+      return true;
+    }
     return isMasConfigured({
       username: credentials.masUsername,
       password: credentials.masPassword,
@@ -80,11 +101,21 @@ export function isWhatsAppProviderConfigured(
     });
   }
 
-  const phoneId = credentials.redlavaPhoneId?.trim();
-  return (
-    Boolean(credentials.redlavaApiKey?.trim() && phoneId) ||
-    Boolean(credentials.metaAccessToken?.trim() && phoneId)
-  );
+  return isOfficialWhatsAppConfigured(credentials);
+}
+
+/**
+ * Prefer Official Cloud for customer-facing bot sends even if nurture MAS
+ * credentials are also saved. Callers that must use MAS (nurture) should
+ * call sendMas directly and never go through this helper.
+ */
+export function credentialsForCustomerBot(
+  credentials: WorkspaceWhatsAppCredentials,
+): WorkspaceWhatsAppCredentials {
+  if (isOfficialWhatsAppConfigured(credentials)) {
+    return { ...credentials, whatsappProvider: "sheetomatic" };
+  }
+  return credentials;
 }
 
 async function sendViaMetaCloud(params: {
@@ -132,20 +163,26 @@ export type DeliverWhatsAppMessageParams = {
   message: Record<string, unknown>;
   credentials?: WorkspaceWhatsAppCredentials;
   templateLanguageCode?: string;
+  /** When true (default), Official Cloud wins over MAS for customer replies. */
+  preferOfficial?: boolean;
 };
 
 export async function deliverWhatsAppMessage(
   params: DeliverWhatsAppMessageParams,
 ): Promise<WhatsAppSendResult> {
-  const credentials =
+  const rawCredentials =
     params.credentials ??
     (params.organizationId
       ? await resolveWorkspaceWhatsAppCredentials(params.organizationId)
       : null);
 
-  if (!credentials) {
+  if (!rawCredentials) {
     return { sent: false, reason: "not_configured" };
   }
+
+  const preferOfficial = params.preferOfficial !== false;
+  const credentials =
+    preferOfficial ? credentialsForCustomerBot(rawCredentials) : rawCredentials;
 
   const provider = resolveWhatsAppProviderKind(credentials);
   const messageType =

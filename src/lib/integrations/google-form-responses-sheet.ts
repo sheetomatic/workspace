@@ -83,7 +83,8 @@ function phoneDigits(value: string) {
   return value.replace(/\D/g, "");
 }
 
-function phonesMatch(left: string, right: string) {
+/** Exported for unit tests — last-10 digit match only (no loose substring). */
+export function phonesMatch(left: string, right: string) {
   const a = phoneDigits(left);
   const b = phoneDigits(right);
   if (!a || !b) {
@@ -96,7 +97,45 @@ function phonesMatch(left: string, right: string) {
   if (a.length >= minLen && b.length >= minLen) {
     return a.slice(-minLen) === b.slice(-minLen);
   }
-  return a.endsWith(b) || b.endsWith(a);
+  return false;
+}
+
+/**
+ * Phone-column match only. Never scan allValues (that caused Digeshwar→Sushma).
+ * When `since` is set, require a parseable timestamp on or after that time.
+ */
+export function selectFormResponseForPhone(
+  rows: ParsedFormResponse[],
+  phoneInput: string,
+  options: { since?: Date } = {},
+): ParsedFormResponse | null {
+  const phone = normalizeWhatsAppPhone(phoneInput);
+  if (!phone) {
+    return null;
+  }
+
+  const matches = rows.filter(
+    (row) => Boolean(row.phone) && phonesMatch(row.phone!, phone),
+  );
+
+  if (matches.length === 0) {
+    return null;
+  }
+
+  if (!options.since) {
+    return matches.at(-1) ?? null;
+  }
+
+  const sinceMs = options.since.getTime();
+  const recentMatch = [...matches].reverse().find((row) => {
+    const timestamp = parseSheetDate(row.timestamp);
+    // Ambiguous / unparseable timestamps must not claim a name for this phone.
+    if (!timestamp) {
+      return false;
+    }
+    return timestamp.getTime() >= sinceMs;
+  });
+  return recentMatch ?? null;
 }
 
 function pickField(
@@ -246,29 +285,7 @@ export async function findFormResponseForPhone(
 
   try {
     const rows = await loadFormResponses(config.spreadsheetId);
-    const matches = rows.filter((row) => {
-      if (row.phone && phonesMatch(row.phone, phone)) {
-        return true;
-      }
-      return row.allValues.some((value) => phonesMatch(value, phone));
-    });
-
-    if (matches.length === 0) {
-      return null;
-    }
-
-    // Only return phone-matched rows. Never fall back to a recent unmatched row
-    // (that assigns another person's name to this contact).
-    if (!options.since) {
-      return matches.at(-1) ?? null;
-    }
-
-    const sinceMs = options.since.getTime();
-    const recentMatch = [...matches].reverse().find((row) => {
-      const timestamp = parseSheetDate(row.timestamp);
-      return timestamp ? timestamp.getTime() >= sinceMs : true;
-    });
-    return recentMatch ?? matches.at(-1) ?? null;
+    return selectFormResponseForPhone(rows, phone, options);
   } catch {
     return null;
   }

@@ -78,7 +78,8 @@ export function LeadsWebBasedApiSettingsPanel({
             autoComplete="tel"
           />
           <small className="leads-machine-muted">
-            The number linked on your Web Based API portal (for your reference).
+            Personal / nurture number on the Web Based API portal (reference only —
+            does not change Official Cloud business phone).
           </small>
         </label>
 

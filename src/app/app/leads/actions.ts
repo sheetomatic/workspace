@@ -2087,14 +2087,8 @@ export async function saveLeadsWebBasedApiSettings(
     existing?.masApiKey,
   );
 
-  const businessRaw = formData.get("businessPhone")?.toString() ?? "";
-  const businessDigits = leadPhoneDigits(businessRaw);
-  if (businessRaw.trim() && !businessDigits) {
-    return {
-      ok: false,
-      message: "Business WhatsApp number must be at least 10 digits.",
-    };
-  }
+  // businessPhone on this form is reference-only for the personal/WBA line.
+  // Never overwrite Official Cloud businessPhone from nurture credentials.
 
   if (!masUsername) {
     return { ok: false, message: "Username is required." };
@@ -2112,19 +2106,18 @@ export async function saveLeadsWebBasedApiSettings(
     };
   }
 
+  // Nurture-only MAS credentials. Never flip Official/SHEETOMATIC provider or
+  // overwrite Cloud businessPhone with the personal/WBA communication number.
   await prisma.workspaceWhatsAppSettings.upsert({
     where: { organizationId: user.organizationId },
     create: {
       organizationId: user.organizationId,
-      businessPhone: businessDigits || null,
-      whatsappProvider: "MESSAGEAUTOSENDER",
+      whatsappProvider: "SHEETOMATIC",
       masUsername,
       masPassword,
       masApiKey,
     },
     update: {
-      businessPhone: businessDigits || existing?.businessPhone || null,
-      whatsappProvider: "MESSAGEAUTOSENDER",
       masUsername,
       masPassword,
       masApiKey,
@@ -2137,7 +2130,7 @@ export async function saveLeadsWebBasedApiSettings(
 
   return {
     ok: true,
-    message: "Web Based API credentials saved.",
+    message: "Web Based API credentials saved for nurture sends.",
   };
 }
 
