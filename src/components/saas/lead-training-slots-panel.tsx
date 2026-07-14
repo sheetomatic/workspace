@@ -6,10 +6,11 @@ import {
   getLeadTrainingSlotsAction,
 } from "@/app/app/leads/actions";
 import { GoogleCalendarBookingEmbed } from "@/components/marketing/google-calendar-booking-embed";
+import { COURSE_GOOGLE_CALENDAR_BOOKING_URL } from "@/lib/content/courses-enrollment";
 import {
-  COURSE_GOOGLE_CALENDAR_BOOKING_URL,
-  courseCohorts,
-} from "@/lib/content/courses-enrollment";
+  TRAINING_BOOKING_WINDOW,
+  TRAINING_WEEKDAYS,
+} from "@/lib/courses/weekdays";
 
 type SlotRow = {
   id: string;
@@ -28,7 +29,9 @@ type EnrollmentRow = {
   name: string;
   email: string;
   phone: string;
-  cohort: "MON_FRI" | "TUE_SAT";
+  cohort: "MON_FRI" | "TUE_SAT" | "CUSTOM";
+  weekdaysCsv?: string | null;
+  daysLabel?: string;
   status: string;
   bookingToken: string | null;
   programStartDate: string | null;
@@ -133,21 +136,43 @@ export function LeadTrainingSlotsPanel({
 
       {canManage ? (
         <form action={onBook} className="leads-drawer-form leads-training-form">
-          <h4 className="leads-training-form-title">Generate cohort calendar</h4>
+          <h4 className="leads-training-form-title">Generate two-day calendar</h4>
+          <p className="leads-help">
+            Days are not fixed — pick any two (Sunday included). Session start can be
+            any time in {TRAINING_BOOKING_WINDOW.label}.
+          </p>
           <div className="leads-drawer-grid">
             <label>
-              Day
-              <select name="cohort" defaultValue="MON_FRI" required>
-                {courseCohorts.map((cohort) => (
-                  <option key={cohort.id} value={cohort.id}>
-                    {cohort.label}
+              Day 1
+              <select name="dayOne" defaultValue="0" required>
+                {TRAINING_WEEKDAYS.map((day) => (
+                  <option key={day.value} value={day.value}>
+                    {day.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Day 2
+              <select name="dayTwo" defaultValue="3" required>
+                {TRAINING_WEEKDAYS.map((day) => (
+                  <option key={day.value} value={day.value}>
+                    {day.label}
                   </option>
                 ))}
               </select>
             </label>
             <label>
               Time (IST)
-              <input name="sessionTimeIst" type="time" defaultValue="08:30" required />
+              <input
+                name="sessionTimeIst"
+                type="time"
+                min={TRAINING_BOOKING_WINDOW.startIst}
+                max={TRAINING_BOOKING_WINDOW.endIst}
+                defaultValue="09:00"
+                required
+              />
+              <span className="leads-help">{TRAINING_BOOKING_WINDOW.label}</span>
             </label>
             <label>
               Frequency
@@ -222,8 +247,8 @@ export function LeadTrainingSlotsPanel({
           enrollment.slots.length === 0 ? null : (
             <div key={enrollment.id} className="leads-training-table-wrap">
               <p className="leads-help">
-                <strong>{enrollment.name}</strong> · {enrollment.cohort} ·{" "}
-                {enrollment.status}
+                <strong>{enrollment.name}</strong> ·{" "}
+                {enrollment.daysLabel || enrollment.cohort} · {enrollment.status}
                 {enrollment.bookingToken ? (
                   <>
                     {" "}

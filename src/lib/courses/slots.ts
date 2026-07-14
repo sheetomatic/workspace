@@ -7,7 +7,6 @@ import type {
 import { prisma } from "@/lib/db";
 import {
   COURSE_ENROLLMENT_PRICE_INR,
-  courseCohortLabel,
   courseEnrollmentSchedule,
   type CourseCohortId,
 } from "@/lib/content/courses-enrollment";
@@ -16,8 +15,17 @@ import {
   toIcsUtcStamp,
 } from "@/lib/leads/calendar-links";
 
+import {
+  cohortFromWeekdays,
+  formatWeekdaysCsv,
+  isWithinTrainingBookingWindow,
+  TRAINING_BOOKING_WINDOW,
+  weekdaysFromCohort,
+  weekdaysLabel,
+} from "@/lib/courses/weekdays";
+
 const DEFAULT_SESSION_DURATION_MIN = 90;
-const DEFAULT_SESSION_TIME_IST = "08:30";
+const DEFAULT_SESSION_TIME_IST = TRAINING_BOOKING_WINDOW.startIst;
 const DEFAULT_TOTAL_SESSIONS = courseEnrollmentSchedule.totalClasses;
 const DEFAULT_FREQUENCY: TrainingFrequency = "WEEKLY";
 
@@ -29,8 +37,11 @@ export function newBookingToken() {
   return randomBytes(24).toString("hex");
 }
 
-export function cohortWeekdays(cohort: CourseCohort | CourseCohortId): number[] {
-  return cohort === "MON_FRI" ? [1, 5] : [2, 6];
+export function cohortWeekdays(
+  cohort: CourseCohort | CourseCohortId,
+  weekdaysCsv?: string | null,
+): number[] {
+  return weekdaysFromCohort(cohort, weekdaysCsv);
 }
 
 /** Calendar Y-M-D in Asia/Kolkata. */
@@ -57,7 +68,7 @@ function addDaysYmd(ymd: string, days: number): string {
   return `${next.getUTCFullYear()}-${pad(next.getUTCMonth() + 1)}-${pad(next.getUTCDate())}`;
 }
 
-/** Normalize HH:mm (24h) IST time; falls back to 08:30. */
+/** Normalize HH:mm (24h) IST time; falls back to 09:00. */
 export function normalizeSessionTimeIst(raw: string | null | undefined): string {
   const match = String(raw ?? "")
     .trim()
@@ -76,6 +87,15 @@ export function normalizeSessionTimeIst(raw: string | null | undefined): string 
     return DEFAULT_SESSION_TIME_IST;
   }
   return `${pad(hour)}:${pad(minute)}`;
+}
+
+/** Normalize time and keep it inside the 9 AM–5 PM IST bookable window. */
+export function normalizeBookableSessionTimeIst(
+  raw: string | null | undefined,
+): string {
+  const normalized = normalizeSessionTimeIst(raw);
+  if (isWithinTrainingBookingWindow(normalized)) return normalized;
+  return DEFAULT_SESSION_TIME_IST;
 }
 
 export function normalizeTotalSessions(raw: unknown): number {
@@ -156,6 +176,8 @@ export type GeneratedSession = {
 
 export function generateTrainingSessions(params: {
   cohort: CourseCohort | CourseCohortId;
+  weekdays?: number[] | null;
+  weekdaysCsv?: string | null;
   programStartYmd: string;
   totalSessions?: number;
   sessionTimeIst?: string;
@@ -166,12 +188,19 @@ export function generateTrainingSessions(params: {
   const total = normalizeTotalSessions(
     params.totalSessions ?? DEFAULT_TOTAL_SESSIONS,
   );
-  const timeIst = normalizeSessionTimeIst(params.sessionTimeIst);
+  const timeIst = normalizeBookableSessionTimeIst(params.sessionTimeIst);
   const durationMin = normalizeSessionDurationMin(
     params.sessionDurationMin ?? DEFAULT_SESSION_DURATION_MIN,
   );
   const frequency = normalizeFrequency(params.frequency);
-  const weekdays = new Set(cohortWeekdays(params.cohort));
+  const resolvedWeekdays =
+    params.weekdays && params.weekdays.length > 0
+      ? [...new Set(params.weekdays)].sort((a, b) => a - b)
+      : cohortWeekdays(params.cohort, params.weekdaysCsv);
+  if (resolvedWeekdays.length === 0) {
+    throw new Error("Choose at least one weekday for the schedule.");
+  }
+  const weekdays = new Set(resolvedWeekdays);
   let cursor = params.programStartYmd;
   // Walk forward until we land on a cohort weekday.
   for (let i = 0; i < 14; i += 1) {
@@ -301,6 +330,8 @@ export async function bookTrainingSlots(params: {
   sessionTimeIst?: string | null;
   sessionDurationMin?: number | null;
   totalSessions?: number | null;
+  weekdays?: number[] | null;
+  weekdaysCsv?: string | null;
   organizationId?: string | null;
   inboundLeadId?: string | null;
   notify?: boolean;
@@ -330,18 +361,36 @@ export async function bookTrainingSlots(params: {
   const frequency = normalizeFrequency(
     params.frequency ?? enrollment.frequency,
   );
-  const sessionTimeIst = normalizeSessionTimeIst(
-    params.sessionTimeIst ?? enrollment.sessionTimeIst,
-  );
+  const rawTime = params.sessionTimeIst ?? enrollment.sessionTimeIst;
+  if (rawTime && !isWithinTrainingBookingWindow(normalizeSessionTimeIst(rawTime))) {
+    return {
+      ok: false as const,
+      message: `Choose a start time between ${TRAINING_BOOKING_WINDOW.label}.`,
+    };
+  }
+  const sessionTimeIst = normalizeBookableSessionTimeIst(rawTime);
   const sessionDurationMin = normalizeSessionDurationMin(
     params.sessionDurationMin ?? enrollment.sessionDurationMin,
   );
   const totalSessions = normalizeTotalSessions(
     params.totalSessions ?? enrollment.totalSessions,
   );
+  const weekdays =
+    params.weekdays && params.weekdays.length > 0
+      ? [...new Set(params.weekdays)].sort((a, b) => a - b)
+      : cohortWeekdays(
+          enrollment.cohort,
+          params.weekdaysCsv ?? enrollment.weekdaysCsv,
+        );
+  if (weekdays.length < 1) {
+    return { ok: false as const, message: "Choose the training days." };
+  }
+  const weekdaysCsv = formatWeekdaysCsv(weekdays);
 
   const sessions = generateTrainingSessions({
     cohort: enrollment.cohort,
+    weekdays,
+    weekdaysCsv,
     programStartYmd: ymd,
     studentName: enrollment.name,
     frequency,
@@ -372,6 +421,7 @@ export async function bookTrainingSlots(params: {
         sessionTimeIst,
         sessionDurationMin,
         totalSessions,
+        weekdaysCsv,
       },
     }),
     prisma.trainingCourseSlot.createMany({
@@ -404,7 +454,7 @@ export async function bookTrainingSlots(params: {
 
   return {
     ok: true as const,
-    message: `Booked ${slots.length} sessions starting ${toIstYmd(firstStart)} (${courseCohortLabel(enrollment.cohort)}, ${frequency.toLowerCase()}, ${timeLabel}).`,
+    message: `Booked ${slots.length} sessions starting ${toIstYmd(firstStart)} (${weekdaysLabel(weekdays)}, ${frequency.toLowerCase()}, ${timeLabel}).`,
     slots,
     bookingToken,
   };
@@ -488,7 +538,9 @@ export async function listLeadTrainingEnrollments(params: {
 export async function bookTrainingSlotsForLead(params: {
   organizationId: string;
   leadId: string;
-  cohort: CourseCohortId;
+  /** Optional legacy preset; ignored when weekdays are provided. */
+  cohort?: CourseCohortId;
+  weekdays: number[];
   programStartYmd: string;
   meetUrl?: string | null;
   frequency?: TrainingFrequency | string | null;
@@ -501,8 +553,28 @@ export async function bookTrainingSlotsForLead(params: {
   markConfirmed?: boolean;
   confirmedById?: string;
 }) {
+  const weekdays = [...new Set(params.weekdays)]
+    .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6)
+    .sort((a, b) => a - b);
+  if (weekdays.length < 2) {
+    return {
+      ok: false as const,
+      message: "Pick two different days for the combination.",
+    };
+  }
+  const weekdaysCsv = formatWeekdaysCsv(weekdays);
+  const cohort = cohortFromWeekdays(weekdays);
   const frequency = normalizeFrequency(params.frequency);
-  const sessionTimeIst = normalizeSessionTimeIst(params.sessionTimeIst);
+  if (
+    params.sessionTimeIst &&
+    !isWithinTrainingBookingWindow(normalizeSessionTimeIst(params.sessionTimeIst))
+  ) {
+    return {
+      ok: false as const,
+      message: `Choose a start time between ${TRAINING_BOOKING_WINDOW.label}.`,
+    };
+  }
+  const sessionTimeIst = normalizeBookableSessionTimeIst(params.sessionTimeIst);
   const sessionDurationMin = normalizeSessionDurationMin(
     params.sessionDurationMin,
   );
@@ -529,7 +601,8 @@ export async function bookTrainingSlotsForLead(params: {
         name: params.name.trim().slice(0, 120),
         phone: params.phone.replace(/[^\d+]/g, "").slice(0, 32),
         email: params.email.trim().toLowerCase().slice(0, 200),
-        cohort: params.cohort,
+        cohort,
+        weekdaysCsv,
         amountInr: COURSE_ENROLLMENT_PRICE_INR,
         status: params.markConfirmed ? "CONFIRMED" : "PAYMENT_PENDING",
         confirmedAt: params.markConfirmed ? new Date() : null,
@@ -551,7 +624,8 @@ export async function bookTrainingSlotsForLead(params: {
       data: {
         organizationId: params.organizationId,
         inboundLeadId: params.leadId,
-        cohort: params.cohort,
+        cohort,
+        weekdaysCsv,
         meetUrl: params.meetUrl?.trim() || undefined,
         frequency,
         sessionTimeIst,
@@ -585,6 +659,8 @@ export async function bookTrainingSlotsForLead(params: {
     sessionTimeIst,
     sessionDurationMin,
     totalSessions,
+    weekdays,
+    weekdaysCsv,
     organizationId: params.organizationId,
     inboundLeadId: params.leadId,
     notify: true,

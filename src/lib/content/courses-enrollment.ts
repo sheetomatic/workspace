@@ -1,6 +1,11 @@
 import { formatInr } from "@/lib/leads/categories";
+import {
+  TRAINING_BOOKING_WINDOW,
+  weekdaysLabel,
+  weekdaysFromCohort,
+} from "@/lib/courses/weekdays";
 
-export type CourseCohortId = "MON_FRI" | "TUE_SAT";
+export type CourseCohortId = "MON_FRI" | "TUE_SAT" | "CUSTOM";
 
 export const COURSE_ENROLLMENT_PRICE_INR = 35_000;
 
@@ -17,28 +22,40 @@ export const COURSE_GOOGLE_CALENDAR_EMBED_URL =
 
 export const courseEnrollmentSchedule = {
   sessionsPerWeek: 2,
-  sessionTimeLabel: "8:30 AM – 10:00 AM IST",
+  sessionTimeLabel: TRAINING_BOOKING_WINDOW.label,
   sessionDurationLabel: "1.5 hours",
   totalClasses: 24,
   totalHours: 36,
+  /** Any start time inside this IST window can be booked (incl. Sunday). */
+  bookingWindowLabel: TRAINING_BOOKING_WINDOW.label,
 } as const;
 
+/** Marketing presets — CRM can also pick any two weekdays (incl. Sunday). */
 export const courseCohorts = [
   {
     id: "MON_FRI" as const,
     label: "Monday + Friday",
     shortLabel: "Mon + Fri",
     daysLabel: "Monday and Friday each week",
+    weekdays: [1, 5] as const,
   },
   {
     id: "TUE_SAT" as const,
     label: "Tuesday + Saturday",
     shortLabel: "Tue + Sat",
     daysLabel: "Tuesday and Saturday each week",
+    weekdays: [2, 6] as const,
   },
 ] as const;
 
-export function courseCohortLabel(cohort: CourseCohortId) {
+export function courseCohortLabel(
+  cohort: CourseCohortId,
+  weekdaysCsv?: string | null,
+) {
+  if (cohort === "CUSTOM" || weekdaysCsv) {
+    const days = weekdaysFromCohort(cohort, weekdaysCsv);
+    if (days.length > 0) return weekdaysLabel(days);
+  }
   return courseCohorts.find((item) => item.id === cohort)?.label ?? cohort;
 }
 

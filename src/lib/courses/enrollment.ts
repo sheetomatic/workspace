@@ -124,6 +124,7 @@ export async function confirmCourseEnrollment(params: {
   sessionTimeIst?: string | null;
   totalSessions?: number | null;
   sessionDurationMin?: number | null;
+  weekdays?: number[] | null;
 }) {
   const existing = await prisma.courseEnrollment.findUnique({
     where: { id: params.enrollmentId },
@@ -159,6 +160,18 @@ export async function confirmCourseEnrollment(params: {
   const bookUrl = `${base}/courses/book-slots?token=${token}`;
 
   if (params.programStartYmd && existing.slots.length === 0) {
+    if (params.weekdays && params.weekdays.length >= 2) {
+      const { cohortFromWeekdays, formatWeekdaysCsv } = await import(
+        "@/lib/courses/weekdays"
+      );
+      await prisma.courseEnrollment.update({
+        where: { id: existing.id },
+        data: {
+          cohort: cohortFromWeekdays(params.weekdays),
+          weekdaysCsv: formatWeekdaysCsv(params.weekdays),
+        },
+      });
+    }
     const booked = await bookTrainingSlots({
       enrollmentId: existing.id,
       programStartYmd: params.programStartYmd,
@@ -167,6 +180,7 @@ export async function confirmCourseEnrollment(params: {
       sessionTimeIst: params.sessionTimeIst,
       totalSessions: params.totalSessions,
       sessionDurationMin: params.sessionDurationMin,
+      weekdays: params.weekdays,
       notify: true,
     });
     if (!booked.ok) {

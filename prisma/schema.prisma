@@ -2994,6 +2994,8 @@ model OrgExpenseEntry {
 enum CourseCohort {
   MON_FRI
   TUE_SAT
+  /** Any two weekdays — see CourseEnrollment.weekdaysCsv */
+  CUSTOM
 }
 
 enum CourseEnrollmentStatus {
@@ -3022,14 +3024,20 @@ model CourseEnrollment {
   cohort           CourseCohort
   status           CourseEnrollmentStatus @default(PAYMENT_PENDING)
   slotNotes        String?
+  /**
+   * Comma-separated weekday numbers (0=Sun … 6=Sat), usually two days.
+   * When set, overrides the fixed MON_FRI / TUE_SAT mapping for CUSTOM (and may
+   * also be filled for preset cohorts).
+   */
+  weekdaysCsv      String?
   /** First training session date (IST calendar day) once slots are booked. */
   programStartDate DateTime?
   /** Optional Google Meet / Zoom link shared on all sessions. */
   meetUrl          String?
   /** How often cohort days repeat. */
   frequency        TrainingFrequency      @default(WEEKLY)
-  /** Session start time in Asia/Kolkata, HH:mm (24h). */
-  sessionTimeIst   String                 @default("08:30")
+  /** Session start time in Asia/Kolkata, HH:mm (24h). Booking window 09:00–17:00. */
+  sessionTimeIst   String                 @default("09:00")
   /** Session length in minutes. */
   sessionDurationMin Int                  @default(90)
   /** Total live sessions to generate. */

@@ -2575,6 +2575,7 @@ export async function getLeadTrainingSlotsAction(leadId: string) {
 
   const { listLeadTrainingEnrollments, buildTrainingGoogleCalendarUrl, formatSlotWhen } =
     await import("@/lib/courses/slots");
+  const { courseCohortLabel } = await import("@/lib/content/courses-enrollment");
   const enrollments = await listLeadTrainingEnrollments({
     organizationId: user.organizationId,
     leadId: lead.id,
@@ -2591,6 +2592,8 @@ export async function getLeadTrainingSlotsAction(leadId: string) {
       email: enrollment.email,
       phone: enrollment.phone,
       cohort: enrollment.cohort,
+      weekdaysCsv: enrollment.weekdaysCsv,
+      daysLabel: courseCohortLabel(enrollment.cohort, enrollment.weekdaysCsv),
       status: enrollment.status,
       bookingToken: enrollment.bookingToken,
       programStartDate: enrollment.programStartDate?.toISOString() ?? null,
@@ -2623,15 +2626,24 @@ export async function bookLeadTrainingSlotsAction(formData: FormData) {
   }
 
   const leadId = String(formData.get("leadId") ?? "").trim();
-  const cohortRaw = String(formData.get("cohort") ?? "MON_FRI").trim();
   const programStartYmd = String(formData.get("programStartYmd") ?? "").trim();
   const meetUrl = String(formData.get("meetUrl") ?? "").trim() || null;
   const frequency = String(formData.get("frequency") ?? "WEEKLY").trim();
-  const sessionTimeIst = String(formData.get("sessionTimeIst") ?? "08:30").trim();
+  const sessionTimeIst = String(formData.get("sessionTimeIst") ?? "09:00").trim();
   const totalSessionsRaw = String(formData.get("totalSessions") ?? "24").trim();
   const sessionDurationRaw = String(formData.get("sessionDurationMin") ?? "90").trim();
+  const dayOne = formData.get("dayOne");
+  const dayTwo = formData.get("dayTwo");
   if (!leadId || !programStartYmd) {
     return { ok: false as const, message: "Lead and start date are required." };
+  }
+
+  const { normalizeTwoWeekdays, weekdaysLabel } = await import(
+    "@/lib/courses/weekdays"
+  );
+  const pair = normalizeTwoWeekdays(dayOne, dayTwo);
+  if (!pair.ok) {
+    return { ok: false as const, message: pair.message };
   }
 
   const lead = await prisma.inboundLead.findFirst({
@@ -2648,16 +2660,11 @@ export async function bookLeadTrainingSlotsAction(formData: FormData) {
     };
   }
 
-  const { isValidCourseCohort } = await import("@/lib/courses/enrollment");
-  if (!isValidCourseCohort(cohortRaw)) {
-    return { ok: false as const, message: "Choose a valid day pair." };
-  }
-
   const { bookTrainingSlotsForLead } = await import("@/lib/courses/slots");
   const result = await bookTrainingSlotsForLead({
     organizationId: user.organizationId,
     leadId: lead.id,
-    cohort: cohortRaw,
+    weekdays: pair.days,
     programStartYmd,
     meetUrl,
     frequency,
@@ -2676,7 +2683,7 @@ export async function bookLeadTrainingSlotsAction(formData: FormData) {
       organizationId: user.organizationId,
       leadId: lead.id,
       type: "NOTE",
-      body: `Training course slots booked (${cohortRaw}, ${frequency}, ${sessionTimeIst} IST, ${totalSessionsRaw} sessions) starting ${programStartYmd}. Email + WhatsApp alerts sent.`,
+      body: `Training course slots booked (${weekdaysLabel(pair.days)}, ${frequency}, ${sessionTimeIst} IST, ${totalSessionsRaw} sessions) starting ${programStartYmd}. Email + WhatsApp alerts sent.`,
       createdByUserId: user.id,
     });
   }
