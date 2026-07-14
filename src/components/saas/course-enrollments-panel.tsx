@@ -10,6 +10,10 @@ import {
   COURSE_GOOGLE_CALENDAR_BOOKING_URL,
   courseCohortLabel,
 } from "@/lib/content/courses-enrollment";
+import {
+  TRAINING_BOOKING_WINDOW,
+  TRAINING_WEEKDAYS,
+} from "@/lib/courses/weekdays";
 import { formatPendingAge } from "@/lib/workspace-format";
 
 export type CourseEnrollmentRow = {
@@ -18,7 +22,7 @@ export type CourseEnrollmentRow = {
   phone: string;
   email: string;
   amountInr: number;
-  cohort: "MON_FRI" | "TUE_SAT";
+  cohort: "MON_FRI" | "TUE_SAT" | "CUSTOM";
   status: "PAYMENT_PENDING" | "CONFIRMED" | "CANCELLED";
   createdAt: string;
   bookingToken?: string | null;
@@ -88,12 +92,38 @@ export function CourseEnrollmentsPanel({
               <form action={formAction} className="saas-list-actions" style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
                 <input name="enrollmentId" type="hidden" value={row.id} />
                 <label style={{ fontSize: 12 }}>
+                  Day 1
+                  <select name="dayOne" defaultValue="0">
+                    {TRAINING_WEEKDAYS.map((day) => (
+                      <option key={day.value} value={day.value}>
+                        {day.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label style={{ fontSize: 12 }}>
+                  Day 2
+                  <select name="dayTwo" defaultValue="3">
+                    {TRAINING_WEEKDAYS.map((day) => (
+                      <option key={day.value} value={day.value}>
+                        {day.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label style={{ fontSize: 12 }}>
                   Start date / day (optional)
                   <input name="programStartYmd" type="date" />
                 </label>
                 <label style={{ fontSize: 12 }}>
-                  Time IST
-                  <input name="sessionTimeIst" type="time" defaultValue="08:30" />
+                  Time IST ({TRAINING_BOOKING_WINDOW.label})
+                  <input
+                    name="sessionTimeIst"
+                    type="time"
+                    min={TRAINING_BOOKING_WINDOW.startIst}
+                    max={TRAINING_BOOKING_WINDOW.endIst}
+                    defaultValue="09:00"
+                  />
                 </label>
                 <label style={{ fontSize: 12 }}>
                   Frequency

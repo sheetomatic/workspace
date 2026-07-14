@@ -23,10 +23,15 @@ export async function confirmCourseEnrollmentAction(
   const programStartYmd = formData.get("programStartYmd")?.toString().trim();
   const meetUrl = formData.get("meetUrl")?.toString().trim() || null;
   const frequency = formData.get("frequency")?.toString().trim() || "WEEKLY";
-  const sessionTimeIst = formData.get("sessionTimeIst")?.toString().trim() || "08:30";
+  const sessionTimeIst = formData.get("sessionTimeIst")?.toString().trim() || "09:00";
   const totalSessions = Number.parseInt(
     formData.get("totalSessions")?.toString().trim() || "24",
     10,
+  );
+  const { normalizeTwoWeekdays } = await import("@/lib/courses/weekdays");
+  const pair = normalizeTwoWeekdays(
+    formData.get("dayOne"),
+    formData.get("dayTwo"),
   );
   if (!enrollmentId) {
     return { ok: false, message: "Enrollment not found." };
@@ -40,6 +45,7 @@ export async function confirmCourseEnrollmentAction(
     frequency,
     sessionTimeIst,
     totalSessions,
+    weekdays: pair.ok ? pair.days : undefined,
   });
 
   revalidatePath("/app/approvals");
@@ -61,13 +67,21 @@ export async function bookCourseSlotsAction(
   const programStartYmd = formData.get("programStartYmd")?.toString().trim();
   const meetUrl = formData.get("meetUrl")?.toString().trim() || null;
   const frequency = formData.get("frequency")?.toString().trim() || "WEEKLY";
-  const sessionTimeIst = formData.get("sessionTimeIst")?.toString().trim() || "08:30";
+  const sessionTimeIst = formData.get("sessionTimeIst")?.toString().trim() || "09:00";
   const totalSessions = Number.parseInt(
     formData.get("totalSessions")?.toString().trim() || "24",
     10,
   );
+  const { normalizeTwoWeekdays } = await import("@/lib/courses/weekdays");
+  const pair = normalizeTwoWeekdays(
+    formData.get("dayOne"),
+    formData.get("dayTwo"),
+  );
   if (!enrollmentId || !programStartYmd) {
     return { ok: false, message: "Enrollment and start date are required." };
+  }
+  if (!pair.ok) {
+    return { ok: false, message: pair.message };
   }
 
   const result = await bookTrainingSlots({
@@ -77,6 +91,7 @@ export async function bookCourseSlotsAction(
     frequency,
     sessionTimeIst,
     totalSessions,
+    weekdays: pair.days,
     notify: true,
   });
 
