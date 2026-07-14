@@ -184,6 +184,7 @@ model Organization {
   employeeProfiles  EmployeeProfile[]
   employeeDocuments EmployeeDocument[]
   fieldCheckIns     FieldCheckIn[]
+  fieldCheckInAttachments FieldCheckInAttachment[]
   fieldVisits       FieldVisit[]
   fieldLocationPings FieldLocationPing[]
   jobOpenings       JobOpening[]
@@ -916,6 +917,7 @@ model User {
   employeeProfiles     EmployeeProfile[]        @relation("EmployeeProfileUser")
   employeeDocumentsUploaded EmployeeDocument[]  @relation("EmployeeDocumentUploader")
   fieldCheckIns        FieldCheckIn[]
+  fieldCheckInAttachmentsUploaded FieldCheckInAttachment[] @relation("FieldCheckInAttachmentUploader")
   fieldVisitsAssigned  FieldVisit[]             @relation("FieldVisitAssignee")
   fieldLocationPings   FieldLocationPing[]
   candidatesOwned      Candidate[]              @relation("CandidateOwner")
@@ -1568,11 +1570,31 @@ model FieldCheckIn {
   accuracyM      Float?
   clientName     String?
   activityNote   String?
+  /** External Drive/WhatsApp link when no in-app upload is used. */
   photoUrl       String?
+  photoAttachmentId String?   @unique
+  photoAttachment   FieldCheckInAttachment? @relation(fields: [photoAttachmentId], references: [id], onDelete: SetNull)
   /** Set when visit has a geofence; null if no fence configured. */
   geoFenceOk     Boolean?
 
   @@index([organizationId, userId, checkedInAt])
+}
+
+/** In-app photo/document proof for field check-ins (camera or file upload). */
+model FieldCheckInAttachment {
+  id             String        @id @default(cuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  fileName       String
+  mimeType       String
+  size           Int
+  data           Bytes
+  uploadedById   String?
+  uploadedBy     User?         @relation("FieldCheckInAttachmentUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  checkIn        FieldCheckIn?
+  createdAt      DateTime      @default(now())
+
+  @@index([organizationId, createdAt])
 }
 
 /** Lightweight live GPS ping while Field page is open (not native background tracking). */

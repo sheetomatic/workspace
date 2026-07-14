@@ -10559,6 +10559,39 @@ body:has(.workspace-app.saas-app) {
   gap: 10px;
 }
 
+.workspace-app .ws-hr-field-proof {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.85rem 0.9rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.workspace-app .ws-hr-field-proof-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.workspace-app .ws-hr-field-proof-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.workspace-app .ws-hr-field-proof-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .workspace-app .ws-hr-holiday-region-list {
   display: grid;
   gap: 8px;

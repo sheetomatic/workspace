@@ -241,6 +241,8 @@ export async function recordFieldCheckInAction(
   const clientName = String(formData.get("clientName") ?? "").trim();
   const activityNote = buildFieldActivityNote(formData);
   const photoUrl = String(formData.get("photoUrl") ?? "").trim();
+  const photoAttachmentId =
+    String(formData.get("photoAttachmentId") ?? "").trim() || null;
   const visitId = String(formData.get("visitId") ?? "").trim() || null;
   const accuracyMRaw = Number(formData.get("accuracyM"));
   const accuracyM = Number.isFinite(accuracyMRaw) ? accuracyMRaw : null;
@@ -248,6 +250,26 @@ export async function recordFieldCheckInAction(
   try {
     if (!Number.isFinite(geoLat) || !Number.isFinite(geoLng)) {
       throw new Error("GPS location is required for field check-in.");
+    }
+
+    let verifiedAttachmentId: string | null = null;
+    if (photoAttachmentId) {
+      const attachment = await prisma.fieldCheckInAttachment.findFirst({
+        where: {
+          id: photoAttachmentId,
+          organizationId: user.organizationId,
+          uploadedById: user.id,
+          checkIn: null,
+        },
+        select: { id: true },
+      });
+      if (!attachment) {
+        return hrActionFailure(
+          "INVALID_INPUT",
+          "Uploaded proof was not found. Take photo or upload again.",
+        );
+      }
+      verifiedAttachmentId = attachment.id;
     }
 
     let geoFenceOk: boolean | null = null;
@@ -305,7 +327,8 @@ export async function recordFieldCheckInAction(
         accuracyM,
         clientName: clientName || null,
         activityNote: activityNote || null,
-        photoUrl: photoUrl || null,
+        photoUrl: verifiedAttachmentId ? null : photoUrl || null,
+        photoAttachmentId: verifiedAttachmentId,
         geoFenceOk,
       },
     });
@@ -1204,7 +1227,10 @@ export async function updateHolidayAction(
           }
         : {}),
     });
-    revalidateHr();
+    // Narrow revalidation — full HR path bust made optional toggles feel slow.
+    revalidatePath("/app/hr/holidays");
+    revalidatePath("/app/hr/attendance");
+    revalidatePath("/app/hr");
     return { ok: true };
   } catch (error) {
     const message =

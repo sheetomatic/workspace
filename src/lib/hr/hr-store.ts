@@ -422,6 +422,7 @@ export async function listFieldCheckIns(organizationId: string, limit = 30) {
     include: {
       user: { select: { id: true, name: true, email: true } },
       visit: { select: { clientName: true, status: true } },
+      photoAttachment: { select: { id: true, fileName: true, mimeType: true } },
     },
     orderBy: { checkedInAt: "desc" },
     take: limit,

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/saas/page-header";
 import { GeoPunchForm } from "@/components/hr/geo-punch-form";
+import { FieldProofUpload } from "@/components/hr/field-proof-upload";
 import { HrSubNav } from "@/components/hr/hr-sub-nav";
 import { FieldLiveBoard } from "@/components/hr/field-live-board";
 import { FieldDayTrail } from "@/components/hr/field-day-trail";
@@ -331,21 +332,14 @@ export default async function HrFieldPage() {
               />
             </label>
             <label>
-              Distribution / documents / photo notes
+              Distribution / documents notes
               <textarea
                 name="distributionDetails"
                 rows={2}
-                placeholder="Samples delivered, documents collected, photos uploaded elsewhere"
+                placeholder="Samples delivered, documents collected, delivery notes"
               />
             </label>
-            <label>
-              Photo / document link
-              <input
-                name="photoUrl"
-                type="url"
-                placeholder="Paste Drive, WhatsApp, or site photo link"
-              />
-            </label>
+            <FieldProofUpload />
           </GeoPunchForm>
         </section>
 
@@ -456,13 +450,21 @@ export default async function HrFieldPage() {
                     </td>
                     <td>{row.activityNote ?? "-"}</td>
                     <td>
-                      {row.photoUrl ? (
+                      {row.photoAttachmentId ? (
+                        <a
+                          href={`/api/hr/field-attachments/${row.photoAttachmentId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Open proof
+                        </a>
+                      ) : row.photoUrl ? (
                         <a
                           href={row.photoUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          Open
+                          Open link
                         </a>
                       ) : (
                         "-"
