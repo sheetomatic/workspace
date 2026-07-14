@@ -1396,7 +1396,7 @@
   flex-shrink: 0;
   z-index: 2;
   background: #fff;
-  padding: 0.85rem 0.85rem 0.5rem;
+  padding: 0.7rem 0.85rem 0.45rem;
   border-bottom: 1px solid #f1f5f9;
 }
 
@@ -1669,17 +1669,84 @@
 }
 
 .leads-training-panel {
+  display: grid;
+  gap: 0.85rem;
   min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.leads-training-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.leads-training-hero h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.leads-training-hero .leads-help {
+  margin: 0.25rem 0 0;
+}
+
+.leads-training-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.75rem;
+}
+
+.leads-training-link {
+  font-size: 0.78rem;
+  color: #0369a1;
+  word-break: break-all;
+}
+
+.leads-training-form {
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.leads-training-form-title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.leads-training-embed {
+  margin: 0;
+}
+
+.leads-training-panel .gcal-booking {
+  padding: 0.65rem;
+  gap: 0.55rem;
+}
+
+.leads-training-panel .gcal-booking-help {
+  display: none;
 }
 
 .leads-training-panel .gcal-booking-frame-wrap {
-  height: 360px;
-  min-height: 280px;
-  max-height: 45dvh;
+  height: 320px;
+  min-height: 240px;
+  max-height: 36dvh;
+  overflow: hidden;
 }
 
 .leads-training-panel .gcal-booking-frame {
-  min-height: 480px;
+  height: 100%;
+  min-height: 100%;
 }
 
 .leads-training-table-wrap {
@@ -1687,7 +1754,10 @@
   max-width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  margin-top: 0.75rem;
+}
+
+.leads-ai-summary {
+  margin-top: 0;
 }
 
 @media (max-width: 640px) {
@@ -1724,9 +1794,15 @@
     max-width: 100%;
   }
 
+  .leads-training-hero .btn-cta {
+    width: 100%;
+    justify-content: center;
+  }
+
   .leads-training-panel .gcal-booking-frame-wrap {
-    height: 280px;
-    min-height: 220px;
+    height: 260px;
+    min-height: 200px;
+    max-height: 32dvh;
   }
 }
 
@@ -3802,13 +3878,15 @@
 .leads-ai-summary,
 .leads-merge-panel,
 .leads-calendar-links {
-  margin-top: 0.75rem;
-  padding: 0.7rem 0.75rem;
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  padding: 0.65rem 0.7rem;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   background: #f8fafc;
   display: grid;
-  gap: 0.45rem;
+  gap: 0.4rem;
+  min-width: 0;
 }
 
 .leads-ai-summary-head,
@@ -3834,6 +3912,10 @@
   font-size: 0.84rem;
   line-height: 1.45;
   color: #334155;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .leads-ai-summary-error {

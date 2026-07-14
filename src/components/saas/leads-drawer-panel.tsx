@@ -376,6 +376,84 @@ export function LeadDrawerPanel({
               AI: {leadStatusLabel(aiStatus)} — Apply
             </button>
           ) : null}
+        </div>
+        <div className="leads-drawer-head-actions">
+          {canManage ? (
+            <button
+              type="button"
+              className="btn-secondary btn-sm"
+              disabled={pending}
+              onClick={() =>
+                startTransition(async () => {
+                  if (isArchived) {
+                    await unarchiveInboundLeadAction(lead.id);
+                  } else {
+                    await archiveInboundLeadAction(lead.id);
+                    onClose();
+                  }
+                  router.refresh();
+                })
+              }
+            >
+              {isArchived ? "Unarchive" : "Archive"}
+            </button>
+          ) : null}
+          {lead.salesOrder ? (
+            <Link
+              href={`/app/sales-orders/${lead.salesOrder.id}`}
+              className="btn-secondary btn-sm leads-drawer-so-link"
+            >
+              {lead.salesOrder.orderNumber}
+            </Link>
+          ) : (
+            <Link
+              href="/app/sales-orders"
+              className="btn-secondary btn-sm leads-drawer-so-link"
+            >
+              Sales orders
+            </Link>
+          )}
+          <button
+            type="button"
+            className="leads-icon-btn"
+            onClick={onClose}
+            title="Close"
+            aria-label="Close"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </header>
+
+      <nav className="leads-drawer-tabs" aria-label="Lead sections">
+        {(
+          [
+            { key: "details", label: "Details" },
+            { key: "meeting", label: "Meeting" },
+            { key: "services", label: "Services" },
+            { key: "payments", label: "Payments" },
+            { key: "quote", label: "Quotation" },
+            { key: "order", label: "Delivery" },
+            { key: "training", label: "Training" },
+          ] as const
+        ).map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            className={tab === item.key ? "active" : ""}
+            onClick={() => setTab(item.key)}
+          >
+            {item.label}
+            {item.key === "order" ? (
+              <span className="leads-drawer-tab-meta">{deliverySummary}</span>
+            ) : null}
+          </button>
+        ))}
+      </nav>
+
+      <div className="leads-drawer-body">
+      {tab === "details" ? (
+        <>
           <div className="leads-ai-summary">
             <div className="leads-ai-summary-head">
               <h3>AI qualification</h3>
@@ -472,84 +550,6 @@ export function LeadDrawerPanel({
               </ul>
             </div>
           ) : null}
-        </div>
-        <div className="leads-drawer-head-actions">
-          {canManage ? (
-            <button
-              type="button"
-              className="btn-secondary btn-sm"
-              disabled={pending}
-              onClick={() =>
-                startTransition(async () => {
-                  if (isArchived) {
-                    await unarchiveInboundLeadAction(lead.id);
-                  } else {
-                    await archiveInboundLeadAction(lead.id);
-                    onClose();
-                  }
-                  router.refresh();
-                })
-              }
-            >
-              {isArchived ? "Unarchive" : "Archive"}
-            </button>
-          ) : null}
-          {lead.salesOrder ? (
-            <Link
-              href={`/app/sales-orders/${lead.salesOrder.id}`}
-              className="btn-secondary btn-sm leads-drawer-so-link"
-            >
-              {lead.salesOrder.orderNumber}
-            </Link>
-          ) : (
-            <Link
-              href="/app/sales-orders"
-              className="btn-secondary btn-sm leads-drawer-so-link"
-            >
-              Sales orders
-            </Link>
-          )}
-          <button
-            type="button"
-            className="leads-icon-btn"
-            onClick={onClose}
-            title="Close"
-            aria-label="Close"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      </header>
-
-      <nav className="leads-drawer-tabs" aria-label="Lead sections">
-        {(
-          [
-            { key: "details", label: "Details" },
-            { key: "meeting", label: "Meeting" },
-            { key: "services", label: "Services" },
-            { key: "payments", label: "Payments" },
-            { key: "quote", label: "Quotation" },
-            { key: "order", label: "Delivery" },
-            { key: "training", label: "Training" },
-          ] as const
-        ).map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            className={tab === item.key ? "active" : ""}
-            onClick={() => setTab(item.key)}
-          >
-            {item.label}
-            {item.key === "order" ? (
-              <span className="leads-drawer-tab-meta">{deliverySummary}</span>
-            ) : null}
-          </button>
-        ))}
-      </nav>
-
-      <div className="leads-drawer-body">
-      {tab === "details" ? (
-        <>
           {canManage ? (
             <div className="leads-drawer-form">
               <label>
