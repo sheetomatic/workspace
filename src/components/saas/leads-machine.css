@@ -1673,14 +1673,103 @@
 
 .leads-training-panel {
   display: grid;
-  gap: 0.85rem;
+  gap: 1rem;
   min-width: 0;
   margin: 0;
   padding: 0;
   border: none;
 }
 
-.leads-training-hero {
+.leads-training-head h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.leads-training-head p {
+  margin: 0.3rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+.leads-training-form {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  display: grid;
+  gap: 1.1rem;
+}
+
+.leads-training-form-section {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.85rem 0.9rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.leads-training-form-section h4 {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.leads-training-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem 0.85rem;
+}
+
+.leads-training-form label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.leads-training-form select,
+.leads-training-form input[type="date"],
+.leads-training-form input[type="time"],
+.leads-training-form input[type="number"],
+.leads-training-form input[type="url"] {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.88rem;
+  background: #fff;
+  color: #0f172a;
+}
+
+.leads-training-meet {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.leads-training-form-footer {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.leads-training-schedule {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.85rem 0.9rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.leads-training-schedule-head {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
@@ -1688,82 +1777,23 @@
   gap: 0.65rem;
 }
 
-.leads-training-hero h3 {
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 700;
+.leads-training-schedule-head strong {
+  display: block;
+  font-size: 0.92rem;
   color: #0f172a;
 }
 
-.leads-training-hero .leads-help {
-  margin: 0.25rem 0 0;
+.leads-training-schedule-head span {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+  color: #64748b;
 }
 
-.leads-training-actions {
+.leads-training-schedule-actions {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.55rem 0.75rem;
-}
-
-.leads-training-link {
-  font-size: 0.78rem;
-  color: #0369a1;
-  word-break: break-all;
-}
-
-.leads-training-form {
-  margin: 0;
-  padding: 0.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  background: #f8fafc;
-  display: grid;
-  gap: 0.65rem;
-}
-
-.leads-training-form .leads-drawer-grid {
-  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
-}
-
-.leads-training-form label .leads-help {
-  display: block;
-  margin-top: 0.25rem;
-  font-size: 0.72rem;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.leads-training-form-title {
-  margin: 0;
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.leads-training-embed {
-  margin: 0;
-}
-
-.leads-training-panel .gcal-booking {
-  padding: 0.65rem;
-  gap: 0.55rem;
-}
-
-.leads-training-panel .gcal-booking-help {
-  display: none;
-}
-
-.leads-training-panel .gcal-booking-frame-wrap {
-  height: 320px;
-  min-height: 240px;
-  max-height: 36dvh;
-  overflow: hidden;
-}
-
-.leads-training-panel .gcal-booking-frame {
-  height: 100%;
-  min-height: 100%;
+  gap: 0.4rem;
 }
 
 .leads-training-table-wrap {
@@ -1771,6 +1801,33 @@
   max-width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+.leads-training-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.leads-training-table th,
+.leads-training-table td {
+  padding: 0.5rem 0.55rem;
+  border-bottom: 1px solid #f1f5f9;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.leads-training-table th {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  background: #f8fafc;
+}
+
+.leads-training-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 @media (max-width: 640px) {
@@ -1807,15 +1864,17 @@
     max-width: 100%;
   }
 
-  .leads-training-hero .btn-cta {
-    width: 100%;
-    justify-content: center;
+  .leads-training-fields {
+    grid-template-columns: 1fr;
   }
 
-  .leads-training-panel .gcal-booking-frame-wrap {
-    height: 260px;
-    min-height: 200px;
-    max-height: 32dvh;
+  .leads-training-schedule-actions {
+    width: 100%;
+  }
+
+  .leads-training-schedule-actions .btn-sm {
+    flex: 1 1 auto;
+    justify-content: center;
   }
 }
 
