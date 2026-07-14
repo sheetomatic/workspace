@@ -17,6 +17,27 @@ function noonDate(date: Date): Date {
   return d;
 }
 
+/** Parse HTML date input (YYYY-MM-DD) as UTC noon — avoids TZ day-shift. */
+export function parseHolidayDateInput(raw: string): Date {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw.trim());
+  if (!match) {
+    throw new Error("Invalid holiday date. Use YYYY-MM-DD.");
+  }
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0));
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    throw new Error("Invalid holiday date.");
+  }
+  return date;
+}
+
 function holidayNotes(name: string) {
   return `Holiday: ${name}`;
 }
@@ -160,7 +181,7 @@ export async function listHolidays(organizationId: string, year?: number) {
 
 export async function createHoliday(params: {
   organizationId: string;
-  date: Date;
+  date: Date | string;
   name: string;
   isOptional?: boolean;
 }) {
@@ -168,7 +189,10 @@ export async function createHoliday(params: {
   if (!name) {
     throw new Error("Holiday name is required.");
   }
-  const date = noonDate(params.date);
+  const date =
+    typeof params.date === "string"
+      ? parseHolidayDateInput(params.date)
+      : noonDate(params.date);
   if (Number.isNaN(date.getTime())) {
     throw new Error("Invalid holiday date.");
   }
