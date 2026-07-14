@@ -156,12 +156,38 @@ export function buildDelegatePromptButtons() {
   };
 }
 
+/** Official Cloud CTA URL button (one URL button per message). */
+export function buildCtaUrlInteractive(params: {
+  body: string;
+  buttonLabel: string;
+  url: string;
+  header?: string;
+  footer?: string;
+}) {
+  return {
+    type: "cta_url" as const,
+    ...(params.header
+      ? { header: { type: "text" as const, text: params.header.slice(0, 60) } }
+      : {}),
+    body: { text: params.body.slice(0, 1024) },
+    ...(params.footer ? { footer: { text: params.footer.slice(0, 60) } } : {}),
+    action: {
+      name: "cta_url" as const,
+      parameters: {
+        display_text: params.buttonLabel.slice(0, 20),
+        url: params.url,
+      },
+    },
+  };
+}
+
 export type WhatsAppInteractivePayload = {
   type: "interactive";
   interactive:
     | ReturnType<typeof buildMainMenuList>
     | ReturnType<typeof buildPostTaskButtons>
     | ReturnType<typeof buildDelegatePromptButtons>
+    | ReturnType<typeof buildCtaUrlInteractive>
     | ReturnType<
         typeof import("@/lib/whatsapp-bot/knowledge-menu").buildCustomerKnowledgeMenu
       >

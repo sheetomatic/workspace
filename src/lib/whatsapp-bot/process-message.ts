@@ -19,6 +19,7 @@ import {
 } from "@/lib/whatsapp-bot/normalize-command";
 import { downloadWhatsAppMedia } from "@/lib/whatsapp-bot/media";
 import {
+  buildCtaUrlInteractive,
   buildDelegatePromptButtons,
   buildMainMenuList,
   buildPostTaskButtons,
@@ -1468,7 +1469,7 @@ async function processSingleMessage(
   await handleTeamMemberMessage(org, delegator, message);
 }
 
-/** Non-team senders on Official API — point them to communication WhatsApp or form. */
+/** Non-team senders on Official API — CTA buttons to communication WhatsApp / form. */
 async function handleNonTeamOfficialRedirect(
   org: { id: string; name: string },
   message: MetaMessage,
@@ -1479,20 +1480,54 @@ async function handleNonTeamOfficialRedirect(
   const chatLink = buildWhatsAppUrl(
     "Hi Sheetomatic, I want to enquire about your products.",
   );
-  const lines = [
+  const bodyText = [
     `Hi! Thanks for messaging *${org.name}* on our Official WhatsApp.`,
     "",
     "This number is for *registered workspace team members* only.",
     "",
-    `Please chat with us on *${whatsappDisplayNumber}* instead:`,
-    chatLink,
+    `Tap below to chat with us on *${whatsappDisplayNumber}*, or use the enquiry form.`,
+  ].join("\n");
+
+  const fallbackLines = [
+    bodyText,
+    "",
+    `Chat: ${chatLink}`,
   ];
   if (formUrl) {
-    lines.push("", "Or fill our enquiry form:", formUrl);
+    fallbackLines.push(`Form: ${formUrl}`);
   }
-  lines.push("", "— Team Sheetomatic");
+  fallbackLines.push("", "— Team Sheetomatic");
+  const fallbackText = fallbackLines.join("\n");
 
-  await replyText(org.id, message.from, lines.join("\n"));
+  const chatSent = await sendWhatsAppInteractiveWithFallback({
+    organizationId: org.id,
+    toPhone: message.from,
+    interactive: wrapInteractive(
+      buildCtaUrlInteractive({
+        body: bodyText,
+        buttonLabel: "Chat on WhatsApp",
+        url: chatLink,
+        footer: "Team members: reply menu here",
+      }),
+    ),
+    fallbackText,
+  });
+
+  if (chatSent.sent && formUrl) {
+    await sendWhatsAppInteractiveWithFallback({
+      organizationId: org.id,
+      toPhone: message.from,
+      interactive: wrapInteractive(
+        buildCtaUrlInteractive({
+          body: "Prefer a form? Share your details here and our team will get back to you.",
+          buttonLabel: "Enquiry form",
+          url: formUrl,
+        }),
+      ),
+      fallbackText: `Enquiry form: ${formUrl}`,
+    });
+  }
+
   await markEvent(message.id, {
     organizationId: org.id,
     fromPhone: message.from,
