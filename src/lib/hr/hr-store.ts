@@ -465,8 +465,11 @@ export async function listCandidates(organizationId: string) {
 
 export async function getHrDashboardStats(organizationId: string) {
   const workDate = startOfToday();
-  const dayEnd = new Date(workDate);
-  dayEnd.setUTCHours(23, 59, 59, 999);
+  const todayYmd = new Date().toLocaleDateString("en-CA", {
+    timeZone: "Asia/Kolkata",
+  });
+  const dayStart = new Date(`${todayYmd}T00:00:00.000+05:30`);
+  const dayEnd = new Date(`${todayYmd}T23:59:59.999+05:30`);
   const [
     activeMembers,
     todayRecords,
@@ -559,6 +562,8 @@ export async function getHrDashboardStats(organizationId: string) {
       } else {
         presentUserIds.add(record.userId);
       }
+    } else if (record.status === "HALF_DAY" || record.status === "SHORT_LEAVE") {
+      presentUserIds.add(record.userId);
     }
   }
 

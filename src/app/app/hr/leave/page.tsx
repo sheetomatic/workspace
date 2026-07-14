@@ -17,7 +17,7 @@ import {
   listLeaveRequests,
 } from "@/lib/hr/hr-store";
 import { resolveEnabledHrSubModules, requireHrSubModule } from "@/lib/hr/hr-sub-modules";
-import { listLeaveBalances, listLeavePolicies } from "@/lib/hr/payroll";
+import { listLeaveBalances, resolveLeavePolicyDays } from "@/lib/hr/payroll";
 import { listAttendanceExceptions } from "@/lib/hr/attendance-exceptions";
 import { listSwapRequests } from "@/lib/hr/swap-requests";
 import {
@@ -136,8 +136,8 @@ export default async function HrLeavePage({ searchParams }: PageProps) {
         isManager ? undefined : { userId: user.id },
       ),
       isAdmin
-        ? listLeavePolicies(user.organizationId, year)
-        : Promise.resolve([]),
+        ? resolveLeavePolicyDays(user.organizationId, year)
+        : Promise.resolve({} as Awaited<ReturnType<typeof resolveLeavePolicyDays>>),
       isAdmin
         ? listLeaveBalancesForPage(user.organizationId, {
             viewerUserId: user.id,
@@ -207,9 +207,9 @@ export default async function HrLeavePage({ searchParams }: PageProps) {
       {activeTab === "allocation" && isAdmin ? (
         <LeaveAllocationPanel
           year={year}
-          policies={policies.map((p) => ({
-            leaveType: p.leaveType,
-            defaultDays: p.defaultDays,
+          policies={Object.entries(policies).map(([leaveType, defaultDays]) => ({
+            leaveType,
+            defaultDays,
           }))}
           members={members.map((m) => ({
             userId: m.id,

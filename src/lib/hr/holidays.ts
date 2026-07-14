@@ -77,7 +77,8 @@ export async function syncHolidayAttendance(params: {
   const notes = holidayNotes(params.name);
   let synced = 0;
   for (const member of members) {
-    // Do not overwrite approved leave with HOLIDAY.
+    // Do not overwrite real attendance, approved leave, or manager-entered rows.
+    // Only create missing rows or refresh rows previously auto-synced by this helper.
     const existing = await prisma.attendanceRecord.findUnique({
       where: {
         organizationId_userId_workDate: {
@@ -86,9 +87,12 @@ export async function syncHolidayAttendance(params: {
           workDate,
         },
       },
-      select: { status: true },
+      select: { status: true, notes: true },
     });
-    if (existing?.status === "ON_LEAVE") {
+    if (
+      existing &&
+      !(existing.status === "HOLIDAY" && existing.notes?.startsWith("Holiday:"))
+    ) {
       continue;
     }
 
