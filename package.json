@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "dev": "prisma generate && next dev",
-    "build": "prisma generate && prisma migrate deploy && NODE_OPTIONS=--max-old-space-size=8192 next build --webpack",
+    "build": "DIRECT_URL=\"${DIRECT_URL:-$DATABASE_URL}\" prisma generate && DIRECT_URL=\"${DIRECT_URL:-$DATABASE_URL}\" prisma migrate deploy && NODE_OPTIONS=--max-old-space-size=8192 next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "db:generate": "prisma generate",
@@ -21,7 +21,7 @@
     "db:seed-acme-hr": "tsx prisma/seed-acme-hr.ts",
     "db:sync-hingorani": "tsx prisma/sync-hingorani-sheet.ts",
     "db:reset": "prisma migrate reset --force",
-    "postinstall": "prisma generate",
+    "postinstall": "DIRECT_URL=\"${DIRECT_URL:-$DATABASE_URL}\" prisma generate",
     "test:e2e": "playwright test",
     "test:e2e:smoke": "playwright test tests/smoke",
     "test:e2e:tenant": "playwright test tests/e2e/tenant-isolation.spec.ts",
