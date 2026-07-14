@@ -10600,6 +10600,28 @@ body:has(.workspace-app.saas-app) {
   border-top: 1px solid #e2e8f0;
 }
 
+.workspace-app .ws-hr-holiday-add-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.workspace-app .ws-hr-holiday-add-header h2 {
+  margin: 0;
+}
+
+.workspace-app .ws-hr-holiday-add-btn {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.workspace-app .ws-hr-holiday-add-form {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
+}
+
 .workspace-app .ws-hr-form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));

@@ -2,7 +2,7 @@
 
 import type { InboundLeadStatus } from "@prisma/client";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { updateInboundLeadStatus } from "@/app/app/leads/actions";
 import {
   leadStatusLabel,
@@ -23,7 +23,12 @@ export function LeadStatusSelect({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const current = resolveLeadStatus(value);
+  const resolved = resolveLeadStatus(value);
+  const [current, setCurrent] = useState(resolved);
+
+  useEffect(() => {
+    setCurrent(resolved);
+  }, [resolved, leadId]);
 
   if (disabled) {
     return (
@@ -43,8 +48,15 @@ export function LeadStatusSelect({
       onKeyDown={(event) => event.stopPropagation()}
       onChange={(event) => {
         const status = event.target.value as InboundLeadStatus;
+        const previous = current;
+        setCurrent(status);
         startTransition(async () => {
-          await updateInboundLeadStatus(leadId, status);
+          const result = await updateInboundLeadStatus(leadId, status);
+          if (!result.ok) {
+            setCurrent(previous);
+            window.alert(result.message ?? "Could not update status.");
+            return;
+          }
           router.refresh();
         });
       }}

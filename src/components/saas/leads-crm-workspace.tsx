@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { MessageCircle, Phone, Trash2 } from "lucide-react";
 import {
   createManualInboundLead,
@@ -183,6 +183,10 @@ export function LeadsCrmWorkspace({
   const [createRequirement, setCreateRequirement] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
   const [createDuplicate, setCreateDuplicate] = useState<DuplicateMatch | null>(null);
+
+  useEffect(() => {
+    setSelectedId(initialSelectedLeadId);
+  }, [initialSelectedLeadId]);
 
   const showArchived = listParams.archived === "1";
   const isBoard = view === "board";

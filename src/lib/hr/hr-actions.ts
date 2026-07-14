@@ -1131,9 +1131,22 @@ export async function getSalarySlipAction(
 
 // ── Holidays ──────────────────────────────────────────────────────────────
 
+export type CreateHolidayActionResult =
+  | {
+      ok: true;
+      year: number;
+      holiday: {
+        id: string;
+        date: string;
+        name: string;
+        isOptional: boolean;
+      };
+    }
+  | { ok: false; code: string; message: string };
+
 export async function createHolidayAction(
   formData: FormData,
-): Promise<HrActionResult> {
+): Promise<CreateHolidayActionResult> {
   const user = await getSessionUser();
   if (!user || !hasMinimumRole(user.role, "ADMIN")) {
     return hrActionFailure("FORBIDDEN", "Admin access required to manage holidays.");
@@ -1151,14 +1164,23 @@ export async function createHolidayAction(
 
   try {
     const { createHoliday } = await import("@/lib/hr/holidays");
-    await createHoliday({
+    const holiday = await createHoliday({
       organizationId: user.organizationId,
-      date: new Date(dateRaw),
+      date: dateRaw,
       name,
       isOptional,
     });
     revalidateHr();
-    return { ok: true };
+    return {
+      ok: true,
+      year: holiday.date.getUTCFullYear(),
+      holiday: {
+        id: holiday.id,
+        date: holiday.date.toISOString(),
+        name: holiday.name,
+        isOptional: holiday.isOptional,
+      },
+    };
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Could not create holiday.";

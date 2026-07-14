@@ -246,7 +246,11 @@ export function LeadDrawerPanel({
   const [winProbability, setWinProbability] = useState(
     lead.winProbability != null ? String(lead.winProbability) : "",
   );
+  const [status, setStatus] = useState(() => resolveLeadStatus(lead.status));
+  const [projectStatus, setProjectStatus] = useState(lead.projectStatus);
+  const [assignedToId, setAssignedToId] = useState(lead.assignedTo?.id ?? "");
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveOk, setSaveOk] = useState(false);
   const [duplicateMatch, setDuplicateMatch] = useState<{
     id: string;
     name: string | null;
@@ -289,6 +293,14 @@ export function LeadDrawerPanel({
       cancelled = true;
     };
   }, [lead.id, canManage, lead.phone, lead.email, lead.company]);
+
+  useEffect(() => {
+    setStatus(resolveLeadStatus(lead.status));
+    setProjectStatus(lead.projectStatus);
+    setAssignedToId(lead.assignedTo?.id ?? "");
+    setSaveError(null);
+    setSaveOk(false);
+  }, [lead.id, lead.status, lead.projectStatus, lead.assignedTo?.id]);
 
   useEffect(() => {
     const body = document.querySelector(".leads-drawer-body");
@@ -500,16 +512,24 @@ export function LeadDrawerPanel({
               <label>
                 Status (next stage)
                 <select
-                  value={resolveLeadStatus(lead.status)}
+                  value={status}
                   disabled={pending}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const next = event.target.value as InboundLeadStatus;
+                    const previous = status;
+                    setStatus(next);
+                    setSaveOk(false);
                     startTransition(async () => {
-                      await updateInboundLeadStatus(
-                        lead.id,
-                        event.target.value as InboundLeadStatus,
-                      );
-                    })
-                  }
+                      const result = await updateInboundLeadStatus(lead.id, next);
+                      if (!result.ok) {
+                        setStatus(previous);
+                        setSaveError(result.message ?? "Could not update status.");
+                        return;
+                      }
+                      setSaveError(null);
+                      router.refresh();
+                    });
+                  }}
                 >
                   {listLeadStatusOptions().map((option) => (
                     <option key={option.id} value={option.id}>
@@ -521,16 +541,24 @@ export function LeadDrawerPanel({
               <label>
                 Project status
                 <select
-                  value={lead.projectStatus}
+                  value={projectStatus}
                   disabled={pending}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const next = event.target.value as LeadProjectStatus;
+                    const previous = projectStatus;
+                    setProjectStatus(next);
+                    setSaveOk(false);
                     startTransition(async () => {
-                      await updateLeadProjectStatus(
-                        lead.id,
-                        event.target.value as LeadProjectStatus,
-                      );
-                    })
-                  }
+                      const result = await updateLeadProjectStatus(lead.id, next);
+                      if (!result.ok) {
+                        setProjectStatus(previous);
+                        setSaveError(result.message ?? "Could not update project status.");
+                        return;
+                      }
+                      setSaveError(null);
+                      router.refresh();
+                    });
+                  }}
                 >
                   {Object.entries(PROJECT_STATUS_LABELS).map(([value, label]) => (
                     <option key={value} value={value}>
@@ -542,13 +570,27 @@ export function LeadDrawerPanel({
               <label>
                 Owner
                 <select
-                  value={lead.assignedTo?.id ?? ""}
+                  value={assignedToId}
                   disabled={pending}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    const previous = assignedToId;
+                    setAssignedToId(next);
+                    setSaveOk(false);
                     startTransition(async () => {
-                      await assignInboundLead(lead.id, event.target.value || null);
-                    })
-                  }
+                      const result = await assignInboundLead(
+                        lead.id,
+                        next || null,
+                      );
+                      if (!result.ok) {
+                        setAssignedToId(previous);
+                        setSaveError(result.message ?? "Could not update owner.");
+                        return;
+                      }
+                      setSaveError(null);
+                      router.refresh();
+                    });
+                  }}
                 >
                   <option value="">Unassigned</option>
                   {teamMembers.map((member) => (
@@ -737,6 +779,11 @@ export function LeadDrawerPanel({
                   ) : null}
                 </div>
               ) : null}
+              {saveOk ? (
+                <p className="leads-machine-muted" role="status">
+                  Lead saved.
+                </p>
+              ) : null}
               <button
                 type="button"
                 className="btn-primary"
@@ -744,6 +791,7 @@ export function LeadDrawerPanel({
                 onClick={() =>
                   startTransition(async () => {
                     setSaveError(null);
+                    setSaveOk(false);
                     setDuplicateMatch(null);
                     const result = await updateInboundLeadDetails({
                       leadId: lead.id,
@@ -755,7 +803,6 @@ export function LeadDrawerPanel({
                       zipCode,
                       requirement,
                       category,
-                      discussionNotes: lead.discussionNotes ?? "",
                       quotationValue,
                       pipeValue: quotationValue,
                       utmSource,
@@ -780,7 +827,10 @@ export function LeadDrawerPanel({
                           name: result.matches[0].name,
                         });
                       }
+                      return;
                     }
+                    setSaveOk(true);
+                    router.refresh();
                   })
                 }
               >

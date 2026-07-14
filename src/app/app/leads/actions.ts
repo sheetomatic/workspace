@@ -256,7 +256,8 @@ export async function updateInboundLeadDetails(params: {
   address: string;
   zipCode: string;
   requirement: string;
-  discussionNotes: string;
+  /** When omitted, existing discussion notes are left unchanged. */
+  discussionNotes?: string;
   quotationValue: string;
   pipeValue: string;
   category?: string;
@@ -391,7 +392,9 @@ export async function updateInboundLeadDetails(params: {
       address: params.address.trim() || null,
       zipCode: params.zipCode.trim() || null,
       requirement: params.requirement.trim() || null,
-      discussionNotes: params.discussionNotes.trim() || null,
+      ...(params.discussionNotes !== undefined
+        ? { discussionNotes: params.discussionNotes.trim() || null }
+        : {}),
       category,
       quotationValue: Number.isFinite(quotation) && quotation > 0 ? quotation : null,
       pipeValue,
@@ -1434,12 +1437,25 @@ export async function updateLeadProjectStatus(
     return { ok: false, message: "Not allowed." };
   }
 
-  await prisma.inboundLead.updateMany({
+  const result = await prisma.inboundLead.updateMany({
     where: { id: leadId, organizationId: user.organizationId },
     data: {
       projectStatus,
+      modifiedAt: new Date(),
       ...(projectStatus === "IN_PROGRESS" ? { status: "PROJECT_ACTIVE" as const } : {}),
     },
+  });
+
+  if (result.count === 0) {
+    return { ok: false, message: "Lead not found." };
+  }
+
+  await logInboundLeadActivity({
+    organizationId: user.organizationId,
+    leadId,
+    type: "STATUS_CHANGE",
+    body: `Project status changed to ${projectStatus.replaceAll("_", " ")}`,
+    createdByUserId: user.id,
   });
 
   await exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { Plus } from "lucide-react";
+import { useEffect, useState, useTransition, type FormEvent } from "react";
 import {
   createHolidayAction,
   deleteHolidayAction,
@@ -32,6 +33,14 @@ function formatDate(value: Date | string) {
   });
 }
 
+function emptyAddForm() {
+  return {
+    name: "",
+    date: "",
+    isOptional: false,
+  };
+}
+
 export function HolidayAdminPanel({
   year,
   holidays,
@@ -45,12 +54,17 @@ export function HolidayAdminPanel({
   const [rows, setRows] = useState<HolidayRow[]>(holidays);
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addForm, setAddForm] = useState(emptyAddForm);
+  const [formKey, setFormKey] = useState(0);
 
   useEffect(() => {
     setRows(holidays);
   }, [holidays]);
 
-  function onCreate(formData: FormData) {
+  function onCreate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
     startTransition(async () => {
       setMessage(null);
       setIsError(false);
@@ -60,7 +74,31 @@ export function HolidayAdminPanel({
         setIsError(true);
         return;
       }
-      setMessage("Holiday saved.");
+      setAddForm(emptyAddForm());
+      setFormKey((key) => key + 1);
+      setShowAddForm(false);
+      setMessage(
+        `“${result.holiday.name}” saved and published to the ${result.year} holiday calendar.`,
+      );
+      if (result.year !== year) {
+        router.push(`/app/hr/holidays?year=${result.year}`);
+        return;
+      }
+      setRows((current) => {
+        const next = [
+          ...current.filter((row) => row.id !== result.holiday.id),
+          {
+            id: result.holiday.id,
+            date: result.holiday.date,
+            name: result.holiday.name,
+            isOptional: result.holiday.isOptional,
+          },
+        ];
+        return next.sort(
+          (a, b) =>
+            new Date(a.date).getTime() - new Date(b.date).getTime(),
+        );
+      });
       router.refresh();
     });
   }
@@ -75,7 +113,7 @@ export function HolidayAdminPanel({
         setIsError(true);
         return;
       }
-      setMessage("Standard holiday calendar imported for this year.");
+      setMessage(`Standard holiday calendar imported and published for ${year}.`);
       router.refresh();
     });
   }
@@ -92,7 +130,8 @@ export function HolidayAdminPanel({
         setIsError(true);
         return;
       }
-      setMessage("Holiday removed.");
+      setRows((current) => current.filter((row) => row.id !== id));
+      setMessage("Holiday removed from calendar.");
       router.refresh();
     });
   }
@@ -122,11 +161,23 @@ export function HolidayAdminPanel({
       }
       setMessage(next ? "Marked optional." : "Marked mandatory.");
       setTogglingId(null);
+      router.refresh();
     });
   }
 
+  const atCap = rows.length >= MAX_HOLIDAYS_PER_YEAR;
+
   return (
     <>
+      {message ? (
+        <p
+          className={isError ? "ws-hr-feedback-error" : "ws-hr-feedback"}
+          role="status"
+        >
+          {message}
+        </p>
+      ) : null}
+
       <div className="ws-attendance-month-nav" aria-label="Year navigation">
         <Link
           className="btn-cta btn-secondary btn-compact"
@@ -149,6 +200,7 @@ export function HolidayAdminPanel({
           <p className="ws-hr-help">
             Add {MAX_HOLIDAYS_PER_YEAR} holidays for {year}: core national
             holidays plus region-wise optional days that can be toggled later.
+            Import publishes them to attendance.
           </p>
           <form action={onImportDefaults} className="ws-hr-form">
             <input type="hidden" name="year" value={year} />
@@ -167,7 +219,9 @@ export function HolidayAdminPanel({
               className="btn-cta btn-secondary"
               disabled={pending}
             >
-              {pending ? "Importing…" : `Import ${MAX_HOLIDAYS_PER_YEAR} defaults`}
+              {pending
+                ? "Publishing…"
+                : `Import & publish ${MAX_HOLIDAYS_PER_YEAR} defaults`}
             </button>
           </form>
           <div className="ws-hr-holiday-region-list">
@@ -180,44 +234,121 @@ export function HolidayAdminPanel({
         </section>
 
         <section className="ws-hr-panel">
-          <h2>Add holiday manually</h2>
-          <p className="ws-hr-help">
-            {rows.length}/{MAX_HOLIDAYS_PER_YEAR} holidays configured for{" "}
-            {year}. Manual additions are capped at {MAX_HOLIDAYS_PER_YEAR} per
-            year.
-          </p>
-          <form action={onCreate} className="ws-hr-form">
-            <label>
-              Name
-              <input
-                name="name"
-                type="text"
-                required
-                placeholder="e.g. Republic Day"
-              />
-            </label>
-            <label>
-              Date
-              <input name="date" type="date" required />
-            </label>
-            <label className="ws-hr-checkbox">
-              <input name="isOptional" type="checkbox" />
-              <span>Optional (does not auto-mark attendance)</span>
-            </label>
+          <div className="ws-hr-holiday-add-header">
+            <div>
+              <h2>Add holiday</h2>
+              <p className="ws-hr-help">
+                {rows.length}/{MAX_HOLIDAYS_PER_YEAR} holidays on the {year}{" "}
+                calendar. Save & publish adds the day and syncs attendance.
+              </p>
+            </div>
             <button
-              type="submit"
-              className="btn-cta btn-primary"
-              disabled={pending}
+              type="button"
+              className="btn-icon ws-hr-holiday-add-btn"
+              aria-label={showAddForm ? "Close add holiday" : "Add holiday"}
+              aria-expanded={showAddForm}
+              disabled={pending || (atCap && !showAddForm)}
+              title={
+                atCap && !showAddForm
+                  ? `Calendar already has ${MAX_HOLIDAYS_PER_YEAR} holidays`
+                  : "Add holiday"
+              }
+              onClick={() => {
+                setShowAddForm((open) => !open);
+                setMessage(null);
+                setIsError(false);
+              }}
             >
-              {pending ? "Saving…" : "Add holiday"}
+              <Plus size={18} aria-hidden />
             </button>
-          </form>
+          </div>
+
+          {atCap && !showAddForm ? (
+            <p className="ws-hr-help">
+              Calendar is full for {year}. Delete a holiday before adding
+              another.
+            </p>
+          ) : null}
+
+          {showAddForm ? (
+            <form
+              key={formKey}
+              onSubmit={onCreate}
+              className="ws-hr-form ws-hr-holiday-add-form"
+            >
+              <label>
+                Name
+                <input
+                  name="name"
+                  type="text"
+                  required
+                  value={addForm.name}
+                  onChange={(event) =>
+                    setAddForm((current) => ({
+                      ...current,
+                      name: event.target.value,
+                    }))
+                  }
+                  placeholder="e.g. Republic Day"
+                />
+              </label>
+              <label>
+                Date
+                <input
+                  name="date"
+                  type="date"
+                  required
+                  value={addForm.date}
+                  onChange={(event) =>
+                    setAddForm((current) => ({
+                      ...current,
+                      date: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <label className="ws-hr-checkbox">
+                <input
+                  name="isOptional"
+                  type="checkbox"
+                  checked={addForm.isOptional}
+                  onChange={(event) =>
+                    setAddForm((current) => ({
+                      ...current,
+                      isOptional: event.target.checked,
+                    }))
+                  }
+                />
+                <span>Optional (does not auto-mark attendance)</span>
+              </label>
+              <div className="ws-hr-form-actions">
+                <button
+                  type="button"
+                  className="btn-cta btn-secondary"
+                  disabled={pending}
+                  onClick={() => {
+                    setShowAddForm(false);
+                    setAddForm(emptyAddForm());
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-cta btn-primary"
+                  disabled={pending || atCap}
+                >
+                  {pending ? "Publishing…" : "Save & publish"}
+                </button>
+              </div>
+            </form>
+          ) : null}
         </section>
       </div>
 
       <div className="ws-hr-split">
         <section className="ws-hr-panel">
-          <h2>Holidays in {year}</h2>
+          <h2>Holiday calendar · {year}</h2>
           <p className="ws-hr-help">
             Toggle optional anytime. Optional holidays stay on the calendar but
             do not auto-mark attendance as Holiday.
@@ -290,15 +421,6 @@ export function HolidayAdminPanel({
           </div>
         </section>
       </div>
-
-      {message ? (
-        <p
-          className={isError ? "ws-hr-feedback-error" : "ws-hr-feedback"}
-          role="status"
-        >
-          {message}
-        </p>
-      ) : null}
     </>
   );
 }
