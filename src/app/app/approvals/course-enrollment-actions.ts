@@ -23,13 +23,17 @@ export async function confirmCourseEnrollmentAction(
   const programStartYmd = formData.get("programStartYmd")?.toString().trim();
   const meetUrl = formData.get("meetUrl")?.toString().trim() || null;
   const frequency = formData.get("frequency")?.toString().trim() || "WEEKLY";
-  const sessionTimeIst = formData.get("sessionTimeIst")?.toString().trim() || "09:00";
+  const sessionTimeIst = formData.get("sessionTimeIst")?.toString().trim() || "08:30";
   const totalSessions = Number.parseInt(
     formData.get("totalSessions")?.toString().trim() || "24",
     10,
   );
-  const { normalizeTwoWeekdays } = await import("@/lib/courses/weekdays");
-  const pair = normalizeTwoWeekdays(
+  const sessionDurationMin = Number.parseInt(
+    formData.get("sessionDurationMin")?.toString().trim() || "90",
+    10,
+  );
+  const { normalizeTrainingWeekdays } = await import("@/lib/courses/weekdays");
+  const pair = normalizeTrainingWeekdays(
     formData.get("dayOne"),
     formData.get("dayTwo"),
   );
@@ -45,6 +49,7 @@ export async function confirmCourseEnrollmentAction(
     frequency,
     sessionTimeIst,
     totalSessions,
+    sessionDurationMin,
     weekdays: pair.ok ? pair.days : undefined,
   });
 
@@ -67,13 +72,17 @@ export async function bookCourseSlotsAction(
   const programStartYmd = formData.get("programStartYmd")?.toString().trim();
   const meetUrl = formData.get("meetUrl")?.toString().trim() || null;
   const frequency = formData.get("frequency")?.toString().trim() || "WEEKLY";
-  const sessionTimeIst = formData.get("sessionTimeIst")?.toString().trim() || "09:00";
+  const sessionTimeIst = formData.get("sessionTimeIst")?.toString().trim() || "08:30";
   const totalSessions = Number.parseInt(
     formData.get("totalSessions")?.toString().trim() || "24",
     10,
   );
-  const { normalizeTwoWeekdays } = await import("@/lib/courses/weekdays");
-  const pair = normalizeTwoWeekdays(
+  const sessionDurationMin = Number.parseInt(
+    formData.get("sessionDurationMin")?.toString().trim() || "90",
+    10,
+  );
+  const { normalizeTrainingWeekdays } = await import("@/lib/courses/weekdays");
+  const pair = normalizeTrainingWeekdays(
     formData.get("dayOne"),
     formData.get("dayTwo"),
   );
@@ -91,6 +100,7 @@ export async function bookCourseSlotsAction(
     frequency,
     sessionTimeIst,
     totalSessions,
+    sessionDurationMin,
     weekdays: pair.days,
     notify: true,
   });
