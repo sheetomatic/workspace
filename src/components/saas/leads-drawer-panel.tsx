@@ -39,6 +39,7 @@ import { LeadTemperatureBadge } from "@/components/saas/lead-temperature-badge";
 import type { LeadDeliveryInput } from "@/lib/leads/delivery-journey";
 import { deliveryJourneySummary, buildDeliveryJourney } from "@/lib/leads/delivery-journey";
 import { SalesOrderPanel } from "@/components/saas/sales-order-panel";
+import { LeadTrainingSlotsPanel } from "@/components/saas/lead-training-slots-panel";
 import type { LeadSalesOrderData } from "@/lib/leads/sales-order-types";
 import { formatInr, leadCategoryLabel, listLeadCategoryOptions, resolveLeadCategoryId, type LeadCategoryId } from "@/lib/leads/categories";
 import {
@@ -217,7 +218,13 @@ export function LeadDrawerPanel({
   void _onDeleted;
   const router = useRouter();
   const [tab, setTab] = useState<
-    "details" | "meeting" | "services" | "payments" | "quote" | "order"
+    | "details"
+    | "meeting"
+    | "services"
+    | "payments"
+    | "quote"
+    | "order"
+    | "training"
   >("details");
   const [name, setName] = useState(lead.name ?? "");
   const [phone, setPhone] = useState(lead.phone ?? "");
@@ -516,6 +523,7 @@ export function LeadDrawerPanel({
             { key: "payments", label: "Payments" },
             { key: "quote", label: "Quotation" },
             { key: "order", label: "Delivery" },
+            { key: "training", label: "Training" },
           ] as const
         ).map((item) => (
           <button
@@ -1179,6 +1187,10 @@ export function LeadDrawerPanel({
           startTransition={startTransition}
           onGoToLeadTab={(leadTab) => setTab(leadTab)}
         />
+      ) : null}
+
+      {tab === "training" ? (
+        <LeadTrainingSlotsPanel leadId={lead.id} canManage={canManage} />
       ) : null}
 
       {tab === "quote" ? (

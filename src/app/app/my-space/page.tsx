@@ -79,9 +79,14 @@ export default async function MySpacePage({ searchParams }: PageProps) {
           title="My Space"
           description="Expense Incurred, Payment Received (by received date), Leads, Invoices & Quotations (by generated date)."
           actions={
-            <Link href="/app/my-space/expenses" className="ws-btn ws-btn-primary">
-              Add Expense
-            </Link>
+            <>
+              <Link href="/app/my-space/training" className="ws-btn ws-btn-secondary">
+                Training slots
+              </Link>
+              <Link href="/app/my-space/expenses" className="ws-btn ws-btn-primary">
+                Add Expense
+              </Link>
+            </>
           }
         />
 

@@ -61,6 +61,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     enrollmentId: result.enrollment.id,
+    bookingToken: result.enrollment.bookingToken,
     status: result.enrollment.status,
     amountInr: result.enrollment.amountInr,
     cohort: result.enrollment.cohort,

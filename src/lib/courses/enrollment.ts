@@ -47,6 +47,7 @@ export async function createCourseEnrollment(input: CreateCourseEnrollmentInput)
     return { ok: false as const, error: "Please choose a cohort schedule." };
   }
 
+  const { newBookingToken } = await import("@/lib/courses/slots");
   const enrollment = await prisma.courseEnrollment.create({
     data: {
       name,
@@ -56,6 +57,7 @@ export async function createCourseEnrollment(input: CreateCourseEnrollmentInput)
       amountInr: COURSE_ENROLLMENT_PRICE_INR,
       status: "PAYMENT_PENDING",
       slotNotes,
+      bookingToken: newBookingToken(),
     },
   });
 
@@ -115,31 +117,71 @@ export async function listRecentCourseEnrollments(limit = 30) {
 export async function confirmCourseEnrollment(params: {
   enrollmentId: string;
   confirmedById: string;
+  /** When set, generate 24 training slots and alert client + owner. */
+  programStartYmd?: string;
+  meetUrl?: string | null;
 }) {
   const existing = await prisma.courseEnrollment.findUnique({
     where: { id: params.enrollmentId },
+    include: { slots: { select: { id: true }, take: 1 } },
   });
   if (!existing) {
     return { ok: false as const, message: "Enrollment not found." };
-  }
-  if (existing.status === "CONFIRMED") {
-    return { ok: true as const, message: "Already confirmed — slots booked." };
   }
   if (existing.status === "CANCELLED") {
     return { ok: false as const, message: "This enrollment was cancelled." };
   }
 
-  await prisma.courseEnrollment.update({
-    where: { id: params.enrollmentId },
-    data: {
-      status: "CONFIRMED" satisfies CourseEnrollmentStatus,
-      confirmedAt: new Date(),
-      confirmedById: params.confirmedById,
-    },
-  });
+  const { ensureEnrollmentBookingToken, bookTrainingSlots } = await import(
+    "@/lib/courses/slots"
+  );
+
+  if (existing.status !== "CONFIRMED") {
+    await prisma.courseEnrollment.update({
+      where: { id: params.enrollmentId },
+      data: {
+        status: "CONFIRMED" satisfies CourseEnrollmentStatus,
+        confirmedAt: new Date(),
+        confirmedById: params.confirmedById,
+        ...(params.meetUrl != null
+          ? { meetUrl: params.meetUrl.trim() || null }
+          : {}),
+      },
+    });
+  }
+
+  const token = await ensureEnrollmentBookingToken(existing.id);
+  const base = getLoginBaseUrl();
+  const bookUrl = `${base}/courses/book-slots?token=${token}`;
+
+  if (params.programStartYmd && existing.slots.length === 0) {
+    const booked = await bookTrainingSlots({
+      enrollmentId: existing.id,
+      programStartYmd: params.programStartYmd,
+      meetUrl: params.meetUrl,
+      notify: true,
+    });
+    if (!booked.ok) {
+      return {
+        ok: true as const,
+        message: `Payment confirmed for ${existing.name}. Slot booking: ${booked.message} Book at ${bookUrl}`,
+      };
+    }
+    return {
+      ok: true as const,
+      message: `Confirmed — ${booked.message}`,
+    };
+  }
+
+  if (existing.slots.length > 0) {
+    return {
+      ok: true as const,
+      message: `Already confirmed with slots booked for ${courseCohortLabel(existing.cohort)}.`,
+    };
+  }
 
   return {
     ok: true as const,
-    message: `Confirmed — ${existing.name} booked for ${courseCohortLabel(existing.cohort)}.`,
+    message: `Confirmed — ${existing.name} (${courseCohortLabel(existing.cohort)}). Book slots: ${bookUrl}`,
   };
 }

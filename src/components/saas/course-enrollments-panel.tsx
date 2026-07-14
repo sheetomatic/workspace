@@ -18,6 +18,8 @@ export type CourseEnrollmentRow = {
   cohort: "MON_FRI" | "TUE_SAT";
   status: "PAYMENT_PENDING" | "CONFIRMED" | "CANCELLED";
   createdAt: string;
+  bookingToken?: string | null;
+  slotsBooked?: number;
 };
 
 const initialState: CourseEnrollmentActionState = { ok: false, message: "" };
@@ -43,9 +45,10 @@ export function CourseEnrollmentsPanel({
           <span className="ws-sf-list-view-count">{pendingRows.length}</span>
         </div>
         <p className="ws-em-section-lead">
-          Buyer pays UPI/PhonePe on /courses for 1:1 Sheets · AppSheet · Looker coaching,
-          then shares a screenshot on WhatsApp. Confirm after you verify payment — that
-          books their Mon+Fri or Tue+Sat morning slots (8:30–10:00 AM IST).
+          Confirm UPI payment, optionally set the first session date to generate
+          all 24 training slots, and alert the client + you on email/WhatsApp.
+          Clients can also book from <code>/courses/book-slots</code> after
+          confirmation.
         </p>
       </header>
 
@@ -72,8 +75,16 @@ export function CourseEnrollmentsPanel({
                   {formatPendingAge(new Date(row.createdAt))}
                 </p>
               </div>
-              <form action={formAction} className="saas-list-actions">
+              <form action={formAction} className="saas-list-actions" style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
                 <input name="enrollmentId" type="hidden" value={row.id} />
+                <label style={{ fontSize: 12 }}>
+                  First session date (optional)
+                  <input name="programStartYmd" type="date" />
+                </label>
+                <label style={{ fontSize: 12 }}>
+                  Meet link (optional)
+                  <input name="meetUrl" type="url" placeholder="https://meet.google.com/…" />
+                </label>
                 <button
                   className="btn-cta btn-primary ws-sf-btn-primary"
                   disabled={pending}
@@ -88,6 +99,16 @@ export function CourseEnrollmentsPanel({
                     "Confirm payment · book slots"
                   )}
                 </button>
+                {row.bookingToken ? (
+                  <a
+                    href={`/courses/book-slots?token=${row.bookingToken}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontSize: 12 }}
+                  >
+                    Open client booking link
+                  </a>
+                ) : null}
               </form>
             </article>
           ))}

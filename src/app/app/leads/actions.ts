@@ -2562,3 +2562,118 @@ export async function importLeadsFromCsvAction(formData: FormData) {
     errors: rowErrors.slice(0, 20),
   };
 }
+
+export async function getLeadTrainingSlotsAction(leadId: string) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  const lead = await prisma.inboundLead.findFirst({
+    where: { id: leadId, organizationId: user.organizationId },
+    select: { id: true, name: true, email: true, phone: true },
+  });
+  if (!lead) {
+    return { ok: false as const, message: "Lead not found.", enrollments: [] };
+  }
+
+  const { listLeadTrainingEnrollments, buildTrainingGoogleCalendarUrl, formatSlotWhen } =
+    await import("@/lib/courses/slots");
+  const enrollments = await listLeadTrainingEnrollments({
+    organizationId: user.organizationId,
+    leadId: lead.id,
+    email: lead.email,
+    phone: lead.phone,
+  });
+
+  return {
+    ok: true as const,
+    message: "",
+    enrollments: enrollments.map((enrollment) => ({
+      id: enrollment.id,
+      name: enrollment.name,
+      email: enrollment.email,
+      phone: enrollment.phone,
+      cohort: enrollment.cohort,
+      status: enrollment.status,
+      bookingToken: enrollment.bookingToken,
+      programStartDate: enrollment.programStartDate?.toISOString() ?? null,
+      meetUrl: enrollment.meetUrl,
+      slots: enrollment.slots.map((slot) => ({
+        id: slot.id,
+        sessionNumber: slot.sessionNumber,
+        startsAt: slot.startsAt.toISOString(),
+        endsAt: slot.endsAt.toISOString(),
+        title: slot.title,
+        status: slot.status,
+        meetUrl: slot.meetUrl,
+        whenLabel: formatSlotWhen(slot.startsAt),
+        googleCalendarUrl: buildTrainingGoogleCalendarUrl({
+          title: slot.title,
+          startsAt: slot.startsAt,
+          endsAt: slot.endsAt,
+          meetUrl: slot.meetUrl ?? enrollment.meetUrl,
+          studentName: enrollment.name,
+        }),
+      })),
+    })),
+  };
+}
+
+export async function bookLeadTrainingSlotsAction(formData: FormData) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "STAFF")) {
+    return { ok: false as const, message: "Staff access required." };
+  }
+
+  const leadId = String(formData.get("leadId") ?? "").trim();
+  const cohortRaw = String(formData.get("cohort") ?? "MON_FRI").trim();
+  const programStartYmd = String(formData.get("programStartYmd") ?? "").trim();
+  const meetUrl = String(formData.get("meetUrl") ?? "").trim() || null;
+  if (!leadId || !programStartYmd) {
+    return { ok: false as const, message: "Lead and start date are required." };
+  }
+
+  const lead = await prisma.inboundLead.findFirst({
+    where: { id: leadId, organizationId: user.organizationId },
+    select: { id: true, name: true, email: true, phone: true },
+  });
+  if (!lead) {
+    return { ok: false as const, message: "Lead not found." };
+  }
+  if (!lead.email || !lead.phone) {
+    return {
+      ok: false as const,
+      message: "Add client email and phone in Details before booking training slots.",
+    };
+  }
+
+  const { isValidCourseCohort } = await import("@/lib/courses/enrollment");
+  if (!isValidCourseCohort(cohortRaw)) {
+    return { ok: false as const, message: "Choose a valid cohort." };
+  }
+
+  const { bookTrainingSlotsForLead } = await import("@/lib/courses/slots");
+  const result = await bookTrainingSlotsForLead({
+    organizationId: user.organizationId,
+    leadId: lead.id,
+    cohort: cohortRaw,
+    programStartYmd,
+    meetUrl,
+    name: lead.name?.trim() || "Client",
+    phone: lead.phone,
+    email: lead.email,
+    markConfirmed: true,
+    confirmedById: user.id,
+  });
+
+  if (result.ok) {
+    await logInboundLeadActivity({
+      organizationId: user.organizationId,
+      leadId: lead.id,
+      type: "NOTE",
+      body: `Training course slots booked (${cohortRaw}) starting ${programStartYmd}. Email + WhatsApp alerts sent.`,
+      createdByUserId: user.id,
+    });
+  }
+
+  revalidatePath("/app/leads");
+  revalidatePath("/app/my-space/training");
+  return { ok: result.ok, message: result.message };
+}
