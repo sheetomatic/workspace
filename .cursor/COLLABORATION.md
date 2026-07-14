@@ -584,3 +584,19 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/leads` Training tab (Day 1 + Day 2, Sunday allowed, 9:00–17:00 IST) + Approvals training booking.
 
 ---
+
+**Deployed (2026-07-14):** Training window 8:30–6:00 IST + single-day / 3-hour sessions (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| PR | https://github.com/sheetomatic/workspace/pull/12 (merged) |
+| Merge SHA | `d05bb6a` (tip `108e1ea`) |
+| Migration | `20260714200000_training_window_830_1800` — applied via `prisma migrate deploy` in Vercel build |
+| Pre-flight | Unit tests: 83/84; remaining UTC flake on `google-sheets` timestamp test is pre-existing on main |
+| Vercel | Production **SUCCESS** — sheetomatic-redesign |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/b1AurUtuZ9bFnzGBfPcMidL2ZNM5 |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops (their auto-deploys failed; ignored). |
+
+**Hard-refresh in prod:** `/app/leads` Training tab (8:30–18:00 IST, optional Day 2, 3h sessions) + Approvals training booking.
+
+---
