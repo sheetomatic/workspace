@@ -178,24 +178,31 @@ export function LeadsCrmWorkspace({
   );
 
   useEffect(() => {
-    if (!selectedId) {
-      return;
-    }
     const scrollRoot =
       document.getElementById("main") ??
-      document.querySelector<HTMLElement>(".saas-main");
-    const previousRoot = scrollRoot?.style.overflow ?? "";
-    const previousBody = document.body.style.overflow;
+      document.querySelector<HTMLElement>(".saas-content, .saas-main");
+
+    const clearScrollLock = () => {
+      if (scrollRoot) {
+        scrollRoot.style.removeProperty("overflow");
+        scrollRoot.style.removeProperty("overflow-x");
+        scrollRoot.style.removeProperty("overflow-y");
+      }
+      document.body.style.removeProperty("overflow");
+    };
+
+    // Stuck overflow:hidden on #main leaves only the right-edge scrollbar gutter
+    // able to receive wheel — clear whenever the drawer is closed.
+    if (!selectedId) {
+      clearScrollLock();
+      return;
+    }
+
     if (scrollRoot) {
       scrollRoot.style.overflow = "hidden";
     }
     document.body.style.overflow = "hidden";
-    return () => {
-      if (scrollRoot) {
-        scrollRoot.style.overflow = previousRoot;
-      }
-      document.body.style.overflow = previousBody;
-    };
+    return clearScrollLock;
   }, [selectedId]);
 
   const sortHref =
