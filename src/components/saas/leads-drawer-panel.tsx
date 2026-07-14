@@ -164,8 +164,6 @@ export type LeadDrawerData = {
   expectedCloseAt: string | null;
   winProbability: number | null;
   archivedAt: string | null;
-  aiSummary: string | null;
-  aiSummaryAt: string | null;
   discussionNotes: string | null;
   meetingNotes: string | null;
   quotationValue: string | number | null;
