@@ -4,7 +4,9 @@
   min-height: 0;
   min-width: 0;
   max-width: 100%;
-  overflow-x: clip;
+  /* Keep visible so this page never becomes a nested scrollport.
+     Vertical wheel moves #main.saas-content; children use min-width:0 to avoid x-bleed. */
+  overflow: visible;
 }
 
 .leads-header-actions {
@@ -1096,10 +1098,12 @@
 }
 
 .leads-crm-table-wrap {
-  overflow: auto;
+  /* Horizontal only — overflow-y:clip avoids the CSS “visible→auto” trap that
+     creates a nested vertical scrollport and eats wheel events in the center. */
+  overflow-x: auto;
+  overflow-y: clip;
   max-width: 100%;
   min-width: 0;
-  max-height: min(70vh, calc(100dvh - 18rem));
   -webkit-overflow-scrolling: touch;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
