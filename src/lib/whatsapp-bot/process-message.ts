@@ -53,6 +53,10 @@ import {
   leadCaptureGoogleFormReminderText,
   leadCaptureGoogleFormWelcomeText,
 } from "@/lib/lead-capture-google-form";
+import {
+  buildWhatsAppUrl,
+  whatsappDisplayNumber,
+} from "@/app/site-content";
 import { maybeAcknowledgeGoogleFormSubmission } from "@/lib/whatsapp-bot/google-form-acknowledge";
 import {
   buildKnownLeadFields,
@@ -1455,11 +1459,46 @@ async function processSingleMessage(
 
   const delegator = await resolveTeamMemberByPhone(org.id, message.from);
   if (!delegator) {
-    await handleCustomerMessage(org, message);
+    // Official Cloud line: team phones get the workspace bot; everyone else is
+    // redirected to the communication WhatsApp / enquiry form.
+    await handleNonTeamOfficialRedirect(org, message);
     return;
   }
 
   await handleTeamMemberMessage(org, delegator, message);
+}
+
+/** Non-team senders on Official API — point them to communication WhatsApp or form. */
+async function handleNonTeamOfficialRedirect(
+  org: { id: string; name: string },
+  message: MetaMessage,
+) {
+  await captureInboundMessage(org.id, message, "Lead");
+
+  const formUrl = await getLeadCaptureGoogleFormUrl(org.id);
+  const chatLink = buildWhatsAppUrl(
+    "Hi Sheetomatic, I want to enquire about your products.",
+  );
+  const lines = [
+    `Hi! Thanks for messaging *${org.name}* on our Official WhatsApp.`,
+    "",
+    "This number is for *registered workspace team members* only.",
+    "",
+    `Please chat with us on *${whatsappDisplayNumber}* instead:`,
+    chatLink,
+  ];
+  if (formUrl) {
+    lines.push("", "Or fill our enquiry form:", formUrl);
+  }
+  lines.push("", "— Team Sheetomatic");
+
+  await replyText(org.id, message.from, lines.join("\n"));
+  await markEvent(message.id, {
+    organizationId: org.id,
+    fromPhone: message.from,
+    messageType: message.type,
+    status: "redirected_to_communication",
+  });
 }
 
 async function handleTeamMemberMessage(
