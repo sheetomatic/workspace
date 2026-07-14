@@ -538,3 +538,33 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/leads` (CSV import, Forecast KPI, Demo/Negotiation stages) and `/app/leads/settings` (WA / Meta / Telegram connectors).
 
 ---
+
+**Deployed (2026-07-14):** CRM center scroll + instant lead name filter (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| PR | https://github.com/sheetomatic/workspace/pull/9 (merged) |
+| Merge SHA | `17efa02` (tip `d27ff6b`) |
+| Vercel | Production **SUCCESS** — sheetomatic-redesign |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/BGEFZC4YcKJLDSfNHaGUhCPCBreS |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops (their auto-deploys failed; ignored). |
+
+**Hard-refresh in prod:** `/app/leads` (center scroll + lead name filter).
+
+---
+
+**Deployed (2026-07-14):** Training schedule fields — Day, Time, Frequency, Start, Sessions, Meet (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| PR | https://github.com/sheetomatic/workspace/pull/10 (merged) |
+| Merge SHA | `56d3b1d` (tip includes `ffa6e22` CSS polish + `30579c9` schedule fields) |
+| Migration | `20260714180000_training_schedule_fields` — applied via `prisma migrate deploy` in Vercel build |
+| Pre-flight | `TZ=Asia/Kolkata npm run test:unit` 84/84 pass (UTC flake on google-sheets timestamp test is pre-existing) |
+| Vercel | Production **SUCCESS** — sheetomatic-redesign |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/7fbykpcaurjhd1EA6N4txRMZRDcL — https://sheetomatic-redesign-7nvj8axfl-sheetomatic.vercel.app |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops (their auto-deploys failed; ignored). |
+
+**Hard-refresh in prod:** `/app/leads` Training tab + Approvals training booking (schedule fields).
+
+---
