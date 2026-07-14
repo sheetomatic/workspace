@@ -73,55 +73,76 @@ export async function syncHolidayAttendance(params: {
     },
     select: { userId: true },
   });
+  if (members.length === 0) {
+    return { synced: 0 };
+  }
 
   const notes = holidayNotes(params.name);
-  let synced = 0;
-  for (const member of members) {
+  const userIds = members.map((member) => member.userId);
+  const existingRows = await prisma.attendanceRecord.findMany({
+    where: {
+      organizationId: params.organizationId,
+      workDate,
+      userId: { in: userIds },
+    },
+    select: { id: true, userId: true, status: true, notes: true },
+  });
+  const existingByUser = new Map(
+    existingRows.map((row) => [row.userId, row] as const),
+  );
+
+  const toCreate: Array<{
+    organizationId: string;
+    userId: string;
+    workDate: Date;
+    status: "HOLIDAY";
+    method: "WEB";
+    notes: string;
+  }> = [];
+  const toUpdateIds: string[] = [];
+
+  for (const userId of userIds) {
+    const existing = existingByUser.get(userId);
     // Do not overwrite real attendance, approved leave, or manager-entered rows.
-    // Only create missing rows or refresh rows previously auto-synced by this helper.
-    const existing = await prisma.attendanceRecord.findUnique({
-      where: {
-        organizationId_userId_workDate: {
-          organizationId: params.organizationId,
-          userId: member.userId,
-          workDate,
-        },
-      },
-      select: { status: true, notes: true },
-    });
     if (
       existing &&
       !(existing.status === "HOLIDAY" && existing.notes?.startsWith("Holiday:"))
     ) {
       continue;
     }
-
-    await prisma.attendanceRecord.upsert({
-      where: {
-        organizationId_userId_workDate: {
-          organizationId: params.organizationId,
-          userId: member.userId,
-          workDate,
-        },
-      },
-      create: {
+    if (existing) {
+      toUpdateIds.push(existing.id);
+    } else {
+      toCreate.push({
         organizationId: params.organizationId,
-        userId: member.userId,
+        userId,
         workDate,
         status: "HOLIDAY",
         method: "WEB",
         notes,
-      },
-      update: {
+      });
+    }
+  }
+
+  if (toCreate.length > 0) {
+    await prisma.attendanceRecord.createMany({
+      data: toCreate,
+      skipDuplicates: true,
+    });
+  }
+  if (toUpdateIds.length > 0) {
+    await prisma.attendanceRecord.updateMany({
+      where: { id: { in: toUpdateIds } },
+      data: {
         status: "HOLIDAY",
         notes,
         checkInAt: null,
         checkOutAt: null,
       },
     });
-    synced += 1;
   }
-  return { synced };
+
+  return { synced: toCreate.length + toUpdateIds.length };
 }
 
 export async function listHolidays(organizationId: string, year?: number) {

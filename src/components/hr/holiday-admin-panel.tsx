@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import {
   createHolidayAction,
   deleteHolidayAction,
@@ -41,8 +41,14 @@ export function HolidayAdminPanel({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [rows, setRows] = useState<HolidayRow[]>(holidays);
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
+
+  useEffect(() => {
+    setRows(holidays);
+  }, [holidays]);
 
   function onCreate(formData: FormData) {
     startTransition(async () => {
@@ -92,20 +98,30 @@ export function HolidayAdminPanel({
   }
 
   function onToggleOptional(id: string, next: boolean) {
+    const previous = rows;
+    setMessage(null);
+    setIsError(false);
+    setTogglingId(id);
+    setRows((current) =>
+      current.map((row) =>
+        row.id === id ? { ...row, isOptional: next } : row,
+      ),
+    );
+
     startTransition(async () => {
-      setMessage(null);
-      setIsError(false);
       const fd = new FormData();
       fd.set("id", id);
       fd.set("isOptional", next ? "true" : "false");
       const result = await updateHolidayAction(fd);
       if (!result.ok) {
+        setRows(previous);
         setMessage(result.message);
         setIsError(true);
+        setTogglingId(null);
         return;
       }
       setMessage(next ? "Marked optional." : "Marked mandatory.");
-      router.refresh();
+      setTogglingId(null);
     });
   }
 
@@ -166,7 +182,7 @@ export function HolidayAdminPanel({
         <section className="ws-hr-panel">
           <h2>Add holiday manually</h2>
           <p className="ws-hr-help">
-            {holidays.length}/{MAX_HOLIDAYS_PER_YEAR} holidays configured for{" "}
+            {rows.length}/{MAX_HOLIDAYS_PER_YEAR} holidays configured for{" "}
             {year}. Manual additions are capped at {MAX_HOLIDAYS_PER_YEAR} per
             year.
           </p>
@@ -218,49 +234,56 @@ export function HolidayAdminPanel({
                 </tr>
               </thead>
               <tbody>
-                {holidays.length === 0 ? (
+                {rows.length === 0 ? (
                   <tr>
                     <td colSpan={5}>No holidays for this year yet.</td>
                   </tr>
                 ) : (
-                  holidays.map((row) => (
-                    <tr key={row.id}>
-                      <td>{formatDate(row.date)}</td>
-                      <td>
-                        {row.name}{" "}
-                        {row.isOptional ? (
-                          <span className="ws-hr-optional-badge">Optional</span>
-                        ) : null}
-                      </td>
-                      <td>{row.isOptional ? "Optional" : "Mandatory"}</td>
-                      <td>
-                        <label className="ws-hr-checkbox">
-                          <input
-                            type="checkbox"
-                            checked={row.isOptional}
-                            disabled={pending}
-                            onChange={(e) =>
-                              onToggleOptional(row.id, e.target.checked)
-                            }
-                            aria-label={`Mark ${row.name} as optional`}
-                          />
-                          <span className="ws-apple-cell-secondary">
-                            {row.isOptional ? "On" : "Off"}
-                          </span>
-                        </label>
-                      </td>
-                      <td>
-                        <button
-                          type="button"
-                          className="btn-secondary btn-sm"
-                          disabled={pending}
-                          onClick={() => onDelete(row.id)}
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                  rows.map((row) => {
+                    const rowBusy = togglingId === row.id;
+                    return (
+                      <tr key={row.id}>
+                        <td>{formatDate(row.date)}</td>
+                        <td>
+                          {row.name}{" "}
+                          {row.isOptional ? (
+                            <span className="ws-hr-optional-badge">Optional</span>
+                          ) : null}
+                        </td>
+                        <td>{row.isOptional ? "Optional" : "Mandatory"}</td>
+                        <td>
+                          <label className="ws-hr-checkbox">
+                            <input
+                              type="checkbox"
+                              checked={row.isOptional}
+                              disabled={rowBusy}
+                              onChange={(e) =>
+                                onToggleOptional(row.id, e.target.checked)
+                              }
+                              aria-label={`Mark ${row.name} as optional`}
+                            />
+                            <span className="ws-apple-cell-secondary">
+                              {rowBusy
+                                ? "Saving…"
+                                : row.isOptional
+                                  ? "On"
+                                  : "Off"}
+                            </span>
+                          </label>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="btn-secondary btn-sm"
+                            disabled={pending || rowBusy}
+                            onClick={() => onDelete(row.id)}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
