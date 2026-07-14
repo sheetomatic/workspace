@@ -9,6 +9,7 @@ import { GoogleCalendarBookingEmbed } from "@/components/marketing/google-calend
 import { COURSE_GOOGLE_CALENDAR_BOOKING_URL } from "@/lib/content/courses-enrollment";
 import {
   TRAINING_BOOKING_WINDOW,
+  TRAINING_SESSION_DURATION_OPTIONS,
   TRAINING_WEEKDAYS,
 } from "@/lib/courses/weekdays";
 
@@ -136,10 +137,11 @@ export function LeadTrainingSlotsPanel({
 
       {canManage ? (
         <form action={onBook} className="leads-drawer-form leads-training-form">
-          <h4 className="leads-training-form-title">Generate two-day calendar</h4>
+          <h4 className="leads-training-form-title">Generate training calendar</h4>
           <p className="leads-help">
-            Days are not fixed — pick any two (Sunday included). Session start can be
-            any time in {TRAINING_BOOKING_WINDOW.label}.
+            Pick one day or a two-day combo (Sunday included). Start time can be any
+            slot in {TRAINING_BOOKING_WINDOW.label}. Single-day 3-hour sessions are
+            supported.
           </p>
           <div className="leads-drawer-grid">
             <label>
@@ -154,7 +156,8 @@ export function LeadTrainingSlotsPanel({
             </label>
             <label>
               Day 2
-              <select name="dayTwo" defaultValue="3" required>
+              <select name="dayTwo" defaultValue="none">
+                <option value="none">Single day only</option>
                 {TRAINING_WEEKDAYS.map((day) => (
                   <option key={day.value} value={day.value}>
                     {day.label}
@@ -169,7 +172,7 @@ export function LeadTrainingSlotsPanel({
                 type="time"
                 min={TRAINING_BOOKING_WINDOW.startIst}
                 max={TRAINING_BOOKING_WINDOW.endIst}
-                defaultValue="09:00"
+                defaultValue="08:30"
                 required
               />
               <span className="leads-help">{TRAINING_BOOKING_WINDOW.label}</span>
@@ -198,15 +201,22 @@ export function LeadTrainingSlotsPanel({
               />
             </label>
             <label>
-              Session length (min)
-              <input
-                name="sessionDurationMin"
-                type="number"
-                min={30}
-                max={240}
-                step={15}
-                defaultValue={90}
-              />
+              Session length
+              <select name="sessionDurationMin" defaultValue="90">
+                {TRAINING_SESSION_DURATION_OPTIONS.map((minutes) => (
+                  <option key={minutes} value={minutes}>
+                    {minutes === 180
+                      ? "3 hours (180 min)"
+                      : minutes === 60
+                        ? "1 hour (60 min)"
+                        : minutes === 90
+                          ? "1.5 hours (90 min)"
+                          : minutes === 120
+                            ? "2 hours (120 min)"
+                            : `${minutes} min`}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
           <label>

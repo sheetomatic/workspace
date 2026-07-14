@@ -2629,7 +2629,7 @@ export async function bookLeadTrainingSlotsAction(formData: FormData) {
   const programStartYmd = String(formData.get("programStartYmd") ?? "").trim();
   const meetUrl = String(formData.get("meetUrl") ?? "").trim() || null;
   const frequency = String(formData.get("frequency") ?? "WEEKLY").trim();
-  const sessionTimeIst = String(formData.get("sessionTimeIst") ?? "09:00").trim();
+  const sessionTimeIst = String(formData.get("sessionTimeIst") ?? "08:30").trim();
   const totalSessionsRaw = String(formData.get("totalSessions") ?? "24").trim();
   const sessionDurationRaw = String(formData.get("sessionDurationMin") ?? "90").trim();
   const dayOne = formData.get("dayOne");
@@ -2638,10 +2638,10 @@ export async function bookLeadTrainingSlotsAction(formData: FormData) {
     return { ok: false as const, message: "Lead and start date are required." };
   }
 
-  const { normalizeTwoWeekdays, weekdaysLabel } = await import(
+  const { normalizeTrainingWeekdays, weekdaysLabel } = await import(
     "@/lib/courses/weekdays"
   );
-  const pair = normalizeTwoWeekdays(dayOne, dayTwo);
+  const pair = normalizeTrainingWeekdays(dayOne, dayTwo);
   if (!pair.ok) {
     return { ok: false as const, message: pair.message };
   }

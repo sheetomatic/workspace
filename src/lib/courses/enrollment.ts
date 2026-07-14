@@ -160,7 +160,7 @@ export async function confirmCourseEnrollment(params: {
   const bookUrl = `${base}/courses/book-slots?token=${token}`;
 
   if (params.programStartYmd && existing.slots.length === 0) {
-    if (params.weekdays && params.weekdays.length >= 2) {
+    if (params.weekdays && params.weekdays.length >= 1) {
       const { cohortFromWeekdays, formatWeekdaysCsv } = await import(
         "@/lib/courses/weekdays"
       );

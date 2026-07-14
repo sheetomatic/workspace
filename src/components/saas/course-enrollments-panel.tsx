@@ -12,6 +12,7 @@ import {
 } from "@/lib/content/courses-enrollment";
 import {
   TRAINING_BOOKING_WINDOW,
+  TRAINING_SESSION_DURATION_OPTIONS,
   TRAINING_WEEKDAYS,
 } from "@/lib/courses/weekdays";
 import { formatPendingAge } from "@/lib/workspace-format";
@@ -103,7 +104,8 @@ export function CourseEnrollmentsPanel({
                 </label>
                 <label style={{ fontSize: 12 }}>
                   Day 2
-                  <select name="dayTwo" defaultValue="3">
+                  <select name="dayTwo" defaultValue="none">
+                    <option value="none">Single day only</option>
                     {TRAINING_WEEKDAYS.map((day) => (
                       <option key={day.value} value={day.value}>
                         {day.label}
@@ -122,7 +124,7 @@ export function CourseEnrollmentsPanel({
                     type="time"
                     min={TRAINING_BOOKING_WINDOW.startIst}
                     max={TRAINING_BOOKING_WINDOW.endIst}
-                    defaultValue="09:00"
+                    defaultValue="08:30"
                   />
                 </label>
                 <label style={{ fontSize: 12 }}>
@@ -130,6 +132,16 @@ export function CourseEnrollmentsPanel({
                   <select name="frequency" defaultValue="WEEKLY">
                     <option value="WEEKLY">Weekly</option>
                     <option value="BIWEEKLY">Every other week</option>
+                  </select>
+                </label>
+                <label style={{ fontSize: 12 }}>
+                  Session length
+                  <select name="sessionDurationMin" defaultValue="90">
+                    {TRAINING_SESSION_DURATION_OPTIONS.map((minutes) => (
+                      <option key={minutes} value={minutes}>
+                        {minutes === 180 ? "3 hours (180 min)" : `${minutes} min`}
+                      </option>
+                    ))}
                   </select>
                 </label>
                 <label style={{ fontSize: 12 }}>

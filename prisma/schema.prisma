@@ -3036,9 +3036,9 @@ model CourseEnrollment {
   meetUrl          String?
   /** How often cohort days repeat. */
   frequency        TrainingFrequency      @default(WEEKLY)
-  /** Session start time in Asia/Kolkata, HH:mm (24h). Booking window 09:00–17:00. */
-  sessionTimeIst   String                 @default("09:00")
-  /** Session length in minutes. */
+  /** Session start time in Asia/Kolkata, HH:mm (24h). Booking window 08:30–18:00. */
+  sessionTimeIst   String                 @default("08:30")
+  /** Session length in minutes (90 default; 180 = 3-hour single-day ok). */
   sessionDurationMin Int                  @default(90)
   /** Total live sessions to generate. */
   totalSessions    Int                    @default(24)

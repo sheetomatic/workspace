@@ -1,4 +1,4 @@
-/** Weekday helpers for flexible two-day training schedules (0=Sun … 6=Sat). */
+/** Weekday helpers for flexible 1–2 day training schedules (0=Sun … 6=Sat). */
 
 export const TRAINING_WEEKDAYS = [
   { value: 0, label: "Sunday", short: "Sun" },
@@ -12,10 +12,13 @@ export const TRAINING_WEEKDAYS = [
 
 /** Bookable session start window in Asia/Kolkata (inclusive). */
 export const TRAINING_BOOKING_WINDOW = {
-  startIst: "09:00",
-  endIst: "17:00",
-  label: "9:00 AM – 5:00 PM IST",
+  startIst: "08:30",
+  endIst: "18:00",
+  label: "8:30 AM – 6:00 PM IST",
 } as const;
+
+/** Allowed session lengths in minutes (includes 3-hour sessions). */
+export const TRAINING_SESSION_DURATION_OPTIONS = [60, 90, 120, 180, 240] as const;
 
 export type TrainingWeekdayValue = (typeof TRAINING_WEEKDAYS)[number]["value"];
 
@@ -45,31 +48,46 @@ export function formatWeekdaysCsv(days: number[]): string {
 
 export function weekdaysLabel(days: number[]): string {
   if (days.length === 0) return "Custom days";
+  if (days.length === 1) return weekdayLabel(days[0]!);
   return days.map(weekdayLabel).join(" + ");
 }
 
-/** Build a sorted unique two-day pair. */
-export function normalizeTwoWeekdays(
+/**
+ * Build a sorted unique weekday list for training.
+ * Day 2 may be empty / "none" for a single-day schedule.
+ */
+export function normalizeTrainingWeekdays(
   dayOneRaw: unknown,
   dayTwoRaw: unknown,
-): { ok: true; days: [number, number]; csv: string } | { ok: false; message: string } {
+): { ok: true; days: number[]; csv: string } | { ok: false; message: string } {
   const dayOne = Number.parseInt(String(dayOneRaw ?? ""), 10);
-  const dayTwo = Number.parseInt(String(dayTwoRaw ?? ""), 10);
+  if (!Number.isInteger(dayOne) || dayOne < 0 || dayOne > 6) {
+    return { ok: false, message: "Choose a weekday." };
+  }
+
+  const dayTwoStr = String(dayTwoRaw ?? "").trim();
   if (
-    !Number.isInteger(dayOne) ||
-    !Number.isInteger(dayTwo) ||
-    dayOne < 0 ||
-    dayOne > 6 ||
-    dayTwo < 0 ||
-    dayTwo > 6
+    dayTwoStr === "" ||
+    dayTwoStr === "none" ||
+    dayTwoStr.toLowerCase() === "single"
   ) {
-    return { ok: false, message: "Choose two valid weekdays." };
+    return { ok: true, days: [dayOne], csv: formatWeekdaysCsv([dayOne]) };
+  }
+
+  const dayTwo = Number.parseInt(dayTwoStr, 10);
+  if (!Number.isInteger(dayTwo) || dayTwo < 0 || dayTwo > 6) {
+    return { ok: false, message: "Choose a valid second weekday, or Single day only." };
   }
   if (dayOne === dayTwo) {
-    return { ok: false, message: "Pick two different days for the combination." };
+    return { ok: true, days: [dayOne], csv: formatWeekdaysCsv([dayOne]) };
   }
-  const days = [dayOne, dayTwo].sort((a, b) => a - b) as [number, number];
+  const days = [dayOne, dayTwo].sort((a, b) => a - b);
   return { ok: true, days, csv: formatWeekdaysCsv(days) };
+}
+
+/** @deprecated Use normalizeTrainingWeekdays — kept for call-site compatibility. */
+export function normalizeTwoWeekdays(dayOneRaw: unknown, dayTwoRaw: unknown) {
+  return normalizeTrainingWeekdays(dayOneRaw, dayTwoRaw);
 }
 
 export function cohortFromWeekdays(days: number[]): "MON_FRI" | "TUE_SAT" | "CUSTOM" {
@@ -111,7 +129,7 @@ export function timeIstToMinutes(timeIst: string): number | null {
   return hour * 60 + minute;
 }
 
-/** True when start time is inside the 9 AM–5 PM IST bookable window. */
+/** True when start time is inside the 8:30 AM–6:00 PM IST bookable window. */
 export function isWithinTrainingBookingWindow(timeIst: string): boolean {
   const minutes = timeIstToMinutes(timeIst);
   if (minutes == null) return false;

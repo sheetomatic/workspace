@@ -107,7 +107,8 @@ export function normalizeTotalSessions(raw: unknown): number {
 export function normalizeSessionDurationMin(raw: unknown): number {
   const n = typeof raw === "number" ? raw : Number.parseInt(String(raw ?? ""), 10);
   if (!Number.isFinite(n)) return DEFAULT_SESSION_DURATION_MIN;
-  return Math.min(240, Math.max(30, Math.round(n)));
+  // Allow up to 6h so 3-hour single-day sessions are first-class.
+  return Math.min(360, Math.max(30, Math.round(n)));
 }
 
 export function normalizeFrequency(
@@ -556,10 +557,10 @@ export async function bookTrainingSlotsForLead(params: {
   const weekdays = [...new Set(params.weekdays)]
     .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6)
     .sort((a, b) => a - b);
-  if (weekdays.length < 2) {
+  if (weekdays.length < 1) {
     return {
       ok: false as const,
-      message: "Pick two different days for the combination.",
+      message: "Pick at least one weekday (single day or a two-day combo).",
     };
   }
   const weekdaysCsv = formatWeekdaysCsv(weekdays);
