@@ -48,6 +48,7 @@ export function LeadTrainingSlotsPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
   const [enrollments, setEnrollments] = useState<EnrollmentRow[]>([]);
+  const [showEmbed, setShowEmbed] = useState(false);
 
   function reload() {
     setLoading(true);
@@ -84,47 +85,71 @@ export function LeadTrainingSlotsPanel({
   const hasSlots = enrollments.some((row) => row.slots.length > 0);
 
   return (
-    <div className="leads-drawer-section leads-training-panel">
-      <h3>Training course slots</h3>
-      <p className="leads-help">
-        Book live 1:1 Sheets / AppSheet / Looker slots on Google Calendar, or
-        generate the full cohort calendar below. Scroll this panel on mobile to
-        see all details.
-      </p>
-
-      <GoogleCalendarBookingEmbed
-        compact
-        activateOnClick
-        title="Google Calendar · book a slot"
-      />
-
-      <p className="leads-help">
-        Share booking link:{" "}
+    <div className="leads-training-panel">
+      <div className="leads-training-hero">
+        <div>
+          <h3>Training slots</h3>
+          <p className="leads-help">
+            Book a live 1:1 session on Google Calendar, or generate the full
+            cohort schedule for this client.
+          </p>
+        </div>
         <a
+          className="btn-cta btn-primary btn-compact"
+          href={COURSE_GOOGLE_CALENDAR_BOOKING_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Open Google Calendar
+        </a>
+      </div>
+
+      <div className="leads-training-actions">
+        <button
+          type="button"
+          className="btn-secondary btn-sm"
+          onClick={() => setShowEmbed((current) => !current)}
+        >
+          {showEmbed ? "Hide calendar embed" : "Show calendar embed"}
+        </button>
+        <a
+          className="leads-training-link"
           href={COURSE_GOOGLE_CALENDAR_BOOKING_URL}
           target="_blank"
           rel="noopener noreferrer"
         >
           calendar.app.google/kbDEB6xuqRYEdUue9
         </a>
-      </p>
+      </div>
+
+      {showEmbed ? (
+        <GoogleCalendarBookingEmbed
+          compact
+          activateOnClick
+          title="Book a slot"
+          className="leads-training-embed"
+        />
+      ) : null}
 
       {canManage ? (
-        <form action={onBook} className="leads-drawer-form">
-          <label>
-            Cohort (full program calendar)
-            <select name="cohort" defaultValue="MON_FRI" required>
-              {courseCohorts.map((cohort) => (
-                <option key={cohort.id} value={cohort.id}>
-                  {cohort.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            First session date
-            <input name="programStartYmd" type="date" required />
-          </label>
+        <form action={onBook} className="leads-drawer-form leads-training-form">
+          <h4 className="leads-training-form-title">Generate cohort calendar</h4>
+          <div className="leads-drawer-grid">
+            <label>
+              Cohort
+              <select name="cohort" defaultValue="MON_FRI" required>
+                {courseCohorts.map((cohort) => (
+                  <option key={cohort.id} value={cohort.id}>
+                    {cohort.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              First session date
+              <input name="programStartYmd" type="date" required />
+            </label>
+          </div>
           <label>
             Meet / Zoom link (optional)
             <input
@@ -135,10 +160,10 @@ export function LeadTrainingSlotsPanel({
           </label>
           <button
             type="submit"
-            className="btn-cta btn-primary"
+            className="btn-cta btn-secondary"
             disabled={pending}
           >
-            {pending ? "Booking…" : "Generate cohort slots"}
+            {pending ? "Booking…" : "Generate 24 slots"}
           </button>
         </form>
       ) : null}
@@ -153,8 +178,7 @@ export function LeadTrainingSlotsPanel({
         <p className="leads-help">Loading booked slots…</p>
       ) : !hasSlots ? (
         <p className="leads-help">
-          No cohort slots on file yet. Use Google Calendar above for one-off
-          bookings, or generate the full program calendar.
+          No cohort slots on file yet for this client.
         </p>
       ) : (
         enrollments.map((enrollment) =>
@@ -172,7 +196,7 @@ export function LeadTrainingSlotsPanel({
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      Client booking page
+                      Client page
                     </a>
                   </>
                 ) : null}
