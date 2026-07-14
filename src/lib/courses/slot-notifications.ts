@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import {
+  COURSE_GOOGLE_CALENDAR_BOOKING_URL,
   courseCohortLabel,
   courseEnrollmentSchedule,
 } from "@/lib/content/courses-enrollment";
@@ -35,8 +36,9 @@ function buildClientMessage(params: {
     `First session: ${params.firstWhen}`,
     params.meetUrl ? `Meet link: ${params.meetUrl}` : null,
     "",
-    `Add first session to Google Calendar: ${params.calendarUrl}`,
-    `View / re-open booking: ${params.bookUrl}`,
+    `Book / manage slots on Google Calendar: ${COURSE_GOOGLE_CALENDAR_BOOKING_URL}`,
+    `Add first session: ${params.calendarUrl}`,
+    `Enrollment status: ${params.bookUrl}`,
     "",
     "See you in class — Sheetomatic",
   ]

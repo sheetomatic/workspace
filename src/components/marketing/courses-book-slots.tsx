@@ -34,14 +34,11 @@ function formatWhen(iso: string) {
   });
 }
 
+/** Enrollment status under the Google Calendar embed (optional token). */
 export function CoursesBookSlots({ token }: { token: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [enrollment, setEnrollment] = useState<EnrollmentDto | null>(null);
-  const [programStartYmd, setProgramStartYmd] = useState("");
-  const [meetUrl, setMeetUrl] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,70 +73,44 @@ export function CoursesBookSlots({ token }: { token: string }) {
     };
   }, [token]);
 
-  async function onBook() {
-    if (!programStartYmd) {
-      setError("Choose your first session date.");
-      return;
-    }
-    setSubmitting(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      const res = await fetch("/api/courses/book-slots", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token,
-          programStartYmd,
-          meetUrl: meetUrl.trim() || null,
-        }),
-      });
-      const data = (await res.json()) as { ok?: boolean; message?: string; error?: string };
-      if (!res.ok || !data.ok) {
-        setError(data.error ?? "Could not book slots.");
-        return;
-      }
-      setSuccess(data.message ?? "Slots booked.");
-      const refresh = await fetch(
-        `/api/courses/book-slots?token=${encodeURIComponent(token)}`,
-      );
-      const refreshed = (await refresh.json()) as { enrollment?: EnrollmentDto };
-      if (refreshed.enrollment) setEnrollment(refreshed.enrollment);
-    } catch {
-      setError("Network error. Try again.");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
   if (loading) {
-    return <p className="course-pay-lead">Loading your booking…</p>;
+    return <p className="course-pay-lead">Loading your enrollment…</p>;
   }
   if (error && !enrollment) {
     return <p className="course-pay-error">{error}</p>;
   }
   if (!enrollment) {
-    return <p className="course-pay-error">Booking not found.</p>;
+    return <p className="course-pay-error">Enrollment not found.</p>;
   }
 
-  const alreadyBooked = enrollment.slotsBooked > 0;
-
   return (
-    <div className="course-pay-body" style={{ maxWidth: 520, margin: "0 auto" }}>
+    <div className="course-pay-body course-book-enrollment">
       <p className="course-pay-lead">
         Hi <strong>{enrollment.name}</strong> — cohort{" "}
         <strong>{enrollment.cohortLabel}</strong> ·{" "}
         {courseEnrollmentSchedule.sessionTimeLabel}. Status:{" "}
-        <strong>{enrollment.status.replace("_", " ")}</strong>.
+        <strong>{enrollment.status.replaceAll("_", " ")}</strong>.
       </p>
 
-      {alreadyBooked ? (
+      {enrollment.status !== "CONFIRMED" ? (
+        <p className="course-pay-note">
+          Payment is still pending confirmation. You can still pick a slot on
+          Google Calendar above; Sheetomatic will match it after payment is
+          verified.
+        </p>
+      ) : (
+        <p className="course-pay-success">
+          Payment confirmed. Use the Google Calendar above to book or change
+          your training slot.
+        </p>
+      )}
+
+      {enrollment.slotsBooked > 0 ? (
         <>
-          <p className="course-pay-success">
-            {enrollment.slotsBooked} sessions are booked. Email and WhatsApp
-            alerts were sent when slots were confirmed.
+          <p className="course-pay-meta">
+            {enrollment.slotsBooked} sessions on file:
           </p>
-          <ul className="course-pay-meta" style={{ listStyle: "none", padding: 0 }}>
+          <ul className="course-book-slot-list">
             {enrollment.slots.slice(0, 8).map((slot) => (
               <li key={slot.id}>
                 #{slot.sessionNumber} · {formatWhen(slot.startsAt)}
@@ -152,54 +123,7 @@ export function CoursesBookSlots({ token }: { token: string }) {
             </p>
           ) : null}
         </>
-      ) : (
-        <>
-          {enrollment.status !== "CONFIRMED" ? (
-            <p className="course-pay-note">
-              Payment is still pending confirmation. You can open this page again
-              after Sheetomatic confirms payment to pick your first session date.
-            </p>
-          ) : (
-            <>
-              <label className="course-pay-field">
-                First session date
-                <input
-                  type="date"
-                  value={programStartYmd}
-                  onChange={(event) => setProgramStartYmd(event.target.value)}
-                  required
-                />
-              </label>
-              <label className="course-pay-field">
-                Meet / Zoom link (optional)
-                <input
-                  type="url"
-                  value={meetUrl}
-                  onChange={(event) => setMeetUrl(event.target.value)}
-                  placeholder="https://meet.google.com/…"
-                />
-              </label>
-              <p className="course-pay-note">
-                We generate all {courseEnrollmentSchedule.totalClasses} live
-                sessions on your cohort days from this start date. You and
-                Sheetomatic get email + WhatsApp alerts with a Google Calendar
-                link for session 1.
-              </p>
-              <button
-                type="button"
-                className="btn-primary btn-block"
-                disabled={submitting || enrollment.status !== "CONFIRMED"}
-                onClick={onBook}
-              >
-                {submitting ? "Booking…" : "Book my training slots"}
-              </button>
-            </>
-          )}
-        </>
-      )}
-
-      {error ? <p className="course-pay-error">{error}</p> : null}
-      {success ? <p className="course-pay-success">{success}</p> : null}
+      ) : null}
     </div>
   );
 }

@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { MarketingPage, SiteFooter, SiteHeader } from "@/app/components";
 import { CoursesBookSlots } from "@/components/marketing/courses-book-slots";
+import { GoogleCalendarBookingEmbed } from "@/components/marketing/google-calendar-booking-embed";
 import { marketingMetadata } from "@/lib/marketing-metadata";
+import "@/components/marketing/courses-book-slots-page.css";
 
 export const metadata: Metadata = marketingMetadata({
   title: "Book training slots | Sheetomatic Courses",
   description:
-    "Pick your first 1:1 Sheets / AppSheet / Looker session date and book the full cohort calendar.",
+    "Book your 1:1 Sheets / AppSheet / Looker training slots on Google Calendar.",
   path: "/courses/book-slots",
 });
 
@@ -22,25 +24,29 @@ export default async function CoursesBookSlotsPage({ searchParams }: PageProps) 
   return (
     <MarketingPage>
       <SiteHeader />
-      <main className="saas-page" style={{ padding: "2.5rem 1.25rem 4rem" }}>
-        <div style={{ maxWidth: 640, margin: "0 auto" }}>
-          <p style={{ marginBottom: 8 }}>
+      <main className="course-book-page">
+        <div className="course-book-page-inner">
+          <p className="course-book-back">
             <Link href="/courses">← Courses</Link>
           </p>
-          <h1 style={{ fontSize: "1.75rem", marginBottom: 8 }}>
-            Book training slots
-          </h1>
-          <p style={{ color: "#475569", marginBottom: 24 }}>
-            Schedule your 1:1 Google Sheets · AppSheet · Looker Studio sessions
-            (meeting-style calendar). Alerts go to you and Sheetomatic by email
-            and WhatsApp.
+          <h1 className="course-book-title">Book training slots</h1>
+          <p className="course-book-lead">
+            Pick an open 1:1 Google Sheets · AppSheet · Looker Studio slot on
+            Google Calendar. On mobile, scroll the calendar area or tap Open
+            calendar.
           </p>
+
+          <GoogleCalendarBookingEmbed title="Google Calendar · available slots" />
+
           {token ? (
-            <CoursesBookSlots token={token} />
+            <section className="course-book-status">
+              <h2>Your enrollment</h2>
+              <CoursesBookSlots token={token} />
+            </section>
           ) : (
-            <p>
-              Open the booking link from your enrollment confirmation email or
-              WhatsApp message. Need help?{" "}
+            <p className="course-book-note">
+              Already enrolled? Open the booking link from your confirmation
+              email or WhatsApp to see enrollment status. Need help?{" "}
               <Link href="/contact">Contact us</Link>.
             </p>
           )}

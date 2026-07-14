@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { buildWhatsAppUrl } from "@/app/site-content";
 import {
   COURSE_ENROLLMENT_PRICE_INR,
+  COURSE_GOOGLE_CALENDAR_BOOKING_URL,
   buildCourseEnrollmentWhatsAppMessage,
   buildCoursePaymentNote,
   courseCohorts,
@@ -378,12 +379,20 @@ export function CoursesEnrollPay({
                 >
                   Open WhatsApp · share screenshot
                 </a>
+                <a
+                  className="btn-secondary btn-block"
+                  href={COURSE_GOOGLE_CALENDAR_BOOKING_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Book slots on Google Calendar
+                </a>
                 {bookingToken ? (
                   <a
                     className="btn-secondary btn-block"
                     href={`/courses/book-slots?token=${bookingToken}`}
                   >
-                    Book training slots (after confirmation)
+                    Open booking page (calendar + status)
                   </a>
                 ) : null}
                 <button type="button" className="btn-secondary btn-block" onClick={close}>
