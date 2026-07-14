@@ -181,14 +181,20 @@ export function LeadsCrmWorkspace({
     if (!selectedId) {
       return;
     }
-    const scrollRoot = document.getElementById("main");
-    if (!scrollRoot) {
-      return;
+    const scrollRoot =
+      document.getElementById("main") ??
+      document.querySelector<HTMLElement>(".saas-main");
+    const previousRoot = scrollRoot?.style.overflow ?? "";
+    const previousBody = document.body.style.overflow;
+    if (scrollRoot) {
+      scrollRoot.style.overflow = "hidden";
     }
-    const previous = scrollRoot.style.overflow;
-    scrollRoot.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
     return () => {
-      scrollRoot.style.overflow = previous;
+      if (scrollRoot) {
+        scrollRoot.style.overflow = previousRoot;
+      }
+      document.body.style.overflow = previousBody;
     };
   }, [selectedId]);
 

@@ -51,6 +51,21 @@
   touch-action: pan-y;
 }
 
+.gcal-booking-activate {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0f172a;
+  background: rgba(248, 250, 252, 0.72);
+  cursor: pointer;
+}
+
 .gcal-booking.is-compact .gcal-booking-frame-wrap {
   height: min(560px, calc(100dvh - 14rem));
   min-height: 360px;
