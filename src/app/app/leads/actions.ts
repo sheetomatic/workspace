@@ -684,6 +684,7 @@ export type LeadSyncActionResult =
 
 export async function syncLeadChannelNow(
   channel: LeadSourceChannel,
+  options?: { forceFull?: boolean },
 ): Promise<LeadSyncActionResult> {
   const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "ADMIN")) {
@@ -694,12 +695,14 @@ export async function syncLeadChannelNow(
     return { ok: false, message: "This connector is coming soon." };
   }
 
+  const forceFull = options?.forceFull === true;
   const result =
     channel === "GOOGLE_SHEETS"
-      ? await syncLeadsTwoWay(user.organizationId)
+      ? await syncLeadsTwoWay(user.organizationId, { forceFull })
       : await pullLeadsFromConnection({
           organizationId: user.organizationId,
           channel,
+          forceFull,
         });
 
   revalidatePath("/app/leads");

@@ -4,6 +4,8 @@ export type LeadSyncCounts = {
   processed: number;
   created: number;
   updated: number;
+  /** Rows skipped (usually missing/invalid phone). */
+  skipped?: number;
 };
 
 export type LeadSyncResult = {
@@ -41,9 +43,12 @@ export function formatLeadSyncCounts(
   if (counts.updated > 0) {
     parts.push(`${counts.updated} updated`);
   }
+  if ((counts.skipped ?? 0) > 0) {
+    parts.push(`${counts.skipped} skipped (need valid phone)`);
+  }
 
   if (partial && partial.cursor < partial.total) {
-    parts.push("sync continues automatically every 15 min");
+    parts.push("sync continues automatically — click Sync now or wait ~15 min");
   }
 
   return parts.join(" · ");
