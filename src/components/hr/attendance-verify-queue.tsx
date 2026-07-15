@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { verifyAttendanceAction } from "@/lib/hr/hr-actions";
+import { HrFeedbackBanner } from "@/components/hr/hr-feedback";
 
 export type PendingVerifyRow = {
   id: string;
@@ -52,6 +53,7 @@ export function AttendanceVerifyQueue({
   return (
     <section className="ws-hr-panel">
       <h2>Verify team Present</h2>
+      <HrFeedbackBanner message={message} isError={isError} />
       <p className="ws-hr-help">
         Self punches stay pending until a manager approves. Rejected days count as
         absent for payroll.
@@ -129,11 +131,6 @@ export function AttendanceVerifyQueue({
           </tbody>
         </table>
       </div>
-      {message ? (
-        <p className={isError ? "ws-hr-feedback-error" : "ws-hr-feedback"} role="status">
-          {message}
-        </p>
-      ) : null}
     </section>
   );
 }

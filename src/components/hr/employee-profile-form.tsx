@@ -6,6 +6,7 @@ import type { TaskDepartment } from "@prisma/client";
 import { upsertEmployeeProfileAction } from "@/lib/hr/hr-actions";
 import { TASK_DEPARTMENT_LABELS } from "@/lib/tasks";
 import { EmployeeDocumentsPanel } from "@/components/hr/employee-documents-panel";
+import { HrFeedbackBanner } from "@/components/hr/hr-feedback";
 
 function toDateInput(value: Date | string | null | undefined) {
   if (!value) return "";
