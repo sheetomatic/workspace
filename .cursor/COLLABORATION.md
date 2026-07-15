@@ -659,3 +659,17 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 
 ---
 
+**Deployed (2026-07-15):** HRMS success feedback after every action (check-in style) (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| PR | https://github.com/sheetomatic/workspace/pull/17 (merged) |
+| Merge SHA | `0cf982f` (tip `4ab53ee`) |
+| Vercel | Production **SUCCESS** — sheetomatic-redesign |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/EJqJfm5azBTXSadGAnPrA3AnLYWK — https://sheetomatic-redesign-e9huyv5gj-sheetomatic.vercel.app |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops (their auto-deploys failed; ignored). |
+
+**Hard-refresh in prod:** HRMS verify / payroll / onboarding / profile (and other HR actions with check-in style success banners).
+
+---
+
