@@ -681,7 +681,7 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 | Merge SHA | `1877d67` (tip `2d5656a`) |
 | Pre-flight | Unit tests: 93/94; remaining UTC flake on `google-sheets` timestamp test is pre-existing on main |
 | Vercel | Production **SUCCESS** — sheetomatic-redesign |
-| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/GkpxTrWtS5UvByL6yWxwWcCknZNk |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/GkpxTrWtS5UvByL6yWxwWcCknZNk — https://sheetomatic-redesign-jy9yhfwri-sheetomatic.vercel.app |
 | Target | Sheetomatic only. Did not promote Hingorani/Tops (ignored auto-deploys). |
 
 **Hard-refresh in prod:** `/app/leads` (Settings + list/CRM center scroll; wheel should work across the page, not only from the edge).
