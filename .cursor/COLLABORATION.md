@@ -688,3 +688,17 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 
 ---
 
+
+**Deployed (2026-07-15):** Fix Google Sheets import missing CRM leads (through row 897) (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| PR | https://github.com/sheetomatic/workspace/pull/19 (merged) |
+| Merge SHA | `59b1dc6` (tip `f707567`) |
+| Vercel | Production **SUCCESS** — sheetomatic-redesign |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/Fm1bAL67D1YfcMv9RT5qYxCUe648 — https://sheetomatic-redesign-furwar240-sheetomatic.vercel.app |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops (their auto-deploys failed; ignored). |
+
+**Hard-refresh in prod:** `/app/leads` — Admin should click **Full re-import** to pull missing sheet rows (including Yogesh Arun Borade).
+
+---
