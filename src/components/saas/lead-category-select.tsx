@@ -1,12 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { updateInboundLeadCategory } from "@/app/app/leads/actions";
 import {
   leadCategoryLabel,
   listLeadCategoryOptions,
   resolveLeadCategoryId,
+  type LeadCategoryId,
 } from "@/lib/leads/categories";
 
 export function LeadCategorySelect({
@@ -20,9 +20,13 @@ export function LeadCategorySelect({
   disabled?: boolean;
   className?: string;
 }) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const current = resolveLeadCategoryId(value);
+  const resolved = resolveLeadCategoryId(value);
+  const [current, setCurrent] = useState(resolved);
+
+  useEffect(() => {
+    setCurrent(resolved);
+  }, [resolved, leadId]);
 
   if (disabled) {
     return (
@@ -41,10 +45,15 @@ export function LeadCategorySelect({
       onClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => event.stopPropagation()}
       onChange={(event) => {
-        const category = event.target.value;
+        const category = event.target.value as LeadCategoryId;
+        const previous = current;
+        setCurrent(category);
         startTransition(async () => {
-          await updateInboundLeadCategory(leadId, category);
-          router.refresh();
+          const result = await updateInboundLeadCategory(leadId, category);
+          if (!result.ok) {
+            setCurrent(previous);
+            window.alert(result.message ?? "Could not update category.");
+          }
         });
       }}
     >

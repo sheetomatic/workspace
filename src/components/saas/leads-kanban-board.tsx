@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import type { InboundLeadStatus } from "@prisma/client";
 import { updateInboundLeadStatus } from "@/app/app/leads/actions";
 import { LeadTemperatureBadge } from "@/components/saas/lead-temperature-badge";
@@ -51,7 +50,6 @@ export function LeadsKanbanBoard({
   canManage: boolean;
   onOpenLead: (leadId: string) => void;
 }) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [boardLeads, setBoardLeads] = useState(leads);
   const [dragOverStatus, setDragOverStatus] = useState<InboundLeadStatus | null>(
@@ -103,9 +101,7 @@ export function LeadsKanbanBoard({
             lead.id === leadId ? { ...lead, status: previousStatus } : lead,
           ),
         );
-        return;
       }
-      router.refresh();
     });
   }
 

@@ -1,7 +1,6 @@
 "use client";
 
 import type { InboundLeadStatus } from "@prisma/client";
-import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { updateInboundLeadStatus } from "@/app/app/leads/actions";
 import {
@@ -21,7 +20,6 @@ export function LeadStatusSelect({
   disabled?: boolean;
   className?: string;
 }) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const resolved = resolveLeadStatus(value);
   const [current, setCurrent] = useState(resolved);
@@ -55,9 +53,7 @@ export function LeadStatusSelect({
           if (!result.ok) {
             setCurrent(previous);
             window.alert(result.message ?? "Could not update status.");
-            return;
           }
-          router.refresh();
         });
       }}
     >

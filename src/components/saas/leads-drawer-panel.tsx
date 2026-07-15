@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Trash2, X } from "lucide-react";
 import type {
   InboundLeadStatus,
@@ -198,6 +198,7 @@ export function LeadDrawerPanel({
   startTransition,
   onClose,
   onDeleted: _onDeleted,
+  onLeadPatched,
   listParams = {},
 }: {
   lead: LeadDrawerData;
@@ -210,10 +211,12 @@ export function LeadDrawerPanel({
   startTransition: (callback: () => Promise<void>) => void;
   onClose: () => void;
   onDeleted?: () => void;
+  onLeadPatched?: (id: string, patch: Partial<LeadDrawerData>) => void;
   listParams?: LeadsListSearchParams;
 }) {
   void _onDeleted;
   const router = useRouter();
+  const [fieldPending, startFieldTransition] = useTransition();
   const [tab, setTab] = useState<
     | "details"
     | "meeting"
@@ -513,13 +516,13 @@ export function LeadDrawerPanel({
                 Status (next stage)
                 <select
                   value={status}
-                  disabled={pending}
+                  disabled={fieldPending}
                   onChange={(event) => {
                     const next = event.target.value as InboundLeadStatus;
                     const previous = status;
                     setStatus(next);
                     setSaveOk(false);
-                    startTransition(async () => {
+                    startFieldTransition(async () => {
                       const result = await updateInboundLeadStatus(lead.id, next);
                       if (!result.ok) {
                         setStatus(previous);
@@ -527,7 +530,7 @@ export function LeadDrawerPanel({
                         return;
                       }
                       setSaveError(null);
-                      router.refresh();
+                      onLeadPatched?.(lead.id, { status: next });
                     });
                   }}
                 >
@@ -542,13 +545,13 @@ export function LeadDrawerPanel({
                 Project status
                 <select
                   value={projectStatus}
-                  disabled={pending}
+                  disabled={fieldPending}
                   onChange={(event) => {
                     const next = event.target.value as LeadProjectStatus;
                     const previous = projectStatus;
                     setProjectStatus(next);
                     setSaveOk(false);
-                    startTransition(async () => {
+                    startFieldTransition(async () => {
                       const result = await updateLeadProjectStatus(lead.id, next);
                       if (!result.ok) {
                         setProjectStatus(previous);
@@ -556,7 +559,7 @@ export function LeadDrawerPanel({
                         return;
                       }
                       setSaveError(null);
-                      router.refresh();
+                      onLeadPatched?.(lead.id, { projectStatus: next });
                     });
                   }}
                 >
@@ -571,13 +574,13 @@ export function LeadDrawerPanel({
                 Owner
                 <select
                   value={assignedToId}
-                  disabled={pending}
+                  disabled={fieldPending}
                   onChange={(event) => {
                     const next = event.target.value;
                     const previous = assignedToId;
                     setAssignedToId(next);
                     setSaveOk(false);
-                    startTransition(async () => {
+                    startFieldTransition(async () => {
                       const result = await assignInboundLead(
                         lead.id,
                         next || null,
@@ -588,7 +591,16 @@ export function LeadDrawerPanel({
                         return;
                       }
                       setSaveError(null);
-                      router.refresh();
+                      const member = teamMembers.find((m) => m.user.id === next);
+                      onLeadPatched?.(lead.id, {
+                        assignedTo: member
+                          ? {
+                              id: member.user.id,
+                              name: member.user.name,
+                              email: member.user.email,
+                            }
+                          : null,
+                      });
                     });
                   }}
                 >
@@ -787,9 +799,9 @@ export function LeadDrawerPanel({
               <button
                 type="button"
                 className="btn-primary"
-                disabled={pending}
+                disabled={fieldPending}
                 onClick={() =>
-                  startTransition(async () => {
+                  startFieldTransition(async () => {
                     setSaveError(null);
                     setSaveOk(false);
                     setDuplicateMatch(null);
@@ -830,7 +842,27 @@ export function LeadDrawerPanel({
                       return;
                     }
                     setSaveOk(true);
-                    router.refresh();
+                    onLeadPatched?.(lead.id, {
+                      name: name || null,
+                      phone: phone || null,
+                      email: email || null,
+                      company: company || null,
+                      address: address || null,
+                      zipCode: zipCode || null,
+                      requirement: requirement || null,
+                      category,
+                      quotationValue: quotationValue || null,
+                      pipeValue: quotationValue || null,
+                      utmSource: utmSource || null,
+                      utmMedium: utmMedium || null,
+                      utmCampaign: utmCampaign || null,
+                      utmContent: utmContent || null,
+                      utmTerm: utmTerm || null,
+                      campaign: campaign || null,
+                      landingPage: landingPage || null,
+                      expectedCloseAt: expectedCloseAt || null,
+                      winProbability: winProbability ? Number(winProbability) : null,
+                    });
                   })
                 }
               >
