@@ -1,4 +1,9 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { deleteHrShiftAction, saveHrShiftAction } from "@/lib/hr/hr-actions";
+import { HrFeedbackBanner } from "@/components/hr/hr-feedback";
 
 export type HrShiftRow = {
   id: string;
@@ -11,6 +16,48 @@ export type HrShiftRow = {
 };
 
 export function HrShiftsPanel({ shifts }: { shifts: HrShiftRow[] }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [message, setMessage] = useState<string | null>(null);
+  const [isError, setIsError] = useState(false);
+  const [addFormKey, setAddFormKey] = useState(0);
+
+  function onSave(formData: FormData) {
+    const isAdd = !String(formData.get("id") ?? "").trim();
+    startTransition(async () => {
+      setMessage(null);
+      setIsError(false);
+      const result = await saveHrShiftAction(formData);
+      if (!result.ok) {
+        setMessage(result.message);
+        setIsError(true);
+        return;
+      }
+      setMessage("Shift saved.");
+      setIsError(false);
+      if (isAdd) {
+        setAddFormKey((key) => key + 1);
+      }
+      router.refresh();
+    });
+  }
+
+  function onDelete(shiftId: string) {
+    startTransition(async () => {
+      setMessage(null);
+      setIsError(false);
+      const result = await deleteHrShiftAction(shiftId);
+      if (!result.ok) {
+        setMessage(result.message);
+        setIsError(true);
+        return;
+      }
+      setMessage("Shift deleted.");
+      setIsError(false);
+      router.refresh();
+    });
+  }
+
   return (
     <section className="saas-form-panel ws-workplace-hr-settings">
       <h3>Shifts &amp; timing</h3>
@@ -19,12 +66,13 @@ export function HrShiftsPanel({ shifts }: { shifts: HrShiftRow[] }) {
         employee profile — late, half day, short leave, and Blue OT use that
         timing. Org default work hours apply when no shift is assigned.
       </p>
+      <HrFeedbackBanner message={message} isError={isError} />
 
       {shifts.length > 0 ? (
         <ul className="ws-hr-sites-list">
           {shifts.map((shift) => (
             <li key={shift.id} className="ws-hr-site-item">
-              <form action={saveHrShiftAction} className="ws-hr-form ws-hr-site-form">
+              <form action={onSave} className="ws-hr-form ws-hr-site-form">
                 <input name="id" type="hidden" value={shift.id} />
                 <div className="form-grid-premium">
                   <label>
@@ -75,19 +123,25 @@ export function HrShiftsPanel({ shifts }: { shifts: HrShiftRow[] }) {
                   Active
                 </label>
                 <div className="form-actions">
-                  <button type="submit" className="btn-secondary btn-sm">
+                  <button
+                    type="submit"
+                    className="btn-secondary btn-sm"
+                    disabled={pending}
+                  >
                     Save shift
                   </button>
                 </div>
               </form>
-              <form
-                action={deleteHrShiftAction.bind(null, shift.id)}
-                className="ws-hr-site-delete"
-              >
-                <button type="submit" className="btn-secondary btn-sm danger">
+              <div className="ws-hr-site-delete">
+                <button
+                  type="button"
+                  className="btn-secondary btn-sm danger"
+                  disabled={pending}
+                  onClick={() => onDelete(shift.id)}
+                >
                   Delete
                 </button>
-              </form>
+              </div>
             </li>
           ))}
         </ul>
@@ -95,7 +149,11 @@ export function HrShiftsPanel({ shifts }: { shifts: HrShiftRow[] }) {
         <p className="ws-hr-help">No shifts yet. Add General / Morning / Night below.</p>
       )}
 
-      <form action={saveHrShiftAction} className="ws-hr-form ws-hr-site-add">
+      <form
+        key={addFormKey}
+        action={onSave}
+        className="ws-hr-form ws-hr-site-add"
+      >
         <h4>Add shift</h4>
         <div className="form-grid-premium">
           <label>
@@ -120,8 +178,12 @@ export function HrShiftsPanel({ shifts }: { shifts: HrShiftRow[] }) {
           Make this the default shift
         </label>
         <div className="form-actions">
-          <button type="submit" className="btn-cta btn-primary">
-            Add shift
+          <button
+            type="submit"
+            className="btn-cta btn-primary"
+            disabled={pending}
+          >
+            {pending ? "Saving…" : "Add shift"}
           </button>
         </div>
       </form>

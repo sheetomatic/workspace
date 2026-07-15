@@ -8,6 +8,7 @@ import {
 } from "@/lib/hr/hr-actions";
 import { HR_OUT_OF_LOCATION_MESSAGE } from "@/lib/hr/hr-result";
 import { GeoPunchForm } from "@/components/hr/geo-punch-form";
+import { HrFeedbackBanner } from "@/components/hr/hr-feedback";
 
 export type PunchState = "not_started" | "clocked_in" | "completed";
 
@@ -67,14 +68,15 @@ export function AttendancePunchPanel({
     startTransition(async () => {
       setMessage(null);
       setIsError(false);
-      try {
-        await recordCheckOutAction();
-        setMessage("Checked out successfully.");
-        router.refresh();
-      } catch {
-        setMessage("Check in first before checking out.");
+      const result = await recordCheckOutAction();
+      if (!result.ok) {
+        setMessage(result.message);
         setIsError(true);
+        return;
       }
+      setMessage("Checked out successfully.");
+      setIsError(false);
+      router.refresh();
     });
   }
 
@@ -115,6 +117,8 @@ export function AttendancePunchPanel({
         ) : null}
       </div>
 
+      <HrFeedbackBanner message={message} isError={isError} />
+
       <div className="ws-attendance-punch-actions">
         {!geoFenceRequired && punchState === "not_started" ? (
           <button
@@ -136,6 +140,7 @@ export function AttendancePunchPanel({
                   return;
                 }
                 setMessage("Checked in successfully.");
+                setIsError(false);
                 router.refresh();
               });
             }}
@@ -162,12 +167,6 @@ export function AttendancePunchPanel({
       {punchState === "completed" ? (
         <p className="ws-hr-meta">
           Both punches recorded for today. Buttons stay disabled until tomorrow.
-        </p>
-      ) : null}
-
-      {message ? (
-        <p className={isError ? "ws-hr-feedback ws-hr-feedback-error" : "ws-hr-feedback"}>
-          {message}
         </p>
       ) : null}
 

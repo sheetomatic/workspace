@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/saas/page-header";
 import { GeoPunchForm } from "@/components/hr/geo-punch-form";
+import { PlanFieldVisitForm } from "@/components/hr/plan-field-visit-form";
 import { FieldProofUpload } from "@/components/hr/field-proof-upload";
 import { HrSubNav } from "@/components/hr/hr-sub-nav";
 import { FieldLiveBoard } from "@/components/hr/field-live-board";
@@ -18,10 +19,7 @@ import {
   requireHrSubModule,
   resolveEnabledHrSubModules,
 } from "@/lib/hr/hr-sub-modules";
-import {
-  createFieldVisitAction,
-  recordFieldCheckInAction,
-} from "@/lib/hr/hr-actions";
+import { recordFieldCheckInAction } from "@/lib/hr/hr-actions";
 import {
   listMyDayTrail,
   listTodayPings,
@@ -346,67 +344,12 @@ export default async function HrFieldPage() {
         {isManager ? (
           <section className="ws-hr-panel">
             <h2>Plan a visit</h2>
-            <form action={createFieldVisitAction} className="ws-hr-form">
-              <label>
-                Assign to
-                <select name="assigneeUserId" required defaultValue="">
-                  <option value="" disabled>
-                    Select team member
-                  </option>
-                  {members.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Client name
-                <input name="clientName" type="text" required />
-              </label>
-              <label>
-                Location label
-                <input name="locationLabel" type="text" placeholder="Area / city" />
-              </label>
-              <label>
-                Planned date/time
-                <input name="plannedAt" type="datetime-local" />
-              </label>
-              <label>
-                Reference latitude (optional)
-                <input
-                  name="geoLat"
-                  type="number"
-                  step="any"
-                  placeholder="e.g. 19.0760"
-                />
-              </label>
-              <label>
-                Reference longitude (optional)
-                <input
-                  name="geoLng"
-                  type="number"
-                  step="any"
-                  placeholder="e.g. 72.8777"
-                />
-              </label>
-              <p className="ws-hr-help">
-                Reference GPS is optional and used for review/maps only. Field
-                teams can check in while travelling, at client shops, or on sites
-                without a radius lock.
-              </p>
-              <label>
-                Purpose
-                <textarea
-                  name="purpose"
-                  rows={3}
-                  placeholder="Retail order, site inspection, BD sourcing, distribution, collection"
-                />
-              </label>
-              <button type="submit" className="btn-cta btn-primary">
-                Plan visit
-              </button>
-            </form>
+            <PlanFieldVisitForm
+              members={members.map((m) => ({
+                id: m.id,
+                name: m.name,
+              }))}
+            />
           </section>
         ) : null}
       </div>

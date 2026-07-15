@@ -111,17 +111,33 @@ export async function recordCheckInAction(
   }
 }
 
-export async function recordCheckOutAction(): Promise<void> {
+export async function recordCheckOutAction(): Promise<HrActionResult> {
   const user = await getSessionUser();
   if (!user) {
-    throw new Error("Sign in required.");
+    return hrActionFailure("FORBIDDEN", "Sign in required.");
   }
   if (!(await assertHrActionAccess(user, "attendance"))) {
-    throw new Error("Attendance is not enabled for this workspace.");
+    return hrActionFailure(
+      "FORBIDDEN",
+      "Attendance is not enabled for this workspace.",
+    );
   }
 
-  await checkOutAttendance(user);
+  try {
+    await checkOutAttendance(user);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not check out.";
+    if (message.toLowerCase().includes("check in")) {
+      return hrActionFailure(
+        "NOT_CHECKED_IN",
+        "Check in first before checking out.",
+      );
+    }
+    return hrActionFailure("CHECK_OUT_FAILED", message);
+  }
   revalidateHr();
+  return { ok: true };
 }
 
 export async function submitLeaveRequestAction(

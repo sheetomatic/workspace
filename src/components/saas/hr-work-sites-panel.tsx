@@ -1,4 +1,9 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { deleteHrWorkSiteAction, saveHrWorkSiteAction } from "@/lib/hr/hr-actions";
+import { HrFeedbackBanner } from "@/components/hr/hr-feedback";
 
 type HrWorkSiteRow = {
   id: string;
@@ -9,6 +14,48 @@ type HrWorkSiteRow = {
 };
 
 export function HrWorkSitesPanel({ sites }: { sites: HrWorkSiteRow[] }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [message, setMessage] = useState<string | null>(null);
+  const [isError, setIsError] = useState(false);
+  const [addFormKey, setAddFormKey] = useState(0);
+
+  function onSave(formData: FormData) {
+    const isAdd = !String(formData.get("id") ?? "").trim();
+    startTransition(async () => {
+      setMessage(null);
+      setIsError(false);
+      const result = await saveHrWorkSiteAction(formData);
+      if (!result.ok) {
+        setMessage(result.message);
+        setIsError(true);
+        return;
+      }
+      setMessage("Work site saved.");
+      setIsError(false);
+      if (isAdd) {
+        setAddFormKey((key) => key + 1);
+      }
+      router.refresh();
+    });
+  }
+
+  function onDelete(siteId: string) {
+    startTransition(async () => {
+      setMessage(null);
+      setIsError(false);
+      const result = await deleteHrWorkSiteAction(siteId);
+      if (!result.ok) {
+        setMessage(result.message);
+        setIsError(true);
+        return;
+      }
+      setMessage("Work site deleted.");
+      setIsError(false);
+      router.refresh();
+    });
+  }
+
   return (
     <section className="saas-form-panel ws-workplace-hr-settings">
       <h3>Work sites (multi-office)</h3>
@@ -17,12 +64,13 @@ export function HrWorkSitesPanel({ sites }: { sites: HrWorkSiteRow[] }) {
         selected site geo-fence. Legacy single office fields above still work when no
         sites are listed.
       </p>
+      <HrFeedbackBanner message={message} isError={isError} />
 
       {sites.length > 0 ? (
         <ul className="ws-hr-sites-list">
           {sites.map((site) => (
             <li key={site.id} className="ws-hr-site-item">
-              <form action={saveHrWorkSiteAction} className="ws-hr-form ws-hr-site-form">
+              <form action={onSave} className="ws-hr-form ws-hr-site-form">
                 <input name="id" type="hidden" value={site.id} />
                 <div className="form-grid-premium">
                   <label>
@@ -47,19 +95,25 @@ export function HrWorkSitesPanel({ sites }: { sites: HrWorkSiteRow[] }) {
                   </label>
                 </div>
                 <div className="form-actions">
-                  <button type="submit" className="btn-secondary btn-sm">
+                  <button
+                    type="submit"
+                    className="btn-secondary btn-sm"
+                    disabled={pending}
+                  >
                     Save site
                   </button>
                 </div>
               </form>
-              <form
-                action={deleteHrWorkSiteAction.bind(null, site.id)}
-                className="ws-hr-site-delete"
-              >
-                <button type="submit" className="btn-secondary btn-sm danger">
+              <div className="ws-hr-site-delete">
+                <button
+                  type="button"
+                  className="btn-secondary btn-sm danger"
+                  disabled={pending}
+                  onClick={() => onDelete(site.id)}
+                >
                   Delete
                 </button>
-              </form>
+              </div>
             </li>
           ))}
         </ul>
@@ -67,7 +121,11 @@ export function HrWorkSitesPanel({ sites }: { sites: HrWorkSiteRow[] }) {
         <p className="ws-hr-help">No work sites yet. Add your first office below.</p>
       )}
 
-      <form action={saveHrWorkSiteAction} className="ws-hr-form ws-hr-site-add">
+      <form
+        key={addFormKey}
+        action={onSave}
+        className="ws-hr-form ws-hr-site-add"
+      >
         <h4>Add work site</h4>
         <div className="form-grid-premium">
           <label>
@@ -88,8 +146,12 @@ export function HrWorkSitesPanel({ sites }: { sites: HrWorkSiteRow[] }) {
           </label>
         </div>
         <div className="form-actions">
-          <button type="submit" className="btn-cta btn-primary">
-            Add site
+          <button
+            type="submit"
+            className="btn-cta btn-primary"
+            disabled={pending}
+          >
+            {pending ? "Saving…" : "Add site"}
           </button>
         </div>
       </form>

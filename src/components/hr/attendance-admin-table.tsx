@@ -7,6 +7,7 @@ import {
   deleteAttendanceRecordAction,
   updateAttendanceRecordAction,
 } from "@/lib/hr/hr-actions";
+import { HrFeedbackBanner } from "@/components/hr/hr-feedback";
 
 export type AttendanceTableRow = {
   id: string;
@@ -74,6 +75,8 @@ export function AttendanceAdminTable({
         if (editingId === record.id) {
           setEditingId(null);
         }
+        setMessage("Attendance deleted.");
+        setIsError(false);
         router.refresh();
       } catch (error) {
         setMessage(
@@ -90,6 +93,7 @@ export function AttendanceAdminTable({
       {canManage ? (
         <p className="ws-hr-help">Super admin: edit or delete any punch row.</p>
       ) : null}
+      <HrFeedbackBanner message={message} isError={isError} />
       <div className="ws-hr-table-wrap">
         <table className="ws-hr-table ws-attendance-table">
           <thead>
@@ -169,6 +173,8 @@ export function AttendanceAdminTable({
                               try {
                                 await updateAttendanceRecordAction(formData);
                                 setEditingId(null);
+                                setMessage("Attendance updated.");
+                                setIsError(false);
                                 router.refresh();
                               } catch (error) {
                                 setMessage(
@@ -261,11 +267,6 @@ export function AttendanceAdminTable({
           </tbody>
         </table>
       </div>
-      {message ? (
-        <p className={isError ? "ws-hr-feedback ws-hr-feedback-error" : "ws-hr-feedback"}>
-          {message}
-        </p>
-      ) : null}
     </section>
   );
 }
