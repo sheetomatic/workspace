@@ -267,7 +267,63 @@ export async function pushLeadToGoogleSheet(
     if (!lead) {
       return { ok: false as const, reason: "not_sheet_lead" as const };
     }
-    await exportLeadsToGoogleSheet(organizationId);
+
+    if (!isGoogleSheetsAuthConfigured()) {
+      return {
+        ok: false as const,
+        reason: "export_failed" as const,
+        message:
+          "Google Sheets export requires service account credentials on the server.",
+      };
+    }
+
+    const sheets = createGoogleSheetsWriteClient();
+    if (!sheets) {
+      return {
+        ok: false as const,
+        reason: "export_failed" as const,
+        message: "Could not connect to Google Sheets.",
+      };
+    }
+
+    const { config } = await resolveSheetConnection(organizationId);
+    const fetched = await fetchLeadsSheetRows(config);
+    const headerRowNumber = config.headerRow ?? 1;
+    const headers = fetched.rows[headerRowNumber - 1] ?? [];
+    const headerIndex = buildHeaderIndex(headers);
+    const dataRows = fetched.rows.slice(headerRowNumber);
+
+    const rowNumber = resolveSheetRowNumber(
+      lead,
+      dataRows,
+      headerIndex,
+      headerRowNumber,
+    );
+    if (!rowNumber) {
+      return {
+        ok: false as const,
+        reason: "export_failed" as const,
+        message: "Lead row not found in Google Sheet.",
+      };
+    }
+
+    const rowIndex = rowNumber - headerRowNumber - 1;
+    const existingRow = dataRows[rowIndex] ?? [];
+    const values = [leadValuesForSheet(lead, headerIndex, existingRow)];
+    const lastCol = Math.max(headers.length, values[0]?.length ?? 1, 1);
+    const endCol = columnIndexToLetter(lastCol - 1);
+    const sheetTitle =
+      fetched.sheetTitle ?? config.sheetTab ?? "Form Responses 1";
+    const quotedTitle = `'${sheetTitle.replace(/'/g, "''")}'`;
+    const range = `${quotedTitle}!A${rowNumber}:${endCol}${rowNumber}`;
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: fetched.spreadsheetId,
+      range,
+      valueInputOption: "RAW",
+      requestBody: { values },
+    });
+
     return { ok: true as const };
   } catch (error) {
     console.error("[leads-sheet-export]", error);

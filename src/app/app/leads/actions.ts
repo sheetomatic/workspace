@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import type {
   InboundLeadStatus,
   LeadCallingStatus,
@@ -101,11 +102,25 @@ import { resolveWorkspaceWhatsAppCredentials } from "@/lib/whatsapp-settings";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 
-async function exportLeadToGoogleSheetAfterSave(
+function exportLeadToGoogleSheetAfterSave(
   organizationId: string,
   leadId: string,
 ) {
-  await pushLeadToGoogleSheet(organizationId, leadId);
+  after(() => {
+    void pushLeadToGoogleSheet(organizationId, leadId).catch((error) => {
+      console.error("[leads-sheet-export]", error);
+    });
+  });
+}
+
+function scheduleInboundLeadActivity(
+  params: Parameters<typeof logInboundLeadActivity>[0],
+) {
+  after(() => {
+    void logInboundLeadActivity(params).catch((error) => {
+      console.error("[leads-activity]", error);
+    });
+  });
 }
 
 export async function assignInboundLead(leadId: string, assigneeUserId: string | null) {
@@ -185,7 +200,7 @@ export async function updateInboundLeadStatus(leadId: string, status: InboundLea
     data: { status, score, temperature, modifiedAt: new Date() },
   });
 
-  await logInboundLeadActivity({
+  scheduleInboundLeadActivity({
     organizationId: user.organizationId,
     leadId,
     type: "STATUS_CHANGE",
@@ -200,7 +215,7 @@ export async function updateInboundLeadStatus(leadId: string, status: InboundLea
     actorUserId: user.id,
   });
 
-  await exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
+  exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
 
   revalidatePath("/app/leads");
   return { ok: true, score, temperature };
@@ -233,7 +248,7 @@ export async function updateInboundLeadCategory(leadId: string, category: string
     data: { category, modifiedAt: new Date() },
   });
 
-  await logInboundLeadActivity({
+  scheduleInboundLeadActivity({
     organizationId: user.organizationId,
     leadId,
     type: "EDIT",
@@ -241,7 +256,7 @@ export async function updateInboundLeadCategory(leadId: string, category: string
     createdByUserId: user.id,
   });
 
-  await exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
+  exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
 
   revalidatePath("/app/leads");
   return { ok: true };
@@ -279,6 +294,8 @@ export async function updateInboundLeadDetails(params: {
   const existing = await prisma.inboundLead.findFirst({
     where: { id: params.leadId, organizationId: user.organizationId },
     select: {
+      phone: true,
+      email: true,
       requirement: true,
       category: true,
       status: true,
@@ -292,20 +309,29 @@ export async function updateInboundLeadDetails(params: {
   const phoneNormalized =
     leadPhoneDigits(params.phone) ?? (params.phone.trim() || null);
   const emailTrimmed = params.email.trim() || null;
+  const existingPhoneNormalized =
+    leadPhoneDigits(existing.phone) ?? (existing.phone?.trim() || null);
+  const existingEmailNormalized = existing.email?.trim().toLowerCase() || null;
+  const nextEmailNormalized = emailTrimmed?.toLowerCase() || null;
+  const contactUnchanged =
+    phoneNormalized === existingPhoneNormalized &&
+    nextEmailNormalized === existingEmailNormalized;
 
-  const duplicates = await findDuplicateLeads(user.organizationId, {
-    phone: phoneNormalized,
-    email: emailTrimmed,
-    excludeLeadId: params.leadId,
-  });
-  const activeDuplicates = duplicates.filter((m) => !m.archivedAt);
-  if (activeDuplicates.length > 0) {
-    return {
-      ok: false as const,
-      duplicate: true as const,
-      message: `Another lead already uses this phone or email (${activeDuplicates[0].name ?? activeDuplicates[0].id}).`,
-      matches: activeDuplicates,
-    };
+  if (!contactUnchanged) {
+    const duplicates = await findDuplicateLeads(user.organizationId, {
+      phone: phoneNormalized,
+      email: emailTrimmed,
+      excludeLeadId: params.leadId,
+    });
+    const activeDuplicates = duplicates.filter((m) => !m.archivedAt);
+    if (activeDuplicates.length > 0) {
+      return {
+        ok: false as const,
+        duplicate: true as const,
+        message: `Another lead already uses this phone or email (${activeDuplicates[0].name ?? activeDuplicates[0].id}).`,
+        matches: activeDuplicates,
+      };
+    }
   }
 
   const requirementTrimmed = params.requirement.trim() || null;
@@ -405,7 +431,7 @@ export async function updateInboundLeadDetails(params: {
     },
   });
 
-  await logInboundLeadActivity({
+  scheduleInboundLeadActivity({
     organizationId: user.organizationId,
     leadId: params.leadId,
     type: "EDIT",
@@ -413,7 +439,7 @@ export async function updateInboundLeadDetails(params: {
     createdByUserId: user.id,
   });
 
-  await exportLeadToGoogleSheetAfterSave(user.organizationId, params.leadId);
+  exportLeadToGoogleSheetAfterSave(user.organizationId, params.leadId);
 
   revalidatePath("/app/leads");
   return { ok: true, score, temperature };
@@ -509,7 +535,7 @@ export async function addInboundLeadNote(leadId: string, note: string) {
     createdByUserId: user.id,
   });
 
-  await exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
+  exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
 
   revalidatePath("/app/leads");
   return { ok: true };
@@ -623,7 +649,7 @@ export async function scheduleInboundLeadFollowUp(params: {
     createdByUserId: user.id,
   });
 
-  await exportLeadToGoogleSheetAfterSave(user.organizationId, params.leadId);
+  exportLeadToGoogleSheetAfterSave(user.organizationId, params.leadId);
 
   revalidatePath("/app/leads");
   return { ok: true };
@@ -1083,7 +1109,7 @@ export async function mergeInboundLeadsAction(params: {
     return result;
   }
 
-  await exportLeadToGoogleSheetAfterSave(user.organizationId, result.primaryId);
+  exportLeadToGoogleSheetAfterSave(user.organizationId, result.primaryId);
   revalidatePath("/app/leads");
   return result;
 }
@@ -1342,7 +1368,7 @@ export async function updateLeadMeetingNotes(leadId: string, meetingNotes: strin
     }
   }
 
-  await exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
+  exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
 
   revalidatePath("/app/leads");
   return { ok: true };
@@ -1421,7 +1447,7 @@ export async function updateLeadCallingStatus(
     });
   }
 
-  await exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
+  exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
 
   revalidatePath("/app/leads");
   return {
@@ -1453,7 +1479,7 @@ export async function updateLeadProjectStatus(
     return { ok: false, message: "Lead not found." };
   }
 
-  await logInboundLeadActivity({
+  scheduleInboundLeadActivity({
     organizationId: user.organizationId,
     leadId,
     type: "STATUS_CHANGE",
@@ -1461,7 +1487,7 @@ export async function updateLeadProjectStatus(
     createdByUserId: user.id,
   });
 
-  await exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
+  exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
 
   revalidatePath("/app/leads");
   return { ok: true };
