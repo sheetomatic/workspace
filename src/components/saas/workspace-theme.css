@@ -20943,6 +20943,8 @@ body:has(.workspace-app.saas-app) {
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0;
+  /* Prefer vertical pan so trackpads/wheels reach this scrollport, not stuck x-only traps. */
+  touch-action: pan-y;
 }
 
 .workspace-app .ws-module-layout-main .ws-tasks-sf,

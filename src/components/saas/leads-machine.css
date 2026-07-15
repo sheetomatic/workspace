@@ -1,12 +1,19 @@
-.leads-machine-page {
+.leads-machine-page,
+.leads-settings-page {
   display: grid;
   gap: 0.75rem;
   min-height: 0;
   min-width: 0;
   max-width: 100%;
-  /* Keep visible so this page never becomes a nested scrollport.
-     Vertical wheel moves #main.saas-content; children use min-width:0 to avoid x-bleed. */
+  /* Page padding lives here — saas-content is padding:0 under ws-module-layout.
+     Keep overflow visible so wheel scrolls .ws-module-layout-main (not a nested trap). */
   overflow: visible;
+  padding: 28px 32px 48px;
+  box-sizing: border-box;
+}
+
+.leads-settings-page {
+  gap: 1rem;
 }
 
 .leads-header-actions {
@@ -1098,7 +1105,7 @@
 }
 
 .leads-crm-table-wrap {
-  /* No nested vertical scroll — #main owns page scroll (see LeadsPageScrollBridge). */
+  /* No nested vertical scroll — module layout main owns page scroll. */
   overflow-x: auto;
   overflow-y: visible;
   max-width: 100%;
@@ -2529,6 +2536,11 @@
 }
 
 @media (max-width: 768px) {
+  .leads-machine-page,
+  .leads-settings-page {
+    padding: 16px 14px 24px;
+  }
+
   .workspace-app .sales-orders-page .ws-sf-page-toolbar {
     flex-direction: column;
     align-items: stretch;
