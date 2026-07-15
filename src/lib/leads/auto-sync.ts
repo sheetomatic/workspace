@@ -1,10 +1,11 @@
 import { withDbRetry } from "@/lib/db";
 import { syncLeadsTwoWay } from "@/lib/leads/google-sheets-export";
+import { pullLeadsFromConnection } from "@/lib/leads/sync-sources";
 import { readSheetSyncProgress } from "@/lib/leads/sheet-sync-progress";
 
 const AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000;
 
-/** Sync Google Sheets if last sync is older than 15 minutes. */
+/** Sync Google Sheets if import is in progress or last sync is older than 15 minutes. */
 export async function maybeAutoSyncGoogleSheets(organizationId: string) {
   const connection = await withDbRetry((client) =>
     client.leadIngestConnection.findUnique({
@@ -23,7 +24,22 @@ export async function maybeAutoSyncGoogleSheets(organizationId: string) {
 
   const inProgress = readSheetSyncProgress(connection.config);
   const lastSyncAt = connection.lastSyncAt?.getTime() ?? 0;
-  if (!inProgress && Date.now() - lastSyncAt < AUTO_SYNC_INTERVAL_MS) {
+
+  // Always continue a partial import when someone opens CRM — do not wait 15 min.
+  if (inProgress) {
+    const result = await pullLeadsFromConnection({
+      organizationId,
+      channel: "GOOGLE_SHEETS",
+    });
+    return {
+      synced: result.ok,
+      reason: result.ok ? ("continued" as const) : ("error" as const),
+      imported: result.ok ? result.imported : 0,
+      error: result.ok ? undefined : result.reason,
+    };
+  }
+
+  if (Date.now() - lastSyncAt < AUTO_SYNC_INTERVAL_MS) {
     return { synced: false as const, reason: "fresh" as const };
   }
 

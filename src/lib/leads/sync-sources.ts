@@ -6,8 +6,10 @@ import { resolveGoogleSheetsLeadConfig } from "@/lib/leads/sheet-config";
 import {
   GOOGLE_SHEETS_SYNC_BATCH_SIZE,
   GOOGLE_SHEETS_SYNC_TIME_BUDGET_MS,
+  clearSheetSyncProgress,
   mergeSheetSyncProgress,
   readSheetSyncProgress,
+  resolveSheetSyncResumeCursor,
   type SheetSyncProgress,
 } from "@/lib/leads/sheet-sync-progress";
 import type { LeadPullResult, LeadSyncCounts } from "@/lib/leads/sync-messages";
@@ -44,6 +46,8 @@ export type ExternalLeadRow = {
 export async function pullLeadsFromConnection(params: {
   organizationId: string;
   channel: LeadSourceChannel;
+  /** Clear resume cursor and re-read every sheet row from the top. */
+  forceFull?: boolean;
 }): Promise<LeadPullResult> {
   const connection = await prisma.leadIngestConnection.findUnique({
     where: {
@@ -59,7 +63,9 @@ export async function pullLeadsFromConnection(params: {
   }
 
   if (params.channel === "GOOGLE_SHEETS") {
-    return pullGoogleSheetsLeads(params.organizationId, connection);
+    return pullGoogleSheetsLeads(params.organizationId, connection, {
+      forceFull: params.forceFull === true,
+    });
   }
 
   const config = connection.config as Record<string, unknown>;
@@ -228,6 +234,7 @@ export async function syncAllEnabledLeadConnections(organizationId: string) {
 async function pullGoogleSheetsLeads(
   organizationId: string,
   connection: { id: string; config: unknown },
+  options?: { forceFull?: boolean },
 ): Promise<LeadPullResult> {
   const sheetConfig = resolveGoogleSheetsLeadConfig(connection.config);
   if (!sheetConfig) {
@@ -243,20 +250,34 @@ async function pullGoogleSheetsLeads(
 
   await ensureLeadConnections(organizationId);
 
+  const startingConfig = options?.forceFull
+    ? clearSheetSyncProgress(connection.config)
+    : connection.config;
+
   await prisma.leadIngestConnection.update({
     where: { id: connection.id },
-    data: { syncStatus: "SYNCING", lastSyncError: null },
+    data: {
+      syncStatus: "SYNCING",
+      lastSyncError: null,
+      ...(options?.forceFull
+        ? { config: startingConfig as Prisma.InputJsonValue }
+        : {}),
+    },
   });
 
   try {
     const rows = await pullLeadsFromGoogleSheet(sheetConfig);
-    const savedProgress = readSheetSyncProgress(connection.config);
-    let cursor =
-      savedProgress && savedProgress.total === rows.length
-        ? savedProgress.cursor
-        : 0;
+    const savedProgress = options?.forceFull
+      ? null
+      : readSheetSyncProgress(startingConfig);
+    let cursor = resolveSheetSyncResumeCursor(savedProgress, rows.length);
 
-    const counts: LeadSyncCounts = { processed: 0, created: 0, updated: 0 };
+    const counts: LeadSyncCounts = {
+      processed: 0,
+      created: 0,
+      updated: 0,
+      skipped: 0,
+    };
     const deadline = Date.now() + GOOGLE_SHEETS_SYNC_TIME_BUDGET_MS;
 
     while (cursor < rows.length && Date.now() < deadline) {
@@ -288,6 +309,7 @@ async function pullGoogleSheetsLeads(
           sheetPull: true,
         });
         if (result.skipped) {
+          counts.skipped = (counts.skipped ?? 0) + 1;
           continue;
         }
         counts.processed += 1;
@@ -302,7 +324,7 @@ async function pullGoogleSheetsLeads(
 
     const partial: SheetSyncProgress | null =
       cursor < rows.length ? { cursor, total: rows.length } : null;
-    const mergedConfig = mergeSheetSyncProgress(connection.config, partial);
+    const mergedConfig = mergeSheetSyncProgress(startingConfig, partial);
 
     await prisma.leadIngestConnection.update({
       where: { id: connection.id },

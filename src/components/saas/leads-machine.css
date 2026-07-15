@@ -20,8 +20,23 @@
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-left: auto;
+}
+
+.leads-sheet-sync-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: min(28rem, 100%);
+}
+
+.leads-sheet-sync-actions .leads-settings-notice {
+  font-size: 0.75rem;
+  margin: 0;
+  padding: 0.25rem 0.5rem;
 }
 
 .workspace-app .leads-machine-page .ws-sf-page-toolbar {

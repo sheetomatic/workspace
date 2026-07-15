@@ -279,11 +279,15 @@ export async function pushLeadToGoogleSheet(
   }
 }
 
-export async function syncLeadsTwoWay(organizationId: string) {
+export async function syncLeadsTwoWay(
+  organizationId: string,
+  options?: { forceFull?: boolean },
+) {
   const { pullLeadsFromConnection } = await import("@/lib/leads/sync-sources");
   const pull = await pullLeadsFromConnection({
     organizationId,
     channel: "GOOGLE_SHEETS",
+    forceFull: options?.forceFull === true,
   });
 
   if (!pull.ok) {

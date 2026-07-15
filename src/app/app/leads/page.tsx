@@ -7,8 +7,12 @@ import { LeadsPipelineCards } from "@/components/saas/leads-pipeline-cards";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import "@/components/saas/leads-machine.css";
 import { runLeadsBackgroundMaintenance } from "@/lib/leads/backfill";
-import { LEADS_SYNC_INTERVAL_LABEL } from "@/lib/leads/auto-sync";
+import {
+  LEADS_SYNC_INTERVAL_LABEL,
+  maybeAutoSyncGoogleSheets,
+} from "@/lib/leads/auto-sync";
 import { readSheetSyncProgress } from "@/lib/leads/sheet-sync-progress";
+import { LeadsSheetSyncButton } from "@/components/saas/leads-sheet-sync-button";
 import { ensureLeadConnections } from "@/lib/leads/ingest";
 import { listCrmAlertCenterItems } from "@/lib/leads/alerts/evaluate";
 import { parseLeadsListParams } from "@/lib/leads/list-params";
@@ -155,12 +159,19 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
   const period = parseLeadsPeriodParams(params);
   const listParams = parseLeadsListParams(params);
   const canManage = hasMinimumRole(user.role, "MANAGER");
+  const canAdmin = hasMinimumRole(user.role, "ADMIN");
 
   after(async () => {
     try {
       await runLeadsBackgroundMaintenance(user.organizationId);
     } catch (error) {
       console.error("leads background maintenance", error);
+    }
+    try {
+      // Continues partial Google Sheet imports (e.g. through row 897) when CRM is opened.
+      await maybeAutoSyncGoogleSheets(user.organizationId);
+    } catch (error) {
+      console.error("leads google sheets auto sync", error);
     }
   });
 
@@ -219,9 +230,24 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
         title="CRM"
         actions={
           <div className="leads-header-actions">
-            <span className="leads-sync-pill" title={`Auto sync ${LEADS_SYNC_INTERVAL_LABEL}`}>
+            <span
+              className="leads-sync-pill"
+              title={
+                sheetSyncProgress
+                  ? `Sheet import in progress — ${sheetSyncProgress.cursor} of ${sheetSyncProgress.total} rows. Click Continue import or wait ${LEADS_SYNC_INTERVAL_LABEL}.`
+                  : `Auto sync ${LEADS_SYNC_INTERVAL_LABEL}`
+              }
+            >
               {syncPillLabel}
             </span>
+            <LeadsSheetSyncButton
+              canManage={canManage}
+              importProgressLabel={
+                sheetSyncProgress
+                  ? `${sheetSyncProgress.cursor}/${sheetSyncProgress.total}`
+                  : null
+              }
+            />
             {canManage ? (
               <Link
                 className="leads-setup-icon-btn"

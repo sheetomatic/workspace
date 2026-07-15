@@ -1,8 +1,11 @@
 /** Rows processed per sync invocation (stays within serverless time limits). */
-export const GOOGLE_SHEETS_SYNC_BATCH_SIZE = 80;
+export const GOOGLE_SHEETS_SYNC_BATCH_SIZE = 100;
 
-/** Stop processing before Vercel function timeout. */
-export const GOOGLE_SHEETS_SYNC_TIME_BUDGET_MS = 50_000;
+/**
+ * Stop before Vercel function timeout.
+ * Cron `leads-sync` maxDuration is 300s — leave headroom for fetch + writeback.
+ */
+export const GOOGLE_SHEETS_SYNC_TIME_BUDGET_MS = 240_000;
 
 export type SheetSyncProgress = {
   cursor: number;
@@ -25,6 +28,37 @@ export function readSheetSyncProgress(config: unknown): SheetSyncProgress | null
   return { cursor, total };
 }
 
+/**
+ * Resume import cursor when the sheet grows (new rows append at the end).
+ * Previously a total mismatch always reset to 0, so a growing ~900-row sheet
+ * could restart forever and never reach the last rows.
+ */
+export function resolveSheetSyncResumeCursor(
+  saved: SheetSyncProgress | null,
+  rowCount: number,
+): number {
+  if (rowCount <= 0) {
+    return 0;
+  }
+  if (!saved) {
+    return 0;
+  }
+
+  const cursor = Math.max(0, Math.min(saved.cursor, rowCount));
+
+  if (saved.total === rowCount) {
+    return cursor;
+  }
+
+  // Sheet grew — continue from where we left off (new rows are at the end).
+  if (rowCount > saved.total) {
+    return cursor;
+  }
+
+  // Sheet shrank — restart from the top.
+  return 0;
+}
+
 export function mergeSheetSyncProgress(
   config: unknown,
   progress: SheetSyncProgress | null,
@@ -45,4 +79,9 @@ export function mergeSheetSyncProgress(
     syncCursor: progress.cursor,
     syncTotal: progress.total,
   };
+}
+
+/** Clear resume cursor so the next pull re-reads every sheet row. */
+export function clearSheetSyncProgress(config: unknown): Record<string, unknown> {
+  return mergeSheetSyncProgress(config, null);
 }
