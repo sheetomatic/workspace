@@ -1,0 +1,34 @@
+# Install on Hostinger VPS:
+#   sudo cp scripts/vps-cron.sh /opt/sheetomatic/scripts/vps-cron.sh
+#   sudo chmod +x /opt/sheetomatic/scripts/vps-cron.sh
+#   sudo crontab -e
+# Paste (times match vercel.json; adjust for IST if you prefer):
+#
+# SHEETOMATIC_ENV_FILE=/opt/sheetomatic/.env
+# APP_BASE_URL=https://sheetomatic.com
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Task reminders — 09:00 and 04:00 UTC
+0 9 * * * /opt/sheetomatic/scripts/vps-cron.sh task-reminders >> /var/log/sheetomatic-cron.log 2>&1
+0 4 * * * /opt/sheetomatic/scripts/vps-cron.sh task-reminders >> /var/log/sheetomatic-cron.log 2>&1
+
+# Due date alerts — 04:30 UTC
+30 4 * * * /opt/sheetomatic/scripts/vps-cron.sh due-date-alerts >> /var/log/sheetomatic-cron.log 2>&1
+
+# FMS step reminders — 05:00 and 10:00 UTC
+0 5 * * * /opt/sheetomatic/scripts/vps-cron.sh fms-step-reminders >> /var/log/sheetomatic-cron.log 2>&1
+0 10 * * * /opt/sheetomatic/scripts/vps-cron.sh fms-step-reminders >> /var/log/sheetomatic-cron.log 2>&1
+
+# IMS reorder alerts — 06:00 UTC
+0 6 * * * /opt/sheetomatic/scripts/vps-cron.sh ims-reorder-alerts >> /var/log/sheetomatic-cron.log 2>&1
+
+# Checklist / PC — 07:00 UTC
+0 7 * * * /opt/sheetomatic/scripts/vps-cron.sh checklist-pc >> /var/log/sheetomatic-cron.log 2>&1
+
+# Task due digest — 03:30 UTC
+30 3 * * * /opt/sheetomatic/scripts/vps-cron.sh task-due-digest >> /var/log/sheetomatic-cron.log 2>&1
+
+# CRM Google Sheets / Meta lead sync — every 15 minutes
+*/15 * * * * /opt/sheetomatic/scripts/vps-cron.sh leads-sync >> /var/log/sheetomatic-cron.log 2>&1
