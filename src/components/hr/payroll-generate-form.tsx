@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { createPayrollRunAction } from "@/lib/hr/hr-actions";
+import { HrFeedbackBanner } from "@/components/hr/hr-feedback";
 
 export function PayrollGenerateForm({
   defaultStart,
@@ -34,6 +35,7 @@ export function PayrollGenerateForm({
   return (
     <section className="ws-hr-panel">
       <h2>Generate payroll from attendance</h2>
+      <HrFeedbackBanner message={message} isError={isError} />
       <form action={onSubmit} className="ws-hr-form ws-hr-form-inline">
         <label>
           Period start
@@ -47,11 +49,6 @@ export function PayrollGenerateForm({
           {pending ? "Calculating…" : "Calculate salary"}
         </button>
       </form>
-      {message ? (
-        <p className={isError ? "ws-hr-feedback-error" : "ws-hr-feedback"} role="status">
-          {message}
-        </p>
-      ) : null}
     </section>
   );
 }

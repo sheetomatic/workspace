@@ -6,6 +6,7 @@ import {
   reviewSwapRequestAction,
   submitSwapRequestAction,
 } from "@/lib/hr/hr-actions";
+import { HrFeedbackBanner } from "@/components/hr/hr-feedback";
 
 function statusClass(status: string) {
   if (status === "APPROVED") return "ws-leave-status is-approved";
@@ -48,6 +49,7 @@ export function LeaveSwapPanel({
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
+  const [formKey, setFormKey] = useState(0);
 
   function onSubmit(formData: FormData) {
     startTransition(async () => {
@@ -60,6 +62,8 @@ export function LeaveSwapPanel({
         return;
       }
       setMessage("Swap request submitted.");
+      setIsError(false);
+      setFormKey((key) => key + 1);
       router.refresh();
     });
   }
@@ -75,12 +79,14 @@ export function LeaveSwapPanel({
         return;
       }
       setMessage("Swap request updated.");
+      setIsError(false);
       router.refresh();
     });
   }
 
   return (
     <>
+      <HrFeedbackBanner message={message} isError={isError} />
       <div className="ws-hr-split">
         <section className="ws-hr-panel">
           <h2>Swap leave / off day</h2>
@@ -88,7 +94,7 @@ export function LeaveSwapPanel({
             Request to swap a leave day or weekly off with another working day.
             Manager approval required.
           </p>
-          <form action={onSubmit} className="ws-hr-form">
+          <form key={formKey} action={onSubmit} className="ws-hr-form">
             <label>
               Type
               <select name="swapType" defaultValue="LEAVE_SWAP" required>
@@ -198,15 +204,6 @@ export function LeaveSwapPanel({
           </table>
         </div>
       </section>
-
-      {message ? (
-        <p
-          className={isError ? "ws-hr-feedback-error" : "ws-hr-feedback"}
-          role="status"
-        >
-          {message}
-        </p>
-      ) : null}
     </>
   );
 }

@@ -6,6 +6,7 @@ import {
   deleteEmployeeDocumentAction,
   uploadEmployeeDocumentAction,
 } from "@/lib/hr/hr-actions";
+import { HrFeedbackBanner } from "@/components/hr/hr-feedback";
 
 const DOC_TYPE_LABELS: Record<string, string> = {
   EDUCATION_QUALIFICATION: "Education Qualification",
@@ -56,6 +57,7 @@ export function EmployeeDocumentsPanel({
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
+  const [uploadKey, setUploadKey] = useState(0);
 
   if (!employeeProfileId) {
     return (
@@ -80,6 +82,7 @@ export function EmployeeDocumentsPanel({
         return;
       }
       setMessage("Document uploaded.");
+      setUploadKey((key) => key + 1);
       router.refresh();
     });
   }
@@ -104,6 +107,7 @@ export function EmployeeDocumentsPanel({
   return (
     <section className="ws-hr-form-section">
       <h3>Documents</h3>
+      <HrFeedbackBanner message={message} isError={isError} />
       <p className="ws-hr-help">
         Required on join: Education, CV, Work Experience, NOC/Resignation,
         Aadhaar, PAN. Optional: offer letter and contract.
@@ -147,7 +151,11 @@ export function EmployeeDocumentsPanel({
       )}
 
       {canEdit ? (
-        <form action={onUpload} className="ws-hr-form ws-hr-doc-upload">
+        <form
+          key={uploadKey}
+          action={onUpload}
+          className="ws-hr-form ws-hr-doc-upload"
+        >
           <input type="hidden" name="employeeProfileId" value={employeeProfileId} />
           <label>
             Type
@@ -176,15 +184,6 @@ export function EmployeeDocumentsPanel({
             {pending ? "Uploading…" : "Upload document"}
           </button>
         </form>
-      ) : null}
-
-      {message ? (
-        <p
-          className={isError ? "ws-hr-feedback-error" : "ws-hr-feedback"}
-          role="status"
-        >
-          {message}
-        </p>
       ) : null}
     </section>
   );

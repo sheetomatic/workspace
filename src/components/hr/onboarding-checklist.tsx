@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { completeOnboardingAction } from "@/lib/hr/hr-actions";
+import { HrFeedbackBanner } from "@/components/hr/hr-feedback";
 
 export type OnboardingChecklistRow = {
   docType: string;
@@ -76,6 +77,7 @@ export function OnboardingChecklist({
               : "Pending docs"}
         </span>
       </div>
+      <HrFeedbackBanner message={message} isError={isError} />
       <p className="ws-hr-help">
         Required: Education, CV, Work Experience, NOC/Resignation, Aadhaar, and
         PAN. {uploadedCount} of {items.length} uploaded.
@@ -157,15 +159,6 @@ export function OnboardingChecklist({
           {educationSummary ? <p>Education: {educationSummary}</p> : null}
           {experienceSummary ? <p>Experience: {experienceSummary}</p> : null}
         </div>
-      ) : null}
-
-      {message ? (
-        <p
-          className={isError ? "ws-hr-feedback-error" : "ws-hr-feedback"}
-          role="status"
-        >
-          {message}
-        </p>
       ) : null}
     </section>
   );

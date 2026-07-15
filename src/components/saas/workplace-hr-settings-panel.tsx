@@ -1,8 +1,13 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { updateHrSettingsAction } from "@/lib/hr/hr-actions";
 import {
   HR_SUB_MODULES,
   resolveEnabledHrSubModules,
 } from "@/lib/hr/hr-sub-modules";
+import { HrFeedbackBanner } from "@/components/hr/hr-feedback";
 
 type WorkplaceHrSettings = {
   officeLat: number | null;
@@ -24,7 +29,27 @@ export function WorkplaceHrSettingsPanel({
 }: {
   settings: WorkplaceHrSettings;
 }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [message, setMessage] = useState<string | null>(null);
+  const [isError, setIsError] = useState(false);
   const enabled = resolveEnabledHrSubModules(settings.enabledHrSubModules);
+
+  function onSubmit(formData: FormData) {
+    startTransition(async () => {
+      setMessage(null);
+      setIsError(false);
+      const result = await updateHrSettingsAction(formData);
+      if (!result.ok) {
+        setMessage(result.message);
+        setIsError(true);
+        return;
+      }
+      setMessage("HR settings saved.");
+      setIsError(false);
+      router.refresh();
+    });
+  }
 
   return (
     <section className="saas-form-panel ws-workplace-hr-settings">
@@ -33,7 +58,8 @@ export function WorkplaceHrSettingsPanel({
         Working hours, shifts, short leave / half day policy, office geo-fence, and face
         recognition. Assign a shift and White/Blue category on the employee profile.
       </p>
-      <form action={updateHrSettingsAction} className="ws-hr-form">
+      <HrFeedbackBanner message={message} isError={isError} />
+      <form action={onSubmit} className="ws-hr-form">
         <div className="ws-hr-submodules-section">
           <h4>HR sub-modules</h4>
           <p className="saas-team-invite-lead">
@@ -157,8 +183,12 @@ export function WorkplaceHrSettingsPanel({
           (or org default hours). Manage named shifts in Shifts &amp; timing below.
         </p>
         <div className="form-actions">
-          <button type="submit" className="btn-cta btn-primary">
-            Save workplace settings
+          <button
+            type="submit"
+            className="btn-cta btn-primary"
+            disabled={pending}
+          >
+            {pending ? "Saving…" : "Save workplace settings"}
           </button>
         </div>
       </form>

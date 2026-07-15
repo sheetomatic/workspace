@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { markAttendanceDayAction } from "@/lib/hr/hr-actions";
+import { HrFeedbackBanner } from "@/components/hr/hr-feedback";
 
 export type MarkAttendanceEmployee = {
   userId: string;
@@ -48,6 +49,7 @@ export function MarkAttendanceDayForm({
   return (
     <section className="ws-hr-panel">
       <h2>Mark attendance day</h2>
+      <HrFeedbackBanner message={message} isError={isError} />
       <p className="ws-hr-help">
         Manager marks are auto-verified. Self check-ins still need approval in the
         verify queue. Use OT hours for Blue-collar overtime.
@@ -96,11 +98,6 @@ export function MarkAttendanceDayForm({
           {pending ? "Saving…" : "Save day"}
         </button>
       </form>
-      {message ? (
-        <p className={isError ? "ws-hr-feedback-error" : "ws-hr-feedback"} role="status">
-          {message}
-        </p>
-      ) : null}
     </section>
   );
 }

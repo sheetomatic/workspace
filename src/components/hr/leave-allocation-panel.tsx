@@ -7,6 +7,7 @@ import {
   upsertLeavePolicyAction,
 } from "@/lib/hr/hr-actions";
 import { leaveTypeLabel, leaveTypeShort } from "@/components/hr/leave-balance-cards";
+import { HrFeedbackBanner } from "@/components/hr/hr-feedback";
 
 const LEAVE_TYPES = ["CASUAL", "SICK", "EARNED", "COMP_OFF"] as const;
 
@@ -42,6 +43,7 @@ export function LeaveAllocationPanel({
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
+  const [allocateKey, setAllocateKey] = useState(0);
 
   const policyMap = new Map(policies.map((p) => [p.leaveType, p.defaultDays]));
 
@@ -71,12 +73,15 @@ export function LeaveAllocationPanel({
         return;
       }
       setMessage("Leave balance updated.");
+      setAllocateKey((key) => key + 1);
       router.refresh();
     });
   }
 
   return (
-    <div className="ws-hr-split">
+    <>
+      <HrFeedbackBanner message={message} isError={isError} />
+      <div className="ws-hr-split">
       <section className="ws-hr-panel">
         <h2>Leave policy ({year})</h2>
         <p className="ws-hr-help">
@@ -135,7 +140,7 @@ export function LeaveAllocationPanel({
         <p className="ws-hr-help">
           Set an employee&apos;s yearly balance for a leave type.
         </p>
-        <form action={onAllocate} className="ws-hr-form">
+        <form key={allocateKey} action={onAllocate} className="ws-hr-form">
           <label>
             Employee
             <select name="userId" required defaultValue="">
@@ -204,15 +209,7 @@ export function LeaveAllocationPanel({
           </div>
         ) : null}
       </section>
-
-      {message ? (
-        <p
-          className={isError ? "ws-hr-feedback-error" : "ws-hr-feedback"}
-          role="status"
-        >
-          {message}
-        </p>
-      ) : null}
-    </div>
+      </div>
+    </>
   );
 }

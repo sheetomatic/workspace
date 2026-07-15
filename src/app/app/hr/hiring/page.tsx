@@ -12,10 +12,7 @@ import {
   requireHrSubModule,
   resolveEnabledHrSubModules,
 } from "@/lib/hr/hr-sub-modules";
-import {
-  addCandidateAction,
-  createJobOpeningAction,
-} from "@/lib/hr/hr-actions";
+import { HiringAdminPanel } from "@/components/hr/hiring-admin-panel";
 import { hrHiringModule } from "@/app/hr-module-content";
 
 export default async function HrHiringPage() {
@@ -52,62 +49,13 @@ export default async function HrHiringPage() {
       </p>
 
       {isAdmin ? (
-        <div className="ws-hr-split">
-          <section className="ws-hr-panel">
-            <h2>New job opening</h2>
-            <form action={createJobOpeningAction} className="ws-hr-form">
-              <label>
-                Title
-                <input name="title" type="text" required />
-              </label>
-              <label>
-                Location
-                <input name="location" type="text" />
-              </label>
-              <label>
-                Description
-                <textarea name="description" rows={4} />
-              </label>
-              <button type="submit" className="btn-cta btn-primary">
-                Publish opening
-              </button>
-            </form>
-          </section>
-
-          <section className="ws-hr-panel">
-            <h2>Add candidate</h2>
-            <form action={addCandidateAction} className="ws-hr-form">
-              <label>
-                Full name
-                <input name="fullName" type="text" required />
-              </label>
-              <label>
-                Email
-                <input name="email" type="email" />
-              </label>
-              <label>
-                Phone
-                <input name="phone" type="tel" />
-              </label>
-              <label>
-                Job opening
-                <select name="jobOpeningId" defaultValue="">
-                  <option value="">General application</option>
-                  {openings
-                    .filter((o) => o.isOpen)
-                    .map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.title}
-                      </option>
-                    ))}
-                </select>
-              </label>
-              <button type="submit" className="btn-cta btn-primary">
-                Add to pipeline
-              </button>
-            </form>
-          </section>
-        </div>
+        <HiringAdminPanel
+          openings={openings.map((o) => ({
+            id: o.id,
+            title: o.title,
+            isOpen: o.isOpen,
+          }))}
+        />
       ) : null}
 
       <section className="ws-hr-panel">

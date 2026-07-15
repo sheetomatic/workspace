@@ -8,6 +8,7 @@ import {
   isWithinVisitGeofence,
   type VisitGeofence,
 } from "@/lib/hr/field-geofence";
+import { HrFeedbackBanner } from "@/components/hr/hr-feedback";
 
 export type FieldVisitOption = {
   id: string;
@@ -27,6 +28,8 @@ type GeoPunchFormProps = {
   sites?: Array<{ id: string; name: string }>;
   /** Optional planned visits for field check-in + geofence UX. */
   visits?: FieldVisitOption[];
+  /** Reset fields after a successful punch. Default true. */
+  resetOnSuccess?: boolean;
 };
 
 export function GeoPunchForm({
@@ -38,6 +41,7 @@ export function GeoPunchForm({
   siteId,
   sites = [],
   visits = [],
+  resetOnSuccess = true,
 }: GeoPunchFormProps) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
@@ -46,9 +50,9 @@ export function GeoPunchForm({
   const [manualLat, setManualLat] = useState("");
   const [manualLng, setManualLng] = useState("");
   const [accuracyM, setAccuracyM] = useState<number | null>(null);
-  const [selectedSiteId, setSelectedSiteId] = useState(
-    siteId ?? (sites.length === 1 ? sites[0]?.id ?? "" : ""),
-  );
+  const defaultSiteId =
+    siteId ?? (sites.length === 1 ? sites[0]?.id ?? "" : "");
+  const [selectedSiteId, setSelectedSiteId] = useState(defaultSiteId);
   const [selectedVisitId, setSelectedVisitId] = useState("");
 
   const selectedVisit = useMemo(
@@ -85,7 +89,8 @@ export function GeoPunchForm({
     setPending(true);
     setMessage(null);
     setIsError(false);
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     const lat = Number(manualLat);
     const lng = Number(manualLng);
     const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
@@ -140,6 +145,16 @@ export function GeoPunchForm({
 
     setMessage(successMessage);
     setIsError(false);
+    if (resetOnSuccess) {
+      form.reset();
+      setManualLat("");
+      setManualLng("");
+      setAccuracyM(null);
+      setSelectedVisitId("");
+      setSelectedSiteId(
+        siteId ?? (sites.length === 1 ? sites[0]?.id ?? "" : ""),
+      );
+    }
     setPending(false);
     router.refresh();
   }
@@ -150,6 +165,7 @@ export function GeoPunchForm({
 
   return (
     <form onSubmit={handleSubmit} className="ws-hr-form">
+      <HrFeedbackBanner message={message} isError={isError} />
       {requireGeo && sites.length > 1 ? (
         <label className="ws-attendance-site-select">
           Work site
@@ -246,11 +262,6 @@ export function GeoPunchForm({
         <p className="ws-hr-meta">
           GPS: {displayLat.toFixed(5)}, {displayLng.toFixed(5)}
           {accuracyM != null ? ` · accuracy ~${Math.round(accuracyM)}m` : " · edited"}
-        </p>
-      ) : null}
-      {message ? (
-        <p className={isError ? "ws-hr-feedback ws-hr-feedback-error" : "ws-hr-feedback"}>
-          {message}
         </p>
       ) : null}
     </form>

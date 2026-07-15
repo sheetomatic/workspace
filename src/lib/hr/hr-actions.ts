@@ -111,26 +111,44 @@ export async function recordCheckInAction(
   }
 }
 
-export async function recordCheckOutAction(): Promise<void> {
+export async function recordCheckOutAction(): Promise<HrActionResult> {
   const user = await getSessionUser();
   if (!user) {
-    throw new Error("Sign in required.");
+    return hrActionFailure("FORBIDDEN", "Sign in required.");
   }
   if (!(await assertHrActionAccess(user, "attendance"))) {
-    throw new Error("Attendance is not enabled for this workspace.");
+    return hrActionFailure(
+      "FORBIDDEN",
+      "Attendance is not enabled for this workspace.",
+    );
   }
 
-  await checkOutAttendance(user);
+  try {
+    await checkOutAttendance(user);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not check out.";
+    if (message.toLowerCase().includes("check in")) {
+      return hrActionFailure(
+        "NOT_CHECKED_IN",
+        "Check in first before checking out.",
+      );
+    }
+    return hrActionFailure("CHECK_OUT_FAILED", message);
+  }
   revalidateHr();
+  return { ok: true };
 }
 
-export async function submitLeaveRequestAction(formData: FormData): Promise<void> {
+export async function submitLeaveRequestAction(
+  formData: FormData,
+): Promise<HrActionResult> {
   const user = await getSessionUser();
   if (!user) {
-    return;
+    return hrActionFailure("FORBIDDEN", "Sign in required.");
   }
   if (!(await assertHrActionAccess(user, "leave"))) {
-    return;
+    return hrActionFailure("FORBIDDEN", "Leave is not enabled for this workspace.");
   }
 
   const leaveType = String(formData.get("leaveType") ?? "CASUAL");
@@ -139,10 +157,13 @@ export async function submitLeaveRequestAction(formData: FormData): Promise<void
   const reason = String(formData.get("reason") ?? "").trim();
 
   if (Number.isNaN(startRaw.getTime()) || Number.isNaN(endRaw.getTime())) {
-    return;
+    return hrActionFailure("INVALID_DATES", "Enter valid start and end dates.");
   }
   if (endRaw < startRaw) {
-    return;
+    return hrActionFailure(
+      "INVALID_DATES",
+      "End date must be on or after start date.",
+    );
   }
 
   const startDate = new Date(startRaw);
@@ -161,7 +182,7 @@ export async function submitLeaveRequestAction(formData: FormData): Promise<void
     cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
   if (days < 1) {
-    return;
+    return hrActionFailure("INVALID_DATES", "Select at least one weekday.");
   }
 
   const year = startDate.getUTCFullYear();
@@ -181,29 +202,44 @@ export async function submitLeaveRequestAction(formData: FormData): Promise<void
   });
 
   revalidateHr();
+  return { ok: true };
 }
 
-export async function reviewLeaveRequestAction(formData: FormData): Promise<void> {
+export async function reviewLeaveRequestAction(
+  formData: FormData,
+): Promise<HrActionResult> {
   const user = await getSessionUser();
   if (!user || !hasMinimumRole(user.role, "MANAGER")) {
-    return;
+    return hrActionFailure(
+      "FORBIDDEN",
+      "Manager access required to review leave requests.",
+    );
   }
 
   const id = String(formData.get("id"));
   const decision = String(formData.get("decision"));
   if (decision !== "APPROVED" && decision !== "REJECTED") {
-    return;
+    return hrActionFailure("INVALID_INPUT", "Invalid review decision.");
   }
 
   const leaveRequest = await prisma.leaveRequest.findFirst({
     where: { id, organizationId: user.organizationId },
     select: { userId: true, status: true },
   });
-  if (!leaveRequest || leaveRequest.status !== "PENDING") {
-    return;
+  if (!leaveRequest) {
+    return hrActionFailure("NOT_FOUND", "Leave request not found.");
+  }
+  if (leaveRequest.status !== "PENDING") {
+    return hrActionFailure(
+      "NOT_PENDING",
+      "This leave request has already been reviewed.",
+    );
   }
   if (leaveRequest.userId === user.id) {
-    throw new Error("You cannot approve or reject your own leave request.");
+    return hrActionFailure(
+      "SELF_APPROVE",
+      "You cannot approve or reject your own leave request.",
+    );
   }
 
   const { applyApprovedLeave, rejectLeaveRequest } = await import("@/lib/hr/payroll");
@@ -223,6 +259,7 @@ export async function reviewLeaveRequestAction(formData: FormData): Promise<void
   }
 
   revalidateHr();
+  return { ok: true };
 }
 
 export async function recordFieldCheckInAction(
@@ -389,13 +426,21 @@ export async function postFieldLocationPingAction(
   }
 }
 
-export async function createFieldVisitAction(formData: FormData): Promise<void> {
+export async function createFieldVisitAction(
+  formData: FormData,
+): Promise<HrActionResult> {
   const user = await getSessionUser();
   if (!user || !hasMinimumRole(user.role, "MANAGER")) {
-    return;
+    return hrActionFailure(
+      "FORBIDDEN",
+      "Manager access required to create field visits.",
+    );
   }
   if (!(await assertHrActionAccess(user, "field"))) {
-    return;
+    return hrActionFailure(
+      "FORBIDDEN",
+      "Field tracking is not enabled for this workspace.",
+    );
   }
 
   const assigneeUserId = String(formData.get("assigneeUserId") ?? "").trim();
@@ -412,7 +457,10 @@ export async function createFieldVisitAction(formData: FormData): Promise<void> 
     Number.isFinite(radiusRaw) && radiusRaw > 0 ? Math.round(radiusRaw) : null;
 
   if (!clientName || !assigneeUserId) {
-    return;
+    return hrActionFailure(
+      "INVALID_INPUT",
+      "Client name and assignee are required.",
+    );
   }
 
   const assigneeMembership = await prisma.membership.findUnique({
@@ -425,7 +473,10 @@ export async function createFieldVisitAction(formData: FormData): Promise<void> 
     select: { id: true, deactivatedAt: true },
   });
   if (!assigneeMembership || assigneeMembership.deactivatedAt) {
-    return;
+    return hrActionFailure(
+      "INVALID_INPUT",
+      "Assignee must be an active member of this workspace.",
+    );
   }
 
   const hasFence = Number.isFinite(geoLat) && Number.isFinite(geoLng);
@@ -450,15 +501,21 @@ export async function createFieldVisitAction(formData: FormData): Promise<void> 
   });
 
   revalidateHr();
+  return { ok: true };
 }
 
-export async function createJobOpeningAction(formData: FormData): Promise<void> {
+export async function createJobOpeningAction(
+  formData: FormData,
+): Promise<HrActionResult> {
   const user = await getSessionUser();
   if (!user || !hasMinimumRole(user.role, "ADMIN")) {
-    return;
+    return hrActionFailure(
+      "FORBIDDEN",
+      "Admin access required to create job openings.",
+    );
   }
   if (!(await assertHrActionAccess(user, "hiring"))) {
-    return;
+    return hrActionFailure("FORBIDDEN", "Hiring is not enabled for this workspace.");
   }
 
   const title = String(formData.get("title") ?? "").trim();
@@ -466,7 +523,7 @@ export async function createJobOpeningAction(formData: FormData): Promise<void> 
   const description = String(formData.get("description") ?? "").trim();
 
   if (!title) {
-    return;
+    return hrActionFailure("INVALID_INPUT", "Job title is required.");
   }
 
   await prisma.jobOpening.create({
@@ -479,15 +536,21 @@ export async function createJobOpeningAction(formData: FormData): Promise<void> 
   });
 
   revalidateHr();
+  return { ok: true };
 }
 
-export async function addCandidateAction(formData: FormData): Promise<void> {
+export async function addCandidateAction(
+  formData: FormData,
+): Promise<HrActionResult> {
   const user = await getSessionUser();
   if (!user || !hasMinimumRole(user.role, "ADMIN")) {
-    return;
+    return hrActionFailure(
+      "FORBIDDEN",
+      "Admin access required to add candidates.",
+    );
   }
   if (!(await assertHrActionAccess(user, "hiring"))) {
-    return;
+    return hrActionFailure("FORBIDDEN", "Hiring is not enabled for this workspace.");
   }
 
   const fullName = String(formData.get("fullName") ?? "").trim();
@@ -496,7 +559,7 @@ export async function addCandidateAction(formData: FormData): Promise<void> {
   const jobOpeningId = String(formData.get("jobOpeningId") ?? "").trim();
 
   if (!fullName) {
-    return;
+    return hrActionFailure("INVALID_INPUT", "Candidate full name is required.");
   }
 
   await prisma.candidate.create({
@@ -512,12 +575,18 @@ export async function addCandidateAction(formData: FormData): Promise<void> {
   });
 
   revalidateHr();
+  return { ok: true };
 }
 
-export async function updateHrSettingsAction(formData: FormData): Promise<void> {
+export async function updateHrSettingsAction(
+  formData: FormData,
+): Promise<HrActionResult> {
   const user = await getSessionUser();
   if (!user || !hasMinimumRole(user.role, "ADMIN")) {
-    return;
+    return hrActionFailure(
+      "FORBIDDEN",
+      "Admin access required to update HR settings.",
+    );
   }
 
   const officeLat = Number(formData.get("officeLat"));
@@ -557,6 +626,7 @@ export async function updateHrSettingsAction(formData: FormData): Promise<void> 
 
   revalidateHr();
   revalidatePath("/app/team");
+  return { ok: true };
 }
 
 export async function createPayrollRunAction(
@@ -779,10 +849,12 @@ export async function deleteAttendanceRecordAction(recordId: string): Promise<vo
   revalidateHr();
 }
 
-export async function saveHrWorkSiteAction(formData: FormData): Promise<void> {
+export async function saveHrWorkSiteAction(
+  formData: FormData,
+): Promise<HrActionResult> {
   const user = await getSessionUser();
   if (!user || !hasMinimumRole(user.role, "ADMIN")) {
-    throw new Error("Admin only.");
+    return hrActionFailure("FORBIDDEN", "Admin access required to manage work sites.");
   }
 
   const id = String(formData.get("id") ?? "").trim();
@@ -792,10 +864,13 @@ export async function saveHrWorkSiteAction(formData: FormData): Promise<void> {
   const geoFenceRadiusM = Number(formData.get("geoFenceRadiusM") ?? 200);
 
   if (!name) {
-    throw new Error("Site name is required.");
+    return hrActionFailure("INVALID_INPUT", "Site name is required.");
   }
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    throw new Error("Latitude and longitude are required.");
+    return hrActionFailure(
+      "INVALID_INPUT",
+      "Latitude and longitude are required.",
+    );
   }
 
   const data = {
@@ -825,12 +900,15 @@ export async function saveHrWorkSiteAction(formData: FormData): Promise<void> {
 
   revalidateHr();
   revalidatePath("/app/team");
+  return { ok: true };
 }
 
-export async function deleteHrWorkSiteAction(siteId: string): Promise<void> {
+export async function deleteHrWorkSiteAction(
+  siteId: string,
+): Promise<HrActionResult> {
   const user = await getSessionUser();
   if (!user || !hasMinimumRole(user.role, "ADMIN")) {
-    throw new Error("Admin only.");
+    return hrActionFailure("FORBIDDEN", "Admin access required to manage work sites.");
   }
 
   await prisma.hrWorkSite.deleteMany({
@@ -839,12 +917,15 @@ export async function deleteHrWorkSiteAction(siteId: string): Promise<void> {
 
   revalidateHr();
   revalidatePath("/app/team");
+  return { ok: true };
 }
 
-export async function saveHrShiftAction(formData: FormData): Promise<void> {
+export async function saveHrShiftAction(
+  formData: FormData,
+): Promise<HrActionResult> {
   const user = await getSessionUser();
   if (!user || !hasMinimumRole(user.role, "ADMIN")) {
-    throw new Error("Admin only.");
+    return hrActionFailure("FORBIDDEN", "Admin access required to manage shifts.");
   }
 
   const id = String(formData.get("id") ?? "").trim() || undefined;
@@ -857,34 +938,50 @@ export async function saveHrShiftAction(formData: FormData): Promise<void> {
     ? formData.get("isActive") === "on"
     : true;
 
-  const { saveHrShift } = await import("@/lib/hr/shifts");
-  await saveHrShift(user.organizationId, {
-    id,
-    name,
-    code,
-    startTime,
-    endTime,
-    isDefault,
-    isActive,
-  });
-
-  revalidateHr();
-  revalidatePath("/app/team");
-  revalidatePath("/app/hr/employees");
-}
-
-export async function deleteHrShiftAction(shiftId: string): Promise<void> {
-  const user = await getSessionUser();
-  if (!user || !hasMinimumRole(user.role, "ADMIN")) {
-    throw new Error("Admin only.");
+  try {
+    const { saveHrShift } = await import("@/lib/hr/shifts");
+    await saveHrShift(user.organizationId, {
+      id,
+      name,
+      code,
+      startTime,
+      endTime,
+      isDefault,
+      isActive,
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not save shift.";
+    return hrActionFailure("SHIFT_SAVE_FAILED", message);
   }
 
-  const { deleteHrShift } = await import("@/lib/hr/shifts");
-  await deleteHrShift(user.organizationId, shiftId.trim());
+  revalidateHr();
+  revalidatePath("/app/team");
+  revalidatePath("/app/hr/employees");
+  return { ok: true };
+}
+
+export async function deleteHrShiftAction(
+  shiftId: string,
+): Promise<HrActionResult> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "ADMIN")) {
+    return hrActionFailure("FORBIDDEN", "Admin access required to manage shifts.");
+  }
+
+  try {
+    const { deleteHrShift } = await import("@/lib/hr/shifts");
+    await deleteHrShift(user.organizationId, shiftId.trim());
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not delete shift.";
+    return hrActionFailure("SHIFT_DELETE_FAILED", message);
+  }
 
   revalidateHr();
   revalidatePath("/app/team");
   revalidatePath("/app/hr/employees");
+  return { ok: true };
 }
 
 function parseOptionalNumber(raw: FormDataEntryValue | null): number | null | undefined {

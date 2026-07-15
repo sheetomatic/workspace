@@ -6,6 +6,7 @@ import {
   reviewAttendanceExceptionAction,
   submitAttendanceExceptionAction,
 } from "@/lib/hr/hr-actions";
+import { HrFeedbackBanner } from "@/components/hr/hr-feedback";
 
 function statusClass(status: string) {
   if (status === "APPROVED") return "ws-leave-status is-approved";
@@ -42,6 +43,7 @@ export function OdWfhPanel({
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
+  const [formKey, setFormKey] = useState(0);
 
   function onSubmit(formData: FormData) {
     startTransition(async () => {
@@ -54,6 +56,8 @@ export function OdWfhPanel({
         return;
       }
       setMessage("OD/WFH request submitted.");
+      setIsError(false);
+      setFormKey((key) => key + 1);
       router.refresh();
     });
   }
@@ -69,12 +73,14 @@ export function OdWfhPanel({
         return;
       }
       setMessage("Request updated.");
+      setIsError(false);
       router.refresh();
     });
   }
 
   return (
     <>
+      <HrFeedbackBanner message={message} isError={isError} />
       <div className="ws-hr-split">
         <section className="ws-hr-panel">
           <h2>Request OD / WFH</h2>
@@ -82,7 +88,7 @@ export function OdWfhPanel({
             Approved OD or work-from-home marks those weekdays as present for
             attendance and payroll.
           </p>
-          <form action={onSubmit} className="ws-hr-form">
+          <form key={formKey} action={onSubmit} className="ws-hr-form">
             <label>
               Type
               <select name="exceptionType" defaultValue="OD" required>
@@ -186,15 +192,6 @@ export function OdWfhPanel({
           </table>
         </div>
       </section>
-
-      {message ? (
-        <p
-          className={isError ? "ws-hr-feedback-error" : "ws-hr-feedback"}
-          role="status"
-        >
-          {message}
-        </p>
-      ) : null}
     </>
   );
 }
