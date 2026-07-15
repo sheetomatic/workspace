@@ -673,3 +673,18 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 
 ---
 
+**Deployed (2026-07-15):** Fix Leads Settings scroll only working from the edge (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| PR | https://github.com/sheetomatic/workspace/pull/18 (merged) |
+| Merge SHA | `1877d67` (tip `2d5656a`) |
+| Pre-flight | Unit tests: 93/94; remaining UTC flake on `google-sheets` timestamp test is pre-existing on main |
+| Vercel | Production **SUCCESS** — sheetomatic-redesign |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/GkpxTrWtS5UvByL6yWxwWcCknZNk |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops (ignored auto-deploys). |
+
+**Hard-refresh in prod:** `/app/leads` (Settings + list/CRM center scroll; wheel should work across the page, not only from the edge).
+
+---
+
