@@ -1,0 +1,15 @@
+# Sheetomatic — Railway Pro (single platform: web + Postgres + cron services).
+# Project setup: docs/RAILWAY.md
+#
+# This file configures the primary **web** service. Cron jobs are separate
+# Railway services that share the same repo (see docs/RAILWAY.md).
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/api/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
