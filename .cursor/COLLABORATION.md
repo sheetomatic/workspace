@@ -645,3 +645,17 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 
 ---
 
+**Deployed (2026-07-15):** Stop welcome WhatsApp from saying “General inquiry” (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| PR | https://github.com/sheetomatic/workspace/pull/16 (merged) |
+| Merge SHA | `6e4d40b` (tip `1bdd29a`) |
+| Vercel | Production **SUCCESS** — sheetomatic-redesign |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/8TZFJdJGLW5P21gcB7eiXxFC14u2 — https://sheetomatic-redesign-2kvmo6r6i-sheetomatic.vercel.app |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops (their auto-deploys failed/pending; ignored). |
+
+**Hard-refresh in prod:** nurture welcome WhatsApp path (requirement phrase no longer falls back to “General inquiry”).
+
+---
+
