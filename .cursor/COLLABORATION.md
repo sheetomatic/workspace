@@ -702,3 +702,18 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/leads` — Admin should click **Full re-import** to pull missing sheet rows (including Yogesh Arun Borade).
 
 ---
+
+**Deployed (2026-07-15):** Make CRM lead status/save updates feel instant (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| PR | https://github.com/sheetomatic/workspace/pull/20 (merged) |
+| Merge SHA | `05f514b` (tip `10b5a01`) |
+| Pre-flight | Unit tests: 100/101; remaining UTC flake on `google-sheets` timestamp test is pre-existing on main |
+| Vercel | Production **SUCCESS** — sheetomatic-redesign |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/FsdNJBU1oBCSvtuDbc7GbnAcyMyQ — https://sheetomatic-redesign-bd4ojkb01-sheetomatic.vercel.app |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops (their auto-deploys failed; ignored). |
+
+**Hard-refresh in prod:** `/app/leads` — status changes, drawer field saves, and kanban moves should feel instant (no full page refresh); sheet sync continues in background.
+
+---
