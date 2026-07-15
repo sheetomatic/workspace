@@ -1,6 +1,5 @@
-import type { InboundLeadStatus } from "@prisma/client";
+import type { InboundLeadStatus, LeadSourceChannel } from "@prisma/client";
 import type { LeadCategoryId } from "@/lib/leads/categories";
-import { LEAD_CATEGORIES } from "@/lib/leads/categories";
 import { leadStatusLabel } from "@/lib/leads/status-labels";
 import type { LeadNurtureEventId } from "@/lib/leads/nurture/events";
 import type { LeadNurtureOrgConfig } from "@/lib/leads/nurture/events";
@@ -8,6 +7,11 @@ import {
   interpolateNurtureTemplate,
   resolveNurtureTemplate,
 } from "@/lib/leads/nurture/config";
+import {
+  isGenericRequirementText,
+  resolveInquiryRequirementPhrase,
+  resolveNurtureTopicLabel,
+} from "@/lib/leads/nurture/requirement-phrase";
 
 export type { LeadNurtureEventId } from "@/lib/leads/nurture/events";
 export {
@@ -22,13 +26,6 @@ function leadFirstName(name: string | null | undefined) {
     return "there";
   }
   return trimmed.split(/\s+/)[0] ?? trimmed;
-}
-
-function categoryLabel(category: LeadCategoryId | null | undefined) {
-  if (!category || !(category in LEAD_CATEGORIES)) {
-    return "operations automation";
-  }
-  return LEAD_CATEGORIES[category as LeadCategoryId].label;
 }
 
 function trimSummary(text: string | null | undefined, max = 220) {
@@ -53,6 +50,11 @@ export function buildLeadNurtureMessage(params: {
   category?: LeadCategoryId | null;
   requirement?: string | null;
   company?: string | null;
+  campaign?: string | null;
+  utmCampaign?: string | null;
+  utmContent?: string | null;
+  landingPage?: string | null;
+  channel?: LeadSourceChannel | null;
   assigneeName?: string | null;
   discussionSummary?: string | null;
   nextStepLabel?: string | null;
@@ -60,8 +62,21 @@ export function buildLeadNurtureMessage(params: {
   nurtureConfig?: LeadNurtureOrgConfig | null;
 }): string {
   const firstName = leadFirstName(params.name);
-  const topic = categoryLabel(params.category ?? null);
-  const requirement = params.requirement?.trim();
+  const topic = resolveNurtureTopicLabel(params.category ?? null);
+  const requirementPhrase = resolveInquiryRequirementPhrase({
+    requirement: params.requirement,
+    category: params.category,
+    company: params.company,
+    campaign: params.campaign,
+    utmCampaign: params.utmCampaign,
+    utmContent: params.utmContent,
+    landingPage: params.landingPage,
+    channel: params.channel,
+  });
+  const specificRequirement =
+    params.requirement?.trim() && !isGenericRequirementText(params.requirement)
+      ? params.requirement.trim()
+      : null;
   const company = params.company?.trim();
   const counsellor = assigneeDisplay(params.assigneeName);
   const summary = trimSummary(params.discussionSummary);
@@ -69,11 +84,7 @@ export function buildLeadNurtureMessage(params: {
 
   const vars: Record<string, string> = {
     "{{firstName}}": firstName,
-    "{{requirement}}": requirement
-      ? requirement.length > 150
-        ? `${requirement.slice(0, 150)}…`
-        : requirement
-      : topic,
+    "{{requirement}}": requirementPhrase,
     "{{company}}": company || "your company",
     "{{topic}}": topic,
     "{{counsellor}}": counsellor,
@@ -92,11 +103,9 @@ export function buildLeadNurtureMessage(params: {
         `Hi ${firstName},`,
         "",
         "Thank you for contacting *Sheetomatic*!",
-        requirement
-          ? `We have received your inquiry regarding *${requirement.slice(0, 150)}${requirement.length > 150 ? "…" : ""}*.`
-          : company
-            ? `We have received your inquiry from *${company}* about *${topic}*.`
-            : `We have received your inquiry about *${topic}*.`,
+        specificRequirement
+          ? `We have received your inquiry regarding *${specificRequirement.length > 150 ? `${specificRequirement.slice(0, 150)}…` : specificRequirement}*.`
+          : `We have received your inquiry regarding *${requirementPhrase}*.`,
         "",
         "Our team will contact you *very soon* on this WhatsApp number.",
         "No need to call us — we have your details and will reach out shortly.",

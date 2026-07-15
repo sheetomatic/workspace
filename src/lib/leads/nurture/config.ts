@@ -27,6 +27,7 @@ export const DEFAULT_NURTURE_TEMPLATES: Record<LeadNurtureEventId, string> = {
 
 Thank you for contacting *Sheetomatic*!
 We have received your inquiry regarding *{{requirement}}*.
+If that is not exact, reply with the *specific requirement* (FMS, IMS, tasks, WhatsApp API, training, website, HR, or other).
 
 Our team will contact you *very soon* on this WhatsApp number.
 No need to call us — we have your details and will reach out shortly.
@@ -154,6 +155,21 @@ export function defaultLeadNurtureConfig(): LeadNurtureOrgConfig {
   };
 }
 
+/** Older default welcome copy that filled {{requirement}} with “General inquiry”. */
+const LEGACY_DEFAULT_WELCOME = `Hi {{firstName}},
+
+Thank you for contacting *Sheetomatic*!
+We have received your inquiry regarding *{{requirement}}*.
+
+Our team will contact you *very soon* on this WhatsApp number.
+No need to call us — we have your details and will reach out shortly.
+
+— Team Sheetomatic`;
+
+function normalizeTemplateText(value: string) {
+  return value.replace(/\r\n/g, "\n").trim();
+}
+
 export function parseLeadNurtureConfig(raw: unknown): LeadNurtureOrgConfig {
   const defaults = defaultLeadNurtureConfig();
   if (!raw || typeof raw !== "object") {
@@ -170,6 +186,15 @@ export function parseLeadNurtureConfig(raw: unknown): LeadNurtureOrgConfig {
         templates[key] = value.trim();
       }
     }
+  }
+
+  // Upgrade unmodified legacy default welcome so orgs stop sending “General inquiry”.
+  if (
+    templates.welcome &&
+    normalizeTemplateText(templates.welcome) ===
+      normalizeTemplateText(LEGACY_DEFAULT_WELCOME)
+  ) {
+    templates.welcome = defaults.templates.welcome;
   }
 
   const gap =

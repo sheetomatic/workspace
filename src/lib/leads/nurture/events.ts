@@ -66,9 +66,12 @@ export function isLeadNurtureEventId(value: string): value is LeadNurtureEventId
 
 export const NURTURE_TEMPLATE_PLACEHOLDERS = [
   { key: "{{firstName}}", label: "Lead first name" },
-  { key: "{{requirement}}", label: "Requirement text" },
+  {
+    key: "{{requirement}}",
+    label: "Specific requirement (never “General inquiry”)",
+  },
   { key: "{{company}}", label: "Company name" },
-  { key: "{{topic}}", label: "Category / topic" },
+  { key: "{{topic}}", label: "Category / topic (specific)" },
   { key: "{{counsellor}}", label: "Assigned team member" },
   { key: "{{discussion}}", label: "Call / meeting notes" },
   { key: "{{nextStep}}", label: "Next step / stage label" },
