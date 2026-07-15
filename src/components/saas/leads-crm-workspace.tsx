@@ -176,6 +176,7 @@ export function LeadsCrmWorkspace({
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedLeadId);
   const [searchDraft, setSearchDraft] = useState(listParams.q ?? "");
   const [pending, startTransition] = useTransition();
+  const [localLeads, setLocalLeads] = useState(leads);
   const [showCreate, setShowCreate] = useState(false);
   const [createName, setCreateName] = useState("");
   const [createPhone, setCreatePhone] = useState("");
@@ -188,19 +189,29 @@ export function LeadsCrmWorkspace({
     setSelectedId(initialSelectedLeadId);
   }, [initialSelectedLeadId]);
 
+  useEffect(() => {
+    setLocalLeads(leads);
+  }, [leads]);
+
+  function patchLead(id: string, patch: Partial<LeadRow>) {
+    setLocalLeads((prev) =>
+      prev.map((lead) => (lead.id === id ? { ...lead, ...patch } : lead)),
+    );
+  }
+
   const showArchived = listParams.archived === "1";
   const isBoard = view === "board";
   const listViewHref = `/app/leads?${buildLeadsListQuery(listParams, { view: "", page: "1" })}`;
   const boardViewHref = `/app/leads?${buildLeadsListQuery(listParams, { view: "board", page: "1" })}`;
 
   const selected = useMemo(
-    () => leads.find((lead) => lead.id === selectedId) ?? null,
-    [leads, selectedId],
+    () => localLeads.find((lead) => lead.id === selectedId) ?? null,
+    [localLeads, selectedId],
   );
 
   const visibleLeads = useMemo(
-    () => leads.filter((lead) => leadMatchesSearch(lead, searchDraft)),
-    [leads, searchDraft],
+    () => localLeads.filter((lead) => leadMatchesSearch(lead, searchDraft)),
+    [localLeads, searchDraft],
   );
 
   const sortHref =
@@ -276,9 +287,9 @@ export function LeadsCrmWorkspace({
           ) : null}
           <span className="leads-crm-count">
             {searchDraft.trim()
-              ? `${visibleLeads.length} match · ${leads.length} loaded`
+              ? `${visibleLeads.length} match · ${localLeads.length} loaded`
               : isBoard
-                ? `${Math.min(leads.length, total)} of ${total} on board`
+                ? `${Math.min(localLeads.length, total)} of ${total} on board`
                 : `${total} leads · p${page}/${totalPages}`}
           </span>
         </div>
@@ -620,9 +631,9 @@ export function LeadsCrmWorkspace({
           </Link>
         ) : null}
       </div>
-      ) : total > leads.length && !searchDraft.trim() ? (
+      ) : total > localLeads.length && !searchDraft.trim() ? (
         <p className="leads-machine-muted leads-board-cap-note">
-          Showing first {leads.length} of {total}. Narrow the period or filter, or use List
+          Showing first {localLeads.length} of {total}. Narrow the period or filter, or use List
           for pagination.
         </p>
       ) : null}
@@ -640,6 +651,7 @@ export function LeadsCrmWorkspace({
             listParams={listParams}
             onClose={() => setSelectedId(null)}
             onDeleted={() => setSelectedId(null)}
+            onLeadPatched={patchLead}
             organizationLogoUrl={organizationLogoUrl}
             organizationName={organizationName}
             pending={pending}
