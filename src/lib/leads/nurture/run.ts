@@ -184,6 +184,10 @@ export async function triggerLeadNurtureEvent(params: {
       meetingNotes: true,
       discussionNotes: true,
       rawPayload: true,
+      paymentFollowUp: true,
+      paymentTotal: true,
+      paymentReceived: true,
+      paymentLastDate: true,
       assignedTo: { select: { id: true, name: true } },
     },
   });
@@ -192,7 +196,14 @@ export async function triggerLeadNurtureEvent(params: {
     return { sent: false, reason: "invalid_lead" };
   }
 
-  if (NURTURE_STOP_STATUSES.includes(lead.status)) {
+  // Payment follow-up alerts must still send after status moves to PAYMENT / INVOICE.
+  const allowPaymentFollowUpAlert =
+    params.event === "alert_payment_pending" &&
+    (lead.paymentFollowUp || params.force);
+  if (
+    NURTURE_STOP_STATUSES.includes(lead.status) &&
+    !allowPaymentFollowUpAlert
+  ) {
     return { sent: false, reason: "status_stopped" };
   }
 
@@ -265,6 +276,9 @@ export async function triggerLeadNurtureEvent(params: {
     nextStepLabel: params.nextStepLabel ?? leadStatusLabel(lead.status),
     status: lead.status,
     nurtureConfig,
+    paymentTotal: lead.paymentTotal,
+    paymentReceived: lead.paymentReceived,
+    paymentLastDate: lead.paymentLastDate,
   });
 
   // Claim before send so concurrent sync/retry cannot double-fire the same welcome.

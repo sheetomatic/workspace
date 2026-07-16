@@ -6,7 +6,7 @@ export const LEADS_PAGE_SIZE = 100;
 export const LEADS_BOARD_PAGE_SIZE = 200;
 
 export type LeadsSortOrder = "newest" | "oldest";
-export type LeadsViewMode = "list" | "board";
+export type LeadsViewMode = "list" | "board" | "payments";
 
 export type LeadsListSearchParams = {
   status?: string;
@@ -22,7 +22,7 @@ export type LeadsListSearchParams = {
   month?: string;
   quarter?: string;
   year?: string;
-  /** list (default) | board */
+  /** list (default) | board | payments */
   view?: string;
 };
 
@@ -34,7 +34,12 @@ export function parseLeadsListParams(params: LeadsListSearchParams) {
   const category = params.category?.trim() || undefined;
   const q = params.q?.trim() || undefined;
   const includeArchived = params.archived === "1";
-  const view: LeadsViewMode = params.view === "board" ? "board" : "list";
+  const view: LeadsViewMode =
+    params.view === "board"
+      ? "board"
+      : params.view === "payments"
+        ? "payments"
+        : "list";
   const pageSize = view === "board" ? LEADS_BOARD_PAGE_SIZE : LEADS_PAGE_SIZE;
 
   return {

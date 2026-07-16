@@ -3829,6 +3829,124 @@
   background: #f1f5f9;
 }
 
+.leads-view-toggle--page {
+  margin: 0.75rem 0 1rem;
+}
+
+/* Payment Follow-up board */
+.leads-payment-fu {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.leads-payment-fu__header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem 1.25rem;
+  align-items: flex-start;
+}
+
+.leads-payment-fu__header h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.15rem;
+}
+
+.leads-payment-fu__header p {
+  margin: 0;
+  color: #64748b;
+  max-width: 40rem;
+  font-size: 0.9rem;
+}
+
+.leads-payment-fu__kpis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.leads-payment-fu__form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+  gap: 0.65rem 0.75rem;
+  padding: 0.9rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.leads-payment-fu__form label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: #334155;
+}
+
+.leads-payment-fu__form input {
+  min-height: 2.25rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.leads-payment-fu__form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.leads-payment-fu__table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.leads-payment-fu__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.leads-payment-fu__table th,
+.leads-payment-fu__table td {
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: top;
+}
+
+.leads-payment-fu__table th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #64748b;
+  background: #f8fafc;
+}
+
+.leads-payment-fu__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.leads-payment-fu__error {
+  color: #b91c1c;
+  margin: 0;
+}
+
+.leads-payment-fu__ok {
+  color: #047857;
+  margin: 0;
+}
+
 .leads-view-toggle .btn-secondary.btn-sm {
   border: none;
   box-shadow: none;

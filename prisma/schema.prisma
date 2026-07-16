@@ -2725,6 +2725,15 @@ model InboundLead {
   capturedAt     DateTime?
   /** Set when a team member edits the lead in CRM — not updated on passive sheet sync. */
   modifiedAt     DateTime?
+  /**
+   * Payment Follow-up board (CRM collection).
+   * Total / Received are entered here; Due = Total − Received.
+   * paymentLastDate = last date by which payment is expected (due-by).
+   */
+  paymentFollowUp   Boolean   @default(false)
+  paymentTotal      Decimal?  @db.Decimal(14, 2)
+  paymentReceived   Decimal?  @db.Decimal(14, 2)
+  paymentLastDate   DateTime?
   followUps      InboundLeadFollowUp[]
   activities     InboundLeadActivity[]
   payments       InboundLeadPayment[]
@@ -2746,6 +2755,7 @@ model InboundLead {
   @@index([organizationId, email])
   @@index([organizationId, archivedAt])
   @@index([organizationId, mergedIntoId])
+  @@index([organizationId, paymentFollowUp, paymentLastDate])
 }
 
 model InboundLeadActivity {

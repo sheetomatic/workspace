@@ -13,9 +13,14 @@ import {
 } from "@/lib/leads/auto-sync";
 import { readSheetSyncProgress } from "@/lib/leads/sheet-sync-progress";
 import { LeadsSheetSyncButton } from "@/components/saas/leads-sheet-sync-button";
+import { LeadsPaymentFollowUp } from "@/components/saas/leads-payment-follow-up";
 import { ensureLeadConnections } from "@/lib/leads/ingest";
 import { listCrmAlertCenterItems } from "@/lib/leads/alerts/evaluate";
-import { parseLeadsListParams } from "@/lib/leads/list-params";
+import {
+  buildLeadsListQuery,
+  parseLeadsListParams,
+} from "@/lib/leads/list-params";
+import { listPaymentFollowUpClients } from "@/lib/leads/payment-follow-up";
 import { parseLeadsPeriodParams } from "@/lib/leads/period";
 import {
   getCrmNumbersMetricsForPeriod,
@@ -175,21 +180,30 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
     }
   });
 
-  const [periodStats, pipeMetrics, numbersMetrics, alertItems, leadPage, teamMembers, sheetsConnection, workspaceTotal, serviceCatalog, organization] =
+  const isPaymentView = listParams.view === "payments";
+
+  const [periodStats, pipeMetrics, numbersMetrics, alertItems, leadPage, teamMembers, sheetsConnection, workspaceTotal, serviceCatalog, organization, paymentClients] =
     await Promise.all([
       getLeadsMachineStatsForPeriod(user.organizationId, period),
       getLeadsPipeMetricsForPeriod(user.organizationId, period),
       getCrmNumbersMetricsForPeriod(user.organizationId, period),
       listCrmAlertCenterItems(user.organizationId, { limit: 40 }),
-      listInboundLeadsForPeriodPaginated(user.organizationId, period, {
-        page: listParams.page,
-        pageSize: listParams.pageSize,
-        sort: listParams.sort,
-        status: listParams.status,
-        category: listParams.category,
-        // Text search filters client-side on the loaded page (no workspace reload).
-        includeArchived: listParams.includeArchived,
-      }),
+      isPaymentView
+        ? Promise.resolve({
+            leads: [],
+            page: 1,
+            total: 0,
+            totalPages: 1,
+          })
+        : listInboundLeadsForPeriodPaginated(user.organizationId, period, {
+            page: listParams.page,
+            pageSize: listParams.pageSize,
+            sort: listParams.sort,
+            status: listParams.status,
+            category: listParams.category,
+            // Text search filters client-side on the loaded page (no workspace reload).
+            includeArchived: listParams.includeArchived,
+          }),
       listWorkspaceMembers(user.organizationId),
       getGoogleSheetsLeadConnection(user.organizationId),
       getInboundLeadWorkspaceTotal(user.organizationId),
@@ -198,6 +212,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
         where: { id: user.organizationId },
         select: { name: true, logoUrl: true },
       }),
+      listPaymentFollowUpClients(user.organizationId),
     ]);
 
   const lastSyncLabel = sheetsConnection?.lastSyncAt
@@ -264,48 +279,75 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
 
       <LeadsPeriodToolbar period={period} />
 
-      <LeadsAlertCenter
-        baseParams={params}
-        canSend={canManage}
-        items={alertItems}
-      />
+      <nav className="leads-view-toggle leads-view-toggle--page" aria-label="CRM views">
+        <Link
+          className={`btn-secondary btn-sm${listParams.view === "list" ? " is-active" : ""}`}
+          href={`/app/leads?${buildLeadsListQuery(params, { view: "", page: "1" })}`}
+        >
+          List
+        </Link>
+        <Link
+          className={`btn-secondary btn-sm${listParams.view === "board" ? " is-active" : ""}`}
+          href={`/app/leads?${buildLeadsListQuery(params, { view: "board", page: "1" })}`}
+        >
+          Board
+        </Link>
+        <Link
+          className={`btn-secondary btn-sm${isPaymentView ? " is-active" : ""}`}
+          href={`/app/leads?${buildLeadsListQuery(params, { view: "payments", page: "1" })}`}
+        >
+          Payment Follow-up
+        </Link>
+      </nav>
 
-      <LeadsNumbersDashboard
-        metrics={numbersMetrics}
-        periodLabel={period.periodLabel}
-      />
+      {isPaymentView ? (
+        <LeadsPaymentFollowUp canManage={canManage} clients={paymentClients} />
+      ) : (
+        <>
+          <LeadsAlertCenter
+            baseParams={params}
+            canSend={canManage}
+            items={alertItems}
+          />
 
-      <LeadsPipelineCards
-        activeCategory={listParams.category}
-        activeStatus={listParams.status}
-        baseParams={params}
-        byStatus={periodStats.byStatus}
-        numbersMetrics={numbersMetrics}
-        pipeMetrics={pipeMetrics}
-      />
+          <LeadsNumbersDashboard
+            metrics={numbersMetrics}
+            periodLabel={period.periodLabel}
+          />
 
-      <LeadsCrmWorkspace
-        canManage={canManage}
-        initialSelectedLeadId={params.leadId ?? null}
-        leads={leadsWithSalesOrders}
-        listParams={params}
-        organizationLogoUrl={organization?.logoUrl ?? null}
-        organizationName={organization?.name ?? "Sheetomatic"}
-        page={leadPage.page}
-        period={period.type}
-        periodLabel={period.periodLabel}
-        sort={listParams.sort}
-        view={listParams.view}
-        teamMembers={teamMembers}
-        total={leadPage.total}
-        totalPages={leadPage.totalPages}
-        workspaceTotal={workspaceTotal}
-        serviceCatalog={serviceCatalog.map((item) => ({
-          id: item.id,
-          serviceCategory: item.serviceCategory,
-          subCategory: item.subCategory,
-        }))}
-      />
+          <LeadsPipelineCards
+            activeCategory={listParams.category}
+            activeStatus={listParams.status}
+            baseParams={params}
+            byStatus={periodStats.byStatus}
+            numbersMetrics={numbersMetrics}
+            pipeMetrics={pipeMetrics}
+          />
+
+          <LeadsCrmWorkspace
+            canManage={canManage}
+            initialSelectedLeadId={params.leadId ?? null}
+            leads={leadsWithSalesOrders}
+            listParams={params}
+            organizationLogoUrl={organization?.logoUrl ?? null}
+            organizationName={organization?.name ?? "Sheetomatic"}
+            page={leadPage.page}
+            period={period.type}
+            periodLabel={period.periodLabel}
+            sort={listParams.sort}
+            view={listParams.view}
+            teamMembers={teamMembers}
+            total={leadPage.total}
+            totalPages={leadPage.totalPages}
+            workspaceTotal={workspaceTotal}
+            serviceCatalog={serviceCatalog.map((item) => ({
+              id: item.id,
+              serviceCategory: item.serviceCategory,
+              subCategory: item.subCategory,
+            }))}
+          />
+        </>
+      )}
     </div>
   );
 }
