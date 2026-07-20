@@ -1140,7 +1140,7 @@
 
 .leads-crm-table-pro th,
 .leads-crm-table-pro td {
-  padding: 0.7rem 0.85rem;
+  padding: 0.45rem 0.55rem;
   border-bottom: 1px solid #eef2f7;
   vertical-align: middle;
   text-align: left;
@@ -1217,6 +1217,7 @@
 
 .leads-row-category,
 .leads-row-status {
+  width: 1%;
   white-space: nowrap;
 }
 
@@ -1249,10 +1250,12 @@
 }
 
 .leads-status-select {
-  display: block;
-  width: 100%;
-  max-width: 10.5rem;
-  padding: 0.28rem 1.6rem 0.28rem 0.5rem;
+  display: inline-block;
+  box-sizing: border-box;
+  width: max-content;
+  min-width: 11.5rem;
+  max-width: 15rem;
+  padding: 0.28rem 1.7rem 0.28rem 0.5rem;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
   background: #f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 0.45rem center;
@@ -1293,10 +1296,12 @@
 }
 
 .leads-category-select {
-  display: block;
-  width: 100%;
-  max-width: 11.5rem;
-  padding: 0.28rem 1.6rem 0.28rem 0.5rem;
+  display: inline-block;
+  box-sizing: border-box;
+  width: max-content;
+  min-width: 9.5rem;
+  max-width: 13.5rem;
+  padding: 0.28rem 1.7rem 0.28rem 0.5rem;
   border-radius: 8px;
   border: 1px solid #ddd6fe;
   background: #f5f3ff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235b21b6' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 0.45rem center;

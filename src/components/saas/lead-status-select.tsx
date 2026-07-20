@@ -41,6 +41,7 @@ export function LeadStatusSelect({
       aria-label="Lead status"
       className={className}
       disabled={pending}
+      title={leadStatusLabel(current)}
       value={current}
       onClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => event.stopPropagation()}
