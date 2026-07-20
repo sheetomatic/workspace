@@ -808,3 +808,19 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/leads/projects` — Received/Due from CRM payments; `/app/leads` list — Lead + Actions columns stay sticky so Call/WA/Delete remain visible.
 
 ---
+
+**Deployed (2026-07-20):** CRM typed follow-ups — Payment / Lead / Quotation / Negotiation / Meeting + WA (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| PR | https://github.com/sheetomatic/workspace/pull/32 (draft → ready → merge commit) |
+| Merge SHA | `cf10765821725efe5057d6c37539d04797339ab7` |
+| Feature | `a855128` — typed CRM follow-ups, last logs, WhatsApp queue UI |
+| Migration | `20260720130000_inbound_lead_follow_up_type` — enum `InboundLeadFollowUpType` + `type`/`waNotifiedAt` via `prisma migrate deploy` in Vercel production build (build SUCCESS ⇒ migrate applied) |
+| Vercel | Production **SUCCESS** — sheetomatic-redesign |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/ALzyi6p4ywgyWf9sQSvA554HyZLz — https://sheetomatic.com |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops (their auto-deploys failed; ignored). |
+
+**Hard-refresh in prod:** `/app/leads` drawer follow-ups — type picker (Payment/Lead/Quotation/Negotiation/Meeting); WA queue/notifications for typed follow-ups.
+
+---
