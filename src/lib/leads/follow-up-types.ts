@@ -79,3 +79,35 @@ export function followUpTypeToLeadStatus(
   }
   return FOLLOW_UP_TYPE_TO_LEAD_STATUS.LEAD;
 }
+
+/** Suggest follow-up type from current lead stage (drawer default). */
+export function suggestFollowUpTypeFromStatus(
+  status: InboundLeadStatus | string | null | undefined,
+): InboundLeadFollowUpTypeId {
+  switch (status) {
+    case "SCHEDULE_MEETING":
+    case "MEETING_NOTES":
+    case "DEMO_SCHEDULED":
+      return "MEETING";
+    case "PROPOSAL":
+    case "INVOICE":
+      return "QUOTATION";
+    case "NEGOTIATION":
+      return "NEGOTIATION";
+    case "PAYMENT":
+    case "PROJECT_ACTIVE":
+      return "PAYMENT";
+    default:
+      return "LEAD";
+  }
+}
+
+export function listFollowUpTypeOptions(): Array<{
+  id: InboundLeadFollowUpTypeId;
+  label: string;
+}> {
+  return FOLLOW_UP_TYPE_ORDER.map((id) => ({
+    id,
+    label: FOLLOW_UP_TYPE_LABELS[id],
+  }));
+}
