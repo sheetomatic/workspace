@@ -3,12 +3,12 @@ import { CrmSubmoduleShell } from "@/components/saas/crm-submodule-shell";
 import "@/components/saas/leads-machine.css";
 import { formatInr } from "@/lib/leads/categories";
 import { formatCrmNavValue } from "@/lib/leads/crm-nav-format";
-import {
-  listSalesOrders,
-} from "@/lib/leads/sales-orders";
+import { getLeadPaymentTotalsByLeadIds } from "@/lib/leads/payment-totals";
+import { listSalesOrders } from "@/lib/leads/sales-orders";
 import {
   partitionSalesOrdersByLifecycle,
   salesOrderStatusLabel,
+  type SalesOrderListItem,
 } from "@/lib/leads/sales-order-types";
 import { getSalesOrderStats } from "@/lib/sales-orders/queries";
 import { requireSession } from "@/lib/require-session";
@@ -19,20 +19,31 @@ export default async function CrmProjectsPage() {
     listSalesOrders(user.organizationId, { limit: 150 }),
     getSalesOrderStats(user.organizationId),
   ]);
+  const paymentByLead = await getLeadPaymentTotalsByLeadIds(
+    user.organizationId,
+    orders.map((order) => order.lead.id),
+  );
   const { running, delivered } = partitionSalesOrdersByLifecycle(orders);
   const pipelineValue = running.reduce(
     (sum, order) => sum + Number(order.orderValue || 0),
     0,
   );
+  const receivedOnProjects = orders.reduce((sum, order) => {
+    return sum + (paymentByLead.get(order.lead.id) ?? 0);
+  }, 0);
 
   return (
     <CrmSubmoduleShell
       title="Projects"
-      description="Sales orders as client projects — running and delivered over time."
+      description="Sales orders as client projects — value, payments received, and due."
       kpis={[
         { label: "Running", value: String(stats.inProgress), accent: "blue" },
         { label: "Delivered", value: String(stats.delivered), accent: "success" },
-        { label: "Total", value: String(stats.total) },
+        {
+          label: "Received",
+          value: formatCrmNavValue(receivedOnProjects),
+          accent: "success",
+        },
         {
           label: "Running value",
           value: formatCrmNavValue(pipelineValue),
@@ -43,16 +54,24 @@ export default async function CrmProjectsPage() {
       <div className="crm-projects-sections">
         <section>
           <h3>Running ({running.length})</h3>
-          <ProjectTable rows={running} empty="No running projects." />
+          <ProjectTable
+            rows={running}
+            paymentByLead={paymentByLead}
+            empty="No running projects."
+          />
         </section>
         <section>
           <h3>Delivered ({delivered.length})</h3>
-          <ProjectTable rows={delivered} empty="No delivered projects yet." />
+          <ProjectTable
+            rows={delivered}
+            paymentByLead={paymentByLead}
+            empty="No delivered projects yet."
+          />
         </section>
       </div>
       <p className="leads-machine-muted crm-submodule-footnote">
-        Full ops queue also lives in{" "}
-        <Link href="/app/sales-orders">Sales orders</Link>.
+        Payments come from CRM Payment records on the lead. Full ops queue also
+        lives in <Link href="/app/sales-orders">Sales orders</Link>.
       </p>
     </CrmSubmoduleShell>
   );
@@ -60,9 +79,11 @@ export default async function CrmProjectsPage() {
 
 function ProjectTable({
   rows,
+  paymentByLead,
   empty,
 }: {
-  rows: Awaited<ReturnType<typeof listSalesOrders>>["orders"];
+  rows: SalesOrderListItem[];
+  paymentByLead: Map<string, number>;
   empty: string;
 }) {
   return (
@@ -74,6 +95,8 @@ function ProjectTable({
             <th>Client</th>
             <th>Status</th>
             <th>Value</th>
+            <th>Received</th>
+            <th>Due</th>
             <th>Created</th>
             <th />
           </tr>
@@ -81,41 +104,52 @@ function ProjectTable({
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={6} className="leads-machine-muted">
+              <td colSpan={8} className="leads-machine-muted">
                 {empty}
               </td>
             </tr>
           ) : (
-            rows.map((order) => (
-              <tr key={order.id}>
-                <td>
-                  <strong>{order.orderNumber}</strong>
-                </td>
-                <td>
-                  {order.lead.name || order.lead.company || "Client"}
-                  <div className="leads-machine-muted">
-                    {order.lead.phone || "—"}
-                  </div>
-                </td>
-                <td>{salesOrderStatusLabel(order.status)}</td>
-                <td>{formatInr(Number(order.orderValue))}</td>
-                <td>
-                  {new Date(order.createdAt).toLocaleDateString("en-IN", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </td>
-                <td>
-                  <Link
-                    className="btn-secondary btn-sm"
-                    href={`/app/leads?leadId=${order.lead.id}&period=all`}
-                  >
-                    Open CRM
-                  </Link>
-                </td>
-              </tr>
-            ))
+            rows.map((order) => {
+              const value = Number(order.orderValue || 0);
+              const received = paymentByLead.get(order.lead.id) ?? 0;
+              const due = Math.max(0, Math.round((value - received) * 100) / 100);
+              return (
+                <tr key={order.id}>
+                  <td>
+                    <strong>{order.orderNumber}</strong>
+                  </td>
+                  <td>
+                    {order.lead.name || order.lead.company || "Client"}
+                    <div className="leads-machine-muted">
+                      {order.lead.phone || "—"}
+                    </div>
+                  </td>
+                  <td>{salesOrderStatusLabel(order.status)}</td>
+                  <td>{formatInr(value)}</td>
+                  <td className={received > 0 ? "crm-projects-received" : undefined}>
+                    {received > 0 ? formatInr(received) : "—"}
+                  </td>
+                  <td className={due > 0 ? "crm-projects-due" : undefined}>
+                    {formatInr(due)}
+                  </td>
+                  <td>
+                    {new Date(order.createdAt).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </td>
+                  <td>
+                    <Link
+                      className="btn-secondary btn-sm"
+                      href={`/app/leads?leadId=${order.lead.id}&period=all`}
+                    >
+                      Open CRM
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>
