@@ -11,6 +11,9 @@ export type LeadDemoCalendarInput = {
   /** Demo / meeting start — typically nextFollowUpAt */
   startsAt: Date;
   durationMinutes?: number;
+  /** Optional join link (Google Meet / Zoom) shown in calendar details. */
+  meetUrl?: string | null;
+  location?: string | null;
 };
 
 function pad(n: number) {
@@ -34,6 +37,7 @@ function eventDetails(input: LeadDemoCalendarInput): string {
   const parts = [
     input.company?.trim() ? `Company: ${input.company.trim()}` : null,
     input.requirement?.trim() ? `Need: ${input.requirement.trim()}` : null,
+    input.meetUrl?.trim() ? `Join: ${input.meetUrl.trim()}` : null,
     input.meetingNotes?.trim() ? `Notes: ${input.meetingNotes.trim()}` : null,
     "Created from Sheetomatic Leads",
   ].filter(Boolean);
@@ -51,6 +55,10 @@ export function buildGoogleCalendarUrl(input: LeadDemoCalendarInput): string {
     dates,
     details: eventDetails(input),
   });
+  const location = input.location?.trim() || input.meetUrl?.trim();
+  if (location) {
+    params.set("location", location);
+  }
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
