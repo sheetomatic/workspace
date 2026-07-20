@@ -792,3 +792,19 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/leads` list — no Lead Stage column; Category/Status selects show full labels; denser row padding.
 
 ---
+
+**Deployed (2026-07-20):** CRM Projects Received/Due + sticky lead Actions (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| PR | https://github.com/sheetomatic/workspace/pull/31 (draft → ready → merge commit) |
+| Merge SHA | `884aa6699adf6e17ae6c7df47d70a386f7423df7` |
+| Feature | `f40e594` — Projects payment Received/Due; sticky Lead + Actions columns |
+| Pre-flight | Unit tests: 100/101; UTC flake on `google-sheets` timestamp test is pre-existing on main (passes with `TZ=Asia/Kolkata`) |
+| Vercel | Production **SUCCESS** — sheetomatic-redesign |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/6ree16cXSEyQitPqCA4HVUuQuwhi — https://sheetomatic.com |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops (their auto-deploys failed; ignored). |
+
+**Hard-refresh in prod:** `/app/leads/projects` — Received/Due from CRM payments; `/app/leads` list — Lead + Actions columns stay sticky so Call/WA/Delete remain visible.
+
+---
