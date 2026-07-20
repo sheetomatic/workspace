@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CrmClientGroups, type CrmClientGroup } from "@/components/saas/crm-client-groups";
 import { CrmSubmoduleShell } from "@/components/saas/crm-submodule-shell";
 import "@/components/saas/leads-machine.css";
 import { formatInr } from "@/lib/leads/categories";
@@ -11,10 +12,93 @@ import {
   type SalesOrderListItem,
 } from "@/lib/leads/sales-order-types";
 import { getSalesOrderStats } from "@/lib/sales-orders/queries";
+import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
+
+function groupProjectsByLead(
+  rows: SalesOrderListItem[],
+  paymentByLead: Map<string, number>,
+  sectionKey: string,
+): CrmClientGroup[] {
+  const byLead = new Map<
+    string,
+    {
+      lead: SalesOrderListItem["lead"];
+      orders: SalesOrderListItem[];
+      value: number;
+      received: number;
+      due: number;
+    }
+  >();
+
+  for (const order of rows) {
+    const value = Number(order.orderValue || 0);
+    const received = paymentByLead.get(order.lead.id) ?? 0;
+    const due = Math.max(0, Math.round((value - received) * 100) / 100);
+    const existing = byLead.get(order.lead.id);
+    if (existing) {
+      existing.orders.push(order);
+      existing.value += value;
+      existing.due = Math.max(0, Math.round((existing.value - existing.received) * 100) / 100);
+    } else {
+      byLead.set(order.lead.id, {
+        lead: order.lead,
+        orders: [order],
+        value,
+        received,
+        due,
+      });
+    }
+  }
+
+  return [...byLead.values()].map((entry) => {
+    const name = entry.lead.name || entry.lead.company || "Client";
+    const dueLabel =
+      entry.due > 0 ? ` · due ${formatInr(entry.due)}` : "";
+    return {
+      id: `${sectionKey}-${entry.lead.id}`,
+      name,
+      phone: entry.lead.phone || "",
+      inboundLeadId: entry.lead.id,
+      summary: `${entry.orders.length} order${
+        entry.orders.length === 1 ? "" : "s"
+      } · ${formatInr(entry.value)}${dueLabel}`,
+      meta:
+        entry.received > 0 ? `received ${formatInr(entry.received)}` : undefined,
+      waEvent: entry.due > 0 ? "alert_payment_pending" : "stage_follow_up",
+      rows: entry.orders.map((order) => {
+        const value = Number(order.orderValue || 0);
+        const received = paymentByLead.get(order.lead.id) ?? 0;
+        const due = Math.max(0, Math.round((value - received) * 100) / 100);
+        return {
+          id: order.id,
+          cells: [
+            { primary: order.orderNumber },
+            salesOrderStatusLabel(order.status),
+            formatInr(value),
+            {
+              primary: received > 0 ? formatInr(received) : "—",
+              className: received > 0 ? "crm-projects-received" : undefined,
+            },
+            {
+              primary: formatInr(due),
+              className: due > 0 ? "crm-projects-due" : undefined,
+            },
+            new Date(order.createdAt).toLocaleDateString("en-IN", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            }),
+          ],
+        };
+      }),
+    };
+  });
+}
 
 export default async function CrmProjectsPage() {
   const user = await requireSession(undefined, { module: "CRM" });
+  const canManage = hasMinimumRole(user.role, "MANAGER");
   const [{ orders }, stats] = await Promise.all([
     listSalesOrders(user.organizationId, { limit: 150 }),
     getSalesOrderStats(user.organizationId),
@@ -31,6 +115,13 @@ export default async function CrmProjectsPage() {
   const receivedOnProjects = orders.reduce((sum, order) => {
     return sum + (paymentByLead.get(order.lead.id) ?? 0);
   }, 0);
+
+  const runningGroups = groupProjectsByLead(running, paymentByLead, "running");
+  const deliveredGroups = groupProjectsByLead(
+    delivered,
+    paymentByLead,
+    "delivered",
+  );
 
   return (
     <CrmSubmoduleShell
@@ -54,18 +145,42 @@ export default async function CrmProjectsPage() {
       <div className="crm-projects-sections">
         <section>
           <h3>Running ({running.length})</h3>
-          <ProjectTable
-            rows={running}
-            paymentByLead={paymentByLead}
-            empty="No running projects."
+          <CrmClientGroups
+            groups={runningGroups}
+            columns={[
+              "Order",
+              "Status",
+              "Value",
+              "Received",
+              "Due",
+              "Created",
+            ]}
+            openTab="projects"
+            waEvent="stage_follow_up"
+            canManage={canManage}
+            emptyMessage="No running projects."
+            filterPlaceholder="Filter running clients…"
+            noun="client"
           />
         </section>
         <section>
           <h3>Delivered ({delivered.length})</h3>
-          <ProjectTable
-            rows={delivered}
-            paymentByLead={paymentByLead}
-            empty="No delivered projects yet."
+          <CrmClientGroups
+            groups={deliveredGroups}
+            columns={[
+              "Order",
+              "Status",
+              "Value",
+              "Received",
+              "Due",
+              "Created",
+            ]}
+            openTab="projects"
+            waEvent="stage_follow_up"
+            canManage={canManage}
+            emptyMessage="No delivered projects yet."
+            filterPlaceholder="Filter delivered clients…"
+            noun="client"
           />
         </section>
       </div>
@@ -74,85 +189,5 @@ export default async function CrmProjectsPage() {
         lives in <Link href="/app/sales-orders">Sales orders</Link>.
       </p>
     </CrmSubmoduleShell>
-  );
-}
-
-function ProjectTable({
-  rows,
-  paymentByLead,
-  empty,
-}: {
-  rows: SalesOrderListItem[];
-  paymentByLead: Map<string, number>;
-  empty: string;
-}) {
-  return (
-    <div className="crm-submodule-table-wrap">
-      <table className="crm-submodule-table">
-        <thead>
-          <tr>
-            <th>Order</th>
-            <th>Client</th>
-            <th>Status</th>
-            <th>Value</th>
-            <th>Received</th>
-            <th>Due</th>
-            <th>Created</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 ? (
-            <tr>
-              <td colSpan={8} className="leads-machine-muted">
-                {empty}
-              </td>
-            </tr>
-          ) : (
-            rows.map((order) => {
-              const value = Number(order.orderValue || 0);
-              const received = paymentByLead.get(order.lead.id) ?? 0;
-              const due = Math.max(0, Math.round((value - received) * 100) / 100);
-              return (
-                <tr key={order.id}>
-                  <td>
-                    <strong>{order.orderNumber}</strong>
-                  </td>
-                  <td>
-                    {order.lead.name || order.lead.company || "Client"}
-                    <div className="leads-machine-muted">
-                      {order.lead.phone || "—"}
-                    </div>
-                  </td>
-                  <td>{salesOrderStatusLabel(order.status)}</td>
-                  <td>{formatInr(value)}</td>
-                  <td className={received > 0 ? "crm-projects-received" : undefined}>
-                    {received > 0 ? formatInr(received) : "—"}
-                  </td>
-                  <td className={due > 0 ? "crm-projects-due" : undefined}>
-                    {formatInr(due)}
-                  </td>
-                  <td>
-                    {new Date(order.createdAt).toLocaleDateString("en-IN", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </td>
-                  <td>
-                    <Link
-                      className="btn-secondary btn-sm"
-                      href={`/app/leads?leadId=${order.lead.id}&period=all`}
-                    >
-                      Open CRM
-                    </Link>
-                  </td>
-                </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
-    </div>
   );
 }

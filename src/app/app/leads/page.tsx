@@ -15,11 +15,13 @@ import { readSheetSyncProgress } from "@/lib/leads/sheet-sync-progress";
 import { LeadsSheetSyncButton } from "@/components/saas/leads-sheet-sync-button";
 import { ensureLeadConnections } from "@/lib/leads/ingest";
 import { listCrmAlertCenterItems } from "@/lib/leads/alerts/evaluate";
+import { parseCrmDrawerTab } from "@/lib/leads/crm-open";
 import { parseLeadsListParams } from "@/lib/leads/list-params";
 import { parseLeadsPeriodParams } from "@/lib/leads/period";
 import {
   getCrmNumbersMetricsForPeriod,
   getGoogleSheetsLeadConnection,
+  getInboundLeadForCrmDrawer,
   getInboundLeadWorkspaceTotal,
   getLeadsMachineStatsForPeriod,
   getLeadsPipeMetricsForPeriod,
@@ -50,10 +52,15 @@ type LeadsListSearchParams = {
   q?: string;
   archived?: string;
   leadId?: string;
+  tab?: string;
   view?: string;
 };
 
-function serializeLead(lead: Awaited<ReturnType<typeof listInboundLeadsForPeriodPaginated>>["leads"][number]) {
+type CrmDrawerLead = NonNullable<
+  Awaited<ReturnType<typeof getInboundLeadForCrmDrawer>>
+>;
+
+function serializeLead(lead: CrmDrawerLead) {
   return {
     id: lead.id,
     channel: lead.channel,
@@ -160,7 +167,9 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
   const period = parseLeadsPeriodParams(params);
   const listParams = parseLeadsListParams(params);
   const canManage = hasMinimumRole(user.role, "MANAGER");
-  const canAdmin = hasMinimumRole(user.role, "ADMIN");
+  const focusLeadId = params.leadId?.trim() || null;
+  const initialTab = parseCrmDrawerTab(params.tab);
+  const focusMode = Boolean(focusLeadId);
 
   after(async () => {
     try {
@@ -175,6 +184,76 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
       console.error("leads google sheets auto sync", error);
     }
   });
+
+  if (focusMode && focusLeadId) {
+    const [lead, teamMembers, serviceCatalog, organization] = await Promise.all([
+      getInboundLeadForCrmDrawer(user.organizationId, focusLeadId),
+      listWorkspaceMembers(user.organizationId),
+      listLeadServiceCatalog(user.organizationId),
+      prisma.organization.findUnique({
+        where: { id: user.organizationId },
+        select: { name: true, logoUrl: true },
+      }),
+    ]);
+
+    const salesOrdersByLead = lead
+      ? await getAllSalesOrdersByLeadIds(user.organizationId, [lead.id])
+      : new Map();
+    const leadsWithSalesOrders = lead
+      ? [
+          {
+            ...serializeLead(lead),
+            salesOrders: salesOrdersByLead.get(lead.id) ?? [],
+            salesOrder: (salesOrdersByLead.get(lead.id) ?? [])[0] ?? null,
+          },
+        ]
+      : [];
+
+    return (
+      <div className="saas-page leads-machine-page leads-machine-page--focus">
+        <TaskPageToolbar
+          title="CRM"
+          actions={
+            <Link className="btn-secondary btn-sm" href="/app/leads?period=all">
+              All leads
+            </Link>
+          }
+        />
+
+        {!lead ? (
+          <p className="leads-machine-muted" style={{ marginTop: "1rem" }}>
+            Lead not found.{" "}
+            <Link href="/app/leads?period=all">Back to CRM</Link>
+          </p>
+        ) : null}
+
+        <LeadsCrmWorkspace
+          canManage={canManage}
+          focusMode
+          initialSelectedLeadId={lead?.id ?? focusLeadId}
+          initialTab={initialTab}
+          leads={leadsWithSalesOrders}
+          listParams={params}
+          organizationLogoUrl={organization?.logoUrl ?? null}
+          organizationName={organization?.name ?? "Sheetomatic"}
+          page={1}
+          period={period.type}
+          periodLabel={period.periodLabel}
+          sort={listParams.sort}
+          view={listParams.view}
+          teamMembers={teamMembers}
+          total={leadsWithSalesOrders.length}
+          totalPages={1}
+          workspaceTotal={leadsWithSalesOrders.length}
+          serviceCatalog={serviceCatalog.map((item) => ({
+            id: item.id,
+            serviceCategory: item.serviceCategory,
+            subCategory: item.subCategory,
+          }))}
+        />
+      </div>
+    );
+  }
 
   const [periodStats, pipeMetrics, numbersMetrics, alertItems, leadPage, teamMembers, sheetsConnection, workspaceTotal, serviceCatalog, organization] =
     await Promise.all([
@@ -291,7 +370,9 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
 
       <LeadsCrmWorkspace
         canManage={canManage}
+        focusMode={false}
         initialSelectedLeadId={params.leadId ?? null}
+        initialTab={initialTab}
         leads={leadsWithSalesOrders}
         listParams={params}
         organizationLogoUrl={organization?.logoUrl ?? null}
