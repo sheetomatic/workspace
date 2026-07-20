@@ -63,6 +63,18 @@ export async function getSalesOrderForLead(
   });
 }
 
+/** All sales orders for one lead (newest first) — supports multi-project clients. */
+export async function listSalesOrdersForLead(
+  organizationId: string,
+  leadId: string,
+) {
+  return prisma.salesOrder.findMany({
+    where: { organizationId, leadId },
+    orderBy: { createdAt: "desc" },
+    include: salesOrderDetailInclude,
+  });
+}
+
 export async function getSalesOrderDetail(
   organizationId: string,
   salesOrderId: string,

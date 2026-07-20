@@ -79,6 +79,20 @@ export type DispatchSlipData = {
   };
 };
 
+/** Running = active fulfillment; Delivered/Cancelled = closed timeline. */
+export function partitionSalesOrdersByLifecycle(orders: LeadSalesOrderData[]) {
+  const running: LeadSalesOrderData[] = [];
+  const delivered: LeadSalesOrderData[] = [];
+  for (const order of orders) {
+    if (order.status === "DELIVERED" || order.status === "CANCELLED") {
+      delivered.push(order);
+    } else {
+      running.push(order);
+    }
+  }
+  return { running, delivered };
+}
+
 export const SALES_ORDER_STATUS_LABELS: Record<SalesOrderStatus, string> = {
   DRAFT: "Draft",
   CONFIRMED: "Order confirmed",
