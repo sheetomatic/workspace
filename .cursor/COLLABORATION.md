@@ -839,3 +839,20 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/leads/training` — student-wise groups with collapse/expand.
 
 ---
+
+**Deployed (2026-07-20):** CRM client groups, fast Open to lead, WhatsApp reminders (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| PR | https://github.com/sheetomatic/workspace/pull/34 (draft → ready → merge commit) |
+| Merge SHA | `1930a4733b145772e4e3c266bc01e84167589b8c` |
+| Deploy SHA | `a3de9108bd38120d03eec3eb9cc6f29973c96db3` (empty trigger after merge push missed Vercel) |
+| Feature | `7575c73` — client groups UI; Open deep-links lead focus/drawer; WA reminders path |
+| Pre-flight | Unit tests: 100/101; UTC flake on `google-sheets` timestamp test is pre-existing on main |
+| Vercel | Production **SUCCESS** — sheetomatic-redesign |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/9H3L5kSPDuo1pbY8utD3exAWHbMB — https://sheetomatic.com |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops (their auto-deploys failed; ignored). |
+
+**Hard-refresh in prod:** `/app/leads` (and submodule lists) — client groups; Open jumps to lead focus with drawer tab; WA reminders.
+
+---
