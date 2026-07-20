@@ -777,3 +777,18 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/leads` — drawer edits should save instantly (no full revalidate); Activity tab; kanban column deal totals; deferred meeting email.
 
 ---
+
+**Deployed (2026-07-20):** CRM list compact — remove Lead Stage, fix truncated Category/Status dropdowns (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| PR | https://github.com/sheetomatic/workspace/pull/30 (draft → ready → merge commit) |
+| Merge SHA | `607d045b194d8276d590a4640ae804ed771112a9` |
+| Pre-flight | Unit tests: 100/101; UTC flake on `google-sheets` timestamp test is pre-existing on main (passes with `TZ=Asia/Kolkata`) |
+| Vercel | Production **SUCCESS** — sheetomatic-redesign |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/Byfwi5Qw4NMX2RQSsRAbAgBm5JxP — https://sheetomatic.com |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops (auto-deploys ignored). |
+
+**Hard-refresh in prod:** `/app/leads` list — no Lead Stage column; Category/Status selects show full labels; denser row padding.
+
+---
