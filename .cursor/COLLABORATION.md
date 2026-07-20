@@ -824,3 +824,18 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/leads` drawer follow-ups — type picker (Payment/Lead/Quotation/Negotiation/Meeting); WA queue/notifications for typed follow-ups.
 
 ---
+
+**Deployed (2026-07-20):** CRM Training — student-wise groups with collapse/expand (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| PR | https://github.com/sheetomatic/workspace/pull/33 (draft → ready → merge commit) |
+| Merge SHA | `4eb28a55fd2742847deaaea298fe63b3601e2a77` |
+| Change | `src/app/app/leads/training/page.tsx` — student-wise grouped rows with collapse/expand |
+| Vercel | Production **SUCCESS** — sheetomatic-redesign |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/CkYaGht4QM1H9EyUZy5XcLDrjcfc — https://sheetomatic.com |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops (their auto-deploys failed; ignored). |
+
+**Hard-refresh in prod:** `/app/leads/training` — student-wise groups with collapse/expand.
+
+---
