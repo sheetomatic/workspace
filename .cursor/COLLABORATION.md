@@ -717,3 +717,18 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/leads` — status changes, drawer field saves, and kanban moves should feel instant (no full page refresh); sheet sync continues in background.
 
 ---
+
+**Deployed (2026-07-20):** CRM Meeting — schedule from panel, email client calendar link (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| PR | https://github.com/sheetomatic/workspace/pull/26 (merged) |
+| Merge SHA | `136dc02` (feature `aacb207`) |
+| Pre-flight | Unit tests: 101/101 with `TZ=Asia/Kolkata`; UTC flake on `google-sheets` timestamp test is pre-existing |
+| Vercel | Production **SUCCESS** — sheetomatic-redesign |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/3HcBLM9KUwjja1GkepL7wGVaLEoG — https://sheetomatic-redesign-6p4b5noov-sheetomatic.vercel.app |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops (ignored auto-deploys). |
+
+**Hard-refresh in prod:** `/app/leads` Meeting tab — schedule client meeting from panel; client should receive calendar-add email invite.
+
+---
