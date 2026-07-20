@@ -75,6 +75,10 @@ export const NURTURE_TEMPLATE_PLACEHOLDERS = [
   { key: "{{counsellor}}", label: "Assigned team member" },
   { key: "{{discussion}}", label: "Call / meeting notes" },
   { key: "{{nextStep}}", label: "Next step / stage label" },
+  { key: "{{totalPayment}}", label: "Payment Follow-up — total" },
+  { key: "{{receivedPayment}}", label: "Payment Follow-up — received" },
+  { key: "{{duePayment}}", label: "Payment Follow-up — due" },
+  { key: "{{lastPaymentDate}}", label: "Payment Follow-up — last date" },
 ] as const;
 
 export type LeadAlertRuleConfig = {

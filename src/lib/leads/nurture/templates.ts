@@ -12,6 +12,7 @@ import {
   resolveInquiryRequirementPhrase,
   resolveNurtureTopicLabel,
 } from "@/lib/leads/nurture/requirement-phrase";
+import { paymentFollowUpTemplateVars } from "@/lib/leads/payment-follow-up";
 
 export type { LeadNurtureEventId } from "@/lib/leads/nurture/events";
 export {
@@ -60,6 +61,9 @@ export function buildLeadNurtureMessage(params: {
   nextStepLabel?: string | null;
   status?: InboundLeadStatus | null;
   nurtureConfig?: LeadNurtureOrgConfig | null;
+  paymentTotal?: unknown;
+  paymentReceived?: unknown;
+  paymentLastDate?: Date | null;
 }): string {
   const firstName = leadFirstName(params.name);
   const topic = resolveNurtureTopicLabel(params.category ?? null);
@@ -81,6 +85,11 @@ export function buildLeadNurtureMessage(params: {
   const counsellor = assigneeDisplay(params.assigneeName);
   const summary = trimSummary(params.discussionSummary);
   const stage = params.nextStepLabel ?? (params.status ? leadStatusLabel(params.status) : null);
+  const paymentVars = paymentFollowUpTemplateVars({
+    paymentTotal: params.paymentTotal,
+    paymentReceived: params.paymentReceived,
+    paymentLastDate: params.paymentLastDate ?? null,
+  });
 
   const vars: Record<string, string> = {
     "{{firstName}}": firstName,
@@ -90,6 +99,10 @@ export function buildLeadNurtureMessage(params: {
     "{{counsellor}}": counsellor,
     "{{discussion}}": summary || "Thank you for your time on the call today.",
     "{{nextStep}}": stage || "We will share the next steps with you shortly.",
+    "{{totalPayment}}": paymentVars.totalPayment,
+    "{{receivedPayment}}": paymentVars.receivedPayment,
+    "{{duePayment}}": paymentVars.duePayment,
+    "{{lastPaymentDate}}": paymentVars.lastPaymentDate,
   };
 
   if (params.nurtureConfig) {
@@ -193,9 +206,14 @@ export function buildLeadNurtureMessage(params: {
       return [
         `Hi ${firstName},`,
         "",
-        "Friendly reminder — we are awaiting *payment* against your Sheetomatic invoice / commercial.",
+        `Friendly reminder — payment follow-up for *${company || "your account"}*.`,
         "",
-        "Once payment is received, we can start / continue delivery without delay.",
+        `*Total:* ${paymentVars.totalPayment}`,
+        `*Received:* ${paymentVars.receivedPayment}`,
+        `*Due:* ${paymentVars.duePayment}`,
+        `*Last date of payment:* ${paymentVars.lastPaymentDate}`,
+        "",
+        "Please clear the due amount so we can continue delivery without delay.",
         "",
         "Reply here if you need the invoice, bank details, or a payment link again.",
         "",

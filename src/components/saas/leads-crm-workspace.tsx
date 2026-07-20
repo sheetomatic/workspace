@@ -201,8 +201,10 @@ export function LeadsCrmWorkspace({
 
   const showArchived = listParams.archived === "1";
   const isBoard = view === "board";
+  const isPayments = view === "payments";
   const listViewHref = `/app/leads?${buildLeadsListQuery(listParams, { view: "", page: "1" })}`;
   const boardViewHref = `/app/leads?${buildLeadsListQuery(listParams, { view: "board", page: "1" })}`;
+  const paymentsViewHref = `/app/leads?${buildLeadsListQuery(listParams, { view: "payments", page: "1" })}`;
 
   const selected = useMemo(
     () => localLeads.find((lead) => lead.id === selectedId) ?? null,
@@ -248,7 +250,7 @@ export function LeadsCrmWorkspace({
           <span className="leads-crm-period">{periodLabel}</span>
           <div className="leads-view-toggle" role="group" aria-label="Leads view">
             <Link
-              className={`btn-secondary btn-sm${!isBoard ? " is-active" : ""}`}
+              className={`btn-secondary btn-sm${!isBoard && !isPayments ? " is-active" : ""}`}
               href={listViewHref}
             >
               List
@@ -258,6 +260,12 @@ export function LeadsCrmWorkspace({
               href={boardViewHref}
             >
               Board
+            </Link>
+            <Link
+              className={`btn-secondary btn-sm${isPayments ? " is-active" : ""}`}
+              href={paymentsViewHref}
+            >
+              Payments
             </Link>
           </div>
           <Link

@@ -91,9 +91,14 @@ We will share the next steps (demo scope, timeline, and commercial) based on our
 
   alert_payment_pending: `Hi {{firstName}},
 
-Friendly reminder — we are awaiting *payment* against your Sheetomatic invoice / commercial.
+Friendly reminder — payment follow-up for *{{company}}*.
 
-Once payment is received, we can start / continue delivery without delay.
+*Total:* {{totalPayment}}
+*Received:* {{receivedPayment}}
+*Due:* {{duePayment}}
+*Last date of payment:* {{lastPaymentDate}}
+
+Please clear the due amount so we can continue delivery without delay.
 
 Reply here if you need the invoice, bank details, or a payment link again.
 

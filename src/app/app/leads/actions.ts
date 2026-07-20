@@ -1763,6 +1763,139 @@ export async function addInboundLeadPayment(params: {
   };
 }
 
+function parsePaymentMoney(raw: string) {
+  const amount = Number.parseFloat(raw.replace(/,/g, "").trim());
+  if (!Number.isFinite(amount) || amount < 0) {
+    return null;
+  }
+  return Math.round(amount * 100) / 100;
+}
+
+/** Add or update a client on CRM Payment Follow-up for portal WA collection. */
+export async function upsertPaymentFollowUpClient(formData: FormData) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false as const, message: "Not allowed." };
+  }
+
+  const leadId = formData.get("leadId")?.toString().trim() || "";
+  const name = formData.get("name")?.toString().trim() || "";
+  const phone = formData.get("phone")?.toString().trim() || "";
+  const company = formData.get("company")?.toString().trim() || "";
+  const total = parsePaymentMoney(formData.get("paymentTotal")?.toString() ?? "");
+  const received = parsePaymentMoney(formData.get("paymentReceived")?.toString() ?? "0");
+  const lastDateRaw = formData.get("paymentLastDate")?.toString().trim() || "";
+  const lastDate = lastDateRaw ? new Date(`${lastDateRaw}T12:00:00`) : null;
+
+  if (total == null || total <= 0) {
+    return { ok: false as const, message: "Enter a valid Total Payment." };
+  }
+  if (received == null) {
+    return { ok: false as const, message: "Enter a valid Received Payment (0 allowed)." };
+  }
+  if (received > total) {
+    return { ok: false as const, message: "Received cannot be greater than Total." };
+  }
+  if (!lastDate || Number.isNaN(lastDate.getTime())) {
+    return { ok: false as const, message: "Enter Last Date of Payment." };
+  }
+  if (!leadId && !leadPhoneDigits(phone)) {
+    return {
+      ok: false as const,
+      message: "Enter a valid WhatsApp / contact number (at least 10 digits).",
+    };
+  }
+
+  let targetLeadId = leadId;
+
+  if (targetLeadId) {
+    const existing = await prisma.inboundLead.findFirst({
+      where: { id: targetLeadId, organizationId: user.organizationId },
+      select: { id: true },
+    });
+    if (!existing) {
+      return { ok: false as const, message: "Lead not found." };
+    }
+  } else {
+    const result = await ingestInboundLead({
+      organizationId: user.organizationId,
+      channel: "MANUAL",
+      externalId: `payment-fu-${Date.now()}`,
+      name: name || company || "Payment client",
+      phone,
+      company: company || undefined,
+      requirement: "Payment follow-up",
+      capturedAt: new Date(),
+      actorUserId: user.id,
+      createdByUserId: user.id,
+      createFmsJob: false,
+      hardBlockDuplicates: false,
+    });
+    if (!result.lead?.id) {
+      // Prefer attaching to an existing duplicate match by phone.
+      const matchId = result.matches?.[0]?.id;
+      if (!matchId) {
+        return {
+          ok: false as const,
+          message: result.duplicate
+            ? "A lead with this phone already exists — open it and add to Payment Follow-up."
+            : "Could not create client.",
+        };
+      }
+      targetLeadId = matchId;
+    } else {
+      targetLeadId = result.lead.id;
+    }
+  }
+
+  await prisma.inboundLead.updateMany({
+    where: { id: targetLeadId, organizationId: user.organizationId },
+    data: {
+      paymentFollowUp: true,
+      paymentTotal: total,
+      paymentReceived: received,
+      paymentLastDate: lastDate,
+      ...(name ? { name } : {}),
+      ...(company ? { company } : {}),
+      ...(phone && leadPhoneDigits(phone) ? { phone } : {}),
+      status: "INVOICE",
+      modifiedAt: new Date(),
+    },
+  });
+
+  await logInboundLeadActivity({
+    organizationId: user.organizationId,
+    leadId: targetLeadId,
+    type: "PAYMENT",
+    body: `Payment Follow-up updated · Total ₹${total.toLocaleString("en-IN")} · Received ₹${received.toLocaleString("en-IN")} · Due ₹${(total - received).toLocaleString("en-IN")} · Last date ${lastDate.toLocaleDateString("en-IN")}`,
+    createdByUserId: user.id,
+  });
+
+  revalidatePath("/app/leads");
+  return { ok: true as const, leadId: targetLeadId };
+}
+
+export async function removePaymentFollowUpClient(leadId: string) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false as const, message: "Not allowed." };
+  }
+
+  const updated = await prisma.inboundLead.updateMany({
+    where: { id: leadId, organizationId: user.organizationId },
+    data: {
+      paymentFollowUp: false,
+      modifiedAt: new Date(),
+    },
+  });
+  if (updated.count === 0) {
+    return { ok: false as const, message: "Lead not found." };
+  }
+
+  revalidatePath("/app/leads");
+  return { ok: true as const };
+}
+
 export async function addLeadOfferedService(params: {
   leadId: string;
   catalogId: string;
