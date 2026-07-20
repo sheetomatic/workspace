@@ -762,3 +762,18 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/leads` — left nav CRM sub-modules (Meetings / Quotations / Payments / Projects / Training) with counts/values; list pages with KPIs.
 
 ---
+
+**Deployed (2026-07-20):** CRM instant saves, Activity tab, kanban deal totals, SO N+1 fix (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| PR | https://github.com/sheetomatic/workspace/pull/29 (draft → ready → merged squash) |
+| Merge SHA | `ab9fb47` |
+| Pre-flight | Unit tests: 101/101 with `TZ=Asia/Kolkata`; UTC flake on `google-sheets` timestamp test is pre-existing |
+| Vercel | Production **SUCCESS** — sheetomatic-redesign |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/6zCr65ov4CEAthK8VVgaDAuYrSSX — https://sheetomatic-redesign-jzhi18lba-sheetomatic.vercel.app |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops (their auto-deploys failed; ignored). |
+
+**Hard-refresh in prod:** `/app/leads` — drawer edits should save instantly (no full revalidate); Activity tab; kanban column deal totals; deferred meeting email.
+
+---
