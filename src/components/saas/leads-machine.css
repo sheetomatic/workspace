@@ -3975,7 +3975,8 @@
 
 /* Merge + calendar */
 .leads-merge-panel,
-.leads-calendar-links {
+.leads-calendar-links,
+.leads-schedule-meeting {
   margin-top: 0;
   margin-bottom: 0.75rem;
   padding: 0.65rem 0.7rem;
@@ -3985,6 +3986,25 @@
   display: grid;
   gap: 0.4rem;
   min-width: 0;
+}
+
+.leads-schedule-meeting h4 {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.leads-schedule-meeting__err {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 0.85rem;
+}
+
+.leads-schedule-meeting__ok {
+  margin: 0;
+  color: #047857;
+  font-size: 0.85rem;
 }
 
 .leads-calendar-actions,

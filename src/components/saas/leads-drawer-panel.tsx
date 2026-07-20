@@ -26,6 +26,7 @@ import {
   listLeadDuplicateMatchesAction,
   mergeInboundLeadsAction,
   scheduleInboundLeadFollowUp,
+  scheduleLeadClientMeeting,
   unarchiveInboundLeadAction,
   updateInboundLeadDetails,
   updateInboundLeadStatus,
@@ -271,6 +272,12 @@ export function LeadDrawerPanel({
   >([]);
   const [followUpAt, setFollowUpAt] = useState(defaultFollowUpLocal());
   const [noteDraft, setNoteDraft] = useState("");
+  const [meetingAt, setMeetingAt] = useState(defaultFollowUpLocal());
+  const [meetingDuration, setMeetingDuration] = useState(45);
+  const [meetingEmail, setMeetingEmail] = useState(lead.email ?? "");
+  const [meetingMeetUrl, setMeetingMeetUrl] = useState("");
+  const [meetingScheduleMsg, setMeetingScheduleMsg] = useState<string | null>(null);
+  const [meetingScheduleErr, setMeetingScheduleErr] = useState<string | null>(null);
   const [selectedCatalogId, setSelectedCatalogId] = useState(serviceCatalog[0]?.id ?? "");
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentDate, setPaymentDate] = useState(
@@ -301,9 +308,12 @@ export function LeadDrawerPanel({
     setStatus(resolveLeadStatus(lead.status));
     setProjectStatus(lead.projectStatus);
     setAssignedToId(lead.assignedTo?.id ?? "");
+    setMeetingEmail(lead.email ?? "");
+    setMeetingScheduleMsg(null);
+    setMeetingScheduleErr(null);
     setSaveError(null);
     setSaveOk(false);
-  }, [lead.id, lead.status, lead.projectStatus, lead.assignedTo?.id]);
+  }, [lead.id, lead.status, lead.projectStatus, lead.assignedTo?.id, lead.email]);
 
   useEffect(() => {
     const body = document.querySelector(".leads-drawer-body");
@@ -325,6 +335,8 @@ export function LeadDrawerPanel({
           requirement: lead.requirement,
           meetingNotes: meetingNotes || lead.meetingNotes,
           startsAt: demoStartsAt,
+          durationMinutes: meetingDuration,
+          meetUrl: meetingMeetUrl.trim() || null,
         }
       : null;
 
@@ -966,12 +978,101 @@ export function LeadDrawerPanel({
               Save meeting notes
             </button>
           ) : null}
+
+          {canManage ? (
+            <div className="leads-schedule-meeting">
+              <h4>Schedule meeting with client</h4>
+              <p className="leads-machine-muted">
+                From this CRM panel only — emails the client a calendar link. Does not open
+                Google Calendar to create the booking.
+              </p>
+              <div className="leads-drawer-grid">
+                <label>
+                  Meeting date &amp; time
+                  <input
+                    type="datetime-local"
+                    value={meetingAt}
+                    onChange={(e) => setMeetingAt(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Duration
+                  <select
+                    value={meetingDuration}
+                    onChange={(e) => setMeetingDuration(Number(e.target.value))}
+                  >
+                    <option value={30}>30 minutes</option>
+                    <option value={45}>45 minutes</option>
+                    <option value={60}>60 minutes</option>
+                    <option value={90}>90 minutes</option>
+                  </select>
+                </label>
+                <label>
+                  Client email
+                  <input
+                    type="email"
+                    value={meetingEmail}
+                    onChange={(e) => setMeetingEmail(e.target.value)}
+                    placeholder="client@company.com"
+                    required
+                  />
+                </label>
+                <label>
+                  Meet / join link (optional)
+                  <input
+                    type="url"
+                    value={meetingMeetUrl}
+                    onChange={(e) => setMeetingMeetUrl(e.target.value)}
+                    placeholder="https://meet.google.com/…"
+                  />
+                </label>
+              </div>
+              {meetingScheduleErr ? (
+                <p className="leads-schedule-meeting__err" role="alert">
+                  {meetingScheduleErr}
+                </p>
+              ) : null}
+              {meetingScheduleMsg ? (
+                <p className="leads-schedule-meeting__ok">{meetingScheduleMsg}</p>
+              ) : null}
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={pending}
+                onClick={() => {
+                  setMeetingScheduleErr(null);
+                  setMeetingScheduleMsg(null);
+                  startTransition(async () => {
+                    const result = await scheduleLeadClientMeeting({
+                      leadId: lead.id,
+                      startsAt: meetingAt,
+                      durationMinutes: meetingDuration,
+                      clientEmail: meetingEmail,
+                      meetUrl: meetingMeetUrl || undefined,
+                      notes: meetingNotes.trim() || undefined,
+                      sendEmail: true,
+                    });
+                    if (!result.ok) {
+                      setMeetingScheduleErr(result.message);
+                      return;
+                    }
+                    setMeetingScheduleMsg(result.message);
+                    setFollowUpAt(meetingAt);
+                    router.refresh();
+                  });
+                }}
+              >
+                {pending ? "Scheduling…" : "Schedule & email client"}
+              </button>
+            </div>
+          ) : null}
+
           {(isDemoScheduled || demoCalendarInput) && (
             <div className="leads-calendar-links">
-              <h4>Add demo to calendar</h4>
+              <h4>Add to your calendar (team)</h4>
               <p className="leads-machine-muted">
-                Opens Google/Outlook or downloads an ICS file. Full Google Calendar OAuth sync
-                is not wired yet — set Next follow-up as the demo time first.
+                Optional for you — Google / Outlook / ICS. Client already gets the link by email
+                when you use Schedule &amp; email above.
               </p>
               {demoCalendarInput ? (
                 <div className="leads-calendar-actions">
@@ -1012,7 +1113,7 @@ export function LeadDrawerPanel({
                 </div>
               ) : (
                 <p className="leads-machine-muted">
-                  Schedule a follow-up datetime below, then use calendar links.
+                  Schedule the meeting above (or set a follow-up time) to enable calendar links.
                 </p>
               )}
             </div>

@@ -77,6 +77,7 @@ import {
   queueLeadNurtureAfterCall,
   queueLeadNurtureAfterStatusChange,
 } from "@/lib/leads/nurture/triggers";
+import { buildClientMeetingInviteEmail } from "@/lib/leads/meeting-invite";
 import { inferLeadStageFromRequirement } from "@/lib/leads/stage-ai";
 import { leadStatusLabel } from "@/lib/leads/status-labels";
 import {
@@ -1372,6 +1373,164 @@ export async function updateLeadMeetingNotes(leadId: string, meetingNotes: strin
 
   revalidatePath("/app/leads");
   return { ok: true };
+}
+
+/**
+ * Schedule a client meeting from the CRM Meeting tab only.
+ * Sets DEMO_SCHEDULED + nextFollowUpAt, emails the client a calendar link.
+ * Does not use Google Calendar OAuth / Calendar product UI.
+ */
+export async function scheduleLeadClientMeeting(params: {
+  leadId: string;
+  startsAt: string;
+  durationMinutes?: number;
+  clientEmail?: string;
+  meetUrl?: string;
+  notes?: string;
+  sendEmail?: boolean;
+}) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false as const, message: "Not allowed." };
+  }
+
+  const startsAt = new Date(params.startsAt);
+  if (Number.isNaN(startsAt.getTime())) {
+    return { ok: false as const, message: "Pick a valid meeting date & time." };
+  }
+  if (startsAt.getTime() < Date.now() - 5 * 60_000) {
+    return { ok: false as const, message: "Meeting time must be in the future." };
+  }
+
+  const durationRaw = params.durationMinutes ?? 45;
+  const durationMinutes = [30, 45, 60, 90].includes(durationRaw)
+    ? durationRaw
+    : 45;
+
+  const lead = await prisma.inboundLead.findFirst({
+    where: { id: params.leadId, organizationId: user.organizationId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      company: true,
+      requirement: true,
+      meetingNotes: true,
+      assignedTo: { select: { name: true } },
+    },
+  });
+  if (!lead) {
+    return { ok: false as const, message: "Lead not found." };
+  }
+
+  const toEmail = (params.clientEmail?.trim() || lead.email?.trim() || "").toLowerCase();
+  const shouldEmail = params.sendEmail !== false;
+  if (shouldEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail)) {
+    return {
+      ok: false as const,
+      message: "Add a valid client email to send the meeting link.",
+    };
+  }
+
+  const meetUrl = params.meetUrl?.trim() || null;
+  const scheduleNote = params.notes?.trim() || null;
+  const mergedNotes = [lead.meetingNotes?.trim(), scheduleNote]
+    .filter(Boolean)
+    .join("\n\n");
+
+  const organization = await prisma.organization.findUnique({
+    where: { id: user.organizationId },
+    select: { name: true },
+  });
+
+  await prisma.inboundLead.updateMany({
+    where: { id: lead.id, organizationId: user.organizationId },
+    data: {
+      nextFollowUpAt: startsAt,
+      status: "DEMO_SCHEDULED",
+      ...(mergedNotes ? { meetingNotes: mergedNotes } : {}),
+      ...(toEmail && !lead.email?.trim() ? { email: toEmail } : {}),
+      modifiedAt: new Date(),
+    },
+  });
+
+  // Optional follow-up row for history — keep status DEMO_SCHEDULED (do not use scheduleInboundLeadFollowUp).
+  await prisma.inboundLeadFollowUp.create({
+    data: {
+      organizationId: user.organizationId,
+      leadId: lead.id,
+      scheduledAt: startsAt,
+      notes:
+        scheduleNote ||
+        `Client meeting scheduled (${durationMinutes} min)${meetUrl ? ` · ${meetUrl}` : ""}`,
+      assigneeUserId: user.id,
+      createdByUserId: user.id,
+    },
+  });
+
+  const invite = buildClientMeetingInviteEmail({
+    clientName: lead.name,
+    organizationName: organization?.name?.trim() || "Sheetomatic",
+    startsAt,
+    durationMinutes,
+    meetUrl,
+    notes: scheduleNote,
+    counsellorName: lead.assignedTo?.name ?? user.name ?? null,
+  });
+
+  let emailSent = false;
+  let emailMessage: string | null = null;
+  if (shouldEmail) {
+    const result = await sendPlainEmail({
+      toEmail,
+      subject: invite.subject,
+      text: invite.text,
+    });
+    if (!result.sent) {
+      emailMessage =
+        result.reason === "not_configured"
+          ? "Meeting saved, but email is not configured (RESEND_API_KEY / TASK_EMAIL_FROM)."
+          : `Meeting saved, but email failed: ${result.detail ?? result.reason}`;
+    } else {
+      emailSent = true;
+    }
+  }
+
+  await logInboundLeadActivity({
+    organizationId: user.organizationId,
+    leadId: lead.id,
+    type: "MEETING",
+    body: [
+      `Meeting scheduled for ${invite.whenLabel}`,
+      meetUrl ? `Join: ${meetUrl}` : null,
+      emailSent ? `Invite emailed to ${toEmail}` : null,
+      !emailSent && shouldEmail ? emailMessage : null,
+      scheduleNote,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    createdByUserId: user.id,
+    metadata: {
+      meetingScheduled: true,
+      startsAt: startsAt.toISOString(),
+      durationMinutes,
+      calendarUrl: invite.calendarUrl,
+      emailSent,
+    },
+  });
+
+  exportLeadToGoogleSheetAfterSave(user.organizationId, lead.id);
+  revalidatePath("/app/leads");
+
+  return {
+    ok: true as const,
+    emailSent,
+    calendarUrl: invite.calendarUrl,
+    whenLabel: invite.whenLabel,
+    message: emailSent
+      ? `Meeting scheduled and invite sent to ${toEmail}.`
+      : emailMessage || "Meeting scheduled.",
+  };
 }
 
 export async function updateLeadCallingStatus(
