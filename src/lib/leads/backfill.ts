@@ -10,6 +10,7 @@ import { leadHasRequiredContact } from "@/lib/leads/contact-validation";
 import { migrateLegacyLeadStatus } from "@/lib/leads/status-labels";
 import { inferLeadStageFromRequirement } from "@/lib/leads/stage-ai";
 import { runLeadNurtureQueue } from "@/lib/leads/nurture/run";
+import { runDueFollowUpNurture } from "@/lib/leads/nurture/follow-up-due";
 import { runLeadAlertQueue } from "@/lib/leads/alerts/run";
 
 const CAPTURED_AT_BACKFILL_BATCH = 50;
@@ -224,6 +225,12 @@ export async function runLeadsBackgroundMaintenance(organizationId: string) {
     await runLeadNurtureQueue(organizationId);
   } catch (error) {
     console.error("leads nurture queue", error);
+  }
+
+  try {
+    await runDueFollowUpNurture(organizationId);
+  } catch (error) {
+    console.error("leads due follow-up nurture", error);
   }
 
   try {

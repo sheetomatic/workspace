@@ -2571,6 +2571,14 @@ enum InboundLeadActivityType {
   PAYMENT
 }
 
+enum InboundLeadFollowUpType {
+  LEAD
+  MEETING
+  QUOTATION
+  NEGOTIATION
+  PAYMENT
+}
+
 enum InboundLeadStatus {
   NEW
   SCHEDULE_MEETING
@@ -2766,22 +2774,25 @@ model InboundLeadActivity {
 }
 
 model InboundLeadFollowUp {
-  id              String       @id @default(cuid())
+  id              String                   @id @default(cuid())
   organizationId  String
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization    Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   leadId          String
-  lead            InboundLead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  lead            InboundLead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
   assigneeUserId  String?
-  assignee        User?        @relation("InboundLeadFollowUpAssignee", fields: [assigneeUserId], references: [id], onDelete: SetNull)
+  assignee        User?                    @relation("InboundLeadFollowUpAssignee", fields: [assigneeUserId], references: [id], onDelete: SetNull)
+  type            InboundLeadFollowUpType  @default(LEAD)
   scheduledAt     DateTime
   completedAt     DateTime?
   notes           String?
+  waNotifiedAt    DateTime?
   createdByUserId String?
-  createdBy       User?        @relation("InboundLeadFollowUpCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdBy       User?                    @relation("InboundLeadFollowUpCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
 
   @@index([organizationId, scheduledAt])
+  @@index([organizationId, type, scheduledAt])
   @@index([leadId])
 }
 
