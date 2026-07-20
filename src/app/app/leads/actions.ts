@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import type {
+  InboundLeadActivityType,
   InboundLeadStatus,
   LeadCallingStatus,
   LeadPaymentMethod,
@@ -12,7 +13,7 @@ import type {
   Prisma,
   QuotationRequestType,
 } from "@prisma/client";
-import { prisma } from "@/lib/db";
+import { prisma, withDbRetry } from "@/lib/db";
 import { isActiveOrgMember } from "@/lib/assignee-org";
 import { logInboundLeadActivity } from "@/lib/leads/activity";
 import { generateLeadMachineApiKey } from "@/lib/leads/api-auth";
@@ -196,10 +197,12 @@ export async function updateInboundLeadStatus(leadId: string, status: InboundLea
     status,
   });
 
-  await prisma.inboundLead.updateMany({
-    where: { id: leadId, organizationId: user.organizationId },
-    data: { status, score, temperature, modifiedAt: new Date() },
-  });
+  await withDbRetry((db) =>
+    db.inboundLead.updateMany({
+      where: { id: leadId, organizationId: user.organizationId },
+      data: { status, score, temperature, modifiedAt: new Date() },
+    }),
+  );
 
   scheduleInboundLeadActivity({
     organizationId: user.organizationId,
@@ -218,8 +221,12 @@ export async function updateInboundLeadStatus(leadId: string, status: InboundLea
 
   exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
 
-  revalidatePath("/app/leads");
-  return { ok: true, score, temperature };
+  return {
+    ok: true,
+    score,
+    temperature,
+    lead: { id: leadId, status, score, temperature },
+  };
 }
 
 export async function updateInboundLeadCategory(leadId: string, category: string) {
@@ -244,10 +251,12 @@ export async function updateInboundLeadCategory(leadId: string, category: string
     return { ok: true };
   }
 
-  await prisma.inboundLead.updateMany({
-    where: { id: leadId, organizationId: user.organizationId },
-    data: { category, modifiedAt: new Date() },
-  });
+  await withDbRetry((db) =>
+    db.inboundLead.updateMany({
+      where: { id: leadId, organizationId: user.organizationId },
+      data: { category, modifiedAt: new Date() },
+    }),
+  );
 
   scheduleInboundLeadActivity({
     organizationId: user.organizationId,
@@ -259,8 +268,7 @@ export async function updateInboundLeadCategory(leadId: string, category: string
 
   exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
 
-  revalidatePath("/app/leads");
-  return { ok: true };
+  return { ok: true, lead: { id: leadId, category } };
 }
 
 export async function updateInboundLeadDetails(params: {
@@ -409,28 +417,39 @@ export async function updateInboundLeadDetails(params: {
     ...(winProbability !== undefined ? { winProbability } : {}),
   };
 
-  await prisma.inboundLead.updateMany({
-    where: { id: params.leadId, organizationId: user.organizationId },
-    data: {
-      name: params.name.trim() || null,
-      phone: phoneNormalized,
-      email: emailTrimmed,
-      company: params.company.trim() || null,
-      address: params.address.trim() || null,
-      zipCode: params.zipCode.trim() || null,
-      requirement: params.requirement.trim() || null,
-      ...(params.discussionNotes !== undefined
-        ? { discussionNotes: params.discussionNotes.trim() || null }
-        : {}),
-      category,
-      quotationValue: Number.isFinite(quotation) && quotation > 0 ? quotation : null,
-      pipeValue,
-      score,
-      temperature,
-      ...utmPatch,
-      modifiedAt: new Date(),
-    },
-  });
+  const name = params.name.trim() || null;
+  const company = params.company.trim() || null;
+  const address = params.address.trim() || null;
+  const zipCode = params.zipCode.trim() || null;
+  const discussionNotes =
+    params.discussionNotes !== undefined
+      ? params.discussionNotes.trim() || null
+      : undefined;
+  const quotationValue =
+    Number.isFinite(quotation) && quotation > 0 ? quotation : null;
+
+  await withDbRetry((db) =>
+    db.inboundLead.updateMany({
+      where: { id: params.leadId, organizationId: user.organizationId },
+      data: {
+        name,
+        phone: phoneNormalized,
+        email: emailTrimmed,
+        company,
+        address,
+        zipCode,
+        requirement: requirementTrimmed,
+        ...(discussionNotes !== undefined ? { discussionNotes } : {}),
+        category,
+        quotationValue,
+        pipeValue,
+        score,
+        temperature,
+        ...utmPatch,
+        modifiedAt: new Date(),
+      },
+    }),
+  );
 
   scheduleInboundLeadActivity({
     organizationId: user.organizationId,
@@ -442,8 +461,28 @@ export async function updateInboundLeadDetails(params: {
 
   exportLeadToGoogleSheetAfterSave(user.organizationId, params.leadId);
 
-  revalidatePath("/app/leads");
-  return { ok: true, score, temperature };
+  return {
+    ok: true,
+    score,
+    temperature,
+    lead: {
+      id: params.leadId,
+      name,
+      phone: phoneNormalized,
+      email: emailTrimmed,
+      company,
+      address,
+      zipCode,
+      requirement: requirementTrimmed,
+      ...(discussionNotes !== undefined ? { discussionNotes } : {}),
+      category,
+      quotationValue,
+      pipeValue,
+      score,
+      temperature,
+      ...utmPatch,
+    },
+  };
 }
 
 export async function deleteInboundLead(leadId: string) {
@@ -523,12 +562,14 @@ export async function addInboundLeadNote(leadId: string, note: string) {
 
   const merged = [lead.discussionNotes?.trim(), trimmed].filter(Boolean).join("\n\n");
 
-  await prisma.inboundLead.updateMany({
-    where: { id: leadId, organizationId: user.organizationId },
-    data: { discussionNotes: merged },
-  });
+  await withDbRetry((db) =>
+    db.inboundLead.updateMany({
+      where: { id: leadId, organizationId: user.organizationId },
+      data: { discussionNotes: merged },
+    }),
+  );
 
-  await logInboundLeadActivity({
+  scheduleInboundLeadActivity({
     organizationId: user.organizationId,
     leadId,
     type: "NOTE",
@@ -538,8 +579,54 @@ export async function addInboundLeadNote(leadId: string, note: string) {
 
   exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
 
-  revalidatePath("/app/leads");
-  return { ok: true };
+  return {
+    ok: true,
+    lead: { id: leadId, discussionNotes: merged },
+  };
+}
+
+/** Fast Activity-tab logger — note / call / WA. No list revalidation. */
+export async function logLeadTimelineActivity(params: {
+  leadId: string;
+  type: "NOTE" | "CALL" | "WHATSAPP";
+  body?: string;
+}) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false as const, message: "Not allowed." };
+  }
+
+  const lead = await prisma.inboundLead.findFirst({
+    where: { id: params.leadId, organizationId: user.organizationId },
+    select: { id: true },
+  });
+  if (!lead) {
+    return { ok: false as const, message: "Lead not found." };
+  }
+
+  const type = params.type as InboundLeadActivityType;
+  const trimmed = params.body?.trim() || null;
+  if (type === "NOTE" && !trimmed) {
+    return { ok: false as const, message: "Note required." };
+  }
+
+  const body =
+    trimmed ||
+    (type === "CALL"
+      ? "Call logged"
+      : type === "WHATSAPP"
+        ? "WhatsApp logged"
+        : null);
+
+  scheduleInboundLeadActivity({
+    organizationId: user.organizationId,
+    leadId: params.leadId,
+    type,
+    body,
+    createdByUserId: user.id,
+  });
+
+  return { ok: true as const, activity: { type, body } };
 }
 
 export async function logLeadContactAction(leadId: string, type: "CALL" | "WHATSAPP") {
@@ -548,7 +635,15 @@ export async function logLeadContactAction(leadId: string, type: "CALL" | "WHATS
     return { ok: false, message: "Not allowed." };
   }
 
-  await logInboundLeadActivity({
+  const lead = await prisma.inboundLead.findFirst({
+    where: { id: leadId, organizationId: user.organizationId },
+    select: { id: true },
+  });
+  if (!lead) {
+    return { ok: false, message: "Lead not found." };
+  }
+
+  scheduleInboundLeadActivity({
     organizationId: user.organizationId,
     leadId,
     type,
@@ -626,34 +721,59 @@ export async function scheduleInboundLeadFollowUp(params: {
     return { ok: false, message: "Invalid date." };
   }
 
-  await prisma.inboundLeadFollowUp.create({
-    data: {
-      organizationId: user.organizationId,
-      leadId: params.leadId,
-      scheduledAt,
-      notes: params.notes?.trim() || null,
-      assigneeUserId: params.assigneeUserId || user.id,
-      createdByUserId: user.id,
-    },
-  });
+  const notes = params.notes?.trim() || null;
+  const assigneeUserId = params.assigneeUserId || user.id;
 
-  await prisma.inboundLead.updateMany({
-    where: { id: params.leadId, organizationId: user.organizationId },
-    data: { nextFollowUpAt: scheduledAt, status: "FOLLOW_UP" },
-  });
+  const followUp = await withDbRetry((db) =>
+    db.inboundLeadFollowUp.create({
+      data: {
+        organizationId: user.organizationId,
+        leadId: params.leadId,
+        scheduledAt,
+        notes,
+        assigneeUserId,
+        createdByUserId: user.id,
+      },
+      select: {
+        id: true,
+        scheduledAt: true,
+        notes: true,
+        assigneeUserId: true,
+      },
+    }),
+  );
 
-  await logInboundLeadActivity({
+  await withDbRetry((db) =>
+    db.inboundLead.updateMany({
+      where: { id: params.leadId, organizationId: user.organizationId },
+      data: { nextFollowUpAt: scheduledAt, status: "FOLLOW_UP" },
+    }),
+  );
+
+  scheduleInboundLeadActivity({
     organizationId: user.organizationId,
     leadId: params.leadId,
     type: "FOLLOW_UP",
-    body: params.notes?.trim() || `Follow-up scheduled for ${scheduledAt.toLocaleString("en-IN")}`,
+    body: notes || `Follow-up scheduled for ${scheduledAt.toLocaleString("en-IN")}`,
     createdByUserId: user.id,
   });
 
   exportLeadToGoogleSheetAfterSave(user.organizationId, params.leadId);
 
-  revalidatePath("/app/leads");
-  return { ok: true };
+  return {
+    ok: true,
+    followUp: {
+      id: followUp.id,
+      scheduledAt: followUp.scheduledAt.toISOString(),
+      notes: followUp.notes,
+      assigneeUserId: followUp.assigneeUserId,
+    },
+    lead: {
+      id: params.leadId,
+      nextFollowUpAt: scheduledAt.toISOString(),
+      status: "FOLLOW_UP" as const,
+    },
+  };
 }
 
 export async function completeInboundLeadFollowUp(followUpId: string) {
@@ -1341,17 +1461,21 @@ export async function updateLeadMeetingNotes(leadId: string, meetingNotes: strin
     return { ok: false, message: "Lead not found." };
   }
 
-  await prisma.inboundLead.updateMany({
-    where: { id: leadId, organizationId: user.organizationId },
-    data: {
-      meetingNotes: trimmed || null,
-      modifiedAt: new Date(),
-      ...(trimmed ? { status: "MEETING_NOTES" as const } : {}),
-    },
-  });
+  const nextStatus = trimmed ? ("MEETING_NOTES" as const) : undefined;
+
+  await withDbRetry((db) =>
+    db.inboundLead.updateMany({
+      where: { id: leadId, organizationId: user.organizationId },
+      data: {
+        meetingNotes: trimmed || null,
+        modifiedAt: new Date(),
+        ...(nextStatus ? { status: nextStatus } : {}),
+      },
+    }),
+  );
 
   if (trimmed) {
-    await logInboundLeadActivity({
+    scheduleInboundLeadActivity({
       organizationId: user.organizationId,
       leadId,
       type: "MEETING",
@@ -1371,8 +1495,14 @@ export async function updateLeadMeetingNotes(leadId: string, meetingNotes: strin
 
   exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
 
-  revalidatePath("/app/leads");
-  return { ok: true };
+  return {
+    ok: true,
+    lead: {
+      id: leadId,
+      meetingNotes: trimmed || null,
+      ...(nextStatus ? { status: nextStatus } : {}),
+    },
+  };
 }
 
 /**
@@ -1478,58 +1608,74 @@ export async function scheduleLeadClientMeeting(params: {
     counsellorName: lead.assignedTo?.name ?? user.name ?? null,
   });
 
-  let emailSent = false;
-  let emailMessage: string | null = null;
-  if (shouldEmail) {
-    const result = await sendPlainEmail({
-      toEmail,
-      subject: invite.subject,
-      text: invite.text,
-    });
-    if (!result.sent) {
-      emailMessage =
-        result.reason === "not_configured"
-          ? "Meeting saved, but email is not configured (RESEND_API_KEY / TASK_EMAIL_FROM)."
-          : `Meeting saved, but email failed: ${result.detail ?? result.reason}`;
-    } else {
-      emailSent = true;
-    }
-  }
+  // Defer Resend + activity — keep drawer save on the critical path.
+  after(() => {
+    void (async () => {
+      let emailSent = false;
+      let emailMessage: string | null = null;
+      if (shouldEmail) {
+        const result = await sendPlainEmail({
+          toEmail,
+          subject: invite.subject,
+          text: invite.text,
+        });
+        if (!result.sent) {
+          emailMessage =
+            result.reason === "not_configured"
+              ? "Email is not configured (RESEND_API_KEY / TASK_EMAIL_FROM)."
+              : `Email failed: ${result.detail ?? result.reason}`;
+        } else {
+          emailSent = true;
+        }
+      }
 
-  await logInboundLeadActivity({
-    organizationId: user.organizationId,
-    leadId: lead.id,
-    type: "MEETING",
-    body: [
-      `Meeting scheduled for ${invite.whenLabel}`,
-      meetUrl ? `Join: ${meetUrl}` : null,
-      emailSent ? `Invite emailed to ${toEmail}` : null,
-      !emailSent && shouldEmail ? emailMessage : null,
-      scheduleNote,
-    ]
-      .filter(Boolean)
-      .join(" · "),
-    createdByUserId: user.id,
-    metadata: {
-      meetingScheduled: true,
-      startsAt: startsAt.toISOString(),
-      durationMinutes,
-      calendarUrl: invite.calendarUrl,
-      emailSent,
-    },
+      await logInboundLeadActivity({
+        organizationId: user.organizationId,
+        leadId: lead.id,
+        type: "MEETING",
+        body: [
+          `Meeting scheduled for ${invite.whenLabel}`,
+          meetUrl ? `Join: ${meetUrl}` : null,
+          emailSent ? `Invite emailed to ${toEmail}` : null,
+          !emailSent && shouldEmail ? emailMessage : null,
+          scheduleNote,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+        createdByUserId: user.id,
+        metadata: {
+          meetingScheduled: true,
+          startsAt: startsAt.toISOString(),
+          durationMinutes,
+          calendarUrl: invite.calendarUrl,
+          emailSent,
+        },
+      }).catch((error) => {
+        console.error("[leads-activity]", error);
+      });
+    })().catch((error) => {
+      console.error("[leads-meeting-invite]", error);
+    });
   });
 
   exportLeadToGoogleSheetAfterSave(user.organizationId, lead.id);
-  revalidatePath("/app/leads");
 
   return {
     ok: true as const,
-    emailSent,
+    emailQueued: shouldEmail,
+    emailSent: false,
     calendarUrl: invite.calendarUrl,
     whenLabel: invite.whenLabel,
-    message: emailSent
-      ? `Meeting scheduled and invite sent to ${toEmail}.`
-      : emailMessage || "Meeting scheduled.",
+    lead: {
+      id: lead.id,
+      status: "DEMO_SCHEDULED" as const,
+      nextFollowUpAt: startsAt.toISOString(),
+      meetingNotes: mergedNotes || lead.meetingNotes,
+      email: toEmail || lead.email,
+    },
+    message: shouldEmail
+      ? `Meeting scheduled. Invite will be sent to ${toEmail}.`
+      : "Meeting scheduled.",
   };
 }
 
@@ -1575,14 +1721,16 @@ export async function updateLeadCallingStatus(
     patch.status = existing.status === "NEW" ? "CONTACTED" : existing.status;
   }
 
-  await prisma.inboundLead.updateMany({
-    where: { id: leadId, organizationId: user.organizationId },
-    data: patch,
-  });
+  await withDbRetry((db) =>
+    db.inboundLead.updateMany({
+      where: { id: leadId, organizationId: user.organizationId },
+      data: patch,
+    }),
+  );
 
   const scored = await recomputeAndSaveScore(leadId, user.organizationId);
 
-  await logInboundLeadActivity({
+  scheduleInboundLeadActivity({
     organizationId: user.organizationId,
     leadId,
     type: "CALL",
@@ -1608,11 +1756,18 @@ export async function updateLeadCallingStatus(
 
   exportLeadToGoogleSheetAfterSave(user.organizationId, leadId);
 
-  revalidatePath("/app/leads");
   return {
     ok: true,
     score: scored?.score ?? null,
     temperature: scored?.temperature ?? null,
+    lead: {
+      id: leadId,
+      callingStatus,
+      ...(notes ? { meetingNotes: notes } : {}),
+      ...(patch.status ? { status: patch.status } : {}),
+      score: scored?.score ?? null,
+      temperature: scored?.temperature ?? null,
+    },
   };
 }
 
@@ -1674,20 +1829,7 @@ export async function addInboundLeadPayment(params: {
     return { ok: false, message: "Invalid payment date." };
   }
 
-  await prisma.inboundLeadPayment.create({
-    data: {
-      organizationId: user.organizationId,
-      leadId: params.leadId,
-      paymentType: params.paymentType,
-      receivedAmount: amount,
-      receivedDate,
-      paymentMethod: params.paymentMethod,
-      notes: params.notes?.trim() || null,
-    },
-  });
-
-  let lockedQuotationNumber: string | null = null;
-  let salesOrderNumber: string | null = null;
+  // Validate advance before writing payment (avoids orphan rows on underpay).
   if (params.paymentType === "ADVANCE") {
     const latestQuotation = await prisma.inboundLeadQuotation.findFirst({
       where: {
@@ -1709,7 +1851,32 @@ export async function addInboundLeadPayment(params: {
         };
       }
     }
+  }
 
+  const payment = await prisma.inboundLeadPayment.create({
+    data: {
+      organizationId: user.organizationId,
+      leadId: params.leadId,
+      paymentType: params.paymentType,
+      receivedAmount: amount,
+      receivedDate,
+      paymentMethod: params.paymentMethod,
+      notes: params.notes?.trim() || null,
+    },
+    select: {
+      id: true,
+      paymentType: true,
+      receivedAmount: true,
+      receivedDate: true,
+      paymentMethod: true,
+      notes: true,
+    },
+  });
+
+  let lockedQuotationNumber: string | null = null;
+  let salesOrderNumber: string | null = null;
+  let salesOrderId: string | null = null;
+  if (params.paymentType === "ADVANCE") {
     const locked = await lockLatestLeadQuotation(
       user.organizationId,
       params.leadId,
@@ -1717,7 +1884,7 @@ export async function addInboundLeadPayment(params: {
     );
     if (locked) {
       lockedQuotationNumber = locked.quotationNumber;
-      await logInboundLeadActivity({
+      scheduleInboundLeadActivity({
         organizationId: user.organizationId,
         leadId: params.leadId,
         type: "QUOTATION",
@@ -1735,6 +1902,7 @@ export async function addInboundLeadPayment(params: {
           actorUserId: user.id,
         });
         salesOrderNumber = salesOrder.orderNumber;
+        salesOrderId = salesOrder.id;
       } catch (error) {
         console.error("createSalesOrderFromLockedQuotation", error);
       }
@@ -1746,7 +1914,7 @@ export async function addInboundLeadPayment(params: {
     data: { status: "PAYMENT" },
   });
 
-  await logInboundLeadActivity({
+  scheduleInboundLeadActivity({
     organizationId: user.organizationId,
     leadId: params.leadId,
     type: "PAYMENT",
@@ -1754,12 +1922,21 @@ export async function addInboundLeadPayment(params: {
     createdByUserId: user.id,
   });
 
-  revalidatePath("/app/leads");
-  revalidatePath("/app/sales-orders");
+  // No revalidatePath — client patches payment/SO from returned payload.
   return {
     ok: true,
     lockedQuotationNumber,
     salesOrderNumber,
+    salesOrderId,
+    payment: {
+      id: payment.id,
+      paymentType: payment.paymentType,
+      receivedAmount: Number(payment.receivedAmount),
+      receivedDate: payment.receivedDate.toISOString(),
+      paymentMethod: payment.paymentMethod,
+      notes: payment.notes,
+    },
+    lead: { id: params.leadId, status: "PAYMENT" as const },
   };
 }
 
@@ -1988,7 +2165,7 @@ export async function createLeadQuotation(params: {
     },
   });
 
-  await logInboundLeadActivity({
+  scheduleInboundLeadActivity({
     organizationId: user.organizationId,
     leadId: lead.id,
     type: "QUOTATION",
@@ -1997,8 +2174,30 @@ export async function createLeadQuotation(params: {
     metadata: { quotationId: quotation.id },
   });
 
-  revalidatePath("/app/leads");
-  return { ok: true, quotationId: quotation.id, quotationNumber };
+  // No revalidatePath — client patches quotation list from returned row.
+  return {
+    ok: true,
+    quotationId: quotation.id,
+    quotationNumber,
+    quotation: {
+      id: quotation.id,
+      quotationNumber,
+      requestType: params.requestType,
+      status: "DRAFT" as const,
+      totalAmount: totals.totalAmount,
+      advanceRequired: Number.isFinite(advanceRequired) ? advanceRequired : null,
+      projectStartDate: projectStartDate?.toISOString() ?? null,
+      endDate: endDate?.toISOString() ?? null,
+      createdAt: quotation.createdAt.toISOString(),
+    },
+    lead: {
+      id: lead.id,
+      status: (params.requestType === "INVOICE" ? "INVOICE" : "PROPOSAL") as
+        | "INVOICE"
+        | "PROPOSAL",
+      quotationValue: totals.totalAmount,
+    },
+  };
 }
 
 export async function markLeadQuotationSent(quotationId: string) {

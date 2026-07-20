@@ -74,11 +74,19 @@ export function LeadsKanbanBoard({
         map.get("NEW")!.push(lead);
       }
     }
-    return LEAD_STATUS_ORDER.map((status) => ({
-      status,
-      label: leadStatusLabel(status),
-      leads: map.get(status) ?? [],
-    }));
+    return LEAD_STATUS_ORDER.map((status) => {
+      const columnLeads = map.get(status) ?? [];
+      const totalValue = columnLeads.reduce((sum, lead) => {
+        const amount = quotedAmount(lead);
+        return amount != null ? sum + amount : sum;
+      }, 0);
+      return {
+        status,
+        label: leadStatusLabel(status),
+        leads: columnLeads,
+        totalValue,
+      };
+    });
   }, [boardLeads]);
 
   function moveLead(leadId: string, nextStatus: InboundLeadStatus) {
@@ -179,6 +187,10 @@ export function LeadsKanbanBoard({
                 })
               )}
             </div>
+            <footer className="leads-kanban-column-foot">
+              <span>{col.leads.length === 1 ? "1 deal" : `${col.leads.length} deals`}</span>
+              <strong>{col.totalValue > 0 ? formatInr(col.totalValue) : "—"}</strong>
+            </footer>
           </section>
         ))}
       </div>

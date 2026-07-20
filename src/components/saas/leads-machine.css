@@ -1608,6 +1608,54 @@
   font-style: normal;
 }
 
+.leads-details-save-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.leads-save-status {
+  font-size: 0.78rem;
+  color: #64748b;
+  min-height: 1.1em;
+}
+
+.leads-activity-composer {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0 0 1rem;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.leads-activity-composer-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.leads-activity-composer-types .btn-secondary.is-active {
+  border-color: #0f172a;
+  color: #0f172a;
+  background: #fff;
+  font-weight: 600;
+}
+
+.leads-activity-followups {
+  margin: 0 0 1rem;
+}
+
+.leads-activity-followups h4,
+.leads-history-head h4 {
+  margin: 0 0 0.45rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
 .leads-settings-head h1 {
   margin: 0.5rem 0 0.25rem;
 }
@@ -3906,6 +3954,24 @@
   background: #f1f5f9;
   border-radius: 999px;
   padding: 0.1rem 0.45rem;
+}
+
+.leads-kanban-column-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding: 0.45rem 0.2rem 0.15rem;
+  border-top: 1px solid #e2e8f0;
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.leads-kanban-column-foot strong {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0f172a;
 }
 
 .leads-kanban-cards {
