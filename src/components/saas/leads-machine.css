@@ -4173,3 +4173,124 @@
 }
 
 
+
+/* CRM sub-modules (Meetings, Quotations, Payments, Projects, Training) */
+.crm-submodule-page .crm-submodule-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: 0.65rem;
+  margin: 0.25rem 0 0.35rem;
+}
+
+.crm-submodule-kpi {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--sf-card-border, #e2e8f0);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.crm-submodule-kpi span {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sf-text-secondary, #64748b);
+}
+
+.crm-submodule-kpi strong {
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--sf-text, #0f172a);
+}
+
+.crm-submodule-kpi.accent-blue strong {
+  color: #014486;
+}
+
+.crm-submodule-kpi.accent-success strong {
+  color: #166534;
+}
+
+.crm-submodule-kpi.accent-warning strong {
+  color: #b45309;
+}
+
+.crm-submodule-kpi.accent-danger strong {
+  color: #b91c1c;
+}
+
+.crm-submodule-table-wrap {
+  border: 1px solid var(--sf-card-border, #e2e8f0);
+  border-radius: 12px;
+  overflow: auto;
+  background: #fff;
+}
+
+.crm-submodule-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.crm-submodule-table th,
+.crm-submodule-table td {
+  padding: 0.65rem 0.85rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid color-mix(in srgb, var(--sf-card-border, #e2e8f0) 85%, transparent);
+}
+
+.crm-submodule-table th {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sf-text-secondary, #64748b);
+  background: #f8fafc;
+  white-space: nowrap;
+}
+
+.crm-submodule-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.crm-submodule-table tbody tr:hover td {
+  background: color-mix(in srgb, #d8edff 35%, transparent);
+}
+
+.crm-projects-sections {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.crm-projects-sections h3 {
+  margin: 0 0 0.45rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.crm-submodule-footnote {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+}
+
+.crm-submodule-footnote a {
+  color: #014486;
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .crm-submodule-table th:nth-child(n + 4),
+  .crm-submodule-table td:nth-child(n + 4) {
+    display: none;
+  }
+
+  .crm-submodule-table th:last-child,
+  .crm-submodule-table td:last-child {
+    display: table-cell;
+  }
+}
