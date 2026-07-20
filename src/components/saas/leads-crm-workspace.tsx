@@ -418,7 +418,7 @@ export function LeadsCrmWorkspace({
         <table className="leads-crm-table leads-crm-table-pro">
           <thead>
             <tr>
-              <th>Lead</th>
+              <th className="leads-row-lead">Lead</th>
               <th>Inquiry time</th>
               <th>Lead Source</th>
               <th>Category</th>
