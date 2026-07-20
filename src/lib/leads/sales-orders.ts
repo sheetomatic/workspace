@@ -15,6 +15,7 @@ import {
   getSalesOrderByDispatchToken,
   getSalesOrderDetail,
   getSalesOrderForLead,
+  listSalesOrdersForLead,
   listSalesOrdersForOrg,
 } from "@/lib/sales-orders/queries";
 import { IMS_STOCK_FULFILLMENT_STATUSES } from "@/lib/ims/sales-order-stock";
@@ -170,30 +171,44 @@ export async function getSalesOrderByLeadId(
   return order ? toLeadSalesOrderData(order) : null;
 }
 
-/** Batch lookup — avoids N+1 on leads list pages. */
+/** Batch lookup — latest SO per lead (list badges). */
 export async function getSalesOrdersByLeadIds(
   organizationId: string,
   leadIds: string[],
 ): Promise<Map<string, LeadSalesOrderData>> {
-  const unique = [...new Set(leadIds.filter(Boolean))];
+  const all = await getAllSalesOrdersByLeadIds(organizationId, leadIds);
   const map = new Map<string, LeadSalesOrderData>();
+  for (const [leadId, orders] of all) {
+    if (orders[0]) {
+      map.set(leadId, orders[0]);
+    }
+  }
+  return map;
+}
+
+/** All SOs per lead — one client can have multiple projects over time. */
+export async function getAllSalesOrdersByLeadIds(
+  organizationId: string,
+  leadIds: string[],
+): Promise<Map<string, LeadSalesOrderData[]>> {
+  const unique = [...new Set(leadIds.filter(Boolean))];
+  const map = new Map<string, LeadSalesOrderData[]>();
   if (unique.length === 0) {
     return map;
   }
 
   const results = await Promise.all(
     unique.map(async (leadId) => {
-      const order = await getSalesOrderByLeadId(organizationId, leadId);
-      return [leadId, order] as const;
+      const orders = await listSalesOrdersForLead(organizationId, leadId);
+      return [leadId, orders.map(toLeadSalesOrderData)] as const;
     }),
   );
-  for (const [leadId, order] of results) {
-    if (order) {
-      map.set(leadId, order);
-    }
+  for (const [leadId, orders] of results) {
+    map.set(leadId, orders);
   }
   return map;
 }
+
 
 export async function getSalesOrderById(
   organizationId: string,

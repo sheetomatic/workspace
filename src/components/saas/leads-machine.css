@@ -4007,6 +4007,127 @@
   font-size: 0.85rem;
 }
 
+.leads-meeting-calendar {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.leads-meeting-calendar h4,
+.leads-meeting-calendar h5 {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #0f172a;
+}
+
+.leads-meeting-calendar__cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.75rem;
+}
+
+.leads-meeting-timeline {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.leads-meeting-timeline li {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-size: 0.8rem;
+}
+
+.leads-payment-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.leads-payment-summary > div {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.55rem 0.6rem;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.leads-payment-summary span {
+  font-size: 0.72rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.leads-payment-summary strong {
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.leads-payment-wa-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+  align-items: center;
+}
+
+.leads-projects-split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.leads-projects-split h4 {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+}
+
+.leads-projects-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.leads-project-chip {
+  width: 100%;
+  text-align: left;
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  cursor: pointer;
+}
+
+.leads-project-chip.is-active {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.leads-project-chip span,
+.leads-project-chip em {
+  font-size: 0.78rem;
+  color: #64748b;
+  font-style: normal;
+}
+
 .leads-calendar-actions,
 .leads-duplicate-alert-actions {
   display: flex;

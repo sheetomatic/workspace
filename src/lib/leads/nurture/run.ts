@@ -192,7 +192,13 @@ export async function triggerLeadNurtureEvent(params: {
     return { sent: false, reason: "invalid_lead" };
   }
 
-  if (NURTURE_STOP_STATUSES.includes(lead.status)) {
+  // Manual portal payment reminders must still send after status → PAYMENT.
+  const allowForcedPaymentAlert =
+    params.force && params.event === "alert_payment_pending";
+  if (
+    NURTURE_STOP_STATUSES.includes(lead.status) &&
+    !allowForcedPaymentAlert
+  ) {
     return { sent: false, reason: "status_stopped" };
   }
 

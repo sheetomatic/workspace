@@ -17,7 +17,6 @@ import type {
 import {
   addInboundLeadNote,
   addInboundLeadPayment,
-  addLeadOfferedService,
   applyAiSuggestedLeadStatus,
   archiveInboundLeadAction,
   assignInboundLead,
@@ -27,6 +26,7 @@ import {
   mergeInboundLeadsAction,
   scheduleInboundLeadFollowUp,
   scheduleLeadClientMeeting,
+  sendLeadNurtureWhatsAppAction,
   unarchiveInboundLeadAction,
   updateInboundLeadDetails,
   updateInboundLeadStatus,
@@ -40,7 +40,11 @@ import type { LeadDeliveryInput } from "@/lib/leads/delivery-journey";
 import { deliveryJourneySummary, buildDeliveryJourney } from "@/lib/leads/delivery-journey";
 import { SalesOrderPanel } from "@/components/saas/sales-order-panel";
 import { LeadTrainingSlotsPanel } from "@/components/saas/lead-training-slots-panel";
-import type { LeadSalesOrderData } from "@/lib/leads/sales-order-types";
+import {
+  partitionSalesOrdersByLifecycle,
+  salesOrderStatusLabel,
+  type LeadSalesOrderData,
+} from "@/lib/leads/sales-order-types";
 import { formatInr, leadCategoryLabel, listLeadCategoryOptions, resolveLeadCategoryId, type LeadCategoryId } from "@/lib/leads/categories";
 import {
   buildDemoIcsContent,
@@ -48,6 +52,8 @@ import {
   buildOutlookWebUrl,
   downloadIcsFilename,
 } from "@/lib/leads/calendar-links";
+import { leadWhatsAppHref } from "@/lib/leads/contact-links";
+import { computeLeadPaymentSummary } from "@/lib/leads/payment-summary";
 import { buildLeadsListQuery, type LeadsListSearchParams } from "@/lib/leads/list-params";
 import {
   CALLING_STATUS_LABELS,
@@ -177,6 +183,14 @@ export type LeadDrawerData = {
   quotations: QuotationRow[];
   offeredServices: OfferedServiceRow[];
   activities: ActivityRow[];
+  followUps?: Array<{
+    id: string;
+    scheduledAt: string;
+    notes: string | null;
+  }>;
+  /** All projects/SOs for this client (newest first). */
+  salesOrders?: LeadSalesOrderData[];
+  /** Latest SO — kept for list badges / journey default. */
   salesOrder?: LeadSalesOrderData | null;
 };
 
@@ -221,12 +235,19 @@ export function LeadDrawerPanel({
   const [tab, setTab] = useState<
     | "details"
     | "meeting"
-    | "services"
     | "payments"
     | "quote"
-    | "order"
+    | "projects"
     | "training"
   >("details");
+  const allSalesOrders = lead.salesOrders?.length
+    ? lead.salesOrders
+    : lead.salesOrder
+      ? [lead.salesOrder]
+      : [];
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(
+    allSalesOrders[0]?.id ?? null,
+  );
   const [name, setName] = useState(lead.name ?? "");
   const [phone, setPhone] = useState(lead.phone ?? "");
   const [email, setEmail] = useState(lead.email ?? "");
@@ -278,7 +299,6 @@ export function LeadDrawerPanel({
   const [meetingMeetUrl, setMeetingMeetUrl] = useState("");
   const [meetingScheduleMsg, setMeetingScheduleMsg] = useState<string | null>(null);
   const [meetingScheduleErr, setMeetingScheduleErr] = useState<string | null>(null);
-  const [selectedCatalogId, setSelectedCatalogId] = useState(serviceCatalog[0]?.id ?? "");
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentDate, setPaymentDate] = useState(
     new Date().toISOString().slice(0, 10),
@@ -313,7 +333,21 @@ export function LeadDrawerPanel({
     setMeetingScheduleErr(null);
     setSaveError(null);
     setSaveOk(false);
-  }, [lead.id, lead.status, lead.projectStatus, lead.assignedTo?.id, lead.email]);
+    const orders = lead.salesOrders?.length
+      ? lead.salesOrders
+      : lead.salesOrder
+        ? [lead.salesOrder]
+        : [];
+    setSelectedOrderId(orders[0]?.id ?? null);
+  }, [
+    lead.id,
+    lead.status,
+    lead.projectStatus,
+    lead.assignedTo?.id,
+    lead.email,
+    lead.salesOrder?.id,
+    lead.salesOrders,
+  ]);
 
   useEffect(() => {
     const body = document.querySelector(".leads-drawer-body");
@@ -340,12 +374,38 @@ export function LeadDrawerPanel({
         }
       : null;
 
+  const selectedSalesOrder =
+    allSalesOrders.find((order) => order.id === selectedOrderId) ??
+    allSalesOrders[0] ??
+    null;
+  const { running: runningProjects, delivered: deliveredProjects } =
+    partitionSalesOrdersByLifecycle(allSalesOrders);
   const leadDelivery: LeadDeliveryInput = {
     quotations: lead.quotations,
     payments: lead.payments,
-    salesOrder: lead.salesOrder ?? null,
+    salesOrder: selectedSalesOrder,
   };
   const deliverySummary = deliveryJourneySummary(buildDeliveryJourney(leadDelivery));
+  const paymentSummary = computeLeadPaymentSummary({
+    quotationValue: lead.quotationValue,
+    quotations: lead.quotations,
+    payments: lead.payments,
+  });
+  const followUps = [...(lead.followUps ?? [])].sort(
+    (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime(),
+  );
+  const now = Date.now();
+  const upcomingMeetings = followUps.filter(
+    (item) => new Date(item.scheduledAt).getTime() >= now - 60_000,
+  );
+  const pastMeetings = followUps
+    .filter((item) => new Date(item.scheduledAt).getTime() < now - 60_000)
+    .reverse();
+  const waPaymentHref = leadWhatsAppHref(
+    lead.phone,
+    lead.name,
+    `Hi ${lead.name?.split(/\s+/)[0] || "there"}, friendly reminder — Total ${paymentSummary.totalLabel}, Received ${paymentSummary.receivedLabel}, Due ${paymentSummary.dueLabel}. Last payment date: ${paymentSummary.lastDateLabel}. — Sheetomatic`,
+  );
 
   return (
     <aside
@@ -415,12 +475,12 @@ export function LeadDrawerPanel({
               {isArchived ? "Unarchive" : "Archive"}
             </button>
           ) : null}
-          {lead.salesOrder ? (
+          {selectedSalesOrder ? (
             <Link
-              href={`/app/sales-orders/${lead.salesOrder.id}`}
+              href={`/app/sales-orders/${selectedSalesOrder.id}`}
               className="btn-secondary btn-sm leads-drawer-so-link"
             >
-              {lead.salesOrder.orderNumber}
+              {selectedSalesOrder.orderNumber}
             </Link>
           ) : (
             <Link
@@ -445,14 +505,13 @@ export function LeadDrawerPanel({
       <nav className="leads-drawer-tabs" aria-label="Lead sections">
         {(
           [
-            { key: "details", label: "Details" },
-            { key: "meeting", label: "Meeting" },
-            { key: "services", label: "Services" },
-            { key: "payments", label: "Payments" },
-            { key: "quote", label: "Quotation" },
-            { key: "order", label: "Delivery" },
-            { key: "training", label: "Training" },
-          ] as const
+            { key: "details" as const, label: "Details" },
+            { key: "meeting" as const, label: "Meeting" },
+            { key: "quote" as const, label: "Quotation" },
+            { key: "payments" as const, label: "Payment" },
+            { key: "projects" as const, label: "Projects" },
+            { key: "training" as const, label: "Training" },
+          ]
         ).map((item) => (
           <button
             key={item.key}
@@ -461,8 +520,17 @@ export function LeadDrawerPanel({
             onClick={() => setTab(item.key)}
           >
             {item.label}
-            {item.key === "order" ? (
-              <span className="leads-drawer-tab-meta">{deliverySummary}</span>
+            {item.key === "projects" ? (
+              <span className="leads-drawer-tab-meta">
+                {allSalesOrders.length > 0
+                  ? `${runningProjects.length} running · ${deliveredProjects.length} done`
+                  : deliverySummary}
+              </span>
+            ) : null}
+            {item.key === "meeting" && upcomingMeetings.length > 0 ? (
+              <span className="leads-drawer-tab-meta">
+                {upcomingMeetings.length} upcoming
+              </span>
             ) : null}
           </button>
         ))}
@@ -1118,6 +1186,61 @@ export function LeadDrawerPanel({
               )}
             </div>
           )}
+          <section className="leads-meeting-calendar" aria-label="Scheduled meetings">
+            <h4>Calendar — time-wise schedule</h4>
+            <p className="leads-machine-muted">
+              Upcoming and past meetings / follow-ups for this client (IST).
+            </p>
+            <div className="leads-meeting-calendar__cols">
+              <div>
+                <h5>Upcoming</h5>
+                {upcomingMeetings.length === 0 ? (
+                  <p className="leads-machine-muted">No upcoming meetings.</p>
+                ) : (
+                  <ul className="leads-meeting-timeline">
+                    {upcomingMeetings.map((item) => (
+                      <li key={item.id}>
+                        <strong>
+                          {new Date(item.scheduledAt).toLocaleString("en-IN", {
+                            weekday: "short",
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </strong>
+                        <span>{item.notes?.trim() || "Scheduled meeting"}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div>
+                <h5>Past</h5>
+                {pastMeetings.length === 0 ? (
+                  <p className="leads-machine-muted">No past meetings yet.</p>
+                ) : (
+                  <ul className="leads-meeting-timeline">
+                    {pastMeetings.slice(0, 8).map((item) => (
+                      <li key={item.id}>
+                        <strong>
+                          {new Date(item.scheduledAt).toLocaleString("en-IN", {
+                            weekday: "short",
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </strong>
+                        <span>{item.notes?.trim() || "Meeting"}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </section>
+
           <section className="leads-drawer-section leads-drawer-section-nested">
             <h3>Follow-up</h3>
             <div className="leads-drawer-grid">
@@ -1142,6 +1265,7 @@ export function LeadDrawerPanel({
                       scheduledAt: followUpAt,
                       notes: noteDraft,
                     });
+                    router.refresh();
                   })
                 }
               >
@@ -1173,59 +1297,59 @@ export function LeadDrawerPanel({
         </section>
       ) : null}
 
-      {tab === "services" ? (
+      {tab === "payments" ? (
         <section className="leads-drawer-section">
-          <h3>Offered services</h3>
-          {canManage ? (
-            <div className="leads-drawer-grid">
-              <label>
-                Add from catalog
-                <select
-                  value={selectedCatalogId}
-                  onChange={(e) => setSelectedCatalogId(e.target.value)}
-                >
-                  {serviceCatalog.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.serviceCategory} — {item.subCategory}
-                    </option>
-                  ))}
-                </select>
-              </label>
+          <h3>Payment</h3>
+          <div className="leads-payment-summary" aria-label="Payment summary">
+            <div>
+              <span>Total Payment</span>
+              <strong>{paymentSummary.totalLabel}</strong>
+            </div>
+            <div>
+              <span>Received</span>
+              <strong>{paymentSummary.receivedLabel}</strong>
+            </div>
+            <div>
+              <span>Due</span>
+              <strong>{paymentSummary.dueLabel}</strong>
+            </div>
+            <div>
+              <span>Last Date of Payment</span>
+              <strong>{paymentSummary.lastDateLabel}</strong>
+            </div>
+          </div>
+          <div className="leads-payment-wa-row">
+            {waPaymentHref ? (
+              <a
+                className="btn-secondary btn-sm"
+                href={waPaymentHref}
+                target="_blank"
+                rel="noreferrer"
+              >
+                WhatsApp reminder
+              </a>
+            ) : (
+              <span className="leads-machine-muted">Add phone to send WhatsApp.</span>
+            )}
+            {canManage && paymentSummary.due > 0 ? (
               <button
                 type="button"
-                className="btn-secondary"
-                disabled={pending || !selectedCatalogId}
+                className="btn-primary btn-sm"
+                disabled={pending}
                 onClick={() =>
                   startTransition(async () => {
-                    await addLeadOfferedService({
-                      leadId: lead.id,
-                      catalogId: selectedCatalogId,
-                    });
+                    await sendLeadNurtureWhatsAppAction(
+                      lead.id,
+                      "alert_payment_pending",
+                    );
+                    router.refresh();
                   })
                 }
               >
-                Add service
+                Send WA from portal
               </button>
-            </div>
-          ) : null}
-          <ul className="leads-service-list">
-            {lead.offeredServices.length === 0 ? (
-              <li className="leads-machine-muted">No services added yet.</li>
-            ) : (
-              lead.offeredServices.map((item) => (
-                <li key={item.id}>
-                  <strong>{item.serviceCategory}</strong>
-                  <span>{item.subCategory}</span>
-                </li>
-              ))
-            )}
-          </ul>
-        </section>
-      ) : null}
-
-      {tab === "payments" ? (
-        <section className="leads-drawer-section">
-          <h3>Payment sheet</h3>
+            ) : null}
+          </div>
           {canManage ? (
             <div className="leads-drawer-form">
               <label>
@@ -1286,6 +1410,7 @@ export function LeadDrawerPanel({
                       paymentMethod,
                     });
                     setPaymentAmount("");
+                    router.refresh();
                   })
                 }
               >
@@ -1314,15 +1439,88 @@ export function LeadDrawerPanel({
         </section>
       ) : null}
 
-      {tab === "order" ? (
-        <SalesOrderPanel
-          leadDelivery={leadDelivery}
-          salesOrder={lead.salesOrder ?? null}
-          canManage={canManage}
-          pending={pending}
-          startTransition={startTransition}
-          onGoToLeadTab={(leadTab) => setTab(leadTab)}
-        />
+      {tab === "projects" ? (
+        <section className="leads-drawer-section leads-projects-tab">
+          <h3>Projects</h3>
+          <p className="leads-machine-muted">
+            One client can have multiple projects over time. Open a running or delivered
+            sales order below.
+          </p>
+          <div className="leads-projects-split">
+            <div>
+              <h4>Running ({runningProjects.length})</h4>
+              {runningProjects.length === 0 ? (
+                <p className="leads-machine-muted">No running projects.</p>
+              ) : (
+                <ul className="leads-projects-list">
+                  {runningProjects.map((order) => (
+                    <li key={order.id}>
+                      <button
+                        type="button"
+                        className={
+                          selectedSalesOrder?.id === order.id
+                            ? "leads-project-chip is-active"
+                            : "leads-project-chip"
+                        }
+                        onClick={() => setSelectedOrderId(order.id)}
+                      >
+                        <strong>{order.orderNumber}</strong>
+                        <span>{salesOrderStatusLabel(order.status)}</span>
+                        <em>
+                          {new Date(order.createdAt).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </em>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div>
+              <h4>Delivered ({deliveredProjects.length})</h4>
+              {deliveredProjects.length === 0 ? (
+                <p className="leads-machine-muted">No delivered projects yet.</p>
+              ) : (
+                <ul className="leads-projects-list">
+                  {deliveredProjects.map((order) => (
+                    <li key={order.id}>
+                      <button
+                        type="button"
+                        className={
+                          selectedSalesOrder?.id === order.id
+                            ? "leads-project-chip is-active"
+                            : "leads-project-chip"
+                        }
+                        onClick={() => setSelectedOrderId(order.id)}
+                      >
+                        <strong>{order.orderNumber}</strong>
+                        <span>{salesOrderStatusLabel(order.status)}</span>
+                        <em>
+                          {new Date(order.createdAt).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </em>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+          <SalesOrderPanel
+            leadDelivery={leadDelivery}
+            salesOrder={selectedSalesOrder}
+            canManage={canManage}
+            pending={pending}
+            startTransition={startTransition}
+            onGoToLeadTab={(leadTab) => setTab(leadTab)}
+          />
+        </section>
       ) : null}
 
       {tab === "training" ? (
@@ -1350,7 +1548,7 @@ export function LeadDrawerPanel({
         />
       ) : null}
 
-      {tab !== "order" ? (
+      {tab !== "projects" ? (
       <section className="leads-drawer-section">
         <div className="leads-history-head">
           <h3>History & logs</h3>
