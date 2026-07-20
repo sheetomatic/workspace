@@ -53,6 +53,12 @@ import {
   buildOutlookWebUrl,
   downloadIcsFilename,
 } from "@/lib/leads/calendar-links";
+import {
+  followUpTypeLabel,
+  listFollowUpTypeOptions,
+  suggestFollowUpTypeFromStatus,
+  type InboundLeadFollowUpTypeId,
+} from "@/lib/leads/follow-up-types";
 import { leadWhatsAppHref } from "@/lib/leads/contact-links";
 import { computeLeadPaymentSummary } from "@/lib/leads/payment-summary";
 import { buildLeadsListQuery, type LeadsListSearchParams } from "@/lib/leads/list-params";
@@ -150,6 +156,7 @@ type FollowUpRow = {
   id: string;
   scheduledAt: string;
   notes: string | null;
+  type?: InboundLeadFollowUpTypeId | string | null;
 };
 
 type DrawerTab =
@@ -222,6 +229,7 @@ export type LeadDrawerData = {
     id: string;
     scheduledAt: string;
     notes: string | null;
+    type?: InboundLeadFollowUpTypeId | string | null;
   }>;
   /** All projects/SOs for this client (newest first). */
   salesOrders?: LeadSalesOrderData[];
@@ -325,6 +333,12 @@ export function LeadDrawerPanel({
   >([]);
   const [followUpAt, setFollowUpAt] = useState(defaultFollowUpLocal());
   const [followUpNotes, setFollowUpNotes] = useState("");
+  const [followUpType, setFollowUpType] = useState<InboundLeadFollowUpTypeId>(
+    () => suggestFollowUpTypeFromStatus(lead.status),
+  );
+  const [followUpQueueWa, setFollowUpQueueWa] = useState(true);
+  const [followUpSendNow, setFollowUpSendNow] = useState(false);
+  const [followUpMsg, setFollowUpMsg] = useState<string | null>(null);
   const [activityComposerType, setActivityComposerType] =
     useState<ActivityComposerType>("NOTE");
   const [activityDraft, setActivityDraft] = useState("");
@@ -486,6 +500,10 @@ export function LeadDrawerPanel({
     setMeetingEmail(lead.email ?? "");
     setMeetingScheduleMsg(null);
     setMeetingScheduleErr(null);
+    setFollowUpMsg(null);
+    setFollowUpType(suggestFollowUpTypeFromStatus(lead.status));
+    setFollowUpQueueWa(true);
+    setFollowUpSendNow(false);
     setSaveError(null);
     setDetailsSaveStatus("idle");
     setDetailsDirty(false);
@@ -640,6 +658,7 @@ export function LeadDrawerPanel({
   const pastMeetings = followUps
     .filter((item) => new Date(item.scheduledAt).getTime() < now - 60_000)
     .reverse();
+  const openFollowUps = upcomingMeetings;
   const waPaymentHref = leadWhatsAppHref(
     lead.phone,
     lead.name,
@@ -1438,6 +1457,7 @@ export function LeadDrawerPanel({
                     const followUp: FollowUpRow = {
                       id: tempId("fu"),
                       scheduledAt: result.lead.nextFollowUpAt,
+                      type: "MEETING",
                       notes:
                         meetingNotes.trim() ||
                         `Client meeting scheduled (${meetingDuration} min)`,
@@ -1576,7 +1596,26 @@ export function LeadDrawerPanel({
 
           <section className="leads-drawer-section leads-drawer-section-nested">
             <h3>Follow-up</h3>
+            <p className="leads-machine-muted leads-followup-hint">
+              Pick a standard type so WhatsApp nurture can send the matching
+              follow-up message when due.
+            </p>
             <div className="leads-drawer-grid">
+              <label>
+                Follow-up type
+                <select
+                  value={followUpType}
+                  onChange={(e) =>
+                    setFollowUpType(e.target.value as InboundLeadFollowUpTypeId)
+                  }
+                >
+                  {listFollowUpTypeOptions().map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <label>
                 Next follow-up
                 <input
@@ -1585,15 +1624,91 @@ export function LeadDrawerPanel({
                   onChange={(e) => setFollowUpAt(e.target.value)}
                 />
               </label>
-              <label>
+              <label className="leads-drawer-span-2">
                 Follow-up notes
                 <input
                   value={followUpNotes}
                   onChange={(e) => setFollowUpNotes(e.target.value)}
-                  placeholder="Optional note"
+                  placeholder="Optional note for your team / AI context"
                 />
               </label>
             </div>
+
+            <div className="leads-followup-last-logs" aria-label="Last logs">
+              <h5>Last logs</h5>
+              {activities.length === 0 ? (
+                <p className="leads-machine-muted">No activity logged yet.</p>
+              ) : (
+                <ul>
+                  {activities.slice(0, 5).map((item) => (
+                    <li key={item.id}>
+                      <strong>{item.type.replaceAll("_", " ")}</strong>
+                      <span>
+                        {item.body?.trim() || "—"} ·{" "}
+                        {new Date(item.createdAt).toLocaleString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {openFollowUps.length > 0 ? (
+              <div className="leads-followup-open-list" aria-label="Open follow-ups">
+                <h5>Open follow-ups</h5>
+                <ul>
+                  {openFollowUps.slice(0, 5).map((item) => (
+                    <li key={item.id}>
+                      <span className="leads-followup-type-pill">
+                        {followUpTypeLabel(item.type)}
+                      </span>
+                      <strong>
+                        {new Date(item.scheduledAt).toLocaleString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </strong>
+                      <span>{item.notes?.trim() || "—"}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {canManage ? (
+              <div className="leads-followup-wa-options">
+                <label className="leads-followup-check">
+                  <input
+                    type="checkbox"
+                    checked={followUpQueueWa}
+                    onChange={(e) => setFollowUpQueueWa(e.target.checked)}
+                  />
+                  Queue WhatsApp when due
+                </label>
+                <label className="leads-followup-check">
+                  <input
+                    type="checkbox"
+                    checked={followUpSendNow}
+                    onChange={(e) => setFollowUpSendNow(e.target.checked)}
+                  />
+                  Send WhatsApp now
+                </label>
+              </div>
+            ) : null}
+
+            {followUpMsg ? (
+              <p className="leads-machine-muted" role="status">
+                {followUpMsg}
+              </p>
+            ) : null}
+
             {canManage ? (
               <button
                 type="button"
@@ -1601,10 +1716,14 @@ export function LeadDrawerPanel({
                 disabled={savingKey === "follow-up"}
                 onClick={() =>
                   runAction("follow-up", async () => {
+                    setFollowUpMsg(null);
                     const result = await scheduleInboundLeadFollowUp({
                       leadId: lead.id,
                       scheduledAt: followUpAt,
                       notes: followUpNotes,
+                      type: followUpType,
+                      queueWhatsApp: followUpQueueWa,
+                      sendWhatsAppNow: followUpSendNow,
                     });
                     if (
                       !result.ok ||
@@ -1612,12 +1731,18 @@ export function LeadDrawerPanel({
                       !result.followUp ||
                       !result.lead
                     ) {
+                      setFollowUpMsg(
+                        "message" in result && typeof result.message === "string"
+                          ? result.message
+                          : "Could not schedule follow-up.",
+                      );
                       return;
                     }
                     const followUp: FollowUpRow = {
                       id: result.followUp.id,
                       scheduledAt: result.followUp.scheduledAt,
                       notes: result.followUp.notes,
+                      type: result.followUp.type,
                     };
                     const patchedLead = result.lead;
                     setFollowUpsState((current) => {
@@ -1634,18 +1759,23 @@ export function LeadDrawerPanel({
                       type: "FOLLOW_UP",
                       body:
                         followUp.notes ||
-                        `Follow-up scheduled for ${new Date(followUp.scheduledAt).toLocaleString("en-IN")}`,
+                        `${followUpTypeLabel(followUp.type)} scheduled for ${new Date(followUp.scheduledAt).toLocaleString("en-IN")}`,
                     });
                     setFollowUpNotes("");
+                    setFollowUpSendNow(false);
+                    setFollowUpMsg(
+                      followUpSendNow
+                        ? `${followUpTypeLabel(followUp.type)} scheduled. WhatsApp send attempted.`
+                        : followUpQueueWa
+                          ? `${followUpTypeLabel(followUp.type)} scheduled. WhatsApp queued for due time.`
+                          : `${followUpTypeLabel(followUp.type)} scheduled.`,
+                    );
                   })
                 }
               >
                 {savingKey === "follow-up" ? "Scheduling…" : "Schedule follow-up"}
               </button>
             ) : null}
-            <p className="leads-machine-muted">
-              Log calls, WhatsApp, and notes on the Activity tab.
-            </p>
           </section>
         </section>
       ) : null}

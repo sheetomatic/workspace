@@ -64,6 +64,13 @@ import {
 } from "@/lib/leads/quotations";
 import { createSalesOrderFromLockedQuotation } from "@/lib/sales-orders/create-from-quotation";
 import { createQuotationShareToken } from "@/lib/leads/quotation-tokens";
+import {
+  followUpTypeLabel,
+  followUpTypeToLeadStatus,
+  followUpTypeToNurtureEvent,
+  isInboundLeadFollowUpType,
+  type InboundLeadFollowUpTypeId,
+} from "@/lib/leads/follow-up-types";
 import { sendLeadNurtureStep } from "@/lib/leads/nurture/run";
 import {
   getLeadNurtureConfig,
@@ -710,6 +717,11 @@ export async function scheduleInboundLeadFollowUp(params: {
   scheduledAt: string;
   notes?: string;
   assigneeUserId?: string | null;
+  type?: InboundLeadFollowUpTypeId | string;
+  /** Default true — leave waNotifiedAt null so the due runner can send when scheduled. */
+  queueWhatsApp?: boolean;
+  /** Optional immediate WhatsApp nurture send (force). */
+  sendWhatsAppNow?: boolean;
 }) {
   const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
@@ -721,23 +733,40 @@ export async function scheduleInboundLeadFollowUp(params: {
     return { ok: false, message: "Invalid date." };
   }
 
+  const followUpType: InboundLeadFollowUpTypeId = isInboundLeadFollowUpType(
+    params.type,
+  )
+    ? params.type
+    : "LEAD";
+  const typeLabel = followUpTypeLabel(followUpType);
+  const nextStatus = followUpTypeToLeadStatus(followUpType);
+  const queueWhatsApp = params.queueWhatsApp !== false;
+  const sendWhatsAppNow = params.sendWhatsAppNow === true;
+
   const notes = params.notes?.trim() || null;
   const assigneeUserId = params.assigneeUserId || user.id;
+
+  // When WA is neither queued nor sent now, mark notified so the due runner skips.
+  let waNotifiedAt: Date | null =
+    !queueWhatsApp && !sendWhatsAppNow ? new Date() : null;
 
   const followUp = await withDbRetry((db) =>
     db.inboundLeadFollowUp.create({
       data: {
         organizationId: user.organizationId,
         leadId: params.leadId,
+        type: followUpType,
         scheduledAt,
         notes,
         assigneeUserId,
         createdByUserId: user.id,
+        waNotifiedAt,
       },
       select: {
         id: true,
         scheduledAt: true,
         notes: true,
+        type: true,
         assigneeUserId: true,
       },
     }),
@@ -746,15 +775,41 @@ export async function scheduleInboundLeadFollowUp(params: {
   await withDbRetry((db) =>
     db.inboundLead.updateMany({
       where: { id: params.leadId, organizationId: user.organizationId },
-      data: { nextFollowUpAt: scheduledAt, status: "FOLLOW_UP" },
+      data: {
+        nextFollowUpAt: scheduledAt,
+        status: nextStatus,
+        modifiedAt: new Date(),
+      },
     }),
   );
 
+  if (sendWhatsAppNow) {
+    const nurtureResult = await sendLeadNurtureStep({
+      organizationId: user.organizationId,
+      leadId: params.leadId,
+      stepId: followUpTypeToNurtureEvent(followUpType),
+      actorUserId: user.id,
+    });
+    if (nurtureResult.sent) {
+      waNotifiedAt = new Date();
+      await withDbRetry((db) =>
+        db.inboundLeadFollowUp.updateMany({
+          where: { id: followUp.id, organizationId: user.organizationId },
+          data: { waNotifiedAt },
+        }),
+      );
+    }
+  }
+
+  const whenLabel = scheduledAt.toLocaleString("en-IN");
   scheduleInboundLeadActivity({
     organizationId: user.organizationId,
     leadId: params.leadId,
     type: "FOLLOW_UP",
-    body: notes || `Follow-up scheduled for ${scheduledAt.toLocaleString("en-IN")}`,
+    body:
+      notes ||
+      `${typeLabel} scheduled for ${whenLabel}`,
+    metadata: { followUpType },
     createdByUserId: user.id,
   });
 
@@ -766,12 +821,13 @@ export async function scheduleInboundLeadFollowUp(params: {
       id: followUp.id,
       scheduledAt: followUp.scheduledAt.toISOString(),
       notes: followUp.notes,
+      type: followUp.type,
       assigneeUserId: followUp.assigneeUserId,
     },
     lead: {
       id: params.leadId,
       nextFollowUpAt: scheduledAt.toISOString(),
-      status: "FOLLOW_UP" as const,
+      status: nextStatus,
     },
   };
 }
@@ -1589,6 +1645,7 @@ export async function scheduleLeadClientMeeting(params: {
     data: {
       organizationId: user.organizationId,
       leadId: lead.id,
+      type: "MEETING",
       scheduledAt: startsAt,
       notes:
         scheduleNote ||

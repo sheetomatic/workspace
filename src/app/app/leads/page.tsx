@@ -94,6 +94,7 @@ function serializeLead(lead: Awaited<ReturnType<typeof listInboundLeadsForPeriod
       id: item.id,
       scheduledAt: item.scheduledAt.toISOString(),
       notes: item.notes,
+      type: item.type,
     })),
     payments: (lead.payments ?? []).map((item) => ({
       id: item.id,

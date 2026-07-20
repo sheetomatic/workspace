@@ -5,6 +5,7 @@ import {
   getCrmMeetingsStats,
   listCrmMeetings,
 } from "@/lib/leads/crm-module-stats";
+import { followUpTypeLabel } from "@/lib/leads/follow-up-types";
 import { leadStatusLabel } from "@/lib/leads/status-labels";
 import { requireSession } from "@/lib/require-session";
 
@@ -19,7 +20,7 @@ export default async function CrmMeetingsPage() {
   return (
     <CrmSubmoduleShell
       title="Meetings"
-      description="Time-wise scheduled meetings and follow-ups across CRM."
+      description="Meetings and typed follow-ups (Lead, Quotation, Negotiation, Payment) across CRM."
       kpis={[
         { label: "Open", value: String(stats.total), accent: "blue" },
         { label: "Today", value: String(stats.today) },
@@ -32,6 +33,7 @@ export default async function CrmMeetingsPage() {
           <thead>
             <tr>
               <th>When</th>
+              <th>Type</th>
               <th>Client</th>
               <th>Status</th>
               <th>Assignee</th>
@@ -42,8 +44,8 @@ export default async function CrmMeetingsPage() {
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={6} className="leads-machine-muted">
-                  No meetings scheduled yet.
+                <td colSpan={7} className="leads-machine-muted">
+                  No meetings or follow-ups scheduled yet.
                 </td>
               </tr>
             ) : (
@@ -65,6 +67,11 @@ export default async function CrmMeetingsPage() {
                         minute: "2-digit",
                       })}
                       <div className="leads-machine-muted">{state}</div>
+                    </td>
+                    <td>
+                      <span className="leads-followup-type-pill">
+                        {followUpTypeLabel(row.type)}
+                      </span>
                     </td>
                     <td>
                       <strong>{row.lead.name || row.lead.company || "Lead"}</strong>
