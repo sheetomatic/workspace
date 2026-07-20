@@ -41,6 +41,7 @@ export function LeadCategorySelect({
       aria-label="Lead category"
       className={className}
       disabled={pending}
+      title={leadCategoryLabel(current)}
       value={current}
       onClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => event.stopPropagation()}
