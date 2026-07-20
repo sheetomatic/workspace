@@ -732,3 +732,18 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/leads` Meeting tab — schedule client meeting from panel; client should receive calendar-add email invite.
 
 ---
+
+**Deployed (2026-07-20):** CRM lead tabs — Meeting calendar, Payment WA, multi-project Projects (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| PR | https://github.com/sheetomatic/workspace/pull/27 (ready → merged squash) |
+| Merge SHA | `8f99489` (features `43c0fa1`, `36dc2df`) |
+| Pre-flight | Unit tests: 101/101 with `TZ=Asia/Kolkata`; UTC flake on `google-sheets` timestamp test is pre-existing |
+| Vercel | Production **SUCCESS** — sheetomatic-redesign |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/7U9AbiJawUdj7g8TQfJzYvhZP4UJ — https://sheetomatic.com |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops (their auto-deploys failed; ignored). |
+
+**Hard-refresh in prod:** `/app/leads` lead drawer tabs — Meeting / Payment / Projects (multi-project); Payment Send WA force path after PAYMENT status.
+
+---
