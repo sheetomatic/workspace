@@ -1,16 +1,20 @@
-import Link from "next/link";
+import {
+  TrainingStudentsPanel,
+  type TrainingStudentView,
+} from "@/components/saas/training-students-panel";
 import { CrmSubmoduleShell } from "@/components/saas/crm-submodule-shell";
 import "@/components/saas/leads-machine.css";
-import { listUpcomingTrainingSlots } from "@/lib/courses/slots";
+import "@/components/saas/training-students-panel.css";
+import { listActiveTrainingStudents } from "@/lib/courses/slots";
 import { requireSession } from "@/lib/require-session";
 import { prisma } from "@/lib/db";
 
 export default async function CrmTrainingPage() {
   const user = await requireSession(undefined, { module: "CRM" });
-  const [slots, totalScheduled, enrollments] = await Promise.all([
-    listUpcomingTrainingSlots({
+  const [studentsRaw, totalScheduled, enrollments] = await Promise.all([
+    listActiveTrainingStudents({
       organizationId: user.organizationId,
-      take: 100,
+      take: 120,
     }),
     prisma.trainingCourseSlot.count({
       where: {
@@ -23,73 +27,65 @@ export default async function CrmTrainingPage() {
     }),
   ]);
 
+  const students: TrainingStudentView[] = studentsRaw.map((student) => ({
+    id: student.id,
+    name: student.name,
+    phone: student.phone,
+    email: student.email,
+    status: student.status,
+    daysLabel: student.daysLabel,
+    frequency: student.frequency,
+    sessionTimeIst: student.sessionTimeIst,
+    sessionDurationMin: student.sessionDurationMin,
+    totalSessions: student.totalSessions,
+    joinUrl: student.joinUrl,
+    inboundLeadId: student.inboundLeadId,
+    bookingToken: student.bookingToken,
+    upcomingCount: student.upcomingCount,
+    completedCount: student.completedCount,
+    totalBooked: student.totalBooked,
+    nextWhenLabel: student.nextWhenLabel,
+    slots: student.slots.map((slot) => ({
+      id: slot.id,
+      sessionNumber: slot.sessionNumber,
+      startsAt: slot.startsAt.toISOString(),
+      endsAt: slot.endsAt.toISOString(),
+      title: slot.title,
+      status: slot.status,
+      meetUrl: slot.meetUrl,
+      whenLabel: slot.whenLabel,
+      joinUrl: slot.joinUrl,
+    })),
+  }));
+
+  const upcomingSlots = students.reduce(
+    (sum, student) => sum + student.upcomingCount,
+    0,
+  );
+
   return (
     <CrmSubmoduleShell
       title="Training"
-      description="Upcoming training slots linked to CRM enrollments."
+      description="Student-wise training groups — expand a student to see their sessions."
       kpis={[
-        { label: "Upcoming slots", value: String(slots.length), accent: "blue" },
+        {
+          label: "Students",
+          value: String(students.length),
+          accent: "blue",
+        },
+        {
+          label: "Upcoming slots",
+          value: String(upcomingSlots),
+          accent: "success",
+        },
         { label: "Scheduled total", value: String(totalScheduled) },
-        { label: "Enrollments", value: String(enrollments), accent: "success" },
+        {
+          label: "Enrollments",
+          value: String(enrollments),
+        },
       ]}
     >
-      <div className="crm-submodule-table-wrap">
-        <table className="crm-submodule-table">
-          <thead>
-            <tr>
-              <th>When</th>
-              <th>Student</th>
-              <th>Session</th>
-              <th>Cohort</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {slots.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="leads-machine-muted">
-                  No upcoming training slots.
-                </td>
-              </tr>
-            ) : (
-              slots.map((slot) => (
-                <tr key={slot.id}>
-                  <td>
-                    {new Date(slot.startsAt).toLocaleString("en-IN", {
-                      day: "numeric",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </td>
-                  <td>
-                    <strong>{slot.enrollment.name}</strong>
-                    <div className="leads-machine-muted">
-                      {slot.enrollment.phone || slot.enrollment.email || "—"}
-                    </div>
-                  </td>
-                  <td>
-                    #{slot.sessionNumber} · {slot.title}
-                  </td>
-                  <td>{slot.enrollment.cohort}</td>
-                  <td>
-                    {slot.enrollment.inboundLeadId ? (
-                      <Link
-                        className="btn-secondary btn-sm"
-                        href={`/app/leads?leadId=${slot.enrollment.inboundLeadId}&period=all`}
-                      >
-                        Open CRM
-                      </Link>
-                    ) : (
-                      <span className="leads-machine-muted">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <TrainingStudentsPanel students={students} />
     </CrmSubmoduleShell>
   );
 }
