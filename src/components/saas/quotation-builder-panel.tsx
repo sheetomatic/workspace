@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { FileText, MessageCircle, Phone, Plus, Trash2 } from "lucide-react";
 import type { QuotationRequestType, QuotationStatus } from "@prisma/client";
@@ -180,7 +179,6 @@ export function QuotationBuilderPanel({
   pending: boolean;
   startTransition: (callback: () => Promise<void>) => void;
 }) {
-  const router = useRouter();
   const [addedCatalogItems, setAddedCatalogItems] = useState<CatalogItem[]>([]);
   const catalogItems = useMemo(() => {
     const byId = new Map(serviceCatalog.map((item) => [item.id, item]));
@@ -310,7 +308,6 @@ export function QuotationBuilderPanel({
       setShowNewServiceForm(false);
       setNewServiceTargetLineId(null);
       setNewServiceMessage(result.message ?? "Service added.");
-      router.refresh();
     });
   }
 

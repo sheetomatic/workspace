@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Trash2, X } from "lucide-react";
 import type {
   InboundLeadStatus,
@@ -23,6 +23,7 @@ import {
   clearInboundLeadHistory,
   deleteInboundLeadActivity,
   listLeadDuplicateMatchesAction,
+  logLeadTimelineActivity,
   mergeInboundLeadsAction,
   scheduleInboundLeadFollowUp,
   scheduleLeadClientMeeting,
@@ -145,6 +146,40 @@ type ActivityRow = {
   createdBy: { name: string | null; email: string } | null;
 };
 
+type FollowUpRow = {
+  id: string;
+  scheduledAt: string;
+  notes: string | null;
+};
+
+type DrawerTab =
+  | "details"
+  | "activity"
+  | "meeting"
+  | "payments"
+  | "quote"
+  | "projects"
+  | "training";
+
+type ActionKey =
+  | "details"
+  | "calling"
+  | "meeting-notes"
+  | "schedule-meeting"
+  | "follow-up"
+  | "payment"
+  | "activity"
+  | "history"
+  | "nurture";
+
+type ActivityComposerType = "NOTE" | "CALL" | "WHATSAPP";
+
+type DetailsSaveStatus = "idle" | "saving" | "saved" | "error";
+
+function tempId(prefix: string) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
 export type LeadDrawerData = {
   id: string;
   name: string | null;
@@ -232,14 +267,8 @@ export function LeadDrawerPanel({
   void _onDeleted;
   const router = useRouter();
   const [fieldPending, startFieldTransition] = useTransition();
-  const [tab, setTab] = useState<
-    | "details"
-    | "meeting"
-    | "payments"
-    | "quote"
-    | "projects"
-    | "training"
-  >("details");
+  const [, startActionTransition] = useTransition();
+  const [tab, setTab] = useState<DrawerTab>("details");
   const allSalesOrders = lead.salesOrders?.length
     ? lead.salesOrders
     : lead.salesOrder
@@ -257,6 +286,7 @@ export function LeadDrawerPanel({
   const [requirement, setRequirement] = useState(lead.requirement ?? "");
   const [category, setCategory] = useState<LeadCategoryId>(resolveLeadCategoryId(lead.category));
   const [meetingNotes, setMeetingNotes] = useState(lead.meetingNotes ?? "");
+  const [callingStatus, setCallingStatus] = useState(lead.callingStatus);
   const [quotationValue, setQuotationValue] = useState(String(lead.quotationValue ?? ""));
   const [utmSource, setUtmSource] = useState(lead.utmSource ?? "");
   const [utmMedium, setUtmMedium] = useState(lead.utmMedium ?? "");
@@ -275,7 +305,9 @@ export function LeadDrawerPanel({
   const [projectStatus, setProjectStatus] = useState(lead.projectStatus);
   const [assignedToId, setAssignedToId] = useState(lead.assignedTo?.id ?? "");
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveOk, setSaveOk] = useState(false);
+  const [detailsSaveStatus, setDetailsSaveStatus] = useState<DetailsSaveStatus>("idle");
+  const [detailsDirty, setDetailsDirty] = useState(false);
+  const [savingKey, setSavingKey] = useState<ActionKey | null>(null);
   const [duplicateMatch, setDuplicateMatch] = useState<{
     id: string;
     name: string | null;
@@ -292,7 +324,11 @@ export function LeadDrawerPanel({
     }>
   >([]);
   const [followUpAt, setFollowUpAt] = useState(defaultFollowUpLocal());
-  const [noteDraft, setNoteDraft] = useState("");
+  const [followUpNotes, setFollowUpNotes] = useState("");
+  const [activityComposerType, setActivityComposerType] =
+    useState<ActivityComposerType>("NOTE");
+  const [activityDraft, setActivityDraft] = useState("");
+  const [activityError, setActivityError] = useState<string | null>(null);
   const [meetingAt, setMeetingAt] = useState(defaultFollowUpLocal());
   const [meetingDuration, setMeetingDuration] = useState(45);
   const [meetingEmail, setMeetingEmail] = useState(lead.email ?? "");
@@ -306,11 +342,129 @@ export function LeadDrawerPanel({
   const [paymentType, setPaymentType] = useState<LeadPaymentType>("ADVANCE");
   const [paymentMethod, setPaymentMethod] = useState<LeadPaymentMethod>("UPI");
   const [activities, setActivities] = useState(lead.activities);
+  const [payments, setPayments] = useState(lead.payments);
+  const [followUpsState, setFollowUpsState] = useState<FollowUpRow[]>(
+    lead.followUps ?? [],
+  );
+  const detailsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const detailsSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const aiStatus = lead.aiSuggestedStatus ?? null;
-  const showAiHint = aiStatus && aiStatus !== lead.status && canManage;
+  const showAiHint = aiStatus && aiStatus !== status && canManage;
   const isArchived = Boolean(lead.archivedAt);
-  const isDemoScheduled = resolveLeadStatus(lead.status) === "DEMO_SCHEDULED";
+  const isDemoScheduled = resolveLeadStatus(status) === "DEMO_SCHEDULED";
+
+  function markDetailsDirty() {
+    setDetailsDirty(true);
+    setDetailsSaveStatus("idle");
+  }
+
+  function appendActivity(entry: Omit<ActivityRow, "id" | "createdAt" | "createdBy"> & {
+    id?: string;
+    createdAt?: string;
+  }) {
+    const next: ActivityRow = {
+      id: entry.id ?? tempId("act"),
+      type: entry.type,
+      body: entry.body,
+      createdAt: entry.createdAt ?? new Date().toISOString(),
+      createdBy: null,
+    };
+    setActivities((current) => {
+      const merged = [next, ...current];
+      onLeadPatched?.(lead.id, { activities: merged });
+      return merged;
+    });
+  }
+
+  function runAction(key: ActionKey, work: () => Promise<void>) {
+    setSavingKey(key);
+    startActionTransition(async () => {
+      try {
+        await work();
+      } finally {
+        setSavingKey((current) => (current === key ? null : current));
+      }
+    });
+  }
+
+  async function persistDetails(options?: { explicit?: boolean }) {
+    if (!canManage) return;
+    if (savingKey === "details") return;
+    if (!detailsDirty && !options?.explicit) return;
+
+    setSavingKey("details");
+    setDetailsSaveStatus("saving");
+    setSaveError(null);
+    setDuplicateMatch(null);
+
+    const result = await updateInboundLeadDetails({
+      leadId: lead.id,
+      name,
+      phone,
+      email,
+      company,
+      address,
+      zipCode,
+      requirement,
+      category,
+      quotationValue,
+      pipeValue: quotationValue,
+      utmSource,
+      utmMedium,
+      utmCampaign,
+      utmContent,
+      utmTerm,
+      campaign,
+      landingPage,
+      expectedCloseAt,
+      winProbability,
+    });
+
+    setSavingKey((current) => (current === "details" ? null : current));
+
+    if (!result.ok) {
+      setDetailsSaveStatus("error");
+      setSaveError(result.message ?? "Could not save lead.");
+      if ("duplicate" in result && result.duplicate && result.matches?.[0]) {
+        setDuplicateMatch({
+          id: result.matches[0].id,
+          name: result.matches[0].name,
+        });
+      }
+      return;
+    }
+
+    setDetailsDirty(false);
+    setDetailsSaveStatus("saved");
+    onLeadPatched?.(lead.id, {
+      name: name || null,
+      phone: phone || null,
+      email: email || null,
+      company: company || null,
+      address: address || null,
+      zipCode: zipCode || null,
+      requirement: requirement || null,
+      category,
+      quotationValue: quotationValue || null,
+      pipeValue: quotationValue || null,
+      utmSource: utmSource || null,
+      utmMedium: utmMedium || null,
+      utmCampaign: utmCampaign || null,
+      utmContent: utmContent || null,
+      utmTerm: utmTerm || null,
+      campaign: campaign || null,
+      landingPage: landingPage || null,
+      expectedCloseAt: expectedCloseAt || null,
+      winProbability: winProbability ? Number(winProbability) : null,
+    });
+    if (detailsSavedTimerRef.current) {
+      clearTimeout(detailsSavedTimerRef.current);
+    }
+    detailsSavedTimerRef.current = setTimeout(() => {
+      setDetailsSaveStatus((current) => (current === "saved" ? "idle" : current));
+    }, 2000);
+  }
 
   useEffect(() => {
     if (!canManage) return;
@@ -328,26 +482,66 @@ export function LeadDrawerPanel({
     setStatus(resolveLeadStatus(lead.status));
     setProjectStatus(lead.projectStatus);
     setAssignedToId(lead.assignedTo?.id ?? "");
+    setCallingStatus(lead.callingStatus);
     setMeetingEmail(lead.email ?? "");
     setMeetingScheduleMsg(null);
     setMeetingScheduleErr(null);
     setSaveError(null);
-    setSaveOk(false);
+    setDetailsSaveStatus("idle");
+    setDetailsDirty(false);
+    setActivities(lead.activities);
+    setPayments(lead.payments);
+    setFollowUpsState(lead.followUps ?? []);
     const orders = lead.salesOrders?.length
       ? lead.salesOrders
       : lead.salesOrder
         ? [lead.salesOrder]
         : [];
     setSelectedOrderId(orders[0]?.id ?? null);
-  }, [
-    lead.id,
-    lead.status,
-    lead.projectStatus,
-    lead.assignedTo?.id,
-    lead.email,
-    lead.salesOrder?.id,
-    lead.salesOrders,
-  ]);
+    // Remount-equivalent reset when switching leads only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lead.id]);
+
+  useEffect(() => {
+    setStatus(resolveLeadStatus(lead.status));
+  }, [lead.status]);
+
+  useEffect(() => {
+    setProjectStatus(lead.projectStatus);
+  }, [lead.projectStatus]);
+
+  useEffect(() => {
+    setCallingStatus(lead.callingStatus);
+  }, [lead.callingStatus]);
+
+  useEffect(() => {
+    setAssignedToId(lead.assignedTo?.id ?? "");
+  }, [lead.assignedTo?.id]);
+
+  useEffect(() => {
+    setMeetingEmail(lead.email ?? "");
+  }, [lead.email]);
+
+  useEffect(() => {
+    setActivities(lead.activities);
+  }, [lead.activities]);
+
+  useEffect(() => {
+    setPayments(lead.payments);
+  }, [lead.payments]);
+
+  useEffect(() => {
+    setFollowUpsState(lead.followUps ?? []);
+  }, [lead.followUps]);
+
+  useEffect(() => {
+    const orders = lead.salesOrders?.length
+      ? lead.salesOrders
+      : lead.salesOrder
+        ? [lead.salesOrder]
+        : [];
+    setSelectedOrderId(orders[0]?.id ?? null);
+  }, [lead.salesOrder?.id, lead.salesOrders]);
 
   useEffect(() => {
     const body = document.querySelector(".leads-drawer-body");
@@ -355,6 +549,50 @@ export function LeadDrawerPanel({
       body.scrollTop = 0;
     }
   }, [tab, lead.id]);
+
+  useEffect(() => {
+    if (!canManage || !detailsDirty) return;
+    if (detailsDebounceRef.current) {
+      clearTimeout(detailsDebounceRef.current);
+    }
+    detailsDebounceRef.current = setTimeout(() => {
+      void persistDetails();
+    }, 750);
+    return () => {
+      if (detailsDebounceRef.current) {
+        clearTimeout(detailsDebounceRef.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- debounce on field dirtiness
+  }, [
+    canManage,
+    detailsDirty,
+    name,
+    phone,
+    email,
+    company,
+    address,
+    zipCode,
+    requirement,
+    category,
+    quotationValue,
+    utmSource,
+    utmMedium,
+    utmCampaign,
+    utmContent,
+    utmTerm,
+    campaign,
+    landingPage,
+    expectedCloseAt,
+    winProbability,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      if (detailsDebounceRef.current) clearTimeout(detailsDebounceRef.current);
+      if (detailsSavedTimerRef.current) clearTimeout(detailsSavedTimerRef.current);
+    };
+  }, []);
 
   const demoStartsAt = lead.nextFollowUpAt
     ? new Date(lead.nextFollowUpAt)
@@ -382,18 +620,19 @@ export function LeadDrawerPanel({
     partitionSalesOrdersByLifecycle(allSalesOrders);
   const leadDelivery: LeadDeliveryInput = {
     quotations: lead.quotations,
-    payments: lead.payments,
+    payments,
     salesOrder: selectedSalesOrder,
   };
   const deliverySummary = deliveryJourneySummary(buildDeliveryJourney(leadDelivery));
   const paymentSummary = computeLeadPaymentSummary({
     quotationValue: lead.quotationValue,
     quotations: lead.quotations,
-    payments: lead.payments,
+    payments,
   });
-  const followUps = [...(lead.followUps ?? [])].sort(
+  const followUps = [...followUpsState].sort(
     (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime(),
   );
+  const detailsBusy = savingKey === "details" || fieldPending;
   const now = Date.now();
   const upcomingMeetings = followUps.filter(
     (item) => new Date(item.scheduledAt).getTime() >= now - 60_000,
@@ -506,6 +745,7 @@ export function LeadDrawerPanel({
         {(
           [
             { key: "details" as const, label: "Details" },
+            { key: "activity" as const, label: "Activity" },
             { key: "meeting" as const, label: "Meeting" },
             { key: "quote" as const, label: "Quotation" },
             { key: "payments" as const, label: "Payment" },
@@ -517,9 +757,13 @@ export function LeadDrawerPanel({
             key={item.key}
             type="button"
             className={tab === item.key ? "active" : ""}
+            aria-current={tab === item.key ? "true" : undefined}
             onClick={() => setTab(item.key)}
           >
             {item.label}
+            {item.key === "activity" && activities.length > 0 ? (
+              <span className="leads-drawer-tab-meta">{activities.length}</span>
+            ) : null}
             {item.key === "projects" ? (
               <span className="leads-drawer-tab-meta">
                 {allSalesOrders.length > 0
@@ -601,7 +845,7 @@ export function LeadDrawerPanel({
                     const next = event.target.value as InboundLeadStatus;
                     const previous = status;
                     setStatus(next);
-                    setSaveOk(false);
+                    setDetailsSaveStatus("idle");
                     startFieldTransition(async () => {
                       const result = await updateInboundLeadStatus(lead.id, next);
                       if (!result.ok) {
@@ -630,7 +874,7 @@ export function LeadDrawerPanel({
                     const next = event.target.value as LeadProjectStatus;
                     const previous = projectStatus;
                     setProjectStatus(next);
-                    setSaveOk(false);
+                    setDetailsSaveStatus("idle");
                     startFieldTransition(async () => {
                       const result = await updateLeadProjectStatus(lead.id, next);
                       if (!result.ok) {
@@ -659,7 +903,7 @@ export function LeadDrawerPanel({
                     const next = event.target.value;
                     const previous = assignedToId;
                     setAssignedToId(next);
-                    setSaveOk(false);
+                    setDetailsSaveStatus("idle");
                     startFieldTransition(async () => {
                       const result = await assignInboundLead(
                         lead.id,
@@ -694,36 +938,80 @@ export function LeadDrawerPanel({
               </label>
               <label>
                 Name
-                <input value={name} onChange={(e) => setName(e.target.value)} />
+                <input
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    markDetailsDirty();
+                  }}
+                  onBlur={() => void persistDetails()}
+                />
               </label>
               <label>
                 Phone
-                <input value={phone} onChange={(e) => setPhone(e.target.value)} />
+                <input
+                  value={phone}
+                  onChange={(e) => {
+                    setPhone(e.target.value);
+                    markDetailsDirty();
+                  }}
+                  onBlur={() => void persistDetails()}
+                />
               </label>
               <label>
                 Email
-                <input value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    markDetailsDirty();
+                  }}
+                  onBlur={() => void persistDetails()}
+                />
               </label>
               <label>
                 Company
-                <input value={company} onChange={(e) => setCompany(e.target.value)} />
+                <input
+                  value={company}
+                  onChange={(e) => {
+                    setCompany(e.target.value);
+                    markDetailsDirty();
+                  }}
+                  onBlur={() => void persistDetails()}
+                />
               </label>
               <label>
                 Address
-                <input value={address} onChange={(e) => setAddress(e.target.value)} />
+                <input
+                  value={address}
+                  onChange={(e) => {
+                    setAddress(e.target.value);
+                    markDetailsDirty();
+                  }}
+                  onBlur={() => void persistDetails()}
+                />
               </label>
               <label>
                 ZIP
-                <input value={zipCode} onChange={(e) => setZipCode(e.target.value)} />
+                <input
+                  value={zipCode}
+                  onChange={(e) => {
+                    setZipCode(e.target.value);
+                    markDetailsDirty();
+                  }}
+                  onBlur={() => void persistDetails()}
+                />
               </label>
               <label>
                 Category
                 <select
                   value={category}
                   disabled={!canManage}
-                  onChange={(event) =>
-                    setCategory(event.target.value as LeadCategoryId)
-                  }
+                  onChange={(event) => {
+                    setCategory(event.target.value as LeadCategoryId);
+                    markDetailsDirty();
+                  }}
+                  onBlur={() => void persistDetails()}
                 >
                   {listLeadCategoryOptions().map((option) => (
                     <option key={option.id} value={option.id}>
@@ -734,14 +1022,25 @@ export function LeadDrawerPanel({
               </label>
               <label>
                 Requirement
-                <textarea value={requirement} onChange={(e) => setRequirement(e.target.value)} />
+                <textarea
+                  value={requirement}
+                  onChange={(e) => {
+                    setRequirement(e.target.value);
+                    markDetailsDirty();
+                  }}
+                  onBlur={() => void persistDetails()}
+                />
               </label>
               <label>
                 Quotation amount (₹)
                 <input
                   type="number"
                   value={quotationValue}
-                  onChange={(e) => setQuotationValue(e.target.value)}
+                  onChange={(e) => {
+                    setQuotationValue(e.target.value);
+                    markDetailsDirty();
+                  }}
+                  onBlur={() => void persistDetails()}
                 />
               </label>
               <label>
@@ -749,7 +1048,11 @@ export function LeadDrawerPanel({
                 <input
                   type="date"
                   value={expectedCloseAt}
-                  onChange={(e) => setExpectedCloseAt(e.target.value)}
+                  onChange={(e) => {
+                    setExpectedCloseAt(e.target.value);
+                    markDetailsDirty();
+                  }}
+                  onBlur={() => void persistDetails()}
                 />
               </label>
               <label>
@@ -759,7 +1062,11 @@ export function LeadDrawerPanel({
                   min={0}
                   max={100}
                   value={winProbability}
-                  onChange={(e) => setWinProbability(e.target.value)}
+                  onChange={(e) => {
+                    setWinProbability(e.target.value);
+                    markDetailsDirty();
+                  }}
+                  onBlur={() => void persistDetails()}
                   placeholder="Stage default if blank"
                 />
               </label>
@@ -770,7 +1077,11 @@ export function LeadDrawerPanel({
                     Campaign
                     <input
                       value={campaign}
-                      onChange={(e) => setCampaign(e.target.value)}
+                      onChange={(e) => {
+                        setCampaign(e.target.value);
+                        markDetailsDirty();
+                      }}
+                      onBlur={() => void persistDetails()}
                       placeholder="Campaign name"
                     />
                   </label>
@@ -778,7 +1089,11 @@ export function LeadDrawerPanel({
                     Landing page
                     <input
                       value={landingPage}
-                      onChange={(e) => setLandingPage(e.target.value)}
+                      onChange={(e) => {
+                        setLandingPage(e.target.value);
+                        markDetailsDirty();
+                      }}
+                      onBlur={() => void persistDetails()}
                       placeholder="https://…"
                     />
                   </label>
@@ -786,7 +1101,11 @@ export function LeadDrawerPanel({
                     UTM source
                     <input
                       value={utmSource}
-                      onChange={(e) => setUtmSource(e.target.value)}
+                      onChange={(e) => {
+                        setUtmSource(e.target.value);
+                        markDetailsDirty();
+                      }}
+                      onBlur={() => void persistDetails()}
                       placeholder="google"
                     />
                   </label>
@@ -794,7 +1113,11 @@ export function LeadDrawerPanel({
                     UTM medium
                     <input
                       value={utmMedium}
-                      onChange={(e) => setUtmMedium(e.target.value)}
+                      onChange={(e) => {
+                        setUtmMedium(e.target.value);
+                        markDetailsDirty();
+                      }}
+                      onBlur={() => void persistDetails()}
                       placeholder="cpc"
                     />
                   </label>
@@ -802,21 +1125,33 @@ export function LeadDrawerPanel({
                     UTM campaign
                     <input
                       value={utmCampaign}
-                      onChange={(e) => setUtmCampaign(e.target.value)}
+                      onChange={(e) => {
+                        setUtmCampaign(e.target.value);
+                        markDetailsDirty();
+                      }}
+                      onBlur={() => void persistDetails()}
                     />
                   </label>
                   <label>
                     UTM content
                     <input
                       value={utmContent}
-                      onChange={(e) => setUtmContent(e.target.value)}
+                      onChange={(e) => {
+                        setUtmContent(e.target.value);
+                        markDetailsDirty();
+                      }}
+                      onBlur={() => void persistDetails()}
                     />
                   </label>
                   <label>
                     UTM term
                     <input
                       value={utmTerm}
-                      onChange={(e) => setUtmTerm(e.target.value)}
+                      onChange={(e) => {
+                        setUtmTerm(e.target.value);
+                        markDetailsDirty();
+                      }}
+                      onBlur={() => void persistDetails()}
                     />
                   </label>
                 </div>
@@ -871,83 +1206,25 @@ export function LeadDrawerPanel({
                   ) : null}
                 </div>
               ) : null}
-              {saveOk ? (
-                <p className="leads-machine-muted" role="status">
-                  Lead saved.
-                </p>
-              ) : null}
-              <button
-                type="button"
-                className="btn-primary"
-                disabled={fieldPending}
-                onClick={() =>
-                  startFieldTransition(async () => {
-                    setSaveError(null);
-                    setSaveOk(false);
-                    setDuplicateMatch(null);
-                    const result = await updateInboundLeadDetails({
-                      leadId: lead.id,
-                      name,
-                      phone,
-                      email,
-                      company,
-                      address,
-                      zipCode,
-                      requirement,
-                      category,
-                      quotationValue,
-                      pipeValue: quotationValue,
-                      utmSource,
-                      utmMedium,
-                      utmCampaign,
-                      utmContent,
-                      utmTerm,
-                      campaign,
-                      landingPage,
-                      expectedCloseAt,
-                      winProbability,
-                    });
-                    if (!result.ok) {
-                      setSaveError(result.message ?? "Could not save lead.");
-                      if (
-                        "duplicate" in result &&
-                        result.duplicate &&
-                        result.matches?.[0]
-                      ) {
-                        setDuplicateMatch({
-                          id: result.matches[0].id,
-                          name: result.matches[0].name,
-                        });
-                      }
-                      return;
-                    }
-                    setSaveOk(true);
-                    onLeadPatched?.(lead.id, {
-                      name: name || null,
-                      phone: phone || null,
-                      email: email || null,
-                      company: company || null,
-                      address: address || null,
-                      zipCode: zipCode || null,
-                      requirement: requirement || null,
-                      category,
-                      quotationValue: quotationValue || null,
-                      pipeValue: quotationValue || null,
-                      utmSource: utmSource || null,
-                      utmMedium: utmMedium || null,
-                      utmCampaign: utmCampaign || null,
-                      utmContent: utmContent || null,
-                      utmTerm: utmTerm || null,
-                      campaign: campaign || null,
-                      landingPage: landingPage || null,
-                      expectedCloseAt: expectedCloseAt || null,
-                      winProbability: winProbability ? Number(winProbability) : null,
-                    });
-                  })
-                }
-              >
-                Save lead
-              </button>
+              <div className="leads-details-save-row">
+                <button
+                  type="button"
+                  className="btn-primary"
+                  disabled={detailsBusy}
+                  onClick={() => void persistDetails({ explicit: true })}
+                >
+                  Save lead
+                </button>
+                <span className="leads-save-status" role="status" aria-live="polite">
+                  {detailsSaveStatus === "saving"
+                    ? "Saving…"
+                    : detailsSaveStatus === "saved"
+                      ? "Saved"
+                      : detailsDirty
+                        ? "Unsaved changes"
+                        : null}
+                </span>
+              </div>
             </div>
           ) : (
             <div className="leads-drawer-readonly">
@@ -1005,12 +1282,35 @@ export function LeadDrawerPanel({
             <label className="leads-drawer-field">
               Calling status
               <select
-                value={lead.callingStatus}
-                disabled={pending}
+                value={callingStatus}
+                disabled={savingKey === "calling"}
                 onChange={(e) => {
                   const next = e.target.value as LeadCallingStatus;
-                  startTransition(async () => {
-                    await updateLeadCallingStatus(lead.id, next, meetingNotes || undefined);
+                  const previous = callingStatus;
+                  setCallingStatus(next);
+                  onLeadPatched?.(lead.id, { callingStatus: next });
+                  runAction("calling", async () => {
+                    const result = await updateLeadCallingStatus(
+                      lead.id,
+                      next,
+                      meetingNotes || undefined,
+                    );
+                    if (!result.ok || !("lead" in result) || !result.lead) {
+                      setCallingStatus(previous);
+                      onLeadPatched?.(lead.id, { callingStatus: previous });
+                      return;
+                    }
+                    const patched = result.lead;
+                    appendActivity({
+                      type: "CALL",
+                      body: meetingNotes.trim()
+                        ? `Call status: ${next.replaceAll("_", " ")} — ${meetingNotes.trim()}`
+                        : `Call status: ${next.replaceAll("_", " ")}`,
+                    });
+                    onLeadPatched?.(lead.id, patched);
+                    if (patched.status) {
+                      setStatus(patched.status);
+                    }
                   });
                 }}
               >
@@ -1023,7 +1323,7 @@ export function LeadDrawerPanel({
             </label>
           ) : (
             <p className="leads-machine-muted">
-              Calling: {CALLING_STATUS_LABELS[lead.callingStatus]}
+              Calling: {CALLING_STATUS_LABELS[callingStatus]}
             </p>
           )}
           <textarea
@@ -1036,14 +1336,23 @@ export function LeadDrawerPanel({
             <button
               type="button"
               className="btn-primary"
-              disabled={pending}
+              disabled={savingKey === "meeting-notes"}
               onClick={() =>
-                startTransition(async () => {
-                  await updateLeadMeetingNotes(lead.id, meetingNotes);
+                runAction("meeting-notes", async () => {
+                  const result = await updateLeadMeetingNotes(lead.id, meetingNotes);
+                  if (!result.ok || !("lead" in result) || !result.lead) return;
+                  const patched = result.lead;
+                  onLeadPatched?.(lead.id, patched);
+                  if (patched.status) {
+                    setStatus(patched.status);
+                  }
+                  if (patched.meetingNotes) {
+                    appendActivity({ type: "MEETING", body: patched.meetingNotes });
+                  }
                 })
               }
             >
-              Save meeting notes
+              {savingKey === "meeting-notes" ? "Saving…" : "Save meeting notes"}
             </button>
           ) : null}
 
@@ -1106,11 +1415,11 @@ export function LeadDrawerPanel({
               <button
                 type="button"
                 className="btn-primary"
-                disabled={pending}
+                disabled={savingKey === "schedule-meeting"}
                 onClick={() => {
                   setMeetingScheduleErr(null);
                   setMeetingScheduleMsg(null);
-                  startTransition(async () => {
+                  runAction("schedule-meeting", async () => {
                     const result = await scheduleLeadClientMeeting({
                       leadId: lead.id,
                       startsAt: meetingAt,
@@ -1126,11 +1435,35 @@ export function LeadDrawerPanel({
                     }
                     setMeetingScheduleMsg(result.message);
                     setFollowUpAt(meetingAt);
-                    router.refresh();
+                    const followUp: FollowUpRow = {
+                      id: tempId("fu"),
+                      scheduledAt: result.lead.nextFollowUpAt,
+                      notes:
+                        meetingNotes.trim() ||
+                        `Client meeting scheduled (${meetingDuration} min)`,
+                    };
+                    setFollowUpsState((current) => {
+                      const merged = [...current, followUp];
+                      onLeadPatched?.(lead.id, {
+                        ...result.lead,
+                        followUps: merged,
+                      });
+                      return merged;
+                    });
+                    setStatus(result.lead.status);
+                    if (result.lead.meetingNotes) {
+                      setMeetingNotes(result.lead.meetingNotes);
+                    }
+                    appendActivity({
+                      type: "MEETING",
+                      body: `Meeting scheduled for ${result.whenLabel}`,
+                    });
                   });
                 }}
               >
-                {pending ? "Scheduling…" : "Schedule & email client"}
+                {savingKey === "schedule-meeting"
+                  ? "Scheduling…"
+                  : "Schedule & email client"}
               </button>
             </div>
           ) : null}
@@ -1252,48 +1585,68 @@ export function LeadDrawerPanel({
                   onChange={(e) => setFollowUpAt(e.target.value)}
                 />
               </label>
+              <label>
+                Follow-up notes
+                <input
+                  value={followUpNotes}
+                  onChange={(e) => setFollowUpNotes(e.target.value)}
+                  placeholder="Optional note"
+                />
+              </label>
             </div>
             {canManage ? (
               <button
                 type="button"
                 className="btn-secondary"
-                disabled={pending}
+                disabled={savingKey === "follow-up"}
                 onClick={() =>
-                  startTransition(async () => {
-                    await scheduleInboundLeadFollowUp({
+                  runAction("follow-up", async () => {
+                    const result = await scheduleInboundLeadFollowUp({
                       leadId: lead.id,
                       scheduledAt: followUpAt,
-                      notes: noteDraft,
+                      notes: followUpNotes,
                     });
-                    router.refresh();
+                    if (
+                      !result.ok ||
+                      !("followUp" in result) ||
+                      !result.followUp ||
+                      !result.lead
+                    ) {
+                      return;
+                    }
+                    const followUp: FollowUpRow = {
+                      id: result.followUp.id,
+                      scheduledAt: result.followUp.scheduledAt,
+                      notes: result.followUp.notes,
+                    };
+                    const patchedLead = result.lead;
+                    setFollowUpsState((current) => {
+                      const merged = [...current, followUp];
+                      onLeadPatched?.(lead.id, {
+                        status: patchedLead.status,
+                        nextFollowUpAt: patchedLead.nextFollowUpAt,
+                        followUps: merged,
+                      });
+                      return merged;
+                    });
+                    setStatus(patchedLead.status);
+                    appendActivity({
+                      type: "FOLLOW_UP",
+                      body:
+                        followUp.notes ||
+                        `Follow-up scheduled for ${new Date(followUp.scheduledAt).toLocaleString("en-IN")}`,
+                    });
+                    setFollowUpNotes("");
                   })
                 }
               >
-                Schedule follow-up
+                {savingKey === "follow-up" ? "Scheduling…" : "Schedule follow-up"}
               </button>
             ) : null}
+            <p className="leads-machine-muted">
+              Log calls, WhatsApp, and notes on the Activity tab.
+            </p>
           </section>
-          <h3>Quick note to history</h3>
-          <textarea
-            value={noteDraft}
-            onChange={(e) => setNoteDraft(e.target.value)}
-            placeholder="Call remark or follow-up note"
-          />
-          {canManage ? (
-            <button
-              type="button"
-              className="btn-secondary"
-              disabled={pending}
-              onClick={() =>
-                startTransition(async () => {
-                  await addInboundLeadNote(lead.id, noteDraft);
-                  setNoteDraft("");
-                })
-              }
-            >
-              Add to history
-            </button>
-          ) : null}
         </section>
       ) : null}
 
@@ -1335,18 +1688,22 @@ export function LeadDrawerPanel({
               <button
                 type="button"
                 className="btn-primary btn-sm"
-                disabled={pending}
+                disabled={savingKey === "nurture"}
                 onClick={() =>
-                  startTransition(async () => {
-                    await sendLeadNurtureWhatsAppAction(
+                  runAction("nurture", async () => {
+                    const result = await sendLeadNurtureWhatsAppAction(
                       lead.id,
                       "alert_payment_pending",
                     );
-                    router.refresh();
+                    if (!result.ok) return;
+                    appendActivity({
+                      type: "WHATSAPP",
+                      body: "Payment pending reminder sent via WhatsApp",
+                    });
                   })
                 }
               >
-                Send WA from portal
+                {savingKey === "nurture" ? "Sending…" : "Send WA from portal"}
               </button>
             ) : null}
           </div>
@@ -1399,30 +1756,60 @@ export function LeadDrawerPanel({
               <button
                 type="button"
                 className="btn-primary"
-                disabled={pending}
+                disabled={savingKey === "payment" || !paymentAmount.trim()}
                 onClick={() =>
-                  startTransition(async () => {
-                    await addInboundLeadPayment({
+                  runAction("payment", async () => {
+                    const result = await addInboundLeadPayment({
                       leadId: lead.id,
                       paymentType,
                       receivedAmount: paymentAmount,
                       receivedDate: paymentDate,
                       paymentMethod,
                     });
+                    if (
+                      !result.ok ||
+                      !("payment" in result) ||
+                      !result.payment ||
+                      !result.lead
+                    ) {
+                      return;
+                    }
+                    const payment = result.payment;
+                    const patchedLead = result.lead;
+                    const row: PaymentRow = {
+                      id: payment.id,
+                      paymentType: payment.paymentType,
+                      receivedAmount: payment.receivedAmount,
+                      receivedDate: payment.receivedDate,
+                      paymentMethod: payment.paymentMethod,
+                      notes: payment.notes,
+                    };
+                    setPayments((current) => {
+                      const merged = [row, ...current];
+                      onLeadPatched?.(lead.id, {
+                        payments: merged,
+                        status: patchedLead.status,
+                      });
+                      return merged;
+                    });
+                    setStatus(patchedLead.status);
+                    appendActivity({
+                      type: "PAYMENT",
+                      body: `₹${Number(payment.receivedAmount).toLocaleString("en-IN")} · ${payment.paymentType.replaceAll("_", " ")}`,
+                    });
                     setPaymentAmount("");
-                    router.refresh();
                   })
                 }
               >
-                Record payment
+                {savingKey === "payment" ? "Recording…" : "Record payment"}
               </button>
             </div>
           ) : null}
           <ul className="leads-payment-list">
-            {lead.payments.length === 0 ? (
+            {payments.length === 0 ? (
               <li className="leads-machine-muted">No payments recorded.</li>
             ) : (
-              lead.payments.map((payment) => (
+              payments.map((payment) => (
                 <li key={payment.id}>
                   <strong>{PAYMENT_TYPE_LABELS[payment.paymentType]}</strong>
                   <span>
@@ -1548,80 +1935,203 @@ export function LeadDrawerPanel({
         />
       ) : null}
 
-      {tab !== "projects" ? (
-      <section className="leads-drawer-section">
-        <div className="leads-history-head">
-          <h3>History & logs</h3>
-          {canManage && activities.length > 0 ? (
-            <button
-              type="button"
-              className="btn-secondary btn-sm leads-history-clear-btn"
-              disabled={pending}
-              onClick={() => {
-                if (
-                  !window.confirm(
-                    "Delete all history entries for this lead? This cannot be undone.",
-                  )
-                ) {
-                  return;
-                }
-                startTransition(async () => {
-                  const result = await clearInboundLeadHistory(lead.id);
-                  if (result.ok) {
-                    setActivities([]);
-                    router.refresh();
-                  }
-                });
-              }}
-            >
-              Clear all
-            </button>
-          ) : null}
-        </div>
-        <ul className="leads-history-list">
-          {activities.length === 0 ? (
-            <li className="leads-machine-muted">No activity yet.</li>
-          ) : (
-            activities.map((item) => (
-              <li key={item.id} className="leads-history-item">
-                <div className="leads-history-item-body">
-                  <strong>{item.type.replaceAll("_", " ")}</strong>
-                  <span>{item.body}</span>
-                  <em>
-                    {new Date(item.createdAt).toLocaleString("en-IN")} ·{" "}
-                    {item.createdBy?.name || item.createdBy?.email || "System"}
-                  </em>
-                </div>
-                {canManage ? (
+      {tab === "activity" ? (
+        <section className="leads-drawer-section" aria-label="Activity timeline">
+          <h3>Activity</h3>
+          <p className="leads-machine-muted">
+            Notes, calls, WhatsApp, meetings, and stage changes — newest first.
+          </p>
+          {canManage ? (
+            <div className="leads-activity-composer">
+              <div
+                className="leads-activity-composer-types"
+                role="group"
+                aria-label="Activity type"
+              >
+                {(
+                  [
+                    { key: "NOTE" as const, label: "Log note" },
+                    { key: "CALL" as const, label: "Log call" },
+                    { key: "WHATSAPP" as const, label: "Log WhatsApp" },
+                  ]
+                ).map((item) => (
                   <button
+                    key={item.key}
                     type="button"
-                    className="leads-history-delete-btn"
-                    disabled={pending}
-                    title="Delete entry"
-                    aria-label="Delete history entry"
-                    onClick={() => {
-                      startTransition(async () => {
-                        const result = await deleteInboundLeadActivity({
-                          leadId: lead.id,
-                          activityId: item.id,
-                        });
-                        if (result.ok) {
-                          setActivities((current) =>
-                            current.filter((entry) => entry.id !== item.id),
-                          );
-                          router.refresh();
-                        }
-                      });
-                    }}
+                    className={
+                      activityComposerType === item.key
+                        ? "btn-secondary btn-sm is-active"
+                        : "btn-secondary btn-sm"
+                    }
+                    aria-pressed={activityComposerType === item.key}
+                    onClick={() => setActivityComposerType(item.key)}
                   >
-                    <Trash2 size={14} aria-hidden />
+                    {item.label}
                   </button>
-                ) : null}
-              </li>
-            ))
-          )}
-        </ul>
-      </section>
+                ))}
+              </div>
+              <label className="leads-drawer-field">
+                {activityComposerType === "NOTE"
+                  ? "Note"
+                  : activityComposerType === "CALL"
+                    ? "Call notes (optional)"
+                    : "WhatsApp notes (optional)"}
+                <textarea
+                  value={activityDraft}
+                  onChange={(e) => setActivityDraft(e.target.value)}
+                  placeholder={
+                    activityComposerType === "NOTE"
+                      ? "What happened with this lead?"
+                      : "Optional details…"
+                  }
+                  rows={3}
+                />
+              </label>
+              {activityError ? (
+                <p className="leads-schedule-meeting__err" role="alert">
+                  {activityError}
+                </p>
+              ) : null}
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={
+                  savingKey === "activity" ||
+                  (activityComposerType === "NOTE" && !activityDraft.trim())
+                }
+                onClick={() => {
+                  setActivityError(null);
+                  runAction("activity", async () => {
+                    const body = activityDraft.trim();
+                    if (activityComposerType === "NOTE") {
+                      const result = await addInboundLeadNote(lead.id, body);
+                      if (!result.ok) {
+                        setActivityError(result.message ?? "Could not save note.");
+                        return;
+                      }
+                      appendActivity({ type: "NOTE", body });
+                      setActivityDraft("");
+                      return;
+                    }
+
+                    const result = await logLeadTimelineActivity({
+                      leadId: lead.id,
+                      type: activityComposerType,
+                      body: body || undefined,
+                    });
+                    if (!result.ok) {
+                      setActivityError(result.message ?? "Could not log activity.");
+                      return;
+                    }
+                    appendActivity({
+                      type: result.activity.type,
+                      body: result.activity.body,
+                    });
+                    setActivityDraft("");
+                  });
+                }}
+              >
+                {savingKey === "activity" ? "Logging…" : "Add to timeline"}
+              </button>
+            </div>
+          ) : null}
+
+          {followUps.length > 0 ? (
+            <div className="leads-activity-followups">
+              <h4>Follow-ups</h4>
+              <ul className="leads-meeting-timeline">
+                {followUps.slice(0, 6).map((item) => (
+                  <li key={item.id}>
+                    <strong>
+                      {new Date(item.scheduledAt).toLocaleString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </strong>
+                    <span>{item.notes?.trim() || "Follow-up"}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          <div className="leads-history-head">
+            <h4>History &amp; logs</h4>
+            {canManage && activities.length > 0 ? (
+              <button
+                type="button"
+                className="btn-secondary btn-sm leads-history-clear-btn"
+                disabled={savingKey === "history"}
+                onClick={() => {
+                  if (
+                    !window.confirm(
+                      "Delete all history entries for this lead? This cannot be undone.",
+                    )
+                  ) {
+                    return;
+                  }
+                  runAction("history", async () => {
+                    const result = await clearInboundLeadHistory(lead.id);
+                    if (result.ok) {
+                      setActivities([]);
+                      onLeadPatched?.(lead.id, { activities: [] });
+                    }
+                  });
+                }}
+              >
+                Clear all
+              </button>
+            ) : null}
+          </div>
+          <ul className="leads-history-list">
+            {activities.length === 0 ? (
+              <li className="leads-machine-muted">No activity yet.</li>
+            ) : (
+              activities.map((item) => (
+                <li key={item.id} className="leads-history-item">
+                  <div className="leads-history-item-body">
+                    <strong>{item.type.replaceAll("_", " ")}</strong>
+                    <span>{item.body}</span>
+                    <em>
+                      {new Date(item.createdAt).toLocaleString("en-IN")} ·{" "}
+                      {item.createdBy?.name || item.createdBy?.email || "System"}
+                    </em>
+                  </div>
+                  {canManage ? (
+                    <button
+                      type="button"
+                      className="leads-history-delete-btn"
+                      disabled={savingKey === "history"}
+                      title="Delete entry"
+                      aria-label="Delete history entry"
+                      onClick={() => {
+                        runAction("history", async () => {
+                          const result = await deleteInboundLeadActivity({
+                            leadId: lead.id,
+                            activityId: item.id,
+                          });
+                          if (result.ok) {
+                            setActivities((current) => {
+                              const merged = current.filter(
+                                (entry) => entry.id !== item.id,
+                              );
+                              onLeadPatched?.(lead.id, { activities: merged });
+                              return merged;
+                            });
+                          }
+                        });
+                      }}
+                    >
+                      <Trash2 size={14} aria-hidden />
+                    </button>
+                  ) : null}
+                </li>
+              ))
+            )}
+          </ul>
+        </section>
       ) : null}
       </div>
     </aside>
