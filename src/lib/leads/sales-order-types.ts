@@ -80,9 +80,11 @@ export type DispatchSlipData = {
 };
 
 /** Running = active fulfillment; Delivered/Cancelled = closed timeline. */
-export function partitionSalesOrdersByLifecycle(orders: LeadSalesOrderData[]) {
-  const running: LeadSalesOrderData[] = [];
-  const delivered: LeadSalesOrderData[] = [];
+export function partitionSalesOrdersByLifecycle<T extends LeadSalesOrderData>(
+  orders: T[],
+) {
+  const running: T[] = [];
+  const delivered: T[] = [];
   for (const order of orders) {
     if (order.status === "DELIVERED" || order.status === "CANCELLED") {
       delivered.push(order);

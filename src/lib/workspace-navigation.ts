@@ -4,13 +4,17 @@ import {
   BarChart3,
   Briefcase,
   CalendarCheck2,
+  CalendarDays,
   CheckSquare,
   ClipboardCheck,
   ClipboardList,
+  CreditCard,
   Factory,
   FileSpreadsheet,
   FlaskConical,
+  FolderKanban,
   GitBranch,
+  GraduationCap,
   LayoutDashboard,
   ListChecks,
   MapPin,
@@ -174,7 +178,7 @@ const BCI_GROUP: WorkspaceNavItem = {
   children: BCI_CHILD_ITEMS,
 };
 
-/** Sellable CRM — top-level sibling of BCI, not nested under it. */
+/** Sellable CRM — top-level sibling of BCI, with pipeline sub-modules. */
 const CRM_NAV_ITEM: WorkspaceNavItem = {
   id: "leads",
   href: "/app/leads",
@@ -182,6 +186,50 @@ const CRM_NAV_ITEM: WorkspaceNavItem = {
   icon: Megaphone,
   module: "CRM",
   matchPrefix: "/app/leads",
+  children: [
+    {
+      href: "/app/leads",
+      label: "Leads",
+      icon: Users,
+      module: "CRM",
+      matchPrefix: "/app/leads",
+    },
+    {
+      href: "/app/leads/meetings",
+      label: "Meetings",
+      icon: CalendarDays,
+      module: "CRM",
+      matchPrefix: "/app/leads/meetings",
+    },
+    {
+      href: "/app/leads/quotations",
+      label: "Quotations",
+      icon: ClipboardList,
+      module: "CRM",
+      matchPrefix: "/app/leads/quotations",
+    },
+    {
+      href: "/app/leads/payments",
+      label: "Payments",
+      icon: CreditCard,
+      module: "CRM",
+      matchPrefix: "/app/leads/payments",
+    },
+    {
+      href: "/app/leads/projects",
+      label: "Projects",
+      icon: FolderKanban,
+      module: "CRM",
+      matchPrefix: "/app/leads/projects",
+    },
+    {
+      href: "/app/leads/training",
+      label: "Training",
+      icon: GraduationCap,
+      module: "CRM",
+      matchPrefix: "/app/leads/training",
+    },
+  ],
 };
 
 const HRMS_NAV_ITEM: WorkspaceNavItem = {
@@ -1012,6 +1060,14 @@ export function navIsActive(
     hrefPath === "/app/tasks" &&
     base === "/app/tasks" &&
     (pathname === "/app/tasks/today" || pathname === "/app/tasks/all")
+  ) {
+    return false;
+  }
+  // CRM Leads index should not stay active on Meetings / Quotations / … sub-modules.
+  if (
+    hrefPath === "/app/leads" &&
+    base === "/app/leads" &&
+    pathname.startsWith("/app/leads/")
   ) {
     return false;
   }
