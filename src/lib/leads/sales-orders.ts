@@ -4,6 +4,7 @@ import type {
   SalesOrderFmsRole as PrismaFmsRole,
   SalesOrderStatus as PrismaSalesOrderStatus,
 } from "@prisma/client";
+import { prisma } from "@/lib/db";
 import type {
   DispatchSlipData,
   LeadSalesOrderData,
@@ -15,7 +16,6 @@ import {
   getSalesOrderByDispatchToken,
   getSalesOrderDetail,
   getSalesOrderForLead,
-  listSalesOrdersForLead,
   listSalesOrdersForOrg,
 } from "@/lib/sales-orders/queries";
 import { IMS_STOCK_FULFILLMENT_STATUSES } from "@/lib/ims/sales-order-stock";
@@ -186,7 +186,136 @@ export async function getSalesOrdersByLeadIds(
   return map;
 }
 
-/** All SOs per lead — one client can have multiple projects over time. */
+/** Light include for CRM list badges — no FMS stepStates (drawer detail uses single-lead fetch). */
+const salesOrderListLightInclude = {
+  quotation: {
+    select: {
+      id: true,
+      quotationNumber: true,
+      totalAmount: true,
+      advanceRequired: true,
+    },
+  },
+  fmsLinks: {
+    select: {
+      role: true,
+      fmsInstance: {
+        select: {
+          id: true,
+          status: true,
+          referenceLabel: true,
+          template: { select: { name: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: "asc" as const },
+  },
+};
+
+type LightOrderRow = {
+  id: string;
+  leadId: string;
+  orderNumber: string;
+  status: PrismaSalesOrderStatus;
+  dispatchShareToken: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  quotation: {
+    id: string;
+    quotationNumber: string;
+    totalAmount: unknown;
+    advanceRequired: unknown;
+  };
+  fmsLinks: Array<{
+    role: PrismaFmsRole;
+    fmsInstance: {
+      id: string;
+      status: string;
+      referenceLabel: string | null;
+      template: { name: string };
+    };
+  }>;
+};
+
+function mapLightPrismaStatusToUi(
+  status: PrismaSalesOrderStatus,
+  links: LightOrderRow["fmsLinks"],
+): SalesOrderStatus {
+  const poLink = links.find((link) => link.role === "PURCHASE_ORDER");
+  if (status === "PO_PENDING" && poLink?.fmsInstance.status === "ACTIVE") {
+    return "PO_IN_PROGRESS";
+  }
+
+  const dispatchLink = links.find((link) => link.role === "DISPATCH");
+  if (dispatchLink?.fmsInstance.status === "ACTIVE" && status === "READY_TO_DISPATCH") {
+    return "DISPATCH_PENDING";
+  }
+
+  switch (status) {
+    case "DRAFT":
+      return "DRAFT";
+    case "CONFIRMED":
+      return links.some((link) => link.role === "STOCK_CHECK")
+        ? "STOCK_CHECK"
+        : "CONFIRMED";
+    case "STOCK_CHECK":
+      return "STOCK_CHECK";
+    case "PO_PENDING":
+      return "PO_PENDING";
+    case "READY_TO_DISPATCH":
+      return "DISPATCH_PENDING";
+    case "IN_TRANSIT":
+      return "DISPATCHED";
+    case "DELIVERED":
+      return "DELIVERED";
+    case "CANCELLED":
+      return "CANCELLED";
+    default:
+      return "DRAFT";
+  }
+}
+
+function findLightFmsInstanceId(
+  links: LightOrderRow["fmsLinks"],
+  role: PrismaFmsRole,
+) {
+  return links.find((link) => link.role === role)?.fmsInstance.id ?? null;
+}
+
+function toLightLeadSalesOrderData(order: LightOrderRow): LeadSalesOrderData {
+  const links = order.fmsLinks;
+  const total = Number(order.quotation.totalAmount);
+  const advance = Number(order.quotation.advanceRequired ?? 0);
+
+  return {
+    id: order.id,
+    orderNumber: order.orderNumber,
+    status: mapLightPrismaStatusToUi(order.status, links),
+    orderValue: total,
+    advanceAmount: advance,
+    balanceAmount: Math.max(0, total - advance),
+    quotationId: order.quotation.id,
+    quotationNumber: order.quotation.quotationNumber,
+    dispatchShareToken: order.dispatchShareToken,
+    stockCheckFmsInstanceId: findLightFmsInstanceId(links, "STOCK_CHECK"),
+    poFmsInstanceId: findLightFmsInstanceId(links, "PURCHASE_ORDER"),
+    dispatchFmsInstanceId: findLightFmsInstanceId(links, "DISPATCH"),
+    fmsInstances: links.map((link) =>
+      summarizeFmsInstance(
+        link.fmsInstance.id,
+        link.fmsInstance.template.name,
+        link.fmsInstance.referenceLabel ?? order.orderNumber,
+        link.fmsInstance.status,
+        mapFmsRole(link.role),
+        [],
+      ),
+    ),
+    createdAt: order.createdAt.toISOString(),
+    updatedAt: order.updatedAt.toISOString(),
+  };
+}
+
+/** All SOs per lead — one batched query (newest first). No per-lead N+1. */
 export async function getAllSalesOrdersByLeadIds(
   organizationId: string,
   leadIds: string[],
@@ -197,14 +326,23 @@ export async function getAllSalesOrdersByLeadIds(
     return map;
   }
 
-  const results = await Promise.all(
-    unique.map(async (leadId) => {
-      const orders = await listSalesOrdersForLead(organizationId, leadId);
-      return [leadId, orders.map(toLeadSalesOrderData)] as const;
-    }),
-  );
-  for (const [leadId, orders] of results) {
-    map.set(leadId, orders);
+  for (const leadId of unique) {
+    map.set(leadId, []);
+  }
+
+  const orders = (await prisma.salesOrder.findMany({
+    where: { organizationId, leadId: { in: unique } },
+    orderBy: { createdAt: "desc" },
+    include: salesOrderListLightInclude,
+  })) as LightOrderRow[];
+
+  for (const order of orders) {
+    const list = map.get(order.leadId);
+    if (list) {
+      list.push(toLightLeadSalesOrderData(order));
+    } else {
+      map.set(order.leadId, [toLightLeadSalesOrderData(order)]);
+    }
   }
   return map;
 }
