@@ -17,6 +17,8 @@ export type LeadsListSearchParams = {
   /** "1" = include soft-archived leads in the list */
   archived?: string;
   leadId?: string;
+  /** Drawer section when opening a lead (payments | meeting | quote | …). */
+  tab?: string;
   period?: string;
   week?: string;
   month?: string;

@@ -1,14 +1,16 @@
-import Link from "next/link";
+import { CrmClientGroups, type CrmClientGroup } from "@/components/saas/crm-client-groups";
 import { CrmSubmoduleShell } from "@/components/saas/crm-submodule-shell";
 import "@/components/saas/leads-machine.css";
 import { formatInr } from "@/lib/leads/categories";
 import { formatCrmNavValue } from "@/lib/leads/crm-nav-format";
 import { listCrmQuotations } from "@/lib/leads/crm-module-stats";
+import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { prisma } from "@/lib/db";
 
 export default async function CrmQuotationsPage() {
   const user = await requireSession(undefined, { module: "CRM" });
+  const canManage = hasMinimumRole(user.role, "MANAGER");
   const [rows, agg] = await Promise.all([
     listCrmQuotations(user.organizationId, 150),
     prisma.inboundLeadQuotation.aggregate({
@@ -21,6 +23,60 @@ export default async function CrmQuotationsPage() {
   const locked = rows.filter((r) => r.lockedAt).length;
   const value = Number(agg._sum.totalAmount ?? 0);
 
+  const byLead = new Map<
+    string,
+    {
+      lead: (typeof rows)[number]["lead"];
+      quotations: typeof rows;
+      total: number;
+    }
+  >();
+  for (const row of rows) {
+    const existing = byLead.get(row.lead.id);
+    const amount = Number(row.totalAmount);
+    if (existing) {
+      existing.quotations.push(row);
+      existing.total += amount;
+    } else {
+      byLead.set(row.lead.id, {
+        lead: row.lead,
+        quotations: [row],
+        total: amount,
+      });
+    }
+  }
+
+  const groups: CrmClientGroup[] = [...byLead.values()].map((entry) => {
+    const name = entry.lead.name || entry.lead.company || "Lead";
+    return {
+      id: entry.lead.id,
+      name,
+      phone: entry.lead.phone || "",
+      inboundLeadId: entry.lead.id,
+      summary: `${entry.quotations.length} quote${
+        entry.quotations.length === 1 ? "" : "s"
+      } · ${formatInr(entry.total)}`,
+      rows: entry.quotations.map((row) => ({
+        id: row.id,
+        cells: [
+          {
+            primary: row.quotationNumber,
+            secondary:
+              row.revisionNumber > 1 ? `Rev ${row.revisionNumber}` : undefined,
+          },
+          row.requestType === "INVOICE" ? "Invoice" : "Proposal",
+          formatInr(Number(row.totalAmount)),
+          new Date(row.quotationDate).toLocaleDateString("en-IN", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          }),
+          row.lockedAt ? "Locked" : row.sentAt ? "Sent" : row.status,
+        ],
+      })),
+    };
+  });
+
   return (
     <CrmSubmoduleShell
       title="Quotations"
@@ -32,73 +88,15 @@ export default async function CrmQuotationsPage() {
         { label: "Locked (page)", value: String(locked), accent: "warning" },
       ]}
     >
-      <div className="crm-submodule-table-wrap">
-        <table className="crm-submodule-table">
-          <thead>
-            <tr>
-              <th>Number</th>
-              <th>Client</th>
-              <th>Type</th>
-              <th>Amount</th>
-              <th>Date</th>
-              <th>Status</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="leads-machine-muted">
-                  No quotations yet.
-                </td>
-              </tr>
-            ) : (
-              rows.map((row) => (
-                <tr key={row.id}>
-                  <td>
-                    <strong>{row.quotationNumber}</strong>
-                    {row.revisionNumber > 1 ? (
-                      <div className="leads-machine-muted">
-                        Rev {row.revisionNumber}
-                      </div>
-                    ) : null}
-                  </td>
-                  <td>
-                    {row.lead.name || row.lead.company || "Lead"}
-                    <div className="leads-machine-muted">
-                      {row.lead.phone || "—"}
-                    </div>
-                  </td>
-                  <td>{row.requestType === "INVOICE" ? "Invoice" : "Proposal"}</td>
-                  <td>{formatInr(Number(row.totalAmount))}</td>
-                  <td>
-                    {new Date(row.quotationDate).toLocaleDateString("en-IN", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </td>
-                  <td>
-                    {row.lockedAt
-                      ? "Locked"
-                      : row.sentAt
-                        ? "Sent"
-                        : row.status}
-                  </td>
-                  <td>
-                    <Link
-                      className="btn-secondary btn-sm"
-                      href={`/app/leads?leadId=${row.lead.id}&period=all`}
-                    >
-                      Open
-                    </Link>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <CrmClientGroups
+        groups={groups}
+        columns={["Number", "Type", "Amount", "Date", "Status"]}
+        openTab="quote"
+        waEvent="alert_quotation_pending"
+        canManage={canManage}
+        emptyMessage="No quotations yet."
+        filterPlaceholder="Filter quotation clients…"
+      />
     </CrmSubmoduleShell>
   );
 }

@@ -24,6 +24,7 @@ import {
   type LeadsListSearchParams,
   type LeadsViewMode,
 } from "@/lib/leads/list-params";
+import { parseCrmDrawerTab, type CrmDrawerTab } from "@/lib/leads/crm-open";
 
 type TeamMember = {
   user: { id: string; name: string | null; email: string };
@@ -149,6 +150,8 @@ export function LeadsCrmWorkspace({
   organizationName,
   organizationLogoUrl,
   initialSelectedLeadId = null,
+  initialTab = null,
+  focusMode = false,
 }: {
   leads: LeadRow[];
   total: number;
@@ -170,6 +173,9 @@ export function LeadsCrmWorkspace({
   organizationName: string;
   organizationLogoUrl: string | null;
   initialSelectedLeadId?: string | null;
+  initialTab?: CrmDrawerTab | string | null;
+  /** Deep-link: show only the focused lead drawer (from Payments / Meetings / etc.). */
+  focusMode?: boolean;
 }) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedLeadId);
@@ -223,7 +229,9 @@ export function LeadsCrmWorkspace({
     : `/app/leads?${buildLeadsListQuery(listParams, { archived: "1", page: "1" })}`;
 
   return (
-    <div className="leads-crm">
+    <div className={`leads-crm${focusMode ? " leads-crm--focus" : ""}`}>
+      {!focusMode ? (
+        <>
       <div className="leads-crm-toolbar">
         <div className="leads-crm-search" role="search">
           <input
@@ -626,20 +634,41 @@ export function LeadsCrmWorkspace({
           for pagination.
         </p>
       ) : null}
+        </>
+      ) : null}
 
       {selected ? (
         <div
           className="leads-drawer-backdrop"
           role="presentation"
-          onClick={() => setSelectedId(null)}
+          onClick={() => {
+            if (focusMode) {
+              router.push("/app/leads?period=all");
+              return;
+            }
+            setSelectedId(null);
+          }}
         >
           <LeadDrawerPanel
             key={selected.id}
             canManage={canManage}
+            initialTab={parseCrmDrawerTab(initialTab) ?? initialTab}
             lead={selected}
             listParams={listParams}
-            onClose={() => setSelectedId(null)}
-            onDeleted={() => setSelectedId(null)}
+            onClose={() => {
+              if (focusMode) {
+                router.push("/app/leads?period=all");
+                return;
+              }
+              setSelectedId(null);
+            }}
+            onDeleted={() => {
+              if (focusMode) {
+                router.push("/app/leads?period=all");
+                return;
+              }
+              setSelectedId(null);
+            }}
             onLeadPatched={patchLead}
             organizationLogoUrl={organizationLogoUrl}
             organizationName={organizationName}

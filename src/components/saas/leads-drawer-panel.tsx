@@ -60,6 +60,10 @@ import {
   type InboundLeadFollowUpTypeId,
 } from "@/lib/leads/follow-up-types";
 import { leadWhatsAppHref } from "@/lib/leads/contact-links";
+import {
+  parseCrmDrawerTab,
+  type CrmDrawerTab,
+} from "@/lib/leads/crm-open";
 import { computeLeadPaymentSummary } from "@/lib/leads/payment-summary";
 import { buildLeadsListQuery, type LeadsListSearchParams } from "@/lib/leads/list-params";
 import {
@@ -159,14 +163,7 @@ type FollowUpRow = {
   type?: InboundLeadFollowUpTypeId | string | null;
 };
 
-type DrawerTab =
-  | "details"
-  | "activity"
-  | "meeting"
-  | "payments"
-  | "quote"
-  | "projects"
-  | "training";
+export type DrawerTab = CrmDrawerTab;
 
 type ActionKey =
   | "details"
@@ -258,6 +255,7 @@ export function LeadDrawerPanel({
   onDeleted: _onDeleted,
   onLeadPatched,
   listParams = {},
+  initialTab = null,
 }: {
   lead: LeadDrawerData;
   canManage: boolean;
@@ -271,12 +269,15 @@ export function LeadDrawerPanel({
   onDeleted?: () => void;
   onLeadPatched?: (id: string, patch: Partial<LeadDrawerData>) => void;
   listParams?: LeadsListSearchParams;
+  initialTab?: DrawerTab | string | null;
 }) {
   void _onDeleted;
   const router = useRouter();
   const [fieldPending, startFieldTransition] = useTransition();
   const [, startActionTransition] = useTransition();
-  const [tab, setTab] = useState<DrawerTab>("details");
+  const [tab, setTab] = useState<DrawerTab>(
+    () => parseCrmDrawerTab(initialTab) ?? "details",
+  );
   const allSalesOrders = lead.salesOrders?.length
     ? lead.salesOrders
     : lead.salesOrder
@@ -516,6 +517,7 @@ export function LeadDrawerPanel({
         ? [lead.salesOrder]
         : [];
     setSelectedOrderId(orders[0]?.id ?? null);
+    setTab(parseCrmDrawerTab(initialTab) ?? "details");
     // Remount-equivalent reset when switching leads only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lead.id]);

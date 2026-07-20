@@ -106,6 +106,58 @@ export async function getLeadsMachineStatsForPeriod(
   };
 }
 
+/** Shared include for CRM list rows and single-lead drawer focus fetch. */
+const inboundLeadCrmDrawerInclude = {
+  assignedTo: { select: { id: true, name: true, email: true } },
+  followUps: {
+    where: { completedAt: null },
+    orderBy: { scheduledAt: "asc" as const },
+    take: 5,
+    include: {
+      assignee: { select: { id: true, name: true, email: true } },
+    },
+  },
+  activities: {
+    orderBy: { createdAt: "desc" as const },
+    take: 12,
+    include: {
+      createdBy: { select: { id: true, name: true, email: true } },
+    },
+  },
+  payments: {
+    orderBy: { receivedDate: "desc" as const },
+    take: 10,
+  },
+  quotations: {
+    orderBy: { quotationDate: "desc" as const },
+    take: 5,
+    include: { lines: true },
+  },
+  offeredServices: {
+    orderBy: { createdAt: "desc" as const },
+  },
+} as const;
+
+/**
+ * Fetch one lead for CRM deep-link / focus mode (Open from Payments, Meetings, etc.).
+ * Same includes as listInboundLeadsForPeriodPaginated. Returns null if missing or wrong org.
+ * Includes archived leads so submodule Open still works after archive.
+ */
+export async function getInboundLeadForCrmDrawer(
+  organizationId: string,
+  leadId: string,
+) {
+  const id = leadId.trim();
+  if (!id) {
+    return null;
+  }
+
+  return prisma.inboundLead.findFirst({
+    where: { id, organizationId },
+    include: inboundLeadCrmDrawerInclude,
+  });
+}
+
 export async function listInboundLeadsForPeriodPaginated(
   organizationId: string,
   period: LeadsPeriodRange,
@@ -160,36 +212,7 @@ export async function listInboundLeadsForPeriodPaginated(
       orderBy,
       skip,
       take: options.pageSize,
-      include: {
-        assignedTo: { select: { id: true, name: true, email: true } },
-        followUps: {
-          where: { completedAt: null },
-          orderBy: { scheduledAt: "asc" },
-          take: 5,
-          include: {
-            assignee: { select: { id: true, name: true, email: true } },
-          },
-        },
-        activities: {
-          orderBy: { createdAt: "desc" },
-          take: 12,
-          include: {
-            createdBy: { select: { id: true, name: true, email: true } },
-          },
-        },
-        payments: {
-          orderBy: { receivedDate: "desc" },
-          take: 10,
-        },
-        quotations: {
-          orderBy: { quotationDate: "desc" },
-          take: 5,
-          include: { lines: true },
-        },
-        offeredServices: {
-          orderBy: { createdAt: "desc" },
-        },
-      },
+      include: inboundLeadCrmDrawerInclude,
     }),
   ]);
 
