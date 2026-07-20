@@ -11,7 +11,6 @@ import {
 } from "@/app/app/leads/actions";
 import { LeadsCsvImportButton } from "@/components/saas/leads-csv-import";
 import { LeadDrawerPanel, type LeadDrawerData } from "@/components/saas/leads-drawer-panel";
-import { LeadDeliveryStagePill } from "@/components/saas/lead-delivery-journey";
 import { LeadCategorySelect } from "@/components/saas/lead-category-select";
 import { LeadStatusSelect } from "@/components/saas/lead-status-select";
 import { LeadTemperatureBadge } from "@/components/saas/lead-temperature-badge";
@@ -424,7 +423,6 @@ export function LeadsCrmWorkspace({
               <th>Lead Source</th>
               <th>Category</th>
               <th>Status</th>
-              <th>Lead Stage</th>
               <th className="leads-col-quoted">Quoted</th>
               <th className="leads-col-actions" aria-label="Actions" />
             </tr>
@@ -432,7 +430,7 @@ export function LeadsCrmWorkspace({
           <tbody>
             {visibleLeads.length === 0 ? (
               <tr>
-                <td colSpan={8}>
+                <td colSpan={7}>
                   <div className="leads-empty-state">
                     <p className="leads-machine-muted">
                       {searchDraft.trim()
@@ -522,15 +520,6 @@ export function LeadsCrmWorkspace({
                         disabled={!canManage}
                         leadId={lead.id}
                         value={lead.status}
-                      />
-                    </td>
-                    <td className="leads-row-delivery">
-                      <LeadDeliveryStagePill
-                        lead={{
-                          quotations: lead.quotations,
-                          payments: lead.payments,
-                          salesOrder: lead.salesOrder ?? null,
-                        }}
                       />
                     </td>
                     <td className="leads-row-quoted">
