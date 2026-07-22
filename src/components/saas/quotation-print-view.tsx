@@ -4,9 +4,9 @@ import type { ReactNode } from "react";
 import { formatInr } from "@/lib/leads/categories";
 import { formatInrInWords } from "@/lib/inr-words";
 import {
-  QUOTATION_FOOTER_CONTACT,
   formatQuotationProjectDate,
   formatQuotationTermsBlock,
+  quotationFooterContact,
   quotationTermsForRequestType,
 } from "@/lib/leads/quotation-content";
 import { siteBrand } from "@/app/site-content";
@@ -68,6 +68,7 @@ export function QuotationPrintView({
   const scopeText =
     quotation.scopeNotes || quotation.lead.requirement || null;
   const isLocked = quotation.status === "LOCKED" || Boolean(quotation.lockedAt);
+  const isSuperseded = quotation.status === "REVISED";
   const revisionLabel =
     quotation.revisionNumber && quotation.revisionNumber > 1
       ? ` · Revision ${quotation.revisionNumber}`
@@ -81,6 +82,11 @@ export function QuotationPrintView({
         {isLocked ? (
           <div className="quotation-print-locked-banner">
             Approved · Locked after advance payment
+          </div>
+        ) : null}
+        {isSuperseded ? (
+          <div className="quotation-print-superseded-banner">
+            Superseded — a newer revision of this quotation exists
           </div>
         ) : null}
 
@@ -105,7 +111,13 @@ export function QuotationPrintView({
               {quotation.requestType === "INVOICE"
                 ? "Invoice Generated Date"
                 : "Quotation Generated Date"}
-              : {new Date(quotation.quotationDate).toLocaleDateString("en-IN")}
+              :{" "}
+              {new Date(quotation.quotationDate).toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+                timeZone: "Asia/Kolkata",
+              })}
             </p>
           </div>
         </header>
@@ -129,6 +141,7 @@ export function QuotationPrintView({
           </section>
         ) : null}
 
+        <div className="quotation-print-table-wrap">
         <table className="quotation-print-table">
           <thead>
             <tr>
@@ -153,10 +166,12 @@ export function QuotationPrintView({
             ))}
           </tbody>
           <tfoot>
-            <tr>
-              <td colSpan={5}>Subtotal</td>
-              <td>{formatInr(quotation.subtotal)}</td>
-            </tr>
+            {quotation.subtotal !== quotation.totalAmount ? (
+              <tr>
+                <td colSpan={5}>Subtotal</td>
+                <td>{formatInr(quotation.subtotal)}</td>
+              </tr>
+            ) : null}
             <tr>
               <td colSpan={5}>
                 <strong>Total</strong>
@@ -172,6 +187,7 @@ export function QuotationPrintView({
             </tr>
           </tfoot>
         </table>
+        </div>
 
         <section className="quotation-print-timeline">
           <p>
@@ -207,17 +223,19 @@ export function QuotationPrintView({
           <h3>Terms &amp; conditions</h3>
           <pre>
             {formatQuotationTermsBlock(
-              quotationTermsForRequestType(quotation.requestType),
+              quotationTermsForRequestType(quotation.requestType, organizationName),
             )}
           </pre>
-          <p className="quotation-print-terms-link">
-            Full terms: sheetomatic.com/terms
-          </p>
+          {organizationName.trim().toLowerCase() === "sheetomatic" ? (
+            <p className="quotation-print-terms-link">
+              Full terms: sheetomatic.com/terms
+            </p>
+          ) : null}
         </section>
 
         <footer className="quotation-print-footer">
           <p>Thank you for choosing {organizationName}.</p>
-          <p>{QUOTATION_FOOTER_CONTACT}</p>
+          <p>{quotationFooterContact(organizationName)}</p>
         </footer>
       </article>
 
@@ -232,6 +250,42 @@ export function QuotationPrintView({
           .quotation-print-standalone {
             background: #fff !important;
             padding: 0 !important;
+          }
+          /* Hide residual workspace shell chrome on the print route */
+          .saas-sidebar,
+          .ws-mobile-shell-header {
+            display: none !important;
+          }
+          .saas-app,
+          .saas-main,
+          .saas-content {
+            display: block !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            max-width: none !important;
+          }
+          .quotation-print-page {
+            padding: 0 !important;
+            background: #fff !important;
+          }
+          .quotation-print-sheet {
+            border: none !important;
+            border-radius: 0 !important;
+            max-width: none !important;
+          }
+          /* Light background + dark text stays readable even when
+             browsers strip backgrounds while printing */
+          .quotation-print-table th {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            background: #e2e8f0 !important;
+            color: #0f172a !important;
+          }
+          .quotation-print-locked-banner,
+          .quotation-print-superseded-banner {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
         }
         .quotation-print-page {
@@ -267,6 +321,16 @@ export function QuotationPrintView({
           background: #ecfdf5;
           border: 1px solid #6ee7b7;
           color: #047857;
+          padding: 0.5rem 0.75rem;
+          border-radius: 8px;
+          margin-bottom: 1rem;
+          font-weight: 600;
+          font-size: 0.88rem;
+        }
+        .quotation-print-superseded-banner {
+          background: #fffbeb;
+          border: 1px solid #fcd34d;
+          color: #b45309;
           padding: 0.5rem 0.75rem;
           border-radius: 8px;
           margin-bottom: 1rem;
@@ -326,6 +390,9 @@ export function QuotationPrintView({
           color: #64748b;
           margin-top: 0.5rem;
         }
+        .quotation-print-table-wrap {
+          overflow-x: auto;
+        }
         .quotation-print-table {
           width: 100%;
           border-collapse: collapse;
@@ -350,6 +417,14 @@ export function QuotationPrintView({
           margin-top: 2rem;
           font-size: 0.82rem;
           color: #64748b;
+        }
+        @media (max-width: 640px) {
+          .quotation-print-page {
+            padding: 0.5rem;
+          }
+          .quotation-print-sheet {
+            padding: 1rem;
+          }
         }
       `}</style>
     </div>

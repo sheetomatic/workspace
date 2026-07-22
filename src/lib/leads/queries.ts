@@ -130,7 +130,7 @@ const inboundLeadCrmDrawerInclude = {
   },
   quotations: {
     orderBy: { quotationDate: "desc" as const },
-    take: 5,
+    take: 20,
     include: { lines: true },
   },
   offeredServices: {

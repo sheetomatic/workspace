@@ -14,33 +14,67 @@ export function paymentTermsForRequestType(requestType: QuotationRequestType | s
     : DEFAULT_QUOTATION_PAYMENT_TERMS;
 }
 
-export const DEFAULT_QUOTATION_TERMS = [
-  "Quotation is valid for 15 days from the date of issue unless extended in writing.",
-  "Scope covers only the line items listed. Additional work is billed separately.",
-  "Client to provide timely access to Google accounts, sheets, and WhatsApp numbers required for setup.",
-  "Sheetomatic is not responsible for third-party API outages (Google, Meta, WhatsApp providers).",
-  "Training sessions are limited to agreed duration; extra sessions are chargeable.",
-  "For WhatsApp API integrations, message credits and annual subscription renewals are as per selected plan.",
-  "Confidentiality: both parties agree to keep business data private.",
-  "Disputes are subject to jurisdiction in India.",
-] as const;
+const SHEETOMATIC_ORG_NAME = "Sheetomatic";
 
-export const INVOICE_TERMS = [
-  "Payment is due immediately upon receipt of this invoice unless otherwise agreed in writing.",
-  "Scope covers only the line items listed. Additional work is billed separately.",
-  "GST extra as applicable on all taxable line items.",
-  "Client to provide timely access to accounts, data, and assets required for delivery.",
-  "Sheetomatic is not responsible for third-party API outages (Google, Meta, WhatsApp providers).",
-  "Confidentiality: both parties agree to keep business data private.",
-  "Disputes are subject to jurisdiction in India.",
-] as const;
+export function defaultQuotationTerms(
+  organizationName: string = SHEETOMATIC_ORG_NAME,
+): readonly string[] {
+  const orgName = organizationName.trim() || SHEETOMATIC_ORG_NAME;
+  return [
+    "Quotation is valid for 15 days from the date of issue unless extended in writing.",
+    "Scope covers only the line items listed. Additional work is billed separately.",
+    "Client to provide timely access to Google accounts, sheets, and WhatsApp numbers required for setup.",
+    `${orgName} is not responsible for third-party API outages (Google, Meta, WhatsApp providers).`,
+    "Training sessions are limited to agreed duration; extra sessions are chargeable.",
+    "For WhatsApp API integrations, message credits and annual subscription renewals are as per selected plan.",
+    "Confidentiality: both parties agree to keep business data private.",
+    "Disputes are subject to jurisdiction in India.",
+  ];
+}
 
-export function quotationTermsForRequestType(requestType: QuotationRequestType | string) {
-  return requestType === "INVOICE" ? INVOICE_TERMS : DEFAULT_QUOTATION_TERMS;
+export function invoiceTerms(
+  organizationName: string = SHEETOMATIC_ORG_NAME,
+): readonly string[] {
+  const orgName = organizationName.trim() || SHEETOMATIC_ORG_NAME;
+  return [
+    "Payment is due immediately upon receipt of this invoice unless otherwise agreed in writing.",
+    "Scope covers only the line items listed. Additional work is billed separately.",
+    "GST extra as applicable on all taxable line items.",
+    "Client to provide timely access to accounts, data, and assets required for delivery.",
+    `${orgName} is not responsible for third-party API outages (Google, Meta, WhatsApp providers).`,
+    "Confidentiality: both parties agree to keep business data private.",
+    "Disputes are subject to jurisdiction in India.",
+  ];
+}
+
+export const DEFAULT_QUOTATION_TERMS: readonly string[] = defaultQuotationTerms();
+
+export const INVOICE_TERMS: readonly string[] = invoiceTerms();
+
+export function quotationTermsForRequestType(
+  requestType: QuotationRequestType | string,
+  organizationName: string = SHEETOMATIC_ORG_NAME,
+) {
+  return requestType === "INVOICE"
+    ? invoiceTerms(organizationName)
+    : defaultQuotationTerms(organizationName);
 }
 
 export const QUOTATION_FOOTER_CONTACT =
   "For queries, reply on WhatsApp +91 93291 03106 or email sheetomatic@gmail.com";
+
+/**
+ * Footer contact line. Sheetomatic's own phone/email only appear when the
+ * document belongs to the primary Sheetomatic org; other tenants get a
+ * generic line under their own name.
+ */
+export function quotationFooterContact(organizationName?: string | null) {
+  const orgName = organizationName?.trim();
+  if (!orgName || orgName === SHEETOMATIC_ORG_NAME) {
+    return QUOTATION_FOOTER_CONTACT;
+  }
+  return `For queries, reply to ${orgName} on WhatsApp or email us.`;
+}
 
 export function formatQuotationTermsBlock(
   terms: readonly string[] = DEFAULT_QUOTATION_TERMS,
@@ -48,7 +82,7 @@ export function formatQuotationTermsBlock(
   return terms.map((item, index) => `${index + 1}. ${item}`).join("\n");
 }
 
-/** Project timeline dates — e.g. 3/7/2026 (no leading zeros). */
+/** Project timeline dates — e.g. "3 Jul 2026", rendered in IST. */
 export function formatQuotationProjectDate(value: Date | string | null | undefined) {
   if (!value) {
     return "—";
@@ -57,7 +91,12 @@ export function formatQuotationProjectDate(value: Date | string | null | undefin
   if (Number.isNaN(date.getTime())) {
     return "—";
   }
-  return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+  return date.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  });
 }
 
 export function isoDateInputValue(date = new Date()) {

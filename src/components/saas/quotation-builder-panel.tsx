@@ -352,7 +352,16 @@ export function QuotationBuilderPanel({
 
   return (
     <section className="leads-drawer-section leads-quotation-workspace">
-      <h3>Quotation / Invoice</h3>
+      <div className="leads-quote-workspace-head">
+        <h3>Quotation / Invoice</h3>
+        <Link
+          className="leads-action-btn"
+          href="/app/leads/quotations"
+          target="_blank"
+        >
+          View all quotations
+        </Link>
+      </div>
 
       {canManage ? (
         <div className="leads-drawer-form leads-quote-builder">
@@ -680,7 +689,12 @@ export function QuotationBuilderPanel({
                     {quote.requestType === "INVOICE"
                       ? "Invoice Generated"
                       : "Quotation Generated"}{" "}
-                    {new Date(quote.quotationDate).toLocaleDateString("en-IN")}
+                    {new Date(quote.quotationDate).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                      timeZone: "Asia/Kolkata",
+                    })}
                   </span>
                   <em className={`leads-quote-status leads-quote-status-${quote.status.toLowerCase()}`}>
                     {quotationStatusLabel(quote.status)}
@@ -777,22 +791,24 @@ export function QuotationBuilderPanel({
                   >
                     Email
                   </button>
-                  <button
-                    type="button"
-                    className="leads-action-btn"
-                    disabled={pending}
-                    onClick={() =>
-                      runAction("Revision", async () => {
-                        const result = await reviseLeadQuotation(quote.id);
-                        if (result.ok && result.quotationId) {
-                          setPreviewId(result.quotationId);
-                        }
-                        return result;
-                      })
-                    }
-                  >
-                    Revise
-                  </button>
+                  {quote.status !== "REVISED" ? (
+                    <button
+                      type="button"
+                      className="leads-action-btn"
+                      disabled={pending}
+                      onClick={() =>
+                        runAction("Revision", async () => {
+                          const result = await reviseLeadQuotation(quote.id);
+                          if (result.ok && result.quotationId) {
+                            setPreviewId(result.quotationId);
+                          }
+                          return result;
+                        })
+                      }
+                    >
+                      Revise
+                    </button>
+                  ) : null}
                   {quote.shareToken ? (
                     <Link
                       className="leads-action-btn"

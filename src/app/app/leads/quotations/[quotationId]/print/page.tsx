@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { QuotationPrintToolbar } from "@/components/saas/quotation-print-toolbar";
 import { QuotationPrintView } from "@/components/saas/quotation-print-view";
 import { getLeadQuotationForPrint } from "@/lib/leads/quotations";
+import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 
 type PageProps = {
@@ -63,6 +64,7 @@ export default async function QuotationPrintPage({ params, searchParams }: PageP
           <QuotationPrintToolbar
             quotationId={quotation.id}
             isLocked={Boolean(quotation.lockedAt) || quotation.status === "LOCKED"}
+            canManage={hasMinimumRole(user.role, "MANAGER")}
           />
         )
       }
