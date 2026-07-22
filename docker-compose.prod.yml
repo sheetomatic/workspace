@@ -1,0 +1,69 @@
+# Production stack for Hostinger VPS
+#
+# Prerequisites on the VPS:
+#   - Docker + Docker Compose plugin
+#   - File `/opt/sheetomatic/.env` (from .env.example) with production secrets
+#   - DATABASE_URL / DIRECT_URL pointing at the `postgres` service, e.g.:
+#       postgresql://sheetomatic:STRONG_PASSWORD@postgres:5432/sheetomatic?schema=public
+#
+# Deploy:
+#   cd /opt/sheetomatic && ./deploy/hostinger/deploy.sh
+#
+# Nginx on the host terminates TLS and proxies to 127.0.0.1:3000
+# System cron calls scripts/vps-cron.sh (see deploy/hostinger/crontab.example)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sheetomatic}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-sheetomatic}
+    volumes:
+      - sheetomatic_pg_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sheetomatic -d sheetomatic"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - sheetomatic
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      AUTH_TRUST_HOST: "true"
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks:
+      - sheetomatic
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+
+networks:
+  sheetomatic:
+    driver: bridge
+
+volumes:
+  sheetomatic_pg_prod:
