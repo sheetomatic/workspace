@@ -872,3 +872,19 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/leads` — status filter/badge/options show **Next Time** instead of Lost (`LOST` unchanged in DB).
 
 ---
+
+**Deployed (2026-07-22):** CRM Meeting tab collapsible sections + Google Calendar embed + Meet link prefill (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| PR | https://github.com/sheetomatic/workspace/pull/37 (draft → ready → merge commit) |
+| Merge SHA | `6514e0055da7156dc78a4cc0ff0beeb96d5e87b8` |
+| Change | `leads-drawer-panel.tsx`, `leads-machine.css`, new `src/lib/leads/meeting-defaults.ts`; no migrations |
+| Pre-flight | Unit tests: 100/101; UTC flake on `google-sheets` timestamp test is pre-existing on main (passes with `TZ=Asia/Kolkata`, 101/101) |
+| Vercel | Production **SUCCESS** — sheetomatic-redesign |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/AqzbAR13MMczW25skZHTFMQ6BCcr — https://sheetomatic.com |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops (their auto-deploys ignored). |
+
+**Hard-refresh in prod:** `/app/leads` lead drawer → Meeting tab — collapsible sections, team Google Calendar embed, default Meet link prefill.
+
+---
