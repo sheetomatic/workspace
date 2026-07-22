@@ -1,0 +1,39 @@
+---
+description: Vercel Pro cost hygiene — save dollars without latency or outages
+alwaysApply: true
+---
+
+# Vercel cost (Sheetomatic)
+
+While production remains on **Vercel** (even temporarily), optimize **$** only in ways that keep UX fast and prod stable. Full playbook: `docs/VERCEL-COST-PLAYBOOK.md`. Pricing reference: https://vercel.com/pricing
+
+## Hard constraints (never “save money” by doing these)
+
+- Do **not** disable Fluid / cold-start prevention.
+- Do **not** recommend Spend Management that **pauses** production — alerts only.
+- Do **not** lower webhook or `leads-sync` `maxDuration` below what delivery/import needs (`vercel.json`).
+- Do **not** remove product crons, tenant isolation, or `CRON_SECRET` checks.
+- Do **not** suggest Hobby for commercial Sheetomatic production.
+
+## Preferred savings (safe)
+
+- **Shorter function time:** batch DB (no N+1 / huge parallel fan-out), early-exit idle crons, keep heavy Sheets work in `after()` / cron — not on the user-critical path.
+- **Retries that prevent double traffic:** use `withDbRetry` on hot DB paths; fix “Connection closed” causes (pool + query shape), don’t ignore them.
+- **Seats:** Viewer (free) vs Member ($20); only deployers need paid seats.
+- **Add-ons off unless required:** SAML, HIPAA, Static IP, Flags Explorer, Preview suffix, Analytics Plus, Speed Insights, Observability Plus.
+- **Builds:** avoid useless preview/build spam; don’t enable costly concurrency without need.
+- **Images:** don’t gratuitously transform every asset via Image Optimization; use sized `public/` assets when transforms aren’t needed.
+- **Region:** keep Fluid functions near the Postgres/Neon region (latency ↓ and CPU ↓).
+- **Neon:** pooler URL on Vercel; avoid sleep/tiny DB that causes connection storms (retries burn Function $).
+
+## When touching these areas, check the playbook
+
+- `vercel.json` crons / `maxDuration`
+- `/app/leads` load path and Sheets sync
+- `next/image` usage on marketing or high-traffic UI
+- New Vercel marketplace / analytics / observability products
+- Deploy frequency and preview policy
+
+## Longer term
+
+Railway Pro single-platform path is documented in `docs/RAILWAY.md`. Until DNS cutover, **Vercel stays production** — cost work must not assume Railway is live.

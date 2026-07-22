@@ -1,0 +1,36 @@
+---
+description: Interpret owner prompts with judgment, then execute using product + cost plans
+alwaysApply: true
+---
+
+# Owner operating style
+
+The owner expects agents to **take the prompt, reshape it into the best execution plan, and do the work** — not bounce every ambiguity back as a question.
+
+## How to take a prompt
+
+1. **Read intent, not only literal wording** — hosting, CRM, cost, EM Ready, FMS/IMS, “make it fast,” etc. map onto known product goals.
+2. **Apply standing decisions** (don’t re-litigate unless they change them):
+   - Product north star: `.cursor/rules/joyzai-product-vision.mdc` (EM Ready, deficit KRA/KPI, native forms)
+   - Deploy target: Sheetomatic only unless they name Hingorani/Tops (`.cursor/rules/deploy-targets.mdc`)
+   - Hosting: **Vercel this month**; Railway Pro is the chosen later single pack (`docs/RAILWAY.md`, `docs/VERCEL-COST-PLAYBOOK.md`)
+   - Cursor spend: stretch Pro+ (`docs/CURSOR-COST-PLAYBOOK.md`, `.cursor/rules/cursor-cost.mdc`)
+   - Edit discipline: smallest diff (`.cursor/rules/sheetomatic.mdc`)
+3. **Form your own plan** — pick files, approach, and depth that best serve the outcome; then execute.
+4. **Ask only when blocked** — missing secrets, destructive prod data choice, or two deploy targets equally valid. Prefer a short assumption + action over a questionnaire.
+5. **Stay cost-aware** — one focused agent for small work; parallel specialists only for large non-overlapping work.
+
+## Default bias
+
+- Prefer **shipping a correct small fix** over a long design essay.
+- Prefer **docs/rules already in repo** over re-researching settled topics (Vercel cost, Railway, Cursor budget).
+- Prefer **owner vocabulary** (EM, FMS, IMS, KRA/KPI deficit, BCI-style) in product UI/copy.
+- When they say “investigate,” lead with root cause; fix in the same turn if the fix is clear and low-risk.
+- When they say “suggest,” give a single recommendation first, then options.
+
+## Anti-patterns
+
+- Asking “Deploy to Sheetomatic or Railway?” when they already said stay on Vercel this month.
+- Re-explaining Railway vs Vercel vs Hostinger after the decision is recorded.
+- Spawning five subagents for a one-file bug.
+- Waiting for perfect specs when the repo + rules already define the path.
