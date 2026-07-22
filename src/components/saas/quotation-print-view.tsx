@@ -4,9 +4,9 @@ import type { ReactNode } from "react";
 import { formatInr } from "@/lib/leads/categories";
 import { formatInrInWords } from "@/lib/inr-words";
 import {
-  QUOTATION_FOOTER_CONTACT,
   formatQuotationProjectDate,
   formatQuotationTermsBlock,
+  quotationFooterContact,
   quotationTermsForRequestType,
 } from "@/lib/leads/quotation-content";
 import { siteBrand } from "@/app/site-content";
@@ -223,17 +223,19 @@ export function QuotationPrintView({
           <h3>Terms &amp; conditions</h3>
           <pre>
             {formatQuotationTermsBlock(
-              quotationTermsForRequestType(quotation.requestType),
+              quotationTermsForRequestType(quotation.requestType, organizationName),
             )}
           </pre>
-          <p className="quotation-print-terms-link">
-            Full terms: sheetomatic.com/terms
-          </p>
+          {organizationName.trim().toLowerCase() === "sheetomatic" ? (
+            <p className="quotation-print-terms-link">
+              Full terms: sheetomatic.com/terms
+            </p>
+          ) : null}
         </section>
 
         <footer className="quotation-print-footer">
           <p>Thank you for choosing {organizationName}.</p>
-          <p>{QUOTATION_FOOTER_CONTACT}</p>
+          <p>{quotationFooterContact(organizationName)}</p>
         </footer>
       </article>
 
