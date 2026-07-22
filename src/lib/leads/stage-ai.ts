@@ -91,6 +91,8 @@ export function mapSheetStageToStatus(value: string): InboundLeadStatus | undefi
     "closed won": "WON",
     lost: "LOST",
     "closed lost": "LOST",
+    "next time": "LOST",
+    nexttime: "LOST",
     "no answer": "FOLLOW_UP",
     calling: "CONTACTED",
   };
