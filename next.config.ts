@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Railway / Docker: standalone `node server.js`. Local + Vercel leave unset.
+  ...(process.env.DOCKER_BUILD === "1" || process.env.RAILWAY_ENVIRONMENT
+    ? { output: "standalone" as const }
+    : {}),
   turbopack: {
     root: __dirname,
   },
