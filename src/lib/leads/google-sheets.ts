@@ -142,6 +142,8 @@ function mapSheetStatus(value: string): InboundLeadStatus | undefined {
     CLOSED_WON: "WON",
     LOST: "LOST",
     CLOSED_LOST: "LOST",
+    NEXT_TIME: "LOST",
+    NEXTTIME: "LOST",
   };
   return map[normalized];
 }
