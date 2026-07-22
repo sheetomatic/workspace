@@ -2037,6 +2037,18 @@
   cursor: pointer;
 }
 
+.leads-quote-workspace-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.leads-quote-workspace-head h3 {
+  margin: 0;
+}
+
 .leads-service-list,
 .leads-payment-list,
 .leads-quote-list {
