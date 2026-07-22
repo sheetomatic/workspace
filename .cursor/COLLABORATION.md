@@ -856,3 +856,19 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 **Hard-refresh in prod:** `/app/leads` (and submodule lists) — client groups; Open jumps to lead focus with drawer tab; WA reminders.
 
 ---
+
+**Deployed (2026-07-22):** CRM status label Lost → Next Time (Sheetomatic).
+
+| Item | Detail |
+|------|--------|
+| PR | https://github.com/sheetomatic/workspace/pull/35 (draft → ready → merge commit) |
+| Merge SHA | `152abffba9598996968a7d04f52326b5b0eef072` |
+| Change | UI/AI/import aliases show "Next Time"; DB enum remains `LOST` |
+| Pre-flight | Unit tests: 100/101; UTC flake on `google-sheets` timestamp test is pre-existing on main (passes with `TZ=Asia/Kolkata`) |
+| Vercel | Production **SUCCESS** — sheetomatic-redesign |
+| Deploy | https://vercel.com/sheetomatic/sheetomatic-redesign/3zG1UpqMnkceiGF5zEAoBHPKori6 — https://sheetomatic.com |
+| Target | Sheetomatic only. Did not promote Hingorani/Tops (auto-deploys ignored). |
+
+**Hard-refresh in prod:** `/app/leads` — status filter/badge/options show **Next Time** instead of Lost (`LOST` unchanged in DB).
+
+---
