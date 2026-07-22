@@ -138,6 +138,9 @@ function parseStatus(raw: string): InboundLeadStatus | null {
   const fromStage = mapSheetStageToStatus(raw);
   if (fromStage) return fromStage;
   const normalized = raw.trim().toUpperCase().replace(/\s+/g, "_");
+  if (normalized === "NEXT_TIME" || normalized === "NEXTTIME") {
+    return "LOST";
+  }
   const allowed: InboundLeadStatus[] = [
     "NEW",
     "SCHEDULE_MEETING",

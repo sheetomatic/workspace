@@ -14,7 +14,7 @@ export const LEAD_STATUS_LABELS: Record<InboundLeadStatus, string> = {
   PAYMENT: "Payment",
   PROJECT_ACTIVE: "Project active",
   WON: "Won",
-  LOST: "Lost",
+  LOST: "Next Time",
 };
 
 /** @deprecated Combined stage — migrated to PROPOSAL in the database. */
