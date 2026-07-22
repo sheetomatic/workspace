@@ -26,6 +26,7 @@ import {
   resolveLeadCategoryId,
 } from "@/lib/leads/categories";
 import { bridgeInboundLeadToFms } from "@/lib/leads/fms-bridge";
+import { whatsAppPhoneDigits } from "@/lib/leads/contact-links";
 import { leadPhoneDigits } from "@/lib/leads/contact-validation";
 import { testLeadsGoogleSheetAccess } from "@/lib/leads/google-sheets";
 import { pushLeadToGoogleSheet, syncLeadsTwoWay } from "@/lib/leads/google-sheets-export";
@@ -1886,6 +1887,15 @@ export async function addInboundLeadPayment(params: {
     return { ok: false, message: "Invalid payment date." };
   }
 
+  // Tenant guard: never write a payment against another org's lead.
+  const paymentLead = await prisma.inboundLead.findFirst({
+    where: { id: params.leadId, organizationId: user.organizationId },
+    select: { id: true },
+  });
+  if (!paymentLead) {
+    return { ok: false, message: "Lead not found." };
+  }
+
   // Validate advance before writing payment (avoids orphan rows on underpay).
   if (params.paymentType === "ADVANCE") {
     const latestQuotation = await prisma.inboundLeadQuotation.findFirst({
@@ -2178,41 +2188,65 @@ export async function createLeadQuotation(params: {
   }
 
   const totals = computeQuotationTotals(lines);
-  const quotationNumber = await nextQuotationNumber(user.organizationId);
   const durationDays = Number.parseInt(params.durationDays ?? "", 10);
   const quotationDate = new Date();
   const projectStartDate = parseQuotationStartDate(params.projectStartDate, quotationDate);
   const endDate = computeQuotationEndDate(projectStartDate, durationDays);
-
   const advanceRequired = Number.parseFloat(params.advanceRequired ?? "");
-  const quotation = await prisma.inboundLeadQuotation.create({
-    data: {
-      organizationId: user.organizationId,
-      leadId: lead.id,
-      quotationNumber,
-      requestType: params.requestType,
-      status: "DRAFT",
-      revisionNumber: 1,
-      company: params.company?.trim() || lead.company,
-      address: params.address?.trim() || lead.address,
-      zipCode: params.zipCode?.trim() || lead.zipCode,
-      quotationDate,
-      projectStartDate,
-      durationDays: Number.isFinite(durationDays) ? durationDays : null,
-      endDate,
-      subtotal: totals.subtotal,
-      totalAmount: totals.totalAmount,
-      advanceRequired: Number.isFinite(advanceRequired) ? advanceRequired : null,
-      scopeNotes: params.scopeNotes?.trim() || lead.requirement || null,
-      paymentTerms:
-        params.paymentTerms?.trim() ||
-        paymentTermsForRequestType(params.requestType),
-      notes: params.notes?.trim() || null,
-      shareToken: createQuotationShareToken(),
-      createdByUserId: user.id,
-      lines: { create: lines },
-    },
-  });
+
+  // Concurrent creates can race on @@unique([organizationId, quotationNumber]);
+  // retry with a freshly computed number on P2002.
+  const maxAttempts = 3;
+  let quotation: { id: string; createdAt: Date } | null = null;
+  let quotationNumber = "";
+  for (let attempt = 1; attempt <= maxAttempts && !quotation; attempt += 1) {
+    quotationNumber = await nextQuotationNumber(user.organizationId);
+    try {
+      quotation = await prisma.inboundLeadQuotation.create({
+        data: {
+          organizationId: user.organizationId,
+          leadId: lead.id,
+          quotationNumber,
+          requestType: params.requestType,
+          status: "DRAFT",
+          revisionNumber: 1,
+          company: params.company?.trim() || lead.company,
+          address: params.address?.trim() || lead.address,
+          zipCode: params.zipCode?.trim() || lead.zipCode,
+          quotationDate,
+          projectStartDate,
+          durationDays: Number.isFinite(durationDays) ? durationDays : null,
+          endDate,
+          subtotal: totals.subtotal,
+          totalAmount: totals.totalAmount,
+          advanceRequired: Number.isFinite(advanceRequired) ? advanceRequired : null,
+          scopeNotes: params.scopeNotes?.trim() || lead.requirement || null,
+          paymentTerms:
+            params.paymentTerms?.trim() ||
+            paymentTermsForRequestType(params.requestType),
+          notes: params.notes?.trim() || null,
+          shareToken: createQuotationShareToken(),
+          createdByUserId: user.id,
+          lines: { create: lines },
+        },
+      });
+    } catch (error) {
+      const isNumberCollision = (error as { code?: string })?.code === "P2002";
+      if (!isNumberCollision) {
+        throw error;
+      }
+      console.error(
+        `createLeadQuotation: quotation number collision on ${quotationNumber} (attempt ${attempt}/${maxAttempts})`,
+      );
+    }
+  }
+
+  if (!quotation) {
+    return {
+      ok: false,
+      message: "Could not allocate a unique quotation number. Please try again.",
+    };
+  }
 
   await prisma.inboundLead.updateMany({
     where: { id: lead.id, organizationId: user.organizationId },
@@ -2231,7 +2265,7 @@ export async function createLeadQuotation(params: {
     metadata: { quotationId: quotation.id },
   });
 
-  // No revalidatePath — client patches quotation list from returned row.
+  revalidatePath("/app/leads");
   return {
     ok: true,
     quotationId: quotation.id,
@@ -2303,6 +2337,13 @@ export async function reviseLeadQuotation(quotationId: string) {
   if (source.lockedAt || source.status === "LOCKED") {
     return { ok: false, message: "Locked quotations cannot be revised." };
   }
+  if (source.status === "REVISED") {
+    return {
+      ok: false,
+      message:
+        "This quotation was already revised — revise the latest revision instead.",
+    };
+  }
 
   const revisionNumber = source.revisionNumber + 1;
   const quotationNumber = revisionQuotationNumber(
@@ -2371,6 +2412,7 @@ async function getQuotationForShare(organizationId: string, quotationId: string)
     where: { id: quotationId, organizationId },
     include: {
       lead: { select: { name: true, phone: true, email: true } },
+      organization: { select: { name: true } },
     },
   });
 }
@@ -2401,6 +2443,7 @@ export async function sendLeadQuotationWhatsApp(quotationId: string) {
 
   const publicUrl = buildQuotationPublicUrl(shareToken!);
   const message = buildQuotationShareMessage({
+    organizationName: quotation.organization.name,
     clientName: quotation.lead.name || "there",
     quotationNumber: quotation.quotationNumber,
     requestType: quotation.requestType,
@@ -2409,7 +2452,7 @@ export async function sendLeadQuotationWhatsApp(quotationId: string) {
     revisionNumber: quotation.revisionNumber,
   });
 
-  const phone = quotation.lead.phone?.replace(/\D/g, "") ?? "";
+  const phone = whatsAppPhoneDigits(quotation.lead.phone);
   if (!phone) {
     return { ok: false, message: "Lead has no phone number for WhatsApp." };
   }
@@ -2449,8 +2492,9 @@ export async function sendLeadQuotationEmail(quotationId: string) {
 
   const publicUrl = buildQuotationPublicUrl(shareToken!);
   const docType = quotation.requestType === "INVOICE" ? "Invoice" : "Proposal";
-  const subject = `Sheetomatic ${docType} ${quotation.quotationNumber}`;
+  const subject = `${quotation.organization.name} ${docType} ${quotation.quotationNumber}`;
   const text = buildQuotationShareMessage({
+    organizationName: quotation.organization.name,
     clientName: quotation.lead.name || "there",
     quotationNumber: quotation.quotationNumber,
     requestType: quotation.requestType,
@@ -2495,7 +2539,7 @@ export async function deleteLeadQuotation(quotationId: string) {
 
   const quotation = await prisma.inboundLeadQuotation.findFirst({
     where: { id: quotationId, organizationId: user.organizationId },
-    select: { id: true, lockedAt: true, status: true },
+    select: { id: true, leadId: true, quotationNumber: true, lockedAt: true, status: true },
   });
 
   if (!quotation) {
@@ -2507,6 +2551,15 @@ export async function deleteLeadQuotation(quotationId: string) {
 
   await prisma.inboundLeadQuotation.delete({
     where: { id: quotationId },
+  });
+
+  scheduleInboundLeadActivity({
+    organizationId: user.organizationId,
+    leadId: quotation.leadId,
+    type: "QUOTATION",
+    body: `Quotation ${quotation.quotationNumber} deleted`,
+    createdByUserId: user.id,
+    metadata: { quotationId: quotation.id, deleted: true },
   });
 
   revalidatePath("/app/leads");

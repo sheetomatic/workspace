@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { QuotationPrintToolbar } from "@/components/saas/quotation-print-toolbar";
 import { QuotationPrintView } from "@/components/saas/quotation-print-view";
@@ -5,6 +6,11 @@ import { getLeadQuotationByShareToken } from "@/lib/leads/quotations";
 
 type PageProps = {
   params: Promise<{ token: string }>;
+};
+
+// Tokenized public documents must never be indexed by search engines.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
 };
 
 export default async function PublicQuotationPage({ params }: PageProps) {

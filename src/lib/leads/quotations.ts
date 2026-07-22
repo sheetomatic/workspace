@@ -1,15 +1,29 @@
+import type { QuotationStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
 export async function nextQuotationNumber(organizationId: string) {
-  const latest = await prisma.inboundLeadQuotation.findFirst({
+  const rows = await prisma.inboundLeadQuotation.findMany({
     where: { organizationId },
-    orderBy: { createdAt: "desc" },
     select: { quotationNumber: true },
   });
 
-  const match = latest?.quotationNumber?.match(/SMQ:(\d+)/i);
-  const seq = match ? Number.parseInt(match[1], 10) + 1 : 100120;
-  return `SMQ:${seq}`;
+  // Max numeric sequence across ALL org quotations — latest createdAt is not
+  // reliable because revisions reuse the base sequence (SMQ:123-R2).
+  let maxSeq = 0;
+  for (const row of rows) {
+    const match = row.quotationNumber
+      ?.replace(/-R\d+$/i, "")
+      .match(/SMQ:(\d+)/i);
+    if (!match) {
+      continue;
+    }
+    const seq = Number.parseInt(match[1], 10);
+    if (Number.isFinite(seq) && seq > maxSeq) {
+      maxSeq = seq;
+    }
+  }
+
+  return `SMQ:${maxSeq > 0 ? maxSeq + 1 : 100120}`;
 }
 
 export function revisionQuotationNumber(baseNumber: string, revisionNumber: number) {
@@ -73,15 +87,25 @@ export async function lockLatestLeadQuotation(
   leadId: string,
   advanceAmount?: number,
 ) {
-  const latest = await prisma.inboundLeadQuotation.findFirst({
-    where: {
-      organizationId,
-      leadId,
-      status: { in: ["DRAFT", "SENT", "REVISED"] },
-      lockedAt: null,
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const preLockStatuses: QuotationStatus[] = ["DRAFT", "SENT", "REVISED"];
+  const unlockedWhere = {
+    organizationId,
+    leadId,
+    status: { in: preLockStatuses },
+    lockedAt: null,
+  };
+
+  // Prefer the latest SENT quotation (the one the client actually saw);
+  // fall back to the latest unlocked quotation of any pre-lock status.
+  const latest =
+    (await prisma.inboundLeadQuotation.findFirst({
+      where: { ...unlockedWhere, status: "SENT" },
+      orderBy: { createdAt: "desc" },
+    })) ??
+    (await prisma.inboundLeadQuotation.findFirst({
+      where: unlockedWhere,
+      orderBy: { createdAt: "desc" },
+    }));
 
   if (!latest) {
     return null;
@@ -108,6 +132,7 @@ export function buildQuotationPublicUrl(shareToken: string) {
 }
 
 export function buildQuotationShareMessage(params: {
+  organizationName: string;
   clientName: string;
   quotationNumber: string;
   requestType: string;
@@ -115,6 +140,7 @@ export function buildQuotationShareMessage(params: {
   publicUrl: string;
   revisionNumber?: number;
 }) {
+  const orgName = params.organizationName.trim() || "our team";
   const docType = params.requestType === "INVOICE" ? "Invoice" : "Proposal";
   const revision =
     params.revisionNumber && params.revisionNumber > 1
@@ -123,12 +149,12 @@ export function buildQuotationShareMessage(params: {
   return [
     `Hi ${params.clientName},`,
     "",
-    `Please find your Sheetomatic ${docType} ${params.quotationNumber}${revision}.`,
+    `Please find your ${orgName} ${docType} ${params.quotationNumber}${revision}.`,
     `Total: ₹${params.totalAmount.toLocaleString("en-IN")}`,
     "",
     `View & download: ${params.publicUrl}`,
     "",
     "Reply here to confirm or request changes.",
-    "— Sheetomatic",
+    `— ${orgName}`,
   ].join("\n");
 }
