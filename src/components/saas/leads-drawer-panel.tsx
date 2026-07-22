@@ -59,6 +59,11 @@ import {
   suggestFollowUpTypeFromStatus,
   type InboundLeadFollowUpTypeId,
 } from "@/lib/leads/follow-up-types";
+import {
+  DEFAULT_CLIENT_MEET_URL,
+  TEAM_GOOGLE_CALENDAR_EMBED_URL,
+  TEAM_GOOGLE_CALENDAR_OPEN_URL,
+} from "@/lib/leads/meeting-defaults";
 import { leadWhatsAppHref } from "@/lib/leads/contact-links";
 import {
   parseCrmDrawerTab,
@@ -347,7 +352,8 @@ export function LeadDrawerPanel({
   const [meetingAt, setMeetingAt] = useState(defaultFollowUpLocal());
   const [meetingDuration, setMeetingDuration] = useState(45);
   const [meetingEmail, setMeetingEmail] = useState(lead.email ?? "");
-  const [meetingMeetUrl, setMeetingMeetUrl] = useState("");
+  const [meetingMeetUrl, setMeetingMeetUrl] = useState(DEFAULT_CLIENT_MEET_URL);
+  const [gcalActive, setGcalActive] = useState(false);
   const [meetingScheduleMsg, setMeetingScheduleMsg] = useState<string | null>(null);
   const [meetingScheduleErr, setMeetingScheduleErr] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
@@ -499,6 +505,7 @@ export function LeadDrawerPanel({
     setAssignedToId(lead.assignedTo?.id ?? "");
     setCallingStatus(lead.callingStatus);
     setMeetingEmail(lead.email ?? "");
+    setMeetingMeetUrl(DEFAULT_CLIENT_MEET_URL);
     setMeetingScheduleMsg(null);
     setMeetingScheduleErr(null);
     setFollowUpMsg(null);
@@ -1297,8 +1304,15 @@ export function LeadDrawerPanel({
       ) : null}
 
       {tab === "meeting" ? (
-        <section className="leads-drawer-section">
-          <h3>Call & meeting</h3>
+        <section className="leads-drawer-section leads-meeting-tab">
+          <details className="leads-collapse" open>
+          <summary className="leads-collapse__head">
+            <h3>Call &amp; meeting</h3>
+            <span className="leads-collapse__meta">
+              {CALLING_STATUS_LABELS[callingStatus]}
+            </span>
+          </summary>
+          <div className="leads-collapse__body">
           {canManage ? (
             <label className="leads-drawer-field">
               Calling status
@@ -1376,13 +1390,19 @@ export function LeadDrawerPanel({
               {savingKey === "meeting-notes" ? "Saving…" : "Save meeting notes"}
             </button>
           ) : null}
+          </div>
+          </details>
 
           {canManage ? (
+            <details className="leads-collapse" open>
+            <summary className="leads-collapse__head">
+              <h3>Schedule meeting with client</h3>
+              <span className="leads-collapse__meta">Email + Meet link</span>
+            </summary>
+            <div className="leads-collapse__body">
             <div className="leads-schedule-meeting">
-              <h4>Schedule meeting with client</h4>
               <p className="leads-machine-muted">
-                From this CRM panel only — emails the client a calendar link. Does not open
-                Google Calendar to create the booking.
+                Emails the client the meeting time with your Meet link.
               </p>
               <div className="leads-drawer-grid">
                 <label>
@@ -1488,14 +1508,80 @@ export function LeadDrawerPanel({
                   : "Schedule & email client"}
               </button>
             </div>
+            </div>
+            </details>
           ) : null}
 
+          <details className="leads-collapse">
+          <summary className="leads-collapse__head">
+            <h3>Google Calendar (team)</h3>
+            <span className="leads-collapse__meta">Week view + Meet room</span>
+          </summary>
+          <div className="leads-collapse__body">
+            <p className="leads-machine-muted">
+              Your team calendar (IST). Standing Meet room:{" "}
+              <a
+                href={DEFAULT_CLIENT_MEET_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {DEFAULT_CLIENT_MEET_URL.replace("https://", "")}
+              </a>{" "}
+              — prefilled on Schedule &amp; email.
+            </p>
+            <div
+              className={`leads-gcal-embed${gcalActive ? " is-active" : ""}`}
+              onClick={() => {
+                if (!gcalActive) setGcalActive(true);
+              }}
+              onKeyDown={(event) => {
+                if (!gcalActive && (event.key === "Enter" || event.key === " ")) {
+                  event.preventDefault();
+                  setGcalActive(true);
+                }
+              }}
+              role={!gcalActive ? "button" : undefined}
+              tabIndex={!gcalActive ? 0 : undefined}
+            >
+              {!gcalActive ? (
+                <div className="leads-gcal-embed__activate">
+                  Click to use calendar (keeps drawer scrolling)
+                </div>
+              ) : null}
+              <iframe
+                title="Team Google Calendar"
+                src={TEAM_GOOGLE_CALENDAR_EMBED_URL}
+                className="leads-gcal-embed__frame"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                style={!gcalActive ? { pointerEvents: "none" } : undefined}
+              />
+            </div>
+            <p className="leads-machine-muted">
+              Calendar not loading (needs Google sign-in)?{" "}
+              <a
+                href={TEAM_GOOGLE_CALENDAR_OPEN_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open Google Calendar
+              </a>
+              .
+            </p>
+          </div>
+          </details>
+
           {(isDemoScheduled || demoCalendarInput) && (
+            <details className="leads-collapse">
+            <summary className="leads-collapse__head">
+              <h3>Add to your calendar (team)</h3>
+              <span className="leads-collapse__meta">Google / Outlook / ICS</span>
+            </summary>
+            <div className="leads-collapse__body">
             <div className="leads-calendar-links">
-              <h4>Add to your calendar (team)</h4>
               <p className="leads-machine-muted">
-                Optional for you — Google / Outlook / ICS. Client already gets the link by email
-                when you use Schedule &amp; email above.
+                Optional for you — client already gets the link by email when you
+                use Schedule &amp; email above.
               </p>
               {demoCalendarInput ? (
                 <div className="leads-calendar-actions">
@@ -1540,9 +1626,19 @@ export function LeadDrawerPanel({
                 </p>
               )}
             </div>
+            </div>
+            </details>
           )}
+
+          <details className="leads-collapse">
+          <summary className="leads-collapse__head">
+            <h3>Meetings timeline</h3>
+            <span className="leads-collapse__meta">
+              {upcomingMeetings.length} upcoming · {pastMeetings.length} past
+            </span>
+          </summary>
+          <div className="leads-collapse__body">
           <section className="leads-meeting-calendar" aria-label="Scheduled meetings">
-            <h4>Calendar — time-wise schedule</h4>
             <p className="leads-machine-muted">
               Upcoming and past meetings / follow-ups for this client (IST).
             </p>
@@ -1595,9 +1691,20 @@ export function LeadDrawerPanel({
               </div>
             </div>
           </section>
+          </div>
+          </details>
 
-          <section className="leads-drawer-section leads-drawer-section-nested">
+          <details className="leads-collapse" open>
+          <summary className="leads-collapse__head">
             <h3>Follow-up</h3>
+            <span className="leads-collapse__meta">
+              {openFollowUps.length > 0
+                ? `${openFollowUps.length} open`
+                : "Schedule + WhatsApp"}
+            </span>
+          </summary>
+          <div className="leads-collapse__body">
+          <section className="leads-drawer-section leads-drawer-section-nested">
             <p className="leads-machine-muted leads-followup-hint">
               Pick a standard type so WhatsApp nurture can send the matching
               follow-up message when due.
@@ -1779,6 +1886,8 @@ export function LeadDrawerPanel({
               </button>
             ) : null}
           </section>
+          </div>
+          </details>
         </section>
       ) : null}
 
