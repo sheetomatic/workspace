@@ -21,7 +21,7 @@ import {
   listActiveHrWorkSites,
 } from "@/lib/hr/sites";
 import { listHolidays } from "@/lib/hr/holidays";
-import { prisma } from "@/lib/db";
+import { prisma, withDbRetry } from "@/lib/db";
 import { attendanceLeaveModule } from "@/app/hr-module-content";
 import { redirect } from "next/navigation";
 
@@ -68,8 +68,11 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
 
   const monthKey = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
 
+  // This page fans out ~9 queries in parallel; on serverless Postgres a single
+  // idle-connection drop / pool timeout would otherwise bubble to the app error
+  // boundary and look like a forced sign-out. withDbRetry reconnects + retries.
   const [records, membership, hrSettings, sites, stats, monthRecords, members, yearHolidays, pendingVerify] =
-    await Promise.all([
+    await withDbRetry(() => Promise.all([
       listTodayAttendance(
         user.organizationId,
         siteFilter,
@@ -111,7 +114,7 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
       canMark
         ? listPendingAttendanceVerifications(user.organizationId)
         : Promise.resolve([]),
-    ]);
+    ]));
 
   if (!requireHrSubModule(hrSettings.enabledHrSubModules, "attendance")) {
     redirect("/app/hr");
