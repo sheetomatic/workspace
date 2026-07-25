@@ -35,6 +35,18 @@
     {
       "path": "/api/cron/leads-sync",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/hr-attendance-reminders?kind=mark",
+      "schedule": "15 4 * * *"
+    },
+    {
+      "path": "/api/cron/hr-attendance-reminders?kind=checkout",
+      "schedule": "15 13 * * *"
+    },
+    {
+      "path": "/api/cron/hr-attendance-reminders?kind=summary",
+      "schedule": "30 13 * * *"
     }
   ],
   "functions": {
@@ -61,6 +73,9 @@
     },
     "src/app/api/cron/leads-sync/route.ts": {
       "maxDuration": 300
+    },
+    "src/app/api/cron/hr-attendance-reminders/route.ts": {
+      "maxDuration": 60
     }
   }
 }

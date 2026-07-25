@@ -324,6 +324,45 @@ export async function sendFmsStepReminderWhatsApp(params: {
   });
 }
 
+/**
+ * Generic per-org WhatsApp text notice (HR reminders, attendance summary, …).
+ * Requires an active chat session on the Sheetomatic (RedLava) provider.
+ */
+export async function sendWorkspaceNoticeWhatsApp(params: {
+  toPhone: string;
+  organizationId: string;
+  body: string;
+}): Promise<WhatsAppSendResult> {
+  const workspace = await resolveWorkspaceWhatsAppCredentials(params.organizationId);
+  const providerKind = resolveWhatsAppProviderKind(workspace);
+  const sheetomatic = sheetomaticCredentialsFromWorkspace(workspace);
+
+  const sendParams = {
+    toPhone: params.toPhone,
+    organizationId: params.organizationId,
+    redlavaCreds: sheetomatic.redlava,
+    metaToken: sheetomatic.metaToken,
+    metaPhoneId: sheetomatic.metaPhoneId,
+  };
+
+  const hasSession =
+    providerKind === "messageautosender" ||
+    (await hasActiveWhatsAppSession(params.organizationId, params.toPhone));
+
+  if (!hasSession && providerKind === "sheetomatic") {
+    return {
+      sent: false,
+      reason: "session_required",
+      detail: "WhatsApp notice needs an active chat session with this user.",
+    };
+  }
+
+  return sendWhatsAppPayload({
+    ...sendParams,
+    message: { type: "text", text: { body: params.body.slice(0, 4096) } },
+  });
+}
+
 export async function sendTaskAssignmentWhatsApp(params: {
   toPhone: string;
   taskId: string;
