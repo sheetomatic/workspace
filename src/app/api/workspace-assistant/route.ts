@@ -31,6 +31,24 @@ export async function POST(request: Request) {
     );
   }
 
+  // Per-org daily cap so one workspace cannot exhaust the shared OpenAI budget.
+  const orgDailyLimit = Number(
+    process.env.WORKSPACE_ASSISTANT_ORG_DAILY_LIMIT ?? 500,
+  );
+  const orgQuota = await checkRateLimit(
+    `workspace-assistant-org:${user.organizationId}`,
+    orgDailyLimit,
+    86_400_000,
+  );
+  if (!orgQuota.allowed) {
+    return NextResponse.json(
+      {
+        error: "Your workspace has reached today's Pulse limit. Try again tomorrow.",
+      },
+      { status: 429 },
+    );
+  }
+
   let body: { messages?: WorkspaceAssistantMessage[] };
   try {
     body = (await request.json()) as { messages?: WorkspaceAssistantMessage[] };

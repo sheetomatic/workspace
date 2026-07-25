@@ -28,6 +28,26 @@ export async function POST(request: Request) {
     );
   }
 
+  // This endpoint is unauthenticated; a per-IP limit alone is bypassable via IP
+  // rotation. A global daily cap bounds total OpenAI spend from marketing Pulse.
+  const globalDailyLimit = Number(
+    process.env.SITE_ASSISTANT_GLOBAL_DAILY_LIMIT ?? 5000,
+  );
+  const globalQuota = await checkRateLimit(
+    "site-assistant:global",
+    globalDailyLimit,
+    86_400_000,
+  );
+  if (!globalQuota.allowed) {
+    return NextResponse.json(
+      {
+        error:
+          "Pulse is busy right now. Please use Contact or WhatsApp instead.",
+      },
+      { status: 429 },
+    );
+  }
+
   const status = getIntegrationStatus();
   if (!status.openai) {
     return NextResponse.json(
