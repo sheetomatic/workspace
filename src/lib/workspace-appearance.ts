@@ -57,6 +57,28 @@ export const DEFAULT_WORKSPACE_APPEARANCE: WorkspaceAppearance = {
   brandName: siteBrand.name,
 };
 
+const HEX_COLOR = /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
+const FUNCTIONAL_COLOR = /^(?:rgb|rgba|hsl|hsla)\([0-9.,%\s/]+\)$/i;
+
+/**
+ * Only allow well-formed CSS color tokens. These values are interpolated into a
+ * `<style>` block (appearanceToCssVars), so anything containing `}`, `<`, `;`,
+ * quotes, etc. must be rejected to prevent stored XSS / style-block breakout.
+ */
+export function sanitizeCssColor(
+  value: unknown,
+  fallback: string,
+): string {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  const trimmed = value.trim();
+  if (HEX_COLOR.test(trimmed) || FUNCTIONAL_COLOR.test(trimmed)) {
+    return trimmed;
+  }
+  return fallback;
+}
+
 export function listThemePresets(): ThemePreset[] {
   return ["default", "ocean", "forest", "sunset", "royal", "custom"];
 }
@@ -79,7 +101,25 @@ export function parseWorkspaceAppearance(
   if (!value || typeof value !== "object") {
     return null;
   }
-  return value as Partial<WorkspaceAppearance>;
+  const raw = value as Partial<WorkspaceAppearance>;
+  const fallback = THEME_PRESETS.default;
+  // Sanitize colors on read too, so any pre-existing/crafted stored value can
+  // never break out of the <style> block when rendered.
+  return {
+    ...raw,
+    ...(raw.primary !== undefined
+      ? { primary: sanitizeCssColor(raw.primary, fallback.primary) }
+      : {}),
+    ...(raw.sidebar !== undefined
+      ? { sidebar: sanitizeCssColor(raw.sidebar, fallback.sidebar) }
+      : {}),
+    ...(raw.sidebarHover !== undefined
+      ? { sidebarHover: sanitizeCssColor(raw.sidebarHover, fallback.sidebarHover) }
+      : {}),
+    ...(raw.background !== undefined
+      ? { background: sanitizeCssColor(raw.background, fallback.background) }
+      : {}),
+  };
 }
 
 export function mergeWorkspaceAppearance(
@@ -108,10 +148,10 @@ export function mergeWorkspaceAppearance(
 
   return {
     preset,
-    primary: stored?.primary ?? presetColors.primary,
-    sidebar: stored?.sidebar ?? presetColors.sidebar,
-    sidebarHover: stored?.sidebarHover ?? presetColors.sidebarHover,
-    background: stored?.background ?? presetColors.background,
+    primary: sanitizeCssColor(stored?.primary, presetColors.primary),
+    sidebar: sanitizeCssColor(stored?.sidebar, presetColors.sidebar),
+    sidebarHover: sanitizeCssColor(stored?.sidebarHover, presetColors.sidebarHover),
+    background: sanitizeCssColor(stored?.background, presetColors.background),
     productName: stored?.productName?.trim() || organizationName,
     brandName: stored?.brandName?.trim() || organizationName,
     logoSrc: customLogo ?? (dedicated ? "" : platformLogo),

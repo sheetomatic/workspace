@@ -9,6 +9,7 @@ import {
   DEFAULT_WORKSPACE_APPEARANCE,
   THEME_PRESETS,
   listThemePresets,
+  sanitizeCssColor,
   type ThemePreset,
   type WorkspaceAppearance,
 } from "@/lib/workspace-appearance";
@@ -43,12 +44,17 @@ function buildAppearanceFromForm(
   const presetColors =
     preset !== "custom" ? THEME_PRESETS[preset] : THEME_PRESETS.default;
 
+  // Colors are interpolated into a <style> block downstream — validate strictly
+  // so a crafted value cannot break out of the style element (stored XSS).
   return {
     preset,
-    primary: String(formData.get("primary") || presetColors.primary),
-    sidebar: String(formData.get("sidebar") || presetColors.sidebar),
-    sidebarHover: String(formData.get("sidebarHover") || presetColors.sidebarHover),
-    background: String(formData.get("background") || presetColors.background),
+    primary: sanitizeCssColor(formData.get("primary"), presetColors.primary),
+    sidebar: sanitizeCssColor(formData.get("sidebar"), presetColors.sidebar),
+    sidebarHover: sanitizeCssColor(
+      formData.get("sidebarHover"),
+      presetColors.sidebarHover,
+    ),
+    background: sanitizeCssColor(formData.get("background"), presetColors.background),
     productName: String(formData.get("productName") || DEFAULT_WORKSPACE_APPEARANCE.productName),
     brandName: String(formData.get("brandName") || organizationName),
   };
