@@ -6,6 +6,7 @@ import {
   resolveHourlyRate,
   shortLeavePayableFraction,
 } from "@/lib/hr/working-hours";
+import { computeLateDeduction, lateToDayRatio } from "@/lib/hr/late-deduction";
 
 export const HR_TZ = "Asia/Kolkata";
 
@@ -372,6 +373,7 @@ export async function generatePayrollFromAttendance(params: {
         notes: true,
         verifyStatus: true,
         otHours: true,
+        isLate: true,
       },
     }),
     prisma.leaveRequest.findMany({
@@ -398,6 +400,7 @@ export async function generatePayrollFromAttendance(params: {
     notes: string | null;
     verifyStatus: string;
     otHours: number;
+    isLate: boolean;
   };
   const byUserDate = new Map<string, Map<string, DayRow>>();
   for (const row of attendance) {
@@ -412,8 +415,11 @@ export async function generatePayrollFromAttendance(params: {
       notes: row.notes,
       verifyStatus: row.verifyStatus,
       otHours: row.otHours ?? 0,
+      isLate: row.isLate ?? false,
     });
   }
+
+  const lateRatio = lateToDayRatio();
 
   const lines: Array<{
     userId: string;
@@ -463,6 +469,7 @@ export async function generatePayrollFromAttendance(params: {
     let unpaidLeaveDays = 0;
     let pendingUnverified = 0;
     let otHoursTotal = 0;
+    let lateDays = 0;
 
     for (const workDate of weekdayDates) {
       const ymd = dateYmdUtc(workDate);
@@ -478,6 +485,7 @@ export async function generatePayrollFromAttendance(params: {
         pendingUnverified += 1;
       }
       if (status === "PRESENT" && verified) presentDays += 1;
+      if (status === "PRESENT" && verified && row.isLate) lateDays += 1;
       if (status === "ON_LEAVE") leaveDays += 1;
       if (status === "ABSENT" || verifyStatus === "REJECTED") absentDays += 1;
       if (status === "HALF_DAY" && verified) halfDays += 1;
@@ -533,8 +541,25 @@ export async function generatePayrollFromAttendance(params: {
           profile?.tdsMonthly != null ? Number(profile.tdsMonthly) : null,
       },
     });
+    // Late-mark deduction: N late marks cost one day's pay (ratio configurable).
+    const perDayPay = salary / workingDays;
+    const lateInfo = computeLateDeduction({
+      lateDays,
+      ratio: lateRatio,
+      perDayPay,
+    });
+    const totalDeductions = pay.totalDeductions + lateInfo.amount;
+    const netPay = Math.round((pay.netPay - lateInfo.amount) * 100) / 100;
+
     const noteParts: string[] = [];
     if (unmarked > 0) noteParts.push(`${unmarked} unmarked weekday(s) treated as absent`);
+    if (lateDays > 0) {
+      noteParts.push(
+        lateInfo.deductionDays > 0
+          ? `${lateDays} late mark(s) → ${lateInfo.deductionDays} day pay deducted (₹${lateInfo.amount.toFixed(2)}; ${lateRatio} lates = 1 day)`
+          : `${lateDays} late mark(s) (deduction at ${lateRatio} lates = 1 day)`,
+      );
+    }
     if (unpaidLeaveDays > 0) noteParts.push(`${unpaidLeaveDays} unpaid leave day(s) not payable`);
     if (pendingUnverified > 0) {
       noteParts.push(`${pendingUnverified} unverified punch(es) not payable`);
@@ -559,8 +584,8 @@ export async function generatePayrollFromAttendance(params: {
       otPay,
       monthlySalary: salary,
       earnedSalary,
-      deductions: pay.totalDeductions,
-      netPay: pay.netPay,
+      deductions: totalDeductions,
+      netPay,
       notes: noteParts.length > 0 ? noteParts.join(" · ") : null,
     });
   }
