@@ -56,6 +56,22 @@ export async function POST(request: Request) {
   if (!token) {
     return NextResponse.json({ error: "Missing booking token." }, { status: 400 });
   }
+  // meetUrl is stored and shown to enrollees, so only accept https links
+  // (blocks javascript:/data: and other phishing/injection schemes).
+  if (meetUrl) {
+    let parsedMeetUrl: URL | null = null;
+    try {
+      parsedMeetUrl = new URL(meetUrl);
+    } catch {
+      parsedMeetUrl = null;
+    }
+    if (!parsedMeetUrl || parsedMeetUrl.protocol !== "https:") {
+      return NextResponse.json(
+        { error: "Enter a valid meeting link starting with https://" },
+        { status: 400 },
+      );
+    }
+  }
   if (!programStartYmd) {
     return NextResponse.json(
       { error: "Choose your first session date." },
