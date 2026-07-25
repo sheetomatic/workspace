@@ -5009,6 +5009,13 @@ button.ws-mobile-nav-link {
   }
 }
 
+/* While the mobile "More" sheet is open, hide floating launcher FABs so they
+   never overlap the sheet / its close button. */
+body.ws-more-sheet-open .ws-guide,
+body.ws-more-sheet-open .sheetomatic-ai-launcher {
+  display: none !important;
+}
+
 @media (max-width: 768px) {
   .workspace-app.saas-app {
     grid-template-columns: 1fr;

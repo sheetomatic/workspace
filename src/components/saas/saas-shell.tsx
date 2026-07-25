@@ -378,6 +378,13 @@ export function SaasShell({
   const pathname = usePathname();
   const currentSearch = useLocationSearch(pathname);
   const [moreOpen, setMoreOpen] = useState(false);
+  // Hide the floating help/AI launcher FABs while the More sheet is open so they
+  // don't render on top of the sheet (they live in a separate stacking context).
+  useEffect(() => {
+    if (!moreOpen) return;
+    document.body.classList.add("ws-more-sheet-open");
+    return () => document.body.classList.remove("ws-more-sheet-open");
+  }, [moreOpen]);
   const isQuotationPrint =
     /^\/app\/leads\/quotations\/[^/]+\/print\/?$/.test(pathname);
   const isSalarySlipPrint =
