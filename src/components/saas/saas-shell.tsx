@@ -377,9 +377,6 @@ export function SaasShell({
   const pathname = usePathname();
   const currentSearch = useLocationSearch(pathname);
   const [moreOpen, setMoreOpen] = useState(false);
-  useEffect(() => {
-    setMoreOpen(false);
-  }, [pathname]);
   const isQuotationPrint =
     /^\/app\/leads\/quotations\/[^/]+\/print\/?$/.test(pathname);
   const isSalarySlipPrint =
