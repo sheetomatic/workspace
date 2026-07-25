@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, LogOut, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, LayoutGrid, LogOut, SlidersHorizontal, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -18,7 +18,7 @@ import {
 } from "@/lib/workspace-nav-prefs";
 import {
   filterNavItemsByPrefs,
-  mobileWorkspaceNavItems,
+  mobileWorkspaceNavSplit,
   getWorkspaceNavSections,
   navGroupHasActiveChild,
   navIsActive,
@@ -376,6 +376,10 @@ export function SaasShell({
 }) {
   const pathname = usePathname();
   const currentSearch = useLocationSearch(pathname);
+  const [moreOpen, setMoreOpen] = useState(false);
+  useEffect(() => {
+    setMoreOpen(false);
+  }, [pathname]);
   const isQuotationPrint =
     /^\/app\/leads\/quotations\/[^/]+\/print\/?$/.test(pathname);
   const isSalarySlipPrint =
@@ -419,8 +423,14 @@ export function SaasShell({
     return isDedicatedPortal ? allowed : filterNavItemsByPrefs(allowed, navPrefs);
   }
 
-  const mobileNavItems = mobileWorkspaceNavItems(
-    mainSections.flatMap((section) => sectionItems(section.items)),
+  // Bottom bar keeps the quick items; every remaining module stays reachable
+  // through the "More" sheet (includes Reports, Settings, Team, My Space, …).
+  const { primary: mobilePrimaryItems, more: mobileMoreItems } =
+    mobileWorkspaceNavSplit(
+      sections.flatMap((section) => sectionItems(section.items)),
+    );
+  const mobileMoreActive = mobileMoreItems.some((item) =>
+    navIsActive(pathname, item.href, item.matchPrefix, currentSearch),
   );
 
   const productName = resolvedAppearance.productName;
@@ -481,11 +491,83 @@ export function SaasShell({
       <nav className="ws-mobile-shell-nav" aria-label={mobileNavigationLabel}>
         <NavLinks
           currentSearch={currentSearch}
-          items={mobileNavItems}
+          items={mobilePrimaryItems}
           pathname={pathname}
           variant="mobile"
         />
+        {mobileMoreItems.length > 0 ? (
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            aria-expanded={moreOpen}
+            className={
+              moreOpen || mobileMoreActive
+                ? "ws-mobile-nav-link active"
+                : "ws-mobile-nav-link"
+            }
+            onClick={() => setMoreOpen((value) => !value)}
+          >
+            <LayoutGrid size={20} strokeWidth={2} />
+            <span>More</span>
+          </button>
+        ) : null}
       </nav>
+
+      {moreOpen && mobileMoreItems.length > 0 ? (
+        <div
+          className="ws-mobile-more-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="All modules"
+        >
+          <button
+            type="button"
+            aria-label="Close"
+            className="ws-mobile-more-backdrop"
+            onClick={() => setMoreOpen(false)}
+          />
+          <div className="ws-mobile-more-sheet">
+            <div className="ws-mobile-more-head">
+              <strong>All modules</strong>
+              <button
+                type="button"
+                aria-label="Close"
+                className="ws-mobile-more-close"
+                onClick={() => setMoreOpen(false)}
+              >
+                <X size={20} strokeWidth={2} />
+              </button>
+            </div>
+            <div className="ws-mobile-more-grid">
+              {mobileMoreItems.map((item) => {
+                const Icon = item.icon;
+                const active = navIsActive(
+                  pathname,
+                  item.href,
+                  item.matchPrefix,
+                  currentSearch,
+                );
+                return (
+                  <Link
+                    key={navItemKey(item)}
+                    href={item.href}
+                    prefetch
+                    className={
+                      active
+                        ? "ws-mobile-more-item active"
+                        : "ws-mobile-more-item"
+                    }
+                    onClick={() => setMoreOpen(false)}
+                  >
+                    <Icon size={22} strokeWidth={2} />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <aside className="saas-sidebar ws-shell-desktop">
         <div className="crm-sidebar-head">

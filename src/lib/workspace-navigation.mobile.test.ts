@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   mobileWorkspaceNavItems,
+  mobileWorkspaceNavSplit,
   navIsActive,
   type WorkspaceNavItem,
 } from "@/lib/workspace-navigation";
@@ -63,6 +64,32 @@ describe("mobileWorkspaceNavItems", () => {
     ]);
     expect(mobile.every((item) => item.label !== "BCI")).toBe(true);
     expect(mobile[0]?.matchPrefix).toBe("/app/hr");
+  });
+
+  it("keeps four quick items and moves the rest under More", () => {
+    const items: WorkspaceNavItem[] = [
+      { id: "dept-hr", href: "/app/hr", label: "HRMS", icon: Users, matchPrefix: "/app/hr" },
+      { id: "tasks", href: "/app/tasks", label: "Tasks Management", icon: LayoutDashboard, matchPrefix: "/app/tasks" },
+      { id: "fms", href: "/app/fms", label: "FMS", icon: GitBranch, matchPrefix: "/app/fms" },
+      { id: "checklists", href: "/app/checklists", label: "Check List", icon: CheckSquare, matchPrefix: "/app/checklists" },
+      { id: "leads", href: "/app/leads", label: "CRM", icon: Briefcase, matchPrefix: "/app/leads" },
+      { id: "em", href: "/app/em", label: "EM Ready", icon: Briefcase, matchPrefix: "/app/em" },
+      { id: "reports", href: "/app/reports", label: "Reports", icon: Briefcase, matchPrefix: "/app/reports" },
+    ];
+
+    const { primary, more } = mobileWorkspaceNavSplit(items);
+    expect(primary.map((item) => item.label)).toEqual([
+      "HRMS",
+      "Tasks",
+      "FMS",
+      "Check List",
+    ]);
+    // Everything beyond the four quick items stays reachable via More.
+    expect(more.map((item) => item.label)).toEqual([
+      "CRM",
+      "EM Ready",
+      "Reports",
+    ]);
   });
 
   it("marks HRMS active on HR Check List path", () => {

@@ -712,6 +712,9 @@ const MOBILE_NAV_PRIORITY_IDS = [
 
 const MOBILE_NAV_MAX_ITEMS = 5;
 
+/** Bottom bar shows this many quick items; everything else lives under "More". */
+export const MOBILE_NAV_PRIMARY_COUNT = 4;
+
 const MOBILE_NAV_SHORT_LABELS: Record<string, string> = {
   "Tasks Management": "Tasks",
   "IMS / Stock": "IMS",
@@ -733,10 +736,11 @@ function collapseMobileNavItem(item: WorkspaceNavItem): WorkspaceNavItem {
 }
 
 /**
- * Bottom nav strip: expand the BCI suite into labeled children (never show "BCI"),
- * keep HRMS as HRMS, prioritize HR/tasks/FMS, cap at five touch targets.
+ * Flattened, de-duplicated, priority-sorted list of mobile nav targets.
+ * Expands the BCI suite into labeled children (never shows "BCI") and keeps
+ * HRMS as HRMS.
  */
-export function mobileWorkspaceNavItems(items: WorkspaceNavItem[]): WorkspaceNavItem[] {
+function orderedMobileNavItems(items: WorkspaceNavItem[]): WorkspaceNavItem[] {
   const flattened: WorkspaceNavItem[] = [];
 
   for (const item of items) {
@@ -774,7 +778,31 @@ export function mobileWorkspaceNavItems(items: WorkspaceNavItem[]): WorkspaceNav
     return aRank - bRank;
   });
 
-  return unique.slice(0, MOBILE_NAV_MAX_ITEMS);
+  return unique;
+}
+
+/**
+ * Bottom nav strip: expand the BCI suite into labeled children (never show "BCI"),
+ * keep HRMS as HRMS, prioritize HR/tasks/FMS, cap at five touch targets.
+ */
+export function mobileWorkspaceNavItems(items: WorkspaceNavItem[]): WorkspaceNavItem[] {
+  return orderedMobileNavItems(items).slice(0, MOBILE_NAV_MAX_ITEMS);
+}
+
+/**
+ * Split the mobile nav into the bottom-bar quick items plus the remaining
+ * modules surfaced under a "More" menu, so every module stays reachable on
+ * mobile instead of being dropped past the five-item cap.
+ */
+export function mobileWorkspaceNavSplit(items: WorkspaceNavItem[]): {
+  primary: WorkspaceNavItem[];
+  more: WorkspaceNavItem[];
+} {
+  const ordered = orderedMobileNavItems(items);
+  return {
+    primary: ordered.slice(0, MOBILE_NAV_PRIMARY_COUNT),
+    more: ordered.slice(MOBILE_NAV_PRIMARY_COUNT),
+  };
 }
 
 
