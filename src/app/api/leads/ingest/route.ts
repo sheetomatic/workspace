@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { InboundLeadStatus, Prisma } from "@prisma/client";
+import { prisma } from "@/lib/db";
 import { verifyLeadIngestRequest } from "@/lib/leads/api-auth";
 import { parseLeadSourceChannel } from "@/lib/leads/channels";
 import { ingestInboundLead } from "@/lib/leads/ingest";
@@ -44,6 +45,23 @@ export async function POST(request: Request) {
   const status =
     body.status && ALLOWED_STATUSES.includes(body.status) ? body.status : undefined;
 
+  // Never trust a client-supplied assignee id: only honour it when the user is
+  // an active member of the ingesting org, otherwise drop it (prevents
+  // cross-tenant assignment + misfired notifications).
+  let assignedToId: string | undefined;
+  if (body.assignedToId) {
+    const member = await prisma.membership.findUnique({
+      where: {
+        userId_organizationId: {
+          userId: body.assignedToId,
+          organizationId: auth.organizationId,
+        },
+      },
+      select: { userId: true, deactivatedAt: true },
+    });
+    assignedToId = member && !member.deactivatedAt ? body.assignedToId : undefined;
+  }
+
   const result = await ingestInboundLead({
     organizationId: auth.organizationId,
     channel,
@@ -55,7 +73,7 @@ export async function POST(request: Request) {
     requirement: body.requirement,
     sourceDetail: body.sourceDetail,
     status,
-    assignedToId: body.assignedToId,
+    assignedToId,
     nextFollowUpAt: body.nextFollowUpAt ? new Date(body.nextFollowUpAt) : undefined,
     rawPayload: body.raw as Prisma.InputJsonValue | undefined,
     createFmsJob: body.createFmsJob,
