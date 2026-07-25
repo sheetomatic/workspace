@@ -350,9 +350,26 @@ export async function getSalarySlipData(
     : round2(storedDeductions);
   const netPay = storedLooksLegacy ? pay.netPay : round2(storedNet);
   const earnings = pay.earnings;
-  const deductions = pay.deductions;
-  const assumptions = pay.assumptions;
+  const deductions = [...pay.deductions];
+  const assumptions = [...pay.assumptions];
   const grossEarnings = pay.grossEarnings;
+
+  // The stored line total may include non-statutory deductions (e.g. late-mark
+  // penalty) that the statutory recompute above does not itemize. Surface the
+  // difference as an explicit line item so the slip reconciles to the net pay.
+  if (!storedLooksLegacy) {
+    const extra = round2(totalDeductions - pay.totalDeductions);
+    if (extra > 0.005) {
+      deductions.push({
+        key: "late_other",
+        label: "Late-mark deduction",
+        amount: extra,
+      });
+      assumptions.push(
+        "Late-mark deduction applied per attendance (see payroll note).",
+      );
+    }
+  }
 
   const start = ymd(line.payrollRun.periodStart);
   const end = ymd(line.payrollRun.periodEnd);
