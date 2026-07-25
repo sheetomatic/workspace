@@ -113,7 +113,15 @@ export async function verifyWhatsAppWebhookRequest(
     return { ok: true as const };
   }
 
-  if (await verifyKnownWorkspaceMetaWebhook(payload)) {
+  // A known phone_number_id is NOT a secret, so treating it as authentication
+  // lets anyone spoof inbound messages/leads. In production require a real
+  // signature or verify token; only fall back to phone_number_id resolution in
+  // non-production, or when an operator explicitly opts in for a proxy that
+  // cannot send a signature/token.
+  const allowUnsignedByPhoneId =
+    process.env.NODE_ENV !== "production" ||
+    process.env.WHATSAPP_ALLOW_UNSIGNED_WEBHOOK === "true";
+  if (allowUnsignedByPhoneId && (await verifyKnownWorkspaceMetaWebhook(payload))) {
     return { ok: true as const };
   }
 
