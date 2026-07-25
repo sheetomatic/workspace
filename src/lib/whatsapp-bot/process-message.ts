@@ -5,6 +5,10 @@ import {
 } from "@/lib/integrations/openai";
 import { generateKnowledgeReply } from "@/lib/integrations/knowledge-reply";
 import {
+  checkAiReplyOrgQuota,
+  recordAiReplyUsage,
+} from "@/lib/integrations/ai-reply-settings";
+import {
   getKnowledgeItemForOrg,
   getKnowledgeMenuItems,
 } from "@/lib/ai-knowledge-store";
@@ -784,6 +788,11 @@ async function maybeLeadCaptureKnowledgePrefix(
     return "";
   }
 
+  const aiQuota = await checkAiReplyOrgQuota(org.id);
+  if (!aiQuota.allowed) {
+    return "";
+  }
+
   try {
     const reply = await generateKnowledgeReply({
       organizationId: org.id,
@@ -791,6 +800,7 @@ async function maybeLeadCaptureKnowledgePrefix(
       customerMessage: customerMessage.trim(),
       customerName: safeCustomerDisplayName(contactName),
     });
+    await recordAiReplyUsage({ organizationId: org.id, handoff: reply.handoff });
     return `${reply.text.trim()}\n\n`;
   } catch {
     return "";
@@ -1343,6 +1353,24 @@ async function handleCustomerMessage(
     return;
   }
 
+  // Enforce the per-org daily AI reply cap (and enabled flag) that the Settings
+  // UI configures, so WhatsApp AI replies respect WorkspaceAiReplySettings.
+  const aiQuota = await checkAiReplyOrgQuota(org.id);
+  if (!aiQuota.allowed) {
+    await replyText(
+      org.id,
+      message.from,
+      "Thanks for your message. Our team will get back to you shortly.",
+    );
+    await markEvent(message.id, {
+      organizationId: org.id,
+      fromPhone: message.from,
+      messageType: message.type,
+      status: "ai_quota_exceeded",
+    });
+    return;
+  }
+
   try {
     const reply = await generateKnowledgeReply({
       organizationId: org.id,
@@ -1356,6 +1384,8 @@ async function handleCustomerMessage(
       aiConfidence: reply.confidence,
       aiSourceTitles: reply.sourceTitles,
     });
+
+    await recordAiReplyUsage({ organizationId: org.id, handoff: reply.handoff });
 
     await markEvent(message.id, {
       organizationId: org.id,
