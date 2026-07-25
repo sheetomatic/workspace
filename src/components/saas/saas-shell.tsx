@@ -2,6 +2,7 @@
 
 import { ChevronDown, LayoutGrid, LogOut, SlidersHorizontal, X } from "lucide-react";
 import Link from "next/link";
+import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
@@ -510,7 +511,8 @@ export function SaasShell({
         ) : null}
       </nav>
 
-      {moreOpen && mobileMoreItems.length > 0 ? (
+      {moreOpen && mobileMoreItems.length > 0 && typeof document !== "undefined"
+        ? createPortal(
         <div
           className="ws-mobile-more-overlay"
           role="dialog"
@@ -563,8 +565,10 @@ export function SaasShell({
               })}
             </div>
           </div>
-        </div>
-      ) : null}
+        </div>,
+            document.body,
+          )
+        : null}
 
       <aside className="saas-sidebar ws-shell-desktop">
         <div className="crm-sidebar-head">

@@ -4892,8 +4892,10 @@ button.ws-mobile-nav-link {
   font-weight: 700;
 }
 
-/* "More" bottom sheet — surfaces every module past the 5-item cap on mobile. */
-.workspace-app .ws-mobile-more-overlay {
+/* "More" bottom sheet — surfaces every module past the 5-item cap on mobile.
+   Portaled to <body>, so these selectors are intentionally not scoped to
+   .workspace-app. */
+.ws-mobile-more-overlay {
   position: fixed;
   inset: 0;
   /* Above the bottom nav (40), AI launcher FAB (72) and guide overlays (80). */
@@ -4903,7 +4905,7 @@ button.ws-mobile-nav-link {
   justify-content: flex-end;
 }
 
-.workspace-app .ws-mobile-more-backdrop {
+.ws-mobile-more-backdrop {
   position: absolute;
   inset: 0;
   border: none;
@@ -4912,7 +4914,7 @@ button.ws-mobile-nav-link {
   cursor: pointer;
 }
 
-.workspace-app .ws-mobile-more-sheet {
+.ws-mobile-more-sheet {
   position: relative;
   z-index: 1;
   background: #fff;
@@ -4936,19 +4938,19 @@ button.ws-mobile-nav-link {
   }
 }
 
-.workspace-app .ws-mobile-more-head {
+.ws-mobile-more-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 4px 4px 12px;
 }
 
-.workspace-app .ws-mobile-more-head strong {
+.ws-mobile-more-head strong {
   font-size: 0.9375rem;
   color: #0f172a;
 }
 
-.workspace-app .ws-mobile-more-close {
+.ws-mobile-more-close {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -4961,13 +4963,13 @@ button.ws-mobile-nav-link {
   cursor: pointer;
 }
 
-.workspace-app .ws-mobile-more-grid {
+.ws-mobile-more-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
 }
 
-.workspace-app .ws-mobile-more-item {
+.ws-mobile-more-item {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4986,7 +4988,7 @@ button.ws-mobile-nav-link {
   text-decoration: none;
 }
 
-.workspace-app .ws-mobile-more-item span {
+.ws-mobile-more-item span {
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -4995,14 +4997,14 @@ button.ws-mobile-nav-link {
   max-width: 100%;
 }
 
-.workspace-app .ws-mobile-more-item.active {
+.ws-mobile-more-item.active {
   color: #1565c0;
   background: #eff6ff;
   border-color: #bfdbfe;
 }
 
 @media (min-width: 420px) {
-  .workspace-app .ws-mobile-more-grid {
+  .ws-mobile-more-grid {
     grid-template-columns: repeat(5, 1fr);
   }
 }
