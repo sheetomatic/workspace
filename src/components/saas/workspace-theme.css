@@ -25772,6 +25772,20 @@ body.ws-more-sheet-open .sheetomatic-ai-launcher {
   flex-shrink: 0;
 }
 
+/* Mobile: stack title/description above the actions so the copy keeps full
+   width (otherwise flex:1 + min-width:0 lets wide action buttons squeeze the
+   heading into a per-character column). Matches the tasks/fms/sales toolbars. */
+@media (max-width: 640px) {
+  .workspace-app .ws-ims-sf .ws-sf-page-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .workspace-app .ws-ims-sf .ws-sf-page-toolbar-actions {
+    justify-content: flex-start;
+  }
+}
+
 .workspace-app .ws-module-layout-main .ws-ims-sf {
   margin: 0;
   min-height: 100%;

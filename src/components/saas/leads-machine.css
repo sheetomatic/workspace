@@ -65,6 +65,20 @@
   padding-top: 0.15rem;
 }
 
+/* Mobile: stack heading above actions so the title isn't squeezed by wide
+   action buttons (flex:1 + min-width:0 copy would otherwise char-wrap). */
+@media (max-width: 640px) {
+  .workspace-app .leads-machine-page .ws-sf-page-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .workspace-app .leads-machine-page .ws-sf-page-toolbar-actions {
+    justify-content: flex-start;
+    margin-left: 0;
+  }
+}
+
 .leads-source-pill {
   display: inline-flex;
   align-items: center;
