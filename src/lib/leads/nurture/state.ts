@@ -22,6 +22,14 @@ export function readNurtureState(rawPayload: unknown): LeadNurtureState {
   return nurture as LeadNurtureState;
 }
 
+function parseSentAt(value: string | undefined) {
+  if (!value || value.startsWith("claim:")) {
+    return null;
+  }
+  const ms = Date.parse(value);
+  return Number.isFinite(ms) ? ms : null;
+}
+
 export function eventAlreadySent(state: LeadNurtureState, event: LeadNurtureEventId) {
   const value = state.sentEvents?.[event];
   if (!value) {
@@ -35,6 +43,20 @@ export function eventAlreadySent(state: LeadNurtureState, event: LeadNurtureEven
     }
   }
   return true;
+}
+
+/** True if this event was delivered within the last `withinDays` (for alert re-nudge cooldown). */
+export function eventSentWithinDays(
+  state: LeadNurtureState,
+  event: LeadNurtureEventId,
+  withinDays: number,
+) {
+  const sentAt = parseSentAt(state.sentEvents?.[event]);
+  if (sentAt == null) {
+    return false;
+  }
+  const daysSince = (Date.now() - sentAt) / (24 * 60 * 60 * 1000);
+  return daysSince < withinDays;
 }
 
 function hoursSince(iso: string | undefined) {

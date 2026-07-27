@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { runLeadAlertQueue } from "@/lib/leads/alerts/run";
+import { runLeadNurtureQueue } from "@/lib/leads/nurture/run";
+import { isLeadNurtureSendingEnabled } from "@/lib/leads/nurture/sending-enabled";
 import { syncAllEnabledLeadConnections } from "@/lib/leads/sync-sources";
 
 function authorizeCron(request: Request) {
@@ -26,7 +29,14 @@ export async function GET(request: Request) {
   const results = [];
   for (const org of orgs) {
     const synced = await syncAllEnabledLeadConnections(org.organizationId);
-    results.push({ organizationId: org.organizationId, synced });
+    let nurture: { welcome: number; alerts: { scanned: number; sent: number } } | null =
+      null;
+    if (await isLeadNurtureSendingEnabled(org.organizationId)) {
+      const welcome = await runLeadNurtureQueue(org.organizationId);
+      const alerts = await runLeadAlertQueue(org.organizationId);
+      nurture = { welcome, alerts };
+    }
+    results.push({ organizationId: org.organizationId, synced, nurture });
   }
 
   return NextResponse.json({ ok: true, results });

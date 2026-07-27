@@ -5,7 +5,7 @@ import {
   type LeadAlertOrgConfig,
   type LeadNurtureOrgConfig,
 } from "@/lib/leads/nurture/config";
-import { eventAlreadySent, readNurtureState } from "@/lib/leads/nurture/state";
+import { eventSentWithinDays, readNurtureState } from "@/lib/leads/nurture/state";
 import {
   alertEventForKind,
   type CrmAlertItem,
@@ -116,7 +116,7 @@ async function listPaymentNotReceivedAlerts(
       daysOverdue: days,
       reason: `No payment recorded · ${days}d since invoice`,
       anchorAt: anchor.toISOString(),
-      alreadyMessaged: eventAlreadySent(state, event),
+      alreadyMessaged: eventSentWithinDays(state, event, afterDays),
     });
   }
   return items;
@@ -192,7 +192,7 @@ async function listQuotationNotAcceptedAlerts(
       daysOverdue: days,
       reason: `Quotation not accepted · ${days}d since sent`,
       anchorAt: anchor.toISOString(),
-      alreadyMessaged: eventAlreadySent(state, event),
+      alreadyMessaged: eventSentWithinDays(state, event, afterDays),
     });
   }
   return items;
@@ -243,7 +243,7 @@ async function listNegotiationAlerts(
       daysOverdue: days,
       reason: `In negotiation · ${days}d without update`,
       anchorAt: anchor.toISOString(),
-      alreadyMessaged: eventAlreadySent(state, event),
+      alreadyMessaged: eventSentWithinDays(state, event, afterDays),
     };
   });
 }

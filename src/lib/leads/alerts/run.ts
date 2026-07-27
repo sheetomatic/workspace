@@ -23,6 +23,8 @@ export async function runLeadAlertQueue(organizationId: string) {
       organizationId,
       leadId: item.leadId,
       event: item.event,
+      // Re-nudge after alert cooldown — prior send is tracked but not a permanent block.
+      force: true,
     });
     if (result.sent) {
       sent += 1;
