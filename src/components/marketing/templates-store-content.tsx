@@ -44,6 +44,12 @@ export function TemplatesStoreContent({
   const [orderId, setOrderId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [utr, setUtr] = useState("");
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofBusy, setProofBusy] = useState(false);
+  const [proofError, setProofError] = useState<string | null>(null);
+  const [proofDone, setProofDone] = useState<string | null>(null);
+  const [upiCopied, setUpiCopied] = useState(false);
 
   const selected = useMemo(
     () => products.find((p) => p.id === selectedId) ?? null,
@@ -107,6 +113,52 @@ export function TemplatesStoreContent({
     });
   }
 
+  async function copyUpiId() {
+    try {
+      await navigator.clipboard.writeText(SHEETOMATIC_UPI_PAYMENT.upiId);
+      setUpiCopied(true);
+      window.setTimeout(() => setUpiCopied(false), 2000);
+    } catch {
+      // Clipboard unavailable — UPI ID stays visible for manual copy.
+    }
+  }
+
+  async function submitProof() {
+    if (!orderId) return;
+    if (!utr.trim() && !proofFile) {
+      setProofError("Add the UPI reference (UTR) or upload a payment screenshot.");
+      return;
+    }
+    setProofBusy(true);
+    setProofError(null);
+    try {
+      const form = new FormData();
+      if (utr.trim()) form.set("utr", utr.trim());
+      if (proofFile) form.set("file", proofFile);
+      const response = await fetch(`/api/templates/order/${orderId}/proof`, {
+        method: "POST",
+        body: form,
+      });
+      const data = (await response.json()) as {
+        ok?: boolean;
+        message?: string;
+        error?: string;
+      };
+      if (!response.ok || !data.ok) {
+        setProofError(data.error ?? "Could not submit. Try again or WhatsApp us.");
+        return;
+      }
+      setProofDone(
+        data.message ??
+          "Confirmation received. We verify and email your copy link shortly.",
+      );
+    } catch {
+      setProofError("Network error. Try again.");
+    } finally {
+      setProofBusy(false);
+    }
+  }
+
   return (
     <div className="tpl-page">
       <header className="tpl-hero">
@@ -138,6 +190,10 @@ export function TemplatesStoreContent({
                       setStep("catalog");
                       setOrderId(null);
                       setError(null);
+                      setUtr("");
+                      setProofFile(null);
+                      setProofError(null);
+                      setProofDone(null);
                     }}
                   >
                     {product.thumbnailUrl ? (
@@ -177,26 +233,95 @@ export function TemplatesStoreContent({
           ) : step === "pay" && orderId ? (
             <div className="tpl-done">
               <h2>Pay ₹{selected.priceInr.toLocaleString("en-IN")}</h2>
-              <p>
-                Order saved. Pay on UPI now. Our team confirms in CRM → Leads,
-                then emails your Make a copy link to <strong>{email}</strong>.
-              </p>
-              <p className="tpl-order-id">Order ID: {orderId}</p>
-              <button type="button" className="tpl-btn primary" onClick={payNow}>
-                Open UPI / PhonePe
-              </button>
-              <div className="tpl-qr-wrap">
+              <ol className="tpl-steps">
+                <li className={proofDone ? "is-done" : "is-active"}>
+                  Pay on UPI — scan the QR or tap the button
+                </li>
+                <li className={proofDone ? "is-done" : ""}>
+                  Upload the payment confirmation below
+                </li>
+                <li>We verify &amp; email your Make a copy link to{" "}
+                  <strong>{email}</strong>
+                </li>
+              </ol>
+
+              <div className="tpl-pay-card">
+                <div className="tpl-pay-amount">
+                  <span>Amount</span>
+                  <strong>₹{selected.priceInr.toLocaleString("en-IN")}</strong>
+                </div>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
+                  className="tpl-pay-qr"
                   src={SHEETOMATIC_UPI_PAYMENT.qrImageSrc}
                   alt="PhonePe UPI QR"
-                  width={180}
-                  height={180}
+                  width={168}
+                  height={168}
                 />
-                <p>
-                  UPI: <code>{SHEETOMATIC_UPI_PAYMENT.upiId}</code>
-                </p>
+                <p className="tpl-pay-scan">Scan with any UPI app</p>
+                <button
+                  type="button"
+                  className="tpl-upi-id"
+                  onClick={() => void copyUpiId()}
+                  title="Copy UPI ID"
+                >
+                  <code>{SHEETOMATIC_UPI_PAYMENT.upiId}</code>
+                  <span>{upiCopied ? "Copied ✓" : "Copy"}</span>
+                </button>
+                <button type="button" className="tpl-btn primary" onClick={payNow}>
+                  Open UPI / PhonePe
+                </button>
               </div>
+
+              {proofDone ? (
+                <div className="tpl-proof-done">
+                  <p>
+                    <strong>✓ {proofDone}</strong>
+                  </p>
+                  <p className="tpl-fine">
+                    Order ID: <code>{orderId}</code>
+                  </p>
+                </div>
+              ) : (
+                <form
+                  className="tpl-proof-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void submitProof();
+                  }}
+                >
+                  <h3>Paid? Confirm it here</h3>
+                  <label>
+                    UPI reference (UTR)
+                    <input
+                      value={utr}
+                      onChange={(e) => setUtr(e.target.value)}
+                      placeholder="12-digit UTR from your UPI app"
+                      inputMode="numeric"
+                    />
+                  </label>
+                  <label>
+                    Payment screenshot
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/heic,application/pdf"
+                      onChange={(e) => setProofFile(e.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                  {proofError ? <p className="tpl-error">{proofError}</p> : null}
+                  <button
+                    type="submit"
+                    className="tpl-btn primary"
+                    disabled={proofBusy}
+                  >
+                    {proofBusy ? "Submitting…" : "I've paid — submit confirmation"}
+                  </button>
+                  <p className="tpl-fine">
+                    Order ID: <code>{orderId}</code> · UTR or screenshot, either
+                    works. We approve and the copy link lands in your inbox.
+                  </p>
+                </form>
+              )}
             </div>
           ) : step === "details" ? (
             <form

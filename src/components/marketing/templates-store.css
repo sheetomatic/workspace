@@ -206,18 +206,142 @@
   color: #475569;
 }
 
-.tpl-qr-wrap {
+.tpl-steps {
+  margin: 0;
+  padding: 0 0 0 1.2rem;
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.86rem;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.tpl-steps li.is-active {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.tpl-steps li.is-done {
+  color: #059669;
+}
+
+.tpl-pay-card {
   display: grid;
   justify-items: center;
-  gap: 0.4rem;
-  margin-top: 0.5rem;
-}
-
-.tpl-qr-wrap img {
-  border-radius: 8px;
+  gap: 0.6rem;
+  padding: 1.1rem 1rem;
   border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
-.tpl-qr-wrap code {
+.tpl-pay-amount {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.tpl-pay-amount span {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.tpl-pay-amount strong {
+  font-size: 1.45rem;
+  color: #0f172a;
+}
+
+.tpl-pay-qr {
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  padding: 6px;
+  background: #fff;
+}
+
+.tpl-pay-scan {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.tpl-upi-id {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px dashed #94a3b8;
+  border-radius: 999px;
+  background: #f8fafc;
+  padding: 0.4rem 0.85rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.tpl-upi-id code {
   font-size: 0.85rem;
+  color: #0f172a;
+}
+
+.tpl-upi-id span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #0369a1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tpl-pay-card .tpl-btn {
+  width: 100%;
+}
+
+.tpl-proof-form {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.95rem;
+  border: 1px solid #bae6fd;
+  border-radius: 12px;
+  background: #f0f9ff;
+}
+
+.tpl-proof-form h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #0c4a6e;
+}
+
+.tpl-proof-form label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  color: #334155;
+}
+
+.tpl-proof-form input {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.55rem 0.65rem;
+  font: inherit;
+  background: #fff;
+}
+
+.tpl-proof-form input[type="file"] {
+  padding: 0.4rem;
+  font-size: 0.8rem;
+}
+
+.tpl-proof-done {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.95rem;
+  border: 1px solid #a7f3d0;
+  border-radius: 12px;
+  background: #ecfdf5;
+}
+
+.tpl-proof-done p {
+  margin: 0;
+  color: #065f46;
 }

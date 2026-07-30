@@ -3158,6 +3158,12 @@ model TemplateOrder {
   notes                  String?
   inboundLeadId          String?
   status                 TemplateOrderStatus @default(PENDING)
+  /// Buyer pressed "I've paid" and submitted UTR / screenshot.
+  paymentClaimedAt       DateTime?
+  paymentProofFileName   String?
+  paymentProofMimeType   String?
+  paymentProofSize       Int?
+  paymentProofData       Bytes?
   paymentReceivedAt      DateTime?
   paymentReceivedById    String?
   fulfillmentEmailSentAt DateTime?

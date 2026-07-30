@@ -1,9 +1,13 @@
 import { prisma } from "@/lib/db";
 import { sendPlainEmail } from "@/lib/integrations/email";
+import { getLoginBaseUrl } from "@/lib/integrations/email-base-url";
 import { ingestInboundLead } from "@/lib/leads/ingest";
 import { getPrimaryOrganization } from "@/lib/platform";
 import { TEMPLATE_PRODUCT_SEEDS } from "@/lib/templates/seed-products";
 import type { TemplateOrderStatus, TemplateProductType } from "@prisma/client";
+
+const TEMPLATE_APPROVER_EMAIL =
+  process.env.TEMPLATE_APPROVER_EMAIL?.trim() || "founder@sheetomatic.com";
 
 export async function seedTemplateProducts() {
   for (const product of TEMPLATE_PRODUCT_SEEDS) {
@@ -77,6 +81,7 @@ export async function listAllTemplateProducts() {
 export async function listTemplateOrders(status?: TemplateOrderStatus) {
   return prisma.templateOrder.findMany({
     where: status ? { status } : undefined,
+    omit: { paymentProofData: true },
     include: {
       product: {
         select: { id: true, name: true, type: true, priceInr: true, copyLink: true },
@@ -93,6 +98,7 @@ export async function listPendingTemplateOrdersForLead(inboundLeadId: string) {
       inboundLeadId,
       status: { in: ["PENDING", "PAYMENT_RECEIVED"] },
     },
+    omit: { paymentProofData: true },
     include: {
       product: {
         select: {
@@ -130,7 +136,14 @@ export async function mapPendingTemplateOrdersByLeadIds(leadIds: string[]) {
       inboundLeadId: { in: ids },
       status: { in: ["PENDING", "PAYMENT_RECEIVED"] },
     },
-    include: {
+    select: {
+      id: true,
+      inboundLeadId: true,
+      status: true,
+      customerEmail: true,
+      paymentRef: true,
+      paymentClaimedAt: true,
+      paymentProofFileName: true,
       product: { select: { name: true, priceInr: true } },
     },
     orderBy: { createdAt: "desc" },
@@ -143,6 +156,8 @@ export async function mapPendingTemplateOrdersByLeadIds(leadIds: string[]) {
       status: TemplateOrderStatus;
       customerEmail: string;
       paymentRef: string | null;
+      paymentClaimedAt: string | null;
+      hasPaymentProof: boolean;
       productName: string;
       priceInr: number;
     }>
@@ -156,12 +171,115 @@ export async function mapPendingTemplateOrdersByLeadIds(leadIds: string[]) {
       status: row.status,
       customerEmail: row.customerEmail,
       paymentRef: row.paymentRef,
+      paymentClaimedAt: row.paymentClaimedAt?.toISOString() ?? null,
+      hasPaymentProof: row.paymentProofFileName != null,
       productName: row.product.name,
       priceInr: row.product.priceInr,
     });
     map.set(row.inboundLeadId, list);
   }
   return map;
+}
+
+/**
+ * Buyer submits payment confirmation (UTR and/or screenshot) after paying UPI.
+ * Stores the proof, logs it on the CRM lead, and emails the approver a direct
+ * link to the lead drawer where "Confirm payment & email link" completes it.
+ */
+export async function submitTemplatePaymentProof(params: {
+  orderId: string;
+  utr?: string;
+  file?: { name: string; mimeType: string; size: number; data: Buffer };
+}) {
+  const utr = params.utr?.trim() || null;
+  if (!utr && !params.file) {
+    return {
+      ok: false as const,
+      message: "Add the UPI reference (UTR) or upload a payment screenshot.",
+    };
+  }
+
+  const order = await prisma.templateOrder.findUnique({
+    where: { id: params.orderId },
+    omit: { paymentProofData: true },
+    include: { product: { select: { name: true, priceInr: true } } },
+  });
+  if (!order) {
+    return { ok: false as const, message: "Order not found." };
+  }
+  if (order.status === "CANCELLED") {
+    return { ok: false as const, message: "Order is cancelled." };
+  }
+  if (order.status === "FULFILLED") {
+    return {
+      ok: true as const,
+      message: "This order is already confirmed — check your email for the copy link.",
+      alreadyFulfilled: true,
+    };
+  }
+
+  const now = new Date();
+  await prisma.templateOrder.update({
+    where: { id: order.id },
+    data: {
+      paymentClaimedAt: order.paymentClaimedAt ?? now,
+      ...(utr ? { paymentRef: utr } : {}),
+      ...(params.file
+        ? {
+            paymentProofFileName: params.file.name.slice(0, 255) || "payment-proof",
+            paymentProofMimeType: params.file.mimeType,
+            paymentProofSize: params.file.size,
+            paymentProofData: params.file.data,
+          }
+        : {}),
+    },
+  });
+
+  const org = await getPrimaryOrganization();
+  if (org && order.inboundLeadId) {
+    await prisma.inboundLeadActivity.create({
+      data: {
+        organizationId: org.id,
+        leadId: order.inboundLeadId,
+        type: "NOTE",
+        body: `Buyer submitted payment confirmation · ${order.product.name}${utr ? ` · UTR ${utr}` : ""}${params.file ? " · screenshot attached" : ""}`,
+      },
+    });
+  }
+
+  const approveLink = order.inboundLeadId
+    ? `${getLoginBaseUrl()}/app/leads?leadId=${order.inboundLeadId}&tab=payments`
+    : `${getLoginBaseUrl()}/app/template-orders`;
+
+  const notify = await sendPlainEmail({
+    toEmail: TEMPLATE_APPROVER_EMAIL,
+    subject: `Approve template payment · ${order.product.name} · ₹${order.product.priceInr.toLocaleString("en-IN")}`,
+    text: [
+      `${order.customerName} says they paid for "${order.product.name}" (₹${order.product.priceInr.toLocaleString("en-IN")}).`,
+      ``,
+      `Email: ${order.customerEmail}`,
+      order.customerPhone ? `Phone: ${order.customerPhone}` : null,
+      utr ? `UTR / reference: ${utr}` : `UTR: not provided`,
+      params.file
+        ? `Screenshot: attached on the order (view from the lead drawer).`
+        : `Screenshot: not uploaded`,
+      `Order ID: ${order.id}`,
+      ``,
+      `Approve here (Confirm payment & email link):`,
+      approveLink,
+      ``,
+      `On confirm, the Make a copy link is auto-emailed to the buyer.`,
+    ]
+      .filter((line): line is string => line !== null)
+      .join("\n"),
+  });
+
+  return {
+    ok: true as const,
+    message:
+      "Confirmation received. We verify the payment and email your copy link shortly.",
+    approverNotified: notify.sent,
+  };
 }
 
 export async function createTemplateOrder(input: {
@@ -321,6 +439,7 @@ export async function markTemplatePaymentReceived(params: {
 }) {
   const order = await prisma.templateOrder.findUnique({
     where: { id: params.orderId },
+    omit: { paymentProofData: true },
     include: { product: true },
   });
 
@@ -406,6 +525,7 @@ export async function confirmTemplatePaymentForLead(params: {
       ...(params.orderId ? { id: params.orderId } : {}),
       status: { in: ["PENDING", "PAYMENT_RECEIVED"] },
     },
+    omit: { paymentProofData: true },
     include: { product: true },
     orderBy: { createdAt: "desc" },
   });

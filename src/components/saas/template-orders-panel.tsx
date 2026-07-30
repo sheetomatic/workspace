@@ -15,6 +15,8 @@ export type TemplateOrderRow = {
   customerEmail: string;
   customerPhone: string | null;
   paymentRef: string | null;
+  paymentClaimedAt: string | null;
+  hasPaymentProof: boolean;
   status: "PENDING" | "PAYMENT_RECEIVED" | "FULFILLED" | "CANCELLED";
   createdAt: string;
   product: {
@@ -113,6 +115,24 @@ export function TemplateOrdersPanel({
                     {formatPendingAge(new Date(row.createdAt))}
                   </p>
                   {row.paymentRef ? <p>Ref: {row.paymentRef}</p> : null}
+                  {row.paymentClaimedAt ? (
+                    <p>
+                      Buyer marked paid{" "}
+                      {formatPendingAge(new Date(row.paymentClaimedAt))}
+                      {row.hasPaymentProof ? (
+                        <>
+                          {" · "}
+                          <a
+                            href={`/api/templates/order/${row.id}/proof`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            View proof
+                          </a>
+                        </>
+                      ) : null}
+                    </p>
+                  ) : null}
                   {!row.product.hasCopyLink ? (
                     <p className="saas-form-message error">
                       Add copy link on the product before confirming.

@@ -221,6 +221,8 @@ export type LeadDrawerData = {
     status: string;
     customerEmail: string;
     paymentRef: string | null;
+    paymentClaimedAt?: string | null;
+    hasPaymentProof?: boolean;
     productName: string;
     priceInr: number;
   }>;
@@ -1973,6 +1975,27 @@ export function LeadDrawerPanel({
                     <span className="leads-machine-muted">
                       Ref: {order.paymentRef}
                     </span>
+                  ) : null}
+                  {order.paymentClaimedAt ? (
+                    <span className="leads-machine-muted">
+                      Buyer marked paid{" "}
+                      {new Date(order.paymentClaimedAt).toLocaleString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  ) : null}
+                  {order.hasPaymentProof ? (
+                    <a
+                      className="btn-secondary btn-sm"
+                      href={`/api/templates/order/${order.id}/proof`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      View proof
+                    </a>
                   ) : null}
                   <button
                     type="button"

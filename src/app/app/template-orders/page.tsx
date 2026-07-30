@@ -31,6 +31,8 @@ export default async function TemplateOrdersPage() {
           customerEmail: row.customerEmail,
           customerPhone: row.customerPhone,
           paymentRef: row.paymentRef,
+          paymentClaimedAt: row.paymentClaimedAt?.toISOString() ?? null,
+          hasPaymentProof: row.paymentProofFileName != null,
           status: row.status,
           createdAt: row.createdAt.toISOString(),
           product: {
