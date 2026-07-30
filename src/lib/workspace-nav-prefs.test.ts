@@ -19,15 +19,23 @@ describe("workspace-nav-prefs", () => {
     expect(isNavIdVisible(prefs, "dept-hr")).toBe(true);
     expect(isNavIdVisible(prefs, "dept-store")).toBe(false);
     expect(isNavIdVisible(prefs, "settings")).toBe(true);
+    expect(isNavIdVisible(prefs, "checklists")).toBe(false);
+    expect(isNavIdVisible(prefs, "ea")).toBe(false);
+    expect(isNavIdVisible(prefs, "pc")).toBe(false);
+    expect(isNavIdVisible(prefs, "team")).toBe(false);
   });
 
-  it("shows everything in all mode", () => {
+  it("shows allowed modules in all mode but keeps retired nav hidden", () => {
     const prefs = parseWorkspaceNavPrefs({ mode: "all", visibleIds: [] });
     expect(resolveVisibleNavIdSet(prefs)).toBeNull();
     expect(isNavIdVisible(prefs, "dept-store")).toBe(true);
+    expect(isNavIdVisible(prefs, "checklists")).toBe(false);
+    expect(isNavIdVisible(prefs, "ea")).toBe(false);
+    expect(isNavIdVisible(prefs, "pc")).toBe(false);
+    expect(isNavIdVisible(prefs, "team")).toBe(false);
   });
 
-  it("respects custom visible ids and always keeps settings/team", () => {
+  it("respects custom visible ids and always keeps settings", () => {
     const prefs = parseWorkspaceNavPrefs({
       mode: "custom",
       visibleIds: ["fms", "em"],
@@ -35,7 +43,8 @@ describe("workspace-nav-prefs", () => {
     expect(isNavIdVisible(prefs, "fms")).toBe(true);
     expect(isNavIdVisible(prefs, "em")).toBe(true);
     expect(isNavIdVisible(prefs, "tasks")).toBe(false);
-    expect(isNavIdVisible(prefs, "team")).toBe(true);
+    expect(isNavIdVisible(prefs, "settings")).toBe(true);
+    expect(isNavIdVisible(prefs, "team")).toBe(false);
   });
 
   it("maps home widgets to nav visibility without granting ACL", () => {

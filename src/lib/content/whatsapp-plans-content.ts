@@ -90,8 +90,8 @@ export const whatsappPlansPage = {
     },
   ] satisfies WhatsappPlanCard[],
   contact: {
-    phone: "+919329103106",
-    phoneDisplay: "+91 93291 03106",
+    phone: "+919755733107",
+    phoneDisplay: "+91 97557 33107",
     email: "sheetomatic@gmail.com",
     enquiryFormUrl: "https://forms.gle/aLUcf4fcAKdUXf3o6",
   },

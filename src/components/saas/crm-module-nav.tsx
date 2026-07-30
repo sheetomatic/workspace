@@ -13,8 +13,10 @@ import {
 } from "lucide-react";
 import type { CrmModuleNavCounts } from "@/lib/leads/crm-module-stats-types";
 import { formatCrmNavValue } from "@/lib/leads/crm-nav-format";
+import type { CrmSubModuleId } from "@/lib/crm/crm-sub-modules";
 
 type NavItem = {
+  id: CrmSubModuleId;
   href: string;
   label: string;
   icon: typeof Users;
@@ -30,11 +32,21 @@ function isActive(pathname: string, href: string, matchExact?: boolean) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function CrmModuleNav({ counts }: { counts: CrmModuleNavCounts }) {
+export function CrmModuleNav({
+  counts,
+  enabledSubModules,
+}: {
+  counts: CrmModuleNavCounts;
+  enabledSubModules?: CrmSubModuleId[] | null;
+}) {
   const pathname = usePathname();
+  const allowed = enabledSubModules
+    ? new Set(enabledSubModules)
+    : null;
 
-  const items: NavItem[] = [
+  const allItems: NavItem[] = [
     {
+      id: "leads",
       href: "/app/leads",
       label: "Leads",
       icon: Users,
@@ -42,12 +54,14 @@ export function CrmModuleNav({ counts }: { counts: CrmModuleNavCounts }) {
       matchExact: true,
     },
     {
+      id: "meetings",
       href: "/app/leads/meetings",
       label: "Meetings",
       icon: CalendarDays,
       count: counts.meetings,
     },
     {
+      id: "quotations",
       href: "/app/leads/quotations",
       label: "Quotations",
       icon: ClipboardList,
@@ -55,6 +69,7 @@ export function CrmModuleNav({ counts }: { counts: CrmModuleNavCounts }) {
       valueLabel: formatCrmNavValue(counts.quotationValue),
     },
     {
+      id: "payments",
       href: "/app/leads/payments",
       label: "Payments",
       icon: CreditCard,
@@ -62,6 +77,7 @@ export function CrmModuleNav({ counts }: { counts: CrmModuleNavCounts }) {
       valueLabel: formatCrmNavValue(counts.paymentValue),
     },
     {
+      id: "projects",
       href: "/app/leads/projects",
       label: "Projects",
       icon: FolderKanban,
@@ -69,12 +85,16 @@ export function CrmModuleNav({ counts }: { counts: CrmModuleNavCounts }) {
       valueLabel: `${counts.projectsDelivered} delivered`,
     },
     {
+      id: "training",
       href: "/app/leads/training",
       label: "Training",
       icon: GraduationCap,
       count: counts.training,
     },
   ];
+  const items = allItems.filter(
+    (item) => !allowed || allowed.has(item.id),
+  );
 
   return (
     <nav className="ws-module-subnav crm-module-subnav" aria-label="CRM modules">

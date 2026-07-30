@@ -1101,6 +1101,10 @@ async function main() {
 
   await seedBciDemo();
 
+  const { seedTemplateProducts } = await import("../src/lib/templates/store");
+  const templateCount = await seedTemplateProducts();
+  console.log(`Template catalog seeded: ${templateCount} products`);
+
   console.log("Seed complete. Demo password for all accounts:", DEMO_PASSWORD);
   console.log("Super admin:", SUPER_ADMIN.email, "@ sheetomatic-technologies");
   console.log("Hingorani portal: https://hingorani.sheetomatic.com (admin@hingorani.demo)");

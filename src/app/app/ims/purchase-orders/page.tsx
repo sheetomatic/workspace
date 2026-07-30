@@ -30,7 +30,7 @@ export default async function ImsPurchaseOrdersPage() {
     <div className="ws-ims-page">
       <TaskPageToolbar
         title="Purchase orders"
-        description="Vendor PO with rates — raise from approved indent, then GRN on receipt."
+        description="Vendor PO with rates — create independently or from an approved indent, then GRN on receipt."
         actions={
           <Link href="/app/ims/purchase-orders/new" className="ws-btn ws-btn-primary">
             New PO

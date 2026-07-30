@@ -9,12 +9,7 @@ import { AttendanceVerifyQueue } from "@/components/hr/attendance-verify-queue";
 import { HrSubNav } from "@/components/hr/hr-sub-nav";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
-import {
-  getOrCreateHrSettings,
-  listPendingAttendanceVerifications,
-  listTodayAttendance,
-} from "@/lib/hr/hr-store";
-import { resolveEnabledHrSubModules, requireHrSubModule } from "@/lib/hr/hr-sub-modules";
+import { getEffectiveHrSubModulesForUser } from "@/lib/hr/hr-access";
 import { listAttendanceForPeriod } from "@/lib/hr/payroll";
 import {
   getAttendanceSiteStats,
@@ -24,6 +19,10 @@ import { listHolidays } from "@/lib/hr/holidays";
 import { prisma, withDbRetry } from "@/lib/db";
 import { attendanceLeaveModule } from "@/app/hr-module-content";
 import { redirect } from "next/navigation";
+import {
+  listPendingAttendanceVerifications,
+  listTodayAttendance,
+} from "@/lib/hr/hr-store";
 
 type PageProps = {
   searchParams: Promise<{ site?: string; month?: string }>;
@@ -71,7 +70,7 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
   // This page fans out ~9 queries in parallel; on serverless Postgres a single
   // idle-connection drop / pool timeout would otherwise bubble to the app error
   // boundary and look like a forced sign-out. withDbRetry reconnects + retries.
-  const [records, membership, hrSettings, sites, stats, monthRecords, members, yearHolidays, pendingVerify] =
+  const [records, membership, hrAccess, sites, stats, monthRecords, members, yearHolidays, pendingVerify] =
     await withDbRetry(() => Promise.all([
       listTodayAttendance(
         user.organizationId,
@@ -87,7 +86,7 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
         },
         select: { geoFenceRequired: true, locationMode: true },
       }),
-      getOrCreateHrSettings(user.organizationId),
+      getEffectiveHrSubModulesForUser(user),
       listActiveHrWorkSites(user.organizationId),
       canMark
         ? getAttendanceSiteStats(user.organizationId, workDate, siteFilter)
@@ -116,13 +115,12 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
         : Promise.resolve([]),
     ]));
 
-  if (!requireHrSubModule(hrSettings.enabledHrSubModules, "attendance")) {
+  if (!hrAccess.allowed("attendance")) {
     redirect("/app/hr");
   }
 
-  const enabledSubModules = resolveEnabledHrSubModules(
-    hrSettings.enabledHrSubModules,
-  );
+  const hrSettings = hrAccess.settings;
+  const enabledSubModules = hrAccess.effective;
 
   const myRecord = records.find((r) => r.userId === user.id);
   const officeConfigured =

@@ -172,7 +172,210 @@ export const emReadyPricingFootnotes = [
   "Prices in INR, exclusive of GST.",
   "Meta WhatsApp conversation / API fees are billed separately.",
   "Billing is monthly recurring; annual invoices available where listed.",
+  "Suite plans include the modules listed on each card. Individual modules can be bought alone or stacked — Suite is usually cheaper when you need two or more.",
 ] as const;
+
+/**
+ * Individual modules (à la carte) — buy one or stack.
+ * List prices are set so stacking 2+ modules typically costs more than the matching Suite tier.
+ */
+export type EmReadyModulePlanId =
+  | "module_fms"
+  | "module_tasks"
+  | "module_crm"
+  | "module_ims"
+  | "module_hr";
+
+export type EmReadyModulePlan = {
+  id: EmReadyModulePlanId;
+  name: string;
+  shortName: string;
+  tagline: string;
+  badge: string | null;
+  priceMonthlyInr: number;
+  priceAnnualInr: number;
+  includedUsers: number;
+  extraUserMonthlyInr: number;
+  includes: string[];
+  highlights: string[];
+  /** Product page / services deep link when available. */
+  href: string;
+};
+
+export const emReadyModulePlans: EmReadyModulePlan[] = [
+  {
+    id: "module_fms",
+    name: "FMS Bundle",
+    shortName: "FMS",
+    tagline: "Split flows, EM Ready board, reports, and approvals",
+    badge: "Core",
+    priceMonthlyInr: 2999,
+    priceAnnualInr: 29990,
+    includedUsers: 8,
+    extraUserMonthlyInr: 399,
+    includes: ["FMS", "REPORTS", "APPROVALS", "EM Ready"],
+    highlights: [
+      "Up to 3 FMS templates",
+      "Person-wise KRA/KPI on EM",
+      "Internal WhatsApp SLA alerts",
+    ],
+    href: "/services/flow",
+  },
+  {
+    id: "module_tasks",
+    name: "Tasks / EA",
+    shortName: "Tasks",
+    tagline: "Delegation, PC checklists, and EA follow-through",
+    badge: null,
+    priceMonthlyInr: 2499,
+    priceAnnualInr: 24990,
+    includedUsers: 8,
+    extraUserMonthlyInr: 349,
+    includes: ["TASKS", "PC checklists", "EA portal"],
+    highlights: [
+      "Task owners, due dates, proof",
+      "Recurring process checklists",
+      "Deficit scoring for EM",
+    ],
+    href: "/services/tasks",
+  },
+  {
+    id: "module_crm",
+    name: "CRM",
+    shortName: "CRM",
+    tagline: "Leads Machine — pipeline, follow-ups, quotations",
+    badge: null,
+    priceMonthlyInr: 2999,
+    priceAnnualInr: 29990,
+    includedUsers: 8,
+    extraUserMonthlyInr: 399,
+    includes: ["CRM", "Leads", "Quotations"],
+    highlights: [
+      "Lead stages and ownership",
+      "Follow-up discipline",
+      "Quotation trail",
+    ],
+    href: "/products",
+  },
+  {
+    id: "module_ims",
+    name: "IMS / Stock",
+    shortName: "IMS",
+    tagline: "Stock in/out, reorder exceptions, store control",
+    badge: null,
+    priceMonthlyInr: 2999,
+    priceAnnualInr: 29990,
+    includedUsers: 8,
+    extraUserMonthlyInr: 399,
+    includes: ["IMS", "Reorder alerts", "Store modules"],
+    highlights: [
+      "Balances and stock movements",
+      "Reorder exceptions for EM",
+      "Purchase / indent workflows",
+    ],
+    href: "/services/inventory",
+  },
+  {
+    id: "module_hr",
+    name: "HRMS",
+    shortName: "HR",
+    tagline: "Attendance, payroll, field staff, hiring workflows",
+    badge: null,
+    priceMonthlyInr: 2999,
+    priceAnnualInr: 29990,
+    includedUsers: 8,
+    extraUserMonthlyInr: 399,
+    includes: ["HR", "Attendance", "Payroll"],
+    highlights: [
+      "Workforce attendance",
+      "Salary slip workflows",
+      "Hiring / screening paths",
+    ],
+    href: "/services",
+  },
+];
+
+/** Compare matrix — Suite tiers vs buying modules. */
+export type EmReadyCompareRow = {
+  feature: string;
+  starter: string;
+  growth: string;
+  scale: string;
+  modules: string;
+};
+
+export const emReadyCompareRows: EmReadyCompareRow[] = [
+  {
+    feature: "Best for",
+    starter: "One location, EM Ready",
+    growth: "Multi-dept + stock + HR",
+    scale: "Mid-market, 50 seats",
+    modules: "Need only 1–2 modules",
+  },
+  {
+    feature: "From (8–50 seats)",
+    starter: "₹4,999/mo",
+    growth: "₹9,999/mo",
+    scale: "₹24,999/mo",
+    modules: "From ₹2,499/mo each",
+  },
+  {
+    feature: "FMS + EM Ready",
+    starter: "Included",
+    growth: "Included",
+    scale: "Included",
+    modules: "FMS Bundle ₹2,999",
+  },
+  {
+    feature: "Tasks / EA + PC",
+    starter: "Included",
+    growth: "Included",
+    scale: "Included",
+    modules: "Tasks ₹2,499",
+  },
+  {
+    feature: "IMS / Stock",
+    starter: "—",
+    growth: "Included",
+    scale: "Included",
+    modules: "IMS ₹2,999",
+  },
+  {
+    feature: "HRMS",
+    starter: "—",
+    growth: "Included",
+    scale: "Included",
+    modules: "HR ₹2,999",
+  },
+  {
+    feature: "CRM",
+    starter: "Add-on",
+    growth: "Add-on",
+    scale: "Add-on",
+    modules: "CRM ₹2,999",
+  },
+  {
+    feature: "Users included",
+    starter: "8",
+    growth: "20",
+    scale: "50",
+    modules: "8 per module",
+  },
+  {
+    feature: "FMS templates",
+    starter: "Up to 3",
+    growth: "Up to 10",
+    scale: "Up to 25",
+    modules: "Up to 3 (FMS Bundle)",
+  },
+  {
+    feature: "When Suite wins",
+    starter: "FMS + Tasks together",
+    growth: "FMS + Tasks + IMS + HR",
+    scale: "50 seats + priority",
+    modules: "Stack 2+ → check Suite",
+  },
+];
 
 export const emReadyStorageAddons = [
   { id: "storage_10", label: "+10 GB (BYTEA)", priceMonthlyInr: 1499, storageGb: 10 },
@@ -206,6 +409,33 @@ export function formatInr(amount: number): string {
 }
 
 export type EmReadyBillingPeriod = "monthly" | "annual";
+
+export function getEmReadyModuleDisplayPrice(
+  plan: EmReadyModulePlan,
+  period: EmReadyBillingPeriod,
+): { amountLabel: string; periodLabel: string; annualNote: string | null } {
+  if (period === "annual") {
+    const perMonth = Math.round(plan.priceAnnualInr / 12);
+    return {
+      amountLabel: formatInr(plan.priceAnnualInr),
+      periodLabel: "/ year",
+      annualNote: `${formatInr(perMonth)}/mo billed annually`,
+    };
+  }
+  return {
+    amountLabel: formatInr(plan.priceMonthlyInr),
+    periodLabel: "/ month",
+    annualNote: `or ${formatInr(plan.priceAnnualInr)}/year`,
+  };
+}
+
+/** Rough stack total for Compare helper (monthly, base seats). */
+export function sumSelectedModulesMonthly(
+  moduleIds: EmReadyModulePlanId[],
+): number {
+  const map = new Map(emReadyModulePlans.map((m) => [m.id, m.priceMonthlyInr]));
+  return moduleIds.reduce((sum, id) => sum + (map.get(id) ?? 0), 0);
+}
 
 /** Display price for a public plan card. */
 export function getEmReadyDisplayPrice(

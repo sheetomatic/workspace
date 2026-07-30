@@ -6,22 +6,18 @@ import { EmployeesTable } from "@/components/hr/employees-table";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import { listEmployees } from "@/lib/hr/employees";
-import { getOrCreateHrSettings } from "@/lib/hr/hr-store";
-import {
-  resolveEnabledHrSubModules,
-  requireHrSubModule,
-} from "@/lib/hr/hr-sub-modules";
+import { getEffectiveHrSubModulesForUser } from "@/lib/hr/hr-access";
 
 export default async function HrEmployeesPage() {
   const user = await requireSession(undefined, { module: "HR" });
   const isAdmin = hasMinimumRole(user.role, "ADMIN");
 
-  const [all, hrSettings] = await Promise.all([
+  const [all, hrAccess] = await Promise.all([
     listEmployees(user.organizationId),
-    getOrCreateHrSettings(user.organizationId),
+    getEffectiveHrSubModulesForUser(user),
   ]);
 
-  if (!requireHrSubModule(hrSettings.enabledHrSubModules, "employees")) {
+  if (!hrAccess.allowed("employees")) {
     redirect("/app/hr");
   }
 
@@ -29,9 +25,7 @@ export default async function HrEmployeesPage() {
     ? all
     : all.filter((row) => row.userId === user.id);
 
-  const enabledSubModules = resolveEnabledHrSubModules(
-    hrSettings.enabledHrSubModules,
-  );
+  const enabledSubModules = hrAccess.effective;
 
   const registered = employees.filter((e) => e.profile != null).length;
   const withSalary = isAdmin

@@ -36,6 +36,8 @@ import {
   parseModulesFromForm,
   resolveMemberModules,
 } from "@/lib/workspace-modules";
+import { persistEnabledHrSubModules } from "@/lib/hr/hr-sub-modules";
+import { persistEnabledCrmSubModules } from "@/lib/crm/crm-sub-modules";
 
 export type TeamActionState = {
   ok: boolean;
@@ -46,6 +48,24 @@ export type TeamActionState = {
   userId?: string;
   userName?: string;
 };
+
+function parseHrSubModulesFromForm(formData: FormData, hasHrModule: boolean) {
+  if (!hasHrModule) {
+    return [] as string[];
+  }
+  return persistEnabledHrSubModules(
+    formData.getAll("hrSubModules").map((v) => String(v).trim()),
+  );
+}
+
+function parseCrmSubModulesFromForm(formData: FormData, hasCrmModule: boolean) {
+  if (!hasCrmModule) {
+    return [] as string[];
+  }
+  return persistEnabledCrmSubModules(
+    formData.getAll("crmSubModules").map((v) => String(v).trim()),
+  );
+}
 
 const ASSIGNABLE_ROLES: Role[] = ["VIEWER", "STAFF", "MANAGER", "ADMIN"];
 const DEPARTMENTS: TaskDepartment[] = [
@@ -281,6 +301,15 @@ export async function inviteTeamMember(
         : modulesForTierRole(orgPlan.plan, role);
   }
 
+  const enabledHrSubModules = parseHrSubModulesFromForm(
+    formData,
+    modules.includes("HR"),
+  );
+  const enabledCrmSubModules = parseCrmSubModulesFromForm(
+    formData,
+    modules.includes("CRM"),
+  );
+
   await assertOrganizationAccess(user.organizationId, user.id);
 
   const existingMembership = await prisma.membership.findFirst({
@@ -319,6 +348,8 @@ export async function inviteTeamMember(
         reportingManagerId: resolvedReportingManagerId,
         isDepartmentHead,
         modules,
+        enabledHrSubModules,
+        enabledCrmSubModules,
         staffCode,
         locationMode,
         primarySiteId,
@@ -406,6 +437,8 @@ export async function inviteTeamMember(
           reportingManagerId: resolvedReportingManagerId,
           isDepartmentHead,
           modules,
+          enabledHrSubModules,
+          enabledCrmSubModules,
           staffCode,
           locationMode,
           primarySiteId,
@@ -608,6 +641,15 @@ export async function updateTeamMemberDetails(
         : modulesForTierRole(orgPlan.plan, role);
   }
 
+  const enabledHrSubModules = parseHrSubModulesFromForm(
+    formData,
+    modules.includes("HR"),
+  );
+  const enabledCrmSubModules = parseCrmSubModulesFromForm(
+    formData,
+    modules.includes("CRM"),
+  );
+
   await prisma.user.update({
     where: { id: membership.userId },
     data: {
@@ -631,12 +673,17 @@ export async function updateTeamMemberDetails(
       faceRequired,
       monthlySalary,
       modules,
+      enabledHrSubModules,
+      enabledCrmSubModules,
     },
   });
 
   revalidatePath("/app/team");
+  revalidatePath("/app/hr");
+  revalidatePath("/app/leads");
   revalidatePath("/app/hr/attendance");
   revalidatePath("/app/hr/payroll");
+  revalidatePath("/app/hr/hiring");
   return { ok: true, message: "Member details updated." };
 }
 

@@ -4,27 +4,21 @@ import { HrSubNav } from "@/components/hr/hr-sub-nav";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import {
-  getOrCreateHrSettings,
   listCandidates,
   listJobOpenings,
 } from "@/lib/hr/hr-store";
-import {
-  requireHrSubModule,
-  resolveEnabledHrSubModules,
-} from "@/lib/hr/hr-sub-modules";
+import { getEffectiveHrSubModulesForUser } from "@/lib/hr/hr-access";
 import { HiringAdminPanel } from "@/components/hr/hiring-admin-panel";
 import { hrHiringModule } from "@/app/hr-module-content";
 
 export default async function HrHiringPage() {
   const user = await requireSession(undefined, { module: "HR" });
-  const hrSettings = await getOrCreateHrSettings(user.organizationId);
-  if (!requireHrSubModule(hrSettings.enabledHrSubModules, "hiring")) {
+  const { effective: enabledSubModules, allowed } =
+    await getEffectiveHrSubModulesForUser(user);
+  if (!allowed("hiring")) {
     redirect("/app/hr");
   }
   const isAdmin = hasMinimumRole(user.role, "ADMIN");
-  const enabledSubModules = resolveEnabledHrSubModules(
-    hrSettings.enabledHrSubModules,
-  );
   const [openings, candidates] = await Promise.all([
     listJobOpenings(user.organizationId),
     listCandidates(user.organizationId),

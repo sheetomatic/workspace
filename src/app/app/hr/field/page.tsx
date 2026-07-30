@@ -11,14 +11,10 @@ import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import { listAssignableMembers } from "@/lib/tasks";
 import {
-  getOrCreateHrSettings,
   listFieldCheckIns,
   listFieldVisits,
 } from "@/lib/hr/hr-store";
-import {
-  requireHrSubModule,
-  resolveEnabledHrSubModules,
-} from "@/lib/hr/hr-sub-modules";
+import { getEffectiveHrSubModulesForUser } from "@/lib/hr/hr-access";
 import { recordFieldCheckInAction } from "@/lib/hr/hr-actions";
 import {
   listMyDayTrail,
@@ -35,13 +31,11 @@ function startOfTodayIst() {
 
 export default async function HrFieldPage() {
   const user = await requireSession(undefined, { module: "HR" });
-  const hrSettings = await getOrCreateHrSettings(user.organizationId);
-  if (!requireHrSubModule(hrSettings.enabledHrSubModules, "field")) {
+  const { effective: enabledSubModules, allowed } =
+    await getEffectiveHrSubModulesForUser(user);
+  if (!allowed("field")) {
     redirect("/app/hr");
   }
-  const enabledSubModules = resolveEnabledHrSubModules(
-    hrSettings.enabledHrSubModules,
-  );
   const isManager = hasMinimumRole(user.role, "MANAGER");
   const todayStart = startOfTodayIst();
 

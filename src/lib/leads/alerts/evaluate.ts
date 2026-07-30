@@ -28,16 +28,17 @@ function daysAgo(days: number) {
 /** Queue + UI: aged invoices / quotes / negotiation without resolution. */
 export async function listCrmAlertCenterItems(
   organizationId: string,
-  options?: { limit?: number; config?: LeadNurtureOrgConfig },
+  options?: { limit?: number; config?: LeadNurtureOrgConfig; assignedToId?: string },
 ): Promise<CrmAlertItem[]> {
   const config = options?.config ?? (await getLeadNurtureConfig(organizationId));
   const alerts = config.alerts;
   const limit = options?.limit ?? 60;
+  const assignedToId = options?.assignedToId;
 
   const [paymentItems, quotationItems, negotiationItems] = await Promise.all([
-    listPaymentNotReceivedAlerts(organizationId, alerts),
-    listQuotationNotAcceptedAlerts(organizationId, alerts),
-    listNegotiationAlerts(organizationId, alerts),
+    listPaymentNotReceivedAlerts(organizationId, alerts, assignedToId),
+    listQuotationNotAcceptedAlerts(organizationId, alerts, assignedToId),
+    listNegotiationAlerts(organizationId, alerts, assignedToId),
   ]);
 
   const items = [...paymentItems, ...quotationItems, ...negotiationItems];
@@ -48,6 +49,7 @@ export async function listCrmAlertCenterItems(
 async function listPaymentNotReceivedAlerts(
   organizationId: string,
   alerts: LeadAlertOrgConfig,
+  assignedToId?: string,
 ): Promise<CrmAlertItem[]> {
   if (!alerts.paymentNotReceived.enabled) {
     return [];
@@ -58,6 +60,7 @@ async function listPaymentNotReceivedAlerts(
   const leads = await prisma.inboundLead.findMany({
     where: mergeLeadContactWhere({
       organizationId,
+      ...(assignedToId ? { assignedToId } : {}),
       status: "INVOICE",
       payments: { none: {} },
       OR: [
@@ -125,6 +128,7 @@ async function listPaymentNotReceivedAlerts(
 async function listQuotationNotAcceptedAlerts(
   organizationId: string,
   alerts: LeadAlertOrgConfig,
+  assignedToId?: string,
 ): Promise<CrmAlertItem[]> {
   if (!alerts.quotationNotAccepted.enabled) {
     return [];
@@ -135,6 +139,7 @@ async function listQuotationNotAcceptedAlerts(
   const leads = await prisma.inboundLead.findMany({
     where: mergeLeadContactWhere({
       organizationId,
+      ...(assignedToId ? { assignedToId } : {}),
       status: { in: ["PROPOSAL", "NEGOTIATION", "INVOICE"] },
       quotations: {
         some: {
@@ -201,6 +206,7 @@ async function listQuotationNotAcceptedAlerts(
 async function listNegotiationAlerts(
   organizationId: string,
   alerts: LeadAlertOrgConfig,
+  assignedToId?: string,
 ): Promise<CrmAlertItem[]> {
   if (!alerts.negotiationFollowUp.enabled) {
     return [];
@@ -211,6 +217,7 @@ async function listNegotiationAlerts(
   const leads = await prisma.inboundLead.findMany({
     where: mergeLeadContactWhere({
       organizationId,
+      ...(assignedToId ? { assignedToId } : {}),
       status: "NEGOTIATION",
       modifiedAt: { lte: cutoff },
     }),

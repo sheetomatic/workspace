@@ -1,5 +1,5 @@
 import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
-import { whatsappDisplayNumber, whatsappTel } from "./site-content";
+import { whatsappDisplayNumber, callingDisplayNumber, callingTel } from "./site-content";
 
 export const knowledgeTransferLinks = {
   flowMonitoring: "/courses#topic-flow-monitoring",
@@ -12,6 +12,7 @@ export const mainNav = [
   { href: "/products", label: "Products" },
   { href: "/pricing", label: "Pricing" },
   { href: "/courses", label: "Courses" },
+  { href: "/templates", label: "Templates" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];
@@ -22,6 +23,7 @@ export const footerCompanyLinks = [
   { href: "/contact", label: "Contact" },
   { href: "/career", label: "Careers" },
   { href: "/courses", label: "Courses" },
+  { href: "/templates", label: "Templates" },
 ];
 
 export const footerProductLinks = [
@@ -573,7 +575,7 @@ export const productsPage = {
   eyebrow: "Operating systems, not apps",
   title: "Modules that protect margin while your team runs without you.",
   lead:
-    "For owner-led MSMEs with revenue and payroll — FMS, IMS, Checklist and Tasks modules, Executive Meeting (Weekly), and Sheetomatic AI, with Process Coordinator and Executive Assistant roles on their portals. Perceived value in Monday numbers and closed leaks, not shelf price.",
+    "For owner-led MSMEs with revenue and payroll — buy the full BCI Suite or individual modules (FMS, IMS, Checklist/Tasks, CRM, HR). Process Coordinator and Executive Assistant roles run on their portals; Monday EM lands without a MIS hire. See Suite vs module pricing on /pricing.",
 };
 
 export const contactPage = {
@@ -584,7 +586,8 @@ export const contactPage = {
 
 export const contactDetails = {
   whatsappNumber: whatsappDisplayNumber,
-  whatsappTel,
+  callingNumber: callingDisplayNumber,
+  callingTel,
   website: "sheetomatic.com",
   websiteUrl: "https://sheetomatic.com",
 };

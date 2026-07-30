@@ -12,8 +12,8 @@ import {
 import {
   buildWhatsAppUrl,
   consultationUrl,
+  callingTel,
   whatsappDisplayNumber,
-  whatsappTel,
   whatsappUrl,
 } from "@/app/site-content";
 import type { ReactNode } from "react";
@@ -227,7 +227,7 @@ export function ContactButtons({
       <CallButton
         className={callClassName}
         label={callLabel}
-        tel={whatsappTel}
+        tel={callingTel}
       />
     </div>
   );

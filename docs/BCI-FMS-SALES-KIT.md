@@ -113,17 +113,26 @@ Pilot: ₹[X]/month for 3 FMS + team. Demo login: bci-demo org on sheetomatic.co
 | Also | `manager@bci.demo`, `sales@bci.demo`, `accounts@bci.demo`, `ops@bci.demo` |
 | Data | 13 sample jobs across 3 FMS (on-time, delayed, completed) |
 
-### Suggested pricing anchors (India MSME)
+### Suggested pricing anchors (India MSME → mid-market)
 
-| Tier | Price guide | Modules | Best for |
-|------|-------------|---------|----------|
-| **BCI Starter** | ₹3,999–5,999/mo | FMS + Reports + Approvals | 1 location, 3 FMS, ≤8 users |
-| **Tasks add-on** | ₹999–1,999/mo | Executive Assistant only | Owners who want EA/PC without FMS |
-| **BCI Growth** | ₹8,999–12,999/mo | Starter + IMS + HR | Multi-dept, ≤20 users |
-| **BCI + Tasks bundle** | Starter + add-on price | Both SKUs merged | FMS accountability + daily task discipline |
-| **Implementation** | ₹15,000–25,000 one-time | Mapping + go-live | Credit 1st month optional |
+> **Locked proposal** — see `docs/EM-READY-PRICING-PLANS.md` (incl. **100+ cost analysis**).
 
-*Adjust to your market. Anchor against MIS coordinator cost (₹15–25k/mo).*
+| Tier | Price | Users / storage | Best for |
+|------|-------|-----------------|----------|
+| **EM Ready Starter** | **₹4,999/mo** (₹49,990/yr) | 8 · 10 GB | 1 location, ≤3 FMS |
+| Extra seat (Starter) | **₹599/user/mo** | — | Seat 9+ |
+| **EM Ready Growth** | **₹9,999/mo** | 20 · 25 GB | Multi-dept + IMS/HR |
+| **EM Ready Scale** | **₹24,999/mo** | 50 · 50 GB **object** | Mid-market |
+| Extra seat (Scale) | **₹399/user/mo** | — | Seat 51–99 |
+| **EM Ready Enterprise** | **₹39,999/mo** | **100** · 100 GB object | 100+ orgs |
+| Extra seat (Ent.) | **₹299** (to 250) / **₹249** (251+) | — | Volume |
+| Storage +10 GB (BYTEA) | **₹1,499/mo** | Starter/Growth | Avoid large BYTEA |
+| Object +50 / +100 GB | **₹999 / ₹1,799** | Scale+ | Cheap vs Neon |
+| Implementation | ₹15–25k · Scale/Ent ₹50k–1.5L | One-time | |
+
+**COGS note:** At 100 users, BYTEA storage alone can be ₹12–21k/mo — **migrate to object storage before selling Scale/Enterprise.** With object storage, est. margin at ₹39,999 / 100 users is **~55–75%**.
+
+*Anchor Starter against MIS hire (₹15–25k/mo). WhatsApp customer chatbot stays on AI Pro/Growth SKUs.*
 
 ---
 

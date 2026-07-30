@@ -357,6 +357,7 @@ export function SaasShell({
   isDedicatedPortal = false,
   navPrefs = DEFAULT_WORKSPACE_NAV_PREFS,
   enabledHrSubModules = null,
+  enabledCrmSubModules = null,
   children,
 }: {
   user: SessionUser;
@@ -373,6 +374,8 @@ export function SaasShell({
   navPrefs?: WorkspaceNavPrefs;
   /** Resolved HR sub-module ids; when set, HRMS children are filtered. */
   enabledHrSubModules?: string[] | null;
+  /** Resolved CRM sub-module ids; when set, CRM children are filtered. */
+  enabledCrmSubModules?: string[] | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -416,7 +419,12 @@ export function SaasShell({
   );
   const settingsSection = sections.find((section) => section.id === "settings");
   const settingsItems = settingsSection
-    ? visibleWorkspaceNavItems(user, settingsSection.items, enabledHrSubModules)
+    ? visibleWorkspaceNavItems(
+        user,
+        settingsSection.items,
+        enabledHrSubModules,
+        enabledCrmSubModules,
+      )
     : [];
 
   function sectionItems(sectionItemsRaw: WorkspaceNavItem[]) {
@@ -424,6 +432,7 @@ export function SaasShell({
       user,
       sectionItemsRaw,
       enabledHrSubModules,
+      enabledCrmSubModules,
     );
     return isDedicatedPortal ? allowed : filterNavItemsByPrefs(allowed, navPrefs);
   }

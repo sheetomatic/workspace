@@ -37,19 +37,36 @@ function startOfTomorrow() {
   return d;
 }
 
-export async function getInboundLeadWorkspaceTotal(organizationId: string) {
+/** Restricts lead reads to a single assignee (staff see only their own leads). */
+export type LeadAssigneeScope = { assignedToId: string };
+
+function assigneeWhere(scope?: LeadAssigneeScope) {
+  return scope ? { assignedToId: scope.assignedToId } : {};
+}
+
+/** Relation filter for quotation/payment queries scoped by lead assignee. */
+function assigneeLeadWhere(scope?: LeadAssigneeScope) {
+  return scope ? { lead: { assignedToId: scope.assignedToId } } : {};
+}
+
+export async function getInboundLeadWorkspaceTotal(
+  organizationId: string,
+  scope?: LeadAssigneeScope,
+) {
   return prisma.inboundLead.count({
-    where: mergeLeadContactWhere({ organizationId }),
+    where: mergeLeadContactWhere({ organizationId, ...assigneeWhere(scope) }),
   });
 }
 
 export async function getLeadsMachineStatsForPeriod(
   organizationId: string,
   period: LeadsPeriodRange,
+  scope?: LeadAssigneeScope,
 ) {
   const periodWhere = mergeLeadContactWhere({
     organizationId,
     ...leadCapturedAtWhere(period),
+    ...assigneeWhere(scope),
   });
 
   const [
@@ -146,6 +163,7 @@ const inboundLeadCrmDrawerInclude = {
 export async function getInboundLeadForCrmDrawer(
   organizationId: string,
   leadId: string,
+  scope?: LeadAssigneeScope,
 ) {
   const id = leadId.trim();
   if (!id) {
@@ -153,7 +171,7 @@ export async function getInboundLeadForCrmDrawer(
   }
 
   return prisma.inboundLead.findFirst({
-    where: { id, organizationId },
+    where: { id, organizationId, ...assigneeWhere(scope) },
     include: inboundLeadCrmDrawerInclude,
   });
 }
@@ -170,12 +188,15 @@ export async function listInboundLeadsForPeriodPaginated(
     q?: string;
     /** When true, include soft-archived leads. Default excludes them. */
     includeArchived?: boolean;
+    /** Staff scoping: only leads assigned to this user. */
+    assignedToId?: string;
   },
 ) {
   const where = mergeLeadContactWhere(
     {
       organizationId,
       ...leadCapturedAtWhere(period),
+      ...(options.assignedToId ? { assignedToId: options.assignedToId } : {}),
       ...(options.status ? { status: options.status } : {}),
       ...(options.category ? { category: options.category } : {}),
       ...(options.q
@@ -238,11 +259,13 @@ export async function listInboundLeadActivities(leadId: string, organizationId: 
 export async function getLeadsPipeMetricsForPeriod(
   organizationId: string,
   period: LeadsPeriodRange,
+  scope?: LeadAssigneeScope,
 ) {
   const leads = await prisma.inboundLead.findMany({
     where: mergeLeadContactWhere({
       organizationId,
       ...leadCapturedAtWhere(period),
+      ...assigneeWhere(scope),
     }),
     select: {
       status: true,
@@ -265,6 +288,7 @@ export async function getLeadsPipeMetricsForPeriod(
 export async function getCrmNumbersMetricsForPeriod(
   organizationId: string,
   period: LeadsPeriodRange,
+  scope?: LeadAssigneeScope,
 ) {
   const [quotations, invoices, payments, firstInvoices, firstPayments] =
     await Promise.all([
@@ -272,6 +296,7 @@ export async function getCrmNumbersMetricsForPeriod(
         where: {
           organizationId,
           requestType: "PROPOSAL",
+          ...assigneeLeadWhere(scope),
           ...quotationGeneratedDateWhere(period),
         },
         _sum: { totalAmount: true },
@@ -281,6 +306,7 @@ export async function getCrmNumbersMetricsForPeriod(
         where: {
           organizationId,
           requestType: "INVOICE",
+          ...assigneeLeadWhere(scope),
           ...quotationGeneratedDateWhere(period),
         },
         _sum: { totalAmount: true },
@@ -289,6 +315,7 @@ export async function getCrmNumbersMetricsForPeriod(
       prisma.inboundLeadPayment.aggregate({
         where: {
           organizationId,
+          ...assigneeLeadWhere(scope),
           ...paymentReceivedDateWhere(period),
         },
         _sum: { receivedAmount: true },
@@ -296,12 +323,16 @@ export async function getCrmNumbersMetricsForPeriod(
       }),
       prisma.inboundLeadQuotation.groupBy({
         by: ["leadId"],
-        where: { organizationId, requestType: "INVOICE" },
+        where: {
+          organizationId,
+          requestType: "INVOICE",
+          ...assigneeLeadWhere(scope),
+        },
         _min: { quotationDate: true },
       }),
       prisma.inboundLeadPayment.groupBy({
         by: ["leadId"],
-        where: { organizationId },
+        where: { organizationId, ...assigneeLeadWhere(scope) },
         _min: { receivedDate: true },
       }),
     ]);

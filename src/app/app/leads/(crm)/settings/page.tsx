@@ -13,11 +13,13 @@ import { masCredentialsFromWorkspace } from "@/lib/integrations/whatsapp-provide
 import { isMasConfigured } from "@/lib/integrations/messageautosender";
 import { prisma } from "@/lib/db";
 import { requireSession } from "@/lib/require-session";
+import { requireCrmSubModule } from "@/lib/crm/crm-access";
 import { hasMinimumRole } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 
 export default async function LeadsSettingsPage() {
   const user = await requireSession(undefined, { module: "CRM" });
+  await requireCrmSubModule(user, "settings");
   if (!hasMinimumRole(user.role, "ADMIN")) {
     redirect("/app/leads");
   }

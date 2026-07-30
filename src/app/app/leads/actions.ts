@@ -1865,6 +1865,32 @@ export async function updateLeadProjectStatus(
   return { ok: true };
 }
 
+/** Template store: confirm UPI in CRM → email Make a copy link. */
+export async function confirmTemplatePaymentForLeadAction(params: {
+  leadId: string;
+  orderId?: string;
+}) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false as const, message: "Not allowed." };
+  }
+
+  const { confirmTemplatePaymentForLead } = await import(
+    "@/lib/templates/store"
+  );
+  const result = await confirmTemplatePaymentForLead({
+    leadId: params.leadId,
+    organizationId: user.organizationId,
+    actorUserId: user.id,
+    orderId: params.orderId,
+  });
+
+  revalidatePath("/app/leads");
+  revalidatePath("/app/approvals");
+  revalidatePath("/app/template-orders");
+  return result;
+}
+
 export async function addInboundLeadPayment(params: {
   leadId: string;
   paymentType: LeadPaymentType;

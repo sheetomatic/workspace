@@ -16,7 +16,8 @@ import {
   finalCtaContent,
   siteBrand,
   whatsappPhone,
-  whatsappTel,
+  callingTel,
+  callingDisplayNumber,
   whatsappDisplayNumber,
 } from "./site-content";
 import {
@@ -67,14 +68,14 @@ export function SiteHeader() {
           <SiteHeaderNav variant="desktop" />
           <div className="site-header-actions">
             <a
-              aria-label={`Call ${whatsappDisplayNumber}`}
+              aria-label={`Call ${callingDisplayNumber}`}
               className={marketingButtonClass("secondary", "header-cta ab-header-call")}
-              href={`tel:${whatsappTel}`}
+              href={`tel:${callingTel}`}
             >
               <span className="btn-cta-icon-wrap" aria-hidden>
                 <PhoneIcon className="btn-cta-icon" size={18} strokeWidth={2.25} />
               </span>
-              <span className="ab-header-call-full">Call {whatsappDisplayNumber}</span>
+              <span className="ab-header-call-full">Call {callingDisplayNumber}</span>
               <span className="ab-header-call-short">Call</span>
             </a>
             <a
@@ -133,7 +134,10 @@ export function SiteFooter() {
                 rel="noopener noreferrer"
                 target="_blank"
               >
-                {whatsappDisplayNumber}
+                WhatsApp {whatsappDisplayNumber}
+              </a>
+              <a className="footer-contact-line" href={`tel:${callingTel}`}>
+                Call {callingDisplayNumber}
               </a>
               <Link className="footer-demo-link" href="/contact">
                 Book a demo →

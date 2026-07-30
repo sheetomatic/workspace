@@ -6,10 +6,12 @@ import { formatCrmNavValue } from "@/lib/leads/crm-nav-format";
 import { listCrmQuotations } from "@/lib/leads/crm-module-stats";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
+import { requireCrmSubModule } from "@/lib/crm/crm-access";
 import { prisma } from "@/lib/db";
 
 export default async function CrmQuotationsPage() {
   const user = await requireSession(undefined, { module: "CRM" });
+  await requireCrmSubModule(user, "quotations");
   const canManage = hasMinimumRole(user.role, "MANAGER");
   const [rows, agg] = await Promise.all([
     listCrmQuotations(user.organizationId, 150),

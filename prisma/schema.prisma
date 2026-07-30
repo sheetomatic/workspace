@@ -1034,6 +1034,18 @@ model Membership {
   monthlySalary      Decimal?             @db.Decimal(14, 2)
   dateOfJoining      DateTime?
   modules            WorkspaceModule[]    @default([])
+  /**
+   * Per-member HR sub-modules (attendance, leave, hiring, …).
+   * Empty = inherit all org-enabled sub-modules (backward compatible).
+   * Use "__none__" sentinel when explicitly granting zero HR sub-modules.
+   */
+  enabledHrSubModules String[]            @default([])
+  /**
+   * Per-member CRM sub-modules (leads, meetings, quotations, …).
+   * Empty = all CRM sub-modules (backward compatible).
+   * Use "__none__" sentinel when explicitly granting zero CRM sub-modules.
+   */
+  enabledCrmSubModules String[]           @default([])
   /** Per-user sidebar/home visibility: { mode, visibleIds }. */
   workspacePrefs     Json?
   userId             String
@@ -3094,3 +3106,68 @@ model TrainingCourseSlot {
   @@index([inboundLeadId, startsAt])
   @@index([status, startsAt])
 }
+
+enum TemplateProductType {
+  APPSHEET
+  SHEETS
+  EXCEL
+}
+
+enum TemplateOrderStatus {
+  PENDING
+  PAYMENT_RECEIVED
+  FULFILLED
+  CANCELLED
+}
+
+/// Sellable digital templates (AppSheet / Google Sheets / Excel).
+model TemplateProduct {
+  id           String              @id @default(cuid())
+  slug         String              @unique
+  name         String
+  type         TemplateProductType
+  priceInr     Int
+  description  String?
+  thumbnailUrl String?
+  /**
+   * AppSheet copy link or Google Sheet /copy (Make a copy) link.
+   * Never expose on public catalog pages — only emailed after payment confirmation.
+   */
+  copyLink     String?
+  active       Boolean             @default(true)
+  sortOrder    Int                 @default(0)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  orders       TemplateOrder[]
+
+  @@index([type, active, sortOrder])
+}
+
+/// Customer purchase of a template — CRM lead created; team confirms payment in CRM → Leads.
+model TemplateOrder {
+  id                     String              @id @default(cuid())
+  productId              String
+  product                TemplateProduct     @relation(fields: [productId], references: [id], onDelete: Restrict)
+  customerName           String
+  customerEmail          String
+  customerPhone          String?
+  company                String?
+  city                   String?
+  requirement            String?
+  paymentRef             String?
+  notes                  String?
+  inboundLeadId          String?
+  status                 TemplateOrderStatus @default(PENDING)
+  paymentReceivedAt      DateTime?
+  paymentReceivedById    String?
+  fulfillmentEmailSentAt DateTime?
+  fulfilledAt            DateTime?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+
+  @@index([status, createdAt])
+  @@index([customerEmail])
+  @@index([productId, status])
+  @@index([inboundLeadId, status])
+}
+

@@ -1,16 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useId, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Columns2, Minus } from "lucide-react";
 import {
+  emReadyCompareRows,
   emReadyContactOffer,
+  emReadyModulePlans,
   emReadyPricingFootnotes,
   emReadyPublicPlans,
   formatInr,
   getEmReadyDisplayPrice,
+  getEmReadyModuleDisplayPrice,
   hasEmReadyAnnualPricing,
+  sumSelectedModulesMonthly,
   type EmReadyBillingPeriod,
+  type EmReadyModulePlan,
+  type EmReadyModulePlanId,
   type EmReadyPlan,
 } from "@/app/em-ready-plans";
 import { buildWhatsAppUrl } from "@/app/site-content";
@@ -19,12 +25,47 @@ import { WhatsAppIcon } from "@/components/marketing/marketing-icons";
 import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
 import "./em-ready-pricing.css";
 
-function enquireMessage(plan: EmReadyPlan): string {
-  return `Hi Sheetomatic, I am interested in ${plan.name} (${plan.includedUsers} users). Please share next steps for EM Ready Workspace.`;
+type PricingPath = "suite" | "modules";
+
+function enquireSuiteMessage(plan: EmReadyPlan): string {
+  return `Hi Sheetomatic, I am interested in ${plan.name} Suite (${plan.includedUsers} users). Please share next steps.`;
+}
+
+function enquireModuleMessage(plan: EmReadyModulePlan): string {
+  return `Hi Sheetomatic, I am interested in the ${plan.name} module (${plan.includedUsers} users). Please share next steps.`;
 }
 
 const CONTACT_50_PLUS_MESSAGE =
   "Hi Sheetomatic, we need EM Ready Workspace for more than 50 users. Please share a custom quote.";
+
+function PriceBlock({
+  amountLabel,
+  periodLabel,
+  annualNote,
+}: {
+  amountLabel: string;
+  periodLabel: string;
+  annualNote: string | null;
+}) {
+  return (
+    <div className="em-plan-price-block">
+      <p className="em-plan-price">
+        {amountLabel.startsWith("₹") ? (
+          <>
+            <span className="em-plan-currency">₹</span>
+            <span>{amountLabel.replace(/^₹\s*/, "")}</span>
+          </>
+        ) : (
+          <span>{amountLabel}</span>
+        )}
+        {periodLabel ? (
+          <span className="em-plan-price-period">{periodLabel}</span>
+        ) : null}
+      </p>
+      {annualNote ? <p className="em-plan-price-note">{annualNote}</p> : null}
+    </div>
+  );
+}
 
 function PlanCard({
   plan,
@@ -34,7 +75,7 @@ function PlanCard({
   period: EmReadyBillingPeriod;
 }) {
   const price = getEmReadyDisplayPrice(plan, period);
-  const whatsappHref = buildWhatsAppUrl(enquireMessage(plan));
+  const whatsappHref = buildWhatsAppUrl(enquireSuiteMessage(plan));
   const isStarter = plan.id === "em_ready_starter";
   const isScale = plan.id === "em_ready_scale";
 
@@ -43,27 +84,11 @@ function PlanCard({
       className={`em-plan-card${isStarter ? " is-starter" : ""}${isScale ? " is-scale" : ""}`}
     >
       {plan.badge ? <span className="em-plan-badge">{plan.badge}</span> : null}
+      <p className="em-plan-path-label">BCI Suite</p>
       <h2 className="em-plan-name">{plan.shortName}</h2>
       <p className="em-plan-tagline">{plan.tagline}</p>
 
-      <div className="em-plan-price-block">
-        <p className="em-plan-price">
-          {price.amountLabel.startsWith("₹") ? (
-            <>
-              <span className="em-plan-currency">₹</span>
-              <span>{price.amountLabel.replace(/^₹\s*/, "")}</span>
-            </>
-          ) : (
-            <span>{price.amountLabel}</span>
-          )}
-          {price.periodLabel ? (
-            <span className="em-plan-price-period">{price.periodLabel}</span>
-          ) : null}
-        </p>
-        {price.annualNote ? (
-          <p className="em-plan-price-note">{price.annualNote}</p>
-        ) : null}
-      </div>
+      <PriceBlock {...price} />
 
       <ul className="em-plan-meta">
         <li>
@@ -137,10 +162,214 @@ function PlanCard({
   );
 }
 
+function ModuleCard({
+  plan,
+  period,
+  selected,
+  onToggleCompare,
+}: {
+  plan: EmReadyModulePlan;
+  period: EmReadyBillingPeriod;
+  selected: boolean;
+  onToggleCompare: () => void;
+}) {
+  const price = getEmReadyModuleDisplayPrice(plan, period);
+  const whatsappHref = buildWhatsAppUrl(enquireModuleMessage(plan));
+
+  return (
+    <article className={`em-plan-card em-module-card${selected ? " is-selected" : ""}`}>
+      {plan.badge ? <span className="em-plan-badge">{plan.badge}</span> : null}
+      <p className="em-plan-path-label">Individual module</p>
+      <h2 className="em-plan-name">{plan.shortName}</h2>
+      <p className="em-plan-tagline">{plan.tagline}</p>
+
+      <PriceBlock {...price} />
+
+      <ul className="em-plan-meta">
+        <li>
+          <span>Users included</span>
+          <span>{plan.includedUsers}</span>
+        </li>
+        <li>
+          <span>Extra seat</span>
+          <span>{formatInr(plan.extraUserMonthlyInr)}/mo</span>
+        </li>
+      </ul>
+
+      <div className="em-plan-modules" aria-label="Includes">
+        {plan.includes.map((mod) => (
+          <span className="em-plan-module" key={mod}>
+            {mod}
+          </span>
+        ))}
+      </div>
+
+      <ul className="em-plan-highlights">
+        {plan.highlights.map((item) => (
+          <li key={item}>
+            <CheckCircle2 size={16} aria-hidden />
+            {item}
+          </li>
+        ))}
+      </ul>
+
+      <div className="em-plan-actions">
+        <button
+          type="button"
+          className={`em-compare-chip${selected ? " is-on" : ""}`}
+          aria-pressed={selected}
+          onClick={onToggleCompare}
+        >
+          <Columns2 size={15} aria-hidden />
+          {selected ? "In compare" : "Add to compare"}
+        </button>
+        <a
+          className={marketingButtonClass("whatsapp", "em-plan-wa")}
+          href={whatsappHref}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          <span className="btn-cta-icon-wrap" aria-hidden>
+            <WhatsAppIcon className="btn-cta-icon" size={18} strokeWidth={1.7} />
+          </span>
+          <span>Chat on WhatsApp</span>
+        </a>
+        <Link
+          className={marketingButtonClass("primary", "em-plan-contact")}
+          href="/contact"
+        >
+          Contact us
+        </Link>
+        <Link className="em-module-learn" href={plan.href}>
+          Learn more
+        </Link>
+      </div>
+    </article>
+  );
+}
+
+function CompareSection({
+  open,
+  selectedModules,
+  onClearModules,
+}: {
+  open: boolean;
+  selectedModules: EmReadyModulePlanId[];
+  onClearModules: () => void;
+}) {
+  const stackTotal = sumSelectedModulesMonthly(selectedModules);
+  const selectedLabels = emReadyModulePlans
+    .filter((m) => selectedModules.includes(m.id))
+    .map((m) => m.shortName);
+
+  if (!open) return null;
+
+  return (
+    <section
+      id="em-pricing-compare"
+      className="em-compare-section"
+      aria-labelledby="em-compare-title"
+    >
+      <div className="em-compare-head">
+        <div>
+          <h2 id="em-compare-title">Compare Suite vs modules</h2>
+          <p>
+            Suite is the complete package. Modules are sold individually — stack
+            what you need, or switch to Suite when two or more add up higher.
+          </p>
+        </div>
+        {selectedModules.length > 0 ? (
+          <div className="em-compare-stack">
+            <p className="em-compare-stack-label">Your module stack</p>
+            <p className="em-compare-stack-value">
+              {formatInr(stackTotal)}
+              <span>/mo</span>
+            </p>
+            <p className="em-compare-stack-mods">
+              {selectedLabels.join(" + ")}
+              {stackTotal > 4999 ? (
+                <>
+                  {" "}
+                  · Starter Suite is {formatInr(4999)}/mo
+                  {stackTotal > 9999 ? (
+                    <> · Growth Suite is {formatInr(9999)}/mo</>
+                  ) : null}
+                </>
+              ) : null}
+            </p>
+            <button type="button" className="em-compare-clear" onClick={onClearModules}>
+              Clear selection
+            </button>
+          </div>
+        ) : (
+          <p className="em-compare-hint">
+            Tip: open Modules and tap “Add to compare” to total a custom stack.
+          </p>
+        )}
+      </div>
+
+      <div className="em-compare-table-wrap">
+        <table className="em-compare-table">
+          <thead>
+            <tr>
+              <th scope="col">Feature</th>
+              <th scope="col">Suite Starter</th>
+              <th scope="col">Suite Growth</th>
+              <th scope="col">Suite Scale</th>
+              <th scope="col">Buy modules</th>
+            </tr>
+          </thead>
+          <tbody>
+            {emReadyCompareRows.map((row) => (
+              <tr key={row.feature}>
+                <th scope="row">{row.feature}</th>
+                <td>{row.starter}</td>
+                <td>{row.growth}</td>
+                <td>{row.scale}</td>
+                <td>{row.modules}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 export function EmReadyPricing() {
   const showAnnual = hasEmReadyAnnualPricing();
   const [period, setPeriod] = useState<EmReadyBillingPeriod>("monthly");
+  const [path, setPath] = useState<PricingPath>("suite");
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [selectedModules, setSelectedModules] = useState<EmReadyModulePlanId[]>(
+    [],
+  );
+  const [scrollCompareToken, setScrollCompareToken] = useState(0);
+  const pathGroupId = useId();
   const contactHref = buildWhatsAppUrl(CONTACT_50_PLUS_MESSAGE);
+
+  useEffect(() => {
+    if (!compareOpen || scrollCompareToken === 0) return;
+    const node = document.getElementById("em-pricing-compare");
+    if (!node) return;
+    node.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [compareOpen, scrollCompareToken]);
+
+  function toggleModule(id: EmReadyModulePlanId) {
+    setSelectedModules((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+    setCompareOpen(true);
+  }
+
+  function handleCompareClick() {
+    if (compareOpen) {
+      setCompareOpen(false);
+      return;
+    }
+    setCompareOpen(true);
+    setScrollCompareToken((n) => n + 1);
+  }
 
   return (
     <div className="em-pricing-page">
@@ -148,20 +377,61 @@ export function EmReadyPricing() {
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
           <div className="em-pricing-hero-inner">
             <p className="em-pricing-kicker">EM Ready Workspace</p>
-            <h1>Plans for owners who run ops one day a week</h1>
+            <h1>Suite or individual modules — pick how you buy</h1>
             <p className="em-pricing-lead">
-              FMS, tasks, checklists, and person-wise KRA/KPI — live for Monday EM.
-              Minimum plan starts at Starter (8 users). Monthly billing; annual where
-              listed.
+              <strong>BCI Suite</strong> is the complete package (FMS, Tasks/EA,
+              EM Ready, and more by tier). <strong>Modules</strong> let you buy
+              only what you need — CRM, FMS, IMS, HR, or Tasks — and stack later.
+              Monthly billing; annual where listed.
             </p>
+            <div className="em-pricing-path-cards" aria-label="How pricing works">
+              <div className="em-pricing-path-card">
+                <h2>BCI Suite</h2>
+                <p>
+                  Full EM Ready package for owners who want ops running one day a
+                  week. From {formatInr(4999)}/mo (8 users).
+                </p>
+              </div>
+              <div className="em-pricing-path-card">
+                <h2>Modules</h2>
+                <p>
+                  Buy FMS, Tasks/EA, CRM, IMS, or HR alone. From{" "}
+                  {formatInr(2499)}/mo each — Suite usually wins at two or more.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="em-pricing-section" aria-label="EM Ready plans">
+      <section className="em-pricing-section" aria-label="EM Ready pricing">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
-          {showAnnual ? (
-            <div className="em-pricing-toolbar">
+          <div className="em-pricing-toolbar">
+            <div
+              className="em-pricing-toggle"
+              role="group"
+              aria-labelledby={pathGroupId}
+            >
+              <span id={pathGroupId} className="sr-only">
+                Pricing path
+              </span>
+              <button
+                type="button"
+                aria-pressed={path === "suite"}
+                onClick={() => setPath("suite")}
+              >
+                Suite
+              </button>
+              <button
+                type="button"
+                aria-pressed={path === "modules"}
+                onClick={() => setPath("modules")}
+              >
+                Modules
+              </button>
+            </div>
+
+            {showAnnual ? (
               <div
                 className="em-pricing-toggle"
                 role="group"
@@ -182,17 +452,55 @@ export function EmReadyPricing() {
                   Annual
                 </button>
               </div>
-              <p className="em-pricing-toggle-hint">
-                Recover every month · annual saves vs paying month-to-month
-              </p>
-            </div>
-          ) : null}
+            ) : null}
 
-          <div className="em-pricing-grid">
-            {emReadyPublicPlans.map((plan) => (
-              <PlanCard key={plan.id} plan={plan} period={period} />
-            ))}
+            <button
+              type="button"
+              className={`em-compare-btn${compareOpen ? " is-open" : ""}`}
+              aria-expanded={compareOpen}
+              aria-controls="em-pricing-compare"
+              onClick={handleCompareClick}
+            >
+              {compareOpen ? (
+                <Minus size={16} aria-hidden />
+              ) : (
+                <Columns2 size={16} aria-hidden />
+              )}
+              {compareOpen ? "Hide compare" : "Compare"}
+            </button>
           </div>
+
+          <p className="em-pricing-toggle-hint">
+            {path === "suite"
+              ? "Suite = complete package by seat band. Compare anytime against buying modules."
+              : "Modules = buy individually. Add to Compare to total a stack vs Suite."}
+          </p>
+
+          {path === "suite" ? (
+            <div className="em-pricing-grid">
+              {emReadyPublicPlans.map((plan) => (
+                <PlanCard key={plan.id} plan={plan} period={period} />
+              ))}
+            </div>
+          ) : (
+            <div className="em-pricing-grid em-pricing-grid-modules">
+              {emReadyModulePlans.map((plan) => (
+                <ModuleCard
+                  key={plan.id}
+                  plan={plan}
+                  period={period}
+                  selected={selectedModules.includes(plan.id)}
+                  onToggleCompare={() => toggleModule(plan.id)}
+                />
+              ))}
+            </div>
+          )}
+
+          <CompareSection
+            open={compareOpen}
+            selectedModules={selectedModules}
+            onClearModules={() => setSelectedModules([])}
+          />
 
           <aside className="em-contact-band" aria-labelledby="em-contact-50-title">
             <div>

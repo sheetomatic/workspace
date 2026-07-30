@@ -1,5 +1,5 @@
 {
-  "name": "sheetomatic-redesign",
+  "name": "sheetomatic",
   "version": "0.1.0",
   "private": true,
   "browserslist": [
@@ -19,6 +19,7 @@
     "db:seed-bci": "tsx prisma/seed-bci-demo.ts",
     "db:seed-acme-ims": "tsx prisma/seed-acme-ims.ts",
     "db:seed-acme-hr": "tsx prisma/seed-acme-hr.ts",
+    "db:seed-templates": "tsx prisma/seed-templates.ts",
     "db:sync-hingorani": "tsx prisma/sync-hingorani-sheet.ts",
     "db:reset": "prisma migrate reset --force",
     "postinstall": "node scripts/prisma-with-env.mjs generate",

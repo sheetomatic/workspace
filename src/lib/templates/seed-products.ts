@@ -1,0 +1,125 @@
+import type { TemplateProductType } from "@prisma/client";
+
+/** Real catalog — add copy links when you send AppSheet / Sheets URLs. */
+export const TEMPLATE_PRODUCT_SEEDS: Array<{
+  slug: string;
+  name: string;
+  type: TemplateProductType;
+  priceInr: number;
+  description: string;
+  sortOrder: number;
+  thumbnailUrl?: string | null;
+  copyLink?: string | null;
+  active?: boolean;
+}> = [
+  {
+    slug: "crm-lead-sheet-template",
+    name: "CRM Lead Sheet Template",
+    type: "SHEETS",
+    priceInr: 499,
+    description:
+      "Google Sheets CRM lead tracker. Pay on UPI — after we confirm in CRM Leads, you get the Make a copy link by email.",
+    sortOrder: 1,
+    thumbnailUrl: "/images/templates/crm-lead-sheet-template.png",
+    copyLink:
+      "https://docs.google.com/spreadsheets/d/1uXguvsBaZPUQtlpz5DhH5Zdwb6DOxAuTbk64vErYsA8/copy",
+    active: true,
+  },
+  {
+    slug: "fms-sheet-template",
+    name: "FMS Template",
+    type: "SHEETS",
+    priceInr: 499,
+    description:
+      "Google Sheets Flow Management System (FMS). Pay on UPI — after we confirm in CRM Leads, you get the Make a copy link by email.",
+    sortOrder: 2,
+    thumbnailUrl: "/images/templates/fms-sheet-template.png",
+    copyLink:
+      "https://docs.google.com/spreadsheets/d/18J1N4h7Mn9evj3JWmkV7oSUi-I46FPxC2NNjRKq_wa4/copy",
+    active: true,
+  },
+  {
+    slug: "appsheet-attendance-leave",
+    name: "Attendance & Leave Management (AppSheet)",
+    type: "APPSHEET",
+    priceInr: 999,
+    description:
+      "AppSheet app for attendance marking and leave requests. Pay on UPI — after CRM confirm, we email your AppSheet copy link.",
+    sortOrder: 10,
+    thumbnailUrl: "/images/templates/appsheet-attendance-leave.png",
+    copyLink: null,
+    active: true,
+  },
+  {
+    slug: "appsheet-visitor-tracking",
+    name: "Visitor Tracking (AppSheet)",
+    type: "APPSHEET",
+    priceInr: 999,
+    description:
+      "AppSheet visitor check-in and tracking. Pay on UPI — after CRM confirm, we email your AppSheet copy link.",
+    sortOrder: 11,
+    thumbnailUrl: "/images/templates/appsheet-visitor-tracking.png",
+    copyLink: null,
+    active: true,
+  },
+  {
+    slug: "appsheet-inventory-management",
+    name: "Inventory Management System (AppSheet)",
+    type: "APPSHEET",
+    priceInr: 1499,
+    description:
+      "AppSheet inventory / stock management. Pay on UPI — after CRM confirm, we email your AppSheet copy link.",
+    sortOrder: 12,
+    thumbnailUrl: "/images/templates/appsheet-inventory-management.png",
+    copyLink: null,
+    active: true,
+  },
+  {
+    slug: "appsheet-fms",
+    name: "FMS (AppSheet)",
+    type: "APPSHEET",
+    priceInr: 1499,
+    description:
+      "AppSheet Flow Management System. Pay on UPI — after CRM confirm, we email your AppSheet copy link.",
+    sortOrder: 13,
+    thumbnailUrl: "/images/templates/appsheet-fms.png",
+    copyLink: null,
+    active: true,
+  },
+  {
+    slug: "appsheet-task-management",
+    name: "Task Management System (AppSheet)",
+    type: "APPSHEET",
+    priceInr: 999,
+    description:
+      "AppSheet task assignment and follow-up. Pay on UPI — after CRM confirm, we email your AppSheet copy link.",
+    sortOrder: 14,
+    thumbnailUrl: "/images/templates/appsheet-task-management.png",
+    copyLink: null,
+    active: true,
+  },
+  {
+    slug: "appsheet-crm",
+    name: "CRM (AppSheet)",
+    type: "APPSHEET",
+    priceInr: 1499,
+    description:
+      "AppSheet CRM for leads and follow-ups. Pay on UPI — after CRM confirm, we email your AppSheet copy link.",
+    sortOrder: 15,
+    thumbnailUrl: "/images/templates/appsheet-crm.png",
+    copyLink: null,
+    active: true,
+  },
+  {
+    slug: "appsheet-grievance-management",
+    name: "Grievance Management System (AppSheet)",
+    type: "APPSHEET",
+    priceInr: 1299,
+    description:
+      "AppSheet grievance / complaint tracking. Pay on UPI — after CRM confirm, we email your AppSheet copy link.",
+    sortOrder: 16,
+    thumbnailUrl: "/images/templates/appsheet-grievance-management.png",
+    copyLink: null,
+    active: true,
+  },
+];

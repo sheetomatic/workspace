@@ -21,9 +21,6 @@ export const DEFAULT_FOCUSED_NAV_IDS = [
   "fms",
   "leads",
   "dept-hr",
-  "checklists",
-  "ea",
-  "pc",
   "em",
   "tasks",
 ] as const;
@@ -31,9 +28,19 @@ export const DEFAULT_FOCUSED_NAV_IDS = [
 /** Never hidden by focus/custom prefs (still role/module gated). */
 export const ALWAYS_VISIBLE_NAV_IDS = new Set([
   "settings",
-  "team",
   "cases-home",
   "cases-import",
+]);
+
+/**
+ * Soft-retired nav entries. Hidden even in "all" mode; still reachable by URL
+ * for admins who need them. Team stays available under Settings for managers.
+ */
+export const HIDDEN_NAV_IDS = new Set([
+  "checklists",
+  "ea",
+  "pc",
+  "team",
 ]);
 
 /** Home widgets that stay visible regardless of sidebar focus. */
@@ -113,7 +120,13 @@ export function isNavIdVisible(
   prefs: WorkspaceNavPrefs,
   navId: string | undefined,
 ): boolean {
-  if (!navId || ALWAYS_VISIBLE_NAV_IDS.has(navId)) {
+  if (!navId) {
+    return true;
+  }
+  if (HIDDEN_NAV_IDS.has(navId)) {
+    return false;
+  }
+  if (ALWAYS_VISIBLE_NAV_IDS.has(navId)) {
     return true;
   }
   const visible = resolveVisibleNavIdSet(prefs);

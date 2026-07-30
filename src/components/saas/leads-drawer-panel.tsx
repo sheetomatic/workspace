@@ -21,6 +21,7 @@ import {
   archiveInboundLeadAction,
   assignInboundLead,
   clearInboundLeadHistory,
+  confirmTemplatePaymentForLeadAction,
   deleteInboundLeadActivity,
   listLeadDuplicateMatchesAction,
   logLeadTimelineActivity,
@@ -170,16 +171,7 @@ type FollowUpRow = {
 
 export type DrawerTab = CrmDrawerTab;
 
-type ActionKey =
-  | "details"
-  | "calling"
-  | "meeting-notes"
-  | "schedule-meeting"
-  | "follow-up"
-  | "payment"
-  | "activity"
-  | "history"
-  | "nurture";
+type ActionKey = string;
 
 type ActivityComposerType = "NOTE" | "CALL" | "WHATSAPP";
 
@@ -224,6 +216,14 @@ export type LeadDrawerData = {
   capturedAt?: string | null;
   assignedTo: { id: string; name: string | null; email: string } | null;
   payments: PaymentRow[];
+  pendingTemplateOrders?: Array<{
+    id: string;
+    status: string;
+    customerEmail: string;
+    paymentRef: string | null;
+    productName: string;
+    priceInr: number;
+  }>;
   quotations: QuotationRow[];
   offeredServices: OfferedServiceRow[];
   activities: ActivityRow[];
@@ -1948,6 +1948,80 @@ export function LeadDrawerPanel({
               </button>
             ) : null}
           </div>
+          {canManage && (lead.pendingTemplateOrders?.length ?? 0) > 0 ? (
+            <div className="leads-drawer-form" style={{ marginBottom: 12 }}>
+              <p className="leads-machine-muted">
+                Template store order waiting for UPI confirmation. Confirm to
+                email the Make a copy link.
+              </p>
+              {(lead.pendingTemplateOrders ?? []).map((order) => (
+                <div
+                  key={order.id}
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 8,
+                    alignItems: "center",
+                    marginTop: 8,
+                  }}
+                >
+                  <strong>{order.productName}</strong>
+                  <span>
+                    ₹{order.priceInr.toLocaleString("en-IN")} · {order.status}
+                  </span>
+                  {order.paymentRef ? (
+                    <span className="leads-machine-muted">
+                      Ref: {order.paymentRef}
+                    </span>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="btn-primary btn-sm"
+                    disabled={savingKey === `tpl-${order.id}`}
+                    onClick={() =>
+                      runAction(`tpl-${order.id}`, async () => {
+                        const result = await confirmTemplatePaymentForLeadAction(
+                          {
+                            leadId: lead.id,
+                            orderId: order.id,
+                          },
+                        );
+                        if (!result.ok) {
+                          setSaveError(result.message);
+                          return;
+                        }
+                        appendActivity({
+                          type: "PAYMENT",
+                          body: result.message,
+                        });
+                        onLeadPatched?.(lead.id, {
+                          status: "PAYMENT",
+                          pendingTemplateOrders: (
+                            lead.pendingTemplateOrders ?? []
+                          ).filter((row) => row.id !== order.id),
+                          payments: [
+                            {
+                              id: `local-${order.id}`,
+                              paymentType: "FULL",
+                              receivedAmount: String(order.priceInr),
+                              receivedDate: new Date().toISOString(),
+                              paymentMethod: "UPI",
+                              notes: `Template store · ${order.productName}`,
+                            },
+                            ...lead.payments,
+                          ],
+                        });
+                      })
+                    }
+                  >
+                    {savingKey === `tpl-${order.id}`
+                      ? "Confirming…"
+                      : "Confirm payment & email link"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
           {canManage ? (
             <div className="leads-drawer-form">
               <label>

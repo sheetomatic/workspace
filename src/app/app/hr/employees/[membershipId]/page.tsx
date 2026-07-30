@@ -9,11 +9,7 @@ import { hasMinimumRole } from "@/lib/permissions";
 import { getEmployeeForForm } from "@/lib/hr/employees";
 import { getOnboardingChecklist } from "@/lib/hr/onboarding";
 import { listHrShifts } from "@/lib/hr/shifts";
-import { getOrCreateHrSettings } from "@/lib/hr/hr-store";
-import {
-  resolveEnabledHrSubModules,
-  requireHrSubModule,
-} from "@/lib/hr/hr-sub-modules";
+import { getEffectiveHrSubModulesForUser } from "@/lib/hr/hr-access";
 
 type PageProps = {
   params: Promise<{ membershipId: string }>;
@@ -35,7 +31,7 @@ export default async function HrEmployeeDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const [checklist, shifts, hrSettings] = await Promise.all([
+  const [checklist, shifts, hrAccess] = await Promise.all([
     data.profile
       ? getOnboardingChecklist({
           organizationId: user.organizationId,
@@ -43,16 +39,14 @@ export default async function HrEmployeeDetailPage({ params }: PageProps) {
         })
       : Promise.resolve(null),
     listHrShifts(user.organizationId, true),
-    getOrCreateHrSettings(user.organizationId),
+    getEffectiveHrSubModulesForUser(user),
   ]);
 
-  if (!requireHrSubModule(hrSettings.enabledHrSubModules, "employees")) {
+  if (!hrAccess.allowed("employees")) {
     redirect("/app/hr");
   }
 
-  const enabledSubModules = resolveEnabledHrSubModules(
-    hrSettings.enabledHrSubModules,
-  );
+  const enabledSubModules = hrAccess.effective;
 
   const canCompleteOnboarding =
     Boolean(data.profile) && (isAdmin || data.userId === user.id);

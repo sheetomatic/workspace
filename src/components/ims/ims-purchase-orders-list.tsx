@@ -81,7 +81,7 @@ export function ImsPurchaseOrdersList({
   if (orders.length === 0) {
     return (
       <p className="ws-apple-record-empty">
-        No purchase orders yet. Create one from an approved indent.
+        No purchase orders yet. Create an independent PO or raise one from an approved indent.
       </p>
     );
   }

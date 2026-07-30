@@ -43,6 +43,7 @@ const WELCOME: ChatMessage = {
   links: [
     { label: "Services", href: "/services" },
     { label: "Courses", href: "/courses" },
+    { label: "Templates", href: "/templates" },
     { label: "Contact", href: "/contact" },
   ],
 };

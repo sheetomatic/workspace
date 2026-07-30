@@ -24,7 +24,7 @@ import { ORG_PLAN_LABELS } from "@/lib/org-plan-presets";
 import { requireSession } from "@/lib/require-session";
 import { ensureSessionTenantHost, getRequestTenantSlug } from "@/lib/tenant-host";
 import { getOrCreateHrSettings } from "@/lib/hr/hr-store";
-import { resolveEnabledHrSubModules } from "@/lib/hr/hr-sub-modules";
+import { resolveMemberHrSubModules } from "@/lib/hr/hr-sub-modules";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -93,6 +93,7 @@ export default async function AppLayout({
   let organizations: Awaited<ReturnType<typeof listOrganizationsForUser>> = [];
   let navPrefs = DEFAULT_WORKSPACE_NAV_PREFS;
   let enabledHrSubModules: string[] | null = null;
+  let enabledCrmSubModules: string[] | null = null;
 
   try {
     const [orgResult, orgsResult, membershipPrefs, hrSettings] = await Promise.all([
@@ -117,7 +118,11 @@ export default async function AppLayout({
             organizationId: sessionUser.organizationId,
           },
         },
-        select: { workspacePrefs: true },
+        select: {
+          workspacePrefs: true,
+          enabledHrSubModules: true,
+          enabledCrmSubModules: true,
+        },
       }),
       hasWorkspaceModule(sessionUser, "HR")
         ? getOrCreateHrSettings(sessionUser.organizationId)
@@ -127,8 +132,20 @@ export default async function AppLayout({
     organizations = orgsResult;
     navPrefs = parseWorkspaceNavPrefs(membershipPrefs?.workspacePrefs);
     if (hrSettings) {
-      enabledHrSubModules = resolveEnabledHrSubModules(
+      const { resolveMemberHrSubModules } = await import(
+        "@/lib/hr/hr-sub-modules"
+      );
+      enabledHrSubModules = resolveMemberHrSubModules(
         hrSettings.enabledHrSubModules,
+        membershipPrefs?.enabledHrSubModules,
+      );
+    }
+    if (hasWorkspaceModule(sessionUser, "CRM")) {
+      const { resolveMemberCrmSubModules } = await import(
+        "@/lib/crm/crm-sub-modules"
+      );
+      enabledCrmSubModules = resolveMemberCrmSubModules(
+        membershipPrefs?.enabledCrmSubModules,
       );
     }
   } catch (error) {
@@ -175,6 +192,7 @@ export default async function AppLayout({
       <WorkspacePwaRegister />
       <SaasShell
         appearance={appearance}
+        enabledCrmSubModules={enabledCrmSubModules}
         enabledHrSubModules={enabledHrSubModules}
         hidePlanBadge={Boolean(dedicatedPortal)}
         isDedicatedPortal={Boolean(dedicatedPortal)}

@@ -90,6 +90,11 @@ export async function createPurchaseOrder(params: {
   lines: PurchaseOrderLineInput[];
   submitForApproval?: boolean;
 }) {
+  const vendorIdInput = params.vendorId?.trim() || null;
+  if (vendorIdInput) {
+    await assertVendorInOrg(params.organizationId, vendorIdInput);
+  }
+
   const resolved = await resolvePoLines({
     organizationId: params.organizationId,
     indentId: params.indentId,
@@ -97,12 +102,22 @@ export async function createPurchaseOrder(params: {
   });
 
   if (resolved.lines.length === 0) {
-    throw new Error("Add at least one item line.");
+    throw new Error(
+      params.indentId
+        ? "Add at least one item line, or link an approved indent with lines."
+        : "Add at least one item line for an independent PO.",
+    );
   }
+
+  const vendorId = vendorIdInput || resolved.vendorId || null;
+  if (!vendorId) {
+    throw new Error("Select a vendor (or link an indent that has a vendor).");
+  }
+
+  await assertPoItemsInOrg(params.organizationId, resolved.lines);
 
   const poNumber = await nextPoNumber(params.organizationId);
   const status: ImsPurchaseOrderStatus = params.submitForApproval ? "PENDING" : "DRAFT";
-  const vendorId = params.vendorId || resolved.vendorId || null;
   const siteName = params.siteName?.trim() || resolved.siteName || null;
 
   return prisma.imsPurchaseOrder.create({
@@ -168,6 +183,7 @@ export async function updatePurchaseOrder(params: {
   organizationId: string;
   purchaseOrderId: string;
   indentId?: string | null;
+  vendorId?: string | null;
   siteName?: string;
   expectedDeliveryDate?: Date | null;
   notes?: string;
@@ -183,6 +199,11 @@ export async function updatePurchaseOrder(params: {
   });
   if (!existing) {
     throw new Error("Only draft purchase orders can be edited.");
+  }
+
+  const vendorIdInput = params.vendorId?.trim() || null;
+  if (vendorIdInput) {
+    await assertVendorInOrg(params.organizationId, vendorIdInput);
   }
 
   const resolved = await resolvePoLines({
@@ -209,8 +230,13 @@ export async function updatePurchaseOrder(params: {
     throw new Error("Add at least one item line.");
   }
 
+  await assertPoItemsInOrg(params.organizationId, lines);
+
   const siteName = params.siteName?.trim() || resolved.siteName || existing.siteName;
-  const vendorId = resolved.vendorId ?? existing.vendorId ?? null;
+  const vendorId = vendorIdInput || resolved.vendorId || existing.vendorId || null;
+  if (!vendorId) {
+    throw new Error("Select a vendor (or link an indent that has a vendor).");
+  }
 
   const status: ImsPurchaseOrderStatus = params.submitForApproval ? "PENDING" : "DRAFT";
 
@@ -240,6 +266,30 @@ export async function updatePurchaseOrder(params: {
     },
     include: { lines: { include: { item: true } }, vendor: true, indent: true },
   });
+}
+
+async function assertVendorInOrg(organizationId: string, vendorId: string) {
+  const vendor = await prisma.imsVendor.findFirst({
+    where: { id: vendorId, organizationId, isActive: true },
+    select: { id: true },
+  });
+  if (!vendor) {
+    throw new Error("Vendor not found.");
+  }
+}
+
+async function assertPoItemsInOrg(
+  organizationId: string,
+  lines: PurchaseOrderLineInput[],
+) {
+  const itemIds = [...new Set(lines.map((line) => line.itemId))];
+  if (itemIds.length === 0) return;
+  const count = await prisma.imsItem.count({
+    where: { organizationId, id: { in: itemIds }, isActive: true },
+  });
+  if (count !== itemIds.length) {
+    throw new Error("One or more items were not found in this organization.");
+  }
 }
 
 export async function updatePurchaseOrderStatus(params: {

@@ -1,0 +1,14 @@
+---
+description: This repo is Sheetomatic platform only — never mix TOPS or Hingorani work here
+alwaysApply: true
+---
+
+# Project identity: Sheetomatic
+
+You are working in **`/Users/shyamkumar/Desktop/sheetomatic`** (sheetomatic.com).
+
+- Templates store, Workspace, CRM, marketing site, WA API live here.
+- **TOPS CRM** is a separate repo: `/Users/shyamkumar/Desktop/tops`
+- **Hingorani** is a separate repo: `/Users/shyamkumar/Desktop/hingorani`
+
+If the user asks about TOPS or Hingorani features, tell them to open that folder as the Cursor workspace root (or use File → Open Folder). Do not implement TOPS/Hingorani product code in this repo unless they explicitly ask to change shared platform tenant plumbing.

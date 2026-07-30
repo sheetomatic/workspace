@@ -29,10 +29,12 @@ import {
 } from "@/lib/leads/queries";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
+import { requireCrmSubModule } from "@/lib/crm/crm-access";
 import { listLeadServiceCatalog } from "@/lib/leads/service-catalog";
 import { getAllSalesOrdersByLeadIds } from "@/lib/leads/sales-orders";
 import { listWorkspaceMembers } from "@/lib/workspace";
 import { prisma } from "@/lib/db";
+import { mapPendingTemplateOrdersByLeadIds } from "@/lib/templates/store";
 import Link from "next/link";
 
 type PageProps = {
@@ -161,12 +163,18 @@ function serializeLead(lead: CrmDrawerLead) {
 
 export default async function LeadsMachinePage({ searchParams }: PageProps) {
   const user = await requireSession(undefined, { module: "CRM" });
+  await requireCrmSubModule(user, "leads");
   await ensureLeadConnections(user.organizationId);
 
   const params = await searchParams;
   const period = parseLeadsPeriodParams(params);
   const listParams = parseLeadsListParams(params);
   const canManage = hasMinimumRole(user.role, "MANAGER");
+  // Admins/owners (and platform super-admins) see the full workspace;
+  // everyone else only sees leads assigned to them.
+  const canSeeAllLeads =
+    user.isSuperAdmin || hasMinimumRole(user.role, "ADMIN");
+  const leadScope = canSeeAllLeads ? undefined : { assignedToId: user.id };
   const focusLeadId = params.leadId?.trim() || null;
   const initialTab = parseCrmDrawerTab(params.tab);
   const focusMode = Boolean(focusLeadId);
@@ -187,7 +195,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
 
   if (focusMode && focusLeadId) {
     const [lead, teamMembers, serviceCatalog, organization] = await Promise.all([
-      getInboundLeadForCrmDrawer(user.organizationId, focusLeadId),
+      getInboundLeadForCrmDrawer(user.organizationId, focusLeadId, leadScope),
       listWorkspaceMembers(user.organizationId),
       listLeadServiceCatalog(user.organizationId),
       prisma.organization.findUnique({
@@ -199,12 +207,16 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
     const salesOrdersByLead = lead
       ? await getAllSalesOrdersByLeadIds(user.organizationId, [lead.id])
       : new Map();
+    const pendingTemplateByLead = lead
+      ? await mapPendingTemplateOrdersByLeadIds([lead.id])
+      : new Map();
     const leadsWithSalesOrders = lead
       ? [
           {
             ...serializeLead(lead),
             salesOrders: salesOrdersByLead.get(lead.id) ?? [],
             salesOrder: (salesOrdersByLead.get(lead.id) ?? [])[0] ?? null,
+            pendingTemplateOrders: pendingTemplateByLead.get(lead.id) ?? [],
           },
         ]
       : [];
@@ -257,10 +269,13 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
 
   const [periodStats, pipeMetrics, numbersMetrics, alertItems, leadPage, teamMembers, sheetsConnection, workspaceTotal, serviceCatalog, organization] =
     await Promise.all([
-      getLeadsMachineStatsForPeriod(user.organizationId, period),
-      getLeadsPipeMetricsForPeriod(user.organizationId, period),
-      getCrmNumbersMetricsForPeriod(user.organizationId, period),
-      listCrmAlertCenterItems(user.organizationId, { limit: 40 }),
+      getLeadsMachineStatsForPeriod(user.organizationId, period, leadScope),
+      getLeadsPipeMetricsForPeriod(user.organizationId, period, leadScope),
+      getCrmNumbersMetricsForPeriod(user.organizationId, period, leadScope),
+      listCrmAlertCenterItems(user.organizationId, {
+        limit: 40,
+        assignedToId: leadScope?.assignedToId,
+      }),
       listInboundLeadsForPeriodPaginated(user.organizationId, period, {
         page: listParams.page,
         pageSize: listParams.pageSize,
@@ -269,10 +284,11 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
         category: listParams.category,
         // Text search filters client-side on the loaded page (no workspace reload).
         includeArchived: listParams.includeArchived,
+        assignedToId: leadScope?.assignedToId,
       }),
       listWorkspaceMembers(user.organizationId),
       getGoogleSheetsLeadConnection(user.organizationId),
-      getInboundLeadWorkspaceTotal(user.organizationId),
+      getInboundLeadWorkspaceTotal(user.organizationId, leadScope),
       listLeadServiceCatalog(user.organizationId),
       prisma.organization.findUnique({
         where: { id: user.organizationId },
@@ -299,12 +315,16 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
     user.organizationId,
     leadPage.leads.map((lead) => lead.id),
   );
+  const pendingTemplateByLead = await mapPendingTemplateOrdersByLeadIds(
+    leadPage.leads.map((lead) => lead.id),
+  );
   const leadsWithSalesOrders = leadPage.leads.map((lead) => {
     const salesOrders = salesOrdersByLead.get(lead.id) ?? [];
     return {
       ...serializeLead(lead),
       salesOrders,
       salesOrder: salesOrders[0] ?? null,
+      pendingTemplateOrders: pendingTemplateByLead.get(lead.id) ?? [],
     };
   });
 
@@ -354,10 +374,12 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
         items={alertItems}
       />
 
-      <LeadsNumbersDashboard
-        metrics={numbersMetrics}
-        periodLabel={period.periodLabel}
-      />
+      {canSeeAllLeads ? (
+        <LeadsNumbersDashboard
+          metrics={numbersMetrics}
+          periodLabel={period.periodLabel}
+        />
+      ) : null}
 
       <LeadsPipelineCards
         activeCategory={listParams.category}

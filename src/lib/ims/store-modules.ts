@@ -42,7 +42,7 @@ export const STORE_DASHBOARD_MODULES: StoreModuleDef[] = [
   {
     id: "po",
     label: "Purchase orders",
-    description: "Vendor PO with rates — raise from approved indent, then GRN.",
+    description: "Vendor PO with rates — independent or from indent, then GRN.",
     href: "/app/ims/purchase-orders",
     status: "live",
   },

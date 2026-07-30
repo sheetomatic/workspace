@@ -1,6 +1,7 @@
 import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
 import {
   consultationUrl,
+  callingDisplayNumber,
   whatsappDisplayNumber,
   whatsappUrl,
 } from "@/app/site-content";
@@ -55,6 +56,7 @@ PRICING (Workspace — /pricing):
 
 CONTACT / BUY:
 - WhatsApp: ${whatsappDisplayNumber} — ${whatsappUrl}
+- Call: ${callingDisplayNumber}
 - Contact page: /contact
 - About: /about
 - Careers: /career

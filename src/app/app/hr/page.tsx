@@ -3,19 +3,16 @@ import { PageHeader } from "@/components/saas/page-header";
 import { HrSubNav } from "@/components/hr/hr-sub-nav";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
-import { getHrDashboardStats, getOrCreateHrSettings } from "@/lib/hr/hr-store";
-import {
-  isHrSubModuleEnabled,
-  resolveEnabledHrSubModules,
-  type HrSubModuleId,
-} from "@/lib/hr/hr-sub-modules";
+import { getHrDashboardStats } from "@/lib/hr/hr-store";
+import { getEffectiveHrSubModulesForUser } from "@/lib/hr/hr-access";
+import type { HrSubModuleId } from "@/lib/hr/hr-sub-modules";
 import { hrModuleOverview } from "@/app/hr-module-content";
 
 export default async function HrOverviewPage() {
   const user = await requireSession(undefined, { module: "HR" });
   const isAdmin = hasMinimumRole(user.role, "ADMIN");
   const canSeeTeamStats = hasMinimumRole(user.role, "MANAGER");
-  const [stats, hrSettings] = await Promise.all([
+  const [stats, hrAccess] = await Promise.all([
     canSeeTeamStats
       ? getHrDashboardStats(user.organizationId)
       : Promise.resolve({
@@ -31,13 +28,10 @@ export default async function HrOverviewPage() {
           openJobs: 0,
           activeCandidates: 0,
         }),
-    getOrCreateHrSettings(user.organizationId),
+    getEffectiveHrSubModulesForUser(user),
   ]);
-  const enabledSubModules = resolveEnabledHrSubModules(
-    hrSettings.enabledHrSubModules,
-  );
-  const enabled = (id: HrSubModuleId) =>
-    isHrSubModuleEnabled(hrSettings.enabledHrSubModules, id);
+  const enabledSubModules = hrAccess.effective;
+  const enabled = (id: HrSubModuleId) => enabledSubModules.includes(id);
 
   return (
     <div className="saas-page ws-hr-page">

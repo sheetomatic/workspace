@@ -4,9 +4,9 @@ import { EmReadyPricing } from "@/components/marketing/em-ready-pricing";
 import { marketingMetadata } from "@/lib/marketing-metadata";
 
 export const metadata: Metadata = marketingMetadata({
-  title: "Pricing | EM Ready Workspace",
+  title: "Pricing | BCI Suite & Modules",
   description:
-    "EM Ready Workspace plans for Indian MSMEs — Starter from ₹4,999/mo (8 users), Growth, Scale up to 50 users. FMS, tasks, and Monday EM without MIS prep.",
+    "Buy BCI Suite (complete EM Ready package from ₹4,999/mo) or individual modules — FMS, Tasks/EA, CRM, IMS, HR from ₹2,499/mo. Compare Suite vs modules.",
   path: "/pricing",
 });
 

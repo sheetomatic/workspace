@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { hasMinimumRole } from "@/lib/permissions";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
-import { getOrCreateHrSettings } from "@/lib/hr/hr-store";
-import { isHrSubModuleEnabled } from "@/lib/hr/hr-sub-modules";
+import { getEffectiveHrSubModulesForUser } from "@/lib/hr/hr-access";
 import {
   listMyDayTrail,
   listTodayPings,
@@ -17,9 +16,12 @@ import {
  * GET /api/hr/field/ping — managers: today's org pings; staff: own day trail.
  * Query: ?mine=1 | ?date=YYYY-MM-DD (trail for self)
  */
-async function hasFieldTrackingAccess(organizationId: string) {
-  const settings = await getOrCreateHrSettings(organizationId);
-  return isHrSubModuleEnabled(settings.enabledHrSubModules, "field");
+async function hasFieldTrackingAccess(user: {
+  id: string;
+  organizationId: string;
+}) {
+  const { allowed } = await getEffectiveHrSubModulesForUser(user);
+  return allowed("field");
 }
 
 export async function POST(request: Request) {
@@ -33,7 +35,7 @@ export async function POST(request: Request) {
   if (!hasWorkspaceModule(user, "HR")) {
     return NextResponse.json({ error: "HR access required" }, { status: 403 });
   }
-  if (!(await hasFieldTrackingAccess(user.organizationId))) {
+  if (!(await hasFieldTrackingAccess(user))) {
     return NextResponse.json(
       { error: "Field tracking is disabled" },
       { status: 403 },
@@ -95,7 +97,7 @@ export async function GET(request: Request) {
   if (!hasWorkspaceModule(user, "HR")) {
     return NextResponse.json({ error: "HR access required" }, { status: 403 });
   }
-  if (!(await hasFieldTrackingAccess(user.organizationId))) {
+  if (!(await hasFieldTrackingAccess(user))) {
     return NextResponse.json(
       { error: "Field tracking is disabled" },
       { status: 403 },

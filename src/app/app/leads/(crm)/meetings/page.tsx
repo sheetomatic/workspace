@@ -12,9 +12,11 @@ import {
 import { leadStatusLabel } from "@/lib/leads/status-labels";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
+import { requireCrmSubModule } from "@/lib/crm/crm-access";
 
 export default async function CrmMeetingsPage() {
   const user = await requireSession(undefined, { module: "CRM" });
+  await requireCrmSubModule(user, "meetings");
   const canManage = hasMinimumRole(user.role, "MANAGER");
   const [stats, rows] = await Promise.all([
     getCrmMeetingsStats(user.organizationId),

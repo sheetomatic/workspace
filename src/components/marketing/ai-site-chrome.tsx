@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { siteBrand, whatsappDisplayNumber } from "@/app/site-content";
+import { callingDisplayNumber, callingTel, siteBrand, whatsappDisplayNumber } from "@/app/site-content";
 import { BrandIconMark } from "@/components/brand/brand-icon-mark";
 import { AI_LOGIN_HREF, AI_START_FREE_HREF } from "@/lib/ai-auth-links";
 
@@ -115,7 +115,12 @@ export function AiSiteFooter() {
           <div className="site-footer-reach">
             <p className="site-footer-col-label">Contact</p>
             <div className="footer-reach-stack">
-              <span className="footer-contact-line">{whatsappDisplayNumber}</span>
+              <span className="footer-contact-line">
+                WhatsApp {whatsappDisplayNumber}
+              </span>
+              <a className="footer-contact-line" href={`tel:${callingTel}`}>
+                Call {callingDisplayNumber}
+              </a>
               <Link className="footer-demo-link" href="/contact">
                 Book a demo →
               </Link>

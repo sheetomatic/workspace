@@ -14,6 +14,7 @@ import {
 import { getSalesOrderStats } from "@/lib/sales-orders/queries";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
+import { requireCrmSubModule } from "@/lib/crm/crm-access";
 
 function groupProjectsByLead(
   rows: SalesOrderListItem[],
@@ -98,6 +99,7 @@ function groupProjectsByLead(
 
 export default async function CrmProjectsPage() {
   const user = await requireSession(undefined, { module: "CRM" });
+  await requireCrmSubModule(user, "projects");
   const canManage = hasMinimumRole(user.role, "MANAGER");
   const [{ orders }, stats] = await Promise.all([
     listSalesOrders(user.organizationId, { limit: 150 }),

@@ -4,6 +4,7 @@ import { QuotationPrintView } from "@/components/saas/quotation-print-view";
 import { getLeadQuotationForPrint } from "@/lib/leads/quotations";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
+import { requireCrmSubModule } from "@/lib/crm/crm-access";
 
 type PageProps = {
   params: Promise<{ quotationId: string }>;
@@ -45,6 +46,7 @@ function mapQuotationForView(quotation: NonNullable<Awaited<ReturnType<typeof ge
 
 export default async function QuotationPrintPage({ params, searchParams }: PageProps) {
   const user = await requireSession(undefined, { module: "CRM" });
+  await requireCrmSubModule(user, "quotations");
   const { quotationId } = await params;
   const { embed } = await searchParams;
   const isEmbed = embed === "1";

@@ -3,8 +3,7 @@ import { SalarySlipToolbar } from "@/components/hr/salary-slip-toolbar";
 import { SalarySlipView } from "@/components/hr/salary-slip-view";
 import { requireSession } from "@/lib/require-session";
 import { getSalarySlipAction } from "@/lib/hr/hr-actions";
-import { getOrCreateHrSettings } from "@/lib/hr/hr-store";
-import { requireHrSubModule } from "@/lib/hr/hr-sub-modules";
+import { getEffectiveHrSubModulesForUser } from "@/lib/hr/hr-access";
 
 type PageProps = {
   params: Promise<{ lineId: string }>;
@@ -12,8 +11,8 @@ type PageProps = {
 
 export default async function SalarySlipPage({ params }: PageProps) {
   const user = await requireSession(undefined, { module: "HR" });
-  const hrSettings = await getOrCreateHrSettings(user.organizationId);
-  if (!requireHrSubModule(hrSettings.enabledHrSubModules, "payroll")) {
+  const { allowed } = await getEffectiveHrSubModulesForUser(user);
+  if (!allowed("payroll")) {
     redirect("/app/hr");
   }
   const { lineId } = await params;

@@ -109,6 +109,39 @@ export function isHrSubModuleEnabled(
   return resolveEnabledHrSubModules(stored).includes(id);
 }
 
+/**
+ * Effective HR sub-modules for a member = org-enabled ∩ member-granted.
+ * Empty member array inherits all org-enabled (backward compatible).
+ */
+export function resolveMemberHrSubModules(
+  orgStored: string[] | null | undefined,
+  memberStored: string[] | null | undefined,
+): HrSubModuleId[] {
+  const orgEnabled = resolveEnabledHrSubModules(orgStored);
+  if (!memberStored || memberStored.length === 0) {
+    return orgEnabled;
+  }
+  if (
+    memberStored.includes(HR_SUB_MODULES_NONE) &&
+    !memberStored.some(isKnownHrSubModuleId)
+  ) {
+    return [];
+  }
+  const memberEnabled = memberStored.filter(isKnownHrSubModuleId);
+  if (memberEnabled.length === 0) {
+    return orgEnabled;
+  }
+  return orgEnabled.filter((id) => memberEnabled.includes(id));
+}
+
+export function isMemberHrSubModuleEnabled(
+  orgStored: string[] | null | undefined,
+  memberStored: string[] | null | undefined,
+  id: HrSubModuleId,
+): boolean {
+  return resolveMemberHrSubModules(orgStored, memberStored).includes(id);
+}
+
 /** Map `/app/hr/attendance` → `attendance`. Overview `/app/hr` → null (always allowed). */
 export function hrSubModuleIdFromPath(pathname: string): HrSubModuleId | null {
   const normalized = pathname.replace(/\/+$/, "") || "/";

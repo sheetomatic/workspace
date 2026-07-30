@@ -1,7 +1,14 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
-import { KeyRound, Mail, Pencil, Trash2 } from "lucide-react";
+import {
+  Fragment,
+  useActionState,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
+import { Eye, EyeOff, KeyRound, Mail, Pencil, Trash2 } from "lucide-react";
 import type {
   AttendanceWorkMode,
   EmployeeLocationMode,
@@ -20,6 +27,7 @@ import {
   WorkspaceModuleFields,
   WorkspaceModulePills,
 } from "@/components/saas/workspace-module-fields";
+import type { HrSubModuleId } from "@/lib/hr/hr-sub-modules";
 import { formatWhatsAppPhone } from "@/lib/phone";
 import { ROLE_LABELS } from "@/lib/permissions";
 import { TASK_DEPARTMENT_LABELS } from "@/lib/tasks";
@@ -70,6 +78,8 @@ export type TeamMemberRow = {
   faceRequired: boolean;
   monthlySalary: number | null;
   modules: WorkspaceModule[];
+  enabledHrSubModules: string[];
+  enabledCrmSubModules: string[];
   joinedAt: Date;
   user: {
     id: string;
@@ -109,6 +119,31 @@ function whatsAppHref(phone: string | null | undefined) {
   }
   const digits = phone.replace(/\D/g, "");
   return digits.length >= 10 ? `https://wa.me/${digits}` : null;
+}
+
+/** Salary stays masked until explicitly clicked; stopPropagation keeps card edit closed. */
+function MaskedSalaryHint({ amount }: { amount: number }) {
+  const [revealed, setRevealed] = useState(false);
+  return (
+    <button
+      aria-label={revealed ? "Hide salary" : "Show salary"}
+      className="saas-salary-mask"
+      onClick={(event) => {
+        event.stopPropagation();
+        setRevealed((current) => !current);
+      }}
+      onKeyDown={(event) => {
+        event.stopPropagation();
+      }}
+      title={revealed ? "Hide salary" : "Show salary"}
+      type="button"
+    >
+      {revealed
+        ? `Salary ₹${Math.round(amount).toLocaleString("en-IN")}/mo`
+        : "Salary ₹•••••/mo"}
+      {revealed ? <EyeOff size={12} /> : <Eye size={12} />}
+    </button>
+  );
 }
 
 function WhatsAppIcon({ size = 14 }: { size?: number }) {
@@ -244,12 +279,14 @@ function MemberEditForm({
   workSites,
   onCancel,
   orgAllowedModules,
+  orgEnabledHrSubModules,
 }: {
   member: TeamMemberRow;
   members: TeamMemberRow[];
   workSites: TeamWorkSiteOption[];
   onCancel: () => void;
   orgAllowedModules?: WorkspaceModule[];
+  orgEnabledHrSubModules?: HrSubModuleId[];
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [state, action, pending] = useActionState(
@@ -370,9 +407,12 @@ function MemberEditForm({
       </div>
 
       <WorkspaceModuleFields
+        defaultCrmSubModules={member.enabledCrmSubModules}
+        defaultHrSubModules={member.enabledHrSubModules}
         defaultModules={member.modules}
         lockSelection
         orgAllowedModules={orgAllowedModules}
+        orgEnabledHrSubModules={orgEnabledHrSubModules}
         role={editRole}
       />
 
@@ -483,6 +523,7 @@ export function TeamManagementPanel({
   currentUserId,
   canManage = true,
   orgAllowedModules,
+  orgEnabledHrSubModules,
   workSites = [],
   defaultInviteOpen = false,
 }: {
@@ -490,6 +531,7 @@ export function TeamManagementPanel({
   currentUserId: string;
   canManage?: boolean;
   orgAllowedModules?: WorkspaceModule[];
+  orgEnabledHrSubModules?: HrSubModuleId[];
   workSites?: TeamWorkSiteOption[];
   defaultInviteOpen?: boolean;
 }) {
@@ -561,10 +603,10 @@ export function TeamManagementPanel({
               ? TASK_DEPARTMENT_LABELS[member.department]
               : null;
             const salaryHint =
-              canManage && member.monthlySalary != null && member.monthlySalary > 0
-                ? `Salary ₹${Math.round(member.monthlySalary).toLocaleString("en-IN")}/mo`
-                : null;
-            const metaParts = [
+              canManage && member.monthlySalary != null && member.monthlySalary > 0 ? (
+                <MaskedSalaryHint amount={member.monthlySalary} />
+              ) : null;
+            const metaParts: React.ReactNode[] = [
               deptLabel,
               member.designation,
               member.reportingManager
@@ -592,6 +634,7 @@ export function TeamManagementPanel({
                     workSites={workSites}
                     onCancel={() => setEditingId(null)}
                     orgAllowedModules={orgAllowedModules}
+                    orgEnabledHrSubModules={orgEnabledHrSubModules}
                   />
                 </article>
               );
@@ -633,7 +676,12 @@ export function TeamManagementPanel({
                       </div>
                       {metaParts.length > 0 ? (
                         <p className="saas-team-card-meta">
-                          {metaParts.join(META_SEPARATOR)}
+                          {metaParts.map((part, index) => (
+                            <Fragment key={index}>
+                              {index > 0 ? META_SEPARATOR : null}
+                              {part}
+                            </Fragment>
+                          ))}
                         </p>
                       ) : null}
                       <p className="saas-team-card-email">{member.user.email}</p>
@@ -861,6 +909,7 @@ export function TeamManagementPanel({
 
               <WorkspaceModuleFields
                 orgAllowedModules={orgAllowedModules}
+                orgEnabledHrSubModules={orgEnabledHrSubModules}
                 role={inviteRole}
               />
               <div className="form-actions">

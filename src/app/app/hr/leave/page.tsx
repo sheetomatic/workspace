@@ -8,17 +8,16 @@ import { LeaveSwapPanel } from "@/components/hr/leave-swap-panel";
 import { LeaveAllocationPanel } from "@/components/hr/leave-allocation-panel";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
-import {
-  getOrCreateHrSettings,
-  listLeaveBalancesForPage,
-  listLeaveRequests,
-} from "@/lib/hr/hr-store";
-import { resolveEnabledHrSubModules, requireHrSubModule } from "@/lib/hr/hr-sub-modules";
+import { getEffectiveHrSubModulesForUser } from "@/lib/hr/hr-access";
 import { listLeaveBalances, resolveLeavePolicyDays } from "@/lib/hr/payroll";
 import { listAttendanceExceptions } from "@/lib/hr/attendance-exceptions";
 import { listSwapRequests } from "@/lib/hr/swap-requests";
 import { listAssignableMembers } from "@/lib/tasks";
 import { redirect } from "next/navigation";
+import {
+  listLeaveBalancesForPage,
+  listLeaveRequests,
+} from "@/lib/hr/hr-store";
 
 type PageProps = {
   searchParams: Promise<{ tab?: string }>;
@@ -110,7 +109,7 @@ export default async function HrLeavePage({ searchParams }: PageProps) {
   const params = await searchParams;
   const activeTab = resolveLeaveTab(params.tab, isAdmin);
 
-  const [requests, balances, exceptions, swaps, policies, allocBalances, members, hrSettings] =
+  const [requests, balances, exceptions, swaps, policies, allocBalances, members, hrAccess] =
     await Promise.all([
       listLeaveRequests(user.organizationId, isManager ? undefined : user.id),
       listLeaveBalances(user.organizationId, user.id, year),
@@ -135,16 +134,14 @@ export default async function HrLeavePage({ searchParams }: PageProps) {
       isAdmin
         ? listAssignableMembers(user.organizationId)
         : Promise.resolve([]),
-      getOrCreateHrSettings(user.organizationId),
+      getEffectiveHrSubModulesForUser(user),
     ]);
 
-  if (!requireHrSubModule(hrSettings.enabledHrSubModules, "leave")) {
+  if (!hrAccess.allowed("leave")) {
     redirect("/app/hr");
   }
 
-  const enabledSubModules = resolveEnabledHrSubModules(
-    hrSettings.enabledHrSubModules,
-  );
+  const enabledSubModules = hrAccess.effective;
 
   return (
     <div className="saas-page ws-hr-page">

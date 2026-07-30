@@ -7,6 +7,7 @@ import {
   getPurchaseOrder,
   listApprovedIndentsForPo,
 } from "@/lib/ims/purchase-orders";
+import { listImsItems, listImsVendors } from "@/lib/ims/ims-store";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -15,9 +16,11 @@ type PageProps = {
 export default async function ImsEditPurchaseOrderPage({ params }: PageProps) {
   const user = await requireSession("MANAGER", { module: "IMS" });
   const { id } = await params;
-  const [order, indents] = await Promise.all([
+  const [order, indents, vendors, items] = await Promise.all([
     getPurchaseOrder(user.organizationId, id),
     listApprovedIndentsForPo(user.organizationId),
+    listImsVendors(user.organizationId),
+    listImsItems(user.organizationId),
   ]);
 
   if (!order) {
@@ -56,10 +59,22 @@ export default async function ImsEditPurchaseOrderPage({ params }: PageProps) {
             siteName: indent.siteName,
             vendor: indent.vendor,
           }))}
+          vendors={vendors.map((vendor) => ({
+            id: vendor.id,
+            name: vendor.name,
+            code: vendor.code,
+          }))}
+          items={items.map((item) => ({
+            id: item.id,
+            code: item.code,
+            name: item.name,
+            uom: item.uom,
+          }))}
           initialValues={{
             purchaseOrderId: order.id,
             poNumber: order.poNumber,
             indentId: order.indentId,
+            vendorId: order.vendorId,
             siteName: order.siteName,
             expectedDeliveryDate: order.expectedDeliveryDate?.toISOString() ?? null,
             notes: order.notes,

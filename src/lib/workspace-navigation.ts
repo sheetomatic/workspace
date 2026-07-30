@@ -5,7 +5,6 @@ import {
   Briefcase,
   CalendarCheck2,
   CalendarDays,
-  CheckSquare,
   ClipboardCheck,
   ClipboardList,
   CreditCard,
@@ -29,7 +28,6 @@ import {
   Truck,
   Users,
   Wallet,
-  Wrench,
 } from "lucide-react";
 import type { SessionUser } from "@/lib/auth";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
@@ -48,8 +46,10 @@ export type WorkspaceNavItem = {
   icon: LucideIcon;
   minRole?: SessionUser["role"];
   module?: WorkspaceModule;
-  /** When set, item is hidden unless this HR sub-module is enabled for the org. */
+  /** When set, item is hidden unless this HR sub-module is enabled for the member. */
   hrSubModule?: string;
+  /** When set, item is hidden unless this CRM sub-module is enabled for the member. */
+  crmSubModule?: string;
   allowDepartmentHead?: boolean;
   matchPrefix?: string;
   addon?: boolean;
@@ -64,65 +64,7 @@ export type WorkspaceNavSection = {
 
 const ROLE_ORDER = ["VIEWER", "STAFF", "MANAGER", "ADMIN", "OWNER"] as const;
 
-const CHECK_LIST_CHILD_ITEMS: WorkspaceNavItem[] = [
-  {
-    href: "/app/checklists/accounts",
-    label: "Accounts Check List",
-    icon: ClipboardCheck,
-    module: "TASKS",
-    matchPrefix: "/app/checklists/accounts",
-  },
-  {
-    href: "/app/checklists/hr",
-    label: "HR Check List",
-    icon: Users,
-    module: "TASKS",
-    matchPrefix: "/app/checklists/hr",
-  },
-  {
-    href: "/app/checklists/maintenance",
-    label: "Maintenance Check List (Machine)",
-    icon: Wrench,
-    module: "TASKS",
-    matchPrefix: "/app/checklists/maintenance",
-  },
-];
-
-const PC_CHILD_ITEMS: WorkspaceNavItem[] = [
-  {
-    href: "/app/pc/today",
-    label: "Today",
-    icon: ClipboardCheck,
-    module: "TASKS",
-    matchPrefix: "/app/pc/today",
-  },
-  {
-    href: "/app/pc/all",
-    label: "All",
-    icon: ListChecks,
-    module: "TASKS",
-    minRole: "MANAGER",
-    matchPrefix: "/app/pc/all",
-  },
-];
-
-const EA_CHILD_ITEMS: WorkspaceNavItem[] = [
-  {
-    href: "/app/tasks/today",
-    label: "Today",
-    icon: ClipboardList,
-    module: "TASKS",
-    matchPrefix: "/app/tasks/today",
-  },
-  {
-    href: "/app/tasks/all",
-    label: "All",
-    icon: ListChecks,
-    module: "TASKS",
-    matchPrefix: "/app/tasks/all",
-  },
-];
-
+/** Checklist / EA / PC stay routable but are hidden from the sidebar (not needed for most orgs). */
 const BCI_CHILD_ITEMS: WorkspaceNavItem[] = [
   {
     id: "fms",
@@ -131,33 +73,6 @@ const BCI_CHILD_ITEMS: WorkspaceNavItem[] = [
     icon: GitBranch,
     module: "FMS",
     matchPrefix: "/app/fms",
-  },
-  {
-    id: "checklists",
-    href: "/app/checklists",
-    label: "Check List",
-    icon: CheckSquare,
-    module: "TASKS",
-    matchPrefix: "/app/checklists",
-    children: CHECK_LIST_CHILD_ITEMS,
-  },
-  {
-    id: "ea",
-    href: "/app/tasks/today",
-    label: "EA",
-    icon: ClipboardList,
-    module: "TASKS",
-    matchPrefix: "/app/tasks/today",
-    children: EA_CHILD_ITEMS,
-  },
-  {
-    id: "pc",
-    href: "/app/pc/today",
-    label: "PC",
-    icon: ListChecks,
-    module: "TASKS",
-    matchPrefix: "/app/pc",
-    children: PC_CHILD_ITEMS,
   },
   {
     id: "em",
@@ -192,6 +107,7 @@ const CRM_NAV_ITEM: WorkspaceNavItem = {
       label: "Leads",
       icon: Users,
       module: "CRM",
+      crmSubModule: "leads",
       matchPrefix: "/app/leads",
     },
     {
@@ -199,6 +115,7 @@ const CRM_NAV_ITEM: WorkspaceNavItem = {
       label: "Meetings",
       icon: CalendarDays,
       module: "CRM",
+      crmSubModule: "meetings",
       matchPrefix: "/app/leads/meetings",
     },
     {
@@ -206,6 +123,7 @@ const CRM_NAV_ITEM: WorkspaceNavItem = {
       label: "Quotations",
       icon: ClipboardList,
       module: "CRM",
+      crmSubModule: "quotations",
       matchPrefix: "/app/leads/quotations",
     },
     {
@@ -213,6 +131,7 @@ const CRM_NAV_ITEM: WorkspaceNavItem = {
       label: "Payments",
       icon: CreditCard,
       module: "CRM",
+      crmSubModule: "payments",
       matchPrefix: "/app/leads/payments",
     },
     {
@@ -220,6 +139,7 @@ const CRM_NAV_ITEM: WorkspaceNavItem = {
       label: "Projects",
       icon: FolderKanban,
       module: "CRM",
+      crmSubModule: "projects",
       matchPrefix: "/app/leads/projects",
     },
     {
@@ -227,6 +147,7 @@ const CRM_NAV_ITEM: WorkspaceNavItem = {
       label: "Training",
       icon: GraduationCap,
       module: "CRM",
+      crmSubModule: "training",
       matchPrefix: "/app/leads/training",
     },
   ],
@@ -432,6 +353,7 @@ const DEPARTMENT_NAV_ITEMS: WorkspaceNavItem[] = [
         label: "CRM Pipeline",
         icon: TrendingUp,
         module: "CRM",
+        crmSubModule: "leads",
         matchPrefix: "/app/leads",
       },
       {
@@ -439,6 +361,7 @@ const DEPARTMENT_NAV_ITEMS: WorkspaceNavItem[] = [
         label: "Lead Sources",
         icon: Megaphone,
         module: "CRM",
+        crmSubModule: "settings",
         minRole: "MANAGER",
         matchPrefix: "/app/leads/settings",
       },
@@ -646,6 +569,7 @@ export function canAccessWorkspaceNav(
   user: SessionUser,
   item: WorkspaceNavItem,
   enabledHrSubModules?: string[] | null,
+  enabledCrmSubModules?: string[] | null,
 ) {
   if (item.minRole) {
     const roleOk =
@@ -659,6 +583,14 @@ export function canAccessWorkspaceNav(
       return false;
     }
   }
+  if (item.crmSubModule) {
+    if (
+      enabledCrmSubModules != null &&
+      !enabledCrmSubModules.includes(item.crmSubModule)
+    ) {
+      return false;
+    }
+  }
   if (!item.module) {
     return true;
   }
@@ -669,19 +601,38 @@ function filterNavItem(
   user: SessionUser,
   item: WorkspaceNavItem,
   enabledHrSubModules?: string[] | null,
+  enabledCrmSubModules?: string[] | null,
 ): WorkspaceNavItem | null {
-  if (!canAccessWorkspaceNav(user, item, enabledHrSubModules)) {
+  if (
+    !canAccessWorkspaceNav(
+      user,
+      item,
+      enabledHrSubModules,
+      enabledCrmSubModules,
+    )
+  ) {
     return null;
   }
 
   if (item.children?.length) {
     const children = item.children
-      .map((child) => filterNavItem(user, child, enabledHrSubModules))
+      .map((child) =>
+        filterNavItem(
+          user,
+          child,
+          enabledHrSubModules,
+          enabledCrmSubModules,
+        ),
+      )
       .filter((child): child is WorkspaceNavItem => child !== null);
     if (children.length === 0) {
       return null;
     }
-    return { ...item, children };
+    return {
+      ...item,
+      children,
+      href: children[0]?.href ?? item.href,
+    };
   }
 
   return item;
@@ -691,9 +642,12 @@ export function visibleWorkspaceNavItems(
   user: SessionUser,
   items: WorkspaceNavItem[],
   enabledHrSubModules?: string[] | null,
+  enabledCrmSubModules?: string[] | null,
 ) {
   return items
-    .map((item) => filterNavItem(user, item, enabledHrSubModules))
+    .map((item) =>
+      filterNavItem(user, item, enabledHrSubModules, enabledCrmSubModules),
+    )
     .filter((item): item is WorkspaceNavItem => item !== null);
 }
 
@@ -702,11 +656,8 @@ const MOBILE_NAV_PRIORITY_IDS = [
   "dept-hr",
   "tasks",
   "fms",
-  "checklists",
   "leads",
   "em",
-  "ea",
-  "pc",
   "dept-store",
 ] as const;
 

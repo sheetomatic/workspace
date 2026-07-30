@@ -2,12 +2,14 @@ import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { hasMinimumRole } from "@/lib/permissions";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
-import { getOrCreateHrSettings } from "@/lib/hr/hr-store";
-import { isHrSubModuleEnabled } from "@/lib/hr/hr-sub-modules";
+import { getEffectiveHrSubModulesForUser } from "@/lib/hr/hr-access";
 
-async function hasFieldTrackingAccess(organizationId: string) {
-  const settings = await getOrCreateHrSettings(organizationId);
-  return isHrSubModuleEnabled(settings.enabledHrSubModules, "field");
+async function hasFieldTrackingAccess(user: {
+  id: string;
+  organizationId: string;
+}) {
+  const { allowed } = await getEffectiveHrSubModulesForUser(user);
+  return allowed("field");
 }
 
 export async function GET(
@@ -24,7 +26,7 @@ export async function GET(
   if (!hasWorkspaceModule(user, "HR")) {
     return new Response("HR access required", { status: 403 });
   }
-  if (!(await hasFieldTrackingAccess(user.organizationId))) {
+  if (!(await hasFieldTrackingAccess(user))) {
     return new Response("Field tracking is disabled", { status: 403 });
   }
 

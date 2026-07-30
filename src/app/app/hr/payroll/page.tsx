@@ -8,22 +8,16 @@ import { hasMinimumRole } from "@/lib/permissions";
 import { prisma } from "@/lib/db";
 import { formatInr } from "@/lib/leads/categories";
 import { istCalendarYmd } from "@/lib/hr/payroll";
-import { getOrCreateHrSettings } from "@/lib/hr/hr-store";
-import {
-  requireHrSubModule,
-  resolveEnabledHrSubModules,
-} from "@/lib/hr/hr-sub-modules";
+import { getEffectiveHrSubModulesForUser } from "@/lib/hr/hr-access";
 
 export default async function HrPayrollPage() {
   const user = await requireSession(undefined, { module: "HR" });
-  const hrSettings = await getOrCreateHrSettings(user.organizationId);
-  if (!requireHrSubModule(hrSettings.enabledHrSubModules, "payroll")) {
+  const { effective: enabledSubModules, allowed } =
+    await getEffectiveHrSubModulesForUser(user);
+  if (!allowed("payroll")) {
     redirect("/app/hr");
   }
   const isAdmin = hasMinimumRole(user.role, "ADMIN");
-  const enabledSubModules = resolveEnabledHrSubModules(
-    hrSettings.enabledHrSubModules,
-  );
 
   const [runs, salaryReadyCount] = await Promise.all([
     prisma.payrollRun.findMany({

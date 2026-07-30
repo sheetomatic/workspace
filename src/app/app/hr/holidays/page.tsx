@@ -4,11 +4,7 @@ import { HolidayAdminPanel } from "@/components/hr/holiday-admin-panel";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import { listHolidays } from "@/lib/hr/holidays";
-import { getOrCreateHrSettings } from "@/lib/hr/hr-store";
-import {
-  requireHrSubModule,
-  resolveEnabledHrSubModules,
-} from "@/lib/hr/hr-sub-modules";
+import { getEffectiveHrSubModulesForUser } from "@/lib/hr/hr-access";
 import { redirect } from "next/navigation";
 
 type PageProps = {
@@ -17,8 +13,9 @@ type PageProps = {
 
 export default async function HrHolidaysPage({ searchParams }: PageProps) {
   const user = await requireSession(undefined, { module: "HR" });
-  const hrSettings = await getOrCreateHrSettings(user.organizationId);
-  if (!requireHrSubModule(hrSettings.enabledHrSubModules, "holidays")) {
+  const { effective: enabledSubModules, allowed } =
+    await getEffectiveHrSubModulesForUser(user);
+  if (!allowed("holidays")) {
     redirect("/app/hr");
   }
   if (!hasMinimumRole(user.role, "ADMIN")) {
@@ -33,9 +30,6 @@ export default async function HrHolidaysPage({ searchParams }: PageProps) {
       : new Date().getFullYear();
 
   const holidays = await listHolidays(user.organizationId, year);
-  const enabledSubModules = resolveEnabledHrSubModules(
-    hrSettings.enabledHrSubModules,
-  );
 
   return (
     <div className="saas-page ws-hr-page">

@@ -5016,7 +5016,59 @@ body.ws-more-sheet-open .sheetomatic-ai-launcher {
   display: none !important;
 }
 
+@media (min-width: 769px) and (max-width: 900px) {
+  .workspace-app .ws-module-layout-main {
+    overflow-y: auto;
+  }
+}
+
 @media (max-width: 768px) {
+  /* Final Android-safe override: one scroll owner = document/body.
+     Nested overflow on module mains traps touch on Chrome Android
+     (FMS / IMS / PC / Checklists) while HRMS/Task/CRM often escape it. */
+  .workspace-app .ws-module-layout-main,
+  .workspace-app .ws-module-layout-main:has(.ws-fms-jotform-page),
+  .workspace-app .ws-module-layout-main:has(.ws-fms-sf),
+  .workspace-app .ws-module-layout-main:has(.ws-ims-sf),
+  .workspace-app .ws-module-layout-main:has(.ws-ims-page),
+  .workspace-app .ws-module-layout-main:has(.ws-checklists-page),
+  .workspace-app .ws-module-layout-main:has(.ws-pc-page) {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    touch-action: auto !important;
+    overscroll-behavior: auto;
+    -webkit-overflow-scrolling: auto;
+  }
+
+  .workspace-app .ws-fms-sf,
+  .workspace-app .ws-ims-sf,
+  .workspace-app .ws-ims-page,
+  .workspace-app .ws-checklists-page,
+  .workspace-app .ws-pc-page,
+  .workspace-app .ws-fms-jf-scroll-shell,
+  .workspace-app .ws-fms-jf-fields-scroll {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+
+  .workspace-app .saas-main,
+  .workspace-app .saas-content,
+  .workspace-app .saas-content:has(.ws-module-layout),
+  .workspace-app .saas-content:has(.ws-fms-jotform-page),
+  .workspace-app .saas-content:has(.ws-fms-flow-design-page) {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+
+  body:has(.workspace-app.saas-app) {
+    overflow: auto !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
   .workspace-app.saas-app {
     grid-template-columns: 1fr;
     height: auto;
@@ -5851,6 +5903,28 @@ body.ws-more-sheet-open .sheetomatic-ai-launcher {
   font-weight: 500;
   color: #64748b;
   line-height: 1.35;
+}
+
+.workspace-app .saas-salary-mask {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+
+.workspace-app .saas-salary-mask:hover {
+  color: #334155;
+}
+
+.workspace-app .saas-salary-mask svg {
+  flex-shrink: 0;
+  opacity: 0.7;
 }
 
 .workspace-app .saas-team-card-email {
@@ -24388,7 +24462,8 @@ body.ws-more-sheet-open .sheetomatic-ai-launcher {
   .workspace-app .ws-module-layout-main {
     flex: 1;
     min-height: 0;
-    overflow-y: auto;
+    /* Nested scroll only for tablet; phones use document scroll (see ≤768 rules). */
+    overflow: visible;
     padding: 0;
   }
 

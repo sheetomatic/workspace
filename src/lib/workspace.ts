@@ -145,6 +145,8 @@ export async function listWorkspaceMembers(organizationId: string) {
       membership.monthlySalary == null ? null : Number(membership.monthlySalary),
     dateOfJoining: membership.dateOfJoining,
     modules: resolveMemberModules(membership.role, membership.modules),
+    enabledHrSubModules: membership.enabledHrSubModules ?? [],
+    enabledCrmSubModules: membership.enabledCrmSubModules ?? [],
     joinedAt: membership.createdAt,
     user: membership.user,
   }));

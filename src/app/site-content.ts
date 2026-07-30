@@ -5,6 +5,13 @@ export const whatsappDisplayNumber = "+91 93291 03106";
 
 export const whatsappTel = "+919329103106";
 
+/** Voice / calling line for website Call buttons (separate from WhatsApp). */
+export const callingPhone = "919755733107";
+
+export const callingDisplayNumber = "+91 97557 33107";
+
+export const callingTel = "+919755733107";
+
 /** Official Cloud API business number (inbox / Go Live). Do not use for site wa.me CTAs. */
 export const officialApiWhatsAppPhone = "919685788980";
 export const officialApiWhatsAppDisplay = "+91 96857 88980";

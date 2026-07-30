@@ -28,6 +28,9 @@ import {
   hasWorkspaceModule,
   isCasesOnlyWorkspace,
 } from "@/lib/workspace-modules";
+import {
+  resolveEnabledHrSubModules,
+} from "@/lib/hr/hr-sub-modules";
 import { tenantPortalOrigin } from "@/lib/workspace-auth-links";
 import { resolveOrgAllowedModules } from "@/lib/org-plan-presets";
 import "@/components/legal/legal-cases.css";
@@ -137,6 +140,9 @@ export default async function TeamPage({
         isPrimary: organization.isPrimary,
       })
     : undefined;
+  const orgEnabledHrSubModules = hrSettings
+    ? resolveEnabledHrSubModules(hrSettings.enabledHrSubModules)
+    : undefined;
   const visibleMembers = canManage
     ? allMembers
     : viewerMembership?.department
@@ -212,6 +218,7 @@ export default async function TeamPage({
           defaultInviteOpen={openInvite}
           members={visibleMembers}
           orgAllowedModules={orgAllowedModules}
+          orgEnabledHrSubModules={orgEnabledHrSubModules}
           workSites={workSites.map((site) => ({
             id: site.id,
             name: site.name,
