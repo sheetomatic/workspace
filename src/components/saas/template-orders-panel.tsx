@@ -97,58 +97,89 @@ export function TemplateOrdersPanel({
             <p>No template orders waiting for payment confirmation.</p>
           </div>
         ) : (
-          <div className={`saas-list-card ${payPending ? "is-updating" : ""}`}>
+          <div className={`tpl-order-list ${payPending ? "is-updating" : ""}`}>
             {pending.map((row) => (
-              <article className="saas-list-row" key={row.id}>
-                <div className="saas-list-icon" aria-hidden />
-                <div className="saas-list-body">
-                  <h3>
-                    {row.product.name}{" "}
-                    <span style={{ fontWeight: 500, color: "#64748b" }}>
-                      ({typeLabel(row.product.type)})
+              <article className="tpl-order-card" key={row.id}>
+                <header className="tpl-order-head">
+                  <div>
+                    <h3>{row.product.name}</h3>
+                    <span className="tpl-order-type">
+                      {typeLabel(row.product.type)}
                     </span>
-                  </h3>
-                  <p>
-                    {row.customerName} · {row.customerEmail}
-                    {row.customerPhone ? ` · ${row.customerPhone}` : ""} · ₹
-                    {row.product.priceInr.toLocaleString("en-IN")} · submitted{" "}
-                    {formatPendingAge(new Date(row.createdAt))}
+                  </div>
+                  <strong className="tpl-order-amount">
+                    ₹{row.product.priceInr.toLocaleString("en-IN")}
+                  </strong>
+                </header>
+
+                <dl className="tpl-order-meta">
+                  <div>
+                    <dt>Buyer</dt>
+                    <dd>{row.customerName}</dd>
+                  </div>
+                  <div>
+                    <dt>Email</dt>
+                    <dd>{row.customerEmail}</dd>
+                  </div>
+                  {row.customerPhone ? (
+                    <div>
+                      <dt>Phone</dt>
+                      <dd>{row.customerPhone}</dd>
+                    </div>
+                  ) : null}
+                  <div>
+                    <dt>Ordered</dt>
+                    <dd>{formatPendingAge(new Date(row.createdAt))}</dd>
+                  </div>
+                  {row.paymentRef ? (
+                    <div>
+                      <dt>UTR / Ref</dt>
+                      <dd>{row.paymentRef}</dd>
+                    </div>
+                  ) : null}
+                </dl>
+
+                {row.paymentClaimedAt ? (
+                  <p className="tpl-order-claimed">
+                    Buyer marked paid{" "}
+                    {formatPendingAge(new Date(row.paymentClaimedAt))}
                   </p>
-                  {row.paymentRef ? <p>Ref: {row.paymentRef}</p> : null}
-                  {row.paymentClaimedAt ? (
-                    <p>
-                      Buyer marked paid{" "}
-                      {formatPendingAge(new Date(row.paymentClaimedAt))}
-                      {row.hasPaymentProof ? (
-                        <>
-                          {" · "}
-                          <a
-                            href={`/api/templates/order/${row.id}/proof`}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            View proof
-                          </a>
-                        </>
-                      ) : null}
-                    </p>
+                ) : (
+                  <p className="tpl-order-waiting">
+                    Buyer has not submitted payment confirmation yet.
+                  </p>
+                )}
+
+                {!row.product.hasCopyLink ? (
+                  <p className="saas-form-message error">
+                    Add copy link on the product before confirming.
+                  </p>
+                ) : null}
+
+                <div className="tpl-order-actions">
+                  {row.hasPaymentProof ? (
+                    <a
+                      className="btn-secondary tpl-order-btn"
+                      href={`/api/templates/order/${row.id}/proof`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      View proof
+                    </a>
                   ) : null}
-                  {!row.product.hasCopyLink ? (
-                    <p className="saas-form-message error">
-                      Add copy link on the product before confirming.
-                    </p>
-                  ) : null}
+                  <form action={payAction} className="tpl-order-confirm">
+                    <input name="orderId" type="hidden" value={row.id} />
+                    <button
+                      type="submit"
+                      className="btn-primary tpl-order-btn"
+                      disabled={payPending || !row.product.hasCopyLink}
+                    >
+                      {payPending
+                        ? "Confirming…"
+                        : "Confirm payment & email copy link"}
+                    </button>
+                  </form>
                 </div>
-                <form action={payAction} className="saas-list-actions">
-                  <input name="orderId" type="hidden" value={row.id} />
-                  <button
-                    type="submit"
-                    className="saas-btn primary"
-                    disabled={payPending || !row.product.hasCopyLink}
-                  >
-                    Payment received
-                  </button>
-                </form>
               </article>
             ))}
           </div>
@@ -275,7 +306,7 @@ export function TemplateOrdersPanel({
                 <div className="saas-list-actions">
                   <button
                     type="submit"
-                    className="saas-btn primary"
+                    className="btn-primary tpl-order-btn"
                     disabled={productPending}
                   >
                     Save

@@ -61,7 +61,7 @@ export default async function ApprovalsPage() {
             }))}
           />
           <div style={{ marginBottom: "0.75rem" }}>
-            <Link href="/app/template-orders" className="saas-btn">
+            <Link href="/app/template-orders" className="btn-secondary tpl-order-btn">
               Open full template store admin
             </Link>
           </div>

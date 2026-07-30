@@ -5905,6 +5905,139 @@ body.ws-more-sheet-open .sheetomatic-ai-launcher {
   line-height: 1.35;
 }
 
+/* Template store admin: pending order cards */
+.workspace-app .tpl-order-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.workspace-app .tpl-order-list.is-updating {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.workspace-app .tpl-order-card {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+
+.workspace-app .tpl-order-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.workspace-app .tpl-order-head h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 650;
+  color: #0f172a;
+}
+
+.workspace-app .tpl-order-type {
+  display: inline-block;
+  margin-top: 0.25rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.workspace-app .tpl-order-amount {
+  font-size: 1.15rem;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.workspace-app .tpl-order-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.55rem 1rem;
+  margin: 0;
+  padding: 0.7rem 0.8rem;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.workspace-app .tpl-order-meta div {
+  min-width: 0;
+}
+
+.workspace-app .tpl-order-meta dt {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+}
+
+.workspace-app .tpl-order-meta dd {
+  margin: 0.1rem 0 0;
+  font-size: 0.82rem;
+  color: #0f172a;
+  overflow-wrap: anywhere;
+}
+
+.workspace-app .tpl-order-claimed {
+  margin: 0;
+  padding: 0.45rem 0.7rem;
+  border-radius: 8px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.workspace-app .tpl-order-waiting {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #92400e;
+}
+
+.workspace-app .tpl-order-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.workspace-app .tpl-order-confirm {
+  flex: 1;
+  min-width: 220px;
+  display: grid;
+}
+
+.workspace-app .tpl-order-btn {
+  min-height: 40px;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.workspace-app .tpl-order-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .workspace-app .tpl-order-actions {
+    flex-direction: column;
+  }
+
+  .workspace-app .tpl-order-confirm {
+    min-width: 0;
+  }
+}
+
 .workspace-app .saas-salary-mask {
   display: inline-flex;
   align-items: center;
