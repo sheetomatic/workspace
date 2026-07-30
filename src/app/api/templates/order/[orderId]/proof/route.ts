@@ -55,7 +55,12 @@ export async function POST(
   const file = form.get("file");
 
   let proofFile:
-    | { name: string; mimeType: string; size: number; data: Buffer }
+    | {
+        name: string;
+        mimeType: string;
+        size: number;
+        data: Uint8Array<ArrayBuffer>;
+      }
     | undefined;
   if (file instanceof File && file.size > 0) {
     if (file.size > MAX_BYTES) {
@@ -74,7 +79,7 @@ export async function POST(
       name: file.name,
       mimeType: file.type,
       size: file.size,
-      data: Buffer.from(await file.arrayBuffer()),
+      data: new Uint8Array(await file.arrayBuffer()),
     };
   }
 

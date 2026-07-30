@@ -189,7 +189,12 @@ export async function mapPendingTemplateOrdersByLeadIds(leadIds: string[]) {
 export async function submitTemplatePaymentProof(params: {
   orderId: string;
   utr?: string;
-  file?: { name: string; mimeType: string; size: number; data: Buffer };
+  file?: {
+    name: string;
+    mimeType: string;
+    size: number;
+    data: Uint8Array<ArrayBuffer>;
+  };
 }) {
   const utr = params.utr?.trim() || null;
   if (!utr && !params.file) {
