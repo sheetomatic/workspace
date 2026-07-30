@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatInr } from "@/lib/leads/categories";
+import { MaskedSalary } from "@/components/hr/masked-salary";
 import type { EmployeeListItem } from "@/lib/hr/employees";
 import { TASK_DEPARTMENT_LABELS } from "@/lib/tasks";
 
@@ -86,9 +86,11 @@ export function EmployeesTable({
                   <td>{statutory || "—"}</td>
                   {isAdmin ? (
                     <td>
-                      {row.monthlySalary != null && row.monthlySalary > 0
-                        ? formatInr(row.monthlySalary)
-                        : "—"}
+                      {row.monthlySalary != null && row.monthlySalary > 0 ? (
+                        <MaskedSalary amount={row.monthlySalary} />
+                      ) : (
+                        "—"
+                      )}
                     </td>
                   ) : null}
                   <td>
