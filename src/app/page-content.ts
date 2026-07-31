@@ -33,6 +33,7 @@ export const footerProductLinks = [
   { href: "/services/checklist", label: "Checklists" },
   { href: "/services/tasks", label: "Tasks" },
   { href: "/ai", label: "Sheetomatic AI" },
+  { href: "/whatsapp-plans", label: "WhatsApp API" },
   { href: "/pricing", label: "Pricing" },
   { href: WORKSPACE_LOGIN_HREF, label: "Sign in" },
 ];
