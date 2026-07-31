@@ -131,11 +131,7 @@ export function AttendancePunchPanel({
                 setIsError(false);
                 const result = await recordCheckInAction(new FormData());
                 if (!result.ok) {
-                  setMessage(
-                    result.code === "OUT_OF_LOCATION"
-                      ? HR_OUT_OF_LOCATION_MESSAGE
-                      : result.message,
-                  );
+                  setMessage(result.message || HR_OUT_OF_LOCATION_MESSAGE);
                   setIsError(true);
                   return;
                 }

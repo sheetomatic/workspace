@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/db";
 import type { SessionUser } from "@/lib/auth";
-import { HR_OUT_OF_LOCATION_MESSAGE } from "@/lib/hr/hr-result";
 import {
   listActiveHrWorkSites,
   resolveHrSiteGeo,
@@ -60,11 +59,54 @@ export async function listTodayAttendance(
   });
 }
 
+/**
+ * GPS accuracy allowance: a phone reporting ±80m accuracy while standing
+ * inside the office can read coordinates outside a 200m fence. We extend the
+ * fence by the reported accuracy, capped so a very weak signal cannot be used
+ * to check in from far away.
+ */
+const GPS_ACCURACY_ALLOWANCE_CAP_M = 150;
+
+function fenceCheck(params: {
+  distanceM: number;
+  radiusM: number;
+  accuracyM: number | null;
+}) {
+  const allowance = Math.min(
+    Math.max(params.accuracyM ?? 0, 0),
+    GPS_ACCURACY_ALLOWANCE_CAP_M,
+  );
+  return {
+    ok: params.distanceM <= params.radiusM + allowance,
+    allowedM: params.radiusM + allowance,
+  };
+}
+
+function outOfLocationError(params: {
+  distanceM: number;
+  allowedM: number;
+  siteName: string;
+  accuracyM: number | null;
+}) {
+  const distance =
+    params.distanceM >= 1000
+      ? `${(params.distanceM / 1000).toFixed(1)}km`
+      : `${Math.round(params.distanceM)}m`;
+  const weakGps =
+    params.accuracyM != null && params.accuracyM > 100
+      ? ` Your GPS accuracy is weak (±${Math.round(params.accuracyM)}m) — move near a window or open sky, tap "Refresh location", and try again.`
+      : "";
+  return new Error(
+    `Out of location — you appear ${distance} from ${params.siteName} (allowed ${Math.round(params.allowedM)}m).${weakGps}`,
+  );
+}
+
 export async function checkInAttendance(params: {
   user: SessionUser;
   siteId?: string | null;
   geoLat?: number;
   geoLng?: number;
+  accuracyM?: number | null;
   method?: "WEB" | "GEO" | "FACE";
 }) {
   const workDate = startOfToday();
@@ -130,6 +172,10 @@ export async function checkInAttendance(params: {
       membership?.primarySiteId != null);
 
   let geoFenceOk: boolean | null = null;
+  const accuracyM =
+    params.accuracyM != null && Number.isFinite(params.accuracyM)
+      ? params.accuracyM
+      : null;
 
   if (enforceFence && siteGeo) {
     if (params.geoLat == null || params.geoLng == null) {
@@ -143,9 +189,19 @@ export async function checkInAttendance(params: {
       siteGeo.lat,
       siteGeo.lng,
     );
-    geoFenceOk = distance <= siteGeo.geoFenceRadiusM;
+    const check = fenceCheck({
+      distanceM: distance,
+      radiusM: siteGeo.geoFenceRadiusM,
+      accuracyM,
+    });
+    geoFenceOk = check.ok;
     if (!geoFenceOk) {
-      throw new Error(HR_OUT_OF_LOCATION_MESSAGE);
+      throw outOfLocationError({
+        distanceM: distance,
+        allowedM: check.allowedM,
+        siteName: siteGeo.name,
+        accuracyM,
+      });
     }
   } else if (params.geoLat != null && params.geoLng != null && siteGeo) {
     const distance = haversineMeters(
@@ -154,10 +210,20 @@ export async function checkInAttendance(params: {
       siteGeo.lat,
       siteGeo.lng,
     );
-    geoFenceOk = distance <= siteGeo.geoFenceRadiusM;
+    const check = fenceCheck({
+      distanceM: distance,
+      radiusM: siteGeo.geoFenceRadiusM,
+      accuracyM,
+    });
+    geoFenceOk = check.ok;
     // FLEXIBLE: record geoFenceOk but never block.
     if (!isFlexible && !geoFenceOk) {
-      throw new Error(HR_OUT_OF_LOCATION_MESSAGE);
+      throw outOfLocationError({
+        distanceM: distance,
+        allowedM: check.allowedM,
+        siteName: siteGeo.name,
+        accuracyM,
+      });
     }
   }
 

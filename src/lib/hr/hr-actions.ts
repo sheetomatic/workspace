@@ -75,6 +75,7 @@ export async function recordCheckInAction(
 
   const geoLat = Number(formData.get("geoLat"));
   const geoLng = Number(formData.get("geoLng"));
+  const accuracyM = Number(formData.get("accuracyM"));
   const siteId = String(formData.get("siteId") ?? "").trim() || null;
 
   try {
@@ -83,6 +84,7 @@ export async function recordCheckInAction(
       siteId,
       geoLat: Number.isFinite(geoLat) ? geoLat : undefined,
       geoLng: Number.isFinite(geoLng) ? geoLng : undefined,
+      accuracyM: Number.isFinite(accuracyM) ? accuracyM : null,
       method: Number.isFinite(geoLat) ? "GEO" : "WEB",
     });
     revalidateHr();

@@ -22,7 +22,8 @@ export function mapCheckInError(error: unknown): Extract<HrActionResult, { ok: f
     message.toLowerCase().includes("outside") ||
     message.toLowerCase().includes("out of location")
   ) {
-    return hrActionFailure("OUT_OF_LOCATION", HR_OUT_OF_LOCATION_MESSAGE);
+    // Keep the detailed distance/accuracy message when available.
+    return hrActionFailure("OUT_OF_LOCATION", message || HR_OUT_OF_LOCATION_MESSAGE);
   }
   if (message.toLowerCase().includes("gps")) {
     return hrActionFailure("GEO_REQUIRED", HR_GEO_REQUIRED_MESSAGE);

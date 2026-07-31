@@ -47,6 +47,7 @@ export function GeoPunchForm({
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
   const [pending, setPending] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [manualLat, setManualLat] = useState("");
   const [manualLng, setManualLng] = useState("");
   const [accuracyM, setAccuracyM] = useState<number | null>(null);
@@ -60,27 +61,81 @@ export function GeoPunchForm({
     [visits, selectedVisitId],
   );
 
+  const GOOD_ACCURACY_M = 25;
+  const GPS_WATCH_MS = 12000;
+
+  function applyFix(pos: GeolocationPosition) {
+    setManualLat(String(pos.coords.latitude));
+    setManualLng(String(pos.coords.longitude));
+    setAccuracyM(
+      Number.isFinite(pos.coords.accuracy) ? pos.coords.accuracy : null,
+    );
+  }
+
+  /**
+   * Watch GPS for up to 12s and keep the most accurate fix instead of the
+   * first (often cached / Wi-Fi coarse) reading — the main cause of false
+   * "out of location" failures.
+   */
   function captureLocation() {
     if (!navigator.geolocation) {
       setMessage("Geolocation is not supported on this device.");
       setIsError(true);
       return;
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setManualLat(String(pos.coords.latitude));
-        setManualLng(String(pos.coords.longitude));
-        setAccuracyM(
-          Number.isFinite(pos.coords.accuracy) ? pos.coords.accuracy : null,
+    setLocating(true);
+    setMessage("Getting GPS fix…");
+    setIsError(false);
+
+    let best: GeolocationPosition | null = null;
+    let finished = false;
+
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      navigator.geolocation.clearWatch(watchId);
+      window.clearTimeout(timeoutId);
+      setLocating(false);
+      if (!best) {
+        setMessage(
+          "Could not read location. Allow location access (enable Precise Location) and try again.",
         );
-        setMessage("Location captured.");
-        setIsError(false);
-      },
-      () => {
-        setMessage("Could not read location. Allow GPS and try again.");
         setIsError(true);
+        return;
+      }
+      applyFix(best);
+      const acc = best.coords.accuracy;
+      if (Number.isFinite(acc) && acc > 100) {
+        setMessage(
+          `Location captured (±${Math.round(acc)}m — weak signal). If check-in fails, move near a window or open sky and refresh location.`,
+        );
+      } else {
+        setMessage("Location captured.");
+      }
+      setIsError(false);
+    };
+
+    const timeoutId = window.setTimeout(finish, GPS_WATCH_MS);
+
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        if (!best || pos.coords.accuracy < best.coords.accuracy) {
+          best = pos;
+          setMessage(
+            `Improving GPS accuracy… ±${Math.round(pos.coords.accuracy)}m`,
+          );
+        }
+        if (pos.coords.accuracy <= GOOD_ACCURACY_M) {
+          finish();
+        }
       },
-      { enableHighAccuracy: true, timeout: 15000 },
+      (err) => {
+        // Permission denied fails immediately; other errors wait for timeout.
+        if (err.code === err.PERMISSION_DENIED) {
+          finish();
+        }
+      },
+      { enableHighAccuracy: true, timeout: GPS_WATCH_MS, maximumAge: 0 },
     );
   }
 
@@ -219,8 +274,13 @@ export function GeoPunchForm({
           type="button"
           className="btn-cta btn-secondary"
           onClick={captureLocation}
+          disabled={locating}
         >
-          {manualLat && manualLng ? "Refresh location" : "Use my location"}
+          {locating
+            ? "Locating…"
+            : manualLat && manualLng
+              ? "Refresh location"
+              : "Use my location"}
         </button>
         <button type="submit" className="btn-cta btn-primary" disabled={pending}>
           {pending ? "Saving..." : submitLabel}
