@@ -34,11 +34,7 @@
     },
     {
       "path": "/api/cron/leads-sync",
-      "schedule": "*/15 3-15 * * *"
-    },
-    {
-      "path": "/api/cron/leads-sync",
-      "schedule": "0 0-2,16-23 * * *"
+      "schedule": "0 3-15 * * *"
     },
     {
       "path": "/api/cron/hr-attendance-reminders?kind=mark",
@@ -54,7 +50,7 @@
     },
     {
       "path": "/api/cron/leads-nurture",
-      "schedule": "0 */2 * * *"
+      "schedule": "30 3-15/2 * * *"
     },
     {
       "path": "/api/cron/leads-daily-digest",
