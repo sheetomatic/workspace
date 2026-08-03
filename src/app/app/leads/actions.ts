@@ -1285,6 +1285,14 @@ export async function createManualInboundLead(formData: FormData) {
     hardBlockDuplicates: true,
   });
 
+  if (result.teamMember) {
+    return {
+      ok: false as const,
+      message:
+        "This number belongs to a team member of this workspace — team numbers are not tracked as leads.",
+    };
+  }
+
   if (result.duplicate && !result.lead) {
     const match = result.matches?.[0];
     return {

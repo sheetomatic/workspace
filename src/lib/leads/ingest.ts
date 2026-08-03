@@ -186,10 +186,37 @@ export type LeadIngestResult = {
   fmsBridge: Awaited<ReturnType<typeof bridgeInboundLeadToFms>> | null;
   created: boolean;
   skipped?: true;
+  /** Set when the phone belongs to a workspace team member (never a lead). */
+  teamMember?: true;
   duplicate?: boolean;
   matches?: DuplicateLeadMatch[];
   linkedExisting?: boolean;
 };
+
+/**
+ * Team members' own numbers must never become leads (e.g. staff testing the
+ * WhatsApp bot or filling the inquiry form). Matches on the last 10 digits.
+ */
+export async function isTeamMemberPhone(
+  organizationId: string,
+  phone: string | null | undefined,
+) {
+  const digits = normalizePhone(phone);
+  if (!digits) {
+    return false;
+  }
+  const last10 = digits.slice(-10);
+  const members = await prisma.user.findMany({
+    where: {
+      phone: { not: null },
+      memberships: { some: { organizationId } },
+    },
+    select: { phone: true },
+  });
+  return members.some(
+    (member) => normalizePhone(member.phone)?.slice(-10) === last10,
+  );
+}
 
 export async function ingestInboundLead(
   input: LeadIngestInput,
@@ -214,6 +241,16 @@ export async function ingestInboundLead(
 
   const phone = normalizePhone(input.phone);
   const externalId = input.externalId?.trim() || null;
+
+  if (phone && (await isTeamMemberPhone(input.organizationId, phone))) {
+    return {
+      lead: null,
+      fmsBridge: null,
+      created: false,
+      skipped: true as const,
+      teamMember: true as const,
+    };
+  }
 
   let lead = externalId
     ? await prisma.inboundLead.findUnique({
