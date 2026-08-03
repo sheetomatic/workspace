@@ -244,6 +244,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
 
         <LeadsCrmWorkspace
           canManage={canManage}
+          currentUserId={user.id}
           focusMode
           initialSelectedLeadId={lead?.id ?? focusLeadId}
           initialTab={initialTab}
@@ -399,6 +400,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
 
       <LeadsCrmWorkspace
         canManage={canManage}
+        currentUserId={user.id}
         focusMode={false}
         initialSelectedLeadId={params.leadId ?? null}
         initialTab={initialTab}

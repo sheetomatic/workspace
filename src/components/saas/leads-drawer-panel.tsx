@@ -254,6 +254,7 @@ function defaultFollowUpLocal() {
 export function LeadDrawerPanel({
   lead,
   canManage,
+  currentUserId = null,
   serviceCatalog,
   teamMembers,
   organizationName,
@@ -268,6 +269,8 @@ export function LeadDrawerPanel({
 }: {
   lead: LeadDrawerData;
   canManage: boolean;
+  /** Enables "work my assigned lead" controls for STAFF users. */
+  currentUserId?: string | null;
   serviceCatalog: CatalogItem[];
   teamMembers: Array<{ user: { id: string; name: string | null; email: string } }>;
   organizationName: string;
@@ -281,6 +284,11 @@ export function LeadDrawerPanel({
   initialTab?: DrawerTab | string | null;
 }) {
   void _onDeleted;
+  // Staff can work (call, note, follow up, meet) leads assigned to them,
+  // even though full management stays MANAGER+.
+  const canWork =
+    canManage ||
+    (Boolean(currentUserId) && lead.assignedTo?.id === currentUserId);
   const router = useRouter();
   const [fieldPending, startFieldTransition] = useTransition();
   const [, startActionTransition] = useTransition();
@@ -1440,7 +1448,7 @@ export function LeadDrawerPanel({
             </span>
           </summary>
           <div className="leads-collapse__body">
-          {canManage ? (
+          {canWork ? (
             <label className="leads-drawer-field">
               Calling status
               <select
@@ -1504,7 +1512,7 @@ export function LeadDrawerPanel({
             placeholder="What was discussed in the meeting?"
             rows={6}
           />
-          {canManage ? (
+          {canWork ? (
             <button
               type="button"
               className="btn-primary"
@@ -1530,7 +1538,7 @@ export function LeadDrawerPanel({
           </div>
           </details>
 
-          {canManage ? (
+          {canWork ? (
             <details className="leads-collapse" open>
             <summary className="leads-collapse__head">
               <h3>Schedule meeting with client</h3>
@@ -1955,7 +1963,7 @@ export function LeadDrawerPanel({
               </div>
             ) : null}
 
-            {canManage ? (
+            {canWork ? (
               <div className="leads-followup-wa-options">
                 <label className="leads-followup-check">
                   <input
@@ -1982,7 +1990,7 @@ export function LeadDrawerPanel({
               </p>
             ) : null}
 
-            {canManage ? (
+            {canWork ? (
               <button
                 type="button"
                 className="btn-secondary"
@@ -2550,7 +2558,7 @@ export function LeadDrawerPanel({
           <p className="leads-machine-muted">
             Notes, calls, WhatsApp, meetings, and stage changes — newest first.
           </p>
-          {canManage ? (
+          {canWork ? (
             <div className="leads-activity-composer">
               <div
                 className="leads-activity-composer-types"

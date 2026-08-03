@@ -145,6 +145,7 @@ export function LeadsCrmWorkspace({
   workspaceTotal,
   teamMembers,
   canManage,
+  currentUserId = null,
   sort,
   view = "list",
   serviceCatalog,
@@ -164,6 +165,8 @@ export function LeadsCrmWorkspace({
   workspaceTotal: number;
   teamMembers: TeamMember[];
   canManage: boolean;
+  /** Lets STAFF work leads assigned to them in the drawer. */
+  currentUserId?: string | null;
   sort: "newest" | "oldest";
   view?: LeadsViewMode;
   serviceCatalog: Array<{
@@ -778,6 +781,7 @@ export function LeadsCrmWorkspace({
           <LeadDrawerPanel
             key={selected.id}
             canManage={canManage}
+            currentUserId={currentUserId}
             initialTab={parseCrmDrawerTab(initialTab) ?? initialTab}
             lead={selected}
             listParams={listParams}
