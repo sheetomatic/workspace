@@ -68,6 +68,8 @@ export type LeadIngestInput = {
   connectionId?: string | null;
   /** When true, empty sheet cells must not wipe CRM fields already saved in the app. */
   sheetPull?: boolean;
+  /** Skip the "new lead" owner notification (bulk imports / connector syncs). */
+  suppressOwnerNotify?: boolean;
   actorUserId?: string;
   /**
    * When true (manual create), refuse to create if phone/email matches another lead.
@@ -453,6 +455,27 @@ export async function ingestInboundLead(
     }).catch((error) => {
       console.error("lead welcome nurture", error);
     });
+  }
+
+  if (created && !input.suppressOwnerNotify && !input.sheetPull) {
+    // Owners/admins get pinged so the lead gets assigned quickly.
+    const { notifyOwnersNewLead, notifyLeadAssigned } = await import(
+      "@/lib/leads/notify"
+    );
+    void notifyOwnersNewLead({
+      organizationId: input.organizationId,
+      leadId: lead.id,
+      channel: input.channel,
+      actorUserId: input.createdByUserId ?? input.actorUserId ?? null,
+    }).catch((error) => console.error("lead owner notify", error));
+    if (lead.assignedToId) {
+      void notifyLeadAssigned({
+        organizationId: input.organizationId,
+        leadId: lead.id,
+        assigneeUserId: lead.assignedToId,
+        actorUserId: input.createdByUserId ?? input.actorUserId ?? null,
+      }).catch((error) => console.error("lead assignee notify", error));
+    }
   }
 
   return {

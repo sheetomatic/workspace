@@ -72,6 +72,7 @@ import {
   isInboundLeadFollowUpType,
   type InboundLeadFollowUpTypeId,
 } from "@/lib/leads/follow-up-types";
+import { notifyLeadAssigned } from "@/lib/leads/notify";
 import { sendLeadNurtureStep } from "@/lib/leads/nurture/run";
 import {
   getLeadNurtureConfig,
@@ -172,6 +173,16 @@ export async function assignInboundLead(leadId: string, assigneeUserId: string |
       assigneeUserId,
       assigneeName: assignee?.name,
       actorUserId: user.id,
+    });
+    // Notify the assignee (in-app + email + WhatsApp) off the critical path.
+    after(() => {
+      void notifyLeadAssigned({
+        organizationId: user.organizationId,
+        leadId,
+        assigneeUserId,
+        actorUserId: user.id,
+        actorName: user.name,
+      }).catch((error) => console.error("[lead-assign-notify]", error));
     });
   }
 
@@ -1575,6 +1586,11 @@ export async function scheduleLeadClientMeeting(params: {
   meetUrl?: string;
   notes?: string;
   sendEmail?: boolean;
+  /**
+   * "client_and_me" (default): invite the client + send a copy to the scheduler.
+   * "me_only": no client email needed — only the scheduler gets the invite.
+   */
+  audience?: "client_and_me" | "me_only";
 }) {
   const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
@@ -1600,6 +1616,7 @@ export async function scheduleLeadClientMeeting(params: {
       id: true,
       name: true,
       email: true,
+      phone: true,
       company: true,
       requirement: true,
       meetingNotes: true,
@@ -1610,12 +1627,14 @@ export async function scheduleLeadClientMeeting(params: {
     return { ok: false as const, message: "Lead not found." };
   }
 
+  const meOnly = params.audience === "me_only";
   const toEmail = (params.clientEmail?.trim() || lead.email?.trim() || "").toLowerCase();
-  const shouldEmail = params.sendEmail !== false;
+  const shouldEmail = !meOnly && params.sendEmail !== false;
   if (shouldEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail)) {
     return {
       ok: false as const,
-      message: "Add a valid client email to send the meeting link.",
+      message:
+        "Add a valid client email to send the meeting link — or schedule it for yourself only.",
     };
   }
 
@@ -1687,15 +1706,62 @@ export async function scheduleLeadClientMeeting(params: {
         }
       }
 
+      // Always send the scheduler their own copy so the meeting is on their radar.
+      let organizerEmailSent = false;
+      const organizerEmail = user.email?.trim().toLowerCase();
+      if (organizerEmail && organizerEmail !== toEmail) {
+        const clientLabel =
+          lead.name?.trim() || lead.company?.trim() || lead.phone?.trim() || "client";
+        const copy = await sendPlainEmail({
+          toEmail: organizerEmail,
+          subject: `Meeting with ${clientLabel} — ${invite.whenLabel}`,
+          text: [
+            `Your meeting with ${clientLabel} is scheduled.`,
+            "",
+            `When: ${invite.whenLabel}`,
+            meetUrl ? `Join link: ${meetUrl}` : null,
+            scheduleNote ? `Notes: ${scheduleNote}` : null,
+            "",
+            "Add to your calendar:",
+            invite.calendarUrl,
+          ]
+            .filter((line) => line !== null)
+            .join("\n"),
+        });
+        organizerEmailSent = copy.sent;
+      }
+
+      // WhatsApp the client the meeting details when we have their number.
+      let whatsappSent = false;
+      const clientPhone = lead.phone?.trim();
+      if (!meOnly && clientPhone) {
+        const { sendWhatsAppText } = await import("@/lib/whatsapp-bot/send");
+        const wa = await sendWhatsAppText({
+          organizationId: user.organizationId,
+          toPhone: clientPhone,
+          body: [
+            `Hi ${lead.name?.trim().split(/\s+/)[0] || "there"}, your meeting with ${organization?.name?.trim() || "Sheetomatic"} is scheduled.`,
+            `When: ${invite.whenLabel}`,
+            meetUrl ? `Join link: ${meetUrl}` : null,
+            scheduleNote ? `Notes: ${scheduleNote}` : null,
+          ]
+            .filter(Boolean)
+            .join("\n\n"),
+        }).catch(() => ({ sent: false as const }));
+        whatsappSent = wa.sent;
+      }
+
       await logInboundLeadActivity({
         organizationId: user.organizationId,
         leadId: lead.id,
         type: "MEETING",
         body: [
-          `Meeting scheduled for ${invite.whenLabel}`,
+          `Meeting scheduled for ${invite.whenLabel}${meOnly ? " (internal — no client invite)" : ""}`,
           meetUrl ? `Join: ${meetUrl}` : null,
           emailSent ? `Invite emailed to ${toEmail}` : null,
           !emailSent && shouldEmail ? emailMessage : null,
+          whatsappSent ? "WhatsApp sent to client" : null,
+          organizerEmailSent ? `Copy emailed to ${user.email}` : null,
           scheduleNote,
         ]
           .filter(Boolean)
@@ -1707,6 +1773,9 @@ export async function scheduleLeadClientMeeting(params: {
           durationMinutes,
           calendarUrl: invite.calendarUrl,
           emailSent,
+          organizerEmailSent,
+          whatsappSent,
+          audience: meOnly ? "me_only" : "client_and_me",
         },
       }).catch((error) => {
         console.error("[leads-activity]", error);
@@ -1732,8 +1801,10 @@ export async function scheduleLeadClientMeeting(params: {
       email: toEmail || lead.email,
     },
     message: shouldEmail
-      ? `Meeting scheduled. Invite will be sent to ${toEmail}.`
-      : "Meeting scheduled.",
+      ? `Meeting scheduled. Invite will be sent to ${toEmail} (plus a copy to you${lead.phone?.trim() ? ", and WhatsApp to the client if connected" : ""}).`
+      : meOnly
+        ? "Meeting scheduled for you. Calendar invite sent to your email."
+        : "Meeting scheduled.",
   };
 }
 
@@ -3073,6 +3144,7 @@ export async function importLeadsFromCsvAction(formData: FormData) {
         createdByUserId: user.id,
         createFmsJob: false,
         hardBlockDuplicates: false,
+        suppressOwnerNotify: true,
       });
       if (!result.lead) {
         skipped += 1;
@@ -3230,4 +3302,286 @@ export async function bookLeadTrainingSlotsAction(formData: FormData) {
   revalidatePath("/app/leads");
   revalidatePath("/app/my-space/training");
   return { ok: result.ok, message: result.message };
+}
+
+/**
+ * Fill ONLY missing client details on a lead (email, address, PIN, company,
+ * name). Never overwrites existing values. Staff can use it on leads assigned
+ * to them; managers+ on any lead.
+ */
+export async function fillLeadPendingDetails(params: {
+  leadId: string;
+  name?: string;
+  email?: string;
+  address?: string;
+  zipCode?: string;
+  company?: string;
+}) {
+  const user = await requireSession(undefined, { module: "CRM" });
+
+  const lead = await prisma.inboundLead.findFirst({
+    where: { id: params.leadId, organizationId: user.organizationId },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      email: true,
+      address: true,
+      zipCode: true,
+      company: true,
+      requirement: true,
+      status: true,
+      callingStatus: true,
+      pipeValue: true,
+      assignedToId: true,
+    },
+  });
+  if (!lead) {
+    return { ok: false as const, message: "Lead not found." };
+  }
+
+  const canManage = hasMinimumRole(user.role, "MANAGER");
+  if (!canManage && lead.assignedToId !== user.id) {
+    return {
+      ok: false as const,
+      message: "You can only update leads assigned to you.",
+    };
+  }
+
+  const patch: {
+    name?: string;
+    email?: string;
+    address?: string;
+    zipCode?: string;
+    company?: string;
+  } = {};
+  const filled: string[] = [];
+
+  const maybeFill = (
+    key: keyof typeof patch,
+    label: string,
+    existing: string | null,
+    next: string | undefined,
+  ) => {
+    const value = next?.trim();
+    if (!value) return;
+    if (existing?.trim()) return; // only pending fields — never overwrite
+    patch[key] = value;
+    filled.push(label);
+  };
+
+  maybeFill("name", "name", lead.name, params.name);
+  maybeFill("email", "email", lead.email, params.email);
+  maybeFill("address", "address", lead.address, params.address);
+  maybeFill("zipCode", "PIN code", lead.zipCode, params.zipCode);
+  maybeFill("company", "company", lead.company, params.company);
+
+  if (filled.length === 0) {
+    return {
+      ok: false as const,
+      message: "Nothing to update — these details are already filled.",
+    };
+  }
+
+  if (patch.email) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(patch.email)) {
+      return { ok: false as const, message: "Enter a valid email address." };
+    }
+    const duplicates = await findDuplicateLeads(user.organizationId, {
+      phone: null,
+      email: patch.email,
+      excludeLeadId: lead.id,
+    });
+    const activeDuplicates = duplicates.filter((m) => !m.archivedAt);
+    if (activeDuplicates.length > 0) {
+      return {
+        ok: false as const,
+        message: `Another lead already uses this email (${activeDuplicates[0].name ?? activeDuplicates[0].id}).`,
+      };
+    }
+    patch.email = patch.email.toLowerCase();
+  }
+
+  const { score, temperature } = computeLeadScore({
+    phone: lead.phone,
+    email: patch.email ?? lead.email,
+    company: patch.company ?? lead.company,
+    requirement: lead.requirement,
+    status: lead.status,
+    callingStatus: lead.callingStatus,
+    pipeValue: lead.pipeValue != null ? Number(lead.pipeValue) : null,
+  });
+
+  await withDbRetry((db) =>
+    db.inboundLead.updateMany({
+      where: { id: lead.id, organizationId: user.organizationId },
+      data: { ...patch, score, temperature, modifiedAt: new Date() },
+    }),
+  );
+
+  scheduleInboundLeadActivity({
+    organizationId: user.organizationId,
+    leadId: lead.id,
+    type: "EDIT",
+    body: `Client info completed: ${filled.join(", ")}`,
+    createdByUserId: user.id,
+  });
+
+  exportLeadToGoogleSheetAfterSave(user.organizationId, lead.id);
+  revalidatePath("/app/leads");
+
+  return {
+    ok: true as const,
+    message: `Updated ${filled.join(", ")}.`,
+    lead: { id: lead.id, ...patch, score, temperature },
+  };
+}
+
+/**
+ * Assign project work on a lead to a team member as a DelegatedTask with a
+ * deadline. Task status (pending / in progress / completed) is tracked in the
+ * Tasks module; the assignee is notified by email / WhatsApp / in-app bell.
+ */
+export async function assignLeadProjectWork(params: {
+  leadId: string;
+  assigneeUserId: string;
+  title: string;
+  /** datetime-local string */
+  deadline: string;
+  instructions?: string;
+  orderNumber?: string;
+}) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false as const, message: "Not allowed." };
+  }
+
+  const title = params.title.trim();
+  if (title.length < 3) {
+    return { ok: false as const, message: "Give the work a short title." };
+  }
+
+  const dueAt = new Date(params.deadline);
+  if (Number.isNaN(dueAt.getTime())) {
+    return { ok: false as const, message: "Pick a valid deadline." };
+  }
+  if (dueAt.getTime() < Date.now()) {
+    return { ok: false as const, message: "Deadline must be in the future." };
+  }
+
+  if (!(await isActiveOrgMember(user.organizationId, params.assigneeUserId))) {
+    return {
+      ok: false as const,
+      message: "Selected assignee must be an active member of this workspace.",
+    };
+  }
+
+  const [lead, assignee, organization] = await Promise.all([
+    prisma.inboundLead.findFirst({
+      where: { id: params.leadId, organizationId: user.organizationId },
+      select: { id: true, name: true, company: true, phone: true },
+    }),
+    prisma.user.findFirst({
+      where: { id: params.assigneeUserId },
+      select: { id: true, name: true, email: true, phone: true },
+    }),
+    prisma.organization.findUnique({
+      where: { id: user.organizationId },
+      select: { name: true },
+    }),
+  ]);
+  if (!lead || !assignee) {
+    return { ok: false as const, message: "Lead or assignee not found." };
+  }
+
+  const clientLabel =
+    lead.name?.trim() || lead.company?.trim() || lead.phone?.trim() || "client";
+  const instructions = [
+    params.instructions?.trim() || null,
+    `Client: ${clientLabel}`,
+    params.orderNumber ? `Project / order: ${params.orderNumber}` : null,
+    `CRM lead: /app/leads?period=all&leadId=${lead.id}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const { getWorkspaceIntegrationStatus } = await import(
+    "@/lib/workspace-integration-status"
+  );
+  const integration = await getWorkspaceIntegrationStatus(user.organizationId);
+
+  const task = await prisma.delegatedTask.create({
+    data: {
+      organizationId: user.organizationId,
+      title,
+      instructions,
+      dueAt,
+      assigneeUserId: assignee.id,
+      createdById: user.id,
+      priority: "HIGH",
+      category: "Project",
+      remindViaEmail: integration.emailConfigured,
+      remindViaWhatsApp: integration.whatsappConfigured,
+    },
+  });
+
+  // Notify assignee (email + WhatsApp via task pattern, plus in-app bell).
+  after(() => {
+    void (async () => {
+      const { notifyTaskAssignee } = await import(
+        "@/lib/task-assignment-notify"
+      );
+      if (assignee.email) {
+        await notifyTaskAssignee({
+          taskId: task.id,
+          taskTitle: title,
+          taskDescription: instructions,
+          priority: "HIGH",
+          dueAt,
+          frequency: "ONCE",
+          isRecurring: false,
+          assignee: {
+            name: assignee.name,
+            email: assignee.email,
+            phone: assignee.phone,
+          },
+          organizationId: user.organizationId,
+          organizationName: organization?.name?.trim() || "Sheetomatic",
+          remindViaEmail: integration.emailConfigured,
+          remindViaWhatsApp: integration.whatsappConfigured,
+        });
+      }
+      await prisma.userAppNotification.create({
+        data: {
+          userId: assignee.id,
+          organizationId: user.organizationId,
+          kind: "PROJECT_ASSIGNED",
+          title: "Project work assigned to you",
+          body: `${title} — deadline ${dueAt.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`,
+          href: "/app/tasks/today",
+        },
+      });
+    })().catch((error) => console.error("[project-assign-notify]", error));
+  });
+
+  const deadlineLabel = dueAt.toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  scheduleInboundLeadActivity({
+    organizationId: user.organizationId,
+    leadId: lead.id,
+    type: "NOTE",
+    body: `Project work assigned to ${assignee.name || assignee.email || "team member"} — "${title}", deadline ${deadlineLabel}`,
+    createdByUserId: user.id,
+  });
+
+  revalidatePath("/app/leads");
+  revalidatePath("/app/tasks");
+  return {
+    ok: true as const,
+    message: `Assigned to ${assignee.name || "team member"} with deadline ${deadlineLabel}. They track it in Tasks (pending → in progress → completed).`,
+  };
 }

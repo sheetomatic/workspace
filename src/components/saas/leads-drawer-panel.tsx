@@ -20,9 +20,11 @@ import {
   applyAiSuggestedLeadStatus,
   archiveInboundLeadAction,
   assignInboundLead,
+  assignLeadProjectWork,
   clearInboundLeadHistory,
   confirmTemplatePaymentForLeadAction,
   deleteInboundLeadActivity,
+  fillLeadPendingDetails,
   listLeadDuplicateMatchesAction,
   logLeadTimelineActivity,
   mergeInboundLeadsAction,
@@ -354,10 +356,22 @@ export function LeadDrawerPanel({
   const [meetingAt, setMeetingAt] = useState(defaultFollowUpLocal());
   const [meetingDuration, setMeetingDuration] = useState(45);
   const [meetingEmail, setMeetingEmail] = useState(lead.email ?? "");
+  const [meetingAudience, setMeetingAudience] = useState<
+    "client_and_me" | "me_only"
+  >(lead.email?.trim() ? "client_and_me" : "me_only");
   const [meetingMeetUrl, setMeetingMeetUrl] = useState(DEFAULT_CLIENT_MEET_URL);
   const [gcalActive, setGcalActive] = useState(false);
   const [meetingScheduleMsg, setMeetingScheduleMsg] = useState<string | null>(null);
   const [meetingScheduleErr, setMeetingScheduleErr] = useState<string | null>(null);
+  const [callingStatusErr, setCallingStatusErr] = useState<string | null>(null);
+  const [projectAssigneeId, setProjectAssigneeId] = useState("");
+  const [projectWorkTitle, setProjectWorkTitle] = useState("");
+  const [projectDeadline, setProjectDeadline] = useState("");
+  const [projectWorkNotes, setProjectWorkNotes] = useState("");
+  const [projectAssignMsg, setProjectAssignMsg] = useState<string | null>(null);
+  const [projectAssignErr, setProjectAssignErr] = useState<string | null>(null);
+  const [pendingInfoMsg, setPendingInfoMsg] = useState<string | null>(null);
+  const [pendingInfoErr, setPendingInfoErr] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentDate, setPaymentDate] = useState(
     new Date().toISOString().slice(0, 10),
@@ -507,6 +521,7 @@ export function LeadDrawerPanel({
     setAssignedToId(lead.assignedTo?.id ?? "");
     setCallingStatus(lead.callingStatus);
     setMeetingEmail(lead.email ?? "");
+    setMeetingAudience(lead.email?.trim() ? "client_and_me" : "me_only");
     setMeetingMeetUrl(DEFAULT_CLIENT_MEET_URL);
     setMeetingScheduleMsg(null);
     setMeetingScheduleErr(null);
@@ -1302,6 +1317,116 @@ export function LeadDrawerPanel({
               )}
             </div>
           )}
+
+          {(!lead.email?.trim() ||
+            !lead.address?.trim() ||
+            !lead.zipCode?.trim() ||
+            !lead.company?.trim() ||
+            !lead.name?.trim()) ? (
+            <div className="leads-pending-info">
+              <h3>Complete missing client info</h3>
+              <p className="leads-machine-muted">
+                Only pending details can be filled here — existing info is
+                never overwritten.
+              </p>
+              <div className="leads-drawer-grid">
+                {!lead.name?.trim() ? (
+                  <label>
+                    Name
+                    <input
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Client name"
+                    />
+                  </label>
+                ) : null}
+                {!lead.email?.trim() ? (
+                  <label>
+                    Email
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="client@company.com"
+                    />
+                  </label>
+                ) : null}
+                {!lead.company?.trim() ? (
+                  <label>
+                    Company
+                    <input
+                      value={company}
+                      onChange={(e) => setCompany(e.target.value)}
+                      placeholder="Company name"
+                    />
+                  </label>
+                ) : null}
+                {!lead.address?.trim() ? (
+                  <label>
+                    Address
+                    <input
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="Street, area, city"
+                    />
+                  </label>
+                ) : null}
+                {!lead.zipCode?.trim() ? (
+                  <label>
+                    PIN code
+                    <input
+                      value={zipCode}
+                      onChange={(e) => setZipCode(e.target.value)}
+                      placeholder="e.g. 400001"
+                    />
+                  </label>
+                ) : null}
+              </div>
+              {pendingInfoErr ? (
+                <p className="leads-schedule-meeting__err" role="alert">
+                  {pendingInfoErr}
+                </p>
+              ) : null}
+              {pendingInfoMsg ? (
+                <p className="leads-schedule-meeting__ok">{pendingInfoMsg}</p>
+              ) : null}
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={savingKey === "pending-info"}
+                onClick={() => {
+                  setPendingInfoErr(null);
+                  setPendingInfoMsg(null);
+                  runAction("pending-info", async () => {
+                    const result = await fillLeadPendingDetails({
+                      leadId: lead.id,
+                      name: !lead.name?.trim() ? name : undefined,
+                      email: !lead.email?.trim() ? email : undefined,
+                      company: !lead.company?.trim() ? company : undefined,
+                      address: !lead.address?.trim() ? address : undefined,
+                      zipCode: !lead.zipCode?.trim() ? zipCode : undefined,
+                    });
+                    if (!result.ok) {
+                      setPendingInfoErr(result.message);
+                      return;
+                    }
+                    setPendingInfoMsg(result.message);
+                    const { id: _id, ...patch } = result.lead;
+                    onLeadPatched?.(lead.id, patch);
+                    if (patch.email) {
+                      setMeetingEmail(patch.email);
+                    }
+                    appendActivity({
+                      type: "EDIT",
+                      body: `Client info completed — ${result.message}`,
+                    });
+                  });
+                }}
+              >
+                {savingKey === "pending-info" ? "Saving…" : "Save missing info"}
+              </button>
+            </div>
+          ) : null}
         </>
       ) : null}
 
@@ -1325,6 +1450,7 @@ export function LeadDrawerPanel({
                   const next = e.target.value as LeadCallingStatus;
                   const previous = callingStatus;
                   setCallingStatus(next);
+                  setCallingStatusErr(null);
                   onLeadPatched?.(lead.id, { callingStatus: next });
                   runAction("calling", async () => {
                     const result = await updateLeadCallingStatus(
@@ -1334,6 +1460,10 @@ export function LeadDrawerPanel({
                     );
                     if (!result.ok || !("lead" in result) || !result.lead) {
                       setCallingStatus(previous);
+                      setCallingStatusErr(
+                        ("message" in result && result.message) ||
+                          "Could not save calling status. Try again.",
+                      );
                       onLeadPatched?.(lead.id, { callingStatus: previous });
                       return;
                     }
@@ -1363,6 +1493,11 @@ export function LeadDrawerPanel({
               Calling: {CALLING_STATUS_LABELS[callingStatus]}
             </p>
           )}
+          {callingStatusErr ? (
+            <p className="leads-schedule-meeting__err" role="alert">
+              {callingStatusErr}
+            </p>
+          ) : null}
           <textarea
             value={meetingNotes}
             onChange={(e) => setMeetingNotes(e.target.value)}
@@ -1404,9 +1539,25 @@ export function LeadDrawerPanel({
             <div className="leads-collapse__body">
             <div className="leads-schedule-meeting">
               <p className="leads-machine-muted">
-                Emails the client the meeting time with your Meet link.
+                {meetingAudience === "client_and_me"
+                  ? "Emails the client the meeting time with your Meet link (WhatsApp too when connected), plus a copy to you."
+                  : "No client email needed — the calendar invite goes to your email only."}
               </p>
               <div className="leads-drawer-grid">
+                <label>
+                  Invite
+                  <select
+                    value={meetingAudience}
+                    onChange={(e) =>
+                      setMeetingAudience(
+                        e.target.value === "me_only" ? "me_only" : "client_and_me",
+                      )
+                    }
+                  >
+                    <option value="client_and_me">Client + me</option>
+                    <option value="me_only">Only me (no client email)</option>
+                  </select>
+                </label>
                 <label>
                   Meeting date &amp; time
                   <input
@@ -1427,16 +1578,18 @@ export function LeadDrawerPanel({
                     <option value={90}>90 minutes</option>
                   </select>
                 </label>
-                <label>
-                  Client email
-                  <input
-                    type="email"
-                    value={meetingEmail}
-                    onChange={(e) => setMeetingEmail(e.target.value)}
-                    placeholder="client@company.com"
-                    required
-                  />
-                </label>
+                {meetingAudience === "client_and_me" ? (
+                  <label>
+                    Client email
+                    <input
+                      type="email"
+                      value={meetingEmail}
+                      onChange={(e) => setMeetingEmail(e.target.value)}
+                      placeholder="client@company.com"
+                      required
+                    />
+                  </label>
+                ) : null}
                 <label>
                   Meet / join link (optional)
                   <input
@@ -1447,6 +1600,12 @@ export function LeadDrawerPanel({
                   />
                 </label>
               </div>
+              {meetingAudience === "client_and_me" && !meetingEmail.trim() ? (
+                <p className="leads-machine-muted">
+                  This client has no email yet — add one above, or switch the
+                  invite to “Only me”.
+                </p>
+              ) : null}
               {meetingScheduleErr ? (
                 <p className="leads-schedule-meeting__err" role="alert">
                   {meetingScheduleErr}
@@ -1470,7 +1629,8 @@ export function LeadDrawerPanel({
                       clientEmail: meetingEmail,
                       meetUrl: meetingMeetUrl || undefined,
                       notes: meetingNotes.trim() || undefined,
-                      sendEmail: true,
+                      sendEmail: meetingAudience === "client_and_me",
+                      audience: meetingAudience,
                     });
                     if (!result.ok) {
                       setMeetingScheduleErr(result.message);
@@ -1507,7 +1667,9 @@ export function LeadDrawerPanel({
               >
                 {savingKey === "schedule-meeting"
                   ? "Scheduling…"
-                  : "Schedule & email client"}
+                  : meetingAudience === "client_and_me"
+                    ? "Schedule & send invites"
+                    : "Schedule for me"}
               </button>
             </div>
             </div>
@@ -2237,6 +2399,115 @@ export function LeadDrawerPanel({
               )}
             </div>
           </div>
+          {canManage ? (
+            <details className="leads-collapse">
+              <summary className="leads-collapse__head">
+                <h3>Assign project work to team</h3>
+                <span className="leads-collapse__meta">Deadline + notify</span>
+              </summary>
+              <div className="leads-collapse__body">
+                <p className="leads-machine-muted">
+                  Creates a task with a deadline for the assignee — they get
+                  email / WhatsApp / in-app alerts and track it in Tasks
+                  (pending → in progress → completed).
+                </p>
+                <div className="leads-drawer-grid">
+                  <label>
+                    Assign to
+                    <select
+                      value={projectAssigneeId}
+                      onChange={(e) => setProjectAssigneeId(e.target.value)}
+                    >
+                      <option value="">Select team member</option>
+                      {teamMembers.map((member) => (
+                        <option key={member.user.id} value={member.user.id}>
+                          {member.user.name || member.user.email}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Deadline
+                    <input
+                      type="datetime-local"
+                      value={projectDeadline}
+                      onChange={(e) => setProjectDeadline(e.target.value)}
+                    />
+                  </label>
+                </div>
+                <label>
+                  Work title
+                  <input
+                    value={projectWorkTitle}
+                    onChange={(e) => setProjectWorkTitle(e.target.value)}
+                    placeholder={`Project work — ${lead.name || lead.company || "client"}`}
+                  />
+                </label>
+                <label>
+                  Instructions (optional)
+                  <textarea
+                    value={projectWorkNotes}
+                    onChange={(e) => setProjectWorkNotes(e.target.value)}
+                    placeholder="Scope, links, what done looks like…"
+                    rows={3}
+                  />
+                </label>
+                {projectAssignErr ? (
+                  <p className="leads-schedule-meeting__err" role="alert">
+                    {projectAssignErr}
+                  </p>
+                ) : null}
+                {projectAssignMsg ? (
+                  <p className="leads-schedule-meeting__ok">{projectAssignMsg}</p>
+                ) : null}
+                <button
+                  type="button"
+                  className="btn-primary"
+                  disabled={savingKey === "project-assign"}
+                  onClick={() => {
+                    setProjectAssignErr(null);
+                    setProjectAssignMsg(null);
+                    if (!projectAssigneeId) {
+                      setProjectAssignErr("Select a team member.");
+                      return;
+                    }
+                    if (!projectDeadline) {
+                      setProjectAssignErr("Pick a deadline.");
+                      return;
+                    }
+                    runAction("project-assign", async () => {
+                      const result = await assignLeadProjectWork({
+                        leadId: lead.id,
+                        assigneeUserId: projectAssigneeId,
+                        title:
+                          projectWorkTitle.trim() ||
+                          `Project work — ${lead.name || lead.company || "client"}`,
+                        deadline: projectDeadline,
+                        instructions: projectWorkNotes.trim() || undefined,
+                        orderNumber: selectedSalesOrder?.orderNumber,
+                      });
+                      if (!result.ok) {
+                        setProjectAssignErr(result.message);
+                        return;
+                      }
+                      setProjectAssignMsg(result.message);
+                      setProjectWorkTitle("");
+                      setProjectWorkNotes("");
+                      setProjectDeadline("");
+                      appendActivity({
+                        type: "NOTE",
+                        body: result.message,
+                      });
+                    });
+                  }}
+                >
+                  {savingKey === "project-assign"
+                    ? "Assigning…"
+                    : "Assign & notify"}
+                </button>
+              </div>
+            </details>
+          ) : null}
           <SalesOrderPanel
             leadDelivery={leadDelivery}
             salesOrder={selectedSalesOrder}

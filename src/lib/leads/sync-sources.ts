@@ -130,6 +130,7 @@ export async function pullLeadsFromConnection(params: {
         status: row.status,
         rawPayload: (row.raw ?? row) as Prisma.InputJsonValue,
         createFmsJob: true,
+        suppressOwnerNotify: true,
       });
       if (result.skipped) {
         continue;
