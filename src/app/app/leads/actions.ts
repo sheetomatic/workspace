@@ -1709,11 +1709,42 @@ export async function scheduleLeadClientMeeting(params: {
    * "me_only": no client email needed — only the scheduler gets the invite.
    */
   audience?: "client_and_me" | "me_only";
+  /**
+   * Who the meeting is with (e.g. lead owner, founder). Defaults to the
+   * scheduler. The host gets the invite copy + an in-app notification.
+   */
+  hostUserId?: string | null;
 }) {
   const user = await requireSession(undefined, { module: "CRM" });
   if (!(await canWorkLead(user, params.leadId))) {
     return { ok: false as const, message: LEAD_WORK_DENIED };
   }
+
+  let host: { id: string; name: string | null; email: string | null } = {
+    id: user.id,
+    name: user.name ?? null,
+    email: user.email ?? null,
+  };
+  if (params.hostUserId && params.hostUserId !== user.id) {
+    const hostUser = await prisma.user.findFirst({
+      where: {
+        id: params.hostUserId,
+        memberships: {
+          some: { organizationId: user.organizationId, deactivatedAt: null },
+        },
+      },
+      select: { id: true, name: true, email: true },
+    });
+    if (!hostUser) {
+      return {
+        ok: false as const,
+        message: "Meeting host must be an active member of this workspace.",
+      };
+    }
+    host = hostUser;
+  }
+  const hostIsScheduler = host.id === user.id;
+  const hostLabel = host.name?.trim() || host.email || "team member";
 
   const startsAt = new Date(params.startsAt);
   if (Number.isNaN(startsAt.getTime())) {
@@ -1787,8 +1818,8 @@ export async function scheduleLeadClientMeeting(params: {
       scheduledAt: startsAt,
       notes:
         scheduleNote ||
-        `Client meeting scheduled (${durationMinutes} min)${meetUrl ? ` · ${meetUrl}` : ""}`,
-      assigneeUserId: user.id,
+        `Client meeting scheduled (${durationMinutes} min)${meetUrl ? ` · ${meetUrl}` : ""}${hostIsScheduler ? "" : ` · with ${hostLabel}`}`,
+      assigneeUserId: host.id,
       createdByUserId: user.id,
     },
   });
@@ -1800,7 +1831,7 @@ export async function scheduleLeadClientMeeting(params: {
     durationMinutes,
     meetUrl,
     notes: scheduleNote,
-    counsellorName: lead.assignedTo?.name ?? user.name ?? null,
+    counsellorName: host.name ?? lead.assignedTo?.name ?? user.name ?? null,
   });
 
   // Defer Resend + activity — keep drawer save on the critical path.
@@ -1824,17 +1855,23 @@ export async function scheduleLeadClientMeeting(params: {
         }
       }
 
-      // Always send the scheduler their own copy so the meeting is on their radar.
+      // Send the meeting host their copy so the meeting is on their radar
+      // (host = scheduler unless "Meeting with" picked someone else).
       let organizerEmailSent = false;
-      const organizerEmail = user.email?.trim().toLowerCase();
-      if (organizerEmail && organizerEmail !== toEmail) {
-        const clientLabel =
-          lead.name?.trim() || lead.company?.trim() || lead.phone?.trim() || "client";
+      const clientLabel =
+        lead.name?.trim() || lead.company?.trim() || lead.phone?.trim() || "client";
+      const hostCopyRecipients = [
+        host.email?.trim().toLowerCase(),
+        hostIsScheduler ? null : user.email?.trim().toLowerCase(),
+      ].filter(
+        (email): email is string => Boolean(email) && email !== toEmail,
+      );
+      for (const recipientEmail of [...new Set(hostCopyRecipients)]) {
         const copy = await sendPlainEmail({
-          toEmail: organizerEmail,
+          toEmail: recipientEmail,
           subject: `Meeting with ${clientLabel} — ${invite.whenLabel}`,
           text: [
-            `Your meeting with ${clientLabel} is scheduled.`,
+            `Your meeting with ${clientLabel} is scheduled${hostIsScheduler ? "" : ` (host: ${hostLabel}, booked by ${user.name ?? "team"})`}.`,
             "",
             `When: ${invite.whenLabel}`,
             meetUrl ? `Join link: ${meetUrl}` : null,
@@ -1846,7 +1883,25 @@ export async function scheduleLeadClientMeeting(params: {
             .filter((line) => line !== null)
             .join("\n"),
         });
-        organizerEmailSent = copy.sent;
+        organizerEmailSent = organizerEmailSent || copy.sent;
+      }
+
+      // In-app bell for the host when someone books a meeting on their behalf.
+      if (!hostIsScheduler) {
+        await prisma.userAppNotification
+          .create({
+            data: {
+              userId: host.id,
+              organizationId: user.organizationId,
+              kind: "LEAD_MEETING",
+              title: `Meeting booked with you — ${invite.whenLabel}`,
+              body: `${clientLabel} · booked by ${user.name ?? "team"}`,
+              href: `/app/leads?period=all&leadId=${lead.id}`,
+            },
+          })
+          .catch((error) =>
+            console.error("[lead-meeting] host notify", error),
+          );
       }
 
       // WhatsApp the client the meeting details when we have their number.
@@ -1874,12 +1929,12 @@ export async function scheduleLeadClientMeeting(params: {
         leadId: lead.id,
         type: "MEETING",
         body: [
-          `Meeting scheduled for ${invite.whenLabel}${meOnly ? " (internal — no client invite)" : ""}`,
+          `Meeting scheduled for ${invite.whenLabel}${hostIsScheduler ? "" : ` · with ${hostLabel}`}${meOnly ? " (internal — no client invite)" : ""}`,
           meetUrl ? `Join: ${meetUrl}` : null,
           emailSent ? `Invite emailed to ${toEmail}` : null,
           !emailSent && shouldEmail ? emailMessage : null,
           whatsappSent ? "WhatsApp sent to client" : null,
-          organizerEmailSent ? `Copy emailed to ${user.email}` : null,
+          organizerEmailSent ? `Copy emailed to ${host.email ?? user.email}` : null,
           scheduleNote,
         ]
           .filter(Boolean)
@@ -1919,9 +1974,11 @@ export async function scheduleLeadClientMeeting(params: {
       email: toEmail || lead.email,
     },
     message: shouldEmail
-      ? `Meeting scheduled. Invite will be sent to ${toEmail} (plus a copy to you${lead.phone?.trim() ? ", and WhatsApp to the client if connected" : ""}).`
+      ? `Meeting scheduled with ${hostIsScheduler ? "you" : hostLabel}. Invite will be sent to ${toEmail} (plus a copy to ${hostIsScheduler ? "you" : hostLabel}${lead.phone?.trim() ? ", and WhatsApp to the client if connected" : ""}).`
       : meOnly
-        ? "Meeting scheduled for you. Calendar invite sent to your email."
+        ? hostIsScheduler
+          ? "Meeting scheduled for you. Calendar invite sent to your email."
+          : `Meeting scheduled with ${hostLabel}. Calendar invite sent to their email.`
         : "Meeting scheduled.",
   };
 }

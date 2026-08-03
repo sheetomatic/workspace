@@ -368,6 +368,8 @@ export function LeadDrawerPanel({
     "client_and_me" | "me_only"
   >(lead.email?.trim() ? "client_and_me" : "me_only");
   const [meetingMeetUrl, setMeetingMeetUrl] = useState(DEFAULT_CLIENT_MEET_URL);
+  /** Who the meeting is with — "" means the scheduler themselves. */
+  const [meetingHostId, setMeetingHostId] = useState("");
   const [gcalActive, setGcalActive] = useState(false);
   const [meetingScheduleMsg, setMeetingScheduleMsg] = useState<string | null>(null);
   const [meetingScheduleErr, setMeetingScheduleErr] = useState<string | null>(null);
@@ -1548,8 +1550,8 @@ export function LeadDrawerPanel({
             <div className="leads-schedule-meeting">
               <p className="leads-machine-muted">
                 {meetingAudience === "client_and_me"
-                  ? "Emails the client the meeting time with your Meet link (WhatsApp too when connected), plus a copy to you."
-                  : "No client email needed — the calendar invite goes to your email only."}
+                  ? `Emails the client the meeting time with the Meet link (WhatsApp too when connected), plus a copy to ${meetingHostId ? "the meeting host" : "you"}.`
+                  : `No client email needed — the calendar invite goes to ${meetingHostId ? "the meeting host" : "your email"} only.`}
               </p>
               <div className="leads-drawer-grid">
                 <label>
@@ -1562,8 +1564,29 @@ export function LeadDrawerPanel({
                       )
                     }
                   >
-                    <option value="client_and_me">Client + me</option>
-                    <option value="me_only">Only me (no client email)</option>
+                    <option value="client_and_me">Client + host</option>
+                    <option value="me_only">Internal only (no client email)</option>
+                  </select>
+                </label>
+                <label>
+                  Meeting with
+                  <select
+                    value={meetingHostId}
+                    onChange={(e) => setMeetingHostId(e.target.value)}
+                  >
+                    <option value="">Me</option>
+                    {teamMembers
+                      .filter((member) => member.user.id !== currentUserId)
+                      .map((member) => {
+                        const label = member.user.name || member.user.email;
+                        const isLeadOwner =
+                          member.user.id === lead.assignedTo?.id;
+                        return (
+                          <option key={member.user.id} value={member.user.id}>
+                            {isLeadOwner ? `${label} · Lead owner` : label}
+                          </option>
+                        );
+                      })}
                   </select>
                 </label>
                 <label>
@@ -1639,6 +1662,7 @@ export function LeadDrawerPanel({
                       notes: meetingNotes.trim() || undefined,
                       sendEmail: meetingAudience === "client_and_me",
                       audience: meetingAudience,
+                      hostUserId: meetingHostId || undefined,
                     });
                     if (!result.ok) {
                       setMeetingScheduleErr(result.message);
@@ -1677,7 +1701,9 @@ export function LeadDrawerPanel({
                   ? "Scheduling…"
                   : meetingAudience === "client_and_me"
                     ? "Schedule & send invites"
-                    : "Schedule for me"}
+                    : meetingHostId
+                      ? "Schedule for host"
+                      : "Schedule for me"}
               </button>
             </div>
             </div>
