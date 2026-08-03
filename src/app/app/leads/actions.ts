@@ -72,7 +72,10 @@ import {
   isInboundLeadFollowUpType,
   type InboundLeadFollowUpTypeId,
 } from "@/lib/leads/follow-up-types";
-import { notifyLeadAssigned } from "@/lib/leads/notify";
+import {
+  notifyLeadAssigned,
+  notifyLeadsBulkAssigned,
+} from "@/lib/leads/notify";
 import { sendLeadNurtureStep } from "@/lib/leads/nurture/run";
 import {
   getLeadNurtureConfig,
@@ -188,6 +191,74 @@ export async function assignInboundLead(leadId: string, assigneeUserId: string |
 
   revalidatePath("/app/leads");
   return { ok: true };
+}
+
+/**
+ * Assign many leads to one team member in a single step. Sends the assignee
+ * ONE summary notification (count + report of all leads) instead of N pings.
+ */
+export async function bulkAssignInboundLeads(
+  leadIds: string[],
+  assigneeUserId: string,
+) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false as const, message: "Not allowed." };
+  }
+
+  const ids = [...new Set(leadIds)].filter(Boolean).slice(0, 200);
+  if (ids.length === 0) {
+    return { ok: false as const, message: "Select at least one lead." };
+  }
+  if (!(await isActiveOrgMember(user.organizationId, assigneeUserId))) {
+    return {
+      ok: false as const,
+      message: "Selected assignee must be an active member of this workspace.",
+    };
+  }
+
+  const updated = await prisma.inboundLead.updateMany({
+    where: { id: { in: ids }, organizationId: user.organizationId },
+    data: { assignedToId: assigneeUserId, modifiedAt: new Date() },
+  });
+  if (updated.count === 0) {
+    return { ok: false as const, message: "No matching leads found." };
+  }
+
+  const assignee = await prisma.user.findFirst({
+    where: { id: assigneeUserId },
+    select: { name: true, email: true },
+  });
+  const assigneeLabel = assignee?.name ?? assignee?.email ?? "team member";
+
+  // Activity log + one summary notification, off the critical path.
+  after(async () => {
+    await Promise.all(
+      ids.map((leadId) =>
+        logInboundLeadActivity({
+          organizationId: user.organizationId,
+          leadId,
+          type: "EDIT",
+          body: `Assigned to ${assigneeLabel} (bulk)`,
+          createdByUserId: user.id,
+        }).catch((error) => console.error("[leads-bulk-activity]", error)),
+      ),
+    );
+    await notifyLeadsBulkAssigned({
+      organizationId: user.organizationId,
+      leadIds: ids,
+      assigneeUserId,
+      actorUserId: user.id,
+      actorName: user.name,
+    }).catch((error) => console.error("[leads-bulk-notify]", error));
+  });
+
+  revalidatePath("/app/leads");
+  return {
+    ok: true as const,
+    count: updated.count,
+    assigneeName: assigneeLabel,
+  };
 }
 
 export async function updateInboundLeadStatus(leadId: string, status: InboundLeadStatus) {

@@ -1096,6 +1096,54 @@
   background: #fff;
 }
 
+.leads-bulk-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #eff6ff;
+}
+
+.leads-bulk-bar select {
+  min-height: 38px;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #cbd5f5;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.9rem;
+}
+
+.leads-bulk-count {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1d4ed8;
+}
+
+.leads-bulk-msg {
+  font-size: 0.85rem;
+  color: #047857;
+}
+
+.leads-bulk-err {
+  font-size: 0.85rem;
+  color: #b91c1c;
+}
+
+.leads-col-select {
+  width: 2.25rem;
+  text-align: center;
+}
+
+.leads-col-select input[type="checkbox"] {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
 .leads-crm-search {
   display: flex;
   flex-wrap: wrap;

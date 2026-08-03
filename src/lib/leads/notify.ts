@@ -109,6 +109,124 @@ export async function notifyLeadAssigned(params: {
 }
 
 /**
+ * One summary notification after a bulk assignment: "N leads assigned to you"
+ * plus a report of every lead (in-app bell + email + WhatsApp, best-effort).
+ */
+export async function notifyLeadsBulkAssigned(params: {
+  organizationId: string;
+  leadIds: string[];
+  assigneeUserId: string;
+  actorUserId?: string | null;
+  actorName?: string | null;
+}) {
+  if (params.leadIds.length === 0) {
+    return;
+  }
+
+  const [assignee, leads, organization] = await Promise.all([
+    prisma.user.findFirst({
+      where: {
+        id: params.assigneeUserId,
+        memberships: { some: { organizationId: params.organizationId } },
+      },
+      select: { id: true, name: true, email: true, phone: true },
+    }),
+    prisma.inboundLead.findMany({
+      where: {
+        id: { in: params.leadIds },
+        organizationId: params.organizationId,
+      },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        company: true,
+        requirement: true,
+        status: true,
+      },
+      orderBy: { capturedAt: "desc" },
+    }),
+    prisma.organization.findUnique({
+      where: { id: params.organizationId },
+      select: { name: true },
+    }),
+  ]);
+  if (!assignee || leads.length === 0) {
+    return;
+  }
+
+  const count = leads.length;
+  const orgName = organization?.name?.trim() || "your workspace";
+  const byLine = params.actorName?.trim()
+    ? ` by ${params.actorName.trim()}`
+    : "";
+  const listHref = "/app/leads?period=all";
+
+  const REPORT_LIMIT = 30;
+  const reportLines = leads.slice(0, REPORT_LIMIT).map((lead, index) => {
+    const parts = [
+      leadLabel(lead),
+      lead.phone?.trim() || null,
+      lead.status.replaceAll("_", " ").toLowerCase(),
+      lead.requirement?.trim() || null,
+    ].filter((part) => part !== null);
+    return `${index + 1}. ${parts.join(" · ")}`;
+  });
+  if (count > REPORT_LIMIT) {
+    reportLines.push(`…and ${count - REPORT_LIMIT} more`);
+  }
+
+  await prisma.userAppNotification
+    .create({
+      data: {
+        userId: assignee.id,
+        organizationId: params.organizationId,
+        kind: "LEAD_ASSIGNED",
+        title: `${count} lead${count === 1 ? "" : "s"} assigned to you`,
+        body: leads
+          .slice(0, 3)
+          .map((lead) => leadLabel(lead))
+          .join(", ") + (count > 3 ? ` +${count - 3} more` : ""),
+        href: listHref,
+      },
+    })
+    .catch((error) => console.error("[lead-bulk-notify] in-app", error));
+
+  const summaryText = [
+    `${count} lead${count === 1 ? "" : "s"} in ${orgName} ${count === 1 ? "was" : "were"} assigned to you${byLine}.`,
+    "",
+    "Assignment report:",
+    ...reportLines,
+    "",
+    `Open your leads: ${getLoginBaseUrl()}${listHref}`,
+  ];
+
+  if (assignee.email) {
+    await sendPlainEmail({
+      toEmail: assignee.email,
+      subject: `${count} lead${count === 1 ? "" : "s"} assigned to you — ${orgName}`,
+      text: [`Hi ${assignee.name?.trim() || "there"},`, "", ...summaryText].join(
+        "\n",
+      ),
+    }).catch((error) => console.error("[lead-bulk-notify] email", error));
+  }
+
+  const assigneePhone = assignee.phone?.trim();
+  if (assigneePhone) {
+    await sendWhatsAppText({
+      organizationId: params.organizationId,
+      toPhone: assigneePhone,
+      body: [
+        `*${count} lead${count === 1 ? "" : "s"} assigned to you*`,
+        `Hi ${assignee.name?.trim() || "there"}, ${summaryText[0]}`,
+        reportLines.join("\n"),
+        `Open your leads: ${getLoginBaseUrl()}${listHref}`,
+      ].join("\n\n"),
+    }).catch((error) => console.error("[lead-bulk-notify] whatsapp", error));
+  }
+}
+
+/**
  * Notify workspace OWNER/ADMIN members that a new lead arrived and needs
  * assignment: in-app bell + email (best-effort, never throws).
  */

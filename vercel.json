@@ -51,6 +51,10 @@
     {
       "path": "/api/cron/leads-nurture",
       "schedule": "0 */2 * * *"
+    },
+    {
+      "path": "/api/cron/leads-daily-digest",
+      "schedule": "45 3 * * *"
     }
   ],
   "functions": {
@@ -83,6 +87,9 @@
     },
     "src/app/api/cron/leads-nurture/route.ts": {
       "maxDuration": 60
+    },
+    "src/app/api/cron/leads-daily-digest/route.ts": {
+      "maxDuration": 300
     }
   }
 }

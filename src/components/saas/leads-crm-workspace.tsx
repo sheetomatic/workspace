@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { MessageCircle, Phone, Trash2 } from "lucide-react";
 import {
+  bulkAssignInboundLeads,
   createManualInboundLead,
   deleteInboundLead,
   logLeadContactAction,
@@ -189,6 +190,11 @@ export function LeadsCrmWorkspace({
   const [createRequirement, setCreateRequirement] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
   const [createDuplicate, setCreateDuplicate] = useState<DuplicateMatch | null>(null);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
+  const [bulkAssigneeId, setBulkAssigneeId] = useState("");
+  const [bulkMsg, setBulkMsg] = useState<string | null>(null);
+  const [bulkErr, setBulkErr] = useState<string | null>(null);
 
   useEffect(() => {
     setSelectedId(initialSelectedLeadId);
@@ -202,6 +208,18 @@ export function LeadsCrmWorkspace({
     setLocalLeads((prev) =>
       prev.map((lead) => (lead.id === id ? { ...lead, ...patch } : lead)),
     );
+  }
+
+  function toggleBulkLead(id: string) {
+    setBulkSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
   }
 
   const showArchived = listParams.archived === "1";
@@ -279,6 +297,20 @@ export function LeadsCrmWorkspace({
           {canManage ? (
             <>
               <LeadsCsvImportButton />
+              {!isBoard ? (
+                <button
+                  type="button"
+                  className={`btn-secondary btn-sm${bulkMode ? " is-active" : ""}`}
+                  onClick={() => {
+                    setBulkMode((open) => !open);
+                    setBulkSelected(new Set());
+                    setBulkMsg(null);
+                    setBulkErr(null);
+                  }}
+                >
+                  {bulkMode ? "Done selecting" : "Bulk assign"}
+                </button>
+              ) : null}
               <button
                 type="button"
                 className="btn-primary btn-sm"
@@ -399,6 +431,60 @@ export function LeadsCrmWorkspace({
         </form>
       ) : null}
 
+      {bulkMode && canManage && !isBoard ? (
+        <div className="leads-bulk-bar" role="toolbar" aria-label="Bulk assign leads">
+          <span className="leads-bulk-count">
+            {bulkSelected.size} selected
+          </span>
+          <select
+            value={bulkAssigneeId}
+            onChange={(event) => setBulkAssigneeId(event.target.value)}
+            aria-label="Assign selected leads to"
+          >
+            <option value="">Assign to…</option>
+            {teamMembers.map((member) => (
+              <option key={member.user.id} value={member.user.id}>
+                {member.user.name || member.user.email}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="btn-primary btn-sm"
+            disabled={pending || bulkSelected.size === 0 || !bulkAssigneeId}
+            onClick={() => {
+              setBulkMsg(null);
+              setBulkErr(null);
+              startTransition(async () => {
+                const result = await bulkAssignInboundLeads(
+                  [...bulkSelected],
+                  bulkAssigneeId,
+                );
+                if (!result.ok) {
+                  setBulkErr(result.message ?? "Could not assign leads.");
+                  return;
+                }
+                setBulkMsg(
+                  `${result.count} lead${result.count === 1 ? "" : "s"} assigned to ${result.assigneeName}. Summary sent to them.`,
+                );
+                setBulkSelected(new Set());
+                router.refresh();
+              });
+            }}
+          >
+            {pending
+              ? "Assigning…"
+              : `Assign ${bulkSelected.size || ""}`.trim()}
+          </button>
+          {bulkMsg ? <span className="leads-bulk-msg">{bulkMsg}</span> : null}
+          {bulkErr ? (
+            <span className="leads-bulk-err" role="alert">
+              {bulkErr}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+
       {isBoard ? (
         visibleLeads.length === 0 ? (
           <div className="leads-empty-state leads-board-empty">
@@ -426,6 +512,27 @@ export function LeadsCrmWorkspace({
         <table className="leads-crm-table leads-crm-table-pro">
           <thead>
             <tr>
+              {bulkMode && canManage ? (
+                <th className="leads-col-select">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all visible leads"
+                    checked={
+                      visibleLeads.length > 0 &&
+                      visibleLeads.every((lead) => bulkSelected.has(lead.id))
+                    }
+                    onChange={(event) => {
+                      if (event.target.checked) {
+                        setBulkSelected(
+                          new Set(visibleLeads.map((lead) => lead.id)),
+                        );
+                      } else {
+                        setBulkSelected(new Set());
+                      }
+                    }}
+                  />
+                </th>
+              ) : null}
               <th className="leads-row-lead">Lead</th>
               <th>Inquiry time</th>
               <th>Lead Source</th>
@@ -438,7 +545,7 @@ export function LeadsCrmWorkspace({
           <tbody>
             {visibleLeads.length === 0 ? (
               <tr>
-                <td colSpan={7}>
+                <td colSpan={bulkMode && canManage ? 8 : 7}>
                   <div className="leads-empty-state">
                     <p className="leads-machine-muted">
                       {searchDraft.trim()
@@ -477,8 +584,27 @@ export function LeadsCrmWorkspace({
                     ]
                       .filter(Boolean)
                       .join(" ")}
-                    onClick={() => setSelectedId(lead.id)}
+                    onClick={() => {
+                      if (bulkMode && canManage) {
+                        toggleBulkLead(lead.id);
+                        return;
+                      }
+                      setSelectedId(lead.id);
+                    }}
                   >
+                    {bulkMode && canManage ? (
+                      <td
+                        className="leads-col-select"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          aria-label={`Select ${primary}`}
+                          checked={bulkSelected.has(lead.id)}
+                          onChange={() => toggleBulkLead(lead.id)}
+                        />
+                      </td>
+                    ) : null}
                     <td className="leads-row-lead">
                       <div className="leads-row-lead-copy">
                         <strong className="leads-row-name">
