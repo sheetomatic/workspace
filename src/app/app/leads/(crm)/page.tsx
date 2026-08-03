@@ -33,7 +33,7 @@ import { requireCrmSubModule } from "@/lib/crm/crm-access";
 import { listLeadServiceCatalog } from "@/lib/leads/service-catalog";
 import { getAllSalesOrdersByLeadIds } from "@/lib/leads/sales-orders";
 import { listWorkspaceMembers } from "@/lib/workspace";
-import { prisma } from "@/lib/db";
+import { withDbRetry } from "@/lib/db";
 import { mapPendingTemplateOrdersByLeadIds } from "@/lib/templates/store";
 import Link from "next/link";
 
@@ -194,15 +194,18 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
   });
 
   if (focusMode && focusLeadId) {
-    const [lead, teamMembers, serviceCatalog, organization] = await Promise.all([
-      getInboundLeadForCrmDrawer(user.organizationId, focusLeadId, leadScope),
-      listWorkspaceMembers(user.organizationId),
-      listLeadServiceCatalog(user.organizationId),
-      prisma.organization.findUnique({
-        where: { id: user.organizationId },
-        select: { name: true, logoUrl: true },
-      }),
-    ]);
+    const [lead, teamMembers, serviceCatalog, organization] = await withDbRetry(
+      (db) =>
+        Promise.all([
+          getInboundLeadForCrmDrawer(user.organizationId, focusLeadId, leadScope),
+          listWorkspaceMembers(user.organizationId),
+          listLeadServiceCatalog(user.organizationId),
+          db.organization.findUnique({
+            where: { id: user.organizationId },
+            select: { name: true, logoUrl: true },
+          }),
+        ]),
+    );
 
     const salesOrdersByLead = lead
       ? await getAllSalesOrdersByLeadIds(user.organizationId, [lead.id])
@@ -267,34 +270,38 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
     );
   }
 
+  // withDbRetry: Neon can drop/refuse connections for a moment (cold start,
+  // post-deploy churn) — retry the whole load once instead of erroring the page.
   const [periodStats, pipeMetrics, numbersMetrics, alertItems, leadPage, teamMembers, sheetsConnection, workspaceTotal, serviceCatalog, organization] =
-    await Promise.all([
-      getLeadsMachineStatsForPeriod(user.organizationId, period, leadScope),
-      getLeadsPipeMetricsForPeriod(user.organizationId, period, leadScope),
-      getCrmNumbersMetricsForPeriod(user.organizationId, period, leadScope),
-      listCrmAlertCenterItems(user.organizationId, {
-        limit: 40,
-        assignedToId: leadScope?.assignedToId,
-      }),
-      listInboundLeadsForPeriodPaginated(user.organizationId, period, {
-        page: listParams.page,
-        pageSize: listParams.pageSize,
-        sort: listParams.sort,
-        status: listParams.status,
-        category: listParams.category,
-        // Text search filters client-side on the loaded page (no workspace reload).
-        includeArchived: listParams.includeArchived,
-        assignedToId: leadScope?.assignedToId,
-      }),
-      listWorkspaceMembers(user.organizationId),
-      getGoogleSheetsLeadConnection(user.organizationId),
-      getInboundLeadWorkspaceTotal(user.organizationId, leadScope),
-      listLeadServiceCatalog(user.organizationId),
-      prisma.organization.findUnique({
-        where: { id: user.organizationId },
-        select: { name: true, logoUrl: true },
-      }),
-    ]);
+    await withDbRetry((db) =>
+      Promise.all([
+        getLeadsMachineStatsForPeriod(user.organizationId, period, leadScope),
+        getLeadsPipeMetricsForPeriod(user.organizationId, period, leadScope),
+        getCrmNumbersMetricsForPeriod(user.organizationId, period, leadScope),
+        listCrmAlertCenterItems(user.organizationId, {
+          limit: 40,
+          assignedToId: leadScope?.assignedToId,
+        }),
+        listInboundLeadsForPeriodPaginated(user.organizationId, period, {
+          page: listParams.page,
+          pageSize: listParams.pageSize,
+          sort: listParams.sort,
+          status: listParams.status,
+          category: listParams.category,
+          // Text search filters client-side on the loaded page (no workspace reload).
+          includeArchived: listParams.includeArchived,
+          assignedToId: leadScope?.assignedToId,
+        }),
+        listWorkspaceMembers(user.organizationId),
+        getGoogleSheetsLeadConnection(user.organizationId),
+        getInboundLeadWorkspaceTotal(user.organizationId, leadScope),
+        listLeadServiceCatalog(user.organizationId),
+        db.organization.findUnique({
+          where: { id: user.organizationId },
+          select: { name: true, logoUrl: true },
+        }),
+      ]),
+    );
 
   const lastSyncLabel = sheetsConnection?.lastSyncAt
     ? new Date(sheetsConnection.lastSyncAt).toLocaleString("en-IN", {
