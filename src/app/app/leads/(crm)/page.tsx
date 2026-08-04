@@ -1,7 +1,6 @@
 import { after } from "next/server";
 import { LeadsAlertCenter } from "@/components/saas/leads-alert-center";
 import { LeadsCrmWorkspace } from "@/components/saas/leads-crm-workspace";
-import { LeadsNumbersDashboard } from "@/components/saas/leads-numbers-dashboard";
 import { LeadsTeamPerformance } from "@/components/saas/leads-team-performance";
 import { currentMonthKeyIst, getTeamPerformance } from "@/lib/leads/team-performance";
 import { LeadsPeriodToolbar } from "@/components/saas/leads-period-toolbar";
@@ -386,13 +385,6 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
         canSend={canManage}
         items={alertItems}
       />
-
-      {canSeeAllLeads ? (
-        <LeadsNumbersDashboard
-          metrics={numbersMetrics}
-          periodLabel={period.periodLabel}
-        />
-      ) : null}
 
       {canSeeAllLeads && teamPerformance ? (
         <LeadsTeamPerformance initial={teamPerformance} />

@@ -26,10 +26,17 @@ const METRICS: MetricDef[] = [
   { key: "meetings", label: "Meetings", accent: "accent-indigo", count: (m) => m.meetings },
   {
     key: "quotes",
-    label: "Quotes sent",
+    label: "Quotations generated",
     accent: "accent-purple",
     count: (m) => m.quotes,
     sub: (m) => (m.quotes > 0 ? m.quotesValueLabel : null),
+  },
+  {
+    key: "invoices",
+    label: "Invoices generated",
+    accent: "accent-indigo",
+    count: (m) => m.invoices,
+    sub: (m) => (m.invoices > 0 ? m.invoicesValueLabel : null),
   },
   { key: "converted", label: "Leads converted", accent: "accent-success", count: (m) => m.converted },
   {
@@ -38,6 +45,13 @@ const METRICS: MetricDef[] = [
     accent: "accent-success",
     count: (m) => m.payments,
     sub: (m) => (m.payments > 0 ? m.paymentsValueLabel : null),
+  },
+  {
+    key: "newClients",
+    label: "New clients onboarded",
+    accent: "accent-blue",
+    count: (m) => m.newClients,
+    sub: (m) => (m.newClients > 0 ? "First-time only" : null),
   },
   { key: "projectsDelivered", label: "Projects delivered", accent: "accent-teal", count: (m) => m.projectsDelivered },
   { key: "projectsPending", label: "Projects pending", accent: "accent-warning", count: (m) => m.projectsPending },

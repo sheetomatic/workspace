@@ -30,8 +30,10 @@ export type TeamPerfMetricKey =
   | "calls"
   | "meetings"
   | "quotes"
+  | "invoices"
   | "converted"
   | "payments"
+  | "newClients"
   | "projectsDelivered"
   | "projectsPending"
   | "paymentFollowUps"
@@ -46,10 +48,14 @@ export type TeamMemberPerf = {
   quotes: number;
   quotesValue: number;
   quotesValueLabel: string;
+  invoices: number;
+  invoicesValue: number;
+  invoicesValueLabel: string;
   converted: number;
   payments: number;
   paymentsValue: number;
   paymentsValueLabel: string;
+  newClients: number;
   projectsDelivered: number;
   projectsPending: number;
   paymentFollowUps: number;
@@ -74,6 +80,26 @@ export type TeamPerformanceData = {
 
 const WON_BODY = "Status changed to WON";
 
+/** Leads whose earliest invoice/payment ("onboarding") falls inside [start, end). */
+function computeOnboardedLeadIds(
+  firstInvoices: Array<{ leadId: string; at: Date | null }>,
+  firstPayments: Array<{ leadId: string; at: Date | null }>,
+  start: Date,
+  end: Date,
+) {
+  const firstByLead = new Map<string, Date>();
+  for (const row of [...firstInvoices, ...firstPayments]) {
+    if (!row.at) continue;
+    const current = firstByLead.get(row.leadId);
+    if (!current || row.at < current) firstByLead.set(row.leadId, row.at);
+  }
+  const ids: string[] = [];
+  for (const [leadId, at] of firstByLead) {
+    if (at >= start && at < end) ids.push(leadId);
+  }
+  return ids;
+}
+
 function capturedInRange(start: Date, end: Date) {
   return {
     OR: [
@@ -93,10 +119,14 @@ function emptyPerf(userId: string | null, name: string): TeamMemberPerf {
     quotes: 0,
     quotesValue: 0,
     quotesValueLabel: formatInr(0),
+    invoices: 0,
+    invoicesValue: 0,
+    invoicesValueLabel: formatInr(0),
     converted: 0,
     payments: 0,
     paymentsValue: 0,
     paymentsValueLabel: formatInr(0),
+    newClients: 0,
     projectsDelivered: 0,
     projectsPending: 0,
     paymentFollowUps: 0,
@@ -117,6 +147,9 @@ export async function getTeamPerformance(
     callActivities,
     meetingsByHost,
     quotesByCreator,
+    invoicesByCreator,
+    firstInvoices,
+    firstPayments,
     wonActivities,
     paymentRows,
     deliveredByAssignee,
@@ -166,6 +199,26 @@ export async function getTeamPerformance(
       },
       _count: { _all: true },
       _sum: { totalAmount: true },
+    }),
+    prisma.inboundLeadQuotation.groupBy({
+      by: ["createdByUserId"],
+      where: {
+        organizationId,
+        requestType: "INVOICE",
+        quotationDate: { gte: start, lt: end },
+      },
+      _count: { _all: true },
+      _sum: { totalAmount: true },
+    }),
+    prisma.inboundLeadQuotation.groupBy({
+      by: ["leadId"],
+      where: { organizationId, requestType: "INVOICE" },
+      _min: { quotationDate: true },
+    }),
+    prisma.inboundLeadPayment.groupBy({
+      by: ["leadId"],
+      where: { organizationId },
+      _min: { receivedDate: true },
     }),
     prisma.inboundLeadActivity.findMany({
       where: {
@@ -264,6 +317,11 @@ export async function getTeamPerformance(
     entry.quotes += row._count._all;
     entry.quotesValue += Number(row._sum.totalAmount ?? 0);
   }
+  for (const row of invoicesByCreator) {
+    const entry = bucket(row.createdByUserId);
+    entry.invoices += row._count._all;
+    entry.invoicesValue += Number(row._sum.totalAmount ?? 0);
+  }
   {
     // Count each lead once even if its status bounced to WON multiple times.
     const seen = new Set<string>();
@@ -272,6 +330,21 @@ export async function getTeamPerformance(
       seen.add(row.leadId);
       bucket(row.lead?.assignedToId).converted += 1;
     }
+  }
+
+  // New clients: leads whose FIRST invoice or payment lands in this month.
+  const onboardedLeadIds = computeOnboardedLeadIds(
+    firstInvoices.map((r) => ({ leadId: r.leadId, at: r._min.quotationDate })),
+    firstPayments.map((r) => ({ leadId: r.leadId, at: r._min.receivedDate })),
+    start,
+    end,
+  );
+  if (onboardedLeadIds.length > 0) {
+    const onboardedLeads = await prisma.inboundLead.findMany({
+      where: { id: { in: onboardedLeadIds } },
+      select: { assignedToId: true },
+    });
+    for (const lead of onboardedLeads) bucket(lead.assignedToId).newClients += 1;
   }
   for (const row of paymentRows) {
     const entry = bucket(row.lead?.assignedToId);
@@ -302,9 +375,12 @@ export async function getTeamPerformance(
     totals.meetings += m.meetings;
     totals.quotes += m.quotes;
     totals.quotesValue += m.quotesValue;
+    totals.invoices += m.invoices;
+    totals.invoicesValue += m.invoicesValue;
     totals.converted += m.converted;
     totals.payments += m.payments;
     totals.paymentsValue += m.paymentsValue;
+    totals.newClients += m.newClients;
     totals.projectsDelivered += m.projectsDelivered;
     totals.projectsPending += m.projectsPending;
     totals.paymentFollowUps += m.paymentFollowUps;
@@ -313,6 +389,7 @@ export async function getTeamPerformance(
 
   for (const m of [...members, totals]) {
     m.quotesValueLabel = formatInr(m.quotesValue);
+    m.invoicesValueLabel = formatInr(m.invoicesValue);
     m.paymentsValueLabel = formatInr(m.paymentsValue);
   }
 
@@ -465,11 +542,12 @@ export async function getTeamPerformanceDrilldown(
         amountLabel: null,
       }));
     }
-    case "quotes": {
+    case "quotes":
+    case "invoices": {
       const rows = await prisma.inboundLeadQuotation.findMany({
         where: {
           organizationId,
-          requestType: "PROPOSAL",
+          requestType: metric === "quotes" ? "PROPOSAL" : "INVOICE",
           quotationDate: { gte: start, lt: end },
           ...(userId !== null ? { createdByUserId: actor } : {}),
         },
@@ -550,6 +628,52 @@ export async function getTeamPerformanceDrilldown(
         dateLabel: fmtDate(r.receivedDate),
         amountLabel: formatInr(Number(r.receivedAmount ?? 0)),
       }));
+    }
+    case "newClients": {
+      const [firstInvoices, firstPayments] = await Promise.all([
+        prisma.inboundLeadQuotation.groupBy({
+          by: ["leadId"],
+          where: { organizationId, requestType: "INVOICE" },
+          _min: { quotationDate: true },
+        }),
+        prisma.inboundLeadPayment.groupBy({
+          by: ["leadId"],
+          where: { organizationId },
+          _min: { receivedDate: true },
+        }),
+      ]);
+      const firstByLead = new Map<string, Date>();
+      for (const row of [
+        ...firstInvoices.map((r) => ({ leadId: r.leadId, at: r._min.quotationDate })),
+        ...firstPayments.map((r) => ({ leadId: r.leadId, at: r._min.receivedDate })),
+      ]) {
+        if (!row.at) continue;
+        const current = firstByLead.get(row.leadId);
+        if (!current || row.at < current) firstByLead.set(row.leadId, row.at);
+      }
+      const ids = [...firstByLead.entries()]
+        .filter(([, at]) => at >= start && at < end)
+        .map(([leadId]) => leadId);
+      if (ids.length === 0) return [];
+      const rows = await prisma.inboundLead.findMany({
+        where: {
+          id: { in: ids },
+          ...(userId !== null ? { assignedToId: actor } : {}),
+        },
+        select: { id: true, ...leadSelect },
+        take: TAKE,
+      });
+      return rows
+        .map((r) => ({
+          id: r.id,
+          title: leadTitle(r),
+          subtitle: "First invoice / payment",
+          dateLabel: fmtDate(firstByLead.get(r.id)),
+          amountLabel: null,
+          onboardedAt: firstByLead.get(r.id)?.getTime() ?? 0,
+        }))
+        .sort((a, b) => b.onboardedAt - a.onboardedAt)
+        .map(({ onboardedAt: _ignored, ...item }) => item);
     }
     case "projectsDelivered":
     case "projectsPending": {
