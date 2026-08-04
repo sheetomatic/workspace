@@ -2,6 +2,8 @@ import { after } from "next/server";
 import { LeadsAlertCenter } from "@/components/saas/leads-alert-center";
 import { LeadsCrmWorkspace } from "@/components/saas/leads-crm-workspace";
 import { LeadsNumbersDashboard } from "@/components/saas/leads-numbers-dashboard";
+import { LeadsTeamPerformance } from "@/components/saas/leads-team-performance";
+import { currentMonthKeyIst, getTeamPerformance } from "@/lib/leads/team-performance";
 import { LeadsPeriodToolbar } from "@/components/saas/leads-period-toolbar";
 import { LeadsPipelineCards } from "@/components/saas/leads-pipeline-cards";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
@@ -273,7 +275,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
 
   // withDbRetry: Neon can drop/refuse connections for a moment (cold start,
   // post-deploy churn) — retry the whole load once instead of erroring the page.
-  const [periodStats, pipeMetrics, numbersMetrics, alertItems, leadPage, teamMembers, sheetsConnection, workspaceTotal, serviceCatalog, organization] =
+  const [periodStats, pipeMetrics, numbersMetrics, alertItems, leadPage, teamMembers, sheetsConnection, workspaceTotal, serviceCatalog, organization, teamPerformance] =
     await withDbRetry((db) =>
       Promise.all([
         getLeadsMachineStatsForPeriod(user.organizationId, period, leadScope),
@@ -301,6 +303,9 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
           where: { id: user.organizationId },
           select: { name: true, logoUrl: true },
         }),
+        canSeeAllLeads
+          ? getTeamPerformance(user.organizationId, currentMonthKeyIst())
+          : Promise.resolve(null),
       ]),
     );
 
@@ -387,6 +392,10 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
           metrics={numbersMetrics}
           periodLabel={period.periodLabel}
         />
+      ) : null}
+
+      {canSeeAllLeads && teamPerformance ? (
+        <LeadsTeamPerformance initial={teamPerformance} />
       ) : null}
 
       <LeadsPipelineCards
