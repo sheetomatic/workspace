@@ -4802,90 +4802,45 @@
   color: #b91c1c;
 }
 
-.leads-teamperf-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 0.6rem;
-}
-
-.leads-teamperf-card {
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 0.55rem 0.65rem;
-  background: #f8fafc;
-}
-
-.leads-teamperf-card.is-total {
-  background: #eef2ff;
-  border-color: #c7d2fe;
-}
-
-.leads-teamperf-card h3 {
-  margin: 0 0 0.4rem;
-  font-size: 0.82rem;
-}
-
-.leads-teamperf-chips {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
-  gap: 0.3rem;
-}
-
-.leads-teamperf-chip {
+.leads-teamperf-controls {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.05rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background: #fff;
-  padding: 0.3rem 0.4rem;
-  cursor: pointer;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+/* Clickable stat card — same look as the numbers dashboard cards. */
+.workspace-app button.leads-teamperf-stat {
+  display: block;
+  width: 100%;
+  font: inherit;
   text-align: left;
-  transition: border-color 120ms ease, box-shadow 120ms ease;
+  cursor: pointer;
+  transition: box-shadow 120ms ease, transform 120ms ease;
 }
 
-.leads-teamperf-chip:not(:disabled):hover {
-  border-color: #6366f1;
-  box-shadow: 0 1px 4px rgba(99, 102, 241, 0.2);
+.workspace-app button.leads-teamperf-stat:not(:disabled):hover {
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  transform: translateY(-1px);
 }
 
-.leads-teamperf-chip:disabled {
+.workspace-app button.leads-teamperf-stat:disabled {
   cursor: default;
 }
 
-.leads-teamperf-chip.is-zero {
-  opacity: 0.55;
+.workspace-app button.leads-teamperf-stat.is-zero {
+  opacity: 0.6;
 }
 
-.leads-teamperf-chip-label {
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #64748b;
-  font-weight: 700;
-}
-
-.leads-teamperf-chip strong {
-  font-size: 0.95rem;
-  line-height: 1.1;
-  color: #0f172a;
-}
-
-.leads-teamperf-chip small {
-  font-size: 0.66rem;
-  color: #475569;
-}
-
-.leads-teamperf-chip.is-good strong {
+.workspace-app button.leads-teamperf-stat.accent-success strong {
   color: #15803d;
 }
 
-.leads-teamperf-chip.is-warn strong {
-  color: #b45309;
+.workspace-app button.leads-teamperf-stat.accent-warning strong {
+  color: #c2410c;
 }
 
-.leads-teamperf-chip.is-bad strong {
+.workspace-app button.leads-teamperf-stat.accent-danger strong {
   color: #b91c1c;
 }
 
@@ -5049,15 +5004,7 @@
 }
 
 @media (max-width: 640px) {
-  .leads-teamperf-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .leads-teamperf-chips {
-    grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
-  }
-
-  .leads-teamperf-cats li {
+      .leads-teamperf-cats li {
     grid-template-columns: minmax(90px, 120px) 1fr auto;
   }
 }

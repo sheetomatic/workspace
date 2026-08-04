@@ -372,7 +372,7 @@ function leadTitle(lead: { name: string | null; company: string | null; phone: s
   return lead.name?.trim() || lead.company?.trim() || lead.phone || "Lead";
 }
 
-/** Items behind one metric card. userId null = whole team. */
+/** Items behind one metric card. userId null = whole team, "unassigned" = no owner. */
 export async function getTeamPerformanceDrilldown(
   organizationId: string,
   monthKey: string,
@@ -383,6 +383,7 @@ export async function getTeamPerformanceDrilldown(
   const now = new Date();
   const TAKE = 200;
   const leadSelect = { name: true, company: true, phone: true } as const;
+  const actor = userId === "unassigned" ? null : userId;
 
   switch (metric) {
     case "leads": {
@@ -391,7 +392,7 @@ export async function getTeamPerformanceDrilldown(
           organizationId,
           archivedAt: null,
           ...capturedInRange(start, end),
-          ...(userId !== null ? { assignedToId: userId } : {}),
+          ...(userId !== null ? { assignedToId: actor } : {}),
         },
         select: {
           id: true,
@@ -419,7 +420,7 @@ export async function getTeamPerformanceDrilldown(
           organizationId,
           type: "CALL",
           createdAt: { gte: start, lt: end },
-          ...(userId !== null ? { createdByUserId: userId } : {}),
+          ...(userId !== null ? { createdByUserId: actor } : {}),
         },
         select: {
           id: true,
@@ -444,7 +445,7 @@ export async function getTeamPerformanceDrilldown(
           organizationId,
           type: "MEETING",
           scheduledAt: { gte: start, lt: end },
-          ...(userId !== null ? { assigneeUserId: userId } : {}),
+          ...(userId !== null ? { assigneeUserId: actor } : {}),
         },
         select: {
           id: true,
@@ -470,7 +471,7 @@ export async function getTeamPerformanceDrilldown(
           organizationId,
           requestType: "PROPOSAL",
           quotationDate: { gte: start, lt: end },
-          ...(userId !== null ? { createdByUserId: userId } : {}),
+          ...(userId !== null ? { createdByUserId: actor } : {}),
         },
         select: {
           id: true,
@@ -497,7 +498,7 @@ export async function getTeamPerformanceDrilldown(
           type: "STATUS_CHANGE",
           body: WON_BODY,
           createdAt: { gte: start, lt: end },
-          ...(userId !== null ? { lead: { assignedToId: userId } } : {}),
+          ...(userId !== null ? { lead: { assignedToId: actor } } : {}),
         },
         select: {
           id: true,
@@ -530,7 +531,7 @@ export async function getTeamPerformanceDrilldown(
         where: {
           organizationId,
           receivedDate: { gte: start, lt: end },
-          ...(userId !== null ? { lead: { assignedToId: userId } } : {}),
+          ...(userId !== null ? { lead: { assignedToId: actor } } : {}),
         },
         select: {
           id: true,
@@ -552,6 +553,8 @@ export async function getTeamPerformanceDrilldown(
     }
     case "projectsDelivered":
     case "projectsPending": {
+      // Project tasks always have an assignee — nothing to show for "Unassigned".
+      if (actor === null && userId !== null) return [];
       const delivered = metric === "projectsDelivered";
       const rows = await prisma.delegatedTask.findMany({
         where: {
@@ -560,7 +563,7 @@ export async function getTeamPerformanceDrilldown(
           ...(delivered
             ? { status: "COMPLETED", completedAt: { gte: start, lt: end } }
             : { status: { not: "COMPLETED" } }),
-          ...(userId !== null ? { assigneeUserId: userId } : {}),
+          ...(actor !== null ? { assigneeUserId: actor } : {}),
         },
         select: {
           id: true,
@@ -592,7 +595,7 @@ export async function getTeamPerformanceDrilldown(
           ...(overdue
             ? { completedAt: null, scheduledAt: { lt: now } }
             : { scheduledAt: { gte: start, lt: end } }),
-          ...(userId !== null ? { assigneeUserId: userId } : {}),
+          ...(userId !== null ? { assigneeUserId: actor } : {}),
         },
         select: {
           id: true,

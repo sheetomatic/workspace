@@ -15,33 +15,34 @@ import type {
 type MetricDef = {
   key: TeamPerfMetricKey;
   label: string;
+  accent: string;
   count: (m: TeamMemberPerf) => number;
   sub?: (m: TeamMemberPerf) => string | null;
-  accent?: string;
 };
 
 const METRICS: MetricDef[] = [
-  { key: "leads", label: "Leads", count: (m) => m.leads },
-  { key: "calls", label: "Calls", count: (m) => m.calls },
-  { key: "meetings", label: "Meetings", count: (m) => m.meetings },
+  { key: "leads", label: "Leads", accent: "accent-blue", count: (m) => m.leads },
+  { key: "calls", label: "Calls", accent: "accent-indigo", count: (m) => m.calls },
+  { key: "meetings", label: "Meetings", accent: "accent-indigo", count: (m) => m.meetings },
   {
     key: "quotes",
     label: "Quotes sent",
+    accent: "accent-purple",
     count: (m) => m.quotes,
     sub: (m) => (m.quotes > 0 ? m.quotesValueLabel : null),
   },
-  { key: "converted", label: "Converted", count: (m) => m.converted, accent: "good" },
+  { key: "converted", label: "Leads converted", accent: "accent-success", count: (m) => m.converted },
   {
     key: "payments",
-    label: "Payments",
+    label: "Payment received",
+    accent: "accent-success",
     count: (m) => m.payments,
     sub: (m) => (m.payments > 0 ? m.paymentsValueLabel : null),
-    accent: "good",
   },
-  { key: "projectsDelivered", label: "Projects done", count: (m) => m.projectsDelivered },
-  { key: "projectsPending", label: "Projects open", count: (m) => m.projectsPending, accent: "warn" },
-  { key: "paymentFollowUps", label: "Pay follow-ups", count: (m) => m.paymentFollowUps },
-  { key: "overduePayments", label: "Overdue pay", count: (m) => m.overduePayments, accent: "bad" },
+  { key: "projectsDelivered", label: "Projects delivered", accent: "accent-teal", count: (m) => m.projectsDelivered },
+  { key: "projectsPending", label: "Projects pending", accent: "accent-warning", count: (m) => m.projectsPending },
+  { key: "paymentFollowUps", label: "Payment follow-ups", accent: "accent-warning", count: (m) => m.paymentFollowUps },
+  { key: "overduePayments", label: "Overdue payments", accent: "accent-danger", count: (m) => m.overduePayments },
 ];
 
 function lastMonths(count: number) {
@@ -75,11 +76,26 @@ type DrillState = {
   error: string | null;
 };
 
+const TOTAL_VALUE = "total";
+const UNASSIGNED_VALUE = "unassigned";
+
 export function LeadsTeamPerformance({ initial }: { initial: TeamPerformanceData }) {
   const [data, setData] = useState(initial);
+  const [selected, setSelected] = useState(TOTAL_VALUE);
   const [pending, startTransition] = useTransition();
   const [drill, setDrill] = useState<DrillState | null>(null);
   const monthOptions = useMemo(() => lastMonths(18), []);
+
+  const namedMembers = data.members.filter((m) => m.userId !== null);
+  const unassigned = data.members.find((m) => m.userId === null) ?? null;
+
+  const shown: TeamMemberPerf =
+    selected === TOTAL_VALUE
+      ? data.totals
+      : selected === UNASSIGNED_VALUE
+        ? (unassigned ?? data.totals)
+        : (namedMembers.find((m) => m.userId === selected) ?? data.totals);
+  const isTotal = shown === data.totals;
 
   function changeMonth(monthKey: string) {
     setDrill(null);
@@ -89,13 +105,19 @@ export function LeadsTeamPerformance({ initial }: { initial: TeamPerformanceData
     });
   }
 
-  function openDrill(member: TeamMemberPerf, metric: MetricDef) {
-    if (metric.count(member) === 0) return;
+  function openDrill(metric: MetricDef) {
+    if (metric.count(shown) === 0) return;
+    // Team total drills into the whole team; a member drills into their items.
+    const userId = isTotal
+      ? null
+      : selected === UNASSIGNED_VALUE
+        ? UNASSIGNED_VALUE
+        : shown.userId;
     setDrill({
       metricLabel: metric.label,
-      memberName: member.name,
+      memberName: shown.name,
       metric: metric.key,
-      userId: member.userId,
+      userId,
       items: null,
       error: null,
     });
@@ -103,10 +125,10 @@ export function LeadsTeamPerformance({ initial }: { initial: TeamPerformanceData
       const result = await fetchTeamPerformanceDrilldownAction({
         monthKey: data.monthKey,
         metric: metric.key,
-        userId: member.userId,
+        userId,
       });
       setDrill((current) => {
-        if (!current || current.metric !== metric.key || current.userId !== member.userId) {
+        if (!current || current.metric !== metric.key) {
           return current;
         }
         return result.ok
@@ -124,58 +146,72 @@ export function LeadsTeamPerformance({ initial }: { initial: TeamPerformanceData
         <div>
           <h2>Team performance</h2>
           <p>
-            Assignee-wise numbers for {data.monthLabel}. Click any number to see
-            the items behind it. Projects open and overdue payments are current
-            totals, not month-bound.
+            {shown.name} · {data.monthLabel}. Click any card to see the items
+            behind it. Projects pending and overdue payments are current totals.
           </p>
         </div>
-        <label className="leads-teamperf-month">
-          Month
-          <select
-            value={data.monthKey}
-            onChange={(e) => changeMonth(e.target.value)}
-            disabled={pending}
-          >
-            {monthOptions.map((option) => (
-              <option key={option.key} value={option.key}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="leads-teamperf-controls">
+          <label className="leads-teamperf-month">
+            Show
+            <select
+              value={selected}
+              onChange={(e) => {
+                setSelected(e.target.value);
+                setDrill(null);
+              }}
+              disabled={pending}
+            >
+              <option value={TOTAL_VALUE}>Team total</option>
+              {namedMembers.map((member) => (
+                <option key={member.userId} value={member.userId!}>
+                  {member.name}
+                </option>
+              ))}
+              {unassigned ? (
+                <option value={UNASSIGNED_VALUE}>Unassigned</option>
+              ) : null}
+            </select>
+          </label>
+          <label className="leads-teamperf-month">
+            Month
+            <select
+              value={data.monthKey}
+              onChange={(e) => changeMonth(e.target.value)}
+              disabled={pending}
+            >
+              {monthOptions.map((option) => (
+                <option key={option.key} value={option.key}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </header>
 
       {pending ? <p className="leads-teamperf-loading">Loading…</p> : null}
 
-      <div className="leads-teamperf-grid">
-        {[data.totals, ...data.members].map((member) => (
-          <article
-            key={member.userId ?? member.name}
-            className={`leads-teamperf-card${member === data.totals ? " is-total" : ""}`}
-          >
-            <h3>{member.name}</h3>
-            <div className="leads-teamperf-chips">
-              {METRICS.map((metric) => {
-                const count = metric.count(member);
-                const sub = metric.sub?.(member) ?? null;
-                return (
-                  <button
-                    key={metric.key}
-                    type="button"
-                    className={`leads-teamperf-chip${count > 0 && metric.accent ? ` is-${metric.accent}` : ""}${count === 0 ? " is-zero" : ""}`}
-                    onClick={() => openDrill(member, metric)}
-                    disabled={count === 0}
-                    title={`Show ${metric.label.toLowerCase()} for ${member.name}`}
-                  >
-                    <span className="leads-teamperf-chip-label">{metric.label}</span>
-                    <strong>{count}</strong>
-                    {sub ? <small>{sub}</small> : null}
-                  </button>
-                );
-              })}
-            </div>
-          </article>
-        ))}
+      <div className="hs-quick-stats">
+        {METRICS.map((metric) => {
+          const count = metric.count(shown);
+          const sub = metric.sub?.(shown) ?? null;
+          return (
+            <button
+              key={metric.key}
+              type="button"
+              className={`hs-quick-stat leads-pipeline-card leads-teamperf-stat ${metric.accent}${count === 0 ? " is-zero" : ""}`}
+              onClick={() => openDrill(metric)}
+              disabled={count === 0}
+              title={`Show ${metric.label.toLowerCase()} — ${shown.name}`}
+            >
+              <span>{metric.label}</span>
+              <strong>
+                {count}
+                {sub ? <small className="leads-kpi-sub">{sub}</small> : null}
+              </strong>
+            </button>
+          );
+        })}
       </div>
 
       {data.byCategory.length > 0 ? (
