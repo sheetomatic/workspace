@@ -1148,14 +1148,15 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 240px;
+  /* Never collapse below a typable width — wraps to its own row instead. */
+  min-width: 240px;
   max-width: 100%;
 }
 
 .leads-crm-search input {
   flex: 1;
-  min-width: 0;
+  min-width: 200px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   padding: 0.5rem 0.7rem;
