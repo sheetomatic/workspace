@@ -51,6 +51,9 @@ export function GeoPunchForm({
   const [manualLat, setManualLat] = useState("");
   const [manualLng, setManualLng] = useState("");
   const [accuracyM, setAccuracyM] = useState<number | null>(null);
+  const [coordsSource, setCoordsSource] = useState<"gps" | "manual" | null>(
+    null,
+  );
   const defaultSiteId =
     siteId ?? (sites.length === 1 ? sites[0]?.id ?? "" : "");
   const [selectedSiteId, setSelectedSiteId] = useState(defaultSiteId);
@@ -70,6 +73,7 @@ export function GeoPunchForm({
     setAccuracyM(
       Number.isFinite(pos.coords.accuracy) ? pos.coords.accuracy : null,
     );
+    setCoordsSource("gps");
   }
 
   /**
@@ -177,9 +181,12 @@ export function GeoPunchForm({
 
     let coords = parseCoords(manualLat, manualLng);
     let fixAccuracyM = accuracyM;
+    const typedManually = coords !== null && coordsSource === "manual";
 
-    // One-tap check-in: no location yet? Capture it now instead of failing.
-    if (requireGeo && !coords) {
+    // One-tap check-in: always take a fresh GPS fix on submit (unless the
+    // person typed coordinates by hand). Falls back to the last captured
+    // fix if the fresh read fails mid-session.
+    if (requireGeo && !typedManually) {
       setLocating(true);
       setMessage("Getting your GPS location…");
       const best = await watchBestFix();
@@ -258,6 +265,7 @@ export function GeoPunchForm({
       setManualLat("");
       setManualLng("");
       setAccuracyM(null);
+      setCoordsSource(null);
       setSelectedVisitId("");
       setSelectedSiteId(
         siteId ?? (sites.length === 1 ? sites[0]?.id ?? "" : ""),
@@ -321,18 +329,20 @@ export function GeoPunchForm({
       ) : null}
       {children}
       <div className="ws-hr-form-actions">
-        <button
-          type="button"
-          className="btn-cta btn-secondary"
-          onClick={() => void captureLocation()}
-          disabled={locating || pending}
-        >
-          {locating
-            ? "Locating…"
-            : manualLat && manualLng
-              ? "Refresh location"
-              : "Use my location"}
-        </button>
+        {!requireGeo ? (
+          <button
+            type="button"
+            className="btn-cta btn-secondary"
+            onClick={() => void captureLocation()}
+            disabled={locating || pending}
+          >
+            {locating
+              ? "Locating…"
+              : manualLat && manualLng
+                ? "Refresh location"
+                : "Use my location"}
+          </button>
+        ) : null}
         <button
           type="submit"
           className="btn-cta btn-primary"
@@ -353,6 +363,7 @@ export function GeoPunchForm({
               onChange={(event) => {
                 setManualLat(event.target.value);
                 setAccuracyM(null);
+                setCoordsSource("manual");
               }}
               placeholder="e.g. 19.0760"
             />
@@ -367,6 +378,7 @@ export function GeoPunchForm({
               onChange={(event) => {
                 setManualLng(event.target.value);
                 setAccuracyM(null);
+                setCoordsSource("manual");
               }}
               placeholder="e.g. 72.8777"
             />
