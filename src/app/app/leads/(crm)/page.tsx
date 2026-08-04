@@ -1,5 +1,4 @@
 import { after } from "next/server";
-import { LeadsAlertCenter } from "@/components/saas/leads-alert-center";
 import { LeadsCrmWorkspace } from "@/components/saas/leads-crm-workspace";
 import { LeadsTeamPerformance } from "@/components/saas/leads-team-performance";
 import { currentMonthKeyIst, getTeamPerformance } from "@/lib/leads/team-performance";
@@ -15,7 +14,6 @@ import {
 import { readSheetSyncProgress } from "@/lib/leads/sheet-sync-progress";
 import { LeadsSheetSyncButton } from "@/components/saas/leads-sheet-sync-button";
 import { ensureLeadConnections } from "@/lib/leads/ingest";
-import { listCrmAlertCenterItems } from "@/lib/leads/alerts/evaluate";
 import { parseCrmDrawerTab } from "@/lib/leads/crm-open";
 import { parseLeadsListParams } from "@/lib/leads/list-params";
 import { parseLeadsPeriodParams } from "@/lib/leads/period";
@@ -274,16 +272,12 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
 
   // withDbRetry: Neon can drop/refuse connections for a moment (cold start,
   // post-deploy churn) — retry the whole load once instead of erroring the page.
-  const [periodStats, pipeMetrics, numbersMetrics, alertItems, leadPage, teamMembers, sheetsConnection, workspaceTotal, serviceCatalog, organization, teamPerformance] =
+  const [periodStats, pipeMetrics, numbersMetrics, leadPage, teamMembers, sheetsConnection, workspaceTotal, serviceCatalog, organization, teamPerformance] =
     await withDbRetry((db) =>
       Promise.all([
         getLeadsMachineStatsForPeriod(user.organizationId, period, leadScope),
         getLeadsPipeMetricsForPeriod(user.organizationId, period, leadScope),
         getCrmNumbersMetricsForPeriod(user.organizationId, period, leadScope),
-        listCrmAlertCenterItems(user.organizationId, {
-          limit: 40,
-          assignedToId: leadScope?.assignedToId,
-        }),
         listInboundLeadsForPeriodPaginated(user.organizationId, period, {
           page: listParams.page,
           pageSize: listParams.pageSize,
@@ -366,6 +360,14 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
             />
             {canManage ? (
               <Link
+                className="btn-secondary btn-sm"
+                href="/app/leads/settings#nurture-messages"
+              >
+                Setup alerts
+              </Link>
+            ) : null}
+            {canManage ? (
+              <Link
                 className="leads-setup-icon-btn"
                 href="/app/leads/settings"
                 title="Setup"
@@ -379,12 +381,6 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
       />
 
       <LeadsPeriodToolbar period={period} />
-
-      <LeadsAlertCenter
-        baseParams={params}
-        canSend={canManage}
-        items={alertItems}
-      />
 
       {canSeeAllLeads && teamPerformance ? (
         <LeadsTeamPerformance initial={teamPerformance} />
