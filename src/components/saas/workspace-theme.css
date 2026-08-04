@@ -11464,6 +11464,12 @@ body.ws-more-sheet-open .sheetomatic-ai-launcher {
   gap: 0.35rem;
 }
 
+.workspace-app .ws-att-verify-bulk {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0.35rem 0 0.6rem;
+}
+
 .workspace-app .ws-att-verify-ot {
   display: inline-flex;
   align-items: center;

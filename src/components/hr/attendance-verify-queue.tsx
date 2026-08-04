@@ -2,7 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { verifyAttendanceAction } from "@/lib/hr/hr-actions";
+import {
+  approveAllAttendanceAction,
+  verifyAttendanceAction,
+} from "@/lib/hr/hr-actions";
 import { HrFeedbackBanner } from "@/components/hr/hr-feedback";
 
 export type PendingVerifyRow = {
@@ -58,6 +61,41 @@ export function AttendanceVerifyQueue({
         Self punches stay pending until a manager approves. Rejected days count as
         absent for payroll.
       </p>
+      <div className="ws-att-verify-bulk">
+        <button
+          type="button"
+          className="btn-cta btn-primary btn-compact"
+          disabled={pending}
+          onClick={() => {
+            if (
+              !window.confirm(
+                `Approve all ${rows.length} pending check-in${rows.length === 1 ? "" : "s"}?`,
+              )
+            ) {
+              return;
+            }
+            startTransition(async () => {
+              setMessage(null);
+              setIsError(false);
+              const result = await approveAllAttendanceAction(
+                rows.map((row) => row.id),
+              );
+              if (!result.ok) {
+                setMessage(result.message);
+                setIsError(true);
+                router.refresh();
+                return;
+              }
+              setMessage(
+                `Approved all ${rows.length} pending check-in${rows.length === 1 ? "" : "s"}.`,
+              );
+              router.refresh();
+            });
+          }}
+        >
+          {pending ? "Approving…" : `Approve all (${rows.length})`}
+        </button>
+      </div>
       <div className="ws-hr-table-wrap">
         <table className="ws-hr-table">
           <thead>

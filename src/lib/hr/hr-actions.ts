@@ -758,6 +758,54 @@ export async function verifyAttendanceAction(
   }
 }
 
+/** Approve every pending self check-in in one click (keeps each row's OT). */
+export async function approveAllAttendanceAction(
+  recordIds: string[],
+): Promise<HrActionResult> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "MANAGER")) {
+    return hrActionFailure("FORBIDDEN", "Manager access required to verify attendance.");
+  }
+  if (!(await assertHrSubModuleEnabled(user, "attendance"))) {
+    return hrActionFailure("FORBIDDEN", "Attendance is not enabled for this workspace.");
+  }
+
+  const ids = [...new Set(recordIds)].filter(Boolean).slice(0, 200);
+  if (ids.length === 0) {
+    return hrActionFailure("INVALID_INPUT", "Nothing to approve.");
+  }
+
+  const { verifyAttendanceRecord } = await import("@/lib/hr/hr-store");
+  let approved = 0;
+  let failed = 0;
+  for (const recordId of ids) {
+    try {
+      await verifyAttendanceRecord({
+        organizationId: user.organizationId,
+        recordId,
+        reviewerId: user.id,
+        approve: true,
+      });
+      approved += 1;
+    } catch (error) {
+      failed += 1;
+      console.error("[hr] bulk approve failed", recordId, error);
+    }
+  }
+
+  revalidateHr();
+  if (approved === 0) {
+    return hrActionFailure("VERIFY_FAILED", "Could not approve the pending check-ins.");
+  }
+  if (failed > 0) {
+    return hrActionFailure(
+      "VERIFY_FAILED",
+      `Approved ${approved}, but ${failed} could not be approved — refresh and retry.`,
+    );
+  }
+  return { ok: true };
+}
+
 async function requireSuperAdminAttendanceActor() {
   const user = await getSessionUser();
   if (!user?.isSuperAdmin) {
