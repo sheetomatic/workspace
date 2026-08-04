@@ -207,6 +207,23 @@ export function LeadsCrmWorkspace({
     setLocalLeads(leads);
   }, [leads]);
 
+  // Focus mode: prefetch the list page so closing the drawer navigates fast.
+  useEffect(() => {
+    if (focusMode) {
+      router.prefetch("/app/leads?period=all");
+    }
+  }, [focusMode, router]);
+
+  function closeDrawer() {
+    // Hide the drawer immediately — never make the user wait on navigation.
+    setSelectedId(null);
+    if (focusMode) {
+      startTransition(() => {
+        router.push("/app/leads?period=all");
+      });
+    }
+  }
+
   function patchLead(id: string, patch: Partial<LeadRow>) {
     setLocalLeads((prev) =>
       prev.map((lead) => (lead.id === id ? { ...lead, ...patch } : lead)),
@@ -770,13 +787,7 @@ export function LeadsCrmWorkspace({
         <div
           className="leads-drawer-backdrop"
           role="presentation"
-          onClick={() => {
-            if (focusMode) {
-              router.push("/app/leads?period=all");
-              return;
-            }
-            setSelectedId(null);
-          }}
+          onClick={closeDrawer}
         >
           <LeadDrawerPanel
             key={selected.id}
@@ -785,20 +796,8 @@ export function LeadsCrmWorkspace({
             initialTab={parseCrmDrawerTab(initialTab) ?? initialTab}
             lead={selected}
             listParams={listParams}
-            onClose={() => {
-              if (focusMode) {
-                router.push("/app/leads?period=all");
-                return;
-              }
-              setSelectedId(null);
-            }}
-            onDeleted={() => {
-              if (focusMode) {
-                router.push("/app/leads?period=all");
-                return;
-              }
-              setSelectedId(null);
-            }}
+            onClose={closeDrawer}
+            onDeleted={closeDrawer}
             onLeadPatched={patchLead}
             organizationLogoUrl={organizationLogoUrl}
             organizationName={organizationName}
