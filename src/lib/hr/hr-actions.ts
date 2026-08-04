@@ -62,6 +62,29 @@ async function assertHrSubModuleEnabled(
   );
 }
 
+/**
+ * Strict coordinate reader: missing/empty fields must stay undefined —
+ * `Number(null)`/`Number("")` are 0, which silently became lat/lng (0,0)
+ * ("Null Island", ~9,300km away) and failed every geofence check.
+ * An exact (0,0) fix is also treated as "no location".
+ */
+function readCoordPair(formData: FormData) {
+  const parse = (name: string) => {
+    const raw = formData.get(name);
+    if (typeof raw !== "string" || raw.trim() === "") {
+      return undefined;
+    }
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : undefined;
+  };
+  const lat = parse("geoLat");
+  const lng = parse("geoLng");
+  if (lat === undefined || lng === undefined || (lat === 0 && lng === 0)) {
+    return { lat: undefined, lng: undefined };
+  }
+  return { lat, lng };
+}
+
 export async function recordCheckInAction(
   formData: FormData,
 ): Promise<HrActionResult> {
@@ -73,8 +96,7 @@ export async function recordCheckInAction(
     return hrActionFailure("FORBIDDEN", "Attendance is not enabled for this workspace.");
   }
 
-  const geoLat = Number(formData.get("geoLat"));
-  const geoLng = Number(formData.get("geoLng"));
+  const { lat: geoLat, lng: geoLng } = readCoordPair(formData);
   const accuracyM = Number(formData.get("accuracyM"));
   const siteId = String(formData.get("siteId") ?? "").trim() || null;
 
@@ -82,10 +104,10 @@ export async function recordCheckInAction(
     await checkInAttendance({
       user,
       siteId,
-      geoLat: Number.isFinite(geoLat) ? geoLat : undefined,
-      geoLng: Number.isFinite(geoLng) ? geoLng : undefined,
+      geoLat,
+      geoLng,
       accuracyM: Number.isFinite(accuracyM) ? accuracyM : null,
-      method: Number.isFinite(geoLat) ? "GEO" : "WEB",
+      method: geoLat !== undefined ? "GEO" : "WEB",
     });
     revalidateHr();
     return { ok: true };
@@ -255,8 +277,7 @@ export async function recordFieldCheckInAction(
     return hrActionFailure("FORBIDDEN", "Field tracking is not enabled for this workspace.");
   }
 
-  const geoLat = Number(formData.get("geoLat"));
-  const geoLng = Number(formData.get("geoLng"));
+  const { lat: geoLat, lng: geoLng } = readCoordPair(formData);
   const clientName = String(formData.get("clientName") ?? "").trim();
   const activityNote = String(formData.get("activityNote") ?? "").trim();
   const visitId = String(formData.get("visitId") ?? "").trim() || null;
@@ -264,7 +285,7 @@ export async function recordFieldCheckInAction(
   const accuracyM = Number.isFinite(accuracyMRaw) ? accuracyMRaw : null;
 
   try {
-    if (!Number.isFinite(geoLat) || !Number.isFinite(geoLng)) {
+    if (geoLat === undefined || geoLng === undefined) {
       throw new Error("GPS location is required for field check-in.");
     }
 
@@ -363,13 +384,12 @@ export async function postFieldLocationPingAction(
     return hrActionFailure("FORBIDDEN", "Field tracking is not enabled for this workspace.");
   }
 
-  const geoLat = Number(formData.get("geoLat"));
-  const geoLng = Number(formData.get("geoLng"));
+  const { lat: geoLat, lng: geoLng } = readCoordPair(formData);
   const accuracyM = Number(formData.get("accuracyM"));
   const batteryPct = Number(formData.get("batteryPct"));
   const isMockRaw = formData.get("isMockLocation");
 
-  if (!Number.isFinite(geoLat) || !Number.isFinite(geoLng)) {
+  if (geoLat === undefined || geoLng === undefined) {
     return hrActionFailure("GEO_REQUIRED", "GPS location is required for live ping.");
   }
 
@@ -416,8 +436,7 @@ export async function createFieldVisitAction(
   const clientName = String(formData.get("clientName") ?? "").trim();
   const purpose = String(formData.get("purpose") ?? "").trim();
   const locationLabel = String(formData.get("locationLabel") ?? "").trim();
-  const geoLat = Number(formData.get("geoLat"));
-  const geoLng = Number(formData.get("geoLng"));
+  const { lat: geoLat, lng: geoLng } = readCoordPair(formData);
   const radiusRaw = Number(
     formData.get("radiusM") ?? formData.get("geoFenceRadiusM"),
   );
@@ -442,7 +461,7 @@ export async function createFieldVisitAction(
   }
 
   try {
-    const hasFence = Number.isFinite(geoLat) && Number.isFinite(geoLng);
+    const hasFence = geoLat !== undefined && geoLng !== undefined;
     const { displayVisitPurpose } = await import("@/lib/hr/field-geofence");
     const cleanPurpose = displayVisitPurpose(purpose) ?? (purpose || null);
 
