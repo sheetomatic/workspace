@@ -316,10 +316,20 @@ export async function updateInboundLeadStatus(leadId: string, status: InboundLea
     status,
   });
 
+  // 3-day trial: auto-schedule the follow-up for when the trial expires.
+  const trialEndsAt =
+    status === "TRIAL" ? new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) : null;
+
   await withDbRetry((db) =>
     db.inboundLead.updateMany({
       where: { id: leadId, organizationId: user.organizationId },
-      data: { status, score, temperature, modifiedAt: new Date() },
+      data: {
+        status,
+        score,
+        temperature,
+        modifiedAt: new Date(),
+        ...(trialEndsAt ? { nextFollowUpAt: trialEndsAt } : {}),
+      },
     }),
   );
 
@@ -327,7 +337,9 @@ export async function updateInboundLeadStatus(leadId: string, status: InboundLea
     organizationId: user.organizationId,
     leadId,
     type: "STATUS_CHANGE",
-    body: `Status changed to ${status.replaceAll("_", " ")}`,
+    body: trialEndsAt
+      ? `3-day trial started — follow up on ${trialEndsAt.toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" })} when the trial ends`
+      : `Status changed to ${status.replaceAll("_", " ")}`,
     createdByUserId: user.id,
   });
 

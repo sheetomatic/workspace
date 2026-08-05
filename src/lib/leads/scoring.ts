@@ -26,6 +26,7 @@ const STATUS_WEIGHT: Record<InboundLeadStatus, number> = {
   QUALIFIED: 28,
   DEMO_SCHEDULED: 32,
   PROPOSAL: 35,
+  TRIAL: 36,
   NEGOTIATION: 38,
   INVOICE: 40,
   PAYMENT: 45,

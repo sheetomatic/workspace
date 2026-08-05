@@ -73,6 +73,16 @@ Our team will share it with you shortly. Reply here if you have any questions on
 
 — Team Sheetomatic`,
 
+  stage_trial: `Hi {{firstName}},
+
+Good news — your *3-day free trial* for *{{topic}}* is now active! 🎉
+
+Explore everything at your own pace. {{counsellor}} is available on this number for any help during the trial.
+
+We will check in with you before the trial ends to answer questions and discuss the next steps.
+
+— Team Sheetomatic`,
+
   stage_follow_up: `Hi {{firstName}},
 
 Just a gentle follow-up on your inquiry with Sheetomatic.

@@ -7,6 +7,7 @@ export type LeadNurtureEventId =
   | "post_call"
   | "stage_schedule_meeting"
   | "stage_proposal"
+  | "stage_trial"
   | "stage_follow_up"
   | "stage_qualified"
   | "alert_payment_pending"
@@ -19,6 +20,7 @@ export const LEAD_NURTURE_EVENT_LABELS: Record<LeadNurtureEventId, string> = {
   post_call: "After call — discussion recap",
   stage_schedule_meeting: "Stage — schedule meeting",
   stage_proposal: "Stage — proposal shared",
+  stage_trial: "Stage — 3-day trial started",
   stage_follow_up: "Stage — follow-up reminder",
   stage_qualified: "Stage — qualified / next steps",
   alert_payment_pending: "Alert — payment not received",
@@ -35,6 +37,7 @@ export const STATUS_TO_NURTURE_EVENT: Partial<
   SCHEDULE_MEETING: "stage_schedule_meeting",
   DEMO_SCHEDULED: "stage_schedule_meeting",
   PROPOSAL: "stage_proposal",
+  TRIAL: "stage_trial",
   NEGOTIATION: "stage_proposal",
   INVOICE: "stage_proposal",
   FOLLOW_UP: "stage_follow_up",
@@ -47,6 +50,7 @@ export const NURTURE_EVENT_ORDER: LeadNurtureEventId[] = [
   "post_call",
   "stage_schedule_meeting",
   "stage_proposal",
+  "stage_trial",
   "stage_follow_up",
   "stage_qualified",
   "alert_payment_pending",

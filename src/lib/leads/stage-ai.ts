@@ -24,6 +24,10 @@ export function inferLeadStageFromRequirement(
     return "INVOICE";
   }
 
+  if (/\btrial\b|free trial|trial period/i.test(text)) {
+    return "TRIAL";
+  }
+
   if (/quotation|proposal|quote|pricing|estimate/i.test(text)) {
     return "PROPOSAL";
   }
@@ -81,6 +85,10 @@ export function mapSheetStageToStatus(value: string): InboundLeadStatus | undefi
     "make proposal | invoice": "PROPOSAL",
     "make proposal": "PROPOSAL",
     proposal: "PROPOSAL",
+    trial: "TRIAL",
+    "free trial": "TRIAL",
+    "3 day trial": "TRIAL",
+    "trial (3 days)": "TRIAL",
     negotiation: "NEGOTIATION",
     negotiating: "NEGOTIATION",
     invoice: "INVOICE",

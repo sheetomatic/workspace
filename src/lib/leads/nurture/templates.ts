@@ -169,6 +169,19 @@ export function buildLeadNurtureMessage(params: {
         "— Team Sheetomatic",
       ].join("\n");
 
+    case "stage_trial":
+      return [
+        `Hi ${firstName},`,
+        "",
+        `Good news — your *3-day free trial* for *${topic}* is now active! 🎉`,
+        "",
+        `Explore everything at your own pace. ${counsellor} is available on this number for any help during the trial.`,
+        "",
+        "We will check in with you before the trial ends to answer questions and discuss the next steps.",
+        "",
+        "— Team Sheetomatic",
+      ].join("\n");
+
     case "stage_follow_up":
       return [
         `Hi ${firstName},`,
