@@ -47,7 +47,8 @@ export const TEMPLATE_PRODUCT_SEEDS: Array<{
       "WorkTrack Pro — one-time purchase HRMS for small teams. Real-time attendance tracking, simple in/out punches, leave requests with quick manager approval, and monthly attendance reports for payroll-ready insights. Pay on UPI — after confirmation we email your AppSheet copy link.",
     sortOrder: 10,
     thumbnailUrl: "/images/templates/appsheet-attendance-leave.png",
-    copyLink: "https://www.appsheet.com/portfolio/288801316",
+    copyLink:
+      "https://www.appsheet.com/templates/?appGuidString=2d4e27df-96a7-4614-8e25-0522d2a77c7c",
     active: true,
   },
   {
@@ -120,6 +121,19 @@ export const TEMPLATE_PRODUCT_SEEDS: Array<{
     sortOrder: 16,
     thumbnailUrl: "/images/templates/appsheet-grievance-management.png",
     copyLink: null,
+    active: true,
+  },
+  {
+    slug: "appsheet-crm-electric-works",
+    name: "CRM – Electric Works Shop (AppSheet)",
+    type: "APPSHEET",
+    priceInr: 1499,
+    description:
+      "Ready-made CRM built for electric works shops — track enquiries, customers, quotations, and job follow-ups in one AppSheet app. Pay on UPI — after confirmation we email your AppSheet copy link.",
+    sortOrder: 17,
+    thumbnailUrl: null,
+    copyLink:
+      "https://www.appsheet.com/templates/?appGuidString=44c60e0f-2247-43dc-9b51-61e7d30075ba",
     active: true,
   },
 ];
