@@ -128,7 +128,6 @@ export async function GET() {
         phone: "919876543210",
         requirement: "What they want",
         sourceDetail: "Campaign or form name",
-        createFmsJob: true,
       },
     },
   });

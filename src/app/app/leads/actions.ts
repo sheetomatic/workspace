@@ -1281,7 +1281,6 @@ export async function createManualInboundLead(formData: FormData) {
     capturedAt: new Date(),
     actorUserId: user.id,
     createdByUserId: user.id,
-    createFmsJob: true,
     hardBlockDuplicates: true,
   });
 

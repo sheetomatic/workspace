@@ -129,7 +129,6 @@ export async function pullLeadsFromConnection(params: {
         nextFollowUpAt: row.nextFollowUpAt ?? undefined,
         status: row.status,
         rawPayload: (row.raw ?? row) as Prisma.InputJsonValue,
-        createFmsJob: true,
         suppressOwnerNotify: true,
       });
       if (result.skipped) {

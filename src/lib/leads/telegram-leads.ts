@@ -138,7 +138,6 @@ export async function processTelegramLeadUpdate(params: {
       ? `Telegram @${contact.username}`
       : "Telegram bot",
     rawPayload: params.update as object,
-    createFmsJob: true,
   });
 
   await prisma.leadIngestConnection.update({

@@ -475,8 +475,11 @@ export async function ingestInboundLead(
     });
   }
 
+  // FMS is opt-in per lead (owner decision): never auto-spawn a Lead-to-Closure
+  // job on capture. Explicit createFmsJob: true or the manual "Move to FMS"
+  // action are the only ways a lead enters FMS.
   let fmsBridge: Awaited<ReturnType<typeof bridgeInboundLeadToFms>> | null = null;
-  if (input.createFmsJob !== false) {
+  if (input.createFmsJob === true) {
     fmsBridge = await bridgeInboundLeadToFms({
       organizationId: input.organizationId,
       lead,

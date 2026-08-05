@@ -374,7 +374,6 @@ export async function processMetaLeadgenEvent(params: {
           entry: params.rawEntry,
           details,
         } as object,
-        createFmsJob: true,
       });
 
       if (result.lead) {
