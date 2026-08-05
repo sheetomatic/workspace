@@ -36,6 +36,7 @@ import {
   updateInboundLeadStatus,
   updateLeadMeetingNotes,
   updateLeadCallingStatus,
+  setLeadTrainingRequiredAction,
   updateLeadProjectStatus,
 } from "@/app/app/leads/actions";
 import { QuotationBuilderPanel } from "@/components/saas/quotation-builder-panel";
@@ -197,6 +198,7 @@ export type LeadDrawerData = {
   aiSuggestedStatus: InboundLeadStatus | null;
   callingStatus: LeadCallingStatus;
   projectStatus: LeadProjectStatus;
+  trainingRequired: boolean;
   score: number | null;
   temperature: LeadTemperature | null;
   utmSource: string | null;
@@ -329,6 +331,29 @@ export function LeadDrawerPanel({
   );
   const [status, setStatus] = useState(() => resolveLeadStatus(lead.status));
   const [projectStatus, setProjectStatus] = useState(lead.projectStatus);
+  const [trainingRequired, setTrainingRequired] = useState(lead.trainingRequired);
+  // Training tab is opt-in per lead; training-category leads always have it.
+  const showTraining = trainingRequired || category === "TRAINING_GWS";
+
+  // Deep links may point at a hidden Training tab — fall back to Details.
+  useEffect(() => {
+    if (tab === "training" && !showTraining) {
+      setTab("details");
+    }
+  }, [tab, showTraining]);
+
+  function toggleTrainingRequired(next: boolean) {
+    setTrainingRequired(next);
+    if (!next && tab === "training") {
+      setTab("details");
+    }
+    startActionTransition(async () => {
+      const result = await setLeadTrainingRequiredAction(lead.id, next);
+      if (!result.ok) {
+        setTrainingRequired(!next);
+      }
+    });
+  }
   const [assignedToId, setAssignedToId] = useState(lead.assignedTo?.id ?? "");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [detailsSaveStatus, setDetailsSaveStatus] = useState<DetailsSaveStatus>("idle");
@@ -805,7 +830,9 @@ export function LeadDrawerPanel({
             { key: "quote" as const, label: "Quotation" },
             { key: "payments" as const, label: "Payment" },
             { key: "projects" as const, label: "Projects" },
-            { key: "training" as const, label: "Training" },
+            ...(showTraining
+              ? [{ key: "training" as const, label: "Training" }]
+              : []),
           ]
         ).map((item) => (
           <button
@@ -1073,6 +1100,24 @@ export function LeadDrawerPanel({
                       {option.label}
                     </option>
                   ))}
+                </select>
+              </label>
+              <label>
+                Training
+                <select
+                  value={showTraining ? "yes" : "no"}
+                  disabled={!canWork || category === "TRAINING_GWS"}
+                  onChange={(event) =>
+                    toggleTrainingRequired(event.target.value === "yes")
+                  }
+                  title={
+                    category === "TRAINING_GWS"
+                      ? "Training-category leads always have the Training tab."
+                      : "Show the Training tab for this lead?"
+                  }
+                >
+                  <option value="no">No</option>
+                  <option value="yes">Yes</option>
                 </select>
               </label>
               <label>
@@ -2553,7 +2598,7 @@ export function LeadDrawerPanel({
         </section>
       ) : null}
 
-      {tab === "training" ? (
+      {tab === "training" && showTraining ? (
         <LeadTrainingSlotsPanel leadId={lead.id} canManage={canManage} />
       ) : null}
 

@@ -3349,6 +3349,22 @@ export async function importLeadsFromCsvAction(formData: FormData) {
   };
 }
 
+export async function setLeadTrainingRequiredAction(
+  leadId: string,
+  required: boolean,
+) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!(await canWorkLead(user, leadId))) {
+    return { ok: false as const, message: "You can only update leads assigned to you." };
+  }
+  await prisma.inboundLead.update({
+    where: { id: leadId },
+    data: { trainingRequired: required },
+  });
+  revalidatePath("/app/leads");
+  return { ok: true as const, message: required ? "Training enabled." : "Training hidden." };
+}
+
 export async function getLeadTrainingSlotsAction(leadId: string) {
   const user = await requireSession(undefined, { module: "CRM" });
   const lead = await prisma.inboundLead.findFirst({

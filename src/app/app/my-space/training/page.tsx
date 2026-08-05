@@ -68,7 +68,7 @@ export default async function MySpaceTrainingPage() {
           <div className="ws-ims-panel-head">
             <h2>Active students</h2>
           </div>
-          <TrainingStudentsPanel students={students} />
+          <TrainingStudentsPanel students={students} canManage />
         </section>
       </div>
     </div>

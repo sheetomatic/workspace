@@ -77,6 +77,7 @@ function serializeLead(lead: CrmDrawerLead) {
     aiSuggestedStatus: lead.aiSuggestedStatus,
     callingStatus: lead.callingStatus,
     projectStatus: lead.projectStatus,
+    trainingRequired: lead.trainingRequired,
     score: lead.score ?? null,
     temperature: lead.temperature ?? null,
     utmSource: lead.utmSource ?? null,

@@ -6,6 +6,7 @@ import { CrmSubmoduleShell } from "@/components/saas/crm-submodule-shell";
 import "@/components/saas/leads-machine.css";
 import "@/components/saas/training-students-panel.css";
 import { listActiveTrainingStudents } from "@/lib/courses/slots";
+import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
 import { prisma } from "@/lib/db";
@@ -87,7 +88,10 @@ export default async function CrmTrainingPage() {
         },
       ]}
     >
-      <TrainingStudentsPanel students={students} />
+      <TrainingStudentsPanel
+        students={students}
+        canManage={hasMinimumRole(user.role, "STAFF")}
+      />
     </CrmSubmoduleShell>
   );
 }

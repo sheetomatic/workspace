@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useMemo, useState, useTransition } from "react";
 import { ChevronDown, ExternalLink, Video } from "lucide-react";
+import { updateLeadTrainingSlotStatusAction } from "@/app/app/leads/actions";
 
 export type TrainingStudentSlotView = {
   id: string;
@@ -59,15 +61,37 @@ function durationLabel(minutes: number) {
   return `${minutes} min`;
 }
 
+type SlotStatus = "SCHEDULED" | "COMPLETED" | "CANCELLED";
+
 export function TrainingStudentsPanel({
   students,
+  canManage = false,
 }: {
   students: TrainingStudentView[];
+  canManage?: boolean;
 }) {
   const [openId, setOpenId] = useState<string | null>(
     students.length === 1 ? students[0]!.id : null,
   );
   const [query, setQuery] = useState("");
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  // Instant feedback while the server data refreshes in the background.
+  const [statusOverride, setStatusOverride] = useState<Record<string, SlotStatus>>({});
+  const router = useRouter();
+
+  function onSlotStatus(slotId: string, status: SlotStatus) {
+    startTransition(async () => {
+      setError(null);
+      const result = await updateLeadTrainingSlotStatusAction(slotId, status);
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setStatusOverride((current) => ({ ...current, [slotId]: status }));
+      router.refresh();
+    });
+  }
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -103,6 +127,8 @@ export function TrainingStudentsPanel({
           {visible.length} active student{visible.length === 1 ? "" : "s"}
         </span>
       </div>
+
+      {error ? <p className="saas-form-message error">{error}</p> : null}
 
       {visible.length === 0 ? (
         <p className="ws-apple-record-empty">No students match this filter.</p>
@@ -232,31 +258,74 @@ export function TrainingStudentsPanel({
                               <th>When (IST)</th>
                               <th>Status</th>
                               <th>Link to join</th>
+                              {canManage ? <th>Update</th> : null}
                             </tr>
                           </thead>
                           <tbody>
-                            {student.slots.map((slot) => (
-                              <tr key={slot.id}>
-                                <td>{slot.sessionNumber}</td>
-                                <td className="ws-apple-cell-primary">
-                                  {slot.whenLabel}
-                                </td>
-                                <td>{slotStatusLabel(slot.status)}</td>
-                                <td>
-                                  {slot.joinUrl ? (
-                                    <a
-                                      href={slot.joinUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                    >
-                                      Join
-                                    </a>
-                                  ) : (
-                                    "—"
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
+                            {student.slots.map((slot) => {
+                              const status = statusOverride[slot.id] ?? slot.status;
+                              return (
+                                <tr key={slot.id}>
+                                  <td>{slot.sessionNumber}</td>
+                                  <td className="ws-apple-cell-primary">
+                                    {slot.whenLabel}
+                                  </td>
+                                  <td>{slotStatusLabel(status)}</td>
+                                  <td>
+                                    {slot.joinUrl ? (
+                                      <a
+                                        href={slot.joinUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        Join
+                                      </a>
+                                    ) : (
+                                      "—"
+                                    )}
+                                  </td>
+                                  {canManage ? (
+                                    <td className="training-slot-actions">
+                                      {status === "SCHEDULED" ? (
+                                        <>
+                                          <button
+                                            type="button"
+                                            className="ws-btn ws-btn-secondary training-slot-btn"
+                                            disabled={pending}
+                                            onClick={() =>
+                                              onSlotStatus(slot.id, "COMPLETED")
+                                            }
+                                          >
+                                            Mark done
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className="ws-btn ws-btn-secondary training-slot-btn"
+                                            disabled={pending}
+                                            onClick={() =>
+                                              onSlotStatus(slot.id, "CANCELLED")
+                                            }
+                                          >
+                                            Cancel
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          className="ws-btn ws-btn-secondary training-slot-btn"
+                                          disabled={pending}
+                                          onClick={() =>
+                                            onSlotStatus(slot.id, "SCHEDULED")
+                                          }
+                                        >
+                                          Reopen
+                                        </button>
+                                      )}
+                                    </td>
+                                  ) : null}
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>

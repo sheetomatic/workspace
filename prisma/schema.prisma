@@ -2709,6 +2709,7 @@ model InboundLead {
   meetingNotes   String?
   callingStatus  LeadCallingStatus    @default(NOT_CALLED)
   projectStatus  LeadProjectStatus    @default(NOT_STARTED)
+  trainingRequired Boolean            @default(false)
   aiSuggestedStatus InboundLeadStatus?
   status         InboundLeadStatus    @default(NEW)
   score          Int?
