@@ -40,14 +40,14 @@ export const TEMPLATE_PRODUCT_SEEDS: Array<{
   },
   {
     slug: "appsheet-attendance-leave",
-    name: "Attendance & Leave Management (AppSheet)",
+    name: "HRMS – Attendance & Leave (AppSheet)",
     type: "APPSHEET",
-    priceInr: 999,
+    priceInr: 1999,
     description:
-      "AppSheet app for attendance marking and leave requests. Pay on UPI — after CRM confirm, we email your AppSheet copy link.",
+      "WorkTrack Pro — one-time purchase HRMS for small teams. Real-time attendance tracking, simple in/out punches, leave requests with quick manager approval, and monthly attendance reports for payroll-ready insights. Pay on UPI — after confirmation we email your AppSheet copy link.",
     sortOrder: 10,
     thumbnailUrl: "/images/templates/appsheet-attendance-leave.png",
-    copyLink: null,
+    copyLink: "https://www.appsheet.com/portfolio/288801316",
     active: true,
   },
   {
