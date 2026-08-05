@@ -36,6 +36,34 @@ export function validateTaskProofFile(file: File) {
   return { ok: true as const, mimeType };
 }
 
+/** Optional attachments added while creating a task (field: taskFiles). */
+export function parseTaskFilesFromForm(formData: FormData) {
+  const files = formData
+    .getAll("taskFiles")
+    .filter((value): value is File => value instanceof File && value.size > 0);
+
+  if (files.length === 0) {
+    return { ok: true as const, files: [] as Array<{ file: File; mimeType: string }> };
+  }
+  if (files.length > TASK_PROOF_MAX_FILES) {
+    return {
+      ok: false as const,
+      message: `You can attach up to ${TASK_PROOF_MAX_FILES} files.`,
+    };
+  }
+
+  const validated: Array<{ file: File; mimeType: string }> = [];
+  for (const file of files) {
+    const check = validateTaskProofFile(file);
+    if (!check.ok) {
+      return check;
+    }
+    validated.push({ file, mimeType: check.mimeType });
+  }
+
+  return { ok: true as const, files: validated };
+}
+
 export function parseProofFilesFromForm(formData: FormData) {
   const files = formData
     .getAll("proofFiles")

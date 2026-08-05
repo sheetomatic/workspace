@@ -103,10 +103,22 @@ function buildTaskEmailBody(params: {
   dueLabel: string;
   frequencyLabel: string;
   isRecurring: boolean;
+  attachments?: Array<{ fileName: string; url: string }>;
 }) {
   const recurringLine = params.isRecurring
     ? `Recurrence: ${params.frequencyLabel}\n`
     : `Frequency: ${params.frequencyLabel}\n`;
+
+  const attachmentLines =
+    params.attachments && params.attachments.length > 0
+      ? [
+          `Attachments (${params.attachments.length}) — sign in to download:`,
+          ...params.attachments.map(
+            (attachment) => `- ${attachment.fileName}: ${attachment.url}`,
+          ),
+          ``,
+        ]
+      : [];
 
   return [
     `Hello ${params.assigneeName},`,
@@ -118,6 +130,7 @@ function buildTaskEmailBody(params: {
     `Priority: ${params.priority}`,
     `Due: ${params.dueLabel}`,
     recurringLine,
+    ...attachmentLines,
     `_Assigned via Sheetomatic Task Delegation_`,
   ].join("\n");
 }
@@ -131,6 +144,7 @@ export async function sendTaskAssignmentEmail(params: {
   dueLabel: string;
   frequencyLabel: string;
   isRecurring: boolean;
+  attachments?: Array<{ fileName: string; url: string }>;
 }) {
   const subject = `[${params.organizationName}] New task: ${params.taskTitle}`;
   const text = buildTaskEmailBody(params);

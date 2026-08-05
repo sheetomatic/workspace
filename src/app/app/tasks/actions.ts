@@ -28,6 +28,8 @@ import {
   buildResendAssignmentReminderUpdate,
 } from "@/lib/task-reminder-persist";
 import { getWorkspaceIntegrationStatus } from "@/lib/workspace-integration-status";
+import { parseTaskFilesFromForm } from "@/lib/task-attachments";
+import { getLoginBaseUrl } from "@/lib/integrations/email-base-url";
 import type { TaskActionState } from "@/lib/task-action-state";
 import { isNextRedirect } from "@/lib/next-redirect";
 import { isTaskActiveStatus } from "@/lib/task-due-urgency";
@@ -151,6 +153,20 @@ async function createDelegatedTaskInner(
     return { ok: false, message: "All assignees must be in your organization." };
   }
 
+  const parsedFiles = parseTaskFilesFromForm(formData);
+  if (!parsedFiles.ok) {
+    return { ok: false, message: parsedFiles.message };
+  }
+  // Read once — each assignee's task gets its own attachment copies.
+  const fileBuffers = await Promise.all(
+    parsedFiles.files.map(async ({ file, mimeType }) => ({
+      fileName: file.name,
+      mimeType,
+      fileSize: file.size,
+      data: Buffer.from(await file.arrayBuffer()),
+    })),
+  );
+
   let message =
     assigneeUserIds.length === 1
       ? isRecurring
@@ -195,6 +211,22 @@ async function createDelegatedTaskInner(
       },
     });
 
+    const attachmentLinks: Array<{ fileName: string; url: string }> = [];
+    for (const fileData of fileBuffers) {
+      const attachment = await prisma.taskAttachment.create({
+        data: {
+          taskId: task.id,
+          uploadedById: user.id,
+          ...fileData,
+        },
+        select: { id: true, fileName: true },
+      });
+      attachmentLinks.push({
+        fileName: attachment.fileName,
+        url: `${getLoginBaseUrl()}/api/tasks/attachments/${attachment.id}`,
+      });
+    }
+
     if (remindViaEmail || remindViaWhatsApp) {
       const reminders = await notifyTaskAssignee({
         taskId: task.id,
@@ -209,6 +241,7 @@ async function createDelegatedTaskInner(
         organizationId: user.organizationId,
         remindViaEmail,
         remindViaWhatsApp,
+        attachments: attachmentLinks,
       });
 
       await prisma.delegatedTask.update({

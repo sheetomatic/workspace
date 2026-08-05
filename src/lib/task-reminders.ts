@@ -38,16 +38,28 @@ export async function dispatchTaskReminders(params: {
   remindViaEmail: boolean;
   remindViaWhatsApp: boolean;
   kind?: TaskReminderKind;
+  attachments?: Array<{ fileName: string; url: string }>;
 }) {
   const kind = params.kind ?? "assignment";
   const assigneeName =
     params.assignee.name ?? params.assignee.email.split("@")[0];
   const dueLabel = formatTaskDue(params.dueAt);
   const frequencyLabel = TASK_FREQUENCY_LABELS[params.frequency];
-  const taskDescription = resolveTaskDescription(
+  const attachments = params.attachments ?? [];
+  let taskDescription = resolveTaskDescription(
     params.taskTitle,
     params.taskDescription,
   );
+  if (attachments.length > 0) {
+    // WhatsApp: names only — files are downloaded from the task in the app.
+    taskDescription = [
+      taskDescription,
+      "",
+      `📎 ${attachments.length} attachment${attachments.length === 1 ? "" : "s"}: ${attachments
+        .map((a) => a.fileName)
+        .join(", ")} — open the task in Sheetomatic to download.`,
+    ].join("\n");
+  }
 
   const parts: string[] = [];
   let emailSent = false;
@@ -75,6 +87,7 @@ export async function dispatchTaskReminders(params: {
             dueLabel,
             frequencyLabel,
             isRecurring: params.isRecurring,
+            attachments,
           });
     if (email.sent) {
       emailSent = true;

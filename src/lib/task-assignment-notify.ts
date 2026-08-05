@@ -44,6 +44,7 @@ export async function notifyTaskAssignee(params: {
   organizationName: string;
   remindViaEmail: boolean;
   remindViaWhatsApp: boolean;
+  attachments?: Array<{ fileName: string; url: string }>;
 }): Promise<TaskReminderDispatchResult> {
   if (!params.remindViaEmail && !params.remindViaWhatsApp) {
     return {
@@ -68,5 +69,6 @@ export async function notifyTaskAssignee(params: {
     organizationId: params.organizationId,
     remindViaEmail: params.remindViaEmail,
     remindViaWhatsApp: params.remindViaWhatsApp,
+    attachments: params.attachments,
   });
 }

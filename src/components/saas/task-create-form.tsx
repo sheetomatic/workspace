@@ -76,6 +76,8 @@ export function TaskCreateForm({
   );
   const [remindViaEmail, setRemindViaEmail] = useState(false);
   const [remindViaWhatsApp, setRemindViaWhatsApp] = useState(true);
+  // File inputs are uncontrolled — bump the key to clear them on reset.
+  const [fileInputKey, setFileInputKey] = useState(0);
   const searchParams = useSearchParams();
 
   const assigneesMissingPhone = members
@@ -97,6 +99,7 @@ export function TaskCreateForm({
     setMonthDay(initMonthDayFromDue(due));
     setRemindViaEmail(false);
     setRemindViaWhatsApp(true);
+    setFileInputKey((key) => key + 1);
   }
 
   useEffect(() => {
@@ -194,6 +197,21 @@ export function TaskCreateForm({
                 value={instructions}
                 onChange={(e) => setInstructions(e.target.value)}
               />
+            </label>
+
+            <label className="form-field-full">
+              Attachments (optional)
+              <input
+                key={fileInputKey}
+                name="taskFiles"
+                type="file"
+                multiple
+                accept="application/pdf,image/jpeg,image/png,image/webp,image/gif,.doc,.docx,.txt"
+              />
+              <small className="ws-task-attach-hint">
+                Up to 3 files, 5 MB each — PDF, images, or documents. Sent to
+                the assignee with the task notification.
+              </small>
             </label>
 
             <label>

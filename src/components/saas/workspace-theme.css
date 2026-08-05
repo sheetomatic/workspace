@@ -10900,6 +10900,13 @@ body.ws-more-sheet-open .sheetomatic-ai-launcher {
   gap: 10px;
 }
 
+.workspace-app .ws-task-attach-hint {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
 /* ── Location troubleshooting guide (attendance GPS) ─────────────── */
 
 .workspace-app .ws-geo-help-toggle {
