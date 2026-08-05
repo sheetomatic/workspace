@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type { HrActionResult } from "@/lib/hr/hr-result";
 import { HR_OUT_OF_LOCATION_MESSAGE } from "@/lib/hr/hr-result";
 import {
@@ -31,6 +31,72 @@ type GeoPunchFormProps = {
   /** Reset fields after a successful punch. Default true. */
   resetOnSuccess?: boolean;
 };
+
+/** Step-by-step fix guide shown whenever GPS capture fails. */
+function LocationHelpGuide() {
+  const isIos =
+    typeof navigator !== "undefined" && /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  const android = (
+    <details className="ws-geo-help-device" open={!isIos}>
+      <summary>Android (Chrome)</summary>
+      <ol>
+        <li>
+          Tap the <strong>lock / ⓘ icon</strong> left of the address bar →{" "}
+          <strong>Permissions</strong> → <strong>Location</strong> →{" "}
+          <strong>Allow</strong>.
+        </li>
+        <li>
+          Pull down the notification shade and make sure{" "}
+          <strong>Location (GPS)</strong> is switched on.
+        </li>
+        <li>
+          Phone <strong>Settings → Apps → Chrome → Permissions → Location</strong>{" "}
+          → choose <strong>Allow while using</strong> and turn on{" "}
+          <strong>Use precise location</strong>.
+        </li>
+        <li>Come back here, reload the page, and tap Check in again.</li>
+      </ol>
+    </details>
+  );
+
+  const ios = (
+    <details className="ws-geo-help-device" open={isIos}>
+      <summary>iPhone (Safari)</summary>
+      <ol>
+        <li>
+          Phone <strong>Settings → Privacy &amp; Security → Location Services</strong>{" "}
+          → switch <strong>On</strong>.
+        </li>
+        <li>
+          In the same list, scroll to <strong>Safari Websites</strong> → choose{" "}
+          <strong>While Using the App</strong> and turn on{" "}
+          <strong>Precise Location</strong>.
+        </li>
+        <li>
+          If it still fails: in Safari tap the <strong>aA / ⓘ icon</strong> in the
+          address bar → <strong>Website Settings</strong> →{" "}
+          <strong>Location → Allow</strong>.
+        </li>
+        <li>Come back here, reload the page, and tap Check in again.</li>
+      </ol>
+    </details>
+  );
+
+  return (
+    <div className="ws-geo-help" role="note">
+      <p className="ws-geo-help-title">How to enable location</p>
+      {isIos ? ios : android}
+      {isIos ? android : ios}
+      <p className="ws-geo-help-tips">
+        Still failing? Stand near a window or open sky, switch off battery
+        saver, and wait 10–15 seconds — the first GPS fix is the slowest. If
+        the browser never asks for permission, clear this site&apos;s settings
+        and reload.
+      </p>
+    </div>
+  );
+}
 
 export function GeoPunchForm({
   action,
@@ -66,6 +132,37 @@ export function GeoPunchForm({
 
   const GOOD_ACCURACY_M = 25;
   const GPS_WATCH_MS = 12000;
+  const [showLocationHelp, setShowLocationHelp] = useState(false);
+
+  // Warn about blocked location before the person taps Check in, so the
+  // fix guide is already on screen instead of a surprise failure.
+  useEffect(() => {
+    if (!requireGeo) return;
+    if (typeof navigator === "undefined" || !navigator.permissions?.query) return;
+    let status: PermissionStatus | null = null;
+    const sync = () => {
+      if (status?.state === "denied") {
+        setMessage(
+          "Location permission is blocked for this site. Follow the steps below to allow it, then reload this page.",
+        );
+        setIsError(true);
+        setShowLocationHelp(true);
+      }
+    };
+    navigator.permissions
+      .query({ name: "geolocation" })
+      .then((result) => {
+        status = result;
+        sync();
+        result.onchange = sync;
+      })
+      .catch(() => {
+        // Permissions API unsupported (older iOS) — errors are handled on tap.
+      });
+    return () => {
+      if (status) status.onchange = null;
+    };
+  }, [requireGeo]);
 
   function applyFix(pos: GeolocationPosition) {
     setManualLat(String(pos.coords.latitude));
@@ -97,19 +194,27 @@ export function GeoPunchForm({
     return { lat, lng };
   }
 
+  type GpsFailReason = "unsupported" | "denied" | "unavailable" | "timeout";
+
+  type GpsResult =
+    | { pos: GeolocationPosition; reason: null }
+    | { pos: null; reason: GpsFailReason };
+
   /**
    * Watch GPS for up to 12s and keep the most accurate fix instead of the
    * first (often cached / Wi-Fi coarse) reading — the main cause of false
-   * "out of location" failures.
+   * "out of location" failures. On failure the reason is reported so the
+   * user gets an actionable message instead of a generic one.
    */
-  function watchBestFix(): Promise<GeolocationPosition | null> {
+  function watchBestFix(): Promise<GpsResult> {
     return new Promise((resolve) => {
       if (!navigator.geolocation) {
-        resolve(null);
+        resolve({ pos: null, reason: "unsupported" });
         return;
       }
 
       let best: GeolocationPosition | null = null;
+      let lastError: GeolocationPositionError | null = null;
       let finished = false;
 
       const finish = () => {
@@ -117,7 +222,17 @@ export function GeoPunchForm({
         finished = true;
         navigator.geolocation.clearWatch(watchId);
         window.clearTimeout(timeoutId);
-        resolve(best);
+        if (best) {
+          resolve({ pos: best, reason: null });
+          return;
+        }
+        const reason: GpsFailReason =
+          lastError?.code === 1
+            ? "denied"
+            : lastError?.code === 2
+              ? "unavailable"
+              : "timeout";
+        resolve({ pos: null, reason });
       };
 
       const timeoutId = window.setTimeout(finish, GPS_WATCH_MS);
@@ -135,6 +250,7 @@ export function GeoPunchForm({
           }
         },
         (err) => {
+          lastError = err;
           // Permission denied fails immediately; other errors wait for timeout.
           if (err.code === err.PERMISSION_DENIED) {
             finish();
@@ -145,18 +261,34 @@ export function GeoPunchForm({
     });
   }
 
+  function gpsFailMessage(reason: GpsFailReason) {
+    switch (reason) {
+      case "unsupported":
+        return "This browser cannot read GPS. Open this page in Chrome (Android) or Safari (iPhone) and try again.";
+      case "denied":
+        return "Location permission is blocked for this site. Follow the steps below to allow it, then tap Check in again.";
+      case "unavailable":
+        return "Your phone's Location/GPS is switched off or has no signal. Turn on Location in your phone settings, then tap Check in again.";
+      case "timeout":
+        return "GPS timed out before getting a fix. Move near a window or open sky, keep the phone still, and tap Check in again.";
+    }
+  }
+
+  function onGpsFailed(reason: GpsFailReason) {
+    setMessage(gpsFailMessage(reason));
+    setIsError(true);
+    setShowLocationHelp(true);
+  }
+
   async function captureLocation() {
     setLocating(true);
     setMessage("Getting GPS fix…");
     setIsError(false);
 
-    const best = await watchBestFix();
+    const { pos: best, reason } = await watchBestFix();
     setLocating(false);
     if (!best) {
-      setMessage(
-        "Could not read location. Allow location access (enable Precise Location) and try again.",
-      );
-      setIsError(true);
+      onGpsFailed(reason);
       return;
     }
     applyFix(best);
@@ -186,10 +318,11 @@ export function GeoPunchForm({
     // One-tap check-in: always take a fresh GPS fix on submit (unless the
     // person typed coordinates by hand). Falls back to the last captured
     // fix if the fresh read fails mid-session.
+    let gpsFailReason: GpsFailReason | null = null;
     if (requireGeo && !typedManually) {
       setLocating(true);
       setMessage("Getting your GPS location…");
-      const best = await watchBestFix();
+      const { pos: best, reason } = await watchBestFix();
       setLocating(false);
       if (best) {
         applyFix(best);
@@ -200,6 +333,8 @@ export function GeoPunchForm({
         fixAccuracyM = Number.isFinite(best.coords.accuracy)
           ? best.coords.accuracy
           : null;
+      } else {
+        gpsFailReason = reason;
       }
     }
 
@@ -221,10 +356,7 @@ export function GeoPunchForm({
       formData.set("visitId", selectedVisitId);
     }
     if (requireGeo && !coords) {
-      setMessage(
-        "We couldn't read your location. Allow location access (enable Precise Location for the browser) and tap again.",
-      );
-      setIsError(true);
+      onGpsFailed(gpsFailReason ?? "timeout");
       setPending(false);
       return;
     }
@@ -391,6 +523,16 @@ export function GeoPunchForm({
           {accuracyM != null ? ` · accuracy ~${Math.round(accuracyM)}m` : " · edited"}
         </p>
       ) : null}
+      {requireGeo ? (
+        <button
+          type="button"
+          className="ws-geo-help-toggle"
+          onClick={() => setShowLocationHelp((open) => !open)}
+        >
+          {showLocationHelp ? "Hide location help" : "Location not working? See how to enable it"}
+        </button>
+      ) : null}
+      {requireGeo && showLocationHelp ? <LocationHelpGuide /> : null}
     </form>
   );
 }
