@@ -90,10 +90,19 @@ function normalizeDraft(
     ? (raw.department as TaskDepartment)
     : "GENERAL";
 
+  // Guardrail: the model must not hallucinate a stale year (e.g. its
+  // training-era 2023) or a date decades away. Out-of-range → default due.
   let dueAtIso = defaultDueIso();
   if (typeof raw.dueAtIso === "string") {
     const parsed = new Date(raw.dueAtIso);
-    if (!Number.isNaN(parsed.getTime())) {
+    const now = Date.now();
+    const minMs = now - 6 * 60 * 60 * 1000; // allow "today morning" slack
+    const maxMs = now + 2 * 365 * 86_400_000;
+    if (
+      !Number.isNaN(parsed.getTime()) &&
+      parsed.getTime() >= minMs &&
+      parsed.getTime() <= maxMs
+    ) {
       dueAtIso = parsed.toISOString();
     }
   }
@@ -205,6 +214,16 @@ Output JSON only with these keys. All string values MUST be in English:
 - recurrenceWeeklyDays: array of weekday numbers 0=Sun through 6=Sat when WEEKLY (e.g. [1,3,5] for Mon/Wed/Fri)
 - recurrenceMonthDay: integer 1-31 when MONTHLY (e.g. 15 for 15th each month)
 
+Current date/time: ${new Date().toLocaleString("en-IN", {
+            timeZone: "Asia/Kolkata",
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          })} IST. Resolve ALL relative dates ("today", "tomorrow", "Friday", "next week") from this — never from any other year.
 Use Asia/Kolkata for "today", "tomorrow", and relative dates. Default due time 17:00 IST if not specified.
 Match assignee to team by name or email when possible.
 Default reminders: remindViaWhatsApp true when user mentions WhatsApp/WA; remindViaEmail true when user mentions email.
