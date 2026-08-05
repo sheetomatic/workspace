@@ -25,6 +25,7 @@ export async function runLeadAlertQueue(organizationId: string) {
       event: item.event,
       // Re-nudge after alert cooldown — prior send is tracked but not a permanent block.
       force: true,
+      pendingAmountLabel: item.pendingAmountLabel,
     });
     if (result.sent) {
       sent += 1;

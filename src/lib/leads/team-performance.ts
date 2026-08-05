@@ -1,28 +1,101 @@
 import { prisma } from "@/lib/db";
 import { formatInr, leadCategoryLabel, resolveLeadCategoryId } from "@/lib/leads/categories";
 
-/** IST month boundaries for a "YYYY-MM" key. */
-export function teamPerfMonthRange(monthKey: string) {
-  const [y, m] = monthKey.split("-").map(Number);
-  const start = new Date(`${monthKey}-01T00:00:00+05:30`);
-  const nextKey =
-    m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
-  const end = new Date(`${nextKey}-01T00:00:00+05:30`);
-  return { start, end };
+/**
+ * Period keys (IST):
+ *   d:YYYY-MM-DD   one day
+ *   w:YYYY-MM-DD   week starting that Monday
+ *   m:YYYY-MM      month
+ *   q:YYYY-Qn      quarter
+ *   y:YYYY         year
+ */
+export const TEAM_PERF_PERIOD_RE = /^(d:\d{4}-\d{2}-\d{2}|w:\d{4}-\d{2}-\d{2}|m:\d{4}-\d{2}|q:\d{4}-Q[1-4]|y:\d{4})$/;
+
+const IST_MS = 5.5 * 60 * 60 * 1000;
+
+function istDate(dateKey: string) {
+  return new Date(`${dateKey}T00:00:00+05:30`);
+}
+
+function addDays(date: Date, days: number) {
+  return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+}
+
+function istDayKey(date: Date) {
+  return new Date(date.getTime() + IST_MS).toISOString().slice(0, 10);
 }
 
 export function currentMonthKeyIst(now = new Date()) {
-  const ist = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
-  return `${ist.getUTCFullYear()}-${String(ist.getUTCMonth() + 1).padStart(2, "0")}`;
+  return `m:${istDayKey(now).slice(0, 7)}`;
 }
 
-export function teamPerfMonthLabel(monthKey: string) {
-  const { start } = teamPerfMonthRange(monthKey);
-  return start.toLocaleDateString("en-IN", {
-    month: "short",
-    year: "numeric",
-    timeZone: "Asia/Kolkata",
-  });
+export function teamPerfPeriodRange(periodKey: string): {
+  start: Date;
+  end: Date;
+  label: string;
+} {
+  const [kind, value] = [periodKey.slice(0, 1), periodKey.slice(2)];
+  const shortDate = (d: Date) =>
+    d.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      timeZone: "Asia/Kolkata",
+    });
+
+  if (kind === "d") {
+    const start = istDate(value);
+    return {
+      start,
+      end: addDays(start, 1),
+      label: start.toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        timeZone: "Asia/Kolkata",
+      }),
+    };
+  }
+  if (kind === "w") {
+    const start = istDate(value);
+    const end = addDays(start, 7);
+    return {
+      start,
+      end,
+      label: `Week ${shortDate(start)} – ${shortDate(addDays(start, 6))}`,
+    };
+  }
+  if (kind === "q") {
+    const [y, qRaw] = value.split("-");
+    const q = Number(qRaw.replace("Q", ""));
+    const startMonth = (q - 1) * 3 + 1;
+    const start = istDate(`${y}-${String(startMonth).padStart(2, "0")}-01`);
+    const endMonth = startMonth + 3;
+    const end =
+      endMonth > 12
+        ? istDate(`${Number(y) + 1}-01-01`)
+        : istDate(`${y}-${String(endMonth).padStart(2, "0")}-01`);
+    return { start, end, label: `Q${q} ${y}` };
+  }
+  if (kind === "y") {
+    const start = istDate(`${value}-01-01`);
+    return { start, end: istDate(`${Number(value) + 1}-01-01`), label: value };
+  }
+  // month
+  const [y, m] = value.split("-").map(Number);
+  const start = istDate(`${value}-01`);
+  const end =
+    m === 12
+      ? istDate(`${y + 1}-01-01`)
+      : istDate(`${y}-${String(m + 1).padStart(2, "0")}-01`);
+  return {
+    start,
+    end,
+    label: start.toLocaleDateString("en-IN", {
+      month: "short",
+      year: "numeric",
+      timeZone: "Asia/Kolkata",
+    }),
+  };
 }
 
 export type TeamPerfMetricKey =
@@ -71,8 +144,8 @@ export type TeamPerfCategoryRow = {
 };
 
 export type TeamPerformanceData = {
-  monthKey: string;
-  monthLabel: string;
+  periodKey: string;
+  periodLabel: string;
   members: TeamMemberPerf[];
   totals: TeamMemberPerf;
   byCategory: TeamPerfCategoryRow[];
@@ -136,9 +209,9 @@ function emptyPerf(userId: string | null, name: string): TeamMemberPerf {
 
 export async function getTeamPerformance(
   organizationId: string,
-  monthKey: string,
+  periodKey: string,
 ): Promise<TeamPerformanceData> {
-  const { start, end } = teamPerfMonthRange(monthKey);
+  const { start, end, label } = teamPerfPeriodRange(periodKey);
   const now = new Date();
 
   const [
@@ -418,8 +491,8 @@ export async function getTeamPerformance(
     .sort((a, b) => b.count - a.count);
 
   return {
-    monthKey,
-    monthLabel: teamPerfMonthLabel(monthKey),
+    periodKey,
+    periodLabel: label,
     members,
     totals,
     byCategory,
@@ -452,11 +525,11 @@ function leadTitle(lead: { name: string | null; company: string | null; phone: s
 /** Items behind one metric card. userId null = whole team, "unassigned" = no owner. */
 export async function getTeamPerformanceDrilldown(
   organizationId: string,
-  monthKey: string,
+  periodKey: string,
   metric: TeamPerfMetricKey,
   userId: string | null,
 ): Promise<TeamPerfDrilldownItem[]> {
-  const { start, end } = teamPerfMonthRange(monthKey);
+  const { start, end } = teamPerfPeriodRange(periodKey);
   const now = new Date();
   const TAKE = 200;
   const leadSelect = { name: true, company: true, phone: true } as const;

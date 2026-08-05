@@ -6,6 +6,7 @@ import { withDbRetry } from "@/lib/db";
 import {
   getTeamPerformance,
   getTeamPerformanceDrilldown,
+  TEAM_PERF_PERIOD_RE,
   type TeamPerfDrilldownItem,
   type TeamPerfMetricKey,
   type TeamPerformanceData,
@@ -20,33 +21,33 @@ async function requireCrmAdmin() {
 }
 
 export async function fetchTeamPerformanceAction(
-  monthKey: string,
+  periodKey: string,
 ): Promise<{ ok: true; data: TeamPerformanceData } | { ok: false; message: string }> {
   const user = await requireCrmAdmin();
   if (!user) return { ok: false, message: "Admin access required." };
-  if (!/^\d{4}-\d{2}$/.test(monthKey)) {
-    return { ok: false, message: "Invalid month." };
+  if (!TEAM_PERF_PERIOD_RE.test(periodKey)) {
+    return { ok: false, message: "Invalid period." };
   }
   const data = await withDbRetry(() =>
-    getTeamPerformance(user.organizationId, monthKey),
+    getTeamPerformance(user.organizationId, periodKey),
   );
   return { ok: true, data };
 }
 
 export async function fetchTeamPerformanceDrilldownAction(params: {
-  monthKey: string;
+  periodKey: string;
   metric: TeamPerfMetricKey;
   userId: string | null;
 }): Promise<{ ok: true; items: TeamPerfDrilldownItem[] } | { ok: false; message: string }> {
   const user = await requireCrmAdmin();
   if (!user) return { ok: false, message: "Admin access required." };
-  if (!/^\d{4}-\d{2}$/.test(params.monthKey)) {
-    return { ok: false, message: "Invalid month." };
+  if (!TEAM_PERF_PERIOD_RE.test(params.periodKey)) {
+    return { ok: false, message: "Invalid period." };
   }
   const items = await withDbRetry(() =>
     getTeamPerformanceDrilldown(
       user.organizationId,
-      params.monthKey,
+      params.periodKey,
       params.metric,
       params.userId,
     ),

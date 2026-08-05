@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import {
   bookLeadTrainingSlotsAction,
   getLeadTrainingSlotsAction,
+  updateLeadTrainingSlotStatusAction,
 } from "@/app/app/leads/actions";
 import {
   TRAINING_BOOKING_WINDOW,
@@ -98,6 +99,31 @@ export function LeadTrainingSlotsPanel({
     });
   }
 
+  function onSlotStatus(
+    slotId: string,
+    status: "SCHEDULED" | "COMPLETED" | "CANCELLED",
+  ) {
+    startTransition(async () => {
+      setMessage(null);
+      setIsError(false);
+      const result = await updateLeadTrainingSlotStatusAction(slotId, status);
+      if (!result.ok) {
+        setMessage(result.message);
+        setIsError(true);
+        return;
+      }
+      // Optimistic-ish: update locally instead of a full reload.
+      setEnrollments((rows) =>
+        rows.map((row) => ({
+          ...row,
+          slots: row.slots.map((slot) =>
+            slot.id === slotId ? { ...slot, status } : slot,
+          ),
+        })),
+      );
+    });
+  }
+
   const booked = enrollments.filter((row) => row.slots.length > 0);
   const hasSlots = booked.length > 0;
   const joinUrl =
@@ -171,6 +197,7 @@ export function LeadTrainingSlotsPanel({
                     <th>When (IST)</th>
                     <th>Status</th>
                     <th>Join</th>
+                    {canManage ? <th>Update</th> : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -194,6 +221,39 @@ export function LeadTrainingSlotsPanel({
                             "—"
                           )}
                         </td>
+                        {canManage ? (
+                          <td className="leads-training-slot-actions">
+                            {slot.status === "SCHEDULED" ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className="btn-secondary btn-sm"
+                                  disabled={pending}
+                                  onClick={() => onSlotStatus(slot.id, "COMPLETED")}
+                                >
+                                  Mark done
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-secondary btn-sm"
+                                  disabled={pending}
+                                  onClick={() => onSlotStatus(slot.id, "CANCELLED")}
+                                >
+                                  Cancel
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                type="button"
+                                className="btn-secondary btn-sm"
+                                disabled={pending}
+                                onClick={() => onSlotStatus(slot.id, "SCHEDULED")}
+                              >
+                                Reopen
+                              </button>
+                            )}
+                          </td>
+                        ) : null}
                       </tr>
                     );
                   })}

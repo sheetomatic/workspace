@@ -59,24 +59,95 @@ const METRICS: MetricDef[] = [
   { key: "overduePayments", label: "Overdue payments", accent: "accent-danger", count: (m) => m.overduePayments },
 ];
 
-function lastMonths(count: number) {
+type PeriodKind = "d" | "w" | "m" | "q" | "y";
+
+const PERIOD_KINDS: { kind: PeriodKind; label: string }[] = [
+  { kind: "d", label: "Day" },
+  { kind: "w", label: "Week" },
+  { kind: "m", label: "Month" },
+  { kind: "q", label: "Quarter" },
+  { kind: "y", label: "Year" },
+];
+
+const IST_MS = 5.5 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** "Now" as a UTC Date whose UTC fields read as IST wall-clock. */
+function istNow() {
+  return new Date(Date.now() + IST_MS);
+}
+
+function dayKey(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+
+function shortDay(d: Date) {
+  return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" });
+}
+
+/** Recent options for one granularity; first entry is the current period. */
+function periodOptions(kind: PeriodKind): { key: string; label: string }[] {
+  const now = istNow();
   const options: { key: string; label: string }[] = [];
-  const now = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
-  let y = now.getUTCFullYear();
-  let m = now.getUTCMonth() + 1;
-  for (let i = 0; i < count; i += 1) {
-    const key = `${y}-${String(m).padStart(2, "0")}`;
-    const label = new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-IN", {
-      month: "short",
-      year: "numeric",
-      timeZone: "UTC",
-    });
-    options.push({ key, label });
-    m -= 1;
-    if (m === 0) {
-      m = 12;
-      y -= 1;
+
+  if (kind === "d") {
+    for (let i = 0; i < 14; i += 1) {
+      const d = new Date(now.getTime() - i * DAY_MS);
+      const label = i === 0 ? "Today" : i === 1 ? "Yesterday" : shortDay(d);
+      options.push({ key: `d:${dayKey(d)}`, label });
     }
+    return options;
+  }
+  if (kind === "w") {
+    // Monday of the current IST week.
+    const dow = (now.getUTCDay() + 6) % 7;
+    const monday = new Date(now.getTime() - dow * DAY_MS);
+    for (let i = 0; i < 12; i += 1) {
+      const start = new Date(monday.getTime() - i * 7 * DAY_MS);
+      const label =
+        i === 0
+          ? "This week"
+          : i === 1
+            ? "Last week"
+            : `Wk of ${shortDay(start)}`;
+      options.push({ key: `w:${dayKey(start)}`, label });
+    }
+    return options;
+  }
+  if (kind === "m") {
+    let y = now.getUTCFullYear();
+    let m = now.getUTCMonth() + 1;
+    for (let i = 0; i < 18; i += 1) {
+      const label = new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-IN", {
+        month: "short",
+        year: "numeric",
+        timeZone: "UTC",
+      });
+      options.push({ key: `m:${y}-${String(m).padStart(2, "0")}`, label });
+      m -= 1;
+      if (m === 0) {
+        m = 12;
+        y -= 1;
+      }
+    }
+    return options;
+  }
+  if (kind === "q") {
+    let y = now.getUTCFullYear();
+    let q = Math.floor(now.getUTCMonth() / 3) + 1;
+    for (let i = 0; i < 8; i += 1) {
+      options.push({ key: `q:${y}-Q${q}`, label: `Q${q} ${y}` });
+      q -= 1;
+      if (q === 0) {
+        q = 4;
+        y -= 1;
+      }
+    }
+    return options;
+  }
+  const year = now.getUTCFullYear();
+  for (let i = 0; i < 5; i += 1) {
+    options.push({ key: `y:${year - i}`, label: String(year - i) });
   }
   return options;
 }
@@ -98,7 +169,8 @@ export function LeadsTeamPerformance({ initial }: { initial: TeamPerformanceData
   const [selected, setSelected] = useState(TOTAL_VALUE);
   const [pending, startTransition] = useTransition();
   const [drill, setDrill] = useState<DrillState | null>(null);
-  const monthOptions = useMemo(() => lastMonths(18), []);
+  const periodKind = (data.periodKey.slice(0, 1) || "m") as PeriodKind;
+  const options = useMemo(() => periodOptions(periodKind), [periodKind]);
 
   const namedMembers = data.members.filter((m) => m.userId !== null);
   const unassigned = data.members.find((m) => m.userId === null) ?? null;
@@ -111,10 +183,10 @@ export function LeadsTeamPerformance({ initial }: { initial: TeamPerformanceData
         : (namedMembers.find((m) => m.userId === selected) ?? data.totals);
   const isTotal = shown === data.totals;
 
-  function changeMonth(monthKey: string) {
+  function changePeriod(periodKey: string) {
     setDrill(null);
     startTransition(async () => {
-      const result = await fetchTeamPerformanceAction(monthKey);
+      const result = await fetchTeamPerformanceAction(periodKey);
       if (result.ok) setData(result.data);
     });
   }
@@ -137,7 +209,7 @@ export function LeadsTeamPerformance({ initial }: { initial: TeamPerformanceData
     });
     startTransition(async () => {
       const result = await fetchTeamPerformanceDrilldownAction({
-        monthKey: data.monthKey,
+        periodKey: data.periodKey,
         metric: metric.key,
         userId,
       });
@@ -160,7 +232,7 @@ export function LeadsTeamPerformance({ initial }: { initial: TeamPerformanceData
         <div>
           <h2>Team performance</h2>
           <p>
-            {shown.name} · {data.monthLabel}. Click any card to see the items
+            {shown.name} · {data.periodLabel}. Click any card to see the items
             behind it. Projects pending and overdue payments are current totals.
           </p>
         </div>
@@ -187,13 +259,33 @@ export function LeadsTeamPerformance({ initial }: { initial: TeamPerformanceData
             </select>
           </label>
           <label className="leads-teamperf-month">
-            Month
+            Period
             <select
-              value={data.monthKey}
-              onChange={(e) => changeMonth(e.target.value)}
+              value={periodKind}
+              onChange={(e) => {
+                const next = periodOptions(e.target.value as PeriodKind);
+                changePeriod(next[0].key);
+              }}
               disabled={pending}
             >
-              {monthOptions.map((option) => (
+              {PERIOD_KINDS.map((option) => (
+                <option key={option.kind} value={option.kind}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="leads-teamperf-month">
+            Range
+            <select
+              value={data.periodKey}
+              onChange={(e) => changePeriod(e.target.value)}
+              disabled={pending}
+            >
+              {options.some((option) => option.key === data.periodKey) ? null : (
+                <option value={data.periodKey}>{data.periodLabel}</option>
+              )}
+              {options.map((option) => (
                 <option key={option.key} value={option.key}>
                   {option.label}
                 </option>
@@ -230,7 +322,7 @@ export function LeadsTeamPerformance({ initial }: { initial: TeamPerformanceData
 
       {data.byCategory.length > 0 ? (
         <div className="leads-teamperf-cats">
-          <h3>Leads by category · {data.monthLabel}</h3>
+          <h3>Leads by category · {data.periodLabel}</h3>
           <ul>
             {data.byCategory.map((cat) => (
               <li key={cat.category}>
@@ -262,7 +354,7 @@ export function LeadsTeamPerformance({ initial }: { initial: TeamPerformanceData
           <div className="leads-teamperf-modal-card">
             <header>
               <h3>
-                {drill.memberName} · {drill.metricLabel} · {data.monthLabel}
+                {drill.memberName} · {drill.metricLabel} · {data.periodLabel}
               </h3>
               <button type="button" onClick={() => setDrill(null)} aria-label="Close">
                 ✕

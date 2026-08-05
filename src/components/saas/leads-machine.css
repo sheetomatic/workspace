@@ -2006,6 +2006,17 @@
   font-size: 0.82rem;
 }
 
+.leads-training-slot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.leads-training-slot-actions .btn-sm {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.74rem;
+}
+
 .leads-training-table th,
 .leads-training-table td {
   padding: 0.5rem 0.55rem;

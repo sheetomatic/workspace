@@ -21,6 +21,8 @@ export type CrmAlertItem = {
   reason: string;
   anchorAt: string;
   alreadyMessaged: boolean;
+  /** e.g. "₹25,000" — outstanding balance for payment alerts. */
+  pendingAmountLabel?: string | null;
 };
 
 export function alertEventForKind(kind: CrmAlertKind): LeadNurtureEventId {

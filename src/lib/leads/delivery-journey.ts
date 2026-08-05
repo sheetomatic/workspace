@@ -103,6 +103,38 @@ function stepStateFromIndex(
   return "pending";
 }
 
+/**
+ * Goods orders run IMS stock checks, purchase orders, and dispatch. Service
+ * work (software builds, WhatsApp API setup, templates, training) never
+ * touches those steps — hide them unless the order actually uses them.
+ */
+export function isGoodsFulfillment(input: LeadDeliveryInput) {
+  const order = input.salesOrder;
+  if (!order) {
+    return false;
+  }
+  return Boolean(
+    order.stockCheckFmsInstanceId ||
+      order.poFmsInstanceId ||
+      order.dispatchFmsInstanceId ||
+      [
+        "STOCK_CHECK",
+        "PO_PENDING",
+        "PO_IN_PROGRESS",
+        "DISPATCH_PENDING",
+        "DISPATCHED",
+      ].includes(order.status),
+  );
+}
+
+const GOODS_ONLY_STAGE_KEYS: OrderJourneyStageKey[] = ["stock", "po", "dispatch"];
+
+/** Service pipeline: Lead → Quote → Advance → Project (SO) → Handover. */
+const SERVICE_STAGE_LABELS: Partial<Record<OrderJourneyStageKey, string>> = {
+  so: "Project",
+  delivered: "Handover",
+};
+
 export function buildDeliveryJourney(input: LeadDeliveryInput): DeliveryJourneyStep[] {
   const order = input.salesOrder;
   const locked = lockedQuotation(input);
@@ -112,6 +144,7 @@ export function buildDeliveryJourney(input: LeadDeliveryInput): DeliveryJourneyS
   const stockFmsId = order?.stockCheckFmsInstanceId ?? null;
   const poFmsId = order?.poFmsInstanceId ?? null;
   const dispatchFmsId = order?.dispatchFmsInstanceId ?? null;
+  const goods = isGoodsFulfillment(input);
 
   let activeKey: OrderJourneyStageKey = "lead";
 
@@ -141,6 +174,18 @@ export function buildDeliveryJourney(input: LeadDeliveryInput): DeliveryJourneyS
     activeKey = "quote";
   }
 
+  // Service work: once the sales order is confirmed the project is in
+  // delivery — the remaining goods steps don't exist for services.
+  if (
+    !goods &&
+    order &&
+    order.status !== "DELIVERED" &&
+    (order.status === "CONFIRMED" ||
+      fmsInstanceStatus(order, soFmsId) === "COMPLETED")
+  ) {
+    activeKey = "delivered";
+  }
+
   const activeIndex = ORDER_JOURNEY_STAGES.findIndex((stage) => stage.key === activeKey);
 
   const poSkipped =
@@ -150,7 +195,7 @@ export function buildDeliveryJourney(input: LeadDeliveryInput): DeliveryJourneyS
     order!.status !== "PO_IN_PROGRESS" &&
     activeIndex > ORDER_JOURNEY_STAGES.findIndex((s) => s.key === "po");
 
-  return ORDER_JOURNEY_STAGES.map((stage, index) => {
+  const steps: DeliveryJourneyStep[] = ORDER_JOURNEY_STAGES.map((stage, index) => {
     switch (stage.key) {
       case "lead":
         return {
@@ -235,7 +280,7 @@ export function buildDeliveryJourney(input: LeadDeliveryInput): DeliveryJourneyS
           nextAction:
             state === "active"
               ? "Complete Sales Order FMS (Order Entry → Approval)"
-              : state === "done" && !stockFmsId
+              : goods && state === "done" && !stockFmsId
                 ? "Verify stock in IMS when ready"
                 : undefined,
         };
@@ -360,14 +405,29 @@ export function buildDeliveryJourney(input: LeadDeliveryInput): DeliveryJourneyS
               : undefined,
         };
       }
-      case "delivered":
+      case "delivered": {
+        const serviceDeliveryActive = !goods && activeKey === "delivered";
         return {
           key: stage.key,
           label: stage.label,
-          state: order?.status === "DELIVERED" ? "done" : stepStateFromIndex(index, activeIndex),
-          statusLabel: order?.status === "DELIVERED" ? "Complete" : "Pending",
+          state:
+            order?.status === "DELIVERED"
+              ? "done"
+              : serviceDeliveryActive
+                ? "active"
+                : stepStateFromIndex(index, activeIndex),
+          statusLabel:
+            order?.status === "DELIVERED"
+              ? "Complete"
+              : serviceDeliveryActive
+                ? "In progress"
+                : "Pending",
           href: order?.id ? `/app/sales-orders/${order.id}` : undefined,
+          nextAction: serviceDeliveryActive
+            ? "Team completes the build/setup. Collect the balance payment before handover, then mark the order Delivered."
+            : undefined,
         };
+      }
       default: {
         const unreachable = stage as { key: OrderJourneyStageKey; label: string };
         return {
@@ -379,6 +439,18 @@ export function buildDeliveryJourney(input: LeadDeliveryInput): DeliveryJourneyS
       }
     }
   });
+
+  if (goods) {
+    return steps;
+  }
+
+  // Service pipeline: drop goods-only steps and use service labels.
+  return steps
+    .filter((step) => !GOODS_ONLY_STAGE_KEYS.includes(step.key))
+    .map((step) => ({
+      ...step,
+      label: SERVICE_STAGE_LABELS[step.key] ?? step.label,
+    }));
 }
 
 export function deliveryJourneySummary(steps: DeliveryJourneyStep[]) {
@@ -506,6 +578,10 @@ export function buildPreSalesJourney(input: LeadDeliveryInput): DeliveryJourneyS
 
 export function buildFulfillmentJourney(input: LeadDeliveryInput): DeliveryJourneyStep[] {
   const full = buildDeliveryJourney(input);
+  if (!isGoodsFulfillment(input)) {
+    // Service pipeline: fulfillment = run the project, then hand over.
+    return full.filter((step) => step.key === "so" || step.key === "delivered");
+  }
   return FULFILLMENT_STAGES.map((stage) => {
     const step = full.find((item) => item.key === stage.key);
     return step ?? {
@@ -586,6 +662,19 @@ export function getDeliveryNextAction(
         title: "Delivered",
         description: "Order fulfillment is complete.",
         primaryLabel: "View sales order",
+        href: salesOrderId ? `/app/sales-orders/${salesOrderId}` : "/app/sales-orders",
+      };
+    }
+
+    if (key === "delivered") {
+      return {
+        phase: "sales_orders",
+        phaseLabel: "Delivery",
+        title: "Complete work & hand over",
+        description:
+          active?.nextAction ??
+          "Finish the remaining work, collect the balance payment, then mark the order Delivered.",
+        primaryLabel: "Open sales order",
         href: salesOrderId ? `/app/sales-orders/${salesOrderId}` : "/app/sales-orders",
       };
     }
@@ -723,9 +812,11 @@ export function getDeliveryNextAction(
   if (key === "delivered") {
     return {
       phase: "sales_orders",
-      phaseLabel: "Fulfillment",
-      title: "Awaiting delivery confirmation",
-      description: "Complete dispatch FMS through customer confirmation.",
+      phaseLabel: "Delivery",
+      title: "Complete work & hand over",
+      description:
+        active?.nextAction ??
+        "Finish the remaining work, collect the balance payment, then mark the order Delivered.",
       primaryLabel: "Open Sales Order",
       href: salesOrderId ? `/app/sales-orders/${salesOrderId}` : "/app/sales-orders",
     };

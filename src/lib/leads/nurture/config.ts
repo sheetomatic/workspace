@@ -91,7 +91,7 @@ We will share the next steps (demo scope, timeline, and commercial) based on our
 
   alert_payment_pending: `Hi {{firstName}},
 
-Friendly reminder — we are awaiting *payment* against your Sheetomatic invoice / commercial.
+Friendly reminder — *{{pendingAmount}}* is pending against your Sheetomatic invoice / commercial.
 
 Once payment is received, we can start / continue delivery without delay.
 

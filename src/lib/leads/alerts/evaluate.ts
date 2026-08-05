@@ -46,6 +46,10 @@ export async function listCrmAlertCenterItems(
   return items.slice(0, limit);
 }
 
+function formatInr(amount: number) {
+  return `₹${Math.round(amount).toLocaleString("en-IN")}`;
+}
+
 async function listPaymentNotReceivedAlerts(
   organizationId: string,
   alerts: LeadAlertOrgConfig,
@@ -57,12 +61,15 @@ async function listPaymentNotReceivedAlerts(
   const afterDays = alerts.paymentNotReceived.afterDays;
   const cutoff = daysAgo(afterDays);
 
+  // Balance-aware: a partial payment (e.g. advance) must NOT silence the
+  // alert — keep reminding while an outstanding balance remains. The clock
+  // restarts from the most recent payment so clients aren't nagged right
+  // after paying an instalment.
   const leads = await prisma.inboundLead.findMany({
     where: mergeLeadContactWhere({
       organizationId,
       ...(assignedToId ? { assignedToId } : {}),
-      status: "INVOICE",
-      payments: { none: {} },
+      status: { in: ["INVOICE", "PAYMENT", "PROJECT_ACTIVE"] },
       OR: [
         {
           quotations: {
@@ -86,27 +93,59 @@ async function listPaymentNotReceivedAlerts(
       status: true,
       modifiedAt: true,
       rawPayload: true,
+      quotationValue: true,
+      payments: { select: { receivedAmount: true, receivedDate: true } },
       quotations: {
         where: { requestType: "INVOICE" },
         orderBy: { quotationDate: "desc" },
         take: 1,
-        select: { quotationDate: true, sentAt: true, status: true },
+        select: {
+          quotationDate: true,
+          sentAt: true,
+          status: true,
+          totalAmount: true,
+        },
       },
     },
-    take: 80,
+    take: 120,
   });
 
   const items: CrmAlertItem[] = [];
   for (const lead of leads) {
     const invoice = lead.quotations[0];
-    const anchor =
+    const received = lead.payments.reduce(
+      (sum, payment) => sum + Number(payment.receivedAmount ?? 0),
+      0,
+    );
+    const total = Number(invoice?.totalAmount ?? lead.quotationValue ?? 0);
+    const balance = total > 0 ? total - received : null;
+
+    if (balance !== null && balance <= 0.5) {
+      continue; // Fully paid.
+    }
+    if (balance === null && lead.payments.length > 0) {
+      continue; // No known total — can't tell if anything is outstanding.
+    }
+    if (balance === null && lead.status !== "INVOICE") {
+      continue; // Legacy no-total case only applies to invoiced leads.
+    }
+
+    const lastPaymentAt = lead.payments.reduce<Date | null>(
+      (latest, payment) =>
+        !latest || payment.receivedDate > latest ? payment.receivedDate : latest,
+      null,
+    );
+    const invoiceAnchor =
       invoice?.sentAt ?? invoice?.quotationDate ?? lead.modifiedAt ?? new Date();
+    const anchor =
+      lastPaymentAt && lastPaymentAt > invoiceAnchor ? lastPaymentAt : invoiceAnchor;
     const days = daysBetween(anchor);
     if (days < afterDays) {
       continue;
     }
     const state = readNurtureState(lead.rawPayload);
     const event = alertEventForKind("payment_not_received");
+    const pendingAmountLabel = balance !== null ? formatInr(balance) : null;
     items.push({
       id: `payment-${lead.id}`,
       kind: "payment_not_received",
@@ -117,9 +156,12 @@ async function listPaymentNotReceivedAlerts(
       company: lead.company,
       status: lead.status,
       daysOverdue: days,
-      reason: `No payment recorded · ${days}d since invoice`,
+      reason: pendingAmountLabel
+        ? `${pendingAmountLabel} balance pending · ${days}d since ${lastPaymentAt && lastPaymentAt >= invoiceAnchor ? "last payment" : "invoice"}`
+        : `No payment recorded · ${days}d since invoice`,
       anchorAt: anchor.toISOString(),
       alreadyMessaged: eventSentWithinDays(state, event, afterDays),
+      pendingAmountLabel,
     });
   }
   return items;

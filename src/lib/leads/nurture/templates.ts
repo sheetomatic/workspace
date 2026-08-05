@@ -60,6 +60,7 @@ export function buildLeadNurtureMessage(params: {
   nextStepLabel?: string | null;
   status?: InboundLeadStatus | null;
   nurtureConfig?: LeadNurtureOrgConfig | null;
+  pendingAmountLabel?: string | null;
 }): string {
   const firstName = leadFirstName(params.name);
   const topic = resolveNurtureTopicLabel(params.category ?? null);
@@ -90,6 +91,7 @@ export function buildLeadNurtureMessage(params: {
     "{{counsellor}}": counsellor,
     "{{discussion}}": summary || "Thank you for your time on the call today.",
     "{{nextStep}}": stage || "We will share the next steps with you shortly.",
+    "{{pendingAmount}}": params.pendingAmountLabel?.trim() || "your payment",
   };
 
   if (params.nurtureConfig) {
@@ -193,7 +195,7 @@ export function buildLeadNurtureMessage(params: {
       return [
         `Hi ${firstName},`,
         "",
-        "Friendly reminder — we are awaiting *payment* against your Sheetomatic invoice / commercial.",
+        `Friendly reminder — *${vars["{{pendingAmount}}"]}* is pending against your Sheetomatic invoice / commercial.`,
         "",
         "Once payment is received, we can start / continue delivery without delay.",
         "",

@@ -3405,6 +3405,62 @@ export async function getLeadTrainingSlotsAction(leadId: string) {
   };
 }
 
+export async function updateLeadTrainingSlotStatusAction(
+  slotId: string,
+  status: "SCHEDULED" | "COMPLETED" | "CANCELLED",
+) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "STAFF")) {
+    return { ok: false as const, message: "Staff access required." };
+  }
+  if (!["SCHEDULED", "COMPLETED", "CANCELLED"].includes(status)) {
+    return { ok: false as const, message: "Invalid status." };
+  }
+
+  const slot = await prisma.trainingCourseSlot.findFirst({
+    where: { id: slotId },
+    select: {
+      id: true,
+      status: true,
+      sessionNumber: true,
+      organizationId: true,
+      inboundLeadId: true,
+    },
+  });
+  if (!slot) {
+    return { ok: false as const, message: "Session not found." };
+  }
+  // Slot must belong to this workspace — directly or via its linked lead.
+  let inOrg = slot.organizationId === user.organizationId;
+  if (!inOrg && slot.inboundLeadId) {
+    const lead = await prisma.inboundLead.findFirst({
+      where: { id: slot.inboundLeadId, organizationId: user.organizationId },
+      select: { id: true },
+    });
+    inOrg = Boolean(lead);
+  }
+  if (!inOrg) {
+    return { ok: false as const, message: "Session not found." };
+  }
+
+  await prisma.trainingCourseSlot.update({
+    where: { id: slot.id },
+    data: { status },
+  });
+
+  if (slot.inboundLeadId && status !== slot.status) {
+    await logInboundLeadActivity({
+      organizationId: user.organizationId,
+      leadId: slot.inboundLeadId,
+      type: "NOTE",
+      body: `Training session ${slot.sessionNumber} marked ${status === "COMPLETED" ? "done" : status.toLowerCase()}.`,
+      createdByUserId: user.id,
+    });
+  }
+
+  return { ok: true as const, message: `Session ${slot.sessionNumber} updated.` };
+}
+
 export async function bookLeadTrainingSlotsAction(formData: FormData) {
   const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "STAFF")) {

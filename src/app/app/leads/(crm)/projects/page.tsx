@@ -3,6 +3,7 @@ import { CrmClientGroups, type CrmClientGroup } from "@/components/saas/crm-clie
 import { CrmSubmoduleShell } from "@/components/saas/crm-submodule-shell";
 import "@/components/saas/leads-machine.css";
 import { formatInr } from "@/lib/leads/categories";
+import { listCrmAlertCenterItems } from "@/lib/leads/alerts/evaluate";
 import { formatCrmNavValue } from "@/lib/leads/crm-nav-format";
 import { getLeadPaymentTotalsByLeadIds } from "@/lib/leads/payment-totals";
 import { listSalesOrders } from "@/lib/leads/sales-orders";
@@ -20,6 +21,7 @@ function groupProjectsByLead(
   rows: SalesOrderListItem[],
   paymentByLead: Map<string, number>,
   sectionKey: string,
+  overdueDaysByLead: Map<string, number>,
 ): CrmClientGroup[] {
   const byLead = new Map<
     string,
@@ -54,8 +56,13 @@ function groupProjectsByLead(
 
   return [...byLead.values()].map((entry) => {
     const name = entry.lead.name || entry.lead.company || "Client";
+    const overdueDays = overdueDaysByLead.get(entry.lead.id);
     const dueLabel =
-      entry.due > 0 ? ` · due ${formatInr(entry.due)}` : "";
+      entry.due > 0
+        ? overdueDays
+          ? ` · OVERDUE ${formatInr(entry.due)} (${overdueDays}d)`
+          : ` · due ${formatInr(entry.due)}`
+        : "";
     return {
       id: `${sectionKey}-${entry.lead.id}`,
       name,
@@ -105,9 +112,18 @@ export default async function CrmProjectsPage() {
     listSalesOrders(user.organizationId, { limit: 150 }),
     getSalesOrderStats(user.organizationId),
   ]);
-  const paymentByLead = await getLeadPaymentTotalsByLeadIds(
-    user.organizationId,
-    orders.map((order) => order.lead.id),
+  const [paymentByLead, alertItems] = await Promise.all([
+    getLeadPaymentTotalsByLeadIds(
+      user.organizationId,
+      orders.map((order) => order.lead.id),
+    ),
+    listCrmAlertCenterItems(user.organizationId, { limit: 120 }),
+  ]);
+  // Leads whose payment reminder has aged past the configured wait.
+  const overdueDaysByLead = new Map<string, number>(
+    alertItems
+      .filter((item) => item.kind === "payment_not_received")
+      .map((item) => [item.leadId, item.daysOverdue]),
   );
   const { running, delivered } = partitionSalesOrdersByLifecycle(orders);
   const pipelineValue = running.reduce(
@@ -117,12 +133,26 @@ export default async function CrmProjectsPage() {
   const receivedOnProjects = orders.reduce((sum, order) => {
     return sum + (paymentByLead.get(order.lead.id) ?? 0);
   }, 0);
+  const overdueValue = [...new Set(orders.map((order) => order.lead.id))]
+    .filter((leadId) => overdueDaysByLead.has(leadId))
+    .reduce((sum, leadId) => {
+      const leadValue = orders
+        .filter((order) => order.lead.id === leadId)
+        .reduce((total, order) => total + Number(order.orderValue || 0), 0);
+      return sum + Math.max(0, leadValue - (paymentByLead.get(leadId) ?? 0));
+    }, 0);
 
-  const runningGroups = groupProjectsByLead(running, paymentByLead, "running");
+  const runningGroups = groupProjectsByLead(
+    running,
+    paymentByLead,
+    "running",
+    overdueDaysByLead,
+  );
   const deliveredGroups = groupProjectsByLead(
     delivered,
     paymentByLead,
     "delivered",
+    overdueDaysByLead,
   );
 
   return (
@@ -141,6 +171,11 @@ export default async function CrmProjectsPage() {
           label: "Running value",
           value: formatCrmNavValue(pipelineValue),
           accent: "warning",
+        },
+        {
+          label: "Overdue",
+          value: formatCrmNavValue(overdueValue),
+          accent: "danger",
         },
       ]}
     >

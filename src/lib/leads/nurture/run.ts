@@ -32,6 +32,37 @@ export {
 
 const WELCOME_RETRY_BATCH = 10;
 
+/** Outstanding balance ("₹25,000") for payment reminders, if computable. */
+async function leadPendingAmountLabel(
+  organizationId: string,
+  leadId: string,
+): Promise<string | null> {
+  const [payments, invoice, lead] = await Promise.all([
+    prisma.inboundLeadPayment.aggregate({
+      where: { organizationId, leadId },
+      _sum: { receivedAmount: true },
+    }),
+    prisma.inboundLeadQuotation.findFirst({
+      where: { organizationId, leadId, requestType: "INVOICE" },
+      orderBy: { quotationDate: "desc" },
+      select: { totalAmount: true },
+    }),
+    prisma.inboundLead.findFirst({
+      where: { id: leadId, organizationId },
+      select: { quotationValue: true },
+    }),
+  ]);
+  const total = Number(invoice?.totalAmount ?? lead?.quotationValue ?? 0);
+  if (total <= 0) {
+    return null;
+  }
+  const balance = total - Number(payments._sum.receivedAmount ?? 0);
+  if (balance <= 0.5) {
+    return null;
+  }
+  return `₹${Math.round(balance).toLocaleString("en-IN")}`;
+}
+
 const NURTURE_STOP_STATUSES: InboundLeadStatus[] = ["WON", "LOST", "PROJECT_ACTIVE", "PAYMENT"];
 
 function mergeNurtureState(
@@ -158,6 +189,8 @@ export async function triggerLeadNurtureEvent(params: {
   assigneeUserId?: string | null;
   actorUserId?: string | null;
   force?: boolean;
+  /** Outstanding balance shown in payment reminders (e.g. "₹25,000"). */
+  pendingAmountLabel?: string | null;
 }): Promise<{ sent: boolean; reason?: string; body?: string }> {
   const sendingEnabled = await isLeadNurtureSendingEnabled(params.organizationId);
   if (!sendingEnabled) {
@@ -255,6 +288,14 @@ export async function triggerLeadNurtureEvent(params: {
   const discussionSummary =
     params.discussionSummary ?? lead.meetingNotes ?? lead.discussionNotes ?? null;
 
+  let pendingAmountLabel = params.pendingAmountLabel ?? null;
+  if (!pendingAmountLabel && params.event === "alert_payment_pending") {
+    pendingAmountLabel = await leadPendingAmountLabel(
+      params.organizationId,
+      lead.id,
+    );
+  }
+
   const body = buildLeadNurtureMessage({
     event: params.event,
     name: lead.name,
@@ -271,6 +312,7 @@ export async function triggerLeadNurtureEvent(params: {
     nextStepLabel: params.nextStepLabel ?? leadStatusLabel(lead.status),
     status: lead.status,
     nurtureConfig,
+    pendingAmountLabel,
   });
 
   // Claim before send so concurrent sync/retry cannot double-fire the same welcome.
