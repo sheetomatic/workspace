@@ -161,6 +161,53 @@ export async function startSalesOrderPo(salesOrderId: string) {
   }
 }
 
+/** Service handover: project done + balance collected → order Delivered. */
+export async function markSalesOrderHandedOver(salesOrderId: string) {
+  try {
+    const user = await requireSalesOrderManager();
+    const order = await prisma.salesOrder.findFirst({
+      where: { id: salesOrderId, organizationId: user.organizationId },
+      select: { id: true, orderNumber: true, leadId: true, status: true },
+    });
+    if (!order) {
+      return { ok: false as const, message: "Sales order not found." };
+    }
+    if (order.status === "DELIVERED") {
+      return { ok: true as const };
+    }
+    if (order.status === "CANCELLED") {
+      return { ok: false as const, message: "Cancelled orders cannot be handed over." };
+    }
+
+    await prisma.salesOrder.update({
+      where: { id: order.id },
+      data: { status: "DELIVERED" },
+    });
+    await prisma.inboundLead.update({
+      where: { id: order.leadId },
+      data: { projectStatus: "COMPLETED" },
+    });
+
+    await logInboundLeadActivity({
+      organizationId: user.organizationId,
+      leadId: order.leadId,
+      type: "STATUS_CHANGE",
+      body: `Project handed over — ${order.orderNumber} marked delivered`,
+      createdByUserId: user.id,
+      metadata: { salesOrderId: order.id },
+    });
+
+    revalidateSalesOrderPaths(order.id);
+    return { ok: true as const };
+  } catch (error) {
+    return {
+      ok: false as const,
+      message:
+        error instanceof Error ? error.message : "Could not mark handover.",
+    };
+  }
+}
+
 export async function sendDispatchSlipWhatsAppAction(salesOrderId: string) {
   try {
     const user = await requireSalesOrderManager();

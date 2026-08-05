@@ -279,7 +279,9 @@ export function buildDeliveryJourney(input: LeadDeliveryInput): DeliveryJourneyS
           href: `/app/sales-orders/${order.id}`,
           nextAction:
             state === "active"
-              ? "Complete Sales Order FMS (Order Entry → Approval)"
+              ? goods
+                ? "Complete Sales Order FMS (Order Entry → Approval)"
+                : "Assign the project team and start work — mark Handover when complete. Move to FMS only if you want stop-by-stop tracking."
               : goods && state === "done" && !stockFmsId
                 ? "Verify stock in IMS when ready"
                 : undefined,

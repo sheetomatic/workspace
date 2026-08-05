@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { ExternalLink, Package, Truck } from "lucide-react";
+import { CheckCircle2, ExternalLink, Package, Truck } from "lucide-react";
 import type { SalesOrderStatus } from "@/lib/leads/sales-order-types";
 import { IMS_SALES_ORDER_STOCK_PATH } from "@/lib/ims/sales-order-stock";
 import {
@@ -16,6 +16,7 @@ import {
 export function SalesOrderDetailActions({
   orderId,
   status,
+  isGoods,
   hasStockCheck,
   hasPo,
   poFmsInstanceId,
@@ -23,9 +24,12 @@ export function SalesOrderDetailActions({
   dispatchUrl,
   startStockCheck,
   startPo,
+  markHandedOver,
 }: {
   orderId: string;
   status: SalesOrderStatus;
+  /** Physical-goods order (IMS/PO/Dispatch apply). Service orders hide those. */
+  isGoods: boolean;
   hasStockCheck: boolean;
   hasPo: boolean;
   poFmsInstanceId: string | null;
@@ -33,6 +37,7 @@ export function SalesOrderDetailActions({
   dispatchUrl: string | null;
   startStockCheck: (orderId: string) => Promise<{ ok: boolean }>;
   startPo: (orderId: string) => Promise<{ ok: boolean }>;
+  markHandedOver: (orderId: string) => Promise<{ ok: boolean }>;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -44,17 +49,44 @@ export function SalesOrderDetailActions({
     });
   };
 
+  const done = status === "DELIVERED";
+  const cancelled = status === "CANCELLED";
+
   return (
     <div className="sales-order-cta-row">
-      <Link className="btn-secondary btn-sm" href={IMS_SALES_ORDER_STOCK_PATH}>
-        <Package size={14} aria-hidden />
-        Open IMS
-      </Link>
-
-      {!hasStockCheck && (status === "CONFIRMED" || status === "STOCK_CHECK") ? (
+      {!done && !cancelled ? (
         <button
           type="button"
           className="btn-primary btn-sm"
+          disabled={pending}
+          onClick={() => {
+            if (
+              window.confirm(
+                "Mark handover complete? Collect the balance payment first — this marks the order Delivered.",
+              )
+            ) {
+              runAction(() => markHandedOver(orderId));
+            }
+          }}
+        >
+          <CheckCircle2 size={14} aria-hidden />
+          {pending ? "Marking…" : "Mark handover complete"}
+        </button>
+      ) : null}
+
+      {isGoods ? (
+        <Link className="btn-secondary btn-sm" href={IMS_SALES_ORDER_STOCK_PATH}>
+          <Package size={14} aria-hidden />
+          Open IMS
+        </Link>
+      ) : null}
+
+      {isGoods &&
+      !hasStockCheck &&
+      (status === "CONFIRMED" || status === "STOCK_CHECK") ? (
+        <button
+          type="button"
+          className="btn-secondary btn-sm"
           disabled={pending}
           onClick={() => runAction(() => startStockCheck(orderId))}
         >

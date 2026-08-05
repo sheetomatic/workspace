@@ -9,9 +9,11 @@ import { buildDispatchPublicUrl, getSalesOrderById } from "@/lib/leads/sales-ord
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import {
+  markSalesOrderHandedOver,
   startSalesOrderPo,
   startSalesOrderStockCheck,
 } from "@/app/app/sales-orders/actions";
+import { isGoodsFulfillment } from "@/lib/leads/delivery-journey";
 import { SalesOrderDetailActions } from "@/components/saas/sales-order-detail-actions";
 import { SalesOrderProcessFmsPanel } from "@/components/saas/sales-order-process-fms";
 
@@ -116,6 +118,7 @@ export default async function SalesOrderDetailPage({ params }: PageProps) {
             <SalesOrderDetailActions
               orderId={order.id}
               status={order.status}
+              isGoods={isGoodsFulfillment(leadDelivery)}
               hasStockCheck={Boolean(order.stockCheckFmsInstanceId)}
               hasPo={Boolean(order.poFmsInstanceId)}
               poFmsInstanceId={order.poFmsInstanceId}
@@ -123,6 +126,7 @@ export default async function SalesOrderDetailPage({ params }: PageProps) {
               dispatchUrl={dispatchUrl}
               startStockCheck={startSalesOrderStockCheck}
               startPo={startSalesOrderPo}
+              markHandedOver={markSalesOrderHandedOver}
             />
           ) : null}
         </section>

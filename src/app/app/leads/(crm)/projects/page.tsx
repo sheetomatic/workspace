@@ -16,6 +16,7 @@ import { getSalesOrderStats } from "@/lib/sales-orders/queries";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
+import { prisma } from "@/lib/db";
 
 function groupProjectsByLead(
   rows: SalesOrderListItem[],
@@ -104,6 +105,58 @@ function groupProjectsByLead(
   });
 }
 
+/** Leads at a pre-project stage, shown as Upcoming / Pipeline groups. */
+function groupLeadsWithQuote(
+  leads: Array<{
+    id: string;
+    name: string | null;
+    company: string | null;
+    phone: string | null;
+    status: string;
+    quotations: Array<{
+      quotationNumber: string;
+      status: string;
+      totalAmount: unknown;
+      sentAt: Date | null;
+      quotationDate: Date;
+    }>;
+  }>,
+  sectionKey: string,
+  waEvent: CrmClientGroup["waEvent"],
+): CrmClientGroup[] {
+  return leads.map((lead) => {
+    const quote = lead.quotations[0] ?? null;
+    const value = Number(quote?.totalAmount ?? 0);
+    return {
+      id: `${sectionKey}-${lead.id}`,
+      name: lead.name || lead.company || "Client",
+      phone: lead.phone || "",
+      inboundLeadId: lead.id,
+      summary: quote
+        ? `${quote.quotationNumber} · ${formatInr(value)}`
+        : "No quotation yet",
+      waEvent,
+      rows: quote
+        ? [
+            {
+              id: `${sectionKey}-${lead.id}-quote`,
+              cells: [
+                { primary: quote.quotationNumber },
+                quote.status === "LOCKED" ? "Accepted" : quote.status,
+                formatInr(value),
+                (quote.sentAt ?? quote.quotationDate).toLocaleDateString("en-IN", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                }),
+              ],
+            },
+          ]
+        : [],
+    };
+  });
+}
+
 export default async function CrmProjectsPage() {
   const user = await requireSession(undefined, { module: "CRM" });
   await requireCrmSubModule(user, "projects");
@@ -112,13 +165,73 @@ export default async function CrmProjectsPage() {
     listSalesOrders(user.organizationId, { limit: 150 }),
     getSalesOrderStats(user.organizationId),
   ]);
-  const [paymentByLead, alertItems] = await Promise.all([
-    getLeadPaymentTotalsByLeadIds(
-      user.organizationId,
-      orders.map((order) => order.lead.id),
-    ),
-    listCrmAlertCenterItems(user.organizationId, { limit: 120 }),
-  ]);
+
+  const preProjectLeadSelect = {
+    id: true,
+    name: true,
+    company: true,
+    phone: true,
+    status: true,
+    quotations: {
+      where: { requestType: "PROPOSAL" as const },
+      orderBy: [{ sentAt: "desc" as const }, { quotationDate: "desc" as const }],
+      take: 1,
+      select: {
+        quotationNumber: true,
+        status: true,
+        totalAmount: true,
+        sentAt: true,
+        quotationDate: true,
+      },
+    },
+  };
+
+  const [paymentByLead, alertItems, upcomingLeads, pipelineLeadsRaw] =
+    await Promise.all([
+      getLeadPaymentTotalsByLeadIds(
+        user.organizationId,
+        orders.map((order) => order.lead.id),
+      ),
+      listCrmAlertCenterItems(user.organizationId, { limit: 120 }),
+      // Upcoming: quotation accepted / deal won, advance payment still pending.
+      prisma.inboundLead.findMany({
+        where: {
+          organizationId: user.organizationId,
+          archivedAt: null,
+          salesOrders: { none: {} },
+          OR: [
+            { status: { in: ["WON", "PAYMENT"] } },
+            { quotations: { some: { lockedAt: { not: null } } } },
+          ],
+        },
+        select: preProjectLeadSelect,
+        orderBy: { modifiedAt: "desc" },
+        take: 100,
+      }),
+      // Pipeline: quotation sent, client has not confirmed yet.
+      prisma.inboundLead.findMany({
+        where: {
+          organizationId: user.organizationId,
+          archivedAt: null,
+          status: { notIn: ["LOST", "WON", "PAYMENT", "PROJECT_ACTIVE"] },
+          salesOrders: { none: {} },
+          payments: { none: {} },
+          quotations: {
+            some: {
+              requestType: "PROPOSAL",
+              status: { in: ["SENT", "REVISED"] },
+              lockedAt: null,
+            },
+          },
+        },
+        select: preProjectLeadSelect,
+        orderBy: { modifiedAt: "desc" },
+        take: 100,
+      }),
+    ]);
+
+  const upcomingIds = new Set(upcomingLeads.map((lead) => lead.id));
+  const pipelineLeads = pipelineLeadsRaw.filter((lead) => !upcomingIds.has(lead.id));
   // Leads whose payment reminder has aged past the configured wait.
   const overdueDaysByLead = new Map<string, number>(
     alertItems
@@ -154,23 +267,34 @@ export default async function CrmProjectsPage() {
     "delivered",
     overdueDaysByLead,
   );
+  const upcomingGroups = groupLeadsWithQuote(
+    upcomingLeads,
+    "upcoming",
+    "alert_payment_pending",
+  );
+  const pipelineGroups = groupLeadsWithQuote(
+    pipelineLeads,
+    "pipeline",
+    "alert_quotation_pending",
+  );
 
   return (
     <CrmSubmoduleShell
       title="Projects"
-      description="Sales orders as client projects — value, payments received, and due."
+      description="Running work, accepted deals waiting on advance, quotes in pipeline, and completed handovers."
       kpis={[
         { label: "Running", value: String(stats.inProgress), accent: "blue" },
-        { label: "Delivered", value: String(stats.delivered), accent: "success" },
+        {
+          label: "Upcoming",
+          value: String(upcomingLeads.length),
+          accent: "warning",
+        },
+        { label: "Pipeline", value: String(pipelineLeads.length) },
+        { label: "Completed", value: String(stats.delivered), accent: "success" },
         {
           label: "Received",
           value: formatCrmNavValue(receivedOnProjects),
           accent: "success",
-        },
-        {
-          label: "Running value",
-          value: formatCrmNavValue(pipelineValue),
-          accent: "warning",
         },
         {
           label: "Overdue",
@@ -201,7 +325,40 @@ export default async function CrmProjectsPage() {
           />
         </section>
         <section>
-          <h3>Delivered ({delivered.length})</h3>
+          <h3>Upcoming ({upcomingLeads.length})</h3>
+          <p className="leads-machine-muted">
+            Quotation accepted — advance payment pending. Record the advance to
+            start the project.
+          </p>
+          <CrmClientGroups
+            groups={upcomingGroups}
+            columns={["Quote", "Status", "Value", "Sent"]}
+            openTab="payments"
+            waEvent="alert_payment_pending"
+            canManage={canManage}
+            emptyMessage="Nothing waiting on advance payment."
+            filterPlaceholder="Filter upcoming clients…"
+            noun="client"
+          />
+        </section>
+        <section>
+          <h3>Pipeline ({pipelineLeads.length})</h3>
+          <p className="leads-machine-muted">
+            Quotation sent — client has not confirmed yet.
+          </p>
+          <CrmClientGroups
+            groups={pipelineGroups}
+            columns={["Quote", "Status", "Value", "Sent"]}
+            openTab="quote"
+            waEvent="alert_quotation_pending"
+            canManage={canManage}
+            emptyMessage="No quotations awaiting confirmation."
+            filterPlaceholder="Filter pipeline clients…"
+            noun="client"
+          />
+        </section>
+        <section>
+          <h3 className="leads-projects-h-done">Completed ({delivered.length})</h3>
           <CrmClientGroups
             groups={deliveredGroups}
             columns={[
@@ -215,8 +372,8 @@ export default async function CrmProjectsPage() {
             openTab="projects"
             waEvent="stage_follow_up"
             canManage={canManage}
-            emptyMessage="No delivered projects yet."
-            filterPlaceholder="Filter delivered clients…"
+            emptyMessage="No completed projects yet."
+            filterPlaceholder="Filter completed clients…"
             noun="client"
           />
         </section>

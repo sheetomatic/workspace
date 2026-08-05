@@ -4332,6 +4332,21 @@
   cursor: pointer;
 }
 
+/* Completed projects: green, clearly out of the running list. */
+.leads-projects-h-done {
+  color: #15803d;
+}
+
+.leads-project-chip.is-done {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.leads-project-chip.is-done strong,
+.leads-project-chip.is-done span {
+  color: #15803d;
+}
+
 .leads-project-chip.is-active {
   border-color: #2563eb;
   background: #eff6ff;

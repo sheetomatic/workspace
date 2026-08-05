@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ExternalLink, Package, Truck } from "lucide-react";
+import { CheckCircle2, ExternalLink, Package, Truck } from "lucide-react";
 import { LeadDeliveryJourney } from "@/components/saas/lead-delivery-journey";
 import { formatInr } from "@/lib/leads/categories";
+import { isGoodsFulfillment } from "@/lib/leads/delivery-journey";
 import type { DeliveryLeadTab, LeadDeliveryInput } from "@/lib/leads/delivery-journey";
 import {
   salesOrderStatusLabel,
@@ -19,6 +20,7 @@ import {
   SALES_OPS_PO_QUEUE_PATH,
 } from "@/lib/fms/sales-fulfillment";
 import {
+  markSalesOrderHandedOver,
   startSalesOrderPo,
   startSalesOrderStockCheck,
 } from "@/app/app/sales-orders/actions";
@@ -56,6 +58,11 @@ export function SalesOrderPanel({
     salesOrder?.dispatchShareToken != null
       ? buildDispatchPublicUrl(salesOrder.dispatchShareToken)
       : null;
+  const isGoods = isGoodsFulfillment(leadDelivery);
+  const canHandOver =
+    salesOrder != null &&
+    salesOrder.status !== "DELIVERED" &&
+    salesOrder.status !== "CANCELLED";
 
   return (
     <section className="leads-drawer-section sales-order-panel">
@@ -102,12 +109,40 @@ export function SalesOrderPanel({
 
           {canManage ? (
             <div className="sales-order-cta-row">
-              <Link className="btn-secondary btn-sm" href={IMS_SALES_ORDER_STOCK_PATH}>
-                <Package size={14} aria-hidden />
-                Open IMS
-              </Link>
+              {canHandOver ? (
+                <button
+                  type="button"
+                  className="btn-primary btn-sm"
+                  disabled={pending}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        "Mark handover complete? Collect the balance payment first — this marks the order Delivered.",
+                      )
+                    ) {
+                      runAction(async () => {
+                        await markSalesOrderHandedOver(salesOrder.id);
+                      });
+                    }
+                  }}
+                >
+                  <CheckCircle2 size={14} aria-hidden />
+                  Mark handover complete
+                </button>
+              ) : null}
 
-              {!salesOrder.stockCheckFmsInstanceId &&
+              {isGoods ? (
+                <Link
+                  className="btn-secondary btn-sm"
+                  href={IMS_SALES_ORDER_STOCK_PATH}
+                >
+                  <Package size={14} aria-hidden />
+                  Open IMS
+                </Link>
+              ) : null}
+
+              {isGoods &&
+              !salesOrder.stockCheckFmsInstanceId &&
               (salesOrder.status === "CONFIRMED" ||
                 salesOrder.status === "STOCK_CHECK") ? (
                 <button

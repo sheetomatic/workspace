@@ -2446,9 +2446,11 @@ export function LeadDrawerPanel({
               )}
             </div>
             <div>
-              <h4>Delivered ({deliveredProjects.length})</h4>
+              <h4 className="leads-projects-h-done">
+                Completed ({deliveredProjects.length})
+              </h4>
               {deliveredProjects.length === 0 ? (
-                <p className="leads-machine-muted">No delivered projects yet.</p>
+                <p className="leads-machine-muted">No completed projects yet.</p>
               ) : (
                 <ul className="leads-projects-list">
                   {deliveredProjects.map((order) => (
@@ -2457,8 +2459,8 @@ export function LeadDrawerPanel({
                         type="button"
                         className={
                           selectedSalesOrder?.id === order.id
-                            ? "leads-project-chip is-active"
-                            : "leads-project-chip"
+                            ? "leads-project-chip is-done is-active"
+                            : "leads-project-chip is-done"
                         }
                         onClick={() => setSelectedOrderId(order.id)}
                       >
