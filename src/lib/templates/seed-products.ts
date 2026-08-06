@@ -131,9 +131,33 @@ export const TEMPLATE_PRODUCT_SEEDS: Array<{
     description:
       "Ready-made CRM built for electric works shops — track enquiries, customers, quotations, and job follow-ups in one AppSheet app. Pay on UPI — after confirmation we email your AppSheet copy link.",
     sortOrder: 17,
-    thumbnailUrl: null,
+    thumbnailUrl: "/images/templates/appsheet-crm-electric-works.png",
     copyLink:
       "https://www.appsheet.com/templates/?appGuidString=44c60e0f-2247-43dc-9b51-61e7d30075ba",
+    active: true,
+  },
+  {
+    slug: "expense-tracker-sheet-template",
+    name: "Expense Tracker (Sheets)",
+    type: "SHEETS",
+    priceInr: 499,
+    description:
+      "Google Sheets expense tracker — log daily spends by category, set monthly budgets, and see spend breakdowns at a glance. Pay on UPI — after confirmation we email your Make a copy link.",
+    sortOrder: 3,
+    thumbnailUrl: "/images/templates/expense-tracker-sheet-template.png",
+    copyLink: null,
+    active: true,
+  },
+  {
+    slug: "appsheet-expense-tracker",
+    name: "Expense Tracker (AppSheet)",
+    type: "APPSHEET",
+    priceInr: 699,
+    description:
+      "AppSheet expense tracker — log expenses on the go from your phone, with categories, payment modes, monthly budgets, and spend reports. Pay on UPI — after confirmation we email your AppSheet copy link.",
+    sortOrder: 18,
+    thumbnailUrl: "/images/templates/appsheet-expense-tracker.png",
+    copyLink: null,
     active: true,
   },
 ];
