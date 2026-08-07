@@ -1,8 +1,8 @@
 import type { CSSProperties } from "react";
 
-/** Crisp SVG marks — same growth-bars brand as site/workspace. */
-const ICON_PATH = "/images/sheetomatic-icon.svg";
-const ICON_ON_DARK_PATH = "/images/sheetomatic-icon-light.svg";
+/** Crisp SVG marks — S-through-4-points brand with AI sparkle. */
+const ICON_PATH = "/images/sm-mark-ai.svg";
+const ICON_ON_DARK_PATH = "/images/sm-mark-ai-light.svg";
 const LOCKUP_PATH = "/images/sheetomatic-ai-lockup.svg";
 /** Lockup aspect (168×40). */
 const LOCKUP_ASPECT = 4.2;

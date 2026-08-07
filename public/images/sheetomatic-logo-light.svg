@@ -1,11 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 64" fill="none" role="img" aria-label="Sheetomatic">
-  <rect x="4" y="36" width="11" height="20" rx="2.5" fill="#67E8F9"/>
-  <rect x="20" y="22" width="11" height="34" rx="2.5" fill="#60A5FA"/>
-  <rect x="36" y="8" width="11" height="48" rx="2.5" fill="#93C5FD"/>
-  <path
-    d="M10 48 L24 30 L33 38 L44 12 L50 14 L36 46 L27 36 L16 50 Z"
-    fill="#34D399"
-  />
+  <defs>
+    <linearGradient id="smLogoLight" x1="140" y1="140" x2="372" y2="372" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#34D399"/>
+      <stop offset="0.5" stop-color="#2DD4BF"/>
+      <stop offset="1" stop-color="#60A5FA"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(-16,-16) scale(0.18)">
+    <path
+      d="M 372 140 C 300 116 212 116 140 140 C 140 258 372 254 372 372 C 300 396 212 396 140 372"
+      stroke="url(#smLogoLight)"
+      stroke-width="14"
+      stroke-linecap="round"
+    />
+    <circle cx="140" cy="140" r="22" fill="url(#smLogoLight)"/>
+    <circle cx="372" cy="140" r="22" fill="url(#smLogoLight)"/>
+    <circle cx="140" cy="372" r="22" fill="url(#smLogoLight)"/>
+    <circle cx="372" cy="372" r="22" fill="url(#smLogoLight)"/>
+  </g>
   <text
     x="62"
     y="36"

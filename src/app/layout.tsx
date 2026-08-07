@@ -17,11 +17,11 @@ export const metadata: Metadata = {
     "BCI Suite: Business Control & Intelligence for system-driven MSMEs — FMS, IMS, Full Kitting, Process Coordinator, Executive Assistant, and Review Rhythm in one operating system.",
   icons: {
     icon: [
-      { url: "/favicon.ico?v=7", sizes: "any" },
-      { url: "/icon.png?v=7", type: "image/png", sizes: "512x512" },
+      { url: "/favicon.ico?v=8", sizes: "any" },
+      { url: "/icon.png?v=8", type: "image/png", sizes: "512x512" },
     ],
-    apple: "/apple-icon.png?v=7",
-    shortcut: "/favicon.ico?v=7",
+    apple: "/apple-icon.png?v=8",
+    shortcut: "/favicon.ico?v=8",
   },
   openGraph: {
     type: "website",

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="96 52 384 384" fill="none" role="img" aria-label="Sheetomatic AI">
+  <defs>
+    <linearGradient id="smAi" x1="140" y1="140" x2="372" y2="372" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#10B981"/>
+      <stop offset="0.5" stop-color="#14B8A6"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+  </defs>
+  <!-- S-line through the four points -->
+  <path
+    d="M 372 140 C 300 116 212 116 140 140 C 140 258 372 254 372 372 C 300 396 212 396 140 372"
+    stroke="url(#smAi)"
+    stroke-width="14"
+    stroke-linecap="round"
+  />
+  <!-- Four points (dice-4 heritage) -->
+  <circle cx="140" cy="140" r="22" fill="url(#smAi)"/>
+  <circle cx="372" cy="140" r="22" fill="url(#smAi)"/>
+  <circle cx="140" cy="372" r="22" fill="url(#smAi)"/>
+  <circle cx="372" cy="372" r="22" fill="url(#smAi)"/>
+  <!-- AI sparkle -->
+  <path
+    d="M 444 62 Q 449 89 476 94 Q 449 99 444 126 Q 439 99 412 94 Q 439 89 444 62 Z"
+    fill="url(#smAi)"
+  />
+</svg>

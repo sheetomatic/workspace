@@ -42,7 +42,7 @@ export async function generateMetadata(): Promise<Metadata> {
         statusBarStyle: "default",
       },
       icons: {
-        apple: "/icons/workspace-icon-192.png?v=5",
+        apple: "/icons/workspace-icon-192.png?v=6",
       },
       other: {
         "mobile-web-app-capable": "yes",
@@ -60,7 +60,7 @@ export async function generateMetadata(): Promise<Metadata> {
       statusBarStyle: "default",
     },
     icons: {
-      apple: "/icons/workspace-icon-192.png?v=5",
+      apple: "/icons/workspace-icon-192.png?v=6",
     },
     other: {
       "mobile-web-app-capable": "yes",
