@@ -422,7 +422,7 @@ export function LeadDrawerPanel({
   const detailsSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const aiStatus = lead.aiSuggestedStatus ?? null;
-  const showAiHint = aiStatus && aiStatus !== status && canManage;
+  const showAiHint = aiStatus && aiStatus !== status && canWork;
   const isArchived = Boolean(lead.archivedAt);
   const isDemoScheduled = resolveLeadStatus(status) === "DEMO_SCHEDULED";
 
@@ -461,7 +461,7 @@ export function LeadDrawerPanel({
   }
 
   async function persistDetails(options?: { explicit?: boolean }) {
-    if (!canManage) return;
+    if (!canWork) return;
     if (savingKey === "details") return;
     if (!detailsDirty && !options?.explicit) return;
 
@@ -630,7 +630,7 @@ export function LeadDrawerPanel({
   }, [tab, lead.id]);
 
   useEffect(() => {
-    if (!canManage || !detailsDirty) return;
+    if (!canWork || !detailsDirty) return;
     if (detailsDebounceRef.current) {
       clearTimeout(detailsDebounceRef.current);
     }
@@ -644,7 +644,7 @@ export function LeadDrawerPanel({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- debounce on field dirtiness
   }, [
-    canManage,
+    canWork,
     detailsDirty,
     name,
     phone,
@@ -774,7 +774,7 @@ export function LeadDrawerPanel({
           ) : null}
         </div>
         <div className="leads-drawer-head-actions">
-          {canManage ? (
+          {canWork ? (
             <button
               type="button"
               className="btn-secondary btn-sm"
@@ -916,7 +916,7 @@ export function LeadDrawerPanel({
               </ul>
             </div>
           ) : null}
-          {canManage ? (
+          {canWork ? (
             <div className="leads-drawer-form">
               <label>
                 Status (next stage)
@@ -1088,7 +1088,7 @@ export function LeadDrawerPanel({
                 Category
                 <select
                   value={category}
-                  disabled={!canManage}
+                  disabled={!canWork}
                   onChange={(event) => {
                     setCategory(event.target.value as LeadCategoryId);
                     markDetailsDirty();
@@ -2168,7 +2168,7 @@ export function LeadDrawerPanel({
             ) : (
               <span className="leads-machine-muted">Add phone to send WhatsApp.</span>
             )}
-            {canManage && paymentSummary.due > 0 ? (
+            {canWork && paymentSummary.due > 0 ? (
               <button
                 type="button"
                 className="btn-primary btn-sm"
@@ -2286,7 +2286,7 @@ export function LeadDrawerPanel({
               ))}
             </div>
           ) : null}
-          {canManage ? (
+          {canWork ? (
             <div className="leads-drawer-form">
               <label>
                 Payment type
@@ -2601,7 +2601,7 @@ export function LeadDrawerPanel({
       ) : null}
 
       {tab === "training" && showTraining ? (
-        <LeadTrainingSlotsPanel leadId={lead.id} canManage={canManage} />
+        <LeadTrainingSlotsPanel leadId={lead.id} canManage={canWork} />
       ) : null}
 
       {tab === "quote" ? (
@@ -2619,7 +2619,8 @@ export function LeadDrawerPanel({
           quotations={lead.quotations}
           organizationName={organizationName}
           organizationLogoUrl={organizationLogoUrl}
-          canManage={canManage}
+          canManage={canWork}
+          canDelete={canManage}
           pending={pending}
           startTransition={startTransition}
         />

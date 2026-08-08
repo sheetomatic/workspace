@@ -166,10 +166,33 @@ async function canWorkLead(
 const LEAD_WORK_DENIED =
   "Not allowed — you can only work leads assigned to you.";
 
+/** Same rule as canWorkLead, resolved through a quotation's parent lead. */
+async function canWorkQuotation(
+  user: {
+    id: string;
+    organizationId: string;
+    role: Parameters<typeof hasMinimumRole>[0];
+  },
+  quotationId: string,
+) {
+  if (hasMinimumRole(user.role, "MANAGER")) {
+    return true;
+  }
+  const quotation = await prisma.inboundLeadQuotation.findFirst({
+    where: {
+      id: quotationId,
+      organizationId: user.organizationId,
+      lead: { assignedToId: user.id },
+    },
+    select: { id: true },
+  });
+  return Boolean(quotation);
+}
+
 export async function assignInboundLead(leadId: string, assigneeUserId: string | null) {
   const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "MANAGER")) {
-    return { ok: false, message: "Not allowed." };
+  if (!(await canWorkLead(user, leadId))) {
+    return { ok: false, message: LEAD_WORK_DENIED };
   }
 
   if (
@@ -292,8 +315,8 @@ export async function bulkAssignInboundLeads(
 
 export async function updateInboundLeadStatus(leadId: string, status: InboundLeadStatus) {
   const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "MANAGER")) {
-    return { ok: false, message: "Not allowed." };
+  if (!(await canWorkLead(user, leadId))) {
+    return { ok: false, message: LEAD_WORK_DENIED };
   }
 
   const existing = await prisma.inboundLead.findFirst({
@@ -362,8 +385,8 @@ export async function updateInboundLeadStatus(leadId: string, status: InboundLea
 
 export async function updateInboundLeadCategory(leadId: string, category: string) {
   const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "MANAGER")) {
-    return { ok: false, message: "Not allowed." };
+  if (!(await canWorkLead(user, leadId))) {
+    return { ok: false, message: LEAD_WORK_DENIED };
   }
 
   if (!isLeadCategoryId(category)) {
@@ -427,8 +450,8 @@ export async function updateInboundLeadDetails(params: {
   winProbability?: string;
 }) {
   const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "MANAGER")) {
-    return { ok: false, message: "Not allowed." };
+  if (!(await canWorkLead(user, params.leadId))) {
+    return { ok: false, message: LEAD_WORK_DENIED };
   }
 
   const existing = await prisma.inboundLead.findFirst({
@@ -806,8 +829,8 @@ export async function sendLeadNurtureWhatsAppAction(
   stepId: LeadNurtureEventId,
 ) {
   const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "MANAGER")) {
-    return { ok: false, message: "Not allowed." };
+  if (!(await canWorkLead(user, leadId))) {
+    return { ok: false, message: LEAD_WORK_DENIED };
   }
 
   if (!NURTURE_EVENT_IDS.has(stepId)) {
@@ -1250,7 +1273,7 @@ export async function regenerateLeadsApiKey() {
 
 export async function createManualInboundLead(formData: FormData) {
   const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "MANAGER")) {
+  if (!hasMinimumRole(user.role, "STAFF")) {
     return { ok: false, message: "Not allowed." };
   }
 
@@ -1293,6 +1316,8 @@ export async function createManualInboundLead(formData: FormData) {
     capturedAt: new Date(),
     actorUserId: user.id,
     createdByUserId: user.id,
+    // Staff only see leads assigned to them — keep their own additions visible.
+    assignedToId: hasMinimumRole(user.role, "MANAGER") ? undefined : user.id,
     hardBlockDuplicates: true,
   });
 
@@ -1327,8 +1352,8 @@ export async function createManualInboundLead(formData: FormData) {
 
 export async function archiveInboundLeadAction(leadId: string) {
   const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "MANAGER")) {
-    return { ok: false, message: "Not allowed." };
+  if (!(await canWorkLead(user, leadId))) {
+    return { ok: false, message: LEAD_WORK_DENIED };
   }
 
   const updated = await prisma.inboundLead.updateMany({
@@ -1365,8 +1390,8 @@ export async function archiveInboundLeadAction(leadId: string) {
 
 export async function unarchiveInboundLeadAction(leadId: string) {
   const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "MANAGER")) {
-    return { ok: false, message: "Not allowed." };
+  if (!(await canWorkLead(user, leadId))) {
+    return { ok: false, message: LEAD_WORK_DENIED };
   }
 
   const updated = await prisma.inboundLead.updateMany({
@@ -1475,8 +1500,8 @@ export async function generateLeadAiSummaryAction(
   opts?: { force?: boolean },
 ) {
   const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "MANAGER")) {
-    return { ok: false as const, message: "Not allowed." };
+  if (!(await canWorkLead(user, leadId))) {
+    return { ok: false as const, message: LEAD_WORK_DENIED };
   }
 
   const lead = await prisma.inboundLead.findFirst({
@@ -1609,8 +1634,8 @@ export async function generateLeadAiSummaryAction(
 
 export async function applyAiSuggestedLeadStatus(leadId: string) {
   const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "MANAGER")) {
-    return { ok: false, message: "Not allowed." };
+  if (!(await canWorkLead(user, leadId))) {
+    return { ok: false, message: LEAD_WORK_DENIED };
   }
 
   const lead = await prisma.inboundLead.findFirst({
@@ -2091,8 +2116,8 @@ export async function updateLeadProjectStatus(
   projectStatus: LeadProjectStatus,
 ) {
   const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "MANAGER")) {
-    return { ok: false, message: "Not allowed." };
+  if (!(await canWorkLead(user, leadId))) {
+    return { ok: false, message: LEAD_WORK_DENIED };
   }
 
   const result = await prisma.inboundLead.updateMany({
@@ -2157,8 +2182,8 @@ export async function addInboundLeadPayment(params: {
   notes?: string;
 }) {
   const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "MANAGER")) {
-    return { ok: false, message: "Not allowed." };
+  if (!(await canWorkLead(user, params.leadId))) {
+    return { ok: false, message: LEAD_WORK_DENIED };
   }
 
   const amount = Number.parseFloat(params.receivedAmount);
@@ -2295,8 +2320,8 @@ export async function addLeadOfferedService(params: {
   catalogId: string;
 }) {
   const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "MANAGER")) {
-    return { ok: false, message: "Not allowed." };
+  if (!(await canWorkLead(user, params.leadId))) {
+    return { ok: false, message: LEAD_WORK_DENIED };
   }
 
   const catalog = await prisma.leadServiceCatalog.findFirst({
@@ -2409,8 +2434,8 @@ export async function createLeadQuotation(params: {
   lineItems?: Array<{ catalogId: string; unitPrice: string; quantity?: string }>;
 }) {
   const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "MANAGER")) {
-    return { ok: false, message: "Not allowed." };
+  if (!(await canWorkLead(user, params.leadId))) {
+    return { ok: false, message: LEAD_WORK_DENIED };
   }
 
   const lead = await prisma.inboundLead.findFirst({
@@ -2576,8 +2601,8 @@ export async function createLeadQuotation(params: {
 
 export async function markLeadQuotationSent(quotationId: string) {
   const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "MANAGER")) {
-    return { ok: false, message: "Not allowed." };
+  if (!(await canWorkQuotation(user, quotationId))) {
+    return { ok: false, message: LEAD_WORK_DENIED };
   }
 
   const quotation = await prisma.inboundLeadQuotation.findFirst({
@@ -2606,8 +2631,8 @@ export async function markLeadQuotationSent(quotationId: string) {
 
 export async function reviseLeadQuotation(quotationId: string) {
   const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "MANAGER")) {
-    return { ok: false, message: "Not allowed." };
+  if (!(await canWorkQuotation(user, quotationId))) {
+    return { ok: false, message: LEAD_WORK_DENIED };
   }
 
   const source = await prisma.inboundLeadQuotation.findFirst({
@@ -2702,8 +2727,8 @@ async function getQuotationForShare(organizationId: string, quotationId: string)
 
 export async function sendLeadQuotationWhatsApp(quotationId: string) {
   const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "MANAGER")) {
-    return { ok: false, message: "Not allowed." };
+  if (!(await canWorkQuotation(user, quotationId))) {
+    return { ok: false, message: LEAD_WORK_DENIED };
   }
 
   const quotation = await getQuotationForShare(user.organizationId, quotationId);
@@ -2748,8 +2773,8 @@ export async function sendLeadQuotationWhatsApp(quotationId: string) {
 
 export async function sendLeadQuotationEmail(quotationId: string) {
   const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "MANAGER")) {
-    return { ok: false, message: "Not allowed." };
+  if (!(await canWorkQuotation(user, quotationId))) {
+    return { ok: false, message: LEAD_WORK_DENIED };
   }
 
   const quotation = await getQuotationForShare(user.organizationId, quotationId);

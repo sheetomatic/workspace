@@ -331,19 +331,19 @@ export function LeadsCrmWorkspace({
                   {bulkMode ? "Done selecting" : "Bulk assign"}
                 </button>
               ) : null}
-              <button
-                type="button"
-                className="btn-primary btn-sm"
-                onClick={() => {
-                  setShowCreate((open) => !open);
-                  setCreateError(null);
-                  setCreateDuplicate(null);
-                }}
-              >
-                {showCreate ? "Cancel" : "Add lead"}
-              </button>
             </>
           ) : null}
+          <button
+            type="button"
+            className="btn-primary btn-sm"
+            onClick={() => {
+              setShowCreate((open) => !open);
+              setCreateError(null);
+              setCreateDuplicate(null);
+            }}
+          >
+            {showCreate ? "Cancel" : "Add lead"}
+          </button>
           <span className="leads-crm-count">
             {searchDraft.trim()
               ? `${visibleLeads.length} match · ${localLeads.length} loaded`
@@ -354,7 +354,7 @@ export function LeadsCrmWorkspace({
         </div>
       </div>
 
-      {showCreate && canManage ? (
+      {showCreate ? (
         <form
           className="leads-create-form"
           onSubmit={(event) => {
@@ -521,8 +521,10 @@ export function LeadsCrmWorkspace({
             ) : null}
           </div>
         ) : (
+          // Staff boards only contain their assigned leads, so stage drag is
+          // safe — the server still checks per-lead permission.
           <LeadsKanbanBoard
-            canManage={canManage}
+            canManage
             leads={visibleLeads}
             onOpenLead={setSelectedId}
           />
@@ -663,15 +665,17 @@ export function LeadsCrmWorkspace({
                       </span>
                     </td>
                     <td className="leads-row-category">
+                      {/* Staff rows are already scoped to their assigned leads;
+                          the server still enforces per-lead permission. */}
                       <LeadCategorySelect
-                        disabled={!canManage}
+                        disabled={false}
                         leadId={lead.id}
                         value={lead.category}
                       />
                     </td>
                     <td className="leads-row-status">
                       <LeadStatusSelect
-                        disabled={!canManage}
+                        disabled={false}
                         leadId={lead.id}
                         value={lead.status}
                       />

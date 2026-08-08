@@ -159,6 +159,7 @@ export function QuotationBuilderPanel({
   organizationName,
   organizationLogoUrl,
   canManage,
+  canDelete = canManage,
   pending,
   startTransition,
 }: {
@@ -176,6 +177,8 @@ export function QuotationBuilderPanel({
   organizationName: string;
   organizationLogoUrl: string | null;
   canManage: boolean;
+  /** Deleting quotations stays MANAGER+ even when staff can work the lead. */
+  canDelete?: boolean;
   pending: boolean;
   startTransition: (callback: () => Promise<void>) => void;
 }) {
@@ -753,7 +756,7 @@ export function QuotationBuilderPanel({
                   >
                     <FileText size={16} />
                   </Link>
-                  {canManage && !isLocked(quote) ? (
+                  {canDelete && !isLocked(quote) ? (
                     <button
                       type="button"
                       className="leads-icon-btn danger"
