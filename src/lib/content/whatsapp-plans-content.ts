@@ -164,7 +164,7 @@ export const officialWhatsappPlans = {
       id: "official-starter-yearly",
       title: "Starter Plan - Yearly",
       cycle: "yearly",
-      price: 3000,
+      price: 5999,
       validityLabel: "365 days",
       planId: "694fbb832f12127e879f0eb2",
       features: [
