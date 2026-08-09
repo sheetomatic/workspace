@@ -240,6 +240,8 @@ model Organization {
   leadMachineApiKeyHint String?
   leadMachineApiKeyHash String?
   leadNurtureConfig     Json?
+  /** LinkedIn / social content calendar (My Space → Social schedule). */
+  socialSchedule        Json?
   logoUrl               String?
   workspaceAppearance   Json?
   organizationPlan     OrganizationPlan?

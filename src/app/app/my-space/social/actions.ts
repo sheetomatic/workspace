@@ -1,0 +1,40 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { requireSession } from "@/lib/require-session";
+import { isPrimaryOrganization } from "@/lib/platform";
+import { updateSocialPostStatus } from "@/lib/my-space/social/schedule";
+
+async function requireSocialScheduleAccess() {
+  const user = await requireSession("MANAGER");
+  const primary = await isPrimaryOrganization(user.organizationId);
+  if (!user.isSuperAdmin && !primary) {
+    throw new Error("Social schedule is available on the primary Sheetomatic workspace only");
+  }
+  return user;
+}
+
+export async function socialScheduleAction(formData: FormData) {
+  const user = await requireSocialScheduleAccess();
+  const postId = String(formData.get("postId") || "");
+  const action = String(formData.get("action") || "") as
+    | "approve"
+    | "improve"
+    | "posted"
+    | "reset";
+  const feedback = String(formData.get("feedback") || "");
+
+  if (!postId || !["approve", "improve", "posted", "reset"].includes(action)) {
+    throw new Error("Invalid action");
+  }
+
+  await updateSocialPostStatus({
+    organizationId: user.organizationId,
+    postId,
+    action,
+    feedback,
+  });
+
+  revalidatePath("/app/my-space/social");
+  revalidatePath("/app/my-space");
+}

@@ -1,0 +1,255 @@
+.ssb {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ssb-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ssb-stat {
+  border: 1px solid var(--ws-border, #d7e0ea);
+  background: var(--ws-surface, #fff);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+
+.ssb-stat.pending {
+  border-color: #3b82f6;
+}
+.ssb-stat.approved {
+  border-color: #16a34a;
+}
+.ssb-stat.improve {
+  border-color: #d97706;
+}
+.ssb-stat.posted {
+  border-color: #64748b;
+}
+
+.ssb-banner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.ssb-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ssb-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--ws-muted, #64748b);
+}
+
+.ssb-filters select,
+.ssb textarea {
+  border: 1px solid var(--ws-border, #d7e0ea);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font: inherit;
+  background: #fff;
+  min-width: 160px;
+}
+
+.ssb-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(300px, 0.95fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.ssb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.ssb-card {
+  text-align: left;
+  border: 1px solid var(--ws-border, #d7e0ea);
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px;
+  cursor: pointer;
+}
+
+.ssb-card.active {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.25);
+}
+
+.ssb-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.ssb-card strong {
+  display: block;
+  font-size: 0.92rem;
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+
+.ssb-card em {
+  font-style: normal;
+  font-size: 0.78rem;
+  color: #0369a1;
+}
+
+.ssb-pill {
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  border: 1px solid #cbd5e1;
+  white-space: nowrap;
+}
+
+.ssb-pill.pending_approval {
+  background: #eff6ff;
+  border-color: #3b82f6;
+}
+.ssb-pill.approved {
+  background: #ecfdf5;
+  border-color: #16a34a;
+}
+.ssb-pill.needs_improvement {
+  background: #fffbeb;
+  border-color: #d97706;
+}
+.ssb-pill.posted {
+  background: #f1f5f9;
+}
+
+.ssb-detail {
+  position: sticky;
+  top: 12px;
+  border: 1px solid var(--ws-border, #d7e0ea);
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+}
+
+.ssb-detail-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.ssb-detail h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.ssb-eyebrow {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #0369a1;
+}
+
+.ssb-sub {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.ssb-creative {
+  border: 1px solid var(--ws-border, #d7e0ea);
+  border-radius: 12px;
+  background: #0b1220;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: min(70vh, 680px);
+  overflow: auto;
+}
+
+.ssb-creative img {
+  width: 100%;
+  height: auto;
+  max-height: min(68vh, 660px);
+  object-fit: contain;
+  display: block;
+}
+
+.ssb-creative-fallback {
+  color: #cbd5e1;
+  padding: 24px;
+  text-align: center;
+}
+
+.ssb-label {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.ssb-caption {
+  margin: 0;
+  white-space: pre-wrap;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.ssb-feedback {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.ssb-feedback p {
+  margin: 6px 0 0;
+}
+
+.ssb-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ssb-note {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 960px) {
+  .ssb-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .ssb-detail {
+    position: static;
+    max-height: none;
+  }
+}

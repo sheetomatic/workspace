@@ -894,6 +894,13 @@ export function getWorkspaceNavSections(params: {
               minRole: "MANAGER",
               matchPrefix: "/app/my-space/training",
             },
+            {
+              href: "/app/my-space/social",
+              label: "Social schedule",
+              icon: Megaphone,
+              minRole: "MANAGER",
+              matchPrefix: "/app/my-space/social",
+            },
           ],
         },
       ],
