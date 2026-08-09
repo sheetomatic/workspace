@@ -53,10 +53,15 @@ Apply the reviewer's feedback. Keep Sheetomatic on-brand. Do not invent client r
           role: "user",
           content: [
             `Pillar: ${params.post.pillar}`,
+            `Format: ${params.post.format}`,
             `Slot: ${params.post.day} ${params.post.date} ${params.post.time}`,
+            params.post.storyHook
+              ? `Story context: ${params.post.storyHook}`
+              : "Story context: Relatable Indian shop MSME (~₹10k+/day sales).",
             `Current title: ${params.post.title}`,
             `Current caption:\n${params.post.caption}`,
             `Reviewer feedback:\n${feedback}`,
+            "Keep Hinglish story tone when the original is Hinglish. Keep Sheetomatic as the system fix, not a hard sell paragraph.",
           ].join("\n\n"),
         },
       ],

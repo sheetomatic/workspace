@@ -5,6 +5,7 @@ import { requireSession } from "@/lib/require-session";
 import { isPrimaryOrganization } from "@/lib/platform";
 import {
   improveSocialPostWithAiAndSave,
+  reloadSocialScheduleFromSeed,
   updateSocialPostStatus,
 } from "@/lib/my-space/social/schedule";
 
@@ -69,5 +70,11 @@ export async function socialScheduleAction(formData: FormData) {
     feedback,
   });
 
+  revalidateSocial();
+}
+
+export async function reloadSocialWeekAction() {
+  const user = await requireSocialScheduleAccess();
+  await reloadSocialScheduleFromSeed(user.organizationId);
   revalidateSocial();
 }

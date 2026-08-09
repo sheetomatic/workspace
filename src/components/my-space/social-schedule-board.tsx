@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { socialScheduleAction } from "@/app/app/my-space/social/actions";
+import {
+  reloadSocialWeekAction,
+  socialScheduleAction,
+} from "@/app/app/my-space/social/actions";
 import {
   SOCIAL_SLOT_LABELS,
   type SocialPost,
@@ -17,6 +20,13 @@ const STATUS_LABEL: Record<string, string> = {
   posted: "Posted",
 };
 
+function slidesFor(post: SocialPost): string[] {
+  if (post.format === "carousel") {
+    return [post.creative, ...post.carousel].filter(Boolean);
+  }
+  return post.creative ? [post.creative] : [];
+}
+
 export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState(schedule.posts[0]?.id ?? "");
@@ -26,6 +36,7 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [slideIndex, setSlideIndex] = useState(0);
 
   const days = useMemo(
     () => [...new Set(schedule.posts.map((p) => p.date))],
@@ -43,6 +54,8 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
   const selected =
     schedule.posts.find((p) => p.id === selectedId) ?? filtered[0] ?? null;
 
+  const slides = selected ? slidesFor(selected) : [];
+
   const counts = useMemo(() => {
     const c = {
       pending_approval: 0,
@@ -55,13 +68,23 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
   }, [schedule.posts]);
 
   useEffect(() => {
+    setSlideIndex(0);
+  }, [selectedId]);
+
+  useEffect(() => {
     if (!lightboxOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setLightboxOpen(false);
+      if (e.key === "ArrowRight" && slides.length > 1) {
+        setSlideIndex((i) => (i + 1) % slides.length);
+      }
+      if (e.key === "ArrowLeft" && slides.length > 1) {
+        setSlideIndex((i) => (i - 1 + slides.length) % slides.length);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [lightboxOpen]);
+  }, [lightboxOpen, slides.length]);
 
   async function run(action: string, post: SocialPost) {
     if (action === "improve" && !improveNote.trim()) {
@@ -76,9 +99,7 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
       fd.set("action", action);
       fd.set("feedback", improveNote);
       await socialScheduleAction(fd);
-      if (action === "improve") {
-        setImproveNote("");
-      }
+      if (action === "improve") setImproveNote("");
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Action failed");
@@ -87,13 +108,50 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
     }
   }
 
+  async function reloadWeek() {
+    if (
+      !window.confirm(
+        "Reload the full Ramesh shop story week from seed? Approvals on this pack will reset.",
+      )
+    ) {
+      return;
+    }
+    setPending(true);
+    setError("");
+    try {
+      await reloadSocialWeekAction();
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Reload failed");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  const isVisualOnly = Boolean(selected && !selected.caption.trim());
+
   return (
     <div className="ssb">
+      {schedule.character ? (
+        <div className="ssb-premise">
+          <strong>Story pack:</strong> {schedule.character}
+          {schedule.premise ? <span> · {schedule.premise}</span> : null}
+        </div>
+      ) : null}
+
       <div className="ssb-stats" aria-label="Schedule counts">
         <span className="ssb-stat pending">{counts.pending_approval} pending</span>
         <span className="ssb-stat approved">{counts.approved} approved</span>
         <span className="ssb-stat improve">{counts.needs_improvement} improve</span>
         <span className="ssb-stat posted">{counts.posted} posted</span>
+        <button
+          type="button"
+          className="ws-btn ws-btn-ghost"
+          disabled={pending}
+          onClick={() => void reloadWeek()}
+        >
+          Reload story week
+        </button>
       </div>
 
       {error ? <div className="ssb-banner">{error}</div> : null}
@@ -146,7 +204,13 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
                 </span>
               </div>
               <strong>{post.title}</strong>
-              <em>{post.pillar}</em>
+              <em>
+                {post.pillar}
+                {post.format === "carousel"
+                  ? ` · Carousel (${1 + post.carousel.length})`
+                  : ""}
+                {!post.caption.trim() ? " · No text" : ""}
+              </em>
             </button>
           ))}
         </section>
@@ -159,6 +223,7 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
                   <p className="ssb-eyebrow">
                     {selected.day} {selected.date} ·{" "}
                     {SOCIAL_SLOT_LABELS[selected.time]}
+                    {selected.format === "carousel" ? " · Carousel" : ""}
                   </p>
                   <h2>{selected.title}</h2>
                   <p className="ssb-sub">Pillar: {selected.pillar}</p>
@@ -171,12 +236,15 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
               <button
                 type="button"
                 className="ssb-creative ssb-creative-btn"
-                onClick={() => setLightboxOpen(true)}
+                onClick={() => {
+                  setSlideIndex(0);
+                  setLightboxOpen(true);
+                }}
                 aria-label="Open full creative"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={selected.creative}
+                  src={slides[0] || selected.creative}
                   alt={selected.title}
                   onError={(e) => {
                     e.currentTarget.style.display = "none";
@@ -188,11 +256,40 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
                 <div className="ssb-creative-fallback" hidden>
                   Creative pending — caption ready for approval.
                 </div>
-                <span className="ssb-creative-hint">Click to view full image</span>
+                <span className="ssb-creative-hint">
+                  Click for full view
+                  {slides.length > 1 ? ` · ${slides.length} slides` : ""}
+                </span>
               </button>
 
+              {slides.length > 1 ? (
+                <div className="ssb-thumbs" aria-label="Carousel slides">
+                  {slides.map((src, i) => (
+                    <button
+                      key={`${src}-${i}`}
+                      type="button"
+                      className={`ssb-thumb ${i === slideIndex ? "active" : ""}`}
+                      onClick={() => {
+                        setSlideIndex(i);
+                        setLightboxOpen(true);
+                      }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt={`Slide ${i + 1}`} />
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+
               <label className="ssb-label">Caption</label>
-              <pre className="ssb-caption">{selected.caption}</pre>
+              {isVisualOnly ? (
+                <p className="ssb-visual-only">
+                  Visual / carousel post — <strong>no caption text</strong> (Sat &amp;
+                  Sun pack).
+                </p>
+              ) : (
+                <pre className="ssb-caption">{selected.caption}</pre>
+              )}
 
               {selected.feedback ? (
                 <div className="ssb-feedback">
@@ -201,17 +298,26 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
                 </div>
               ) : null}
 
-              <label className="ssb-label" htmlFor="ssb-improve">
-                Ask AI to improve (caption updates here)
-              </label>
-              <textarea
-                id="ssb-improve"
-                rows={3}
-                placeholder="e.g. Shorter hook, more Hinglish, change CTA to DEMO…"
-                value={improveNote}
-                onChange={(e) => setImproveNote(e.target.value)}
-                disabled={pending || selected.status === "posted"}
-              />
+              {!isVisualOnly ? (
+                <>
+                  <label className="ssb-label" htmlFor="ssb-improve">
+                    Ask AI to improve (caption updates here)
+                  </label>
+                  <textarea
+                    id="ssb-improve"
+                    rows={3}
+                    placeholder="e.g. More shop detail, shorter hook, softer CTA…"
+                    value={improveNote}
+                    onChange={(e) => setImproveNote(e.target.value)}
+                    disabled={pending || selected.status === "posted"}
+                  />
+                </>
+              ) : (
+                <p className="ssb-note">
+                  Weekend carousels are visual-only. Approve as-is, or message Sam
+                  for new slides.
+                </p>
+              )}
 
               <div className="ssb-actions">
                 <button
@@ -226,14 +332,16 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
                 >
                   Approve
                 </button>
-                <button
-                  type="button"
-                  className="ws-btn ws-btn-secondary"
-                  disabled={pending || selected.status === "posted"}
-                  onClick={() => void run("improve", selected)}
-                >
-                  {pending ? "AI improving…" : "Improve with AI"}
-                </button>
+                {!isVisualOnly ? (
+                  <button
+                    type="button"
+                    className="ws-btn ws-btn-secondary"
+                    disabled={pending || selected.status === "posted"}
+                    onClick={() => void run("improve", selected)}
+                  >
+                    {pending ? "AI improving…" : "Improve with AI"}
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className="ws-btn ws-btn-ghost"
@@ -253,9 +361,8 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
               </div>
 
               <p className="ssb-note">
-                Flow: write feedback → <strong>Improve with AI</strong> → review
-                caption → <strong>Approve</strong>. Sam posts only after Approved.
-                Cadence: 8 AM · 11 AM · 4 PM · 9 PM IST.
+                Mon–Fri: Hinglish shop stories + image. Sat–Sun: carousel, no text.
+                Approve before Sam posts. Cadence 8 AM · 11 AM · 4 PM · 9 PM IST.
               </p>
             </>
           ) : (
@@ -264,7 +371,7 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
         </aside>
       </div>
 
-      {lightboxOpen && selected ? (
+      {lightboxOpen && selected && slides.length ? (
         <div
           className="ssb-lightbox"
           role="dialog"
@@ -281,6 +388,9 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
                 <p className="ssb-eyebrow">
                   {selected.day} {selected.date} ·{" "}
                   {SOCIAL_SLOT_LABELS[selected.time]}
+                  {slides.length > 1
+                    ? ` · Slide ${slideIndex + 1}/${slides.length}`
+                    : ""}
                 </p>
                 <h2>{selected.title}</h2>
               </div>
@@ -292,35 +402,56 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
                 Close
               </button>
             </div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              className="ssb-lightbox-img"
-              src={selected.creative}
-              alt={selected.title}
-            />
-            <pre className="ssb-caption ssb-lightbox-caption">
-              {selected.caption}
-            </pre>
-            <label className="ssb-label" htmlFor="ssb-improve-lb">
-              Ask AI to improve
-            </label>
-            <textarea
-              id="ssb-improve-lb"
-              rows={3}
-              placeholder="Describe the change…"
-              value={improveNote}
-              onChange={(e) => setImproveNote(e.target.value)}
-              disabled={pending || selected.status === "posted"}
-            />
+            <div className="ssb-lightbox-stage">
+              {slides.length > 1 ? (
+                <button
+                  type="button"
+                  className="ssb-nav prev"
+                  onClick={() =>
+                    setSlideIndex(
+                      (i) => (i - 1 + slides.length) % slides.length,
+                    )
+                  }
+                >
+                  ‹
+                </button>
+              ) : null}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className="ssb-lightbox-img"
+                src={slides[slideIndex]}
+                alt={`${selected.title} slide ${slideIndex + 1}`}
+              />
+              {slides.length > 1 ? (
+                <button
+                  type="button"
+                  className="ssb-nav next"
+                  onClick={() =>
+                    setSlideIndex((i) => (i + 1) % slides.length)
+                  }
+                >
+                  ›
+                </button>
+              ) : null}
+            </div>
+            {!isVisualOnly ? (
+              <pre className="ssb-caption ssb-lightbox-caption">
+                {selected.caption}
+              </pre>
+            ) : (
+              <p className="ssb-visual-only">No caption — visual carousel post.</p>
+            )}
             <div className="ssb-actions">
-              <button
-                type="button"
-                className="ws-btn ws-btn-secondary"
-                disabled={pending || selected.status === "posted"}
-                onClick={() => void run("improve", selected)}
-              >
-                {pending ? "AI improving…" : "Improve with AI"}
-              </button>
+              {!isVisualOnly ? (
+                <button
+                  type="button"
+                  className="ws-btn ws-btn-secondary"
+                  disabled={pending || selected.status === "posted"}
+                  onClick={() => void run("improve", selected)}
+                >
+                  {pending ? "AI improving…" : "Improve with AI"}
+                </button>
+              ) : null}
               <button
                 type="button"
                 className="ws-btn ws-btn-primary"

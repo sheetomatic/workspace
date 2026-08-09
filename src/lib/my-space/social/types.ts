@@ -4,6 +4,8 @@ export type SocialPostStatus =
   | "needs_improvement"
   | "posted";
 
+export type SocialPostFormat = "image" | "carousel";
+
 export type SocialPost = {
   id: string;
   date: string;
@@ -11,11 +13,19 @@ export type SocialPost = {
   time: string;
   title: string;
   pillar: string;
+  /** image = single use-case creative; carousel = swipe pack (esp. weekends) */
+  format: SocialPostFormat;
   status: SocialPostStatus;
+  /** LinkedIn caption. Empty string = visual-only / no text post. */
   caption: string;
+  /** Cover / single image */
   creative: string;
+  /** Extra carousel slides (cover is `creative`) */
+  carousel: string[];
   feedback: string;
   postedAt: string | null;
+  /** Optional story character / shop context for AI improve */
+  storyHook?: string;
 };
 
 export type SocialSchedule = {
@@ -24,6 +34,8 @@ export type SocialSchedule = {
   timezone: string;
   platform: string;
   account: string;
+  character: string;
+  premise: string;
   slotsPerDay: string[];
   updatedAt: string;
   posts: SocialPost[];
