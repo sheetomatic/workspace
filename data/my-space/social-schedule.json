@@ -1,18 +1,18 @@
 {
-  "weekId": "2026-W33-icp-stories",
+  "weekId": "2026-W33-icp-stories-v2",
   "weekLabel": "10–16 Aug 2026 · ICP long stories (no grocery)",
   "timezone": "Asia/Kolkata",
   "platform": "linkedin",
   "account": "sheetomatic",
   "character": "ICP MSMEs: jewellery, clinics, lawyers, boutiques, furniture, mobile/computer, manufacturing, electronics, travel, services — NEVER grocery/general store",
-  "premise": "Long human Hinglish stories, hook on line 1. Mon–Fri story+image. Sat–Sun carousel no caption.",
+  "premise": "Long human Hinglish stories Mon–Fri. Sat–Sun: carousel WITH on-image text, LinkedIn caption empty.",
   "slotsPerDay": [
     "08:00",
     "11:00",
     "16:00",
     "21:00"
   ],
-  "updatedAt": "2026-08-09T23:55:00+05:30",
+  "updatedAt": "2026-08-10T00:30:00+05:30",
   "posts": [
     {
       "id": "2026-08-10-0800",

@@ -284,8 +284,8 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
               <label className="ssb-label">Caption</label>
               {isVisualOnly ? (
                 <p className="ssb-visual-only">
-                  Visual / carousel post — <strong>no caption text</strong> (Sat &amp;
-                  Sun pack).
+                  Sat &amp; Sun: <strong>no LinkedIn caption</strong>. Story text is{" "}
+                  <strong>on the carousel slides</strong> — open full image to read.
                 </p>
               ) : (
                 <pre className="ssb-caption">{selected.caption}</pre>
@@ -314,8 +314,8 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
                 </>
               ) : (
                 <p className="ssb-note">
-                  Weekend carousels are visual-only. Approve as-is, or message Sam
-                  for new slides.
+                  Weekend = post carousel only (empty caption). Slide copy is inside
+                  the images. Approve as-is, or ask Sam for slide rewrites.
                 </p>
               )}
 
