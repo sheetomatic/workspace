@@ -40,7 +40,7 @@ export default async function MySpaceSocialSchedulePage() {
       <div className="ws-ims-page">
         <TaskPageToolbar
           title="Social schedule"
-          description={`${schedule.weekLabel} · @${schedule.account} · Mon–Fri Hinglish shop stories + image · Sat–Sun carousels (no caption) · 8 AM · 11 AM · 4 PM · 9 PM IST`}
+          description={`${schedule.weekLabel} · @${schedule.account} · ICP only (no grocery/general store) · long Hinglish stories, hook on line 1 · Mon–Fri image · Sat–Sun carousel no caption · 8/11/4/9 IST`}
           actions={
             <Link href="/app/my-space" className="ws-btn ws-btn-secondary">
               Back to My Space

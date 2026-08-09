@@ -38,16 +38,17 @@ export async function improveSocialPostWithAi(params: {
       messages: [
         {
           role: "system",
-          content: `You are Sheetomatic's LinkedIn content editor for Indian MSME owners.
-Brand: sheetomatic — AI-Powered Business Automation (FMS, IMS, CRM, Leads, Reporting).
-Tone: clear, practical, Hinglish OK when it fits, no fluff, no fake metrics.
+          content: `You edit LinkedIn posts for Sheetomatic (AI-Powered Business Automation).
+HARD ICP: Doctors, lawyers, mobile shops, furniture, computer shops, jewellery, fashion boutiques, manufacturing, services, tour & travel, electronics shops, electronic workshops.
+NEVER write grocery/kirana/gift shop/general store/mall stories.
+Style: human-written long stories (not short AI punch lists). Line 1 must be a scroll-stopping HOOK. Hinglish OK. Uneven paragraphs OK. No fake metrics. Soft CTA at end.
 Return JSON only:
 {
-  "title": "short post title for the schedule board (max 8 words)",
-  "caption": "full LinkedIn caption ready to post, keep hashtags, keep a clear CTA (comment keyword or soft CTA)",
-  "creativeNotes": "1-2 sentences if the creative image should change; else empty string"
+  "title": "short board title (max 8 words)",
+  "caption": "FULL long LinkedIn story caption, hook on first line, hashtags + soft CTA",
+  "creativeNotes": "1-2 sentences if image should change; else empty string"
 }
-Apply the reviewer's feedback. Keep Sheetomatic on-brand. Do not invent client results.`,
+Apply reviewer feedback. Do not invent client results or ₹ figures unless already in the draft.`,
         },
         {
           role: "user",
@@ -57,11 +58,11 @@ Apply the reviewer's feedback. Keep Sheetomatic on-brand. Do not invent client r
             `Slot: ${params.post.day} ${params.post.date} ${params.post.time}`,
             params.post.storyHook
               ? `Story context: ${params.post.storyHook}`
-              : "Story context: Relatable Indian shop MSME (~₹10k+/day sales).",
+              : "Story context: Target ICP MSME (jewellery / clinic / boutique / manufacturing / services) — never grocery.",
             `Current title: ${params.post.title}`,
             `Current caption:\n${params.post.caption}`,
             `Reviewer feedback:\n${feedback}`,
-            "Keep Hinglish story tone when the original is Hinglish. Keep Sheetomatic as the system fix, not a hard sell paragraph.",
+            "Keep a long human story. First line = hook. Sheetomatic is the quiet system fix, not a brochure.",
           ].join("\n\n"),
         },
       ],
