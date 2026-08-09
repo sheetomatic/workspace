@@ -3,15 +3,25 @@
 import { revalidatePath } from "next/cache";
 import { requireSession } from "@/lib/require-session";
 import { isPrimaryOrganization } from "@/lib/platform";
-import { updateSocialPostStatus } from "@/lib/my-space/social/schedule";
+import {
+  improveSocialPostWithAiAndSave,
+  updateSocialPostStatus,
+} from "@/lib/my-space/social/schedule";
 
 async function requireSocialScheduleAccess() {
   const user = await requireSession("MANAGER");
   const primary = await isPrimaryOrganization(user.organizationId);
   if (!user.isSuperAdmin && !primary) {
-    throw new Error("Social schedule is available on the primary Sheetomatic workspace only");
+    throw new Error(
+      "Social schedule is available on the primary Sheetomatic workspace only",
+    );
   }
   return user;
+}
+
+function revalidateSocial() {
+  revalidatePath("/app/my-space/social");
+  revalidatePath("/app/my-space");
 }
 
 export async function socialScheduleAction(formData: FormData) {
@@ -28,6 +38,30 @@ export async function socialScheduleAction(formData: FormData) {
     throw new Error("Invalid action");
   }
 
+  if (action === "improve") {
+    try {
+      await improveSocialPostWithAiAndSave({
+        organizationId: user.organizationId,
+        postId,
+        feedback,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "AI improve failed";
+      if (msg === "OPENAI_NOT_CONFIGURED") {
+        throw new Error("OpenAI is not configured on this environment");
+      }
+      if (msg.startsWith("OPENAI_ERROR:")) {
+        throw new Error(msg.replace("OPENAI_ERROR:", ""));
+      }
+      if (msg === "OPENAI_EMPTY") {
+        throw new Error("AI returned an empty rewrite — try again");
+      }
+      throw e instanceof Error ? e : new Error(msg);
+    }
+    revalidateSocial();
+    return;
+  }
+
   await updateSocialPostStatus({
     organizationId: user.organizationId,
     postId,
@@ -35,6 +69,5 @@ export async function socialScheduleAction(formData: FormData) {
     feedback,
   });
 
-  revalidatePath("/app/my-space/social");
-  revalidatePath("/app/my-space");
+  revalidateSocial();
 }

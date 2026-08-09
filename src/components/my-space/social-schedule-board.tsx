@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { socialScheduleAction } from "@/app/app/my-space/social/actions";
 import {
   SOCIAL_SLOT_LABELS,
@@ -17,12 +18,14 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) {
+  const router = useRouter();
   const [selectedId, setSelectedId] = useState(schedule.posts[0]?.id ?? "");
   const [dayFilter, setDayFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [improveNote, setImproveNote] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const days = useMemo(
     () => [...new Set(schedule.posts.map((p) => p.date))],
@@ -51,9 +54,18 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
     return c;
   }, [schedule.posts]);
 
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxOpen]);
+
   async function run(action: string, post: SocialPost) {
     if (action === "improve" && !improveNote.trim()) {
-      setError("Write what to improve before submitting");
+      setError("Write what to improve — AI will rewrite the caption here");
       return;
     }
     setPending(true);
@@ -64,7 +76,10 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
       fd.set("action", action);
       fd.set("feedback", improveNote);
       await socialScheduleAction(fd);
-      setImproveNote("");
+      if (action === "improve") {
+        setImproveNote("");
+      }
+      router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Action failed");
     } finally {
@@ -153,41 +168,49 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
                 </span>
               </div>
 
-              <div className="ssb-creative">
+              <button
+                type="button"
+                className="ssb-creative ssb-creative-btn"
+                onClick={() => setLightboxOpen(true)}
+                aria-label="Open full creative"
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={selected.creative}
                   alt={selected.title}
                   onError={(e) => {
                     e.currentTarget.style.display = "none";
-                    const next = e.currentTarget.nextElementSibling as HTMLElement | null;
+                    const next = e.currentTarget
+                      .nextElementSibling as HTMLElement | null;
                     if (next) next.hidden = false;
                   }}
                 />
                 <div className="ssb-creative-fallback" hidden>
                   Creative pending — caption ready for approval.
                 </div>
-              </div>
+                <span className="ssb-creative-hint">Click to view full image</span>
+              </button>
 
               <label className="ssb-label">Caption</label>
               <pre className="ssb-caption">{selected.caption}</pre>
 
               {selected.feedback ? (
                 <div className="ssb-feedback">
-                  <strong>Improvement note</strong>
+                  <strong>Last AI / improvement note</strong>
                   <p>{selected.feedback}</p>
                 </div>
               ) : null}
 
               <label className="ssb-label" htmlFor="ssb-improve">
-                Ask for improvement
+                Ask AI to improve (caption updates here)
               </label>
               <textarea
                 id="ssb-improve"
                 rows={3}
-                placeholder="e.g. Shorter hook, more Hinglish, change CTA…"
+                placeholder="e.g. Shorter hook, more Hinglish, change CTA to DEMO…"
                 value={improveNote}
                 onChange={(e) => setImproveNote(e.target.value)}
+                disabled={pending || selected.status === "posted"}
               />
 
               <div className="ssb-actions">
@@ -206,10 +229,10 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
                 <button
                   type="button"
                   className="ws-btn ws-btn-secondary"
-                  disabled={pending}
+                  disabled={pending || selected.status === "posted"}
                   onClick={() => void run("improve", selected)}
                 >
-                  Ask improvement
+                  {pending ? "AI improving…" : "Improve with AI"}
                 </button>
                 <button
                   type="button"
@@ -230,7 +253,8 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
               </div>
 
               <p className="ssb-note">
-                Sam posts on LinkedIn only after status is <strong>Approved</strong>.
+                Flow: write feedback → <strong>Improve with AI</strong> → review
+                caption → <strong>Approve</strong>. Sam posts only after Approved.
                 Cadence: 8 AM · 11 AM · 4 PM · 9 PM IST.
               </p>
             </>
@@ -239,6 +263,80 @@ export function SocialScheduleBoard({ schedule }: { schedule: SocialSchedule }) 
           )}
         </aside>
       </div>
+
+      {lightboxOpen && selected ? (
+        <div
+          className="ssb-lightbox"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Full creative"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <div
+            className="ssb-lightbox-panel"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="ssb-lightbox-head">
+              <div>
+                <p className="ssb-eyebrow">
+                  {selected.day} {selected.date} ·{" "}
+                  {SOCIAL_SLOT_LABELS[selected.time]}
+                </p>
+                <h2>{selected.title}</h2>
+              </div>
+              <button
+                type="button"
+                className="ws-btn ws-btn-ghost"
+                onClick={() => setLightboxOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              className="ssb-lightbox-img"
+              src={selected.creative}
+              alt={selected.title}
+            />
+            <pre className="ssb-caption ssb-lightbox-caption">
+              {selected.caption}
+            </pre>
+            <label className="ssb-label" htmlFor="ssb-improve-lb">
+              Ask AI to improve
+            </label>
+            <textarea
+              id="ssb-improve-lb"
+              rows={3}
+              placeholder="Describe the change…"
+              value={improveNote}
+              onChange={(e) => setImproveNote(e.target.value)}
+              disabled={pending || selected.status === "posted"}
+            />
+            <div className="ssb-actions">
+              <button
+                type="button"
+                className="ws-btn ws-btn-secondary"
+                disabled={pending || selected.status === "posted"}
+                onClick={() => void run("improve", selected)}
+              >
+                {pending ? "AI improving…" : "Improve with AI"}
+              </button>
+              <button
+                type="button"
+                className="ws-btn ws-btn-primary"
+                disabled={
+                  pending ||
+                  selected.status === "approved" ||
+                  selected.status === "posted"
+                }
+                onClick={() => void run("approve", selected)}
+              >
+                Approve
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
