@@ -1,11 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Sheetomatic">
-  <!-- Clear ascending bars — high contrast for small UI sizes -->
-  <rect x="8" y="38" width="12" height="18" rx="3" fill="#22D3EE"/>
-  <rect x="26" y="24" width="12" height="32" rx="3" fill="#3B82F6"/>
-  <rect x="44" y="10" width="12" height="46" rx="3" fill="#1D4ED8"/>
-  <!-- Growth arrow — solid, readable at 16–28px -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" role="img" aria-label="Sheetomatic">
+  <defs>
+    <linearGradient id="smS" x1="120" y1="120" x2="392" y2="392" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#22C55E"/>
+      <stop offset="0.45" stop-color="#14B8A6"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+  </defs>
+  <!-- S-through-4-points mark -->
   <path
-    d="M14 50 L30 30 L40 38 L52 12 L58 14 L42 48 L32 38 L20 52 Z"
-    fill="#10B981"
+    d="M 372 140 C 300 116 212 116 140 140 C 140 258 372 254 372 372 C 300 396 212 396 140 372"
+    stroke="url(#smS)"
+    stroke-width="28"
+    stroke-linecap="round"
   />
+  <circle cx="140" cy="140" r="36" fill="url(#smS)"/>
+  <circle cx="372" cy="140" r="36" fill="url(#smS)"/>
+  <circle cx="140" cy="372" r="36" fill="url(#smS)"/>
+  <circle cx="372" cy="372" r="36" fill="url(#smS)"/>
 </svg>

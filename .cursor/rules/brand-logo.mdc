@@ -1,0 +1,12 @@
+---
+description: Sheetomatic primary logo — S-through-4-nodes mark
+alwaysApply: true
+---
+
+# Brand logo (canonical)
+
+- Primary mark: green→teal→blue **S through 4 nodes**
+- File: `public/brand/sheetomatic-logo-s-mark.png` (transparent: `sheetomatic-logo-s-mark-transparent.png`)
+- Wordmark SVG: `public/images/sheetomatic-logo.svg`
+- Kit icon: `public/brand/kit/icons/symbol.svg` / `symbol.png`
+- Do **not** use the old bars + green arrow mark or Technologies grid/glow logos on new UI, marketing, or social creatives unless the user explicitly asks for a legacy asset.
