@@ -168,10 +168,34 @@ export const emReadyContactOffer = {
   ],
 };
 
+/**
+ * One-time build / setup for the workspace.
+ * Covers all products at onboarding. Adding more modules later does not
+ * require another build fee unless customization is needed.
+ */
+export const emReadyWorkspaceBuild = {
+  oneTimeInr: 10_000,
+  label: "One-time build (all products)",
+  note:
+    "₹10,000 one-time covers setup for all products. Adding more modules later does not require another build fee unless customization is needed.",
+} as const;
+
+/** Standard list pricing for WhatsApp Official API and HRMS. */
+export const STANDARD_MODULE_LIST = {
+  baseMonthlyInr: 10_000,
+  baseAnnualInr: 99_990,
+  perUserMonthlyInr: 300,
+  /** Product setup when bought alone (waived if workspace build already paid). */
+  productBuildInr: 5_000,
+  whatsappMessagesIncluded: 2_000,
+} as const;
+
 export const emReadyPricingFootnotes = [
   "Prices in INR, exclusive of GST.",
-  "Meta WhatsApp conversation / API fees are billed separately.",
+  "Meta WhatsApp conversation charges beyond included message credits are billed separately.",
   "Billing is monthly recurring; annual invoices available where listed.",
+  "One-time build ₹10,000 covers all products at start. Adding modules later needs no extra build fee unless customization is required.",
+  "WhatsApp Official API and HRMS: ₹10,000/mo base + ₹300 per user/mo. Product setup ₹5,000 when bought alone (waived if workspace build already paid).",
   "Suite plans include the modules listed on each card. Individual modules can be bought alone or stacked — Suite is usually cheaper when you need two or more.",
 ] as const;
 
@@ -184,7 +208,8 @@ export type EmReadyModulePlanId =
   | "module_tasks"
   | "module_crm"
   | "module_ims"
-  | "module_hr";
+  | "module_hr"
+  | "module_whatsapp";
 
 export type EmReadyModulePlan = {
   id: EmReadyModulePlanId;
@@ -196,6 +221,10 @@ export type EmReadyModulePlan = {
   priceAnnualInr: number;
   includedUsers: number;
   extraUserMonthlyInr: number;
+  /** One-time product setup (₹). Null = use workspace build only. */
+  buildCostInr: number | null;
+  /** Optional included message pack (WhatsApp Official API). */
+  messagesIncluded?: number;
   includes: string[];
   highlights: string[];
   /** Product page / services deep link when available. */
@@ -203,6 +232,47 @@ export type EmReadyModulePlan = {
 };
 
 export const emReadyModulePlans: EmReadyModulePlan[] = [
+  {
+    id: "module_whatsapp",
+    name: "WhatsApp Official API",
+    shortName: "WhatsApp API",
+    tagline: "Official Meta API — 2,000 messages included with the base plan",
+    badge: "Standard",
+    priceMonthlyInr: STANDARD_MODULE_LIST.baseMonthlyInr,
+    priceAnnualInr: STANDARD_MODULE_LIST.baseAnnualInr,
+    includedUsers: 1,
+    extraUserMonthlyInr: STANDARD_MODULE_LIST.perUserMonthlyInr,
+    buildCostInr: STANDARD_MODULE_LIST.productBuildInr,
+    messagesIncluded: STANDARD_MODULE_LIST.whatsappMessagesIncluded,
+    includes: ["Official WhatsApp API", "2,000 messages", "Templates"],
+    highlights: [
+      "₹10,000/mo base includes 2,000 messages",
+      "₹300 per user / month",
+      "Build ₹5,000 one-time (waived if workspace build paid)",
+      "Meta conversation fees beyond credits billed separately",
+    ],
+    href: "/whatsapp-plans",
+  },
+  {
+    id: "module_hr",
+    name: "HRMS",
+    shortName: "HR",
+    tagline: "Attendance, payroll, field staff, hiring workflows",
+    badge: "Standard",
+    priceMonthlyInr: STANDARD_MODULE_LIST.baseMonthlyInr,
+    priceAnnualInr: STANDARD_MODULE_LIST.baseAnnualInr,
+    includedUsers: 1,
+    extraUserMonthlyInr: STANDARD_MODULE_LIST.perUserMonthlyInr,
+    buildCostInr: STANDARD_MODULE_LIST.productBuildInr,
+    includes: ["HR", "Attendance", "Payroll"],
+    highlights: [
+      "₹10,000/mo base plan",
+      "₹300 per user / month",
+      "Build ₹5,000 one-time (waived if workspace build paid)",
+      "Workforce attendance and salary workflows",
+    ],
+    href: "/services",
+  },
   {
     id: "module_fms",
     name: "FMS Bundle",
@@ -213,6 +283,7 @@ export const emReadyModulePlans: EmReadyModulePlan[] = [
     priceAnnualInr: 29990,
     includedUsers: 8,
     extraUserMonthlyInr: 399,
+    buildCostInr: null,
     includes: ["FMS", "REPORTS", "APPROVALS", "EM Ready"],
     highlights: [
       "Up to 3 FMS templates",
@@ -231,6 +302,7 @@ export const emReadyModulePlans: EmReadyModulePlan[] = [
     priceAnnualInr: 24990,
     includedUsers: 8,
     extraUserMonthlyInr: 349,
+    buildCostInr: null,
     includes: ["TASKS", "PC checklists", "EA portal"],
     highlights: [
       "Task owners, due dates, proof",
@@ -249,6 +321,7 @@ export const emReadyModulePlans: EmReadyModulePlan[] = [
     priceAnnualInr: 29990,
     includedUsers: 8,
     extraUserMonthlyInr: 399,
+    buildCostInr: null,
     includes: ["CRM", "Leads", "Quotations"],
     highlights: [
       "Lead stages and ownership",
@@ -267,6 +340,7 @@ export const emReadyModulePlans: EmReadyModulePlan[] = [
     priceAnnualInr: 29990,
     includedUsers: 8,
     extraUserMonthlyInr: 399,
+    buildCostInr: null,
     includes: ["IMS", "Reorder alerts", "Store modules"],
     highlights: [
       "Balances and stock movements",
@@ -274,24 +348,6 @@ export const emReadyModulePlans: EmReadyModulePlan[] = [
       "Purchase / indent workflows",
     ],
     href: "/services/inventory",
-  },
-  {
-    id: "module_hr",
-    name: "HRMS",
-    shortName: "HR",
-    tagline: "Attendance, payroll, field staff, hiring workflows",
-    badge: null,
-    priceMonthlyInr: 2999,
-    priceAnnualInr: 29990,
-    includedUsers: 8,
-    extraUserMonthlyInr: 399,
-    includes: ["HR", "Attendance", "Payroll"],
-    highlights: [
-      "Workforce attendance",
-      "Salary slip workflows",
-      "Hiring / screening paths",
-    ],
-    href: "/services",
   },
 ];
 
@@ -317,7 +373,7 @@ export const emReadyCompareRows: EmReadyCompareRow[] = [
     starter: "₹4,999/mo",
     growth: "₹9,999/mo",
     scale: "₹24,999/mo",
-    modules: "From ₹2,499/mo each",
+    modules: "From ₹2,499/mo · WA/HR ₹10,000",
   },
   {
     feature: "FMS + EM Ready",
@@ -345,7 +401,14 @@ export const emReadyCompareRows: EmReadyCompareRow[] = [
     starter: "—",
     growth: "Included",
     scale: "Included",
-    modules: "HR ₹2,999",
+    modules: "₹10,000 + ₹300/user",
+  },
+  {
+    feature: "WhatsApp Official API",
+    starter: "Add-on",
+    growth: "Add-on",
+    scale: "Add-on",
+    modules: "₹10,000 + 2k msgs + ₹300/user",
   },
   {
     feature: "CRM",
@@ -355,11 +418,18 @@ export const emReadyCompareRows: EmReadyCompareRow[] = [
     modules: "CRM ₹2,999",
   },
   {
-    feature: "Users included",
-    starter: "8",
-    growth: "20",
-    scale: "50",
-    modules: "8 per module",
+    feature: "Users / seats",
+    starter: "8 included",
+    growth: "20 included",
+    scale: "50 included",
+    modules: "WA/HR: ₹300/user · others 8",
+  },
+  {
+    feature: "One-time build",
+    starter: "₹10,000 (all products)",
+    growth: "₹10,000 (all products)",
+    scale: "₹10,000 (all products)",
+    modules: "₹10,000 once · add-ons free of build",
   },
   {
     feature: "FMS templates",

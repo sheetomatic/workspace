@@ -9,6 +9,7 @@ import {
   emReadyModulePlans,
   emReadyPricingFootnotes,
   emReadyPublicPlans,
+  emReadyWorkspaceBuild,
   formatInr,
   getEmReadyDisplayPrice,
   getEmReadyModuleDisplayPrice,
@@ -32,7 +33,11 @@ function enquireSuiteMessage(plan: EmReadyPlan): string {
 }
 
 function enquireModuleMessage(plan: EmReadyModulePlan): string {
-  return `Hi Sheetomatic, I am interested in the ${plan.name} module (${plan.includedUsers} users). Please share next steps.`;
+  const seat =
+    plan.id === "module_whatsapp" || plan.id === "module_hr"
+      ? `base ${formatInr(plan.priceMonthlyInr)}/mo + ${formatInr(plan.extraUserMonthlyInr)}/user`
+      : `${plan.includedUsers} users`;
+  return `Hi Sheetomatic, I am interested in the ${plan.name} module (${seat}). Please share next steps.`;
 }
 
 const CONTACT_50_PLUS_MESSAGE =
@@ -186,14 +191,36 @@ function ModuleCard({
       <PriceBlock {...price} />
 
       <ul className="em-plan-meta">
+        {plan.messagesIncluded != null ? (
+          <li>
+            <span>Messages included</span>
+            <span>{plan.messagesIncluded.toLocaleString("en-IN")}</span>
+          </li>
+        ) : null}
         <li>
-          <span>Users included</span>
-          <span>{plan.includedUsers}</span>
+          <span>
+            {plan.id === "module_whatsapp" || plan.id === "module_hr"
+              ? "Per user"
+              : "Users included"}
+          </span>
+          <span>
+            {plan.id === "module_whatsapp" || plan.id === "module_hr"
+              ? `${formatInr(plan.extraUserMonthlyInr)}/mo`
+              : plan.includedUsers}
+          </span>
         </li>
-        <li>
-          <span>Extra seat</span>
-          <span>{formatInr(plan.extraUserMonthlyInr)}/mo</span>
-        </li>
+        {plan.id === "module_whatsapp" || plan.id === "module_hr" ? null : (
+          <li>
+            <span>Extra seat</span>
+            <span>{formatInr(plan.extraUserMonthlyInr)}/mo</span>
+          </li>
+        )}
+        {plan.buildCostInr != null ? (
+          <li>
+            <span>Build (one-time)</span>
+            <span>{formatInr(plan.buildCostInr)}</span>
+          </li>
+        ) : null}
       </ul>
 
       <div className="em-plan-modules" aria-label="Includes">
@@ -381,8 +408,8 @@ export function EmReadyPricing() {
             <p className="em-pricing-lead">
               <strong>BCI Suite</strong> is the complete package (FMS, Tasks/EA,
               EM Ready, and more by tier). <strong>Modules</strong> let you buy
-              only what you need — CRM, FMS, IMS, HR, or Tasks — and stack later.
-              Monthly billing; annual where listed.
+              only what you need — WhatsApp Official API, HRMS, CRM, FMS, IMS, or
+              Tasks — and stack later. Monthly billing; annual where listed.
             </p>
             <div className="em-pricing-path-cards" aria-label="How pricing works">
               <div className="em-pricing-path-card">
@@ -395,8 +422,9 @@ export function EmReadyPricing() {
               <div className="em-pricing-path-card">
                 <h2>Modules</h2>
                 <p>
-                  Buy FMS, Tasks/EA, CRM, IMS, or HR alone. From{" "}
-                  {formatInr(2499)}/mo each — Suite usually wins at two or more.
+                  WhatsApp Official API &amp; HRMS: {formatInr(10000)}/mo +{" "}
+                  {formatInr(300)}/user. Other modules from {formatInr(2499)}
+                  /mo.
                 </p>
               </div>
             </div>
@@ -501,6 +529,37 @@ export function EmReadyPricing() {
             selectedModules={selectedModules}
             onClearModules={() => setSelectedModules([])}
           />
+
+          <aside
+            className="em-build-band"
+            aria-labelledby="em-build-title"
+          >
+            <div>
+              <h2 id="em-build-title">{emReadyWorkspaceBuild.label}</h2>
+              <p className="em-build-price">
+                {formatInr(emReadyWorkspaceBuild.oneTimeInr)}
+                <span> one-time</span>
+              </p>
+              <p>{emReadyWorkspaceBuild.note}</p>
+            </div>
+            <ul className="em-build-points">
+              <li>
+                <CheckCircle2 size={16} aria-hidden />
+                WhatsApp Official API &amp; HRMS: {formatInr(10000)}/mo +{" "}
+                {formatInr(300)}/user · product build {formatInr(5000)} if
+                bought alone
+              </li>
+              <li>
+                <CheckCircle2 size={16} aria-hidden />
+                Already paid workspace build? Extra modules — no build fee
+                until customization is required
+              </li>
+              <li>
+                <CheckCircle2 size={16} aria-hidden />
+                Customization (extra flows, integrations, UI) quoted separately
+              </li>
+            </ul>
+          </aside>
 
           <aside className="em-contact-band" aria-labelledby="em-contact-50-title">
             <div>
