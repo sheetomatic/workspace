@@ -27,4 +27,5 @@ export function workspaceLoginHref(options?: { org?: string }) {
 
 /** Sheetomatic Workspace marketing → auth entry points (always workspace portal). */
 export const WORKSPACE_LOGIN_HREF = workspaceLoginHref();
-export const WORKSPACE_SIGNUP_HREF = `${workspacePortalOrigin()}/login?intent=start`;
+/** Self-serve signup is closed — keep this equal to login so old links do not open a register form. */
+export const WORKSPACE_SIGNUP_HREF = WORKSPACE_LOGIN_HREF;

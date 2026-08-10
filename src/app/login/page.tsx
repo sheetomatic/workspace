@@ -55,7 +55,7 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ product?: string; intent?: string; org?: string }>;
 }) {
-  const { product, intent, org: orgFromQuery } = await searchParams;
+  const { product, org: orgFromQuery } = await searchParams;
   const tenantSlug = orgFromQuery?.trim() || (await getRequestTenantSlug());
   const tenantOrg = await loadTenantOrg(tenantSlug);
   const dedicatedPortal = getDedicatedClientPortal(tenantSlug);
@@ -79,10 +79,6 @@ export default async function LoginPage({
         )
       : null;
   const isAiProduct = product === "ai";
-  const isAiLogin = isAiProduct && intent === "login";
-  const isAiSignup = isAiProduct && intent === "start";
-  const isWorkspaceSignup = !isAiProduct && intent === "start";
-  const isSignup = isAiSignup || isWorkspaceSignup;
 
   return (
     <main className="login-page workspace-login">
@@ -118,19 +114,13 @@ export default async function LoginPage({
                 : "Client workspace"}
           </p>
           <h1>
-            {isAiLogin
-              ? "Welcome back"
-              : isSignup
-                ? isAiProduct
-                  ? "Start free on Sheetomatic AI"
-                  : "Create your company workspace"
-                : tenantOrg
-                  ? `Sign in to ${tenantOrg.name}`
-                  : tenantSlug && !tenantOrg
-                    ? "Workspace not found"
-                    : isAiProduct
-                      ? "Automate WhatsApp with AI"
-                      : "Sign in to your workspace"}
+            {tenantOrg
+              ? `Sign in to ${tenantOrg.name}`
+              : tenantSlug && !tenantOrg
+                ? "Workspace not found"
+                : isAiProduct
+                  ? "Sign in to Sheetomatic AI"
+                  : "Sign in to your workspace"}
           </h1>
           <p>
             {tenantSlug && !tenantOrg ? (
@@ -141,17 +131,11 @@ export default async function LoginPage({
               </>
             ) : null}
             {!tenantSlug || tenantOrg
-              ? isAiLogin
+              ? isAiProduct
                 ? "Enter your email and password to open Chats, Campaign, and AI settings."
-                : isAiSignup
-                  ? "Create a free workspace, connect WhatsApp, and train your AI in minutes."
-                  : isWorkspaceSignup
-                    ? "Sign up as the owner, then add team members with login credentials from Team."
-                    : isAiProduct
-                      ? "Sign in with your email and password to connect WhatsApp and go live."
-                      : tenantOrg
-                        ? `Use your workspace email and password for ${tenantOrg.name}.`
-                        : "Owners sign in with the email they registered. Team members use credentials from their admin."
+                : tenantOrg
+                  ? `Use your workspace email and password for ${tenantOrg.name}.`
+                  : "Access is provisioned after purchase. Owners and team members sign in with credentials shared by Sheetomatic or your admin."
               : null}
           </p>
         </div>
@@ -165,17 +149,6 @@ export default async function LoginPage({
               <li>
                 <CheckCircle2 size={18} />
                 Official WhatsApp Business API via RedLava
-              </li>
-            </>
-          ) : isWorkspaceSignup ? (
-            <>
-              <li>
-                <CheckCircle2 size={18} />
-                One owner account creates the workspace
-              </li>
-              <li>
-                <CheckCircle2 size={18} />
-                Admins add staff logins from Team settings
               </li>
             </>
           ) : (

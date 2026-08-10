@@ -6,7 +6,8 @@ import { aiPortalOrigin } from "@/lib/workspace-auth-links";
 
 /** Sheetomatic AI marketing → auth entry points (path-only; use aiPortalOrigin() for absolute URLs). */
 export const AI_LOGIN_HREF = "/login?product=ai&intent=login";
-export const AI_START_FREE_HREF = "/login?product=ai&intent=start";
+/** Self-serve signup is closed — old “start free” links land on AI sign-in. */
+export const AI_START_FREE_HREF = "/login?product=ai&intent=login";
 
 export function aiLoginHref(intent: "login" | "start" = "login") {
   const base = aiPortalOrigin();

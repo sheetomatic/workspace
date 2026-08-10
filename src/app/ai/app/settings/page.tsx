@@ -20,8 +20,6 @@ import {
 } from "@/app/app/whatsapp/mas-actions";
 import { getWhatsAppGoLiveStatus } from "@/lib/whatsapp-go-live";
 import { isWebBasedApiUiEnabled } from "@/lib/web-based-api-ui";
-import { listPendingWorkspaceSignups } from "@/lib/pending-workspace-signups";
-
 export default async function SheetomaticAiSettingsPage() {
   const user = await requireSession("ADMIN", { redirectTo: "/ai/app" });
   const showWebBasedApi = isWebBasedApiUiEnabled();
@@ -47,7 +45,6 @@ export default async function SheetomaticAiSettingsPage() {
     tenantWallets,
     resellerData,
     aiReplySummary,
-    pendingWorkspaces,
     masLinkStatus,
     masAccountDashboard,
   ] = await Promise.all([
@@ -68,7 +65,6 @@ export default async function SheetomaticAiSettingsPage() {
           wallet: { ok: false as const, error: "Wallet unavailable.", body: {} },
         }),
     getAiReplyUsageSummary(user.organizationId),
-    user.isSuperAdmin ? listPendingWorkspaceSignups() : Promise.resolve([]),
     showWebBasedApi
       ? loadMasWhatsAppLinkStatusForSettings()
       : Promise.resolve(null),
@@ -119,16 +115,6 @@ export default async function SheetomaticAiSettingsPage() {
         organizationStatus={organization?.status ?? null}
         organizationPlan={organization?.plan ?? null}
         organizationAllowedModules={organization?.allowedModules ?? []}
-        pendingWorkspaces={pendingWorkspaces.map((workspace) => ({
-          id: workspace.id,
-          name: workspace.name,
-          slug: workspace.slug,
-          ownerEmail: workspace.ownerEmail,
-          createdAt: workspace.createdAt.toLocaleDateString("en-IN", {
-            timeZone: "Asia/Kolkata",
-            dateStyle: "medium",
-          }),
-        }))}
         showAdminPanels={user.isSuperAdmin}
         showWebBasedApi={showWebBasedApi}
         showResellerWallet={showResellerData}

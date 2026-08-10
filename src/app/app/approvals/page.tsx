@@ -2,12 +2,10 @@ import Link from "next/link";
 import { ApprovalsList } from "@/components/saas/approvals-list";
 import { CourseEnrollmentsPanel } from "@/components/saas/course-enrollments-panel";
 import { PageHeader } from "@/components/saas/page-header";
-import { SignupApprovalsPanel } from "@/components/saas/signup-approvals-panel";
 import { TemplateOrdersPanel } from "@/components/saas/template-orders-panel";
 import { listPendingCourseEnrollments } from "@/lib/courses/enrollment";
 import { requireSession } from "@/lib/require-session";
 import { syncApprovalsFromGoogleSheets } from "@/lib/integrations/sync-sheets-to-db";
-import { listPendingWorkspaceSignups } from "@/lib/pending-workspace-signups";
 import {
   listAllTemplateProducts,
   listTemplateOrders,
@@ -17,9 +15,8 @@ import { listWorkspaceApprovals } from "@/lib/workspace-data";
 export default async function ApprovalsPage() {
   const user = await requireSession("MANAGER", { module: "APPROVALS" });
 
-  const [pendingSignups, courseEnrollments, templateOrders, templateProducts, sheetApprovals] =
+  const [courseEnrollments, templateOrders, templateProducts, sheetApprovals] =
     await Promise.all([
-      user.isSuperAdmin ? listPendingWorkspaceSignups() : Promise.resolve([]),
       user.isSuperAdmin ? listPendingCourseEnrollments() : Promise.resolve([]),
       user.isSuperAdmin ? listTemplateOrders("PENDING") : Promise.resolve([]),
       user.isSuperAdmin ? listAllTemplateProducts() : Promise.resolve([]),
@@ -39,14 +36,13 @@ export default async function ApprovalsPage() {
         title="Approvals"
         description={
           user.isSuperAdmin
-            ? "Approve workspace signups, confirm 1:1 course and template payments, and review operational items before they go into MIS."
+            ? "Confirm 1:1 course and template payments, and review operational items before they go into MIS."
             : "Review items synced from your Approvals sheet tab before they go into MIS."
         }
       />
 
       {user.isSuperAdmin ? (
         <>
-          <SignupApprovalsPanel workspaces={pendingSignups} />
           <CourseEnrollmentsPanel
             enrollments={courseEnrollments.map((row) => ({
               id: row.id,

@@ -177,31 +177,21 @@ async function registerAccount(
   }
 }
 
+const SELF_SIGNUP_DISABLED_MESSAGE =
+  "Self-registration is closed. After you purchase a plan, Sheetomatic will create your workspace and share sign-in details.";
+
+/** Public self-serve signup is disabled — provision after purchase only. */
 export async function registerSheetomaticAiAccount(
   _prev: RegisterActionState,
-  formData: FormData,
+  _formData: FormData,
 ): Promise<RegisterActionState> {
-  return registerAccount({
-    name: formData.get("name")?.toString() ?? "",
-    businessName: formData.get("businessName")?.toString() ?? "",
-    email: formData.get("email")?.toString() ?? "",
-    password: formData.get("password")?.toString() ?? "",
-    confirmPassword: formData.get("confirmPassword")?.toString() ?? "",
-    organizationStatus: "ONBOARDING",
-  });
+  return { ok: false, message: SELF_SIGNUP_DISABLED_MESSAGE };
 }
 
+/** Public self-serve signup is disabled — provision after purchase only. */
 export async function registerWorkspaceAccount(
   _prev: RegisterActionState,
-  formData: FormData,
+  _formData: FormData,
 ): Promise<RegisterActionState> {
-  return registerAccount({
-    name: formData.get("name")?.toString() ?? "",
-    businessName: formData.get("businessName")?.toString() ?? "",
-    email: formData.get("email")?.toString() ?? "",
-    password: formData.get("password")?.toString() ?? "",
-    confirmPassword: formData.get("confirmPassword")?.toString() ?? "",
-    // New workspaces stay in ONBOARDING until a super admin activates them.
-    organizationStatus: "ONBOARDING",
-  });
+  return { ok: false, message: SELF_SIGNUP_DISABLED_MESSAGE };
 }

@@ -1,5 +1,4 @@
 import { AiReplySettingsPanel } from "@/components/saas/ai-reply-settings-panel";
-import { PendingWorkspacesPanel } from "@/components/saas/pending-workspaces-panel";
 import { SettingsPageShell } from "@/components/saas/settings-page-shell";
 import { WorkspaceActivationPanel } from "@/components/saas/workspace-activation-panel";
 import type { AiReplyUsageSummary } from "@/lib/integrations/ai-reply-settings";
@@ -10,7 +9,6 @@ import type {
   MasPhoneConnectionStatus,
 } from "@/lib/integrations/messageautosender";
 import { isWebBasedApiUiEnabled } from "@/lib/web-based-api-ui";
-import type { PendingWorkspaceRow } from "@/components/saas/pending-workspaces-panel";
 import type { OrgPlan, WorkspaceModule } from "@prisma/client";
 
 export function WhatsAppSettingsWorkspacePanel({
@@ -36,7 +34,6 @@ export function WhatsAppSettingsWorkspacePanel({
   organizationStatus = null,
   organizationPlan = null,
   organizationAllowedModules = [],
-  pendingWorkspaces = [],
   showAdminPanels = false,
   showWebBasedApi = isWebBasedApiUiEnabled(),
 }: {
@@ -62,23 +59,18 @@ export function WhatsAppSettingsWorkspacePanel({
   organizationStatus?: "ONBOARDING" | "ACTIVE" | null;
   organizationPlan?: OrgPlan | null;
   organizationAllowedModules?: WorkspaceModule[];
-  pendingWorkspaces?: PendingWorkspaceRow[];
   showAdminPanels?: boolean;
   showWebBasedApi?: boolean;
 }) {
-  const adminSlot = showAdminPanels ? (
-    <>
-      {organizationName && organizationStatus ? (
-        <WorkspaceActivationPanel
-          organizationName={organizationName}
-          status={organizationStatus}
-          plan={organizationPlan}
-          allowedModules={organizationAllowedModules}
-        />
-      ) : null}
-      <PendingWorkspacesPanel workspaces={pendingWorkspaces} />
-    </>
-  ) : null;
+  const adminSlot =
+    showAdminPanels && organizationName && organizationStatus ? (
+      <WorkspaceActivationPanel
+        organizationName={organizationName}
+        status={organizationStatus}
+        plan={organizationPlan}
+        allowedModules={organizationAllowedModules}
+      />
+    ) : null;
 
   return (
     <SettingsPageShell
