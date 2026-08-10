@@ -7,7 +7,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { AiSiteFooter, AiSiteHeader } from "@/components/marketing/ai-site-chrome";
-import { AI_LOGIN_HREF, AI_START_FREE_HREF } from "@/lib/ai-auth-links";
+import { AI_LOGIN_HREF } from "@/lib/ai-auth-links";
 import { pricingEnquireFaqs, pricingEnquireIncludes } from "@/app/product-content";
 import { buildWhatsAppUrl } from "@/app/site-content";
 import "./wa-product.css";
@@ -85,15 +85,12 @@ export function AiPricingEnquirePage() {
                 Or send a message from our contact page
               </Link>
               <div className="wa-pricing-enquire-divider" />
-              <p className="wa-pricing-enquire-free">Want to explore first?</p>
+              <p className="wa-pricing-enquire-free">Already purchased?</p>
               <Link
                 className="wa-btn-secondary wa-pricing-enquire-free-btn"
-                href={AI_START_FREE_HREF}
+                href={AI_LOGIN_HREF}
               >
-                Start free workspace
-              </Link>
-              <Link className="wa-pricing-signin-link" href={AI_LOGIN_HREF}>
-                Already have an account? <strong>Sign in</strong>
+                Sign in to workspace
               </Link>
             </aside>
           </div>

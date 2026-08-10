@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, BookOpen, CheckCircle2, Inbox, MessageCircle, Radio, Sparkles } from "lucide-react";
 import { AiSiteFooter, AiSiteHeader } from "@/components/marketing/ai-site-chrome";
-import { AI_LOGIN_HREF, AI_START_FREE_HREF } from "@/lib/ai-auth-links";
+import { AI_LOGIN_HREF } from "@/lib/ai-auth-links";
 import { launchSteps } from "@/app/product-content";
 import "./wa-product.css";
 
@@ -30,15 +30,15 @@ export function AiCompactHomePage() {
               close while AI handles routine replies.
             </p>
             <div className="wa-ai-compact-hero-actions">
-              <Link className="wa-btn-primary" href={AI_START_FREE_HREF}>
-                Start free
+              <Link className="wa-btn-primary" href="/contact">
+                Enquire to purchase
                 <ArrowRight size={16} aria-hidden />
               </Link>
               <Link className="wa-btn-secondary" href={AI_LOGIN_HREF}>
                 Sign in
               </Link>
               <Link className="wa-ai-pricing-link" href="/ai/pricing">
-                Enquire pricing
+                View pricing
               </Link>
             </div>
           </div>
@@ -69,14 +69,14 @@ export function AiCompactHomePage() {
             </div>
 
             <aside className="wa-ai-signup-card">
-              <p className="wa-ai-signup-kicker">Free workspace</p>
-              <h3>Create your Sheetomatic AI account</h3>
+              <p className="wa-ai-signup-kicker">After purchase</p>
+              <h3>We provision your AI workspace</h3>
               <p className="wa-ai-signup-copy">
-                Start free, then connect WhatsApp and go live when your knowledge base is
-                ready.
+                Buy a plan, then we create your login and help you connect WhatsApp and
+                go live.
               </p>
-              <Link className="wa-btn-primary wa-ai-signup-btn" href={AI_START_FREE_HREF}>
-                Create free account
+              <Link className="wa-btn-primary wa-ai-signup-btn" href="/contact">
+                Enquire to purchase
                 <ArrowRight size={16} aria-hidden />
               </Link>
               <Link className="wa-ai-signin-link" href={AI_LOGIN_HREF}>

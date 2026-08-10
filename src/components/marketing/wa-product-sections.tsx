@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Bot, Sparkles } from "lucide-react";
 import type { ProductFeature, PricingPlan } from "@/app/product-content";
-import { AI_LOGIN_HREF, AI_START_FREE_HREF } from "@/lib/ai-auth-links";
+import { AI_LOGIN_HREF } from "@/lib/ai-auth-links";
 import { buildWhatsAppUrl } from "@/app/site-content";
 import {
   aiFullAccessPlans,
@@ -30,7 +30,7 @@ export function WaProductHero({
   eyebrow = productHome.eyebrow,
   title = productHome.title,
   lead = productHome.lead,
-  primaryHref = AI_START_FREE_HREF,
+  primaryHref = "/contact",
   primaryLabel = productHome.primaryCta,
   secondaryHref = AI_LOGIN_HREF,
   secondaryLabel = productHome.secondaryCta,
@@ -276,10 +276,7 @@ export function WaFaqSection({
 }
 
 function pricingPlanHref(plan: PricingPlan) {
-  if (plan.ctaType === "signup") {
-    return AI_START_FREE_HREF;
-  }
-  if (plan.ctaType === "contact") {
+  if (plan.ctaType === "signup" || plan.ctaType === "contact") {
     return "/contact";
   }
   return buildWhatsAppUrl(
@@ -499,7 +496,7 @@ export function WaChatbotPageContent() {
         title={chatbotPage.title}
         lead={chatbotPage.lead}
         primaryLabel={chatbotPage.cta}
-        primaryHref={AI_START_FREE_HREF}
+        primaryHref="/contact"
         secondaryLabel="See pricing"
         secondaryHref="/ai/pricing"
         showTrusted={false}
@@ -522,7 +519,7 @@ export function WaChatbotPageContent() {
               ))}
             </ul>
             <div className="wa-product-hero-actions">
-              <Link className="wa-btn-primary" href={AI_START_FREE_HREF}>
+              <Link className="wa-btn-primary" href="/contact">
                 {chatbotPage.cta}
               </Link>
               <Link className="wa-btn-secondary" href={AI_LOGIN_HREF}>
@@ -629,23 +626,21 @@ export function WaProductCta() {
       <div className="wa-product-container" style={{ textAlign: "center" }}>
         <span className="wa-product-kicker">Ready to go live?</span>
         <h2 style={{ marginTop: "0.75rem", fontSize: "clamp(1.75rem, 3vw, 2.25rem)" }}>
-          Start free and connect WhatsApp in minutes
+          Purchase, then we provision your WhatsApp AI workspace
         </h2>
         <p style={{ color: "#64748b", maxWidth: "36rem", margin: "0.75rem auto 0" }}>
-          Experience AI replies, team inbox, and CRM in one workspace built for Indian MSMEs.
+          After purchase we create your login and help you connect WhatsApp, AI replies,
+          team inbox, and CRM.
         </p>
         <div
           className="wa-product-hero-actions"
           style={{ justifyContent: "center", marginTop: "1.25rem" }}
         >
-          <Link className="wa-btn-primary" href={AI_START_FREE_HREF}>
-            Start Free
+          <Link className="wa-btn-primary" href="/contact">
+            Enquire to purchase
           </Link>
           <Link className="wa-btn-secondary" href={AI_LOGIN_HREF}>
-            Log in
-          </Link>
-          <Link className="wa-btn-secondary" href="/contact">
-            Talk to us
+            Sign in
           </Link>
         </div>
       </div>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { callingDisplayNumber, callingTel, siteBrand, whatsappDisplayNumber } from "@/app/site-content";
 import { BrandIconMark } from "@/components/brand/brand-icon-mark";
-import { AI_LOGIN_HREF, AI_START_FREE_HREF } from "@/lib/ai-auth-links";
+import { AI_LOGIN_HREF } from "@/lib/ai-auth-links";
 
 const aiNav = [
   { href: "/ai", label: "Home" },
@@ -45,8 +45,8 @@ export function AiSiteHeader() {
             <Link className="ai-header-signin" href={AI_LOGIN_HREF}>
               Sign in
             </Link>
-            <Link className="wa-btn-primary ai-header-start" href={AI_START_FREE_HREF}>
-              Start free
+            <Link className="wa-btn-primary ai-header-start" href="/contact">
+              Enquire
             </Link>
           </div>
         </div>
@@ -97,7 +97,7 @@ export function AiSiteFooter() {
               <Link href="/ai/chatbot">AI Chatbot</Link>
               <Link href="/ai/crm">CRM & Inbox</Link>
               <Link href="/ai/pricing">Pricing</Link>
-              <Link href={AI_START_FREE_HREF}>Start free</Link>
+              <Link href="/contact">Enquire</Link>
               <Link href={AI_LOGIN_HREF}>Sign in</Link>
             </nav>
           </div>
