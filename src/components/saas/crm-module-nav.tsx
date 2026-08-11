@@ -113,6 +113,7 @@ export function CrmModuleNav({
             <li key={item.href}>
               <Link
                 href={item.href}
+                prefetch={false}
                 className={`ws-module-subnav-link${active ? " is-active" : ""}`}
                 aria-current={active ? "page" : undefined}
               >

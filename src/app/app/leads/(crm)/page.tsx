@@ -164,7 +164,12 @@ function serializeLead(lead: CrmDrawerLead) {
 export default async function LeadsMachinePage({ searchParams }: PageProps) {
   const user = await requireSession(undefined, { module: "CRM" });
   await requireCrmSubModule(user, "leads");
-  await ensureLeadConnections(user.organizationId);
+  try {
+    await withDbRetry(() => ensureLeadConnections(user.organizationId));
+  } catch (error) {
+    // Connections can wait — do not block the leads list on a Neon flap.
+    console.error("leads ensureLeadConnections", error);
+  }
 
   const params = await searchParams;
   const period = parseLeadsPeriodParams(params);
@@ -271,14 +276,11 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
     );
   }
 
-  // withDbRetry: Neon can drop/refuse connections for a moment (cold start,
-  // post-deploy churn) — retry the whole load once instead of erroring the page.
-  const [periodStats, pipeMetrics, numbersMetrics, leadPage, teamMembers, sheetsConnection, workspaceTotal, serviceCatalog, organization, teamPerformance] =
+  // Critical path first (list + members + org). Heavy dashboards / sync
+  // metadata load second and soft-fail so Neon cold-start does not blank CRM.
+  const [leadPage, teamMembers, serviceCatalog, organization, workspaceTotal] =
     await withDbRetry((db) =>
       Promise.all([
-        getLeadsMachineStatsForPeriod(user.organizationId, period, leadScope),
-        getLeadsPipeMetricsForPeriod(user.organizationId, period, leadScope),
-        getCrmNumbersMetricsForPeriod(user.organizationId, period, leadScope),
         listInboundLeadsForPeriodPaginated(user.organizationId, period, {
           page: listParams.page,
           pageSize: listParams.pageSize,
@@ -290,18 +292,59 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
           assignedToId: leadScope?.assignedToId,
         }),
         listWorkspaceMembers(user.organizationId),
-        getGoogleSheetsLeadConnection(user.organizationId),
-        getInboundLeadWorkspaceTotal(user.organizationId, leadScope),
         listLeadServiceCatalog(user.organizationId),
         db.organization.findUnique({
           where: { id: user.organizationId },
           select: { name: true, logoUrl: true },
         }),
+        getInboundLeadWorkspaceTotal(user.organizationId, leadScope),
+      ]),
+    );
+
+  const emptyPeriodStats = {
+    total: 0,
+    withFms: 0,
+    openPipeline: 0,
+    won: 0,
+    lost: 0,
+    conversionRate: 0,
+    byChannel: {} as Record<string, number>,
+    byStatus: {} as Record<string, number>,
+    periodLabel: period.periodLabel,
+  };
+
+  let periodStats = emptyPeriodStats;
+  let pipeMetrics: Awaited<ReturnType<typeof getLeadsPipeMetricsForPeriod>> | null =
+    null;
+  let numbersMetrics: Awaited<
+    ReturnType<typeof getCrmNumbersMetricsForPeriod>
+  > | null = null;
+  let sheetsConnection: Awaited<
+    ReturnType<typeof getGoogleSheetsLeadConnection>
+  > | null = null;
+  let teamPerformance: Awaited<ReturnType<typeof getTeamPerformance>> | null =
+    null;
+
+  try {
+    const secondary = await withDbRetry(() =>
+      Promise.all([
+        getLeadsMachineStatsForPeriod(user.organizationId, period, leadScope),
+        getLeadsPipeMetricsForPeriod(user.organizationId, period, leadScope),
+        getCrmNumbersMetricsForPeriod(user.organizationId, period, leadScope),
+        getGoogleSheetsLeadConnection(user.organizationId),
         canSeeAllLeads
           ? getTeamPerformance(user.organizationId, currentMonthKeyIst())
           : Promise.resolve(null),
       ]),
     );
+    periodStats = secondary[0];
+    pipeMetrics = secondary[1];
+    numbersMetrics = secondary[2];
+    sheetsConnection = secondary[3];
+    teamPerformance = secondary[4];
+  } catch (error) {
+    console.error("leads secondary metrics unavailable", error);
+  }
 
   const lastSyncLabel = sheetsConnection?.lastSyncAt
     ? new Date(sheetsConnection.lastSyncAt).toLocaleString("en-IN", {
@@ -318,12 +361,12 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
       ? "Not synced"
       : lastSyncLabel;
 
-  const salesOrdersByLead = await getAllSalesOrdersByLeadIds(
-    user.organizationId,
-    leadPage.leads.map((lead) => lead.id),
-  );
-  const pendingTemplateByLead = await mapPendingTemplateOrdersByLeadIds(
-    leadPage.leads.map((lead) => lead.id),
+  const leadIds = leadPage.leads.map((lead) => lead.id);
+  const [salesOrdersByLead, pendingTemplateByLead] = await withDbRetry(() =>
+    Promise.all([
+      getAllSalesOrdersByLeadIds(user.organizationId, leadIds),
+      mapPendingTemplateOrdersByLeadIds(leadIds),
+    ]),
   );
   const leadsWithSalesOrders = leadPage.leads.map((lead) => {
     const salesOrders = salesOrdersByLead.get(lead.id) ?? [];
@@ -387,14 +430,16 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
         <LeadsTeamPerformance initial={teamPerformance} />
       ) : null}
 
-      <LeadsPipelineCards
-        activeCategory={listParams.category}
-        activeStatus={listParams.status}
-        baseParams={params}
-        byStatus={periodStats.byStatus}
-        numbersMetrics={numbersMetrics}
-        pipeMetrics={pipeMetrics}
-      />
+      {pipeMetrics && numbersMetrics ? (
+        <LeadsPipelineCards
+          activeCategory={listParams.category}
+          activeStatus={listParams.status}
+          baseParams={params}
+          byStatus={periodStats.byStatus}
+          numbersMetrics={numbersMetrics}
+          pipeMetrics={pipeMetrics}
+        />
+      ) : null}
 
       <LeadsCrmWorkspace
         canManage={canManage}

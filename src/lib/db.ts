@@ -118,41 +118,78 @@ function isConnectionError(error: unknown) {
     typeof (error as { code?: string }).code === "string"
   ) {
     const code = (error as { code: string }).code;
-    if (code === "P2024" || code === "P1001" || code === "P1017") {
+    // P1001 = can't reach DB, P1017 = server closed connection, P2024 = pool timeout
+    if (
+      code === "P2024" ||
+      code === "P1001" ||
+      code === "P1017" ||
+      code === "P1002" ||
+      code === "P1008"
+    ) {
       return true;
     }
   }
 
   const message = error.message.toLowerCase();
   return (
+    message.includes("can't reach database") ||
+    message.includes("cant reach database") ||
+    message.includes("could not connect") ||
     message.includes("closed") ||
     message.includes("connection") ||
     message.includes("pool timeout") ||
+    message.includes("timed out") ||
+    message.includes("timeout exceeded") ||
     message.includes("p1001") ||
     message.includes("p1017") ||
     message.includes("p2024") ||
     message.includes("econnreset") ||
+    message.includes("econnrefused") ||
     message.includes("socket") ||
+    message.includes("server has closed the connection") ||
     message.includes("response from the engine was empty") ||
     message.includes("engine is not yet connected") ||
+    message.includes("prismaclientinitializationerror") ||
     message.includes("prismaclientunknownrequesterror")
   );
 }
 
-/** Retry once after reconnect when Neon closes idle dev connections. */
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Retry on Neon cold-start / pool flaps. Default: 3 attempts with backoff
+ * (0ms → ~400ms → ~1200ms) and a fresh Prisma client between tries.
+ */
 export async function withDbRetry<T>(
   fn: (client: PrismaClient) => Promise<T>,
+  options?: { attempts?: number },
 ): Promise<T> {
-  const client = resolvePrismaClient();
+  const attempts = Math.max(1, options?.attempts ?? 3);
+  let lastError: unknown;
 
-  try {
-    return await fn(client);
-  } catch (error) {
-    if (!isConnectionError(error)) {
-      throw error;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await fn(resolvePrismaClient());
+    } catch (error) {
+      lastError = error;
+      if (!isConnectionError(error) || attempt === attempts) {
+        throw error;
+      }
+      console.warn(
+        `[db] connection error (attempt ${attempt}/${attempts}), retrying…`,
+        error instanceof Error ? error.message : error,
+      );
+      try {
+        await reconnectPrisma();
+      } catch {
+        // ignore disconnect failures — next attempt creates a fresh client
+      }
+      // Neon compute wake can take 1–3s; give it a beat before retrying.
+      await sleep(350 * attempt * attempt);
     }
-
-    await reconnectPrisma();
-    return fn(resolvePrismaClient());
   }
+
+  throw lastError;
 }

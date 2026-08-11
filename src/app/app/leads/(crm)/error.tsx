@@ -19,18 +19,18 @@ export default function LeadsError({
       <div className="leads-error-panel">
         <h1>Leads could not load</h1>
         <p>
-          The leads workspace hit an error while loading. This is often fixed by
-          redeploying after database migrations, or by opening{" "}
-          <Link href="/app/leads?period=all">all leads</Link> instead of a narrow
-          date range.
+          The database was briefly unavailable (common right after idle / cold
+          start). Click <strong>Try again</strong> — it usually loads on the
+          next attempt. If it keeps failing, open{" "}
+          <Link href="/app/leads?period=all">all leads</Link>.
         </p>
         <p className="leads-machine-muted">{error.message}</p>
         <div className="leads-error-actions">
           <button type="button" className="btn-primary" onClick={() => reset()}>
             Try again
           </button>
-          <Link className="btn-secondary" href="/app/leads/settings">
-            Open setup
+          <Link className="btn-secondary" href="/app/leads?period=all">
+            Open all leads
           </Link>
         </div>
       </div>
