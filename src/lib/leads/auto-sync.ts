@@ -26,10 +26,12 @@ export async function maybeAutoSyncGoogleSheets(organizationId: string) {
   const lastSyncAt = connection.lastSyncAt?.getTime() ?? 0;
 
   // Always continue a partial import when someone opens CRM — do not wait 15 min.
+  // Use interactive budget so the after() job does not thrash Neon for minutes.
   if (inProgress) {
     const result = await pullLeadsFromConnection({
       organizationId,
       channel: "GOOGLE_SHEETS",
+      interactive: true,
     });
     return {
       synced: result.ok,
@@ -43,7 +45,10 @@ export async function maybeAutoSyncGoogleSheets(organizationId: string) {
     return { synced: false as const, reason: "fresh" as const };
   }
 
-  const result = await syncLeadsTwoWay(organizationId);
+  const result = await syncLeadsTwoWay(organizationId, {
+    interactive: true,
+    exportBack: false,
+  });
 
   return {
     synced: result.ok,

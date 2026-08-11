@@ -337,17 +337,43 @@ export async function pushLeadToGoogleSheet(
 
 export async function syncLeadsTwoWay(
   organizationId: string,
-  options?: { forceFull?: boolean },
+  options?: {
+    forceFull?: boolean;
+    /** Shorter budget for Sync now / CRM auto-continue. */
+    interactive?: boolean;
+    /**
+     * Push CRM fields back to the sheet. Default false for interactive syncs
+     * (export of 1k+ rows after import was killing the request and the CRM page).
+     */
+    exportBack?: boolean;
+  },
 ) {
   const { pullLeadsFromConnection } = await import("@/lib/leads/sync-sources");
+  const interactive = options?.interactive === true;
   const pull = await pullLeadsFromConnection({
     organizationId,
     channel: "GOOGLE_SHEETS",
     forceFull: options?.forceFull === true,
+    interactive,
   });
 
   if (!pull.ok) {
     return pull;
+  }
+
+  // Never export while a partial import is still running — finish pull first.
+  const shouldExport =
+    options?.exportBack === true ||
+    (!interactive && !pull.partial && options?.exportBack !== false);
+
+  if (!shouldExport) {
+    return {
+      ok: true as const,
+      imported: pull.imported,
+      counts: pull.counts,
+      partial: pull.partial,
+      exported: 0,
+    };
   }
 
   try {

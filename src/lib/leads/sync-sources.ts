@@ -5,11 +5,15 @@ import { pullLeadsFromGoogleSheet } from "@/lib/leads/google-sheets";
 import { resolveGoogleSheetsLeadConfig } from "@/lib/leads/sheet-config";
 import {
   GOOGLE_SHEETS_SYNC_BATCH_SIZE,
+  GOOGLE_SHEETS_SYNC_INTERACTIVE_BUDGET_MS,
   GOOGLE_SHEETS_SYNC_TIME_BUDGET_MS,
+  advanceSheetSyncProgress,
   clearSheetSyncProgress,
+  isSheetSyncComplete,
   mergeSheetSyncProgress,
+  planGoogleSheetSync,
   readSheetSyncProgress,
-  resolveSheetSyncResumeCursor,
+  readSheetSyncWatermark,
   type SheetSyncProgress,
 } from "@/lib/leads/sheet-sync-progress";
 import type { LeadPullResult, LeadSyncCounts } from "@/lib/leads/sync-messages";
@@ -48,6 +52,11 @@ export async function pullLeadsFromConnection(params: {
   channel: LeadSourceChannel;
   /** Clear resume cursor and re-read every sheet row from the top. */
   forceFull?: boolean;
+  /**
+   * Interactive Sync now / CRM auto-continue: shorter time budget so the
+   * request finishes cleanly instead of being killed mid-flight.
+   */
+  interactive?: boolean;
 }): Promise<LeadPullResult> {
   const connection = await prisma.leadIngestConnection.findUnique({
     where: {
@@ -62,9 +71,20 @@ export async function pullLeadsFromConnection(params: {
     return { ok: false as const, reason: "connection_disabled" };
   }
 
+  // Avoid overlapping syncs — concurrent imports exhaust the Neon pool and
+  // tip the CRM page into "Leads could not load". Allow restart if a prior
+  // request was killed mid-flight and left SYNCING stuck.
+  if (connection.syncStatus === "SYNCING") {
+    const staleMs = Date.now() - new Date(connection.updatedAt).getTime();
+    if (staleMs < 90_000) {
+      return { ok: false as const, reason: "sync_in_progress" };
+    }
+  }
+
   if (params.channel === "GOOGLE_SHEETS") {
     return pullGoogleSheetsLeads(params.organizationId, connection, {
       forceFull: params.forceFull === true,
+      interactive: params.interactive === true,
     });
   }
 
@@ -233,8 +253,8 @@ export async function syncAllEnabledLeadConnections(organizationId: string) {
 
 async function pullGoogleSheetsLeads(
   organizationId: string,
-  connection: { id: string; config: unknown },
-  options?: { forceFull?: boolean },
+  connection: { id: string; config: unknown; lastSyncAt?: Date | null },
+  options?: { forceFull?: boolean; interactive?: boolean },
 ): Promise<LeadPullResult> {
   const sheetConfig = resolveGoogleSheetsLeadConfig(connection.config);
   if (!sheetConfig) {
@@ -270,7 +290,16 @@ async function pullGoogleSheetsLeads(
     const savedProgress = options?.forceFull
       ? null
       : readSheetSyncProgress(startingConfig);
-    let cursor = resolveSheetSyncResumeCursor(savedProgress, rows.length);
+    const watermark = options?.forceFull
+      ? null
+      : readSheetSyncWatermark(startingConfig);
+    const { indices, start, mode } = planGoogleSheetSync({
+      saved: savedProgress,
+      watermark,
+      rowCount: rows.length,
+      forceFull: options?.forceFull === true,
+      previouslySynced: Boolean(connection.lastSyncAt),
+    });
 
     const counts: LeadSyncCounts = {
       processed: 0,
@@ -278,11 +307,43 @@ async function pullGoogleSheetsLeads(
       updated: 0,
       skipped: 0,
     };
-    const deadline = Date.now() + GOOGLE_SHEETS_SYNC_TIME_BUDGET_MS;
 
-    while (cursor < rows.length && Date.now() < deadline) {
-      const batchEnd = Math.min(cursor + GOOGLE_SHEETS_SYNC_BATCH_SIZE, rows.length);
-      for (let index = cursor; index < batchEnd; index += 1) {
+    // Nothing new — persist watermark at current size and finish quickly.
+    if (mode === "noop" || indices.length === 0) {
+      const mergedConfig = mergeSheetSyncProgress(startingConfig, null, {
+        watermarkTotal: rows.length,
+      });
+      await prisma.leadIngestConnection.update({
+        where: { id: connection.id },
+        data: {
+          syncStatus: "IDLE",
+          lastSyncAt: new Date(),
+          lastSyncError: null,
+          config: mergedConfig as Prisma.InputJsonValue,
+        },
+      });
+      return {
+        ok: true as const,
+        imported: 0,
+        counts,
+      };
+    }
+
+    const budgetMs = options?.interactive
+      ? GOOGLE_SHEETS_SYNC_INTERACTIVE_BUDGET_MS
+      : GOOGLE_SHEETS_SYNC_TIME_BUDGET_MS;
+    const deadline = Date.now() + budgetMs;
+
+    let progress = start;
+    let workOffset = 0;
+
+    while (workOffset < indices.length && Date.now() < deadline) {
+      const batchEnd = Math.min(
+        workOffset + GOOGLE_SHEETS_SYNC_BATCH_SIZE,
+        indices.length,
+      );
+      for (let i = workOffset; i < batchEnd; i += 1) {
+        const index = indices[i]!;
         const row = rows[index]!;
         const result = await ingestInboundLead({
           organizationId,
@@ -290,6 +351,7 @@ async function pullGoogleSheetsLeads(
           connectionId: connection.id,
           skipConnectionSetup: true,
           createFmsJob: false,
+          suppressOwnerNotify: true,
           externalId: row.externalId,
           name: row.name,
           phone: row.phone,
@@ -308,6 +370,7 @@ async function pullGoogleSheetsLeads(
           rawPayload: row.raw as Prisma.InputJsonValue,
           sheetPull: true,
         });
+        progress = advanceSheetSyncProgress(progress, index);
         if (result.skipped) {
           counts.skipped = (counts.skipped ?? 0) + 1;
           continue;
@@ -319,12 +382,18 @@ async function pullGoogleSheetsLeads(
           counts.updated += 1;
         }
       }
-      cursor = batchEnd;
+      workOffset = batchEnd;
     }
 
-    const partial: SheetSyncProgress | null =
-      cursor < rows.length ? { cursor, total: rows.length } : null;
-    const mergedConfig = mergeSheetSyncProgress(startingConfig, partial);
+    const complete = isSheetSyncComplete(progress) || workOffset >= indices.length;
+    const partial: SheetSyncProgress | null = complete
+      ? null
+      : { ...progress, total: rows.length };
+    // On complete: raise watermark to full sheet size so the next sync only
+    // imports rows appended after this point (fixes 1374 → restart-at-300).
+    const mergedConfig = mergeSheetSyncProgress(startingConfig, partial, {
+      watermarkTotal: complete ? rows.length : watermark,
+    });
 
     await prisma.leadIngestConnection.update({
       where: { id: connection.id },

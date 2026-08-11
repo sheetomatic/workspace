@@ -11,7 +11,10 @@ import {
   LEADS_SYNC_INTERVAL_LABEL,
   maybeAutoSyncGoogleSheets,
 } from "@/lib/leads/auto-sync";
-import { readSheetSyncProgress } from "@/lib/leads/sheet-sync-progress";
+import {
+  formatSheetSyncProgressLabel,
+  readSheetSyncProgress,
+} from "@/lib/leads/sheet-sync-progress";
 import { LeadsSheetSyncButton } from "@/components/saas/leads-sheet-sync-button";
 import { ensureLeadConnections } from "@/lib/leads/ingest";
 import { parseCrmDrawerTab } from "@/lib/leads/crm-open";
@@ -185,13 +188,15 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
   const focusMode = Boolean(focusLeadId);
 
   after(async () => {
+    // Let the page response release DB pool slots before background work.
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     try {
       await runLeadsBackgroundMaintenance(user.organizationId);
     } catch (error) {
       console.error("leads background maintenance", error);
     }
     try {
-      // Continues partial Google Sheet imports (e.g. through row 897) when CRM is opened.
+      // Continues partial Google Sheet imports when CRM is opened.
       await maybeAutoSyncGoogleSheets(user.organizationId);
     } catch (error) {
       console.error("leads google sheets auto sync", error);
@@ -287,7 +292,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
           sort: listParams.sort,
           status: listParams.status,
           category: listParams.category,
-          // Text search filters client-side on the loaded page (no workspace reload).
+          // Search filters client-side on the loaded page (no workspace reload).
           includeArchived: listParams.includeArchived,
           assignedToId: leadScope?.assignedToId,
         }),
@@ -355,19 +360,34 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
       })
     : "Not synced yet";
   const sheetSyncProgress = readSheetSyncProgress(sheetsConnection?.config);
-  const syncPillLabel = sheetSyncProgress
-    ? `Importing ${sheetSyncProgress.cursor}/${sheetSyncProgress.total}`
+  const syncProgressLabel = sheetSyncProgress
+    ? formatSheetSyncProgressLabel(sheetSyncProgress)
+    : null;
+  const syncPillLabel = syncProgressLabel
+    ? `Importing ${syncProgressLabel}`
     : lastSyncLabel === "Not synced yet"
       ? "Not synced"
       : lastSyncLabel;
 
   const leadIds = leadPage.leads.map((lead) => lead.id);
-  const [salesOrdersByLead, pendingTemplateByLead] = await withDbRetry(() =>
-    Promise.all([
-      getAllSalesOrdersByLeadIds(user.organizationId, leadIds),
-      mapPendingTemplateOrdersByLeadIds(leadIds),
-    ]),
-  );
+  let salesOrdersByLead: Awaited<
+    ReturnType<typeof getAllSalesOrdersByLeadIds>
+  > = new Map();
+  let pendingTemplateByLead: Awaited<
+    ReturnType<typeof mapPendingTemplateOrdersByLeadIds>
+  > = new Map();
+  try {
+    const extras = await withDbRetry(() =>
+      Promise.all([
+        getAllSalesOrdersByLeadIds(user.organizationId, leadIds),
+        mapPendingTemplateOrdersByLeadIds(leadIds),
+      ]),
+    );
+    salesOrdersByLead = extras[0];
+    pendingTemplateByLead = extras[1];
+  } catch (error) {
+    console.error("leads sales-order extras unavailable", error);
+  }
   const leadsWithSalesOrders = leadPage.leads.map((lead) => {
     const salesOrders = salesOrdersByLead.get(lead.id) ?? [];
     return {
@@ -387,8 +407,8 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
             <span
               className="leads-sync-pill"
               title={
-                sheetSyncProgress
-                  ? `Sheet import in progress — ${sheetSyncProgress.cursor} of ${sheetSyncProgress.total} rows. Click Continue import or wait ${LEADS_SYNC_INTERVAL_LABEL}.`
+                syncProgressLabel
+                  ? `Sheet import in progress — ${syncProgressLabel} rows. Click Continue import or wait ${LEADS_SYNC_INTERVAL_LABEL}.`
                   : `Auto sync ${LEADS_SYNC_INTERVAL_LABEL}`
               }
             >
@@ -396,11 +416,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
             </span>
             <LeadsSheetSyncButton
               canManage={canManage}
-              importProgressLabel={
-                sheetSyncProgress
-                  ? `${sheetSyncProgress.cursor}/${sheetSyncProgress.total}`
-                  : null
-              }
+              importProgressLabel={syncProgressLabel}
             />
             {canManage ? (
               <Link

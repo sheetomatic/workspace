@@ -20,8 +20,9 @@ export default function LeadsError({
         <h1>Leads could not load</h1>
         <p>
           The database was briefly unavailable (common right after idle / cold
-          start). Click <strong>Try again</strong> — it usually loads on the
-          next attempt. If it keeps failing, open{" "}
+          start, or right after a Google Sheets sync). Click{" "}
+          <strong>Try again</strong> — it usually loads on the next attempt. If
+          it keeps failing, open{" "}
           <Link href="/app/leads?period=all">all leads</Link>.
         </p>
         <p className="leads-machine-muted">{error.message}</p>

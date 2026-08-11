@@ -1058,11 +1058,18 @@ export async function syncLeadChannelNow(
   const forceFull = options?.forceFull === true;
   const result =
     channel === "GOOGLE_SHEETS"
-      ? await syncLeadsTwoWay(user.organizationId, { forceFull })
+      ? await syncLeadsTwoWay(user.organizationId, {
+          forceFull,
+          // Interactive Sync now must finish inside the request window and
+          // must not export 1k+ rows back to Sheets (that was crashing CRM).
+          interactive: true,
+          exportBack: false,
+        })
       : await pullLeadsFromConnection({
           organizationId: user.organizationId,
           channel,
           forceFull,
+          interactive: true,
         });
 
   revalidatePath("/app/leads");

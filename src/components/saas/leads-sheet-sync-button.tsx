@@ -2,7 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { syncLeadChannelNow } from "@/app/app/leads/actions";
+
+type SyncApiResult =
+  | { ok: true; message: string }
+  | { ok: false; message: string };
 
 export function LeadsSheetSyncButton({
   canManage,
@@ -25,15 +28,42 @@ export function LeadsSheetSyncButton({
     startTransition(async () => {
       setMessage(null);
       setIsError(false);
-      const result = await syncLeadChannelNow("GOOGLE_SHEETS", { forceFull });
-      if (!result.ok) {
+      try {
+        const response = await fetch("/api/leads/sheets-sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ forceFull }),
+        });
+        let result: SyncApiResult;
+        try {
+          result = (await response.json()) as SyncApiResult;
+        } catch {
+          setIsError(true);
+          setMessage(
+            "Sync was interrupted. Click Sync now again — new sheet rows are imported first.",
+          );
+          return;
+        }
+        if (!response.ok || !result.ok) {
+          setMessage(
+            "message" in result && result.message
+              ? result.message
+              : "Sync failed. Try again.",
+          );
+          setIsError(true);
+          return;
+        }
         setMessage(result.message);
+        setIsError(false);
+        // Short delay so Neon can release sync connections before CRM reload.
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        router.refresh();
+      } catch {
         setIsError(true);
-        return;
+        setMessage(
+          "Sync was interrupted. Click Sync now again — new sheet rows are imported first.",
+        );
       }
-      setMessage(result.message);
-      setIsError(false);
-      router.refresh();
     });
   }
 

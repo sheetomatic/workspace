@@ -1,4 +1,7 @@
-import type { SheetSyncProgress } from "@/lib/leads/sheet-sync-progress";
+import {
+  sheetSyncImportedCount,
+  type SheetSyncProgress,
+} from "@/lib/leads/sheet-sync-progress";
 
 export type LeadSyncCounts = {
   processed: number;
@@ -27,12 +30,17 @@ export function formatLeadSyncCounts(
   partial?: SheetSyncProgress,
 ) {
   if (counts.processed === 0 && !partial) {
-    return "No lead rows found in the sheet.";
+    if ((counts.skipped ?? 0) > 0) {
+      return `${counts.skipped} row${counts.skipped === 1 ? "" : "s"} skipped (need valid phone).`;
+    }
+    return "Sheet already up to date — no new rows to import.";
   }
 
   const parts: string[] = [];
-  if (partial && partial.cursor < partial.total) {
-    parts.push(`Imported ${partial.cursor} of ${partial.total} sheet rows`);
+  if (partial) {
+    parts.push(
+      `Imported ${sheetSyncImportedCount(partial)} of ${partial.total} sheet rows`,
+    );
   } else if (counts.processed > 0) {
     parts.push(`Synced ${counts.processed} row${counts.processed === 1 ? "" : "s"}`);
   }
@@ -47,8 +55,8 @@ export function formatLeadSyncCounts(
     parts.push(`${counts.skipped} skipped (need valid phone)`);
   }
 
-  if (partial && partial.cursor < partial.total) {
-    parts.push("sync continues automatically — click Sync now or wait ~15 min");
+  if (partial) {
+    parts.push("new sheet rows first — click Sync now again to continue");
   }
 
   return parts.join(" · ");
@@ -64,6 +72,8 @@ export function formatLeadSyncError(reason: string) {
       return "API URL is not configured for this connector.";
     case "export_failed":
       return "Imported from sheet but could not push CRM updates back to Google Sheets.";
+    case "sync_in_progress":
+      return "A sync is already running. Wait a moment, then try again.";
     default:
       return reason;
   }
