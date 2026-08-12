@@ -4,6 +4,8 @@ import { useEffect, useState, useTransition } from "react";
 import {
   bookLeadTrainingSlotsAction,
   getLeadTrainingSlotsAction,
+  resendTrainingScheduleAction,
+  saveTrainingMeetUrlAction,
   updateLeadTrainingSlotStatusAction,
 } from "@/app/app/leads/actions";
 import {
@@ -66,6 +68,7 @@ export function LeadTrainingSlotsPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
   const [enrollments, setEnrollments] = useState<EnrollmentRow[]>([]);
+  const [meetDraft, setMeetDraft] = useState<Record<string, string>>({});
 
   function reload() {
     setLoading(true);
@@ -126,12 +129,6 @@ export function LeadTrainingSlotsPanel({
 
   const booked = enrollments.filter((row) => row.slots.length > 0);
   const hasSlots = booked.length > 0;
-  const joinUrl =
-    booked.find((row) => row.meetUrl)?.meetUrl ||
-    booked
-      .flatMap((row) => row.slots)
-      .find((slot) => slot.meetUrl)?.meetUrl ||
-    null;
 
   return (
     <div className="leads-training-panel">
@@ -153,7 +150,12 @@ export function LeadTrainingSlotsPanel({
       {loading ? (
         <p className="leads-help">Loading…</p>
       ) : hasSlots ? (
-        booked.map((enrollment) => (
+        booked.map((enrollment) => {
+          const enrollmentJoin =
+            enrollment.meetUrl ||
+            enrollment.slots.find((slot) => slot.meetUrl)?.meetUrl ||
+            null;
+          return (
           <section key={enrollment.id} className="leads-training-schedule">
             <div className="leads-training-schedule-head">
               <div>
@@ -166,15 +168,35 @@ export function LeadTrainingSlotsPanel({
                 </span>
               </div>
               <div className="leads-training-schedule-actions">
-                {joinUrl ? (
+                {enrollmentJoin ? (
                   <a
                     className="btn-primary btn-sm"
-                    href={joinUrl}
+                    href={enrollmentJoin}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
                     Link to join
                   </a>
+                ) : null}
+                {canManage ? (
+                  <button
+                    type="button"
+                    className="btn-secondary btn-sm"
+                    disabled={pending}
+                    onClick={() => {
+                      startTransition(async () => {
+                        setMessage(null);
+                        setIsError(false);
+                        const result = await resendTrainingScheduleAction(
+                          enrollment.id,
+                        );
+                        setMessage(result.message);
+                        setIsError(!result.ok);
+                      });
+                    }}
+                  >
+                    {pending ? "Sending…" : "Resend schedule"}
+                  </button>
                 ) : null}
                 {enrollment.bookingToken ? (
                   <a
@@ -188,6 +210,51 @@ export function LeadTrainingSlotsPanel({
                 ) : null}
               </div>
             </div>
+
+            {canManage ? (
+              <div className="leads-training-meet-resend">
+                <label>
+                  Google Meet
+                  <input
+                    type="url"
+                    placeholder="https://meet.google.com/…"
+                    value={meetDraft[enrollment.id] ?? enrollment.meetUrl ?? ""}
+                    onChange={(event) =>
+                      setMeetDraft((current) => ({
+                        ...current,
+                        [enrollment.id]: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="btn-primary btn-sm"
+                  disabled={pending}
+                  onClick={() => {
+                    const meetUrl = (
+                      meetDraft[enrollment.id] ??
+                      enrollment.meetUrl ??
+                      ""
+                    ).trim();
+                    startTransition(async () => {
+                      setMessage(null);
+                      setIsError(false);
+                      const result = await saveTrainingMeetUrlAction({
+                        enrollmentId: enrollment.id,
+                        meetUrl,
+                        resend: true,
+                      });
+                      setMessage(result.message);
+                      setIsError(!result.ok);
+                      if (result.ok) reload();
+                    });
+                  }}
+                >
+                  {pending ? "Saving…" : "Save Meet & send schedule"}
+                </button>
+              </div>
+            ) : null}
 
             <div className="leads-training-table-wrap">
               <table className="leads-training-table">
@@ -261,7 +328,8 @@ export function LeadTrainingSlotsPanel({
               </table>
             </div>
           </section>
-        ))
+          );
+        })
       ) : canManage ? (
         <form action={onBook} className="leads-training-form">
           <div className="leads-training-form-section">
@@ -349,8 +417,12 @@ export function LeadTrainingSlotsPanel({
                 name="meetUrl"
                 type="url"
                 placeholder="https://meet.google.com/…"
+                required
               />
             </label>
+            <p className="leads-help">
+              Required — the client email includes this join link.
+            </p>
           </div>
 
           <div className="leads-training-form-footer">

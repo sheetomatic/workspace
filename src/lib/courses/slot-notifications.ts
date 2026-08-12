@@ -26,15 +26,18 @@ function buildClientMessage(params: {
   bookUrl: string;
   calendarUrl: string;
   meetUrl: string | null;
+  sessionTimeLabel?: string;
 }) {
   return [
     `Hi ${params.name}, your Sheetomatic 1:1 training slots are booked.`,
     "",
     `Cohort: ${params.cohortLabel}`,
-    `Time: ${courseEnrollmentSchedule.sessionTimeLabel}`,
+    `Time: ${params.sessionTimeLabel || courseEnrollmentSchedule.sessionTimeLabel}`,
     `Sessions: ${params.total} live classes`,
     `First session: ${params.firstWhen}`,
-    params.meetUrl ? `Meet link: ${params.meetUrl}` : null,
+    params.meetUrl
+      ? `Meet link: ${params.meetUrl}`
+      : "Meet link: (trainer will share before the first session)",
     "",
     `Book / manage slots on Google Calendar: ${COURSE_GOOGLE_CALENDAR_BOOKING_URL}`,
     `Add first session: ${params.calendarUrl}`,
@@ -55,6 +58,7 @@ function buildOwnerMessage(params: {
   total: number;
   enrollmentId: string;
   workspaceUrl: string;
+  meetUrl: string | null;
 }) {
   return [
     "Training course slots booked",
@@ -65,13 +69,38 @@ function buildOwnerMessage(params: {
     `Cohort: ${params.cohortLabel}`,
     `First session: ${params.firstWhen}`,
     `Sessions: ${params.total}`,
+    params.meetUrl ? `Meet: ${params.meetUrl}` : "Meet: NOT SET",
     `Enrollment: ${params.enrollmentId}`,
     "",
     `Workspace: ${params.workspaceUrl}`,
   ].join("\n");
 }
 
-export async function notifyTrainingSlotsBooked(enrollmentId: string) {
+export type TrainingNotifyResult = {
+  ok: boolean;
+  message: string;
+  meetUrl: string | null;
+  clientEmailSent: boolean;
+  ownerEmailSent: boolean;
+};
+
+/** Resolve Meet link from enrollment or any scheduled slot. */
+export function resolveTrainingMeetUrl(enrollment: {
+  meetUrl?: string | null;
+  slots?: Array<{ meetUrl?: string | null }>;
+}): string | null {
+  const fromEnrollment = enrollment.meetUrl?.trim() || null;
+  if (fromEnrollment) return fromEnrollment;
+  for (const slot of enrollment.slots ?? []) {
+    const url = slot.meetUrl?.trim();
+    if (url) return url;
+  }
+  return null;
+}
+
+export async function notifyTrainingSlotsBooked(
+  enrollmentId: string,
+): Promise<TrainingNotifyResult> {
   const enrollment = await prisma.courseEnrollment.findUnique({
     where: { id: enrollmentId },
     include: {
@@ -84,9 +113,16 @@ export async function notifyTrainingSlotsBooked(enrollmentId: string) {
     },
   });
   if (!enrollment || enrollment.slots.length === 0) {
-    return;
+    return {
+      ok: false,
+      message: "No scheduled sessions to email.",
+      meetUrl: null,
+      clientEmailSent: false,
+      ownerEmailSent: false,
+    };
   }
 
+  const meetUrl = resolveTrainingMeetUrl(enrollment);
   const first = enrollment.slots[0]!;
   const base = getLoginBaseUrl();
   const bookUrl = enrollment.bookingToken
@@ -96,10 +132,13 @@ export async function notifyTrainingSlotsBooked(enrollmentId: string) {
     title: first.title,
     startsAt: first.startsAt,
     endsAt: first.endsAt,
-    meetUrl: first.meetUrl ?? enrollment.meetUrl,
+    meetUrl: first.meetUrl ?? meetUrl,
     studentName: enrollment.name,
   });
-  const cohortLabel = courseCohortLabel(enrollment.cohort);
+  const cohortLabel = courseCohortLabel(
+    enrollment.cohort,
+    enrollment.weekdaysCsv,
+  );
   const firstWhen = formatSlotWhen(first.startsAt);
   const total = enrollment._count.slots;
 
@@ -110,7 +149,10 @@ export async function notifyTrainingSlotsBooked(enrollmentId: string) {
     total,
     bookUrl,
     calendarUrl,
-    meetUrl: enrollment.meetUrl,
+    meetUrl,
+    sessionTimeLabel: enrollment.sessionTimeIst
+      ? `${enrollment.sessionTimeIst} IST`
+      : undefined,
   });
   const ownerText = buildOwnerMessage({
     name: enrollment.name,
@@ -121,12 +163,15 @@ export async function notifyTrainingSlotsBooked(enrollmentId: string) {
     total,
     enrollmentId: enrollment.id,
     workspaceUrl: `${base}/app/my-space/training`,
+    meetUrl,
   });
 
-  await Promise.allSettled([
+  const [clientMail, ownerMail] = await Promise.all([
     sendPlainEmail({
       toEmail: enrollment.email,
-      subject: `Your training slots are booked — starts ${firstWhen}`,
+      subject: meetUrl
+        ? `Your training schedule + Meet link — starts ${firstWhen}`
+        : `Your training slots are booked — starts ${firstWhen}`,
       text: clientText,
     }),
     sendPlainEmail({
@@ -153,4 +198,72 @@ export async function notifyTrainingSlotsBooked(enrollmentId: string) {
         : Promise.resolve(),
     ]);
   }
+
+  const clientEmailSent = clientMail.sent;
+  const ownerEmailSent = ownerMail.sent;
+  if (!clientEmailSent) {
+    const detail =
+      clientMail.reason === "not_configured"
+        ? "Email is not configured on the server."
+        : clientMail.detail || "Client email failed.";
+    return {
+      ok: false,
+      message: detail,
+      meetUrl,
+      clientEmailSent,
+      ownerEmailSent,
+    };
+  }
+
+  return {
+    ok: true,
+    message: meetUrl
+      ? `Schedule emailed to ${enrollment.email} with Meet link.`
+      : `Schedule emailed to ${enrollment.email} (no Meet link set yet).`,
+    meetUrl,
+    clientEmailSent,
+    ownerEmailSent,
+  };
+}
+
+/** Save Meet on enrollment + empty slots, then optionally notify the client. */
+export async function saveTrainingMeetUrl(params: {
+  enrollmentId: string;
+  organizationId: string;
+  meetUrl: string;
+}) {
+  const meetUrl = params.meetUrl.trim().slice(0, 500);
+  if (!meetUrl || !/^https?:\/\//i.test(meetUrl)) {
+    return {
+      ok: false as const,
+      message: "Enter a valid Meet URL starting with https://",
+    };
+  }
+
+  const enrollment = await prisma.courseEnrollment.findFirst({
+    where: {
+      id: params.enrollmentId,
+      organizationId: params.organizationId,
+    },
+    select: { id: true },
+  });
+  if (!enrollment) {
+    return { ok: false as const, message: "Training enrollment not found." };
+  }
+
+  await prisma.$transaction([
+    prisma.courseEnrollment.update({
+      where: { id: enrollment.id },
+      data: { meetUrl },
+    }),
+    prisma.trainingCourseSlot.updateMany({
+      where: {
+        enrollmentId: enrollment.id,
+        OR: [{ meetUrl: null }, { meetUrl: "" }],
+      },
+      data: { meetUrl },
+    }),
+  ]);
+
+  return { ok: true as const, meetUrl, message: "Meet link saved." };
 }

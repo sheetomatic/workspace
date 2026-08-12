@@ -3538,6 +3538,12 @@ export async function bookLeadTrainingSlotsAction(formData: FormData) {
   if (!leadId || !programStartYmd) {
     return { ok: false as const, message: "Lead and start date are required." };
   }
+  if (!meetUrl || !/^https?:\/\//i.test(meetUrl)) {
+    return {
+      ok: false as const,
+      message: "Google Meet link is required so the client email includes the join link.",
+    };
+  }
 
   const { normalizeTrainingWeekdays, weekdaysLabel } = await import(
     "@/lib/courses/weekdays"
@@ -3591,7 +3597,88 @@ export async function bookLeadTrainingSlotsAction(formData: FormData) {
 
   revalidatePath("/app/leads");
   revalidatePath("/app/my-space/training");
+  revalidatePath("/app/leads/training");
   return { ok: result.ok, message: result.message };
+}
+
+/** Save Meet link on an enrollment (and empty slots), optionally email the client. */
+export async function saveTrainingMeetUrlAction(params: {
+  enrollmentId: string;
+  meetUrl: string;
+  resend?: boolean;
+}) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "STAFF")) {
+    return { ok: false as const, message: "Staff access required." };
+  }
+
+  const { saveTrainingMeetUrl, notifyTrainingSlotsBooked } = await import(
+    "@/lib/courses/slot-notifications"
+  );
+  const saved = await saveTrainingMeetUrl({
+    enrollmentId: params.enrollmentId,
+    organizationId: user.organizationId,
+    meetUrl: params.meetUrl,
+  });
+  if (!saved.ok) {
+    return saved;
+  }
+
+  if (params.resend !== false) {
+    const notified = await notifyTrainingSlotsBooked(params.enrollmentId);
+    revalidatePath("/app/leads");
+    revalidatePath("/app/leads/training");
+    revalidatePath("/app/my-space/training");
+    return {
+      ok: notified.ok,
+      message: notified.ok
+        ? `Meet link saved. ${notified.message}`
+        : `Meet link saved, but email failed: ${notified.message}`,
+    };
+  }
+
+  revalidatePath("/app/leads");
+  revalidatePath("/app/leads/training");
+  revalidatePath("/app/my-space/training");
+  return { ok: true as const, message: saved.message };
+}
+
+/** Resend training schedule email (+ WhatsApp) for an enrollment. */
+export async function resendTrainingScheduleAction(enrollmentId: string) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "STAFF")) {
+    return { ok: false as const, message: "Staff access required." };
+  }
+
+  const enrollment = await prisma.courseEnrollment.findFirst({
+    where: { id: enrollmentId, organizationId: user.organizationId },
+    select: { id: true, inboundLeadId: true, email: true },
+  });
+  if (!enrollment) {
+    return { ok: false as const, message: "Training enrollment not found." };
+  }
+
+  const { notifyTrainingSlotsBooked } = await import(
+    "@/lib/courses/slot-notifications"
+  );
+  const notified = await notifyTrainingSlotsBooked(enrollment.id);
+
+  if (notified.ok && enrollment.inboundLeadId) {
+    await logInboundLeadActivity({
+      organizationId: user.organizationId,
+      leadId: enrollment.inboundLeadId,
+      type: "NOTE",
+      body: notified.meetUrl
+        ? `Training schedule resent to ${enrollment.email} (with Meet link).`
+        : `Training schedule resent to ${enrollment.email} (Meet link still missing).`,
+      createdByUserId: user.id,
+    });
+  }
+
+  return {
+    ok: notified.ok,
+    message: notified.message,
+  };
 }
 
 /**

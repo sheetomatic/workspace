@@ -3,8 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { ChevronDown, ExternalLink, Video } from "lucide-react";
-import { updateLeadTrainingSlotStatusAction } from "@/app/app/leads/actions";
+import { ChevronDown, ExternalLink, Mail, Video } from "lucide-react";
+import {
+  resendTrainingScheduleAction,
+  saveTrainingMeetUrlAction,
+  updateLeadTrainingSlotStatusAction,
+} from "@/app/app/leads/actions";
 
 export type TrainingStudentSlotView = {
   id: string;
@@ -76,6 +80,8 @@ export function TrainingStudentsPanel({
   const [query, setQuery] = useState("");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [meetDraft, setMeetDraft] = useState<Record<string, string>>({});
   // Instant feedback while the server data refreshes in the background.
   const [statusOverride, setStatusOverride] = useState<Record<string, SlotStatus>>({});
   const router = useRouter();
@@ -83,6 +89,7 @@ export function TrainingStudentsPanel({
   function onSlotStatus(slotId: string, status: SlotStatus) {
     startTransition(async () => {
       setError(null);
+      setNotice(null);
       const result = await updateLeadTrainingSlotStatusAction(slotId, status);
       if (!result.ok) {
         setError(result.message);
@@ -90,6 +97,38 @@ export function TrainingStudentsPanel({
       }
       setStatusOverride((current) => ({ ...current, [slotId]: status }));
       router.refresh();
+    });
+  }
+
+  function onSaveMeetAndSend(enrollmentId: string) {
+    const meetUrl = (meetDraft[enrollmentId] || "").trim();
+    startTransition(async () => {
+      setError(null);
+      setNotice(null);
+      const result = await saveTrainingMeetUrlAction({
+        enrollmentId,
+        meetUrl,
+        resend: true,
+      });
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setNotice(result.message);
+      router.refresh();
+    });
+  }
+
+  function onResendSchedule(enrollmentId: string) {
+    startTransition(async () => {
+      setError(null);
+      setNotice(null);
+      const result = await resendTrainingScheduleAction(enrollmentId);
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setNotice(result.message);
     });
   }
 
@@ -129,6 +168,7 @@ export function TrainingStudentsPanel({
       </div>
 
       {error ? <p className="saas-form-message error">{error}</p> : null}
+      {notice ? <p className="saas-form-message ok">{notice}</p> : null}
 
       {visible.length === 0 ? (
         <p className="ws-apple-record-empty">No students match this filter.</p>
@@ -185,9 +225,25 @@ export function TrainingStudentsPanel({
                         </a>
                       ) : (
                         <span className="training-join-missing">
-                          No Meet link yet — add it on the CRM Training tab.
+                          No Meet link yet — paste it below and send the schedule.
                         </span>
                       )}
+                      {canManage ? (
+                        <button
+                          type="button"
+                          className="ws-btn ws-btn-secondary"
+                          disabled={pending}
+                          onClick={() => onResendSchedule(student.id)}
+                          title={
+                            student.joinUrl
+                              ? "Email + WhatsApp the schedule again (includes Meet link)"
+                              : "Email schedule again — add a Meet link first for the join URL"
+                          }
+                        >
+                          <Mail size={16} aria-hidden />
+                          {pending ? "Sending…" : "Resend schedule"}
+                        </button>
+                      ) : null}
                       {student.inboundLeadId ? (
                         <Link
                           className="ws-btn ws-btn-secondary"
@@ -208,6 +264,35 @@ export function TrainingStudentsPanel({
                         </a>
                       ) : null}
                     </div>
+
+                    {canManage ? (
+                      <div className="training-meet-resend">
+                        <label>
+                          Google Meet link
+                          <input
+                            type="url"
+                            placeholder="https://meet.google.com/…"
+                            value={
+                              meetDraft[student.id] ?? student.joinUrl ?? ""
+                            }
+                            onChange={(event) =>
+                              setMeetDraft((current) => ({
+                                ...current,
+                                [student.id]: event.target.value,
+                              }))
+                            }
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          className="ws-btn ws-btn-primary"
+                          disabled={pending}
+                          onClick={() => onSaveMeetAndSend(student.id)}
+                        >
+                          {pending ? "Saving…" : "Save Meet & send schedule"}
+                        </button>
+                      </div>
+                    ) : null}
 
                     <dl className="training-student-summary">
                       <div>
