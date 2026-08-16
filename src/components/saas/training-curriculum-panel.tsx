@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { TrainingTrackId } from "@prisma/client";
 import {
   createTrainingLessonAction,
-  publishMsmeWorkbookAction,
   saveTrainingLessonAction,
 } from "@/app/app/leads/training-content-actions";
 import { TRACK_LABEL } from "@/lib/learn/catalog";
@@ -56,6 +55,11 @@ export function TrainingCurriculumPanel({
   );
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [liveCopyUrl, setLiveCopyUrl] = useState<string | null>(copyUrl ?? null);
+
+  useEffect(() => {
+    if (copyUrl) setLiveCopyUrl(copyUrl);
+  }, [copyUrl]);
 
   const course = courses.find((item) => item.track === track) ?? courses[0];
   const lesson = useMemo(
@@ -78,14 +82,49 @@ export function TrainingCurriculumPanel({
     startTransition(async () => {
       setNotice(null);
       setError(null);
-      const result = await work();
-      if (!result.ok) {
-        setError(result.message);
-        return;
+      try {
+        const result = await work();
+        if (!result.ok) {
+          setError(result.message);
+          return;
+        }
+        setNotice(result.message);
+        if (result.lessonId) setLessonId(result.lessonId);
+        router.refresh();
+      } catch (caught) {
+        setError(
+          caught instanceof Error
+            ? caught.message
+            : "That action failed. Try again — this page stays open.",
+        );
       }
-      setNotice(result.message);
-      if (result.lessonId) setLessonId(result.lessonId);
-      router.refresh();
+    });
+  }
+
+  function publishGoogleCopy() {
+    startTransition(async () => {
+      setNotice(null);
+      setError(null);
+      try {
+        const response = await fetch("/api/learn/samples/publish", {
+          method: "POST",
+        });
+        const result = (await response.json()) as {
+          ok?: boolean;
+          message?: string;
+          copyUrl?: string;
+        };
+        if (!result.ok) {
+          setError(result.message || "Publish failed. Download Excel still works.");
+          return;
+        }
+        if (result.copyUrl) setLiveCopyUrl(result.copyUrl);
+        setNotice(result.message || "Google Sheet is ready.");
+      } catch {
+        setError(
+          "Publish timed out or failed. Download Excel still works. Stay on this page and try again.",
+        );
+      }
     });
   }
 
@@ -109,10 +148,10 @@ export function TrainingCurriculumPanel({
             </span>
           </div>
           <div>
-            {copyUrl ? (
+            {liveCopyUrl ? (
               <a
                 className="ws-btn ws-btn-primary"
-                href={copyUrl}
+                href={liveCopyUrl}
                 target="_blank"
                 rel="noreferrer"
               >
@@ -127,9 +166,7 @@ export function TrainingCurriculumPanel({
                 type="button"
                 className="ws-btn ws-btn-secondary"
                 disabled={pending}
-                onClick={() =>
-                  run(() => publishMsmeWorkbookAction())
-                }
+                onClick={publishGoogleCopy}
               >
                 {pending ? "Publishing…" : "Publish Google copy link"}
               </button>

@@ -115,10 +115,17 @@ export async function createTrainingLessonAction(formData: FormData) {
 export async function publishMsmeWorkbookAction() {
   const auth = await requireTrainer();
   if (!auth.ok || !auth.user) return { ok: false as const, message: auth.message };
-  const { publishMsmeWorkbookToGoogle } = await import(
-    "@/lib/learn/publish-msme-sheet"
-  );
-  const result = await publishMsmeWorkbookToGoogle();
-  refreshLearnPaths();
-  return result;
+  try {
+    const { publishMsmeWorkbookToGoogle } = await import(
+      "@/lib/learn/publish-msme-sheet"
+    );
+    return await publishMsmeWorkbookToGoogle();
+  } catch (error) {
+    console.error("[learn] publish action failed", error);
+    return {
+      ok: false as const,
+      message:
+        "Publish failed. Use Download Excel, or try Publish again — this page stays open.",
+    };
+  }
 }

@@ -7,6 +7,7 @@ import { TrainingTabs } from "@/components/saas/training-tabs";
 import "@/components/saas/leads-machine.css";
 import "@/components/saas/training-students-panel.css";
 import { listTrainingCurriculum } from "@/lib/learn/catalog";
+import { withDbRetry } from "@/lib/db";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
@@ -20,7 +21,14 @@ export default async function CrmTrainingContentPage({
   const user = await requireSession(undefined, { module: "CRM" });
   await requireCrmSubModule(user, "training");
   const params = await searchParams;
-  const coursesRaw = await listTrainingCurriculum();
+  let coursesRaw: Awaited<ReturnType<typeof listTrainingCurriculum>> = [];
+  let loadError = false;
+  try {
+    coursesRaw = await withDbRetry(() => listTrainingCurriculum());
+  } catch (error) {
+    loadError = true;
+    console.error("[crm-training-content] curriculum unavailable", error);
+  }
   const courses: CurriculumCourseView[] = coursesRaw.map((course) => ({
     id: course.id,
     track: course.track,
@@ -65,12 +73,19 @@ export default async function CrmTrainingContentPage({
       ]}
     >
       <TrainingTabs current="curriculum" />
-      <TrainingCurriculumPanel
-        courses={courses}
-        canManage={hasMinimumRole(user.role, "STAFF")}
-        initialLessonId={params.lesson}
-        copyUrl={await getLearnMsmeCopyUrl()}
-      />
+      {loadError && courses.length === 0 ? (
+        <p className="training-banner is-error">
+          Teach could not load just now. Refresh this page — do not leave
+          Training. Download Excel still works.
+        </p>
+      ) : (
+        <TrainingCurriculumPanel
+          courses={courses}
+          canManage={hasMinimumRole(user.role, "STAFF")}
+          initialLessonId={params.lesson}
+          copyUrl={await getLearnMsmeCopyUrl()}
+        />
+      )}
     </CrmSubmoduleShell>
   );
 }
