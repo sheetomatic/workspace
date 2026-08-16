@@ -21,11 +21,7 @@ export async function studentLearnLoginAction(formData: FormData) {
   });
 
   if (!enrollment) {
-    return {
-      ok: false as const,
-      message:
-        "No training enrollment matched. Use the email and WhatsApp number from your booking, or open the link we sent you.",
-    };
+    redirect("/learn/login?error=nomatch");
   }
 
   await setLearnSessionCookie(enrollment.id);
@@ -40,7 +36,7 @@ export async function studentLearnLogoutAction() {
 export async function markLearnLessonDoneAction(formData: FormData) {
   const enrollment = await requireLearnEnrollment();
   if (!enrollment) {
-    return { ok: false as const, message: "Please sign in again." };
+    redirect("/learn/login");
   }
 
   const lessonId = String(formData.get("lessonId") ?? "").trim();
@@ -49,7 +45,7 @@ export async function markLearnLessonDoneAction(formData: FormData) {
     select: { id: true },
   });
   if (!lesson) {
-    return { ok: false as const, message: "Lesson not found." };
+    redirect("/learn/courses");
   }
 
   await prisma.trainingLessonProgress.upsert({
@@ -66,6 +62,4 @@ export async function markLearnLessonDoneAction(formData: FormData) {
     },
     update: { completedAt: new Date() },
   });
-
-  return { ok: true as const, message: "Marked as done." };
 }

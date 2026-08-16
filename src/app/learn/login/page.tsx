@@ -43,6 +43,12 @@ export default async function LearnLoginPage({
               instead.
             </p>
           ) : null}
+          {params.error === "nomatch" ? (
+            <p className="learn-banner is-error">
+              No training enrollment matched. Use the email and WhatsApp number
+              from your booking, or open the link we sent you.
+            </p>
+          ) : null}
 
           <form action={studentLearnLoginAction} className="learn-login-form">
             {token ? <input type="hidden" name="token" value={token} /> : null}
