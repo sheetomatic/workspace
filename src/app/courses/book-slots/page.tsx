@@ -28,6 +28,8 @@ export default async function CoursesBookSlotsPage({ searchParams }: PageProps) 
         <div className="course-book-page-inner">
           <p className="course-book-back">
             <Link href="/courses">← Courses</Link>
+            {" · "}
+            <Link href="/learn/login">Student login</Link>
           </p>
           <h1 className="course-book-title">Book training slots</h1>
           <p className="course-book-lead">

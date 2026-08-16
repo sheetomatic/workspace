@@ -51,6 +51,9 @@ export function CoursesPageContent() {
               <Link className="btn-cta btn-secondary" href="/courses/book-slots">
                 Booking page
               </Link>
+              <Link className="btn-cta btn-secondary" href="/learn/login">
+                Student login
+              </Link>
               <Link className="btn-cta btn-secondary" href={WORKSPACE_LOGIN_HREF}>
                 {coursesPage.ctaSecondaryLabel}
               </Link>

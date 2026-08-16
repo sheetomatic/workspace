@@ -291,15 +291,26 @@ export function TrainingStudentsPanel({
                         </Link>
                       ) : null}
                       {student.bookingToken ? (
-                        <a
-                          className="ws-btn ws-btn-secondary"
-                          href={`/courses/book-slots?token=${student.bookingToken}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          Client page
-                          <ExternalLink size={14} aria-hidden />
-                        </a>
+                        <>
+                          <a
+                            className="ws-btn ws-btn-secondary"
+                            href={`/learn/login?token=${student.bookingToken}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Student panel
+                            <ExternalLink size={14} aria-hidden />
+                          </a>
+                          <a
+                            className="ws-btn ws-btn-secondary"
+                            href={`/courses/book-slots?token=${student.bookingToken}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Client page
+                            <ExternalLink size={14} aria-hidden />
+                          </a>
+                        </>
                       ) : null}
                     </div>
 

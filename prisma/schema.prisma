@@ -3079,6 +3079,7 @@ model CourseEnrollment {
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
   slots            TrainingCourseSlot[]
+  lessonProgress   TrainingLessonProgress[]
 
   @@index([status, createdAt])
   @@index([email])
@@ -3179,5 +3180,60 @@ model TemplateOrder {
   @@index([customerEmail])
   @@index([productId, status])
   @@index([inboundLeadId, status])
+}
+
+enum TrainingTrackId {
+  SHEETS
+  APPSHEET
+  LOOKER
+}
+
+/** Student learning track (Sheets / AppSheet / Looker Studio). */
+model TrainingCourse {
+  id        String          @id @default(cuid())
+  track     TrainingTrackId @unique
+  title     String
+  summary   String
+  sortOrder Int             @default(0)
+  published Boolean         @default(true)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  lessons   TrainingLesson[]
+}
+
+model TrainingLesson {
+  id          String   @id @default(cuid())
+  courseId    String
+  course      TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  slug        String
+  title       String
+  moduleLabel String   @default("")
+  summary     String   @default("")
+  bodyMd      String   @default("")
+  videoUrl    String?
+  embedUrl    String?
+  sortOrder   Int      @default(0)
+  published   Boolean  @default(true)
+  durationMin Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  progress    TrainingLessonProgress[]
+
+  @@unique([courseId, slug])
+  @@index([courseId, sortOrder])
+}
+
+model TrainingLessonProgress {
+  id           String   @id @default(cuid())
+  enrollmentId String
+  enrollment   CourseEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lessonId     String
+  lesson       TrainingLesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completedAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([enrollmentId, lessonId])
+  @@index([enrollmentId])
 }
 

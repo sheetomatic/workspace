@@ -23,6 +23,7 @@ export const footerCompanyLinks = [
   { href: "/contact", label: "Contact" },
   { href: "/career", label: "Careers" },
   { href: "/courses", label: "Courses" },
+  { href: "/learn/login", label: "Student login" },
   { href: "/templates", label: "Templates" },
 ];
 
