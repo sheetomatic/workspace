@@ -186,14 +186,33 @@ export function LeadTrainingSlotsPanel({
                       className="btn-primary btn-sm"
                       disabled={pending}
                       onClick={() => {
+                        const meetUrl = (
+                          meetDraft[enrollment.id] ??
+                          enrollment.meetUrl ??
+                          enrollmentJoin ??
+                          ""
+                        ).trim();
                         startTransition(async () => {
                           setMessage(null);
                           setIsError(false);
+                          if (meetUrl) {
+                            const saved = await saveTrainingMeetUrlAction({
+                              enrollmentId: enrollment.id,
+                              meetUrl,
+                              resend: false,
+                            });
+                            if (!saved.ok) {
+                              setMessage(saved.message);
+                              setIsError(true);
+                              return;
+                            }
+                          }
                           const result = await sendTrainingScheduleWhatsAppAction(
                             enrollment.id,
                           );
                           setMessage(result.message);
                           setIsError(!result.ok);
+                          if (result.ok) reload();
                         });
                       }}
                     >

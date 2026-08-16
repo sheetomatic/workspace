@@ -344,28 +344,59 @@ export async function sendTrainingScheduleOnWhatsApp(enrollmentId: string) {
   });
 }
 
+/** Accept pasted Meet links (spaces, zero-width chars, missing https). */
+export function normalizeTrainingMeetUrl(raw: string | null | undefined): string | null {
+  let value = String(raw ?? "")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .trim();
+  if (!value) return null;
+
+  const extracted = value.match(/https?:\/\/[^\s<>"']+/i)?.[0];
+  if (extracted) {
+    value = extracted;
+  } else if (/^(meet\.google\.com|zoom\.us)\//i.test(value)) {
+    value = `https://${value}`;
+  }
+
+  value = value.replace(/[.,);]+$/g, "").slice(0, 500);
+  if (!/^https:\/\/(meet\.google\.com|zoom\.us)\//i.test(value)) {
+    return null;
+  }
+  return value;
+}
+
 /** Save Meet on enrollment + empty slots, then optionally notify the client. */
 export async function saveTrainingMeetUrl(params: {
   enrollmentId: string;
   organizationId: string;
   meetUrl: string;
 }) {
-  const meetUrl = params.meetUrl.trim().slice(0, 500);
-  if (!meetUrl || !/^https?:\/\//i.test(meetUrl)) {
+  const meetUrl = normalizeTrainingMeetUrl(params.meetUrl);
+  if (!meetUrl) {
     return {
       ok: false as const,
-      message: "Enter a valid Meet URL starting with https://",
+      message: "Enter a valid Google Meet link (https://meet.google.com/…).",
     };
   }
 
-  const enrollment = await prisma.courseEnrollment.findFirst({
-    where: {
-      id: params.enrollmentId,
-      organizationId: params.organizationId,
-    },
-    select: { id: true },
+  const enrollment = await prisma.courseEnrollment.findUnique({
+    where: { id: params.enrollmentId },
+    select: { id: true, organizationId: true, inboundLeadId: true },
   });
   if (!enrollment) {
+    return { ok: false as const, message: "Training enrollment not found." };
+  }
+  const sameOrg = enrollment.organizationId === params.organizationId;
+  const leadInOrg = enrollment.inboundLeadId
+    ? await prisma.inboundLead.findFirst({
+        where: {
+          id: enrollment.inboundLeadId,
+          organizationId: params.organizationId,
+        },
+        select: { id: true },
+      })
+    : null;
+  if (!sameOrg && !leadInOrg) {
     return { ok: false as const, message: "Training enrollment not found." };
   }
 

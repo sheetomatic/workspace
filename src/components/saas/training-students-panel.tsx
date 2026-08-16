@@ -101,13 +101,17 @@ export function TrainingStudentsPanel({
     });
   }
 
-  function onSaveMeetAndSend(enrollmentId: string) {
-    const meetUrl = (meetDraft[enrollmentId] || "").trim();
+  function resolveMeetInput(student: TrainingStudentView) {
+    return (meetDraft[student.id] ?? student.joinUrl ?? "").trim();
+  }
+
+  function onSaveMeetAndSend(student: TrainingStudentView) {
+    const meetUrl = resolveMeetInput(student);
     startTransition(async () => {
       setError(null);
       setNotice(null);
       const result = await saveTrainingMeetUrlAction({
-        enrollmentId,
+        enrollmentId: student.id,
         meetUrl,
         resend: true,
       });
@@ -133,11 +137,23 @@ export function TrainingStudentsPanel({
     });
   }
 
-  function onSendWhatsApp(enrollmentId: string) {
+  function onSendWhatsApp(student: TrainingStudentView) {
     startTransition(async () => {
       setError(null);
       setNotice(null);
-      const result = await sendTrainingScheduleWhatsAppAction(enrollmentId);
+      const meetUrl = resolveMeetInput(student);
+      if (meetUrl) {
+        const saved = await saveTrainingMeetUrlAction({
+          enrollmentId: student.id,
+          meetUrl,
+          resend: false,
+        });
+        if (!saved.ok) {
+          setError(saved.message);
+          return;
+        }
+      }
+      const result = await sendTrainingScheduleWhatsAppAction(student.id);
       if (!result.ok) {
         setError(result.message);
         return;
@@ -232,7 +248,7 @@ export function TrainingStudentsPanel({
                           type="button"
                           className="ws-btn ws-btn-primary training-wa-btn"
                           disabled={pending}
-                          onClick={() => onSendWhatsApp(student.id)}
+                          onClick={() => onSendWhatsApp(student)}
                           title="Send schedule + Google Meet on WhatsApp"
                         >
                           <MessageCircle size={16} aria-hidden />
@@ -309,7 +325,7 @@ export function TrainingStudentsPanel({
                           type="button"
                           className="ws-btn ws-btn-primary"
                           disabled={pending}
-                          onClick={() => onSaveMeetAndSend(student.id)}
+                          onClick={() => onSaveMeetAndSend(student)}
                         >
                           {pending ? "Saving…" : "Save Meet & send WhatsApp"}
                         </button>
