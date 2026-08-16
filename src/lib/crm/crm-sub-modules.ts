@@ -52,7 +52,7 @@ export const CRM_SUB_MODULES = [
     id: "training",
     label: "Training",
     href: "/app/leads/training",
-    description: "Training schedules and enrollments.",
+    description: "Students, schedules, and the curriculum you teach.",
   },
   {
     id: "settings",

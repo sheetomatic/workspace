@@ -3234,6 +3234,10 @@ model TrainingLesson {
   title       String
   moduleLabel String   @default("")
   summary     String   @default("")
+  /** One-line outcome: what the student can do after this lesson. */
+  goal        String   @default("")
+  /** Practice task for the live sheet. */
+  practicePrompt String @default("")
   bodyMd      String   @default("")
   videoUrl    String?
   embedUrl    String?

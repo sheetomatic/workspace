@@ -2,6 +2,7 @@ import {
   TrainingStudentsPanel,
   type TrainingStudentView,
 } from "@/components/saas/training-students-panel";
+import { TrainingTabs } from "@/components/saas/training-tabs";
 import { CrmSubmoduleShell } from "@/components/saas/crm-submodule-shell";
 import "@/components/saas/leads-machine.css";
 import "@/components/saas/training-students-panel.css";
@@ -70,7 +71,7 @@ export default async function CrmTrainingPage() {
   return (
     <CrmSubmoduleShell
       title="Training"
-      description="Student-wise training groups — expand a student to see their sessions."
+      description="Students, live sessions, and the curriculum you teach from this workspace."
       kpis={[
         {
           label: "Students",
@@ -89,6 +90,7 @@ export default async function CrmTrainingPage() {
         },
       ]}
     >
+      <TrainingTabs current="students" />
       <TrainingStudentsPanel
         students={students}
         canManage={hasMinimumRole(user.role, "STAFF")}

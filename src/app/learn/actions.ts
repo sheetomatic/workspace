@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import {
@@ -62,4 +63,5 @@ export async function markLearnLessonDoneAction(formData: FormData) {
     },
     update: { completedAt: new Date() },
   });
+  revalidatePath("/learn/courses");
 }

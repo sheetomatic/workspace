@@ -29,10 +29,16 @@ export default async function LearnHomePage() {
           <LearnNav name={enrollment.name} current="home" />
           <h1>Welcome, {enrollment.name.split(" ")[0] || enrollment.name}</h1>
           <p className="learn-lead">
-            Your training status, live schedule, and class recordings live here.
+            Status and schedule for live classes. Learn is the full course in
+            your trainer&apos;s style. Class files are recordings from each session.
           </p>
 
           <section className="learn-cards">
+            <article className="learn-card">
+              <h2>Learn</h2>
+              <p>Sheets → AppSheet → Looker, written the way your trainer teaches.</p>
+              <Link href="/learn/courses">Open the course</Link>
+            </article>
             <article className="learn-card">
               <h2>Status</h2>
               <p>

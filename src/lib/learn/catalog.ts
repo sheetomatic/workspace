@@ -17,7 +17,7 @@ export type CatalogCourse = {
   lessons: CatalogLesson[];
 };
 
-function slugify(value: string, fallback: string) {
+export function slugifyLessonTitle(value: string, fallback: string) {
   const slug = value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
@@ -123,7 +123,7 @@ export const LEARN_CATALOG: CatalogCourse[] = [
       "From a blank spreadsheet to lookups, QUERY, pivots, Forms, and add-ons. Curriculum from the Sheetomatic training sheet.",
     sortOrder: 1,
     lessons: SHEETS_LESSONS.map((item) => ({
-      slug: slugify(item.title, `lesson-${item.no}`),
+      slug: slugifyLessonTitle(item.title, `lesson-${item.no}`),
       title: `${item.no}. ${item.title}`,
       moduleLabel: item.module,
       summary: item.summary,
@@ -209,7 +209,6 @@ export async function ensureTrainingCatalog() {
           moduleLabel: lesson.moduleLabel,
           summary: lesson.summary,
           sortOrder: index + 1,
-          published: lesson.published !== false,
         },
       });
     }
@@ -232,6 +231,11 @@ export async function listPublishedCourses() {
           moduleLabel: true,
           summary: true,
           sortOrder: true,
+          goal: true,
+          practicePrompt: true,
+          bodyMd: true,
+          videoUrl: true,
+          embedUrl: true,
         },
       },
     },
@@ -257,4 +261,17 @@ export async function getPublishedLesson(track: TrainingTrackId, slug: string) {
   const lesson = course.lessons.find((item) => item.slug === slug) ?? null;
   if (!lesson) return null;
   return { course, lesson, lessons: course.lessons };
+}
+
+/** Full curriculum for the trainer editor, including unpublished lessons. */
+export async function listTrainingCurriculum() {
+  await ensureTrainingCatalog();
+  return prisma.trainingCourse.findMany({
+    orderBy: { sortOrder: "asc" },
+    include: {
+      lessons: {
+        orderBy: { sortOrder: "asc" },
+      },
+    },
+  });
 }
