@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import {
+  LEARN_PORTAL_HEADER,
   REQUEST_PATHNAME_HEADER,
   TENANT_SLUG_HEADER,
 } from "@/lib/tenant-host";
@@ -8,10 +9,12 @@ import {
   isAiAppPath,
   isApiPath,
   isLearnAdminPath,
+  isLearnPortalHostname,
   isLearnPortalPath,
   isStaticAssetPath,
   isWorkspacePath,
   parseHost,
+  requestHostname,
 } from "@/lib/subdomain";
 import { LEARN_ADMIN_HOME } from "@/lib/workspace-auth-links";
 
@@ -260,11 +263,19 @@ function learnLoginUrl(request: NextRequest) {
   return loginUrl;
 }
 
+function withLearnRequest(request: NextRequest) {
+  const headers = new Headers(request.headers);
+  headers.set(LEARN_PORTAL_HEADER, "1");
+  return NextResponse.next({
+    request: { headers },
+  });
+}
+
 function handleLearnPortalHost(request: NextRequest, isLoggedIn: boolean) {
   const { pathname } = request.nextUrl;
 
   if (isApiPath(pathname) || isStaticAssetPath(pathname)) {
-    return NextResponse.next();
+    return withLearnRequest(request);
   }
 
   if (pathname === "/") {
@@ -310,7 +321,10 @@ function handleLearnPortalHost(request: NextRequest, isLoggedIn: boolean) {
   }
 
   const protectedResponse = handleProtectedAppRoutes(request, isLoggedIn);
-  return protectedResponse ?? NextResponse.next();
+  if (protectedResponse) {
+    return protectedResponse;
+  }
+  return withLearnRequest(request);
 }
 
 function handleAiPortalHost(request: NextRequest, isLoggedIn: boolean) {
@@ -410,7 +424,15 @@ function handleTenantHost(
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isLoggedIn = hasSessionCookie(request);
-  const parsedHost = parseHost(request.headers.get("host"));
+  const hostname = requestHostname(
+    request.headers.get("host"),
+    request.headers.get("x-forwarded-host"),
+  );
+  const parsedHost = parseHost(hostname);
+
+  if (isLearnPortalHostname(hostname) || parsedHost.kind === "learn") {
+    return handleLearnPortalHost(request, isLoggedIn);
+  }
 
   if (parsedHost.kind === "workspace") {
     return handleWorkspacePortalHost(request, isLoggedIn);
@@ -418,10 +440,6 @@ export function middleware(request: NextRequest) {
 
   if (parsedHost.kind === "ai") {
     return handleAiPortalHost(request, isLoggedIn);
-  }
-
-  if (parsedHost.kind === "learn") {
-    return handleLearnPortalHost(request, isLoggedIn);
   }
 
   if (parsedHost.kind === "tenant" && parsedHost.tenantSlug) {

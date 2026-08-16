@@ -6,6 +6,8 @@ import { prisma } from "@/lib/db";
 import type { DashboardPayload } from "@/lib/dashboard-types";
 import { getWidgetDashboardData } from "@/lib/dashboard/widgets";
 import { requireSession } from "@/lib/require-session";
+import { isLearnPortalRequest } from "@/lib/tenant-host";
+import { LEARN_ADMIN_HOME } from "@/lib/workspace-auth-links";
 import { hasWorkspaceModule, resolveWorkspaceHomeHref } from "@/lib/workspace-modules";
 import { getUserDashboard } from "@/lib/workspace-data";
 import { parseWorkspaceNavPrefs } from "@/lib/workspace-nav-prefs";
@@ -150,6 +152,10 @@ async function DashboardHome({
 }
 
 export default async function AppDashboardPage() {
+  if (await isLearnPortalRequest()) {
+    redirect(LEARN_ADMIN_HOME);
+  }
+
   const user = await requireSession();
   const home = resolveWorkspaceHomeHref(user);
 

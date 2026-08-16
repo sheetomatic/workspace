@@ -2,11 +2,17 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { SessionUser } from "@/lib/auth";
 import { isDedicatedClientPortal } from "@/lib/dedicated-client-portals";
-import { parseHost, type HostKind } from "@/lib/subdomain";
+import {
+  isLearnPortalHostname,
+  parseHost,
+  requestHostname,
+  type HostKind,
+} from "@/lib/subdomain";
 import { tenantPortalOrigin } from "@/lib/workspace-auth-links";
 
 export const TENANT_SLUG_HEADER = "x-tenant-slug";
 export const REQUEST_PATHNAME_HEADER = "x-pathname";
+export const LEARN_PORTAL_HEADER = "x-learn-portal";
 
 function requestProtocol(headerStore: Headers) {
   const forwarded = headerStore.get("x-forwarded-proto")?.split(",")[0]?.trim();
@@ -33,13 +39,28 @@ export async function getRequestTenantSlug() {
   return null;
 }
 
+function hostnameFromHeaders(headerStore: Headers) {
+  return requestHostname(
+    headerStore.get("host"),
+    headerStore.get("x-forwarded-host"),
+  );
+}
+
 export async function getRequestHostKind(): Promise<HostKind> {
   const headerStore = await headers();
-  return parseHost(headerStore.get("host")).kind;
+  const hostname = hostnameFromHeaders(headerStore);
+  if (isLearnPortalHostname(hostname)) {
+    return "learn";
+  }
+  return parseHost(hostname).kind;
 }
 
 export async function isLearnPortalRequest() {
-  return (await getRequestHostKind()) === "learn";
+  const headerStore = await headers();
+  if (headerStore.get(LEARN_PORTAL_HEADER) === "1") {
+    return true;
+  }
+  return isLearnPortalHostname(hostnameFromHeaders(headerStore));
 }
 
 /** Current path + query for tenant-host redirects (set by middleware on tenant rewrites). */

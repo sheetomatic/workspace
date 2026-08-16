@@ -42,13 +42,34 @@ function classifySubdomain(subdomain: string, hostname: string): ParsedHost {
   return { kind: "tenant", hostname, tenantSlug: subdomain };
 }
 
+/** First label of the public host — Vercel often sends x-forwarded-host. */
+export function requestHostname(
+  host?: string | null,
+  forwardedHost?: string | null,
+) {
+  const raw = (forwardedHost || host || "").split(",")[0]?.trim().toLowerCase() ?? "";
+  return raw.split(":")[0] ?? "";
+}
+
+export function isLearnPortalHostname(hostname: string) {
+  return (
+    hostname === "learn.localhost" ||
+    hostname === "training.localhost" ||
+    hostname.startsWith("learn.") ||
+    hostname.startsWith("training.")
+  );
+}
+
 /** Parse the request Host header into marketing, workspace, AI, or tenant context. */
 export function parseHost(host: string | null | undefined): ParsedHost {
-  const raw = host?.trim().toLowerCase() ?? "";
-  const hostname = raw.split(":")[0] ?? "";
+  const hostname = requestHostname(host);
 
   if (!hostname) {
     return { kind: "marketing", hostname: "" };
+  }
+
+  if (isLearnPortalHostname(hostname)) {
+    return { kind: "learn", hostname };
   }
 
   if (
