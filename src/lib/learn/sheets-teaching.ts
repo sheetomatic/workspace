@@ -1,0 +1,361 @@
+import { MSME_FIRM } from "@/lib/learn/msme-workbook";
+
+export type SheetsTeachingPack = {
+  no: number;
+  goal: string;
+  practicePrompt: string;
+  bodyMd: string;
+};
+
+const FIRM = MSME_FIRM.name;
+
+export const SHEETS_TEACHING: SheetsTeachingPack[] = [
+  {
+    no: 1,
+    goal: `You know how this 1:1 track is run — one shop file (${FIRM}), not 58 loose demos.`,
+    practicePrompt: "Download the Kailash workbook. Open HowTo, then click every tab once. Do not edit yet. Just see Sales is fat and Products is short.",
+    bodyMd: `I do not teach Sheets as a list of functions. I teach one business file.\n\n${FIRM} in Tatibandh is a real-shaped electrical shop: wire, MCB, LED, fans. Sales has a thousand-plus lines. That is the point. A 12-row demo never shows why VLOOKUP or a pivot is needed.\n\nWe will keep coming back to the same tabs. If you make a new file for every topic, you will forget it by Sunday.`,
+  },
+  {
+    no: 2,
+    goal: "You can make a clean shop file: name, tabs, and no 'Sheet1' left behind.",
+    practicePrompt: "File → New. Rename it Kailash-Practice-YourName. Add tabs Products, Sales, Dashboard. Delete Sheet1. Freeze row 1 on each tab.",
+    bodyMd: "Ramesh's old file was Book1, Sheet1, Sheet2. Staff could not find the rate list. First job is always naming. One file per shop. Tab names like the counter: Products, Sales, Payments. Freeze the header or the first scroll loses the column names and people type in the wrong place.",
+  },
+  {
+    no: 3,
+    goal: "You can pull a Tally / Excel dump into Sheets without shifting columns.",
+    practicePrompt: "In the workbook, File → Import is what we do in class. For now open DirtyImport. That is how WhatsApp and Tally arrive — extra spaces, mixed case, blank qty.",
+    bodyMd: "Never copy-paste a CSV into A1 if the shop already has a header. Import → Append or Import → Replace only the DirtyImport tab. Check whether phone numbers stayed text. If Sheets ate the leading 0, the column was formatted as number. We fix that before any formula.",
+  },
+  {
+    no: 4,
+    goal: "You can send a PDF bill list to a CA and an Excel copy to the owner without breaking formulas.",
+    practicePrompt: "On Dashboard, File → Download → PDF (current sheet). Then Download → Excel. Open the Excel and see which formulas survived.",
+    bodyMd: "Owner wants PDF on WhatsApp. CA wants Excel. If you PDF the whole workbook they get HowTo and DirtyImport too — looks careless. Print only Dashboard or GST. When you export Excel, tell them Dashboard will show values; some SPARKLINE charts look different in Excel. That is normal.",
+  },
+  {
+    no: 5,
+    goal: "You can publish a read-only dashboard link for a partner who should not edit rates.",
+    practicePrompt: "In Google Sheets: File → Share → Publish to web → Dashboard tab only. Keep Products unpublished.",
+    bodyMd: "Publishing the whole file is how a competitor gets your rate list. Publish one tab. Partners get a link. They cannot break VLOOKUP. If the link must die, unpublish. Do not use 'anyone editor' for a published page.",
+  },
+  {
+    no: 6,
+    goal: "You can move in a fat Sales tab without touching the mouse for every row.",
+    practicePrompt: "On Sales: Ctrl+Down from A2, Ctrl+Shift+Right, then Ctrl+Backspace to jump back to A1. Repeat until it is muscle memory.",
+    bodyMd: "A thousand rows. If you scroll with the bar you will waste the class. Ctrl+Down, Ctrl+Shift+End, Alt+Enter inside a cell. I use shortcuts because the shop owner is standing behind you. Speed looks like competence.",
+  },
+  {
+    no: 7,
+    goal: "You can hide cost columns from counter staff and still keep them for yourself.",
+    practicePrompt: "On Products, group columns Rate and GST. Hide Rack. Show them again. Do not delete.",
+    bodyMd: "Staff need item name and stock. They do not need landing cost. Hide or group — never delete. Deleted columns break VLOOKUP months later when you 'just clean the file'.",
+  },
+  {
+    no: 8,
+    goal: "You can lock Products so a salesman cannot change 16A MCB from 118 to 99.",
+    practicePrompt: "Data → Protect sheets and ranges. Protect Products!A:G. Allow only your login to edit. Leave Sales unlocked.",
+    bodyMd: "Every rate fight in this shop starts with someone editing the master. Protect Products. Sales can still look up. If they need a special rate, that is a typed rate on the bill — Practice column D — not a silent change on the master.",
+  },
+  {
+    no: 9,
+    goal: "You can filter Raipur overdue bills without ruining Pooja's view.",
+    practicePrompt: "On Sales create a filter view named Overdue-Raipur. Filter Status=Overdue and City=Raipur. Close it. The main sheet should look unchanged.",
+    bodyMd: "Filter (the green funnel) changes the sheet for everyone. Filter view is yours. In a shared shop file this is the difference between helping and fighting. Name the view. Do not leave a filter on when you close the laptop.",
+  },
+  {
+    no: 10,
+    goal: "You can clean a dirty import without rewriting names by hand.",
+    practicePrompt: "DirtyImport column A: add TRIM helper in F. Data → Data cleanup → Cleanup suggestions. Accept only trailing spaces. Do not auto-merge names.",
+    bodyMd: "Cleanup suggestions will happily merge two different Sahus. I accept spaces and dates. I do not accept 'merge similar'. After that TRIM + PROPER on a helper column, then paste values. Never cleanup on the only copy.",
+  },
+  {
+    no: 11,
+    goal: "You can force Status and City to a list so reports stop breaking.",
+    practicePrompt: "Sales Status: Data → Validation → list Paid, Partial, Overdue. City: list from Customers city unique. Try typing 'paid ' with a space — it should reject.",
+    bodyMd: "COUNTIF dies when one row says Paid and one says paid and one says PAID . Validation is cheaper than fixing 200 rows later. Same for City. Raipur vs RAIPUR vs Raipur  is how dashboards lie.",
+  },
+  {
+    no: 12,
+    goal: "You get a mail when someone edits Products after 8 pm.",
+    practicePrompt: "Tools → Notification rules on Products. Any change, email daily digest. Not 'every change instantly' or you will mute it.",
+    bodyMd: "Instant mail on a busy Sales tab is noise. Products is small. If it changes at night, I want to know. Sales can be a daily digest. Turn rules off before a bulk import or you will get 800 mails.",
+  },
+  {
+    no: 13,
+    goal: "You can argue on a cell without overwriting the number.",
+    practicePrompt: "On Products KE-MCB-16 rate, add a comment: 'Keep 118. Special rate only on the bill.' Assign it to yourself. Resolve after reading.",
+    bodyMd: "Notes sit on the cell and print. Comments are the conversation. Owners type over formulas when they 'discuss' in the cell. Comment thread. Then leave the formula alone.",
+  },
+  {
+    no: 14,
+    goal: "You know what still works on the shop PC when Jio is down.",
+    practicePrompt: "Install Drive for desktop or enable Sheets offline on this Google account. Open the workbook once while online. Then toggle airplane mode and edit one Practice cell.",
+    bodyMd: "Tatibandh power cut + bad data is common. Offline edit is fine. IMPORTRANGE and GOOGLEFINANCE are not. Tell the student: billing can go offline, dashboard refresh waits for the line.",
+  },
+  {
+    no: 15,
+    goal: "You can share Dashboard as viewer and keep Products restricted.",
+    practicePrompt: "Share the file: viewer for a dummy partner mail. Then Protect Products. Confirm they can see Dashboard numbers but cannot edit Rate.",
+    bodyMd: "Anyone-with-link editor is how a rate list leaks. Viewer on the file, or a published Dashboard tab. Accountant gets editor on GST and Payments only if you trust them. Write it down in HowTo.",
+  },
+  {
+    no: 16,
+    goal: "You can build a bill label the counter can read: code | name.",
+    practicePrompt: "Practice column H already has TEXTJOIN. Write the same idea on a new column: A2 & \" - \" & B2. Then TEXTJOIN for three fields. Compare.",
+    bodyMd: "CONCATENATE is old. & is what I type on a live call. TEXTJOIN is when you have optional GSTIN and do not want leftover pipes. Shop labels, WhatsApp lines, folder names — this is the job, not exam tricks.",
+  },
+  {
+    no: 17,
+    goal: "You can count bills, blank GSTINs, and empty qty without a pivot.",
+    practicePrompt: "On Customers: COUNTA names, COUNTBLANK GSTIN. On DirtyImport: COUNT qty, COUNTBLANK qty. Write the four answers on HowTo.",
+    bodyMd: "COUNT only counts numbers. COUNTA counts anything. COUNTBLANK is the GSTIN hole. If you COUNT a text invoice number you get 0 and think there are no bills. That mistake has happened in this room.",
+  },
+  {
+    no: 18,
+    goal: "You can catch a phone number that is too short before it goes to WhatsApp.",
+    practicePrompt: "Customers phone: =LEN(D2). Filter LEN <> 10. Fix two rows. Do not use this as the final phone — it is a check.",
+    bodyMd: "Indian mobile is 10 digits after we strip +91. LEN tells you the dump is dirty. Combined with VALUE/RIGHT later. First just see the mess.",
+  },
+  {
+    no: 19,
+    goal: "You can strip the spaces that break VLOOKUP.",
+    practicePrompt: "DirtyImport A: =TRIM(A2) in F, fill down, paste values back. Then try VLOOKUP of a trimmed name — it should start matching.",
+    bodyMd: "VLOOKUP does not forgive a trailing space. TRIM is the first formula I write on any client dump. Do it on a helper column. Paste values. Then delete the helper. If you TRIM inside the VLOOKUP every row, the file gets slow and nobody can audit it.",
+  },
+  {
+    no: 20,
+    goal: "You can turn KE-MCB-16 / KE_MCB_16 into one code.",
+    practicePrompt: "On a helper: SUBSTITUTE(A2,\"_\",\"-\"). Then SUBSTITUTE again for spaces. Products codes must stay one style.",
+    bodyMd: "Tally exports underscores. The shop types dashes. Lookup fails, they say Sheets is wrong. Standardise the code. I pick dash and I stick to it.",
+  },
+  {
+    no: 21,
+    goal: "You can make customer names look like a register, not a WhatsApp chat.",
+    practicePrompt: "DirtyImport: =PROPER(TRIM(A2)). Spot the row where PROPER ruins GSTIN or MCB. That is why we do not PROPER the whole file.",
+    bodyMd: "PROPER is for people names. It will turn MCB into Mcb and GSTIN into Gstin. Column by column. Names yes. Item codes no.",
+  },
+  {
+    no: 22,
+    goal: "You can age a bill from today without typing today's date.",
+    practicePrompt: "Ageing tab already uses TODAY and DAYS. Change a bill date and watch the bucket move. Do not type 16-08-2026 in the formula.",
+    bodyMd: "If you type the date, the file is stale tomorrow. TODAY() is the shop clock. Ageing buckets 0-7, 8-15, 16-30, 30+ — that is how Ramesh chases credit. We build it here, then the dashboard only reads it.",
+  },
+  {
+    no: 23,
+    goal: "You can stamp when a row was last touched.",
+    practicePrompt: "Add a Note column on Practice. Explain why NOW() in a cell keeps changing every edit — and why we paste values for a real log.",
+    bodyMd: "NOW() is live. Good for 'as of'. Bad for an audit log. For a log I use a script or paste values at save. I still teach NOW so they know why the timestamp jumps.",
+  },
+  {
+    no: 24,
+    goal: "You can split a bill date into month and year for a GST sheet.",
+    practicePrompt: "On Sales, helper columns: =YEAR(B2), =MONTH(B2). Then SUMIFS taxable where year=2026 and month=8.",
+    bodyMd: "GST is a month problem. YEAR/MONTH/DATE let you build the period without text like 'Aug-26' that breaks sorts. DATE(2026,8,1) is how Dashboard pins 'this month'.",
+  },
+  {
+    no: 25,
+    goal: "You can say how many days a customer has been on credit.",
+    practicePrompt: "Ageing: DATEDIF(B2,TODAY(),\"D\") next to DAYS. Same answer. Then try \"M\" for months on a 2025 bill.",
+    bodyMd: "DATEDIF is the odd one that Sheets still uses for year/month age. DAYS is cleaner for bill ageing. I show both so they are not scared when an old file has DATEDIF.",
+  },
+  {
+    no: 26,
+    goal: "You can compute days late with one function.",
+    practicePrompt: "Ageing column E is DAYS(TODAY(), date). Find a 30+ row. That is the call list for Monday.",
+    bodyMd: "DAYS is the one I keep on the ageing sheet. Simple. If it is negative, the bill date is in the future — data error, not a miracle.",
+  },
+  {
+    no: 27,
+    goal: "Overdue rows turn red without anyone painting them.",
+    practicePrompt: "Sales Status column: Format → Conditional formatting → text is exactly Overdue → light red. Qty blank on DirtyImport → yellow.",
+    bodyMd: "Do not colour by hand. Next import wipes it. Rule on the whole column. Three colours max or the sheet looks like a festival and nobody reads it.",
+  },
+  {
+    no: 28,
+    goal: "You can copy a clean Products tab into a new client's file.",
+    practicePrompt: "Right-click Products → Copy to → New spreadsheet. Name it Kailash-Products-Master. This is how a template leaves the training file.",
+    bodyMd: "I keep a master Products. Each new shop gets a copy, not a fresh type-out. Copy to existing spreadsheet when the client already has Sales and you are only giving them the rate list.",
+  },
+  {
+    no: 29,
+    goal: "You can format Sales as a table-like range that sorts with the header locked.",
+    practicePrompt: "Sales A1:N1 bold, freeze. Create a named range SalesData = Sales!A1:N. Sort by Date. Header must stay.",
+    bodyMd: "Sheets is not Excel Tables, but a named range plus freeze is what I use for MSME files. Later QUERY and pivots eat SalesData. If the header sorts into row 40, the class failed.",
+  },
+  {
+    no: 30,
+    goal: "You can split a 'Name | City' cell and pick the city.",
+    practicePrompt: "Make a helper: =SPLIT(H2,\"|\") on a Practice label. Then INDEX(SPLIT(H2,\"|\"),1,2) for the city piece.",
+    bodyMd: "WhatsApp dumps come as one cell. SPLIT makes columns. INDEX picks the nth piece when you do not want all of them. This is also how we steal the last part of a SKU.",
+  },
+  {
+    no: 31,
+    goal: "You can pull item name and list rate from Products onto a bill line.",
+    practicePrompt: "Practice A is item code. Column B and C are VLOOKUP. Break C2 by pointing at the wrong column index. Fix it. Then write one VLOOKUP yourself on a blank column.",
+    bodyMd: "This is the spine of the shop file. Sales should not store the official rate if Products already has it. VLOOKUP(code, Products!A:D, 4, FALSE). FALSE or you will match the wrong MCB. Approximate match has no place on a rate list.",
+  },
+  {
+    no: 32,
+    goal: "You understand HLOOKUP and why I almost never use it on shop files.",
+    practicePrompt: "Make a tiny GST slab row: 12 | 18 across a header. HLOOKUP(18, that row, 1, FALSE). Then say out loud why Products is a column list, not a row.",
+    bodyMd: "HLOOKUP reads a header row. Rate lists grow down, not across. I teach it so they are not stuck in an old CA file. Then we go back to VLOOKUP/XLOOKUP.",
+  },
+  {
+    no: 33,
+    goal: "You can find KE-MCB when the bill says only MCB-16.",
+    practicePrompt: "VLOOKUP(\"*MCB-16*\", Products!B:D, 1, FALSE) on a helper — see why wildcards need the name column and still fail if two MCBs match.",
+    bodyMd: "Wildcard VLOOKUP is a last resort. Better to clean the code. I show it for Tally names like 'MCB 16A SP'. If two rows match, it returns the first and you will bill the wrong rate. That is why we still fix the code.",
+  },
+  {
+    no: 34,
+    goal: "You can look up rate when the code is not in column A.",
+    practicePrompt: "Pretend Products code is in column G. INDEX(D:D, MATCH(A2, G:G, 0)). Same answer as VLOOKUP when the layout is normal.",
+    bodyMd: "VLOOKUP cannot look left. INDEX/MATCH can. When a client file has name first and code on the right, this is the way. MATCH must be 0 for exact.",
+  },
+  {
+    no: 35,
+    goal: "You can replace VLOOKUP with XLOOKUP and pull GST in one go.",
+    practicePrompt: "Practice column F is XLOOKUP for GST %. Write XLOOKUP for min stock from Products. If the code is missing, return \"NO CODE\".",
+    bodyMd: "XLOOKUP is what I use on new files. It can look left, it can return a blank instead of #N/A, and you can read it in English: look this code in A, return E. Old Excel on a CA laptop may not have it — then VLOOKUP.",
+  },
+  {
+    no: 36,
+    goal: "One formula fills GST amount for the whole Practice list.",
+    practicePrompt: "In Practice G2 we already have a row formula. In G1 put ARRAYFORMULA(IF(A2:A=\"\",\"\",D2:D*F2:F/100)) and delete the per-row formulas below. Check the last row still works.",
+    bodyMd: "ARRAYFORMULA is how a shop file stays honest when they add 50 lines tomorrow. Teach it after VLOOKUP or they will array a broken lookup across 2000 rows and freeze the file.",
+  },
+  {
+    no: 37,
+    goal: "You can pull Products from a second workbook with IMPORTRANGE.",
+    practicePrompt: "Copy Products to a new file. In the training file, on a new tab: IMPORTRANGE(\"that-url\",\"Products!A:G\"). Allow access. Point one VLOOKUP at this import.",
+    bodyMd: "This is the two-file setup: owner keeps Products in a private book, billing file only imports. First time Sheets asks permission. If it breaks, someone changed the tab name. I write the tab name in HowTo.",
+  },
+  {
+    no: 38,
+    goal: "You can make a live overdue list without a pivot.",
+    practicePrompt: "=FILTER(Sales!A:N, Sales!N:N=\"Overdue\", Sales!K:K=\"Raipur\"). Put it on a new tab. Change a Sales status and watch the list move.",
+    bodyMd: "FILTER is the live register. Pivot is the meeting report. I use FILTER for 'what do I chase today'. Sort the result by total if you want the fat bills on top.",
+  },
+  {
+    no: 39,
+    goal: "City dropdown first, then only customers of that city.",
+    practicePrompt: "Cell P1: city validation from CITIES. P2: validation =FILTER(Customers!B:B, Customers!C:C=P1). Pick Bhilai, then only Bhilai names.",
+    bodyMd: "Dependent dropdown is how a bill form stops Raipur customers on a Bhilai invoice. First list unique cities. Second FILTER on that city. If they type the name, validation should reject. This is the start of a small billing system.",
+  },
+  {
+    no: 40,
+    goal: "You can write a QUERY that the owner can read like English.",
+    practicePrompt: "Dashboard already has a QUERY for overdue by salesman. Change it to Paid and Bilaspur only. If it errors, you dropped a quote.",
+    bodyMd: "QUERY is the closest thing to a cheap database inside Sheets. select, where, group by. I do not teach every clause. I teach one overdue-by-salesman and one monthly GST. That covers 80% of MSME meetings.",
+  },
+  {
+    no: 41,
+    goal: "A missing item code shows a blank or 'NO CODE', not #N/A on a customer PDF.",
+    practicePrompt: "On Practice, put a fake code ZZ-1 in A. Wrap the VLOOKUP with IFERROR(...,\"NO CODE\"). IFNA if you only want to catch #N/A.",
+    bodyMd: "A customer facing sheet with #N/A looks like the file is broken. IFERROR hides everything — even a typo in your formula. I prefer IFNA on lookups. IFERROR on GST math when divide-by-zero is possible.",
+  },
+  {
+    no: 42,
+    goal: "You can flag a row if it is Overdue or Partial.",
+    practicePrompt: "=OR(N2=\"Overdue\",N2=\"Partial\") on Sales. Filter TRUE. That is the follow-up pile.",
+    bodyMd: "OR is the follow-up pile. Not only Overdue. Partial is how shops forget the balance. Keep it boring and visible.",
+  },
+  {
+    no: 43,
+    goal: "You can flag Raipur + Overdue together.",
+    practicePrompt: "=AND(K2=\"Raipur\",N2=\"Overdue\"). Count TRUE with COUNTIF. That is Monday's Raipur round.",
+    bodyMd: "AND is a route plan. City and status. Later we add salesman. This is how a sheet becomes a system instead of a dump.",
+  },
+  {
+    no: 44,
+    goal: "You can mark REORDER on Stock without reading every row.",
+    practicePrompt: "Stock column G already has IF(closing < min,\"REORDER\",\"ok\"). Drop KE-MCB-16 closing below min and watch the flag.",
+    bodyMd: "IF is the shop alarm. I use it on stock, on credit days, on GST missing. One condition. When they nest five IFs I stop them and we write IFS or a table.",
+  },
+  {
+    no: 45,
+    goal: "You can bucket ageing without nested IFs.",
+    practicePrompt: "Ageing column F is IFS. Add a 45+ bucket. Check a 2025 bill falls there.",
+    bodyMd: "IFS reads top to bottom. First true wins. Put the tight buckets first. This is the ageing report I actually leave with clients.",
+  },
+  {
+    no: 46,
+    goal: "You can express shop rules: overdue OR (credit and Raipur).",
+    practicePrompt: "=IF(OR(N2=\"Overdue\",AND(M2=\"Credit\",K2=\"Raipur\")),\"CHASE\",\"ok\"). Test four rows. If it feels twisted, split into helper columns.",
+    bodyMd: "IF-OR / IF-AND is where people get clever and the file dies. I allow one nested line. After that, helper columns named ChaseCity and ChaseStatus. The owner must be able to read it next April.",
+  },
+  {
+    no: 47,
+    goal: "You can total taxable for Bhilai and for August without a pivot.",
+    practicePrompt: "Dashboard city SUMIF is already there. Write SUMIFS for Raipur + Overdue on a blank cell. Then August 2026 using date bounds.",
+    bodyMd: "SUMIF is one condition. SUMIFS is the monthly GST and the city meeting. This is the dashboard before charts. If SUMIFS is wrong, check City validation — Raipur vs RAIPUR.",
+  },
+  {
+    no: 48,
+    goal: "You can count overdue bills per salesman.",
+    practicePrompt: "COUNTIF Status Overdue. COUNTIFS salesman Amit and Overdue. Match the QUERY on Dashboard.",
+    bodyMd: "COUNTIFS is the scoreboard. How many bills, not how much money. Owners mix the two and fight. Write both: count and sum, labelled.",
+  },
+  {
+    no: 49,
+    goal: "You know GOOGLEFINANCE is for metal/FX demos, not for Kailash daily billing.",
+    practicePrompt: "=GOOGLEFINANCE(\"CURRENCY:USDINR\") on a scratch cell. Note it needs internet. Do not put it on Sales.",
+    bodyMd: "I show this once. Copper and dollar talk in a class. It does not belong on an MSME bill file. Offline it dies. Keep it off the shop dashboard.",
+  },
+  {
+    no: 50,
+    goal: "You can put a tiny bar in the city table so the fat city is obvious.",
+    practicePrompt: "Dashboard sparkline column already reads city totals. Change charttype to column. Then put it back to bar.",
+    bodyMd: "SPARKLINE is the cheap chart inside the table. Good for city mix. Not a replacement for a proper chart on a client slide. If MAX of the range is 0, the bar vanishes — usually a SUMIF city typo.",
+  },
+  {
+    no: 51,
+    goal: "You can build a pivot: City × Status, sum of Total, from the fat Sales tab.",
+    practicePrompt: "Insert → Pivot table from Sales A:N. Rows City, Columns Status, Values SUM of Total. Filter out blank city. Screenshot it for yourself.",
+    bodyMd: "This is the meeting sheet. I do not start with charts. Pivot first. If City is dirty, the pivot grows junk rows — go back to validation. One pivot per question. Do not stack five metrics until they can explain one.",
+  },
+  {
+    no: 52,
+    goal: "You can add GST% of taxable as a calculated field on the pivot.",
+    practicePrompt: "On the city pivot, add a calculated field GSTShare = GST amt / Taxable. Format percent. Check 12% lighting vs 18% switchgear mix.",
+    bodyMd: "Calculated fields are for ratios. Not for things already on the row. If they can SUMIFS it, I still show the pivot field so the owner can slice. Name the field like a human: GST share, not Calc1.",
+  },
+  {
+    no: 53,
+    goal: "You can make one client-ready chart: monthly taxable, no 3D, no rainbow.",
+    practicePrompt: "From a YEAR-MONTH helper on Sales, a column chart of taxable. Title: Kailash Electricals — taxable by month. Remove the legend if there is one series.",
+    bodyMd: "One colour. No 3D. Title has the shop name. This is what goes on WhatsApp to a partner. If the chart is from the raw 1600 rows without a monthly helper, Sheets will plot noise. Helper first, chart second.",
+  },
+  {
+    no: 54,
+    goal: "You can put a slicer on City so the pivot and chart move together.",
+    practicePrompt: "On the pivot sheet: Data → Slicer → City. Click Bhilai. Pivot and any chart on that data should follow. Add a second slicer for Salesman only if the first one is clear.",
+    bodyMd: "Slicer is how a non-Sheets owner uses the file in a meeting. They will not edit QUERY. They will poke Bhilai. Connect slicer to the pivot. Tell them one click, then look at the number — do not click five cities and forget.",
+  },
+  {
+    no: 55,
+    goal: "You can build a field-order form that does not accept poetry in the qty box.",
+    practicePrompt: "Forms → Item code (short), Qty (number), City (dropdown). Description: Kailash counter slip. Do not add 20 questions.",
+    bodyMd: "A form is a gate. Short. Dropdowns from the same lists as the sheet. If qty is a paragraph, the sheet dies. This is how counter staff who fear Sheets still feed the system.",
+  },
+  {
+    no: 56,
+    goal: "Form answers land on a tab you can QUERY like Sales.",
+    practicePrompt: "Link the form to this workbook, new tab FormIn. Add a column Status default New. Write a FILTER of today's rows.",
+    bodyMd: "The form tab is raw. Do not pretty it. Another tab reads it. Same pattern as DirtyImport → Sales. If you format the form tab heavily, the next response shifts columns and you will spend Sunday fixing it.",
+  },
+  {
+    no: 57,
+    goal: "You know when Form Mule is worth it: reminder mails from the ageing list.",
+    practicePrompt: "Write three columns on Ageing: To (dummy mail), Subject, Body using TEXTJOIN. That is the merge. Install Form Mule only if the shop actually sends mail.",
+    bodyMd: "Most Kailash-type shops chase on WhatsApp, not Gmail. I still show Form Mule because some distributors want a proper mail. Merge from a clean sheet, not from Sales with 1600 rows unfiltered. Filter 30+ first.",
+  },
+  {
+    no: 58,
+    goal: "A new form row can ping the owner without you sitting on the file.",
+    practicePrompt: "On FormIn (or DirtyImport as a stand-in): Tools → Notification rules → a new row is added. Daily digest. Write in HowTo who owns that mail.",
+    bodyMd: "This is the last mile of a small system: data in, alarm out. Not a full ERP. A shop that gets one mail when a field order arrives will use the form. If you notify on every Sales edit, they will ignore you. Be stingy with alarms.",
+  },
+];

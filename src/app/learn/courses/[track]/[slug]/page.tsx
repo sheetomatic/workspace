@@ -6,6 +6,8 @@ import { LearnNav } from "@/components/learn/learn-nav";
 import { markLearnLessonDoneAction } from "@/app/learn/actions";
 import { getPublishedLesson, parseTrainingTrack, TRACK_LABEL } from "@/lib/learn/catalog";
 import { requireStudent } from "@/lib/learn/require";
+import { LearnWorkbookBar } from "@/components/learn/learn-workbook-bar";
+import { learnMsmeCopyUrl } from "@/lib/learn/msme-sheet";
 import { prisma } from "@/lib/db";
 import "@/components/learn/learn-panel.css";
 
@@ -50,6 +52,7 @@ export default async function LearnLessonPage({
           </p>
           <h1>{lesson.title}</h1>
           <p className="learn-lead">{lesson.summary}</p>
+          <LearnWorkbookBar copyUrl={learnMsmeCopyUrl()} />
 
           <LearnLessonBody
             goal={lesson.goal}

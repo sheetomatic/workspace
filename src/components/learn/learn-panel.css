@@ -273,6 +273,38 @@
   color: #0f766e;
 }
 
+.learn-workbook-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.85rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #99f6e4;
+  border-radius: 14px;
+  background: #f0fdfa;
+}
+
+.learn-workbook-bar strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #115e59;
+}
+
+.learn-workbook-bar span {
+  display: block;
+  max-width: 42rem;
+  color: #134e4a;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.learn-workbook-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
 .learn-teach p,
 .learn-teach pre {
   margin: 0;

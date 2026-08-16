@@ -9,6 +9,7 @@ import {
 } from "@/app/app/leads/training-content-actions";
 import { TRACK_LABEL } from "@/lib/learn/catalog";
 import { lessonHasTeachingContent } from "@/lib/learn/media";
+import { MSME_FIRM } from "@/lib/learn/msme-workbook";
 
 export type CurriculumLessonView = {
   id: string;
@@ -37,10 +38,12 @@ export function TrainingCurriculumPanel({
   courses,
   canManage,
   initialLessonId,
+  copyUrl,
 }: {
   courses: CurriculumCourseView[];
   canManage: boolean;
   initialLessonId?: string;
+  copyUrl?: string | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -93,6 +96,34 @@ export function TrainingCurriculumPanel({
     <div className="training-curriculum">
       {error ? <p className="training-banner is-error">{error}</p> : null}
       {notice ? <p className="training-banner is-ok">{notice}</p> : null}
+
+      {course.track === "SHEETS" ? (
+        <aside className="training-workbook-bar">
+          <div>
+            <strong>Practice workbook — {MSME_FIRM.name}</strong>
+            <span>
+              Big MSME file: 1,000+ sales lines, lookups, dashboard, ageing,
+              GST. Students copy this, then each topic applies a formula on the
+              same shop.
+            </span>
+          </div>
+          <div>
+            {copyUrl ? (
+              <a
+                className="ws-btn ws-btn-primary"
+                href={copyUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Copy to Google Sheets
+              </a>
+            ) : null}
+            <a className="ws-btn ws-btn-primary" href="/api/learn/samples/workbook">
+              Download Excel — open in Google Sheets
+            </a>
+          </div>
+        </aside>
+      ) : null}
 
       <div className="training-track-switch">
         {courses.map((item) => (
