@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { MarketingPage, SiteFooter, SiteHeader } from "@/app/components";
 import { LearnNav } from "@/components/learn/learn-nav";
+import { LearnPageShell } from "@/components/learn/learn-page-shell";
 import { LearnSessionMaterials } from "@/components/learn/learn-session-materials";
 import { requireStudent } from "@/lib/learn/require";
 import { formatSlotWhen } from "@/lib/courses/slots";
@@ -22,8 +22,7 @@ export default async function LearnHomePage() {
     null;
 
   return (
-    <MarketingPage>
-      <SiteHeader />
+    <LearnPageShell>
       <main className="learn-shell">
         <div className="learn-wide">
           <LearnNav name={enrollment.name} current="home" />
@@ -88,7 +87,6 @@ export default async function LearnHomePage() {
           </section>
         </div>
       </main>
-      <SiteFooter />
-    </MarketingPage>
+    </LearnPageShell>
   );
 }

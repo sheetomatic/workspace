@@ -6,6 +6,7 @@ import type { CrmModuleNavCounts } from "@/lib/leads/crm-module-stats-types";
 import { withDbRetry } from "@/lib/db";
 import { requireSession } from "@/lib/require-session";
 import { getEffectiveCrmSubModulesForUser } from "@/lib/crm/crm-access";
+import { isLearnPortalRequest } from "@/lib/tenant-host";
 
 const EMPTY_COUNTS: CrmModuleNavCounts = {
   leads: 0,
@@ -24,7 +25,20 @@ export default async function LeadsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await requireSession(undefined, { module: "CRM" });
+  const learnPortal = await isLearnPortalRequest();
+  const user = await requireSession(
+    undefined,
+    learnPortal ? undefined : { module: "CRM" },
+  );
+  if (learnPortal) {
+    return (
+      <div className="ws-module-layout leads-module-layout">
+        <WorkspacePageScrollBridge preferSelector=".ws-module-layout-main" />
+        <div className="ws-module-layout-main">{children}</div>
+      </div>
+    );
+  }
+
   const { effective } = await getEffectiveCrmSubModulesForUser(user);
   if (effective.length === 0) {
     redirect("/app");

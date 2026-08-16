@@ -7,7 +7,7 @@ import { WorkspaceThemeStyles } from "@/components/saas/workspace-theme-styles";
 import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { getDedicatedClientPortal } from "@/lib/dedicated-client-portals";
-import { getRequestTenantSlug } from "@/lib/tenant-host";
+import { getRequestTenantSlug, isLearnPortalRequest } from "@/lib/tenant-host";
 import { workspaceLoginHref } from "@/lib/workspace-auth-links";
 import {
   mergeWorkspaceAppearance,
@@ -41,6 +41,13 @@ export async function generateMetadata(): Promise<Metadata> {
     return {
       title: `Sign in | ${productName}`,
       description: `Secure sign in for ${productName}.`,
+    };
+  }
+
+  if (await isLearnPortalRequest()) {
+    return {
+      title: "Sign in | Sheetomatic Learn",
+      description: "Trainer login for Students and Teach.",
     };
   }
 
@@ -79,6 +86,7 @@ export default async function LoginPage({
         )
       : null;
   const isAiProduct = product === "ai";
+  const isLearnProduct = product === "learn";
 
   return (
     <main className="login-page workspace-login">
@@ -92,7 +100,15 @@ export default async function LoginPage({
       <section className="login-brand">
         <Link
           className="login-logo"
-          href={dedicatedPortal ? "/login" : isAiProduct ? "/ai" : "/"}
+          href={
+            dedicatedPortal
+              ? "/login"
+              : isAiProduct
+                ? "/ai"
+                : isLearnProduct
+                  ? "/learn"
+                  : "/"
+          }
         >
           {dedicatedPortal ? (
             <span className="login-logo-text">{tenantAppearance?.productName}</span>
@@ -101,7 +117,13 @@ export default async function LoginPage({
               <span className="logo-mark">
                 <BrandIconMark size={26} priority theme="light" />
               </span>
-              <span>{isAiProduct ? "Sheetomatic AI" : "Sheetomatic"}</span>
+              <span>
+                {isAiProduct
+                  ? "Sheetomatic AI"
+                  : isLearnProduct
+                    ? "Sheetomatic Learn"
+                    : "Sheetomatic"}
+              </span>
             </>
           )}
         </Link>
@@ -111,7 +133,9 @@ export default async function LoginPage({
               ? "MACT case management"
               : isAiProduct
                 ? "WhatsApp AI workspace"
-                : "Client workspace"}
+                : isLearnProduct
+                  ? "Teach and student portal"
+                  : "Client workspace"}
           </p>
           <h1>
             {tenantOrg
@@ -120,7 +144,9 @@ export default async function LoginPage({
                 ? "Workspace not found"
                 : isAiProduct
                   ? "Sign in to Sheetomatic AI"
-                  : "Sign in to your workspace"}
+                  : isLearnProduct
+                    ? "Sign in to Teach"
+                    : "Sign in to your workspace"}
           </h1>
           <p>
             {tenantSlug && !tenantOrg ? (
@@ -133,6 +159,8 @@ export default async function LoginPage({
             {!tenantSlug || tenantOrg
               ? isAiProduct
                 ? "Enter your email and password to open Chats, Campaign, and AI settings."
+                : isLearnProduct
+                  ? "Use your workspace email and password. You will only see Students and Teach — not the rest of CRM."
                 : tenantOrg
                   ? `Use your workspace email and password for ${tenantOrg.name}.`
                   : "Access is provisioned after purchase. Owners and team members sign in with credentials shared by Sheetomatic or your admin."
@@ -149,6 +177,17 @@ export default async function LoginPage({
               <li>
                 <CheckCircle2 size={18} />
                 Official WhatsApp Business API via RedLava
+              </li>
+            </>
+          ) : isLearnProduct ? (
+            <>
+              <li>
+                <CheckCircle2 size={18} />
+                Students, live sessions, and the curriculum you teach
+              </li>
+              <li>
+                <CheckCircle2 size={18} />
+                Students sign in separately at /learn
               </li>
             </>
           ) : (

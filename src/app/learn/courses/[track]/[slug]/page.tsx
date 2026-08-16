@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MarketingPage, SiteFooter, SiteHeader } from "@/app/components";
 import { LearnLessonBody } from "@/components/learn/learn-lesson-body";
+import { LearnPageShell } from "@/components/learn/learn-page-shell";
 import { LearnNav } from "@/components/learn/learn-nav";
 import { markLearnLessonDoneAction } from "@/app/learn/actions";
 import { getPublishedLesson, parseTrainingTrack, TRACK_LABEL } from "@/lib/learn/catalog";
@@ -37,8 +37,7 @@ export default async function LearnLessonPage({
   });
 
   return (
-    <MarketingPage>
-      <SiteHeader />
+    <LearnPageShell>
       <main className="learn-shell">
         <div className="learn-wide">
           <LearnNav name={enrollment.name} current="learn" />
@@ -93,7 +92,6 @@ export default async function LearnLessonPage({
           </div>
         </div>
       </main>
-      <SiteFooter />
-    </MarketingPage>
+    </LearnPageShell>
   );
 }

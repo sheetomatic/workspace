@@ -1,10 +1,16 @@
 import Link from "next/link";
+import { isLearnPortalRequest } from "@/lib/tenant-host";
+import { learnPortalOrigin } from "@/lib/workspace-auth-links";
 
-export function TrainingTabs({
+export async function TrainingTabs({
   current,
 }: {
   current: "students" | "curriculum";
 }) {
+  if (await isLearnPortalRequest()) {
+    return null;
+  }
+
   return (
     <nav className="training-tabs" aria-label="Training sections">
       <Link
@@ -19,6 +25,9 @@ export function TrainingTabs({
       >
         Teach
       </Link>
+      <a href={`${learnPortalOrigin()}/app/leads/training`}>
+        Open Learn portal
+      </a>
     </nav>
   );
 }

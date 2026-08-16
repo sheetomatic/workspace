@@ -11,10 +11,17 @@ import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
 import { prisma } from "@/lib/db";
+import { isLearnPortalRequest } from "@/lib/tenant-host";
 
 export default async function CrmTrainingPage() {
-  const user = await requireSession(undefined, { module: "CRM" });
-  await requireCrmSubModule(user, "training");
+  const learnPortal = await isLearnPortalRequest();
+  const user = await requireSession(
+    undefined,
+    learnPortal ? undefined : { module: "CRM" },
+  );
+  if (!learnPortal) {
+    await requireCrmSubModule(user, "training");
+  }
   const [studentsRaw, totalScheduled, enrollments] = await Promise.all([
     listActiveTrainingStudents({
       organizationId: user.organizationId,

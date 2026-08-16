@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { SessionUser } from "@/lib/auth";
 import { isDedicatedClientPortal } from "@/lib/dedicated-client-portals";
-import { parseHost } from "@/lib/subdomain";
+import { parseHost, type HostKind } from "@/lib/subdomain";
 import { tenantPortalOrigin } from "@/lib/workspace-auth-links";
 
 export const TENANT_SLUG_HEADER = "x-tenant-slug";
@@ -31,6 +31,15 @@ export async function getRequestTenantSlug() {
   }
 
   return null;
+}
+
+export async function getRequestHostKind(): Promise<HostKind> {
+  const headerStore = await headers();
+  return parseHost(headerStore.get("host")).kind;
+}
+
+export async function isLearnPortalRequest() {
+  return (await getRequestHostKind()) === "learn";
 }
 
 /** Current path + query for tenant-host redirects (set by middleware on tenant rewrites). */
@@ -62,6 +71,9 @@ export async function ensureSessionTenantHost(sessionUser: SessionUser) {
   }
 
   const headerStore = await headers();
+  if (parseHost(headerStore.get("host")).kind === "learn") {
+    return;
+  }
   const tenantSlug = await getRequestTenantSlug();
   const pathname = await getRequestPathname();
 

@@ -14,6 +14,18 @@ export function aiPortalOrigin(protocol = "https") {
   return `${protocol}://ai.${ROOT_DOMAIN}`;
 }
 
+/** Teach + student Learn portal — learn.sheetomatic.com */
+export function learnPortalOrigin(protocol = "https") {
+  return `${protocol}://learn.${ROOT_DOMAIN}`;
+}
+
+export const LEARN_ADMIN_HOME = "/app/leads/training";
+export const LEARN_STUDENT_HOME = "/learn";
+
+export function learnLoginHref() {
+  return `${learnPortalOrigin()}/login?product=learn`;
+}
+
 export function tenantPortalOrigin(slug: string, protocol = "https") {
   return `${protocol}://${slug}.${ROOT_DOMAIN}`;
 }

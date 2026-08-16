@@ -12,6 +12,10 @@ import {
 } from "@/app/app/leads/actions";
 import { TrainingSlotContentEditor } from "@/components/saas/training-slot-content-editor";
 import type { TrainingMaterialView } from "@/lib/courses/session-materials";
+import {
+  learnPortalOrigin,
+  workspacePortalOrigin,
+} from "@/lib/workspace-auth-links";
 
 export type TrainingStudentSlotView = {
   id: string;
@@ -304,7 +308,7 @@ export function TrainingStudentsPanel({
                       {student.inboundLeadId ? (
                         <Link
                           className="ws-btn ws-btn-secondary"
-                          href={`/app/leads?leadId=${student.inboundLeadId}`}
+                          href={`${workspacePortalOrigin()}/app/leads?leadId=${student.inboundLeadId}`}
                         >
                           Open lead
                         </Link>
@@ -313,7 +317,7 @@ export function TrainingStudentsPanel({
                         <>
                           <a
                             className="ws-btn ws-btn-secondary"
-                            href={`/learn/login?token=${student.bookingToken}`}
+                            href={`${learnPortalOrigin()}/learn/login?token=${student.bookingToken}`}
                             target="_blank"
                             rel="noopener noreferrer"
                           >

@@ -7,10 +7,13 @@ import {
   apexOrigin,
   isAiAppPath,
   isApiPath,
+  isLearnAdminPath,
+  isLearnPortalPath,
   isStaticAssetPath,
   isWorkspacePath,
   parseHost,
 } from "@/lib/subdomain";
+import { LEARN_ADMIN_HOME } from "@/lib/workspace-auth-links";
 
 function hasSessionCookie(request: NextRequest) {
   return Boolean(
@@ -123,7 +126,9 @@ function handleProtectedAppRoutes(request: NextRequest, isLoggedIn: boolean) {
         ? callbackUrl
         : product === "ai"
           ? "/ai/app"
-          : "/app";
+          : product === "learn"
+            ? LEARN_ADMIN_HOME
+            : "/app";
     appUrl.search = "";
     return NextResponse.redirect(appUrl);
   }
@@ -134,6 +139,26 @@ function handleProtectedAppRoutes(request: NextRequest, isLoggedIn: boolean) {
 function workspacePortalHost(request: NextRequest) {
   const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "sheetomatic.com";
   return `workspace.${root}`;
+}
+
+function learnPortalHost(request: NextRequest) {
+  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "sheetomatic.com";
+  return `learn.${root}`;
+}
+
+function withPortalHostname(request: NextRequest, hostname: string) {
+  const target = request.nextUrl.clone();
+  target.hostname = hostname;
+  const hostHeader = request.headers.get("host") ?? "";
+  if (hostHeader.includes("localhost")) {
+    target.protocol = "http:";
+    const port = hostHeader.split(":")[1];
+    if (port) target.port = port;
+  } else {
+    target.protocol = "https:";
+    target.port = "";
+  }
+  return target;
 }
 
 /** Apex/www marketing only — skip localhost and preview hosts (no workspace subdomain). */
@@ -168,9 +193,15 @@ function redirectMarketingToWorkspacePortal(request: NextRequest) {
     return NextResponse.redirect(target);
   }
 
+  if (pathname === "/learn" || pathname.startsWith("/learn/")) {
+    const target = withPortalHostname(request, learnPortalHost(request));
+    return NextResponse.redirect(target);
+  }
+
   if (
     (pathname === "/login" || pathname.startsWith("/login/")) &&
-    product !== "ai"
+    product !== "ai" &&
+    product !== "learn"
   ) {
     const target = request.nextUrl.clone();
     target.hostname = workspacePortalHost(request);
@@ -207,7 +238,74 @@ function handleWorkspacePortalHost(request: NextRequest, isLoggedIn: boolean) {
     return NextResponse.redirect(aiHost);
   }
 
+  if (pathname.startsWith("/learn")) {
+    return NextResponse.redirect(
+      withPortalHostname(request, learnPortalHost(request)),
+    );
+  }
+
   if (!isWorkspacePath(pathname)) {
+    return redirectToApexMarketing(request, pathname);
+  }
+
+  const protectedResponse = handleProtectedAppRoutes(request, isLoggedIn);
+  return protectedResponse ?? NextResponse.next();
+}
+
+function learnLoginUrl(request: NextRequest) {
+  const loginUrl = request.nextUrl.clone();
+  loginUrl.pathname = "/login";
+  loginUrl.search = "";
+  loginUrl.searchParams.set("product", "learn");
+  return loginUrl;
+}
+
+function handleLearnPortalHost(request: NextRequest, isLoggedIn: boolean) {
+  const { pathname } = request.nextUrl;
+
+  if (isApiPath(pathname) || isStaticAssetPath(pathname)) {
+    return NextResponse.next();
+  }
+
+  if (pathname === "/") {
+    if (isLoggedIn) {
+      const adminUrl = request.nextUrl.clone();
+      adminUrl.pathname = LEARN_ADMIN_HOME;
+      adminUrl.search = "";
+      return NextResponse.redirect(adminUrl);
+    }
+    const studentUrl = request.nextUrl.clone();
+    studentUrl.pathname = "/learn";
+    studentUrl.search = "";
+    return NextResponse.redirect(studentUrl);
+  }
+
+  if (pathname.startsWith("/ai/app") || pathname === "/ai") {
+    const aiHost = request.nextUrl.clone();
+    aiHost.hostname = `ai.${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "sheetomatic.com"}`;
+    return NextResponse.redirect(aiHost);
+  }
+
+  if (pathname.startsWith("/app") && !isLearnAdminPath(pathname)) {
+    const adminUrl = request.nextUrl.clone();
+    adminUrl.pathname = LEARN_ADMIN_HOME;
+    adminUrl.search = "";
+    return NextResponse.redirect(adminUrl);
+  }
+
+  if (
+    (pathname === "/login" || pathname.startsWith("/login/")) &&
+    request.nextUrl.searchParams.get("product") !== "learn"
+  ) {
+    const loginUrl = learnLoginUrl(request);
+    const callbackUrl = request.nextUrl.searchParams.get("callbackUrl");
+    if (callbackUrl) {
+      loginUrl.searchParams.set("callbackUrl", callbackUrl);
+    }
+    return NextResponse.redirect(loginUrl);
+  }
+
+  if (!isLearnPortalPath(pathname)) {
     return redirectToApexMarketing(request, pathname);
   }
 
@@ -271,6 +369,12 @@ function handleTenantHost(
     return NextResponse.redirect(aiHost);
   }
 
+  if (pathname.startsWith("/learn")) {
+    return NextResponse.redirect(
+      withPortalHostname(request, learnPortalHost(request)),
+    );
+  }
+
   if (!isWorkspacePath(pathname)) {
     return redirectToApexMarketing(request, pathname);
   }
@@ -314,6 +418,10 @@ export function middleware(request: NextRequest) {
 
   if (parsedHost.kind === "ai") {
     return handleAiPortalHost(request, isLoggedIn);
+  }
+
+  if (parsedHost.kind === "learn") {
+    return handleLearnPortalHost(request, isLoggedIn);
   }
 
   if (parsedHost.kind === "tenant" && parsedHost.tenantSlug) {

@@ -12,14 +12,21 @@ import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
 import { getLearnMsmeCopyUrl } from "@/lib/learn/publish-msme-sheet";
+import { isLearnPortalRequest } from "@/lib/tenant-host";
 
 export default async function CrmTrainingContentPage({
   searchParams,
 }: {
   searchParams: Promise<{ lesson?: string }>;
 }) {
-  const user = await requireSession(undefined, { module: "CRM" });
-  await requireCrmSubModule(user, "training");
+  const learnPortal = await isLearnPortalRequest();
+  const user = await requireSession(
+    undefined,
+    learnPortal ? undefined : { module: "CRM" },
+  );
+  if (!learnPortal) {
+    await requireCrmSubModule(user, "training");
+  }
   const params = await searchParams;
   let coursesRaw: Awaited<ReturnType<typeof listTrainingCurriculum>> = [];
   let loadError = false;

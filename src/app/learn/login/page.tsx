@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { MarketingPage, SiteFooter, SiteHeader } from "@/app/components";
+import { LearnPageShell } from "@/components/learn/learn-page-shell";
 import { studentLearnLoginAction } from "@/app/learn/actions";
 import { redirect } from "next/navigation";
 import { marketingMetadata } from "@/lib/marketing-metadata";
@@ -25,8 +25,7 @@ export default async function LearnLoginPage({
   }
 
   return (
-    <MarketingPage>
-      <SiteHeader />
+    <LearnPageShell>
       <main className="learn-shell">
         <div className="learn-narrow">
           <p className="learn-kicker">Student panel</p>
@@ -83,7 +82,6 @@ export default async function LearnLoginPage({
           </p>
         </div>
       </main>
-      <SiteFooter />
-    </MarketingPage>
+    </LearnPageShell>
   );
 }

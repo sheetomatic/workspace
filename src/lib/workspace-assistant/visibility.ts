@@ -6,7 +6,7 @@ import { parseHost } from "@/lib/subdomain";
  */
 export function shouldShowWorkspaceAssistant(pathname: string, hostname: string) {
   const { kind } = parseHost(hostname);
-  if (kind === "ai") return false;
+  if (kind === "ai" || kind === "learn") return false;
   if (kind === "workspace" || kind === "tenant") {
     if (pathname.startsWith("/login")) return false;
     return true;

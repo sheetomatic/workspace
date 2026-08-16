@@ -5,6 +5,7 @@ import "@/components/saas/apple-design-system.css";
 import { redirect } from "next/navigation";
 import { AuthSessionProvider } from "@/components/providers/session-provider";
 import { SaasShell } from "@/components/saas/saas-shell";
+import { TrainingPortalShell } from "@/components/saas/training-portal-shell";
 import { WorkspaceThemeStyles } from "@/components/saas/workspace-theme-styles";
 import { WorkspacePwaInstallBanner } from "@/components/saas/workspace-pwa-install-banner";
 import { WorkspacePwaRegister } from "@/components/saas/workspace-pwa-register";
@@ -22,12 +23,23 @@ import {
 } from "@/lib/workspace-nav-prefs";
 import { ORG_PLAN_LABELS } from "@/lib/org-plan-presets";
 import { requireSession } from "@/lib/require-session";
-import { ensureSessionTenantHost, getRequestTenantSlug } from "@/lib/tenant-host";
+import {
+  ensureSessionTenantHost,
+  getRequestTenantSlug,
+  isLearnPortalRequest,
+} from "@/lib/tenant-host";
 import { getOrCreateHrSettings } from "@/lib/hr/hr-store";
 import { resolveMemberHrSubModules } from "@/lib/hr/hr-sub-modules";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
 
 export async function generateMetadata(): Promise<Metadata> {
+  if (await isLearnPortalRequest()) {
+    return {
+      title: "Learn | Sheetomatic",
+      description: "Students and Teach — the Sheetomatic training portal.",
+    };
+  }
+
   const tenantSlug = await getRequestTenantSlug();
   const portal = getDedicatedClientPortal(tenantSlug);
   if (portal) {
@@ -79,6 +91,7 @@ export default async function AppLayout({
 }) {
   const sessionUser = await requireSession();
   await ensureSessionTenantHost(sessionUser);
+  const learnPortal = await isLearnPortalRequest();
 
   let organization: {
     id: string;
@@ -165,6 +178,19 @@ export default async function AppLayout({
 
   if (organization.status !== "ACTIVE" && !sessionUser.isSuperAdmin) {
     return <WorkspacePendingApproval organizationName={organization.name} />;
+  }
+
+  if (learnPortal) {
+    return (
+      <AuthSessionProvider>
+        <TrainingPortalShell
+          organizationName={organization.name}
+          userName={sessionUser.name?.trim() || sessionUser.email}
+        >
+          {children}
+        </TrainingPortalShell>
+      </AuthSessionProvider>
+    );
   }
 
   const user = {

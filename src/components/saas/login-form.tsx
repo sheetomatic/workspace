@@ -9,6 +9,7 @@ import {
   type LoginActionState,
 } from "@/app/login/actions";
 import { aiAppEntryHref } from "@/lib/ai-auth-links";
+import { LEARN_ADMIN_HOME } from "@/lib/workspace-auth-links";
 
 const showDemoAccounts = process.env.NODE_ENV === "development";
 
@@ -45,9 +46,14 @@ export function LoginForm() {
   const intent = searchParams.get("intent");
   const orgSlug = searchParams.get("org")?.trim() || undefined;
   const isAiProduct = product === "ai";
+  const isLearnProduct = product === "learn";
   const callbackUrl = safeCallbackUrl(
     searchParams.get("callbackUrl"),
-    isAiProduct ? aiAppEntryHref(intent) : "/app/tasks",
+    isAiProduct
+      ? aiAppEntryHref(intent)
+      : isLearnProduct
+        ? LEARN_ADMIN_HOME
+        : "/app/tasks",
   );
 
   const [email, setEmail] = useState("");
@@ -206,11 +212,17 @@ export function LoginForm() {
     <div className="login-card">
       <div className="login-card-head">
         <h2>
-          {isAiProduct ? "Log in to Sheetomatic AI" : "Sign in to Workspace"}
+          {isAiProduct
+            ? "Log in to Sheetomatic AI"
+            : isLearnProduct
+              ? "Log in to Teach"
+              : "Sign in to Workspace"}
         </h2>
         <p>
           {isAiProduct
             ? "Enter your email and password to continue."
+            : isLearnProduct
+              ? "Same workspace email and password. Only Students and Teach open here."
             : "Use the email and password shared after purchase, or sign in as the workspace owner."}
         </p>
       </div>

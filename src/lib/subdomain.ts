@@ -1,9 +1,16 @@
 export const ROOT_DOMAIN =
   process.env.NEXT_PUBLIC_ROOT_DOMAIN?.trim().toLowerCase() || "sheetomatic.com";
 
-const RESERVED_SUBDOMAINS = new Set(["www", "app", "workspace", "ai"]);
+const RESERVED_SUBDOMAINS = new Set([
+  "www",
+  "app",
+  "workspace",
+  "ai",
+  "learn",
+  "training",
+]);
 
-export type HostKind = "marketing" | "workspace" | "ai" | "tenant";
+export type HostKind = "marketing" | "workspace" | "ai" | "learn" | "tenant";
 
 export type ParsedHost = {
   kind: HostKind;
@@ -22,6 +29,10 @@ function classifySubdomain(subdomain: string, hostname: string): ParsedHost {
 
   if (subdomain === "ai") {
     return { kind: "ai", hostname };
+  }
+
+  if (subdomain === "learn" || subdomain === "training") {
+    return { kind: "learn", hostname };
   }
 
   if (RESERVED_SUBDOMAINS.has(subdomain)) {
@@ -84,6 +95,21 @@ export function isWorkspacePath(pathname: string) {
 
 export function isAiAppPath(pathname: string) {
   return isLoginPath(pathname) || pathname.startsWith("/ai/app");
+}
+
+export function isLearnAdminPath(pathname: string) {
+  return (
+    pathname === "/app/leads/training" ||
+    pathname.startsWith("/app/leads/training/")
+  );
+}
+
+export function isLearnPortalPath(pathname: string) {
+  return (
+    isLoginPath(pathname) ||
+    pathname.startsWith("/learn") ||
+    isLearnAdminPath(pathname)
+  );
 }
 
 export function isApiPath(pathname: string) {
