@@ -111,3 +111,14 @@ export async function createTrainingLessonAction(formData: FormData) {
     lessonId: created.id,
   };
 }
+
+export async function publishMsmeWorkbookAction() {
+  const auth = await requireTrainer();
+  if (!auth.ok || !auth.user) return { ok: false as const, message: auth.message };
+  const { publishMsmeWorkbookToGoogle } = await import(
+    "@/lib/learn/publish-msme-sheet"
+  );
+  const result = await publishMsmeWorkbookToGoogle();
+  refreshLearnPaths();
+  return result;
+}

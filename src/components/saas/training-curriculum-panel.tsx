@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { TrainingTrackId } from "@prisma/client";
 import {
   createTrainingLessonAction,
+  publishMsmeWorkbookAction,
   saveTrainingLessonAction,
 } from "@/app/app/leads/training-content-actions";
 import { TRACK_LABEL } from "@/lib/learn/catalog";
@@ -118,9 +119,21 @@ export function TrainingCurriculumPanel({
                 Copy to Google Sheets
               </a>
             ) : null}
-            <a className="ws-btn ws-btn-primary" href="/api/learn/samples/workbook">
-              Download Excel — open in Google Sheets
+            <a className="ws-btn ws-btn-secondary" href="/api/learn/samples/workbook">
+              Download Excel
             </a>
+            {canManage ? (
+              <button
+                type="button"
+                className="ws-btn ws-btn-secondary"
+                disabled={pending}
+                onClick={() =>
+                  run(() => publishMsmeWorkbookAction())
+                }
+              >
+                {pending ? "Publishing…" : "Publish Google copy link"}
+              </button>
+            ) : null}
           </div>
         </aside>
       ) : null}

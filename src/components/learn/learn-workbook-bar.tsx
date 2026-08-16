@@ -21,8 +21,11 @@ export function LearnWorkbookBar({
             Copy to Google Sheets
           </a>
         ) : null}
-        <a className="learn-btn-primary" href="/api/learn/samples/workbook">
-          Download Excel — open in Google Sheets
+        <a
+          className={copyUrl ? "learn-btn-secondary" : "learn-btn-primary"}
+          href="/api/learn/samples/workbook"
+        >
+          Download Excel
         </a>
       </div>
     </aside>

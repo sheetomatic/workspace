@@ -3221,6 +3221,8 @@ model TrainingCourse {
   summary   String
   sortOrder Int             @default(0)
   published Boolean         @default(true)
+  /** Google Sheet template id for File → Make a copy. */
+  sampleSheetId String?
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
   lessons   TrainingLesson[]

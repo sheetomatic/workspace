@@ -15,5 +15,9 @@ describe("Sheets teaching pack", () => {
     expect(tabs.meta.salesLines).toBeGreaterThan(1000);
     expect(tabs.meta.products).toBeGreaterThan(20);
     expect(tabs.Practice.length).toBeGreaterThan(20);
+    expect(tabs.Apply.length).toBeGreaterThan(1);
+    expect(tabs.Analyst_Query.length).toBeGreaterThan(5);
+    expect(tabs.Live_Filter.length).toBeGreaterThan(5);
+    expect(tabs.Sell_More.length).toBeGreaterThan(5);
   });
 });

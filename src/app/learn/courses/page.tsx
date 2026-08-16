@@ -5,7 +5,7 @@ import { listPublishedCourses, TRACK_LABEL } from "@/lib/learn/catalog";
 import { lessonHasTeachingContent } from "@/lib/learn/media";
 import { requireStudent } from "@/lib/learn/require";
 import { LearnWorkbookBar } from "@/components/learn/learn-workbook-bar";
-import { learnMsmeCopyUrl } from "@/lib/learn/msme-sheet";
+import { getLearnMsmeCopyUrl } from "@/lib/learn/publish-msme-sheet";
 import "@/components/learn/learn-panel.css";
 
 export default async function LearnCoursesPage() {
@@ -23,7 +23,7 @@ export default async function LearnCoursesPage() {
             Follow the path the way your trainer teaches it — Sheets, then
             AppSheet, then Looker Studio. One shop file for every formula.
           </p>
-          <LearnWorkbookBar copyUrl={learnMsmeCopyUrl()} />
+          <LearnWorkbookBar copyUrl={await getLearnMsmeCopyUrl()} />
           <ul className="learn-course-grid">
             {courses.map((course) => {
               const ready = course.lessons.filter(lessonHasTeachingContent).length;

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma, withDbRetry } from "@/lib/db";
 import { ensureTrainingCatalog } from "@/lib/learn/catalog";
 import { SHEETS_TEACHING } from "@/lib/learn/sheets-teaching";
 
@@ -24,16 +24,18 @@ export async function applySheetsTeachingContent(params?: {
     if (!lesson) continue;
     if (!params?.force && lesson.goal.trim()) continue;
 
-    await prisma.trainingLesson.update({
-      where: { id: lesson.id },
-      data: {
-        goal: pack.goal,
-        practicePrompt: pack.practicePrompt,
-        bodyMd: pack.bodyMd,
-        embedUrl: params?.embedUrl ?? undefined,
-        published: true,
-      },
-    });
+    await withDbRetry(() =>
+      prisma.trainingLesson.update({
+        where: { id: lesson.id },
+        data: {
+          goal: pack.goal,
+          practicePrompt: pack.practicePrompt,
+          bodyMd: pack.bodyMd,
+          embedUrl: params?.embedUrl ?? undefined,
+          published: true,
+        },
+      }),
+    );
     updated += 1;
   }
 

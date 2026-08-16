@@ -10,7 +10,7 @@ import { listTrainingCurriculum } from "@/lib/learn/catalog";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
-import { learnMsmeCopyUrl } from "@/lib/learn/msme-sheet";
+import { getLearnMsmeCopyUrl } from "@/lib/learn/publish-msme-sheet";
 
 export default async function CrmTrainingContentPage({
   searchParams,
@@ -69,7 +69,7 @@ export default async function CrmTrainingContentPage({
         courses={courses}
         canManage={hasMinimumRole(user.role, "STAFF")}
         initialLessonId={params.lesson}
-        copyUrl={learnMsmeCopyUrl()}
+        copyUrl={await getLearnMsmeCopyUrl()}
       />
     </CrmSubmoduleShell>
   );
