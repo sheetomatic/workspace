@@ -6,7 +6,7 @@ import { logInboundLeadActivity } from "@/lib/leads/activity";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import {
-  findTrainingSlotForOrg,
+  findTrainingSlotForStaff,
   normalizeTrainingContentUrl,
   TRAINING_MATERIAL_MAX_BYTES,
 } from "@/lib/courses/session-materials";
@@ -15,11 +15,12 @@ function refreshTrainingPaths() {
   revalidatePath("/app/leads");
   revalidatePath("/app/leads/training");
   revalidatePath("/app/my-space/training");
+  revalidatePath("/app/my-space/training/content");
 }
 
 export async function saveTrainingSessionRecordingAction(formData: FormData) {
-  const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "STAFF")) {
+  const user = await requireSession();
+  if (!hasMinimumRole(user.role, "STAFF") && !user.isSuperAdmin) {
     return { ok: false as const, message: "Staff access required." };
   }
 
@@ -36,7 +37,11 @@ export async function saveTrainingSessionRecordingAction(formData: FormData) {
     };
   }
 
-  const slot = await findTrainingSlotForOrg(slotId, user.organizationId);
+  const slot = await findTrainingSlotForStaff(
+    slotId,
+    user.organizationId,
+    user.isSuperAdmin,
+  );
   if (!slot) {
     return { ok: false as const, message: "Session not found." };
   }
@@ -81,8 +86,8 @@ export async function saveTrainingSessionRecordingAction(formData: FormData) {
 }
 
 export async function addTrainingSessionDocumentAction(formData: FormData) {
-  const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "STAFF")) {
+  const user = await requireSession();
+  if (!hasMinimumRole(user.role, "STAFF") && !user.isSuperAdmin) {
     return { ok: false as const, message: "Staff access required." };
   }
 
@@ -95,7 +100,11 @@ export async function addTrainingSessionDocumentAction(formData: FormData) {
     return { ok: false as const, message: "Session is required." };
   }
 
-  const slot = await findTrainingSlotForOrg(slotId, user.organizationId);
+  const slot = await findTrainingSlotForStaff(
+    slotId,
+    user.organizationId,
+    user.isSuperAdmin,
+  );
   if (!slot) {
     return { ok: false as const, message: "Session not found." };
   }
@@ -143,8 +152,8 @@ export async function addTrainingSessionDocumentAction(formData: FormData) {
 }
 
 export async function removeTrainingSessionMaterialAction(materialId: string) {
-  const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "STAFF")) {
+  const user = await requireSession();
+  if (!hasMinimumRole(user.role, "STAFF") && !user.isSuperAdmin) {
     return { ok: false as const, message: "Staff access required." };
   }
 
@@ -156,7 +165,11 @@ export async function removeTrainingSessionMaterialAction(materialId: string) {
     return { ok: false as const, message: "File not found." };
   }
 
-  const slot = await findTrainingSlotForOrg(material.slotId, user.organizationId);
+  const slot = await findTrainingSlotForStaff(
+    material.slotId,
+    user.organizationId,
+    user.isSuperAdmin,
+  );
   if (!slot) {
     return { ok: false as const, message: "File not found." };
   }

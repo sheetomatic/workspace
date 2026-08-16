@@ -1,12 +1,9 @@
-import {
-  TrainingStudentsPanel,
-  type TrainingStudentView,
-} from "@/components/saas/training-students-panel";
+import { TrainingStudentsPanel } from "@/components/saas/training-students-panel";
 import { TrainingTabs } from "@/components/saas/training-tabs";
 import { CrmSubmoduleShell } from "@/components/saas/crm-submodule-shell";
 import "@/components/saas/leads-machine.css";
 import "@/components/saas/training-students-panel.css";
-import { listActiveTrainingStudents } from "@/lib/courses/slots";
+import { loadTrainingStudentsSafe } from "@/lib/learn/training-admin-view";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
@@ -22,53 +19,28 @@ export default async function CrmTrainingPage() {
   if (!learnPortal) {
     await requireCrmSubModule(user, "training");
   }
-  const [studentsRaw, totalScheduled, enrollments] = await Promise.all([
-    listActiveTrainingStudents({
-      organizationId: user.organizationId,
-      take: 120,
-    }),
-    prisma.trainingCourseSlot.count({
-      where: {
-        organizationId: user.organizationId,
-        status: "SCHEDULED",
-      },
-    }),
-    prisma.courseEnrollment.count({
-      where: { organizationId: user.organizationId },
-    }),
-  ]);
 
-  const students: TrainingStudentView[] = studentsRaw.map((student) => ({
-    id: student.id,
-    name: student.name,
-    phone: student.phone,
-    email: student.email,
-    status: student.status,
-    daysLabel: student.daysLabel,
-    frequency: student.frequency,
-    sessionTimeIst: student.sessionTimeIst,
-    sessionDurationMin: student.sessionDurationMin,
-    totalSessions: student.totalSessions,
-    joinUrl: student.joinUrl,
-    inboundLeadId: student.inboundLeadId,
-    bookingToken: student.bookingToken,
-    upcomingCount: student.upcomingCount,
-    completedCount: student.completedCount,
-    totalBooked: student.totalBooked,
-    nextWhenLabel: student.nextWhenLabel,
-    slots: student.slots.map((slot) => ({
-      id: slot.id,
-      sessionNumber: slot.sessionNumber,
-      startsAt: slot.startsAt.toISOString(),
-      endsAt: slot.endsAt.toISOString(),
-      title: slot.title,
-      status: slot.status,
-      meetUrl: slot.meetUrl,
-      whenLabel: slot.whenLabel,
-      joinUrl: slot.joinUrl,
-      materials: slot.materials,
-    })),
-  }));
+  const { students, loadError } = await loadTrainingStudentsSafe({
+    organizationId: user.organizationId,
+  });
+
+  let totalScheduled = 0;
+  let enrollments = 0;
+  try {
+    [totalScheduled, enrollments] = await Promise.all([
+      prisma.trainingCourseSlot.count({
+        where: {
+          organizationId: user.organizationId,
+          status: "SCHEDULED",
+        },
+      }),
+      prisma.courseEnrollment.count({
+        where: { organizationId: user.organizationId },
+      }),
+    ]);
+  } catch (error) {
+    console.error("[crm-training] counts unavailable", error);
+  }
 
   const upcomingSlots = students.reduce(
     (sum, student) => sum + student.upcomingCount,
@@ -77,8 +49,9 @@ export default async function CrmTrainingPage() {
 
   return (
     <CrmSubmoduleShell
-      title="Training"
+      title="Students"
       description="Students, live sessions, and the curriculum you teach from this workspace."
+      leadsHref={learnPortal ? null : "/app/leads"}
       kpis={[
         {
           label: "Students",
@@ -98,10 +71,16 @@ export default async function CrmTrainingPage() {
       ]}
     >
       <TrainingTabs current="students" />
-      <TrainingStudentsPanel
-        students={students}
-        canManage={hasMinimumRole(user.role, "STAFF")}
-      />
+      {loadError ? (
+        <p className="training-banner is-error">
+          Students could not load just now. Try again — this page stays open.
+        </p>
+      ) : (
+        <TrainingStudentsPanel
+          students={students}
+          canManage={hasMinimumRole(user.role, "STAFF")}
+        />
+      )}
     </CrmSubmoduleShell>
   );
 }

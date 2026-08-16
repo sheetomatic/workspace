@@ -12,11 +12,13 @@ export function CrmSubmoduleShell({
   description,
   kpis,
   children,
+  leadsHref = "/app/leads",
 }: {
   title: string;
   description: string;
   kpis: CrmKpi[];
   children: React.ReactNode;
+  leadsHref?: string | null;
 }) {
   return (
     <div className="saas-page leads-machine-page crm-submodule-page">
@@ -24,9 +26,11 @@ export function CrmSubmoduleShell({
         title={title}
         description={description}
         actions={
-          <Link href="/app/leads" className="btn-secondary btn-sm">
-            All leads
-          </Link>
+          leadsHref ? (
+            <Link href={leadsHref} className="btn-secondary btn-sm">
+              All leads
+            </Link>
+          ) : null
         }
       />
       <section className="crm-submodule-kpis" aria-label={`${title} summary`}>

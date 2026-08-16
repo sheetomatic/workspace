@@ -104,4 +104,28 @@ export async function findTrainingSlotForOrg(
   return inOrg ? slot : null;
 }
 
+export async function findTrainingSlotForStaff(
+  slotId: string,
+  organizationId: string,
+  isSuperAdmin?: boolean,
+) {
+  if (isSuperAdmin) {
+    const slot = await prisma.trainingCourseSlot.findFirst({
+      where: { id: slotId },
+      include: {
+        enrollment: {
+          select: {
+            id: true,
+            organizationId: true,
+            inboundLeadId: true,
+            name: true,
+          },
+        },
+      },
+    });
+    return slot;
+  }
+  return findTrainingSlotForOrg(slotId, organizationId);
+}
+
 export { MATERIAL_SELECT };

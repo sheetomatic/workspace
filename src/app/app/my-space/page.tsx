@@ -84,7 +84,7 @@ export default async function MySpacePage({ searchParams }: PageProps) {
                 Social schedule
               </Link>
               <Link href="/app/my-space/training" className="ws-btn ws-btn-secondary">
-                Training slots
+                Students & Teach
               </Link>
               <Link href="/app/my-space/expenses" className="ws-btn ws-btn-primary">
                 Add Expense

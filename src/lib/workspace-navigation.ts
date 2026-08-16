@@ -889,7 +889,7 @@ export function getWorkspaceNavSections(params: {
             },
             {
               href: "/app/my-space/training",
-              label: "Training slots",
+              label: "Students & Teach",
               icon: CalendarCheck2,
               minRole: "MANAGER",
               matchPrefix: "/app/my-space/training",

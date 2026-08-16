@@ -3478,8 +3478,8 @@ export async function updateLeadTrainingSlotStatusAction(
   slotId: string,
   status: "SCHEDULED" | "COMPLETED" | "CANCELLED",
 ) {
-  const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "STAFF")) {
+  const user = await requireSession();
+  if (!hasMinimumRole(user.role, "STAFF") && !user.isSuperAdmin) {
     return { ok: false as const, message: "Staff access required." };
   }
   if (!["SCHEDULED", "COMPLETED", "CANCELLED"].includes(status)) {
@@ -3508,7 +3508,7 @@ export async function updateLeadTrainingSlotStatusAction(
     });
     inOrg = Boolean(lead);
   }
-  if (!inOrg) {
+  if (!inOrg && !user.isSuperAdmin) {
     return { ok: false as const, message: "Session not found." };
   }
 
@@ -3617,9 +3617,18 @@ export async function saveTrainingMeetUrlAction(params: {
   meetUrl: string;
   resend?: boolean;
 }) {
-  const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "STAFF")) {
+  const user = await requireSession();
+  if (!hasMinimumRole(user.role, "STAFF") && !user.isSuperAdmin) {
     return { ok: false as const, message: "Staff access required." };
+  }
+
+  let organizationId = user.organizationId;
+  if (user.isSuperAdmin) {
+    const enrollment = await prisma.courseEnrollment.findUnique({
+      where: { id: params.enrollmentId },
+      select: { organizationId: true },
+    });
+    if (enrollment) organizationId = enrollment.organizationId;
   }
 
   const { saveTrainingMeetUrl, notifyTrainingSlotsBooked } = await import(
@@ -3627,7 +3636,7 @@ export async function saveTrainingMeetUrlAction(params: {
   );
   const saved = await saveTrainingMeetUrl({
     enrollmentId: params.enrollmentId,
-    organizationId: user.organizationId,
+    organizationId,
     meetUrl: params.meetUrl,
   });
   if (!saved.ok) {
@@ -3660,13 +3669,15 @@ export async function saveTrainingMeetUrlAction(params: {
 
 /** Resend training schedule email + WhatsApp for an enrollment. */
 export async function resendTrainingScheduleAction(enrollmentId: string) {
-  const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "STAFF")) {
+  const user = await requireSession();
+  if (!hasMinimumRole(user.role, "STAFF") && !user.isSuperAdmin) {
     return { ok: false as const, message: "Staff access required." };
   }
 
   const enrollment = await prisma.courseEnrollment.findFirst({
-    where: { id: enrollmentId, organizationId: user.organizationId },
+    where: user.isSuperAdmin
+      ? { id: enrollmentId }
+      : { id: enrollmentId, organizationId: user.organizationId },
     select: { id: true, inboundLeadId: true, email: true, phone: true },
   });
   if (!enrollment) {

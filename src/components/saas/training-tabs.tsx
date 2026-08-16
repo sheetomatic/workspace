@@ -2,10 +2,18 @@ import Link from "next/link";
 import { isLearnPortalRequest } from "@/lib/tenant-host";
 import { learnPortalOrigin } from "@/lib/workspace-auth-links";
 
+export type TrainingAdminBasePath =
+  | "/app/leads/training"
+  | "/app/my-space/training";
+
 export async function TrainingTabs({
   current,
+  basePath = "/app/leads/training",
+  showLearnLink = true,
 }: {
   current: "students" | "curriculum";
+  basePath?: TrainingAdminBasePath;
+  showLearnLink?: boolean;
 }) {
   if (await isLearnPortalRequest()) {
     return null;
@@ -14,20 +22,22 @@ export async function TrainingTabs({
   return (
     <nav className="training-tabs" aria-label="Training sections">
       <Link
-        href="/app/leads/training"
+        href={basePath}
         className={current === "students" ? "is-active" : ""}
       >
         Students
       </Link>
       <Link
-        href="/app/leads/training/content"
+        href={`${basePath}/content`}
         className={current === "curriculum" ? "is-active" : ""}
       >
         Teach
       </Link>
-      <a href={`${learnPortalOrigin()}/app/leads/training`}>
-        Open Learn portal
-      </a>
+      {showLearnLink ? (
+        <a href={`${learnPortalOrigin()}/app/leads/training`}>
+          Open Learn portal
+        </a>
+      ) : null}
     </nav>
   );
 }

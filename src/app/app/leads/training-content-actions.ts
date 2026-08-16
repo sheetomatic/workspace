@@ -13,6 +13,8 @@ import { requireSession } from "@/lib/require-session";
 function refreshLearnPaths() {
   revalidatePath("/app/leads/training");
   revalidatePath("/app/leads/training/content");
+  revalidatePath("/app/my-space/training");
+  revalidatePath("/app/my-space/training/content");
   revalidatePath("/learn");
   revalidatePath("/learn/learn");
   revalidatePath("/learn/courses");
