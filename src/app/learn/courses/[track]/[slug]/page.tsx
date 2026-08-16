@@ -76,13 +76,13 @@ export default async function LearnLessonPage({
             ) : null}
           </article>
 
-          <form
-            action={async () => {
-              "use server";
-              await markLearnLessonDoneAction(lesson.id);
-            }}
-          >
-            <button type="submit" className="learn-btn-secondary" disabled={Boolean(progress?.completedAt)}>
+          <form action={markLearnLessonDoneAction}>
+            <input type="hidden" name="lessonId" value={lesson.id} />
+            <button
+              type="submit"
+              className="learn-btn-secondary"
+              disabled={Boolean(progress?.completedAt)}
+            >
               {progress?.completedAt ? "Completed" : "Mark as done"}
             </button>
           </form>
@@ -100,7 +100,9 @@ export default async function LearnLessonPage({
                 {next.title} →
               </Link>
             ) : (
-              <Link href={`/learn/courses/${track.toLowerCase()}`}>Back to {course.title}</Link>
+              <Link href={`/learn/courses/${track.toLowerCase()}`}>
+                Back to {course.title}
+              </Link>
             )}
           </div>
         </div>

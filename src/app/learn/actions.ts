@@ -37,12 +37,13 @@ export async function studentLearnLogoutAction() {
   redirect("/learn/login");
 }
 
-export async function markLearnLessonDoneAction(lessonId: string) {
+export async function markLearnLessonDoneAction(formData: FormData) {
   const enrollment = await requireLearnEnrollment();
   if (!enrollment) {
     return { ok: false as const, message: "Please sign in again." };
   }
 
+  const lessonId = String(formData.get("lessonId") ?? "").trim();
   const lesson = await prisma.trainingLesson.findFirst({
     where: { id: lessonId, published: true },
     select: { id: true },
