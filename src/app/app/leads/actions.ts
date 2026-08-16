@@ -3628,7 +3628,9 @@ export async function saveTrainingMeetUrlAction(params: {
       where: { id: params.enrollmentId },
       select: { organizationId: true },
     });
-    if (enrollment) organizationId = enrollment.organizationId;
+    if (enrollment?.organizationId) {
+      organizationId = enrollment.organizationId;
+    }
   }
 
   const { saveTrainingMeetUrl, notifyTrainingSlotsBooked } = await import(
