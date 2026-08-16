@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { ChevronDown, ExternalLink, Mail, Video } from "lucide-react";
+import { ChevronDown, ExternalLink, Mail, MessageCircle, Video } from "lucide-react";
 import {
   resendTrainingScheduleAction,
   saveTrainingMeetUrlAction,
+  sendTrainingScheduleWhatsAppAction,
   updateLeadTrainingSlotStatusAction,
 } from "@/app/app/leads/actions";
 
@@ -132,6 +133,19 @@ export function TrainingStudentsPanel({
     });
   }
 
+  function onSendWhatsApp(enrollmentId: string) {
+    startTransition(async () => {
+      setError(null);
+      setNotice(null);
+      const result = await sendTrainingScheduleWhatsAppAction(enrollmentId);
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setNotice(result.message);
+    });
+  }
+
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return students;
@@ -229,20 +243,28 @@ export function TrainingStudentsPanel({
                         </span>
                       )}
                       {canManage ? (
-                        <button
-                          type="button"
-                          className="ws-btn ws-btn-secondary"
-                          disabled={pending}
-                          onClick={() => onResendSchedule(student.id)}
-                          title={
-                            student.joinUrl
-                              ? "Email + WhatsApp the schedule again (includes Meet link)"
-                              : "Email schedule again — add a Meet link first for the join URL"
-                          }
-                        >
-                          <Mail size={16} aria-hidden />
-                          {pending ? "Sending…" : "Resend schedule"}
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            className="ws-btn ws-btn-secondary"
+                            disabled={pending}
+                            onClick={() => onSendWhatsApp(student.id)}
+                            title="Send schedule + Meet link on WhatsApp"
+                          >
+                            <MessageCircle size={16} aria-hidden />
+                            {pending ? "Sending…" : "Send on WhatsApp"}
+                          </button>
+                          <button
+                            type="button"
+                            className="ws-btn ws-btn-secondary"
+                            disabled={pending}
+                            onClick={() => onResendSchedule(student.id)}
+                            title="Resend email + WhatsApp"
+                          >
+                            <Mail size={16} aria-hidden />
+                            {pending ? "Sending…" : "Resend email"}
+                          </button>
+                        </>
                       ) : null}
                       {student.inboundLeadId ? (
                         <Link
@@ -289,7 +311,7 @@ export function TrainingStudentsPanel({
                           disabled={pending}
                           onClick={() => onSaveMeetAndSend(student.id)}
                         >
-                          {pending ? "Saving…" : "Save Meet & send schedule"}
+                          {pending ? "Saving…" : "Save Meet & send WhatsApp"}
                         </button>
                       </div>
                     ) : null}

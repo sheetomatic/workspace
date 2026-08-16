@@ -6,6 +6,7 @@ import {
   getLeadTrainingSlotsAction,
   resendTrainingScheduleAction,
   saveTrainingMeetUrlAction,
+  sendTrainingScheduleWhatsAppAction,
   updateLeadTrainingSlotStatusAction,
 } from "@/app/app/leads/actions";
 import {
@@ -179,24 +180,44 @@ export function LeadTrainingSlotsPanel({
                   </a>
                 ) : null}
                 {canManage ? (
-                  <button
-                    type="button"
-                    className="btn-secondary btn-sm"
-                    disabled={pending}
-                    onClick={() => {
-                      startTransition(async () => {
-                        setMessage(null);
-                        setIsError(false);
-                        const result = await resendTrainingScheduleAction(
-                          enrollment.id,
-                        );
-                        setMessage(result.message);
-                        setIsError(!result.ok);
-                      });
-                    }}
-                  >
-                    {pending ? "Sending…" : "Resend schedule"}
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      className="btn-secondary btn-sm"
+                      disabled={pending}
+                      onClick={() => {
+                        startTransition(async () => {
+                          setMessage(null);
+                          setIsError(false);
+                          const result = await sendTrainingScheduleWhatsAppAction(
+                            enrollment.id,
+                          );
+                          setMessage(result.message);
+                          setIsError(!result.ok);
+                        });
+                      }}
+                    >
+                      {pending ? "Sending…" : "Send on WhatsApp"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-secondary btn-sm"
+                      disabled={pending}
+                      onClick={() => {
+                        startTransition(async () => {
+                          setMessage(null);
+                          setIsError(false);
+                          const result = await resendTrainingScheduleAction(
+                            enrollment.id,
+                          );
+                          setMessage(result.message);
+                          setIsError(!result.ok);
+                        });
+                      }}
+                    >
+                      {pending ? "Sending…" : "Resend email"}
+                    </button>
+                  </>
                 ) : null}
                 {enrollment.bookingToken ? (
                   <a
@@ -251,7 +272,7 @@ export function LeadTrainingSlotsPanel({
                     });
                   }}
                 >
-                  {pending ? "Saving…" : "Save Meet & send schedule"}
+                  {pending ? "Saving…" : "Save Meet & send WhatsApp"}
                 </button>
               </div>
             ) : null}

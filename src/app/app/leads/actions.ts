@@ -3625,15 +3625,20 @@ export async function saveTrainingMeetUrlAction(params: {
   }
 
   if (params.resend !== false) {
-    const notified = await notifyTrainingSlotsBooked(params.enrollmentId);
+    // WhatsApp first (email delivery is unreliable for some clients), then email.
+    const notified = await notifyTrainingSlotsBooked(params.enrollmentId, {
+      email: true,
+      whatsapp: true,
+    });
     revalidatePath("/app/leads");
     revalidatePath("/app/leads/training");
     revalidatePath("/app/my-space/training");
+    const ok = notified.clientWhatsAppSent || notified.clientEmailSent;
     return {
-      ok: notified.ok,
-      message: notified.ok
+      ok,
+      message: ok
         ? `Meet link saved. ${notified.message}`
-        : `Meet link saved, but email failed: ${notified.message}`,
+        : `Meet link saved, but send failed: ${notified.message}`,
     };
   }
 
@@ -3643,7 +3648,7 @@ export async function saveTrainingMeetUrlAction(params: {
   return { ok: true as const, message: saved.message };
 }
 
-/** Resend training schedule email (+ WhatsApp) for an enrollment. */
+/** Resend training schedule email + WhatsApp for an enrollment. */
 export async function resendTrainingScheduleAction(enrollmentId: string) {
   const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "STAFF")) {
@@ -3652,7 +3657,7 @@ export async function resendTrainingScheduleAction(enrollmentId: string) {
 
   const enrollment = await prisma.courseEnrollment.findFirst({
     where: { id: enrollmentId, organizationId: user.organizationId },
-    select: { id: true, inboundLeadId: true, email: true },
+    select: { id: true, inboundLeadId: true, email: true, phone: true },
   });
   if (!enrollment) {
     return { ok: false as const, message: "Training enrollment not found." };
@@ -3661,7 +3666,52 @@ export async function resendTrainingScheduleAction(enrollmentId: string) {
   const { notifyTrainingSlotsBooked } = await import(
     "@/lib/courses/slot-notifications"
   );
-  const notified = await notifyTrainingSlotsBooked(enrollment.id);
+  const notified = await notifyTrainingSlotsBooked(enrollment.id, {
+    email: true,
+    whatsapp: true,
+  });
+
+  if (notified.ok && enrollment.inboundLeadId) {
+    await logInboundLeadActivity({
+      organizationId: user.organizationId,
+      leadId: enrollment.inboundLeadId,
+      type: "NOTE",
+      body: notified.message,
+      createdByUserId: user.id,
+    });
+  }
+
+  return {
+    ok: notified.ok,
+    message: notified.message,
+  };
+}
+
+/** WhatsApp-only: send training schedule + Meet link to the client phone. */
+export async function sendTrainingScheduleWhatsAppAction(enrollmentId: string) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "STAFF")) {
+    return { ok: false as const, message: "Staff access required." };
+  }
+
+  const enrollment = await prisma.courseEnrollment.findFirst({
+    where: { id: enrollmentId, organizationId: user.organizationId },
+    select: { id: true, inboundLeadId: true, phone: true, meetUrl: true },
+  });
+  if (!enrollment) {
+    return { ok: false as const, message: "Training enrollment not found." };
+  }
+  if (!enrollment.phone?.trim()) {
+    return {
+      ok: false as const,
+      message: "Add the client phone in Details before sending on WhatsApp.",
+    };
+  }
+
+  const { sendTrainingScheduleOnWhatsApp } = await import(
+    "@/lib/courses/slot-notifications"
+  );
+  const notified = await sendTrainingScheduleOnWhatsApp(enrollment.id);
 
   if (notified.ok && enrollment.inboundLeadId) {
     await logInboundLeadActivity({
@@ -3669,8 +3719,8 @@ export async function resendTrainingScheduleAction(enrollmentId: string) {
       leadId: enrollment.inboundLeadId,
       type: "NOTE",
       body: notified.meetUrl
-        ? `Training schedule resent to ${enrollment.email} (with Meet link).`
-        : `Training schedule resent to ${enrollment.email} (Meet link still missing).`,
+        ? `Training schedule sent on WhatsApp to ${enrollment.phone} (with Meet link).`
+        : `Training schedule sent on WhatsApp to ${enrollment.phone} (Meet link still missing).`,
       createdByUserId: user.id,
     });
   }
