@@ -215,7 +215,7 @@ export function LeadTrainingSlotsPanel({
                         });
                       }}
                     >
-                      {pending ? "Sending…" : "Resend email"}
+                      {pending ? "Sending…" : "Send email to client"}
                     </button>
                   </>
                 ) : null}

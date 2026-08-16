@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/db";
 import {
-  COURSE_GOOGLE_CALENDAR_BOOKING_URL,
   courseCohortLabel,
   courseEnrollmentSchedule,
 } from "@/lib/content/courses-enrollment";
@@ -12,10 +11,9 @@ import { sendPlainEmail } from "@/lib/integrations/email";
 import { getLoginBaseUrl } from "@/lib/integrations/email-base-url";
 import { sendWhatsAppText } from "@/lib/whatsapp-bot/send";
 
-const OWNER_NOTIFY_EMAIL =
-  process.env.COURSE_ENROLLMENT_NOTIFY_EMAIL?.trim() || "sheetomatic@gmail.com";
-const OWNER_NOTIFY_PHONE =
-  process.env.COURSE_ENROLLMENT_NOTIFY_PHONE?.trim() || "";
+/** Optional extra copy for ops — only if explicitly configured. Never default to sheetomatic@. */
+const OWNER_NOTIFY_EMAIL = process.env.COURSE_ENROLLMENT_NOTIFY_EMAIL?.trim() || "";
+const OWNER_NOTIFY_PHONE = process.env.COURSE_ENROLLMENT_NOTIFY_PHONE?.trim() || "";
 
 function buildClientMessage(params: {
   name: string;
@@ -107,20 +105,13 @@ async function loadEnrollmentForNotify(enrollmentId: string) {
         take: 3,
       },
       _count: { select: { slots: true } },
-      inboundLead: { select: { organizationId: true } },
     },
   });
 }
 
-function resolveNotifyOrganizationId(enrollment: {
-  organizationId: string | null;
-  inboundLead: { organizationId: string } | null;
-}) {
-  return (
-    enrollment.organizationId?.trim() ||
-    enrollment.inboundLead?.organizationId?.trim() ||
-    null
-  );
+function isValidEmail(value: string | null | undefined) {
+  const email = value?.trim().toLowerCase() ?? "";
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
 }
 
 type NotifyChannels = {
@@ -155,6 +146,35 @@ export async function notifyTrainingSlotsBooked(
     };
   }
 
+  const lead = enrollment.inboundLeadId
+    ? await prisma.inboundLead.findFirst({
+        where: { id: enrollment.inboundLeadId },
+        select: {
+          organizationId: true,
+          email: true,
+          phone: true,
+          name: true,
+        },
+      })
+    : null;
+
+  const clientEmail =
+    isValidEmail(lead?.email) || isValidEmail(enrollment.email);
+  const clientPhone = (lead?.phone || enrollment.phone || "").trim();
+  const clientName = (lead?.name || enrollment.name || "there").trim();
+  const organizationId =
+    enrollment.organizationId?.trim() || lead?.organizationId?.trim() || null;
+
+  if (
+    clientEmail &&
+    clientEmail !== (enrollment.email || "").trim().toLowerCase()
+  ) {
+    await prisma.courseEnrollment.update({
+      where: { id: enrollment.id },
+      data: { email: clientEmail },
+    });
+  }
+
   const meetUrl = resolveTrainingMeetUrl(enrollment);
   const first = enrollment.slots[0]!;
   const base = getLoginBaseUrl();
@@ -166,7 +186,7 @@ export async function notifyTrainingSlotsBooked(
     startsAt: first.startsAt,
     endsAt: first.endsAt,
     meetUrl: first.meetUrl ?? meetUrl,
-    studentName: enrollment.name,
+    studentName: clientName,
   });
   const cohortLabel = courseCohortLabel(
     enrollment.cohort,
@@ -174,10 +194,9 @@ export async function notifyTrainingSlotsBooked(
   );
   const firstWhen = formatSlotWhen(first.startsAt);
   const total = enrollment._count.slots;
-  const organizationId = resolveNotifyOrganizationId(enrollment);
 
   const clientText = buildClientMessage({
-    name: enrollment.name,
+    name: clientName,
     cohortLabel,
     firstWhen,
     total,
@@ -189,9 +208,9 @@ export async function notifyTrainingSlotsBooked(
       : undefined,
   });
   const ownerText = buildOwnerMessage({
-    name: enrollment.name,
-    phone: enrollment.phone,
-    email: enrollment.email,
+    name: clientName,
+    phone: clientPhone,
+    email: clientEmail || enrollment.email,
     cohortLabel,
     firstWhen,
     total,
@@ -207,39 +226,51 @@ export async function notifyTrainingSlotsBooked(
   let whatsappError: string | null = null;
 
   if (sendEmail) {
-    const [clientMail, ownerMail] = await Promise.all([
-      sendPlainEmail({
-        toEmail: enrollment.email,
+    if (!clientEmail) {
+      emailError = "Client email is missing on the lead.";
+    } else {
+      const clientMail = await sendPlainEmail({
+        toEmail: clientEmail,
         subject: meetUrl
           ? `Your training schedule + Meet link — starts ${firstWhen}`
           : `Your training slots are booked — starts ${firstWhen}`,
         text: clientText,
-      }),
-      sendPlainEmail({
-        toEmail: OWNER_NOTIFY_EMAIL,
-        subject: `Slots booked — ${enrollment.name} · ${firstWhen}`,
+      });
+      clientEmailSent = clientMail.sent;
+      if (!clientMail.sent) {
+        emailError =
+          clientMail.reason === "not_configured"
+            ? "Email is not configured on the server."
+            : clientMail.detail || "Client email failed.";
+      }
+    }
+
+    // Internal copy only when explicitly configured — not sheetomatic@ by default.
+    const ownerCopy =
+      OWNER_NOTIFY_EMAIL &&
+      OWNER_NOTIFY_EMAIL !== clientEmail &&
+      !OWNER_NOTIFY_EMAIL.toLowerCase().includes("sheetomatic@gmail.com")
+        ? OWNER_NOTIFY_EMAIL
+        : "";
+    if (ownerCopy) {
+      const ownerMail = await sendPlainEmail({
+        toEmail: ownerCopy,
+        subject: `Slots booked — ${clientName} · ${firstWhen}`,
         text: ownerText,
-      }),
-    ]);
-    clientEmailSent = clientMail.sent;
-    ownerEmailSent = ownerMail.sent;
-    if (!clientMail.sent) {
-      emailError =
-        clientMail.reason === "not_configured"
-          ? "Email is not configured on the server."
-          : clientMail.detail || "Client email failed.";
+      });
+      ownerEmailSent = ownerMail.sent;
     }
   }
 
   if (sendWhatsApp) {
     if (!organizationId) {
       whatsappError = "No workspace linked to this training enrollment.";
-    } else if (!enrollment.phone?.trim()) {
+    } else if (!clientPhone) {
       whatsappError = "Client phone is missing.";
     } else {
       const wa = await sendWhatsAppText({
         organizationId,
-        toPhone: enrollment.phone,
+        toPhone: clientPhone,
         body: clientText,
       });
       clientWhatsAppSent = wa.sent;
@@ -270,14 +301,14 @@ export async function notifyTrainingSlotsBooked(
   if (sendWhatsApp) {
     parts.push(
       clientWhatsAppSent
-        ? `WhatsApp sent to ${enrollment.phone}${meetUrl ? " (with Meet link)" : ""}`
+        ? `WhatsApp sent to ${clientPhone}${meetUrl ? " (with Meet link)" : ""}`
         : `WhatsApp failed: ${whatsappError}`,
     );
   }
   if (sendEmail) {
     parts.push(
       clientEmailSent
-        ? `Email sent to ${enrollment.email}${meetUrl ? " (with Meet link)" : ""}`
+        ? `Email sent to ${clientEmail}${meetUrl ? " (with Meet link)" : ""}`
         : `Email failed: ${emailError}`,
     );
   }
@@ -300,8 +331,8 @@ export async function notifyTrainingSlotsBooked(
     clientEmailSent,
     ownerEmailSent,
     clientWhatsAppSent,
-    phone: enrollment.phone,
-    email: enrollment.email,
+    phone: clientPhone || null,
+    email: clientEmail,
   };
 }
 

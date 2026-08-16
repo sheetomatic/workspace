@@ -262,7 +262,7 @@ export function TrainingStudentsPanel({
                             title="Resend email + WhatsApp"
                           >
                             <Mail size={16} aria-hidden />
-                            {pending ? "Sending…" : "Resend email"}
+                            {pending ? "Sending…" : "Send email to client"}
                           </button>
                         </>
                       ) : null}
