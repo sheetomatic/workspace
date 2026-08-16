@@ -218,6 +218,39 @@
   background: #fff;
 }
 
+.learn-material-list,
+.learn-content-list {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.learn-material-list a {
+  color: #0f766e;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.learn-content-list {
+  gap: 0.65rem;
+}
+
+.learn-content-list li {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.learn-content-list span {
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
 .learn-crumb {
   margin: 0;
   font-size: 0.85rem;

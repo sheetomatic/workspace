@@ -16,6 +16,7 @@ import {
   toIcsUtcStamp,
 } from "@/lib/leads/calendar-links";
 
+import { toTrainingMaterialView } from "@/lib/courses/session-materials";
 import {
   cohortFromWeekdays,
   formatWeekdaysCsv,
@@ -515,7 +516,7 @@ export async function listActiveTrainingStudents(params: {
       status: { in: ["CONFIRMED", "PAYMENT_PENDING"] },
       slots: {
         some: {
-          status: "SCHEDULED",
+          status: { in: ["SCHEDULED", "COMPLETED"] },
           ...orgFilter,
         },
       },
@@ -525,6 +526,20 @@ export async function listActiveTrainingStudents(params: {
       slots: {
         where: { status: { not: "CANCELLED" } },
         orderBy: { sessionNumber: "asc" },
+        include: {
+          materials: {
+            orderBy: { createdAt: "asc" },
+            select: {
+              id: true,
+              kind: true,
+              title: true,
+              url: true,
+              fileName: true,
+              mimeType: true,
+              fileSize: true,
+            },
+          },
+        },
       },
     },
     orderBy: [{ name: "asc" }, { createdAt: "desc" }],
@@ -578,6 +593,7 @@ export async function listActiveTrainingStudents(params: {
         meetUrl: slot.meetUrl,
         whenLabel: formatSlotWhen(slot.startsAt),
         joinUrl: slot.meetUrl?.trim() || enrollment.meetUrl?.trim() || null,
+        materials: slot.materials.map(toTrainingMaterialView),
       })),
     };
   });
@@ -616,6 +632,20 @@ export async function listLeadTrainingEnrollments(params: {
       slots: {
         where: { status: { not: "CANCELLED" } },
         orderBy: { sessionNumber: "asc" },
+        include: {
+          materials: {
+            orderBy: { createdAt: "asc" },
+            select: {
+              id: true,
+              kind: true,
+              title: true,
+              url: true,
+              fileName: true,
+              mimeType: true,
+              fileSize: true,
+            },
+          },
+        },
       },
     },
     orderBy: { createdAt: "desc" },

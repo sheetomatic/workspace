@@ -83,7 +83,21 @@ export async function getLearnEnrollment() {
       slots: {
         where: { status: { in: ["SCHEDULED", "COMPLETED"] } },
         orderBy: { startsAt: "asc" },
-        take: 40,
+        take: 80,
+        include: {
+          materials: {
+            orderBy: { createdAt: "asc" },
+            select: {
+              id: true,
+              kind: true,
+              title: true,
+              url: true,
+              fileName: true,
+              mimeType: true,
+              fileSize: true,
+            },
+          },
+        },
       },
     },
   });

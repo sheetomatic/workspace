@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { Fragment, useMemo, useState, useTransition } from "react";
 import { ChevronDown, ExternalLink, Mail, MessageCircle, Video } from "lucide-react";
 import {
   resendTrainingScheduleAction,
@@ -10,6 +10,8 @@ import {
   sendTrainingScheduleWhatsAppAction,
   updateLeadTrainingSlotStatusAction,
 } from "@/app/app/leads/actions";
+import { TrainingSlotContentEditor } from "@/components/saas/training-slot-content-editor";
+import type { TrainingMaterialView } from "@/lib/courses/session-materials";
 
 export type TrainingStudentSlotView = {
   id: string;
@@ -21,6 +23,7 @@ export type TrainingStudentSlotView = {
   meetUrl: string | null;
   whenLabel: string;
   joinUrl: string | null;
+  materials: TrainingMaterialView[];
 };
 
 export type TrainingStudentView = {
@@ -85,7 +88,22 @@ export function TrainingStudentsPanel({
   const [meetDraft, setMeetDraft] = useState<Record<string, string>>({});
   // Instant feedback while the server data refreshes in the background.
   const [statusOverride, setStatusOverride] = useState<Record<string, SlotStatus>>({});
+  const [contentSlotId, setContentSlotId] = useState<string | null>(null);
   const router = useRouter();
+
+  function runContent(work: () => Promise<{ ok: boolean; message: string }>) {
+    startTransition(async () => {
+      setError(null);
+      setNotice(null);
+      const result = await work();
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setNotice(result.message);
+      router.refresh();
+    });
+  }
 
   function onSlotStatus(slotId: string, status: SlotStatus) {
     startTransition(async () => {
@@ -97,6 +115,7 @@ export function TrainingStudentsPanel({
         return;
       }
       setStatusOverride((current) => ({ ...current, [slotId]: status }));
+      if (status === "COMPLETED") setContentSlotId(slotId);
       router.refresh();
     });
   }
@@ -392,14 +411,23 @@ export function TrainingStudentsPanel({
                               <th>When (IST)</th>
                               <th>Status</th>
                               <th>Link to join</th>
+                              <th>Content</th>
                               {canManage ? <th>Update</th> : null}
                             </tr>
                           </thead>
                           <tbody>
                             {student.slots.map((slot) => {
                               const status = statusOverride[slot.id] ?? slot.status;
+                              const recs = slot.materials.filter(
+                                (item) => item.kind === "RECORDING",
+                              ).length;
+                              const docs = slot.materials.filter(
+                                (item) => item.kind === "DOCUMENT",
+                              ).length;
+                              const open = contentSlotId === slot.id;
                               return (
-                                <tr key={slot.id}>
+                                <Fragment key={slot.id}>
+                                <tr>
                                   <td>{slot.sessionNumber}</td>
                                   <td className="ws-apple-cell-primary">
                                     {slot.whenLabel}
@@ -417,6 +445,21 @@ export function TrainingStudentsPanel({
                                     ) : (
                                       "—"
                                     )}
+                                  </td>
+                                  <td>
+                                    <button
+                                      type="button"
+                                      className="ws-btn ws-btn-secondary training-slot-btn"
+                                      onClick={() =>
+                                        setContentSlotId(open ? null : slot.id)
+                                      }
+                                    >
+                                      {recs || docs
+                                        ? `${recs ? `${recs} rec` : ""}${recs && docs ? " · " : ""}${docs ? `${docs} doc` : ""}`
+                                        : canManage
+                                          ? "Add"
+                                          : "—"}
+                                    </button>
                                   </td>
                                   {canManage ? (
                                     <td className="training-slot-actions">
@@ -458,6 +501,20 @@ export function TrainingStudentsPanel({
                                     </td>
                                   ) : null}
                                 </tr>
+                                {open && canManage ? (
+                                  <tr>
+                                    <td colSpan={canManage ? 6 : 5}>
+                                      <TrainingSlotContentEditor
+                                        slotId={slot.id}
+                                        status={status}
+                                        materials={slot.materials}
+                                        pending={pending}
+                                        run={runContent}
+                                      />
+                                    </td>
+                                  </tr>
+                                ) : null}
+                                </Fragment>
                               );
                             })}
                           </tbody>

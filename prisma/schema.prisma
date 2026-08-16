@@ -3104,12 +3104,37 @@ model TrainingCourseSlot {
   notes          String?
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
+  materials      TrainingSessionMaterial[]
 
   @@unique([enrollmentId, sessionNumber])
   @@index([enrollmentId, startsAt])
   @@index([organizationId, startsAt])
   @@index([inboundLeadId, startsAt])
   @@index([status, startsAt])
+}
+
+enum TrainingMaterialKind {
+  RECORDING
+  DOCUMENT
+}
+
+/// Recording or document attached to a live 1:1 session (admin upload).
+model TrainingSessionMaterial {
+  id          String               @id @default(cuid())
+  slotId      String
+  slot        TrainingCourseSlot   @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  kind        TrainingMaterialKind
+  title       String
+  url         String?
+  fileName    String?
+  mimeType    String?
+  fileSize    Int?
+  data        Bytes?
+  createdById String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([slotId, kind])
 }
 
 enum TemplateProductType {

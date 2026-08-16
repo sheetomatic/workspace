@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { Fragment, useEffect, useState, useTransition } from "react";
 import {
   bookLeadTrainingSlotsAction,
   getLeadTrainingSlotsAction,
@@ -9,11 +9,14 @@ import {
   sendTrainingScheduleWhatsAppAction,
   updateLeadTrainingSlotStatusAction,
 } from "@/app/app/leads/actions";
+import { TrainingSlotContentEditor } from "@/components/saas/training-slot-content-editor";
+import type { TrainingMaterialView } from "@/lib/courses/session-materials";
 import {
   TRAINING_BOOKING_WINDOW,
   TRAINING_SESSION_DURATION_OPTIONS,
   TRAINING_WEEKDAYS,
 } from "@/lib/courses/weekdays";
+import "@/components/saas/training-students-panel.css";
 
 type SlotRow = {
   id: string;
@@ -25,6 +28,7 @@ type SlotRow = {
   meetUrl: string | null;
   whenLabel: string;
   googleCalendarUrl: string;
+  materials: TrainingMaterialView[];
 };
 
 type EnrollmentRow = {
@@ -70,6 +74,7 @@ export function LeadTrainingSlotsPanel({
   const [isError, setIsError] = useState(false);
   const [enrollments, setEnrollments] = useState<EnrollmentRow[]>([]);
   const [meetDraft, setMeetDraft] = useState<Record<string, string>>({});
+  const [contentSlotId, setContentSlotId] = useState<string | null>(null);
 
   function reload() {
     setLoading(true);
@@ -116,7 +121,6 @@ export function LeadTrainingSlotsPanel({
         setIsError(true);
         return;
       }
-      // Optimistic-ish: update locally instead of a full reload.
       setEnrollments((rows) =>
         rows.map((row) => ({
           ...row,
@@ -125,6 +129,19 @@ export function LeadTrainingSlotsPanel({
           ),
         })),
       );
+      if (status === "COMPLETED") setContentSlotId(slotId);
+      reload();
+    });
+  }
+
+  function runContent(work: () => Promise<{ ok: boolean; message: string }>) {
+    startTransition(async () => {
+      setMessage(null);
+      setIsError(false);
+      const result = await work();
+      setMessage(result.message);
+      setIsError(!result.ok);
+      if (result.ok) reload();
     });
   }
 
@@ -304,14 +321,23 @@ export function LeadTrainingSlotsPanel({
                     <th>When (IST)</th>
                     <th>Status</th>
                     <th>Join</th>
+                    <th>Content</th>
                     {canManage ? <th>Update</th> : null}
                   </tr>
                 </thead>
                 <tbody>
                   {enrollment.slots.map((slot) => {
                     const slotJoin = slot.meetUrl || enrollment.meetUrl;
+                    const recs = (slot.materials ?? []).filter(
+                      (item) => item.kind === "RECORDING",
+                    ).length;
+                    const docs = (slot.materials ?? []).filter(
+                      (item) => item.kind === "DOCUMENT",
+                    ).length;
+                    const open = contentSlotId === slot.id;
                     return (
-                      <tr key={slot.id}>
+                      <Fragment key={slot.id}>
+                      <tr>
                         <td>{slot.sessionNumber}</td>
                         <td>{slot.whenLabel}</td>
                         <td>{slotStatusLabel(slot.status)}</td>
@@ -327,6 +353,21 @@ export function LeadTrainingSlotsPanel({
                           ) : (
                             "—"
                           )}
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="btn-secondary btn-sm"
+                            onClick={() =>
+                              setContentSlotId(open ? null : slot.id)
+                            }
+                          >
+                            {recs || docs
+                              ? `${recs ? `${recs} rec` : ""}${recs && docs ? " · " : ""}${docs ? `${docs} doc` : ""}`
+                              : canManage
+                                ? "Add"
+                                : "—"}
+                          </button>
                         </td>
                         {canManage ? (
                           <td className="leads-training-slot-actions">
@@ -362,6 +403,20 @@ export function LeadTrainingSlotsPanel({
                           </td>
                         ) : null}
                       </tr>
+                      {open && canManage ? (
+                        <tr>
+                          <td colSpan={canManage ? 6 : 5}>
+                            <TrainingSlotContentEditor
+                              slotId={slot.id}
+                              status={slot.status}
+                              materials={slot.materials ?? []}
+                              pending={pending}
+                              run={runContent}
+                            />
+                          </td>
+                        </tr>
+                      ) : null}
+                      </Fragment>
                     );
                   })}
                 </tbody>

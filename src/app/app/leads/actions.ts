@@ -3452,6 +3452,16 @@ export async function getLeadTrainingSlotsAction(leadId: string) {
         status: slot.status,
         meetUrl: slot.meetUrl,
         whenLabel: formatSlotWhen(slot.startsAt),
+        materials: slot.materials.map((item) => ({
+          id: item.id,
+          kind: item.kind,
+          title: item.title,
+          url: item.url,
+          fileName: item.fileName,
+          mimeType: item.mimeType,
+          fileSize: item.fileSize,
+          href: item.url?.trim() || `/api/learn/materials/${item.id}`,
+        })),
         googleCalendarUrl: buildTrainingGoogleCalendarUrl({
           title: slot.title,
           startsAt: slot.startsAt,

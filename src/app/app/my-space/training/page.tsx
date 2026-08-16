@@ -48,6 +48,7 @@ export default async function MySpaceTrainingPage() {
       meetUrl: slot.meetUrl,
       whenLabel: slot.whenLabel,
       joinUrl: slot.joinUrl,
+      materials: slot.materials,
     })),
   }));
 

@@ -58,6 +58,7 @@ export default async function CrmTrainingPage() {
       meetUrl: slot.meetUrl,
       whenLabel: slot.whenLabel,
       joinUrl: slot.joinUrl,
+      materials: slot.materials,
     })),
   }));
 

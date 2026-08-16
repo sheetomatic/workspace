@@ -6,7 +6,7 @@ export function LearnNav({
   current,
 }: {
   name: string;
-  current: "home" | "courses" | "schedule";
+  current: "home" | "schedule" | "contents";
 }) {
   return (
     <header className="learn-nav">
@@ -16,19 +16,19 @@ export function LearnNav({
       </div>
       <nav>
         <Link href="/learn" className={current === "home" ? "is-active" : ""}>
-          Home
-        </Link>
-        <Link
-          href="/learn/courses"
-          className={current === "courses" ? "is-active" : ""}
-        >
-          Courses
+          Status
         </Link>
         <Link
           href="/learn/schedule"
           className={current === "schedule" ? "is-active" : ""}
         >
           Schedule
+        </Link>
+        <Link
+          href="/learn/contents"
+          className={current === "contents" ? "is-active" : ""}
+        >
+          Contents
         </Link>
       </nav>
       <form action={studentLearnLogoutAction}>

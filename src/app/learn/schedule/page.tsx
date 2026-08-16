@@ -1,9 +1,16 @@
 import { MarketingPage, SiteFooter, SiteHeader } from "@/app/components";
 import { LearnNav } from "@/components/learn/learn-nav";
+import { LearnSessionMaterials } from "@/components/learn/learn-session-materials";
 import { requireStudent } from "@/lib/learn/require";
 import { formatSlotWhen } from "@/lib/courses/slots";
 import { courseCohortLabel } from "@/lib/content/courses-enrollment";
 import "@/components/learn/learn-panel.css";
+
+function slotStatusLabel(status: string) {
+  if (status === "COMPLETED") return "Done";
+  if (status === "CANCELLED") return "Cancelled";
+  return "Scheduled";
+}
 
 export default async function LearnSchedulePage() {
   const enrollment = await requireStudent();
@@ -38,8 +45,11 @@ export default async function LearnSchedulePage() {
               {enrollment.slots.map((slot) => (
                 <li key={slot.id}>
                   <strong>#{slot.sessionNumber}</strong>
-                  <span>{formatSlotWhen(slot.startsAt)}</span>
-                  <em>{slot.status === "COMPLETED" ? "Done" : "Scheduled"}</em>
+                  <div>
+                    <span>{formatSlotWhen(slot.startsAt)}</span>
+                    <LearnSessionMaterials materials={slot.materials} />
+                  </div>
+                  <em>{slotStatusLabel(slot.status)}</em>
                 </li>
               ))}
             </ol>
