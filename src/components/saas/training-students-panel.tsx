@@ -227,9 +227,21 @@ export function TrainingStudentsPanel({
                 {open ? (
                   <div className="training-student-body">
                     <div className="training-student-actions">
+                      {canManage ? (
+                        <button
+                          type="button"
+                          className="ws-btn ws-btn-primary training-wa-btn"
+                          disabled={pending}
+                          onClick={() => onSendWhatsApp(student.id)}
+                          title="Send schedule + Google Meet on WhatsApp"
+                        >
+                          <MessageCircle size={16} aria-hidden />
+                          {pending ? "Sending…" : "WhatsApp"}
+                        </button>
+                      ) : null}
                       {student.joinUrl ? (
                         <a
-                          className="ws-btn ws-btn-primary"
+                          className="ws-btn ws-btn-secondary"
                           href={student.joinUrl}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -239,32 +251,20 @@ export function TrainingStudentsPanel({
                         </a>
                       ) : (
                         <span className="training-join-missing">
-                          No Meet link yet — paste it below and send the schedule.
+                          No Meet link yet — paste it below, then tap WhatsApp.
                         </span>
                       )}
                       {canManage ? (
-                        <>
-                          <button
-                            type="button"
-                            className="ws-btn ws-btn-secondary"
-                            disabled={pending}
-                            onClick={() => onSendWhatsApp(student.id)}
-                            title="Send schedule + Meet link on WhatsApp"
-                          >
-                            <MessageCircle size={16} aria-hidden />
-                            {pending ? "Sending…" : "Send on WhatsApp"}
-                          </button>
-                          <button
-                            type="button"
-                            className="ws-btn ws-btn-secondary"
-                            disabled={pending}
-                            onClick={() => onResendSchedule(student.id)}
-                            title="Resend email + WhatsApp"
-                          >
-                            <Mail size={16} aria-hidden />
-                            {pending ? "Sending…" : "Send email to client"}
-                          </button>
-                        </>
+                        <button
+                          type="button"
+                          className="ws-btn ws-btn-secondary"
+                          disabled={pending}
+                          onClick={() => onResendSchedule(student.id)}
+                          title="Email the client schedule"
+                        >
+                          <Mail size={16} aria-hidden />
+                          {pending ? "Sending…" : "Email client"}
+                        </button>
                       ) : null}
                       {student.inboundLeadId ? (
                         <Link

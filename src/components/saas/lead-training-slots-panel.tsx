@@ -183,7 +183,7 @@ export function LeadTrainingSlotsPanel({
                   <>
                     <button
                       type="button"
-                      className="btn-secondary btn-sm"
+                      className="btn-primary btn-sm"
                       disabled={pending}
                       onClick={() => {
                         startTransition(async () => {
@@ -197,7 +197,7 @@ export function LeadTrainingSlotsPanel({
                         });
                       }}
                     >
-                      {pending ? "Sending…" : "Send on WhatsApp"}
+                      {pending ? "Sending…" : "WhatsApp"}
                     </button>
                     <button
                       type="button"

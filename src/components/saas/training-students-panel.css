@@ -180,6 +180,12 @@
   justify-self: start;
 }
 
+.training-wa-btn {
+  background: #128c7e !important;
+  border-color: #128c7e !important;
+  color: #fff !important;
+}
+
 .training-student-summary {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
