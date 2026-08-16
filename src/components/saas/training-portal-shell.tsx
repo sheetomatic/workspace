@@ -31,7 +31,7 @@ export function TrainingPortalShell({
   }, [pathname, router]);
 
   return (
-    <div className="learn-admin-shell">
+    <div className="learn-admin-shell workspace-app">
       <header className="learn-admin-bar">
         <div className="learn-admin-brand">
           <strong>Sheetomatic Learn</strong>

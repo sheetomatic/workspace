@@ -9,6 +9,7 @@ import {
 } from "@/app/app/leads/training-content-actions";
 import { TRACK_LABEL } from "@/lib/learn/catalog";
 import { lessonHasTeachingContent } from "@/lib/learn/media";
+import { learnMsmeCopyUrl } from "@/lib/learn/msme-sheet";
 import { MSME_FIRM } from "@/lib/learn/msme-workbook";
 
 export type CurriculumLessonView = {
@@ -116,17 +117,18 @@ export function TrainingCurriculumPanel({
             </span>
           </div>
           <div>
-            {copyUrl ? (
-              <a
-                className="ws-btn ws-btn-primary"
-                href={copyUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Copy to Google Sheets
-              </a>
-            ) : null}
-            <a className="ws-btn ws-btn-secondary" href="/api/learn/samples/workbook">
+            <a
+              className="training-workbook-btn is-primary"
+              href={copyUrl || learnMsmeCopyUrl() || "#"}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Copy to Google Sheets
+            </a>
+            <a
+              className="training-workbook-btn is-secondary"
+              href="/api/learn/samples/workbook"
+            >
               Download Excel
             </a>
           </div>

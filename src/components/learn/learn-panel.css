@@ -306,8 +306,16 @@
 .learn-workbook-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
+  gap: 0.5rem;
   align-items: center;
+}
+
+.learn-workbook-actions a.learn-btn-primary,
+.learn-workbook-actions a.learn-btn-secondary {
+  min-height: 36px;
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
 }
 
 .learn-teach p,

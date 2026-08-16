@@ -351,7 +351,42 @@
 .training-workbook-bar div:last-child {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.training-workbook-bar a.training-workbook-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.training-workbook-bar a.training-workbook-btn.is-primary {
+  border: 0;
+  background: #0f766e;
+  color: #fff;
+}
+
+.training-workbook-bar a.training-workbook-btn.is-primary:hover {
+  background: #0d9488;
+}
+
+.training-workbook-bar a.training-workbook-btn.is-secondary {
+  border: 1px solid #99f6e4;
+  background: #fff;
+  color: #0f766e;
+}
+
+.training-workbook-bar a.training-workbook-btn.is-secondary:hover {
+  background: #ccfbf1;
 }
 
 .training-curriculum {
