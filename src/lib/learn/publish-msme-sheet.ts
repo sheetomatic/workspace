@@ -1,6 +1,7 @@
 import { google } from "googleapis";
 import { withDbRetry } from "@/lib/db";
 import { getGoogleSheetsCredentials } from "@/lib/integrations/google-sheets-auth";
+import { learnMsmeCopyUrl } from "@/lib/learn/msme-sheet";
 import { buildMsmeWorkbookAoa } from "@/lib/learn/msme-workbook";
 
 function cellToValue(cell: string | number | { f: string }) {
@@ -22,24 +23,7 @@ function googleErrorMessage(error: unknown) {
 }
 
 export async function getLearnMsmeCopyUrl() {
-  try {
-    const fromEnv = process.env.LEARN_MSME_SHEET_ID?.trim();
-    if (fromEnv) {
-      return `https://docs.google.com/spreadsheets/d/${fromEnv}/copy`;
-    }
-    const course = await withDbRetry((db) =>
-      db.trainingCourse.findUnique({
-        where: { track: "SHEETS" },
-        select: { sampleSheetId: true },
-      }),
-    );
-    const id = course?.sampleSheetId || "";
-    if (!id) return null;
-    return `https://docs.google.com/spreadsheets/d/${id}/copy`;
-  } catch (error) {
-    console.error("[learn] copy url unavailable", error);
-    return null;
-  }
+  return learnMsmeCopyUrl();
 }
 
 export async function publishMsmeWorkbookToGoogle() {

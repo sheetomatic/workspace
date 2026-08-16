@@ -10,9 +10,9 @@ export function LearnWorkbookBar({
       <div>
         <strong>Practice workbook — {MSME_FIRM.name}</strong>
         <span>
-          1,000+ sales lines from a Raipur electrical shop. Upload this Excel to
-          Google Drive → Open with Google Sheets. That is your copy. Then apply
-          each topic on the same file — lookups, dashboard, ageing, GST.
+          1,000+ sales lines from a Raipur electrical shop. Click Copy to Google
+          Sheets, then File → Make a copy. Or download Excel. Apply each topic
+          on the same file — lookups, dashboard, ageing, GST.
         </span>
       </div>
       <div className="learn-workbook-actions">
