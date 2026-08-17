@@ -32,7 +32,7 @@ export default async function LeadsLayout({
   );
   if (learnPortal) {
     return (
-      <div className="ws-module-layout leads-module-layout">
+      <div className="ws-module-layout ws-module-layout--no-subnav leads-module-layout">
         <WorkspacePageScrollBridge preferSelector=".ws-module-layout-main" />
         <div className="ws-module-layout-main">{children}</div>
       </div>

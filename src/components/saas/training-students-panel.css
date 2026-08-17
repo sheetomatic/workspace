@@ -643,15 +643,25 @@
 }
 
 .learn-admin-main {
+  display: block;
+  width: 100%;
+  min-width: 0;
   padding: 0;
 }
 
+.learn-admin-shell.workspace-app .ws-module-layout,
 .learn-admin-shell .ws-module-layout {
+  display: block;
+  width: 100%;
   min-height: calc(100vh - 64px);
+  grid-template-columns: minmax(0, 1fr);
 }
 
-.learn-admin-shell .leads-module-layout {
-  display: block;
+.learn-admin-shell.workspace-app .ws-module-layout-main,
+.learn-admin-shell .ws-module-layout-main,
+.learn-admin-shell .saas-page {
+  width: 100%;
+  max-width: none;
 }
 
 .learn-portal-page {
