@@ -39,10 +39,23 @@ export const TEMPLATE_PRODUCT_SEEDS: Array<{
     active: true,
   },
   {
+    slug: "appsheet-sales-to-dispatch",
+    name: "Sales to Dispatch – Flora (AppSheet)",
+    type: "APPSHEET",
+    priceInr: 9999,
+    description:
+      "AppSheet for florists and nurseries — take a sale, pack it, and dispatch it in one flow. Capture customer orders and line items, move each order from Sold → Packed → Dispatched → Delivered, assign a delivery person, and see what is still pending to go out today. Built from the DNM Flora Sales-to-Dispatch app. Pay on UPI — after confirmation we email your AppSheet copy link.",
+    sortOrder: 9,
+    thumbnailUrl: "/images/templates/appsheet-sales-to-dispatch.png",
+    copyLink:
+      "https://www.appsheet.com/template/showdef?appId=SalesToDispatch-DNMFlora-288801316&quickStart=False",
+    active: true,
+  },
+  {
     slug: "appsheet-attendance-leave",
     name: "HRMS – Attendance & Leave (AppSheet)",
     type: "APPSHEET",
-    priceInr: 1999,
+    priceInr: 9999,
     description:
       "WorkTrack Pro — one-time purchase HRMS for small teams. Real-time attendance tracking, simple in/out punches, leave requests with quick manager approval, and monthly attendance reports for payroll-ready insights. Pay on UPI — after confirmation we email your AppSheet copy link.",
     sortOrder: 10,
@@ -55,7 +68,7 @@ export const TEMPLATE_PRODUCT_SEEDS: Array<{
     slug: "appsheet-visitor-tracking",
     name: "Visitor Tracking (AppSheet)",
     type: "APPSHEET",
-    priceInr: 999,
+    priceInr: 9999,
     description:
       "AppSheet visitor check-in and tracking. Pay on UPI — after CRM confirm, we email your AppSheet copy link.",
     sortOrder: 11,
@@ -67,7 +80,7 @@ export const TEMPLATE_PRODUCT_SEEDS: Array<{
     slug: "appsheet-inventory-management",
     name: "Inventory Management System (AppSheet)",
     type: "APPSHEET",
-    priceInr: 1499,
+    priceInr: 9999,
     description:
       "AppSheet inventory / stock management. Pay on UPI — after CRM confirm, we email your AppSheet copy link.",
     sortOrder: 12,
@@ -79,7 +92,7 @@ export const TEMPLATE_PRODUCT_SEEDS: Array<{
     slug: "appsheet-fms",
     name: "FMS (AppSheet)",
     type: "APPSHEET",
-    priceInr: 1499,
+    priceInr: 9999,
     description:
       "AppSheet Flow Management System. Pay on UPI — after CRM confirm, we email your AppSheet copy link.",
     sortOrder: 13,
@@ -91,7 +104,7 @@ export const TEMPLATE_PRODUCT_SEEDS: Array<{
     slug: "appsheet-task-management",
     name: "Task Management System (AppSheet)",
     type: "APPSHEET",
-    priceInr: 999,
+    priceInr: 9999,
     description:
       "AppSheet task assignment and follow-up. Pay on UPI — after CRM confirm, we email your AppSheet copy link.",
     sortOrder: 14,
@@ -103,7 +116,7 @@ export const TEMPLATE_PRODUCT_SEEDS: Array<{
     slug: "appsheet-crm",
     name: "CRM (AppSheet)",
     type: "APPSHEET",
-    priceInr: 1499,
+    priceInr: 9999,
     description:
       "AppSheet CRM for leads and follow-ups. Pay on UPI — after CRM confirm, we email your AppSheet copy link.",
     sortOrder: 15,
@@ -115,7 +128,7 @@ export const TEMPLATE_PRODUCT_SEEDS: Array<{
     slug: "appsheet-grievance-management",
     name: "Grievance Management System (AppSheet)",
     type: "APPSHEET",
-    priceInr: 1299,
+    priceInr: 9999,
     description:
       "AppSheet grievance / complaint tracking. Pay on UPI — after CRM confirm, we email your AppSheet copy link.",
     sortOrder: 16,
@@ -127,7 +140,7 @@ export const TEMPLATE_PRODUCT_SEEDS: Array<{
     slug: "appsheet-crm-electric-works",
     name: "CRM – Electric Works Shop (AppSheet)",
     type: "APPSHEET",
-    priceInr: 1499,
+    priceInr: 9999,
     description:
       "Ready-made CRM built for electric works shops — track enquiries, customers, quotations, and job follow-ups in one AppSheet app. Pay on UPI — after confirmation we email your AppSheet copy link.",
     sortOrder: 17,
@@ -152,7 +165,7 @@ export const TEMPLATE_PRODUCT_SEEDS: Array<{
     slug: "appsheet-expense-tracker",
     name: "Expense Tracker (AppSheet)",
     type: "APPSHEET",
-    priceInr: 699,
+    priceInr: 9999,
     description:
       "AppSheet expense tracker — log expenses on the go from your phone, with categories, payment modes, monthly budgets, and spend reports. Pay on UPI — after confirmation we email your AppSheet copy link.",
     sortOrder: 18,

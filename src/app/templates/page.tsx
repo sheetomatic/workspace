@@ -6,7 +6,10 @@ import {
 } from "@/app/components";
 import { TemplatesStoreContent } from "@/components/marketing/templates-store-content";
 import { marketingMetadata } from "@/lib/marketing-metadata";
-import { listActiveTemplateProducts } from "@/lib/templates/store";
+import {
+  listActiveTemplateProducts,
+  seedTemplateProducts,
+} from "@/lib/templates/store";
 
 export const metadata: Metadata = marketingMetadata({
   title: "AppSheet & Google Sheets Templates | Smart Office Templates",
@@ -16,6 +19,7 @@ export const metadata: Metadata = marketingMetadata({
 });
 
 export default async function TemplatesPage() {
+  await seedTemplateProducts();
   const products = await listActiveTemplateProducts();
 
   return (
