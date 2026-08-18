@@ -22,10 +22,18 @@ export function LearnSessionMaterials({
         const view = toTrainingMaterialView(item);
         return (
           <li key={item.id}>
-            <a href={view.href} target="_blank" rel="noreferrer">
-              {item.kind === "RECORDING" ? "Watch recording" : "Open document"}
-              {" — "}
-              {item.title}
+            <a
+              className={
+                item.kind === "RECORDING"
+                  ? "learn-btn-primary"
+                  : "learn-btn-secondary"
+              }
+              href={view.href}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {item.kind === "RECORDING" ? "Watch" : "Open"}
+              {item.title ? ` · ${item.title}` : ""}
             </a>
           </li>
         );

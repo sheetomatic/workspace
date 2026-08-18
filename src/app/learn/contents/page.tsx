@@ -18,23 +18,31 @@ export default async function LearnContentsPage() {
             <p className="learn-kicker">Library</p>
             <h1>Class files</h1>
             <p className="learn-lead">
-              Recordings and documents from your live sessions. The full course
-              lives under Learn.
+              Recordings and documents from live sessions. The course itself is
+              under Learn.
             </p>
           </header>
           {sessions.length === 0 ? (
-            <p className="learn-muted">
-              Nothing uploaded yet. After a class is marked done, the recording
-              and files will appear here.
-            </p>
+            <div className="learn-empty">
+              <p className="learn-kicker">Nothing yet</p>
+              <h2>Files appear after class</h2>
+              <p className="learn-muted">
+                When your trainer pastes the Unlisted YouTube and notes, they
+                show here as Watch and Open.
+              </p>
+            </div>
           ) : (
             <ol className="learn-content-list">
               {sessions.map((slot) => (
                 <li key={slot.id}>
-                  <strong>
-                    Session {slot.sessionNumber}
-                    {slot.status === "COMPLETED" ? " · Done" : ""}
-                  </strong>
+                  <div className="learn-content-head">
+                    <strong>Session {slot.sessionNumber}</strong>
+                    <em
+                      className={`learn-status is-${slot.status.toLowerCase()}`}
+                    >
+                      {slot.status === "COMPLETED" ? "Done" : slot.status}
+                    </em>
+                  </div>
                   <span>{formatSlotWhen(slot.startsAt)}</span>
                   <LearnSessionMaterials materials={slot.materials} />
                 </li>

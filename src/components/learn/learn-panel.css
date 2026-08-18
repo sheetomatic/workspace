@@ -134,7 +134,9 @@
   text-decoration: none;
 }
 
-.learn-nav-brand a {
+.learn-nav-brand a,
+.learn-nav-brand strong {
+  display: block;
   font-weight: 750;
   color: #f4f7f6;
   text-decoration: none;
@@ -310,12 +312,26 @@
   color: #9aada7;
 }
 
-.learn-spotlight-actions {
+.learn-spotlight-actions,
+.learn-join {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.55rem;
+}
+
+.learn-spotlight-actions {
   margin-top: 0.55rem;
+}
+
+.learn-join.is-compact {
+  margin-top: 0.45rem;
+}
+
+.learn-join.is-compact .learn-btn-primary,
+.learn-join.is-compact .learn-btn-secondary {
+  padding: 0.38rem 0.8rem;
+  font-size: 0.78rem;
 }
 
 .learn-spotlight .learn-btn-primary {
@@ -425,11 +441,44 @@
   display: grid;
   grid-template-columns: 3.1rem 1fr auto;
   gap: 0.75rem;
-  align-items: center;
-  padding: 0.9rem 1rem;
+  align-items: start;
+  padding: 0.95rem 1.05rem;
   border: 1px solid #d7e0dc;
   border-radius: 16px;
   background: #fff;
+}
+
+.learn-schedule-list li.is-live {
+  border-color: #0f766e;
+  background: #f0fdfa;
+}
+
+.learn-schedule-copy {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.learn-empty {
+  display: grid;
+  gap: 0.4rem;
+  padding: 1.35rem 1.3rem;
+  border-radius: 20px;
+  background: #0b1f1c;
+  color: #e7eeeb;
+}
+
+.learn-empty .learn-kicker {
+  color: #5eead4;
+}
+
+.learn-empty h2 {
+  margin: 0;
+  color: #f4f7f6;
+  letter-spacing: -0.03em;
+}
+
+.learn-empty .learn-muted {
+  color: #9aada7;
 }
 
 .learn-schedule-list strong {
@@ -461,29 +510,54 @@
 .learn-material-list,
 .learn-content-list {
   list-style: none;
-  margin: 0.4rem 0 0;
+  margin: 0.45rem 0 0;
   padding: 0;
-  display: grid;
-  gap: 0.35rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
 }
 
 .learn-material-list a {
-  color: #0f766e;
-  font-size: 0.88rem;
-  font-weight: 650;
+  text-decoration: none;
+}
+
+.learn-course-card {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.learn-course-card .learn-progress-track {
+  max-width: none;
+  margin: 0.35rem 0 0.1rem;
 }
 
 .learn-content-list {
+  display: grid;
   gap: 0.7rem;
 }
 
 .learn-content-list li {
   display: grid;
-  gap: 0.3rem;
-  padding: 1rem 1.1rem;
+  gap: 0.35rem;
+  padding: 1.05rem 1.15rem;
   border: 1px solid #d7e0dc;
   border-radius: 16px;
   background: #fff;
+}
+
+.learn-content-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.learn-login-wrap {
+  padding-top: 2rem;
+}
+
+.learn-login-form .learn-btn-primary {
+  width: 100%;
 }
 
 .learn-content-list span {

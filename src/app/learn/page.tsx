@@ -4,7 +4,8 @@ import { LearnPageShell } from "@/components/learn/learn-page-shell";
 import { LearnSessionMaterials } from "@/components/learn/learn-session-materials";
 import { requireStudent } from "@/lib/learn/require";
 import { formatSlotWhen } from "@/lib/courses/slots";
-import { isClassroomLive, studentClassPath } from "@/lib/learn/classroom";
+import { LearnJoinActions } from "@/components/learn/learn-join-actions";
+import { isClassroomLive } from "@/lib/learn/classroom";
 import "@/components/learn/learn-panel.css";
 
 function greetingIst() {
@@ -84,55 +85,16 @@ export default async function LearnHomePage() {
                 </h2>
                 <p>{formatSlotWhen(upcoming.startsAt)}</p>
                 <div className="learn-spotlight-actions">
-                  {live ? (
-                    <a
-                      className="learn-btn-primary"
-                      href={studentClassPath(live.id)}
-                    >
-                      Join class
-                    </a>
-                  ) : groupMeetUrl ? (
-                    <a
-                      className="learn-btn-primary"
-                      href={groupMeetUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Join group class
-                    </a>
-                  ) : meetUrl ? (
-                    <a
-                      className="learn-btn-primary"
-                      href={meetUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Join Google Meet
-                    </a>
-                  ) : (
+                  <LearnJoinActions
+                    liveSlotId={live?.id}
+                    groupMeetUrl={groupMeetUrl}
+                    groupLabel={enrollment.groupLabel}
+                    meetUrl={meetUrl}
+                  />
+                  {!live && !groupMeetUrl && !meetUrl ? (
                     <p className="learn-muted">
                       Join appears when your trainer starts the room.
                     </p>
-                  )}
-                  {groupMeetUrl && live ? (
-                    <a
-                      className="learn-btn-secondary"
-                      href={groupMeetUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Group Meet
-                    </a>
-                  ) : null}
-                  {meetUrl && meetUrl !== groupMeetUrl && (live || groupMeetUrl) ? (
-                    <a
-                      className="learn-btn-secondary"
-                      href={meetUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      1:1 Meet
-                    </a>
                   ) : null}
                   <Link className="learn-text-link" href="/learn/schedule">
                     Full schedule

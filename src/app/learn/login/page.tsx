@@ -26,15 +26,26 @@ export default async function LearnLoginPage({
 
   return (
     <LearnPageShell>
+      <header className="learn-nav">
+        <div className="learn-nav-brand">
+          <span className="learn-nav-mark" aria-hidden>
+            S
+          </span>
+          <div>
+            <strong>Sheetomatic Learn</strong>
+            <span>Student studio</span>
+          </div>
+        </div>
+      </header>
       <main className="learn-shell">
         <div className="learn-narrow learn-login-wrap">
-          <p className="learn-kicker">Sheetomatic Learn</p>
-          <h1>Sign in to your studio</h1>
-          <p className="learn-lead">
-            Use the email and WhatsApp number from your enrollment. After login
-            you will see your schedule and the learning library (Sheets,
-            AppSheet, Looker Studio).
-          </p>
+          <header className="learn-page-head">
+            <p className="learn-kicker">Welcome back</p>
+            <h1>Sign in</h1>
+            <p className="learn-lead">
+              Email and WhatsApp from your enrollment. No password.
+            </p>
+          </header>
 
           {params.error === "token" ? (
             <p className="learn-banner is-error">
@@ -45,7 +56,7 @@ export default async function LearnLoginPage({
           {params.error === "nomatch" ? (
             <p className="learn-banner is-error">
               No training enrollment matched. Use the email and WhatsApp number
-              from your booking, or open the link we sent you.
+              from your booking.
             </p>
           ) : null}
 
@@ -72,7 +83,7 @@ export default async function LearnLoginPage({
               />
             </label>
             <button type="submit" className="learn-btn-primary">
-              Open my panel
+              Open my studio
             </button>
           </form>
 
