@@ -3061,6 +3061,12 @@ model CourseEnrollment {
   programStartDate DateTime?
   /** Optional Google Meet / Zoom link shared on all sessions. */
   meetUrl          String?
+  /** Shared Meet/join URL when this enrollment is in a group class. URL only — not video. */
+  groupMeetUrl     String?
+  /** Optional trainer label for the group (e.g. Tuesday evening). */
+  groupLabel       String?
+  /** Shared id so several enrollments belong to one group class. */
+  groupKey         String?
   /** How often cohort days repeat. */
   frequency        TrainingFrequency      @default(WEEKLY)
   /** Session start time in Asia/Kolkata, HH:mm (24h). Booking window 08:30–18:00. */
@@ -3086,6 +3092,7 @@ model CourseEnrollment {
   @@index([phone])
   @@index([organizationId, inboundLeadId])
   @@index([bookingToken])
+  @@index([groupKey])
 }
 
 /// Individual 1:1 training sessions generated from cohort + program start date.

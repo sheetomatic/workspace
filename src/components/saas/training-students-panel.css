@@ -23,6 +23,104 @@
   justify-content: space-between;
 }
 
+.training-group-class {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #c7d2fe;
+  border-radius: 14px;
+  background: #eef2ff;
+}
+
+.training-group-class strong {
+  display: block;
+  color: #312e81;
+  font-size: 0.9rem;
+}
+
+.training-group-class p {
+  margin: 0.2rem 0 0;
+  color: #3730a3;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.training-group-class label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #4338ca;
+}
+
+.training-group-class input {
+  border: 1px solid #c7d2fe;
+  border-radius: 10px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #0f172a;
+  background: #fff;
+}
+
+.training-group-class-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.training-group-class-actions .ws-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.training-student-head-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.training-student-select {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  padding: 0 0.15rem 0 0.75rem;
+}
+
+.training-student-select input {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: #4338ca;
+}
+
+.training-student-head-row .training-student-head {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.training-copy-login {
+  flex: 0 0 auto;
+  margin-right: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.training-group-badge {
+  display: inline-block;
+  margin-left: 0.45rem;
+  padding: 0.08rem 0.45rem;
+  border-radius: 999px;
+  background: #e0e7ff;
+  color: #3730a3;
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+}
+
 .training-students-toolbar input[type="search"] {
   flex: 1 1 16rem;
   min-width: 0;

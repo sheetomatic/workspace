@@ -3669,6 +3669,42 @@ export async function saveTrainingMeetUrlAction(params: {
   return { ok: true as const, message: saved.message };
 }
 
+/** Assign or clear a shared group-class Meet/join URL on selected enrollments. */
+export async function saveTrainingGroupClassAction(params: {
+  enrollmentIds: string[];
+  groupMeetUrl?: string;
+  groupLabel?: string;
+  clear?: boolean;
+}) {
+  const user = await requireSession();
+  if (!hasMinimumRole(user.role, "STAFF") && !user.isSuperAdmin) {
+    return { ok: false as const, message: "Staff access required." };
+  }
+
+  const { assignTrainingGroupClass, clearTrainingGroupClass } = await import(
+    "@/lib/courses/group-class"
+  );
+  const shared = {
+    enrollmentIds: params.enrollmentIds,
+    organizationId: user.organizationId,
+    isSuperAdmin: user.isSuperAdmin,
+  };
+  const result = params.clear
+    ? await clearTrainingGroupClass(shared)
+    : await assignTrainingGroupClass({
+        ...shared,
+        groupMeetUrl: params.groupMeetUrl ?? "",
+        groupLabel: params.groupLabel,
+      });
+
+  if (result.ok) {
+    revalidatePath("/app/leads");
+    revalidatePath("/app/leads/training");
+    revalidatePath("/app/my-space/training");
+  }
+  return result;
+}
+
 /** Resend training schedule email + WhatsApp for an enrollment. */
 export async function resendTrainingScheduleAction(enrollmentId: string) {
   const user = await requireSession();

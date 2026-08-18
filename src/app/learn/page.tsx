@@ -25,6 +25,7 @@ export default async function LearnHomePage() {
     enrollment.meetUrl ||
     enrollment.slots.find((slot) => slot.meetUrl)?.meetUrl ||
     null;
+  const groupMeetUrl = enrollment.groupMeetUrl?.trim() || null;
 
   return (
     <LearnPageShell>
@@ -62,6 +63,15 @@ export default async function LearnHomePage() {
                     >
                       Join class
                     </a>
+                  ) : groupMeetUrl ? (
+                    <a
+                      className="learn-btn-primary"
+                      href={groupMeetUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Join group class
+                    </a>
                   ) : meetUrl ? (
                     <a
                       className="learn-btn-secondary"
@@ -77,6 +87,26 @@ export default async function LearnHomePage() {
                       fallback until then.
                     </p>
                   )}
+                  {groupMeetUrl && live ? (
+                    <a
+                      className="learn-btn-secondary"
+                      href={groupMeetUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Join group class
+                    </a>
+                  ) : null}
+                  {meetUrl && meetUrl !== groupMeetUrl && (live || groupMeetUrl) ? (
+                    <a
+                      className="learn-btn-secondary"
+                      href={meetUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      1:1 Google Meet
+                    </a>
+                  ) : null}
                 </>
               ) : (
                 <p className="learn-muted">No upcoming session on file yet.</p>

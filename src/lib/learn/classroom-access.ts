@@ -28,6 +28,7 @@ const slotSelect = {
       id: true,
       name: true,
       meetUrl: true,
+      groupMeetUrl: true,
       organizationId: true,
     },
   },
@@ -61,6 +62,7 @@ export async function loadTeacherClassroom(slotId: string) {
 
   const live = isClassroomLive(slot);
   const meetUrl = slot.meetUrl || slot.enrollment.meetUrl;
+  const groupMeetUrl = slot.enrollment.groupMeetUrl?.trim() || null;
   let embedUrl: string | null = null;
   if (live && slot.classroomRoomName && slot.classroomUrl && isDailyConfigured()) {
     const token = await createDailyMeetingToken({
@@ -78,6 +80,7 @@ export async function loadTeacherClassroom(slotId: string) {
     live,
     configured: isDailyConfigured(),
     meetUrl,
+    groupMeetUrl,
     embedUrl,
     studentName: slot.enrollment.name,
     sessionNumber: slot.sessionNumber,
@@ -103,6 +106,7 @@ export async function loadStudentClassroom(slotId: string) {
 
   const live = isClassroomLive(slot);
   const meetUrl = slot.meetUrl || slot.enrollment.meetUrl;
+  const groupMeetUrl = slot.enrollment.groupMeetUrl?.trim() || null;
   let embedUrl: string | null = null;
   if (live && slot.classroomRoomName && slot.classroomUrl && isDailyConfigured()) {
     const token = await createDailyMeetingToken({
@@ -120,6 +124,7 @@ export async function loadStudentClassroom(slotId: string) {
     live,
     configured: isDailyConfigured(),
     meetUrl,
+    groupMeetUrl,
     embedUrl,
     studentName: enrollment.name,
     sessionNumber: slot.sessionNumber,

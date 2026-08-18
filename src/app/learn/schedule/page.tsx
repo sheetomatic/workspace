@@ -20,6 +20,7 @@ export default async function LearnSchedulePage() {
     enrollment.meetUrl ||
     enrollment.slots.find((slot) => slot.meetUrl)?.meetUrl ||
     null;
+  const groupMeetUrl = enrollment.groupMeetUrl?.trim() || null;
 
   return (
     <LearnPageShell>
@@ -30,7 +31,17 @@ export default async function LearnSchedulePage() {
           <p className="learn-lead">
             {courseCohortLabel(enrollment.cohort, enrollment.weekdaysCsv)} ·{" "}
             {enrollment.sessionTimeIst} IST
-            {meetUrl ? (
+            {groupMeetUrl ? (
+              <>
+                {" · "}
+                <a href={groupMeetUrl} target="_blank" rel="noreferrer">
+                  {enrollment.groupLabel?.trim()
+                    ? `Join group class (${enrollment.groupLabel.trim()})`
+                    : "Join group class"}
+                </a>
+              </>
+            ) : null}
+            {meetUrl && meetUrl !== groupMeetUrl ? (
               <>
                 {" · "}
                 <a href={meetUrl} target="_blank" rel="noreferrer">

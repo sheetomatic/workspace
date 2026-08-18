@@ -16,6 +16,7 @@ export function ClassroomRoom({
   live,
   configured,
   meetUrl,
+  groupMeetUrl,
   embedUrl,
   studentName,
   sessionNumber,
@@ -29,6 +30,7 @@ export function ClassroomRoom({
   live: boolean;
   configured: boolean;
   meetUrl: string | null;
+  groupMeetUrl?: string | null;
   embedUrl: string | null;
   studentName: string;
   sessionNumber: number;
@@ -101,7 +103,17 @@ export function ClassroomRoom({
               {pending ? "Ending…" : "End class"}
             </button>
           ) : null}
-          {meetUrl ? (
+          {groupMeetUrl ? (
+            <a
+              className="learn-btn-secondary"
+              href={groupMeetUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Join group class
+            </a>
+          ) : null}
+          {meetUrl && meetUrl !== groupMeetUrl ? (
             <a
               className="learn-btn-secondary"
               href={meetUrl}

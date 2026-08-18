@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useMemo, useState, useTransition } from "react";
-import { ChevronDown, ExternalLink, Mail, MessageCircle, Video } from "lucide-react";
+import { ChevronDown, Copy, ExternalLink, Mail, MessageCircle, Video } from "lucide-react";
 import {
   resendTrainingScheduleAction,
+  saveTrainingGroupClassAction,
   saveTrainingMeetUrlAction,
   sendTrainingScheduleWhatsAppAction,
   updateLeadTrainingSlotStatusAction,
@@ -13,6 +14,10 @@ import {
 import { TrainingSlotContentEditor } from "@/components/saas/training-slot-content-editor";
 import type { TrainingMaterialView } from "@/lib/courses/session-materials";
 import { teacherClassPath } from "@/lib/learn/classroom";
+import {
+  buildGroupLoginShareText,
+  buildStudentLoginShareText,
+} from "@/lib/learn/group-class";
 import {
   learnPortalOrigin,
   workspacePortalOrigin,
@@ -44,6 +49,9 @@ export type TrainingStudentView = {
   sessionDurationMin: number;
   totalSessions: number;
   joinUrl: string | null;
+  groupMeetUrl: string | null;
+  groupLabel: string | null;
+  groupKey: string | null;
   inboundLeadId: string | null;
   bookingToken: string | null;
   upcomingCount: number;
@@ -92,10 +100,36 @@ export function TrainingStudentsPanel({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [meetDraft, setMeetDraft] = useState<Record<string, string>>({});
+  const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({});
+  const [groupMeetDraft, setGroupMeetDraft] = useState("");
+  const [groupLabelDraft, setGroupLabelDraft] = useState("");
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   // Instant feedback while the server data refreshes in the background.
   const [statusOverride, setStatusOverride] = useState<Record<string, SlotStatus>>({});
   const [contentSlotId, setContentSlotId] = useState<string | null>(null);
   const router = useRouter();
+
+  function shareInput(student: TrainingStudentView) {
+    return {
+      name: student.name,
+      email: student.email,
+      phone: student.phone,
+      bookingToken: student.bookingToken,
+      groupMeetUrl: student.groupMeetUrl,
+      groupLabel: student.groupLabel,
+    };
+  }
+
+  async function copyShare(text: string, key: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedKey(key);
+      setError(null);
+      setNotice("Copied. Paste on WhatsApp to share — no password, email + WhatsApp or the token link.");
+    } catch {
+      setError("Could not copy. Select the text and copy manually.");
+    }
+  }
 
   function runContent(work: () => Promise<{ ok: boolean; message: string }>) {
     startTransition(async () => {
@@ -198,6 +232,46 @@ export function TrainingStudentsPanel({
     });
   }, [students, query]);
 
+  const selectedStudents = useMemo(
+    () => visible.filter((student) => selectedIds[student.id]),
+    [visible, selectedIds],
+  );
+
+  function toggleSelected(studentId: string, checked: boolean) {
+    setSelectedIds((current) => ({ ...current, [studentId]: checked }));
+  }
+
+  function selectAllVisible() {
+    setSelectedIds((current) => {
+      const next = { ...current };
+      for (const student of visible) next[student.id] = true;
+      return next;
+    });
+  }
+
+  function onSaveGroupClass(clear = false) {
+    if (selectedStudents.length === 0) {
+      setError("Select at least one student for the group class.");
+      return;
+    }
+    startTransition(async () => {
+      setError(null);
+      setNotice(null);
+      const result = await saveTrainingGroupClassAction({
+        enrollmentIds: selectedStudents.map((student) => student.id),
+        groupMeetUrl: groupMeetDraft,
+        groupLabel: groupLabelDraft,
+        clear,
+      });
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setNotice(result.message);
+      router.refresh();
+    });
+  }
+
   if (students.length === 0) {
     return (
       <p className="ws-apple-record-empty">
@@ -219,8 +293,80 @@ export function TrainingStudentsPanel({
         />
         <span className="training-students-count">
           {visible.length} active student{visible.length === 1 ? "" : "s"}
+          {selectedStudents.length
+            ? ` · ${selectedStudents.length} selected`
+            : ""}
         </span>
       </div>
+
+      {canManage ? (
+        <div className="training-group-class">
+          <div>
+            <strong>Group class</strong>
+            <p>
+              Paste one Meet/join URL. Every selected student sees the same
+              link on Learn. 1:1 Meet and Start class stay as they are.
+            </p>
+          </div>
+          <label>
+            Group Meet / join URL
+            <input
+              type="url"
+              placeholder="https://meet.google.com/…"
+              value={groupMeetDraft}
+              onChange={(event) => setGroupMeetDraft(event.target.value)}
+            />
+          </label>
+          <label>
+            Group label (optional)
+            <input
+              type="text"
+              placeholder="e.g. Tuesday evening"
+              value={groupLabelDraft}
+              onChange={(event) => setGroupLabelDraft(event.target.value)}
+            />
+          </label>
+          <div className="training-group-class-actions">
+            <button
+              type="button"
+              className="ws-btn ws-btn-secondary"
+              onClick={selectAllVisible}
+            >
+              Select all visible
+            </button>
+            <button
+              type="button"
+              className="ws-btn ws-btn-primary"
+              disabled={pending}
+              onClick={() => onSaveGroupClass(false)}
+            >
+              {pending ? "Saving…" : "Apply group link"}
+            </button>
+            <button
+              type="button"
+              className="ws-btn ws-btn-secondary"
+              disabled={pending}
+              onClick={() => onSaveGroupClass(true)}
+            >
+              Remove from selected
+            </button>
+            <button
+              type="button"
+              className="ws-btn ws-btn-secondary"
+              disabled={selectedStudents.length === 0}
+              onClick={() =>
+                copyShare(
+                  buildGroupLoginShareText(selectedStudents.map(shareInput)),
+                  "group",
+                )
+              }
+            >
+              <Copy size={16} aria-hidden />
+              {copiedKey === "group" ? "Copied logins" : "Copy selected logins"}
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {error ? <p className="saas-form-message error">{error}</p> : null}
       {notice ? <p className="saas-form-message ok">{notice}</p> : null}
@@ -236,34 +382,71 @@ export function TrainingStudentsPanel({
                 key={student.id}
                 className={`training-student-card${open ? " is-open" : ""}`}
               >
-                <button
-                  type="button"
-                  className="training-student-head"
-                  aria-expanded={open}
-                  onClick={() => setOpenId(open ? null : student.id)}
-                >
-                  <span className="training-student-avatar" aria-hidden>
-                    {(student.name.trim()[0] || "?").toUpperCase()}
-                  </span>
-                  <span className="training-student-copy">
-                    <strong>{student.name}</strong>
-                    <span>
-                      {student.daysLabel} · {student.sessionTimeIst} IST ·{" "}
-                      {durationLabel(student.sessionDurationMin)}
+                <div className="training-student-head-row">
+                  {canManage ? (
+                    <label className="training-student-select">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(selectedIds[student.id])}
+                        onChange={(event) =>
+                          toggleSelected(student.id, event.target.checked)
+                        }
+                        aria-label={`Select ${student.name} for group class`}
+                      />
+                    </label>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="training-student-head"
+                    aria-expanded={open}
+                    onClick={() => setOpenId(open ? null : student.id)}
+                  >
+                    <span className="training-student-avatar" aria-hidden>
+                      {(student.name.trim()[0] || "?").toUpperCase()}
                     </span>
-                    <span className="training-student-meta">
-                      {statusLabel(student.status)} · {student.upcomingCount} upcoming
-                      {student.nextWhenLabel
-                        ? ` · next ${student.nextWhenLabel}`
-                        : ""}
+                    <span className="training-student-copy">
+                      <strong>
+                        {student.name}
+                        {student.groupMeetUrl ? (
+                          <em className="training-group-badge">
+                            {student.groupLabel?.trim()
+                              ? student.groupLabel
+                              : "Group class"}
+                          </em>
+                        ) : null}
+                      </strong>
+                      <span>
+                        {student.daysLabel} · {student.sessionTimeIst} IST ·{" "}
+                        {durationLabel(student.sessionDurationMin)}
+                      </span>
+                      <span className="training-student-meta">
+                        {statusLabel(student.status)} · {student.upcomingCount} upcoming
+                        {student.nextWhenLabel
+                          ? ` · next ${student.nextWhenLabel}`
+                          : ""}
+                      </span>
                     </span>
-                  </span>
-                  <ChevronDown
-                    className="training-student-chevron"
-                    size={18}
-                    aria-hidden
-                  />
-                </button>
+                    <ChevronDown
+                      className="training-student-chevron"
+                      size={18}
+                      aria-hidden
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    className="ws-btn ws-btn-secondary training-copy-login"
+                    onClick={() =>
+                      copyShare(
+                        buildStudentLoginShareText(shareInput(student)),
+                        student.id,
+                      )
+                    }
+                    title="Copy Learn login (email + WhatsApp or token link)"
+                  >
+                    <Copy size={16} aria-hidden />
+                    {copiedKey === student.id ? "Copied" : "Copy login"}
+                  </button>
+                </div>
 
                 {open ? (
                   <div className="training-student-body">
@@ -280,6 +463,17 @@ export function TrainingStudentsPanel({
                           {pending ? "Sending…" : "WhatsApp"}
                         </button>
                       ) : null}
+                      {student.groupMeetUrl ? (
+                        <a
+                          className="ws-btn ws-btn-primary"
+                          href={student.groupMeetUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Video size={16} aria-hidden />
+                          Join group class
+                        </a>
+                      ) : null}
                       {student.joinUrl ? (
                         <a
                           className="ws-btn ws-btn-secondary"
@@ -288,9 +482,9 @@ export function TrainingStudentsPanel({
                           rel="noopener noreferrer"
                         >
                           <Video size={16} aria-hidden />
-                          Link to join
+                          {student.groupMeetUrl ? "1:1 Meet" : "Link to join"}
                         </a>
-                      ) : (
+                      ) : student.groupMeetUrl ? null : (
                         <span className="training-join-missing">
                           No Meet link yet — paste it below, then tap WhatsApp.
                         </span>
@@ -403,6 +597,21 @@ export function TrainingStudentsPanel({
                           {student.phone} · {student.email}
                         </dd>
                       </div>
+                      {student.groupMeetUrl ? (
+                        <div>
+                          <dt>Group class</dt>
+                          <dd>
+                            {student.groupLabel ? `${student.groupLabel} · ` : ""}
+                            <a
+                              href={student.groupMeetUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              Join link
+                            </a>
+                          </dd>
+                        </div>
+                      ) : null}
                     </dl>
 
                     <h3 className="training-schedule-title">Schedules</h3>
