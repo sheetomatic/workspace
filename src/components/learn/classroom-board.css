@@ -1,0 +1,196 @@
+.teach-board {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: min(68vh, 640px);
+  border: 1px solid #d0d7de;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.teach-board-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 0.75rem;
+  align-items: center;
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.teach-board-modes,
+.teach-board-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.teach-board-modes button,
+.teach-board-tools button {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  border-radius: 8px;
+  padding: 0.28rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: #334155;
+  cursor: pointer;
+}
+
+.teach-board-modes button.is-active,
+.teach-board-tools button.is-active {
+  background: #0f766e;
+  border-color: #0f766e;
+  color: #fff;
+}
+
+.teach-board-swatch {
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0;
+  border-radius: 999px;
+}
+
+.teach-board-swatch.is-active {
+  outline: 2px solid #0f766e;
+  outline-offset: 1px;
+}
+
+.teach-board-hint {
+  margin: 0 0 0 auto;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.teach-sheet {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+}
+
+.teach-sheet-formula {
+  display: grid;
+  grid-template-columns: 3.2rem minmax(0, 1fr);
+  gap: 0.45rem;
+  align-items: center;
+  padding: 0.4rem 0.55rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.teach-sheet-formula strong {
+  font-size: 0.8rem;
+  color: #0f766e;
+}
+
+.teach-sheet-formula input,
+.teach-sheet-formula span {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0.28rem 0.5rem;
+  font: 0.85rem/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.teach-sheet-scroll {
+  overflow: auto;
+  min-height: 0;
+}
+
+.teach-sheet table {
+  border-collapse: collapse;
+  min-width: 100%;
+  font-size: 0.78rem;
+}
+
+.teach-sheet th,
+.teach-sheet td {
+  border: 1px solid #d8dee6;
+  min-width: 5.4rem;
+  max-width: 9rem;
+  height: 1.7rem;
+  padding: 0 0.35rem;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.teach-sheet thead th,
+.teach-sheet tbody th {
+  background: #eef2f6;
+  color: #475569;
+  font-weight: 700;
+  text-align: center;
+  min-width: 2.1rem;
+  position: sticky;
+}
+
+.teach-sheet thead th {
+  top: 0;
+  z-index: 1;
+}
+
+.teach-sheet tbody th {
+  left: 0;
+  z-index: 1;
+}
+
+.teach-sheet td.is-head {
+  font-weight: 700;
+  background: #f1f5f9;
+}
+
+.teach-sheet td.is-active {
+  outline: 2px solid #0f766e;
+  outline-offset: -2px;
+  background: #ecfdf5;
+}
+
+.teach-draw {
+  width: 100%;
+  height: min(64vh, 620px);
+  background: #fff;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.classroom-layout {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.classroom-layout.is-both {
+  grid-template-columns: minmax(240px, 0.38fr) minmax(0, 1fr);
+}
+
+@media (max-width: 860px) {
+  .classroom-layout.is-both {
+    grid-template-columns: 1fr;
+  }
+}
+
+.classroom-layout .classroom-frame {
+  min-height: min(42vh, 420px);
+  height: min(68vh, 640px);
+}
+
+.classroom-views {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.classroom-views button {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  border-radius: 8px;
+  padding: 0.32rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.classroom-views button.is-active {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #fff;
+}

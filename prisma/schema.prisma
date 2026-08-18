@@ -3105,6 +3105,9 @@ model TrainingCourseSlot {
   classroomUrl      String?
   classroomStartedAt DateTime?
   classroomEndedAt   DateTime?
+  /** Draw + spreadsheet teaching board. JSON only — not a file store. */
+  classroomBoard     Json?
+  classroomBoardRev  Int                @default(0)
   status         TrainingSlotStatus @default(SCHEDULED)
   notes          String?
   createdAt      DateTime           @default(now())

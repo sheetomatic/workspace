@@ -7,7 +7,9 @@ import {
   endTrainingClassroomAction,
   startTrainingClassroomAction,
 } from "@/app/app/leads/classroom-actions";
+import { ClassroomBoardPanel } from "@/components/learn/classroom-board";
 import "@/components/learn/classroom-room.css";
+import "@/components/learn/classroom-board.css";
 
 export function ClassroomRoom({
   role,
@@ -40,6 +42,9 @@ export function ClassroomRoom({
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(error ?? null);
   const [consented, setConsented] = useState(role === "teacher");
+  const [view, setView] = useState<"room" | "board" | "both">(
+    live ? "both" : "board",
+  );
 
   function startClass() {
     startTransition(async () => {
@@ -57,7 +62,11 @@ export function ClassroomRoom({
     });
   }
 
-  const showFrame = Boolean(embedUrl) && (role === "teacher" || consented);
+  const showFrame =
+    Boolean(embedUrl) &&
+    (role === "teacher" || consented) &&
+    view !== "board";
+  const showBoard = view !== "room" && (role === "teacher" || consented || !live);
 
   return (
     <div className="classroom-shell">
@@ -102,6 +111,29 @@ export function ClassroomRoom({
               Meet fallback
             </a>
           ) : null}
+          <div className="classroom-views" role="tablist" aria-label="Class view">
+            <button
+              type="button"
+              className={view === "room" ? "is-active" : undefined}
+              onClick={() => setView("room")}
+            >
+              Room
+            </button>
+            <button
+              type="button"
+              className={view === "board" ? "is-active" : undefined}
+              onClick={() => setView("board")}
+            >
+              Board
+            </button>
+            <button
+              type="button"
+              className={view === "both" ? "is-active" : undefined}
+              onClick={() => setView("both")}
+            >
+              Both
+            </button>
+          </div>
           <Link className="learn-btn-secondary" href={backHref}>
             Back
           </Link>
@@ -138,14 +170,21 @@ export function ClassroomRoom({
         </label>
       ) : null}
 
-      {showFrame && embedUrl ? (
-        <iframe
-          className="classroom-frame"
-          title="Live class"
-          src={embedUrl}
-          allow="camera; microphone; fullscreen; display-capture; autoplay"
-          allowFullScreen
-        />
+      {showFrame || showBoard ? (
+        <div className={`classroom-layout${view === "both" && showFrame ? " is-both" : ""}`}>
+          {showFrame && embedUrl ? (
+            <iframe
+              className="classroom-frame"
+              title="Live class"
+              src={embedUrl}
+              allow="camera; microphone; fullscreen; display-capture; autoplay"
+              allowFullScreen
+            />
+          ) : null}
+          {showBoard ? (
+            <ClassroomBoardPanel slotId={slotId} canEdit={role === "teacher"} />
+          ) : null}
+        </div>
       ) : live && !embedUrl ? (
         <p className="classroom-note">
           Room is live but the join token could not be created. Check Daily, or
