@@ -15,6 +15,15 @@ import {
   ensureDailyRoom,
   isDailyConfigured,
 } from "@/lib/learn/daily";
+import {
+  classroomMaxParticipants,
+  earliestClassroomStartedAt,
+  groupClassIdentity,
+  latestSlotEndsAt,
+  pickLiveGroupClassroom,
+  roomNameForGroup,
+} from "@/lib/learn/group-classroom";
+import { listGroupSessionSlots } from "@/lib/learn/group-classroom-slots";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 
@@ -42,6 +51,8 @@ async function loadManageableSlot(slotId: string) {
           organizationId: true,
           inboundLeadId: true,
           meetUrl: true,
+          groupMeetUrl: true,
+          groupKey: true,
         },
       },
     },
@@ -79,61 +90,88 @@ export async function startTrainingClassroomAction(slotId: string) {
     return { ok: false as const, message: "This session is cancelled." };
   }
 
-  const roomName = loaded.slot.classroomRoomName || roomNameForSlot(loaded.slot.id);
+  const groupSlots = groupClassIdentity(loaded.slot.enrollment)
+    ? await listGroupSessionSlots(loaded.slot)
+    : [];
+  const sessionSlots = groupSlots.length > 0 ? groupSlots : [loaded.slot];
+  const alreadyLive = sessionSlots.some((slot) => isClassroomLive(slot));
+  const livePeer = pickLiveGroupClassroom(sessionSlots);
+  const identity = groupClassIdentity(loaded.slot.enrollment);
+  const roomName =
+    livePeer?.classroomRoomName ||
+    loaded.slot.classroomRoomName ||
+    (identity
+      ? roomNameForGroup(identity, loaded.slot.startsAt)
+      : roomNameForSlot(loaded.slot.id));
   const room = await ensureDailyRoom({
     roomName,
-    expUnix: classroomExpUnix(loaded.slot.endsAt),
+    expUnix: classroomExpUnix(latestSlotEndsAt(sessionSlots, loaded.slot.endsAt)),
+    maxParticipants: classroomMaxParticipants(sessionSlots.length),
   });
   if (!room.url) {
     return { ok: false as const, message: "Daily did not return a room URL." };
   }
 
-  const alreadyLive = isClassroomLive(loaded.slot);
-  await prisma.trainingCourseSlot.update({
-    where: { id: loaded.slot.id },
+  const startedAt = earliestClassroomStartedAt(sessionSlots);
+  const slotIds = [...new Set(sessionSlots.map((slot) => slot.id))];
+  await prisma.trainingCourseSlot.updateMany({
+    where: { id: { in: slotIds } },
     data: {
       classroomRoomName: room.name,
       classroomUrl: room.url,
-      classroomStartedAt: loaded.slot.classroomStartedAt ?? new Date(),
+      classroomStartedAt: startedAt,
       classroomEndedAt: null,
       status: "SCHEDULED",
     },
   });
 
   if (!alreadyLive) {
-    const orgId =
-      loaded.slot.enrollment.organizationId ||
-      loaded.slot.organizationId ||
-      loaded.user.organizationId;
-    try {
-      await notifyClassroomStarted({
-        organizationId: orgId,
-        studentName: loaded.slot.enrollment.name,
-        studentPhone: loaded.slot.enrollment.phone,
-        sessionNumber: loaded.slot.sessionNumber,
-        startsAt: loaded.slot.startsAt,
-        slotId: loaded.slot.id,
-        meetUrl: loaded.slot.meetUrl || loaded.slot.enrollment.meetUrl,
-      });
-    } catch (error) {
-      console.error("[classroom] WhatsApp start notify failed", error);
-    }
+    for (const slot of sessionSlots) {
+      const orgId =
+        slot.enrollment.organizationId ||
+        slot.organizationId ||
+        loaded.user.organizationId;
+      try {
+        await notifyClassroomStarted({
+          organizationId: orgId,
+          studentName: slot.enrollment.name,
+          studentPhone: slot.enrollment.phone,
+          sessionNumber: slot.sessionNumber,
+          startsAt: slot.startsAt,
+          slotId: slot.id,
+          meetUrl:
+            slot.enrollment.groupMeetUrl ||
+            slot.meetUrl ||
+            slot.enrollment.meetUrl,
+        });
+      } catch (error) {
+        console.error("[classroom] WhatsApp start notify failed", error);
+      }
 
-    if (loaded.slot.inboundLeadId) {
-      await logInboundLeadActivity({
-        organizationId: loaded.user.organizationId,
-        leadId: loaded.slot.inboundLeadId,
-        type: "NOTE",
-        body: `Training session ${loaded.slot.sessionNumber} class started in the Learn panel.`,
-        createdByUserId: loaded.user.id,
-      });
+      if (slot.inboundLeadId) {
+        await logInboundLeadActivity({
+          organizationId: loaded.user.organizationId,
+          leadId: slot.inboundLeadId,
+          type: "NOTE",
+          body:
+            sessionSlots.length > 1
+              ? `Training session ${slot.sessionNumber} group class started in the Learn panel (${sessionSlots.length} students).`
+              : `Training session ${slot.sessionNumber} class started in the Learn panel.`,
+          createdByUserId: loaded.user.id,
+        });
+      }
     }
   }
 
   revalidateClassroom();
+  const groupCount = sessionSlots.length;
   return {
     ok: true as const,
-    message: alreadyLive ? "Entering class." : "Class started. Student was pinged on WhatsApp.",
+    message: alreadyLive
+      ? "Entering class."
+      : groupCount > 1
+        ? `Class started for ${groupCount} students. They can Join class on Learn.`
+        : "Class started. Student was pinged on WhatsApp.",
     path: teacherClassPath(loaded.slot.id),
   };
 }
@@ -142,24 +180,46 @@ export async function endTrainingClassroomAction(slotId: string) {
   const loaded = await loadManageableSlot(slotId);
   if (!loaded.ok) return loaded;
 
-  if (loaded.slot.classroomRoomName) {
-    await deleteDailyRoom(loaded.slot.classroomRoomName);
+  const roomName = loaded.slot.classroomRoomName;
+  if (roomName) {
+    await deleteDailyRoom(roomName);
   }
 
-  await prisma.trainingCourseSlot.update({
-    where: { id: loaded.slot.id },
-    data: {
-      classroomEndedAt: new Date(),
-      status: "COMPLETED",
-    },
-  });
+  const endedAt = new Date();
+  if (roomName) {
+    await prisma.trainingCourseSlot.updateMany({
+      where: { classroomRoomName: roomName, classroomEndedAt: null },
+      data: {
+        classroomEndedAt: endedAt,
+        status: "COMPLETED",
+      },
+    });
+  } else {
+    await prisma.trainingCourseSlot.update({
+      where: { id: loaded.slot.id },
+      data: {
+        classroomEndedAt: endedAt,
+        status: "COMPLETED",
+      },
+    });
+  }
 
-  if (loaded.slot.inboundLeadId) {
+  const groupSlots = groupClassIdentity(loaded.slot.enrollment)
+    ? await listGroupSessionSlots(loaded.slot)
+    : [];
+  const activitySlots =
+    groupSlots.length > 0
+      ? groupSlots
+      : [loaded.slot];
+  const noted = new Set<string>();
+  for (const slot of activitySlots) {
+    if (!slot.inboundLeadId || noted.has(slot.inboundLeadId)) continue;
+    noted.add(slot.inboundLeadId);
     await logInboundLeadActivity({
       organizationId: loaded.user.organizationId,
-      leadId: loaded.slot.inboundLeadId,
+      leadId: slot.inboundLeadId,
       type: "NOTE",
-      body: `Training session ${loaded.slot.sessionNumber} class ended. Paste the Unlisted YouTube in Class files.`,
+      body: `Training session ${slot.sessionNumber} class ended. Paste the Unlisted YouTube in Class files.`,
       createdByUserId: loaded.user.id,
     });
   }

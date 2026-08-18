@@ -5,6 +5,12 @@ import {
   createDailyMeetingToken,
   isDailyConfigured,
 } from "@/lib/learn/daily";
+import {
+  formatGroupRoster,
+  groupClassIdentity,
+  pickLiveGroupClassroom,
+} from "@/lib/learn/group-classroom";
+import { listGroupSessionSlots } from "@/lib/learn/group-classroom-slots";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { requireLearnEnrollment } from "@/lib/learn/session";
@@ -29,6 +35,7 @@ const slotSelect = {
       name: true,
       meetUrl: true,
       groupMeetUrl: true,
+      groupKey: true,
       organizationId: true,
     },
   },
@@ -60,18 +67,27 @@ export async function loadTeacherClassroom(slotId: string) {
     return { ok: false as const, message: "Session not found." };
   }
 
-  const live = isClassroomLive(slot);
+  const groupSlots = groupClassIdentity(slot.enrollment)
+    ? await listGroupSessionSlots(slot)
+    : [];
+  const livePeer = pickLiveGroupClassroom(groupSlots);
+  const roomName = livePeer?.classroomRoomName || slot.classroomRoomName;
+  const roomUrl = livePeer?.classroomUrl || slot.classroomUrl;
+  const live = isClassroomLive(livePeer ?? slot);
   const meetUrl = slot.meetUrl || slot.enrollment.meetUrl;
   const groupMeetUrl = slot.enrollment.groupMeetUrl?.trim() || null;
+  const groupNames = (groupSlots.length > 0 ? groupSlots : [slot]).map(
+    (row) => row.enrollment.name,
+  );
   let embedUrl: string | null = null;
-  if (live && slot.classroomRoomName && slot.classroomUrl && isDailyConfigured()) {
+  if (live && roomName && roomUrl && isDailyConfigured()) {
     const token = await createDailyMeetingToken({
-      roomName: slot.classroomRoomName,
+      roomName,
       userName: user.name?.trim() || "Trainer",
       isOwner: true,
       expUnix: classroomExpUnix(slot.endsAt),
     });
-    embedUrl = `${slot.classroomUrl}?t=${encodeURIComponent(token)}`;
+    embedUrl = `${roomUrl}?t=${encodeURIComponent(token)}`;
   }
 
   return {
@@ -82,7 +98,10 @@ export async function loadTeacherClassroom(slotId: string) {
     meetUrl,
     groupMeetUrl,
     embedUrl,
-    studentName: slot.enrollment.name,
+    studentName:
+      groupNames.length > 1
+        ? formatGroupRoster(groupNames)
+        : slot.enrollment.name,
     sessionNumber: slot.sessionNumber,
     title: slot.title,
     whenLabel: formatSlotWhen(slot.startsAt),
@@ -104,18 +123,24 @@ export async function loadStudentClassroom(slotId: string) {
     return { ok: false as const, message: "This class is not on your schedule." };
   }
 
-  const live = isClassroomLive(slot);
+  const groupSlots = groupClassIdentity(slot.enrollment)
+    ? await listGroupSessionSlots(slot)
+    : [];
+  const livePeer = pickLiveGroupClassroom([slot, ...groupSlots]);
+  const roomName = livePeer?.classroomRoomName || slot.classroomRoomName;
+  const roomUrl = livePeer?.classroomUrl || slot.classroomUrl;
+  const live = Boolean(livePeer) || isClassroomLive(slot);
   const meetUrl = slot.meetUrl || slot.enrollment.meetUrl;
   const groupMeetUrl = slot.enrollment.groupMeetUrl?.trim() || null;
   let embedUrl: string | null = null;
-  if (live && slot.classroomRoomName && slot.classroomUrl && isDailyConfigured()) {
+  if (live && roomName && roomUrl && isDailyConfigured()) {
     const token = await createDailyMeetingToken({
-      roomName: slot.classroomRoomName,
+      roomName,
       userName: enrollment.name,
       isOwner: false,
       expUnix: classroomExpUnix(slot.endsAt),
     });
-    embedUrl = `${slot.classroomUrl}?t=${encodeURIComponent(token)}`;
+    embedUrl = `${roomUrl}?t=${encodeURIComponent(token)}`;
   }
 
   return {

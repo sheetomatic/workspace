@@ -305,7 +305,8 @@ export function TrainingStudentsPanel({
             <strong>Group class</strong>
             <p>
               Paste one Meet/join URL. Every selected student sees the same
-              link on Learn. 1:1 Meet and Start class stay as they are.
+              link on Learn. Start class on any of them opens one in-panel
+              room the whole group can Join.
             </p>
           </div>
           <label>

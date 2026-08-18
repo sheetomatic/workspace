@@ -45,26 +45,37 @@ function alreadyExists(error: unknown) {
 export async function ensureDailyRoom(params: {
   roomName: string;
   expUnix: number;
+  maxParticipants?: number;
 }) {
+  const maxParticipants = params.maxParticipants ?? 6;
+  const properties = {
+    exp: params.expUnix,
+    enable_screenshare: true,
+    enable_chat: true,
+    start_video_off: false,
+    eject_at_room_exp: true,
+    max_participants: maxParticipants,
+  };
   try {
     const room = await dailyFetch("/rooms", {
       method: "POST",
       body: JSON.stringify({
         name: params.roomName,
         privacy: "private",
-        properties: {
-          exp: params.expUnix,
-          enable_screenshare: true,
-          enable_chat: true,
-          start_video_off: false,
-          eject_at_room_exp: true,
-          max_participants: 6,
-        },
+        properties,
       }),
     });
     return { name: room.name || params.roomName, url: room.url || "" };
   } catch (error) {
     if (!alreadyExists(error)) throw error;
+    try {
+      await dailyFetch(`/rooms/${encodeURIComponent(params.roomName)}`, {
+        method: "POST",
+        body: JSON.stringify({ properties }),
+      });
+    } catch {
+      // Room may already be in use; joining still works.
+    }
     const room = await dailyFetch(`/rooms/${encodeURIComponent(params.roomName)}`);
     return { name: room.name || params.roomName, url: room.url || "" };
   }

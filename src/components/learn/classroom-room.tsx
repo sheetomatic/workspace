@@ -75,7 +75,8 @@ export function ClassroomRoom({
       <header className="classroom-bar">
         <div>
           <p className="classroom-kicker">
-            {role === "teacher" ? "Teach" : "Learn"} · Session {sessionNumber}
+            {role === "teacher" ? "Teach" : "Learn"}
+            {groupMeetUrl ? " · Group" : ""} · Session {sessionNumber}
           </p>
           <h1>{title}</h1>
           <p>
