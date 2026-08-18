@@ -2,6 +2,8 @@
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   min-height: min(68vh, 640px);
+  height: min(68vh, 640px);
+  max-height: min(68vh, 640px);
   border: 1px solid #d0d7de;
   border-radius: 12px;
   background: #fff;
@@ -94,6 +96,8 @@
 .teach-sheet-scroll {
   overflow: auto;
   min-height: 0;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
 }
 
 .teach-sheet table {

@@ -666,12 +666,28 @@
   }
 }
 
+/* Viewport column: header + one real scrollport. display:block + leftover
+   .workspace-app .ws-module-layout-main { overflow-y: auto; overscroll-behavior:
+   contain } grew with content, trapped wheel in the center, and left only the
+   window scrollbar gutter on the far right. */
+html:has(.learn-admin-shell),
+body:has(.learn-admin-shell) {
+  height: 100dvh;
+  overflow: hidden;
+}
+
 .learn-admin-shell {
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
   background: #f8fafc;
 }
 
 .learn-admin-bar {
+  flex: 0 0 auto;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -741,25 +757,49 @@
 }
 
 .learn-admin-main {
-  display: block;
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
   min-width: 0;
+  width: 100%;
   padding: 0;
+  overflow: hidden;
 }
 
 .learn-admin-shell.workspace-app .ws-module-layout,
 .learn-admin-shell .ws-module-layout {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
   width: 100%;
-  min-height: calc(100vh - 64px);
+  min-height: 0;
+  min-width: 0;
   grid-template-columns: minmax(0, 1fr);
 }
 
 .learn-admin-shell.workspace-app .ws-module-layout-main,
-.learn-admin-shell .ws-module-layout-main,
+.learn-admin-shell .ws-module-layout-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  max-width: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
 .learn-admin-shell .saas-page {
   width: 100%;
   max-width: none;
+}
+
+/* Horizontal table clip only — do not invent a nested vertical scrollport. */
+.learn-admin-shell .ws-ims-table-wrap {
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .learn-portal-page {

@@ -64,7 +64,9 @@ export function TrainingPortalShell({
           </button>
         </div>
       </header>
-      <div className="learn-admin-main">{children}</div>
+      <div className="learn-admin-main" id="main">
+        {children}
+      </div>
     </div>
   );
 }
