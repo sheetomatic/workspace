@@ -67,11 +67,13 @@ export function pickLiveGroupClassroom<
     classroomEndedAt?: Date | string | null;
   },
 >(slots: T[]): T | undefined {
-  return slots.find(
-    (slot) =>
-      isClassroomLive(slot) &&
-      Boolean(slot.classroomRoomName?.trim()) &&
-      Boolean(slot.classroomUrl?.trim()),
+  return (
+    slots.find(
+      (slot) =>
+        isClassroomLive(slot) &&
+        Boolean(slot.classroomRoomName?.trim()) &&
+        Boolean(slot.classroomUrl?.trim()),
+    ) ?? slots.find((slot) => isClassroomLive(slot))
   );
 }
 

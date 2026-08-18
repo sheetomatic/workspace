@@ -9,8 +9,7 @@ import {
 } from "@/app/app/leads/training-content-actions";
 import { TRACK_LABEL } from "@/lib/learn/catalog";
 import { lessonHasTeachingContent } from "@/lib/learn/media";
-import { learnMsmeCopyUrl } from "@/lib/learn/msme-sheet";
-import { MSME_FIRM } from "@/lib/learn/msme-workbook";
+import { learnPracticeCopyUrl } from "@/lib/learn/practice-workbook";
 
 export type CurriculumLessonView = {
   id: string;
@@ -109,17 +108,17 @@ export function TrainingCurriculumPanel({
       {course.track === "SHEETS" ? (
         <aside className="training-workbook-bar">
           <div>
-            <strong>Practice workbook — {MSME_FIRM.name}</strong>
+            <strong>Practice workbook — TOC + hidden session tabs</strong>
             <span>
-              Big MSME file: 1,000+ sales lines, lookups, dashboard, ageing,
-              GST. Students copy this, then each topic applies a formula on the
-              same shop.
+              Official Sheets file. TOC lists every session. Practice sheets
+              are hidden tabs — Unhide the tab named on the lesson. RawData is
+              the sales dump the later tabs read.
             </span>
           </div>
           <div>
             <a
               className="training-workbook-btn is-primary"
-              href={copyUrl || learnMsmeCopyUrl() || "#"}
+              href={copyUrl || learnPracticeCopyUrl()}
               target="_blank"
               rel="noreferrer"
             >

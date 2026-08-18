@@ -19,7 +19,7 @@ type DailyJson = {
 async function dailyFetch(path: string, init?: RequestInit): Promise<DailyJson> {
   const key = dailyApiKey();
   if (!key) {
-    throw new Error("Add DAILY_API_KEY on Vercel to start an in-panel class.");
+    throw new Error("Daily is not configured.");
   }
   const response = await fetch(`${DAILY_API}${path}`, {
     ...init,

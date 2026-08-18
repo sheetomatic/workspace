@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildMsmeWorkbookAoa } from "@/lib/learn/msme-workbook";
+import { PRACTICE_TABS } from "@/lib/learn/practice-workbook";
 import { SHEETS_TEACHING } from "@/lib/learn/sheets-teaching";
 
 describe("Sheets teaching pack", () => {
@@ -8,6 +9,16 @@ describe("Sheets teaching pack", () => {
     expect(SHEETS_TEACHING.map((item) => item.no)).toEqual(
       Array.from({ length: 58 }, (_, index) => index + 1),
     );
+  });
+
+  it("points practice at real workbook tabs", () => {
+    const named = SHEETS_TEACHING.filter((item) => item.tab);
+    expect(named.length).toBeGreaterThan(40);
+    for (const item of named) {
+      expect(PRACTICE_TABS).toContain(item.tab);
+      expect(item.practicePrompt).toContain(item.tab);
+      expect(item.embedUrl).toContain("spreadsheets/d/");
+    }
   });
 
   it("builds a fat MSME sales register", () => {

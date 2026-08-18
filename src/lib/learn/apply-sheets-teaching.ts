@@ -31,7 +31,7 @@ export async function applySheetsTeachingContent(params?: {
           goal: pack.goal,
           practicePrompt: pack.practicePrompt,
           bodyMd: pack.bodyMd,
-          embedUrl: params?.embedUrl ?? undefined,
+          embedUrl: pack.embedUrl || params?.embedUrl || undefined,
           published: true,
         },
       }),

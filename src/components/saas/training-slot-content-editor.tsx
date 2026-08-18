@@ -7,6 +7,7 @@ import {
   removeTrainingSessionMaterialAction,
   saveTrainingSessionRecordingAction,
 } from "@/app/app/leads/training-session-actions";
+import { TrainingSessionBotButton } from "@/components/saas/training-session-bot-button";
 
 export function TrainingSlotContentEditor({
   slotId,
@@ -23,6 +24,13 @@ export function TrainingSlotContentEditor({
 }) {
   return (
     <div className="training-slot-content">
+      <TrainingSessionBotButton
+        slotId={slotId}
+        disabled={pending}
+        onDone={(result) => {
+          void run(async () => result);
+        }}
+      />
       {materials.length > 0 ? (
         <ul className="training-material-list">
           {materials.map((item) => (

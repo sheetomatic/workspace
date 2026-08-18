@@ -73,3 +73,37 @@
   border-radius: 12px;
   background: #0f172a;
 }
+
+.classroom-meet-stage {
+  display: grid;
+  align-content: start;
+  gap: 0.55rem;
+  min-height: min(32vh, 280px);
+  padding: 1.25rem 1.35rem;
+  border-radius: 12px;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.classroom-meet-stage h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.3;
+  color: #f8fafc;
+}
+
+.classroom-meet-stage p {
+  margin: 0;
+  max-width: 36rem;
+  color: #cbd5e1;
+  font-size: 0.92rem;
+}
+
+.classroom-meet-stage .classroom-kicker {
+  color: #7dd3fc;
+}
+
+.classroom-meet-stage .learn-btn-primary {
+  justify-self: start;
+  margin-top: 0.35rem;
+}

@@ -21,7 +21,7 @@ export async function notifyClassroomStarted(params: {
     "",
     `Session ${params.sessionNumber} · ${formatSlotWhen(params.startsAt)}`,
     `Join in your student panel: ${join}`,
-    params.meetUrl ? `Meet fallback: ${params.meetUrl}` : null,
+    params.meetUrl ? `Join Meet: ${params.meetUrl}` : null,
     "",
     "This class may be recorded. Your trainer will share the Unlisted YouTube in Class files.",
   ].filter(Boolean);

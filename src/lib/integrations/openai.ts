@@ -477,13 +477,15 @@ export type ParsedFmsFormDraft = {
 
 const FMS_AI_TIMEOUT_MS = 45_000;
 
-function fmsOpenAiModel() {
+/** Same key + model stack as FMS and Tasks. */
+export function workspaceOpenAiModel() {
   return process.env.OPENAI_FMS_MODEL ?? process.env.OPENAI_TASK_MODEL ?? "gpt-4o-mini";
 }
 
-async function requestFmsOpenAiJson(
+export async function requestOpenAiJson(
   systemPrompt: string,
   userContent: string,
+  options?: { temperature?: number; maxTokens?: number; timeoutMs?: number },
 ): Promise<{
   content: string;
   usage: {
@@ -498,7 +500,10 @@ async function requestFmsOpenAiJson(
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), FMS_AI_TIMEOUT_MS);
+  const timeout = setTimeout(
+    () => controller.abort(),
+    options?.timeoutMs ?? FMS_AI_TIMEOUT_MS,
+  );
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -509,9 +514,9 @@ async function requestFmsOpenAiJson(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: fmsOpenAiModel(),
-        temperature: 0.2,
-        max_tokens: 1800,
+        model: workspaceOpenAiModel(),
+        temperature: options?.temperature ?? 0.2,
+        max_tokens: options?.maxTokens ?? 1800,
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: systemPrompt },
@@ -556,6 +561,13 @@ async function requestFmsOpenAiJson(
   } finally {
     clearTimeout(timeout);
   }
+}
+
+async function requestFmsOpenAiJson(
+  systemPrompt: string,
+  userContent: string,
+) {
+  return requestOpenAiJson(systemPrompt, userContent);
 }
 
 const FMS_FIELD_TYPES: FmsFormFieldType[] = [

@@ -7,7 +7,7 @@ import { markLearnLessonDoneAction } from "@/app/learn/actions";
 import { getPublishedLesson, parseTrainingTrack, TRACK_LABEL } from "@/lib/learn/catalog";
 import { requireStudent } from "@/lib/learn/require";
 import { LearnWorkbookBar } from "@/components/learn/learn-workbook-bar";
-import { getLearnMsmeCopyUrl } from "@/lib/learn/publish-msme-sheet";
+import { learnPracticeCopyUrl } from "@/lib/learn/practice-workbook";
 import { prisma } from "@/lib/db";
 import "@/components/learn/learn-panel.css";
 
@@ -53,7 +53,7 @@ export default async function LearnLessonPage({
           <h1>{lesson.title}</h1>
           <p className="learn-lead">{lesson.summary}</p>
           </header>
-          <LearnWorkbookBar copyUrl={await getLearnMsmeCopyUrl()} />
+          <LearnWorkbookBar copyUrl={learnPracticeCopyUrl()} />
 
           <LearnLessonBody
             goal={lesson.goal}

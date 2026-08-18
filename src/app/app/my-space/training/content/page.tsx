@@ -8,7 +8,7 @@ import "@/components/saas/leads-machine.css";
 import "@/components/saas/training-students-panel.css";
 import { listTrainingCurriculum } from "@/lib/learn/catalog";
 import { withDbRetry } from "@/lib/db";
-import { getLearnMsmeCopyUrl } from "@/lib/learn/publish-msme-sheet";
+import { learnPracticeCopyUrl } from "@/lib/learn/practice-workbook";
 import { requireSession } from "@/lib/require-session";
 
 export default async function MySpaceTrainingContentPage({
@@ -82,7 +82,7 @@ export default async function MySpaceTrainingContentPage({
           courses={courses}
           canManage
           initialLessonId={params.lesson}
-          copyUrl={await getLearnMsmeCopyUrl()}
+          copyUrl={learnPracticeCopyUrl()}
         />
       )}
     </CrmSubmoduleShell>

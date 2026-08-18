@@ -5,7 +5,7 @@ import { listPublishedCourses, TRACK_LABEL } from "@/lib/learn/catalog";
 import { lessonHasTeachingContent } from "@/lib/learn/media";
 import { requireStudent } from "@/lib/learn/require";
 import { LearnWorkbookBar } from "@/components/learn/learn-workbook-bar";
-import { getLearnMsmeCopyUrl } from "@/lib/learn/publish-msme-sheet";
+import { learnPracticeCopyUrl } from "@/lib/learn/practice-workbook";
 import "@/components/learn/learn-panel.css";
 
 export default async function LearnCoursesPage() {
@@ -25,7 +25,7 @@ export default async function LearnCoursesPage() {
               formula.
             </p>
           </header>
-          <LearnWorkbookBar copyUrl={await getLearnMsmeCopyUrl()} />
+          <LearnWorkbookBar copyUrl={learnPracticeCopyUrl()} />
           <ol className="learn-course-grid">
             {courses.map((course, index) => {
               const ready = course.lessons.filter(lessonHasTeachingContent).length;

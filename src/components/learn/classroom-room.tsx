@@ -8,13 +8,13 @@ import {
   startTrainingClassroomAction,
 } from "@/app/app/leads/classroom-actions";
 import { ClassroomBoardPanel } from "@/components/learn/classroom-board";
+import { TrainingSessionBotButton } from "@/components/saas/training-session-bot-button";
 import "@/components/learn/classroom-room.css";
 import "@/components/learn/classroom-board.css";
 
 export function ClassroomRoom({
   role,
   live,
-  configured,
   meetUrl,
   groupMeetUrl,
   embedUrl,
@@ -28,7 +28,7 @@ export function ClassroomRoom({
 }: {
   role: "teacher" | "student";
   live: boolean;
-  configured: boolean;
+  configured?: boolean;
   meetUrl: string | null;
   groupMeetUrl?: string | null;
   embedUrl: string | null;
@@ -44,8 +44,9 @@ export function ClassroomRoom({
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(error ?? null);
   const [consented, setConsented] = useState(role === "teacher");
+  const joinMeet = groupMeetUrl || meetUrl;
   const [view, setView] = useState<"room" | "board" | "both">(
-    live ? "both" : "board",
+    embedUrl ? "both" : "board",
   );
 
   function startClass() {
@@ -88,7 +89,7 @@ export function ClassroomRoom({
             <button
               type="button"
               className="learn-btn-primary"
-              disabled={pending || !configured}
+              disabled={pending}
               onClick={startClass}
             >
               {pending ? "Starting…" : "Start class"}
@@ -104,24 +105,35 @@ export function ClassroomRoom({
               {pending ? "Ending…" : "End class"}
             </button>
           ) : null}
-          {groupMeetUrl ? (
+          {role === "teacher" ? (
+            <TrainingSessionBotButton
+              slotId={slotId}
+              disabled={pending}
+              variant="bar"
+              onDone={(result) => {
+                setMessage(result.message);
+                if (result.ok) router.refresh();
+              }}
+            />
+          ) : null}
+          {joinMeet ? (
             <a
-              className="learn-btn-secondary"
-              href={groupMeetUrl}
+              className={live ? "learn-btn-primary" : "learn-btn-secondary"}
+              href={joinMeet}
               target="_blank"
               rel="noreferrer"
             >
-              Join group class
+              Join Meet
             </a>
           ) : null}
-          {meetUrl && meetUrl !== groupMeetUrl ? (
+          {meetUrl && groupMeetUrl && meetUrl !== groupMeetUrl ? (
             <a
               className="learn-btn-secondary"
               href={meetUrl}
               target="_blank"
               rel="noreferrer"
             >
-              Meet fallback
+              1:1 Meet
             </a>
           ) : null}
           <div className="classroom-views" role="tablist" aria-label="Class view">
@@ -130,7 +142,7 @@ export function ClassroomRoom({
               className={view === "room" ? "is-active" : undefined}
               onClick={() => setView("room")}
             >
-              Room
+              {embedUrl ? "Room" : "Meet"}
             </button>
             <button
               type="button"
@@ -155,17 +167,10 @@ export function ClassroomRoom({
 
       {message ? <p className="classroom-note">{message}</p> : null}
 
-      {!configured && role === "teacher" ? (
-        <p className="classroom-note">
-          Add <code>DAILY_API_KEY</code> on Vercel to open the in-panel room.
-          Until then use Meet fallback.
-        </p>
-      ) : null}
-
       {role === "student" && !live ? (
         <p className="classroom-note">
-          Waiting for your trainer to start this class. Stay on this page or use
-          Meet fallback if they sent one.
+          Waiting for your trainer to start. Use Join Meet when they share it,
+          or stay here for the board.
         </p>
       ) : null}
 
@@ -183,8 +188,10 @@ export function ClassroomRoom({
         </label>
       ) : null}
 
-      {showFrame || showBoard ? (
-        <div className={`classroom-layout${view === "both" && showFrame ? " is-both" : ""}`}>
+      {showFrame || showBoard || (live && joinMeet && view !== "board") ? (
+        <div
+          className={`classroom-layout${view === "both" && (showFrame || joinMeet) ? " is-both" : ""}`}
+        >
           {showFrame && embedUrl ? (
             <iframe
               className="classroom-frame"
@@ -193,16 +200,28 @@ export function ClassroomRoom({
               allow="camera; microphone; fullscreen; display-capture; autoplay"
               allowFullScreen
             />
+          ) : live && joinMeet && view !== "board" ? (
+            <div className="classroom-meet-stage">
+              <p className="classroom-kicker">Live on Google Meet</p>
+              <h2>Join the call, teach on the board</h2>
+              <p>
+                Voice and camera stay in Meet. The spreadsheet board in this
+                panel is what students follow.
+              </p>
+              <a
+                className="learn-btn-primary"
+                href={joinMeet}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Join Meet
+              </a>
+            </div>
           ) : null}
           {showBoard ? (
             <ClassroomBoardPanel slotId={slotId} canEdit={role === "teacher"} />
           ) : null}
         </div>
-      ) : live && !embedUrl ? (
-        <p className="classroom-note">
-          Room is live but the join token could not be created. Check Daily, or
-          use Meet fallback.
-        </p>
       ) : null}
     </div>
   );

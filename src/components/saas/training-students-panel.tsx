@@ -12,6 +12,7 @@ import {
   updateLeadTrainingSlotStatusAction,
 } from "@/app/app/leads/actions";
 import { TrainingSlotContentEditor } from "@/components/saas/training-slot-content-editor";
+import { TrainingSessionBotButton } from "@/components/saas/training-session-bot-button";
 import type { TrainingMaterialView } from "@/lib/courses/session-materials";
 import { teacherClassPath } from "@/lib/learn/classroom";
 import {
@@ -304,9 +305,9 @@ export function TrainingStudentsPanel({
           <div>
             <strong>Group class</strong>
             <p>
-              Paste one Meet/join URL. Every selected student sees the same
-              link on Learn. Start class on any of them opens one in-panel
-              room the whole group can Join.
+              Paste one Meet URL. Every selected student sees the same link
+              on Learn. Start class marks the group live, pings WhatsApp, and
+              opens the board. Voice stays on Meet.
             </p>
           </div>
           <label>
@@ -697,6 +698,25 @@ export function TrainingStudentsPanel({
                                               ? "Enter class"
                                               : "Start class"}
                                           </Link>
+                                          <TrainingSessionBotButton
+                                            slotId={slot.id}
+                                            disabled={pending}
+                                            onDone={(result) => {
+                                              if (result.ok) {
+                                                setError(null);
+                                                setNotice(result.message);
+                                                setContentSlotId(slot.id);
+                                                setStatusOverride((current) => ({
+                                                  ...current,
+                                                  [slot.id]: "COMPLETED",
+                                                }));
+                                                router.refresh();
+                                                return;
+                                              }
+                                              setNotice(null);
+                                              setError(result.message);
+                                            }}
+                                          />
                                           <button
                                             type="button"
                                             className="ws-btn ws-btn-secondary training-slot-btn"
@@ -719,16 +739,33 @@ export function TrainingStudentsPanel({
                                           </button>
                                         </>
                                       ) : (
-                                        <button
-                                          type="button"
-                                          className="ws-btn ws-btn-secondary training-slot-btn"
-                                          disabled={pending}
-                                          onClick={() =>
-                                            onSlotStatus(slot.id, "SCHEDULED")
-                                          }
-                                        >
-                                          Reopen
-                                        </button>
+                                        <>
+                                          <TrainingSessionBotButton
+                                            slotId={slot.id}
+                                            disabled={pending}
+                                            onDone={(result) => {
+                                              if (result.ok) {
+                                                setError(null);
+                                                setNotice(result.message);
+                                                setContentSlotId(slot.id);
+                                                router.refresh();
+                                                return;
+                                              }
+                                              setNotice(null);
+                                              setError(result.message);
+                                            }}
+                                          />
+                                          <button
+                                            type="button"
+                                            className="ws-btn ws-btn-secondary training-slot-btn"
+                                            disabled={pending}
+                                            onClick={() =>
+                                              onSlotStatus(slot.id, "SCHEDULED")
+                                            }
+                                          >
+                                            Reopen
+                                          </button>
+                                        </>
                                       )}
                                     </td>
                                   ) : null}

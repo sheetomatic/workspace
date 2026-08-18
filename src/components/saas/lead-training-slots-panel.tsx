@@ -10,6 +10,7 @@ import {
   updateLeadTrainingSlotStatusAction,
 } from "@/app/app/leads/actions";
 import { TrainingSlotContentEditor } from "@/components/saas/training-slot-content-editor";
+import { TrainingSessionBotButton } from "@/components/saas/training-session-bot-button";
 import type { TrainingMaterialView } from "@/lib/courses/session-materials";
 import {
   TRAINING_BOOKING_WINDOW,
@@ -373,6 +374,18 @@ export function LeadTrainingSlotsPanel({
                           <td className="leads-training-slot-actions">
                             {slot.status === "SCHEDULED" ? (
                               <>
+                                <TrainingSessionBotButton
+                                  slotId={slot.id}
+                                  disabled={pending}
+                                  onDone={(result) => {
+                                    setMessage(result.message);
+                                    setIsError(!result.ok);
+                                    if (result.ok) {
+                                      setContentSlotId(slot.id);
+                                      reload();
+                                    }
+                                  }}
+                                />
                                 <button
                                   type="button"
                                   className="btn-secondary btn-sm"
@@ -391,14 +404,28 @@ export function LeadTrainingSlotsPanel({
                                 </button>
                               </>
                             ) : (
-                              <button
-                                type="button"
-                                className="btn-secondary btn-sm"
-                                disabled={pending}
-                                onClick={() => onSlotStatus(slot.id, "SCHEDULED")}
-                              >
-                                Reopen
-                              </button>
+                              <>
+                                <TrainingSessionBotButton
+                                  slotId={slot.id}
+                                  disabled={pending}
+                                  onDone={(result) => {
+                                    setMessage(result.message);
+                                    setIsError(!result.ok);
+                                    if (result.ok) {
+                                      setContentSlotId(slot.id);
+                                      reload();
+                                    }
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  className="btn-secondary btn-sm"
+                                  disabled={pending}
+                                  onClick={() => onSlotStatus(slot.id, "SCHEDULED")}
+                                >
+                                  Reopen
+                                </button>
+                              </>
                             )}
                           </td>
                         ) : null}

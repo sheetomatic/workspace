@@ -11,7 +11,7 @@ import { withDbRetry } from "@/lib/db";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
-import { getLearnMsmeCopyUrl } from "@/lib/learn/publish-msme-sheet";
+import { learnPracticeCopyUrl } from "@/lib/learn/practice-workbook";
 import { isLearnPortalRequest } from "@/lib/tenant-host";
 
 export default async function CrmTrainingContentPage({
@@ -91,7 +91,7 @@ export default async function CrmTrainingContentPage({
           courses={courses}
           canManage={hasMinimumRole(user.role, "STAFF")}
           initialLessonId={params.lesson}
-          copyUrl={await getLearnMsmeCopyUrl()}
+          copyUrl={learnPracticeCopyUrl()}
         />
       )}
     </CrmSubmoduleShell>

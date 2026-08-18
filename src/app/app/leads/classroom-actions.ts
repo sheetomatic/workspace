@@ -79,13 +79,6 @@ async function loadManageableSlot(slotId: string) {
 export async function startTrainingClassroomAction(slotId: string) {
   const loaded = await loadManageableSlot(slotId);
   if (!loaded.ok) return loaded;
-  if (!isDailyConfigured()) {
-    return {
-      ok: false as const,
-      message:
-        "Add DAILY_API_KEY on Vercel (Daily.co) to start class in this panel. Meet fallback still works.",
-    };
-  }
   if (loaded.slot.status === "CANCELLED") {
     return { ok: false as const, message: "This session is cancelled." };
   }
@@ -97,19 +90,29 @@ export async function startTrainingClassroomAction(slotId: string) {
   const alreadyLive = sessionSlots.some((slot) => isClassroomLive(slot));
   const livePeer = pickLiveGroupClassroom(sessionSlots);
   const identity = groupClassIdentity(loaded.slot.enrollment);
-  const roomName =
-    livePeer?.classroomRoomName ||
-    loaded.slot.classroomRoomName ||
-    (identity
-      ? roomNameForGroup(identity, loaded.slot.startsAt)
-      : roomNameForSlot(loaded.slot.id));
-  const room = await ensureDailyRoom({
-    roomName,
-    expUnix: classroomExpUnix(latestSlotEndsAt(sessionSlots, loaded.slot.endsAt)),
-    maxParticipants: classroomMaxParticipants(sessionSlots.length),
-  });
-  if (!room.url) {
-    return { ok: false as const, message: "Daily did not return a room URL." };
+
+  let roomName =
+    livePeer?.classroomRoomName || loaded.slot.classroomRoomName || null;
+  let roomUrl = livePeer?.classroomUrl || loaded.slot.classroomUrl || null;
+  if (isDailyConfigured()) {
+    const name =
+      roomName ||
+      (identity
+        ? roomNameForGroup(identity, loaded.slot.startsAt)
+        : roomNameForSlot(loaded.slot.id));
+    try {
+      const room = await ensureDailyRoom({
+        roomName: name,
+        expUnix: classroomExpUnix(
+          latestSlotEndsAt(sessionSlots, loaded.slot.endsAt),
+        ),
+        maxParticipants: classroomMaxParticipants(sessionSlots.length),
+      });
+      roomName = room.name;
+      roomUrl = room.url || roomUrl;
+    } catch (error) {
+      console.error("[classroom] Daily room skipped", error);
+    }
   }
 
   const startedAt = earliestClassroomStartedAt(sessionSlots);
@@ -117,8 +120,8 @@ export async function startTrainingClassroomAction(slotId: string) {
   await prisma.trainingCourseSlot.updateMany({
     where: { id: { in: slotIds } },
     data: {
-      classroomRoomName: room.name,
-      classroomUrl: room.url,
+      classroomRoomName: roomName,
+      classroomUrl: roomUrl,
       classroomStartedAt: startedAt,
       classroomEndedAt: null,
       status: "SCHEDULED",
@@ -180,37 +183,34 @@ export async function endTrainingClassroomAction(slotId: string) {
   const loaded = await loadManageableSlot(slotId);
   if (!loaded.ok) return loaded;
 
+  const groupSlots = groupClassIdentity(loaded.slot.enrollment)
+    ? await listGroupSessionSlots(loaded.slot)
+    : [];
+  const activitySlots = groupSlots.length > 0 ? groupSlots : [loaded.slot];
   const roomName = loaded.slot.classroomRoomName;
-  if (roomName) {
+  if (roomName && isDailyConfigured()) {
     await deleteDailyRoom(roomName);
   }
 
   const endedAt = new Date();
-  if (roomName) {
-    await prisma.trainingCourseSlot.updateMany({
-      where: { classroomRoomName: roomName, classroomEndedAt: null },
-      data: {
-        classroomEndedAt: endedAt,
-        status: "COMPLETED",
-      },
-    });
-  } else {
-    await prisma.trainingCourseSlot.update({
-      where: { id: loaded.slot.id },
-      data: {
-        classroomEndedAt: endedAt,
-        status: "COMPLETED",
-      },
-    });
-  }
-
-  const groupSlots = groupClassIdentity(loaded.slot.enrollment)
-    ? await listGroupSessionSlots(loaded.slot)
-    : [];
-  const activitySlots =
-    groupSlots.length > 0
-      ? groupSlots
-      : [loaded.slot];
+  const endIds = [
+    ...new Set(activitySlots.map((slot) => slot.id)),
+    loaded.slot.id,
+  ];
+  await prisma.trainingCourseSlot.updateMany({
+    where: {
+      OR: [
+        { id: { in: endIds } },
+        roomName
+          ? { classroomRoomName: roomName, classroomEndedAt: null }
+          : { id: loaded.slot.id },
+      ],
+    },
+    data: {
+      classroomEndedAt: endedAt,
+      status: "COMPLETED",
+    },
+  });
   const noted = new Set<string>();
   for (const slot of activitySlots) {
     if (!slot.inboundLeadId || noted.has(slot.inboundLeadId)) continue;
@@ -219,7 +219,7 @@ export async function endTrainingClassroomAction(slotId: string) {
       organizationId: loaded.user.organizationId,
       leadId: slot.inboundLeadId,
       type: "NOTE",
-      body: `Training session ${slot.sessionNumber} class ended. Paste the Unlisted YouTube in Class files.`,
+      body: `Training session ${slot.sessionNumber} class ended. Click Update Learn to attach the recording and lesson.`,
       createdByUserId: loaded.user.id,
     });
   }
@@ -227,6 +227,6 @@ export async function endTrainingClassroomAction(slotId: string) {
   revalidateClassroom();
   return {
     ok: true as const,
-    message: "Class ended. Paste the Unlisted YouTube on this session.",
+    message: "Class ended. Click Update Learn to put the recording and lesson on the student panel.",
   };
 }

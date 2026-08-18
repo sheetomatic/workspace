@@ -15,6 +15,29 @@
   line-height: 1.2;
 }
 
+.training-session-bot {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.training-session-bot-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.training-session-bot-hint {
+  margin: 0;
+  max-width: 28rem;
+  color: #334155;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.training-slot-content .training-session-bot {
+  margin-bottom: 0.45rem;
+}
+
 .training-students-toolbar {
   display: flex;
   flex-wrap: wrap;

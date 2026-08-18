@@ -81,20 +81,24 @@ export async function loadTeacherClassroom(slotId: string) {
   );
   let embedUrl: string | null = null;
   if (live && roomName && roomUrl && isDailyConfigured()) {
-    const token = await createDailyMeetingToken({
-      roomName,
-      userName: user.name?.trim() || "Trainer",
-      isOwner: true,
-      expUnix: classroomExpUnix(slot.endsAt),
-    });
-    embedUrl = `${roomUrl}?t=${encodeURIComponent(token)}`;
+    try {
+      const token = await createDailyMeetingToken({
+        roomName,
+        userName: user.name?.trim() || "Trainer",
+        isOwner: true,
+        expUnix: classroomExpUnix(slot.endsAt),
+      });
+      embedUrl = `${roomUrl}?t=${encodeURIComponent(token)}`;
+    } catch (error) {
+      console.error("[classroom] Daily embed skipped", error);
+    }
   }
 
   return {
     ok: true as const,
     role: "teacher" as const,
     live,
-    configured: isDailyConfigured(),
+    configured: true,
     meetUrl,
     groupMeetUrl,
     embedUrl,
@@ -134,20 +138,24 @@ export async function loadStudentClassroom(slotId: string) {
   const groupMeetUrl = slot.enrollment.groupMeetUrl?.trim() || null;
   let embedUrl: string | null = null;
   if (live && roomName && roomUrl && isDailyConfigured()) {
-    const token = await createDailyMeetingToken({
-      roomName,
-      userName: enrollment.name,
-      isOwner: false,
-      expUnix: classroomExpUnix(slot.endsAt),
-    });
-    embedUrl = `${roomUrl}?t=${encodeURIComponent(token)}`;
+    try {
+      const token = await createDailyMeetingToken({
+        roomName,
+        userName: enrollment.name,
+        isOwner: false,
+        expUnix: classroomExpUnix(slot.endsAt),
+      });
+      embedUrl = `${roomUrl}?t=${encodeURIComponent(token)}`;
+    } catch (error) {
+      console.error("[classroom] Daily embed skipped", error);
+    }
   }
 
   return {
     ok: true as const,
     role: "student" as const,
     live,
-    configured: isDailyConfigured(),
+    configured: true,
     meetUrl,
     groupMeetUrl,
     embedUrl,

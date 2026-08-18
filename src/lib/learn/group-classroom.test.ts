@@ -109,6 +109,18 @@ describe("group Daily room", () => {
     expect(live?.classroomRoomName).toBe("so-g-grp-1-1");
   });
 
+  it("treats a started Meet-only class as live", () => {
+    const live = pickLiveGroupClassroom([
+      {
+        classroomRoomName: null,
+        classroomUrl: null,
+        classroomStartedAt: new Date(),
+        classroomEndedAt: null,
+      },
+    ]);
+    expect(live?.classroomStartedAt).toBeTruthy();
+  });
+
   it("keeps the first start time when more students join the same room", () => {
     const first = new Date("2026-08-18T12:31:00.000Z");
     expect(
