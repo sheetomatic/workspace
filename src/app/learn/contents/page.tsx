@@ -14,11 +14,14 @@ export default async function LearnContentsPage() {
       <main className="learn-shell">
         <div className="learn-wide">
           <LearnNav name={enrollment.name} current="contents" />
-          <h1>Class files</h1>
-          <p className="learn-lead">
-            Recordings and documents from your live sessions. The full course
-            lives under Learn.
-          </p>
+          <header className="learn-page-head">
+            <p className="learn-kicker">Library</p>
+            <h1>Class files</h1>
+            <p className="learn-lead">
+              Recordings and documents from your live sessions. The full course
+              lives under Learn.
+            </p>
+          </header>
           {sessions.length === 0 ? (
             <p className="learn-muted">
               Nothing uploaded yet. After a class is marked done, the recording

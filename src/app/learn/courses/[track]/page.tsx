@@ -32,6 +32,7 @@ export default async function LearnTrackPage({
       <main className="learn-shell">
         <div className="learn-wide">
           <LearnNav name={enrollment.name} current="learn" />
+          <header className="learn-page-head">
           <p className="learn-crumb">
             <Link href="/learn/courses">Learn</Link>
             {" / "}
@@ -39,6 +40,7 @@ export default async function LearnTrackPage({
           </p>
           <h1>{course.title}</h1>
           <p className="learn-lead">{course.summary}</p>
+          </header>
           {[...modules.entries()].map(([moduleLabel, lessons]) => (
             <section key={moduleLabel} className="learn-module">
               <h2>{moduleLabel}</h2>

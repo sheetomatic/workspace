@@ -27,9 +27,9 @@ export default async function LearnLoginPage({
   return (
     <LearnPageShell>
       <main className="learn-shell">
-        <div className="learn-narrow">
-          <p className="learn-kicker">Student panel</p>
-          <h1>Sign in to training</h1>
+        <div className="learn-narrow learn-login-wrap">
+          <p className="learn-kicker">Sheetomatic Learn</p>
+          <h1>Sign in to your studio</h1>
           <p className="learn-lead">
             Use the email and WhatsApp number from your enrollment. After login
             you will see your schedule and the learning library (Sheets,

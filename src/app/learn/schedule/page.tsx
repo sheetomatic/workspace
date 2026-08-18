@@ -27,6 +27,8 @@ export default async function LearnSchedulePage() {
       <main className="learn-shell">
         <div className="learn-wide">
           <LearnNav name={enrollment.name} current="schedule" />
+          <header className="learn-page-head">
+          <p className="learn-kicker">Plan</p>
           <h1>Your schedule</h1>
           <p className="learn-lead">
             {courseCohortLabel(enrollment.cohort, enrollment.weekdaysCsv)} ·{" "}
@@ -50,6 +52,7 @@ export default async function LearnSchedulePage() {
               </>
             ) : null}
           </p>
+          </header>
           {enrollment.slots.length === 0 ? (
             <p className="learn-muted">No sessions booked yet.</p>
           ) : (
@@ -71,7 +74,9 @@ export default async function LearnSchedulePage() {
                       ) : null}
                       <LearnSessionMaterials materials={slot.materials} />
                     </div>
-                    <em>{slotStatusLabel(slot.status, live)}</em>
+                    <em className={`learn-status is-${live ? "live" : slot.status.toLowerCase()}`}>
+                      {slotStatusLabel(slot.status, live)}
+                    </em>
                   </li>
                 );
               })}

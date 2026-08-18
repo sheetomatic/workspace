@@ -41,6 +41,7 @@ export default async function LearnLessonPage({
       <main className="learn-shell">
         <div className="learn-wide">
           <LearnNav name={enrollment.name} current="learn" />
+          <header className="learn-page-head">
           <p className="learn-crumb">
             <Link href="/learn/courses">Learn</Link>
             {" / "}
@@ -51,6 +52,7 @@ export default async function LearnLessonPage({
           </p>
           <h1>{lesson.title}</h1>
           <p className="learn-lead">{lesson.summary}</p>
+          </header>
           <LearnWorkbookBar copyUrl={await getLearnMsmeCopyUrl()} />
 
           <LearnLessonBody

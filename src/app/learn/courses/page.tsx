@@ -17,11 +17,14 @@ export default async function LearnCoursesPage() {
       <main className="learn-shell">
         <div className="learn-wide">
           <LearnNav name={enrollment.name} current="learn" />
-          <h1>Learn</h1>
-          <p className="learn-lead">
-            Follow the path the way your trainer teaches it — Sheets, then
-            AppSheet, then Looker Studio. One shop file for every formula.
-          </p>
+          <header className="learn-page-head">
+            <p className="learn-kicker">Course</p>
+            <h1>Learn</h1>
+            <p className="learn-lead">
+              Follow the path the way your trainer teaches it — Sheets, then
+              AppSheet, then Looker Studio. One shop file for every formula.
+            </p>
+          </header>
           <LearnWorkbookBar copyUrl={await getLearnMsmeCopyUrl()} />
           <ul className="learn-course-grid">
             {courses.map((course) => {
