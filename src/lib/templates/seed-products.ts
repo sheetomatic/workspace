@@ -40,11 +40,11 @@ export const TEMPLATE_PRODUCT_SEEDS: Array<{
   },
   {
     slug: "appsheet-sales-to-dispatch",
-    name: "Sales to Dispatch – Flora (AppSheet)",
+    name: "TMT Bars – Sales to Dispatch (AppSheet)",
     type: "APPSHEET",
     priceInr: 9999,
     description:
-      "AppSheet for florists and nurseries — take a sale, pack it, and dispatch it in one flow. Capture customer orders and line items, move each order from Sold → Packed → Dispatched → Delivered, assign a delivery person, and see what is still pending to go out today. Built from the DNM Flora Sales-to-Dispatch app. Pay on UPI — after confirmation we email your AppSheet copy link.",
+      "MS TMT bars — direct and retail sales with vehicle loading and unloading. Capture DOs by plant, brand, party, size, and MT/Kg; link purchase and sale sauda; weigh on kanta at load and unload; track the vehicle; split retail vs direct; and keep godown, freight, and party payments in one AppSheet. Pay on UPI — after confirmation we email your AppSheet copy link.",
     sortOrder: 9,
     thumbnailUrl: "/images/templates/appsheet-sales-to-dispatch.png",
     copyLink:
