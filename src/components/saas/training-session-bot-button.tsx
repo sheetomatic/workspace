@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { ChevronDown } from "lucide-react";
 import { runLearnSessionBotAction } from "@/app/app/leads/training-session-bot-action";
 import { SheetomaticAiMark } from "@/components/saas/sheetomatic-ai-mark";
 
@@ -17,10 +18,12 @@ export function TrainingSessionBotButton({
 }) {
   const [pending, startTransition] = useTransition();
   const [hint, setHint] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
 
   function run() {
     startTransition(async () => {
       setHint(null);
+      setOpen(false);
       const result = await runLearnSessionBotAction(slotId);
       setHint(result.message);
       onDone?.(result);
@@ -43,7 +46,18 @@ export function TrainingSessionBotButton({
         <SheetomaticAiMark variant="icon" sizes="sm" />
         {pending ? "Updating Learn…" : "Update Learn"}
       </button>
-      {hint ? <p className="training-session-bot-hint">{hint}</p> : null}
+      {hint ? (
+        <button
+          type="button"
+          className="training-session-bot-toggle"
+          aria-expanded={open}
+          onClick={() => setOpen((current) => !current)}
+        >
+          {open ? "Hide result" : "Show result"}
+          <ChevronDown size={14} />
+        </button>
+      ) : null}
+      {hint && open ? <p className="training-session-bot-hint">{hint}</p> : null}
     </div>
   );
 }

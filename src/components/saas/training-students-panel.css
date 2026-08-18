@@ -26,9 +26,26 @@
   gap: 0.35rem;
 }
 
+.training-session-bot-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.training-session-bot-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
 .training-session-bot-hint {
   margin: 0;
-  max-width: 28rem;
+  max-width: 22rem;
   color: #334155;
   font-size: 0.75rem;
   line-height: 1.35;
@@ -346,6 +363,57 @@
   display: grid;
   gap: 0.75rem;
   padding: 0.75rem 0.15rem;
+}
+
+.training-slot-content-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.training-slot-content-kicker {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 750;
+  color: #0f172a;
+}
+
+.training-slot-content-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.45rem;
+}
+
+.training-slot-add {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.training-slot-add-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #0f172a;
+  font-size: 0.84rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.training-slot-add-toggle[aria-expanded="true"] {
+  border-color: #cbd5e1;
+  background: #fff;
+}
+
+.training-slot-add-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
 }
 
 .training-slot-content-empty {

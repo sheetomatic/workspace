@@ -679,11 +679,13 @@ export function TrainingStudentsPanel({
                                         setContentSlotId(open ? null : slot.id)
                                       }
                                     >
-                                      {recs || docs
-                                        ? `${recs ? `${recs} rec` : ""}${recs && docs ? " · " : ""}${docs ? `${docs} doc` : ""}`
-                                        : canManage
-                                          ? "Add"
-                                          : "—"}
+                                      {open
+                                        ? "Close"
+                                        : recs || docs
+                                          ? `${recs ? `${recs} rec` : ""}${recs && docs ? " · " : ""}${docs ? `${docs} doc` : ""}`
+                                          : canManage
+                                            ? "Add"
+                                            : "—"}
                                     </button>
                                   </td>
                                   {canManage ? (
@@ -779,6 +781,7 @@ export function TrainingStudentsPanel({
                                         materials={slot.materials}
                                         pending={pending}
                                         run={runContent}
+                                        onClose={() => setContentSlotId(null)}
                                       />
                                     </td>
                                   </tr>
