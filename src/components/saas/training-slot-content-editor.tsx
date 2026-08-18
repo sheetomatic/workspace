@@ -45,7 +45,8 @@ export function TrainingSlotContentEditor({
         </ul>
       ) : (
         <p className="training-slot-content-empty">
-          No recording or documents on this session yet.
+          No YouTube recording on this session yet. Upload Unlisted, then paste
+          the link so it shows on the student Class files page.
         </p>
       )}
 
@@ -76,7 +77,7 @@ export function TrainingSlotContentEditor({
             name="url"
             type="url"
             required
-            placeholder="https://drive.google.com/…"
+            placeholder="https://youtu.be/… (Unlisted)"
           />
         </label>
         <button type="submit" className="ws-btn ws-btn-secondary" disabled={pending}>

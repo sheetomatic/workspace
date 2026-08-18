@@ -3100,6 +3100,11 @@ model TrainingCourseSlot {
   endsAt         DateTime
   title          String
   meetUrl        String?
+  /** Daily.co room name (so-{slotId}). Neon stores the id only — not the video. */
+  classroomRoomName String?
+  classroomUrl      String?
+  classroomStartedAt DateTime?
+  classroomEndedAt   DateTime?
   status         TrainingSlotStatus @default(SCHEDULED)
   notes          String?
   createdAt      DateTime           @default(now())

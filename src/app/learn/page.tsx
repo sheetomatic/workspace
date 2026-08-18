@@ -4,15 +4,20 @@ import { LearnPageShell } from "@/components/learn/learn-page-shell";
 import { LearnSessionMaterials } from "@/components/learn/learn-session-materials";
 import { requireStudent } from "@/lib/learn/require";
 import { formatSlotWhen } from "@/lib/courses/slots";
+import { isClassroomLive, studentClassPath } from "@/lib/learn/classroom";
 import "@/components/learn/learn-panel.css";
 
 export default async function LearnHomePage() {
   const enrollment = await requireStudent();
   const completed = enrollment.slots.filter((slot) => slot.status === "COMPLETED")
     .length;
-  const upcoming = enrollment.slots.find(
-    (slot) => slot.status === "SCHEDULED" && slot.startsAt.getTime() >= Date.now(),
-  );
+  const live = enrollment.slots.find((slot) => isClassroomLive(slot));
+  const upcoming =
+    live ??
+    enrollment.slots.find(
+      (slot) =>
+        slot.status === "SCHEDULED" && slot.startsAt.getTime() >= Date.now(),
+    );
   const latestContent = [...enrollment.slots]
     .reverse()
     .find((slot) => slot.materials.length > 0);
@@ -50,9 +55,16 @@ export default async function LearnHomePage() {
               {upcoming ? (
                 <>
                   <p>{formatSlotWhen(upcoming.startsAt)}</p>
-                  {meetUrl ? (
+                  {live ? (
                     <a
                       className="learn-btn-primary"
+                      href={studentClassPath(live.id)}
+                    >
+                      Join class
+                    </a>
+                  ) : meetUrl ? (
+                    <a
+                      className="learn-btn-secondary"
                       href={meetUrl}
                       target="_blank"
                       rel="noreferrer"
@@ -61,7 +73,8 @@ export default async function LearnHomePage() {
                     </a>
                   ) : (
                     <p className="learn-muted">
-                      Meet link will appear when your trainer adds it.
+                      Join class appears when your trainer starts. Meet is the
+                      fallback until then.
                     </p>
                   )}
                 </>

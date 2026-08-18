@@ -3,10 +3,12 @@ import { LearnPageShell } from "@/components/learn/learn-page-shell";
 import { LearnSessionMaterials } from "@/components/learn/learn-session-materials";
 import { requireStudent } from "@/lib/learn/require";
 import { formatSlotWhen } from "@/lib/courses/slots";
+import { isClassroomLive, studentClassPath } from "@/lib/learn/classroom";
 import { courseCohortLabel } from "@/lib/content/courses-enrollment";
 import "@/components/learn/learn-panel.css";
 
-function slotStatusLabel(status: string) {
+function slotStatusLabel(status: string, live: boolean) {
+  if (live) return "Live";
   if (status === "COMPLETED") return "Done";
   if (status === "CANCELLED") return "Cancelled";
   return "Scheduled";
@@ -41,16 +43,27 @@ export default async function LearnSchedulePage() {
             <p className="learn-muted">No sessions booked yet.</p>
           ) : (
             <ol className="learn-schedule-list">
-              {enrollment.slots.map((slot) => (
-                <li key={slot.id}>
-                  <strong>#{slot.sessionNumber}</strong>
-                  <div>
-                    <span>{formatSlotWhen(slot.startsAt)}</span>
-                    <LearnSessionMaterials materials={slot.materials} />
-                  </div>
-                  <em>{slotStatusLabel(slot.status)}</em>
-                </li>
-              ))}
+              {enrollment.slots.map((slot) => {
+                const live = isClassroomLive(slot);
+                return (
+                  <li key={slot.id}>
+                    <strong>#{slot.sessionNumber}</strong>
+                    <div>
+                      <span>{formatSlotWhen(slot.startsAt)}</span>
+                      {live ? (
+                        <a
+                          className="learn-btn-primary"
+                          href={studentClassPath(slot.id)}
+                        >
+                          Join class
+                        </a>
+                      ) : null}
+                      <LearnSessionMaterials materials={slot.materials} />
+                    </div>
+                    <em>{slotStatusLabel(slot.status, live)}</em>
+                  </li>
+                );
+              })}
             </ol>
           )}
         </div>

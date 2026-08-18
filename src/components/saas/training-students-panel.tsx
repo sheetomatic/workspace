@@ -12,6 +12,7 @@ import {
 } from "@/app/app/leads/actions";
 import { TrainingSlotContentEditor } from "@/components/saas/training-slot-content-editor";
 import type { TrainingMaterialView } from "@/lib/courses/session-materials";
+import { teacherClassPath } from "@/lib/learn/classroom";
 import {
   learnPortalOrigin,
   workspacePortalOrigin,
@@ -27,6 +28,7 @@ export type TrainingStudentSlotView = {
   meetUrl: string | null;
   whenLabel: string;
   joinUrl: string | null;
+  classroomLive: boolean;
   materials: TrainingMaterialView[];
 };
 
@@ -436,15 +438,23 @@ export function TrainingStudentsPanel({
                                   <td className="ws-apple-cell-primary">
                                     {slot.whenLabel}
                                   </td>
-                                  <td>{slotStatusLabel(status)}</td>
                                   <td>
-                                    {slot.joinUrl ? (
+                                    {slot.classroomLive
+                                      ? "Live"
+                                      : slotStatusLabel(status)}
+                                  </td>
+                                  <td>
+                                    {slot.classroomLive && canManage ? (
+                                      <Link href={teacherClassPath(slot.id)}>
+                                        In panel
+                                      </Link>
+                                    ) : slot.joinUrl ? (
                                       <a
                                         href={slot.joinUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                       >
-                                        Join
+                                        Meet
                                       </a>
                                     ) : (
                                       "—"
@@ -469,6 +479,14 @@ export function TrainingStudentsPanel({
                                     <td className="training-slot-actions">
                                       {status === "SCHEDULED" ? (
                                         <>
+                                          <Link
+                                            className="ws-btn ws-btn-primary training-slot-btn"
+                                            href={teacherClassPath(slot.id)}
+                                          >
+                                            {slot.classroomLive
+                                              ? "Enter class"
+                                              : "Start class"}
+                                          </Link>
                                           <button
                                             type="button"
                                             className="ws-btn ws-btn-secondary training-slot-btn"

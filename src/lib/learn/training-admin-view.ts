@@ -33,6 +33,9 @@ export function toTrainingStudentViews(
       meetUrl: slot.meetUrl,
       whenLabel: slot.whenLabel,
       joinUrl: slot.joinUrl,
+      classroomLive: Boolean(
+        slot.classroomStartedAt && !slot.classroomEndedAt,
+      ),
       materials: slot.materials,
     })),
   }));

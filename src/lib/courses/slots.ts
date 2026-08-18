@@ -593,6 +593,8 @@ export async function listActiveTrainingStudents(params: {
         meetUrl: slot.meetUrl,
         whenLabel: formatSlotWhen(slot.startsAt),
         joinUrl: slot.meetUrl?.trim() || enrollment.meetUrl?.trim() || null,
+        classroomStartedAt: slot.classroomStartedAt,
+        classroomEndedAt: slot.classroomEndedAt,
         materials: slot.materials.map(toTrainingMaterialView),
       })),
     };
