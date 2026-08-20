@@ -1,8 +1,9 @@
-import { prisma, withDbRetry } from "@/lib/db";
+import { withDbRetry } from "@/lib/db";
 import {
   followUpTypeToNurtureEvent,
   isInboundLeadFollowUpType,
 } from "@/lib/leads/follow-up-types";
+import { extractMeetUrl, formatMeetingWhenIst } from "@/lib/leads/meeting-invite";
 import { triggerLeadNurtureEvent } from "@/lib/leads/nurture/run";
 
 const DUE_FOLLOW_UP_BATCH = 40;
@@ -36,6 +37,8 @@ export async function runDueFollowUpNurture(organizationId: string) {
         id: true,
         leadId: true,
         type: true,
+        scheduledAt: true,
+        notes: true,
       },
     }),
   );
@@ -46,14 +49,23 @@ export async function runDueFollowUpNurture(organizationId: string) {
   for (const row of due) {
     const type = isInboundLeadFollowUpType(row.type) ? row.type : "LEAD";
     const event = followUpTypeToNurtureEvent(type);
-    // Payment stage is a nurture stop status; alert_payment_pending still needs force.
-    const force = type === "PAYMENT";
+    // Payment stage is a nurture stop status; join-time reminders must not
+    // be blocked by the 48h stage gap from the booking message.
+    const force = type === "PAYMENT" || event === "alert_meeting_join";
 
     const result = await triggerLeadNurtureEvent({
       organizationId,
       leadId: row.leadId,
       event,
       force,
+      whenLabel:
+        event === "alert_meeting_join"
+          ? formatMeetingWhenIst(row.scheduledAt, 45)
+          : undefined,
+      meetUrl:
+        event === "alert_meeting_join"
+          ? extractMeetUrl(row.notes) ?? undefined
+          : undefined,
     });
 
     const shouldMark =

@@ -2,6 +2,7 @@ import {
   buildGoogleCalendarEventUrl,
   buildMeetingInviteIcs,
 } from "@/lib/leads/calendar-links";
+import { DEFAULT_CLIENT_MEET_URL } from "@/lib/leads/meeting-defaults";
 
 function escapeHtml(value: string) {
   return value
@@ -9,6 +10,35 @@ function escapeHtml(value: string) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+const MEET_URL_RE =
+  /https?:\/\/(?:meet\.google\.com|zoom\.us)[^\s<>"']+/i;
+
+export function extractMeetUrl(text: string | null | undefined): string | null {
+  const match = text?.match(MEET_URL_RE);
+  if (!match?.[0]) return null;
+  return match[0].replace(/[)\].,;]+$/, "");
+}
+
+export function resolveMeetingJoinDetails(params: {
+  startsAt?: Date | null;
+  durationMinutes?: number;
+  notes?: string | null;
+  meetUrl?: string | null;
+}) {
+  const meetUrl =
+    params.meetUrl?.trim() ||
+    extractMeetUrl(params.notes) ||
+    DEFAULT_CLIENT_MEET_URL;
+  const whenLabel = params.startsAt
+    ? formatMeetingWhenIst(params.startsAt, params.durationMinutes ?? 45)
+    : "the scheduled time";
+  return {
+    meetUrl,
+    whenLabel,
+    joinLine: `Join: ${meetUrl}`,
+  };
 }
 
 export function formatMeetingWhenIst(startsAt: Date, durationMinutes: number) {
@@ -98,7 +128,7 @@ export function buildClientMeetingInviteEmail(params: {
   const text = [
     `Hi ${firstName},`,
     "",
-    `Your meeting with ${params.organizationName} is scheduled.`,
+    `Your meeting with ${params.organizationName} is confirmed.`,
     "",
     `When: ${when}`,
     meetUrl ? `Join link: ${meetUrl}` : null,
@@ -117,7 +147,7 @@ export function buildClientMeetingInviteEmail(params: {
 
   const html = [
     `<p>Hi ${escapeHtml(firstName)},</p>`,
-    `<p>Your meeting with <strong>${escapeHtml(params.organizationName)}</strong> is scheduled.</p>`,
+    `<p>Your meeting with <strong>${escapeHtml(params.organizationName)}</strong> is confirmed.</p>`,
     `<p><strong>When:</strong> ${escapeHtml(when)}</p>`,
     meetUrl
       ? `<p><strong>Join link:</strong> <a href="${escapeHtml(meetUrl)}">${escapeHtml(meetUrl)}</a></p>`
@@ -132,7 +162,7 @@ export function buildClientMeetingInviteEmail(params: {
     .join("\n");
 
   return {
-    subject: `Meeting scheduled — ${params.organizationName}`,
+    subject: `Meeting confirmed — ${params.organizationName}`,
     text,
     html,
     calendarUrl,

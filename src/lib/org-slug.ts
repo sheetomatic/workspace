@@ -1,4 +1,28 @@
 import { prisma } from "@/lib/db";
+import { PRIMARY_ORG_SLUG } from "@/lib/platform";
+import { HINGORANI_PORTAL_SLUG } from "@/lib/dedicated-client-portals";
+
+const RESERVED_ORG_SLUGS = new Set([
+  PRIMARY_ORG_SLUG,
+  HINGORANI_PORTAL_SLUG,
+  "sheetomatic",
+  "tops",
+  "app",
+  "workspace",
+  "ai",
+  "www",
+  "login",
+  "admin",
+  "api",
+  "learn",
+  "mail",
+  "cdn",
+  "app-builder",
+]);
+
+export function isReservedOrganizationSlug(slug: string) {
+  return RESERVED_ORG_SLUGS.has(slug.trim().toLowerCase());
+}
 
 export function slugifyOrganizationName(name: string) {
   const base = name
@@ -16,7 +40,10 @@ export async function createUniqueOrganizationSlug(name: string) {
   let slug = base;
   let suffix = 0;
 
-  while (await prisma.organization.findUnique({ where: { slug } })) {
+  while (
+    isReservedOrganizationSlug(slug) ||
+    (await prisma.organization.findUnique({ where: { slug } }))
+  ) {
     suffix += 1;
     slug = `${base}-${suffix}`;
   }

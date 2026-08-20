@@ -15,6 +15,21 @@ describe("clientFacingNurtureNextStep", () => {
     ).toContain("today's meeting");
   });
 
+  it("asks for slots only before the meeting is booked", () => {
+    expect(
+      clientFacingNurtureNextStep({ status: "SCHEDULE_MEETING" }),
+    ).toContain("2 convenient time slots");
+  });
+
+  it("tells the client to join once the meeting is booked", () => {
+    expect(
+      clientFacingNurtureNextStep({ status: "DEMO_SCHEDULED" }),
+    ).toContain("join the meeting at the scheduled time");
+    expect(
+      clientFacingNurtureNextStep({ status: "DEMO_SCHEDULED" }),
+    ).not.toContain("2 convenient time slots");
+  });
+
   it("keeps a written client action", () => {
     expect(
       clientFacingNurtureNextStep({

@@ -1,0 +1,149 @@
+.hr-docs-public {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+  color: #111113;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.hr-docs-public-head h1 {
+  margin: 0.2rem 0 0.55rem;
+  font-size: 1.55rem;
+  letter-spacing: -0.03em;
+}
+
+.hr-docs-public-head p,
+.hr-docs-empty,
+.hr-docs-hint,
+.hr-docs-check p,
+.hr-docs-files p {
+  margin: 0;
+  color: #5b5d66;
+  line-height: 1.5;
+}
+
+.hr-docs-public-kicker {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6f7380;
+}
+
+.hr-docs-pill {
+  display: inline-flex;
+  margin-top: 0.85rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: #fff4d6;
+  color: #8a5a00;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.hr-docs-pill.is-done {
+  background: #e4f7ea;
+  color: #166534;
+}
+
+.hr-docs-alert {
+  margin: 1rem 0 0;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  background: #e4f7ea;
+  color: #166534;
+}
+
+.hr-docs-alert.is-error {
+  background: #fde8e8;
+  color: #9f1239;
+}
+
+.hr-docs-check,
+.hr-docs-files {
+  list-style: none;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.hr-docs-check li,
+.hr-docs-files li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid #eceef2;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.hr-docs-check li {
+  justify-content: flex-start;
+}
+
+.hr-docs-form {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border: 1px solid #eceef2;
+  border-radius: 16px;
+  background: #f4f5f7;
+}
+
+.hr-docs-form label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.hr-docs-form input,
+.hr-docs-form select,
+.hr-docs-form textarea {
+  width: 100%;
+  border: 1px solid #d7dae2;
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  background: #fff;
+  font: inherit;
+}
+
+.hr-docs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.hr-docs-form button,
+.hr-docs-file-actions a,
+.hr-docs-file-actions button {
+  border: 1px solid #d7dae2;
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.55rem 0.85rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  color: #111113;
+  text-decoration: none;
+}
+
+.hr-docs-form button.is-primary {
+  background: #111113;
+  color: #fff;
+  border-color: #111113;
+}
+
+.hr-docs-form button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.hr-docs-file-actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}

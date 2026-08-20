@@ -9,6 +9,11 @@ import {
   PRIMARY_ORG_SLUG,
 } from "@/lib/platform";
 import type { TeamActionState } from "@/app/app/team/actions";
+import {
+  listClientWorkspaces,
+  provisionClientWorkspace,
+  type ProvisionClientWorkspaceResult,
+} from "@/lib/workspace-provision";
 
 export type SuperAdminRow = {
   id: string;
@@ -106,6 +111,48 @@ export async function grantSuperAdminAccess(
     ok: true,
     message: `${email} now has super admin access across all workspaces.`,
   };
+}
+
+export type CreateClientWorkspaceState = ProvisionClientWorkspaceResult | {
+  ok: false;
+  message: string;
+};
+
+export async function listClientWorkspacesForSuperAdmin() {
+  const user = await getSessionUser();
+  if (!user || !canManageSuperAdmins(user, user.organizationSlug)) {
+    return [];
+  }
+  return listClientWorkspaces(20);
+}
+
+export async function createClientWorkspaceAction(
+  _prev: CreateClientWorkspaceState,
+  formData: FormData,
+): Promise<CreateClientWorkspaceState> {
+  const user = await getSessionUser();
+  if (!user || !canManageSuperAdmins(user, user.organizationSlug)) {
+    return {
+      ok: false,
+      message: "Only super admins in Sheetomatic Technologies can create client workspaces.",
+    };
+  }
+
+  const result = await provisionClientWorkspace({
+    businessName: String(formData.get("businessName") ?? ""),
+    ownerName: String(formData.get("ownerName") ?? ""),
+    ownerEmail: String(formData.get("ownerEmail") ?? ""),
+    ownerPhone: String(formData.get("ownerPhone") ?? ""),
+    bundle: String(formData.get("activationBundle") ?? ""),
+    invitedByName: user.name ?? user.email,
+  });
+
+  if (result.ok) {
+    revalidatePath("/app/team");
+    revalidatePath("/app/settings");
+  }
+
+  return result;
 }
 
 export async function revokeSuperAdminAccess(

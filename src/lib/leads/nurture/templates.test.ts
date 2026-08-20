@@ -34,6 +34,34 @@ describe("buildLeadNurtureMessage post_call", () => {
   });
 });
 
+describe("buildLeadNurtureMessage meeting reminders", () => {
+  it("asks for slots only when the meeting is not booked yet", () => {
+    const body = buildLeadNurtureMessage({
+      event: "stage_schedule_meeting",
+      name: "Sumit",
+      nurtureConfig: defaultLeadNurtureConfig(),
+    });
+    expect(body).toContain("2 convenient time slots");
+    expect(body.toLowerCase()).not.toContain("join our meeting");
+  });
+
+  it("reminds the client to join at the scheduled time with the Meet link", () => {
+    const body = buildLeadNurtureMessage({
+      event: "alert_meeting_join",
+      name: "Sumit",
+      whenLabel: "Thu, 20 Aug 2026, 03:00 – 03:45 pm IST",
+      meetUrl: "https://meet.google.com/axy-yorv-ofn",
+      nurtureConfig: defaultLeadNurtureConfig(),
+    });
+    expect(body).toContain("Hi Sumit");
+    expect(body).toContain("join our meeting at the scheduled time");
+    expect(body).toContain("Thu, 20 Aug 2026");
+    expect(body).toContain("https://meet.google.com/axy-yorv-ofn");
+    expect(body.toLowerCase()).not.toContain("2 convenient time slots");
+    expect(body.toLowerCase()).not.toContain("meeting notes");
+  });
+});
+
 describe("buildLeadNurtureMessage welcome", () => {
   it("does not send General inquiry when requirement is empty", () => {
     const body = buildLeadNurtureMessage({

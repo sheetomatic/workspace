@@ -1130,6 +1130,9 @@ export async function upsertEmployeeProfileAction(
           : "WHITE",
       hourlyRate: parseOptionalNumber(formData.get("hourlyRate")),
       shiftId: String(formData.get("shiftId") ?? "").trim() || null,
+      ...(formData.get("saveAsDraft") === "true" || formData.get("saveAsDraft") === "on"
+        ? { onboardingStatus: "PENDING_DOCS" as const }
+        : {}),
     });
     revalidateHr();
     revalidatePath("/app/team");
@@ -1745,6 +1748,103 @@ export async function upsertLeavePolicyAction(
 }
 
 // ── Onboarding ────────────────────────────────────────────────────────────
+
+export async function saveOnboardingDraftAction(
+  formData: FormData,
+): Promise<HrActionResult> {
+  const user = await getSessionUser();
+  if (!user) {
+    return hrActionFailure("FORBIDDEN", "Sign in required.");
+  }
+
+  const employeeProfileId = String(formData.get("employeeProfileId") ?? "").trim();
+  const educationSummary = String(formData.get("educationSummary") ?? "").trim();
+  const experienceSummary = String(formData.get("experienceSummary") ?? "").trim();
+  if (!employeeProfileId) {
+    return hrActionFailure("INVALID_INPUT", "Employee profile is required.");
+  }
+
+  const profile = await prisma.employeeProfile.findFirst({
+    where: { id: employeeProfileId, organizationId: user.organizationId },
+    select: { userId: true },
+  });
+  if (!profile) {
+    return hrActionFailure("INVALID_INPUT", "Employee profile not found.");
+  }
+
+  const isAdmin = hasMinimumRole(user.role, "ADMIN");
+  const isSelf = profile.userId === user.id;
+  if (!isAdmin && !isSelf) {
+    return hrActionFailure("FORBIDDEN", "Not allowed to save this onboarding draft.");
+  }
+
+  try {
+    const { saveOnboardingDraft } = await import("@/lib/hr/onboarding");
+    await saveOnboardingDraft({
+      organizationId: user.organizationId,
+      employeeProfileId,
+      educationSummary: educationSummary || null,
+      experienceSummary: experienceSummary || null,
+    });
+    revalidateHr();
+    return { ok: true };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not save draft.";
+    return hrActionFailure("ONBOARDING_DRAFT_FAILED", message);
+  }
+}
+
+export type SendEmployeeDocsLinkResult =
+  | { ok: true; message: string; waMeUrl?: string }
+  | { ok: false; code: string; message: string };
+
+export async function sendEmployeeDocsLinkAction(
+  formData: FormData,
+): Promise<SendEmployeeDocsLinkResult> {
+  const user = await getSessionUser();
+  if (
+    !user ||
+    !hasWorkspaceModule(user, "HR") ||
+    !hasMinimumRole(user.role, "ADMIN")
+  ) {
+    return hrActionFailure(
+      "FORBIDDEN",
+      "Admin access required to send document update links.",
+    );
+  }
+  if (!(await assertHrSubModuleEnabled(user, "employees"))) {
+    return hrActionFailure("FORBIDDEN", "Employees is not enabled for this workspace.");
+  }
+
+  const employeeProfileId = String(formData.get("employeeProfileId") ?? "").trim();
+  const channelRaw = String(formData.get("channel") ?? "").trim();
+  if (!employeeProfileId) {
+    return hrActionFailure("INVALID_INPUT", "Employee profile is required.");
+  }
+  if (channelRaw !== "email" && channelRaw !== "whatsapp") {
+    return hrActionFailure("INVALID_INPUT", "Choose Email or WhatsApp.");
+  }
+
+  try {
+    const { sendEmployeeDocsLink } = await import("@/lib/hr/docs-link");
+    const result = await sendEmployeeDocsLink({
+      organizationId: user.organizationId,
+      employeeProfileId,
+      channel: channelRaw,
+    });
+    revalidateHr();
+    return {
+      ok: true,
+      message: result.message,
+      waMeUrl: result.waMeUrl,
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not send document link.";
+    return hrActionFailure("DOCS_LINK_FAILED", message);
+  }
+}
 
 export async function completeOnboardingAction(
   formData: FormData,

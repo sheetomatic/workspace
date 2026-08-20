@@ -2,7 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { completeOnboardingAction } from "@/lib/hr/hr-actions";
+import {
+  completeOnboardingAction,
+  saveOnboardingDraftAction,
+} from "@/lib/hr/hr-actions";
 import { HrFeedbackBanner } from "@/components/hr/hr-feedback";
 
 export type OnboardingChecklistRow = {
@@ -107,7 +110,30 @@ export function OnboardingChecklist({
       </ul>
 
       {canComplete && !done ? (
-        <form action={onComplete} className="ws-hr-form">
+        <form
+          action={(formData) => {
+            const saveDraft =
+              formData.get("saveAsDraft") === "true" ||
+              formData.get("saveAsDraft") === "on";
+            if (saveDraft) {
+              startTransition(async () => {
+                setMessage(null);
+                setIsError(false);
+                const result = await saveOnboardingDraftAction(formData);
+                if (!result.ok) {
+                  setMessage(result.message);
+                  setIsError(true);
+                  return;
+                }
+                setMessage("Draft saved. Status stays Pending docs until they submit.");
+                router.refresh();
+              });
+              return;
+            }
+            onComplete(formData);
+          }}
+          className="ws-hr-form"
+        >
           <input
             type="hidden"
             name="employeeProfileId"
@@ -132,6 +158,15 @@ export function OnboardingChecklist({
             />
           </label>
           <div className="ws-hr-form-actions">
+            <button
+              type="submit"
+              name="saveAsDraft"
+              value="true"
+              className="btn-cta btn-secondary"
+              disabled={pending}
+            >
+              {pending ? "Saving…" : "Save as draft"}
+            </button>
             <button
               type="submit"
               className="btn-cta btn-primary"

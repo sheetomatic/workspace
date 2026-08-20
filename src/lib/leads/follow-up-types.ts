@@ -26,7 +26,7 @@ export const FOLLOW_UP_TYPE_TO_NURTURE_EVENT: Record<
   LeadNurtureEventId
 > = {
   LEAD: "stage_follow_up",
-  MEETING: "stage_schedule_meeting",
+  MEETING: "alert_meeting_join",
   QUOTATION: "alert_quotation_pending",
   NEGOTIATION: "alert_negotiation",
   PAYMENT: "alert_payment_pending",

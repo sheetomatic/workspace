@@ -12,7 +12,8 @@ export type LeadNurtureEventId =
   | "stage_qualified"
   | "alert_payment_pending"
   | "alert_quotation_pending"
-  | "alert_negotiation";
+  | "alert_negotiation"
+  | "alert_meeting_join";
 
 export const LEAD_NURTURE_EVENT_LABELS: Record<LeadNurtureEventId, string> = {
   welcome: "Welcome — inquiry received",
@@ -26,6 +27,7 @@ export const LEAD_NURTURE_EVENT_LABELS: Record<LeadNurtureEventId, string> = {
   alert_payment_pending: "Alert — payment not received",
   alert_quotation_pending: "Alert — quotation not accepted yet",
   alert_negotiation: "Alert — negotiation follow-up",
+  alert_meeting_join: "Alert — join meeting at scheduled time",
 };
 
 /** Min hours between stage-wise / alert messages so we do not irritate the lead. */
@@ -35,7 +37,6 @@ export const STATUS_TO_NURTURE_EVENT: Partial<
   Record<InboundLeadStatus, LeadNurtureEventId>
 > = {
   SCHEDULE_MEETING: "stage_schedule_meeting",
-  DEMO_SCHEDULED: "stage_schedule_meeting",
   PROPOSAL: "stage_proposal",
   TRIAL: "stage_trial",
   NEGOTIATION: "stage_proposal",
@@ -56,12 +57,14 @@ export const NURTURE_EVENT_ORDER: LeadNurtureEventId[] = [
   "alert_payment_pending",
   "alert_quotation_pending",
   "alert_negotiation",
+  "alert_meeting_join",
 ];
 
 export const ALERT_EVENT_ORDER: LeadNurtureEventId[] = [
   "alert_payment_pending",
   "alert_quotation_pending",
   "alert_negotiation",
+  "alert_meeting_join",
 ];
 
 export function isLeadNurtureEventId(value: string): value is LeadNurtureEventId {
@@ -80,6 +83,9 @@ export const NURTURE_TEMPLATE_PLACEHOLDERS = [
   { key: "{{discussion}}", label: "Call / meeting notes" },
   { key: "{{nextStep}}", label: "Client next action (not CRM stage)" },
   { key: "{{thanksLine}}", label: "Thanks line (meeting vs call)" },
+  { key: "{{when}}", label: "Meeting date & time (IST)" },
+  { key: "{{meetUrl}}", label: "Google Meet / join link" },
+  { key: "{{joinLine}}", label: "Join line with the Meet link" },
 ] as const;
 
 export type LeadAlertRuleConfig = {

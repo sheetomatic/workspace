@@ -1,6 +1,7 @@
 import { Decimal } from "@prisma/client/runtime/library";
 import type {
   EmployeeDocumentType,
+  EmployeeOnboardingStatus,
   EmployeeStatus,
   EmploymentType,
   Prisma,
@@ -73,6 +74,8 @@ export type EmployeeProfileInput = {
   hourlyRate?: number | null;
   /** Assigned shift; empty/null clears to org default timing. */
   shiftId?: string | null;
+  /** Keep joining docs pending until the employee submits. */
+  onboardingStatus?: EmployeeOnboardingStatus;
 };
 
 export type EmployeeListItem = {
@@ -80,6 +83,7 @@ export type EmployeeListItem = {
   userId: string;
   name: string | null;
   email: string;
+  userPhone: string | null;
   role: string;
   designation: string | null;
   department: TaskDepartment | null;
@@ -146,7 +150,7 @@ function mapListItem(
     deactivatedAt: Date | null;
     shiftId: string | null;
     shift: { id: string; name: string } | null;
-    user: { name: string | null; email: string };
+    user: { name: string | null; email: string; phone?: string | null };
     employeeProfile: {
       id: string;
       employeeCode: string;
@@ -176,6 +180,7 @@ function mapListItem(
     userId: row.userId,
     name: row.user.name,
     email: row.user.email,
+    userPhone: row.user.phone ?? null,
     role: row.role,
     designation: row.designation,
     department: row.department,
@@ -242,7 +247,7 @@ export async function listEmployees(
       deactivatedAt: true,
       shiftId: true,
       shift: { select: { id: true, name: true } },
-      user: { select: { name: true, email: true } },
+      user: { select: { name: true, email: true, phone: true } },
       employeeProfile: {
         select: {
           id: true,
@@ -297,7 +302,7 @@ export async function getEmployeeForForm(
   const row = await prisma.membership.findFirst({
     where: { id: membershipId, organizationId },
     include: {
-      user: { select: { name: true, email: true } },
+      user: { select: { name: true, email: true, phone: true } },
       shift: { select: { id: true, name: true, startTime: true, endTime: true } },
       employeeProfile: {
         include: {
@@ -328,6 +333,7 @@ export async function getEmployeeForForm(
     userId: row.userId,
     name: row.user.name,
     email: row.user.email,
+    userPhone: row.user.phone ?? null,
     role: row.role,
     designation: row.designation,
     department: row.department,
@@ -396,6 +402,7 @@ export async function getEmployee(
     userId: form.userId,
     name: form.name,
     email: form.email,
+    userPhone: form.userPhone ?? null,
     role: form.role,
     designation: form.designation,
     department: form.department,
@@ -527,6 +534,9 @@ export async function upsertEmployeeProfile(
     ifsc: input.ifsc?.trim().toUpperCase() || null,
     collarCategory: input.collarCategory ?? "WHITE",
     hourlyRate: decOrNull(input.hourlyRate),
+    ...(input.onboardingStatus
+      ? { onboardingStatus: input.onboardingStatus }
+      : {}),
   } satisfies Prisma.EmployeeProfileUncheckedUpdateInput;
 
   const [profile] = await prisma.$transaction([

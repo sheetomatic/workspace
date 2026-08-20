@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MaskedSalary } from "@/components/hr/masked-salary";
+import { EmployeeDocsLinkActions } from "@/components/hr/employee-docs-link-actions";
 import type { EmployeeListItem } from "@/lib/hr/employees";
 import { TASK_DEPARTMENT_LABELS } from "@/lib/tasks";
 
@@ -114,9 +115,18 @@ export function EmployeesTable({
                     )}
                   </td>
                   <td>
-                    <Link href={href} className="btn-secondary btn-sm">
-                      {row.profile ? (isAdmin ? "Edit" : "View") : "Register"}
-                    </Link>
+                    <div className="ws-hr-row-actions">
+                      <Link href={href} className="btn-secondary btn-sm">
+                        {row.profile ? (isAdmin ? "Edit" : "View") : "Register"}
+                      </Link>
+                      {isAdmin && row.profile && onboard === "PENDING_DOCS" ? (
+                        <EmployeeDocsLinkActions
+                          employeeProfileId={row.profile.id}
+                          hasPhone={Boolean(row.profile.phone || row.userPhone)}
+                          compact
+                        />
+                      ) : null}
+                    </div>
                   </td>
                 </tr>
               );

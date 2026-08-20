@@ -151,6 +151,33 @@ export async function completeOnboarding(params: {
   return profile;
 }
 
+/** Persist summaries and keep status PENDING_DOCS until the employee submits. */
+export async function saveOnboardingDraft(params: {
+  organizationId: string;
+  employeeProfileId: string;
+  educationSummary?: string | null;
+  experienceSummary?: string | null;
+}) {
+  const result = await prisma.employeeProfile.updateMany({
+    where: {
+      id: params.employeeProfileId,
+      organizationId: params.organizationId,
+    },
+    data: {
+      onboardingStatus: "PENDING_DOCS",
+      ...(params.educationSummary !== undefined
+        ? { educationSummary: params.educationSummary?.trim() || null }
+        : {}),
+      ...(params.experienceSummary !== undefined
+        ? { experienceSummary: params.experienceSummary?.trim() || null }
+        : {}),
+    },
+  });
+  if (result.count === 0) {
+    throw new Error("Employee profile not found.");
+  }
+}
+
 export async function setOnboardingPending(params: {
   organizationId: string;
   employeeProfileId: string;

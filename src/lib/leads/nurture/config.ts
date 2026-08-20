@@ -128,6 +128,17 @@ We are happy to refine the proposal so it fits your budget and priority modules.
 Share what you would like changed, or pick a quick call slot — we will close this together.
 
 — Team Sheetomatic`,
+
+  alert_meeting_join: `Hi {{firstName}},
+
+This is a reminder to *join our meeting at the scheduled time*.
+
+When: *{{when}}*
+{{joinLine}}
+
+We will be there. Reply here if you need to reschedule.
+
+— Team Sheetomatic`,
 };
 
 function defaultAlerts(): LeadAlertOrgConfig {

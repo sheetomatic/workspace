@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { buildMeetingInviteIcs } from "@/lib/leads/calendar-links";
-import { buildClientMeetingInviteEmail } from "@/lib/leads/meeting-invite";
+import {
+  buildClientMeetingInviteEmail,
+  extractMeetUrl,
+  resolveMeetingJoinDetails,
+} from "@/lib/leads/meeting-invite";
 import { parseDatetimeLocalAsIst } from "@/lib/leads/ist-datetime";
 
 describe("meeting invite ICS + HTML", () => {
@@ -40,5 +44,20 @@ describe("meeting invite ICS + HTML", () => {
     expect(invite.icsContent).toContain("METHOD:REQUEST");
     expect(invite.text).toContain("Add to your calendar:");
     expect(invite.calendarUrl).toContain("text=Meeting");
+    expect(invite.text).toContain("is confirmed");
+  });
+
+  it("extracts a Meet link from follow-up notes", () => {
+    expect(
+      extractMeetUrl(
+        "Client meeting scheduled (45 min) · https://meet.google.com/axy-yorv-ofn",
+      ),
+    ).toBe("https://meet.google.com/axy-yorv-ofn");
+    expect(
+      resolveMeetingJoinDetails({
+        startsAt,
+        notes: "Client meeting scheduled (45 min)",
+      }).meetUrl,
+    ).toBe("https://meet.google.com/axy-yorv-ofn");
   });
 });

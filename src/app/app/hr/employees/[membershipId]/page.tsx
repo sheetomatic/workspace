@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/saas/page-header";
 import { HrSubNav } from "@/components/hr/hr-sub-nav";
 import { EmployeeProfileForm } from "@/components/hr/employee-profile-form";
 import { OnboardingChecklist } from "@/components/hr/onboarding-checklist";
+import { EmployeeDocsLinkActions } from "@/components/hr/employee-docs-link-actions";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import { getEmployeeForForm } from "@/lib/hr/employees";
@@ -76,6 +77,18 @@ export default async function HrEmployeeDetailPage({ params }: PageProps) {
           </>
         ) : null}
       </p>
+
+      {checklist && data.profile && isAdmin ? (
+        <section className="ws-hr-panel">
+          <div className="ws-ims-panel-head">
+            <h3>Ask employee to update docs</h3>
+          </div>
+          <EmployeeDocsLinkActions
+            employeeProfileId={data.profile.id}
+            hasPhone={Boolean(data.profile.phone || data.userPhone)}
+          />
+        </section>
+      ) : null}
 
       {checklist && data.profile ? (
         <section className="ws-hr-panel">

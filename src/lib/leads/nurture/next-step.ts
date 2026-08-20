@@ -36,8 +36,9 @@ export function clientFacingNurtureNextStep(params: {
   const status = params.status ? resolveLeadStatus(params.status) : null;
   switch (status) {
     case "SCHEDULE_MEETING":
-    case "DEMO_SCHEDULED":
       return "Please share 2 convenient time slots and we will confirm the meeting.";
+    case "DEMO_SCHEDULED":
+      return "Please join the meeting at the scheduled time using the Meet link we shared.";
     case "PROPOSAL":
     case "INVOICE":
       return "We will share the proposal / quotation with you shortly.";

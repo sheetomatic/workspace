@@ -835,11 +835,13 @@ const NURTURE_EVENT_IDS = new Set<LeadNurtureEventId>([
   "post_call",
   "stage_schedule_meeting",
   "stage_proposal",
+  "stage_trial",
   "stage_follow_up",
   "stage_qualified",
   "alert_payment_pending",
   "alert_quotation_pending",
   "alert_negotiation",
+  "alert_meeting_join",
 ]);
 
 export async function sendLeadNurtureWhatsAppAction(
@@ -1966,7 +1968,7 @@ export async function scheduleLeadClientMeeting(params: {
           title: `Meeting with ${clientLabel}`,
         });
         const hostHtml = [
-          `<p>Your meeting with <strong>${clientLabel.replace(/</g, "")}</strong> is scheduled${hostIsScheduler ? "" : ` (host: ${hostLabel}, booked by ${user.name ?? "team"})`}.</p>`,
+          `<p>Your meeting with <strong>${clientLabel.replace(/</g, "")}</strong> is confirmed${hostIsScheduler ? "" : ` (host: ${hostLabel}, booked by ${user.name ?? "team"})`}.</p>`,
           `<p><strong>When:</strong> ${invite.whenLabel}</p>`,
           meetUrl
             ? `<p><strong>Join link:</strong> <a href="${meetUrl}">${meetUrl}</a></p>`
@@ -1981,7 +1983,7 @@ export async function scheduleLeadClientMeeting(params: {
           toEmail: recipientEmail,
           subject: `Meeting with ${clientLabel} — ${invite.whenLabel}`,
           text: [
-            `Your meeting with ${clientLabel} is scheduled${hostIsScheduler ? "" : ` (host: ${hostLabel}, booked by ${user.name ?? "team"})`}.`,
+            `Your meeting with ${clientLabel} is confirmed${hostIsScheduler ? "" : ` (host: ${hostLabel}, booked by ${user.name ?? "team"})`}.`,
             "",
             `When: ${invite.whenLabel}`,
             meetUrl ? `Join link: ${meetUrl}` : null,
@@ -2033,13 +2035,20 @@ export async function scheduleLeadClientMeeting(params: {
           organizationId: user.organizationId,
           toPhone: clientPhone,
           body: [
-            `Hi ${lead.name?.trim().split(/\s+/)[0] || "there"}, your meeting with ${organization?.name?.trim() || "Sheetomatic"} is scheduled.`,
+            `Hi ${lead.name?.trim().split(/\s+/)[0] || "there"},`,
+            "",
+            `Your meeting with ${organizationName} is confirmed.`,
+            "",
             `When: ${invite.whenLabel}`,
-            meetUrl ? `Join link: ${meetUrl}` : null,
+            meetUrl ? `Join: ${meetUrl}` : null,
             scheduleNote ? `Notes: ${scheduleNote}` : null,
+            "",
+            "We will send a reminder at the scheduled time. Reply here if you need to reschedule.",
+            "",
+            `— ${organizationName}`,
           ]
-            .filter(Boolean)
-            .join("\n\n"),
+            .filter((line) => line !== null)
+            .join("\n"),
         }).catch(() => ({ sent: false as const }));
         whatsappSent = wa.sent;
       }

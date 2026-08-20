@@ -6875,6 +6875,88 @@ body.ws-more-sheet-open .sheetomatic-ai-launcher {
   font-size: 0.9375rem;
 }
 
+.workspace-app .saas-create-workspace-form {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.workspace-app .saas-create-workspace-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.workspace-app .saas-create-workspace-form input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+}
+
+.workspace-app .saas-create-workspace-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.workspace-app .saas-create-workspace-creds {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+}
+
+.workspace-app .saas-create-workspace-creds dt {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.workspace-app .saas-create-workspace-creds dd {
+  margin: 0;
+  color: #0f172a;
+}
+
+.workspace-app .saas-create-workspace-list {
+  margin-top: 18px;
+}
+
+.workspace-app .saas-create-workspace-list h4 {
+  margin: 0 0 8px;
+  font-size: 0.875rem;
+}
+
+.workspace-app .saas-create-workspace-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.workspace-app .saas-create-workspace-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #e9d5ff;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.workspace-app .saas-create-workspace-list li strong {
+  display: block;
+}
+
+.workspace-app .saas-create-workspace-list li span {
+  display: block;
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
 .workspace-app .saas-form-success,
 .workspace-app .saas-form-error {
   margin: 12px 0 0;
@@ -11088,6 +11170,32 @@ body.ws-more-sheet-open .sheetomatic-ai-launcher {
 .workspace-app .ws-hr-table th {
   color: #64748b;
   font-weight: 600;
+}
+
+.workspace-app .ws-hr-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.workspace-app .ws-hr-row-docs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 11rem;
+}
+
+.workspace-app .ws-hr-row-docs .ws-hr-feedback,
+.workspace-app .ws-hr-row-docs .ws-hr-feedback-error {
+  margin: 0;
+  font-size: 0.72rem;
+  max-width: 16rem;
+}
+
+.workspace-app .ws-hr-docs-link-block {
+  display: grid;
+  gap: 0.45rem;
 }
 
 .workspace-app .ws-attendance-col-actions {

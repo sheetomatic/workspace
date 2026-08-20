@@ -69,6 +69,8 @@ export function buildLeadNurtureMessage(params: {
   status?: InboundLeadStatus | null;
   nurtureConfig?: LeadNurtureOrgConfig | null;
   pendingAmountLabel?: string | null;
+  whenLabel?: string | null;
+  meetUrl?: string | null;
 }): string {
   const firstName = leadFirstName(params.name);
   const topic = resolveNurtureTopicLabel(params.category ?? null);
@@ -109,6 +111,11 @@ export function buildLeadNurtureMessage(params: {
     "{{nextStep}}": nextStep,
     "{{thanksLine}}": thanksLine,
     "{{pendingAmount}}": params.pendingAmountLabel?.trim() || "your payment",
+    "{{when}}": params.whenLabel?.trim() || "the scheduled time",
+    "{{meetUrl}}": params.meetUrl?.trim() || "the Meet link we shared",
+    "{{joinLine}}": params.meetUrl?.trim()
+      ? `Join: ${params.meetUrl.trim()}`
+      : "Join using the Meet link we shared earlier.",
   };
 
   if (params.nurtureConfig) {
@@ -254,6 +261,20 @@ export function buildLeadNurtureMessage(params: {
         "We are happy to refine the proposal so it fits your budget and priority modules.",
         "",
         "Share what you would like changed, or pick a quick call slot — we will close this together.",
+        "",
+        "— Team Sheetomatic",
+      ].join("\n");
+
+    case "alert_meeting_join":
+      return [
+        `Hi ${firstName},`,
+        "",
+        "This is a reminder to *join our meeting at the scheduled time*.",
+        "",
+        `When: *${vars["{{when}}"]}*`,
+        vars["{{joinLine}}"],
+        "",
+        "We will be there. Reply here if you need to reschedule.",
         "",
         "— Team Sheetomatic",
       ].join("\n");

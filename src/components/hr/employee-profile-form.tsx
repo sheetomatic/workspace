@@ -104,7 +104,11 @@ export function EmployeeProfileForm({
         setIsError(true);
         return;
       }
-      setMessage("Employee profile saved.");
+      setMessage(
+        formData.get("saveAsDraft") === "true"
+          ? "Draft saved. Pending docs stay open until they submit."
+          : "Employee profile saved.",
+      );
       router.refresh();
     });
   }
@@ -496,6 +500,15 @@ export function EmployeeProfileForm({
 
         {canEdit ? (
           <div className="ws-hr-form-actions">
+            <button
+              type="submit"
+              name="saveAsDraft"
+              value="true"
+              className="btn-cta btn-secondary"
+              disabled={pending}
+            >
+              {pending ? "Saving…" : "Save as draft"}
+            </button>
             <button type="submit" className="btn-cta btn-primary" disabled={pending}>
               {pending ? "Saving…" : p ? "Save employee" : "Register employee"}
             </button>

@@ -42,9 +42,9 @@ export function LeadsNurtureMessagesPanel({
         <div>
           <h3>Nurture + Alert messages</h3>
           <p className="leads-machine-muted">
-            Lifecycle nurture steps and commercial alerts (payment not received,
-            quotation pending, negotiation). Placeholders fill from the lead when
-            WhatsApp sends.
+            Lifecycle nurture steps and alerts (join meeting at the scheduled
+            time, payment, quotation, negotiation). Placeholders fill from the
+            lead when WhatsApp sends.
           </p>
         </div>
         <span

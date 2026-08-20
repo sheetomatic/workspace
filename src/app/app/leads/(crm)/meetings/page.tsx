@@ -63,7 +63,7 @@ export default async function CrmMeetingsPage() {
       entry.meetings.find((row) => !row.completedAt) ?? entry.meetings[0];
     const waEvent = openRow
       ? followUpTypeToNurtureEvent(openRow.type)
-      : "stage_schedule_meeting";
+      : "alert_meeting_join";
 
     return {
       id: entry.lead.id,
@@ -119,7 +119,7 @@ export default async function CrmMeetingsPage() {
         groups={groups}
         columns={["When", "Type", "Assignee", "Notes"]}
         openTab="meeting"
-        waEvent="stage_schedule_meeting"
+        waEvent="alert_meeting_join"
         canManage={canManage}
         emptyMessage="No meetings or follow-ups scheduled yet."
         filterPlaceholder="Filter meeting clients…"

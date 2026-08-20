@@ -190,6 +190,8 @@ export async function triggerLeadNurtureEvent(params: {
   force?: boolean;
   /** Outstanding balance shown in payment reminders (e.g. "₹25,000"). */
   pendingAmountLabel?: string | null;
+  whenLabel?: string | null;
+  meetUrl?: string | null;
 }): Promise<{ sent: boolean; reason?: string; body?: string }> {
   const sendingEnabled = await isLeadNurtureSendingEnabled(params.organizationId);
   if (!sendingEnabled) {
@@ -216,6 +218,7 @@ export async function triggerLeadNurtureEvent(params: {
       meetingNotes: true,
       discussionNotes: true,
       callingStatus: true,
+      nextFollowUpAt: true,
       rawPayload: true,
       assignedTo: { select: { id: true, name: true } },
     },
@@ -296,6 +299,30 @@ export async function triggerLeadNurtureEvent(params: {
     );
   }
 
+  let whenLabel = params.whenLabel ?? null;
+  let meetUrl = params.meetUrl ?? null;
+  if (params.event === "alert_meeting_join" && (!whenLabel || !meetUrl)) {
+    const meeting = await prisma.inboundLeadFollowUp.findFirst({
+      where: {
+        organizationId: params.organizationId,
+        leadId: lead.id,
+        type: "MEETING",
+      },
+      orderBy: { scheduledAt: "desc" },
+      select: { scheduledAt: true, notes: true },
+    });
+    const { resolveMeetingJoinDetails } = await import(
+      "@/lib/leads/meeting-invite"
+    );
+    const join = resolveMeetingJoinDetails({
+      startsAt: meeting?.scheduledAt ?? lead.nextFollowUpAt,
+      notes: meeting?.notes,
+      meetUrl,
+    });
+    whenLabel = whenLabel || join.whenLabel;
+    meetUrl = meetUrl || join.meetUrl;
+  }
+
   const body = buildLeadNurtureMessage({
     event: params.event,
     name: lead.name,
@@ -314,6 +341,8 @@ export async function triggerLeadNurtureEvent(params: {
     status: lead.status,
     nurtureConfig,
     pendingAmountLabel,
+    whenLabel,
+    meetUrl,
   });
 
   // Claim before send so concurrent sync/retry cannot double-fire the same welcome.

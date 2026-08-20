@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { TeamManagementPanel } from "@/components/saas/team-management-panel";
 import { SuperAdminPanel } from "@/components/saas/super-admin-panel";
+import { CreateClientWorkspacePanel } from "@/components/saas/create-client-workspace-panel";
 import { WorkplaceHrSettingsPanel } from "@/components/saas/workplace-hr-settings-panel";
 import { HrWorkSitesPanel } from "@/components/saas/hr-work-sites-panel";
 import { HrShiftsPanel } from "@/components/saas/hr-shifts-panel";
@@ -11,7 +12,10 @@ import {
   LegalTeamPageActions,
 } from "@/components/legal/legal-team-invite-panel";
 import { LegalTeamPanel } from "@/components/legal/legal-team-panel";
-import { listSuperAdmins } from "@/app/app/team/platform-actions";
+import {
+  listClientWorkspacesForSuperAdmin,
+  listSuperAdmins,
+} from "@/app/app/team/platform-actions";
 import { canManageSuperAdmins } from "@/lib/platform";
 import { requireSession } from "@/lib/require-session";
 import { getOrCreateHrSettings } from "@/lib/hr/hr-store";
@@ -152,7 +156,9 @@ export default async function TeamPage({
       : [];
   const showSuperAdminPanel =
     canManage && canManageSuperAdmins(user, user.organizationSlug);
-  const superAdmins = showSuperAdminPanel ? await listSuperAdmins() : [];
+  const [superAdmins, clientWorkspaces] = showSuperAdminPanel
+    ? await Promise.all([listSuperAdmins(), listClientWorkspacesForSuperAdmin()])
+    : [[], []];
 
   return (
     <div className="saas-page">
@@ -175,9 +181,23 @@ export default async function TeamPage({
       <div className="ws-team-section-stack">
         {showSuperAdminPanel ? (
           <TeamCollapsibleSection
-            title="Platform super admins"
-            description="Grant or revoke platform admin access."
+            title="Super Admin panel"
+            description="Create a separate client workspace, or grant platform admin access."
+            defaultOpen
           >
+            <CreateClientWorkspacePanel
+              workspaces={clientWorkspaces.map((row) => ({
+                id: row.id,
+                name: row.name,
+                slug: row.slug,
+                status: row.status,
+                plan: row.plan,
+                allowedModules: row.allowedModules,
+                createdAt: row.createdAt.toISOString(),
+                ownerName: row.memberships[0]?.user.name ?? null,
+                ownerEmail: row.memberships[0]?.user.email ?? null,
+              }))}
+            />
             <SuperAdminPanel
               currentUserId={user.id}
               superAdmins={superAdmins}
