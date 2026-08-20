@@ -14,7 +14,7 @@ type Assignee = {
   phone: string | null;
 };
 
-export type TaskReminderKind = "assignment" | "due";
+export type TaskReminderKind = "assignment" | "due" | "interval";
 
 export type TaskReminderDispatchResult = {
   emailSent: boolean;
@@ -38,6 +38,7 @@ export async function dispatchTaskReminders(params: {
   remindViaEmail: boolean;
   remindViaWhatsApp: boolean;
   kind?: TaskReminderKind;
+  whatsappOnly?: boolean;
   attachments?: Array<{ fileName: string; url: string }>;
 }) {
   const kind = params.kind ?? "assignment";
@@ -117,7 +118,8 @@ export async function dispatchTaskReminders(params: {
         organizationId: params.organizationId,
         frequencyLabel,
         isRecurring: params.isRecurring,
-        reminderKind: kind,
+        reminderKind: kind === "assignment" ? "assignment" : kind,
+        whatsappOnly: params.whatsappOnly,
       });
       if (wa.sent) {
         whatsappSent = true;

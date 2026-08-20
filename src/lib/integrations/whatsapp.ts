@@ -161,6 +161,7 @@ type DeliverTaskMessageParams = {
   isRecurring?: boolean;
   /** Due reminders use text within an active session — not the assignment template. */
   skipTemplate?: boolean;
+  whatsappOnly?: boolean;
 };
 
 async function sendTaskTemplate(params: DeliverTaskMessageParams & {
@@ -227,7 +228,24 @@ async function deliverTaskMessage(params: DeliverTaskMessageParams) {
   ) {
     templateAttempted = true;
     templateResult = await sendTaskTemplate(templateParams);
-    if (templateResult.sent || templateResult.reason === "phone_id_required") {
+    if (templateResult.sent) {
+      if (params.whatsappOnly && params.organizationId) {
+        const hasSession =
+          providerKind === "messageautosender" ||
+          (await hasActiveWhatsAppSession(params.organizationId, params.toPhone));
+        if (hasSession) {
+          const interactivePayload = wrapInteractive(
+            buildTaskActionButtons(params.taskId, params.taskTitle),
+          );
+          await sendWhatsAppPayload({
+            ...sendParams,
+            message: interactivePayload,
+          });
+        }
+      }
+      return templateResult;
+    }
+    if (templateResult.reason === "phone_id_required") {
       return templateResult;
     }
     if (
@@ -375,23 +393,30 @@ export async function sendTaskAssignmentWhatsApp(params: {
   organizationId?: string;
   frequencyLabel?: string;
   isRecurring?: boolean;
-  reminderKind?: "assignment" | "due";
+  reminderKind?: "assignment" | "due" | "interval";
+  whatsappOnly?: boolean;
 }) {
   const taskDescription = resolveTaskDescription(
     params.taskTitle,
     params.taskDescription,
   );
-  const isDueReminder = params.reminderKind === "due";
+  const isDueReminder =
+    params.reminderKind === "due" || params.reminderKind === "interval";
+  const updateLine = params.whatsappOnly
+    ? "Reply on WhatsApp only — Start, Mark done, or Need help. No website login."
+    : "Reply on WhatsApp or open Sheetomatic to update status.";
   const body = isDueReminder
     ? [
-        `*Task reminder*`,
+        params.reminderKind === "interval"
+          ? `*Task still pending*`
+          : `*Task reminder*`,
         ``,
         `*${params.taskTitle}*`,
         ``,
         `Hi ${params.assigneeName}, this task is due ${formatTaskDue(params.dueAt)}.`,
         `Priority: ${params.priority}`,
         ``,
-        `Reply on WhatsApp or open Sheetomatic to update status.`,
+        updateLine,
       ].join("\n")
     : buildTaskMessageBody({
         taskTitle: params.taskTitle,
@@ -417,5 +442,6 @@ export async function sendTaskAssignmentWhatsApp(params: {
     frequencyLabel: params.frequencyLabel,
     isRecurring: params.isRecurring,
     skipTemplate: isDueReminder,
+    whatsappOnly: params.whatsappOnly,
   });
 }

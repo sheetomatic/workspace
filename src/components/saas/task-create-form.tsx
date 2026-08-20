@@ -49,10 +49,12 @@ export function TaskCreateForm({
   members,
   emailConfigured = true,
   whatsappConfigured = true,
+  whatsappOnly = false,
 }: {
   members: Member[];
   emailConfigured?: boolean;
   whatsappConfigured?: boolean;
+  whatsappOnly?: boolean;
 }) {
   const [state, action, pending] = useActionState(
     createDelegatedTask,
@@ -335,8 +337,13 @@ export function TaskCreateForm({
               <input
                 name="waOptOut"
                 type="hidden"
-                value={remindViaWhatsApp && whatsappConfigured ? "" : "1"}
+                value={
+                  whatsappOnly || (remindViaWhatsApp && whatsappConfigured)
+                    ? ""
+                    : "1"
+                }
               />
+              {whatsappOnly ? null : (
               <label
                 className={`ws-task-reminder-opt${!emailConfigured ? " is-disabled" : ""}`}
                 title={
@@ -355,6 +362,7 @@ export function TaskCreateForm({
                 />
                 Email
               </label>
+              )}
               <label
                 className={`ws-task-reminder-opt${!whatsappConfigured ? " is-disabled" : ""}`}
                 title={
@@ -364,14 +372,22 @@ export function TaskCreateForm({
                 }
               >
                 <input
-                  checked={remindViaWhatsApp && whatsappConfigured}
-                  disabled={!whatsappConfigured}
+                  checked={
+                    (whatsappOnly || remindViaWhatsApp) && whatsappConfigured
+                  }
+                  disabled={!whatsappConfigured || whatsappOnly}
                   type="checkbox"
                   onChange={(e) => setRemindViaWhatsApp(e.target.checked)}
                 />
                 WhatsApp
               </label>
             </div>
+            {whatsappOnly ? (
+              <p className="ws-task-recurring-hint">
+                Team updates on WhatsApp only. Overdue tasks get a WhatsApp
+                reminder every 4 hours during work hours.
+              </p>
+            ) : null}
             {!emailConfigured ? (
               <p className="ws-task-reminder-warning">
                 Email reminders are off — Resend is not configured on the server.

@@ -336,7 +336,7 @@ export async function updateTaskStatusForMember(
   if (status === "HELP_REQUESTED") {
     const message =
       note?.trim() ||
-      "I need help completing this task. Please advise on WhatsApp or the workspace.";
+      "I need help completing this task. Please advise on WhatsApp.";
 
     await prisma.$transaction(async (tx) => {
       await tx.taskRequest.updateMany({

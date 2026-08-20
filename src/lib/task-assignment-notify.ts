@@ -4,6 +4,7 @@ import {
   type TaskReminderDispatchResult,
 } from "@/lib/task-reminders";
 import { getWorkspaceIntegrationStatus } from "@/lib/workspace-integration-status";
+import { getOrgTaskPolicy } from "@/lib/tasks/org-task-policy";
 
 type AssigneeContact = {
   name: string | null;
@@ -14,15 +15,19 @@ type AssigneeContact = {
 export async function resolveAssignmentReminderFlags(
   organizationId: string,
   formData: FormData,
+  organizationSlug?: string,
 ) {
   const integration = await getWorkspaceIntegrationStatus(organizationId);
-  const remindViaEmail =
-    integration.emailConfigured && formData.get("remindViaEmail") === "1";
+  const policy = getOrgTaskPolicy(organizationSlug);
+  const remindViaEmail = policy.whatsappOnlyTeam
+    ? false
+    : integration.emailConfigured && formData.get("remindViaEmail") === "1";
 
   // Always notify on assign when wa.sheetomatic.com is connected for this workspace.
   // Client checkbox only opts out via waOptOut=1 (avoids hidden-field false negatives).
-  const remindViaWhatsApp =
-    integration.whatsappConfigured && formData.get("waOptOut") !== "1";
+  const remindViaWhatsApp = policy.whatsappOnlyTeam
+    ? integration.whatsappConfigured
+    : integration.whatsappConfigured && formData.get("waOptOut") !== "1";
 
   return {
     remindViaEmail,
@@ -44,6 +49,7 @@ export async function notifyTaskAssignee(params: {
   organizationName: string;
   remindViaEmail: boolean;
   remindViaWhatsApp: boolean;
+  organizationSlug?: string;
   attachments?: Array<{ fileName: string; url: string }>;
 }): Promise<TaskReminderDispatchResult> {
   if (!params.remindViaEmail && !params.remindViaWhatsApp) {
@@ -69,6 +75,7 @@ export async function notifyTaskAssignee(params: {
     organizationId: params.organizationId,
     remindViaEmail: params.remindViaEmail,
     remindViaWhatsApp: params.remindViaWhatsApp,
+    whatsappOnly: getOrgTaskPolicy(params.organizationSlug).whatsappOnlyTeam,
     attachments: params.attachments,
   });
 }

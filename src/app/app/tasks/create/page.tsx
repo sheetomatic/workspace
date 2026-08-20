@@ -6,6 +6,7 @@ import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
 import { canCreateTasks, listAssignableMembers } from "@/lib/tasks";
 import { getWorkspaceIntegrationStatus } from "@/lib/workspace-integration-status";
+import { getOrgTaskPolicy } from "@/lib/tasks/org-task-policy";
 
 export default async function CreateTaskPage() {
   const user = await requireSession(undefined, { module: "TASKS" });
@@ -40,6 +41,7 @@ export default async function CreateTaskPage() {
           emailConfigured={integrationStatus.emailConfigured}
           members={members}
           whatsappConfigured={integrationStatus.whatsappConfigured}
+          whatsappOnly={getOrgTaskPolicy(user.organizationSlug).whatsappOnlyTeam}
         />
       </section>
     </div>

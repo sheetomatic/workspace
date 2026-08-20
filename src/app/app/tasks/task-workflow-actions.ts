@@ -379,8 +379,8 @@ async function createAssigneeRequest(
   }
 
   const task = await loadTaskForUser(taskId, user.organizationId);
-  if (!task || !isTaskAssignee(user, task)) {
-    return { ok: false, message: "Only the assignee can submit this request." };
+  if (!task || !isTaskAssignee(user, task) || !canUpdateTask(user, task)) {
+    return { ok: false, message: "Update this task on WhatsApp only." };
   }
 
   if (task.status === "COMPLETED") {
@@ -676,8 +676,8 @@ export async function cancelAssigneeRequest(taskId: string): Promise<TaskActionS
     }
 
     const task = await loadTaskForUser(taskId, user.organizationId);
-    if (!task || !isTaskAssignee(user, task)) {
-      return { ok: false, message: "You cannot cancel this request." };
+    if (!task || !isTaskAssignee(user, task) || !canUpdateTask(user, task)) {
+      return { ok: false, message: "Update this task on WhatsApp only." };
     }
 
     await prisma.$transaction(async (tx) => {

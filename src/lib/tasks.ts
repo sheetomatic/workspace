@@ -12,6 +12,7 @@ import { SCALE } from "@/lib/scale";
 import { hasMinimumRole } from "@/lib/permissions";
 import { isTaskActiveStatus } from "@/lib/task-due-urgency";
 import { buildTaskVisibilityWhere } from "@/lib/task-verification";
+import { isWhatsAppOnlyTeamMember } from "@/lib/tasks/org-task-policy";
 
 export const ACTIVE_TASK_STATUSES: TaskStatus[] = [
   "PENDING",
@@ -863,6 +864,15 @@ export function canUpdateTask(
   user: SessionUser,
   task: { assigneeUserId: string },
 ) {
+  if (
+    isWhatsAppOnlyTeamMember(
+      user.organizationSlug,
+      user.role,
+      user.isSuperAdmin,
+    )
+  ) {
+    return false;
+  }
   if (hasMinimumRole(user.role, "MANAGER")) {
     return true;
   }

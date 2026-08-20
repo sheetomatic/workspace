@@ -32,6 +32,8 @@ import {
 import { getOrCreateHrSettings } from "@/lib/hr/hr-store";
 import { resolveMemberHrSubModules } from "@/lib/hr/hr-sub-modules";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
+import { isWhatsAppOnlyTeamMember } from "@/lib/tasks/org-task-policy";
+import { WhatsAppOnlyGate } from "@/components/saas/whatsapp-only-gate";
 
 export async function generateMetadata(): Promise<Metadata> {
   if (await isLearnPortalRequest()) {
@@ -183,6 +185,23 @@ export default async function AppLayout({
         organizationName={organization.name}
         status={organization.status}
       />
+    );
+  }
+
+  if (
+    isWhatsAppOnlyTeamMember(
+      organization.slug,
+      sessionUser.role,
+      sessionUser.isSuperAdmin,
+    )
+  ) {
+    return (
+      <AuthSessionProvider>
+        <WhatsAppOnlyGate
+          organizationName={organization.name}
+          userName={sessionUser.name?.trim() || sessionUser.email}
+        />
+      </AuthSessionProvider>
     );
   }
 

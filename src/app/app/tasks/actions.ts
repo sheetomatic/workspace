@@ -93,7 +93,11 @@ async function createDelegatedTaskInner(
   const isRecurring =
     formData.get("isRecurring") === "1" || isRecurringFrequency(frequency);
   const { remindViaEmail, remindViaWhatsApp } =
-    await resolveAssignmentReminderFlags(user.organizationId, formData);
+    await resolveAssignmentReminderFlags(
+      user.organizationId,
+      formData,
+      user.organizationSlug,
+    );
 
   if (title.length < 3) {
     return { ok: false, message: "Task title is required." };
@@ -239,6 +243,7 @@ async function createDelegatedTaskInner(
         assignee: task.assignee,
         organizationName: user.organizationName,
         organizationId: user.organizationId,
+        organizationSlug: user.organizationSlug,
         remindViaEmail,
         remindViaWhatsApp,
         attachments: attachmentLinks,
@@ -592,6 +597,7 @@ export async function updateDelegatedTask(
           assignee: nextAssignee,
           organizationName: user.organizationName,
           organizationId: user.organizationId,
+          organizationSlug: user.organizationSlug,
           remindViaEmail,
           remindViaWhatsApp,
         });
