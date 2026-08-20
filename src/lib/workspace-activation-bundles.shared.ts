@@ -27,8 +27,8 @@ export const ACTIVATION_BUNDLE_OPTIONS: ActivationBundleOption[] = [
   },
   {
     value: "tasks_addon",
-    label: "Tasks / EA only",
-    description: "Executive Assistant, PC, checklists. Sold separately.",
+    label: "Tasks Management only",
+    description: "Task assignment, owners, due dates, and scores. Not EA. Not PC.",
     modules: ["TASKS"],
   },
   {

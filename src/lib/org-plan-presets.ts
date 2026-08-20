@@ -19,7 +19,7 @@ export const BCI_GROWTH_ALLOWED: WorkspaceModule[] = [
   "HR",
 ];
 
-/** Executive Assistant / PC / checklists — standalone module anyone can buy. */
+/** Tasks Management — standalone SKU. Not EA. Not PC. */
 export const TASKS_ADDON_ALLOWED: WorkspaceModule[] = ["TASKS"];
 
 /** CRM / Leads Machine — sellable separate from full BCI/FMS. */
@@ -135,13 +135,13 @@ export const ORG_PLAN_LABELS: Record<OrgPlan, string> = {
   BCI_GROWTH: "BCI FMS Growth",
   ENTERPRISE: "Enterprise",
   LEGAL_ADDON: "Legal add-on",
-  TASKS_ADDON: "Executive Assistant (Tasks)",
+  TASKS_ADDON: "Tasks Management",
 };
 
 /** Product packaging labels for sales / onboarding UI. */
 export const MODULE_SKU_LABELS = {
   bciCore: "BCI FMS Bundle (FMS + Reports + Approvals)",
-  tasksAddon: "Tasks / EA add-on",
+  tasksAddon: "Tasks Management",
   crmAddon: "CRM add-on (Leads Machine)",
   imsAddon: "IMS / Stock add-on",
   hrAddon: "HRMS add-on",

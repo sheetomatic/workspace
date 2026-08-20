@@ -21,7 +21,7 @@ export const PLATFORM_WORKSPACE_MODULES: WorkspaceModule[] = WORKSPACE_MODULES.f
 
 export const WORKSPACE_MODULE_LABELS: Record<WorkspaceModule, string> = {
   CASES: "Cases",
-  TASKS: "Tasks",
+  TASKS: "Tasks Management",
   FMS: "FMS",
   CRM: "CRM",
   HR: "HRMS",

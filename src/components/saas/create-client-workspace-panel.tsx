@@ -43,8 +43,8 @@ export function CreateClientWorkspacePanel({
           </h3>
           <p>
             Makes a separate account from Sheetomatic Technologies. The client
-            gets their own login, tasks, and team. Pick Tasks / EA only for a
-            Tasks Management client.
+            gets their own login, tasks, and team. Pick Tasks Management only
+            — that is not EA and not PC.
           </p>
         </div>
       </div>

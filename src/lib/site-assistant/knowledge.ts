@@ -24,7 +24,7 @@ CORE MODULES:
 - FMS (Flow Management System): multiple templates allowed (split FMS). Steps with Who/How/When/SLA; Planned|Actual|Status|Delay. Page: /services/flow
 - IMS (Inventory): stock in/out, reorder exceptions. Page: /services/inventory
 - Checklist / PC module: recurring SOPs, completion proofs. Page: /services/checklist
-- Tasks / EA module: assignment, follow-through. Page: /services/tasks
+- Tasks Management module: assignment, follow-through. Separate from EA and PC. Page: /services/tasks
 - Executive Meeting (EM / MIS board): exceptions-first weekly review. Page: /services/mis
 - Custom software / automation: /services/automation
 - HR screening etc. may appear under services as available.

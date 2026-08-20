@@ -52,9 +52,9 @@ export const WORKSPACE_ADDON_CATALOG: WorkspaceAddonDefinition[] = [
   {
     key: "tasks",
     module: "TASKS",
-    label: "Tasks / EA add-on",
+    label: "Tasks Management",
     shortLabel: "Tasks",
-    description: "Tasks delegation, PC checklists, and PMS scores.",
+    description: "Task assignment, owners, due dates, and scores. Not EA. Not PC.",
     isBciCore: false,
   },
   {

@@ -52,7 +52,7 @@ export function bciStarterOnboardingPreset(): ClientOnboardingPreset {
   return planOnboardingPreset("BCI_STARTER");
 }
 
-/** Tasks / Executive Assistant only — no FMS. */
+/** Tasks Management only — no FMS, EA, or PC. */
 export function tasksAddonOnboardingPreset(): ClientOnboardingPreset {
   return planOnboardingPreset("TASKS_ADDON");
 }
