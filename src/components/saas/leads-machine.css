@@ -4634,12 +4634,35 @@
   gap: 0.65rem;
 }
 
-.service-master-form-actions,
-.service-master-row-actions {
+.service-master-form-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
   align-items: center;
+}
+
+.service-master-row-actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 0.3rem;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.service-master-bulk-bar {
+  margin: 0 0 0.75rem;
+}
+
+.service-master-bulk-bar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.service-master-table th:last-child,
+.service-master-table td:last-child {
+  width: 1%;
+  white-space: nowrap;
 }
 
 .service-master-row-inactive td {

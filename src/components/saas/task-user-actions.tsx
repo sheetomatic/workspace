@@ -169,6 +169,7 @@ export function TaskUserActions({ task }: { task: TaskRow }) {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [pending, startTransition] = useTransition();
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -205,14 +206,23 @@ export function TaskUserActions({ task }: { task: TaskRow }) {
     action: (taskId: string, formData: FormData) => Promise<{ ok: boolean; message: string }>,
     formData: FormData,
   ) {
+    if (submittingRef.current || pending) {
+      return;
+    }
+    submittingRef.current = true;
     startTransition(async () => {
-      const result = await action(task.id, formData);
-      if (!result.ok) {
-        setFeedback(result.message);
-        return;
+      try {
+        const result = await action(task.id, formData);
+        if (!result.ok) {
+          setFeedback(result.message);
+          submittingRef.current = false;
+          return;
+        }
+        setDialog(null);
+        setFeedback(null);
+      } catch {
+        submittingRef.current = false;
       }
-      setDialog(null);
-      setFeedback(null);
     });
   }
 

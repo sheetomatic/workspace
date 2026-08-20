@@ -1,10 +1,13 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { Check, Eye, EyeOff, Pencil, Trash2, X } from "lucide-react";
 import {
   createLeadServiceCatalogItem,
+  deleteLeadServiceCatalogBulk,
   deleteLeadServiceCatalogItem,
   setLeadServiceCatalogActive,
+  setLeadServiceCatalogActiveBulk,
   updateLeadServiceCatalogItem,
 } from "@/app/app/leads/actions";
 import { formatInr } from "@/lib/leads/categories";
@@ -48,6 +51,7 @@ export function ServiceMasterPanel({
     unitPrice: "",
     perUserCost: "",
   });
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const categories = useMemo(() => {
     return [...new Set(rows.map((item) => item.serviceCategory))].sort((a, b) =>
@@ -73,6 +77,37 @@ export function ServiceMasterPanel({
       );
     });
   }, [categoryFilter, query, rows, showHidden]);
+
+  const visibleIds = useMemo(() => visible.map((item) => item.id), [visible]);
+  const selectedVisibleCount = visibleIds.filter((id) => selectedIds.has(id)).length;
+  const allVisibleSelected =
+    visibleIds.length > 0 && selectedVisibleCount === visibleIds.length;
+
+  function toggleSelected(id: string, checked: boolean) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (checked) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  }
+
+  function toggleSelectAll(checked: boolean) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      for (const id of visibleIds) {
+        if (checked) {
+          next.add(id);
+        } else {
+          next.delete(id);
+        }
+      }
+      return next;
+    });
+  }
 
   function startEdit(item: ServiceItem) {
     setEditingId(item.id);
@@ -186,6 +221,56 @@ export function ServiceMasterPanel({
         setEditingId(null);
       }
       setMessage("Service removed.");
+    });
+  }
+
+  function runBulk(action: "show" | "hide" | "remove") {
+    const ids = [...selectedIds];
+    if (ids.length === 0) {
+      setMessage("Select at least one service.");
+      return;
+    }
+    if (
+      action === "remove" &&
+      !window.confirm(`Remove ${ids.length} selected service${ids.length === 1 ? "" : "s"}?`)
+    ) {
+      return;
+    }
+    setMessage(null);
+    startTransition(async () => {
+      if (action === "remove") {
+        const result = await deleteLeadServiceCatalogBulk(ids);
+        if (!result.ok) {
+          setMessage(result.message ?? "Could not remove services.");
+          return;
+        }
+        const deleted = new Set(result.deletedIds ?? []);
+        const hidden = new Set(result.hiddenIds ?? []);
+        setRows((current) =>
+          current
+            .filter((row) => !deleted.has(row.id))
+            .map((row) => (hidden.has(row.id) ? { ...row, isActive: false } : row)),
+        );
+        setSelectedIds(new Set());
+        if (editingId && (deleted.has(editingId) || hidden.has(editingId))) {
+          setEditingId(null);
+        }
+        setMessage(result.message ?? "Services updated.");
+        return;
+      }
+
+      const isActive = action === "show";
+      const result = await setLeadServiceCatalogActiveBulk(ids, isActive);
+      if (!result.ok) {
+        setMessage(result.message ?? "Could not update services.");
+        return;
+      }
+      const chosen = new Set(ids);
+      setRows((current) =>
+        current.map((row) => (chosen.has(row.id) ? { ...row, isActive } : row)),
+      );
+      setSelectedIds(new Set());
+      setMessage(result.message ?? "Services updated.");
     });
   }
 
@@ -314,6 +399,49 @@ export function ServiceMasterPanel({
 
       {message ? <p className="service-master-msg">{message}</p> : null}
 
+      {canManage && selectedIds.size > 0 ? (
+        <div className="leads-bulk-bar service-master-bulk-bar" role="toolbar" aria-label="Bulk service actions">
+          <span className="leads-bulk-count">
+            {selectedIds.size} selected
+          </span>
+          <button
+            type="button"
+            className="btn-secondary btn-sm"
+            disabled={pending}
+            onClick={() => runBulk("show")}
+          >
+            <Eye size={14} aria-hidden />
+            Show
+          </button>
+          <button
+            type="button"
+            className="btn-secondary btn-sm"
+            disabled={pending}
+            onClick={() => runBulk("hide")}
+          >
+            <EyeOff size={14} aria-hidden />
+            Hide
+          </button>
+          <button
+            type="button"
+            className="btn-secondary btn-sm"
+            disabled={pending}
+            onClick={() => runBulk("remove")}
+          >
+            <Trash2 size={14} aria-hidden />
+            Remove
+          </button>
+          <button
+            type="button"
+            className="btn-ghost btn-sm"
+            disabled={pending}
+            onClick={() => setSelectedIds(new Set())}
+          >
+            Clear
+          </button>
+        </div>
+      ) : null}
+
       <datalist id="service-master-categories">
         {categories.map((category) => (
           <option key={category} value={category} />
@@ -321,9 +449,20 @@ export function ServiceMasterPanel({
       </datalist>
 
       <div className="crm-submodule-table-wrap">
-        <table className="crm-submodule-table">
+        <table className="crm-submodule-table service-master-table">
           <thead>
             <tr>
+              {canManage ? (
+                <th className="leads-col-select">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    disabled={visibleIds.length === 0 || pending}
+                    aria-label="Select all visible services"
+                    onChange={(e) => toggleSelectAll(e.target.checked)}
+                  />
+                </th>
+              ) : null}
               <th>Category</th>
               <th>Service</th>
               <th>Amount</th>
@@ -335,7 +474,7 @@ export function ServiceMasterPanel({
           <tbody>
             {visible.length === 0 ? (
               <tr>
-                <td colSpan={canManage ? 6 : 5}>
+                <td colSpan={canManage ? 7 : 5}>
                   No services match this filter.
                 </td>
               </tr>
@@ -347,6 +486,17 @@ export function ServiceMasterPanel({
                     key={item.id}
                     className={item.isActive ? undefined : "service-master-row-inactive"}
                   >
+                    {canManage ? (
+                      <td className="leads-col-select">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(item.id)}
+                          disabled={pending}
+                          aria-label={`Select ${item.subCategory}`}
+                          onChange={(e) => toggleSelected(item.id, e.target.checked)}
+                        />
+                      </td>
+                    ) : null}
                     <td>
                       {editing ? (
                         <input
@@ -431,46 +581,64 @@ export function ServiceMasterPanel({
                             <>
                               <button
                                 type="button"
-                                className="btn-primary btn-sm"
+                                className="leads-icon-btn"
                                 disabled={pending}
+                                title="Save"
+                                aria-label={`Save ${item.subCategory}`}
                                 onClick={() => saveEdit(item.id)}
                               >
-                                Save
+                                <Check size={15} aria-hidden />
                               </button>
                               <button
                                 type="button"
-                                className="btn-secondary btn-sm"
+                                className="leads-icon-btn"
                                 disabled={pending}
+                                title="Cancel"
+                                aria-label="Cancel edit"
                                 onClick={() => setEditingId(null)}
                               >
-                                Cancel
+                                <X size={15} aria-hidden />
                               </button>
                             </>
                           ) : (
                             <>
                               <button
                                 type="button"
-                                className="btn-secondary btn-sm"
+                                className="leads-icon-btn"
                                 disabled={pending}
+                                title="Edit"
+                                aria-label={`Edit ${item.subCategory}`}
                                 onClick={() => startEdit(item)}
                               >
-                                Edit
+                                <Pencil size={15} aria-hidden />
                               </button>
                               <button
                                 type="button"
-                                className="btn-secondary btn-sm"
+                                className="leads-icon-btn"
                                 disabled={pending}
+                                title={item.isActive ? "Hide" : "Show"}
+                                aria-label={
+                                  item.isActive
+                                    ? `Hide ${item.subCategory}`
+                                    : `Show ${item.subCategory}`
+                                }
                                 onClick={() => setActive(item.id, !item.isActive)}
                               >
-                                {item.isActive ? "Hide" : "Show"}
+                                {item.isActive ? (
+                                  <EyeOff size={15} aria-hidden />
+                                ) : (
+                                  <Eye size={15} aria-hidden />
+                                )}
                               </button>
                               <button
                                 type="button"
-                                className="btn-secondary btn-sm"
+                                className="leads-icon-btn danger"
                                 disabled={pending}
+                                title="Remove"
+                                aria-label={`Remove ${item.subCategory}`}
                                 onClick={() => removeItem(item.id)}
                               >
-                                Remove
+                                <Trash2 size={15} aria-hidden />
                               </button>
                             </>
                           )}

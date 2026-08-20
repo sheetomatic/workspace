@@ -314,8 +314,16 @@ async function updateTaskStatusInner(
     return { ok: false, message: "You cannot update this task." };
   }
 
+  if (status === "COMPLETED" && task.status === "COMPLETED") {
+    return { ok: true, message: "Task already marked done." };
+  }
+
   const updated = await prisma.delegatedTask.updateMany({
-    where: { id: taskId, organizationId: user.organizationId },
+    where: {
+      id: taskId,
+      organizationId: user.organizationId,
+      ...(status === "COMPLETED" ? { status: { not: "COMPLETED" } } : {}),
+    },
     data: {
       status,
       completedAt: status === "COMPLETED" ? new Date() : null,
@@ -323,7 +331,9 @@ async function updateTaskStatusInner(
   });
 
   if (updated.count === 0) {
-    return { ok: false, message: "Could not update task." };
+    return status === "COMPLETED"
+      ? { ok: true, message: "Task already marked done." }
+      : { ok: false, message: "Could not update task." };
   }
 
   let message = "Status updated.";
@@ -349,59 +359,72 @@ async function updateTaskStatusInner(
       recurrenceOptions,
     );
     if (nextDue) {
-      const nextTask = await prisma.delegatedTask.create({
-        data: {
+      const seriesId = task.seriesId ?? task.id;
+      const existingNext = await prisma.delegatedTask.findFirst({
+        where: {
           organizationId: task.organizationId,
-          title: task.title,
-          instructions: task.instructions,
-          assigneeUserId: task.assigneeUserId,
-          createdById: task.createdById,
-          priority: task.priority,
-          department: task.department,
-          category: task.category,
-          frequency: task.frequency,
-          recurrenceWeeklyDays: task.recurrenceWeeklyDays,
-          recurrenceMonthDay: task.recurrenceMonthDay,
-          isRecurring: true,
-          seriesId: task.seriesId ?? task.id,
+          seriesId,
           occurrenceNumber: task.occurrenceNumber + 1,
-          nextOccurrenceAt: computeNextDueAt(
-            task.frequency,
-            nextDue,
-            recurrenceOptions,
-          ),
-          remindViaEmail: task.remindViaEmail,
-          remindViaWhatsApp: task.remindViaWhatsApp,
-          dueAt: nextDue,
-          status: "PENDING",
         },
+        select: { id: true },
       });
-
-      if (task.remindViaEmail || task.remindViaWhatsApp) {
-        const reminders = await dispatchTaskReminders({
-          taskId: nextTask.id,
-          taskTitle: task.title,
-          taskDescription: task.instructions,
-          priority: task.priority,
-          dueAt: nextDue,
-          frequency: task.frequency,
-          isRecurring: true,
-          assignee: task.assignee,
-          organizationName: user.organizationName,
-          organizationId: user.organizationId,
-          remindViaEmail: task.remindViaEmail,
-          remindViaWhatsApp: task.remindViaWhatsApp,
-        });
-        await prisma.delegatedTask.update({
-          where: { id: nextTask.id },
-          data: buildAssignmentReminderUpdate(reminders, {
+      if (existingNext) {
+        message = `Marked done. Next ${task.frequency.toLowerCase()} run scheduled.`;
+      } else {
+        const nextTask = await prisma.delegatedTask.create({
+          data: {
+            organizationId: task.organizationId,
+            title: task.title,
+            instructions: task.instructions,
+            assigneeUserId: task.assigneeUserId,
+            createdById: task.createdById,
+            priority: task.priority,
+            department: task.department,
+            category: task.category,
+            frequency: task.frequency,
+            recurrenceWeeklyDays: task.recurrenceWeeklyDays,
+            recurrenceMonthDay: task.recurrenceMonthDay,
+            isRecurring: true,
+            seriesId,
+            occurrenceNumber: task.occurrenceNumber + 1,
+            nextOccurrenceAt: computeNextDueAt(
+              task.frequency,
+              nextDue,
+              recurrenceOptions,
+            ),
+            remindViaEmail: task.remindViaEmail,
             remindViaWhatsApp: task.remindViaWhatsApp,
-            assigneeHasPhone: Boolean(task.assignee.phone?.trim()),
-          }),
+            dueAt: nextDue,
+            status: "PENDING",
+          },
         });
-      }
 
-      message = `Marked done. Next ${task.frequency.toLowerCase()} run scheduled.`;
+        if (task.remindViaEmail || task.remindViaWhatsApp) {
+          const reminders = await dispatchTaskReminders({
+            taskId: nextTask.id,
+            taskTitle: task.title,
+            taskDescription: task.instructions,
+            priority: task.priority,
+            dueAt: nextDue,
+            frequency: task.frequency,
+            isRecurring: true,
+            assignee: task.assignee,
+            organizationName: user.organizationName,
+            organizationId: user.organizationId,
+            remindViaEmail: task.remindViaEmail,
+            remindViaWhatsApp: task.remindViaWhatsApp,
+          });
+          await prisma.delegatedTask.update({
+            where: { id: nextTask.id },
+            data: buildAssignmentReminderUpdate(reminders, {
+              remindViaWhatsApp: task.remindViaWhatsApp,
+              assigneeHasPhone: Boolean(task.assignee.phone?.trim()),
+            }),
+          });
+        }
+
+        message = `Marked done. Next ${task.frequency.toLowerCase()} run scheduled.`;
+      }
     }
   } else if (status === "COMPLETED") {
     message = "Task marked done.";

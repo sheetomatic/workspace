@@ -2855,6 +2855,96 @@ export async function deleteLeadServiceCatalogItem(id: string) {
   return { ok: true };
 }
 
+function uniqueCatalogIds(ids: string[]) {
+  return [...new Set(ids.map((id) => id.trim()).filter(Boolean))].slice(0, 200);
+}
+
+export async function setLeadServiceCatalogActiveBulk(
+  ids: string[],
+  isActive: boolean,
+) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  const catalogIds = uniqueCatalogIds(ids);
+  if (catalogIds.length === 0) {
+    return { ok: false, message: "Select at least one service." };
+  }
+
+  const result = await prisma.leadServiceCatalog.updateMany({
+    where: { organizationId: user.organizationId, id: { in: catalogIds } },
+    data: { isActive },
+  });
+
+  revalidatePath("/app/leads");
+  revalidatePath("/app/leads/services");
+  return {
+    ok: true,
+    count: result.count,
+    message: isActive
+      ? `Shown ${result.count} service${result.count === 1 ? "" : "s"} on quotations.`
+      : `Hidden ${result.count} service${result.count === 1 ? "" : "s"} from quotations.`,
+  };
+}
+
+export async function deleteLeadServiceCatalogBulk(ids: string[]) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  const catalogIds = uniqueCatalogIds(ids);
+  if (catalogIds.length === 0) {
+    return { ok: false, message: "Select at least one service." };
+  }
+
+  const existing = await prisma.leadServiceCatalog.findMany({
+    where: { organizationId: user.organizationId, id: { in: catalogIds } },
+    include: { _count: { select: { offeredOnLeads: true } } },
+  });
+  const inUseIds = existing
+    .filter((item) => item._count.offeredOnLeads > 0)
+    .map((item) => item.id);
+  const unusedIds = existing
+    .filter((item) => item._count.offeredOnLeads === 0)
+    .map((item) => item.id);
+
+  if (inUseIds.length > 0) {
+    await prisma.leadServiceCatalog.updateMany({
+      where: { organizationId: user.organizationId, id: { in: inUseIds } },
+      data: { isActive: false },
+    });
+  }
+  if (unusedIds.length > 0) {
+    await prisma.leadServiceCatalog.deleteMany({
+      where: { organizationId: user.organizationId, id: { in: unusedIds } },
+    });
+  }
+
+  revalidatePath("/app/leads");
+  revalidatePath("/app/leads/services");
+
+  const parts: string[] = [];
+  if (unusedIds.length > 0) {
+    parts.push(
+      `Removed ${unusedIds.length} service${unusedIds.length === 1 ? "" : "s"}`,
+    );
+  }
+  if (inUseIds.length > 0) {
+    parts.push(
+      `hidden ${inUseIds.length} already used on leads`,
+    );
+  }
+  return {
+    ok: true,
+    deletedIds: unusedIds,
+    hiddenIds: inUseIds,
+    message: parts.length > 0 ? `${parts.join("; ")}.` : "Nothing to update.",
+  };
+}
+
 export async function createLeadQuotation(params: {
   leadId: string;
   requestType: QuotationRequestType;

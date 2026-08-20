@@ -71,6 +71,19 @@ async function spawnNextRecurringTask(
     return null;
   }
 
+  const seriesId = task.seriesId ?? task.id;
+  const existingNext = await prisma.delegatedTask.findFirst({
+    where: {
+      organizationId: task.organizationId,
+      seriesId,
+      occurrenceNumber: task.occurrenceNumber + 1,
+    },
+    select: { dueAt: true },
+  });
+  if (existingNext) {
+    return existingNext.dueAt;
+  }
+
   await prisma.delegatedTask.create({
     data: {
       organizationId: task.organizationId,
@@ -85,7 +98,7 @@ async function spawnNextRecurringTask(
       recurrenceWeeklyDays: task.recurrenceWeeklyDays,
       recurrenceMonthDay: task.recurrenceMonthDay,
       isRecurring: true,
-      seriesId: task.seriesId ?? task.id,
+      seriesId,
       occurrenceNumber: task.occurrenceNumber + 1,
       nextOccurrenceAt: computeNextDueAt(task.frequency, nextDue, recurrenceOptions),
       remindViaEmail: task.remindViaEmail,
@@ -129,7 +142,30 @@ export async function completeTaskWithProof(
     const note = formData.get("completionNote")?.toString().trim() || null;
     const submittedAt = new Date();
 
-    await prisma.$transaction(async (tx) => {
+    const claimed = await prisma.$transaction(async (tx) => {
+      const updated = await tx.delegatedTask.updateMany({
+        where: {
+          id: task.id,
+          organizationId: user.organizationId,
+          status: { notIn: ["AWAITING_VERIFICATION", "COMPLETED"] },
+        },
+        data: {
+          status: "AWAITING_VERIFICATION",
+          proofSubmittedAt: submittedAt,
+          completedAt: null,
+          verifiedAt: null,
+          verifiedById: null,
+          instructions: note
+            ? [task.instructions, `Completion note: ${note}`]
+                .filter(Boolean)
+                .join("\n\n")
+            : task.instructions,
+        },
+      });
+      if (updated.count === 0) {
+        return false;
+      }
+
       for (const { file, mimeType } of parsed.files) {
         const buffer = Buffer.from(await file.arrayBuffer());
         await tx.taskAttachment.create({
@@ -144,22 +180,6 @@ export async function completeTaskWithProof(
         });
       }
 
-      await tx.delegatedTask.updateMany({
-        where: { id: task.id, organizationId: user.organizationId },
-        data: {
-          status: "AWAITING_VERIFICATION",
-          proofSubmittedAt: submittedAt,
-          completedAt: null,
-          verifiedAt: null,
-          verifiedById: null,
-          instructions: note
-            ? [task.instructions, `Completion note: ${note}`]
-                .filter(Boolean)
-                .join("\n\n")
-            : task.instructions,
-        },
-      });
-
       await tx.taskRequest.updateMany({
         where: { taskId: task.id, status: "OPEN" },
         data: {
@@ -168,7 +188,12 @@ export async function completeTaskWithProof(
           resolvedById: user.id,
         },
       });
+      return true;
     });
+
+    if (!claimed) {
+      return { ok: false, message: "Proof is already awaiting manager verification." };
+    }
 
     const assigneeName = task.assignee.name ?? task.assignee.email.split("@")[0];
     const reviewer = await loadReportingManagerContact(
@@ -239,8 +264,12 @@ export async function verifyTaskProof(
     const note = formData.get("verificationNote")?.toString().trim() || null;
     const completedAt = new Date();
 
-    await prisma.delegatedTask.updateMany({
-      where: { id: task.id, organizationId: user.organizationId },
+    const claimed = await prisma.delegatedTask.updateMany({
+      where: {
+        id: task.id,
+        organizationId: user.organizationId,
+        status: "AWAITING_VERIFICATION",
+      },
       data: {
         status: "COMPLETED",
         completedAt,
@@ -253,6 +282,9 @@ export async function verifyTaskProof(
           : task.instructions,
       },
     });
+    if (claimed.count === 0) {
+      return { ok: false, message: "This task is not awaiting verification." };
+    }
 
     const nextDue = await spawnNextRecurringTask(task);
     const message = nextDue
@@ -379,7 +411,19 @@ async function createAssigneeRequest(
     }
   }
 
-  await prisma.$transaction(async (tx) => {
+  const claimed = await prisma.$transaction(async (tx) => {
+    const updated = await tx.delegatedTask.updateMany({
+      where: {
+        id: task.id,
+        organizationId: user.organizationId,
+        status: { notIn: ["COMPLETED", "AWAITING_VERIFICATION", status] },
+      },
+      data: { status },
+    });
+    if (updated.count === 0) {
+      return false;
+    }
+
     await tx.taskRequest.updateMany({
       where: { taskId: task.id, status: "OPEN" },
       data: { status: "RESOLVED", resolvedAt: new Date(), resolvedById: user.id },
@@ -396,12 +440,12 @@ async function createAssigneeRequest(
         requestedById: user.id,
       },
     });
-
-    await tx.delegatedTask.update({
-      where: { id: task.id },
-      data: { status },
-    });
+    return true;
   });
+
+  if (!claimed) {
+    return { ok: false, message: "This request was already sent." };
+  }
 
   const assigneeName = user.name ?? user.email.split("@")[0];
   const subject =
