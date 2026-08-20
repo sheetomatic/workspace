@@ -17,6 +17,7 @@ import {
   History,
   LayoutDashboard,
   ListChecks,
+  ListTree,
   MapPin,
   Megaphone,
   Package,
@@ -134,6 +135,14 @@ const CRM_NAV_ITEM: WorkspaceNavItem = {
       module: "CRM",
       crmSubModule: "quotations",
       matchPrefix: "/app/leads/quotations",
+    },
+    {
+      href: "/app/leads/services",
+      label: "Service Master",
+      icon: ListTree,
+      module: "CRM",
+      crmSubModule: "services",
+      matchPrefix: "/app/leads/services",
     },
     {
       href: "/app/leads/payments",

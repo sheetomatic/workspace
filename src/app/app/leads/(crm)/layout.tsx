@@ -14,6 +14,7 @@ const EMPTY_COUNTS: CrmModuleNavCounts = {
   meetings: 0,
   quotations: 0,
   quotationValue: 0,
+  services: 0,
   payments: 0,
   paymentValue: 0,
   projectsRunning: 0,

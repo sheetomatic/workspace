@@ -34,7 +34,10 @@ import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
 import { NEXT_TIME_LEAD_STATUSES } from "@/lib/leads/status-labels";
-import { listLeadServiceCatalog } from "@/lib/leads/service-catalog";
+import {
+  listLeadServiceCatalog,
+  serializeServiceCatalogItem,
+} from "@/lib/leads/service-catalog";
 import { getAllSalesOrdersByLeadIds } from "@/lib/leads/sales-orders";
 import { listWorkspaceMembers } from "@/lib/workspace";
 import { withDbRetry } from "@/lib/db";
@@ -282,11 +285,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
           total={leadsWithSalesOrders.length}
           totalPages={1}
           workspaceTotal={leadsWithSalesOrders.length}
-          serviceCatalog={serviceCatalog.map((item) => ({
-            id: item.id,
-            serviceCategory: item.serviceCategory,
-            subCategory: item.subCategory,
-          }))}
+          serviceCatalog={serviceCatalog.map(serializeServiceCatalogItem)}
         />
       </div>
     );
@@ -490,11 +489,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
         total={leadPage.total}
         totalPages={leadPage.totalPages}
         workspaceTotal={workspaceTotal}
-        serviceCatalog={serviceCatalog.map((item) => ({
-          id: item.id,
-          serviceCategory: item.serviceCategory,
-          subCategory: item.subCategory,
-        }))}
+        serviceCatalog={serviceCatalog.map(serializeServiceCatalogItem)}
       />
     </div>
   );

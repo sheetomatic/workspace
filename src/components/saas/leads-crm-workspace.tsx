@@ -173,6 +173,8 @@ export function LeadsCrmWorkspace({
     id: string;
     serviceCategory: string;
     subCategory: string;
+    unitPrice?: number | null;
+    perUserCost?: number | null;
   }>;
   organizationName: string;
   organizationLogoUrl: string | null;

@@ -21,6 +21,12 @@ describe("website pricing catalog for quotations", () => {
     expect(products.some((item) => item.id.includes("product_setup"))).toBe(
       true,
     );
+    expect(
+      products.some((item) => item.id.includes("official-starter-yearly")),
+    ).toBe(true);
+    expect(products.some((item) => item.id.includes("credits_2000"))).toBe(
+      true,
+    );
     expect(products.every((item) => isWebsitePricingCatalogId(item.id))).toBe(
       true,
     );
@@ -57,5 +63,16 @@ describe("website pricing catalog for quotations", () => {
         users: "",
       }),
     ).toBe(4999);
+  });
+
+  it("prefills Official WhatsApp yearly and leaves credit pack amount blank", () => {
+    const yearly = findWebsitePricingProduct(
+      "web:whatsapp:official-starter-yearly",
+    );
+    expect(yearly?.defaultAmount).toBe(5999);
+    expect(yearly?.period).toBe("annual");
+    const credits = findWebsitePricingProduct("web:whatsapp:credits_2000");
+    expect(credits?.name).toContain("2,000");
+    expect(credits?.defaultAmount).toBe(0);
   });
 });

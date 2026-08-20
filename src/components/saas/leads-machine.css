@@ -2177,6 +2177,12 @@
   margin: 0;
 }
 
+.leads-quote-workspace-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
 .leads-service-list,
 .leads-payment-list,
 .leads-quote-list {
@@ -4581,6 +4587,98 @@
 .crm-submodule-footnote a {
   color: #014486;
   font-weight: 600;
+}
+
+.service-master-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: end;
+  margin: 0 0 0.85rem;
+}
+
+.service-master-toolbar label,
+.service-master-form label {
+  display: grid;
+  gap: 0.28rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--sf-text-secondary, #64748b);
+}
+
+.service-master-toolbar input,
+.service-master-toolbar select,
+.service-master-form input {
+  min-width: 10rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--sf-card-border, #e2e8f0);
+  border-radius: 8px;
+  font: inherit;
+  color: var(--sf-text, #0f172a);
+  background: #fff;
+}
+
+.service-master-form {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0.85rem;
+  border: 1px solid var(--sf-card-border, #e2e8f0);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.service-master-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+  gap: 0.65rem;
+}
+
+.service-master-form-actions,
+.service-master-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.service-master-row-inactive td {
+  color: var(--sf-text-secondary, #64748b);
+}
+
+.service-master-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.service-master-status.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.service-master-status.hidden {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.service-master-inline-input {
+  width: 100%;
+  min-width: 6rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--sf-card-border, #e2e8f0);
+  border-radius: 8px;
+  font: inherit;
+}
+
+.service-master-msg {
+  margin: 0;
+  font-size: 0.82rem;
 }
 
 @media (max-width: 720px) {

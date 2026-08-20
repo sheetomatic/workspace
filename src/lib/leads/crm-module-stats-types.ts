@@ -4,6 +4,7 @@ export type CrmModuleNavCounts = {
   meetings: number;
   quotations: number;
   quotationValue: number;
+  services: number;
   payments: number;
   paymentValue: number;
   projectsRunning: number;

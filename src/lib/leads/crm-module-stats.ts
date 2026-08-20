@@ -21,6 +21,7 @@ export async function getCrmModuleNavCounts(
     paymentAgg,
     soStats,
     training,
+    services,
   ] = await Promise.all([
     prisma.inboundLead.count({
       where: {
@@ -63,6 +64,9 @@ export async function getCrmModuleNavCounts(
         startsAt: { gte: new Date(now.getTime() - 2 * 60 * 60 * 1000) },
       },
     }),
+    prisma.leadServiceCatalog.count({
+      where: { organizationId, isActive: true },
+    }),
   ]);
 
   return {
@@ -76,6 +80,7 @@ export async function getCrmModuleNavCounts(
     projectsRunning: soStats.inProgress,
     projectsDelivered: soStats.delivered,
     training,
+    services,
   };
 }
 

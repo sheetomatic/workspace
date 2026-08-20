@@ -2633,10 +2633,42 @@ export async function addLeadOfferedService(params: {
   return { ok: true };
 }
 
+function parseOptionalMoney(value?: string) {
+  const raw = value?.trim();
+  if (!raw) {
+    return null;
+  }
+  const amount = Number.parseFloat(raw);
+  return Number.isFinite(amount) && amount >= 0 ? amount : null;
+}
+
+function catalogItemPayload(item: {
+  id: string;
+  serviceCategory: string;
+  subCategory: string;
+  unitPrice: { toNumber(): number } | number | null;
+  perUserCost?: { toNumber(): number } | number | null;
+  isActive?: boolean;
+}) {
+  const money = (value: { toNumber(): number } | number | null | undefined) => {
+    if (value == null) return null;
+    return typeof value === "number" ? value : value.toNumber();
+  };
+  return {
+    id: item.id,
+    serviceCategory: item.serviceCategory,
+    subCategory: item.subCategory,
+    unitPrice: money(item.unitPrice),
+    perUserCost: money(item.perUserCost),
+    isActive: item.isActive ?? true,
+  };
+}
+
 export async function createLeadServiceCatalogItem(params: {
   serviceCategory: string;
   subCategory: string;
   unitPrice?: string;
+  perUserCost?: string;
 }) {
   const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
@@ -2649,13 +2681,8 @@ export async function createLeadServiceCatalogItem(params: {
     return { ok: false, message: "Category and service name are required." };
   }
 
-  const parsedPrice = params.unitPrice?.trim()
-    ? Number.parseFloat(params.unitPrice)
-    : null;
-  const unitPrice =
-    parsedPrice != null && Number.isFinite(parsedPrice) && parsedPrice >= 0
-      ? parsedPrice
-      : null;
+  const unitPrice = parseOptionalMoney(params.unitPrice);
+  const perUserCost = parseOptionalMoney(params.perUserCost);
 
   const existing = await prisma.leadServiceCatalog.findFirst({
     where: {
@@ -2665,15 +2692,28 @@ export async function createLeadServiceCatalogItem(params: {
     },
   });
   if (existing) {
+    if (!existing.isActive) {
+      const restored = await prisma.leadServiceCatalog.update({
+        where: { id: existing.id },
+        data: {
+          isActive: true,
+          unitPrice: unitPrice ?? existing.unitPrice,
+          perUserCost: perUserCost ?? existing.perUserCost,
+        },
+      });
+      revalidatePath("/app/leads");
+      revalidatePath("/app/leads/services");
+      return {
+        ok: true,
+        item: catalogItemPayload(restored),
+        message: "Service restored from the hidden list.",
+      };
+    }
     revalidatePath("/app/leads");
+    revalidatePath("/app/leads/services");
     return {
       ok: true,
-      item: {
-        id: existing.id,
-        serviceCategory: existing.serviceCategory,
-        subCategory: existing.subCategory,
-        unitPrice: existing.unitPrice != null ? Number(existing.unitPrice) : null,
-      },
+      item: catalogItemPayload(existing),
       message: "Service already exists in catalog.",
     };
   }
@@ -2689,20 +2729,130 @@ export async function createLeadServiceCatalogItem(params: {
       serviceCategory,
       subCategory,
       unitPrice,
+      perUserCost,
+      isActive: true,
       sortOrder: (maxSort._max.sortOrder ?? -1) + 1,
     },
   });
 
   revalidatePath("/app/leads");
+  revalidatePath("/app/leads/services");
   return {
     ok: true,
-    item: {
-      id: item.id,
-      serviceCategory: item.serviceCategory,
-      subCategory: item.subCategory,
-      unitPrice: item.unitPrice != null ? Number(item.unitPrice) : null,
-    },
+    item: catalogItemPayload(item),
   };
+}
+
+export async function updateLeadServiceCatalogItem(params: {
+  id: string;
+  serviceCategory: string;
+  subCategory: string;
+  unitPrice?: string;
+  perUserCost?: string;
+  isActive?: boolean;
+}) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  const serviceCategory = params.serviceCategory.trim();
+  const subCategory = params.subCategory.trim();
+  if (!serviceCategory || !subCategory) {
+    return { ok: false, message: "Category and service name are required." };
+  }
+
+  const existing = await prisma.leadServiceCatalog.findFirst({
+    where: { id: params.id, organizationId: user.organizationId },
+  });
+  if (!existing) {
+    return { ok: false, message: "Service not found." };
+  }
+
+  const clash = await prisma.leadServiceCatalog.findFirst({
+    where: {
+      organizationId: user.organizationId,
+      serviceCategory,
+      subCategory,
+      NOT: { id: existing.id },
+    },
+    select: { id: true },
+  });
+  if (clash) {
+    return { ok: false, message: "Another service already uses this name." };
+  }
+
+  const item = await prisma.leadServiceCatalog.update({
+    where: { id: existing.id },
+    data: {
+      serviceCategory,
+      subCategory,
+      unitPrice: parseOptionalMoney(params.unitPrice),
+      perUserCost: parseOptionalMoney(params.perUserCost),
+      isActive: params.isActive ?? existing.isActive,
+    },
+  });
+
+  revalidatePath("/app/leads");
+  revalidatePath("/app/leads/services");
+  return { ok: true, item: catalogItemPayload(item) };
+}
+
+export async function setLeadServiceCatalogActive(id: string, isActive: boolean) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  const existing = await prisma.leadServiceCatalog.findFirst({
+    where: { id, organizationId: user.organizationId },
+    select: { id: true },
+  });
+  if (!existing) {
+    return { ok: false, message: "Service not found." };
+  }
+
+  await prisma.leadServiceCatalog.update({
+    where: { id: existing.id },
+    data: { isActive },
+  });
+
+  revalidatePath("/app/leads");
+  revalidatePath("/app/leads/services");
+  return { ok: true };
+}
+
+export async function deleteLeadServiceCatalogItem(id: string) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  const existing = await prisma.leadServiceCatalog.findFirst({
+    where: { id, organizationId: user.organizationId },
+    include: { _count: { select: { offeredOnLeads: true } } },
+  });
+  if (!existing) {
+    return { ok: false, message: "Service not found." };
+  }
+
+  if (existing._count.offeredOnLeads > 0) {
+    await prisma.leadServiceCatalog.update({
+      where: { id: existing.id },
+      data: { isActive: false },
+    });
+    revalidatePath("/app/leads");
+    revalidatePath("/app/leads/services");
+    return {
+      ok: true,
+      message: "Service is used on leads, so it was hidden instead of deleted.",
+    };
+  }
+
+  await prisma.leadServiceCatalog.delete({ where: { id: existing.id } });
+  revalidatePath("/app/leads");
+  revalidatePath("/app/leads/services");
+  return { ok: true };
 }
 
 export async function createLeadQuotation(params: {

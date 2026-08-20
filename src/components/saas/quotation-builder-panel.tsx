@@ -28,16 +28,15 @@ import {
 import { QuotationPrintView } from "@/components/saas/quotation-print-view";
 import {
   computeWebsitePricingLineTotal,
-  findWebsitePricingProduct,
-  listWebsitePricingProducts,
   parseMoneyInput,
-  type WebsitePricingProduct,
 } from "@/lib/leads/website-pricing-catalog";
 
 type CatalogItem = {
   id: string;
   serviceCategory: string;
   subCategory: string;
+  unitPrice?: number | null;
+  perUserCost?: number | null;
 };
 
 type QuotationLine = {
@@ -88,8 +87,6 @@ type LineDraft = {
   perUserCost: string;
   users: string;
 };
-
-const WEBSITE_PRICING_PRODUCTS = listWebsitePricingProducts();
 
 function createLineId() {
   return `line-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -154,58 +151,50 @@ function catalogOptionsForLine(
   );
 }
 
-function websiteOptionsForLine(
-  lineDrafts: LineDraft[],
-  currentLineId: string,
-  currentCatalogId: string,
-) {
-  const usedElsewhere = usedCatalogIdsElsewhere(lineDrafts, currentLineId);
-  return WEBSITE_PRICING_PRODUCTS.filter(
-    (item) => item.id === currentCatalogId || !usedElsewhere.has(item.id),
-  );
-}
-
-function groupWebsiteProducts(products: WebsitePricingProduct[]) {
-  return {
-    suite: products.filter((item) => item.kind === "suite"),
-    module: products.filter((item) => item.kind === "module"),
-    addon: products.filter((item) => item.kind === "addon"),
-  };
-}
-
-function websiteProductLabel(item: WebsitePricingProduct) {
-  const amount = item.defaultAmount > 0 ? ` · ₹${item.defaultAmount.toLocaleString("en-IN")}` : "";
-  return `${item.name}${amount}`;
-}
-
-function websiteProductHint(item: WebsitePricingProduct) {
-  const parts: string[] = [];
-  if (item.defaultUsers != null && item.defaultUsers > 0) {
-    parts.push(`${item.defaultUsers} users in list price`);
+function groupCatalogByCategory(items: CatalogItem[]) {
+  const groups = new Map<string, CatalogItem[]>();
+  for (const item of items) {
+    const list = groups.get(item.serviceCategory) ?? [];
+    list.push(item);
+    groups.set(item.serviceCategory, list);
   }
-  if (item.defaultPerUserCost != null && item.defaultPerUserCost > 0) {
-    parts.push(`₹${item.defaultPerUserCost.toLocaleString("en-IN")}/user`);
+  return [...groups.entries()];
+}
+
+function catalogOptionLabel(item: CatalogItem) {
+  const amount =
+    item.unitPrice != null && item.unitPrice > 0
+      ? ` · ₹${item.unitPrice.toLocaleString("en-IN")}`
+      : "";
+  return `${item.subCategory}${amount}`;
+}
+
+function catalogProductHint(item: CatalogItem | undefined) {
+  if (!item) {
+    return "";
+  }
+  const parts: string[] = [];
+  if (item.unitPrice == null || item.unitPrice <= 0) {
+    parts.push("Enter the amount");
+  }
+  if (item.perUserCost != null && item.perUserCost > 0) {
+    parts.push(`₹${item.perUserCost.toLocaleString("en-IN")}/user`);
   }
   return parts.join(" · ");
 }
 
-function catalogLabel(item: CatalogItem) {
-  return `${item.serviceCategory} — ${item.subCategory}`;
-}
-
-function lineDraftFromCatalogId(catalogId: string): Pick<
-  LineDraft,
-  "catalogId" | "amount" | "perUserCost" | "users"
-> {
-  const website = findWebsitePricingProduct(catalogId);
-  if (!website) {
+function lineDraftFromCatalogItem(
+  item: CatalogItem | undefined,
+  catalogId: string,
+): Pick<LineDraft, "catalogId" | "amount" | "perUserCost" | "users"> {
+  if (!item) {
     return { catalogId, amount: "", perUserCost: "", users: "" };
   }
   return {
     catalogId,
-    amount: website.defaultAmount > 0 ? String(website.defaultAmount) : "",
+    amount: item.unitPrice != null && item.unitPrice > 0 ? String(item.unitPrice) : "",
     perUserCost:
-      website.defaultPerUserCost != null ? String(website.defaultPerUserCost) : "",
+      item.perUserCost != null && item.perUserCost > 0 ? String(item.perUserCost) : "",
     users: "",
   };
 }
@@ -260,6 +249,7 @@ export function QuotationBuilderPanel({
   const [newServiceCategory, setNewServiceCategory] = useState("");
   const [newServiceName, setNewServiceName] = useState("");
   const [newServicePrice, setNewServicePrice] = useState("");
+  const [newServicePerUser, setNewServicePerUser] = useState("");
   const [newServiceTargetLineId, setNewServiceTargetLineId] = useState<string | null>(null);
   const [newServiceMessage, setNewServiceMessage] = useState<string | null>(null);
   const [quoteType, setQuoteType] = useState<QuotationRequestType>("PROPOSAL");
@@ -349,6 +339,7 @@ export function QuotationBuilderPanel({
         serviceCategory: newServiceCategory,
         subCategory: newServiceName,
         unitPrice: newServicePrice,
+        perUserCost: newServicePerUser,
       });
       if (!result.ok || !result.item) {
         setNewServiceMessage(result.message ?? "Could not add service.");
@@ -356,8 +347,7 @@ export function QuotationBuilderPanel({
       }
 
       const item = result.item;
-      const defaultAmount =
-        result.item.unitPrice != null ? String(result.item.unitPrice) : "";
+      const nextDraft = lineDraftFromCatalogItem(item, item.id);
 
       setAddedCatalogItems((current) => {
         if (current.some((entry) => entry.id === item.id)) {
@@ -368,20 +358,12 @@ export function QuotationBuilderPanel({
 
       const targetLineId = newServiceTargetLineId ?? lineDrafts[0]?.id;
       if (targetLineId) {
-        updateLineDraft(targetLineId, {
-          catalogId: item.id,
-          amount: defaultAmount,
-          perUserCost: "",
-          users: "",
-        });
+        updateLineDraft(targetLineId, nextDraft);
       } else {
         setLineDrafts([
           {
             id: createLineId(),
-            catalogId: item.id,
-            amount: defaultAmount,
-            perUserCost: "",
-            users: "",
+            ...nextDraft,
           },
         ]);
       }
@@ -389,6 +371,7 @@ export function QuotationBuilderPanel({
       setNewServiceCategory("");
       setNewServiceName("");
       setNewServicePrice("");
+      setNewServicePerUser("");
       setShowNewServiceForm(false);
       setNewServiceTargetLineId(null);
       setNewServiceMessage(result.message ?? "Service added.");
@@ -437,13 +420,18 @@ export function QuotationBuilderPanel({
     <section className="leads-drawer-section leads-quotation-workspace">
       <div className="leads-quote-workspace-head">
         <h3>Quotation / Invoice</h3>
-        <Link
-          className="leads-action-btn"
-          href="/app/leads/quotations"
-          target="_blank"
-        >
-          View all quotations
-        </Link>
+        <div className="leads-quote-workspace-head-actions">
+          <Link className="leads-action-btn" href="/app/leads/services">
+            Service Master
+          </Link>
+          <Link
+            className="leads-action-btn"
+            href="/app/leads/quotations"
+            target="_blank"
+          >
+            View all quotations
+          </Link>
+        </div>
       </div>
 
       {canManage ? (
@@ -547,8 +535,9 @@ export function QuotationBuilderPanel({
           <div className="leads-form-span-2">
             <p className="leads-quote-lines-label">Line items</p>
             <p className="leads-machine-muted leads-quote-line-hint">
-              Website /pricing products are listed below. Line total = amount + (per user × users).
-              For suite plans, amount already includes listed seats — put extra seats in Users.
+              Pick from Service Master. Line total = amount + (per user × users).
+              Hide unused standards in{" "}
+              <Link href="/app/leads/services">Service Master</Link>.
             </p>
                 <div className="leads-quote-line-table-wrap">
                   <table className="leads-quote-line-table leads-quote-line-table-pricing">
@@ -570,21 +559,16 @@ export function QuotationBuilderPanel({
                           line.id,
                           line.catalogId,
                         );
-                        const websiteOptions = websiteOptionsForLine(
-                          lineDrafts,
-                          line.id,
-                          line.catalogId,
+                        const grouped = groupCatalogByCategory(options);
+                        const selected = catalogItems.find(
+                          (item) => item.id === line.catalogId,
                         );
-                        const grouped = groupWebsiteProducts(websiteOptions);
-                        const selectedWebsite = findWebsitePricingProduct(line.catalogId);
                         const lineTotal = computeWebsitePricingLineTotal({
                           amount: line.amount,
                           perUserCost: line.perUserCost,
                           users: line.users,
                         });
-                        const hint = selectedWebsite
-                          ? websiteProductHint(selectedWebsite)
-                          : "";
+                        const hint = catalogProductHint(selected);
                         return (
                           <tr key={line.id}>
                             <td>
@@ -596,49 +580,25 @@ export function QuotationBuilderPanel({
                                     openNewServiceForm(line.id);
                                     return;
                                   }
+                                  const next = catalogItems.find(
+                                    (item) => item.id === e.target.value,
+                                  );
                                   updateLineDraft(
                                     line.id,
-                                    lineDraftFromCatalogId(e.target.value),
+                                    lineDraftFromCatalogItem(next, e.target.value),
                                   );
                                 }}
                               >
                                 <option value="">Select service</option>
-                                {grouped.suite.length > 0 ? (
-                                  <optgroup label="Website — EM Ready Suite">
-                                    {grouped.suite.map((item) => (
+                                {grouped.map(([category, items]) => (
+                                  <optgroup key={category} label={category}>
+                                    {items.map((item) => (
                                       <option key={item.id} value={item.id}>
-                                        {websiteProductLabel(item)}
+                                        {catalogOptionLabel(item)}
                                       </option>
                                     ))}
                                   </optgroup>
-                                ) : null}
-                                {grouped.module.length > 0 ? (
-                                  <optgroup label="Website — Modules">
-                                    {grouped.module.map((item) => (
-                                      <option key={item.id} value={item.id}>
-                                        {websiteProductLabel(item)}
-                                      </option>
-                                    ))}
-                                  </optgroup>
-                                ) : null}
-                                {grouped.addon.length > 0 ? (
-                                  <optgroup label="Website — Add-ons">
-                                    {grouped.addon.map((item) => (
-                                      <option key={item.id} value={item.id}>
-                                        {websiteProductLabel(item)}
-                                      </option>
-                                    ))}
-                                  </optgroup>
-                                ) : null}
-                                {options.length > 0 ? (
-                                  <optgroup label="Your catalog">
-                                    {options.map((item) => (
-                                      <option key={item.id} value={item.id}>
-                                        {catalogLabel(item)}
-                                      </option>
-                                    ))}
-                                  </optgroup>
-                                ) : null}
+                                ))}
                                 <option value="__new__">+ Add new service…</option>
                               </select>
                               {hint ? (
@@ -724,7 +684,9 @@ export function QuotationBuilderPanel({
                 </div>
                 {showNewServiceForm ? (
                   <div className="leads-quote-new-service">
-                    <p className="leads-quote-new-service-title">New service for this client</p>
+                    <p className="leads-quote-new-service-title">
+                      New service — saved to Service Master
+                    </p>
                     <div className="leads-quote-new-service-grid">
                       <label>
                         Category
@@ -749,6 +711,16 @@ export function QuotationBuilderPanel({
                           min="0"
                           value={newServicePrice}
                           onChange={(e) => setNewServicePrice(e.target.value)}
+                          placeholder="Optional"
+                        />
+                      </label>
+                      <label>
+                        Per user (₹)
+                        <input
+                          type="number"
+                          min="0"
+                          value={newServicePerUser}
+                          onChange={(e) => setNewServicePerUser(e.target.value)}
                           placeholder="Optional"
                         />
                       </label>

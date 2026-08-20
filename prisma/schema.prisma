@@ -2821,8 +2821,10 @@ model LeadServiceCatalog {
   serviceCategory String
   subCategory     String
   unitPrice       Decimal?      @db.Decimal(14, 2)
+  perUserCost     Decimal?      @db.Decimal(14, 2)
   durationDays    Int?
   sortOrder       Int           @default(0)
+  isActive        Boolean       @default(true)
   offeredOnLeads  InboundLeadOfferedService[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt

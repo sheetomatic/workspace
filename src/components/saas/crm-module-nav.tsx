@@ -9,6 +9,7 @@ import {
   FolderKanban,
   GraduationCap,
   History,
+  ListTree,
   Megaphone,
   Users,
 } from "lucide-react";
@@ -75,6 +76,13 @@ export function CrmModuleNav({
       icon: ClipboardList,
       count: counts.quotations,
       valueLabel: formatCrmNavValue(counts.quotationValue),
+    },
+    {
+      id: "services",
+      href: "/app/leads/services",
+      label: "Service Master",
+      icon: ListTree,
+      count: counts.services,
     },
     {
       id: "payments",

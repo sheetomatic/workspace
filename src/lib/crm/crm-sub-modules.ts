@@ -5,6 +5,7 @@ export type CrmSubModuleId =
   | "nextTime"
   | "meetings"
   | "quotations"
+  | "services"
   | "payments"
   | "projects"
   | "training"
@@ -42,6 +43,12 @@ export const CRM_SUB_MODULES = [
     label: "Quotations",
     href: "/app/leads/quotations",
     description: "Proposals and invoices.",
+  },
+  {
+    id: "services",
+    label: "Service Master",
+    href: "/app/leads/services",
+    description: "Standard services for quotations — add, edit, or hide.",
   },
   {
     id: "payments",
@@ -108,11 +115,18 @@ export function resolveMemberCrmSubModules(
   if (enabled.length === 0) {
     return [...DEFAULT_ENABLED_CRM_SUB_MODULES];
   }
+  const next = [...enabled];
   // Next Time is a parked slice of Leads — keep it with anyone who can see Leads.
-  if (enabled.includes("leads") && !enabled.includes("nextTime")) {
-    return [...enabled, "nextTime"];
+  if (next.includes("leads") && !next.includes("nextTime")) {
+    next.push("nextTime");
   }
-  return enabled;
+  if (
+    (next.includes("quotations") || next.includes("leads")) &&
+    !next.includes("services")
+  ) {
+    next.push("services");
+  }
+  return next;
 }
 
 export function isMemberCrmSubModuleEnabled(
