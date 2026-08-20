@@ -2755,9 +2755,14 @@ export async function createLeadQuotation(params: {
       })
     : [];
   const catalogById = new Map(catalog.map((item) => [item.id, item]));
-  const lineInputs = hasExplicitLines
+  const lineInputs: Array<{
+    catalogId: string;
+    unitPrice: string;
+    perUserCost?: string;
+    users?: string;
+  }> = hasExplicitLines
     ? explicitLineItems
-    : catalogIds.map((catalogId) => ({ catalogId, unitPrice: "0", quantity: "1" }));
+    : catalogIds.map((catalogId) => ({ catalogId, unitPrice: "0" }));
 
   const lines = lineInputs.flatMap((input) => {
     const website = isWebsitePricingCatalogId(input.catalogId)
