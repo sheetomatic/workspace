@@ -1,25 +1,30 @@
 import type { Role } from "@prisma/client";
+import { ANMOL_PORTAL_SLUG } from "@/lib/dedicated-client-portals";
 import { hasMinimumRole } from "@/lib/permissions";
 
-/** Anmol Traders — Tasks Management client. Team works on WhatsApp only. */
-export const ANMOL_TRADERS_SLUG = "anmol-traders";
+/** Anmol Traders — dedicated Tasks Management portal. */
+export const ANMOL_TRADERS_SLUG = ANMOL_PORTAL_SLUG;
 
 export type OrgTaskPolicy = {
   /** Repeat WhatsApp due pings every N hours until the task is done. */
   intervalReminderHours: number | null;
   /** Staff/viewers cannot use the web panel. Owner/managers still assign. */
   whatsappOnlyTeam: boolean;
+  /** Official API only — never Web Based API. */
+  officialWhatsAppOnly: boolean;
 };
 
 const DEFAULT_POLICY: OrgTaskPolicy = {
   intervalReminderHours: null,
   whatsappOnlyTeam: false,
+  officialWhatsAppOnly: false,
 };
 
 const ORG_TASK_POLICIES: Record<string, OrgTaskPolicy> = {
   [ANMOL_TRADERS_SLUG]: {
     intervalReminderHours: 4,
     whatsappOnlyTeam: true,
+    officialWhatsAppOnly: true,
   },
 };
 

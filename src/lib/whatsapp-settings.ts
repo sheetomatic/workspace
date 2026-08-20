@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { formatWhatsAppPhone, normalizeWhatsAppPhone } from "@/lib/phone";
 import { canUsePlatformWhatsAppEnv } from "@/lib/platform";
 import type { WhatsAppProviderKind } from "@/lib/integrations/whatsapp-provider";
+import { getOrgTaskPolicy } from "@/lib/tasks/org-task-policy";
 
 export type WorkspaceWhatsAppCredentials = {
   businessPhone: string | null;
@@ -59,10 +60,15 @@ export async function getWorkspaceWhatsAppSettings(organizationId: string) {
 export async function resolveWorkspaceWhatsAppCredentials(
   organizationId: string,
 ): Promise<WorkspaceWhatsAppCredentials> {
-  const [saved, usePlatformEnv] = await Promise.all([
+  const [saved, usePlatformEnv, organization] = await Promise.all([
     getWorkspaceWhatsAppSettings(organizationId),
     canUsePlatformWhatsAppEnv(organizationId),
+    prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { slug: true },
+    }),
   ]);
+  const officialOnly = getOrgTaskPolicy(organization?.slug).officialWhatsAppOnly;
 
   const envBusinessPhone = usePlatformEnv
     ? normalizeWhatsAppPhone(process.env.WHATSAPP_FALLBACK_PHONE ?? "")
@@ -98,9 +104,11 @@ export async function resolveWorkspaceWhatsAppCredentials(
   const businessPhone =
     normalizeWhatsAppPhone(saved?.businessPhone ?? "") ?? envBusinessPhone ?? null;
 
-  const whatsappProvider = saved?.whatsappProvider
-    ? parseWhatsAppProvider(saved.whatsappProvider)
-    : envProvider;
+  const whatsappProvider = officialOnly
+    ? "sheetomatic"
+    : saved?.whatsappProvider
+      ? parseWhatsAppProvider(saved.whatsappProvider)
+      : envProvider;
 
   const redlavaApiKey = saved?.redlavaApiKey?.trim() || envRedlavaApiKey || null;
   const redlavaPhoneId =

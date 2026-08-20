@@ -7,9 +7,12 @@ import {
 import type { Role } from "@prisma/client";
 import { platformWorkspaceModules } from "@/lib/workspace-modules";
 
+export type DedicatedPortalKind = "legal" | "tasks";
+
 export type DedicatedClientPortal = {
   slug: string;
   name: string;
+  kind: DedicatedPortalKind;
   allowedModules: WorkspaceModule[];
   defaultAppearance: WorkspaceAppearance;
   /** Landing route after sign-in (TOPS-style dedicated product). */
@@ -17,6 +20,7 @@ export type DedicatedClientPortal = {
 };
 
 export const HINGORANI_PORTAL_SLUG = "hingorani";
+export const ANMOL_PORTAL_SLUG = "anmol-traders";
 
 const HINGORANI_DEFAULT_APPEARANCE: WorkspaceAppearance = {
   preset: "royal",
@@ -28,13 +32,32 @@ const HINGORANI_DEFAULT_APPEARANCE: WorkspaceAppearance = {
   brandName: "MACT Operations",
 };
 
+const ANMOL_DEFAULT_APPEARANCE: WorkspaceAppearance = {
+  preset: "forest",
+  primary: "#0f766e",
+  sidebar: "#042f2e",
+  sidebarHover: "#0f766e",
+  background: "#f0fdfa",
+  productName: "Anmol Traders",
+  brandName: "Tasks Management",
+};
+
 export const DEDICATED_CLIENT_PORTALS: Record<string, DedicatedClientPortal> = {
   [HINGORANI_PORTAL_SLUG]: {
     slug: HINGORANI_PORTAL_SLUG,
     name: "Hingorani Law Firm",
+    kind: "legal",
     allowedModules: ["CASES", "REPORTS"],
     defaultAppearance: HINGORANI_DEFAULT_APPEARANCE,
     homePath: "/app/cases",
+  },
+  [ANMOL_PORTAL_SLUG]: {
+    slug: ANMOL_PORTAL_SLUG,
+    name: "Anmol Traders",
+    kind: "tasks",
+    allowedModules: ["TASKS"],
+    defaultAppearance: ANMOL_DEFAULT_APPEARANCE,
+    homePath: "/app/tasks",
   },
 };
 
@@ -64,7 +87,13 @@ export function dedicatedPortalLoginUrl(slug: string) {
 export function isLegalCasesOrganization(
   organizationSlug: string | null | undefined,
 ): boolean {
-  return Boolean(getDedicatedClientPortal(organizationSlug));
+  return getDedicatedClientPortal(organizationSlug)?.kind === "legal";
+}
+
+export function isTasksDedicatedPortal(
+  organizationSlug: string | null | undefined,
+): boolean {
+  return getDedicatedClientPortal(organizationSlug)?.kind === "tasks";
 }
 
 /** Module list for session users — clamps super-admins on dedicated client portals. */
@@ -90,7 +119,12 @@ export function resolveSessionModules(params: {
   }
 
   if (params.isSuperAdmin) {
-    return platformWorkspaceModules();
+    if (params.isPrimary) {
+      return platformWorkspaceModules();
+    }
+    return resolveOrgAllowedModules(params.orgAllowedModules, {
+      isPrimary: false,
+    });
   }
 
   return effectiveMemberModules(

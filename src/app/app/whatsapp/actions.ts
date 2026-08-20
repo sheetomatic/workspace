@@ -23,6 +23,7 @@ import {
 import { normalizeWhatsAppPhone } from "@/lib/phone";
 import { verifyRedlavaPhoneCredentials } from "@/lib/integrations/redlava";
 import { resolveWorkspaceWhatsAppCredentials } from "@/lib/whatsapp-settings";
+import { getOrgTaskPolicy } from "@/lib/tasks/org-task-policy";
 import {
   formatWhatsAppTestPhoneLabel,
   resolveWhatsAppTestPhone,
@@ -348,8 +349,13 @@ export async function saveWhatsAppSettings(
   }
 
   const providerKind = parseWhatsAppProviderField(formData.get("whatsappProvider"));
-  const whatsappProvider: WhatsAppProvider =
-    providerKind === "messageautosender" ? "MESSAGEAUTOSENDER" : "SHEETOMATIC";
+  const whatsappProvider: WhatsAppProvider = getOrgTaskPolicy(
+    user.organizationSlug,
+  ).officialWhatsAppOnly
+    ? "SHEETOMATIC"
+    : providerKind === "messageautosender"
+      ? "MESSAGEAUTOSENDER"
+      : "SHEETOMATIC";
 
   const masUsername =
     formData.get("masUsername")?.toString().trim() ||

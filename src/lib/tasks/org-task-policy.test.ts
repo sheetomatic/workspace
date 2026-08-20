@@ -10,6 +10,7 @@ describe("org task policy", () => {
   it("keeps Anmol Traders as WhatsApp-only with 4-hour interval pings", () => {
     const policy = getOrgTaskPolicy("anmol-traders");
     expect(policy.whatsappOnlyTeam).toBe(true);
+    expect(policy.officialWhatsAppOnly).toBe(true);
     expect(policy.intervalReminderHours).toBe(4);
     expect(isWhatsAppOnlyTeamMember("anmol-traders", "STAFF")).toBe(true);
     expect(isWhatsAppOnlyTeamMember("anmol-traders", "OWNER")).toBe(false);

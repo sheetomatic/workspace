@@ -1,14 +1,23 @@
 ---
-description: This repo is Sheetomatic platform only — never mix TOPS or Hingorani work here
+description: This repo is Workspace only — TOPS, Hingorani, and Anmol are separate
 alwaysApply: true
 ---
 
-# Project identity: Sheetomatic
+# Project identity: Workspace
 
-You are working in **`/Users/shyamkumar/Desktop/sheetomatic`** (sheetomatic.com).
+This Cursor window is **Workspace only**.
 
-- Templates store, Workspace, CRM, marketing site, WA API live here.
-- **TOPS CRM** is a separate repo: `/Users/shyamkumar/Desktop/tops`
-- **Hingorani** is a separate repo: `/Users/shyamkumar/Desktop/hingorani`
+| Name | Product | Path | How to open |
+|---|---|---|---|
+| **Workspace** | sheetomatic.com platform (this repo) | `/Users/shyamkumar/Desktop/sheetomatic` | This window |
+| **Anmol** | Anmol Traders Tasks Management | `/Users/shyamkumar/Desktop/anmol` | **New Cursor window** |
+| **AppBuilder** | AppSheet App Builder | `/Users/shyamkumar/Desktop/Sheetomatic-App-Builder` | New Cursor window |
+| **TOPS CRM** | TOPS Security | `/Users/shyamkumar/Desktop/tops` | New Cursor window |
+| **Hingorani** | Law portal | `/Users/shyamkumar/Desktop/hingorani` | New Cursor window |
 
-If the user asks about TOPS or Hingorani features, tell them to open that folder as the Cursor workspace root (or use File → Open Folder). Do not implement TOPS/Hingorani product code in this repo unless they explicitly ask to change shared platform tenant plumbing.
+Do **not** add those folders as extra roots here. Dual-root mixes commits.
+
+This repo is **Workspace** (sheetomatic.com): templates store, CRM, marketing site, WA API.
+
+- Anmol / TOPS / Hingorani product customizations live in their own repos. Only change shared tenant plumbing here when asked.
+- Anmol website hosting on this deploy is temporary until `anmol.sheetomatic.com` / `anmol-traders.sheetomatic.com` points at the Anmol Vercel project.

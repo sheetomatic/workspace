@@ -3,6 +3,7 @@
 This workspace is **Sheetomatic only** — sheetomatic.com platform (Workspace, CRM, Templates, WA API, marketing site).
 
 ## Do not work on here
+- **Anmol Traders** → open `/Users/shyamkumar/Desktop/anmol` (`anmol-traders.sheetomatic.com`)
 - **TOPS Security CRM** → open `/Users/shyamkumar/Desktop/tops` (`tops.sheetomatic.com`)
 - **Hingorani Law Portal** → open `/Users/shyamkumar/Desktop/hingorani` (`hingorani.sheetomatic.com`)
 

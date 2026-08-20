@@ -1,10 +1,15 @@
 import { prisma } from "@/lib/db";
 import { PRIMARY_ORG_SLUG } from "@/lib/platform";
-import { HINGORANI_PORTAL_SLUG } from "@/lib/dedicated-client-portals";
+import {
+  ANMOL_PORTAL_SLUG,
+  HINGORANI_PORTAL_SLUG,
+} from "@/lib/dedicated-client-portals";
 
 const RESERVED_ORG_SLUGS = new Set([
   PRIMARY_ORG_SLUG,
   HINGORANI_PORTAL_SLUG,
+  ANMOL_PORTAL_SLUG,
+  "anmol",
   "sheetomatic",
   "tops",
   "app",

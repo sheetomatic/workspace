@@ -1,5 +1,5 @@
 ---
-description: Default deploy target is Sheetomatic only; Hingorani/Tops only when explicitly named.
+description: Default deploy target is Sheetomatic only; named client portals only when asked
 alwaysApply: true
 ---
 
@@ -7,25 +7,25 @@ alwaysApply: true
 
 ## Default (always)
 
-- **Develop and deploy only in `sheetomatic-redesign`** → production **Sheetomatic** (`sheetomatic.com` / `app.sheetomatic.com`).
+- **Develop and deploy only in Workspace** → production **Sheetomatic** (`sheetomatic.com` / `app.sheetomatic.com`).
 - Commit, push `main`, and Vercel verify for Sheetomatic unless the user **explicitly** names another target.
 
 ## Named exceptions only
 
-Deploy or push to **Hingorani** or **Tops** **only** when the user clearly says so, e.g.:
+Deploy or push to **Hingorani**, **Tops**, or **Anmol** **only** when the user clearly says so, e.g.:
 
 - "deploy on Hingorani"
 - "deploy to Tops"
-- "push Hingorani portal"
+- "push Anmol portal"
+- "deploy Anmol"
 
-Do **not** infer Hingorani/Tops from context (legal cases, client names in chat, dedicated portals in code) unless the user names the deploy target in that message.
+Do **not** infer those targets from context (legal cases, Anmol tasks, client names) unless they name the deploy target in that message.
 
 ## Do not
 
-- Push Sheetomatic changes to Hingorani/Tops repos or Vercel projects by default.
-- Run release-ops or multitask deploy workers for Hingorani/Tops without an explicit user request.
-- Treat `hingorani.sheetomatic.com` or other dedicated subdomains as a deploy instruction unless the user asks to deploy there.
+- Push Sheetomatic changes to Hingorani / Tops / Anmol repos or Vercel projects by default.
+- Run release-ops for those portals without an explicit user request.
 
 ## When ambiguous
 
-Ask: *"Deploy to Sheetomatic only, or to Hingorani/Tops?"* — default answer is Sheetomatic.
+Ask: *"Deploy to Sheetomatic only, or to Hingorani / Tops / Anmol?"* — default answer is Sheetomatic.

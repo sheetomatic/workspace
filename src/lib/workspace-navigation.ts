@@ -784,6 +784,35 @@ export function getWorkspaceNavSections(params: {
   if (isDedicatedClientPortal(organizationSlug)) {
     const portal = getDedicatedClientPortal(organizationSlug)!;
     const mainLabel = portal.defaultAppearance.productName ?? portal.name;
+    if (portal.kind === "tasks") {
+      return [
+        {
+          id: portal.slug,
+          label: mainLabel,
+          items: TASK_DELEGATION_ITEMS,
+        },
+        {
+          id: "settings",
+          label: "Settings",
+          items: [
+            {
+              id: "settings",
+              href: "/app/settings",
+              label: "Settings",
+              icon: Settings,
+            },
+            {
+              id: "team",
+              href: "/app/team",
+              label: "Team",
+              icon: Users,
+              minRole: "ADMIN",
+              allowDepartmentHead: true,
+            },
+          ],
+        },
+      ];
+    }
     return [
       {
         id: portal.slug,
