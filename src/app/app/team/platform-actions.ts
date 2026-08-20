@@ -11,7 +11,9 @@ import {
 import type { TeamActionState } from "@/app/app/team/actions";
 import {
   listClientWorkspaces,
+  manageClientWorkspace,
   provisionClientWorkspace,
+  type ManageClientWorkspaceIntent,
   type ProvisionClientWorkspaceResult,
 } from "@/lib/workspace-provision";
 
@@ -123,7 +125,7 @@ export async function listClientWorkspacesForSuperAdmin() {
   if (!user || !canManageSuperAdmins(user, user.organizationSlug)) {
     return [];
   }
-  return listClientWorkspaces(20);
+  return listClientWorkspaces(80);
 }
 
 export async function createClientWorkspaceAction(
@@ -150,6 +152,44 @@ export async function createClientWorkspaceAction(
   if (result.ok) {
     revalidatePath("/app/team");
     revalidatePath("/app/settings");
+  }
+
+  return result;
+}
+
+const MANAGE_INTENTS = new Set<ManageClientWorkspaceIntent>([
+  "activate",
+  "hold",
+  "deactivate",
+  "remove",
+]);
+
+export async function manageClientWorkspaceAction(
+  _prev: CreateClientWorkspaceState,
+  formData: FormData,
+): Promise<CreateClientWorkspaceState> {
+  const user = await getSessionUser();
+  if (!user || !canManageSuperAdmins(user, user.organizationSlug)) {
+    return {
+      ok: false,
+      message: "Only super admins in Sheetomatic Technologies can manage client workspaces.",
+    };
+  }
+
+  const intent = formData.get("intent")?.toString().trim() ?? "";
+  if (!MANAGE_INTENTS.has(intent as ManageClientWorkspaceIntent)) {
+    return { ok: false, message: "Choose activate, hold, deactivate, or remove." };
+  }
+
+  const result = await manageClientWorkspace({
+    workspaceId: String(formData.get("workspaceId") ?? ""),
+    intent: intent as ManageClientWorkspaceIntent,
+  });
+
+  if (result.ok) {
+    revalidatePath("/app/team");
+    revalidatePath("/app/settings");
+    revalidatePath("/app");
   }
 
   return result;

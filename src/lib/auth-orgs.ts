@@ -53,11 +53,16 @@ export async function resolveOrganizationsForCredentials(
     }));
   }
 
-  return user.memberships.map((membership) => ({
-    slug: membership.organization.slug,
-    name: membership.organization.name,
-    role: membership.role,
-  }));
+  return user.memberships
+    .filter((membership) =>
+      membership.organization.status === "ACTIVE" ||
+      membership.organization.status === "ONBOARDING",
+    )
+    .map((membership) => ({
+      slug: membership.organization.slug,
+      name: membership.organization.name,
+      role: membership.role,
+    }));
 }
 
 export async function listOrganizationsForUser(userId: string) {
@@ -91,9 +96,14 @@ export async function listOrganizationsForUser(userId: string) {
     }),
   );
 
-  return memberships.map((membership) => ({
-    slug: membership.organization.slug,
-    name: membership.organization.name,
-    role: membership.role,
-  }));
+  return memberships
+    .filter((membership) =>
+      membership.organization.status === "ACTIVE" ||
+      membership.organization.status === "ONBOARDING",
+    )
+    .map((membership) => ({
+      slug: membership.organization.slug,
+      name: membership.organization.name,
+      role: membership.role,
+    }));
 }

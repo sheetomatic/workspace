@@ -56,7 +56,7 @@ export function WhatsAppSettingsWorkspacePanel({
   openaiConfigured: boolean;
   aiReplySummary: AiReplyUsageSummary;
   organizationName?: string | null;
-  organizationStatus?: "ONBOARDING" | "ACTIVE" | null;
+  organizationStatus?: "ONBOARDING" | "ACTIVE" | "HOLD" | "INACTIVE" | null;
   organizationPlan?: OrgPlan | null;
   organizationAllowedModules?: WorkspaceModule[];
   showAdminPanels?: boolean;

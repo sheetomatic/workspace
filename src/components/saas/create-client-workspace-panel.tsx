@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { Building2 } from "lucide-react";
 import {
   createClientWorkspaceAction,
+  manageClientWorkspaceAction,
   type CreateClientWorkspaceState,
 } from "@/app/app/team/platform-actions";
 import { WorkspaceBundleSelect } from "@/components/saas/workspace-bundle-select";
@@ -30,6 +31,10 @@ export function CreateClientWorkspacePanel({
 }) {
   const [state, formAction, pending] = useActionState(
     createClientWorkspaceAction,
+    initialState,
+  );
+  const [manageState, manageAction, managing] = useActionState(
+    manageClientWorkspaceAction,
     initialState,
   );
 
@@ -135,6 +140,12 @@ export function CreateClientWorkspacePanel({
         </div>
       ) : null}
 
+      {manageState.message ? (
+        <div className={manageState.ok ? "saas-form-success" : "saas-form-error"}>
+          <p>{manageState.message}</p>
+        </div>
+      ) : null}
+
       {workspaces.length > 0 ? (
         <div className="saas-create-workspace-list">
           <h4>Recent client workspaces</h4>
@@ -143,15 +154,75 @@ export function CreateClientWorkspacePanel({
               <li key={row.id}>
                 <div>
                   <strong>{row.name}</strong>
-                  <span>
+                  <span className="saas-create-workspace-meta">
                     {row.ownerEmail ?? "No owner"} · {row.slug} ·{" "}
                     {ORG_PLAN_LABELS[row.plan as keyof typeof ORG_PLAN_LABELS] ??
                       row.plan}
                   </span>
                 </div>
-                <span className="saas-role-pill">
-                  {row.status === "ACTIVE" ? "Active" : "Pending"}
-                </span>
+                <form
+                  action={manageAction}
+                  className="saas-ws-row-actions"
+                  onSubmit={(event) => {
+                    const submitter = (event.nativeEvent as SubmitEvent)
+                      .submitter as HTMLButtonElement | null;
+                    if (
+                      submitter?.value === "remove" &&
+                      !window.confirm(
+                        `Remove ${row.name}? The workspace is deleted. This cannot be undone.`,
+                      )
+                    ) {
+                      event.preventDefault();
+                    }
+                  }}
+                >
+                  <input name="workspaceId" type="hidden" value={row.id} />
+                  <span className={`saas-role-pill status-${row.status.toLowerCase()}`}>
+                    {workspaceStatusLabel(row.status)}
+                  </span>
+                  {row.status !== "ACTIVE" ? (
+                    <button
+                      className="saas-ws-action"
+                      disabled={managing}
+                      name="intent"
+                      type="submit"
+                      value="activate"
+                    >
+                      Activate
+                    </button>
+                  ) : null}
+                  {row.status !== "HOLD" ? (
+                    <button
+                      className="saas-ws-action"
+                      disabled={managing}
+                      name="intent"
+                      type="submit"
+                      value="hold"
+                    >
+                      Hold
+                    </button>
+                  ) : null}
+                  {row.status !== "INACTIVE" ? (
+                    <button
+                      className="saas-ws-action"
+                      disabled={managing}
+                      name="intent"
+                      type="submit"
+                      value="deactivate"
+                    >
+                      Deactivate
+                    </button>
+                  ) : null}
+                  <button
+                    className="saas-ws-action danger"
+                    disabled={managing}
+                    name="intent"
+                    type="submit"
+                    value="remove"
+                  >
+                    Remove
+                  </button>
+                </form>
               </li>
             ))}
           </ul>
@@ -159,4 +230,11 @@ export function CreateClientWorkspacePanel({
       ) : null}
     </article>
   );
+}
+
+function workspaceStatusLabel(status: string) {
+  if (status === "ACTIVE") return "Active";
+  if (status === "HOLD") return "On hold";
+  if (status === "INACTIVE") return "Inactive";
+  return "Pending";
 }

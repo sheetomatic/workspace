@@ -21,7 +21,7 @@ export function WorkspaceActivationPanel({
   allowedModules,
 }: {
   organizationName: string;
-  status: "ONBOARDING" | "ACTIVE";
+  status: "ONBOARDING" | "ACTIVE" | "HOLD" | "INACTIVE";
   plan?: OrgPlan | null;
   allowedModules?: WorkspaceModule[];
 }) {

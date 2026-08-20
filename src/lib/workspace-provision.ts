@@ -1,6 +1,8 @@
 import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
+import type { OrganizationStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { PRIMARY_ORG_SLUG } from "@/lib/platform";
 import {
   emailStatusMessage,
   sendTeamWelcomeEmail,
@@ -202,7 +204,114 @@ export async function provisionClientWorkspace(
   };
 }
 
-export async function listClientWorkspaces(take = 20) {
+export type ManageClientWorkspaceIntent =
+  | "activate"
+  | "hold"
+  | "deactivate"
+  | "remove";
+
+const INTENT_STATUS: Record<
+  Exclude<ManageClientWorkspaceIntent, "remove">,
+  OrganizationStatus
+> = {
+  activate: "ACTIVE",
+  hold: "HOLD",
+  deactivate: "INACTIVE",
+};
+
+export async function manageClientWorkspace(input: {
+  workspaceId: string;
+  intent: ManageClientWorkspaceIntent;
+}): Promise<{ ok: true; message: string } | { ok: false; message: string }> {
+  const workspaceId = input.workspaceId.trim();
+  if (!workspaceId) {
+    return { ok: false, message: "Workspace not found." };
+  }
+
+  const organization = await prisma.organization.findUnique({
+    where: { id: workspaceId },
+    select: { id: true, name: true, slug: true, isPrimary: true, status: true },
+  });
+
+  if (!organization) {
+    return { ok: false, message: "Workspace not found." };
+  }
+
+  if (organization.isPrimary || organization.slug === PRIMARY_ORG_SLUG) {
+    return { ok: false, message: "The primary Sheetomatic workspace cannot be changed here." };
+  }
+
+  if (input.intent === "remove") {
+    return removeClientWorkspace(organization.id, organization.name);
+  }
+
+  const status = INTENT_STATUS[input.intent];
+  if (organization.status === status) {
+    return { ok: true, message: `${organization.name} is already ${statusLabel(status)}.` };
+  }
+
+  await prisma.organization.update({
+    where: { id: organization.id },
+    data: { status },
+  });
+
+  if (status === "ACTIVE") {
+    return { ok: true, message: `${organization.name} is active. The owner can sign in.` };
+  }
+  if (status === "HOLD") {
+    return { ok: true, message: `${organization.name} is on hold. Staff see a hold screen.` };
+  }
+  return { ok: true, message: `${organization.name} is deactivated. Staff cannot use it.` };
+}
+
+function statusLabel(status: OrganizationStatus) {
+  if (status === "ACTIVE") return "active";
+  if (status === "HOLD") return "on hold";
+  if (status === "INACTIVE") return "inactive";
+  return "pending";
+}
+
+async function removeClientWorkspace(organizationId: string, name: string) {
+  const members = await prisma.membership.findMany({
+    where: { organizationId },
+    select: { userId: true },
+  });
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.invitation.deleteMany({ where: { organizationId } });
+      await tx.organizationPlan.deleteMany({ where: { organizationId } });
+      await tx.membership.deleteMany({ where: { organizationId } });
+      await tx.organization.delete({ where: { id: organizationId } });
+    });
+  } catch {
+    return {
+      ok: false,
+      message: `${name} has operational data, so it cannot be deleted. Deactivate it instead.`,
+    };
+  }
+
+  for (const member of members) {
+    const leftover = await prisma.membership.count({
+      where: { userId: member.userId },
+    });
+    if (leftover > 0) continue;
+    const user = await prisma.user.findUnique({
+      where: { id: member.userId },
+      select: { isSuperAdmin: true },
+    });
+    if (!user || user.isSuperAdmin) continue;
+    try {
+      await prisma.user.delete({ where: { id: member.userId } });
+    } catch {
+      // User still has other records — leave the login, workspace is gone.
+    }
+  }
+
+  return { ok: true as const, message: `${name} was removed.` };
+}
+
+export async function listClientWorkspaces(take = 80) {
   return prisma.organization.findMany({
     where: { isPrimary: false },
     orderBy: { createdAt: "desc" },

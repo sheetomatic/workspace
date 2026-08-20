@@ -178,7 +178,12 @@ export default async function AppLayout({
   }
 
   if (organization.status !== "ACTIVE" && !sessionUser.isSuperAdmin) {
-    return <WorkspacePendingApproval organizationName={organization.name} />;
+    return (
+      <WorkspacePendingApproval
+        organizationName={organization.name}
+        status={organization.status}
+      />
+    );
   }
 
   if (learnPortal) {
