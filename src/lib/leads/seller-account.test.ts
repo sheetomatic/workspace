@@ -23,6 +23,10 @@ describe("quotation seller account", () => {
     expect(
       quotationAccountForOrganization({ name: "Sheetomatic" }),
     ).toEqual(SHEETOMATIC_QUOTATION_ACCOUNT);
+    expect(
+      quotationAccountForOrganization({ name: "Sheetomatic Technologies" }),
+    ).toEqual(SHEETOMATIC_QUOTATION_ACCOUNT);
+    expect(SHEETOMATIC_QUOTATION_ACCOUNT.addressLines[2]).toContain("495690");
     expect(quotationAccountForOrganization({ name: "Hingorani" })).toBeNull();
   });
 });

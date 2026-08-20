@@ -31,6 +31,16 @@ export function QuotationAccountSettingsPanel({
           <dd>{account.legalName}</dd>
         </div>
         <div>
+          <dt>Udyam address</dt>
+          <dd>
+            {account.addressLines.map((line) => (
+              <span key={line} style={{ display: "block" }}>
+                {line}
+              </span>
+            ))}
+          </dd>
+        </div>
+        <div>
           <dt>PAN</dt>
           <dd>{account.pan}</dd>
         </div>

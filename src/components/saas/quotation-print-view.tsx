@@ -135,6 +135,9 @@ export function QuotationPrintView({
             {account ? (
               <>
                 <p>{account.legalName}</p>
+                {account.addressLines.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
                 <p>PAN: {account.pan}</p>
                 <p>
                   Udyam Aadhaar: {account.udyamNumber}{" "}
@@ -284,7 +287,7 @@ export function QuotationPrintView({
               quotationTermsForRequestType(quotation.requestType, organizationName),
             )}
           </pre>
-          {organizationName.trim().toLowerCase() === "sheetomatic" ? (
+          {organizationName.trim().toLowerCase().includes("sheetomatic") ? (
             <p className="quotation-print-terms-link">
               Full terms: sheetomatic.com/terms
             </p>
