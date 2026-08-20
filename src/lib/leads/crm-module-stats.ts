@@ -1,7 +1,9 @@
 import "server-only";
 
 import { prisma } from "@/lib/db";
+import { mergeLeadContactWhere } from "@/lib/leads/contact-validation";
 import type { CrmModuleNavCounts } from "@/lib/leads/crm-module-stats-types";
+import { NEXT_TIME_LEAD_STATUSES } from "@/lib/leads/status-labels";
 import { getSalesOrderStats } from "@/lib/sales-orders/queries";
 
 export type { CrmModuleNavCounts } from "@/lib/leads/crm-module-stats-types";
@@ -13,6 +15,7 @@ export async function getCrmModuleNavCounts(
   const now = new Date();
   const [
     leads,
+    nextTime,
     meetings,
     quotationAgg,
     paymentAgg,
@@ -24,6 +27,15 @@ export async function getCrmModuleNavCounts(
         organizationId,
         archivedAt: null,
         mergedIntoId: null,
+        status: { notIn: NEXT_TIME_LEAD_STATUSES },
+      },
+    }),
+    prisma.inboundLead.count({
+      where: {
+        organizationId,
+        archivedAt: null,
+        mergedIntoId: null,
+        status: { in: NEXT_TIME_LEAD_STATUSES },
       },
     }),
     prisma.inboundLeadFollowUp.count({
@@ -55,6 +67,7 @@ export async function getCrmModuleNavCounts(
 
   return {
     leads,
+    nextTime,
     meetings,
     quotations: quotationAgg._count._all,
     quotationValue: Number(quotationAgg._sum.totalAmount ?? 0),
@@ -120,6 +133,36 @@ export async function listCrmPayments(organizationId: string, take = 100) {
           status: true,
         },
       },
+    },
+  });
+}
+
+export async function listCrmNextTimeLeads(
+  organizationId: string,
+  options?: { take?: number; assignedToId?: string },
+) {
+  return prisma.inboundLead.findMany({
+    where: mergeLeadContactWhere({
+      organizationId,
+      status: { in: NEXT_TIME_LEAD_STATUSES },
+      ...(options?.assignedToId ? { assignedToId: options.assignedToId } : {}),
+    }),
+    orderBy: [{ modifiedAt: "desc" }, { createdAt: "desc" }],
+    take: options?.take ?? 200,
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      email: true,
+      company: true,
+      category: true,
+      requirement: true,
+      pipeValue: true,
+      quotationValue: true,
+      modifiedAt: true,
+      capturedAt: true,
+      createdAt: true,
+      assignedTo: { select: { id: true, name: true, email: true } },
     },
   });
 }

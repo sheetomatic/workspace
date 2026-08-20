@@ -8,6 +8,7 @@ import {
   CreditCard,
   FolderKanban,
   GraduationCap,
+  History,
   Megaphone,
   Users,
 } from "lucide-react";
@@ -52,6 +53,13 @@ export function CrmModuleNav({
       icon: Users,
       count: counts.leads,
       matchExact: true,
+    },
+    {
+      id: "nextTime",
+      href: "/app/leads/next-time",
+      label: "Next Time",
+      icon: History,
+      count: counts.nextTime,
     },
     {
       id: "meetings",

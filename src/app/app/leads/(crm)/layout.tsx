@@ -10,6 +10,7 @@ import { isLearnPortalRequest } from "@/lib/tenant-host";
 
 const EMPTY_COUNTS: CrmModuleNavCounts = {
   leads: 0,
+  nextTime: 0,
   meetings: 0,
   quotations: 0,
   quotationValue: 0,

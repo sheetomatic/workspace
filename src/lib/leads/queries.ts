@@ -9,7 +9,10 @@ import {
   type LeadsPeriodRange,
 } from "@/lib/leads/period";
 import type { InboundLeadStatus } from "@prisma/client";
-import { OPEN_LEAD_STATUSES } from "@/lib/leads/status-labels";
+import {
+  NEXT_TIME_LEAD_STATUSES,
+  OPEN_LEAD_STATUSES,
+} from "@/lib/leads/status-labels";
 
 function quotationGeneratedDateWhere(period: LeadsPeriodRange) {
   if (period.type === "all") {
@@ -54,7 +57,11 @@ export async function getInboundLeadWorkspaceTotal(
   scope?: LeadAssigneeScope,
 ) {
   return prisma.inboundLead.count({
-    where: mergeLeadContactWhere({ organizationId, ...assigneeWhere(scope) }),
+    where: mergeLeadContactWhere({
+      organizationId,
+      ...assigneeWhere(scope),
+      status: { notIn: NEXT_TIME_LEAD_STATUSES },
+    }),
   });
 }
 
@@ -190,6 +197,8 @@ export async function listInboundLeadsForPeriodPaginated(
     includeArchived?: boolean;
     /** Staff scoping: only leads assigned to this user. */
     assignedToId?: string;
+    /** Drop parked statuses (Next Time) from the main Leads list. */
+    excludeStatuses?: InboundLeadStatus[];
   },
 ) {
   const where = mergeLeadContactWhere(
@@ -197,7 +206,11 @@ export async function listInboundLeadsForPeriodPaginated(
       organizationId,
       ...leadCapturedAtWhere(period),
       ...(options.assignedToId ? { assignedToId: options.assignedToId } : {}),
-      ...(options.status ? { status: options.status } : {}),
+      ...(options.status
+        ? { status: options.status }
+        : options.excludeStatuses?.length
+          ? { status: { notIn: options.excludeStatuses } }
+          : {}),
       ...(options.category ? { category: options.category } : {}),
       ...(options.q
         ? {

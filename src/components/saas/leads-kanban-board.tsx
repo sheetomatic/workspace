@@ -6,7 +6,7 @@ import { updateInboundLeadStatus } from "@/app/app/leads/actions";
 import { LeadTemperatureBadge } from "@/components/saas/lead-temperature-badge";
 import { formatInr } from "@/lib/leads/categories";
 import {
-  LEAD_STATUS_ORDER,
+  LEAD_LIST_STATUS_ORDER,
   leadStatusLabel,
 } from "@/lib/leads/status-labels";
 
@@ -62,7 +62,7 @@ export function LeadsKanbanBoard({
 
   const columns = useMemo(() => {
     const map = new Map<InboundLeadStatus, KanbanLeadCard[]>();
-    for (const status of LEAD_STATUS_ORDER) {
+    for (const status of LEAD_LIST_STATUS_ORDER) {
       map.set(status, []);
     }
     for (const lead of boardLeads) {
@@ -70,11 +70,9 @@ export function LeadsKanbanBoard({
       const bucket = map.get(lead.status);
       if (bucket) {
         bucket.push(lead);
-      } else {
-        map.get("NEW")!.push(lead);
       }
     }
-    return LEAD_STATUS_ORDER.map((status) => {
+    return LEAD_LIST_STATUS_ORDER.map((status) => {
       const columnLeads = map.get(status) ?? [];
       const totalValue = columnLeads.reduce((sum, lead) => {
         const amount = quotedAmount(lead);

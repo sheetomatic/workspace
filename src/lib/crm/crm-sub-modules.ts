@@ -2,6 +2,7 @@
 
 export type CrmSubModuleId =
   | "leads"
+  | "nextTime"
   | "meetings"
   | "quotations"
   | "payments"
@@ -23,6 +24,12 @@ export const CRM_SUB_MODULES = [
     label: "Leads",
     href: "/app/leads",
     description: "Lead pipeline, calling, and follow-ups.",
+  },
+  {
+    id: "nextTime",
+    label: "Next Time",
+    href: "/app/leads/next-time",
+    description: "Parked leads to revisit later — kept out of the Leads list.",
   },
   {
     id: "meetings",
@@ -98,9 +105,14 @@ export function resolveMemberCrmSubModules(
     return [];
   }
   const enabled = memberStored.filter(isKnownCrmSubModuleId);
-  return enabled.length > 0
-    ? enabled
-    : [...DEFAULT_ENABLED_CRM_SUB_MODULES];
+  if (enabled.length === 0) {
+    return [...DEFAULT_ENABLED_CRM_SUB_MODULES];
+  }
+  // Next Time is a parked slice of Leads — keep it with anyone who can see Leads.
+  if (enabled.includes("leads") && !enabled.includes("nextTime")) {
+    return [...enabled, "nextTime"];
+  }
+  return enabled;
 }
 
 export function isMemberCrmSubModuleEnabled(

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { InboundLeadStatus } from "@prisma/client";
 import { buildLeadsListQuery, type LeadsListSearchParams } from "@/lib/leads/list-params";
-import { LEAD_STATUS_ORDER, leadStatusLabel } from "@/lib/leads/status-labels";
+import { LEAD_LIST_STATUS_ORDER, leadStatusLabel } from "@/lib/leads/status-labels";
 
 export function LeadsPipelineFilters({
   baseParams,
@@ -43,7 +43,7 @@ export function LeadsPipelineFilters({
           }
         >
           <option value="">All statuses</option>
-          {LEAD_STATUS_ORDER.map((status) => (
+          {LEAD_LIST_STATUS_ORDER.map((status) => (
             <option key={status} value={status}>
               {leadStatusLabel(status)} ({byStatus[status] ?? 0})
             </option>

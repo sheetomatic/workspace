@@ -63,6 +63,14 @@ import {
   nextQuotationNumber,
   revisionQuotationNumber,
 } from "@/lib/leads/quotations";
+import {
+  computeWebsitePricingLineTotal,
+  findWebsitePricingProduct,
+  isWebsitePricingCatalogId,
+  parseCountInput,
+  parseMoneyInput,
+  websitePricingLineDescription,
+} from "@/lib/leads/website-pricing-catalog";
 import { createSalesOrderFromLockedQuotation } from "@/lib/sales-orders/create-from-quotation";
 import { createQuotationShareToken } from "@/lib/leads/quotation-tokens";
 import {
@@ -91,6 +99,9 @@ import {
   queueLeadNurtureAfterStatusChange,
 } from "@/lib/leads/nurture/triggers";
 import { buildClientMeetingInviteEmail } from "@/lib/leads/meeting-invite";
+import { parseDatetimeLocalAsIst } from "@/lib/leads/ist-datetime";
+import { buildCallNoteAckWhatsApp } from "@/lib/leads/call-note-ack";
+import { CALLING_STATUS_LABELS } from "@/lib/leads/status-labels";
 import { inferLeadStageFromRequirement } from "@/lib/leads/stage-ai";
 import { leadStatusLabel } from "@/lib/leads/status-labels";
 import {
@@ -431,6 +442,11 @@ export async function updateInboundLeadDetails(params: {
   phone: string;
   email: string;
   company: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  teamSize?: string;
+  industry?: string;
   address: string;
   zipCode: string;
   requirement: string;
@@ -590,6 +606,11 @@ export async function updateInboundLeadDetails(params: {
         phone: phoneNormalized,
         email: emailTrimmed,
         company,
+        city: params.city !== undefined ? params.city.trim() || null : undefined,
+        state: params.state !== undefined ? params.state.trim() || null : undefined,
+        country: params.country !== undefined ? params.country.trim() || null : undefined,
+        teamSize: params.teamSize !== undefined ? params.teamSize.trim() || null : undefined,
+        industry: params.industry !== undefined ? params.industry.trim() || null : undefined,
         address,
         zipCode,
         requirement: requirementTrimmed,
@@ -875,8 +896,8 @@ export async function scheduleInboundLeadFollowUp(params: {
     return { ok: false, message: LEAD_WORK_DENIED };
   }
 
-  const scheduledAt = new Date(params.scheduledAt);
-  if (Number.isNaN(scheduledAt.getTime())) {
+  const scheduledAt = parseDatetimeLocalAsIst(params.scheduledAt);
+  if (!scheduledAt) {
     return { ok: false, message: "Invalid date." };
   }
 
@@ -1789,8 +1810,9 @@ export async function scheduleLeadClientMeeting(params: {
   const hostIsScheduler = host.id === user.id;
   const hostLabel = host.name?.trim() || host.email || "team member";
 
-  const startsAt = new Date(params.startsAt);
-  if (Number.isNaN(startsAt.getTime())) {
+  // datetime-local has no TZ — interpret as IST (Vercel UTC would otherwise shift +5:30).
+  const startsAt = parseDatetimeLocalAsIst(params.startsAt);
+  if (!startsAt) {
     return { ok: false as const, message: "Pick a valid meeting date & time." };
   }
   if (startsAt.getTime() < Date.now() - 5 * 60_000) {
@@ -1867,15 +1889,37 @@ export async function scheduleLeadClientMeeting(params: {
     },
   });
 
+  const organizationName = organization?.name?.trim() || "Sheetomatic";
+  const counsellorName = host.name ?? lead.assignedTo?.name ?? user.name ?? null;
+  const organizerEmail =
+    host.email?.trim() ||
+    user.email?.trim() ||
+    process.env.TASK_EMAIL_FROM?.trim() ||
+    "notifications@notification.sheetomatic.com";
+  const eventUid = `crm-meeting-${lead.id}-${startsAt.getTime()}@sheetomatic.com`;
+  const clientLabel =
+    lead.name?.trim() || lead.company?.trim() || lead.phone?.trim() || "client";
+
   const invite = buildClientMeetingInviteEmail({
     clientName: lead.name,
-    organizationName: organization?.name?.trim() || "Sheetomatic",
+    organizationName,
     startsAt,
     durationMinutes,
     meetUrl,
     notes: scheduleNote,
-    counsellorName: host.name ?? lead.assignedTo?.name ?? user.name ?? null,
+    counsellorName,
+    attendeeEmail: toEmail || organizerEmail,
+    organizerEmail,
+    organizerName: counsellorName ?? organizationName,
+    eventUid,
+    title: `Meeting with ${organizationName}`,
   });
+
+  const icsAttachment = {
+    filename: invite.icsFilename,
+    content: invite.icsContent,
+    contentType: "text/calendar; method=REQUEST; charset=UTF-8",
+  };
 
   // Defer Resend + activity — keep drawer save on the critical path.
   after(() => {
@@ -1887,6 +1931,8 @@ export async function scheduleLeadClientMeeting(params: {
           toEmail,
           subject: invite.subject,
           text: invite.text,
+          html: invite.html,
+          attachments: [icsAttachment],
         });
         if (!result.sent) {
           emailMessage =
@@ -1901,8 +1947,6 @@ export async function scheduleLeadClientMeeting(params: {
       // Send the meeting host their copy so the meeting is on their radar
       // (host = scheduler unless "Meeting with" picked someone else).
       let organizerEmailSent = false;
-      const clientLabel =
-        lead.name?.trim() || lead.company?.trim() || lead.phone?.trim() || "client";
       const hostCopyRecipients = [
         host.email?.trim().toLowerCase(),
         hostIsScheduler ? null : user.email?.trim().toLowerCase(),
@@ -1910,6 +1954,32 @@ export async function scheduleLeadClientMeeting(params: {
         (email): email is string => Boolean(email) && email !== toEmail,
       );
       for (const recipientEmail of [...new Set(hostCopyRecipients)]) {
+        const hostInvite = buildClientMeetingInviteEmail({
+          clientName: clientLabel,
+          organizationName,
+          startsAt,
+          durationMinutes,
+          meetUrl,
+          notes: scheduleNote,
+          counsellorName,
+          attendeeEmail: recipientEmail,
+          organizerEmail,
+          organizerName: counsellorName ?? organizationName,
+          eventUid,
+          title: `Meeting with ${clientLabel}`,
+        });
+        const hostHtml = [
+          `<p>Your meeting with <strong>${clientLabel.replace(/</g, "")}</strong> is scheduled${hostIsScheduler ? "" : ` (host: ${hostLabel}, booked by ${user.name ?? "team"})`}.</p>`,
+          `<p><strong>When:</strong> ${invite.whenLabel}</p>`,
+          meetUrl
+            ? `<p><strong>Join link:</strong> <a href="${meetUrl}">${meetUrl}</a></p>`
+            : "",
+          scheduleNote ? `<p><strong>Notes:</strong> ${scheduleNote.replace(/</g, "")}</p>` : "",
+          `<p><a href="${invite.calendarUrl}">Add to your calendar</a></p>`,
+          `<p style="color:#555;font-size:14px">Calendar invite attached — use <strong>Yes / No / Maybe</strong> to RSVP.</p>`,
+        ]
+          .filter(Boolean)
+          .join("\n");
         const copy = await sendPlainEmail({
           toEmail: recipientEmail,
           subject: `Meeting with ${clientLabel} — ${invite.whenLabel}`,
@@ -1922,9 +1992,19 @@ export async function scheduleLeadClientMeeting(params: {
             "",
             "Add to your calendar:",
             invite.calendarUrl,
+            "",
+            "Calendar invite attached — Yes / No / Maybe to RSVP.",
           ]
             .filter((line) => line !== null)
             .join("\n"),
+          html: hostHtml,
+          attachments: [
+            {
+              filename: hostInvite.icsFilename,
+              content: hostInvite.icsContent,
+              contentType: "text/calendar; method=REQUEST; charset=UTF-8",
+            },
+          ],
         });
         organizerEmailSent = organizerEmailSent || copy.sent;
       }
@@ -2023,6 +2103,210 @@ export async function scheduleLeadClientMeeting(params: {
           ? "Meeting scheduled for you. Calendar invite sent to your email."
           : `Meeting scheduled with ${hostLabel}. Calendar invite sent to their email.`
         : "Meeting scheduled.",
+  };
+}
+
+/**
+ * Log one call outcome as history (does not overwrite prior call notes).
+ * Updates latest callingStatus, clears the form on the client after success,
+ * and optionally WhatsApps the client for acknowledgment.
+ */
+export async function logLeadCallNote(params: {
+  leadId: string;
+  callingStatus: LeadCallingStatus;
+  notes?: string;
+  sendWhatsAppAck?: boolean;
+}) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!(await canWorkLead(user, params.leadId))) {
+    return { ok: false as const, message: LEAD_WORK_DENIED };
+  }
+
+  const allowed: LeadCallingStatus[] = [
+    "NO_ANSWER",
+    "WILL_CALL_BACK",
+    "CONNECTED",
+    "MEETING_DONE",
+    "NOT_INTERESTED",
+    "CALLING",
+  ];
+  if (!allowed.includes(params.callingStatus)) {
+    return { ok: false as const, message: "Pick a valid call status." };
+  }
+
+  const notes = params.notes?.trim() || null;
+  if (
+    (params.callingStatus === "MEETING_DONE" ||
+      params.callingStatus === "CONNECTED") &&
+    !notes
+  ) {
+    return {
+      ok: false as const,
+      message: "Add notes for Connected / Meeting done.",
+    };
+  }
+
+  const lead = await prisma.inboundLead.findFirst({
+    where: { id: params.leadId, organizationId: user.organizationId },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      status: true,
+      callingStatus: true,
+      meetingNotes: true,
+    },
+  });
+  if (!lead) {
+    return { ok: false as const, message: "Lead not found." };
+  }
+
+  const organization = await prisma.organization.findUnique({
+    where: { id: user.organizationId },
+    select: { name: true },
+  });
+  const statusLabel =
+    CALLING_STATUS_LABELS[params.callingStatus] ?? params.callingStatus;
+  const activityBody = notes
+    ? `${statusLabel} — ${notes}`
+    : statusLabel;
+
+  const patch: {
+    callingStatus: LeadCallingStatus;
+    modifiedAt: Date;
+    meetingNotes?: string | null;
+    status?: InboundLeadStatus;
+  } = {
+    callingStatus: params.callingStatus,
+    modifiedAt: new Date(),
+  };
+
+  // Keep latest note on the lead for sheets / summary; full history is activities.
+  if (notes) {
+    patch.meetingNotes = notes;
+  }
+
+  if (
+    params.callingStatus === "CONNECTED" ||
+    params.callingStatus === "MEETING_DONE"
+  ) {
+    if (lead.status === "NEW") {
+      patch.status = "CONTACTED";
+    } else if (
+      lead.status === "SCHEDULE_MEETING" ||
+      lead.status === "CONTACTED" ||
+      lead.status === "FOLLOW_UP"
+    ) {
+      patch.status = "MEETING_NOTES";
+    }
+  }
+
+  await withDbRetry((db) =>
+    db.inboundLead.updateMany({
+      where: { id: lead.id, organizationId: user.organizationId },
+      data: patch,
+    }),
+  );
+
+  const activity = await prisma.inboundLeadActivity.create({
+    data: {
+      organizationId: user.organizationId,
+      leadId: lead.id,
+      type: "CALL",
+      body: activityBody,
+      createdByUserId: user.id,
+      metadata: {
+        callingStatus: params.callingStatus,
+        notes,
+        callLog: true,
+      },
+    },
+    select: {
+      id: true,
+      type: true,
+      body: true,
+      createdAt: true,
+      metadata: true,
+    },
+  });
+
+  const scored = await recomputeAndSaveScore(lead.id, user.organizationId);
+
+  let whatsappSent = false;
+  let whatsappMessage: string | null = null;
+  const sendAck = params.sendWhatsAppAck !== false;
+  const phone = lead.phone?.trim();
+  if (sendAck && phone) {
+    const { sendWhatsAppText } = await import("@/lib/whatsapp-bot/send");
+    const body = buildCallNoteAckWhatsApp({
+      clientName: lead.name,
+      organizationName: organization?.name?.trim() || "Sheetomatic",
+      callingStatus: params.callingStatus,
+      notes,
+    });
+    const wa = await sendWhatsAppText({
+      organizationId: user.organizationId,
+      toPhone: phone,
+      body,
+    }).catch(() => ({ sent: false as const }));
+    whatsappSent = wa.sent;
+    if (!wa.sent) {
+      whatsappMessage = "WhatsApp could not be sent — note was still saved.";
+    } else {
+      await prisma.inboundLeadActivity
+        .create({
+          data: {
+            organizationId: user.organizationId,
+            leadId: lead.id,
+            type: "WHATSAPP",
+            body: `Call ack WhatsApp sent — ${statusLabel}`,
+            createdByUserId: user.id,
+            metadata: { callingStatus: params.callingStatus, callAck: true },
+          },
+        })
+        .catch(() => null);
+    }
+  } else if (sendAck && !phone) {
+    whatsappMessage = "No phone on lead — skipped WhatsApp ack.";
+  }
+
+  // Keep nurture for connected/no-answer style outcomes
+  if (
+    params.callingStatus === "CONNECTED" ||
+    params.callingStatus === "MEETING_DONE" ||
+    params.callingStatus === "NO_ANSWER"
+  ) {
+    queueLeadNurtureAfterCall({
+      organizationId: user.organizationId,
+      leadId: lead.id,
+      discussionSummary: notes ?? lead.meetingNotes,
+      actorUserId: user.id,
+    });
+  }
+
+  exportLeadToGoogleSheetAfterSave(user.organizationId, lead.id);
+  revalidatePath("/app/leads");
+
+  return {
+    ok: true as const,
+    whatsappSent,
+    whatsappMessage,
+    activity: {
+      id: activity.id,
+      type: activity.type,
+      body: activity.body,
+      createdAt: activity.createdAt.toISOString(),
+      createdBy: null as null,
+      metadata: activity.metadata,
+    },
+    lead: {
+      id: lead.id,
+      callingStatus: params.callingStatus,
+      meetingNotes: notes ?? lead.meetingNotes,
+      ...(patch.status ? { status: patch.status } : {}),
+      score: scored?.score ?? null,
+      temperature: scored?.temperature ?? null,
+    },
   };
 }
 
@@ -2438,7 +2722,14 @@ export async function createLeadQuotation(params: {
   address?: string;
   zipCode?: string;
   lineCatalogIds: string[];
-  lineItems?: Array<{ catalogId: string; unitPrice: string; quantity?: string }>;
+  lineItems?: Array<{
+    catalogId: string;
+    unitPrice: string;
+    quantity?: string;
+    perUserCost?: string;
+    users?: string;
+  }>;
+  setupCost?: string;
 }) {
   const user = await requireSession(undefined, { module: "CRM" });
   if (!(await canWorkLead(user, params.leadId))) {
@@ -2453,45 +2744,63 @@ export async function createLeadQuotation(params: {
     return { ok: false, message: "Lead not found." };
   }
 
-  const catalogIds =
-    params.lineItems && params.lineItems.length > 0
-      ? params.lineItems.map((item) => item.catalogId)
-      : params.lineCatalogIds.length > 0
-        ? params.lineCatalogIds
-        : (lead.offeredServices.map((item) => item.catalogId).filter(Boolean) as string[]);
+  const explicitLineItems = params.lineItems;
+  const hasExplicitLines = Array.isArray(explicitLineItems);
+  const catalogIds = hasExplicitLines
+    ? explicitLineItems.map((item) => item.catalogId)
+    : params.lineCatalogIds.length > 0
+      ? params.lineCatalogIds
+      : (lead.offeredServices.map((item) => item.catalogId).filter(Boolean) as string[]);
 
-  const catalog = await prisma.leadServiceCatalog.findMany({
-    where: { organizationId: user.organizationId, id: { in: catalogIds } },
-  });
-  if (catalog.length === 0) {
-    return { ok: false, message: "Add at least one offered service first." };
-  }
-
+  const dbCatalogIds = catalogIds.filter((id) => !isWebsitePricingCatalogId(id));
+  const catalog = dbCatalogIds.length
+    ? await prisma.leadServiceCatalog.findMany({
+        where: { organizationId: user.organizationId, id: { in: dbCatalogIds } },
+      })
+    : [];
   const catalogById = new Map(catalog.map((item) => [item.id, item]));
-  const lineInputs =
-    params.lineItems && params.lineItems.length > 0
-      ? params.lineItems
-      : catalogIds.map((catalogId) => ({ catalogId, unitPrice: "0", quantity: "1" }));
+  const lineInputs = hasExplicitLines
+    ? explicitLineItems
+    : catalogIds.map((catalogId) => ({ catalogId, unitPrice: "0", quantity: "1" }));
 
   const lines = lineInputs.flatMap((input) => {
+    const website = isWebsitePricingCatalogId(input.catalogId)
+      ? findWebsitePricingProduct(input.catalogId)
+      : null;
     const item = catalogById.get(input.catalogId);
-    if (!item) {
+    if (!website && !item) {
       return [];
     }
-    const unitPrice = Number.parseFloat(input.unitPrice);
-    const quantity = Number.parseInt(input.quantity ?? "1", 10);
-    const price = Number.isFinite(unitPrice) ? unitPrice : 0;
-    const qty = Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
+    const serviceCategory = website?.category ?? item?.serviceCategory ?? "Service";
+    const productName = website?.name ?? item?.subCategory ?? "Item";
+    const users = parseCountInput(input.users);
+    const perUserCost = parseMoneyInput(input.perUserCost);
+    const lineTotal = computeWebsitePricingLineTotal({
+      amount: input.unitPrice,
+      perUserCost: input.perUserCost,
+      users: input.users,
+    });
     return [
       {
-        serviceCategory: item.serviceCategory,
-        subCategory: item.subCategory,
-        quantity: qty,
-        unitPrice: price,
-        lineTotal: price * qty,
+        serviceCategory,
+        subCategory: websitePricingLineDescription(productName, users, perUserCost),
+        quantity: 1,
+        unitPrice: lineTotal,
+        lineTotal,
       },
     ];
   });
+
+  const setupCost = parseMoneyInput(params.setupCost);
+  if (setupCost > 0) {
+    lines.push({
+      serviceCategory: "Setup",
+      subCategory: "One-time setup",
+      quantity: 1,
+      unitPrice: setupCost,
+      lineTotal: setupCost,
+    });
+  }
 
   if (lines.length === 0) {
     return { ok: false, message: "Add at least one valid line item." };
@@ -3947,8 +4256,8 @@ export async function assignLeadProjectWork(params: {
     return { ok: false as const, message: "Give the work a short title." };
   }
 
-  const dueAt = new Date(params.deadline);
-  if (Number.isNaN(dueAt.getTime())) {
+  const dueAt = parseDatetimeLocalAsIst(params.deadline);
+  if (!dueAt) {
     return { ok: false as const, message: "Pick a valid deadline." };
   }
   if (dueAt.getTime() < Date.now()) {

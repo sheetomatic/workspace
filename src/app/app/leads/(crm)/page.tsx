@@ -1,4 +1,5 @@
 import { after } from "next/server";
+import { redirect } from "next/navigation";
 import { LeadsCrmWorkspace } from "@/components/saas/leads-crm-workspace";
 import { LeadsTeamPerformance } from "@/components/saas/leads-team-performance";
 import { currentMonthKeyIst, getTeamPerformance } from "@/lib/leads/team-performance";
@@ -32,6 +33,7 @@ import {
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
+import { NEXT_TIME_LEAD_STATUSES } from "@/lib/leads/status-labels";
 import { listLeadServiceCatalog } from "@/lib/leads/service-catalog";
 import { getAllSalesOrdersByLeadIds } from "@/lib/leads/sales-orders";
 import { listWorkspaceMembers } from "@/lib/workspace";
@@ -72,6 +74,11 @@ function serializeLead(lead: CrmDrawerLead) {
     phone: lead.phone,
     email: lead.email,
     company: lead.company,
+    city: lead.city,
+    state: lead.state,
+    country: lead.country,
+    teamSize: lead.teamSize,
+    industry: lead.industry,
     address: lead.address,
     zipCode: lead.zipCode,
     requirement: lead.requirement,
@@ -187,6 +194,14 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
   const initialTab = parseCrmDrawerTab(params.tab);
   const focusMode = Boolean(focusLeadId);
 
+  if (
+    !focusMode &&
+    listParams.status &&
+    NEXT_TIME_LEAD_STATUSES.includes(listParams.status)
+  ) {
+    redirect("/app/leads/next-time");
+  }
+
   after(async () => {
     // Let the page response release DB pool slots before background work.
     await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -295,6 +310,9 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
           // Search filters client-side on the loaded page (no workspace reload).
           includeArchived: listParams.includeArchived,
           assignedToId: leadScope?.assignedToId,
+          excludeStatuses: listParams.status
+            ? undefined
+            : NEXT_TIME_LEAD_STATUSES,
         }),
         listWorkspaceMembers(user.organizationId),
         listLeadServiceCatalog(user.organizationId),

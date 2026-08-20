@@ -14,6 +14,7 @@ import {
   FolderKanban,
   GitBranch,
   GraduationCap,
+  History,
   LayoutDashboard,
   ListChecks,
   MapPin,
@@ -109,6 +110,14 @@ const CRM_NAV_ITEM: WorkspaceNavItem = {
       module: "CRM",
       crmSubModule: "leads",
       matchPrefix: "/app/leads",
+    },
+    {
+      href: "/app/leads/next-time",
+      label: "Next Time",
+      icon: History,
+      module: "CRM",
+      crmSubModule: "nextTime",
+      matchPrefix: "/app/leads/next-time",
     },
     {
       href: "/app/leads/meetings",

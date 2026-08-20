@@ -41,6 +41,12 @@ export const LEAD_STATUS_ORDER: InboundLeadStatus[] = [
   "LOST",
 ];
 
+/** Hidden from the main Leads list / board — shown on CRM → Next Time. */
+export const NEXT_TIME_LEAD_STATUSES: InboundLeadStatus[] = ["LOST"];
+
+export const LEAD_LIST_STATUS_ORDER: InboundLeadStatus[] =
+  LEAD_STATUS_ORDER.filter((status) => !NEXT_TIME_LEAD_STATUSES.includes(status));
+
 export const OPEN_LEAD_STATUSES: InboundLeadStatus[] = [
   "NEW",
   "SCHEDULE_MEETING",
@@ -80,9 +86,21 @@ export const CALLING_STATUS_LABELS: Record<LeadCallingStatus, string> = {
   NOT_CALLED: "Not called",
   CALLING: "Calling…",
   NO_ANSWER: "No answer",
+  WILL_CALL_BACK: "He will call back",
   CONNECTED: "Connected",
+  MEETING_DONE: "Meeting done",
   NOT_INTERESTED: "Not interested",
 };
+
+/** Statuses used when logging a call outcome on the Meeting tab. */
+export const CALL_OUTCOME_STATUSES: LeadCallingStatus[] = [
+  "NO_ANSWER",
+  "WILL_CALL_BACK",
+  "CONNECTED",
+  "MEETING_DONE",
+  "NOT_INTERESTED",
+  "CALLING",
+];
 
 export const PROJECT_STATUS_LABELS: Record<LeadProjectStatus, string> = {
   NOT_STARTED: "Not started",
