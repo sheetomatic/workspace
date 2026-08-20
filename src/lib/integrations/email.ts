@@ -10,16 +10,36 @@ export function isEmailConfigured() {
   );
 }
 
+export type EmailAttachment = {
+  filename: string;
+  /** Raw file contents (will be base64-encoded for Resend). */
+  content: string | Buffer;
+  /** MIME type, e.g. text/calendar; method=REQUEST */
+  contentType?: string;
+};
+
 export async function sendPlainEmail(params: {
   toEmail: string;
   subject: string;
   text: string;
+  /** Optional HTML body (hyperlinks, RSVP copy). */
+  html?: string;
+  attachments?: EmailAttachment[];
 }): Promise<EmailSendResult> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from = process.env.TASK_EMAIL_FROM?.trim();
   if (!apiKey || !from) {
     return { sent: false, reason: "not_configured" };
   }
+
+  const attachments = params.attachments?.map((file) => ({
+    filename: file.filename,
+    content:
+      typeof file.content === "string"
+        ? Buffer.from(file.content, "utf8").toString("base64")
+        : file.content.toString("base64"),
+    content_type: file.contentType,
+  }));
 
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -32,6 +52,8 @@ export async function sendPlainEmail(params: {
       to: [params.toEmail],
       subject: params.subject,
       text: params.text,
+      ...(params.html ? { html: params.html } : {}),
+      ...(attachments?.length ? { attachments } : {}),
     }),
   });
 

@@ -98,13 +98,23 @@ export function buildOutlookWebUrl(input: LeadDemoCalendarInput): string {
   return `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`;
 }
 
+function icsEscape(s: string) {
+  return s
+    .replace(/\\/g, "\\\\")
+    .replace(/\n/g, "\\n")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;");
+}
+
+function icsMailto(email: string) {
+  return `mailto:${email.trim().toLowerCase()}`;
+}
+
 /** ICS file body for download (Google / Outlook / Apple). */
 export function buildDemoIcsContent(input: LeadDemoCalendarInput): string {
   const duration = input.durationMinutes ?? 45;
   const end = new Date(input.startsAt.getTime() + duration * 60_000);
   const uid = `lead-demo-${input.startsAt.getTime()}@sheetomatic.com`;
-  const escape = (s: string) =>
-    s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
 
   return [
     "BEGIN:VCALENDAR",
@@ -117,12 +127,72 @@ export function buildDemoIcsContent(input: LeadDemoCalendarInput): string {
     `DTSTAMP:${toIcsUtcStamp(new Date())}`,
     `DTSTART:${toIcsUtcStamp(input.startsAt)}`,
     `DTEND:${toIcsUtcStamp(end)}`,
-    `SUMMARY:${escape(eventTitle(input))}`,
-    `DESCRIPTION:${escape(eventDetails(input))}`,
+    `SUMMARY:${icsEscape(eventTitle(input))}`,
+    `DESCRIPTION:${icsEscape(eventDetails(input))}`,
     "END:VEVENT",
     "END:VCALENDAR",
     "",
   ].join("\r\n");
+}
+
+export type MeetingInviteIcsInput = {
+  title: string;
+  startsAt: Date;
+  durationMinutes: number;
+  description?: string;
+  location?: string | null;
+  /** Stable id so updates replace the same event */
+  uid: string;
+  organizerEmail: string;
+  organizerName?: string | null;
+  attendeeEmail: string;
+  attendeeName?: string | null;
+  /** REQUEST = Yes/No/Maybe RSVP in Gmail/Outlook; PUBLISH = add-only */
+  method?: "REQUEST" | "PUBLISH";
+};
+
+/**
+ * Calendar invite (.ics) with RSVP so clients can Accept / Decline / Tentative
+ * like a normal meeting invite.
+ */
+export function buildMeetingInviteIcs(input: MeetingInviteIcsInput): string {
+  const duration = input.durationMinutes;
+  const end = new Date(input.startsAt.getTime() + duration * 60_000);
+  const method = input.method ?? "REQUEST";
+  const organizerEmail = input.organizerEmail.trim().toLowerCase();
+  const attendeeEmail = input.attendeeEmail.trim().toLowerCase();
+  const organizerCn = icsEscape(
+    input.organizerName?.trim() || organizerEmail,
+  );
+  const attendeeCn = icsEscape(input.attendeeName?.trim() || attendeeEmail);
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Sheetomatic//CRM Meetings//EN",
+    "CALSCALE:GREGORIAN",
+    `METHOD:${method}`,
+    "BEGIN:VEVENT",
+    `UID:${input.uid}`,
+    `DTSTAMP:${toIcsUtcStamp(new Date())}`,
+    `DTSTART:${toIcsUtcStamp(input.startsAt)}`,
+    `DTEND:${toIcsUtcStamp(end)}`,
+    `SUMMARY:${icsEscape(input.title)}`,
+    `DESCRIPTION:${icsEscape(input.description?.trim() || "")}`,
+  ];
+  if (input.location?.trim()) {
+    lines.push(`LOCATION:${icsEscape(input.location.trim())}`);
+  }
+  lines.push(
+    `ORGANIZER;CN=${organizerCn}:${icsMailto(organizerEmail)}`,
+    `ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE;CN=${attendeeCn}:${icsMailto(attendeeEmail)}`,
+    "STATUS:CONFIRMED",
+    "SEQUENCE:0",
+    "TRANSP:OPAQUE",
+    "END:VEVENT",
+    "END:VCALENDAR",
+    "",
+  );
+  return lines.join("\r\n");
 }
 
 export function downloadIcsFilename(leadName: string | null): string {
