@@ -33,8 +33,8 @@ export const ACTIVATION_BUNDLE_OPTIONS: ActivationBundleOption[] = [
   },
   {
     value: "bci_with_tasks",
-    label: "BCI + Tasks",
-    description: "FMS bundle plus Tasks add-on (common upsell).",
+    label: "BCI + Tasks Management",
+    description: "FMS bundle plus Tasks Management. EA and PC stay separate.",
     modules: ["FMS", "REPORTS", "APPROVALS", "TASKS"],
   },
   {

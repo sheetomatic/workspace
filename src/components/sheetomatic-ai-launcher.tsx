@@ -37,7 +37,7 @@ type ChatMessage = {
 const STARTER_CHIPS: { label: string; prompt: string }[] = [
   { label: "FMS steps", prompt: "How do I complete my FMS steps in My stops?" },
   { label: "IMS stock", prompt: "Where do I check IMS stock and reorder exceptions?" },
-  { label: "Tasks / EA", prompt: "How do I create a task and see my EA work for today?" },
+  { label: "Tasks Management", prompt: "How do I create a task and see today's work?" },
   { label: "EM Ready", prompt: "How do I open EM Ready for the weekly review?" },
   { label: "Checklists", prompt: "How do I run my checklists or PC today?" },
 ];
