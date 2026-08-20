@@ -71,6 +71,7 @@ import {
   parseMoneyInput,
   websitePricingLineDescription,
 } from "@/lib/leads/website-pricing-catalog";
+import { findCatalogByUniquenessKey } from "@/lib/leads/service-catalog";
 import { createSalesOrderFromLockedQuotation } from "@/lib/sales-orders/create-from-quotation";
 import { createQuotationShareToken } from "@/lib/leads/quotation-tokens";
 import {
@@ -2684,13 +2685,14 @@ export async function createLeadServiceCatalogItem(params: {
   const unitPrice = parseOptionalMoney(params.unitPrice);
   const perUserCost = parseOptionalMoney(params.perUserCost);
 
-  const existing = await prisma.leadServiceCatalog.findFirst({
-    where: {
-      organizationId: user.organizationId,
-      serviceCategory,
-      subCategory,
-    },
+  const catalog = await prisma.leadServiceCatalog.findMany({
+    where: { organizationId: user.organizationId },
   });
+  const existing = findCatalogByUniquenessKey(
+    catalog,
+    serviceCategory,
+    subCategory,
+  );
   if (existing) {
     if (!existing.isActive) {
       const restored = await prisma.leadServiceCatalog.update({
@@ -2769,15 +2771,15 @@ export async function updateLeadServiceCatalogItem(params: {
     return { ok: false, message: "Service not found." };
   }
 
-  const clash = await prisma.leadServiceCatalog.findFirst({
-    where: {
-      organizationId: user.organizationId,
-      serviceCategory,
-      subCategory,
-      NOT: { id: existing.id },
-    },
-    select: { id: true },
+  const catalog = await prisma.leadServiceCatalog.findMany({
+    where: { organizationId: user.organizationId },
+    select: { id: true, serviceCategory: true, subCategory: true },
   });
+  const clash = findCatalogByUniquenessKey(
+    catalog.filter((item) => item.id !== existing.id),
+    serviceCategory,
+    subCategory,
+  );
   if (clash) {
     return { ok: false, message: "Another service already uses this name." };
   }

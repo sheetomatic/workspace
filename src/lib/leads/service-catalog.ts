@@ -9,6 +9,41 @@ export type ServiceCatalogSeed = {
   durationDays?: number;
 };
 
+/** Compare category / service names without case, punctuation, or extra spaces. */
+export function normalizeServiceCatalogLabel(value: string) {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[—–−]/g, "-")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+export function serviceCatalogUniquenessKey(
+  serviceCategory: string,
+  subCategory: string,
+) {
+  return `${normalizeServiceCatalogLabel(serviceCategory)}|||${normalizeServiceCatalogLabel(subCategory)}`;
+}
+
+export function uniqueServiceCatalogSeeds(seeds: ServiceCatalogSeed[]) {
+  const seen = new Set<string>();
+  const unique: ServiceCatalogSeed[] = [];
+  for (const item of seeds) {
+    const key = serviceCatalogUniquenessKey(
+      item.serviceCategory,
+      item.subCategory,
+    );
+    if (!key.startsWith("|||") && !key.endsWith("|||") && !seen.has(key)) {
+      seen.add(key);
+      unique.push(item);
+    }
+  }
+  return unique;
+}
+
 /** Legacy Sheetomatic catalog rows kept as extra standards. */
 export const DEFAULT_SERVICE_CATALOG: ServiceCatalogSeed[] = [
   { serviceCategory: "Training", subCategory: "Google Sheets", unitPrice: 15000 },
@@ -46,25 +81,136 @@ export function websitePricingToCatalogSeeds(): ServiceCatalogSeed[] {
 export function standardServiceCatalogSeeds(): ServiceCatalogSeed[] {
   const website = websitePricingToCatalogSeeds();
   const used = new Set(
-    website.map((item) => `${item.serviceCategory}|||${item.subCategory}`),
+    website.map((item) =>
+      serviceCatalogUniquenessKey(item.serviceCategory, item.subCategory),
+    ),
   );
   const extras = DEFAULT_SERVICE_CATALOG.filter(
-    (item) => !used.has(`${item.serviceCategory}|||${item.subCategory}`),
+    (item) =>
+      !used.has(
+        serviceCatalogUniquenessKey(item.serviceCategory, item.subCategory),
+      ),
   );
-  return [...website, ...extras];
+  return uniqueServiceCatalogSeeds([...website, ...extras]);
+}
+
+type CatalogDedupeRow = {
+  id: string;
+  serviceCategory: string;
+  subCategory: string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: Date;
+  unitPrice: { toNumber(): number } | number | null;
+};
+
+function catalogKeeperScore(item: CatalogDedupeRow) {
+  const price =
+    item.unitPrice == null
+      ? 0
+      : typeof item.unitPrice === "number"
+        ? item.unitPrice
+        : item.unitPrice.toNumber();
+  return (
+    (item.isActive ? 1000 : 0) +
+    (price > 0 ? 100 : 0) -
+    item.sortOrder +
+    (Number.MAX_SAFE_INTEGER - item.createdAt.getTime()) / 1e15
+  );
+}
+
+/** Keep one row per normalized category + service; move lead links off the extras. */
+export async function dedupeLeadServiceCatalog(organizationId: string) {
+  const existing = await prisma.leadServiceCatalog.findMany({
+    where: { organizationId },
+    select: {
+      id: true,
+      serviceCategory: true,
+      subCategory: true,
+      sortOrder: true,
+      isActive: true,
+      createdAt: true,
+      unitPrice: true,
+    },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+  });
+
+  const groups = new Map<string, CatalogDedupeRow[]>();
+  for (const item of existing) {
+    const key = serviceCatalogUniquenessKey(
+      item.serviceCategory,
+      item.subCategory,
+    );
+    const list = groups.get(key) ?? [];
+    list.push(item);
+    groups.set(key, list);
+  }
+
+  const extraIds: string[] = [];
+  for (const rows of groups.values()) {
+    if (rows.length < 2) {
+      continue;
+    }
+    const ranked = [...rows].sort(
+      (a, b) => catalogKeeperScore(b) - catalogKeeperScore(a),
+    );
+    extraIds.push(...ranked.slice(1).map((item) => item.id));
+  }
+
+  if (extraIds.length === 0) {
+    return { removed: 0 };
+  }
+
+  const keepersByExtra = new Map<string, string>();
+  for (const rows of groups.values()) {
+    if (rows.length < 2) {
+      continue;
+    }
+    const ranked = [...rows].sort(
+      (a, b) => catalogKeeperScore(b) - catalogKeeperScore(a),
+    );
+    const keeperId = ranked[0]?.id;
+    if (!keeperId) {
+      continue;
+    }
+    for (const extra of ranked.slice(1)) {
+      keepersByExtra.set(extra.id, keeperId);
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    for (const [extraId, keeperId] of keepersByExtra) {
+      await tx.inboundLeadOfferedService.updateMany({
+        where: { organizationId, catalogId: extraId },
+        data: { catalogId: keeperId },
+      });
+    }
+    await tx.leadServiceCatalog.deleteMany({
+      where: { organizationId, id: { in: extraIds } },
+    });
+  });
+
+  return { removed: extraIds.length };
 }
 
 export async function ensureLeadServiceCatalog(organizationId: string) {
+  await dedupeLeadServiceCatalog(organizationId);
+
   const existing = await prisma.leadServiceCatalog.findMany({
     where: { organizationId },
     select: { serviceCategory: true, subCategory: true, sortOrder: true },
   });
 
   const existingKeys = new Set(
-    existing.map((item) => `${item.serviceCategory}|||${item.subCategory}`),
+    existing.map((item) =>
+      serviceCatalogUniquenessKey(item.serviceCategory, item.subCategory),
+    ),
   );
   const missing = standardServiceCatalogSeeds().filter(
-    (item) => !existingKeys.has(`${item.serviceCategory}|||${item.subCategory}`),
+    (item) =>
+      !existingKeys.has(
+        serviceCatalogUniquenessKey(item.serviceCategory, item.subCategory),
+      ),
   );
 
   if (missing.length === 0) {
@@ -100,6 +246,19 @@ export async function listLeadServiceCatalog(
     },
     orderBy: [{ serviceCategory: "asc" }, { sortOrder: "asc" }, { subCategory: "asc" }],
   });
+}
+
+export function findCatalogByUniquenessKey<
+  T extends { serviceCategory: string; subCategory: string },
+>(items: T[], serviceCategory: string, subCategory: string) {
+  const key = serviceCatalogUniquenessKey(serviceCategory, subCategory);
+  return (
+    items.find(
+      (item) =>
+        serviceCatalogUniquenessKey(item.serviceCategory, item.subCategory) ===
+        key,
+    ) ?? null
+  );
 }
 
 export function serializeServiceCatalogItem(item: {
