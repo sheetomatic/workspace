@@ -120,6 +120,11 @@ export type CreateClientWorkspaceState = ProvisionClientWorkspaceResult | {
   message: string;
 };
 
+export type ManageClientWorkspaceState = {
+  ok: boolean;
+  message: string;
+};
+
 export async function listClientWorkspacesForSuperAdmin() {
   const user = await getSessionUser();
   if (!user || !canManageSuperAdmins(user, user.organizationSlug)) {
@@ -165,9 +170,9 @@ const MANAGE_INTENTS = new Set<ManageClientWorkspaceIntent>([
 ]);
 
 export async function manageClientWorkspaceAction(
-  _prev: CreateClientWorkspaceState,
+  _prev: ManageClientWorkspaceState,
   formData: FormData,
-): Promise<CreateClientWorkspaceState> {
+): Promise<ManageClientWorkspaceState> {
   const user = await getSessionUser();
   if (!user || !canManageSuperAdmins(user, user.organizationSlug)) {
     return {

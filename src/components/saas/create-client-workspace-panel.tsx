@@ -6,11 +6,13 @@ import {
   createClientWorkspaceAction,
   manageClientWorkspaceAction,
   type CreateClientWorkspaceState,
+  type ManageClientWorkspaceState,
 } from "@/app/app/team/platform-actions";
 import { WorkspaceBundleSelect } from "@/components/saas/workspace-bundle-select";
 import { ORG_PLAN_LABELS } from "@/lib/org-plan-presets";
 
 const initialState: CreateClientWorkspaceState = { ok: false, message: "" };
+const manageInitial: ManageClientWorkspaceState = { ok: false, message: "" };
 
 export type ClientWorkspaceRow = {
   id: string;
@@ -35,7 +37,7 @@ export function CreateClientWorkspacePanel({
   );
   const [manageState, manageAction, managing] = useActionState(
     manageClientWorkspaceAction,
-    initialState,
+    manageInitial,
   );
 
   return (
