@@ -19,10 +19,10 @@ export const THEME_PRESETS: Record<
   Pick<WorkspaceAppearance, "primary" | "sidebar" | "sidebarHover" | "background">
 > = {
   default: {
-    primary: "#2563eb",
-    sidebar: "#0d47a1",
-    sidebarHover: "#1565c0",
-    background: "#f1f5f9",
+    primary: "#111113",
+    sidebar: "#111113",
+    sidebarHover: "#1c1c1f",
+    background: "#eceef2",
   },
   ocean: {
     primary: "#0891b2",
@@ -85,7 +85,7 @@ export function listThemePresets(): ThemePreset[] {
 
 export function getPresetLabel(preset: ThemePreset) {
   const labels: Record<ThemePreset, string> = {
-    default: "Default Blue",
+    default: "Glide",
     ocean: "Ocean",
     forest: "Forest",
     sunset: "Sunset",
@@ -135,6 +135,11 @@ export function mergeWorkspaceAppearance(
       : "default";
   const presetColors =
     preset !== "custom" ? THEME_PRESETS[preset] : THEME_PRESETS.default;
+  const useGlideDefault =
+    preset === "default" &&
+    (!stored?.primary ||
+      stored.primary === "#2563eb" ||
+      stored.primary === THEME_PRESETS.default.primary);
 
   const customLogo =
     logoUrl && logoVersion != null
@@ -148,10 +153,22 @@ export function mergeWorkspaceAppearance(
 
   return {
     preset,
-    primary: sanitizeCssColor(stored?.primary, presetColors.primary),
-    sidebar: sanitizeCssColor(stored?.sidebar, presetColors.sidebar),
-    sidebarHover: sanitizeCssColor(stored?.sidebarHover, presetColors.sidebarHover),
-    background: sanitizeCssColor(stored?.background, presetColors.background),
+    primary: sanitizeCssColor(
+      useGlideDefault ? presetColors.primary : stored?.primary,
+      presetColors.primary,
+    ),
+    sidebar: sanitizeCssColor(
+      useGlideDefault ? presetColors.sidebar : stored?.sidebar,
+      presetColors.sidebar,
+    ),
+    sidebarHover: sanitizeCssColor(
+      useGlideDefault ? presetColors.sidebarHover : stored?.sidebarHover,
+      presetColors.sidebarHover,
+    ),
+    background: sanitizeCssColor(
+      useGlideDefault ? presetColors.background : stored?.background,
+      presetColors.background,
+    ),
     productName: stored?.productName?.trim() || organizationName,
     brandName: stored?.brandName?.trim() || organizationName,
     logoSrc: customLogo ?? (dedicated ? "" : platformLogo),

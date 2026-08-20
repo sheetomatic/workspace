@@ -100,6 +100,17 @@ const PAYMENT_METHOD_LABELS: Record<LeadPaymentMethod, string> = {
   UPI: "UPI",
 };
 
+function leadDrawerInitials(name: string | null | undefined) {
+  const parts = name?.trim().split(/\s+/).filter(Boolean) ?? [];
+  if (parts.length === 0) {
+    return "L";
+  }
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
+
 type CatalogItem = {
   id: string;
   serviceCategory: string;
@@ -728,12 +739,16 @@ export function LeadDrawerPanel({
 
   return (
     <aside
-      className="leads-drawer leads-drawer-wide"
+      className="leads-drawer leads-drawer-wide leads-drawer-glide"
       role="dialog"
       aria-label="Lead details"
       onClick={(event) => event.stopPropagation()}
     >
       <header className="leads-drawer-head">
+        <div className="leads-drawer-head-main">
+        <div className="leads-drawer-avatar" aria-hidden="true">
+          {leadDrawerInitials(lead.name)}
+        </div>
         <div className="leads-drawer-head-copy">
           <h2>
             {lead.name || "Lead details"}
@@ -772,6 +787,7 @@ export function LeadDrawerPanel({
               AI: {leadStatusLabel(aiStatus)} — Apply
             </button>
           ) : null}
+        </div>
         </div>
         <div className="leads-drawer-head-actions">
           {canWork ? (

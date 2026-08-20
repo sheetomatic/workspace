@@ -40,6 +40,37 @@ describe("sanitizeCssColor", () => {
     expect(css).not.toContain("<script>");
     expect(css).not.toContain("</style>");
     // Falls back to a preset color instead of the payload.
-    expect(merged.primary).toBe("#2563eb");
+    expect(merged.primary).toBe("#111113");
+  });
+
+  it("upgrades the old default-blue preset to Glide ink", () => {
+    const merged = mergeWorkspaceAppearance(
+      {
+        preset: "default",
+        primary: "#2563eb",
+        sidebar: "#0d47a1",
+        sidebarHover: "#1565c0",
+        background: "#f1f5f9",
+      },
+      "Sheetomatic",
+    );
+    expect(merged.primary).toBe("#111113");
+    expect(merged.sidebar).toBe("#111113");
+    expect(merged.background).toBe("#eceef2");
+  });
+
+  it("keeps a non-default preset's colors", () => {
+    const merged = mergeWorkspaceAppearance(
+      {
+        preset: "ocean",
+        primary: "#0891b2",
+        sidebar: "#082f49",
+        sidebarHover: "#0e4d6e",
+        background: "#ecfeff",
+      },
+      "Sheetomatic",
+    );
+    expect(merged.primary).toBe("#0891b2");
+    expect(merged.sidebar).toBe("#082f49");
   });
 });

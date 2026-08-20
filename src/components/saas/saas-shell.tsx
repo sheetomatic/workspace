@@ -464,7 +464,13 @@ export function SaasShell({
     : "/app";
 
   return (
-    <div className="saas-app workspace-app">
+    <div
+      className={
+        isDedicatedPortal
+          ? "saas-app workspace-app"
+          : "saas-app workspace-app workspace-app--glide"
+      }
+    >
       <header className="ws-mobile-shell-header">
         <Link
           aria-label="Home"

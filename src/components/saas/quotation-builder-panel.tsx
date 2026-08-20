@@ -608,22 +608,8 @@ export function QuotationBuilderPanel({
             <p className="leads-quote-lines-label">Line items</p>
             <p className="leads-machine-muted leads-quote-line-hint">
               Pick from Service Master. Line total = amount + (per user × users).
-              Hide unused standards in{" "}
-              <Link href="/app/leads/services">Service Master</Link>.
             </p>
-                <div className="leads-quote-line-table-wrap">
-                  <table className="leads-quote-line-table leads-quote-line-table-pricing">
-                    <thead>
-                      <tr>
-                        <th>Service</th>
-                        <th>Amount (₹)</th>
-                        <th>Per user (₹)</th>
-                        <th>Users</th>
-                        <th>Line total</th>
-                        <th aria-label="Actions" />
-                      </tr>
-                    </thead>
-                    <tbody>
+                <div className="leads-quote-cards">
                       {lineDrafts.map((line) => {
                         const options = catalogOptionsForLine(
                           catalogItems,
@@ -642,88 +628,45 @@ export function QuotationBuilderPanel({
                         });
                         const hint = catalogProductHint(selected);
                         return (
-                          <tr key={line.id}>
-                            <td>
-                              <select
-                                className="leads-quote-line-select"
-                                title={
-                                  selected
-                                    ? catalogOptionLabel(selected)
-                                    : "Select service"
-                                }
-                                value={line.catalogId}
-                                onChange={(e) => {
-                                  if (e.target.value === "__new__") {
-                                    openNewServiceForm(line.id);
-                                    return;
+                          <article key={line.id} className="leads-quote-card">
+                            <div className="leads-quote-card-top">
+                              <label className="leads-quote-card-service">
+                                Service
+                                <select
+                                  className="leads-quote-line-select"
+                                  title={
+                                    selected
+                                      ? catalogOptionLabel(selected)
+                                      : "Select service"
                                   }
-                                  const next = catalogItems.find(
-                                    (item) => item.id === e.target.value,
-                                  );
-                                  updateLineDraft(
-                                    line.id,
-                                    lineDraftFromCatalogItem(next, e.target.value),
-                                  );
-                                }}
-                              >
-                                <option value="">Select service</option>
-                                {grouped.map(([category, items]) => (
-                                  <optgroup key={category} label={category}>
-                                    {items.map((item) => (
-                                      <option key={item.id} value={item.id}>
-                                        {catalogOptionLabel(item)}
-                                      </option>
-                                    ))}
-                                  </optgroup>
-                                ))}
-                                <option value="__new__">+ Add new service…</option>
-                              </select>
-                              {hint ? (
-                                <p className="leads-quote-line-product-hint">{hint}</p>
-                              ) : null}
-                            </td>
-                            <td>
-                              <input
-                                className="leads-quote-line-amount-input"
-                                type="number"
-                                min="0"
-                                value={line.amount}
-                                placeholder="0"
-                                onChange={(e) =>
-                                  updateLineDraft(line.id, { amount: e.target.value })
-                                }
-                              />
-                            </td>
-                            <td>
-                              <input
-                                className="leads-quote-line-amount-input"
-                                type="number"
-                                min="0"
-                                value={line.perUserCost}
-                                placeholder="0"
-                                onChange={(e) =>
-                                  updateLineDraft(line.id, {
-                                    perUserCost: e.target.value,
-                                  })
-                                }
-                              />
-                            </td>
-                            <td>
-                              <input
-                                className="leads-quote-line-amount-input"
-                                type="number"
-                                min="0"
-                                value={line.users}
-                                placeholder="0"
-                                onChange={(e) =>
-                                  updateLineDraft(line.id, { users: e.target.value })
-                                }
-                              />
-                            </td>
-                            <td className="leads-quote-line-total-cell">
-                              {formatInr(lineTotal)}
-                            </td>
-                            <td>
+                                  value={line.catalogId}
+                                  onChange={(e) => {
+                                    if (e.target.value === "__new__") {
+                                      openNewServiceForm(line.id);
+                                      return;
+                                    }
+                                    const next = catalogItems.find(
+                                      (item) => item.id === e.target.value,
+                                    );
+                                    updateLineDraft(
+                                      line.id,
+                                      lineDraftFromCatalogItem(next, e.target.value),
+                                    );
+                                  }}
+                                >
+                                  <option value="">Select service</option>
+                                  {grouped.map(([category, items]) => (
+                                    <optgroup key={category} label={category}>
+                                      {items.map((item) => (
+                                        <option key={item.id} value={item.id}>
+                                          {catalogOptionLabel(item)}
+                                        </option>
+                                      ))}
+                                    </optgroup>
+                                  ))}
+                                  <option value="__new__">+ Add new service…</option>
+                                </select>
+                              </label>
                               <button
                                 type="button"
                                 className="leads-icon-btn danger"
@@ -734,12 +677,60 @@ export function QuotationBuilderPanel({
                               >
                                 <Trash2 size={16} />
                               </button>
-                            </td>
-                          </tr>
+                            </div>
+                            {hint ? (
+                              <p className="leads-quote-line-product-hint">{hint}</p>
+                            ) : null}
+                            <div className="leads-quote-card-grid">
+                              <label>
+                                Amount (₹)
+                                <input
+                                  className="leads-quote-line-amount-input"
+                                  type="number"
+                                  min="0"
+                                  value={line.amount}
+                                  placeholder="0"
+                                  onChange={(e) =>
+                                    updateLineDraft(line.id, { amount: e.target.value })
+                                  }
+                                />
+                              </label>
+                              <label>
+                                Per user (₹)
+                                <input
+                                  className="leads-quote-line-amount-input"
+                                  type="number"
+                                  min="0"
+                                  value={line.perUserCost}
+                                  placeholder="0"
+                                  onChange={(e) =>
+                                    updateLineDraft(line.id, {
+                                      perUserCost: e.target.value,
+                                    })
+                                  }
+                                />
+                              </label>
+                              <label>
+                                Users
+                                <input
+                                  className="leads-quote-line-amount-input"
+                                  type="number"
+                                  min="0"
+                                  value={line.users}
+                                  placeholder="0"
+                                  onChange={(e) =>
+                                    updateLineDraft(line.id, { users: e.target.value })
+                                  }
+                                />
+                              </label>
+                              <div className="leads-quote-card-total">
+                                <span>Line total</span>
+                                <strong>{formatInr(lineTotal)}</strong>
+                              </div>
+                            </div>
+                          </article>
                         );
                       })}
-                    </tbody>
-                  </table>
                 </div>
                 <div className="leads-quote-line-actions-row">
                   <button

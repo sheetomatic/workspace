@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import "@/components/saas/workspace-theme.css";
 import "@/components/saas/apple-design-system.css";
+import "@/components/saas/workspace-glide.css";
 import { redirect } from "next/navigation";
 import { AuthSessionProvider } from "@/components/providers/session-provider";
 import { SaasShell } from "@/components/saas/saas-shell";

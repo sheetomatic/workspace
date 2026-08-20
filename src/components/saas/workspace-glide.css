@@ -1,0 +1,218 @@
+/**
+ * Glide-inspired workspace skin (Sheetomatic /app only).
+ * Scoped to .workspace-app--glide so dedicated portals keep their theme.
+ */
+
+.workspace-app--glide {
+  --glide-ink: #111113;
+  --glide-muted: #6b7280;
+  --glide-line: #e6e7eb;
+  --glide-soft: #f4f5f7;
+  --glide-paper: #ffffff;
+  --glide-canvas: #eceef2;
+  --glide-chip: #eef2ff;
+  --glide-radius: 16px;
+  --glide-radius-sm: 10px;
+  --glide-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+}
+
+.workspace-app--glide.saas-app {
+  background: var(--glide-canvas);
+}
+
+.workspace-app--glide .saas-content,
+.workspace-app--glide .ws-module-layout,
+.workspace-app--glide .ws-module-layout-main {
+  background: var(--glide-canvas);
+}
+
+.workspace-app--glide .saas-sidebar {
+  background: var(--glide-ink);
+  border-right: none;
+  box-shadow: none;
+  color: #fff;
+  --ws-sidebar-lockup-dark: block;
+  --ws-sidebar-lockup-light: none;
+  --ws-sidebar-org-color: rgba(255, 255, 255, 0.72);
+}
+
+.workspace-app--glide .saas-sidebar-brand strong,
+.workspace-app--glide .saas-sidebar-brand span,
+.workspace-app--glide .ws-dedicated-product-name,
+.workspace-app--glide .crm-sidebar-profile strong {
+  color: #fff;
+}
+
+.workspace-app--glide .saas-sidebar-brand span,
+.workspace-app--glide .crm-user-role,
+.workspace-app--glide .ws-sidebar-org-name {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.workspace-app--glide .saas-sidebar-brand .logo-mark {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+}
+
+.workspace-app--glide .crm-sidebar-head {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.workspace-app--glide .crm-sidebar-profile {
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+}
+
+.workspace-app--glide .crm-avatar {
+  background: #fff;
+  color: var(--glide-ink);
+}
+
+.workspace-app--glide .saas-nav-link {
+  color: rgba(255, 255, 255, 0.86);
+  font-weight: 550;
+  border-radius: var(--glide-radius-sm);
+  border-color: transparent;
+}
+
+.workspace-app--glide .saas-nav-link:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: transparent;
+  color: #fff;
+}
+
+.workspace-app--glide .saas-nav-link.active {
+  background: #fff;
+  color: var(--glide-ink);
+  border-color: transparent;
+  box-shadow: var(--glide-shadow);
+  font-weight: 650;
+}
+
+.workspace-app--glide .saas-nav-link.active svg {
+  color: var(--glide-ink);
+}
+
+.workspace-app--glide .saas-nav-section {
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.workspace-app--glide .saas-sidebar-foot {
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+.workspace-app--glide .saas-sidebar-foot .saas-plan-badge,
+.workspace-app--glide .saas-sidebar-foot span,
+.workspace-app--glide .saas-sidebar-foot button {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.workspace-app--glide .ws-module-subnav {
+  background: var(--glide-paper);
+  border-right-color: var(--glide-line);
+}
+
+.workspace-app--glide .ws-module-subnav-link {
+  border-radius: var(--glide-radius-sm);
+  color: var(--glide-ink);
+}
+
+.workspace-app--glide .ws-module-subnav-link:hover {
+  background: var(--glide-soft);
+}
+
+.workspace-app--glide .ws-module-subnav-link.is-active {
+  background: var(--glide-soft);
+  color: var(--glide-ink);
+  box-shadow: none;
+  font-weight: 650;
+}
+
+.workspace-app--glide .ws-page-header h1,
+.workspace-app--glide .crm-dashboard-topbar h1,
+.workspace-app--glide .hs-dashboard-topbar h1,
+.workspace-app--glide .ws-tasks-sf .ws-sf-page-toolbar h1,
+.workspace-app--glide .ws-fms-sf .ws-sf-page-toolbar h1,
+.workspace-app--glide .ws-settings-page .ws-page-header h1 {
+  font-size: 1.65rem;
+  font-weight: 650;
+  letter-spacing: -0.04em;
+  color: var(--glide-ink);
+}
+
+.workspace-app--glide .ws-page-header p,
+.workspace-app--glide .ws-sf-page-toolbar p {
+  color: var(--glide-muted);
+}
+
+.workspace-app--glide .saas-kpi,
+.workspace-app--glide .saas-panel,
+.workspace-app--glide .ws-sf-card,
+.workspace-app--glide .ws-sf-list-view,
+.workspace-app--glide .ws-tasks-sf .ws-sf-list-view,
+.workspace-app--glide .ws-fms-sf .ws-sf-list-view,
+.workspace-app--glide .ws-fms-instance-work-card,
+.workspace-app--glide .ws-fms-journey-hero,
+.workspace-app--glide .ws-stat-card,
+.workspace-app--glide .ws-meta-row,
+.workspace-app--glide .leads-board,
+.workspace-app--glide .leads-list-card,
+.workspace-app--glide .saas-settings-page .saas-panel {
+  border-radius: var(--glide-radius);
+  border: 1px solid var(--glide-line);
+  background: var(--glide-paper);
+  box-shadow: var(--glide-shadow);
+}
+
+.workspace-app--glide .saas-kpi strong,
+.workspace-app--glide .ws-stat-card strong {
+  letter-spacing: -0.04em;
+  color: var(--glide-ink);
+}
+
+.workspace-app--glide .ws-sf-list-view-header,
+.workspace-app--glide .ws-tasks-sf .ws-sf-list-view-header,
+.workspace-app--glide .ws-fms-sf .ws-sf-list-view-header {
+  background: var(--glide-soft);
+  border-bottom-color: var(--glide-line);
+}
+
+.workspace-app--glide .btn-primary,
+.workspace-app--glide .ws-sf-btn-primary,
+.workspace-app--glide .ws-tasks-sf .ws-sf-btn-primary,
+.workspace-app--glide .ws-fms-sf .ws-sf-btn-primary {
+  border-radius: 14px;
+  background: var(--glide-ink);
+  color: #fff;
+  font-weight: 650;
+}
+
+.workspace-app--glide .btn-primary:hover,
+.workspace-app--glide .ws-sf-btn-primary:hover {
+  background: #1c1c1f;
+}
+
+.workspace-app--glide .btn-secondary,
+.workspace-app--glide .btn-ghost {
+  border-radius: 14px;
+  border-color: var(--glide-line);
+  background: var(--glide-paper);
+  color: var(--glide-ink);
+  font-weight: 650;
+}
+
+.workspace-app--glide input,
+.workspace-app--glide select,
+.workspace-app--glide textarea {
+  border-color: var(--glide-line);
+  border-radius: 12px;
+}
+
+.workspace-app--glide .ws-mobile-shell-header {
+  background: var(--glide-paper);
+  border-bottom: 1px solid var(--glide-line);
+}
+
+.workspace-app--glide .leads-drawer-glide {
+  width: min(920px, 100%);
+}
