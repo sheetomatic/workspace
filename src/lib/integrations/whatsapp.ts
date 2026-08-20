@@ -230,9 +230,10 @@ async function deliverTaskMessage(params: DeliverTaskMessageParams) {
     templateResult = await sendTaskTemplate(templateParams);
     if (templateResult.sent) {
       if (params.whatsappOnly && params.organizationId) {
-        const hasSession =
-          providerKind === "messageautosender" ||
-          (await hasActiveWhatsAppSession(params.organizationId, params.toPhone));
+        const hasSession = await hasActiveWhatsAppSession(
+          params.organizationId,
+          params.toPhone,
+        );
         if (hasSession) {
           const interactivePayload = wrapInteractive(
             buildTaskActionButtons(params.taskId, params.taskTitle),

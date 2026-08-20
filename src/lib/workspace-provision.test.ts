@@ -41,6 +41,7 @@ describe("reserved workspace slugs", () => {
   it("blocks platform and dedicated portal slugs", () => {
     expect(isReservedOrganizationSlug("sheetomatic-technologies")).toBe(true);
     expect(isReservedOrganizationSlug("hingorani")).toBe(true);
+    expect(isReservedOrganizationSlug("anmol-traders")).toBe(true);
     expect(isReservedOrganizationSlug("workspace")).toBe(true);
     expect(isReservedOrganizationSlug("ketan-tasks-co")).toBe(false);
   });
