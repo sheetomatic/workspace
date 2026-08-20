@@ -78,7 +78,8 @@ export const NURTURE_TEMPLATE_PLACEHOLDERS = [
   { key: "{{topic}}", label: "Category / topic (specific)" },
   { key: "{{counsellor}}", label: "Assigned team member" },
   { key: "{{discussion}}", label: "Call / meeting notes" },
-  { key: "{{nextStep}}", label: "Next step / stage label" },
+  { key: "{{nextStep}}", label: "Client next action (not CRM stage)" },
+  { key: "{{thanksLine}}", label: "Thanks line (meeting vs call)" },
 ] as const;
 
 export type LeadAlertRuleConfig = {

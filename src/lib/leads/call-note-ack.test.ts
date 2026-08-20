@@ -11,7 +11,10 @@ describe("buildCallNoteAckWhatsApp", () => {
     });
     expect(body).toContain("Hi Ketan");
     expect(body).toContain("Will discuss with elder brother");
-    expect(body).toContain("acknowledge");
+    expect(body).toContain("Thank you for the meeting today");
+    expect(body).toContain("next update");
+    expect(body.toLowerCase()).not.toContain("meeting done");
+    expect(body).not.toContain("acknowledge");
   });
 
   it("covers no answer without requiring notes", () => {

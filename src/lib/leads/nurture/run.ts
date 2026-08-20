@@ -17,7 +17,6 @@ import {
   LEAD_NURTURE_EVENT_LABELS,
   type LeadNurtureEventId,
 } from "@/lib/leads/nurture/templates";
-import { leadStatusLabel } from "@/lib/leads/status-labels";
 import { masCredentialsFromWorkspace } from "@/lib/integrations/whatsapp-provider";
 import { sendMasTextMessage } from "@/lib/integrations/messageautosender";
 import { resolveWorkspaceWhatsAppCredentials } from "@/lib/whatsapp-settings";
@@ -216,6 +215,7 @@ export async function triggerLeadNurtureEvent(params: {
       landingPage: true,
       meetingNotes: true,
       discussionNotes: true,
+      callingStatus: true,
       rawPayload: true,
       assignedTo: { select: { id: true, name: true } },
     },
@@ -309,7 +309,8 @@ export async function triggerLeadNurtureEvent(params: {
     channel: lead.channel,
     assigneeName,
     discussionSummary,
-    nextStepLabel: params.nextStepLabel ?? leadStatusLabel(lead.status),
+    nextStepLabel: params.nextStepLabel,
+    callingStatus: lead.callingStatus,
     status: lead.status,
     nurtureConfig,
     pendingAmountLabel,

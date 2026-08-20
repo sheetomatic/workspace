@@ -26,9 +26,11 @@ import {
   quotationStatusLabel,
 } from "@/lib/leads/quotation-content";
 import { QuotationPrintView } from "@/components/saas/quotation-print-view";
+import { quotationAccountForOrganization } from "@/lib/leads/seller-account";
 import {
   computeWebsitePricingLineTotal,
   parseMoneyInput,
+  parseWebsitePricingLineDescription,
 } from "@/lib/leads/website-pricing-catalog";
 
 type CatalogItem = {
@@ -107,10 +109,67 @@ function resolveCatalogId(
   return match?.id ?? null;
 }
 
+function catalogIdFromQuoteLine(
+  line: QuotationLine,
+  serviceCatalog: CatalogItem[],
+) {
+  const parsedName = parseWebsitePricingLineDescription(line.subCategory).name;
+  const exact = serviceCatalog.find(
+    (item) =>
+      item.serviceCategory === line.serviceCategory &&
+      (item.subCategory === line.subCategory || item.subCategory === parsedName),
+  );
+  if (exact) {
+    return exact.id;
+  }
+  const prefix = serviceCatalog.find(
+    (item) =>
+      item.serviceCategory === line.serviceCategory &&
+      line.subCategory.startsWith(item.subCategory),
+  );
+  return prefix?.id ?? "";
+}
+
 function buildLineDrafts(
   offeredServices: OfferedServiceRow[],
   serviceCatalog: CatalogItem[],
+  quotations: QuotationRow[] = [],
 ): LineDraft[] {
+  const draftQuote = quotations.find(
+    (item) => item.status === "DRAFT" && !item.lockedAt,
+  );
+  const draftLines = (draftQuote?.lines ?? []).filter(
+    (line) => line.serviceCategory !== "Setup",
+  );
+  if (draftLines.length > 0) {
+    const rows = draftLines.flatMap((line) => {
+      const catalogId = catalogIdFromQuoteLine(line, serviceCatalog);
+      if (!catalogId) {
+        return [];
+      }
+      const parsed = parseWebsitePricingLineDescription(line.subCategory);
+      const lineTotal = Number(line.unitPrice);
+      const users = parsed.users;
+      const perUserCost = parsed.perUserCost;
+      const amount =
+        Number.isFinite(lineTotal) && lineTotal > 0
+          ? Math.max(0, lineTotal - perUserCost * users)
+          : 0;
+      return [
+        {
+          id: createLineId(),
+          catalogId,
+          amount: amount > 0 ? String(amount) : "",
+          perUserCost: perUserCost > 0 ? String(perUserCost) : "",
+          users: users > 0 ? String(users) : "",
+        },
+      ];
+    });
+    if (rows.length > 0) {
+      return rows;
+    }
+  }
+
   if (offeredServices.length > 0) {
     const rows = offeredServices.flatMap((item) => {
       const catalogId = resolveCatalogId(item, serviceCatalog);
@@ -265,9 +324,18 @@ export function QuotationBuilderPanel({
   const [billAddress, setBillAddress] = useState(leadAddress ?? "");
   const [billZip, setBillZip] = useState(leadZipCode ?? "");
   const [lineDrafts, setLineDrafts] = useState<LineDraft[]>(() =>
-    buildLineDrafts(offeredServices, serviceCatalog),
+    buildLineDrafts(offeredServices, serviceCatalog, quotations),
   );
-  const [setupCost, setSetupCost] = useState("");
+  const [setupCost, setSetupCost] = useState(() => {
+    const draftQuote = quotations.find(
+      (item) => item.status === "DRAFT" && !item.lockedAt,
+    );
+    const setupLine = draftQuote?.lines.find(
+      (line) => line.serviceCategory === "Setup",
+    );
+    const amount = Number(setupLine?.unitPrice);
+    return Number.isFinite(amount) && amount > 0 ? String(amount) : "";
+  });
   const [previewId, setPreviewId] = useState<string | null>(
     quotations[0]?.id ?? null,
   );
@@ -404,7 +472,11 @@ export function QuotationBuilderPanel({
     setActionMessage(null);
     startTransition(async () => {
       const result = await action();
-      setActionMessage(result.ok ? `${label} done.` : result.message ?? `${label} failed.`);
+      setActionMessage(
+        result.ok
+          ? result.message ?? `${label} done.`
+          : result.message ?? `${label} failed.`,
+      );
     });
   }
 
@@ -574,6 +646,11 @@ export function QuotationBuilderPanel({
                             <td>
                               <select
                                 className="leads-quote-line-select"
+                                title={
+                                  selected
+                                    ? catalogOptionLabel(selected)
+                                    : "Select service"
+                                }
                                 value={line.catalogId}
                                 onChange={(e) => {
                                   if (e.target.value === "__new__") {
@@ -762,42 +839,81 @@ export function QuotationBuilderPanel({
             ) : null}
           </div>
 
-          <button
-            type="button"
-            className="btn-primary leads-form-span-2"
-            disabled={pending || !canGenerate}
-            onClick={() =>
-              runAction("Generate", async () => {
-                const result = await createLeadQuotation({
-                  leadId,
-                  requestType: quoteType,
-                  projectStartDate: quoteStartDate,
-                  durationDays: quoteDuration,
-                  notes: quoteNotes,
-                  scopeNotes,
-                  paymentTerms,
-                  advanceRequired,
-                  company: billCompany,
-                  address: billAddress,
-                  zipCode: billZip,
-                  lineCatalogIds: [],
-                  lineItems: validLines.map((line) => ({
-                    catalogId: line.catalogId,
-                    unitPrice: line.amount,
-                    perUserCost: line.perUserCost,
-                    users: line.users,
-                  })),
-                  setupCost,
-                });
-                if (result.ok && result.quotationId) {
-                  setPreviewId(result.quotationId);
-                }
-                return result;
-              })
-            }
-          >
-            Generate {quoteType === "INVOICE" ? "invoice" : "proposal"}
-          </button>
+          <div className="leads-form-span-2 leads-quote-submit-row">
+            <button
+              type="button"
+              className="btn-secondary"
+              disabled={pending || !canGenerate}
+              onClick={() =>
+                runAction("Save", async () => {
+                  const result = await createLeadQuotation({
+                    leadId,
+                    requestType: quoteType,
+                    projectStartDate: quoteStartDate,
+                    durationDays: quoteDuration,
+                    notes: quoteNotes,
+                    scopeNotes,
+                    paymentTerms,
+                    advanceRequired,
+                    company: billCompany,
+                    address: billAddress,
+                    zipCode: billZip,
+                    lineCatalogIds: [],
+                    lineItems: validLines.map((line) => ({
+                      catalogId: line.catalogId,
+                      unitPrice: line.amount,
+                      perUserCost: line.perUserCost,
+                      users: line.users,
+                    })),
+                    setupCost,
+                    saveAsDraft: true,
+                  });
+                  if (result.ok && result.quotationId) {
+                    setPreviewId(result.quotationId);
+                  }
+                  return result;
+                })
+              }
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={pending || !canGenerate}
+              onClick={() =>
+                runAction("Generate", async () => {
+                  const result = await createLeadQuotation({
+                    leadId,
+                    requestType: quoteType,
+                    projectStartDate: quoteStartDate,
+                    durationDays: quoteDuration,
+                    notes: quoteNotes,
+                    scopeNotes,
+                    paymentTerms,
+                    advanceRequired,
+                    company: billCompany,
+                    address: billAddress,
+                    zipCode: billZip,
+                    lineCatalogIds: [],
+                    lineItems: validLines.map((line) => ({
+                      catalogId: line.catalogId,
+                      unitPrice: line.amount,
+                      perUserCost: line.perUserCost,
+                      users: line.users,
+                    })),
+                    setupCost,
+                  });
+                  if (result.ok && result.quotationId) {
+                    setPreviewId(result.quotationId);
+                  }
+                  return result;
+                })
+              }
+            >
+              Generate {quoteType === "INVOICE" ? "invoice" : "proposal"}
+            </button>
+          </div>
         </div>
       ) : null}
 
@@ -823,9 +939,11 @@ export function QuotationBuilderPanel({
                     {quote.requestType} · {formatInr(Number(quote.totalAmount))}
                     {quote.revisionNumber > 1 ? ` · R${quote.revisionNumber}` : ""}
                     {" · "}
-                    {quote.requestType === "INVOICE"
-                      ? "Invoice Generated"
-                      : "Quotation Generated"}{" "}
+                    {quote.status === "DRAFT"
+                      ? "Draft saved"
+                      : quote.requestType === "INVOICE"
+                        ? "Invoice generated"
+                        : "Quotation generated"}{" "}
                     {new Date(quote.quotationDate).toLocaleDateString("en-IN", {
                       day: "numeric",
                       month: "short",
@@ -993,6 +1111,7 @@ export function QuotationBuilderPanel({
             <QuotationPrintView
               organizationName={organizationName}
               logoUrl={organizationLogoUrl}
+              account={quotationAccountForOrganization({ name: organizationName })}
               embed
               quotation={{
                 quotationNumber: previewQuote.quotationNumber,

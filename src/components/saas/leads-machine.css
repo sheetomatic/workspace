@@ -2416,6 +2416,16 @@
   text-align: center;
 }
 
+.leads-quote-line-table-pricing {
+  min-width: 48rem;
+}
+
+.leads-quote-line-table-pricing th:first-child,
+.leads-quote-line-table-pricing td:first-child {
+  min-width: 16rem;
+  width: 42%;
+}
+
 .leads-quote-line-table th:nth-child(2),
 .leads-quote-line-table td:nth-child(2),
 .leads-quote-line-table-pricing th:nth-child(3),
@@ -2439,6 +2449,7 @@
 .leads-quote-line-select,
 .leads-quote-line-amount-input {
   width: 100%;
+  min-width: 0;
   box-sizing: border-box;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
@@ -2446,6 +2457,25 @@
   font-size: 0.84rem;
   color: #0f172a;
   background: #fff;
+}
+
+.leads-quote-line-select {
+  min-width: 15rem;
+}
+
+.leads-quote-submit-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: stretch;
+}
+
+.leads-quote-submit-row .btn-secondary,
+.leads-quote-submit-row .btn-primary {
+  flex: 1 1 10rem;
+  min-height: 2.6rem;
+  padding: 0.55rem 1.1rem;
+  width: auto;
 }
 
 .leads-quote-line-amount-input {

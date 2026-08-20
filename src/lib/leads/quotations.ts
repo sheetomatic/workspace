@@ -61,7 +61,7 @@ const quotationPrintInclude = {
     },
   },
   lines: { orderBy: { serviceCategory: "asc" as const } },
-  organization: { select: { name: true, logoUrl: true } },
+  organization: { select: { name: true, logoUrl: true, isPrimary: true } },
   createdBy: { select: { name: true, email: true } },
 };
 

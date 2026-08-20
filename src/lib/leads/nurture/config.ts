@@ -46,7 +46,7 @@ If you miss the call, reply *CALL* here and we will ring you back.
 
   post_call: `Hi {{firstName}},
 
-Thank you for speaking with us — {{counsellor}}.
+{{thanksLine}} — {{counsellor}}.
 
 *As discussed:*
 {{discussion}}
@@ -176,6 +176,20 @@ No need to call us — we have your details and will reach out shortly.
 
 — Team Sheetomatic`;
 
+/** Older post-call copy that used CRM stage labels as the next step. */
+const LEGACY_DEFAULT_POST_CALL = `Hi {{firstName}},
+
+Thank you for speaking with us — {{counsellor}}.
+
+*As discussed:*
+{{discussion}}
+
+*Next step:* {{nextStep}}
+
+If anything was missed in our notes, reply here and we will update it.
+
+— {{counsellor}}, Sheetomatic`;
+
 function normalizeTemplateText(value: string) {
   return value.replace(/\r\n/g, "\n").trim();
 }
@@ -205,6 +219,14 @@ export function parseLeadNurtureConfig(raw: unknown): LeadNurtureOrgConfig {
       normalizeTemplateText(LEGACY_DEFAULT_WELCOME)
   ) {
     templates.welcome = defaults.templates.welcome;
+  }
+
+  if (
+    templates.post_call &&
+    normalizeTemplateText(templates.post_call) ===
+      normalizeTemplateText(LEGACY_DEFAULT_POST_CALL)
+  ) {
+    templates.post_call = defaults.templates.post_call;
   }
 
   const gap =

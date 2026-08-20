@@ -4,6 +4,8 @@ import {
   findWebsitePricingProduct,
   isWebsitePricingCatalogId,
   listWebsitePricingProducts,
+  parseWebsitePricingLineDescription,
+  websitePricingLineDescription,
 } from "@/lib/leads/website-pricing-catalog";
 
 describe("website pricing catalog for quotations", () => {
@@ -63,6 +65,21 @@ describe("website pricing catalog for quotations", () => {
         users: "",
       }),
     ).toBe(4999);
+  });
+
+  it("round-trips users and per-user cost in the saved line description", () => {
+    const description = websitePricingLineDescription("Training", 15, 300);
+    expect(description).toBe("Training · 15 users @ ₹300");
+    expect(parseWebsitePricingLineDescription(description)).toEqual({
+      name: "Training",
+      users: 15,
+      perUserCost: 300,
+    });
+    expect(parseWebsitePricingLineDescription("Voice")).toEqual({
+      name: "Voice",
+      users: 0,
+      perUserCost: 0,
+    });
   });
 
   it("prefills Official WhatsApp yearly and leaves credit pack amount blank", () => {

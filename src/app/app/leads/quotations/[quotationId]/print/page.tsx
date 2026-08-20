@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { QuotationPrintToolbar } from "@/components/saas/quotation-print-toolbar";
 import { QuotationPrintView } from "@/components/saas/quotation-print-view";
 import { getLeadQuotationForPrint } from "@/lib/leads/quotations";
+import { quotationAccountForOrganization } from "@/lib/leads/seller-account";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
@@ -60,6 +61,7 @@ export default async function QuotationPrintPage({ params, searchParams }: PageP
     <QuotationPrintView
       organizationName={quotation.organization.name}
       logoUrl={quotation.organization.logoUrl}
+      account={quotationAccountForOrganization(quotation.organization)}
       quotation={mapQuotationForView(quotation)}
       toolbar={
         isEmbed ? null : (

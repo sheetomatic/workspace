@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { QuotationPrintToolbar } from "@/components/saas/quotation-print-toolbar";
 import { QuotationPrintView } from "@/components/saas/quotation-print-view";
 import { getLeadQuotationByShareToken } from "@/lib/leads/quotations";
+import { quotationAccountForOrganization } from "@/lib/leads/seller-account";
 
 type PageProps = {
   params: Promise<{ token: string }>;
@@ -24,6 +25,7 @@ export default async function PublicQuotationPage({ params }: PageProps) {
     <QuotationPrintView
       organizationName={quotation.organization.name}
       logoUrl={quotation.organization.logoUrl}
+      account={quotationAccountForOrganization(quotation.organization)}
       quotation={{
         quotationNumber: quotation.quotationNumber,
         requestType: quotation.requestType,

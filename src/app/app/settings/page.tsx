@@ -7,6 +7,8 @@ import { WorkspaceAppearancePanel } from "@/components/saas/workspace-appearance
 import { WorkspaceModulesPanel } from "@/components/saas/workspace-modules-panel";
 import { WorkspaceAddonsPanel } from "@/components/saas/workspace-addons-panel";
 import { WorkspaceSettingsForm } from "@/components/saas/workspace-settings-form";
+import { QuotationAccountSettingsPanel } from "@/components/saas/quotation-account-settings-panel";
+import { quotationAccountForOrganization } from "@/lib/leads/seller-account";
 import { getIntegrationStatus } from "@/lib/integrations/status";
 import { getTaskAiUsageSummary } from "@/lib/integrations/task-ai-settings";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
@@ -113,6 +115,12 @@ export default async function SettingsPage() {
               />
             ) : null}
             <WorkspaceAppearancePanel appearance={appearance} />
+            <QuotationAccountSettingsPanel
+              account={quotationAccountForOrganization({
+                name: organization.name,
+                isPrimary: organization.isPrimary,
+              })}
+            />
             <article className="saas-panel">
               <h3>Company</h3>
               <WorkspaceSettingsForm

@@ -1,6 +1,13 @@
-import type { InboundLeadStatus, LeadSourceChannel } from "@prisma/client";
+import type {
+  InboundLeadStatus,
+  LeadCallingStatus,
+  LeadSourceChannel,
+} from "@prisma/client";
 import type { LeadCategoryId } from "@/lib/leads/categories";
-import { leadStatusLabel } from "@/lib/leads/status-labels";
+import {
+  clientFacingNurtureNextStep,
+  postCallThanksLine,
+} from "@/lib/leads/nurture/next-step";
 import type { LeadNurtureEventId } from "@/lib/leads/nurture/events";
 import type { LeadNurtureOrgConfig } from "@/lib/leads/nurture/events";
 import {
@@ -58,6 +65,7 @@ export function buildLeadNurtureMessage(params: {
   assigneeName?: string | null;
   discussionSummary?: string | null;
   nextStepLabel?: string | null;
+  callingStatus?: LeadCallingStatus | null;
   status?: InboundLeadStatus | null;
   nurtureConfig?: LeadNurtureOrgConfig | null;
   pendingAmountLabel?: string | null;
@@ -81,7 +89,15 @@ export function buildLeadNurtureMessage(params: {
   const company = params.company?.trim();
   const counsellor = assigneeDisplay(params.assigneeName);
   const summary = trimSummary(params.discussionSummary);
-  const stage = params.nextStepLabel ?? (params.status ? leadStatusLabel(params.status) : null);
+  const nextStep = clientFacingNurtureNextStep({
+    status: params.status,
+    callingStatus: params.callingStatus,
+    nextStepLabel: params.nextStepLabel,
+  });
+  const thanksLine = postCallThanksLine({
+    status: params.status,
+    callingStatus: params.callingStatus,
+  });
 
   const vars: Record<string, string> = {
     "{{firstName}}": firstName,
@@ -89,8 +105,9 @@ export function buildLeadNurtureMessage(params: {
     "{{company}}": company || "your company",
     "{{topic}}": topic,
     "{{counsellor}}": counsellor,
-    "{{discussion}}": summary || "Thank you for your time on the call today.",
-    "{{nextStep}}": stage || "We will share the next steps with you shortly.",
+    "{{discussion}}": summary || "Thank you for your time today.",
+    "{{nextStep}}": nextStep,
+    "{{thanksLine}}": thanksLine,
     "{{pendingAmount}}": params.pendingAmountLabel?.trim() || "your payment",
   };
 
@@ -132,15 +149,13 @@ export function buildLeadNurtureMessage(params: {
       return [
         `Hi ${firstName},`,
         "",
-        `Thank you for speaking with us${params.assigneeName ? ` — ${counsellor}` : ""}.`,
+        `${thanksLine}${params.assigneeName ? ` — ${counsellor}` : ""}.`,
         "",
         summary
           ? `*As discussed:*\n${summary}`
-          : "Thank you for your time on the call today.",
+          : "Thank you for your time today.",
         "",
-        stage
-          ? `*Next step:* ${stage}`
-          : "We will share the next steps with you shortly.",
+        `*Next step:* ${nextStep}`,
         "",
         "If anything was missed in our notes, reply here and we will update it.",
         "",

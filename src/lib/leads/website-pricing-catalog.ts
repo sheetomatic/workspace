@@ -261,3 +261,25 @@ export function websitePricingLineDescription(
   }
   return name;
 }
+
+export function parseWebsitePricingLineDescription(description: string) {
+  const withRate = description.match(
+    /^(.*) · (\d+) users @ ₹([\d,]+(?:\.\d+)?)$/,
+  );
+  if (withRate) {
+    return {
+      name: withRate[1],
+      users: Number(withRate[2]),
+      perUserCost: parseMoneyInput(withRate[3].replace(/,/g, "")),
+    };
+  }
+  const withUsers = description.match(/^(.*) · (\d+) users$/);
+  if (withUsers) {
+    return {
+      name: withUsers[1],
+      users: Number(withUsers[2]),
+      perUserCost: 0,
+    };
+  }
+  return { name: description, users: 0, perUserCost: 0 };
+}

@@ -10,6 +10,8 @@ import {
   quotationTermsForRequestType,
 } from "@/lib/leads/quotation-content";
 import { siteBrand } from "@/app/site-content";
+import type { QuotationAccountDetails } from "@/lib/leads/seller-account";
+import { UDYAM_CERTIFICATE_HREF } from "@/lib/leads/seller-account";
 
 type QuotationLine = {
   serviceCategory: string;
@@ -22,12 +24,14 @@ type QuotationLine = {
 export function QuotationPrintView({
   organizationName,
   logoUrl,
+  account,
   quotation,
   toolbar,
   embed = false,
 }: {
   organizationName: string;
   logoUrl: string | null;
+  account?: QuotationAccountDetails | null;
   quotation: {
     quotationNumber: string;
     requestType: string;
@@ -122,16 +126,41 @@ export function QuotationPrintView({
           </div>
         </header>
 
-        <section className="quotation-print-client">
-          <h3>Bill To</h3>
-          <p>
-            <strong>{clientName}</strong>
-          </p>
-          <p>{clientCompany}</p>
-          <p>{clientAddress}</p>
-          <p>ZIP: {clientZip}</p>
-          {quotation.lead.phone ? <p>Phone: {quotation.lead.phone}</p> : null}
-          {quotation.lead.email ? <p>Email: {quotation.lead.email}</p> : null}
+        <section className="quotation-print-parties">
+          <div className="quotation-print-client">
+            <h3>From</h3>
+            <p>
+              <strong>{organizationName}</strong>
+            </p>
+            {account ? (
+              <>
+                <p>{account.legalName}</p>
+                <p>PAN: {account.pan}</p>
+                <p>
+                  Udyam Aadhaar: {account.udyamNumber}{" "}
+                  <a
+                    className="quotation-print-udyam-link"
+                    href={UDYAM_CERTIFICATE_HREF}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Certificate
+                  </a>
+                </p>
+              </>
+            ) : null}
+          </div>
+          <div className="quotation-print-client">
+            <h3>Bill To</h3>
+            <p>
+              <strong>{clientName}</strong>
+            </p>
+            <p>{clientCompany}</p>
+            <p>{clientAddress}</p>
+            <p>ZIP: {clientZip}</p>
+            {quotation.lead.phone ? <p>Phone: {quotation.lead.phone}</p> : null}
+            {quotation.lead.email ? <p>Email: {quotation.lead.email}</p> : null}
+          </div>
         </section>
 
         {scopeText ? (
@@ -212,6 +241,35 @@ export function QuotationPrintView({
           </section>
         ) : null}
 
+        {account ? (
+          <section className="quotation-print-account">
+            <div className="quotation-print-account-copy">
+              <h3>Account details</h3>
+              <p>
+                <strong>{account.accountType}</strong>
+              </p>
+              <p>Account holder: {account.accountHolder}</p>
+              <p>Bank: {account.bankName}</p>
+              <p>Account number: {account.accountNumber}</p>
+              <p>IFSC: {account.ifsc}</p>
+              <p>UPI ID: {account.upiId}</p>
+              <p>
+                PAN: {account.pan} · Udyam Aadhaar: {account.udyamNumber}
+              </p>
+            </div>
+            <aside className="quotation-print-qr">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={account.qrImageSrc}
+                alt={`PhonePe QR — pay ${account.accountHolder}`}
+                className="quotation-print-qr-img"
+              />
+              <p>Scan to pay · PhonePe / UPI</p>
+              <p>{account.upiId}</p>
+            </aside>
+          </section>
+        ) : null}
+
         {quotation.notes ? (
           <section className="quotation-print-notes">
             <h3>Notes</h3>
@@ -283,7 +341,9 @@ export function QuotationPrintView({
             color: #0f172a !important;
           }
           .quotation-print-locked-banner,
-          .quotation-print-superseded-banner {
+          .quotation-print-superseded-banner,
+          .quotation-print-account,
+          .quotation-print-qr-img {
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
@@ -364,12 +424,55 @@ export function QuotationPrintView({
           text-align: right;
           flex: 0 0 auto;
         }
+        .quotation-print-parties {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1.25rem;
+          margin-bottom: 1rem;
+        }
         .quotation-print-client,
         .quotation-print-scope,
-        .quotation-print-timeline {
+        .quotation-print-timeline,
+        .quotation-print-account {
           margin-bottom: 1rem;
           font-size: 0.95rem;
           line-height: 1.65;
+        }
+        .quotation-print-client p,
+        .quotation-print-account-copy p {
+          margin: 0;
+        }
+        .quotation-print-udyam-link {
+          font-size: 0.78rem;
+          color: #0369a1;
+        }
+        .quotation-print-account {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: 1.25rem;
+          align-items: start;
+          border: 1px solid #e2e8f0;
+          border-radius: 10px;
+          padding: 0.85rem 1rem;
+          background: #f8fafc;
+        }
+        .quotation-print-qr {
+          text-align: center;
+          width: 168px;
+        }
+        .quotation-print-qr-img {
+          display: block;
+          width: 168px;
+          height: auto;
+          background: #fff;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+        }
+        .quotation-print-qr p {
+          margin: 0.35rem 0 0;
+          font-size: 0.72rem;
+          line-height: 1.35;
+          color: #334155;
         }
         .quotation-print-timeline p {
           margin: 0;
@@ -424,6 +527,13 @@ export function QuotationPrintView({
           }
           .quotation-print-sheet {
             padding: 1rem;
+          }
+          .quotation-print-parties,
+          .quotation-print-account {
+            grid-template-columns: 1fr;
+          }
+          .quotation-print-qr {
+            justify-self: start;
           }
         }
       `}</style>

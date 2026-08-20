@@ -2968,6 +2968,8 @@ export async function createLeadQuotation(params: {
     users?: string;
   }>;
   setupCost?: string;
+  /** Persist lines without moving the lead to Proposal / Invoice. */
+  saveAsDraft?: boolean;
 }) {
   const user = await requireSession(undefined, { module: "CRM" });
   if (!(await canWorkLead(user, params.leadId))) {
@@ -3061,50 +3063,84 @@ export async function createLeadQuotation(params: {
   const endDate = computeQuotationEndDate(projectStartDate, durationDays);
   const advanceRequired = Number.parseFloat(params.advanceRequired ?? "");
 
-  // Concurrent creates can race on @@unique([organizationId, quotationNumber]);
-  // retry with a freshly computed number on P2002.
-  const maxAttempts = 3;
-  let quotation: { id: string; createdAt: Date } | null = null;
-  let quotationNumber = "";
-  for (let attempt = 1; attempt <= maxAttempts && !quotation; attempt += 1) {
-    quotationNumber = await nextQuotationNumber(user.organizationId);
-    try {
-      quotation = await prisma.inboundLeadQuotation.create({
+  const quotationData = {
+    requestType: params.requestType,
+    status: "DRAFT" as const,
+    company: params.company?.trim() || lead.company,
+    address: params.address?.trim() || lead.address,
+    zipCode: params.zipCode?.trim() || lead.zipCode,
+    quotationDate,
+    projectStartDate,
+    durationDays: Number.isFinite(durationDays) ? durationDays : null,
+    endDate,
+    subtotal: totals.subtotal,
+    totalAmount: totals.totalAmount,
+    advanceRequired: Number.isFinite(advanceRequired) ? advanceRequired : null,
+    scopeNotes: params.scopeNotes?.trim() || lead.requirement || null,
+    paymentTerms:
+      params.paymentTerms?.trim() ||
+      paymentTermsForRequestType(params.requestType),
+    notes: params.notes?.trim() || null,
+  };
+
+  const existingDraft = await prisma.inboundLeadQuotation.findFirst({
+    where: {
+      organizationId: user.organizationId,
+      leadId: lead.id,
+      requestType: params.requestType,
+      status: "DRAFT",
+      lockedAt: null,
+    },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, quotationNumber: true, createdAt: true },
+  });
+
+  let quotation: { id: string; createdAt: Date } | null = existingDraft
+    ? { id: existingDraft.id, createdAt: existingDraft.createdAt }
+    : null;
+  let quotationNumber = existingDraft?.quotationNumber ?? "";
+
+  if (existingDraft) {
+    await prisma.$transaction([
+      prisma.inboundLeadQuotationLine.deleteMany({
+        where: { quotationId: existingDraft.id },
+      }),
+      prisma.inboundLeadQuotation.update({
+        where: { id: existingDraft.id },
         data: {
-          organizationId: user.organizationId,
-          leadId: lead.id,
-          quotationNumber,
-          requestType: params.requestType,
-          status: "DRAFT",
-          revisionNumber: 1,
-          company: params.company?.trim() || lead.company,
-          address: params.address?.trim() || lead.address,
-          zipCode: params.zipCode?.trim() || lead.zipCode,
-          quotationDate,
-          projectStartDate,
-          durationDays: Number.isFinite(durationDays) ? durationDays : null,
-          endDate,
-          subtotal: totals.subtotal,
-          totalAmount: totals.totalAmount,
-          advanceRequired: Number.isFinite(advanceRequired) ? advanceRequired : null,
-          scopeNotes: params.scopeNotes?.trim() || lead.requirement || null,
-          paymentTerms:
-            params.paymentTerms?.trim() ||
-            paymentTermsForRequestType(params.requestType),
-          notes: params.notes?.trim() || null,
-          shareToken: createQuotationShareToken(),
-          createdByUserId: user.id,
+          ...quotationData,
           lines: { create: lines },
         },
-      });
-    } catch (error) {
-      const isNumberCollision = (error as { code?: string })?.code === "P2002";
-      if (!isNumberCollision) {
-        throw error;
+      }),
+    ]);
+  } else {
+    // Concurrent creates can race on @@unique([organizationId, quotationNumber]);
+    // retry with a freshly computed number on P2002.
+    const maxAttempts = 3;
+    for (let attempt = 1; attempt <= maxAttempts && !quotation; attempt += 1) {
+      quotationNumber = await nextQuotationNumber(user.organizationId);
+      try {
+        quotation = await prisma.inboundLeadQuotation.create({
+          data: {
+            organizationId: user.organizationId,
+            leadId: lead.id,
+            quotationNumber,
+            revisionNumber: 1,
+            shareToken: createQuotationShareToken(),
+            createdByUserId: user.id,
+            ...quotationData,
+            lines: { create: lines },
+          },
+        });
+      } catch (error) {
+        const isNumberCollision = (error as { code?: string })?.code === "P2002";
+        if (!isNumberCollision) {
+          throw error;
+        }
+        console.error(
+          `createLeadQuotation: quotation number collision on ${quotationNumber} (attempt ${attempt}/${maxAttempts})`,
+        );
       }
-      console.error(
-        `createLeadQuotation: quotation number collision on ${quotationNumber} (attempt ${attempt}/${maxAttempts})`,
-      );
     }
   }
 
@@ -3115,21 +3151,56 @@ export async function createLeadQuotation(params: {
     };
   }
 
-  await prisma.inboundLead.updateMany({
-    where: { id: lead.id, organizationId: user.organizationId },
-    data: {
-      status: params.requestType === "INVOICE" ? "INVOICE" : "PROPOSAL",
-      quotationValue: totals.totalAmount,
-    },
+  const offeredRows = lineInputs.flatMap((input) => {
+    const item = catalogById.get(input.catalogId);
+    if (!item) {
+      return [];
+    }
+    return [
+      {
+        organizationId: user.organizationId,
+        leadId: lead.id,
+        catalogId: item.id,
+        serviceCategory: item.serviceCategory,
+        subCategory: item.subCategory,
+        unitPrice: parseMoneyInput(input.unitPrice) || null,
+      },
+    ];
   });
+  await prisma.$transaction([
+    prisma.inboundLeadOfferedService.deleteMany({
+      where: { organizationId: user.organizationId, leadId: lead.id },
+    }),
+    ...(offeredRows.length > 0
+      ? [
+          prisma.inboundLeadOfferedService.createMany({
+            data: offeredRows,
+          }),
+        ]
+      : []),
+  ]);
+
+  const nextLeadStatus =
+    params.requestType === "INVOICE" ? "INVOICE" : "PROPOSAL";
+  if (!params.saveAsDraft) {
+    await prisma.inboundLead.updateMany({
+      where: { id: lead.id, organizationId: user.organizationId },
+      data: {
+        status: nextLeadStatus,
+        quotationValue: totals.totalAmount,
+      },
+    });
+  }
 
   scheduleInboundLeadActivity({
     organizationId: user.organizationId,
     leadId: lead.id,
     type: "QUOTATION",
-    body: `${quotationNumber} · ${params.requestType} · ₹${totals.totalAmount.toLocaleString("en-IN")}`,
+    body: params.saveAsDraft
+      ? `Draft saved ${quotationNumber} · ₹${totals.totalAmount.toLocaleString("en-IN")}`
+      : `${quotationNumber} · ${params.requestType} · ₹${totals.totalAmount.toLocaleString("en-IN")}`,
     createdByUserId: user.id,
-    metadata: { quotationId: quotation.id },
+    metadata: { quotationId: quotation.id, draft: Boolean(params.saveAsDraft) },
   });
 
   revalidatePath("/app/leads");
@@ -3137,6 +3208,9 @@ export async function createLeadQuotation(params: {
     ok: true,
     quotationId: quotation.id,
     quotationNumber,
+    message: params.saveAsDraft
+      ? `Draft saved as ${quotationNumber}. Generate the ${params.requestType === "INVOICE" ? "invoice" : "proposal"} when ready.`
+      : undefined,
     quotation: {
       id: quotation.id,
       quotationNumber,
@@ -3148,13 +3222,13 @@ export async function createLeadQuotation(params: {
       endDate: endDate?.toISOString() ?? null,
       createdAt: quotation.createdAt.toISOString(),
     },
-    lead: {
-      id: lead.id,
-      status: (params.requestType === "INVOICE" ? "INVOICE" : "PROPOSAL") as
-        | "INVOICE"
-        | "PROPOSAL",
-      quotationValue: totals.totalAmount,
-    },
+    lead: params.saveAsDraft
+      ? undefined
+      : {
+          id: lead.id,
+          status: nextLeadStatus as "INVOICE" | "PROPOSAL",
+          quotationValue: totals.totalAmount,
+        },
   };
 }
 

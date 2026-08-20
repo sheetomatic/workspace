@@ -1,5 +1,4 @@
 import type { LeadCallingStatus } from "@prisma/client";
-import { CALLING_STATUS_LABELS } from "@/lib/leads/status-labels";
 
 export function buildCallNoteAckWhatsApp(params: {
   clientName: string | null;
@@ -10,7 +9,6 @@ export function buildCallNoteAckWhatsApp(params: {
   const firstName =
     params.clientName?.trim().split(/\s+/)[0] || "there";
   const org = params.organizationName.trim() || "Sheetomatic";
-  const statusLabel = CALLING_STATUS_LABELS[params.callingStatus];
   const notes = params.notes?.trim() || null;
 
   if (params.callingStatus === "NO_ANSWER") {
@@ -57,11 +55,27 @@ export function buildCallNoteAckWhatsApp(params: {
       .join("\n");
   }
 
-  // CONNECTED / MEETING_DONE / others
+  if (params.callingStatus === "MEETING_DONE") {
+    return [
+      `Hi ${firstName},`,
+      "",
+      "Thank you for the meeting today.",
+      notes ? `\n*As discussed:*\n${notes}` : null,
+      "",
+      "We will work on these points and share the next update with you shortly.",
+      "If anything was missed, reply here and we will update it.",
+      "",
+      `— ${org}`,
+    ]
+      .filter((line) => line !== null)
+      .join("\n");
+  }
+
+  // CONNECTED / others
   return [
     `Hi ${firstName},`,
     "",
-    `Thanks for the call (${statusLabel.toLowerCase()}).`,
+    "Thanks for the call today.",
     notes ? `\nNotes:\n${notes}` : null,
     "",
     "Please reply to acknowledge.",
