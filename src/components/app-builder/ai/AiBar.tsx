@@ -74,7 +74,7 @@ export function AiBar({ credits, busy, onBuild }: Props) {
           onClick={() => (listening ? recRef.current?.stop() : listen())}
           aria-label="Voice"
         >
-          {listening ? "●" : "mic"}
+          <MicIcon listening={listening} />
         </button>
         <button
           type="button"
@@ -86,12 +86,27 @@ export function AiBar({ credits, busy, onBuild }: Props) {
         </button>
       </div>
       <div className="chips">
-        {TEMPLATES.map((t) => (
+        {TEMPLATES.filter((t) => t.id !== "custom").map((t) => (
           <button key={t.id} type="button" onClick={() => submit(t.prompt)}>
             {t.label}
           </button>
         ))}
       </div>
     </div>
+  );
+}
+
+function MicIcon({ listening }: { listening: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+      <path
+        fill="currentColor"
+        d={
+          listening
+            ? "M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z"
+            : "M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Zm4.5-3a4.5 4.5 0 1 1-9 0H5.5a6.5 6.5 0 0 0 6 6.48V21h1v-3.52A6.5 6.5 0 0 0 18.5 11h-2Z"
+        }
+      />
+    </svg>
   );
 }

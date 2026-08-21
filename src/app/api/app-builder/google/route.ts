@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
+import { TEMPLATES } from "@/lib/app-builder";
 import {
   appBuilderGoogleRedirectUri,
   appBuilderOAuthFromTokens,
+  createAppBuilderSpreadsheet,
   isAppBuilderGoogleConfigured,
   listAppBuilderSpreadsheets,
 } from "@/lib/app-builder/google";
@@ -68,6 +70,7 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as {
     action?: string;
     spreadsheetId?: string;
+    templateId?: string;
   } | null;
   const action = body?.action;
 
@@ -76,6 +79,53 @@ export async function POST(request: Request) {
       where: { organizationId: user.organizationId },
     });
     return NextResponse.json({ ok: true, connected: false });
+  }
+
+  if (action === "create") {
+    const template = TEMPLATES.find((item) => item.id === body?.templateId);
+    if (!template) {
+      return NextResponse.json({ error: "Choose a template." }, { status: 400 });
+    }
+    const connection = await prisma.appBuilderGoogleConnection.findUnique({
+      where: { organizationId: user.organizationId },
+    });
+    if (!connection) {
+      return NextResponse.json({ error: "Connect Google first." }, { status: 400 });
+    }
+    const oauth2 = appBuilderOAuthFromTokens(
+      appBuilderGoogleRedirectUri(request),
+      connection,
+    );
+    if (!oauth2) {
+      return NextResponse.json(
+        { error: "Google connect is not configured." },
+        { status: 503 },
+      );
+    }
+    try {
+      const created = await createAppBuilderSpreadsheet(
+        oauth2,
+        `${template.config.meta.name} · Sheetomatic`,
+        template.workbook,
+      );
+      await prisma.appBuilderGoogleConnection.update({
+        where: { organizationId: user.organizationId },
+        data: {
+          spreadsheetId: created.spreadsheetId,
+          spreadsheetTitle: created.spreadsheetTitle,
+        },
+      });
+      return NextResponse.json({ ok: true, ...created, templateId: template.id });
+    } catch (error) {
+      console.error("[app-builder google create]", error);
+      return NextResponse.json(
+        {
+          error:
+            "Could not create a Sheet. Disconnect Google, connect again, and allow Sheets access.",
+        },
+        { status: 400 },
+      );
+    }
   }
 
   if (action === "select") {

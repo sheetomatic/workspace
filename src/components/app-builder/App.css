@@ -550,3 +550,93 @@
   min-height: 0;
   height: 100%;
 }
+
+.ab-studio .preview-btn{
+  border: 1px solid var(--line);
+  background: var(--paper);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  padding: 6px 10px;
+  cursor: pointer;
+  margin-left: auto;
+}
+.ab-studio .preview-btn.on{ background: var(--ink); color: #fff; border-color: var(--ink); }
+.ab-studio .header-row{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #f4f4f5;
+}
+.ab-studio .header-row input{
+  width: 56px;
+  min-width: 56px;
+  flex: none;
+}
+.ab-studio .mic{ display: grid; place-items: center; color: var(--ink); }
+.ab-studio .mic.on{ color: #b42318; }
+.ab-studio.previewing .connect-bar,
+.ab-studio.previewing .pages,
+.ab-studio.previewing .inspector,
+.ab-studio.previewing .ai-bar,
+.ab-studio.gallery-open .inspector{
+  display: none;
+}
+.ab-studio.previewing{ grid-template-rows: 56px 1fr; }
+.ab-studio.previewing .layout,
+.ab-studio.gallery-open .layout{
+  grid-template-columns: 1fr;
+}
+.ab-studio.gallery-open .pages{ display: none; }
+.ab-studio .tpl-gallery{
+  padding: 20px 24px 32px;
+  overflow: auto;
+}
+.ab-studio .tpl-back{
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+  padding: 0 0 12px;
+}
+.ab-studio .tpl-head h2{ margin: 0 0 6px; font-size: 22px; }
+.ab-studio .tpl-head p{ margin: 0 0 18px; color: var(--muted); max-width: 42rem; }
+.ab-studio .tpl-grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.ab-studio .tpl-card{
+  text-align: left;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  border-radius: 14px;
+  padding: 14px;
+  cursor: pointer;
+  font: inherit;
+}
+.ab-studio .tpl-card strong{ display: block; font-size: 16px; }
+.ab-studio .tpl-card span{ display: block; color: var(--muted); font-size: 12px; margin: 4px 0 10px; }
+.ab-studio .tpl-preview{
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 10px;
+}
+.ab-studio .tpl-preview-head,
+.ab-studio .tpl-preview-row{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+.ab-studio .tpl-preview-head{ background: var(--soft); font-weight: 700; }
+.ab-studio .tpl-preview em,
+.ab-studio .tpl-preview i{
+  padding: 5px 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-style: normal;
+}

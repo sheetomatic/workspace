@@ -8,9 +8,11 @@ import {
   type SheetWorkbook,
 } from "@/lib/app-builder";
 import { DesignPanel } from "./editor/DesignPanel";
+import { TemplateGallery } from "./editor/TemplateGallery";
 import { ThemePicker } from "./editor/ThemePicker";
 import { AiBar } from "./ai/AiBar";
 import { planFromPrompt } from "./ai/planner";
+import { type AppPlan } from "@/lib/app-builder";
 import { addCredits, readCredits, spendCredit, WELCOME_CREDITS } from "./credits";
 import { AppRuntime } from "./runtime/AppRuntime";
 import { createMockAdapter, type SheetAdapter } from "./sheet/mockAdapter";
@@ -73,6 +75,12 @@ export default function AppBuilderStudio({
   });
   const [pickedSheet, setPickedSheet] = useState("");
   const [googleBusy, setGoogleBusy] = useState(false);
+  const [preview, setPreview] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [importTabs, setImportTabs] = useState<string[]>([]);
+  const [importTab, setImportTab] = useState("");
+  const [importHeaderRow, setImportHeaderRow] = useState(1);
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
 
   const workbook = useMemo(() => sheet.getWorkbook(), [sheet, rev]);
   const screens = config.views;
@@ -91,6 +99,75 @@ export default function AppBuilderStudio({
     setCredits(spendCredit());
     setNote(`Built “${plan.config.meta.name}” from your words. Preview it in the phone.`);
     setEditor("layout");
+    setGalleryOpen(false);
+  }
+
+  function applyPlan(plan: AppPlan) {
+    sheet.replace(structuredClone(plan.workbook));
+    setConfig({
+      ...plan.config,
+      meta: { ...plan.config.meta },
+    });
+    setFocus("home");
+    setDataTab(Object.keys(plan.workbook.tabs)[0] || "");
+    bump();
+    setActiveTemplateId(plan.id);
+    setGalleryOpen(false);
+    setEditor("layout");
+    setNote(
+      google.connected
+        ? `Loaded “${plan.label}”. Create that Sheet in Drive, or keep editing the preview.`
+        : `Loaded “${plan.label}”. Connect Google to create this Sheet in your Drive.`,
+    );
+  }
+
+  async function createSheetFromTemplate(templateId: string) {
+    if (!google.connected) {
+      setNote("Connect with Google first, then we can create the Sheet.");
+      return;
+    }
+    setGoogleBusy(true);
+    try {
+      const res = await fetch("/api/app-builder/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "create", templateId }),
+      });
+      const body = (await res.json().catch(() => null)) as {
+        error?: string;
+        spreadsheetId?: string;
+        spreadsheetTitle?: string;
+      } | null;
+      if (!res.ok || !body?.spreadsheetId) {
+        setNote(body?.error || "Could not create that Sheet. Reconnect Google and allow Sheets.");
+        return;
+      }
+      setGoogle((prev) => ({
+        ...prev,
+        spreadsheetId: body.spreadsheetId,
+        spreadsheetTitle: body.spreadsheetTitle,
+      }));
+      setConnected(body.spreadsheetId);
+      setNote(`Created “${body.spreadsheetTitle}” in your Google Drive.`);
+    } finally {
+      setGoogleBusy(false);
+    }
+  }
+
+  async function loadSheetMeta(spreadsheetId: string) {
+    const res = await fetch(
+      `/api/app-builder/google/workbook?id=${encodeURIComponent(spreadsheetId)}&meta=1`,
+      { cache: "no-store" },
+    );
+    if (!res.ok) {
+      setImportTabs([]);
+      return;
+    }
+    const body = (await res.json()) as { tabs?: string[] };
+    const tabs = body.tabs ?? [];
+    setImportTabs(tabs);
+    setImportTab(tabs[0] || "");
+    setImportHeaderRow(1);
   }
 
   useEffect(() => {
@@ -127,11 +204,18 @@ export default function AppBuilderStudio({
     };
   }, []);
 
-  async function loadWorkbook(spreadsheetId: string) {
-    const res = await fetch(
-      `/api/app-builder/google/workbook?id=${encodeURIComponent(spreadsheetId)}`,
-      { cache: "no-store" },
-    );
+  async function loadWorkbook(
+    spreadsheetId: string,
+    options?: { tab?: string; headerRow?: number },
+  ) {
+    const params = new URLSearchParams({ id: spreadsheetId });
+    if (options?.tab) params.set("tab", options.tab);
+    if (options?.headerRow && options.headerRow > 1) {
+      params.set("headerRow", String(options.headerRow));
+    }
+    const res = await fetch(`/api/app-builder/google/workbook?${params}`, {
+      cache: "no-store",
+    });
     if (!res.ok) {
       const body = (await res.json().catch(() => null)) as { error?: string } | null;
       setNote(body?.error || "Could not read that Google Sheet.");
@@ -171,7 +255,10 @@ export default function AppBuilderStudio({
         spreadsheetId,
         spreadsheetTitle: body?.spreadsheetTitle ?? prev.spreadsheetTitle,
       }));
-      await loadWorkbook(spreadsheetId);
+      await loadWorkbook(spreadsheetId, {
+        tab: importTab || undefined,
+        headerRow: importHeaderRow,
+      });
     } finally {
       setGoogleBusy(false);
     }
@@ -207,8 +294,11 @@ export default function AppBuilderStudio({
     );
   }
 
+  const emptyApp = config.views.length === 0;
+  const showGallery = galleryOpen || (emptyApp && editor === "layout" && !preview);
+
   return (
-    <div className="ab-studio glide">
+    <div className={`ab-studio glide${preview ? " previewing" : ""}${showGallery ? " gallery-open" : ""}`}>
       <div className="connect-bar">
         {google.connected ? (
           <>
@@ -226,7 +316,15 @@ export default function AppBuilderStudio({
               <>
                 <select
                   value={pickedSheet}
-                  onChange={(e) => setPickedSheet(e.target.value)}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setPickedSheet(id);
+                    if (id) void loadSheetMeta(id);
+                    else {
+                      setImportTabs([]);
+                      setImportTab("");
+                    }
+                  }}
                   aria-label="Google Sheets in your Drive"
                 >
                   <option value="">Choose a Google Sheet</option>
@@ -236,6 +334,31 @@ export default function AppBuilderStudio({
                     </option>
                   ))}
                 </select>
+                {importTabs.length > 0 ? (
+                  <>
+                    <select
+                      value={importTab}
+                      onChange={(e) => setImportTab(e.target.value)}
+                      aria-label="Sheet tab name"
+                    >
+                      {importTabs.map((name) => (
+                        <option key={name} value={name}>
+                          {name}
+                        </option>
+                      ))}
+                    </select>
+                    <label className="header-row">
+                      Header row
+                      <input
+                        type="number"
+                        min={1}
+                        max={50}
+                        value={importHeaderRow}
+                        onChange={(e) => setImportHeaderRow(Number(e.target.value) || 1)}
+                      />
+                    </label>
+                  </>
+                ) : null}
                 <button type="button" disabled={googleBusy} onClick={() => void usePickedSheet()}>
                   Use this Sheet
                 </button>
@@ -281,7 +404,9 @@ export default function AppBuilderStudio({
             Buy credits
           </a>
         ) : (
-          <span className="try-hint">Gmail is enough · try free, then buy credits</span>
+          <span className="try-hint">
+            New Gmail works after we add it as a tester, until Google verifies the app
+          </span>
         )}
       </div>
       <header className="topbar">
@@ -315,6 +440,13 @@ export default function AppBuilderStudio({
             </button>
           ))}
         </nav>
+        <button
+          type="button"
+          className={preview ? "on preview-btn" : "preview-btn"}
+          onClick={() => setPreview((on) => !on)}
+        >
+          {preview ? "← Exit preview" : "Preview"}
+        </button>
         <span className={`credits ${credits < 5 ? "low" : ""}`}>{credits} credits</span>
       </header>
 
@@ -325,10 +457,17 @@ export default function AppBuilderStudio({
             <button
               type="button"
               className={focus === "home" ? "on" : ""}
-              onClick={() => setFocus("home")}
+              onClick={() => {
+                setFocus("home");
+                if (emptyApp) setGalleryOpen(true);
+              }}
             >
               Home
-              <em>Custom</em>
+              <em>{emptyApp ? "Custom" : "Home"}</em>
+            </button>
+            <button type="button" onClick={() => setGalleryOpen(true)}>
+              Templates
+              <em>Ready apps</em>
             </button>
             {screens.map((s) => (
               <button
@@ -349,21 +488,40 @@ export default function AppBuilderStudio({
           </aside>
 
           <div className="canvas-col">
-            <div className="canvas">
-              <div className="phone">
-                <div className="island" />
-                <div className="phone-screen">
-                  <AppRuntime
-                    config={config}
-                    sheet={sheet}
-                    focusViewId={focus}
-                    onSheetChange={bump}
-                  />
+            {showGallery ? (
+              <TemplateGallery
+                onPick={applyPlan}
+                onBack={emptyApp ? undefined : () => setGalleryOpen(false)}
+              />
+            ) : (
+              <div className="canvas">
+                <div className="phone">
+                  <div className="island" />
+                  <div className="phone-screen">
+                    <AppRuntime
+                      config={config}
+                      sheet={sheet}
+                      focusViewId={focus}
+                      onSheetChange={bump}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-            <AiBar credits={credits} onBuild={build} />
+            )}
+            {preview ? null : <AiBar credits={credits} onBuild={build} />}
             {note ? <p className="build-note">{note}</p> : null}
+            {activeTemplateId && google.connected && !google.spreadsheetId ? (
+              <p className="build-note">
+                <button
+                  type="button"
+                  className="linkish"
+                  disabled={googleBusy}
+                  onClick={() => void createSheetFromTemplate(activeTemplateId)}
+                >
+                  Create this Sheet in my Google Drive
+                </button>
+              </p>
+            ) : null}
           </div>
 
           <aside className="inspector">

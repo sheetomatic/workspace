@@ -97,6 +97,39 @@ function baseMeta(name: string, formTitle: string): AppConfig["meta"] {
 
 export const TEMPLATES: AppPlan[] = [
   {
+    id: "custom",
+    label: "Custom",
+    blurb: "One table you name — Title, Status, Notes",
+    prompt: "custom blank app with one table",
+    config: {
+      meta: baseMeta("My app", "New record"),
+      hubs: ["App"],
+      users: owner,
+      views: [
+        view({
+          id: "records",
+          name: "Records",
+          tab: "Records",
+          titleCol: "Title",
+          subtitleCol: "Status",
+          statusCol: "Status",
+          cols: ["Title", "Status", "Notes"],
+          addFields: fields(["Title", "Status", "Notes"], ["Title"]),
+          editFields: fields(["Title", "Status", "Notes"], ["Title"]),
+        }),
+      ],
+      related: [],
+    },
+    workbook: book("My app Sheet", {
+      Records: {
+        headers: ["Title", "Status", "Notes"],
+        rows: [
+          { Title: "First record", Status: "Open", Notes: "Change these columns in Data" },
+        ],
+      },
+    }),
+  },
+  {
     id: "orders",
     label: "Orders",
     blurb: "Parties, items, line items",

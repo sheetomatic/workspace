@@ -5,7 +5,7 @@ import type { CellValue, SheetTab, SheetWorkbook } from "@/lib/app-builder";
 export const APP_BUILDER_GOOGLE_SCOPES = [
   "openid",
   "email",
-  "https://www.googleapis.com/auth/spreadsheets.readonly",
+  "https://www.googleapis.com/auth/spreadsheets",
   "https://www.googleapis.com/auth/drive.readonly",
 ] as const;
 
@@ -119,14 +119,19 @@ function coerceCell(value: unknown): CellValue {
   return text;
 }
 
-export function valuesToTab(name: string, values: unknown[][]): SheetTab {
-  const headerRow = (values[0] ?? []).map((cell, index) => {
+export function valuesToTab(
+  name: string,
+  values: unknown[][],
+  headerRow = 1,
+): SheetTab {
+  const headerIdx = Math.max(1, Math.floor(headerRow)) - 1;
+  const headerLine = (values[headerIdx] ?? []).map((cell, index) => {
     const label = String(cell ?? "").trim();
     return label || `Col ${index + 1}`;
   });
-  const headers = headerRow.length > 0 ? headerRow : ["Column"];
-  const rows = values.slice(1, 201).map((line, index) => ({
-    _row: index + 2,
+  const headers = headerLine.length > 0 ? headerLine : ["Column"];
+  const rows = values.slice(headerIdx + 1, headerIdx + 201).map((line, index) => ({
+    _row: headerIdx + 2 + index,
     cells: Object.fromEntries(
       headers.map((header, col) => [header, coerceCell(line?.[col])]),
     ),
@@ -150,30 +155,96 @@ export async function listAppBuilderSpreadsheets(
     .map((file) => ({ id: file.id, name: file.name }));
 }
 
-export async function loadAppBuilderWorkbook(
+export async function listAppBuilderTabs(
   oauth2: InstanceType<typeof google.auth.OAuth2>,
   spreadsheetId: string,
-): Promise<SheetWorkbook> {
+): Promise<{ title: string; tabs: string[] }> {
   const sheets = google.sheets({ version: "v4", auth: oauth2 });
   const meta = await sheets.spreadsheets.get({
     spreadsheetId,
     fields: "properties.title,sheets.properties.title",
   });
-  const title = meta.data.properties?.title?.trim() || "Google Sheet";
-  const tabNames = (meta.data.sheets ?? [])
-    .map((sheet) => sheet.properties?.title?.trim())
-    .filter((name): name is string => Boolean(name))
-    .slice(0, 12);
+  return {
+    title: meta.data.properties?.title?.trim() || "Google Sheet",
+    tabs: (meta.data.sheets ?? [])
+      .map((sheet) => sheet.properties?.title?.trim())
+      .filter((name): name is string => Boolean(name))
+      .slice(0, 20),
+  };
+}
+
+export async function loadAppBuilderWorkbook(
+  oauth2: InstanceType<typeof google.auth.OAuth2>,
+  spreadsheetId: string,
+  options?: { tab?: string | null; headerRow?: number },
+): Promise<SheetWorkbook> {
+  const sheets = google.sheets({ version: "v4", auth: oauth2 });
+  const meta = await listAppBuilderTabs(oauth2, spreadsheetId);
+  const wanted = options?.tab?.trim();
+  const tabNames = (wanted ? meta.tabs.filter((name) => name === wanted) : meta.tabs).slice(
+    0,
+    12,
+  );
+  const headerRow = options?.headerRow ?? 1;
 
   const tabs: Record<string, SheetTab> = {};
   for (const tabName of tabNames) {
     const values = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `'${tabName.replace(/'/g, "''")}'!A1:Z200`,
+      range: `'${tabName.replace(/'/g, "''")}'!A1:Z400`,
       majorDimension: "ROWS",
     });
-    tabs[tabName] = valuesToTab(tabName, (values.data.values ?? []) as unknown[][]);
+    tabs[tabName] = valuesToTab(
+      tabName,
+      (values.data.values ?? []) as unknown[][],
+      headerRow,
+    );
   }
 
-  return { title, tabs };
+  return { title: meta.title, tabs };
+}
+
+export async function createAppBuilderSpreadsheet(
+  oauth2: InstanceType<typeof google.auth.OAuth2>,
+  title: string,
+  workbook: SheetWorkbook,
+) {
+  const sheets = google.sheets({ version: "v4", auth: oauth2 });
+  const tabNames = Object.keys(workbook.tabs);
+  if (tabNames.length === 0) {
+    throw new Error("Template has no tables.");
+  }
+  const created = await sheets.spreadsheets.create({
+    requestBody: {
+      properties: { title },
+      sheets: tabNames.map((name, index) => ({
+        properties: { title: name, index },
+      })),
+    },
+    fields: "spreadsheetId,properties.title",
+  });
+  const spreadsheetId = created.data.spreadsheetId;
+  if (!spreadsheetId) {
+    throw new Error("Google did not return a spreadsheet id.");
+  }
+  await sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      valueInputOption: "USER_ENTERED",
+      data: tabNames.map((name) => {
+        const tab = workbook.tabs[name];
+        return {
+          range: `'${name.replace(/'/g, "''")}'!A1`,
+          values: [
+            tab.headers,
+            ...tab.rows.map((row) => tab.headers.map((header) => row.cells[header] ?? "")),
+          ],
+        };
+      }),
+    },
+  });
+  return {
+    spreadsheetId,
+    spreadsheetTitle: created.data.properties?.title?.trim() || title,
+  };
 }

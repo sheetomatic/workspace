@@ -1,6 +1,7 @@
 import { TEMPLATES, type AppPlan } from "@/lib/app-builder";
 
 const RULES: { id: string; keys: string[] }[] = [
+  { id: "custom", keys: ["custom", "blank", "empty", "scratch", "अपना", "कस्टम"] },
   { id: "orders", keys: ["order", "sales", "dispatch", "party", "ऑर्डर", "बिक्री", "पार्टी"] },
   { id: "crm", keys: ["crm", "lead", "enquiry", "follow", "लीड", "एंक्वायरी"] },
   { id: "inventory", keys: ["stock", "inventory", "item", "warehouse", "स्टॉक", "माल", "इन्वेंटरी"] },

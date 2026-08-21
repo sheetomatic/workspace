@@ -48,4 +48,15 @@ describe("app builder google oauth helpers", () => {
     expect(tab.rows[0]?.cells["Order No"]).toBe("SO-1");
     expect(tab.rows[0]?.cells.Amount).toBe(1200);
   });
+
+  it("reads a header row that is not the first row", () => {
+    const tab = valuesToTab(
+      "Orders",
+      [["ignore", "this"], ["Order No", "Amount"], ["SO-9", "50"]],
+      2,
+    );
+    expect(tab.headers).toEqual(["Order No", "Amount"]);
+    expect(tab.rows[0]?.cells["Order No"]).toBe("SO-9");
+    expect(tab.rows[0]?._row).toBe(3);
+  });
 });
