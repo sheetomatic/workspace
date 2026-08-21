@@ -114,6 +114,12 @@ enum OrgPlan {
   TASKS_ADDON
 }
 
+/** Which Sheetomatic product this org belongs to. App Builder is not Workspace. */
+enum WorkspaceProduct {
+  WORKSPACE
+  APP_BUILDER
+}
+
 enum PlanSubscriptionStatus {
   TRIAL
   ACTIVE
@@ -147,6 +153,7 @@ model Organization {
   legalSheetDataStartRow Int @default(3)
   status          OrganizationStatus       @default(ONBOARDING)
   plan            OrgPlan                  @default(BCI_STARTER)
+  product         WorkspaceProduct         @default(WORKSPACE)
   planStatus      PlanSubscriptionStatus   @default(ACTIVE)
   billingPeriod   PlanBillingPeriod        @default(MONTHLY)
   allowedModules  WorkspaceModule[]        @default([])
@@ -247,8 +254,25 @@ model Organization {
   logoUrl               String?
   workspaceAppearance   Json?
   organizationPlan     OrganizationPlan?
+  appBuilderGoogleConnection AppBuilderGoogleConnection?
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
+}
+
+model AppBuilderGoogleConnection {
+  id                   String       @id @default(cuid())
+  organizationId       String       @unique
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  googleEmail          String
+  refreshToken         String
+  accessToken          String?
+  accessTokenExpiresAt DateTime?
+  spreadsheetId        String?
+  spreadsheetTitle     String?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  @@index([googleEmail])
 }
 
 model OrganizationPlan {
@@ -3287,5 +3311,59 @@ model TrainingLessonProgress {
 
   @@unique([enrollmentId, lessonId])
   @@index([enrollmentId])
+}
+
+/** Platform geo master — ISO countries from REST Countries; states/cities from CountriesNow or user add. */
+model GeoCountry {
+  id        String     @id @default(cuid())
+  iso2      String     @unique
+  iso3      String?
+  name      String
+  source    String     @default("restcountries")
+  userAdded Boolean    @default(false)
+  states    GeoState[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([name])
+}
+
+model GeoState {
+  id        String     @id @default(cuid())
+  countryId String
+  country   GeoCountry @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  name      String
+  isoCode   String?
+  source    String     @default("countriesnow")
+  userAdded Boolean    @default(false)
+  cities    GeoCity[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([countryId, name])
+  @@index([countryId])
+}
+
+model GeoCity {
+  id        String   @id @default(cuid())
+  stateId   String
+  state     GeoState @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  name      String
+  source    String   @default("countriesnow")
+  userAdded Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([stateId, name])
+  @@index([stateId])
+}
+
+model BusinessIndustry {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  source    String   @default("sheetomatic")
+  userAdded Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
 }
 

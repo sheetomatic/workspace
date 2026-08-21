@@ -69,7 +69,7 @@ function aiLoginUrl(request: NextRequest, options?: { intent?: string }) {
 
 function handleProtectedAppRoutes(request: NextRequest, isLoggedIn: boolean) {
   const { pathname } = request.nextUrl;
-  const isAppRoute = pathname.startsWith("/app");
+  const isAppRoute = pathname === "/app" || pathname.startsWith("/app/");
   const isAiAppRoute = pathname.startsWith("/ai/app");
   const isLoginRoute = pathname === "/login";
 
@@ -131,7 +131,9 @@ function handleProtectedAppRoutes(request: NextRequest, isLoggedIn: boolean) {
           ? "/ai/app"
           : product === "learn"
             ? LEARN_ADMIN_HOME
-            : "/app";
+            : product === "app-builder"
+              ? "/app/app-builder"
+              : "/app";
     appUrl.search = "";
     return NextResponse.redirect(appUrl);
   }

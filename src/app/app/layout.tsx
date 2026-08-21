@@ -26,9 +26,12 @@ import { ORG_PLAN_LABELS } from "@/lib/org-plan-presets";
 import { requireSession } from "@/lib/require-session";
 import {
   ensureSessionTenantHost,
+  getRequestPathname,
   getRequestTenantSlug,
   isLearnPortalRequest,
 } from "@/lib/tenant-host";
+import { isAppBuilderStudioPath } from "@/lib/subdomain";
+import { AppBuilderShell } from "@/components/app-builder/app-builder-shell";
 import { getOrCreateHrSettings } from "@/lib/hr/hr-store";
 import { resolveMemberHrSubModules } from "@/lib/hr/hr-sub-modules";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
@@ -102,6 +105,7 @@ export default async function AppLayout({
     slug: string;
     status: import("@prisma/client").OrganizationStatus;
     plan: import("@prisma/client").OrgPlan;
+    product: import("@prisma/client").WorkspaceProduct;
     logoUrl: string | null;
     workspaceAppearance: unknown;
     updatedAt: Date;
@@ -121,6 +125,7 @@ export default async function AppLayout({
           slug: true,
           status: true,
           plan: true,
+          product: true,
           logoUrl: true,
           workspaceAppearance: true,
           updatedAt: true,
@@ -201,6 +206,28 @@ export default async function AppLayout({
           organizationName={organization.name}
           userName={sessionUser.name?.trim() || sessionUser.email}
         />
+      </AuthSessionProvider>
+    );
+  }
+
+  if (organization.product === "APP_BUILDER") {
+    const pathname = await getRequestPathname();
+    const pathOnly = pathname.split("?")[0] ?? pathname;
+    if (
+      !isAppBuilderStudioPath(pathOnly) &&
+      !pathOnly.startsWith("/app/manifest")
+    ) {
+      redirect("/app/app-builder");
+    }
+
+    return (
+      <AuthSessionProvider>
+        <AppBuilderShell
+          organizationName={organization.name}
+          userEmail={sessionUser.email}
+        >
+          {children}
+        </AppBuilderShell>
       </AuthSessionProvider>
     );
   }

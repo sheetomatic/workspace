@@ -33,7 +33,19 @@ async function loadTenantOrg(tenantSlug: string | null) {
   });
 }
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ product?: string }>;
+}): Promise<Metadata> {
+  const { product } = await searchParams;
+  if (product === "app-builder") {
+    return {
+      title: "Sign in | App Builder",
+      description: "Sign in to Sheetomatic App Builder.",
+    };
+  }
+
   const tenantSlug = await getRequestTenantSlug();
   const portal = getDedicatedClientPortal(tenantSlug);
   if (portal) {
@@ -60,10 +72,20 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ product?: string; intent?: string; org?: string }>;
+  searchParams: Promise<{
+    product?: string;
+    intent?: string;
+    org?: string;
+    callbackUrl?: string;
+  }>;
 }) {
-  const { product, org: orgFromQuery } = await searchParams;
-  const tenantSlug = orgFromQuery?.trim() || (await getRequestTenantSlug());
+  const { product, org: orgFromQuery, callbackUrl } = await searchParams;
+  const isAppBuilderProduct =
+    product === "app-builder" ||
+    (callbackUrl ?? "").startsWith("/app/app-builder");
+  const tenantSlug = isAppBuilderProduct
+    ? null
+    : orgFromQuery?.trim() || (await getRequestTenantSlug());
   const tenantOrg = await loadTenantOrg(tenantSlug);
   const dedicatedPortal = getDedicatedClientPortal(tenantSlug);
   const tenantAppearance = tenantOrg
@@ -87,6 +109,26 @@ export default async function LoginPage({
       : null;
   const isAiProduct = product === "ai";
   const isLearnProduct = product === "learn";
+  const loginKicker = dedicatedPortal
+    ? "MACT case management"
+    : isAppBuilderProduct
+      ? "App Builder"
+      : isAiProduct
+        ? "WhatsApp AI workspace"
+        : isLearnProduct
+          ? "Teach and student portal"
+          : "Client workspace";
+  const loginTitle = tenantOrg
+    ? `Sign in to ${tenantOrg.name}`
+    : tenantSlug && !tenantOrg
+      ? "Workspace not found"
+      : isAppBuilderProduct
+        ? "Sign in to App Builder"
+        : isAiProduct
+          ? "Sign in to Sheetomatic AI"
+          : isLearnProduct
+            ? "Sign in to Teach"
+            : "Sign in to your workspace";
 
   return (
     <main className="login-page workspace-login">
@@ -122,32 +164,16 @@ export default async function LoginPage({
                   ? "Sheetomatic AI"
                   : isLearnProduct
                     ? "Sheetomatic Learn"
-                    : "Sheetomatic"}
+                    : isAppBuilderProduct
+                      ? "Sheetomatic App Builder"
+                      : "Sheetomatic"}
               </span>
             </>
           )}
         </Link>
         <div className="login-brand-copy">
-          <p className="login-kicker">
-            {dedicatedPortal
-              ? "MACT case management"
-              : isAiProduct
-                ? "WhatsApp AI workspace"
-                : isLearnProduct
-                  ? "Teach and student portal"
-                  : "Client workspace"}
-          </p>
-          <h1>
-            {tenantOrg
-              ? `Sign in to ${tenantOrg.name}`
-              : tenantSlug && !tenantOrg
-                ? "Workspace not found"
-                : isAiProduct
-                  ? "Sign in to Sheetomatic AI"
-                  : isLearnProduct
-                    ? "Sign in to Teach"
-                    : "Sign in to your workspace"}
-          </h1>
+          <p className="login-kicker">{loginKicker}</p>
+          <h1>{loginTitle}</h1>
           <p>
             {tenantSlug && !tenantOrg ? (
               <>
@@ -157,13 +183,15 @@ export default async function LoginPage({
               </>
             ) : null}
             {!tenantSlug || tenantOrg
-              ? isAiProduct
+              ? isAppBuilderProduct
+                ? "Use the App Builder email and password you created. This is not the Hingorani or TOPS portal."
+                : isAiProduct
                 ? "Enter your email and password to open Chats, Campaign, and AI settings."
                 : isLearnProduct
                   ? "Use your workspace email and password. You will only see Students and Teach — not the rest of CRM."
-                : tenantOrg
-                  ? `Use your workspace email and password for ${tenantOrg.name}.`
-                  : "Access is provisioned after purchase. Owners and team members sign in with credentials shared by Sheetomatic or your admin."
+                  : tenantOrg
+                    ? `Use your workspace email and password for ${tenantOrg.name}.`
+                    : "Access is provisioned after purchase. Owners and team members sign in with credentials shared by Sheetomatic or your admin."
               : null}
           </p>
         </div>

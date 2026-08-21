@@ -39,5 +39,20 @@ export function workspaceLoginHref(options?: { org?: string }) {
 
 /** Sheetomatic Workspace marketing → auth entry points (always workspace portal). */
 export const WORKSPACE_LOGIN_HREF = workspaceLoginHref();
+
+/** App Builder sign-in — always generic workspace host, never a dedicated tenant portal. */
+export function appBuilderLoginHref() {
+  const callback = encodeURIComponent("/app/app-builder");
+  return `${workspacePortalOrigin()}/login?product=app-builder&callbackUrl=${callback}`;
+}
+
+export const APP_BUILDER_LOGIN_HREF = appBuilderLoginHref();
+
+export function appBuilderStudioHref() {
+  return `${workspacePortalOrigin()}/app/app-builder`;
+}
+
+export const APP_BUILDER_STUDIO_HREF = appBuilderStudioHref();
+
 /** Self-serve signup is closed — keep this equal to login so old links do not open a register form. */
 export const WORKSPACE_SIGNUP_HREF = WORKSPACE_LOGIN_HREF;

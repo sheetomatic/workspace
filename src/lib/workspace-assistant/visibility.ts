@@ -1,4 +1,8 @@
-import { parseHost } from "@/lib/subdomain";
+import {
+  isAppBuilderStudioPath,
+  isWorkspaceAppPath,
+  parseHost,
+} from "@/lib/subdomain";
 
 /**
  * Workspace guide FAB: show on workspace/tenant hosts and /app/* routes.
@@ -7,10 +11,11 @@ import { parseHost } from "@/lib/subdomain";
 export function shouldShowWorkspaceAssistant(pathname: string, hostname: string) {
   const { kind } = parseHost(hostname);
   if (kind === "ai" || kind === "learn") return false;
+  if (isAppBuilderStudioPath(pathname)) return false;
   if (kind === "workspace" || kind === "tenant") {
     if (pathname.startsWith("/login")) return false;
     return true;
   }
-  if (pathname.startsWith("/app")) return true;
+  if (isWorkspaceAppPath(pathname)) return true;
   return false;
 }
