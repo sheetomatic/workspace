@@ -183,7 +183,7 @@ function redirectMarketingToWorkspacePortal(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const product = request.nextUrl.searchParams.get("product");
 
-  if (pathname.startsWith("/app")) {
+  if (pathname === "/app" || pathname.startsWith("/app/")) {
     const target = request.nextUrl.clone();
     target.hostname = workspacePortalHost(request);
     target.protocol = "https:";
