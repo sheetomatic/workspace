@@ -25,6 +25,17 @@ function hasSessionCookie(request: NextRequest) {
   );
 }
 
+function nextWithPathname(request: NextRequest) {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(
+    REQUEST_PATHNAME_HEADER,
+    request.nextUrl.pathname + request.nextUrl.search,
+  );
+  return NextResponse.next({
+    request: { headers: requestHeaders },
+  });
+}
+
 function withTenantHeader(
   response: NextResponse,
   tenantSlug: string,
@@ -254,7 +265,7 @@ function handleWorkspacePortalHost(request: NextRequest, isLoggedIn: boolean) {
   }
 
   const protectedResponse = handleProtectedAppRoutes(request, isLoggedIn);
-  return protectedResponse ?? NextResponse.next();
+  return protectedResponse ?? nextWithPathname(request);
 }
 
 function learnLoginUrl(request: NextRequest) {
@@ -458,7 +469,7 @@ export function middleware(request: NextRequest) {
     return protectedResponse;
   }
 
-  return NextResponse.next();
+  return nextWithPathname(request);
 }
 
 export const config = {

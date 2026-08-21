@@ -213,7 +213,10 @@ export default async function AppLayout({
   if (organization.product === "APP_BUILDER") {
     const pathname = await getRequestPathname();
     const pathOnly = pathname.split("?")[0] ?? pathname;
+    // getRequestPathname() falls back to "/app" when middleware did not set
+    // x-pathname. Redirecting that default looped the studio.
     if (
+      pathOnly !== "/app" &&
       !isAppBuilderStudioPath(pathOnly) &&
       !pathOnly.startsWith("/app/manifest")
     ) {
