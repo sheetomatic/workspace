@@ -9,7 +9,14 @@ import {
 import { isWhatsAppProviderConfigured } from "@/lib/integrations/whatsapp-provider";
 import { getMasPhoneConnectionStatus } from "@/lib/integrations/messageautosender";
 
-export function getWhatsAppWebhookBaseUrl() {
+import { tenantPortalOrigin } from "@/lib/workspace-auth-links";
+import { getDedicatedClientPortal, isTasksDedicatedPortal } from "@/lib/dedicated-client-portals";
+
+export function getWhatsAppWebhookBaseUrl(organizationSlug?: string | null) {
+  const portal = getDedicatedClientPortal(organizationSlug);
+  if (portal) {
+    return tenantPortalOrigin(portal.slug);
+  }
   return (
     process.env.NEXTAUTH_URL?.trim().replace(/\/+$/, "") ||
     process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, "") ||
@@ -17,14 +24,14 @@ export function getWhatsAppWebhookBaseUrl() {
   );
 }
 
-export function getWhatsAppWebhookUrl() {
-  return `${getWhatsAppWebhookBaseUrl()}/api/webhooks/whatsapp`;
+export function getWhatsAppWebhookUrl(organizationSlug?: string | null) {
+  return `${getWhatsAppWebhookBaseUrl(organizationSlug)}/api/webhooks/whatsapp`;
 }
 
 /** RedLava callback URL with verify token (use when Meta signature is unavailable). */
-export function getWhatsAppWebhookUrlWithToken() {
+export function getWhatsAppWebhookUrlWithToken(organizationSlug?: string | null) {
   const token = getWhatsAppWebhookVerifyToken();
-  const base = getWhatsAppWebhookUrl();
+  const base = getWhatsAppWebhookUrl(organizationSlug);
   if (!token) {
     return base;
   }
@@ -67,10 +74,13 @@ export async function getWhatsAppGoLiveStatus(
     listWhatsAppMembers(organizationId),
     prisma.organization.findUnique({
       where: { id: organizationId },
-      select: { status: true },
+      select: { status: true, slug: true },
     }),
     isLeadCaptureFormConfigured(organizationId),
   ]);
+
+  const orgSlug = organization?.slug ?? null;
+  const skipLeadForm = isTasksDedicatedPortal(orgSlug);
 
   const delegatorCount = members.filter(
     (member) => hasMinimumRole(member.role, "MANAGER") && member.phone,
@@ -134,15 +144,15 @@ export async function getWhatsAppGoLiveStatus(
       "Register the webhook URL with your provider and send a test message — waiting for first inbound webhook.",
     );
   }
-  if (!leadFormConfigured) {
+  if (!leadFormConfigured && !skipLeadForm) {
     blockers.push(
       "Add your lead capture Google Form in Settings → Workspace links (type Google Form).",
     );
   }
 
   return {
-    webhookUrl: getWhatsAppWebhookUrl(),
-    webhookUrlWithToken: getWhatsAppWebhookUrlWithToken(),
+    webhookUrl: getWhatsAppWebhookUrl(orgSlug),
+    webhookUrlWithToken: getWhatsAppWebhookUrlWithToken(orgSlug),
     verifyTokenConfigured,
     verifyTokenHint: verifyTokenConfigured
       ? "Configured on server"
@@ -156,7 +166,7 @@ export async function getWhatsAppGoLiveStatus(
     liveSince: settings?.botLiveAt?.toISOString() ?? null,
     businessPhone: credentials.businessPhone,
     phoneId: credentials.redlavaPhoneId,
-    leadFormConfigured,
+    leadFormConfigured: leadFormConfigured || skipLeadForm,
     canGoLive: blockers.length === 0,
     blockers,
   };

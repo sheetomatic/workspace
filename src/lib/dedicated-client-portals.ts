@@ -22,6 +22,11 @@ export type DedicatedClientPortal = {
 export const HINGORANI_PORTAL_SLUG = "hingorani";
 export const ANMOL_PORTAL_SLUG = "anmol-traders";
 
+/** Short host / org slugs that should resolve to a dedicated portal. */
+const PORTAL_SLUG_ALIASES: Record<string, string> = {
+  anmol: ANMOL_PORTAL_SLUG,
+};
+
 const HINGORANI_DEFAULT_APPEARANCE: WorkspaceAppearance = {
   preset: "royal",
   primary: "#4c1d95",
@@ -67,7 +72,8 @@ export function getDedicatedClientPortal(
   if (!organizationSlug) {
     return null;
   }
-  return DEDICATED_CLIENT_PORTALS[organizationSlug] ?? null;
+  const key = PORTAL_SLUG_ALIASES[organizationSlug] ?? organizationSlug;
+  return DEDICATED_CLIENT_PORTALS[key] ?? null;
 }
 
 export function isDedicatedClientPortal(

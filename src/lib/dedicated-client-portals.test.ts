@@ -19,4 +19,9 @@ describe("dedicated client portals", () => {
     expect(isLegalCasesOrganization("anmol-traders")).toBe(false);
     expect(isTasksDedicatedPortal("anmol-traders")).toBe(true);
   });
+
+  it("treats the short Anmol slug as the same Tasks portal", () => {
+    expect(getDedicatedClientPortal("anmol")?.slug).toBe("anmol-traders");
+    expect(isTasksDedicatedPortal("anmol")).toBe(true);
+  });
 });

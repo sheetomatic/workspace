@@ -65,7 +65,7 @@ export function WhatsAppGoLivePanel({ status }: { status: WhatsAppGoLiveStatus }
       id: "webhook",
       title: "Register webhook",
       description:
-        "In Sheetomatic WhatsApp or Meta settings, point inbound messages to the Sheetomatic callback URL below.",
+        "In Sheetomatic WhatsApp or Meta settings, point inbound messages to the callback URL below. Dedicated portals use their own host (not sheetomatic.com).",
       done: status.webhookReceived,
       note: status.webhookReceived
         ? "Inbound webhook received"
@@ -145,10 +145,12 @@ export function WhatsAppGoLivePanel({ status }: { status: WhatsAppGoLiveStatus }
 
       <div className="ws-go-live-webhook">
         <h3>Webhook for Sheetomatic / Meta</h3>
-        <CopyField label="Callback URL (paste in wa.sheetomatic.com)" value={status.webhookUrlWithToken} />
+        <CopyField label={`Callback URL (paste in ${portalHost})`} value={status.webhookUrlWithToken} />
         <p className="ws-go-live-hint">
           Use the full URL above (includes verify token). Plain URL without{" "}
-          <code>?token=</code> will block inbound messages.
+          <code>?token=</code> will block inbound messages. If this host is not{" "}
+          <code>sheetomatic.com</code>, replace any old sheetomatic.com webhook in{" "}
+          {portalHost}.
         </p>
         <p className="ws-go-live-hint">
           Verify token: set <code>WHATSAPP_WEBHOOK_VERIFY_TOKEN</code> on Vercel,
