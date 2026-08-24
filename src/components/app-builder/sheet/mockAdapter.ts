@@ -1,4 +1,10 @@
-import type { CellValue, SheetRow, SheetTab, SheetWorkbook } from "@/lib/app-builder";
+import {
+  moveColumnHeaders,
+  type CellValue,
+  type SheetRow,
+  type SheetTab,
+  type SheetWorkbook,
+} from "@/lib/app-builder";
 
 function row(n: number, cells: Record<string, CellValue>): SheetRow {
   return { _row: n, cells };
@@ -105,6 +111,7 @@ export type SheetAdapter = {
   setCell: (tabName: string, rowNum: number, col: string, value: CellValue) => void;
   deleteRow: (tabName: string, rowNum: number) => void;
   addColumn: (tabName: string, col: string) => void;
+  moveColumn: (tabName: string, col: string, direction: -1 | 1) => void;
   addTab: (tabName: string) => void;
   replace: (next: SheetWorkbook) => void;
 };
@@ -157,6 +164,10 @@ export function createMockAdapter(seed?: SheetWorkbook): SheetAdapter {
       const t = ensureTab(tabName);
       const name = col.trim();
       if (name && !t.headers.includes(name)) t.headers.push(name);
+    },
+    moveColumn: (tabName, col, direction) => {
+      const t = ensureTab(tabName);
+      t.headers = moveColumnHeaders(t.headers, col, direction);
     },
     addTab: (tabName) => {
       ensureTab(tabName.trim() || "Sheet");

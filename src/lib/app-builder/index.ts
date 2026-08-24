@@ -411,6 +411,7 @@ export function createDemoConfig(): AppConfig {
 
 export { TEMPLATES, styleLabel, type AppPlan } from "./templates";
 export { THEMES, themeById, themeVars, type ThemePalette } from "./themes";
+export { moveColumnHeaders } from "./column-order";
 export { defaultNavForTab, inferAppFromWorkbook, inferFieldType } from "./infer";
 export {
   makeRelation,

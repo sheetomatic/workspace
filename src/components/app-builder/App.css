@@ -559,6 +559,22 @@
 }
 .ab-studio .schema-done{ margin-top: 22px; }
 .ab-studio th{ background: var(--soft); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.ab-studio .col-head{
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.ab-studio .col-move{
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+}
+.ab-studio .col-move:disabled{ opacity: .28; cursor: default; }
 .ab-studio .idx{ color: var(--muted); width: 40px; }
 
 .ab-studio .credits{

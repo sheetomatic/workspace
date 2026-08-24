@@ -881,8 +881,54 @@ function DataEditor({
                 <thead>
                   <tr>
                     <th className="idx">#</th>
-                    {tab.headers.map((h) => (
-                      <th key={h}>{h}</th>
+                    {tab.headers.map((h, index) => (
+                      <th key={h}>
+                        <span className="col-head">
+                          <button
+                            type="button"
+                            className="col-move"
+                            disabled={index === 0}
+                            aria-label={`Move ${h} left`}
+                            onClick={() => {
+                              sheet.moveColumn(tab.name, h, -1);
+                              const headers =
+                                sheet.getTab(tab.name)?.headers || [];
+                              onConfigChange({
+                                ...config,
+                                views: config.views.map((view) =>
+                                  view.tab === tab.name
+                                    ? { ...view, cols: headers }
+                                    : view,
+                                ),
+                              });
+                            }}
+                          >
+                            ‹
+                          </button>
+                          <span>{h}</span>
+                          <button
+                            type="button"
+                            className="col-move"
+                            disabled={index === tab.headers.length - 1}
+                            aria-label={`Move ${h} right`}
+                            onClick={() => {
+                              sheet.moveColumn(tab.name, h, 1);
+                              const headers =
+                                sheet.getTab(tab.name)?.headers || [];
+                              onConfigChange({
+                                ...config,
+                                views: config.views.map((view) =>
+                                  view.tab === tab.name
+                                    ? { ...view, cols: headers }
+                                    : view,
+                                ),
+                              });
+                            }}
+                          >
+                            ›
+                          </button>
+                        </span>
+                      </th>
                     ))}
                     <th />
                   </tr>
