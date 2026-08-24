@@ -17,6 +17,7 @@ import type {
 import {
   addInboundLeadNote,
   addInboundLeadPayment,
+  updateInboundLeadPayment,
   applyAiSuggestedLeadStatus,
   archiveInboundLeadAction,
   assignInboundLead,
@@ -99,6 +100,15 @@ const PAYMENT_METHOD_LABELS: Record<LeadPaymentMethod, string> = {
   CASH_DEPOSIT: "Cash Deposit",
   UPI: "UPI",
 };
+
+function paymentDateInputValue(iso: string) {
+  if (/^\d{4}-\d{2}-\d{2}/.test(iso)) return iso.slice(0, 10);
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) {
+    return new Date().toISOString().slice(0, 10);
+  }
+  return parsed.toISOString().slice(0, 10);
+}
 
 function leadDrawerInitials(name: string | null | undefined) {
   const parts = name?.trim().split(/\s+/).filter(Boolean) ?? [];
@@ -424,6 +434,8 @@ export function LeadDrawerPanel({
   );
   const [paymentType, setPaymentType] = useState<LeadPaymentType>("ADVANCE");
   const [paymentMethod, setPaymentMethod] = useState<LeadPaymentMethod>("UPI");
+  const [paymentNotes, setPaymentNotes] = useState("");
+  const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
   const [activities, setActivities] = useState(lead.activities);
   const [payments, setPayments] = useState(lead.payments);
   const [followUpsState, setFollowUpsState] = useState<FollowUpRow[]>(
@@ -2348,56 +2360,134 @@ export function LeadDrawerPanel({
                   ))}
                 </select>
               </label>
-              <button
-                type="button"
-                className="btn-primary"
-                disabled={savingKey === "payment" || !paymentAmount.trim()}
-                onClick={() =>
-                  runAction("payment", async () => {
-                    const result = await addInboundLeadPayment({
-                      leadId: lead.id,
-                      paymentType,
-                      receivedAmount: paymentAmount,
-                      receivedDate: paymentDate,
-                      paymentMethod,
-                    });
-                    if (
-                      !result.ok ||
-                      !("payment" in result) ||
-                      !result.payment ||
-                      !result.lead
-                    ) {
-                      return;
-                    }
-                    const payment = result.payment;
-                    const patchedLead = result.lead;
-                    const row: PaymentRow = {
-                      id: payment.id,
-                      paymentType: payment.paymentType,
-                      receivedAmount: payment.receivedAmount,
-                      receivedDate: payment.receivedDate,
-                      paymentMethod: payment.paymentMethod,
-                      notes: payment.notes,
-                    };
-                    setPayments((current) => {
-                      const merged = [row, ...current];
-                      onLeadPatched?.(lead.id, {
-                        payments: merged,
-                        status: patchedLead.status,
+              <label>
+                Remarks
+                <textarea
+                  rows={2}
+                  value={paymentNotes}
+                  onChange={(e) => setPaymentNotes(e.target.value)}
+                  placeholder="Optional — UTR, who paid, what this covers"
+                />
+              </label>
+              <div className="leads-payment-form-actions">
+                <button
+                  type="button"
+                  className="btn-primary"
+                  disabled={savingKey === "payment" || !paymentAmount.trim()}
+                  onClick={() =>
+                    runAction("payment", async () => {
+                      if (editingPaymentId) {
+                        const result = await updateInboundLeadPayment({
+                          leadId: lead.id,
+                          paymentId: editingPaymentId,
+                          paymentType,
+                          receivedAmount: paymentAmount,
+                          receivedDate: paymentDate,
+                          paymentMethod,
+                          notes: paymentNotes,
+                        });
+                        if (!result.ok || !("payment" in result) || !result.payment) {
+                          setSaveError(result.message ?? "Could not update payment.");
+                          return;
+                        }
+                        const payment = result.payment;
+                        const row: PaymentRow = {
+                          id: payment.id,
+                          paymentType: payment.paymentType,
+                          receivedAmount: payment.receivedAmount,
+                          receivedDate: payment.receivedDate,
+                          paymentMethod: payment.paymentMethod,
+                          notes: payment.notes,
+                        };
+                        setPayments((current) => {
+                          const merged = current.map((item) =>
+                            item.id === row.id ? row : item,
+                          );
+                          onLeadPatched?.(lead.id, { payments: merged });
+                          return merged;
+                        });
+                        appendActivity({
+                          type: "PAYMENT",
+                          body: `Payment updated · ₹${Number(payment.receivedAmount).toLocaleString("en-IN")} · ${payment.paymentType.replaceAll("_", " ")}`,
+                        });
+                        setEditingPaymentId(null);
+                        setPaymentAmount("");
+                        setPaymentNotes("");
+                        setPaymentType("ADVANCE");
+                        setPaymentMethod("UPI");
+                        setPaymentDate(new Date().toISOString().slice(0, 10));
+                        return;
+                      }
+                      const result = await addInboundLeadPayment({
+                        leadId: lead.id,
+                        paymentType,
+                        receivedAmount: paymentAmount,
+                        receivedDate: paymentDate,
+                        paymentMethod,
+                        notes: paymentNotes,
                       });
-                      return merged;
-                    });
-                    setStatus(patchedLead.status);
-                    appendActivity({
-                      type: "PAYMENT",
-                      body: `₹${Number(payment.receivedAmount).toLocaleString("en-IN")} · ${payment.paymentType.replaceAll("_", " ")}`,
-                    });
-                    setPaymentAmount("");
-                  })
-                }
-              >
-                {savingKey === "payment" ? "Recording…" : "Record payment"}
-              </button>
+                      if (
+                        !result.ok ||
+                        !("payment" in result) ||
+                        !result.payment ||
+                        !result.lead
+                      ) {
+                        setSaveError(result.message ?? "Could not record payment.");
+                        return;
+                      }
+                      const payment = result.payment;
+                      const patchedLead = result.lead;
+                      const row: PaymentRow = {
+                        id: payment.id,
+                        paymentType: payment.paymentType,
+                        receivedAmount: payment.receivedAmount,
+                        receivedDate: payment.receivedDate,
+                        paymentMethod: payment.paymentMethod,
+                        notes: payment.notes,
+                      };
+                      setPayments((current) => {
+                        const merged = [row, ...current];
+                        onLeadPatched?.(lead.id, {
+                          payments: merged,
+                          status: patchedLead.status,
+                        });
+                        return merged;
+                      });
+                      setStatus(patchedLead.status);
+                      appendActivity({
+                        type: "PAYMENT",
+                        body: `₹${Number(payment.receivedAmount).toLocaleString("en-IN")} · ${payment.paymentType.replaceAll("_", " ")}`,
+                      });
+                      setPaymentAmount("");
+                      setPaymentNotes("");
+                    })
+                  }
+                >
+                  {savingKey === "payment"
+                    ? editingPaymentId
+                      ? "Saving…"
+                      : "Recording…"
+                    : editingPaymentId
+                      ? "Save payment"
+                      : "Record payment"}
+                </button>
+                {editingPaymentId ? (
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => {
+                      setEditingPaymentId(null);
+                      setPaymentAmount("");
+                      setPaymentNotes("");
+                      setPaymentType("ADVANCE");
+                      setPaymentMethod("UPI");
+                      setPaymentDate(new Date().toISOString().slice(0, 10));
+                    }}
+                  >
+                    Cancel
+                  </button>
+                ) : null}
+              </div>
             </div>
           ) : null}
           <ul className="leads-payment-list">
@@ -2414,6 +2504,23 @@ export function LeadDrawerPanel({
                   <em>
                     Received {new Date(payment.receivedDate).toLocaleDateString("en-IN")}
                   </em>
+                  {payment.notes?.trim() ? <p>{payment.notes}</p> : null}
+                  {canWork ? (
+                    <button
+                      type="button"
+                      className="btn-secondary btn-sm"
+                      onClick={() => {
+                        setEditingPaymentId(payment.id);
+                        setPaymentType(payment.paymentType);
+                        setPaymentAmount(String(payment.receivedAmount));
+                        setPaymentDate(paymentDateInputValue(payment.receivedDate));
+                        setPaymentMethod(payment.paymentMethod);
+                        setPaymentNotes(payment.notes ?? "");
+                      }}
+                    >
+                      {editingPaymentId === payment.id ? "Editing…" : "Edit"}
+                    </button>
+                  ) : null}
                 </li>
               ))
             )}

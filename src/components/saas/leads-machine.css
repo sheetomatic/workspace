@@ -2546,6 +2546,19 @@
   gap: 0.35rem;
 }
 
+.leads-payment-list li p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.leads-payment-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .leads-quote-row {
   display: flex;
   align-items: flex-start;

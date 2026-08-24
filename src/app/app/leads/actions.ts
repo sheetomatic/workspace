@@ -2612,6 +2612,81 @@ export async function addInboundLeadPayment(params: {
   };
 }
 
+export async function updateInboundLeadPayment(params: {
+  leadId: string;
+  paymentId: string;
+  paymentType: LeadPaymentType;
+  receivedAmount: string;
+  receivedDate: string;
+  paymentMethod: LeadPaymentMethod;
+  notes?: string;
+}) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!(await canWorkLead(user, params.leadId))) {
+    return { ok: false, message: LEAD_WORK_DENIED };
+  }
+
+  const amount = Number.parseFloat(params.receivedAmount);
+  const receivedDate = new Date(params.receivedDate);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return { ok: false, message: "Enter a valid amount." };
+  }
+  if (Number.isNaN(receivedDate.getTime())) {
+    return { ok: false, message: "Invalid payment date." };
+  }
+
+  const existing = await prisma.inboundLeadPayment.findFirst({
+    where: {
+      id: params.paymentId,
+      leadId: params.leadId,
+      organizationId: user.organizationId,
+    },
+    select: { id: true },
+  });
+  if (!existing) {
+    return { ok: false, message: "Payment not found." };
+  }
+
+  const payment = await prisma.inboundLeadPayment.update({
+    where: { id: existing.id },
+    data: {
+      paymentType: params.paymentType,
+      receivedAmount: amount,
+      receivedDate,
+      paymentMethod: params.paymentMethod,
+      notes: params.notes?.trim() || null,
+    },
+    select: {
+      id: true,
+      paymentType: true,
+      receivedAmount: true,
+      receivedDate: true,
+      paymentMethod: true,
+      notes: true,
+    },
+  });
+
+  scheduleInboundLeadActivity({
+    organizationId: user.organizationId,
+    leadId: params.leadId,
+    type: "PAYMENT",
+    body: `Payment updated · ₹${amount.toLocaleString("en-IN")} · ${params.paymentType.replaceAll("_", " ")}`,
+    createdByUserId: user.id,
+  });
+
+  return {
+    ok: true,
+    payment: {
+      id: payment.id,
+      paymentType: payment.paymentType,
+      receivedAmount: Number(payment.receivedAmount),
+      receivedDate: payment.receivedDate.toISOString(),
+      paymentMethod: payment.paymentMethod,
+      notes: payment.notes,
+    },
+  };
+}
+
 export async function addLeadOfferedService(params: {
   leadId: string;
   catalogId: string;
