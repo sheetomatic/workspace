@@ -355,7 +355,7 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
               view.allowDelete === false
                 ? undefined
                 : () => {
-                    sheet.deleteRow(view.tab, row._row);
+                    sheet.deleteRow(view.tab, detailRow._row);
                     bump();
                     setRow(null);
                     setScreen("collection");
