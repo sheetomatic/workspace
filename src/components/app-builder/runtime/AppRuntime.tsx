@@ -10,6 +10,7 @@ import type {
   UserRole,
 } from "@/lib/app-builder";
 import {
+  addButtonLabel,
   applyAction,
   applySlice,
   cellStr,
@@ -469,8 +470,8 @@ function HomeScreen({
       <p className="kicker">{config.meta.greeting || "Good morning"}</p>
       <h2>{config.meta.name}</h2>
       {featured?.addFields?.length ? (
-        <button type="button" className="btn primary" onClick={() => onAdd(featured)}>
-          New {featured.name.replace(/s$/, "")}
+        <button type="button" className="btn primary home-add" onClick={() => onAdd(featured)}>
+          {addButtonLabel(featured, config.meta.formTitle)}
         </button>
       ) : null}
       {config.meta.showHomeTiles === false ? null : (
@@ -807,7 +808,7 @@ function HomeIcon() {
 }
 
 function TabIcon({ name }: { name: string }) {
-  if (name === "Parties") {
+  if (/staff|part|lead|visit|people|follow/i.test(name)) {
     return (
       <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden>
         <circle cx="9" cy="6.2" r="2.3" fill="none" stroke="currentColor" strokeWidth="1.5" />
@@ -821,7 +822,7 @@ function TabIcon({ name }: { name: string }) {
       </svg>
     );
   }
-  if (name === "Items") {
+  if (/item|stock|invent/i.test(name)) {
     return (
       <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden>
         <rect x="3.4" y="3.4" width="11.2" height="11.2" rx="2" fill="none" stroke="currentColor" strokeWidth="1.5" />

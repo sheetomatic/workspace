@@ -161,6 +161,7 @@ export function createEmptyConfig(name = "Untitled app"): AppConfig {
       themeAccent: "#111113",
       requirePin: false,
       showFormBanner: false,
+      formTitle: "New record",
     },
     hubs: [],
     views: [],
@@ -240,6 +241,21 @@ export function relatedForView(config: AppConfig, viewId: string): AppRelated[] 
 
 export function navViews(config: AppConfig): AppView[] {
   return config.views.filter((v) => v.nav !== false);
+}
+
+export function addButtonLabel(
+  view?: { name: string } | null,
+  formTitle?: string,
+) {
+  const titled = formTitle?.trim();
+  if (titled) return titled;
+  const name = view?.name?.trim() || "item";
+  const one = /ies$/i.test(name)
+    ? name.replace(/ies$/i, "y")
+    : /s$/i.test(name)
+      ? name.replace(/s$/i, "")
+      : name;
+  return `New ${one}`;
 }
 
 export function initials(value: string): string {

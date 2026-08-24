@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import {
+  addButtonLabel,
   cellStr,
   initials,
   navViews,
@@ -53,7 +54,7 @@ function HomeGlyph() {
 }
 
 function TabGlyph({ name }: { name: string }) {
-  if (/part|staff|lead|visit|people/i.test(name)) {
+  if (/staff|part|lead|visit|people|follow/i.test(name)) {
     return (
       <svg width="16" height="16" viewBox="0 0 18 18" aria-hidden>
         <circle cx="9" cy="6.2" r="2.3" fill="none" stroke="currentColor" strokeWidth="1.6" />
@@ -165,7 +166,7 @@ export function GlidePhonePreview({
           </div>
         ) : null}
         {featured?.addFields?.length ? (
-          <div className="ios-cta">New {featured.name.replace(/s$/, "")}</div>
+          <div className="ios-cta">{addButtonLabel(featured, plan.config.meta.formTitle)}</div>
         ) : null}
         {featured && rows.length ? (
           <div className="ios-section">

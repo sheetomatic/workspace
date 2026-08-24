@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyAction, enrichRow, evaluateComputed, isImageUrl, visibilityAllows } from "./glide-extras";
-import type { AppComputedColumn, AppConfig, SheetRow } from "./index";
+import { addButtonLabel, type AppComputedColumn, type AppConfig, type SheetRow } from "./index";
 
 const row: SheetRow = {
   _row: 2,
@@ -186,5 +186,18 @@ describe("glide extras", () => {
       sheet,
     );
     expect(enriched.cells["Line Amount"]).toBe(520);
+  });
+});
+
+describe("addButtonLabel", () => {
+  it("uses formTitle when set", () => {
+    expect(addButtonLabel({ name: "Staff" }, "Mark attendance")).toBe("Mark attendance");
+    expect(addButtonLabel({ name: "Records" }, "New record")).toBe("New record");
+  });
+
+  it("singularizes view names", () => {
+    expect(addButtonLabel({ name: "Parties" })).toBe("New Party");
+    expect(addButtonLabel({ name: "Follow-ups" })).toBe("New Follow-up");
+    expect(addButtonLabel({ name: "Items" })).toBe("New Item");
   });
 });

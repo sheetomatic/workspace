@@ -177,11 +177,15 @@
 
 .ios-title {
   margin: 0;
+  min-width: 0;
   font-size: 26px;
   font-weight: 720;
   letter-spacing: -0.04em;
   line-height: 1.05;
   color: var(--ios-label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ios-add {
@@ -230,7 +234,8 @@
   justify-content: center;
   min-width: 0;
   min-height: 54px;
-  padding: 8px 7px;
+  padding: 8px 6px;
+  overflow: hidden;
   border-radius: 14px;
   background: var(--ios-fill);
   box-shadow: 0 1px 0 var(--ios-sep);
@@ -259,14 +264,20 @@
 
 .ios-cta {
   margin: 0 12px 10px;
-  height: 36px;
-  display: grid;
-  place-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   border-radius: 12px;
   background: var(--ios-blue);
   color: #fff;
   font-size: 13px;
   font-weight: 620;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ios-section {
@@ -319,9 +330,12 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
+  flex: none;
+  overflow: hidden;
   color: #fff;
   font-size: 10px;
   font-weight: 700;
+  line-height: 1;
 }
 
 .ios-row strong {
@@ -338,6 +352,7 @@
 }
 
 .ios-chip {
+  max-width: 7.5rem;
   border-radius: 999px;
   padding: 3px 8px;
   font-size: 10px;
@@ -345,6 +360,8 @@
   background: rgba(0, 122, 255, 0.12);
   color: var(--ios-blue);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ios-chip.ok {
@@ -364,6 +381,12 @@
   font-weight: 510;
   color: var(--ios-secondary);
   text-align: center;
+}
+
+.ios-tabbar svg {
+  width: 16px;
+  height: 16px;
+  display: block;
 }
 
 .ios-tabbar span {
