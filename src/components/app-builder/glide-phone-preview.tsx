@@ -71,12 +71,17 @@ export function GlidePhonePreview({
         <p className="glide-phone-kicker">{plan.config.meta.greeting || "Good morning"}</p>
         <h3>{plan.config.meta.name}</h3>
         {views.length ? (
-          <div className={`glide-phone-tiles count-${Math.min(views.length, 3)}`}>
+          <div
+            className="glide-phone-tiles"
+            style={{
+              gridTemplateColumns: `repeat(${Math.min(views.length, 3)}, minmax(0, 1fr))`,
+            }}
+          >
             {views.slice(0, 3).map((view) => (
-              <span key={view.id}>
-                <em>{plan.workbook.tabs[view.tab]?.rows.length ?? 0}</em>
-                <i>{view.name}</i>
-              </span>
+              <div className="glide-phone-tile" key={view.id}>
+                <strong>{plan.workbook.tabs[view.tab]?.rows.length ?? 0}</strong>
+                <span>{view.name}</span>
+              </div>
             ))}
           </div>
         ) : null}

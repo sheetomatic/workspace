@@ -1,26 +1,33 @@
 .glide-phone {
   width: 100%;
   max-width: 280px;
+  height: 360px;
   margin: 0 auto;
   background: #0b0b0d;
   border-radius: 28px;
   padding: 8px;
+  box-sizing: border-box;
 }
 
 .glide-phone.is-large {
   max-width: 320px;
+  height: 400px;
 }
 
 .glide-phone-screen {
+  height: 100%;
   background: #f8fafc;
   border-radius: 20px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .glide-phone-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex: none;
   padding: 12px 12px 6px;
   font-size: 10px;
   font-weight: 700;
@@ -34,12 +41,14 @@
 
 .glide-phone-kicker {
   margin: 0 12px;
+  flex: none;
   font-size: 10px;
   color: #64748b;
 }
 
 .glide-phone-screen h3 {
   margin: 2px 12px 10px;
+  flex: none;
   font-size: 16px;
   letter-spacing: -0.03em;
   color: #0f172a;
@@ -47,47 +56,60 @@
 
 .glide-phone-tiles {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  align-content: start;
   gap: 6px;
   padding: 0 12px 10px;
+  flex: none;
 }
 
-.glide-phone-tiles.count-3 {
-  grid-template-columns: 1fr 1fr 1fr;
-}
-
-.glide-phone-tiles span {
-  display: grid;
-  gap: 1px;
-  padding: 8px;
+.glide-phone-tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  min-height: 52px;
+  padding: 8px 6px;
   border-radius: 12px;
   background: #fff;
   border: 1px solid #e2e8f0;
+  box-sizing: border-box;
 }
 
-.glide-phone-tiles em {
-  font-style: normal;
+.glide-phone-tile strong {
+  display: block;
   font-size: 15px;
   font-weight: 800;
+  line-height: 1.1;
   color: #0f172a;
 }
 
-.glide-phone-tiles i {
-  font-style: normal;
+.glide-phone-tile span {
+  display: block;
+  margin-top: 2px;
   font-size: 10px;
+  line-height: 1.2;
   color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .glide-phone-list {
   display: grid;
+  align-content: start;
   gap: 1px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
   background: #e2e8f0;
   border-top: 1px solid #e2e8f0;
 }
 
 .glide-phone-row {
   display: grid;
-  grid-template-columns: 32px 1fr auto;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
   padding: 8px 12px;
@@ -124,6 +146,7 @@
   font-weight: 700;
   background: #eff6ff;
   color: #1d4ed8;
+  white-space: nowrap;
 }
 
 .glide-phone-chip.ok {
@@ -133,6 +156,7 @@
 
 .glide-phone-nav {
   display: grid;
+  flex: none;
   padding: 8px 6px 10px;
   background: #fff;
   border-top: 1px solid #e2e8f0;
