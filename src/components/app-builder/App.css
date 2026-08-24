@@ -200,7 +200,7 @@
   background: var(--paper);
   color: var(--ink);
 }
-.ab-studio .runtime .rt-top, .ab-studio .runtime .rt-nav{
+.ab-studio .runtime .rt-top, .ab-studio .runtime .rt-nav, .ab-studio .runtime .rt-dock{
   background: var(--paper);
   border-color: var(--line);
 }
@@ -235,32 +235,31 @@
 .ab-studio .text-link{ font-size: 14px; font-weight: 600; color: #2563eb; }
 
 .ab-studio .rt-body{ flex: 1; overflow: auto; padding: 4px 16px 16px; }
-.ab-studio .rt-nav{
+.ab-studio .rt-nav,
+.ab-studio .rt-dock{
   display: flex;
+  justify-content: center;
   border-top: 1px solid var(--line);
-  padding: 6px 8px 10px;
+  padding: 8px 16px 12px;
   background: var(--paper);
 }
-.ab-studio .rt-nav button{
-  flex: 1;
-  min-width: 0;
+.ab-studio .rt-nav button,
+.ab-studio .rt-dock button{
+  min-width: 72px;
   border: 0;
   background: transparent;
   color: #9ca3af;
   font: inherit;
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 650;
   display: grid;
   justify-items: center;
   gap: 3px;
-  padding: 4px 2px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  padding: 4px 10px;
   cursor: pointer;
 }
-.ab-studio .rt-nav svg{ width: 16px; height: 16px; display: block; }
-.ab-studio .rt-nav button.on{ color: var(--ink); }
+.ab-studio .rt-nav svg, .ab-studio .rt-dock svg{ width: 18px; height: 18px; display: block; }
+.ab-studio .rt-nav button.on, .ab-studio .rt-dock button.on{ color: var(--ink); }
 
 .ab-studio .home h2{ margin: 0 0 16px; font-size: 28px; letter-spacing: -0.04em; }
 .ab-studio .kicker{ margin: 8px 0 0; color: var(--muted); font-size: 13px; font-weight: 500; }
@@ -274,6 +273,45 @@
   margin: 0 0 16px;
   padding: 0 14px;
   min-height: 48px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ab-studio .phone-apps{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px 6px;
+  margin: 4px 0 22px;
+}
+.ab-studio .phone-app{
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 0;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font: inherit;
+}
+.ab-studio .phone-app-icon{
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  font-style: normal;
+  letter-spacing: -0.03em;
+}
+.ab-studio .phone-app span{
+  width: 100%;
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -295,6 +333,48 @@
   overflow: hidden;
   border: 0; background: var(--soft); border-radius: 16px;
   padding: 12px 8px; text-align: left; cursor: pointer; font: inherit;
+}
+.ab-studio .table-picks{
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+}
+.ab-studio .table-picks li{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.ab-studio .table-picks label{
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.ab-studio .table-picks em{
+  font-style: normal;
+  font-weight: 500;
+  color: var(--muted);
+}
+.ab-studio .table-add{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 16px;
+}
+.ab-studio .table-add button{
+  border: 1px solid var(--line);
+  background: var(--paper);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  cursor: pointer;
 }
 .ab-studio .tile em{ display: block; font-style: normal; font-size: 22px; font-weight: 700; letter-spacing: -0.04em; }
 .ab-studio .tile span{

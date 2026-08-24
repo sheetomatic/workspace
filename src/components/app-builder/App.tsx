@@ -605,6 +605,12 @@ export default function AppBuilderStudio({
               Templates
               <em>Ready apps</em>
             </button>
+            <button type="button" onClick={() => setFocus("home")}>
+              Tables in app
+              <em>
+                {screens.filter((s) => s.nav !== false).length} of {screens.length}
+              </em>
+            </button>
             {screens.map((s) => (
               <button
                 key={s.id}

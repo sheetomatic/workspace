@@ -12,6 +12,15 @@ import { defaultComputedForTab } from "./glide-extras";
 
 const LINE_TAB = /line|lines|detail|details|entries|items line/i;
 const USER_TAB = /^(users|staff|team|members)$/i;
+const HELPER_TAB =
+  /^(home|pivot|piv|chart|graph|import|export|raw|dump|archive|calc|lookup|mapping|settings?|config|temp|backup|copy|gs|agent|live|analysis|dashboard)$/i;
+
+export function defaultNavForTab(name: string): boolean {
+  if (LINE_TAB.test(name) || USER_TAB.test(name) || HELPER_TAB.test(name)) {
+    return false;
+  }
+  return true;
+}
 
 function slug(value: string) {
   return (
@@ -195,7 +204,7 @@ export function inferAppFromWorkbook(workbook: SheetWorkbook, appName?: string):
       ownerCol: pickNamed(tab.headers, /^(owner|assigned|staff|who)$/i),
       cols: tab.headers,
       sliceCols: [titleCol],
-      nav: !LINE_TAB.test(tab.name),
+      nav: defaultNavForTab(tab.name),
       collectionStyle: "list",
       allowDelete: true,
       addFields: fields,

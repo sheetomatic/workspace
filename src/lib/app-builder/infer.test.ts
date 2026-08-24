@@ -52,6 +52,32 @@ const demo: SheetWorkbook = {
 };
 
 describe("inferAppFromWorkbook", () => {
+  it("hides helper sheets from the phone home", () => {
+    const app = inferAppFromWorkbook({
+      title: "Ops",
+      tabs: {
+        Sales: {
+          name: "Sales",
+          headers: ["Id"],
+          rows: [{ _row: 2, cells: { Id: "KE-1" } }],
+        },
+        Pivot: {
+          name: "Pivot",
+          headers: ["A"],
+          rows: [{ _row: 2, cells: { A: "1" } }],
+        },
+        Import: {
+          name: "Import",
+          headers: ["A"],
+          rows: [{ _row: 2, cells: { A: "1" } }],
+        },
+      },
+    });
+    expect(app.views.find((v) => v.tab === "Sales")?.nav).toBe(true);
+    expect(app.views.find((v) => v.tab === "Pivot")?.nav).toBe(false);
+    expect(app.views.find((v) => v.tab === "Import")?.nav).toBe(false);
+  });
+
   it("builds a screen per table and hides line-item tabs from nav", () => {
     const app = inferAppFromWorkbook(demo);
     expect(app.views.map((v) => v.tab)).toEqual(["Orders", "Order Lines", "Parties"]);

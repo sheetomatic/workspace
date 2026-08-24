@@ -45,7 +45,15 @@ export function DesignPanel({ config, sheet, focus, onFocus, onChange }: Props) 
   const tables = Object.keys(book.tabs);
 
   if (focus === "home") {
-    return <HomeDesign config={config} onChange={onChange} />;
+    return (
+      <HomeDesign
+        config={config}
+        sheet={sheet}
+        tables={tables}
+        onChange={onChange}
+        onFocus={onFocus}
+      />
+    );
   }
   if (!selected) {
     return <p className="hint">Pick a screen.</p>;
@@ -64,20 +72,104 @@ export function DesignPanel({ config, sheet, focus, onFocus, onChange }: Props) 
   );
 }
 
+function viewFromTab(tab: string, sheet: SheetAdapter, hub = "App"): AppView {
+  const heads = sheet.getTab(tab)?.headers.length
+    ? sheet.getTab(tab)!.headers
+    : ["Name"];
+  return {
+    id: slug(tab) + "-" + Date.now().toString().slice(-4),
+    hub,
+    name: tab,
+    kind: "deck",
+    tab,
+    titleCol: heads[0],
+    subtitleCol: heads[1],
+    cols: heads,
+    collectionStyle: "list",
+    nav: true,
+    addFields: heads.map(fieldFromCol),
+    editFields: heads.map(fieldFromCol),
+  };
+}
+
 function HomeDesign({
   config,
+  sheet,
+  tables,
   onChange,
+  onFocus,
 }: {
   config: AppConfig;
+  sheet: SheetAdapter;
+  tables: string[];
   onChange: (c: AppConfig) => void;
+  onFocus: (id: string) => void;
 }) {
   const m = config.meta;
+  const unused = tables.filter((t) => !config.views.some((v) => v.tab === t));
   function meta(patch: Partial<typeof m>) {
     onChange({ ...config, meta: { ...m, ...patch } });
   }
   return (
     <>
       <ThemePicker meta={m} onChange={meta} />
+      <h3>Tables in this app</h3>
+      <p className="hint">
+        Checked tables show as apps on the phone Home. Uncheck to hide. Remove
+        drops the screen — the Sheet tab stays.
+      </p>
+      <ul className="table-picks">
+        {config.views.map((view) => (
+          <li key={view.id}>
+            <label>
+              <input
+                type="checkbox"
+                checked={view.nav !== false}
+                onChange={(e) =>
+                  onChange(patchView(config, view.id, { nav: e.target.checked }))
+                }
+              />
+              <span>
+                {view.name}
+                {view.tab !== view.name ? <em> · {view.tab}</em> : null}
+              </span>
+            </label>
+            <button
+              type="button"
+              className="linkish"
+              onClick={() => {
+                onChange({
+                  ...config,
+                  views: config.views.filter((v) => v.id !== view.id),
+                  related: config.related.filter((r) => r.parentViewId !== view.id),
+                });
+              }}
+            >
+              Remove
+            </button>
+          </li>
+        ))}
+      </ul>
+      {unused.length ? (
+        <>
+          <p className="aside-label">Add a table</p>
+          <div className="table-add">
+            {unused.map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => {
+                  const next = viewFromTab(tab, sheet);
+                  onChange({ ...config, views: [...config.views, next] });
+                  onFocus(next.id);
+                }}
+              >
+                + {tab}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : null}
       <h3>Header</h3>
       <label className="field-label">
         Brand (left of title)
@@ -107,7 +199,7 @@ function HomeDesign({
         onChange={(v) => meta({ showBrand: v })}
       />
       <Toggle
-        label="Home tiles"
+        label="Apps on Home"
         on={m.showHomeTiles !== false}
         onChange={(v) => meta({ showHomeTiles: v })}
       />
@@ -255,7 +347,7 @@ function ScreenDesign({
       </div>
 
       <Toggle
-        label="Show in bottom tabs"
+        label="Show as app on Home"
         on={view.nav !== false}
         onChange={(v) => set({ nav: v })}
       />

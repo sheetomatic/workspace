@@ -419,7 +419,7 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
       ) : null}
 
       {screen !== "form" && (
-        <nav className="rt-nav" aria-label="Tabs">
+        <nav className="rt-dock" aria-label="Home">
           <button
             type="button"
             className={screen === "home" ? "on" : ""}
@@ -428,17 +428,6 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
             <HomeIcon />
             Home
           </button>
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              className={viewId === t.id && screen !== "home" ? "on" : ""}
-              onClick={() => openView(t.id)}
-            >
-              <TabIcon name={t.name} />
-              {t.name}
-            </button>
-          ))}
         </nav>
       )}
     </div>
@@ -475,10 +464,17 @@ function HomeScreen({
         </button>
       ) : null}
       {config.meta.showHomeTiles === false ? null : (
-        <div className="tiles">
+        <div className="phone-apps">
           {tabs.map((t) => (
-            <button key={t.id} type="button" className="tile" onClick={() => onOpenView(t.id)}>
-              <em>{sheet.listRows(t.tab).length}</em>
+            <button
+              key={t.id}
+              type="button"
+              className="phone-app"
+              onClick={() => onOpenView(t.id)}
+            >
+              <i className="phone-app-icon" style={{ background: tone(t.name) }}>
+                {initials(t.name)}
+              </i>
               <span>{t.name}</span>
             </button>
           ))}
@@ -803,42 +799,6 @@ function HomeIcon() {
         strokeWidth="1.5"
         strokeLinejoin="round"
       />
-    </svg>
-  );
-}
-
-function TabIcon({ name }: { name: string }) {
-  if (/staff|part|lead|visit|people|follow/i.test(name)) {
-    return (
-      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden>
-        <circle cx="9" cy="6.2" r="2.3" fill="none" stroke="currentColor" strokeWidth="1.5" />
-        <path
-          d="M4.2 14.2c.6-2.4 2.3-3.6 4.8-3.6s4.2 1.2 4.8 3.6"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-      </svg>
-    );
-  }
-  if (/item|stock|invent/i.test(name)) {
-    return (
-      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden>
-        <rect x="3.4" y="3.4" width="11.2" height="11.2" rx="2" fill="none" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M3.6 7.4h10.8" stroke="currentColor" strokeWidth="1.5" />
-      </svg>
-    );
-  }
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden>
-      <path
-        d="M4 5h10v9.2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      />
-      <path d="M6.5 5V4.2A1.7 1.7 0 0 1 8.2 2.5h1.6A1.7 1.7 0 0 1 11.5 4.2V5" stroke="currentColor" strokeWidth="1.5" />
     </svg>
   );
 }
