@@ -144,6 +144,14 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
     goHome();
   }
 
+  const featured = tabs[0];
+  const recent = featured
+    ? applySlice(sheet.listRows(featured.tab), featured.sliceCols)
+        .slice(0, 3)
+        .map((r) => enrichRow(r, featured.tab, config, sheet))
+    : [];
+  const detailRow = view && row ? enrichRow(row, view.tab, config, sheet) : row;
+
   const title =
     screen === "home"
       ? config.meta.name
@@ -158,14 +166,6 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
             : form?.kind === "related"
               ? form.related.name
               : "New item";
-
-  const featured = tabs[0];
-  const recent = featured
-    ? applySlice(sheet.listRows(featured.tab), featured.sliceCols)
-        .slice(0, 3)
-        .map((r) => enrichRow(r, featured.tab, config, sheet))
-    : [];
-  const detailRow = view && row ? enrichRow(row, view.tab, config, sheet) : row;
 
   const skin = themeVars(themeById(config.meta.themeId), config.meta.themeAccent);
 
