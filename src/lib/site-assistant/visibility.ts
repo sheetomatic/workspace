@@ -14,6 +14,5 @@ export function shouldShowSiteAssistant(pathname: string, hostname: string) {
   if (isWorkspaceAppPath(pathname)) return false;
   if (pathname === "/ai" || pathname.startsWith("/ai/")) return false;
   if (pathname.startsWith("/login")) return false;
-  if (pathname === "/petal" || pathname.startsWith("/petal/")) return false;
   return true;
 }
