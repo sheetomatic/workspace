@@ -5,6 +5,7 @@ import {
   createEmptyConfig,
   inferAppFromWorkbook,
   parseGoogleSheetId,
+  setTableInApp,
   SPREADSHEET_ACCEPT,
   styleLabel,
   workbookFromSpreadsheetFile,
@@ -12,6 +13,7 @@ import {
   type SheetWorkbook,
 } from "@/lib/app-builder";
 import { DesignPanel } from "./editor/DesignPanel";
+import { SchemaStudio } from "./editor/SchemaStudio";
 import { TemplateGallery } from "./editor/TemplateGallery";
 import { ThemePicker } from "./editor/ThemePicker";
 import { AiBar } from "./ai/AiBar";
@@ -90,6 +92,7 @@ export default function AppBuilderStudio({
   const [importTab, setImportTab] = useState("");
   const [importHeaderRow, setImportHeaderRow] = useState(1);
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
+  const [dataPane, setDataPane] = useState<"rows" | "schema">("rows");
   const fileRef = useRef<HTMLInputElement>(null);
 
   liveSheetId.current = google.spreadsheetId || connected;
@@ -226,7 +229,7 @@ export default function AppBuilderStudio({
 
   async function loadWorkbook(
     spreadsheetId: string,
-    options?: { tab?: string; headerRow?: number },
+    options?: { tab?: string; headerRow?: number; askSchema?: boolean },
   ) {
     const params = new URLSearchParams({ id: spreadsheetId });
     if (options?.headerRow && options.headerRow > 1) {
@@ -241,14 +244,20 @@ export default function AppBuilderStudio({
       return;
     }
     const body = (await res.json()) as { workbook: SheetWorkbook };
-    applyWorkbook(body.workbook, options?.tab);
+    applyWorkbook(body.workbook, options?.tab, options?.askSchema);
     setConnected(spreadsheetId);
     setNote(
-      `Opened “${body.workbook.title}”. Screens and relations were built from your tables.`,
+      options?.askSchema
+        ? `Opened “${body.workbook.title}”. Tick the tables for the phone, then link parent and child.`
+        : `Opened “${body.workbook.title}”. Screens and relations were built from your tables.`,
     );
   }
 
-  function applyWorkbook(workbook: SheetWorkbook, focusTab?: string) {
+  function applyWorkbook(
+    workbook: SheetWorkbook,
+    focusTab?: string,
+    askSchema = false,
+  ) {
     sheet.replace(workbook);
     const next = inferAppFromWorkbook(workbook);
     setConfig(next);
@@ -257,6 +266,10 @@ export default function AppBuilderStudio({
     setDataTab(focusTab || Object.keys(workbook.tabs)[0] || "");
     setGalleryOpen(false);
     setActiveTemplateId(null);
+    if (askSchema) {
+      setEditor("data");
+      setDataPane("schema");
+    }
     setRev((n) => n + 1);
   }
 
@@ -289,6 +302,7 @@ export default function AppBuilderStudio({
       await loadWorkbook(spreadsheetId, {
         tab: importTab || undefined,
         headerRow: importHeaderRow,
+        askSchema: true,
       });
     } finally {
       setGoogleBusy(false);
@@ -326,11 +340,12 @@ export default function AppBuilderStudio({
     if (!file) return;
     try {
       const book = await workbookFromSpreadsheetFile(file);
-      applyWorkbook(book);
+      applyWorkbook(book, undefined, true);
       setPreview(false);
       setEditor("data");
+      setDataPane("schema");
       setNote(
-        `Opened “${book.title}” from your file. Screens were built from the columns.`,
+        `Opened “${book.title}”. Tick the tables for the phone, then link parent and child.`,
       );
     } catch (error) {
       setNote(
@@ -350,9 +365,8 @@ export default function AppBuilderStudio({
     if (google.connected) {
       setGoogleBusy(true);
       try {
-        await loadWorkbook(id);
+        await loadWorkbook(id, { askSchema: true });
         setPreview(false);
-        setEditor("data");
       } finally {
         setGoogleBusy(false);
       }
@@ -487,7 +501,7 @@ export default function AppBuilderStudio({
             <button
               type="button"
               className="ghost"
-              onClick={() => applyWorkbook(sheet.getWorkbook(), dataTab)}
+              onClick={() => applyWorkbook(sheet.getWorkbook(), dataTab, true)}
             >
               Rebuild from Sheet
             </button>
@@ -690,11 +704,24 @@ export default function AppBuilderStudio({
       {editor === "data" && (
         <DataEditor
           sheet={sheet}
+          config={config}
           tabName={dataTab || Object.keys(workbook.tabs)[0] || ""}
+          pane={dataPane}
+          onPane={setDataPane}
           onTab={setDataTab}
           onChange={bump}
+          onConfigChange={(next) => {
+            setConfig(next);
+            bump();
+          }}
           onTemplates={openGallery}
           onUpload={pickSpreadsheet}
+          onSeePhone={() => {
+            setDataPane("rows");
+            setEditor("layout");
+            setFocus("home");
+            setPreview(true);
+          }}
         />
       )}
 
@@ -720,18 +747,28 @@ export default function AppBuilderStudio({
 
 function DataEditor({
   sheet,
+  config,
   tabName,
+  pane,
+  onPane,
   onTab,
   onChange,
+  onConfigChange,
   onTemplates,
   onUpload,
+  onSeePhone,
 }: {
   sheet: SheetAdapter;
+  config: AppConfig;
   tabName: string;
+  pane: "rows" | "schema";
+  onPane: (pane: "rows" | "schema") => void;
   onTab: (name: string) => void;
   onChange: () => void;
+  onConfigChange: (next: AppConfig) => void;
   onTemplates: () => void;
   onUpload: () => void;
+  onSeePhone: () => void;
 }) {
   const book = sheet.getWorkbook();
   const tab = book.tabs[tabName];
@@ -746,17 +783,50 @@ function DataEditor({
           Templates
           <em>Change app</em>
         </button>
-        {Object.values(book.tabs).map((t) => (
-          <button
-            key={t.name}
-            type="button"
-            className={tabName === t.name ? "on" : ""}
-            onClick={() => onTab(t.name)}
-          >
-            {t.name}
-            <em>{t.rows.length}</em>
-          </button>
-        ))}
+        <button
+          type="button"
+          className={pane === "schema" ? "on" : ""}
+          onClick={() => onPane("schema")}
+        >
+          Tables & relations
+          <em>
+            {config.views.filter((v) => v.nav !== false).length} in app
+          </em>
+        </button>
+        {Object.values(book.tabs).map((t) => {
+          const view = config.views.find((v) => v.tab === t.name);
+          const inApp = view ? view.nav !== false : false;
+          return (
+            <div key={t.name} className="table-row">
+              <label className="table-check">
+                <input
+                  type="checkbox"
+                  checked={inApp}
+                  onChange={(e) =>
+                    onConfigChange(
+                      setTableInApp(config, book, t.name, e.target.checked),
+                    )
+                  }
+                  aria-label={`${t.name} in app`}
+                />
+              </label>
+              <button
+                type="button"
+                className={tabName === t.name && pane === "rows" ? "on" : ""}
+                onClick={() => {
+                  onTab(t.name);
+                  onPane("rows");
+                }}
+              >
+                {t.name}
+                <em>
+                  {t.rows.length}
+                  {inApp ? "" : " · off"}
+                </em>
+              </button>
+            </div>
+          );
+        })}
         <div className="add-inline">
           <input
             value={newTab}
@@ -778,7 +848,14 @@ function DataEditor({
         </div>
       </aside>
       <div className="sheet-wrap">
-        {!tab ? (
+        {pane === "schema" ? (
+          <SchemaStudio
+            config={config}
+            sheet={sheet}
+            onChange={onConfigChange}
+            onDone={onSeePhone}
+          />
+        ) : !tab ? (
           <p className="hint">Build an app first — tables appear here like your Sheet.</p>
         ) : (
           <div className="sheet">
@@ -790,6 +867,9 @@ function DataEditor({
               <div className="sheet-toolbar">
                 <button type="button" className="btn ghost" onClick={onTemplates}>
                   ← Templates
+                </button>
+                <button type="button" className="btn ghost" onClick={() => onPane("schema")}>
+                  Tables & relations
                 </button>
                 <button type="button" className="btn ghost" onClick={onUpload}>
                   Upload spreadsheet

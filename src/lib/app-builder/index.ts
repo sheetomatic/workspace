@@ -413,6 +413,14 @@ export { TEMPLATES, styleLabel, type AppPlan } from "./templates";
 export { THEMES, themeById, themeVars, type ThemePalette } from "./themes";
 export { defaultNavForTab, inferAppFromWorkbook, inferFieldType } from "./infer";
 export {
+  makeRelation,
+  pickRowIdColumn,
+  refColumnName,
+  setTableInApp,
+  suggestMissingLinks,
+  withRefColumnOnView,
+} from "./schema";
+export {
   parseGoogleSheetId,
   SPREADSHEET_ACCEPT,
   workbookFromSpreadsheetFile,

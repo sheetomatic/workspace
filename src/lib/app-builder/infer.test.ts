@@ -78,6 +78,32 @@ describe("inferAppFromWorkbook", () => {
     expect(app.views.find((v) => v.tab === "Import")?.nav).toBe(false);
   });
 
+  it("keeps HowTo and DirtyImport off the phone by default", () => {
+    const app = inferAppFromWorkbook({
+      title: "Training",
+      tabs: {
+        Sales: {
+          name: "Sales",
+          headers: ["Id"],
+          rows: [{ _row: 2, cells: { Id: "1" } }],
+        },
+        HowTo: {
+          name: "HowTo",
+          headers: ["Note"],
+          rows: [{ _row: 2, cells: { Note: "Read" } }],
+        },
+        DirtyImport: {
+          name: "DirtyImport",
+          headers: ["A"],
+          rows: [{ _row: 2, cells: { A: "x" } }],
+        },
+      },
+    });
+    expect(app.views.find((v) => v.tab === "Sales")?.nav).toBe(true);
+    expect(app.views.find((v) => v.tab === "HowTo")?.nav).toBe(false);
+    expect(app.views.find((v) => v.tab === "DirtyImport")?.nav).toBe(false);
+  });
+
   it("builds a screen per table and hides line-item tabs from nav", () => {
     const app = inferAppFromWorkbook(demo);
     expect(app.views.map((v) => v.tab)).toEqual(["Orders", "Order Lines", "Parties"]);

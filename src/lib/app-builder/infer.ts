@@ -13,7 +13,7 @@ import { defaultComputedForTab } from "./glide-extras";
 const LINE_TAB = /line|lines|detail|details|entries|items line/i;
 const USER_TAB = /^(users|staff|team|members)$/i;
 const HELPER_TAB =
-  /^(home|pivot|piv|chart|graph|import|export|raw|dump|archive|calc|lookup|mapping|settings?|config|temp|backup|copy|gs|agent|live|analysis|dashboard)$/i;
+  /^(home|howto|apply|practice|pivot|piv|chart|graph|import|export|raw|dump|archive|calc|lookup|mapping|settings?|config|temp|backup|copy|gs|agent|live|analysis|dashboard)$|dirty|import.?hub|analyst|live.?filter|market.?watch|pivot|chart.?data/i;
 
 export function defaultNavForTab(name: string): boolean {
   if (LINE_TAB.test(name) || USER_TAB.test(name) || HELPER_TAB.test(name)) {
