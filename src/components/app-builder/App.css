@@ -764,8 +764,8 @@
 .ab-studio .store-device-screen{ background: #fff; border-radius: 20px; padding: 14px; min-height: 180px; }
 .ab-studio .store-device-screen em{ display: block; font-style: normal; font-weight: 700; margin-bottom: 10px; }
 .ab-studio .store-apps .store-get{ margin: 12px 16px 0; }
-.ab-studio .gs-floor .glide-phone{ max-width: none; padding: 6px; }
-.ab-studio .gs-floor .glide-phone-screen h3{ font-size: 14px; }
+.ab-studio .gs-floor .iphone,
+.ab-studio .gs-card .iphone{ max-width: 248px; }
 .ab-studio .gs-h3{ margin: 0 0 14px; font-size: 18px; }
 .ab-studio .store-section h3{ margin: 0 0 14px; font-size: 18px; }
 .ab-studio .store-list{ display: grid; gap: 10px; }

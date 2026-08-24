@@ -1,125 +1,245 @@
-.glide-phone {
-  width: 100%;
-  max-width: 280px;
-  height: 360px;
+.iphone {
+  --ios-blue: #007aff;
+  --ios-label: #1c1c1e;
+  --ios-secondary: #8e8e93;
+  --ios-grouped: #f2f2f7;
+  --ios-fill: #ffffff;
+  --ios-sep: rgba(60, 60, 67, 0.16);
+  position: relative;
+  width: 248px;
+  height: 508px;
   margin: 0 auto;
-  background: #0b0b0d;
-  border-radius: 28px;
-  padding: 8px;
+  padding: 10px;
   box-sizing: border-box;
+  background: #1c1c1e;
+  border-radius: 42px;
+  box-shadow:
+    inset 0 0 0 1px #3a3a3c,
+    0 18px 40px rgba(15, 23, 42, 0.22);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-.glide-phone.is-large {
-  max-width: 320px;
-  height: 400px;
+.iphone.is-large {
+  width: 292px;
+  height: 598px;
 }
 
-.glide-phone-screen {
+.iphone.is-empty {
+  background: #1c1c1e;
+}
+
+.iphone-silent,
+.iphone-vol,
+.iphone-power {
+  position: absolute;
+  background: #2c2c2e;
+  border-radius: 2px;
+}
+
+.iphone-silent {
+  left: -2px;
+  top: 86px;
+  width: 3px;
+  height: 18px;
+}
+
+.iphone-vol {
+  left: -2px;
+  width: 3px;
+  height: 28px;
+}
+
+.iphone-vol-up {
+  top: 118px;
+}
+
+.iphone-vol-down {
+  top: 154px;
+}
+
+.iphone-power {
+  right: -2px;
+  top: 128px;
+  width: 3px;
+  height: 52px;
+}
+
+.iphone-screen {
+  position: relative;
   height: 100%;
-  background: #f8fafc;
-  border-radius: 20px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  background: var(--ios-grouped);
+  border-radius: 32px;
 }
 
-.glide-phone-bar {
+.iphone-island {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  z-index: 3;
+  width: 78px;
+  height: 20px;
+  background: #0b0b0d;
+  border-radius: 12px;
+  transform: translateX(-50%);
+}
+
+.iphone.is-large .iphone-island {
+  width: 92px;
+  height: 22px;
+}
+
+.iphone-home {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  z-index: 3;
+  width: 92px;
+  height: 4px;
+  background: #0b0b0d;
+  border-radius: 99px;
+  transform: translateX(-50%);
+  opacity: 0.85;
+}
+
+.ios-status {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex: none;
-  padding: 12px 12px 6px;
-  font-size: 10px;
+  padding: 12px 18px 0;
+  font-size: 11px;
   font-weight: 700;
-  color: #64748b;
+  letter-spacing: -0.02em;
+  color: var(--ios-label);
 }
 
-.glide-phone-bar strong {
-  color: #0f172a;
+.ios-status-end {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ios-battery {
+  width: 20px;
+  height: 9px;
+  border: 1.2px solid currentColor;
+  border-radius: 2.5px;
+  position: relative;
+  opacity: 0.92;
+}
+
+.ios-battery::after {
+  content: "";
+  position: absolute;
+  right: -3px;
+  top: 2px;
+  width: 1.5px;
+  height: 3.5px;
+  background: currentColor;
+  border-radius: 0 1px 1px 0;
+}
+
+.ios-battery i {
+  display: block;
+  width: 14px;
+  height: 5px;
+  margin: 1px 0 0 1px;
+  background: #34c759;
+  border-radius: 1px;
+}
+
+.ios-kicker {
+  margin: 18px 16px 0;
+  flex: none;
   font-size: 12px;
+  font-weight: 590;
+  color: var(--ios-secondary);
 }
 
-.glide-phone-kicker {
-  margin: 0 12px;
+.ios-title {
+  margin: 1px 16px 10px;
   flex: none;
-  font-size: 10px;
-  color: #64748b;
+  font-size: 26px;
+  font-weight: 720;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  color: var(--ios-label);
 }
 
-.glide-phone-screen h3 {
-  margin: 2px 12px 10px;
-  flex: none;
-  font-size: 16px;
-  letter-spacing: -0.03em;
-  color: #0f172a;
-}
-
-.glide-phone-tiles {
+.ios-tiles {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: stretch;
-  align-content: start;
-  gap: 6px;
+  gap: 8px;
   padding: 0 12px 10px;
   flex: none;
 }
 
-.glide-phone-tile {
+.ios-tile {
   display: flex;
   flex-direction: column;
   justify-content: center;
   min-width: 0;
-  min-height: 52px;
-  padding: 8px 6px;
-  border-radius: 12px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  min-height: 54px;
+  padding: 8px 7px;
+  border-radius: 14px;
+  background: var(--ios-fill);
+  box-shadow: 0 1px 0 var(--ios-sep);
   box-sizing: border-box;
 }
 
-.glide-phone-tile strong {
+.ios-tile strong {
   display: block;
-  font-size: 15px;
-  font-weight: 800;
-  line-height: 1.1;
-  color: #0f172a;
+  font-size: 18px;
+  font-weight: 720;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  color: var(--ios-label);
 }
 
-.glide-phone-tile span {
+.ios-tile span {
   display: block;
   margin-top: 2px;
   font-size: 10px;
-  line-height: 1.2;
-  color: #64748b;
+  font-weight: 510;
+  color: var(--ios-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.glide-phone-list {
-  display: grid;
-  align-content: start;
-  gap: 1px;
+.ios-list {
+  margin: 0 12px;
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  background: #e2e8f0;
-  border-top: 1px solid #e2e8f0;
+  background: var(--ios-fill);
+  border-radius: 14px;
 }
 
-.glide-phone-row {
+.ios-row {
   display: grid;
   grid-template-columns: 32px minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
-  padding: 8px 12px;
-  background: #fff;
+  padding: 8px 10px;
+  background: var(--ios-fill);
+  box-shadow: inset 0 -0.5px 0 var(--ios-sep);
 }
 
-.glide-phone-av {
+.ios-row:last-child {
+  box-shadow: none;
+}
+
+.ios-av {
   width: 32px;
   height: 32px;
-  border-radius: 10px;
+  border-radius: 50%;
   display: grid;
   place-items: center;
   color: #fff;
@@ -127,46 +247,66 @@
   font-weight: 700;
 }
 
-.glide-phone-row strong {
+.ios-row strong {
   display: block;
-  font-size: 12px;
-  color: #0f172a;
+  font-size: 13px;
+  font-weight: 590;
+  color: var(--ios-label);
 }
 
-.glide-phone-row small {
+.ios-row small {
   display: block;
-  color: #64748b;
-  font-size: 10px;
+  color: var(--ios-secondary);
+  font-size: 11px;
 }
 
-.glide-phone-chip {
+.ios-chip {
   border-radius: 999px;
-  padding: 2px 7px;
-  font-size: 9px;
-  font-weight: 700;
-  background: #eff6ff;
-  color: #1d4ed8;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  background: rgba(0, 122, 255, 0.12);
+  color: var(--ios-blue);
   white-space: nowrap;
 }
 
-.glide-phone-chip.ok {
-  background: #ecfdf5;
-  color: #047857;
+.ios-chip.ok {
+  background: rgba(52, 199, 89, 0.16);
+  color: #248a3d;
 }
 
-.glide-phone-nav {
+.ios-tabbar {
   display: grid;
   flex: none;
-  padding: 8px 6px 10px;
-  background: #fff;
-  border-top: 1px solid #e2e8f0;
-  font-size: 9px;
-  font-weight: 700;
-  color: #94a3b8;
+  margin-top: auto;
+  padding: 6px 4px 16px;
+  background: rgba(249, 249, 249, 0.92);
+  border-top: 0.5px solid var(--ios-sep);
+  backdrop-filter: blur(16px);
+  font-size: 8px;
+  font-weight: 510;
+  color: var(--ios-secondary);
   text-align: center;
 }
 
-.glide-phone-nav em {
-  font-style: normal;
-  color: #0f172a;
+.ios-tabbar span {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ios-tabbar span.on {
+  color: var(--ios-blue);
+  font-weight: 600;
+}
+
+.ab-land-template .iphone,
+.gs-card .iphone,
+.gs-floor .iphone {
+  width: 100%;
+  max-width: 248px;
 }
