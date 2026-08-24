@@ -559,16 +559,24 @@
 }
 
 .workspace-app .saas-content:has(.ab-studio) {
-  display: flex;
-  flex-direction: column;
+  display: block;
   padding: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .ab-studio {
   flex: 1;
   min-height: 0;
-  height: 100%;
+}
+
+.ab-studio.glide.gallery-open {
+  display: block;
+  height: auto;
+  max-height: none;
+  min-height: calc(100dvh - 72px);
+  overflow: visible;
 }
 
 .ab-studio .preview-btn{

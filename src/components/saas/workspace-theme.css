@@ -956,9 +956,10 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .saas-content:has(.ab-studio) {
+  display: block;
   padding: 0;
-  overflow-y: auto;
   overflow-x: hidden;
+  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
 

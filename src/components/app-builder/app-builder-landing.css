@@ -1,3 +1,17 @@
+html:has(.ab-land-hero),
+body:has(.ab-land-hero) {
+  height: auto;
+  max-height: none;
+  overflow-x: clip;
+  overflow-y: auto;
+}
+
+.marketing-page:has(.ab-land-hero) {
+  height: auto;
+  max-height: none;
+  overflow: visible;
+}
+
 .ab-land-hero {
   overflow: hidden;
   border-bottom: 1px solid #e5e5ea;
@@ -8,6 +22,21 @@
 
 .ab-land-hero.is-featured {
   overflow: visible;
+}
+
+.ab-land-hero-phone,
+.ab-land-hero-phone .iphone,
+.ab-land-template .iphone {
+  touch-action: pan-y;
+}
+
+.ab-land-hero-phone .iphone-screen,
+.ab-land-hero-phone .ios-home,
+.ab-land-hero-phone .ios-list,
+.ab-land-template .iphone-screen,
+.ab-land-template .ios-home,
+.ab-land-template .ios-list {
+  overflow: clip;
 }
 
 .ab-land-hero-inner {
