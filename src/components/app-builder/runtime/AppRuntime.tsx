@@ -338,6 +338,7 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
             }}
             relatedBlocks={relatedBlocks}
             onAddRelated={(rel) => {
+              if (!row) return;
               setForm({ kind: "related", view, related: rel, parent: row });
               setScreen("form");
             }}
