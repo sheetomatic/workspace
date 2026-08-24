@@ -246,6 +246,19 @@ body:has(.ab-land-hero) {
   margin-left: calc(50% - 50vw);
 }
 
+.workspace-app .gs-page .ab-land-hero.is-featured,
+.workspace-app .gs-home + .ab-land-hero.is-featured,
+.workspace-app .ab-land-hero.is-featured {
+  width: 100%;
+  max-width: none;
+  margin-left: 0;
+}
+
+.workspace-app .ab-land-hero-phone .iphone,
+.workspace-app .ab-land-hero-phone .iphone.is-large {
+  transform: none;
+}
+
 .ab-phone {
   width: min(100%, 292px);
   margin: 0 auto;

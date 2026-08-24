@@ -956,7 +956,11 @@ body:has(.workspace-app.saas-app) {
 }
 
 .workspace-app .saas-content:has(.ab-studio) {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
   padding: 0;
   overflow-x: hidden;
   overflow-y: auto;

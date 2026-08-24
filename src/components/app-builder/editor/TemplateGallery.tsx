@@ -1,10 +1,6 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { TEMPLATES, type AppPlan, type SheetTab } from "@/lib/app-builder";
-import {
-  AppBuilderHeroSplit,
-  TEMPLATE_LEAD,
-  templateFacts,
-} from "../app-builder-hero-split";
+import { TEMPLATE_LEAD } from "../app-builder-hero-split";
 import { GlidePhonePreview } from "../glide-phone-preview";
 
 type Page = "home" | "cases" | "store" | "solution";
@@ -287,9 +283,9 @@ function Home({
   return (
     <>
       <section className="gs-home is-lead">
-        <h1>Turn your spreadsheets into apps that run your business</h1>
+        <h1>Start a phone app from your Sheet</h1>
         <p className="store-lead">
-          Build on a Gmail Sheet. Staff need a link and PIN — not a Google account.
+          Describe it, paste a Gmail Sheet, or pick a template. Staff use a link and PIN.
         </p>
         <AskBar
           prompt={prompt}
@@ -307,9 +303,8 @@ function Home({
           ))}
         </div>
       </section>
-      <SolutionSplit featured plan={TEMPLATES[0]} compact onPick={onPick} />
       <div className="ab-land-templates gs-template-grid">
-        {TEMPLATES.slice(1).map((plan) => (
+        {TEMPLATES.map((plan) => (
           <TemplateCard key={plan.id} plan={plan} onPick={onPick} />
         ))}
       </div>
@@ -331,9 +326,8 @@ function Cases({ onPick }: { onPick: (plan: AppPlan) => void }) {
     <section className="gs-page">
       <h1>Use cases</h1>
       <p className="store-lead gs-left">Apps you can start from a Sheet today.</p>
-      {plans[0] ? <SolutionSplit featured plan={plans[0]} compact onPick={onPick} /> : null}
-      <div className="ab-land-templates">
-        {plans.slice(1).map((plan) => (
+      <div className="ab-land-templates gs-template-grid">
+        {plans.map((plan) => (
           <TemplateCard key={plan.id} plan={plan} onPick={onPick} />
         ))}
       </div>
@@ -372,9 +366,8 @@ function Store({
           </button>
         ))}
       </div>
-      {list[0] ? <SolutionSplit featured plan={list[0]} compact onPick={onPick} /> : null}
-      <div className="ab-land-templates">
-        {list.slice(1).map((plan) => (
+      <div className="ab-land-templates gs-template-grid">
+        {list.map((plan) => (
           <TemplateCard key={plan.id} plan={plan} onPick={onPick} />
         ))}
       </div>
@@ -396,7 +389,7 @@ function TemplateCard({
       <p>{COPY[plan.id] || plan.blurb}</p>
       <div className="ab-land-actions">
         <button type="button" className="ab-ios-btn ab-ios-btn-fill" onClick={() => onPick(plan)}>
-          Get
+          Start
         </button>
         <button
           type="button"
@@ -407,58 +400,6 @@ function TemplateCard({
         </button>
       </div>
     </article>
-  );
-}
-
-function SolutionSplit({
-  plan,
-  onPick,
-  compact,
-  featured,
-  before,
-  ask,
-}: {
-  plan: AppPlan;
-  onPick: (plan: AppPlan) => void;
-  compact?: boolean;
-  featured?: boolean;
-  before?: ReactNode;
-  ask?: ReactNode;
-}) {
-  return (
-    <AppBuilderHeroSplit
-      id={`tpl-${plan.id}`}
-      featured={featured}
-      kicker={plan.label}
-      titleAs={compact ? "h2" : "h1"}
-      title={
-        <>
-          {plan.label}.
-          <br />
-          On the phone.
-        </>
-      }
-      lead={COPY[plan.id] || plan.blurb}
-      facts={templateFacts(plan)}
-      plan={plan}
-      actions={
-        <>
-          <button type="button" className="ab-ios-btn ab-ios-btn-fill" onClick={() => onPick(plan)}>
-            Get
-          </button>
-          <button
-            type="button"
-            className="ab-ios-btn ab-ios-btn-tint"
-            onClick={() => downloadTemplateFormat(plan)}
-          >
-            Format
-          </button>
-        </>
-      }
-    >
-      {before}
-      {ask}
-    </AppBuilderHeroSplit>
   );
 }
 
@@ -487,25 +428,18 @@ function Solution({
   ];
   return (
     <>
-      {ordered[0] ? (
-        <SolutionSplit
-          featured
-          plan={ordered[0]}
-          onPick={onPick}
-          ask={
-            <AskBar
-              prompt={prompt}
-              setPrompt={setPrompt}
-              onBuild={onBuild}
-              sheetUrl={sheetUrl}
-              onSheetUrl={onSheetUrl}
-              onConnectSheet={onConnectSheet}
-            />
-          }
+      <section className="gs-home is-lead">
+        <AskBar
+          prompt={prompt}
+          setPrompt={setPrompt}
+          onBuild={onBuild}
+          sheetUrl={sheetUrl}
+          onSheetUrl={onSheetUrl}
+          onConnectSheet={onConnectSheet}
         />
-      ) : null}
+      </section>
       <div className="ab-land-templates gs-template-grid">
-        {ordered.slice(1).map((plan) => (
+        {ordered.map((plan) => (
           <TemplateCard key={plan.id} plan={plan} onPick={onPick} />
         ))}
       </div>

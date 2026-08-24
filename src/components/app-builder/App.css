@@ -588,11 +588,50 @@
 }
 
 .workspace-app .saas-content:has(.ab-studio) {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
   padding: 0;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+.workspace-app .saas-content .ab-studio,
+.workspace-app .saas-content .gs {
+  width: 100%;
+  height: auto;
+  max-height: none;
+  min-height: 0;
+  overflow: visible;
+}
+
+.workspace-app .gs-nav,
+.workspace-app .gs-mega {
+  display: none;
+}
+
+.workspace-app .gs-home {
+  width: auto;
+  max-width: none;
+  padding: 28px 24px 8px;
+  text-align: left;
+}
+
+.workspace-app .gs-home h1 {
+  margin: 0 0 8px;
+  max-width: none;
+  font-size: 22px;
+}
+
+.workspace-app .store-lead,
+.workspace-app .store-ask,
+.workspace-app .store-url,
+.workspace-app .store-usecases {
+  margin-left: 0;
+  justify-content: flex-start;
 }
 
 .ab-studio {
