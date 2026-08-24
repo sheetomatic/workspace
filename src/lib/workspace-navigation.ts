@@ -623,10 +623,7 @@ export function canAccessWorkspaceNav(
   if (!item.module) {
     return true;
   }
-  if (
-    item.module === "APP_BUILDER" &&
-    ROLE_ORDER.indexOf(user.role) >= ROLE_ORDER.indexOf("ADMIN")
-  ) {
+  if (item.module === "APP_BUILDER") {
     return true;
   }
   return hasWorkspaceModule(user, item.module);
@@ -1072,6 +1069,15 @@ export function listNavPreferenceOptions(params: {
       section,
       options,
     );
+  }
+
+  if (!options.some((option) => option.id === "app-builder")) {
+    options.push({
+      id: "app-builder",
+      label: "App Builder",
+      sectionId: "sellable",
+      sectionLabel: "Modules",
+    });
   }
 
   return options;
