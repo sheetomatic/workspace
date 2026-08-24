@@ -1,11 +1,15 @@
 import { useState } from "react";
 import {
+  relatedForView,
   styleLabel,
+  type AppAction,
+  type AppComputedColumn,
   type AppConfig,
   type AppFormField,
   type AppView,
   type CollectionStyle,
 } from "@/lib/app-builder";
+import { fieldFromColumn } from "@/lib/app-builder/infer";
 import type { SheetAdapter } from "../sheet/mockAdapter";
 import { ThemePicker } from "./ThemePicker";
 
@@ -25,12 +29,7 @@ function slug(s: string) {
 }
 
 function fieldFromCol(col: string): AppFormField {
-  return {
-    name: col.toLowerCase().replace(/\s+/g, ""),
-    label: col,
-    col,
-    type: /qty|rate|amount|stock|price|count/i.test(col) ? "number" : "text",
-  };
+  return fieldFromColumn(col);
 }
 
 function patchView(config: AppConfig, id: string, patch: Partial<AppView>): AppConfig {
@@ -101,24 +100,11 @@ function HomeDesign({
           onChange={(e) => meta({ greeting: e.target.value })}
         />
       </label>
-      <label className="field-label">
-        Form title
-        <input
-          value={m.formTitle ?? ""}
-          onChange={(e) => meta({ formTitle: e.target.value })}
-          placeholder="New order"
-        />
-      </label>
       <p className="aside-label">Show / hide</p>
       <Toggle
         label="Brand in header"
         on={m.showBrand !== false}
         onChange={(v) => meta({ showBrand: v })}
-      />
-      <Toggle
-        label="Form banner"
-        on={m.showFormBanner !== false}
-        onChange={(v) => meta({ showFormBanner: v })}
       />
       <Toggle
         label="Home tiles"
@@ -273,6 +259,11 @@ function ScreenDesign({
         on={view.nav !== false}
         onChange={(v) => set({ nav: v })}
       />
+      <Toggle
+        label="Allow delete"
+        on={view.allowDelete !== false}
+        onChange={(v) => set({ allowDelete: v })}
+      />
 
       <label className="field-label">
         Title column
@@ -302,6 +293,18 @@ function ScreenDesign({
         <select
           value={view.statusCol || ""}
           onChange={(e) => set({ statusCol: e.target.value || undefined })}
+        >
+          <option value="">None</option>
+          {headers.map((h) => (
+            <option key={h}>{h}</option>
+          ))}
+        </select>
+      </label>
+      <label className="field-label">
+        Image
+        <select
+          value={view.imageCol || ""}
+          onChange={(e) => set({ imageCol: e.target.value || undefined })}
         >
           <option value="">None</option>
           {headers.map((h) => (
@@ -362,6 +365,28 @@ function ScreenDesign({
         <p className="hint">All sheet columns are on this screen.</p>
       )}
 
+      <label className="field-label">
+        Row owner (staff sees only their rows)
+        <select
+          value={view.ownerCol || ""}
+          onChange={(e) => set({ ownerCol: e.target.value || undefined })}
+        >
+          <option value="">Everyone</option>
+          {headers.map((h) => (
+            <option key={h}>{h}</option>
+          ))}
+        </select>
+      </label>
+
+      <RelationsEditor config={config} view={view} tables={tables} sheet={sheet} onChange={onChange} />
+      <GlideExtrasEditor
+        config={config}
+        view={view}
+        headers={headers}
+        sheet={sheet}
+        onChange={onChange}
+      />
+
       <p className="aside-label">Add a screen</p>
       {unusedTables.length ? (
         <div className="add-inline">
@@ -389,6 +414,453 @@ function ScreenDesign({
       <button type="button" className="linkish" onClick={removeScreen}>
         Remove this screen
       </button>
+    </>
+  );
+}
+
+function GlideExtrasEditor({
+  config,
+  view,
+  headers,
+  sheet,
+  onChange,
+}: {
+  config: AppConfig;
+  view: AppView;
+  headers: string[];
+  sheet: SheetAdapter;
+  onChange: (c: AppConfig) => void;
+}) {
+  const computed = (config.computed || []).filter((col) => col.tab === view.tab);
+  const actions = (config.actions || []).filter((action) => action.viewId === view.id);
+  const relations = config.related.filter(
+    (rel) => rel.parentViewId === view.id || rel.childTab === view.tab,
+  );
+  const allCols = [...headers, ...computed.map((col) => col.name)];
+  const fieldRules = (config.visibility || []).filter(
+    (rule) => rule.target === "field" && allCols.includes(rule.targetId),
+  );
+
+  function lookupCols(relationId?: string) {
+    const rel = relations.find((item) => item.id === relationId) || relations[0];
+    if (!rel) return [];
+    if (rel.childTab === view.tab) {
+      const parent = config.views.find((item) => item.id === rel.parentViewId);
+      return sheet.getTab(parent?.tab || "")?.headers || parent?.cols || [];
+    }
+    return sheet.getTab(rel.childTab)?.headers || rel.cols;
+  }
+
+  function patchComputed(id: string, patch: Partial<AppComputedColumn>) {
+    onChange({
+      ...config,
+      computed: (config.computed || []).map((item) =>
+        item.id === id ? { ...item, ...patch } : item,
+      ),
+    });
+  }
+
+  function patchAction(id: string, patch: (action: AppAction) => AppAction) {
+    onChange({
+      ...config,
+      actions: (config.actions || []).map((item) => (item.id === id ? patch(item) : item)),
+    });
+  }
+
+  function addComputed(kind: AppComputedColumn["kind"]) {
+    const name =
+      kind === "math" ? "Line Amount" : kind === "lookup" ? "Lookup" : "Flag";
+    const rel = relations[0];
+    const next: AppComputedColumn = {
+      id: `${view.tab}-${kind}-${Date.now().toString().slice(-4)}`,
+      tab: view.tab,
+      name,
+      kind,
+      leftCol: headers[0],
+      rightCol: headers[1],
+      op: "mul",
+      relationId: rel?.id,
+      lookupCol: lookupCols(rel?.id)[0],
+      whenCol: view.statusCol || headers[0],
+      whenOp: "eq",
+      whenValue: "Open",
+      thenValue: "Needs action",
+      elseValue: "Ok",
+    };
+    onChange({
+      ...config,
+      computed: [...(config.computed || []), next],
+      views: config.views.map((item) =>
+        item.id === view.id && !item.cols.includes(name)
+          ? { ...item, cols: [...item.cols, name] }
+          : item,
+      ),
+    });
+  }
+
+  function addAction() {
+    const next: AppAction = {
+      id: `act-${Date.now().toString().slice(-4)}`,
+      label: "Mark done",
+      viewId: view.id,
+      steps: [
+        { kind: "set", col: view.statusCol || headers[0], value: "Done" },
+        { kind: "notify", message: "Updated" },
+      ],
+    };
+    onChange({ ...config, actions: [...(config.actions || []), next] });
+  }
+
+  return (
+    <>
+      <p className="aside-label">Computed columns</p>
+      <p className="hint">Lookup, math, or if-then-else. Shown in the phone, not written to the Sheet.</p>
+      {computed.map((col) => (
+        <div className="rel-add" key={col.id}>
+          <input value={col.name} onChange={(e) => patchComputed(col.id, { name: e.target.value })} />
+          {col.kind === "math" ? (
+            <>
+              <select
+                value={col.leftCol || ""}
+                onChange={(e) => patchComputed(col.id, { leftCol: e.target.value })}
+              >
+                {headers.map((h) => (
+                  <option key={h}>{h}</option>
+                ))}
+              </select>
+              <select
+                value={col.op || "mul"}
+                onChange={(e) =>
+                  patchComputed(col.id, { op: e.target.value as AppComputedColumn["op"] })
+                }
+              >
+                <option value="mul">×</option>
+                <option value="add">+</option>
+                <option value="sub">−</option>
+                <option value="div">÷</option>
+              </select>
+              <select
+                value={col.rightCol || ""}
+                onChange={(e) => patchComputed(col.id, { rightCol: e.target.value })}
+              >
+                {headers.map((h) => (
+                  <option key={h}>{h}</option>
+                ))}
+              </select>
+            </>
+          ) : null}
+          {col.kind === "lookup" ? (
+            <>
+              <select
+                value={col.relationId || ""}
+                onChange={(e) =>
+                  patchComputed(col.id, {
+                    relationId: e.target.value,
+                    lookupCol: lookupCols(e.target.value)[0],
+                  })
+                }
+              >
+                {relations.length ? (
+                  relations.map((rel) => (
+                    <option key={rel.id} value={rel.id}>
+                      {rel.name}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">Add a relation first</option>
+                )}
+              </select>
+              <select
+                value={col.lookupCol || ""}
+                onChange={(e) => patchComputed(col.id, { lookupCol: e.target.value })}
+              >
+                {lookupCols(col.relationId).map((h) => (
+                  <option key={h}>{h}</option>
+                ))}
+              </select>
+            </>
+          ) : null}
+          {col.kind === "if" ? (
+            <>
+              <select
+                value={col.whenCol || ""}
+                onChange={(e) => patchComputed(col.id, { whenCol: e.target.value })}
+              >
+                {headers.map((h) => (
+                  <option key={h}>{h}</option>
+                ))}
+              </select>
+              <select
+                value={col.whenOp || "eq"}
+                onChange={(e) =>
+                  patchComputed(col.id, { whenOp: e.target.value as AppComputedColumn["whenOp"] })
+                }
+              >
+                <option value="eq">=</option>
+                <option value="neq">≠</option>
+                <option value="empty">empty</option>
+                <option value="notempty">filled</option>
+              </select>
+              {col.whenOp === "empty" || col.whenOp === "notempty" ? null : (
+                <input
+                  value={col.whenValue || ""}
+                  placeholder="When"
+                  onChange={(e) => patchComputed(col.id, { whenValue: e.target.value })}
+                />
+              )}
+              <input
+                value={col.thenValue || ""}
+                placeholder="Then"
+                onChange={(e) => patchComputed(col.id, { thenValue: e.target.value })}
+              />
+              <input
+                value={col.elseValue || ""}
+                placeholder="Else"
+                onChange={(e) => patchComputed(col.id, { elseValue: e.target.value })}
+              />
+            </>
+          ) : null}
+          <button
+            type="button"
+            onClick={() =>
+              onChange({
+                ...config,
+                computed: (config.computed || []).filter((item) => item.id !== col.id),
+              })
+            }
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+      <div className="style-picks">
+        <button type="button" onClick={() => addComputed("math")}>+ Math</button>
+        <button type="button" onClick={() => addComputed("lookup")}>+ Lookup</button>
+        <button type="button" onClick={() => addComputed("if")}>+ If-then</button>
+      </div>
+
+      <p className="aside-label">Visibility</p>
+      <p className="hint">Hide this screen from staff, or hide a field unless the person is owner.</p>
+      <Toggle
+        label="Staff can open this screen"
+        on={!config.visibility?.some((rule) => rule.target === "view" && rule.targetId === view.id && rule.when === "owner")}
+        onChange={(on) => {
+          const rest = (config.visibility || []).filter(
+            (rule) => !(rule.target === "view" && rule.targetId === view.id),
+          );
+          onChange({
+            ...config,
+            visibility: on
+              ? rest
+              : [...rest, { id: `vis-${view.id}`, target: "view", targetId: view.id, when: "owner" }],
+          });
+        }}
+      />
+      {fieldRules.map((rule) => (
+        <div className="rel-add" key={rule.id}>
+          <span>{rule.targetId} · owner only</span>
+          <button
+            type="button"
+            onClick={() =>
+              onChange({
+                ...config,
+                visibility: (config.visibility || []).filter((item) => item.id !== rule.id),
+              })
+            }
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+      <div className="add-inline">
+        <select
+          defaultValue=""
+          onChange={(e) => {
+            const targetId = e.target.value;
+            if (!targetId) return;
+            e.target.value = "";
+            if (fieldRules.some((rule) => rule.targetId === targetId)) return;
+            onChange({
+              ...config,
+              visibility: [
+                ...(config.visibility || []),
+                { id: `vis-field-${targetId}`, target: "field", targetId, when: "owner" },
+              ],
+            });
+          }}
+        >
+          <option value="">Hide field from staff…</option>
+          {allCols
+            .filter((col) => !fieldRules.some((rule) => rule.targetId === col))
+            .map((col) => (
+              <option key={col}>{col}</option>
+            ))}
+        </select>
+      </div>
+
+      <p className="aside-label">Action buttons</p>
+      {actions.map((action) => {
+        const setStep = action.steps.find((step) => step.kind === "set");
+        const notifyStep = action.steps.find((step) => step.kind === "notify");
+        return (
+          <div className="rel-add" key={action.id}>
+            <input
+              value={action.label}
+              onChange={(e) => patchAction(action.id, (item) => ({ ...item, label: e.target.value }))}
+            />
+            <select
+              value={setStep?.col || ""}
+              onChange={(e) =>
+                patchAction(action.id, (item) => ({
+                  ...item,
+                  steps: item.steps.map((step) =>
+                    step.kind === "set" ? { ...step, col: e.target.value } : step,
+                  ),
+                }))
+              }
+            >
+              {allCols.map((h) => (
+                <option key={h}>{h}</option>
+              ))}
+            </select>
+            <input
+              value={setStep?.value || ""}
+              placeholder="{{now}} or Done"
+              onChange={(e) =>
+                patchAction(action.id, (item) => ({
+                  ...item,
+                  steps: item.steps.map((step) =>
+                    step.kind === "set" ? { ...step, value: e.target.value } : step,
+                  ),
+                }))
+              }
+            />
+            <input
+              value={notifyStep?.message || ""}
+              placeholder="Toast"
+              onChange={(e) =>
+                patchAction(action.id, (item) => ({
+                  ...item,
+                  steps: item.steps.map((step) =>
+                    step.kind === "notify" ? { ...step, message: e.target.value } : step,
+                  ),
+                }))
+              }
+            />
+            <button
+              type="button"
+              onClick={() =>
+                onChange({
+                  ...config,
+                  actions: (config.actions || []).filter((item) => item.id !== action.id),
+                })
+              }
+            >
+              Remove
+            </button>
+          </div>
+        );
+      })}
+      <button type="button" onClick={addAction}>
+        + Action sequence
+      </button>
+    </>
+  );
+}
+
+function RelationsEditor({
+  config,
+  view,
+  tables,
+  sheet,
+  onChange,
+}: {
+  config: AppConfig;
+  view: AppView;
+  tables: string[];
+  sheet: SheetAdapter;
+  onChange: (c: AppConfig) => void;
+}) {
+  const existing = relatedForView(config, view.id);
+  const [childTab, setChildTab] = useState(tables.find((t) => t !== view.tab) || "");
+  const childHeaders = sheet.getTab(childTab)?.headers || [];
+  const [parentKey, setParentKey] = useState(view.titleCol || view.cols[0] || "");
+  const [childKey, setChildKey] = useState(childHeaders[0] || "");
+
+  return (
+    <>
+      <p className="aside-label">Relations</p>
+      <p className="hint">Match a column here to a column on another table — like Glide.</p>
+      {existing.map((rel) => (
+        <div className="rel-row" key={rel.id}>
+          <span>
+            {rel.name}: {rel.parentKeys[0]} → {rel.childTab}.{rel.childKeys[0]}
+          </span>
+          <button
+            type="button"
+            onClick={() =>
+              onChange({
+                ...config,
+                related: config.related.filter((r) => r.id !== rel.id),
+              })
+            }
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+      {tables.length > 1 ? (
+        <div className="rel-add">
+          <select value={parentKey} onChange={(e) => setParentKey(e.target.value)}>
+            {(sheet.getTab(view.tab)?.headers || view.cols).map((h) => (
+              <option key={h}>{h}</option>
+            ))}
+          </select>
+          <select
+            value={childTab}
+            onChange={(e) => {
+              setChildTab(e.target.value);
+              setChildKey(sheet.getTab(e.target.value)?.headers[0] || "");
+            }}
+          >
+            {tables.filter((t) => t !== view.tab).map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+          </select>
+          <select value={childKey} onChange={(e) => setChildKey(e.target.value)}>
+            {childHeaders.map((h) => (
+              <option key={h}>{h}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => {
+              if (!childTab || !parentKey || !childKey) return;
+              const childView = config.views.find((v) => v.tab === childTab);
+              const heads = sheet.getTab(childTab)?.headers || [];
+              onChange({
+                ...config,
+                related: [
+                  ...config.related,
+                  {
+                    id: `${view.id}__${childTab}-${Date.now().toString().slice(-4)}`,
+                    name: childTab,
+                    parentViewId: view.id,
+                    childTab,
+                    childViewId: childView?.id,
+                    parentKeys: [parentKey],
+                    childKeys: [childKey],
+                    cols: heads.filter((h) => h !== childKey).slice(0, 4),
+                    addFields: heads.filter((h) => h !== childKey).map(fieldFromCol),
+                  },
+                ],
+              });
+            }}
+          >
+            Link
+          </button>
+        </div>
+      ) : null}
     </>
   );
 }

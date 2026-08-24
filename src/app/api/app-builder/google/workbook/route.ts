@@ -5,7 +5,9 @@ import {
   appBuilderOAuthFromTokens,
   listAppBuilderTabs,
   loadAppBuilderWorkbook,
+  mutateAppBuilderSheet,
 } from "@/lib/app-builder/google";
+import type { CellValue } from "@/lib/app-builder";
 import { prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -63,6 +65,78 @@ export async function GET(request: Request) {
     console.error("[app-builder google workbook]", error);
     return NextResponse.json(
       { error: "Could not read that Sheet. Reconnect Google and try again." },
+      { status: 400 },
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json({ error: "Sign in required." }, { status: 401 });
+  }
+
+  const connection = await prisma.appBuilderGoogleConnection.findUnique({
+    where: { organizationId: user.organizationId },
+  });
+  const body = (await request.json().catch(() => null)) as {
+    spreadsheetId?: string;
+    action?: "append" | "update" | "delete";
+    tab?: string;
+    headers?: string[];
+    cells?: Record<string, CellValue>;
+    row?: number;
+  } | null;
+  const spreadsheetId = body?.spreadsheetId?.trim() || connection?.spreadsheetId;
+  if (!connection || !spreadsheetId || !body?.action || !body.tab) {
+    return NextResponse.json({ error: "Connect a Google Sheet first." }, { status: 400 });
+  }
+
+  const oauth2 = appBuilderOAuthFromTokens(
+    appBuilderGoogleRedirectUri(request),
+    connection,
+  );
+  if (!oauth2) {
+    return NextResponse.json(
+      { error: "Google connect is not configured." },
+      { status: 503 },
+    );
+  }
+
+  try {
+    if (body.action === "append") {
+      await mutateAppBuilderSheet(oauth2, spreadsheetId, {
+        action: "append",
+        tab: body.tab,
+        headers: body.headers || Object.keys(body.cells || {}),
+        cells: body.cells || {},
+      });
+    } else if (body.action === "update") {
+      if (!body.row) {
+        return NextResponse.json({ error: "Missing row." }, { status: 400 });
+      }
+      await mutateAppBuilderSheet(oauth2, spreadsheetId, {
+        action: "update",
+        tab: body.tab,
+        headers: body.headers || Object.keys(body.cells || {}),
+        row: body.row,
+        cells: body.cells || {},
+      });
+    } else {
+      if (!body.row) {
+        return NextResponse.json({ error: "Missing row." }, { status: 400 });
+      }
+      await mutateAppBuilderSheet(oauth2, spreadsheetId, {
+        action: "delete",
+        tab: body.tab,
+        row: body.row,
+      });
+    }
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("[app-builder google mutate]", error);
+    return NextResponse.json(
+      { error: "Could not write to that Sheet. Reconnect Google and allow edit access." },
       { status: 400 },
     );
   }

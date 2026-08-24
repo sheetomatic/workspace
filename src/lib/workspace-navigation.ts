@@ -30,6 +30,7 @@ import {
   Truck,
   Users,
   Wallet,
+  AppWindow,
 } from "lucide-react";
 import type { SessionUser } from "@/lib/auth";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
@@ -577,10 +578,20 @@ const DEPARTMENT_NAV_ITEMS: WorkspaceNavItem[] = [
 
 const MODULE_ITEMS: WorkspaceNavItem[] = [...DEPARTMENT_NAV_ITEMS];
 
+const APP_BUILDER_NAV_ITEM: WorkspaceNavItem = {
+  id: "app-builder",
+  href: "/app/app-builder",
+  label: "App Builder",
+  icon: AppWindow,
+  module: "APP_BUILDER",
+  matchPrefix: "/app/app-builder",
+};
+
 const SELLABLE_MODULE_ITEMS: WorkspaceNavItem[] = [
   CRM_NAV_ITEM,
   HRMS_NAV_ITEM,
   IMS_STOCK_NAV_ITEM,
+  APP_BUILDER_NAV_ITEM,
 ];
 
 export function canAccessWorkspaceNav(
@@ -610,6 +621,12 @@ export function canAccessWorkspaceNav(
     }
   }
   if (!item.module) {
+    return true;
+  }
+  if (
+    item.module === "APP_BUILDER" &&
+    ROLE_ORDER.indexOf(user.role) >= ROLE_ORDER.indexOf("ADMIN")
+  ) {
     return true;
   }
   return hasWorkspaceModule(user, item.module);

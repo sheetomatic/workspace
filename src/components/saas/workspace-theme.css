@@ -955,6 +955,17 @@ body:has(.workspace-app.saas-app) {
   overflow: hidden;
 }
 
+.workspace-app .saas-content:has(.ab-studio) {
+  padding: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.workspace-app .saas-content:has(.ab-studio:not(.glide)) {
+  display: block;
+}
+
 .workspace-app .saas-content:has(.ws-fms-jotform-page),
 .workspace-app .saas-content:has(.ws-fms-flow-design-page) {
   display: flex;

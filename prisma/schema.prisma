@@ -25,6 +25,7 @@ enum WorkspaceModule {
   FMS
   IMS
   CRM
+  APP_BUILDER
 }
 
 enum FmsFormFieldType {

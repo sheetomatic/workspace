@@ -1,5 +1,12 @@
 import type { AppView, SheetRow } from "@/lib/app-builder";
-import { cellStr, initials, tone } from "@/lib/app-builder";
+import { cellStr, initials, isImageUrl, tone } from "@/lib/app-builder";
+
+export function CellVisual({ value, asImage }: { value: string; asImage?: boolean }) {
+  if ((asImage || isImageUrl(value)) && /^https?:\/\//i.test(value)) {
+    return <img className="cell-img" src={value} alt="" />;
+  }
+  return <>{value}</>;
+}
 
 function titleOf(view: AppView, row: SheetRow) {
   return cellStr(row, view.titleCol || view.cols[0] || "") || `Item ${row._row}`;
@@ -53,7 +60,9 @@ export function CollectionList({
             {rows.map((r) => (
               <tr key={r._row} onClick={() => onOpen(r)}>
                 {cols.map((c) => (
-                  <td key={c}>{cellStr(r, c)}</td>
+                  <td key={c}>
+                    <CellVisual value={cellStr(r, c)} asImage={c === view.imageCol} />
+                  </td>
                 ))}
               </tr>
             ))}
@@ -108,7 +117,11 @@ export function CollectionList({
           return (
             <button key={r._row} type="button" className="card" onClick={() => onOpen(r)}>
               <div className="card-art" style={{ background: tone(title) }}>
-                <span>{initials(title)}</span>
+                {view.imageCol && cellStr(r, view.imageCol) ? (
+                  <CellVisual value={cellStr(r, view.imageCol)} asImage />
+                ) : (
+                  <span>{initials(title)}</span>
+                )}
               </div>
               <div className="card-body">
                 <strong>{title}</strong>
@@ -136,7 +149,13 @@ export function CollectionList({
           .slice(0, 1)[0];
         return (
           <button key={r._row} type="button" className="list-row" onClick={() => onOpen(r)}>
-            <Avatar name={title} />
+            {view.imageCol && cellStr(r, view.imageCol) ? (
+              <span className="thumb">
+                <CellVisual value={cellStr(r, view.imageCol)} asImage />
+              </span>
+            ) : (
+              <Avatar name={title} />
+            )}
             <div className="list-copy">
               <strong>{title}</strong>
               <span>
@@ -155,9 +174,11 @@ export function CollectionList({
 export function FieldBlocks({
   row,
   hide,
+  imageCol,
 }: {
   row: SheetRow;
   hide?: string[];
+  imageCol?: string;
 }) {
   const skip = new Set(hide ?? []);
   const keys = Object.keys(row.cells).filter(
@@ -169,7 +190,9 @@ export function FieldBlocks({
       {keys.map((k) => (
         <div className="field" key={k}>
           <dt>{k}</dt>
-          <dd>{cellStr(row, k)}</dd>
+          <dd>
+            <CellVisual value={cellStr(row, k)} asImage={k === imageCol} />
+          </dd>
         </div>
       ))}
     </div>

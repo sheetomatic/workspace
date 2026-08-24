@@ -1,24 +1,31 @@
 import { useEffect, useMemo, useState } from "react";
 import type {
+  AppAction,
   AppConfig,
   AppFormField,
   AppRelated,
   AppView,
   CellValue,
   SheetRow,
+  UserRole,
 } from "@/lib/app-builder";
 import {
+  applyAction,
   applySlice,
   cellStr,
+  enrichRow,
   filterRelated,
   initials,
-  navViews,
+  normKey,
   parentKeyFromRow,
   relatedForView,
   searchRows,
   themeById,
   themeVars,
   tone,
+  visibleActions,
+  visibleFields,
+  visibleNavViews,
 } from "@/lib/app-builder";
 import type { SheetAdapter } from "../sheet/mockAdapter";
 import { Avatar, CollectionList, FieldBlocks } from "./Collection";
@@ -38,8 +45,8 @@ type Props = {
 };
 
 export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props) {
-  const tabs = navViews(config);
   const [screen, setScreen] = useState<Screen>("home");
+  const [toast, setToast] = useState("");
   const [viewId, setViewId] = useState<string | null>(null);
   const [row, setRow] = useState<SheetRow | null>(null);
   const [q, setQ] = useState("");
@@ -47,7 +54,11 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
   const [tick, setTick] = useState(0);
   const [pin, setPin] = useState("");
   const [who, setWho] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState("");
 
+  const signed = (config.users || []).find((u) => u.name === who);
+  const role: UserRole | null = signed?.role ?? (who ? "owner" : null);
+  const tabs = visibleNavViews(config, role);
   const view = config.views.find((v) => v.id === viewId) || null;
 
   useEffect(() => {
@@ -65,9 +76,19 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
 
   const deckRows = useMemo(() => {
     if (!view) return [];
-    return searchRows(applySlice(sheet.listRows(view.tab), view.sliceCols), q);
+    let rows = searchRows(applySlice(sheet.listRows(view.tab), view.sliceCols), q).map((r) =>
+      enrichRow(r, view.tab, config, sheet),
+    );
+    const signedUser = (config.users || []).find((u) => u.name === who);
+    if (view.ownerCol && signedUser && signedUser.role !== "owner") {
+      rows = rows.filter((r) => normKey(cellStr(r, view.ownerCol || "")) === normKey(signedUser.name));
+    }
+    if (statusFilter && view.statusCol) {
+      rows = rows.filter((r) => cellStr(r, view.statusCol || "") === statusFilter);
+    }
+    return rows;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, q, tick, sheet]);
+  }, [view, q, tick, sheet, who, statusFilter, config.users]);
 
   const relatedBlocks = useMemo(() => {
     if (!view || !row) return [];
@@ -90,6 +111,7 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
   function openView(id: string) {
     setViewId(id);
     setQ("");
+    setStatusFilter("");
     setRow(null);
     setForm(null);
     setScreen("collection");
@@ -128,8 +150,8 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
       : screen === "collection"
         ? view?.name || "Collection"
         : screen === "detail"
-          ? view && row
-            ? cellStr(row, view.titleCol || view.cols[0] || "")
+          ? view && detailRow
+            ? cellStr(detailRow, view.titleCol || view.cols[0] || "")
             : "Details"
           : form?.kind === "edit"
             ? "Edit"
@@ -139,8 +161,11 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
 
   const featured = tabs[0];
   const recent = featured
-    ? applySlice(sheet.listRows(featured.tab), featured.sliceCols).slice(0, 3)
+    ? applySlice(sheet.listRows(featured.tab), featured.sliceCols)
+        .slice(0, 3)
+        .map((r) => enrichRow(r, featured.tab, config, sheet))
     : [];
+  const detailRow = view && row ? enrichRow(row, view.tab, config, sheet) : row;
 
   const skin = themeVars(themeById(config.meta.themeId), config.meta.themeAccent);
 
@@ -220,9 +245,15 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
           <HomeScreen
             config={config}
             sheet={sheet}
+            role={role}
             recent={recent}
             featured={featured}
             onOpenView={openView}
+            onAdd={(v) => {
+              setViewId(v.id);
+              setForm({ kind: "add", view: v });
+              setScreen("form");
+            }}
             onOpenRow={(v, r) => {
               setViewId(v.id);
               openDetail(r);
@@ -242,6 +273,33 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
                 />
               </div>
             )}
+            {view.statusCol ? (
+              <div className="status-filters">
+                <button
+                  type="button"
+                  className={statusFilter ? "" : "on"}
+                  onClick={() => setStatusFilter("")}
+                >
+                  All
+                </button>
+                {[
+                  ...new Set(
+                    applySlice(sheet.listRows(view.tab), view.sliceCols)
+                      .map((r) => cellStr(r, view.statusCol || ""))
+                      .filter(Boolean),
+                  ),
+                ].map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    className={statusFilter === status ? "on" : ""}
+                    onClick={() => setStatusFilter(status)}
+                  >
+                    {status}
+                  </button>
+                ))}
+              </div>
+            ) : null}
             <CollectionList
               view={view}
               rows={deckRows}
@@ -250,15 +308,57 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
           </>
         )}
 
-        {screen === "detail" && view && row && (
+        {screen === "detail" && view && detailRow && (
           <DetailPane
             view={view}
-            row={row}
+            row={detailRow}
+            hiddenFields={Object.keys(detailRow.cells).filter(
+              (key) => !visibleFields(Object.keys(detailRow.cells), config, role, detailRow).includes(key),
+            )}
+            actions={visibleActions(config, view.id, role, detailRow)}
+            onRunAction={(action) => {
+              const result = applyAction(action, detailRow, who);
+              if (Object.keys(result.cells).length) {
+                sheet.updateRow(view.tab, detailRow._row, {
+                  ...detailRow.cells,
+                  ...result.cells,
+                });
+                setRow({
+                  ...detailRow,
+                  cells: { ...detailRow.cells, ...result.cells },
+                });
+                bump();
+              }
+              if (result.notify) setToast(result.notify);
+              if (result.go === "home") goHome();
+              if (result.go === "collection") {
+                setRow(null);
+                setScreen("collection");
+              }
+            }}
             relatedBlocks={relatedBlocks}
             onAddRelated={(rel) => {
               setForm({ kind: "related", view, related: rel, parent: row });
               setScreen("form");
             }}
+            onOpenRelated={(rel, child) => {
+              const childView =
+                config.views.find((v) => v.id === rel.childViewId) ||
+                config.views.find((v) => v.tab === rel.childTab);
+              if (!childView) return;
+              setViewId(childView.id);
+              openDetail(child);
+            }}
+            onDelete={
+              view.allowDelete === false
+                ? undefined
+                : () => {
+                    sheet.deleteRow(view.tab, row._row);
+                    bump();
+                    setRow(null);
+                    setScreen("collection");
+                  }
+            }
           />
         )}
 
@@ -273,6 +373,7 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
                   : form.view.id)
             }
             mode={form}
+            sheet={sheet}
             onCancel={back}
             onSave={(cells) => {
               if (form.kind === "add") {
@@ -288,12 +389,15 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
                 if (!key) throw new Error("Set the parent key first");
                 const stamped: Record<string, CellValue> = { ...cells };
                 for (const k of form.related.childKeys) stamped[k] = key;
-                if (
-                  stamped.Qty != null &&
-                  stamped.Rate != null &&
-                  !stamped["Line Amount"]
-                ) {
-                  stamped["Line Amount"] = Number(stamped.Qty) * Number(stamped.Rate);
+                const qty = Number(stamped.Qty ?? stamped.Quantity);
+                const rate = Number(stamped.Rate ?? stamped.Price);
+                if (Number.isFinite(qty) && Number.isFinite(rate) && qty && rate) {
+                  const amountCol = Object.keys(stamped).find((k) =>
+                    /line amount|amount|total/i.test(k),
+                  );
+                  if (amountCol && (stamped[amountCol] == null || stamped[amountCol] === "")) {
+                    stamped[amountCol] = qty * rate;
+                  }
                 }
                 sheet.appendRow(form.related.childTab, stamped);
               }
@@ -304,6 +408,12 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
           />
         )}
       </div>
+
+      {toast ? (
+        <p className="rt-toast" role="status">
+          {toast}
+        </p>
+      ) : null}
 
       {screen !== "form" && (
         <nav className="rt-nav" aria-label="Tabs">
@@ -335,28 +445,31 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
 function HomeScreen({
   config,
   sheet,
+  role,
   recent,
   featured,
   onOpenView,
+  onAdd,
   onOpenRow,
 }: {
   config: AppConfig;
   sheet: SheetAdapter;
+  role: UserRole | null;
   recent: SheetRow[];
   featured?: AppView;
   onOpenView: (id: string) => void;
+  onAdd: (view: AppView) => void;
   onOpenRow: (view: AppView, row: SheetRow) => void;
 }) {
-  const tabs = navViews(config);
+  const tabs = visibleNavViews(config, role);
   return (
     <div className="home">
       <p className="kicker">{config.meta.greeting || "Good morning"}</p>
       <h2>{config.meta.name}</h2>
-      {config.meta.formTitle && config.meta.showFormBanner !== false ? (
-        <div className="form-banner">
-          <strong>Google Form</strong>
-          <span>{config.meta.formTitle} — responses land in this Sheet</span>
-        </div>
+      {featured?.addFields?.length ? (
+        <button type="button" className="btn primary" onClick={() => onAdd(featured)}>
+          New {featured.name.replace(/s$/, "")}
+        </button>
       ) : null}
       {config.meta.showHomeTiles === false ? null : (
         <div className="tiles">
@@ -383,7 +496,7 @@ function HomeScreen({
           />
         </section>
       ) : (
-        <p className="help">Speak or type what to build. Apply, and this phone fills in.</p>
+        <p className="help">Connect a Sheet or pick a template. Screens come from your tables.</p>
       )}
     </div>
   );
@@ -392,17 +505,27 @@ function HomeScreen({
 function DetailPane({
   view,
   row,
+  hiddenFields,
+  actions,
+  onRunAction,
   relatedBlocks,
   onAddRelated,
+  onOpenRelated,
+  onDelete,
 }: {
   view: AppView;
   row: SheetRow;
+  hiddenFields: string[];
+  actions: AppAction[];
+  onRunAction: (action: AppAction) => void;
   relatedBlocks: {
     rel: AppRelated;
     key: string;
     children: SheetRow[];
   }[];
   onAddRelated: (rel: AppRelated) => void;
+  onOpenRelated: (rel: AppRelated, child: SheetRow) => void;
+  onDelete?: () => void;
 }) {
   const title = cellStr(row, view.titleCol || view.cols[0] || "") || `Item ${row._row}`;
   const status = view.statusCol ? cellStr(row, view.statusCol) : "";
@@ -411,7 +534,11 @@ function DetailPane({
   return (
     <div className="detail">
       <div className="hero" style={{ background: tone(title) }}>
-        <span>{initials(title)}</span>
+        {view.imageCol && cellStr(row, view.imageCol) ? (
+          <img className="hero-img" src={cellStr(row, view.imageCol)} alt="" />
+        ) : (
+          <span>{initials(title)}</span>
+        )}
       </div>
       <div className="detail-title">
         <h2>{title}</h2>
@@ -436,8 +563,30 @@ function DetailPane({
 
       <section className="block">
         <h3>Details</h3>
-        <FieldBlocks row={row} hide={[view.titleCol || ""]} />
+        <FieldBlocks
+          row={row}
+          hide={[view.titleCol || "", ...hiddenFields]}
+          imageCol={view.imageCol}
+        />
       </section>
+
+      {actions.length ? (
+        <section className="block">
+          <h3>Actions</h3>
+          <div className="actions">
+            {actions.map((action) => (
+              <button
+                key={action.id}
+                type="button"
+                className="btn ghost"
+                onClick={() => onRunAction(action)}
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {relatedBlocks.map(({ rel, key, children }) => (
         <section className="block" key={rel.id}>
@@ -459,7 +608,12 @@ function DetailPane({
           ) : (
             <div className="list compact">
               {children.map((c) => (
-                <div className="list-row static" key={c._row}>
+                <button
+                  type="button"
+                  className="list-row"
+                  key={c._row}
+                  onClick={() => onOpenRelated(rel, c)}
+                >
                   <Avatar name={cellStr(c, rel.cols[0] || "")} />
                   <div className="list-copy">
                     <strong>{cellStr(c, rel.cols[0] || "") || `Row ${c._row}`}</strong>
@@ -471,22 +625,29 @@ function DetailPane({
                         .join(" · ")}
                     </span>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           )}
         </section>
       ))}
+      {onDelete ? (
+        <button type="button" className="linkish danger" onClick={onDelete}>
+          Delete this item
+        </button>
+      ) : null}
     </div>
   );
 }
 
 function FormPane({
   mode,
+  sheet,
   onCancel,
   onSave,
 }: {
   mode: FormMode;
+  sheet: SheetAdapter;
   onCancel: () => void;
   onSave: (cells: Record<string, CellValue>) => void;
 }) {
@@ -523,8 +684,9 @@ function FormPane({
           if (mode.kind === "add" && mode.view.statusCol && !cells[mode.view.statusCol]) {
             cells[mode.view.statusCol] = "Open";
           }
-          if (mode.kind === "add" && mode.view.tab === "Orders" && !cells.Date) {
-            cells.Date = new Date().toLocaleDateString("en-GB");
+          const dateCol = fields.find((f) => f.type === "date")?.col;
+          if (mode.kind === "add" && dateCol && !cells[dateCol]) {
+            cells[dateCol] = new Date().toLocaleDateString("en-GB");
           }
           onSave(cells);
         } catch (ex) {
@@ -538,20 +700,59 @@ function FormPane({
           <strong>{parentKeyFromRow(mode.parent, mode.related.parentKeys) || "—"}</strong>
         </p>
       ) : null}
-      {fields.map((f) => (
-        <label key={f.name}>
-          {f.label}
-          {f.required ? " *" : ""}
-          <input
-            value={values[f.name] ?? ""}
-            type={f.type === "number" ? "number" : f.type === "date" ? "text" : "text"}
-            step={f.type === "number" ? "0.01" : undefined}
-            required={!!f.required}
-            placeholder={f.label}
-            onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
-          />
-        </label>
-      ))}
+      {fields.map((f) => {
+        const choiceValues = f.choiceTab
+          ? [
+              ...new Set(
+                sheet
+                  .listRows(f.choiceTab)
+                  .map((r) => cellStr(r, f.choiceCol || ""))
+                  .filter(Boolean),
+              ),
+            ]
+          : f.options || [];
+        const useChoice = f.type === "choice" || Boolean(f.choiceTab);
+        return (
+          <label key={f.name}>
+            {f.label}
+            {f.required ? " *" : ""}
+            {useChoice ? (
+              <select
+                value={values[f.name] ?? ""}
+                required={!!f.required}
+                onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
+              >
+                <option value="">Select</option>
+                {choiceValues.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+                {values[f.name] && !choiceValues.includes(values[f.name]) ? (
+                  <option value={values[f.name]}>{values[f.name]}</option>
+                ) : null}
+              </select>
+            ) : (
+              <input
+                value={values[f.name] ?? ""}
+                type={
+                  f.type === "number" ? "number" : f.type === "phone" ? "tel" : f.type === "email" ? "email" : "text"
+                }
+                step={f.type === "number" ? "0.01" : undefined}
+                required={!!f.required}
+                placeholder={
+                  f.type === "date"
+                    ? "DD/MM/YYYY"
+                    : f.type === "image"
+                      ? "https://…/photo.jpg"
+                      : f.label
+                }
+                onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
+              />
+            )}
+          </label>
+        );
+      })}
       {err ? <p className="err">{err}</p> : null}
       <div className="form-actions">
         <button type="submit" className="btn primary">

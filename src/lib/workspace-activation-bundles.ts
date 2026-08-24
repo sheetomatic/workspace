@@ -1,6 +1,7 @@
 import {
   bciStarterOnboardingPreset,
   bciWithTasksOnboardingPreset,
+  appBuilderOnboardingPreset,
   client50OnboardingPreset,
   planOnboardingPreset,
   tasksAddonOnboardingPreset,
@@ -37,6 +38,8 @@ export function resolveActivationPreset(bundle: string): ClientOnboardingPreset 
       return planOnboardingPreset("BCI_GROWTH");
     case "client_50":
       return client50OnboardingPreset();
+    case "app_builder":
+      return appBuilderOnboardingPreset();
     case "bci_starter":
     default:
       return bciStarterOnboardingPreset();

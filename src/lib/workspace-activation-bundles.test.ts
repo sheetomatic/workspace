@@ -25,6 +25,14 @@ describe("workspace activation bundles", () => {
     expect(option?.description).toMatch(/Not PC/);
   });
 
+  it("resolves App Builder as its own SKU", () => {
+    const preset = resolveActivationPreset("app_builder");
+    expect(preset.allowedModules).toEqual(["APP_BUILDER"]);
+    expect(preset.allowedModules).not.toContain("FMS");
+    const option = ACTIVATION_BUNDLE_OPTIONS.find((o) => o.value === "app_builder");
+    expect(option?.label).toBe("App Builder");
+  });
+
   it("resolves BCI + Tasks bundle", () => {
     const preset = resolveActivationPreset("bci_with_tasks");
     expect(preset.allowedModules).toContain("FMS");

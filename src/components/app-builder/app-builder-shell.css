@@ -52,6 +52,10 @@
 
 .ab-product-main {
   min-height: calc(100dvh - 56px);
+  max-height: calc(100dvh - 56px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 .ab-product .ab-studio,

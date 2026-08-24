@@ -29,12 +29,64 @@ export interface AppUser {
   role: UserRole;
 }
 
+export type FieldType = "text" | "number" | "date" | "phone" | "email" | "choice" | "image";
+
+export type ComputedKind = "lookup" | "math" | "if";
+export type MathOp = "mul" | "add" | "sub" | "div";
+export type IfOp = "eq" | "neq" | "empty" | "notempty";
+export type VisibilityWhen = "always" | "never" | "owner" | "staff" | "column";
+export type ActionStepKind = "set" | "notify" | "go";
+
+export interface AppComputedColumn {
+  id: string;
+  tab: string;
+  name: string;
+  kind: ComputedKind;
+  relationId?: string;
+  lookupCol?: string;
+  leftCol?: string;
+  op?: MathOp;
+  rightCol?: string;
+  whenCol?: string;
+  whenOp?: IfOp;
+  whenValue?: string;
+  thenValue?: string;
+  elseValue?: string;
+}
+
+export interface AppVisibility {
+  id: string;
+  target: "view" | "field" | "action";
+  targetId: string;
+  when: VisibilityWhen;
+  col?: string;
+  equals?: string;
+}
+
+export interface AppActionStep {
+  kind: ActionStepKind;
+  col?: string;
+  value?: string;
+  message?: string;
+  screen?: "home" | "collection" | "detail";
+}
+
+export interface AppAction {
+  id: string;
+  label: string;
+  viewId: string;
+  steps: AppActionStep[];
+}
+
 export interface AppFormField {
   name: string;
   label: string;
   col: string;
-  type?: "text" | "number" | "date";
+  type?: FieldType;
   required?: boolean;
+  options?: string[];
+  choiceTab?: string;
+  choiceCol?: string;
 }
 
 export interface AppView {
@@ -52,6 +104,9 @@ export interface AppView {
   collectionStyle?: CollectionStyle;
   statusCol?: string;
   phoneCol?: string;
+  imageCol?: string;
+  ownerCol?: string;
+  allowDelete?: boolean;
   addFields?: AppFormField[];
   editFields?: AppFormField[];
 }
@@ -61,6 +116,7 @@ export interface AppRelated {
   name: string;
   parentViewId: string;
   childTab: string;
+  childViewId?: string;
   parentKeys: string[];
   childKeys: string[];
   cols: string[];
@@ -73,6 +129,9 @@ export interface AppConfig {
   views: AppView[];
   related: AppRelated[];
   users?: AppUser[];
+  computed?: AppComputedColumn[];
+  visibility?: AppVisibility[];
+  actions?: AppAction[];
 }
 
 export type CellValue = string | number | boolean | null;
@@ -95,7 +154,14 @@ export interface SheetWorkbook {
 
 export function createEmptyConfig(name = "Untitled app"): AppConfig {
   return {
-    meta: { name, version: 1, plan: "free", themeAccent: "#111113", requirePin: false },
+    meta: {
+      name,
+      version: 1,
+      plan: "free",
+      themeAccent: "#111113",
+      requirePin: false,
+      showFormBanner: false,
+    },
     hubs: [],
     views: [],
     related: [],
@@ -209,7 +275,7 @@ export function createDemoConfig(): AppConfig {
         titleCol: "Order No",
         subtitleCol: "Party",
         collectionStyle: "list",
-        cols: ["Order No", "Date", "Party", "Status", "Amount"],
+        cols: ["Order No", "Date", "Party", "Status", "Amount", "Party Phone"],
         sliceCols: ["Order No"],
         statusCol: "Status",
         addFields: [
@@ -303,8 +369,39 @@ export function createDemoConfig(): AppConfig {
         cols: ["Order No", "Date", "Status", "Amount"],
       },
     ],
+    computed: [
+      {
+        id: "party-phone",
+        tab: "Orders",
+        name: "Party Phone",
+        kind: "lookup",
+        relationId: "party-orders-rel",
+        lookupCol: "Phone",
+      },
+    ],
+    actions: [
+      {
+        id: "mark-done",
+        label: "Mark done",
+        viewId: "orders",
+        steps: [
+          { kind: "set", col: "Status", value: "Done" },
+          { kind: "notify", message: "Marked done" },
+        ],
+      },
+    ],
   };
 }
 
 export { TEMPLATES, styleLabel, type AppPlan } from "./templates";
 export { THEMES, themeById, themeVars, type ThemePalette } from "./themes";
+export { inferAppFromWorkbook, inferFieldType } from "./infer";
+export {
+  applyAction,
+  enrichRow,
+  evaluateComputed,
+  isImageUrl,
+  visibleActions,
+  visibleFields,
+  visibleNavViews,
+} from "./glide-extras";

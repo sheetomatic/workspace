@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createEmptyConfig,
+  inferAppFromWorkbook,
   styleLabel,
   type AppConfig,
   type SheetWorkbook,
@@ -16,6 +17,7 @@ import { type AppPlan } from "@/lib/app-builder";
 import { addCredits, readCredits, spendCredit, WELCOME_CREDITS } from "./credits";
 import { AppRuntime } from "./runtime/AppRuntime";
 import { createMockAdapter, type SheetAdapter } from "./sheet/mockAdapter";
+import { withLiveSheetSync } from "./sheet/liveSync";
 import "./App.css";
 
 type Editor = "layout" | "data" | "users" | "settings";
@@ -56,7 +58,10 @@ export default function AppBuilderStudio({
   googleAuthReady?: boolean;
 }) {
   const [config, setConfig] = useState<AppConfig>(() => createEmptyConfig("My app"));
-  const [sheet] = useState<SheetAdapter>(() => createMockAdapter(emptyBook));
+  const liveSheetId = useRef<string | null>(null);
+  const [sheet] = useState<SheetAdapter>(() =>
+    withLiveSheetSync(createMockAdapter(emptyBook), () => liveSheetId.current),
+  );
   const [editor, setEditor] = useState<Editor>("layout");
   const [focus, setFocus] = useState("home");
   const [rev, setRev] = useState(0);
@@ -82,6 +87,7 @@ export default function AppBuilderStudio({
   const [importHeaderRow, setImportHeaderRow] = useState(1);
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
 
+  liveSheetId.current = google.spreadsheetId || connected;
   const workbook = useMemo(() => sheet.getWorkbook(), [sheet, rev]);
   const screens = config.views;
   const bump = () => setRev((n) => n + 1);
@@ -209,7 +215,6 @@ export default function AppBuilderStudio({
     options?: { tab?: string; headerRow?: number },
   ) {
     const params = new URLSearchParams({ id: spreadsheetId });
-    if (options?.tab) params.set("tab", options.tab);
     if (options?.headerRow && options.headerRow > 1) {
       params.set("headerRow", String(options.headerRow));
     }
@@ -222,11 +227,23 @@ export default function AppBuilderStudio({
       return;
     }
     const body = (await res.json()) as { workbook: SheetWorkbook };
-    sheet.replace(body.workbook);
+    applyWorkbook(body.workbook, options?.tab);
     setConnected(spreadsheetId);
-    setDataTab(Object.keys(body.workbook.tabs)[0] || "");
+    setNote(
+      `Opened “${body.workbook.title}”. Screens and relations were built from your tables.`,
+    );
+  }
+
+  function applyWorkbook(workbook: SheetWorkbook, focusTab?: string) {
+    sheet.replace(workbook);
+    const next = inferAppFromWorkbook(workbook);
+    setConfig(next);
+    const focusView = next.views.find((v) => v.tab === focusTab);
+    setFocus(focusView?.id || "home");
+    setDataTab(focusTab || Object.keys(workbook.tabs)[0] || "");
+    setGalleryOpen(false);
+    setActiveTemplateId(null);
     setRev((n) => n + 1);
-    setNote(`Opened “${body.workbook.title}” from your Google account.`);
   }
 
   async function usePickedSheet() {
@@ -297,6 +314,21 @@ export default function AppBuilderStudio({
   const emptyApp = config.views.length === 0;
   const showGallery = galleryOpen || (emptyApp && editor === "layout" && !preview);
 
+  if (showGallery) {
+    return (
+      <div className="ab-studio">
+        <TemplateGallery
+          onPick={applyPlan}
+          onBuild={build}
+          sheetUrl={sheetUrl}
+          onSheetUrl={setSheetUrl}
+          onConnectSheet={connectSheet}
+          onBack={emptyApp ? undefined : () => setGalleryOpen(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className={`ab-studio glide${preview ? " previewing" : ""}${showGallery ? " gallery-open" : ""}`}>
       <div className="connect-bar">
@@ -364,16 +396,25 @@ export default function AppBuilderStudio({
                 </button>
               </>
             ) : (
-              <button
-                type="button"
-                className="ghost"
-                disabled={googleBusy}
-                onClick={() =>
-                  setGoogle((prev) => ({ ...prev, spreadsheetId: null, spreadsheetTitle: null }))
-                }
-              >
-                Change Sheet
-              </button>
+              <>
+            <button
+              type="button"
+              className="ghost"
+              disabled={googleBusy}
+              onClick={() =>
+                setGoogle((prev) => ({ ...prev, spreadsheetId: null, spreadsheetTitle: null }))
+              }
+            >
+              Change Sheet
+            </button>
+            <button
+              type="button"
+              className="ghost"
+              onClick={() => applyWorkbook(sheet.getWorkbook(), dataTab)}
+            >
+              Rebuild from Sheet
+            </button>
+              </>
             )}
             <button
               type="button"
@@ -491,6 +532,10 @@ export default function AppBuilderStudio({
             {showGallery ? (
               <TemplateGallery
                 onPick={applyPlan}
+                onBuild={build}
+                sheetUrl={sheetUrl}
+                onSheetUrl={setSheetUrl}
+                onConnectSheet={connectSheet}
                 onBack={emptyApp ? undefined : () => setGalleryOpen(false)}
               />
             ) : (
@@ -809,19 +854,16 @@ function SettingsEditor({
           }
         />
       </label>
-      <label className="field-label">
-        Google Form title
-        <input
-          value={config.meta.formTitle || ""}
-          onChange={(e) =>
-            onChange({
-              ...config,
-              meta: { ...config.meta, formTitle: e.target.value },
-            })
-          }
-          placeholder="New order"
-        />
-      </label>
+      <p className="hint">
+        Google Connect works for any Gmail after the Cloud app is in{" "}
+        <strong>Production</strong> and verification is submitted. Privacy page
+        Google will ask for:{" "}
+        <a href="/app-builder/privacy" target="_blank" rel="noreferrer">
+          sheetomatic.com/app-builder/privacy
+        </a>
+        . Homepage: sheetomatic.com/app-builder. Scopes: Sheets + drive.file
+        only. Until Google approves, add each new Gmail as a tester.
+      </p>
       <ThemePicker
         meta={config.meta}
         onChange={(patch) =>

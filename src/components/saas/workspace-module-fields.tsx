@@ -125,17 +125,15 @@ export function WorkspaceModuleFields({
         is always available. Team and Settings remain admin-only.
       </p>
       <div className="ws-member-module-grid" role="group" aria-label="Workspace modules">
-        {WORKSPACE_MODULES.map((module) => {
+        {WORKSPACE_MODULES.filter((module) => allowedSet.has(module)).map((module) => {
           const checked = selected.includes(module);
-          const tierLocked = !allowedSet.has(module);
           return (
             <label
-              className={`ws-module-option${checked ? " is-selected" : ""}${tierLocked ? " is-tier-locked" : ""}`}
+              className={`ws-module-option${checked ? " is-selected" : ""}`}
               key={module}
             >
               <input
                 checked={checked}
-                disabled={tierLocked}
                 name="modules"
                 type="checkbox"
                 value={module}
@@ -143,7 +141,6 @@ export function WorkspaceModuleFields({
               />
               <span className="ws-module-option-label">
                 {WORKSPACE_MODULE_LABELS[module]}
-                {tierLocked ? " (plan upgrade)" : ""}
               </span>
             </label>
           );

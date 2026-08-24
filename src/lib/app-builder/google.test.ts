@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  APP_BUILDER_GOOGLE_SCOPES,
   appBuilderGoogleRedirectUri,
   signAppBuilderGoogleState,
   valuesToTab,
@@ -7,6 +8,16 @@ import {
 } from "@/lib/app-builder/google";
 
 describe("app builder google oauth helpers", () => {
+  it("asks only for Sheets plus drive.file so verification stays out of CASA", () => {
+    expect(APP_BUILDER_GOOGLE_SCOPES).toContain(
+      "https://www.googleapis.com/auth/spreadsheets",
+    );
+    expect(APP_BUILDER_GOOGLE_SCOPES).toContain(
+      "https://www.googleapis.com/auth/drive.file",
+    );
+    expect(APP_BUILDER_GOOGLE_SCOPES.join(" ")).not.toMatch(/drive\.readonly/);
+  });
+
   it("builds the workspace callback from forwarded host", () => {
     const request = new Request("http://127.0.0.1/api/app-builder/google/start", {
       headers: {

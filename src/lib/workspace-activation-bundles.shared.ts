@@ -7,6 +7,7 @@ export const ACTIVATION_BUNDLE_KEYS = [
   "bci_with_tasks",
   "bci_growth",
   "client_50",
+  "app_builder",
 ] as const;
 
 export type ActivationBundleKey = (typeof ACTIVATION_BUNDLE_KEYS)[number];
@@ -47,7 +48,13 @@ export const ACTIVATION_BUNDLE_OPTIONS: ActivationBundleOption[] = [
     value: "client_50",
     label: "Full client (50 users)",
     description: "Growth modules + Tasks + Legal (HRMS sold separately). Enterprise rollout.",
-    modules: ["FMS", "REPORTS", "APPROVALS", "CRM", "IMS", "TASKS", "CASES"],
+    modules: ["FMS", "REPORTS", "APPROVALS", "CRM", "IMS", "TASKS", "CASES", "APP_BUILDER"],
+  },
+  {
+    value: "app_builder",
+    label: "App Builder",
+    description: "Phone apps on a Gmail Sheet. Staff use a link and PIN — not a Google seat.",
+    modules: ["APP_BUILDER"],
   },
 ];
 

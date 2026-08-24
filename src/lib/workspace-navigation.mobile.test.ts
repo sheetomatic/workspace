@@ -82,12 +82,12 @@ describe("mobileWorkspaceNavItems", () => {
       "HRMS",
       "Tasks",
       "FMS",
-      "Check List",
+      "CRM",
     ]);
     // Everything beyond the four quick items stays reachable via More.
     expect(more.map((item) => item.label)).toEqual([
-      "CRM",
       "EM Ready",
+      "Check List",
       "Reports",
     ]);
   });

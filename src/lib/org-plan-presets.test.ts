@@ -56,5 +56,6 @@ describe("module bundling", () => {
     const preset = client50OnboardingPreset();
     expect(preset.allowedModules).toContain("TASKS");
     expect(preset.allowedModules).toContain("FMS");
+    expect(preset.allowedModules).toContain("APP_BUILDER");
   });
 });

@@ -123,27 +123,31 @@ export default async function TeamPage({
   }
 
   const canManage = canManageTeam(user);
-  const [allMembers, hrSettings, organization, workSites, hrShifts] = await Promise.all([
+  const [allMembers, organization] = await Promise.all([
     listWorkspaceMembers(user.organizationId),
-    canManage ? getOrCreateHrSettings(user.organizationId) : Promise.resolve(null),
     canManage
       ? prisma.organization.findUnique({
           where: { id: user.organizationId },
           select: { allowedModules: true, isPrimary: true },
         })
       : Promise.resolve(null),
-    canManage ? listActiveHrWorkSites(user.organizationId) : Promise.resolve([]),
-    canManage
-      ? ensureDefaultHrShift(user.organizationId).then(() =>
-          listHrShifts(user.organizationId),
-        )
-      : Promise.resolve([]),
   ]);
   const orgAllowedModules = organization
     ? resolveOrgAllowedModules(organization.allowedModules, {
         isPrimary: organization.isPrimary,
       })
     : undefined;
+  const orgHasHr = Boolean(orgAllowedModules?.includes("HR"));
+  const [hrSettings, workSites, hrShifts] =
+    canManage && orgHasHr
+      ? await Promise.all([
+          getOrCreateHrSettings(user.organizationId),
+          listActiveHrWorkSites(user.organizationId),
+          ensureDefaultHrShift(user.organizationId).then(() =>
+            listHrShifts(user.organizationId),
+          ),
+        ])
+      : [null, [] as Awaited<ReturnType<typeof listActiveHrWorkSites>>, []];
   const orgEnabledHrSubModules = hrSettings
     ? resolveEnabledHrSubModules(hrSettings.enabledHrSubModules)
     : undefined;
@@ -204,7 +208,7 @@ export default async function TeamPage({
             />
           </TeamCollapsibleSection>
         ) : null}
-        {canManage && hrSettings ? (
+        {canManage && orgHasHr && hrSettings ? (
           <TeamCollapsibleSection
             title="Workplace attendance settings"
             description="HR sub-modules, working hours, shifts, short leave, geo-fence, and face recognition."
@@ -230,6 +234,31 @@ export default async function TeamPage({
                 geoFenceRadiusM: site.geoFenceRadiusM,
               }))}
             />
+          </TeamCollapsibleSection>
+        ) : null}
+        {canManage ? (
+          <TeamCollapsibleSection
+            title="App Builder"
+            description="New client: a phone app on their Gmail Sheet. Grant the module on the invite."
+            defaultOpen
+          >
+            <article className="saas-panel">
+              <div className="saas-panel-head">
+                <div>
+                  <h3>Start from a Sheet</h3>
+                  <p>
+                    Connect Gmail, pick a template, staff use a link and PIN.
+                    Tick <strong>App Builder</strong> on the invite so they see
+                    it in the left sidebar.
+                  </p>
+                </div>
+              </div>
+              <p>
+                <a className="btn-cta btn-secondary" href="/app/app-builder">
+                  Open App Builder
+                </a>
+              </p>
+            </article>
           </TeamCollapsibleSection>
         ) : null}
         <TeamManagementPanel

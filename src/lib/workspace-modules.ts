@@ -12,6 +12,7 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
   "IMS",
   "APPROVALS",
   "REPORTS",
+  "APP_BUILDER",
 ];
 
 /** BCI / platform modules — legal Cases is a dedicated-portal product only (Hingorani). */
@@ -28,6 +29,7 @@ export const WORKSPACE_MODULE_LABELS: Record<WorkspaceModule, string> = {
   IMS: "IMS / Stock",
   APPROVALS: "Approvals",
   REPORTS: "Reports & MIS",
+  APP_BUILDER: "App Builder",
 };
 
 export const WORKSPACE_MODULE_HREFS: Partial<Record<WorkspaceModule, string>> = {
@@ -39,6 +41,7 @@ export const WORKSPACE_MODULE_HREFS: Partial<Record<WorkspaceModule, string>> = 
   IMS: "/app/ims",
   APPROVALS: "/app/approvals",
   REPORTS: "/app/reports",
+  APP_BUILDER: "/app/app-builder",
 };
 
 /** Defaults when admin leaves modules empty (legacy rows use migration backfill).
@@ -49,7 +52,7 @@ export function defaultModulesForRole(role: Role): WorkspaceModule[] {
     return [...PLATFORM_WORKSPACE_MODULES];
   }
   if (role === "MANAGER") {
-    return ["TASKS", "FMS", "CRM", "HR", "IMS", "APPROVALS", "REPORTS"];
+    return ["TASKS", "FMS", "CRM", "HR", "IMS", "APPROVALS", "REPORTS", "APP_BUILDER"];
   }
   if (role === "STAFF") {
     return ["TASKS", "FMS", "CRM", "HR"];
@@ -79,10 +82,10 @@ export function hasWorkspaceModule(
   user: Pick<SessionUser, "modules" | "isSuperAdmin">,
   module: WorkspaceModule,
 ) {
-  if (user.isSuperAdmin) {
-    return true;
+  if (user.modules.length > 0) {
+    return user.modules.includes(module);
   }
-  return user.modules.includes(module);
+  return Boolean(user.isSuperAdmin);
 }
 
 export function parseModulesFromForm(formData: FormData): WorkspaceModule[] {

@@ -2,11 +2,12 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { google } from "googleapis";
 import type { CellValue, SheetTab, SheetWorkbook } from "@/lib/app-builder";
 
+/** drive.file (not drive.readonly) so Google verification does not need CASA. */
 export const APP_BUILDER_GOOGLE_SCOPES = [
   "openid",
   "email",
   "https://www.googleapis.com/auth/spreadsheets",
-  "https://www.googleapis.com/auth/drive.readonly",
+  "https://www.googleapis.com/auth/drive.file",
 ] as const;
 
 export const APP_BUILDER_GOOGLE_COOKIE = "ab_google_oauth";
@@ -247,4 +248,82 @@ export async function createAppBuilderSpreadsheet(
     spreadsheetId,
     spreadsheetTitle: created.data.properties?.title?.trim() || title,
   };
+}
+
+function quotedTab(tab: string) {
+  return `'${tab.replace(/'/g, "''")}'`;
+}
+
+function rowValues(headers: string[], cells: Record<string, CellValue>) {
+  return headers.map((header) => {
+    const value = cells[header];
+    return value == null ? "" : value;
+  });
+}
+
+export async function mutateAppBuilderSheet(
+  oauth2: InstanceType<typeof google.auth.OAuth2>,
+  spreadsheetId: string,
+  mutation:
+    | {
+        action: "append";
+        tab: string;
+        headers: string[];
+        cells: Record<string, CellValue>;
+      }
+    | {
+        action: "update";
+        tab: string;
+        headers: string[];
+        row: number;
+        cells: Record<string, CellValue>;
+      }
+    | { action: "delete"; tab: string; row: number },
+) {
+  const sheets = google.sheets({ version: "v4", auth: oauth2 });
+  if (mutation.action === "append") {
+    await sheets.spreadsheets.values.append({
+      spreadsheetId,
+      range: `${quotedTab(mutation.tab)}!A:Z`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: [rowValues(mutation.headers, mutation.cells)] },
+    });
+    return;
+  }
+  if (mutation.action === "update") {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${quotedTab(mutation.tab)}!A${mutation.row}:Z${mutation.row}`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: [rowValues(mutation.headers, mutation.cells)] },
+    });
+    return;
+  }
+  const meta = await sheets.spreadsheets.get({
+    spreadsheetId,
+    fields: "sheets.properties(sheetId,title)",
+  });
+  const sheetId = meta.data.sheets?.find(
+    (item) => item.properties?.title === mutation.tab,
+  )?.properties?.sheetId;
+  if (sheetId == null) {
+    throw new Error(`Tab “${mutation.tab}” was not found.`);
+  }
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [
+        {
+          deleteDimension: {
+            range: {
+              sheetId,
+              dimension: "ROWS",
+              startIndex: mutation.row - 1,
+              endIndex: mutation.row,
+            },
+          },
+        },
+      ],
+    },
+  });
 }

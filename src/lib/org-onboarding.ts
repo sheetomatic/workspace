@@ -12,7 +12,7 @@ import {
 export const CLIENT_50_MODULES: WorkspaceModule[] = mergeAllowedModules(
   BCI_GROWTH_ALLOWED,
   TASKS_ADDON_ALLOWED,
-  ["CASES"],
+  ["CASES", "APP_BUILDER"],
 ).filter((module) => module !== "HR");
 
 export const CLIENT_50_LIMITS = {
@@ -55,6 +55,16 @@ export function bciStarterOnboardingPreset(): ClientOnboardingPreset {
 /** Tasks Management only — no FMS, EA, or PC. */
 export function tasksAddonOnboardingPreset(): ClientOnboardingPreset {
   return planOnboardingPreset("TASKS_ADDON");
+}
+
+/** Phone apps on a Gmail Sheet — sold as App Builder, not FMS. */
+export function appBuilderOnboardingPreset(): ClientOnboardingPreset {
+  return {
+    plan: "ENTERPRISE",
+    allowedModules: ["APP_BUILDER"],
+    maxMembers: 25,
+    maxFmsTemplates: 0,
+  };
 }
 
 /** Client bought BCI Starter + Tasks add-on (common upsell). */
