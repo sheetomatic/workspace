@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "dev": "node scripts/prisma-with-env.mjs generate && next dev",
-    "build": "node scripts/prisma-with-env.mjs generate && node scripts/prisma-with-env.mjs migrate deploy && NODE_OPTIONS=--max-old-space-size=8192 next build --webpack",
+    "build": "node scripts/prisma-with-env.mjs generate && node scripts/prisma-with-env.mjs migrate deploy && NODE_OPTIONS=--max-old-space-size=4096 next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "db:generate": "node scripts/prisma-with-env.mjs generate",
