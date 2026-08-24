@@ -26,6 +26,11 @@ Do **not** infer those targets from context (legal cases, Anmol tasks, client na
 - Push Sheetomatic changes to Hingorani / Tops / Anmol repos or Vercel projects by default.
 - Run release-ops for those portals without an explicit user request.
 
+## When a named portal is requested
+
+Follow `docs/CLIENT_PORTAL_ONBOARDING_SOP.md`. Do not deploy until
+`node scripts/client-portal-preflight.mjs --project {slug} --slug {slug}` exits 0.
+
 ## When ambiguous
 
 Ask: *"Deploy to Sheetomatic only, or to Hingorani / Tops / Anmol?"* — default answer is Sheetomatic.

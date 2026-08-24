@@ -991,3 +991,24 @@ PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e   # if dev already running
 | Excluded | IMS PO WIP, pricing/EM Ready, HR actions, BCI sales kit, Graphy CSS, wa-catalog |
 
 **Hard-refresh in prod:** Official WhatsApp Cloud webhook path — non-team senders get redirect to +91 93291 03106 / enquiry form; team phones still use workspace bot.
+
+---
+
+## Release Ops — Super Admin workspace status (2026-08-20)
+
+**Pushed:** `a878264` on `main` → Sheetomatic production **Error** (typecheck). Live site still previous Ready.
+
+| Item | Detail |
+|------|--------|
+| Commit | `a8782640c7cfcfbdcec1ff283c6bd995c2627e77` — Let Super Admin hold, deactivate, or remove client workspaces without touching the primary account. |
+| Branch | `main` == `origin/main` (pushed) |
+| Tests | `npm run test:unit` 204/205 — 1 pre-existing fail in `workspace-navigation.mobile.test.ts` (CRM vs Check List; not in this ship) |
+| Local build | Skipped — `DATABASE_URL`/`DIRECT_URL` missing |
+| Migration | `20260820100000_org_status_hold_inactive` **applied** on Neon during Vercel build |
+| Vercel | Production **Error** — `dpl_5wUsMuDEc6r8SKZjHBbiWWm6t69X` — https://sheetomatic-redesign-l9nju4fgd-sheetomatic.vercel.app |
+| Target | Sheetomatic only (no Hingorani/Tops) |
+| Live | Previous Ready still serving sheetomatic.com / app.sheetomatic.com |
+
+**Blocker for Backend:** `src/app/app/team/platform-actions.ts:195` — `manageClientWorkspaceAction` returns `{ ok: true; message }` but `CreateClientWorkspaceState` success requires `workspaceName`, `slug`, `loginUrl`, `loginEmail`, `emailSent`, `existingUser`, `bundleLabel`. Separate manage-action state type (or optional success fields).
+
+**Hard-refresh in prod:** Do not yet — Super Admin hold/deactivate/remove is not live until typecheck hotfix ships.

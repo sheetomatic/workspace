@@ -416,6 +416,7 @@ function MemberEditForm({
         role={editRole}
       />
 
+      {orgAllowedModules?.includes("HR") ? (
       <fieldset className="ws-member-hr-settings">
         <legend>Attendance &amp; payroll</legend>
         <div className="form-grid-premium">
@@ -500,6 +501,7 @@ function MemberEditForm({
           </label>
         </div>
       </fieldset>
+      ) : null}
 
       <div className="form-actions">
         <button className="btn-cta btn-primary" disabled={pending} type="submit">
@@ -875,6 +877,8 @@ export function TeamManagementPanel({
                     type="text"
                   />
                 </label>
+                {orgAllowedModules?.includes("HR") ? (
+                  <>
                 <label>
                   Location mode
                   <select name="locationMode" defaultValue="FIXED_SITE" required>
@@ -898,6 +902,8 @@ export function TeamManagementPanel({
                     ))}
                   </select>
                 </label>
+                  </>
+                ) : null}
                 <label>
                   Require onboarding docs
                   <select name="requireOnboarding" defaultValue="on">

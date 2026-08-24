@@ -1464,6 +1464,9 @@
 }
 
 .leads-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid #e2e8f0;
   background: #fff;
   border-radius: 8px;
@@ -1950,6 +1953,7 @@
   border: none;
   padding: 0;
   margin: 0;
+  min-width: 0;
 }
 
 .leads-drawer-glide .leads-quote-builder .leads-form-span-2 {
@@ -2043,7 +2047,10 @@
 }
 
 @media (max-width: 720px) {
-  .leads-drawer-glide .leads-quote-builder,
+  .leads-drawer-glide .leads-quote-builder {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .leads-quote-card-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -2055,7 +2062,7 @@
   }
 
   .leads-quote-card-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -2292,22 +2299,132 @@
   }
 
   .leads-drawer,
-  .leads-drawer-wide {
+  .leads-drawer-wide,
+  .leads-drawer-glide {
     width: 100%;
     max-width: 100%;
     height: 100%;
     max-height: 100dvh;
     border-radius: 0;
+    min-width: 0;
   }
 
-  .leads-drawer-head {
+  .leads-drawer-head,
+  .leads-drawer-glide .leads-drawer-head {
     flex-wrap: wrap;
+    padding: 0.7rem 0.75rem calc(0.55rem + env(safe-area-inset-top, 0px));
+    gap: 0.55rem;
+  }
+
+  .leads-drawer-head-main,
+  .leads-drawer-head-copy {
+    min-width: 0;
+    flex: 1 1 12rem;
+  }
+
+  .leads-drawer-glide .leads-drawer-head h2 {
+    font-size: 1.15rem;
+    overflow-wrap: anywhere;
   }
 
   .leads-drawer-head-actions {
     width: 100%;
-    justify-content: flex-end;
+    justify-content: flex-start;
     flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .leads-drawer-so-link,
+  .leads-drawer-head-actions .btn-sm {
+    white-space: nowrap;
+  }
+
+  .leads-drawer-tabs,
+  .leads-drawer-glide .leads-drawer-tabs {
+    margin-inline: 0.5rem;
+    padding: 4px 0.35rem 4px 4px;
+    scroll-padding-inline: 0.75rem;
+  }
+
+  .leads-drawer-tabs::after,
+  .leads-drawer-glide .leads-drawer-tabs::after {
+    content: "";
+    flex: 0 0 0.75rem;
+  }
+
+  .leads-drawer-tabs button,
+  .leads-drawer-glide .leads-drawer-tabs button {
+    flex: 0 0 auto;
+  }
+
+  .leads-drawer-glide .leads-drawer-body {
+    padding: 0.65rem 0.7rem calc(1.1rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .leads-drawer-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .leads-drawer-form,
+  .leads-drawer-section,
+  .leads-drawer-glide .leads-drawer-form,
+  .leads-drawer-glide .leads-drawer-section,
+  .leads-drawer-glide .leads-quotation-workspace {
+    min-width: 0;
+    overflow-x: hidden;
+    padding-inline: 0.85rem;
+  }
+
+  .leads-drawer-glide .leads-quote-builder {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.7rem;
+  }
+
+  .leads-drawer-glide .leads-quote-builder > * {
+    min-width: 0;
+  }
+
+  .leads-quote-workspace-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .leads-quote-workspace-head-actions {
+    width: 100%;
+  }
+
+  .leads-quote-workspace-head-actions .leads-action-btn {
+    flex: 1 1 auto;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .leads-drawer-glide .leads-quote-submit-row {
+    flex-direction: column;
+    position: sticky;
+    bottom: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .leads-drawer-glide .leads-quote-submit-row .btn-secondary,
+  .leads-drawer-glide .leads-quote-submit-row .btn-primary {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  .leads-quote-line-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .leads-payment-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .leads-meeting-calendar__cols,
+  .leads-projects-split,
+  .leads-quote-new-service-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .leads-drawer-form input,
@@ -2315,9 +2432,14 @@
   .leads-drawer-form textarea,
   .leads-drawer-section input,
   .leads-drawer-section select,
-  .leads-drawer-section textarea {
+  .leads-drawer-section textarea,
+  .leads-quote-builder input,
+  .leads-quote-builder select,
+  .leads-quote-builder textarea {
     font-size: 16px;
     max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .leads-training-fields {

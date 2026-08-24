@@ -1,0 +1,20 @@
+---
+description: Dedicated client portal go-live — follow the SOP, never deploy half-set
+alwaysApply: true
+---
+
+# Client portal onboarding
+
+We sell dedicated portals. Improvised go-live is a failed sale.
+
+When the lead names **Anmol / Hingorani / Tops / a new client portal**, follow `docs/CLIENT_PORTAL_ONBOARDING_SOP.md` in order.
+
+## Hard gates
+
+- Do **not** deploy until `node scripts/client-portal-preflight.mjs --project {slug} --slug {slug}` exits 0.
+- Shared keys come from `sheetomatic/.env.shared.local`. If empty, **stop** and ask the lead. Do not decrypt Vercel, do not copy from another client unless the lead says so.
+- Never print secrets. Add env via stdin, not `--value`.
+- Deploy author: `training@sheetomatic.in` for that command only. Never `git config`.
+- Own repo + own Cursor window + own Vercel project. Domain on **that** project, not `sheetomatic-redesign`.
+- Typecheck in the **client** repo (`npm run build`) before deploy.
+- Accept only when login, tenant slug, and OpenAI **Configured** work on `https://{slug}.sheetomatic.com`.
