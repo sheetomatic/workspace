@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
-import { TEMPLATES, type AppPlan } from "@/lib/app-builder";
+import { useMemo, useState, type ReactNode } from "react";
+import { TEMPLATES, type AppPlan, type SheetTab } from "@/lib/app-builder";
+import { GlidePhonePreview } from "../glide-phone-preview";
 
 type Page = "home" | "cases" | "store" | "solution";
 type Cat = "All" | "Sales" | "Inventory" | "Operations" | "Finance" | "Custom";
@@ -58,6 +59,33 @@ type Props = {
   onSheetUrl?: (url: string) => void;
   onConnectSheet?: () => void;
 };
+
+function xmlEscape(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function formatSheetXml(tab: SheetTab) {
+  const header = tab.headers
+    .map((h) => `<Cell><Data ss:Type="String">${xmlEscape(h)}</Data></Cell>`)
+    .join("");
+  return `<Worksheet ss:Name="${xmlEscape(tab.name.slice(0, 31))}"><Table><Row>${header}</Row></Table></Worksheet>`;
+}
+
+function downloadTemplateFormat(plan: AppPlan) {
+  const sheets = Object.values(plan.workbook.tabs).map(formatSheetXml).join("");
+  const xml = `<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">${sheets}</Workbook>`;
+  const blob = new Blob([xml], { type: "application/vnd.ms-excel" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${plan.id}-format.xls`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export function TemplateGallery(props: Props) {
   const [page, setPage] = useState<Page>("home");
@@ -151,22 +179,21 @@ export function TemplateGallery(props: Props) {
           prompt={prompt}
           setPrompt={setPrompt}
           onBuild={props.onBuild}
+          onPick={props.onPick}
           sheetUrl={props.sheetUrl}
           onSheetUrl={props.onSheetUrl}
           onConnectSheet={props.onConnectSheet}
-          onCase={openSolution}
         />
       ) : null}
 
       {page === "cases" ? (
-        <Cases onOpen={openSolution} />
+        <Cases onPick={props.onPick} />
       ) : null}
 
       {page === "store" ? (
         <Store
           cat={cat}
           setCat={setCat}
-          featured={featured}
           list={list}
           onPick={props.onPick}
           onInferDemo={props.onInferDemo}
@@ -175,7 +202,7 @@ export function TemplateGallery(props: Props) {
 
       {page === "solution" && solution ? (
         <Solution
-          plan={solution}
+          selectedId={solution.id}
           prompt={prompt}
           setPrompt={setPrompt}
           onBuild={props.onBuild}
@@ -240,170 +267,19 @@ function AskBar({
   );
 }
 
+function scrollToTemplate(id: string) {
+  document.getElementById(`tpl-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 function Home({
   prompt,
   setPrompt,
   onBuild,
-  sheetUrl,
-  onSheetUrl,
-  onConnectSheet,
-  onCase,
-}: {
-  prompt: string;
-  setPrompt: (v: string) => void;
-  onBuild?: (p: string) => void;
-  sheetUrl?: string;
-  onSheetUrl?: (v: string) => void;
-  onConnectSheet?: () => void;
-  onCase: (id: string) => void;
-}) {
-  const pills = useMemo(
-    () => [
-      { id: "orders", label: "Field operations" },
-      { id: "inventory", label: "Inventory" },
-      { id: "visitors", label: "Events" },
-      { id: "custom", label: "Customer portals" },
-      { id: "tasks", label: "Internal operations" },
-    ],
-    [],
-  );
-  return (
-    <section className="gs-home">
-      <h1>Turn your spreadsheets into apps that run your business</h1>
-      <p className="store-lead">
-        Build on a Gmail Sheet. Staff need a link and PIN — not a Google account.
-      </p>
-      <AskBar
-        prompt={prompt}
-        setPrompt={setPrompt}
-        onBuild={onBuild}
-        sheetUrl={sheetUrl}
-        onSheetUrl={onSheetUrl}
-        onConnectSheet={onConnectSheet}
-      />
-      <div className="gs-floors">
-        <button type="button" className="gs-floor" onClick={() => onCase("orders")}>
-          <em>Yard</em>
-          <b>Dispatch · weighment · party</b>
-          <span>Orders from the gate. Lines stay on the parent.</span>
-        </button>
-        <button type="button" className="gs-floor" onClick={() => onCase("crm")}>
-          <em>Office</em>
-          <b>Orders · follow-up · cash</b>
-          <span>CRM and cash out without a second Sheet.</span>
-        </button>
-        <button type="button" className="gs-floor" onClick={() => onCase("tasks")}>
-          <em>Review</em>
-          <b>Weekly EM · deficit · not prep</b>
-          <span>Open the phone. Exceptions first — not a slide deck.</span>
-        </button>
-      </div>
-      <div className="store-usecases">
-        {pills.map((p) => (
-          <button key={p.id} type="button" onClick={() => onCase(p.id)}>
-            {p.label}
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function Cases({ onOpen }: { onOpen: (id: string) => void }) {
-  return (
-    <section className="gs-page">
-      <h1>Use cases</h1>
-      <p className="store-lead gs-left">Apps you can start from a Sheet today.</p>
-      <div className="gs-cards">
-        {CASES.map((c) => {
-          const plan = TEMPLATES.find((t) => t.id === c.id);
-          return (
-            <button key={c.title} type="button" className="gs-card" onClick={() => onOpen(c.id)}>
-              <div className="gs-card-art">
-                <PhonePreview plan={plan} />
-              </div>
-              <strong>{c.title}</strong>
-              <span>{c.body}</span>
-            </button>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function Store({
-  cat,
-  setCat,
-  featured,
-  list,
-  onPick,
-  onInferDemo,
-}: {
-  cat: Cat;
-  setCat: (c: Cat) => void;
-  featured?: AppPlan;
-  list: AppPlan[];
-  onPick: (plan: AppPlan) => void;
-  onInferDemo?: () => void;
-}) {
-  return (
-    <section className="gs-page">
-      {featured ? (
-        <div className="store-featured">
-          <div>
-            <p className="store-kicker">Featured</p>
-            <h2>{featured.label}</h2>
-            <p>{COPY[featured.id] || featured.blurb}</p>
-            <button type="button" className="store-get" onClick={() => onPick(featured)}>
-              Get
-            </button>
-            {onInferDemo ? (
-              <button type="button" className="store-ghost" onClick={onInferDemo}>
-                Build from a demo Sheet
-              </button>
-            ) : null}
-          </div>
-          <PhonePreview plan={featured} />
-        </div>
-      ) : null}
-      <div className="store-usecases gs-left-row">
-        {CATS.map((c) => (
-          <button key={c} type="button" className={cat === c ? "on" : ""} onClick={() => setCat(c)}>
-            {c}
-          </button>
-        ))}
-      </div>
-      <h3 className="gs-h3">Ready apps</h3>
-      <div className="store-list">
-        {list.map((plan) => (
-          <article key={plan.id} className="store-row">
-            <span className="store-mark">{plan.label.slice(0, 1)}</span>
-            <div>
-              <strong>{plan.label}</strong>
-              <p>{COPY[plan.id] || plan.blurb}</p>
-            </div>
-            <button type="button" className="store-get" onClick={() => onPick(plan)}>
-              Get
-            </button>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function Solution({
-  plan,
-  prompt,
-  setPrompt,
-  onBuild,
   onPick,
   sheetUrl,
   onSheetUrl,
   onConnectSheet,
 }: {
-  plan: AppPlan;
   prompt: string;
   setPrompt: (v: string) => void;
   onBuild?: (p: string) => void;
@@ -413,11 +289,12 @@ function Solution({
   onConnectSheet?: () => void;
 }) {
   return (
-    <section className="gs-split">
-      <div>
-        <p className="store-kicker">{CAT_OF[plan.id] || "App"} software</p>
-        <h1>Build {plan.label.toLowerCase()} on your Sheet, with AI</h1>
-        <p className="store-lead gs-left">{COPY[plan.id] || plan.blurb}</p>
+    <>
+      <section className="gs-home is-lead">
+        <h1>Turn your spreadsheets into apps that run your business</h1>
+        <p className="store-lead">
+          Build on a Gmail Sheet. Staff need a link and PIN — not a Google account.
+        </p>
         <AskBar
           prompt={prompt}
           setPrompt={setPrompt}
@@ -426,39 +303,167 @@ function Solution({
           onSheetUrl={onSheetUrl}
           onConnectSheet={onConnectSheet}
         />
-        <button type="button" className="gs-cta" onClick={() => onPick(plan)}>
-          Start for free
-        </button>
-      </div>
-      <PhonePreview plan={plan} large />
+        <div className="store-usecases">
+          {TEMPLATES.map((t) => (
+            <button key={t.id} type="button" onClick={() => scrollToTemplate(t.id)}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </section>
+      {TEMPLATES.map((plan) => (
+        <SolutionSplit key={plan.id} plan={plan} onPick={onPick} />
+      ))}
+    </>
+  );
+}
+
+function Cases({ onPick }: { onPick: (plan: AppPlan) => void }) {
+  const plans = useMemo(() => {
+    const seen = new Set<string>();
+    return CASES.flatMap((c) => {
+      const plan = TEMPLATES.find((t) => t.id === c.id);
+      if (!plan || seen.has(plan.id)) return [];
+      seen.add(plan.id);
+      return [plan];
+    });
+  }, []);
+  return (
+    <section className="gs-page">
+      <h1>Use cases</h1>
+      <p className="store-lead gs-left">Apps you can start from a Sheet today.</p>
+      {plans.map((plan) => (
+        <SolutionSplit key={plan.id} plan={plan} compact onPick={onPick} />
+      ))}
     </section>
   );
 }
 
-function PhonePreview({ plan, large }: { plan?: AppPlan; large?: boolean }) {
-  if (!plan) return <div className="store-device" />;
-  const tab = Object.values(plan.workbook.tabs)[0];
+function Store({
+  cat,
+  setCat,
+  list,
+  onPick,
+  onInferDemo,
+}: {
+  cat: Cat;
+  setCat: (c: Cat) => void;
+  list: AppPlan[];
+  onPick: (plan: AppPlan) => void;
+  onInferDemo?: () => void;
+}) {
   return (
-    <div className={large ? "store-device is-large" : "store-device"} aria-hidden>
-      <div className="store-device-screen">
-        <em>{plan.config.meta.name}</em>
-        {tab ? (
-          <div className="tpl-preview">
-            <div className="tpl-preview-head">
-              {tab.headers.slice(0, 4).map((h) => (
-                <b key={h}>{h}</b>
-              ))}
-            </div>
-            {tab.rows.slice(0, large ? 4 : 3).map((row) => (
-              <div key={row._row} className="tpl-preview-row">
-                {tab.headers.slice(0, 4).map((h) => (
-                  <i key={h}>{String(row.cells[h] ?? "")}</i>
-                ))}
-              </div>
-            ))}
-          </div>
-        ) : null}
+    <section className="gs-page">
+      <h1>Store</h1>
+      <p className="store-lead gs-left">
+        Same Glide preview for every template. Download the Sheet format, then start.
+      </p>
+      {onInferDemo ? (
+        <button type="button" className="store-ghost gs-demo" onClick={onInferDemo}>
+          Build from a demo Sheet
+        </button>
+      ) : null}
+      <div className="store-usecases gs-left-row">
+        {CATS.map((c) => (
+          <button key={c} type="button" className={cat === c ? "on" : ""} onClick={() => setCat(c)}>
+            {c}
+          </button>
+        ))}
       </div>
-    </div>
+      {list.map((plan) => (
+        <SolutionSplit key={plan.id} plan={plan} compact onPick={onPick} />
+      ))}
+    </section>
+  );
+}
+
+function SolutionSplit({
+  plan,
+  onPick,
+  compact,
+  before,
+  ask,
+}: {
+  plan: AppPlan;
+  onPick: (plan: AppPlan) => void;
+  compact?: boolean;
+  before?: ReactNode;
+  ask?: ReactNode;
+}) {
+  const Title = compact ? "h2" : "h1";
+  return (
+    <section
+      id={`tpl-${plan.id}`}
+      className="gs-split gs-split-app"
+    >
+      <div>
+        {before}
+        <p className="store-kicker">{CAT_OF[plan.id] || "App"} software</p>
+        <Title>Build {plan.label.toLowerCase()} on your Sheet, with AI</Title>
+        <p className="store-lead gs-left">{COPY[plan.id] || plan.blurb}</p>
+        {ask}
+        <div className="gs-actions">
+          <button type="button" className="gs-cta" onClick={() => onPick(plan)}>
+            Start for free
+          </button>
+          <button
+            type="button"
+            className="gs-cta ghost"
+            onClick={() => downloadTemplateFormat(plan)}
+          >
+            Download Format
+          </button>
+        </div>
+      </div>
+      <GlidePhonePreview plan={plan} large />
+    </section>
+  );
+}
+
+function Solution({
+  selectedId,
+  prompt,
+  setPrompt,
+  onBuild,
+  onPick,
+  sheetUrl,
+  onSheetUrl,
+  onConnectSheet,
+}: {
+  selectedId: string;
+  prompt: string;
+  setPrompt: (v: string) => void;
+  onBuild?: (p: string) => void;
+  onPick: (plan: AppPlan) => void;
+  sheetUrl?: string;
+  onSheetUrl?: (v: string) => void;
+  onConnectSheet?: () => void;
+}) {
+  const ordered = [
+    ...TEMPLATES.filter((t) => t.id === selectedId),
+    ...TEMPLATES.filter((t) => t.id !== selectedId),
+  ];
+  return (
+    <>
+      {ordered.map((plan, i) => (
+        <SolutionSplit
+          key={plan.id}
+          plan={plan}
+          onPick={onPick}
+          ask={
+            i === 0 ? (
+              <AskBar
+                prompt={prompt}
+                setPrompt={setPrompt}
+                onBuild={onBuild}
+                sheetUrl={sheetUrl}
+                onSheetUrl={onSheetUrl}
+                onConnectSheet={onConnectSheet}
+              />
+            ) : undefined
+          }
+        />
+      ))}
+    </>
   );
 }

@@ -2,7 +2,9 @@ import Link from "next/link";
 import { EyeOff, ImageIcon, Sigma, Zap } from "lucide-react";
 import { MarketingPage, SiteFooter, SiteHeader } from "@/app/components";
 import { marketingButtonClass } from "@/components/marketing/marketing-button-class";
+import { TEMPLATES } from "@/lib/app-builder";
 import { APP_BUILDER_LOGIN_HREF, APP_BUILDER_STUDIO_HREF } from "@/lib/workspace-auth-links";
+import { GlidePhonePreview } from "./glide-phone-preview";
 import "./app-builder-landing.css";
 
 const steps = [
@@ -78,7 +80,32 @@ export function AppBuilderLanding() {
               <Link href="/app-builder/privacy">How we use your Sheet</Link>.
             </p>
           </div>
-          <PhonePreview />
+          <GlidePhonePreview
+            plan={TEMPLATES.find((t) => t.id === "orders")}
+            large
+          />
+        </div>
+      </section>
+
+      <section className="ab-land-section">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8">
+          <div className="ab-land-head">
+            <p className="type-kicker text-sky-700">Templates</p>
+            <h2>Same Glide phone. One app per Sheet.</h2>
+            <p>
+              Orders, CRM, inventory, attendance — each template is a phone
+              home, not a spreadsheet thumbnail.
+            </p>
+          </div>
+          <div className="ab-land-templates">
+            {TEMPLATES.map((plan) => (
+              <article className="ab-land-template" key={plan.id}>
+                <GlidePhonePreview plan={plan} />
+                <strong>{plan.label}</strong>
+                <p>{plan.blurb}</p>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -126,66 +153,5 @@ export function AppBuilderLanding() {
       </section>
       <SiteFooter />
     </MarketingPage>
-  );
-}
-
-function PhonePreview() {
-  return (
-    <aside className="ab-phone" aria-label="Phone preview of an orders app">
-      <div className="ab-phone-bar">
-        <span>9:41</span>
-        <strong>Sheetomatic</strong>
-        <span>LTE</span>
-      </div>
-      <p className="ab-phone-kicker">Good morning</p>
-      <h3>Orders Desk</h3>
-      <div className="ab-phone-tiles">
-        <span>
-          <em>3</em>
-          <i>Orders</i>
-        </span>
-        <span>
-          <em>2</em>
-          <i>Parties</i>
-        </span>
-      </div>
-      <div className="ab-phone-list">
-        <div className="ab-phone-row">
-          <span className="ab-phone-av" style={{ background: "#1d4ed8" }}>
-            SM
-          </span>
-          <div>
-            <strong>SO-1001</strong>
-            <small>SM Traders · ₹1,25,000</small>
-          </div>
-          <span className="ab-phone-chip">Open</span>
-        </div>
-        <div className="ab-phone-row">
-          <span className="ab-phone-av" style={{ background: "#0f766e" }}>
-            ES
-          </span>
-          <div>
-            <strong>SO-1002</strong>
-            <small>East Steel · ₹84,000</small>
-          </div>
-          <span className="ab-phone-chip ok">Dispatched</span>
-        </div>
-        <div className="ab-phone-row">
-          <span className="ab-phone-av" style={{ background: "#7c3aed" }}>
-            SM
-          </span>
-          <div>
-            <strong>SO-1003</strong>
-            <small>SM Traders · ₹52,000</small>
-          </div>
-          <span className="ab-phone-chip">Open</span>
-        </div>
-      </div>
-      <div className="ab-phone-nav">
-        <em>Home</em>
-        <span>Orders</span>
-        <span>Parties</span>
-      </div>
-    </aside>
   );
 }

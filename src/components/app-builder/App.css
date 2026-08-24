@@ -751,6 +751,10 @@
 .ab-studio .store-device{ background: #0b0b0d; border-radius: 28px; padding: 10px; }
 .ab-studio .store-device-screen{ background: #fff; border-radius: 20px; padding: 14px; min-height: 180px; }
 .ab-studio .store-device-screen em{ display: block; font-style: normal; font-weight: 700; margin-bottom: 10px; }
+.ab-studio .store-apps .store-get{ margin: 12px 16px 0; }
+.ab-studio .gs-floor .glide-phone{ max-width: none; padding: 6px; }
+.ab-studio .gs-floor .glide-phone-screen h3{ font-size: 14px; }
+.ab-studio .gs-h3{ margin: 0 0 14px; font-size: 18px; }
 .ab-studio .store-section h3{ margin: 0 0 14px; font-size: 18px; }
 .ab-studio .store-list{ display: grid; gap: 10px; }
 .ab-studio .store-row{
@@ -800,6 +804,7 @@
 .gs-mega aside{ background: #eef3f8; border-radius: 16px; padding: 16px; display: grid; gap: 8px; }
 .gs-home, .gs-page, .gs-split{ width: min(1080px, calc(100% - 48px)); margin: 0 auto; padding: 48px 0 72px; }
 .gs-home{ text-align: center; }
+.gs-home.is-lead{ padding-bottom: 8px; }
 .gs-home h1, .gs-split h1, .gs-page h1{ margin: 0 auto 14px; max-width: 16ch; font-size: clamp(32px, 6vw, 56px); letter-spacing: -0.05em; line-height: 1.05; }
 .gs-split h1, .gs-page h1{ margin-left: 0; }
 .gs-left{ text-align: left; margin-left: 0; }
@@ -829,6 +834,23 @@
 .gs-card strong{ display: block; padding: 8px 16px 0; font-size: 17px; }
 .gs-card span{ display: block; padding: 6px 16px 0; color: #4b5563; font-size: 13px; line-height: 1.45; }
 .gs-split{ display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+.gs-split .store-ask, .gs-split .store-url{ margin-left: 0; max-width: 100%; }
+.gs-left-row{ justify-content: flex-start; margin: 0 0 16px; }
+.gs-actions{ display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 18px; }
+.gs-cta.ghost{
+  background: #fff;
+  color: #111;
+  border: 1px solid #d1d5db;
+}
+.gs-split-app{
+  width: 100%;
+  padding: 36px 0;
+  border-bottom: 1px solid #eceef2;
+  scroll-margin-top: 16px;
+}
+.gs-split-app:last-child{ border-bottom: 0; }
+.gs-split-app h2{ margin: 0 0 12px; font-size: clamp(26px, 4vw, 40px); letter-spacing: -0.04em; line-height: 1.1; }
+.gs-demo{ display: inline-block; margin: 0 0 18px; padding: 0; }
 @media (max-width: 860px){
   .gs-mega, .gs-cards, .gs-split, .gs-floors{ grid-template-columns: 1fr; }
 }
