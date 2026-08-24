@@ -1,5 +1,10 @@
-import { useMemo, useState } from "react";
-import { TEMPLATES, type AppPlan, type SheetTab } from "@/lib/app-builder";
+import { useMemo, useRef, useState } from "react";
+import {
+  SPREADSHEET_ACCEPT,
+  TEMPLATES,
+  type AppPlan,
+  type SheetTab,
+} from "@/lib/app-builder";
 import { TEMPLATE_LEAD } from "../app-builder-hero-split";
 import { GlidePhonePreview } from "../glide-phone-preview";
 
@@ -50,6 +55,7 @@ type Props = {
   sheetUrl?: string;
   onSheetUrl?: (url: string) => void;
   onConnectSheet?: () => void;
+  onUploadFile?: (file: File) => void;
 };
 
 function xmlEscape(value: string) {
@@ -98,6 +104,13 @@ export function TemplateGallery(props: Props) {
 
   return (
     <div className="gs">
+      {props.onBack ? (
+        <div className="gs-workspace-back">
+          <button type="button" onClick={props.onBack}>
+            ← Back to builder
+          </button>
+        </div>
+      ) : null}
       <header className="gs-nav">
         <button type="button" className="gs-logo" onClick={() => setPage("home")}>
           <i>S</i> Sheetomatic
@@ -175,6 +188,7 @@ export function TemplateGallery(props: Props) {
           sheetUrl={props.sheetUrl}
           onSheetUrl={props.onSheetUrl}
           onConnectSheet={props.onConnectSheet}
+          onUploadFile={props.onUploadFile}
         />
       ) : null}
 
@@ -202,6 +216,7 @@ export function TemplateGallery(props: Props) {
           sheetUrl={props.sheetUrl}
           onSheetUrl={props.onSheetUrl}
           onConnectSheet={props.onConnectSheet}
+          onUploadFile={props.onUploadFile}
         />
       ) : null}
     </div>
@@ -215,6 +230,7 @@ function AskBar({
   sheetUrl,
   onSheetUrl,
   onConnectSheet,
+  onUploadFile,
 }: {
   prompt: string;
   setPrompt: (v: string) => void;
@@ -222,9 +238,22 @@ function AskBar({
   sheetUrl?: string;
   onSheetUrl?: (v: string) => void;
   onConnectSheet?: () => void;
+  onUploadFile?: (file: File) => void;
 }) {
+  const fileRef = useRef<HTMLInputElement>(null);
   return (
     <>
+      <input
+        ref={fileRef}
+        type="file"
+        hidden
+        accept={SPREADSHEET_ACCEPT}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          if (file) onUploadFile?.(file);
+        }}
+      />
       <div className="store-ask">
         <input
           value={prompt}
@@ -234,7 +263,11 @@ function AskBar({
             if (e.key === "Enter" && prompt.trim()) onBuild?.(prompt);
           }}
         />
-        <button type="button" className="store-upload" onClick={onConnectSheet}>
+        <button
+          type="button"
+          className="store-upload"
+          onClick={() => fileRef.current?.click()}
+        >
           Upload spreadsheet
         </button>
         <button
@@ -248,12 +281,24 @@ function AskBar({
         </button>
       </div>
       {onSheetUrl ? (
-        <input
-          className="store-url"
-          value={sheetUrl}
-          onChange={(e) => onSheetUrl(e.target.value)}
-          placeholder="Paste a Google Sheet link, then Upload spreadsheet"
-        />
+        <div className="store-url-row">
+          <input
+            className="store-url"
+            value={sheetUrl}
+            onChange={(e) => onSheetUrl(e.target.value)}
+            placeholder="Or paste a Google Sheet link"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && sheetUrl?.trim()) onConnectSheet?.();
+            }}
+          />
+          <button
+            type="button"
+            className="store-open-sheet"
+            onClick={onConnectSheet}
+          >
+            Open Sheet
+          </button>
+        </div>
       ) : null}
     </>
   );
@@ -271,6 +316,7 @@ function Home({
   sheetUrl,
   onSheetUrl,
   onConnectSheet,
+  onUploadFile,
 }: {
   prompt: string;
   setPrompt: (v: string) => void;
@@ -279,13 +325,14 @@ function Home({
   sheetUrl?: string;
   onSheetUrl?: (v: string) => void;
   onConnectSheet?: () => void;
+  onUploadFile?: (file: File) => void;
 }) {
   return (
     <>
       <section className="gs-home is-lead">
         <h1>Start a phone app from your Sheet</h1>
         <p className="store-lead">
-          Describe it, paste a Gmail Sheet, or pick a template. Staff use a link and PIN.
+          Describe it, upload a spreadsheet, or pick a template. Staff use a link and PIN.
         </p>
         <AskBar
           prompt={prompt}
@@ -294,6 +341,7 @@ function Home({
           sheetUrl={sheetUrl}
           onSheetUrl={onSheetUrl}
           onConnectSheet={onConnectSheet}
+          onUploadFile={onUploadFile}
         />
         <div className="store-usecases">
           {TEMPLATES.map((t) => (
@@ -412,6 +460,7 @@ function Solution({
   sheetUrl,
   onSheetUrl,
   onConnectSheet,
+  onUploadFile,
 }: {
   selectedId: string;
   prompt: string;
@@ -421,6 +470,7 @@ function Solution({
   sheetUrl?: string;
   onSheetUrl?: (v: string) => void;
   onConnectSheet?: () => void;
+  onUploadFile?: (file: File) => void;
 }) {
   const ordered = [
     ...TEMPLATES.filter((t) => t.id === selectedId),
@@ -436,6 +486,7 @@ function Solution({
           sheetUrl={sheetUrl}
           onSheetUrl={onSheetUrl}
           onConnectSheet={onConnectSheet}
+          onUploadFile={onUploadFile}
         />
       </section>
       <div className="ab-land-templates gs-template-grid">

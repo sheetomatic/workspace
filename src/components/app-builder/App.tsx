@@ -4,7 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createEmptyConfig,
   inferAppFromWorkbook,
+  parseGoogleSheetId,
+  SPREADSHEET_ACCEPT,
   styleLabel,
+  workbookFromSpreadsheetFile,
   type AppConfig,
   type SheetWorkbook,
 } from "@/lib/app-builder";
@@ -34,6 +37,7 @@ type GoogleStatus = {
 };
 
 const emptyBook = { title: "My Sheet", tabs: {} };
+const PENDING_SHEET_KEY = "sheetomatic-ab-pending-sheet";
 
 function googleCallbackNote(flag: string | null) {
   switch (flag) {
@@ -86,6 +90,7 @@ export default function AppBuilderStudio({
   const [importTab, setImportTab] = useState("");
   const [importHeaderRow, setImportHeaderRow] = useState(1);
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   liveSheetId.current = google.spreadsheetId || connected;
   const workbook = useMemo(() => sheet.getWorkbook(), [sheet, rev]);
@@ -193,7 +198,16 @@ export default function AppBuilderStudio({
         const data = (await res.json()) as GoogleStatus;
         if (cancelled) return;
         setGoogle(data);
-        if (data.spreadsheetId) {
+        const pending =
+          typeof sessionStorage !== "undefined"
+            ? sessionStorage.getItem(PENDING_SHEET_KEY)
+            : null;
+        if (data.connected && pending) {
+          sessionStorage.removeItem(PENDING_SHEET_KEY);
+          setPickedSheet(pending);
+          setConnected(pending);
+          await loadWorkbook(pending);
+        } else if (data.spreadsheetId) {
           setPickedSheet(data.spreadsheetId);
           setConnected(data.spreadsheetId);
           await loadWorkbook(data.spreadsheetId);
@@ -298,16 +312,56 @@ export default function AppBuilderStudio({
     }
   }
 
-  function connectSheet() {
-    const raw = sheetUrl.trim();
-    const id = raw.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/)?.[1] || raw;
-    if (!id || id.length < 8) {
-      setNote("Paste a Google Sheet link from your Gmail Drive.");
+  function openGallery() {
+    setPreview(false);
+    setEditor("layout");
+    setGalleryOpen(true);
+  }
+
+  function pickSpreadsheet() {
+    fileRef.current?.click();
+  }
+
+  async function onSpreadsheetFile(file: File | undefined) {
+    if (!file) return;
+    try {
+      const book = await workbookFromSpreadsheetFile(file);
+      applyWorkbook(book);
+      setPreview(false);
+      setEditor("data");
+      setNote(
+        `Opened “${book.title}” from your file. Screens were built from the columns.`,
+      );
+    } catch (error) {
+      setNote(
+        error instanceof Error
+          ? error.message
+          : "Could not read that spreadsheet.",
+      );
+    }
+  }
+
+  async function connectSheet() {
+    const id = parseGoogleSheetId(sheetUrl);
+    if (!id) {
+      pickSpreadsheet();
+      return;
+    }
+    if (google.connected) {
+      setGoogleBusy(true);
+      try {
+        await loadWorkbook(id);
+        setPreview(false);
+        setEditor("data");
+      } finally {
+        setGoogleBusy(false);
+      }
       return;
     }
     setConnected(id);
+    sessionStorage.setItem(PENDING_SHEET_KEY, id);
     setNote(
-      "Sheet linked by URL. For live tabs, use Connect with Google so we can read your Drive.",
+      "Connect with Google to open that Sheet live, or upload a .xlsx / .csv.",
     );
   }
 
@@ -317,12 +371,24 @@ export default function AppBuilderStudio({
   if (showGallery) {
     return (
       <div className="ab-studio">
+        <input
+          ref={fileRef}
+          type="file"
+          hidden
+          accept={SPREADSHEET_ACCEPT}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            void onSpreadsheetFile(file);
+          }}
+        />
         <TemplateGallery
           onPick={applyPlan}
           onBuild={build}
           sheetUrl={sheetUrl}
           onSheetUrl={setSheetUrl}
           onConnectSheet={connectSheet}
+          onUploadFile={onSpreadsheetFile}
           onBack={emptyApp ? undefined : () => setGalleryOpen(false)}
         />
       </div>
@@ -331,6 +397,17 @@ export default function AppBuilderStudio({
 
   return (
     <div className={`ab-studio glide${preview ? " previewing" : ""}${showGallery ? " gallery-open" : ""}`}>
+      <input
+        ref={fileRef}
+        type="file"
+        hidden
+        accept={SPREADSHEET_ACCEPT}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          void onSpreadsheetFile(file);
+        }}
+      />
       <div className="connect-bar">
         {google.connected ? (
           <>
@@ -414,6 +491,9 @@ export default function AppBuilderStudio({
             >
               Rebuild from Sheet
             </button>
+            <button type="button" className="ghost" onClick={pickSpreadsheet}>
+              Upload spreadsheet
+            </button>
               </>
             )}
             <button
@@ -435,8 +515,11 @@ export default function AppBuilderStudio({
               onChange={(e) => setSheetUrl(e.target.value)}
               placeholder="or paste a Sheet link"
             />
-            <button type="button" onClick={connectSheet}>
-              Use link
+            <button type="button" onClick={() => void connectSheet()}>
+              Open Sheet
+            </button>
+            <button type="button" className="ghost" onClick={pickSpreadsheet}>
+              Upload spreadsheet
             </button>
           </>
         )}
@@ -481,14 +564,26 @@ export default function AppBuilderStudio({
             </button>
           ))}
         </nav>
-        <button
-          type="button"
-          className={preview ? "on preview-btn" : "preview-btn"}
-          onClick={() => setPreview((on) => !on)}
-        >
-          {preview ? "← Exit preview" : "Preview"}
-        </button>
-        <span className={`credits ${credits < 5 ? "low" : ""}`}>{credits} credits</span>
+        <div className="topbar-actions">
+          <button
+            type="button"
+            className="templates-btn"
+            onClick={openGallery}
+          >
+            ← Templates
+          </button>
+          <button type="button" className="ghost-bar" onClick={pickSpreadsheet}>
+            Upload
+          </button>
+          <button
+            type="button"
+            className={preview ? "on preview-btn" : "preview-btn"}
+            onClick={() => setPreview((on) => !on)}
+          >
+            {preview ? "← Exit preview" : "Preview"}
+          </button>
+          <span className={`credits ${credits < 5 ? "low" : ""}`}>{credits} credits</span>
+        </div>
       </header>
 
       {editor === "layout" && (
@@ -506,7 +601,7 @@ export default function AppBuilderStudio({
               Home
               <em>{emptyApp ? "Custom" : "Home"}</em>
             </button>
-            <button type="button" onClick={() => setGalleryOpen(true)}>
+            <button type="button" onClick={openGallery}>
               Templates
               <em>Ready apps</em>
             </button>
@@ -535,8 +630,9 @@ export default function AppBuilderStudio({
                 onBuild={build}
                 sheetUrl={sheetUrl}
                 onSheetUrl={setSheetUrl}
-                onConnectSheet={connectSheet}
-                onBack={emptyApp ? undefined : () => setGalleryOpen(false)}
+          onConnectSheet={connectSheet}
+          onUploadFile={onSpreadsheetFile}
+          onBack={emptyApp ? undefined : () => setGalleryOpen(false)}
               />
             ) : (
               <div className="canvas">
@@ -591,6 +687,8 @@ export default function AppBuilderStudio({
           tabName={dataTab || Object.keys(workbook.tabs)[0] || ""}
           onTab={setDataTab}
           onChange={bump}
+          onTemplates={openGallery}
+          onUpload={pickSpreadsheet}
         />
       )}
 
@@ -619,11 +717,15 @@ function DataEditor({
   tabName,
   onTab,
   onChange,
+  onTemplates,
+  onUpload,
 }: {
   sheet: SheetAdapter;
   tabName: string;
   onTab: (name: string) => void;
   onChange: () => void;
+  onTemplates: () => void;
+  onUpload: () => void;
 }) {
   const book = sheet.getWorkbook();
   const tab = book.tabs[tabName];
@@ -634,6 +736,10 @@ function DataEditor({
     <div className="data-editor">
       <aside className="pages">
         <p className="aside-label">Tables</p>
+        <button type="button" onClick={onTemplates}>
+          Templates
+          <em>Change app</em>
+        </button>
         {Object.values(book.tabs).map((t) => (
           <button
             key={t.name}
@@ -675,6 +781,14 @@ function DataEditor({
               <p>
                 {book.title} · edit cells like Google Sheets
               </p>
+              <div className="sheet-toolbar">
+                <button type="button" className="btn ghost" onClick={onTemplates}>
+                  ← Templates
+                </button>
+                <button type="button" className="btn ghost" onClick={onUpload}>
+                  Upload spreadsheet
+                </button>
+              </div>
             </header>
             <div className="grid-scroll">
               <table>
