@@ -6,7 +6,7 @@ import {
   type SheetTab,
 } from "@/lib/app-builder";
 import { TEMPLATE_LEAD } from "../app-builder-hero-split";
-import { GlidePhonePreview } from "../glide-phone-preview";
+import { TemplateNamePicker } from "../template-name-picker";
 
 type Page = "home" | "cases" | "store" | "solution";
 type Cat = "All" | "Sales" | "Inventory" | "Operations" | "Finance" | "Custom";
@@ -304,10 +304,6 @@ function AskBar({
   );
 }
 
-function scrollToTemplate(id: string) {
-  document.getElementById(`tpl-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
 function Home({
   prompt,
   setPrompt,
@@ -343,19 +339,12 @@ function Home({
           onConnectSheet={onConnectSheet}
           onUploadFile={onUploadFile}
         />
-        <div className="store-usecases">
-          {TEMPLATES.map((t) => (
-            <button key={t.id} type="button" onClick={() => scrollToTemplate(t.id)}>
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <TemplateNamePicker
+          templates={TEMPLATES}
+          onPick={onPick}
+          onFormat={downloadTemplateFormat}
+        />
       </section>
-      <div className="ab-land-templates gs-template-grid">
-        {TEMPLATES.map((plan) => (
-          <TemplateCard key={plan.id} plan={plan} onPick={onPick} />
-        ))}
-      </div>
     </>
   );
 }
@@ -374,11 +363,11 @@ function Cases({ onPick }: { onPick: (plan: AppPlan) => void }) {
     <section className="gs-page">
       <h1>Use cases</h1>
       <p className="store-lead gs-left">Apps you can start from a Sheet today.</p>
-      <div className="ab-land-templates gs-template-grid">
-        {plans.map((plan) => (
-          <TemplateCard key={plan.id} plan={plan} onPick={onPick} />
-        ))}
-      </div>
+      <TemplateNamePicker
+        templates={plans}
+        onPick={onPick}
+        onFormat={downloadTemplateFormat}
+      />
     </section>
   );
 }
@@ -414,40 +403,12 @@ function Store({
           </button>
         ))}
       </div>
-      <div className="ab-land-templates gs-template-grid">
-        {list.map((plan) => (
-          <TemplateCard key={plan.id} plan={plan} onPick={onPick} />
-        ))}
-      </div>
+      <TemplateNamePicker
+        templates={list}
+        onPick={onPick}
+        onFormat={downloadTemplateFormat}
+      />
     </section>
-  );
-}
-
-function TemplateCard({
-  plan,
-  onPick,
-}: {
-  plan: AppPlan;
-  onPick: (plan: AppPlan) => void;
-}) {
-  return (
-    <article className="ab-land-template" id={`tpl-${plan.id}`}>
-      <GlidePhonePreview plan={plan} />
-      <strong>{plan.label}</strong>
-      <p>{COPY[plan.id] || plan.blurb}</p>
-      <div className="ab-land-actions">
-        <button type="button" className="ab-ios-btn ab-ios-btn-fill" onClick={() => onPick(plan)}>
-          Start
-        </button>
-        <button
-          type="button"
-          className="ab-ios-btn ab-ios-btn-tint"
-          onClick={() => downloadTemplateFormat(plan)}
-        >
-          Format
-        </button>
-      </div>
-    </article>
   );
 }
 
@@ -489,11 +450,12 @@ function Solution({
           onUploadFile={onUploadFile}
         />
       </section>
-      <div className="ab-land-templates gs-template-grid">
-        {ordered.map((plan) => (
-          <TemplateCard key={plan.id} plan={plan} onPick={onPick} />
-        ))}
-      </div>
+      <TemplateNamePicker
+        templates={ordered}
+        initialId={selectedId}
+        onPick={onPick}
+        onFormat={downloadTemplateFormat}
+      />
     </>
   );
 }

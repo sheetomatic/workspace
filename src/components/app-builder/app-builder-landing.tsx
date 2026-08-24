@@ -3,11 +3,8 @@ import { EyeOff, ImageIcon, Sigma, Zap } from "lucide-react";
 import { MarketingPage, SiteFooter, SiteHeader } from "@/app/components";
 import { TEMPLATES } from "@/lib/app-builder";
 import { APP_BUILDER_LOGIN_HREF, APP_BUILDER_STUDIO_HREF } from "@/lib/workspace-auth-links";
-import {
-  AppBuilderHeroSplit,
-  TEMPLATE_LEAD,
-} from "./app-builder-hero-split";
-import { GlidePhonePreview } from "./glide-phone-preview";
+import { AppBuilderHeroSplit } from "./app-builder-hero-split";
+import { TemplateNamePicker } from "./template-name-picker";
 import "./app-builder-landing.css";
 
 const steps = [
@@ -96,19 +93,10 @@ export function AppBuilderLanding() {
             <p className="type-kicker text-sky-700">Templates</p>
             <h2>Same phone app. One Sheet each.</h2>
             <p>
-              Orders, CRM, inventory, attendance — each template is a phone
-              home, not a spreadsheet thumbnail.
+              Click a template name to preview the phone. Then get it or buy.
             </p>
           </div>
-          <div className="ab-land-templates">
-            {TEMPLATES.filter((plan) => plan.id !== "orders").map((plan) => (
-              <article className="ab-land-template" id={`tpl-${plan.id}`} key={plan.id}>
-                <GlidePhonePreview plan={plan} />
-                <strong>{plan.label}</strong>
-                <p>{TEMPLATE_LEAD[plan.id] || plan.blurb}</p>
-              </article>
-            ))}
-          </div>
+          <TemplateNamePicker templates={TEMPLATES} />
         </div>
       </section>
 

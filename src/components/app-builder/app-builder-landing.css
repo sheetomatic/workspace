@@ -500,6 +500,48 @@ body:has(.ab-land-hero) {
   gap: 28px 20px;
 }
 
+.tpl-name-picker {
+  width: min(720px, 100%);
+  margin: 8px auto 0;
+}
+
+.tpl-name-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 18px;
+}
+
+.tpl-name-list button {
+  border: 1px solid #dbe4ee;
+  background: #fff;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+
+.tpl-name-list button.on {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+.tpl-name-hint {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.tpl-name-preview {
+  margin: 8px auto 0;
+  max-width: 280px;
+}
+
 @media (min-width: 720px) {
   .ab-land-templates {
     grid-template-columns: repeat(2, minmax(0, 1fr));
