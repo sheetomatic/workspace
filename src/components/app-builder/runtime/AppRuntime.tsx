@@ -217,6 +217,7 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
             className="ghost-btn add"
             aria-label="Add"
             onClick={() => {
+              if (!view) return;
               setForm({ kind: "add", view });
               setScreen("form");
             }}
