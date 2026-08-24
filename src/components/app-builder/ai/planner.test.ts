@@ -22,4 +22,14 @@ describe("planFromPrompt", () => {
     expect(plan.id).toBe("cashbook");
     expect(plan.config.meta.name).toBe("CFLO");
   });
+
+  it("rebuilds sales + purchase + leads into one app", () => {
+    const plan = planFromPrompt(
+      "एक एप्लिकेशन बनाओ जिसमें सेल्स हो परचेज ऑर्डर हो और लीड्स आते हैं",
+    );
+    expect(Object.keys(plan.workbook.tabs)).toEqual(
+      expect.arrayContaining(["Orders", "Leads"]),
+    );
+    expect(plan.config.views.some((view) => view.id === "leads")).toBe(true);
+  });
 });

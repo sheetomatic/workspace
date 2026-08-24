@@ -29,6 +29,7 @@ import {
   visibleNavViews,
 } from "@/lib/app-builder";
 import {
+  isCashbookHome,
   isMoneyView,
   rupee,
   summarizeMoney,
@@ -460,7 +461,7 @@ function HomeScreen({
   onOpenRow: (view: AppView, row: SheetRow) => void;
 }) {
   const tabs = visibleNavViews(config, role);
-  const moneyViews = config.views.filter(isMoneyView);
+  const moneyViews = isCashbookHome(config.views) ? config.views.filter(isMoneyView) : [];
   const [range, setRange] = useState<MoneyRange>("month");
   const summary = summarizeMoney(sheet.getWorkbook(), moneyViews, range);
   return (

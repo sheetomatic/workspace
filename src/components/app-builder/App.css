@@ -653,6 +653,12 @@
   min-width: 0;
 }
 .ab-studio .ai-bar{ padding: 8px 16px 16px; }
+.ab-studio .ai-hint{
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
 .ab-studio .ai-row{ display: flex; gap: 8px; }
 .ab-studio .ai-row input{
   flex: 1; min-height: 44px; border: 1px solid var(--line); border-radius: 12px;

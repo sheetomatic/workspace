@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { TEMPLATES } from "./templates";
-import { parseSheetDate, rowInRange, rupee, summarizeMoney } from "./money-summary";
+import { isCashbookHome, parseSheetDate, rowInRange, rupee, summarizeMoney } from "./money-summary";
 
 const cashbook = TEMPLATES.find((t) => t.id === "cashbook");
 
@@ -30,5 +30,11 @@ describe("cashbook money summary", () => {
       true,
     );
     expect(rupee(summary.net)).toBe("₹1,47,800");
+  });
+
+  it("does not treat Orders Desk as a cashbook home", () => {
+    const orders = TEMPLATES.find((t) => t.id === "orders");
+    expect(isCashbookHome(orders?.config.views || [])).toBe(false);
+    expect(isCashbookHome(cashbook?.config.views || [])).toBe(true);
   });
 });

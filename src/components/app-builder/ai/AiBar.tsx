@@ -20,13 +20,19 @@ declare global {
 type Props = {
   credits: number;
   busy?: boolean;
+  built?: boolean;
+  lastPrompt?: string;
   onBuild: (prompt: string) => void;
 };
 
-export function AiBar({ credits, busy, onBuild }: Props) {
-  const [text, setText] = useState("");
+export function AiBar({ credits, busy, built, lastPrompt, onBuild }: Props) {
+  const [text, setText] = useState(lastPrompt || "");
   const [listening, setListening] = useState(false);
   const recRef = useRef<SpeechRec | null>(null);
+
+  useEffect(() => {
+    if (lastPrompt) setText(lastPrompt);
+  }, [lastPrompt]);
 
   useEffect(() => {
     return () => recRef.current?.stop();
@@ -54,16 +60,31 @@ export function AiBar({ credits, busy, onBuild }: Props) {
   function submit(prompt: string) {
     const q = prompt.trim();
     if (!q || busy) return;
+    if (built) {
+      const ok = window.confirm(
+        "Rebuild this app from your prompt? Current screens are replaced. Sheet rows already saved in Google stay.",
+      );
+      if (!ok) return;
+    }
     onBuild(q);
   }
 
   return (
     <div className="ai-bar">
+      <p className="ai-hint">
+        {built
+          ? "Already built? Speak or type the change, then Rebuild. Or use Layout and Data to tweak screens without replacing the app."
+          : "Speak or type what to build, then Build."}
+      </p>
       <div className="ai-row">
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Say or type: orders, CRM, stock, attendance…"
+          placeholder={
+            built
+              ? "Say or type the change — sales, purchase, leads, cashbook…"
+              : "Say or type: orders, CRM, stock, attendance…"
+          }
           onKeyDown={(e) => {
             if (e.key === "Enter") submit(text);
           }}
@@ -79,10 +100,10 @@ export function AiBar({ credits, busy, onBuild }: Props) {
         <button
           type="button"
           className="go"
-          disabled={busy || credits < 1}
+          disabled={busy || credits < 1 || !text.trim()}
           onClick={() => submit(text)}
         >
-          {credits < 1 ? "Buy credits" : "Build"}
+          {credits < 1 ? "Buy credits" : built ? "Rebuild" : "Build"}
         </button>
       </div>
       <div className="chips">

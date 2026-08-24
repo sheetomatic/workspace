@@ -40,6 +40,11 @@ export function isMoneyView(view: AppView): boolean {
   return Boolean(amountColOf(view)) && !/categor/i.test(view.name);
 }
 
+export function isCashbookHome(views: AppView[]): boolean {
+  const names = views.map((view) => view.name);
+  return names.some((name) => /credit/i.test(name)) && names.some((name) => /debit|expense/i.test(name));
+}
+
 export function rowInRange(date: Date | null, range: MoneyRange, now: Date): boolean {
   if (range === "all") return true;
   if (!date) return false;

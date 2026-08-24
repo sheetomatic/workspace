@@ -92,6 +92,7 @@ export default function AppBuilderStudio({
   const [importTab, setImportTab] = useState("");
   const [importHeaderRow, setImportHeaderRow] = useState(1);
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
+  const [lastPrompt, setLastPrompt] = useState("");
   const [dataPane, setDataPane] = useState<"rows" | "schema">("rows");
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -120,13 +121,17 @@ export default function AppBuilderStudio({
       setNote("Credits finished. Buy more to keep building.");
       return;
     }
+    const rebuilding = config.views.length > 0;
     const plan = planFromPrompt(prompt);
+    setLastPrompt(prompt.trim());
     setCredits(spendCredit());
     applyGeneratedPlan(
       plan,
-      google.connected && !google.spreadsheetId
-        ? `Built “${plan.config.meta.name}”. Create this as a new Sheet in Drive — you do not need to upload one.`
-        : `Built “${plan.config.meta.name}” from your words. Preview it in the phone.`,
+      rebuilding
+        ? `Rebuilt “${plan.config.meta.name}” from your prompt. Use Layout or Data if you only need a small change.`
+        : google.connected && !google.spreadsheetId
+          ? `Built “${plan.config.meta.name}”. Create this as a new Sheet in Drive — you do not need to upload one.`
+          : `Built “${plan.config.meta.name}” from your words. Preview it in the phone.`,
     );
   }
 
@@ -703,7 +708,14 @@ export default function AppBuilderStudio({
                 </div>
               </div>
             )}
-            {preview ? null : <AiBar credits={credits} onBuild={build} />}
+            {preview ? null : (
+              <AiBar
+                credits={credits}
+                built={config.views.length > 0}
+                lastPrompt={lastPrompt}
+                onBuild={build}
+              />
+            )}
             {note ? <p className="build-note">{note}</p> : null}
             {google.connected && !google.spreadsheetId && Object.keys(workbook.tabs).length ? (
               <p className="build-note">
