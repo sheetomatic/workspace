@@ -87,7 +87,7 @@ export async function POST(request: Request) {
   if (action === "create") {
     const template = TEMPLATES.find((item) => item.id === body?.templateId);
     const customBook = workbookFromClient(body?.workbook);
-    const workbook: SheetWorkbook | undefined = template?.workbook ?? customBook;
+    const workbook: SheetWorkbook | undefined = template?.workbook ?? customBook ?? undefined;
     const title =
       (typeof body?.title === "string" && body.title.trim().slice(0, 80)) ||
       (template ? `${template.config.meta.name} · Sheetomatic` : workbook?.title);
