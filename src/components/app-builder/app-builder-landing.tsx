@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { EyeOff, ImageIcon, Sigma, Zap } from "lucide-react";
 import { MarketingPage, SiteFooter, SiteHeader } from "@/app/components";
-import { marketingButtonClass } from "@/components/marketing/marketing-button-class";
 import { TEMPLATES } from "@/lib/app-builder";
 import { APP_BUILDER_LOGIN_HREF, APP_BUILDER_STUDIO_HREF } from "@/lib/workspace-auth-links";
+import {
+  AppBuilderHeroSplit,
+  TEMPLATE_LEAD,
+} from "./app-builder-hero-split";
 import { GlidePhonePreview } from "./glide-phone-preview";
 import "./app-builder-landing.css";
 
@@ -49,60 +52,60 @@ const extras = [
 ];
 
 export function AppBuilderLanding() {
+  const featured = TEMPLATES.find((t) => t.id === "orders");
+
   return (
     <MarketingPage>
       <SiteHeader />
-      <section className="ab-land-hero">
-        <div className="ab-land-hero-inner mx-auto max-w-7xl px-5 sm:px-8">
-          <div className="ab-land-hero-copy">
-            <p className="type-kicker text-sky-700">App Builder · on sheetomatic.com</p>
-            <h1 className="minimal-hero-title">
-              A phone app on your Google Sheet. Try here first.
-            </h1>
-            <p className="minimal-hero-lead">
-              Free Gmail is enough. Paste the Sheet, speak what you need, use
-              free credits. Staff do not need Google. We never send you to the
-              Workspace Marketplace.
-            </p>
-            <div className="ab-land-actions">
-              <Link className={marketingButtonClass("primary")} href="/app-builder/signup">
-                Sign up
-              </Link>
-              <a className={marketingButtonClass("secondary")} href={APP_BUILDER_STUDIO_HREF}>
-                Try App Builder
-              </a>
-              <a className={marketingButtonClass("secondary")} href={APP_BUILDER_LOGIN_HREF}>
-                Sign in
-              </a>
-            </div>
-            <p className="ab-land-note">
-              Google only sees Sheets you create or open here.{" "}
-              <Link href="/app-builder/privacy">How we use your Sheet</Link>.
-            </p>
-          </div>
-          <GlidePhonePreview
-            plan={TEMPLATES.find((t) => t.id === "orders")}
-            large
-          />
-        </div>
-      </section>
+      <AppBuilderHeroSplit
+        featured
+        kicker="App Builder"
+        titleAs="h1"
+        title={
+          <>
+            Your Sheet.
+            <br />
+            A phone app.
+          </>
+        }
+        lead="On Google Workspace. Staff open a link and PIN — no extra seat, no Marketplace."
+        facts={["Google Workspace", "40 free credits", "PIN for staff"]}
+        plan={featured}
+        actions={
+          <>
+            <Link className="ab-ios-btn ab-ios-btn-fill" href="/app-builder/signup">
+              Get
+            </Link>
+            <a className="ab-ios-btn ab-ios-btn-tint" href={APP_BUILDER_STUDIO_HREF}>
+              Try
+            </a>
+          </>
+        }
+        note={
+          <>
+            <Link href="/app-builder/privacy">How we use your Sheet</Link>
+            <span aria-hidden> · </span>
+            <a href={APP_BUILDER_LOGIN_HREF}>Sign in</a>
+          </>
+        }
+      />
 
       <section className="ab-land-section">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
           <div className="ab-land-head">
             <p className="type-kicker text-sky-700">Templates</p>
-            <h2>Same Glide phone. One app per Sheet.</h2>
+            <h2>Same phone app. One Sheet each.</h2>
             <p>
               Orders, CRM, inventory, attendance — each template is a phone
               home, not a spreadsheet thumbnail.
             </p>
           </div>
           <div className="ab-land-templates">
-            {TEMPLATES.map((plan) => (
-              <article className="ab-land-template" key={plan.id}>
+            {TEMPLATES.filter((plan) => plan.id !== "orders").map((plan) => (
+              <article className="ab-land-template" id={`tpl-${plan.id}`} key={plan.id}>
                 <GlidePhonePreview plan={plan} />
                 <strong>{plan.label}</strong>
-                <p>{plan.blurb}</p>
+                <p>{TEMPLATE_LEAD[plan.id] || plan.blurb}</p>
               </article>
             ))}
           </div>

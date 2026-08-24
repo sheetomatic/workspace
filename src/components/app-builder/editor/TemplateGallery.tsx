@@ -1,5 +1,10 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { TEMPLATES, type AppPlan, type SheetTab } from "@/lib/app-builder";
+import {
+  AppBuilderHeroSplit,
+  TEMPLATE_LEAD,
+  templateFacts,
+} from "../app-builder-hero-split";
 import { GlidePhonePreview } from "../glide-phone-preview";
 
 type Page = "home" | "cases" | "store" | "solution";
@@ -18,16 +23,7 @@ const CAT_OF: Record<string, Cat> = {
   tasks: "Operations",
 };
 
-const COPY: Record<string, string> = {
-  custom: "A secure desk for staff or customers. One table you name, then add columns.",
-  orders: "Parties, items, and line items. Staff add an order; lines stay on the parent.",
-  crm: "A CRM for your pipeline, follow-ups, and parties — not a row dump.",
-  inventory: "Stay ahead of demand. Items, stock in, stock out, on the phone.",
-  attendance: "Staff in/out and leave. Owner sees deficit, not a register book.",
-  visitors: "Gate in/out with who and when. No paper at the door.",
-  expenses: "Submit and approve cash out. Owner sees what left the till.",
-  tasks: "Assign, due, close. Person-wise work without a second sheet.",
-};
+const COPY = TEMPLATE_LEAD;
 
 const CASES = [
   { id: "custom", title: "Portals", body: "A central hub for staff or customers. Link + PIN. No Google seat." },
@@ -311,9 +307,12 @@ function Home({
           ))}
         </div>
       </section>
-      {TEMPLATES.map((plan) => (
-        <SolutionSplit key={plan.id} plan={plan} onPick={onPick} />
-      ))}
+      <SolutionSplit featured plan={TEMPLATES[0]} compact onPick={onPick} />
+      <div className="ab-land-templates gs-template-grid">
+        {TEMPLATES.slice(1).map((plan) => (
+          <TemplateCard key={plan.id} plan={plan} onPick={onPick} />
+        ))}
+      </div>
     </>
   );
 }
@@ -332,9 +331,12 @@ function Cases({ onPick }: { onPick: (plan: AppPlan) => void }) {
     <section className="gs-page">
       <h1>Use cases</h1>
       <p className="store-lead gs-left">Apps you can start from a Sheet today.</p>
-      {plans.map((plan) => (
-        <SolutionSplit key={plan.id} plan={plan} compact onPick={onPick} />
-      ))}
+      {plans[0] ? <SolutionSplit featured plan={plans[0]} compact onPick={onPick} /> : null}
+      <div className="ab-land-templates">
+        {plans.slice(1).map((plan) => (
+          <TemplateCard key={plan.id} plan={plan} onPick={onPick} />
+        ))}
+      </div>
     </section>
   );
 }
@@ -370,10 +372,41 @@ function Store({
           </button>
         ))}
       </div>
-      {list.map((plan) => (
-        <SolutionSplit key={plan.id} plan={plan} compact onPick={onPick} />
-      ))}
+      {list[0] ? <SolutionSplit featured plan={list[0]} compact onPick={onPick} /> : null}
+      <div className="ab-land-templates">
+        {list.slice(1).map((plan) => (
+          <TemplateCard key={plan.id} plan={plan} onPick={onPick} />
+        ))}
+      </div>
     </section>
+  );
+}
+
+function TemplateCard({
+  plan,
+  onPick,
+}: {
+  plan: AppPlan;
+  onPick: (plan: AppPlan) => void;
+}) {
+  return (
+    <article className="ab-land-template" id={`tpl-${plan.id}`}>
+      <GlidePhonePreview plan={plan} />
+      <strong>{plan.label}</strong>
+      <p>{COPY[plan.id] || plan.blurb}</p>
+      <div className="ab-land-actions">
+        <button type="button" className="ab-ios-btn ab-ios-btn-fill" onClick={() => onPick(plan)}>
+          Get
+        </button>
+        <button
+          type="button"
+          className="ab-ios-btn ab-ios-btn-tint"
+          onClick={() => downloadTemplateFormat(plan)}
+        >
+          Format
+        </button>
+      </div>
+    </article>
   );
 }
 
@@ -381,42 +414,51 @@ function SolutionSplit({
   plan,
   onPick,
   compact,
+  featured,
   before,
   ask,
 }: {
   plan: AppPlan;
   onPick: (plan: AppPlan) => void;
   compact?: boolean;
+  featured?: boolean;
   before?: ReactNode;
   ask?: ReactNode;
 }) {
-  const Title = compact ? "h2" : "h1";
   return (
-    <section
+    <AppBuilderHeroSplit
       id={`tpl-${plan.id}`}
-      className="gs-split gs-split-app"
-    >
-      <div>
-        {before}
-        <p className="store-kicker">{CAT_OF[plan.id] || "App"} software</p>
-        <Title>Build {plan.label.toLowerCase()} on your Sheet, with AI</Title>
-        <p className="store-lead gs-left">{COPY[plan.id] || plan.blurb}</p>
-        {ask}
-        <div className="gs-actions">
-          <button type="button" className="gs-cta" onClick={() => onPick(plan)}>
-            Start for free
+      featured={featured}
+      kicker={plan.label}
+      titleAs={compact ? "h2" : "h1"}
+      title={
+        <>
+          {plan.label}.
+          <br />
+          On the phone.
+        </>
+      }
+      lead={COPY[plan.id] || plan.blurb}
+      facts={templateFacts(plan)}
+      plan={plan}
+      actions={
+        <>
+          <button type="button" className="ab-ios-btn ab-ios-btn-fill" onClick={() => onPick(plan)}>
+            Get
           </button>
           <button
             type="button"
-            className="gs-cta ghost"
+            className="ab-ios-btn ab-ios-btn-tint"
             onClick={() => downloadTemplateFormat(plan)}
           >
-            Download Format
+            Format
           </button>
-        </div>
-      </div>
-      <GlidePhonePreview plan={plan} large />
-    </section>
+        </>
+      }
+    >
+      {before}
+      {ask}
+    </AppBuilderHeroSplit>
   );
 }
 
@@ -445,25 +487,28 @@ function Solution({
   ];
   return (
     <>
-      {ordered.map((plan, i) => (
+      {ordered[0] ? (
         <SolutionSplit
-          key={plan.id}
-          plan={plan}
+          featured
+          plan={ordered[0]}
           onPick={onPick}
           ask={
-            i === 0 ? (
-              <AskBar
-                prompt={prompt}
-                setPrompt={setPrompt}
-                onBuild={onBuild}
-                sheetUrl={sheetUrl}
-                onSheetUrl={onSheetUrl}
-                onConnectSheet={onConnectSheet}
-              />
-            ) : undefined
+            <AskBar
+              prompt={prompt}
+              setPrompt={setPrompt}
+              onBuild={onBuild}
+              sheetUrl={sheetUrl}
+              onSheetUrl={onSheetUrl}
+              onConnectSheet={onConnectSheet}
+            />
           }
         />
-      ))}
+      ) : null}
+      <div className="ab-land-templates gs-template-grid">
+        {ordered.slice(1).map((plan) => (
+          <TemplateCard key={plan.id} plan={plan} onPick={onPick} />
+        ))}
+      </div>
     </>
   );
 }
