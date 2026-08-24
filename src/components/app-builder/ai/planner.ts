@@ -7,10 +7,30 @@ const RULES: { id: string; keys: string[] }[] = [
   { id: "inventory", keys: ["stock", "inventory", "item", "warehouse", "स्टॉक", "माल", "इन्वेंटरी"] },
   { id: "attendance", keys: ["attend", "leave", "staff", "हाजिरी", "छुट्टी", "कर्मचारी"] },
   { id: "visitors", keys: ["visitor", "gate", "आगंतुक", "गेट"] },
-  { id: "cashbook", keys: ["cashbook", "cash book", "credit", "debit", "कैशबुक", "खाता"] },
+  {
+    id: "cashbook",
+    keys: [
+      "cashbook",
+      "cash book",
+      "cash +",
+      "cash+",
+      "cash and expense",
+      "cash expense",
+      "credit",
+      "debit",
+      "कैशबुक",
+      "खाता",
+    ],
+  },
   { id: "expenses", keys: ["expense", "petrol", "diesel", "खर्च", "कैश"] },
   { id: "tasks", keys: ["task", "todo", "assign", "काम", "कार्य"] },
 ];
+
+export function brandFromPrompt(raw: string): string | undefined {
+  const match = raw.match(/brand\s*[:\-]\s*([A-Za-z0-9][\w.&-]{0,32})/i);
+  const name = match?.[1]?.trim().replace(/[.,;:]+$/, "");
+  return name || undefined;
+}
 
 export function planFromPrompt(raw: string): AppPlan {
   const q = raw.trim().toLowerCase();
@@ -26,12 +46,17 @@ export function planFromPrompt(raw: string): AppPlan {
       }
     }
   }
+  const brand = brandFromPrompt(raw);
   return {
     ...best,
     prompt: raw.trim(),
     config: {
       ...best.config,
-      meta: { ...best.config.meta },
+      meta: {
+        ...best.config.meta,
+        name: brand || best.config.meta.name,
+        brand: brand || best.config.meta.brand,
+      },
     },
     workbook: structuredClone(best.workbook),
   };

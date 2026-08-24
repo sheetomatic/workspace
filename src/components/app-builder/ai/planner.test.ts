@@ -14,4 +14,12 @@ describe("planFromPrompt", () => {
   it("still maps a plain expense request to Expenses", () => {
     expect(planFromPrompt("petrol diesel expense tracker").id).toBe("expenses");
   });
+
+  it("builds Cashbook as CFLO from a cash + expense prompt", () => {
+    const plan = planFromPrompt(
+      "Build a production Cash + Expense app. Brand: CFLO. Currency",
+    );
+    expect(plan.id).toBe("cashbook");
+    expect(plan.config.meta.name).toBe("CFLO");
+  });
 });

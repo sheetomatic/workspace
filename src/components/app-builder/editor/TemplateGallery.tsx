@@ -1,6 +1,5 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
-  SPREADSHEET_ACCEPT,
   TEMPLATES,
   type AppPlan,
   type SheetTab,
@@ -236,7 +235,6 @@ function AskBar({
   sheetUrl,
   onSheetUrl,
   onConnectSheet,
-  onUploadFile,
 }: {
   prompt: string;
   setPrompt: (v: string) => void;
@@ -247,20 +245,8 @@ function AskBar({
   onConnectSheet?: () => void;
   onUploadFile?: (file: File) => void;
 }) {
-  const fileRef = useRef<HTMLInputElement>(null);
   return (
     <>
-      <input
-        ref={fileRef}
-        type="file"
-        hidden
-        accept={SPREADSHEET_ACCEPT}
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          e.target.value = "";
-          if (file) onUploadFile?.(file);
-        }}
-      />
       <div className="store-ask">
         <input
           value={prompt}
@@ -272,19 +258,11 @@ function AskBar({
         />
         <button
           type="button"
-          className="store-upload"
-          onClick={() => fileRef.current?.click()}
-        >
-          Upload spreadsheet
-        </button>
-        <button
-          type="button"
-          className="store-go"
-          aria-label="Build"
+          className="store-ai"
           disabled={!prompt.trim()}
           onClick={() => onBuild?.(prompt)}
         >
-          ↑
+          Build with AI
         </button>
       </div>
       {onSheetUrl ? (
