@@ -106,18 +106,6 @@
   opacity: 0.85;
 }
 
-.ios-status {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex: none;
-  padding: 12px 18px 0;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--ios-label);
-}
-
 .ios-status-end {
   display: flex;
   align-items: center;
@@ -153,22 +141,78 @@
   border-radius: 1px;
 }
 
-.ios-kicker {
-  margin: 18px 16px 0;
+.ios-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   flex: none;
+  padding: 12px 22px 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ios-label);
+}
+
+.ios-home {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: 4px;
+}
+
+.ios-kicker {
+  margin: 14px 16px 0;
   font-size: 12px;
   font-weight: 590;
   color: var(--ios-secondary);
 }
 
-.ios-title {
+.ios-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   margin: 1px 16px 10px;
-  flex: none;
+}
+
+.ios-title {
+  margin: 0;
   font-size: 26px;
   font-weight: 720;
   letter-spacing: -0.04em;
   line-height: 1.05;
   color: var(--ios-label);
+}
+
+.ios-add {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--ios-blue);
+  position: relative;
+}
+
+.ios-add::before,
+.ios-add::after {
+  content: "";
+  position: absolute;
+  background: #fff;
+  border-radius: 1px;
+}
+
+.ios-add::before {
+  width: 10px;
+  height: 2px;
+  left: 6px;
+  top: 10px;
+}
+
+.ios-add::after {
+  width: 2px;
+  height: 10px;
+  left: 10px;
+  top: 6px;
 }
 
 .ios-tiles {
@@ -213,10 +257,43 @@
   text-overflow: ellipsis;
 }
 
+.ios-cta {
+  margin: 0 12px 10px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--ios-blue);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 620;
+}
+
+.ios-section {
+  margin: 0 12px 10px;
+}
+
+.ios-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 4px 6px;
+  font-size: 11px;
+  font-weight: 680;
+  letter-spacing: 0.02em;
+  text-transform: capitalize;
+  color: var(--ios-label);
+}
+
+.ios-section-head b {
+  font-size: 12px;
+  font-weight: 590;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ios-blue);
+}
+
 .ios-list {
-  margin: 0 12px;
-  flex: 1;
-  min-height: 0;
   overflow: hidden;
   background: var(--ios-fill);
   border-radius: 14px;

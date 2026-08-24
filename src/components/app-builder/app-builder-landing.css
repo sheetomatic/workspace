@@ -274,12 +274,16 @@
   margin-bottom: 10px;
 }
 
+.ab-land-hero-inner .iphone {
+  justify-self: center;
+}
+
 .ab-land-templates {
   display: grid;
   grid-template-columns: 1fr;
   align-items: start;
   align-content: start;
-  gap: 16px;
+  gap: 28px 20px;
 }
 
 @media (min-width: 720px) {
@@ -297,22 +301,22 @@
 .ab-land-template {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  align-items: center;
   min-width: 0;
-  padding: 14px 14px 16px;
-  border: 1px solid #e2e8f0;
-  border-radius: 18px;
-  background: #fff;
+  padding: 0;
+  background: transparent;
+  text-align: center;
 }
 
 .ab-land-template strong {
   display: block;
-  margin: 12px 2px 0;
+  margin: 14px 2px 0;
   color: #0f172a;
 }
 
 .ab-land-template p {
   margin: 4px 2px 0;
+  max-width: 22ch;
   color: #475569;
   font-size: 0.92rem;
   line-height: 1.45;

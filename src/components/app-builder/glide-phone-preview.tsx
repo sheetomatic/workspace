@@ -143,43 +143,59 @@ export function GlidePhonePreview({
           </span>
         </span>
       </div>
-      <p className="ios-kicker">{plan.config.meta.greeting || "Good morning"}</p>
-      <h3 className="ios-title">{plan.config.meta.name}</h3>
-      {views.length ? (
-        <div
-          className="ios-tiles"
-          style={{
-            gridTemplateColumns: `repeat(${Math.min(views.length, 3)}, minmax(0, 1fr))`,
-          }}
-        >
-          {views.slice(0, 3).map((view) => (
-            <div className="ios-tile" key={view.id}>
-              <strong>{plan.workbook.tabs[view.tab]?.rows.length ?? 0}</strong>
-              <span>{view.name}</span>
-            </div>
-          ))}
+      <div className="ios-home">
+        <p className="ios-kicker">{plan.config.meta.greeting || "Good morning"}</p>
+        <div className="ios-title-row">
+          <h3 className="ios-title">{plan.config.meta.name}</h3>
+          <span className="ios-add" />
         </div>
-      ) : null}
-      <div className="ios-list">
-        {rows.map((row) => {
-          const title = featured ? rowTitle(featured, row) : "";
-          const sub = featured ? rowSub(featured, row) : "";
-          const status = featured?.statusCol ? cellStr(row, featured.statusCol) : "";
-          return (
-            <div className="ios-row" key={row._row}>
-              <span className="ios-av" style={{ background: tone(title) }}>
-                {initials(title)}
-              </span>
-              <div>
-                <strong>{title}</strong>
-                {sub ? <small>{sub}</small> : null}
+        {views.length ? (
+          <div
+            className="ios-tiles"
+            style={{
+              gridTemplateColumns: `repeat(${Math.min(views.length, 3)}, minmax(0, 1fr))`,
+            }}
+          >
+            {views.slice(0, 3).map((view) => (
+              <div className="ios-tile" key={view.id}>
+                <strong>{plan.workbook.tabs[view.tab]?.rows.length ?? 0}</strong>
+                <span>{view.name}</span>
               </div>
-              {status ? (
-                <span className={chipOk(status) ? "ios-chip ok" : "ios-chip"}>{status}</span>
-              ) : null}
+            ))}
+          </div>
+        ) : null}
+        {featured?.addFields?.length ? (
+          <div className="ios-cta">New {featured.name.replace(/s$/, "")}</div>
+        ) : null}
+        {featured && rows.length ? (
+          <div className="ios-section">
+            <div className="ios-section-head">
+              <span>Recent {featured.name.toLowerCase()}</span>
+              <b>See All</b>
             </div>
-          );
-        })}
+            <div className="ios-list">
+              {rows.map((row) => {
+                const title = rowTitle(featured, row);
+                const sub = rowSub(featured, row);
+                const status = featured.statusCol ? cellStr(row, featured.statusCol) : "";
+                return (
+                  <div className="ios-row" key={row._row}>
+                    <span className="ios-av" style={{ background: tone(title) }}>
+                      {initials(title)}
+                    </span>
+                    <div>
+                      <strong>{title}</strong>
+                      {sub ? <small>{sub}</small> : null}
+                    </div>
+                    {status ? (
+                      <span className={chipOk(status) ? "ios-chip ok" : "ios-chip"}>{status}</span>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
       </div>
       <nav
         className="ios-tabbar"
