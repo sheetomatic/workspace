@@ -28,6 +28,12 @@ import {
   visibleFields,
   visibleNavViews,
 } from "@/lib/app-builder";
+import {
+  isMoneyView,
+  rupee,
+  summarizeMoney,
+  type MoneyRange,
+} from "@/lib/app-builder/money-summary";
 import type { SheetAdapter } from "../sheet/mockAdapter";
 import { Avatar, CollectionList, FieldBlocks } from "./Collection";
 
@@ -454,11 +460,77 @@ function HomeScreen({
   onOpenRow: (view: AppView, row: SheetRow) => void;
 }) {
   const tabs = visibleNavViews(config, role);
+  const moneyViews = config.views.filter(isMoneyView);
+  const [range, setRange] = useState<MoneyRange>("month");
+  const summary = summarizeMoney(sheet.getWorkbook(), moneyViews, range);
   return (
     <div className="home">
       <p className="kicker">{config.meta.greeting || "Good morning"}</p>
       <h2>{config.meta.name}</h2>
-      {featured?.addFields?.length ? (
+      {moneyViews.length ? (
+        <section className="home-money">
+          <div className="home-range" role="tablist" aria-label="Date range">
+            {(
+              [
+                ["month", "This month"],
+                ["week", "This week"],
+                ["all", "All"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={range === id}
+                className={range === id ? "on" : ""}
+                onClick={() => setRange(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="home-stats">
+            <div>
+              <em>Credits</em>
+              <strong>{rupee(summary.credits)}</strong>
+            </div>
+            <div>
+              <em>Debits</em>
+              <strong>{rupee(summary.debits)}</strong>
+            </div>
+            <div>
+              <em>Net</em>
+              <strong>{rupee(summary.net)}</strong>
+            </div>
+          </div>
+          {summary.byCategory.length ? (
+            <ul className="home-cats">
+              {summary.byCategory.slice(0, 6).map((row) => (
+                <li key={`${row.side}-${row.label}`}>
+                  <span>
+                    {row.side === "in" ? "Credit" : "Expense"} · {row.label}
+                  </span>
+                  <b>{rupee(row.amount)}</b>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </section>
+      ) : null}
+      {moneyViews.length > 1 ? (
+        <div className="home-adds">
+          {moneyViews.slice(0, 2).map((view) => (
+            <button
+              key={view.id}
+              type="button"
+              className="btn primary home-add"
+              onClick={() => onAdd(view)}
+            >
+              {addButtonLabel(view, view.name.startsWith("Credit") ? "New credit" : "New debit")}
+            </button>
+          ))}
+        </div>
+      ) : featured?.addFields?.length ? (
         <button type="button" className="btn primary home-add" onClick={() => onAdd(featured)}>
           {addButtonLabel(featured, config.meta.formTitle)}
         </button>

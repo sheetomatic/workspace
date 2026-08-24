@@ -100,20 +100,47 @@ export default function AppBuilderStudio({
   const screens = config.views;
   const bump = () => setRev((n) => n + 1);
 
+  function applyGeneratedPlan(plan: AppPlan, noteText: string) {
+    sheet.replace(structuredClone(plan.workbook));
+    setConfig({
+      ...plan.config,
+      meta: { ...plan.config.meta },
+    });
+    setFocus("home");
+    setDataTab(Object.keys(plan.workbook.tabs)[0] || "");
+    bump();
+    setActiveTemplateId(plan.id);
+    setGalleryOpen(false);
+    setEditor("layout");
+    setNote(noteText);
+  }
+
   function build(prompt: string) {
     if (credits < 1) {
       setNote("Credits finished. Buy more to keep building.");
       return;
     }
     const plan = planFromPrompt(prompt);
-    sheet.replace(plan.workbook);
-    setConfig(plan.config);
-    setFocus("home");
-    setDataTab(Object.keys(plan.workbook.tabs)[0] || "");
     setCredits(spendCredit());
-    setNote(`Built “${plan.config.meta.name}” from your words. Preview it in the phone.`);
-    setEditor("layout");
-    setGalleryOpen(false);
+    applyGeneratedPlan(
+      plan,
+      google.connected && !google.spreadsheetId
+        ? `Built “${plan.config.meta.name}”. Create this as a new Sheet in Drive — you do not need to upload one.`
+        : `Built “${plan.config.meta.name}” from your words. Preview it in the phone.`,
+    );
+  }
+
+  async function createNewSpreadsheet(prompt: string) {
+    const plan = planFromPrompt(prompt.trim() || "custom blank app with one table");
+    applyGeneratedPlan(
+      plan,
+      google.connected
+        ? `Creating “${plan.config.meta.name}” as a new Sheet in your Drive…`
+        : `“${plan.config.meta.name}” is ready. Connect Google to save it as a new Sheet — no upload needed.`,
+    );
+    if (google.connected) {
+      await createSheetFromPlan(plan);
+    }
   }
 
   function applyPlan(plan: AppPlan) {
@@ -135,7 +162,7 @@ export default function AppBuilderStudio({
     );
   }
 
-  async function createSheetFromTemplate(templateId: string) {
+  async function createSheetFromPlan(plan: AppPlan) {
     if (!google.connected) {
       setNote("Connect with Google first, then we can create the Sheet.");
       return;
@@ -145,7 +172,12 @@ export default function AppBuilderStudio({
       const res = await fetch("/api/app-builder/google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "create", templateId }),
+        body: JSON.stringify({
+          action: "create",
+          templateId: plan.id,
+          title: `${plan.config.meta.name} · Sheetomatic`,
+          workbook: plan.workbook,
+        }),
       });
       const body = (await res.json().catch(() => null)) as {
         error?: string;
@@ -399,6 +431,7 @@ export default function AppBuilderStudio({
         <TemplateGallery
           onPick={applyPlan}
           onBuild={build}
+          onCreateNew={createNewSpreadsheet}
           sheetUrl={sheetUrl}
           onSheetUrl={setSheetUrl}
           onConnectSheet={connectSheet}
@@ -648,6 +681,7 @@ export default function AppBuilderStudio({
               <TemplateGallery
                 onPick={applyPlan}
                 onBuild={build}
+                onCreateNew={createNewSpreadsheet}
                 sheetUrl={sheetUrl}
                 onSheetUrl={setSheetUrl}
           onConnectSheet={connectSheet}
@@ -671,13 +705,22 @@ export default function AppBuilderStudio({
             )}
             {preview ? null : <AiBar credits={credits} onBuild={build} />}
             {note ? <p className="build-note">{note}</p> : null}
-            {activeTemplateId && google.connected && !google.spreadsheetId ? (
+            {google.connected && !google.spreadsheetId && Object.keys(workbook.tabs).length ? (
               <p className="build-note">
                 <button
                   type="button"
                   className="linkish"
                   disabled={googleBusy}
-                  onClick={() => void createSheetFromTemplate(activeTemplateId)}
+                  onClick={() =>
+                    void createSheetFromPlan({
+                      id: activeTemplateId || "custom",
+                      label: config.meta.name,
+                      blurb: "",
+                      prompt: "",
+                      config,
+                      workbook,
+                    })
+                  }
                 >
                   Create this Sheet in my Google Drive
                 </button>

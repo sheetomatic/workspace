@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
-import { TEMPLATES } from "@/lib/app-builder";
+import { TEMPLATES, type SheetWorkbook } from "@/lib/app-builder";
+import { workbookFromClient } from "@/lib/app-builder/workbook-payload";
 import {
   appBuilderGoogleRedirectUri,
   appBuilderOAuthFromTokens,
@@ -71,6 +72,8 @@ export async function POST(request: Request) {
     action?: string;
     spreadsheetId?: string;
     templateId?: string;
+    title?: string;
+    workbook?: unknown;
   } | null;
   const action = body?.action;
 
@@ -83,8 +86,16 @@ export async function POST(request: Request) {
 
   if (action === "create") {
     const template = TEMPLATES.find((item) => item.id === body?.templateId);
-    if (!template) {
-      return NextResponse.json({ error: "Choose a template." }, { status: 400 });
+    const customBook = workbookFromClient(body?.workbook);
+    const workbook: SheetWorkbook | undefined = template?.workbook ?? customBook;
+    const title =
+      (typeof body?.title === "string" && body.title.trim().slice(0, 80)) ||
+      (template ? `${template.config.meta.name} · Sheetomatic` : workbook?.title);
+    if (!workbook || !title) {
+      return NextResponse.json(
+        { error: "Choose a template, or describe an app to create a new Sheet." },
+        { status: 400 },
+      );
     }
     const connection = await prisma.appBuilderGoogleConnection.findUnique({
       where: { organizationId: user.organizationId },
@@ -103,11 +114,7 @@ export async function POST(request: Request) {
       );
     }
     try {
-      const created = await createAppBuilderSpreadsheet(
-        oauth2,
-        `${template.config.meta.name} · Sheetomatic`,
-        template.workbook,
-      );
+      const created = await createAppBuilderSpreadsheet(oauth2, title, workbook);
       await prisma.appBuilderGoogleConnection.update({
         where: { organizationId: user.organizationId },
         data: {
@@ -115,7 +122,7 @@ export async function POST(request: Request) {
           spreadsheetTitle: created.spreadsheetTitle,
         },
       });
-      return NextResponse.json({ ok: true, ...created, templateId: template.id });
+      return NextResponse.json({ ok: true, ...created, templateId: template?.id ?? null });
     } catch (error) {
       console.error("[app-builder google create]", error);
       return NextResponse.json(

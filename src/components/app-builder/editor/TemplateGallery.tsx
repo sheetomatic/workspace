@@ -21,6 +21,7 @@ const CAT_OF: Record<string, Cat> = {
   attendance: "Operations",
   visitors: "Operations",
   expenses: "Finance",
+  cashbook: "Finance",
   tasks: "Operations",
 };
 
@@ -35,6 +36,7 @@ const CASES = [
   { id: "attendance", title: "Attendance", body: "Who came, who is late. Feeds the same weekly review." },
   { id: "visitors", title: "Visitors", body: "Gate log that staff can fill without a Google account." },
   { id: "expenses", title: "Spend", body: "Cash out and approve. No WhatsApp photo of a bill." },
+  { id: "cashbook", title: "Cashbook", body: "Credits in, debits out, category-wise. No Sheet needed to start." },
   { id: "tasks", title: "Work orders", body: "Assign work, due date, close. Owner sees who is behind." },
 ] as const;
 
@@ -52,6 +54,7 @@ type Props = {
   onBack?: () => void;
   onInferDemo?: () => void;
   onBuild?: (prompt: string) => void;
+  onCreateNew?: (prompt: string) => void;
   sheetUrl?: string;
   onSheetUrl?: (url: string) => void;
   onConnectSheet?: () => void;
@@ -184,6 +187,7 @@ export function TemplateGallery(props: Props) {
           prompt={prompt}
           setPrompt={setPrompt}
           onBuild={props.onBuild}
+          onCreateNew={props.onCreateNew}
           onPick={props.onPick}
           sheetUrl={props.sheetUrl}
           onSheetUrl={props.onSheetUrl}
@@ -212,6 +216,7 @@ export function TemplateGallery(props: Props) {
           prompt={prompt}
           setPrompt={setPrompt}
           onBuild={props.onBuild}
+          onCreateNew={props.onCreateNew}
           onPick={props.onPick}
           sheetUrl={props.sheetUrl}
           onSheetUrl={props.onSheetUrl}
@@ -227,6 +232,7 @@ function AskBar({
   prompt,
   setPrompt,
   onBuild,
+  onCreateNew,
   sheetUrl,
   onSheetUrl,
   onConnectSheet,
@@ -235,6 +241,7 @@ function AskBar({
   prompt: string;
   setPrompt: (v: string) => void;
   onBuild?: (p: string) => void;
+  onCreateNew?: (p: string) => void;
   sheetUrl?: string;
   onSheetUrl?: (v: string) => void;
   onConnectSheet?: () => void;
@@ -300,6 +307,14 @@ function AskBar({
           </button>
         </div>
       ) : null}
+      {onCreateNew ? (
+        <div className="store-new-sheet">
+          <button type="button" className="store-new-sheet-btn" onClick={() => onCreateNew(prompt)}>
+            Create new spreadsheet
+          </button>
+          <p>No Sheet yet? We make one from your words — Cashbook, CRM, or a blank table.</p>
+        </div>
+      ) : null}
     </>
   );
 }
@@ -308,6 +323,7 @@ function Home({
   prompt,
   setPrompt,
   onBuild,
+  onCreateNew,
   onPick,
   sheetUrl,
   onSheetUrl,
@@ -317,6 +333,7 @@ function Home({
   prompt: string;
   setPrompt: (v: string) => void;
   onBuild?: (p: string) => void;
+  onCreateNew?: (p: string) => void;
   onPick: (plan: AppPlan) => void;
   sheetUrl?: string;
   onSheetUrl?: (v: string) => void;
@@ -328,12 +345,14 @@ function Home({
       <section className="gs-home is-lead">
         <h1>Start a phone app from your Sheet</h1>
         <p className="store-lead">
-          Describe it, upload a spreadsheet, or pick a template. Staff use a link and PIN.
+          No spreadsheet yet? Describe the app and create a new one. Or upload, paste a
+          link, or pick a template. Staff use a link and PIN.
         </p>
         <AskBar
           prompt={prompt}
           setPrompt={setPrompt}
           onBuild={onBuild}
+          onCreateNew={onCreateNew}
           sheetUrl={sheetUrl}
           onSheetUrl={onSheetUrl}
           onConnectSheet={onConnectSheet}
@@ -417,6 +436,7 @@ function Solution({
   prompt,
   setPrompt,
   onBuild,
+  onCreateNew,
   onPick,
   sheetUrl,
   onSheetUrl,
@@ -427,6 +447,7 @@ function Solution({
   prompt: string;
   setPrompt: (v: string) => void;
   onBuild?: (p: string) => void;
+  onCreateNew?: (p: string) => void;
   onPick: (plan: AppPlan) => void;
   sheetUrl?: string;
   onSheetUrl?: (v: string) => void;
@@ -444,6 +465,7 @@ function Solution({
           prompt={prompt}
           setPrompt={setPrompt}
           onBuild={onBuild}
+          onCreateNew={onCreateNew}
           sheetUrl={sheetUrl}
           onSheetUrl={onSheetUrl}
           onConnectSheet={onConnectSheet}

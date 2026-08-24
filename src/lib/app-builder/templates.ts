@@ -528,6 +528,144 @@ export const TEMPLATES: AppPlan[] = [
     }),
   },
   {
+    id: "cashbook",
+    label: "Cashbook",
+    blurb: "Credits, debits, categories",
+    prompt: "cashbook credits debits expenses by date and category",
+    config: {
+      meta: baseMeta("Cashbook", "New entry"),
+      hubs: ["Accounts"],
+      users: [
+        { id: "owner", name: "Owner", pin: "1234", role: "owner", phone: "9876543210" },
+        { id: "accounts", name: "Accounts", pin: "0000", role: "staff", phone: "9123456780" },
+      ],
+      views: [
+        view({
+          id: "credits",
+          name: "Credits",
+          tab: "Credits",
+          titleCol: "From",
+          subtitleCol: "Category",
+          cols: ["Date", "From", "Category", "Amount", "Notes"],
+          collectionStyle: "list",
+          addFields: fields(["Date", "From", "Category", "Amount", "Notes"], ["From", "Category", "Amount"]).map((f) =>
+            f.col === "Category"
+              ? { ...f, type: "choice", choiceTab: "Credit categories", choiceCol: "Category" }
+              : f.col === "From"
+                ? { ...f, type: "choice", choiceTab: "Parties", choiceCol: "Name" }
+                : f,
+          ),
+          editFields: fields(["Date", "From", "Category", "Amount", "Notes"], ["From", "Amount"]).map((f) =>
+            f.col === "Category"
+              ? { ...f, type: "choice", choiceTab: "Credit categories", choiceCol: "Category" }
+              : f.col === "From"
+                ? { ...f, type: "choice", choiceTab: "Parties", choiceCol: "Name" }
+                : f,
+          ),
+        }),
+        view({
+          id: "debits",
+          name: "Debits",
+          tab: "Debits",
+          titleCol: "Paid to",
+          subtitleCol: "Category",
+          cols: ["Date", "Paid to", "Category", "Amount", "Notes"],
+          collectionStyle: "list",
+          addFields: fields(["Date", "Paid to", "Category", "Amount", "Notes"], ["Paid to", "Category", "Amount"]).map(
+            (f) =>
+              f.col === "Category"
+                ? { ...f, type: "choice", choiceTab: "Expense categories", choiceCol: "Category" }
+                : f.col === "Paid to"
+                  ? { ...f, type: "choice", choiceTab: "Parties", choiceCol: "Name" }
+                  : f,
+          ),
+          editFields: fields(["Date", "Paid to", "Category", "Amount", "Notes"], ["Paid to", "Amount"]).map((f) =>
+            f.col === "Category"
+              ? { ...f, type: "choice", choiceTab: "Expense categories", choiceCol: "Category" }
+              : f.col === "Paid to"
+                ? { ...f, type: "choice", choiceTab: "Parties", choiceCol: "Name" }
+                : f,
+          ),
+        }),
+        view({
+          id: "credit-cats",
+          name: "Credit cats",
+          tab: "Credit categories",
+          titleCol: "Category",
+          cols: ["Category", "Notes"],
+          addFields: fields(["Category", "Notes"], ["Category"]),
+          editFields: fields(["Category", "Notes"], ["Category"]),
+        }),
+        view({
+          id: "expense-cats",
+          name: "Expense cats",
+          tab: "Expense categories",
+          titleCol: "Category",
+          cols: ["Category", "Notes"],
+          addFields: fields(["Category", "Notes"], ["Category"]),
+          editFields: fields(["Category", "Notes"], ["Category"]),
+        }),
+        view({
+          id: "parties",
+          name: "Parties",
+          tab: "Parties",
+          titleCol: "Name",
+          subtitleCol: "Kind",
+          cols: ["Name", "Kind", "Phone"],
+          addFields: fields(["Name", "Kind", "Phone"], ["Name"]),
+          editFields: fields(["Name", "Kind", "Phone"], ["Name"]),
+        }),
+      ],
+      related: [],
+    },
+    workbook: book("Cashbook Sheet", {
+      Credits: {
+        headers: ["Date", "From", "Category", "Amount", "Notes"],
+        rows: [
+          { Date: "01/08/2026", From: "SM Traders", Category: "Sales", Amount: 125000, Notes: "SO-1001" },
+          { Date: "12/08/2026", From: "Cash counter", Category: "Sales", Amount: 18000, Notes: "Walk-in" },
+          { Date: "18/08/2026", From: "East Steel", Category: "Recovery", Amount: 42000, Notes: "Old bill" },
+        ],
+      },
+      Debits: {
+        headers: ["Date", "Paid to", "Category", "Amount", "Notes"],
+        rows: [
+          { Date: "05/08/2026", "Paid to": "IOCL pump", Category: "Fuel", Amount: 4200, Notes: "Diesel" },
+          { Date: "10/08/2026", "Paid to": "Landlord", Category: "Rent", Amount: 25000, Notes: "August" },
+          { Date: "16/08/2026", "Paid to": "Office", Category: "Staff", Amount: 8000, Notes: "Tea + travel" },
+        ],
+      },
+      "Credit categories": {
+        headers: ["Category", "Notes"],
+        rows: [
+          { Category: "Sales", Notes: "Money in from sales" },
+          { Category: "Recovery", Notes: "Old dues received" },
+          { Category: "Other credit", Notes: "Add more from the phone" },
+        ],
+      },
+      "Expense categories": {
+        headers: ["Category", "Notes"],
+        rows: [
+          { Category: "Fuel", Notes: "Diesel, petrol" },
+          { Category: "Rent", Notes: "Shop or godown" },
+          { Category: "Staff", Notes: "Salary, tea, travel" },
+          { Category: "Other expense", Notes: "Add more from the phone" },
+        ],
+      },
+      Parties: {
+        headers: ["Name", "Kind", "Phone"],
+        rows: [
+          { Name: "SM Traders", Kind: "Customer", Phone: "9876543210" },
+          { Name: "East Steel", Kind: "Customer", Phone: "9123456780" },
+          { Name: "Cash counter", Kind: "Walk-in", Phone: "" },
+          { Name: "IOCL pump", Kind: "Vendor", Phone: "" },
+          { Name: "Landlord", Kind: "Vendor", Phone: "" },
+          { Name: "Office", Kind: "Internal", Phone: "" },
+        ],
+      },
+    }),
+  },
+  {
     id: "tasks",
     label: "Tasks",
     blurb: "Assign and close",

@@ -7,6 +7,7 @@ const RULES: { id: string; keys: string[] }[] = [
   { id: "inventory", keys: ["stock", "inventory", "item", "warehouse", "स्टॉक", "माल", "इन्वेंटरी"] },
   { id: "attendance", keys: ["attend", "leave", "staff", "हाजिरी", "छुट्टी", "कर्मचारी"] },
   { id: "visitors", keys: ["visitor", "gate", "आगंतुक", "गेट"] },
+  { id: "cashbook", keys: ["cashbook", "cash book", "credit", "debit", "कैशबुक", "खाता"] },
   { id: "expenses", keys: ["expense", "petrol", "diesel", "खर्च", "कैश"] },
   { id: "tasks", keys: ["task", "todo", "assign", "काम", "कार्य"] },
 ];

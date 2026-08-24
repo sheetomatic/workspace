@@ -11,6 +11,7 @@ export const TEMPLATE_LEAD: Record<string, string> = {
   attendance: "Staff in/out and leave. Owner sees who is late, not a register book.",
   visitors: "Gate in/out with who and when. No paper at the door.",
   expenses: "Cash out and approve. Owner sees what left the till.",
+  cashbook: "Credits, debits, and expenses by date and category. Add a new category from the phone.",
   tasks: "Assign, due, close. Person-wise work without a second sheet.",
 };
 
