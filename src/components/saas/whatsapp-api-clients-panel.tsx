@@ -92,7 +92,7 @@ export function WhatsAppApiClientsPanel({
             {inactiveTotal ? ` ${inactiveTotal} inactive.` : ""}
           </p>
         </div>
-        <WhatsAppApiClientUpload />
+        <WhatsAppApiClientSync />
       </div>
 
       {clients.length > 0 ? (
@@ -231,8 +231,8 @@ export function WhatsAppApiClientsPanel({
 
       {clients.length === 0 ? (
         <p className="ws-wa-empty">
-          No WhatsApp API clients yet. Add a number and plan, or upload the
-          panel customer list.
+          No WhatsApp API clients yet. Add a number and plan, or sync from
+          the panel.
         </p>
       ) : (
         <div className="ws-wa-groups">
@@ -391,7 +391,7 @@ function WhatsAppApiClientCard({ row }: { row: WhatsAppApiClientRow }) {
   );
 }
 
-function WhatsAppApiClientUpload() {
+function WhatsAppApiClientSync() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
@@ -399,31 +399,30 @@ function WhatsAppApiClientUpload() {
 
   return (
     <div className="ws-wa-upload">
-      <div className="ws-billing-actions">
-        <button
-          className="btn-cta"
-          disabled={pending}
-          type="button"
-          onClick={() => {
-            setMessage(null);
-            setError(null);
-            startTransition(async () => {
-              const result = await syncWhatsAppApiClientsFromPanelAction();
-              if (!result.ok) {
-                setError(result.message);
-                return;
-              }
-              setMessage(result.message);
-              router.refresh();
-            });
-          }}
-        >
-          {pending ? "Syncing…" : "Sync from panel"}
-        </button>
-      </div>
+      <button
+        className="saas-ws-action"
+        disabled={pending}
+        type="button"
+        onClick={() => {
+          setMessage(null);
+          setError(null);
+          startTransition(async () => {
+            const result = await syncWhatsAppApiClientsFromPanelAction();
+            if (!result.ok) {
+              setError(result.message);
+              return;
+            }
+            setMessage(result.message);
+            router.refresh();
+          });
+        }}
+      >
+        {pending ? "Syncing…" : "Sync from panel"}
+      </button>
       <p className="ws-wa-upload-hint">
         Sync pulls every customer from the Web Based API panel. Same WhatsApp
-        number merges; a new number is added.
+        number merges; a new number is added. Recharge and credits write back
+        to the panel.
       </p>
       {message ? <span className="ws-billing-pill active">{message}</span> : null}
       {error ? <span className="ws-billing-pill overdue">{error}</span> : null}
