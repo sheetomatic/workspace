@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useState, useTransition } from "react";
+import { useActionState, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   addWhatsAppApiClientAction,
@@ -36,6 +36,7 @@ export function WhatsAppApiClientsPanel({
   );
   const [planId, setPlanId] = useState(plans[0]?.id ?? CUSTOM_WHATSAPP_API_PLAN_ID);
   const [phoneDraft, setPhoneDraft] = useState("");
+  const [query, setQuery] = useState("");
   const official = plans.filter((plan) => plan.kind === "OFFICIAL");
   const unofficial = plans.filter((plan) => plan.kind === "UNOFFICIAL");
   const phoneMatch = (() => {
@@ -45,8 +46,31 @@ export function WhatsAppApiClientsPanel({
       clients.find((row) => normalizeWhatsAppPhone(row.phone) === normalized) ?? null
     );
   })();
-  const regular = clients.filter((row) => row.accountGroup === "REGULAR");
-  const inactive = clients.filter((row) => row.accountGroup === "INACTIVE");
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const digits = query.replace(/\D/g, "");
+    if (!q) return clients;
+    return clients.filter((row) => {
+      const haystack = [
+        row.name,
+        row.company,
+        row.email,
+        row.phone,
+        row.phoneLabel,
+        row.planLabel,
+        row.notes,
+        row.externalId,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      if (haystack.includes(q)) return true;
+      return Boolean(digits && row.phone.replace(/\D/g, "").includes(digits));
+    });
+  }, [clients, query]);
+  const regular = visible.filter((row) => row.accountGroup === "REGULAR");
+  const inactive = visible.filter((row) => row.accountGroup === "INACTIVE");
+  const searching = Boolean(query.trim());
   const dueSoon = regular.filter((row) => row.dueSoon).length;
   const expired = regular.filter((row) => row.status === "EXPIRED").length;
 
@@ -182,17 +206,43 @@ export function WhatsAppApiClientsPanel({
         </p>
       ) : (
         <div className="ws-wa-groups">
-          <WhatsAppApiClientGroup
-            title="Regular"
-            hint="Active clients — reminders are on"
-            rows={regular}
-            defaultOpen
-          />
-          <WhatsAppApiClientGroup
-            title="Inactive"
-            hint="Rest of the list — no reminders"
-            rows={inactive}
-          />
+          <label className="ws-wa-search">
+            Search customers
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Name, WhatsApp number, email, company…"
+              aria-label="Search WhatsApp API customers"
+            />
+            <small>
+              {searching
+                ? `${visible.length} match${visible.length === 1 ? "" : "es"} of ${clients.length}`
+                : `${clients.length} customers`}
+            </small>
+          </label>
+          {searching && visible.length === 0 ? (
+            <p className="ws-wa-empty">No customer matches that search.</p>
+          ) : (
+            <>
+              {!searching || regular.length > 0 ? (
+                <WhatsAppApiClientGroup
+                  title="Regular"
+                  hint="Active clients — reminders are on"
+                  rows={regular}
+                  defaultOpen
+                />
+              ) : null}
+              {!searching || inactive.length > 0 ? (
+                <WhatsAppApiClientGroup
+                  title="Inactive"
+                  hint="Rest of the list — no reminders"
+                  rows={inactive}
+                  defaultOpen={searching}
+                />
+              ) : null}
+            </>
+          )}
         </div>
       )}
     </article>
