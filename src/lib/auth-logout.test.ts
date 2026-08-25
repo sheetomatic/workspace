@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   applySignedOutCookies,
@@ -37,9 +36,9 @@ describe("applySignedOutCookies", () => {
 
   it("expires host and domain session cookies", () => {
     process.env.AUTH_COOKIE_DOMAIN = ".sheetomatic.com";
-    const response = NextResponse.redirect("https://anmol-traders.sheetomatic.com/login");
-    applySignedOutCookies(response);
-    const cookies = response.headers.getSetCookie();
+    const headers = new Headers();
+    applySignedOutCookies(headers);
+    const cookies = headers.getSetCookie();
     expect(
       cookies.some(
         (cookie) =>

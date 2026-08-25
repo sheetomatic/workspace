@@ -1,5 +1,3 @@
-import { NextResponse } from "next/server";
-
 const AUTH_COOKIE_NAMES = [
   "authjs.session-token",
   "__Secure-authjs.session-token",
@@ -55,20 +53,34 @@ function cookieDomainVariants(rawDomain: string | undefined) {
   );
 }
 
-/** Clear Auth.js cookies, including Domain=AUTH_COOKIE_DOMAIN copies. */
-export function applySignedOutCookies(response: NextResponse) {
-  const domains = cookieDomainVariants(process.env.AUTH_COOKIE_DOMAIN);
+export function logoutCookieDomains() {
+  const fromAuth = cookieDomainVariants(process.env.AUTH_COOKIE_DOMAIN);
+  if (fromAuth.length > 0) {
+    return fromAuth;
+  }
+  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN?.trim();
+  return root ? cookieDomainVariants(`.${root}`) : [];
+}
+
+export function signedOutCookieHeaders() {
+  const headers: string[] = [];
+  const domains = logoutCookieDomains();
 
   for (const name of AUTH_COOKIE_NAMES) {
-    response.headers.append("Set-Cookie", expireCookieHeader(name));
-    if (name.startsWith("__Host-")) {
-      continue;
+    // Domain copies first — some hosts keep only the first Set-Cookie per name.
+    if (!name.startsWith("__Host-")) {
+      for (const domain of domains) {
+        headers.push(expireCookieHeader(name, { domain }));
+      }
     }
-    for (const domain of domains) {
-      response.headers.append(
-        "Set-Cookie",
-        expireCookieHeader(name, { domain }),
-      );
-    }
+    headers.push(expireCookieHeader(name));
+  }
+
+  return headers;
+}
+
+export function applySignedOutCookies(headers: Headers) {
+  for (const cookie of signedOutCookieHeaders()) {
+    headers.append("Set-Cookie", cookie);
   }
 }
