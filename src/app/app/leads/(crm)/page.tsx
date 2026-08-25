@@ -30,6 +30,7 @@ import {
   getLeadsPipeMetricsForPeriod,
   listInboundLeadsForPeriodPaginated,
 } from "@/lib/leads/queries";
+import { importSheetLeadsMatchingSearch } from "@/lib/leads/search-sheet";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
@@ -291,6 +292,19 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
     );
   }
 
+  // Search also pulls matching rows from the connected Google Sheet so
+  // unsynced names (e.g. Shyam) appear instead of only the imported window.
+  if (listParams.q) {
+    try {
+      await importSheetLeadsMatchingSearch({
+        organizationId: user.organizationId,
+        q: listParams.q,
+      });
+    } catch (error) {
+      console.error("leads sheet search", error);
+    }
+  }
+
   // Critical path first (list + members + org). Heavy dashboards / sync
   // metadata load second and soft-fail so Neon cold-start does not blank CRM.
   const [leadPage, teamMembers, serviceCatalog, organization, workspaceTotal] =
@@ -302,12 +316,13 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
           sort: listParams.sort,
           status: listParams.status,
           category: listParams.category,
-          // Search filters client-side on the loaded page (no workspace reload).
-          includeArchived: listParams.includeArchived,
+          q: listParams.q,
+          includeArchived: listParams.includeArchived || Boolean(listParams.q),
           assignedToId: leadScope?.assignedToId,
-          excludeStatuses: listParams.status
-            ? undefined
-            : NEXT_TIME_LEAD_STATUSES,
+          excludeStatuses:
+            listParams.q || listParams.status
+              ? undefined
+              : NEXT_TIME_LEAD_STATUSES,
         }),
         listWorkspaceMembers(user.organizationId),
         listLeadServiceCatalog(user.organizationId),

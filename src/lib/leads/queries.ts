@@ -9,6 +9,7 @@ import {
   type LeadsPeriodRange,
 } from "@/lib/leads/period";
 import type { InboundLeadStatus } from "@prisma/client";
+import { leadSearchWhere } from "@/lib/leads/search";
 import {
   NEXT_TIME_LEAD_STATUSES,
   OPEN_LEAD_STATUSES,
@@ -201,10 +202,12 @@ export async function listInboundLeadsForPeriodPaginated(
     excludeStatuses?: InboundLeadStatus[];
   },
 ) {
+  const query = options.q?.trim() ?? "";
   const where = mergeLeadContactWhere(
     {
       organizationId,
-      ...leadCapturedAtWhere(period),
+      // Name/phone search is workspace-wide — period filter hid older leads.
+      ...(query ? {} : leadCapturedAtWhere(period)),
       ...(options.assignedToId ? { assignedToId: options.assignedToId } : {}),
       ...(options.status
         ? { status: options.status }
@@ -212,16 +215,8 @@ export async function listInboundLeadsForPeriodPaginated(
           ? { status: { notIn: options.excludeStatuses } }
           : {}),
       ...(options.category ? { category: options.category } : {}),
-      ...(options.q
-        ? {
-            OR: [
-              { name: { contains: options.q, mode: "insensitive" } },
-              { phone: { contains: options.q, mode: "insensitive" } },
-              { email: { contains: options.q, mode: "insensitive" } },
-              { requirement: { contains: options.q, mode: "insensitive" } },
-            ],
-          }
-        : {}),
+      ...leadSearchWhere(query),
+      ...(query ? { mergedIntoId: null } : {}),
     },
     { includeArchived: options.includeArchived },
   );

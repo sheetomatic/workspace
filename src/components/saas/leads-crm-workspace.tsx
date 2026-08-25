@@ -117,21 +117,11 @@ function leadDeepLink(listParams: LeadsListSearchParams, leadId: string) {
   return `/app/leads?${buildLeadsListQuery(listParams, { leadId, page: "1" })}`;
 }
 
-function leadMatchesSearch(lead: LeadRow, query: string) {
-  const q = query.trim().toLowerCase();
-  if (!q) return true;
-  const haystack = [
-    lead.name,
-    lead.phone,
-    lead.email,
-    lead.company,
-    lead.requirement,
-    lead.category,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-  return haystack.includes(q);
+function searchHref(listParams: LeadsListSearchParams, query: string) {
+  return `/app/leads?${buildLeadsListQuery(listParams, {
+    q: query.trim(),
+    page: "1",
+  })}`;
 }
 
 export function LeadsCrmWorkspace({
@@ -209,6 +199,29 @@ export function LeadsCrmWorkspace({
     setLocalLeads(leads);
   }, [leads]);
 
+  useEffect(() => {
+    setSearchDraft(listParams.q ?? "");
+  }, [listParams.q]);
+
+  function applySearch(next: string) {
+    const href = searchHref(listParams, next);
+    startTransition(() => {
+      router.push(href);
+    });
+  }
+
+  useEffect(() => {
+    const draft = searchDraft.trim();
+    const committed = (listParams.q ?? "").trim();
+    if (draft === committed) {
+      return;
+    }
+    const timer = window.setTimeout(() => applySearch(searchDraft), 350);
+    return () => window.clearTimeout(timer);
+    // listParams identity changes every render from the server props object.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- debounce on draft only
+  }, [searchDraft]);
+
   // Focus mode: prefetch the list page so closing the drawer navigates fast.
   useEffect(() => {
     if (focusMode) {
@@ -254,10 +267,8 @@ export function LeadsCrmWorkspace({
     [localLeads, selectedId],
   );
 
-  const visibleLeads = useMemo(
-    () => localLeads.filter((lead) => leadMatchesSearch(lead, searchDraft)),
-    [localLeads, searchDraft],
-  );
+  const committedSearch = (listParams.q ?? "").trim();
+  const visibleLeads = localLeads;
 
   const sortHref =
     sort === "newest"
@@ -278,14 +289,23 @@ export function LeadsCrmWorkspace({
             type="search"
             value={searchDraft}
             onChange={(event) => setSearchDraft(event.target.value)}
-            placeholder="Filter loaded leads…"
-            aria-label="Filter loaded leads by name, phone, email, or company"
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                applySearch(searchDraft);
+              }
+            }}
+            placeholder="Search CRM + Google Sheets by name, phone, email, or company…"
+            aria-label="Search CRM and Google Sheets by name, phone, email, or company"
           />
           {searchDraft.trim() ? (
             <button
               type="button"
               className="btn-secondary btn-sm"
-              onClick={() => setSearchDraft("")}
+              onClick={() => {
+                setSearchDraft("");
+                applySearch("");
+              }}
             >
               Clear
             </button>
@@ -347,8 +367,10 @@ export function LeadsCrmWorkspace({
             {showCreate ? "Cancel" : "Add lead"}
           </button>
           <span className="leads-crm-count">
-            {searchDraft.trim()
-              ? `${visibleLeads.length} match · ${localLeads.length} loaded`
+            {committedSearch
+              ? pending
+                ? "Searching…"
+                : `${total} match${total === 1 ? "" : "es"}`
               : isBoard
                 ? `${Math.min(localLeads.length, total)} of ${total} on board`
                 : `${total} leads · p${page}/${totalPages}`}
@@ -511,8 +533,10 @@ export function LeadsCrmWorkspace({
         visibleLeads.length === 0 ? (
           <div className="leads-empty-state leads-board-empty">
             <p className="leads-machine-muted">
-              {searchDraft.trim()
-                ? "No loaded leads match this search."
+              {committedSearch
+                ? pending
+                  ? "Searching all leads…"
+                  : "No leads match this search."
                 : "No leads match this filter."}
             </p>
             {workspaceTotal > 0 && period !== "all" && !searchDraft.trim() ? (
@@ -572,8 +596,10 @@ export function LeadsCrmWorkspace({
                 <td colSpan={bulkMode && canManage ? 8 : 7}>
                   <div className="leads-empty-state">
                     <p className="leads-machine-muted">
-                      {searchDraft.trim()
-                        ? "No loaded leads match this search."
+                      {committedSearch
+                        ? pending
+                          ? "Searching all leads…"
+                          : "No leads match this search."
                         : "No leads match this filter."}
                     </p>
                     {workspaceTotal > 0 && period !== "all" && !searchDraft.trim() ? (
@@ -759,12 +785,12 @@ export function LeadsCrmWorkspace({
       </div>
       )}
 
-      {!isBoard && !searchDraft.trim() ? (
+      {!isBoard && totalPages > 1 ? (
       <div className="leads-crm-pagination">
         {page > 1 ? (
           <Link
             className="btn-secondary btn-sm"
-            href={`/app/leads?${buildLeadsListQuery(listParams, { page: String(page - 1), q: "" })}`}
+            href={`/app/leads?${buildLeadsListQuery(listParams, { page: String(page - 1) })}`}
           >
             Previous
           </Link>
@@ -774,13 +800,13 @@ export function LeadsCrmWorkspace({
         {page < totalPages ? (
           <Link
             className="btn-secondary btn-sm"
-            href={`/app/leads?${buildLeadsListQuery(listParams, { page: String(page + 1), q: "" })}`}
+            href={`/app/leads?${buildLeadsListQuery(listParams, { page: String(page + 1) })}`}
           >
             Next
           </Link>
         ) : null}
       </div>
-      ) : total > localLeads.length && !searchDraft.trim() ? (
+      ) : total > localLeads.length && !committedSearch ? (
         <p className="leads-machine-muted leads-board-cap-note">
           Showing first {localLeads.length} of {total}. Narrow the period or filter, or use List
           for pagination.

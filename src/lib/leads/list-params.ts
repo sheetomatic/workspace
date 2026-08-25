@@ -1,7 +1,7 @@
 import type { InboundLeadStatus } from "@prisma/client";
 import { LEAD_STATUS_ORDER } from "@/lib/leads/status-labels";
 
-/** Larger page so name search can filter in-memory without a workspace reload. */
+/** Page size for the CRM list. Search uses `q` on the server, not this window. */
 export const LEADS_PAGE_SIZE = 100;
 export const LEADS_BOARD_PAGE_SIZE = 200;
 
