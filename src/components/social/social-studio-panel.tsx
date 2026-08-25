@@ -12,7 +12,7 @@ import type { SocialPostFormat } from "@/lib/my-space/social/types";
 import "./social-studio-panel.css";
 
 export function SocialStudioPanel() {
-  const [icp, setIcp] = useState(SOCIAL_ICP_VERTICALS[0].id);
+  const [icp, setIcp] = useState<string>(SOCIAL_ICP_VERTICALS[0].id);
   const [format, setFormat] = useState<SocialPostFormat>("image");
   const [personName, setPersonName] = useState("");
   const [shopName, setShopName] = useState("");
