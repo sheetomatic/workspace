@@ -57,11 +57,21 @@ function redirectToApexMarketing(request: NextRequest, pathname: string) {
 function workspaceLoginUrl(request: NextRequest, options?: { org?: string }) {
   const loginUrl = request.nextUrl.clone();
   loginUrl.pathname = "/login";
+  const preserved = new URLSearchParams();
+  for (const key of ["error", "callbackUrl", "product", "intent"] as const) {
+    const value = request.nextUrl.searchParams.get(key);
+    if (value) {
+      preserved.set(key, value);
+    }
+  }
   loginUrl.search = "";
 
   if (options?.org) {
     loginUrl.searchParams.set("org", options.org);
   }
+  preserved.forEach((value, key) => {
+    loginUrl.searchParams.set(key, value);
+  });
 
   return loginUrl;
 }
@@ -411,12 +421,9 @@ function handleTenantHost(
     !request.nextUrl.searchParams.has("org")
   ) {
     if (pathname === "/login") {
-      const loginUrl = workspaceLoginUrl(request, { org: tenantSlug });
-      const callbackUrl = request.nextUrl.searchParams.get("callbackUrl");
-      if (callbackUrl) {
-        loginUrl.searchParams.set("callbackUrl", callbackUrl);
-      }
-      return NextResponse.redirect(loginUrl);
+      return NextResponse.redirect(
+        workspaceLoginUrl(request, { org: tenantSlug }),
+      );
     }
 
     const loginSubpathUrl = request.nextUrl.clone();

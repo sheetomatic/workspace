@@ -23,6 +23,7 @@ import {
   parseWorkspaceNavPrefs,
 } from "@/lib/workspace-nav-prefs";
 import { ORG_PLAN_LABELS } from "@/lib/org-plan-presets";
+import { logoutHref } from "@/lib/auth-logout";
 import { requireSession } from "@/lib/require-session";
 import {
   ensureSessionTenantHost,
@@ -171,17 +172,11 @@ export default async function AppLayout({
     }
   } catch (error) {
     console.error("[app-layout] workspace bootstrap failed", error);
-    redirect(
-      "/api/auth/signout?callbackUrl=" +
-        encodeURIComponent("/login?error=workspace"),
-    );
+    redirect(logoutHref("/login?error=workspace"));
   }
 
   if (!organization) {
-    redirect(
-      "/api/auth/signout?callbackUrl=" +
-        encodeURIComponent("/login?error=workspace"),
-    );
+    redirect(logoutHref("/login?error=workspace"));
   }
 
   if (organization.status !== "ACTIVE" && !sessionUser.isSuperAdmin) {

@@ -9,6 +9,7 @@ import {
   type LoginActionState,
 } from "@/app/login/actions";
 import { aiAppEntryHref } from "@/lib/ai-auth-links";
+import { logoutHref } from "@/lib/auth-logout";
 import { LEARN_ADMIN_HOME } from "@/lib/workspace-auth-links";
 
 const showDemoAccounts = process.env.NODE_ENV === "development";
@@ -317,6 +318,12 @@ export function LoginForm() {
           >
             Forgot password?
           </Link>
+          {staleSessionError || workspaceError ? (
+            <>
+              {" · "}
+              <a href={logoutHref("/login")}>Clear saved session</a>
+            </>
+          ) : null}
         </p>
 
         {error ? <p className="login-error form-field-full">{error}</p> : null}

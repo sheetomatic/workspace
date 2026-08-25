@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { signOut } from "next-auth/react";
+import { logoutHref } from "@/lib/auth-logout";
 import { BrandIconMark } from "@/components/brand/brand-icon-mark";
 import "./app-builder-shell.css";
 
@@ -28,9 +28,9 @@ export function AppBuilderShell({
           <span>{userEmail}</span>
           <button
             type="button"
-            onClick={() =>
-              void signOut({ callbackUrl: "/login?product=app-builder" })
-            }
+            onClick={() => {
+              window.location.assign(logoutHref("/login?product=app-builder"));
+            }}
           >
             Sign out
           </button>

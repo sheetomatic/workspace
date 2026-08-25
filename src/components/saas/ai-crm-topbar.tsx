@@ -3,7 +3,7 @@
 import { LogOut, Settings, User, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { logoutHref } from "@/lib/auth-logout";
 import { useEffect, useRef, useState } from "react";
 import type { SessionUser } from "@/lib/auth";
 import { ROLE_LABELS } from "@/lib/permissions";
@@ -120,7 +120,9 @@ export function AiCrmTopbar({
               ) : null}
               <button
                 type="button"
-                onClick={() => signOut({ callbackUrl: "/ai" })}
+                onClick={() => {
+                  window.location.assign(logoutHref("/ai"));
+                }}
               >
                 <LogOut size={15} aria-hidden />
                 Sign out

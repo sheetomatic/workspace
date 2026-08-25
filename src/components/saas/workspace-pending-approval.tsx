@@ -1,5 +1,6 @@
 import { Clock, MessageCircle } from "lucide-react";
 import { buildWhatsAppUrl, whatsappDisplayNumber } from "@/app/site-content";
+import { logoutHref } from "@/lib/auth-logout";
 
 /** Full-page hold screen shown while a workspace is pending, on hold, or inactive. */
 export function WorkspacePendingApproval({
@@ -68,7 +69,7 @@ export function WorkspacePendingApproval({
           </a>
           <a
             className="text-sm font-medium text-slate-500 underline-offset-4 hover:underline"
-            href="/api/auth/signout"
+            href={logoutHref("/login")}
           >
             Sign out
           </a>

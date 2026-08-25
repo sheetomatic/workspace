@@ -9,6 +9,7 @@ import { formatRedlavaWalletAmount } from "@/lib/integrations/redlava";
 import { listOrganizationsForUser } from "@/lib/auth-orgs";
 import { shouldSkipAiOnboarding } from "@/lib/ai-onboarding";
 import { prisma } from "@/lib/db";
+import { logoutHref } from "@/lib/auth-logout";
 import { requireAiSession } from "@/lib/require-session";
 import { getWorkspaceTenantWallets } from "@/lib/whatsapp-wallet";
 import {
@@ -45,10 +46,7 @@ export default async function SheetomaticAiAppLayout({
     ]);
 
   if (!organization) {
-    redirect(
-      "/api/auth/signout?callbackUrl=" +
-        encodeURIComponent("/login?error=workspace&product=ai"),
-    );
+    redirect(logoutHref("/login?error=workspace&product=ai"));
   }
 
   if (organization.status !== "ACTIVE" && !sessionUser.isSuperAdmin) {

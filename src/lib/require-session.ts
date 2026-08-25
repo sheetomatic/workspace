@@ -8,6 +8,7 @@ import {
   hasWorkspaceModule,
   resolveWorkspaceHomeHref,
 } from "@/lib/workspace-modules";
+import { logoutHref } from "@/lib/auth-logout";
 
 export async function requireSession(
   minRole?: Role,
@@ -16,10 +17,7 @@ export async function requireSession(
   const user = await getSessionUser();
 
   if (!user) {
-    redirect(
-      "/api/auth/signout?callbackUrl=" +
-        encodeURIComponent("/login?error=session"),
-    );
+    redirect(logoutHref("/login?error=session"));
   }
 
   if (minRole && !user.isSuperAdmin && !hasMinimumRole(user.role, minRole)) {

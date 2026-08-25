@@ -1,4 +1,5 @@
 import { MessageCircle } from "lucide-react";
+import { logoutHref } from "@/lib/auth-logout";
 
 export function WhatsAppOnlyGate({
   organizationName,
@@ -28,7 +29,7 @@ export function WhatsAppOnlyGate({
           <strong>Need help</strong>. Reminders keep coming until it is done.
         </p>
         <p>
-          <a className="btn-ghost" href="/api/auth/signout">
+          <a className="btn-ghost" href={logoutHref("/login")}>
             Sign out
           </a>
         </p>

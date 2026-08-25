@@ -4,7 +4,7 @@ import "@/components/saas/training-students-panel.css";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { signOut } from "next-auth/react";
+import { logoutHref } from "@/lib/auth-logout";
 import {
   LEARN_ADMIN_HOME,
   workspacePortalOrigin,
@@ -56,9 +56,9 @@ export function TrainingPortalShell({
           <a href={`${workspacePortalOrigin()}/app`}>Open workspace</a>
           <button
             type="button"
-            onClick={() =>
-              void signOut({ callbackUrl: "/login?product=learn" })
-            }
+            onClick={() => {
+              window.location.assign(logoutHref("/login?product=learn"));
+            }}
           >
             Sign out
           </button>

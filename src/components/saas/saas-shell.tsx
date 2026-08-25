@@ -5,7 +5,7 @@ import Link from "next/link";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { signOut } from "next-auth/react";
+import { logoutHref } from "@/lib/auth-logout";
 import { OrganizationSwitcher } from "@/components/saas/organization-switcher";
 import type { OrganizationOption } from "@/components/saas/organization-switcher";
 import type { SessionUser } from "@/lib/auth";
@@ -501,7 +501,9 @@ export function SaasShell({
             aria-label="Sign out"
             className="ws-mobile-shell-signout"
             type="button"
-            onClick={() => signOut({ callbackUrl: signOutPath })}
+            onClick={() => {
+              window.location.assign(logoutHref(signOutPath));
+            }}
           >
             <LogOut size={18} />
           </button>
@@ -665,7 +667,9 @@ export function SaasShell({
           <button
             className="saas-signout"
             type="button"
-            onClick={() => signOut({ callbackUrl: signOutPath })}
+            onClick={() => {
+              window.location.assign(logoutHref(signOutPath));
+            }}
           >
             <LogOut size={16} />
             Sign out

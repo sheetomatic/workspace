@@ -3,7 +3,7 @@
 import { ChevronDown, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { logoutHref } from "@/lib/auth-logout";
 import { AiCrmTopbar } from "@/components/saas/ai-crm-topbar";
 import { OrganizationSwitcher } from "@/components/saas/organization-switcher";
 import { BrandIconMark } from "@/components/brand/brand-icon-mark";
@@ -120,7 +120,9 @@ export function AiShell({
             <button
               className="ai-crm-signout"
               type="button"
-              onClick={() => signOut({ callbackUrl: "/ai" })}
+              onClick={() => {
+                window.location.assign(logoutHref("/ai"));
+              }}
             >
               <LogOut size={15} />
               Sign out
