@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { leadOutstandingBalance } from "@/lib/leads/payment-summary";
 import { mergeLeadContactWhere } from "@/lib/leads/contact-validation";
 import {
   getLeadNurtureConfig,
@@ -94,7 +95,7 @@ async function listPaymentNotReceivedAlerts(
       modifiedAt: true,
       rawPayload: true,
       quotationValue: true,
-      payments: { select: { receivedAmount: true, receivedDate: true } },
+      payments: { select: { receivedAmount: true, receivedDate: true, paymentType: true } },
       quotations: {
         where: { requestType: "INVOICE" },
         orderBy: { quotationDate: "desc" },
@@ -113,12 +114,11 @@ async function listPaymentNotReceivedAlerts(
   const items: CrmAlertItem[] = [];
   for (const lead of leads) {
     const invoice = lead.quotations[0];
-    const received = lead.payments.reduce(
-      (sum, payment) => sum + Number(payment.receivedAmount ?? 0),
-      0,
-    );
-    const total = Number(invoice?.totalAmount ?? lead.quotationValue ?? 0);
-    const balance = total > 0 ? total - received : null;
+    const balance = leadOutstandingBalance({
+      invoiceTotal: invoice?.totalAmount,
+      quotationValue: lead.quotationValue,
+      payments: lead.payments,
+    });
 
     if (balance !== null && balance <= 0.5) {
       continue; // Fully paid.

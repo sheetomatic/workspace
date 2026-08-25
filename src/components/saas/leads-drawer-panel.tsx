@@ -93,6 +93,7 @@ const PAYMENT_TYPE_LABELS: Record<LeadPaymentType, string> = {
   WHATSAPP_API_RECHARGE: "6. WhatsApp API Recharge",
   YOUTUBE_ADSENSE: "7. YouTube Adsense",
   COURSE_FEE: "8. Course Fee",
+  ADJUSTMENT: "9. Adjust payment (paid less)",
 };
 
 const PAYMENT_METHOD_LABELS: Record<LeadPaymentMethod, string> = {
@@ -2174,6 +2175,12 @@ export function LeadDrawerPanel({
               <span>Received</span>
               <strong>{paymentSummary.receivedLabel}</strong>
             </div>
+            {paymentSummary.adjusted > 0 ? (
+              <div>
+                <span>Adjusted</span>
+                <strong>{paymentSummary.adjustedLabel}</strong>
+              </div>
+            ) : null}
             <div>
               <span>Due</span>
               <strong>{paymentSummary.dueLabel}</strong>
@@ -2216,6 +2223,64 @@ export function LeadDrawerPanel({
                 }
               >
                 {savingKey === "nurture" ? "Sending…" : "Send WA from portal"}
+              </button>
+            ) : null}
+            {canWork && paymentSummary.due > 0 ? (
+              <button
+                type="button"
+                className="btn-secondary btn-sm"
+                disabled={savingKey === "adjust"}
+                onClick={() =>
+                  runAction("adjust", async () => {
+                    const result = await addInboundLeadPayment({
+                      leadId: lead.id,
+                      paymentType: "ADJUSTMENT",
+                      receivedAmount: String(paymentSummary.due),
+                      receivedDate: new Date().toISOString().slice(0, 10),
+                      paymentMethod: "UPI",
+                      notes:
+                        paymentNotes.trim() ||
+                        "Adjusted — client paid less than invoice; settle remaining due.",
+                    });
+                    if (
+                      !result.ok ||
+                      !("payment" in result) ||
+                      !result.payment ||
+                      !result.lead
+                    ) {
+                      setSaveError(result.message ?? "Could not adjust payment.");
+                      return;
+                    }
+                    const payment = result.payment;
+                    const patchedLead = result.lead;
+                    const row: PaymentRow = {
+                      id: payment.id,
+                      paymentType: payment.paymentType,
+                      receivedAmount: payment.receivedAmount,
+                      receivedDate: payment.receivedDate,
+                      paymentMethod: payment.paymentMethod,
+                      notes: payment.notes,
+                    };
+                    setPayments((current) => {
+                      const merged = [row, ...current];
+                      onLeadPatched?.(lead.id, {
+                        payments: merged,
+                        status: patchedLead.status,
+                      });
+                      return merged;
+                    });
+                    setStatus(patchedLead.status);
+                    appendActivity({
+                      type: "PAYMENT",
+                      body: `Adjusted ₹${Number(payment.receivedAmount).toLocaleString("en-IN")} off the invoice`,
+                    });
+                    setPaymentNotes("");
+                  })
+                }
+              >
+                {savingKey === "adjust"
+                  ? "Adjusting…"
+                  : `Adjust remaining ${paymentSummary.dueLabel}`}
               </button>
             ) : null}
           </div>
@@ -2366,7 +2431,11 @@ export function LeadDrawerPanel({
                   rows={2}
                   value={paymentNotes}
                   onChange={(e) => setPaymentNotes(e.target.value)}
-                  placeholder="Optional — UTR, who paid, what this covers"
+                  placeholder={
+                    paymentType === "ADJUSTMENT"
+                      ? "Why less than invoice — discount, waived, round-off"
+                      : "Optional — UTR, who paid, what this covers"
+                  }
                 />
               </label>
               <div className="leads-payment-form-actions">
@@ -2496,7 +2565,9 @@ export function LeadDrawerPanel({
             ) : (
               payments.map((payment) => (
                 <li key={payment.id}>
-                  <strong>{PAYMENT_TYPE_LABELS[payment.paymentType]}</strong>
+                  <strong>
+                    {PAYMENT_TYPE_LABELS[payment.paymentType] ?? payment.paymentType}
+                  </strong>
                   <span>
                     {formatInr(Number(payment.receivedAmount))} ·{" "}
                     {PAYMENT_METHOD_LABELS[payment.paymentMethod]}

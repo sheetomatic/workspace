@@ -1,0 +1,25 @@
+export type WhatsAppApiClientRow = {
+  id: string;
+  name: string;
+  company: string | null;
+  phone: string;
+  phoneLabel: string;
+  email: string | null;
+  planKind: "OFFICIAL" | "UNOFFICIAL";
+  planKindLabel: string;
+  planId: string;
+  planLabel: string;
+  amountPaise: number;
+  amountLabel: string;
+  durationDays: number;
+  startedAt: Date;
+  startedLabel: string;
+  expiresAt: Date;
+  expiresLabel: string;
+  daysLeft: number;
+  daysLeftLabel: string;
+  status: string;
+  reminderCount: number;
+  notes: string | null;
+  dueSoon: boolean;
+};

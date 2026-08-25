@@ -100,9 +100,16 @@
 }
 
 .ws-billing-pill.sent,
-.ws-billing-pill.onboarding {
+.ws-billing-pill.onboarding,
+.ws-billing-pill.expired {
   background: #fef3c7;
   color: #92400e;
+}
+
+.ws-wa-empty {
+  margin: 1rem 0 0;
+  color: #64748b;
+  font-size: 0.875rem;
 }
 
 .ws-billing-form {

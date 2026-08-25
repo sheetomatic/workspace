@@ -35,6 +35,10 @@ function normalizePost(raw: Record<string, unknown>): SocialPost | null {
     feedback: String(raw.feedback || ""),
     postedAt: typeof raw.postedAt === "string" ? raw.postedAt : null,
     storyHook: typeof raw.storyHook === "string" ? raw.storyHook : undefined,
+    createdByName: typeof raw.createdByName === "string" ? raw.createdByName : undefined,
+    postedByName: typeof raw.postedByName === "string" ? raw.postedByName : undefined,
+    icp: typeof raw.icp === "string" ? raw.icp : undefined,
+    artDirection: typeof raw.artDirection === "string" ? raw.artDirection : undefined,
   };
 }
 
@@ -107,11 +111,35 @@ export async function reloadSocialScheduleFromSeed(
   return seed;
 }
 
+export async function addSocialStudioPost(params: {
+  organizationId: string;
+  createdByName: string;
+  post: Omit<SocialPost, "id" | "status" | "feedback" | "postedAt">;
+}): Promise<SocialPost> {
+  const schedule = await getSocialSchedule(params.organizationId);
+  const created: SocialPost = {
+    ...params.post,
+    id: `studio-${Date.now().toString(36)}`,
+    status: "pending_approval",
+    feedback: "",
+    postedAt: null,
+    createdByName: params.createdByName,
+  };
+  const next: SocialSchedule = {
+    ...schedule,
+    updatedAt: new Date().toISOString(),
+    posts: [created, ...schedule.posts],
+  };
+  await saveSchedule(params.organizationId, next);
+  return created;
+}
+
 export async function updateSocialPostStatus(params: {
   organizationId: string;
   postId: string;
   action: "approve" | "improve" | "posted" | "reset";
   feedback?: string;
+  actorName?: string;
 }): Promise<SocialPost> {
   const schedule = await getSocialSchedule(params.organizationId);
   const post = schedule.posts.find((p) => p.id === params.postId);
@@ -138,11 +166,20 @@ export async function updateSocialPostStatus(params: {
     postedAt = null;
   }
 
+  const postedByName =
+    params.action === "posted"
+      ? params.actorName || post.postedByName
+      : params.action === "reset"
+        ? undefined
+        : post.postedByName;
+
   const next: SocialSchedule = {
     ...schedule,
     updatedAt: new Date().toISOString(),
     posts: schedule.posts.map((p) =>
-      p.id === params.postId ? { ...p, status, feedback, postedAt } : p,
+      p.id === params.postId
+        ? { ...p, status, feedback, postedAt, postedByName }
+        : p,
     ),
   };
 

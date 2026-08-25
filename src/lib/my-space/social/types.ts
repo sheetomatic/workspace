@@ -26,6 +26,10 @@ export type SocialPost = {
   postedAt: string | null;
   /** Optional story character / shop context for AI improve */
   storyHook?: string;
+  createdByName?: string;
+  postedByName?: string;
+  icp?: string;
+  artDirection?: string;
 };
 
 export type SocialSchedule = {

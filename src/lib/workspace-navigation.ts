@@ -590,11 +590,44 @@ const APP_BUILDER_NAV_ITEM: WorkspaceNavItem = {
   matchPrefix: "/app/app-builder",
 };
 
+const SOCIAL_NAV_ITEM: WorkspaceNavItem = {
+  id: "social",
+  href: "/app/social",
+  label: "Social",
+  icon: Megaphone,
+  module: "SOCIAL",
+  matchPrefix: "/app/social",
+  children: [
+    {
+      href: "/app/social",
+      label: "This week",
+      icon: CalendarDays,
+      module: "SOCIAL",
+      matchPrefix: "/app/social",
+    },
+    {
+      href: "/app/social?tab=create",
+      label: "Create",
+      icon: PenTool,
+      module: "SOCIAL",
+      matchPrefix: "/app/social",
+    },
+    {
+      href: "/app/social?tab=posted",
+      label: "Posted",
+      icon: History,
+      module: "SOCIAL",
+      matchPrefix: "/app/social",
+    },
+  ],
+};
+
 const SELLABLE_MODULE_ITEMS: WorkspaceNavItem[] = [
   CRM_NAV_ITEM,
   HRMS_NAV_ITEM,
   IMS_STOCK_NAV_ITEM,
   APP_BUILDER_NAV_ITEM,
+  SOCIAL_NAV_ITEM,
 ];
 
 export function canAccessWorkspaceNav(
@@ -981,11 +1014,11 @@ export function getWorkspaceNavSections(params: {
               matchPrefix: "/app/my-space/training",
             },
             {
-              href: "/app/my-space/social",
-              label: "Social schedule",
+              href: "/app/social",
+              label: "Social",
               icon: Megaphone,
-              minRole: "MANAGER",
-              matchPrefix: "/app/my-space/social",
+              module: "SOCIAL",
+              matchPrefix: "/app/social",
             },
           ],
         },

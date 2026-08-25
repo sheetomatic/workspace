@@ -290,7 +290,7 @@ export async function getTeamPerformance(
     }),
     prisma.inboundLeadPayment.groupBy({
       by: ["leadId"],
-      where: { organizationId },
+      where: { organizationId, paymentType: { not: "ADJUSTMENT" } },
       _min: { receivedDate: true },
     }),
     prisma.inboundLeadActivity.findMany({
@@ -305,6 +305,7 @@ export async function getTeamPerformance(
     prisma.inboundLeadPayment.findMany({
       where: {
         organizationId,
+        paymentType: { not: "ADJUSTMENT" },
         receivedDate: { gte: start, lt: end },
       },
       select: {
@@ -711,7 +712,7 @@ export async function getTeamPerformanceDrilldown(
         }),
         prisma.inboundLeadPayment.groupBy({
           by: ["leadId"],
-          where: { organizationId },
+          where: { organizationId, paymentType: { not: "ADJUSTMENT" } },
           _min: { receivedDate: true },
         }),
       ]);

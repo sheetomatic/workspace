@@ -323,6 +323,7 @@ export async function getCrmNumbersMetricsForPeriod(
       prisma.inboundLeadPayment.aggregate({
         where: {
           organizationId,
+          paymentType: { not: "ADJUSTMENT" },
           ...assigneeLeadWhere(scope),
           ...paymentReceivedDateWhere(period),
         },
@@ -340,7 +341,11 @@ export async function getCrmNumbersMetricsForPeriod(
       }),
       prisma.inboundLeadPayment.groupBy({
         by: ["leadId"],
-        where: { organizationId, ...assigneeLeadWhere(scope) },
+        where: {
+          organizationId,
+          paymentType: { not: "ADJUSTMENT" },
+          ...assigneeLeadWhere(scope),
+        },
         _min: { receivedDate: true },
       }),
     ]);

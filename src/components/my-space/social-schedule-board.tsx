@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   reloadSocialWeekAction,
   socialScheduleAction,
-} from "@/app/app/my-space/social/actions";
+} from "@/app/app/social/actions";
 import {
   SOCIAL_SLOT_LABELS,
   type SocialPost,

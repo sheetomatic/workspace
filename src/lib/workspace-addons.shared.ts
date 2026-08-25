@@ -13,6 +13,7 @@ export type WorkspaceAddonKey =
   | "approvals"
   | "reports"
   | "app_builder"
+  | "social"
   | "legal";
 
 export type WorkspaceAddonDefinition = {
@@ -88,6 +89,14 @@ export const WORKSPACE_ADDON_CATALOG: WorkspaceAddonDefinition[] = [
     label: "App Builder",
     shortLabel: "App Builder",
     description: "Phone apps on a Gmail Sheet. Staff use a link and PIN.",
+    isBciCore: false,
+  },
+  {
+    key: "social",
+    module: "SOCIAL",
+    label: "Social",
+    shortLabel: "Social",
+    description: "LinkedIn schedule, captions, image/carousel studio, and posted log.",
     isBciCore: false,
   },
   {

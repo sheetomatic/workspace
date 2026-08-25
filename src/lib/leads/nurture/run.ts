@@ -20,6 +20,7 @@ import {
 import { masCredentialsFromWorkspace } from "@/lib/integrations/whatsapp-provider";
 import { sendMasTextMessage } from "@/lib/integrations/messageautosender";
 import { resolveWorkspaceWhatsAppCredentials } from "@/lib/whatsapp-settings";
+import { leadOutstandingBalance } from "@/lib/leads/payment-summary";
 
 export {
   canSendEvent,
@@ -37,9 +38,9 @@ async function leadPendingAmountLabel(
   leadId: string,
 ): Promise<string | null> {
   const [payments, invoice, lead] = await Promise.all([
-    prisma.inboundLeadPayment.aggregate({
+    prisma.inboundLeadPayment.findMany({
       where: { organizationId, leadId },
-      _sum: { receivedAmount: true },
+      select: { receivedAmount: true, paymentType: true },
     }),
     prisma.inboundLeadQuotation.findFirst({
       where: { organizationId, leadId, requestType: "INVOICE" },
@@ -51,12 +52,12 @@ async function leadPendingAmountLabel(
       select: { quotationValue: true },
     }),
   ]);
-  const total = Number(invoice?.totalAmount ?? lead?.quotationValue ?? 0);
-  if (total <= 0) {
-    return null;
-  }
-  const balance = total - Number(payments._sum.receivedAmount ?? 0);
-  if (balance <= 0.5) {
+  const balance = leadOutstandingBalance({
+    invoiceTotal: invoice?.totalAmount,
+    quotationValue: lead?.quotationValue,
+    payments,
+  });
+  if (balance === null || balance <= 0.5) {
     return null;
   }
   return `₹${Math.round(balance).toLocaleString("en-IN")}`;
@@ -292,11 +293,13 @@ export async function triggerLeadNurtureEvent(params: {
     params.discussionSummary ?? lead.meetingNotes ?? lead.discussionNotes ?? null;
 
   let pendingAmountLabel = params.pendingAmountLabel ?? null;
-  if (!pendingAmountLabel && params.event === "alert_payment_pending") {
-    pendingAmountLabel = await leadPendingAmountLabel(
-      params.organizationId,
-      lead.id,
-    );
+  if (params.event === "alert_payment_pending") {
+    pendingAmountLabel =
+      pendingAmountLabel ??
+      (await leadPendingAmountLabel(params.organizationId, lead.id));
+    if (!pendingAmountLabel) {
+      return { sent: false, reason: "nothing_due" };
+    }
   }
 
   let whenLabel = params.whenLabel ?? null;

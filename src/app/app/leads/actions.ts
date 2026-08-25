@@ -871,6 +871,8 @@ export async function sendLeadNurtureWhatsAppAction(
         ? "Save Web Based API credentials and enable nurture under Leads → Settings."
         : result.reason === "web_based_api_disabled"
           ? "Enable nurture messages under Leads → Settings."
+          : result.reason === "nothing_due"
+            ? "Nothing is due on this invoice — no payment reminder sent."
           : result.reason ?? "Could not send message.";
     return { ok: false, message: reason };
   }
@@ -2590,7 +2592,10 @@ export async function addInboundLeadPayment(params: {
     organizationId: user.organizationId,
     leadId: params.leadId,
     type: "PAYMENT",
-    body: `₹${amount.toLocaleString("en-IN")} · ${params.paymentType.replaceAll("_", " ")}`,
+    body:
+      params.paymentType === "ADJUSTMENT"
+        ? `Adjusted ₹${amount.toLocaleString("en-IN")} off the invoice — due reduced so payment reminders stop when nothing is left.`
+        : `₹${amount.toLocaleString("en-IN")} · ${params.paymentType.replaceAll("_", " ")}`,
     createdByUserId: user.id,
   });
 

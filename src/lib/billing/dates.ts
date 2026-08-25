@@ -50,6 +50,20 @@ export function daysUntilDue(dueAt: Date, now = new Date()) {
   return daysBetweenUtc(startOfUtcDay(now), dueAt);
 }
 
+const REMINDER_DAYS = [7, 3, 1, 0] as const;
+
+export function shouldSendReminder(
+  daysLeft: number,
+  alreadyOn: Date | null,
+  now: Date,
+) {
+  if (!REMINDER_DAYS.includes(daysLeft as (typeof REMINDER_DAYS)[number])) {
+    return false;
+  }
+  if (!alreadyOn) return true;
+  return alreadyOn.toISOString().slice(0, 10) !== now.toISOString().slice(0, 10);
+}
+
 export function formatBillingDate(date: Date) {
   return new Intl.DateTimeFormat("en-IN", {
     day: "numeric",

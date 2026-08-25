@@ -84,4 +84,5 @@ export const LEAD_PAYMENT_TYPE_LABELS: Record<string, string> = {
   WHATSAPP_API_RECHARGE: "WhatsApp API Recharge",
   YOUTUBE_ADSENSE: "YouTube AdSense",
   COURSE_FEE: "Course Fee",
+  ADJUSTMENT: "Payment adjustment",
 };

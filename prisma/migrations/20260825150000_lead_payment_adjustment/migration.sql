@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "LeadPaymentType" ADD VALUE IF NOT EXISTS 'ADJUSTMENT';

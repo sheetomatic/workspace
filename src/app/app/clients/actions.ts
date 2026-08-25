@@ -4,7 +4,14 @@ import type { PlanBillingPeriod, SubscriptionPaymentMethod } from "@prisma/clien
 import { revalidatePath } from "next/cache";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { formatBillingDate } from "@/lib/billing/dates";
 import { sendSubscriptionInvoiceEmail } from "@/lib/billing/email";
+import {
+  cancelWhatsAppApiClient,
+  markWhatsAppApiClientRecharged,
+  upsertWhatsAppApiClient,
+} from "@/lib/billing/whatsapp-api-clients";
+import { sendWhatsAppApiClientReminder } from "@/lib/billing/whatsapp-api-reminders";
 import {
   ensureOnboardingTasks,
   ensureOrganizationBilling,
@@ -304,6 +311,87 @@ export async function voidClientInvoiceAction(
   if (!result.ok) return result;
   revalidateBilling(organizationId);
   return { ok: true, message: "Invoice voided." };
+}
+
+export async function addWhatsAppApiClientAction(
+  _prev: BillingActionState,
+  formData: FormData,
+): Promise<BillingActionState> {
+  const user = await requirePlatformAdmin();
+  if (!user) {
+    return { ok: false, message: "Only Sheetomatic super admins can add WhatsApp API clients." };
+  }
+
+  const result = await upsertWhatsAppApiClient({
+    name: String(formData.get("name") ?? ""),
+    company: String(formData.get("company") ?? ""),
+    phone: String(formData.get("phone") ?? ""),
+    email: String(formData.get("email") ?? ""),
+    planId: String(formData.get("planId") ?? ""),
+    planKind: String(formData.get("planKind") ?? "") === "OFFICIAL" ? "OFFICIAL" : "UNOFFICIAL",
+    customLabel: String(formData.get("customLabel") ?? ""),
+    customAmountRupees: String(formData.get("customAmount") ?? ""),
+    customDurationDays: String(formData.get("customDurationDays") ?? ""),
+    startedAt: String(formData.get("startedAt") ?? ""),
+    notes: String(formData.get("notes") ?? ""),
+    createdByUserId: user.id,
+  });
+  if (!result.ok) return result;
+
+  revalidateBilling();
+  return {
+    ok: true,
+    message: `${result.client.name} added. Recharge reminders go on WhatsApp 7, 3, and 1 day before expiry, and on the due date.`,
+  };
+}
+
+export async function rechargeWhatsAppApiClientAction(
+  _prev: BillingActionState,
+  formData: FormData,
+): Promise<BillingActionState> {
+  const user = await requirePlatformAdmin();
+  if (!user) {
+    return { ok: false, message: "Only Sheetomatic super admins can mark a recharge." };
+  }
+  const result = await markWhatsAppApiClientRecharged(String(formData.get("clientId") ?? ""));
+  if (!result.ok) return result;
+  revalidateBilling();
+  return {
+    ok: true,
+    message: `${result.client.name} recharged until ${formatBillingDate(result.client.expiresAt)}.`,
+  };
+}
+
+export async function remindWhatsAppApiClientAction(
+  _prev: BillingActionState,
+  formData: FormData,
+): Promise<BillingActionState> {
+  const user = await requirePlatformAdmin();
+  if (!user) {
+    return { ok: false, message: "Only Sheetomatic super admins can send reminders." };
+  }
+  const result = await sendWhatsAppApiClientReminder(String(formData.get("clientId") ?? ""));
+  if (!result.ok) return result;
+  revalidateBilling();
+  const via = [
+    result.whatsappSent ? "WhatsApp" : null,
+    result.emailSent ? "email" : null,
+  ].filter(Boolean);
+  return { ok: true, message: `Reminder sent on ${via.join(" and ")}.` };
+}
+
+export async function cancelWhatsAppApiClientAction(
+  _prev: BillingActionState,
+  formData: FormData,
+): Promise<BillingActionState> {
+  const user = await requirePlatformAdmin();
+  if (!user) {
+    return { ok: false, message: "Only Sheetomatic super admins can cancel a client." };
+  }
+  const result = await cancelWhatsAppApiClient(String(formData.get("clientId") ?? ""));
+  if (!result.ok) return result;
+  revalidateBilling();
+  return { ok: true, message: "WhatsApp API client cancelled. Reminders stopped." };
 }
 
 export async function toggleOnboardingTaskAction(

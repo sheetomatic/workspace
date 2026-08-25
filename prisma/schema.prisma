@@ -26,6 +26,7 @@ enum WorkspaceModule {
   IMS
   CRM
   APP_BUILDER
+  SOCIAL
 }
 
 enum FmsFormFieldType {
@@ -156,6 +157,17 @@ enum SubscriptionPaymentMethod {
   BANK
   CASH
   OTHER
+}
+
+enum WhatsAppApiPlanKind {
+  OFFICIAL
+  UNOFFICIAL
+}
+
+enum WhatsAppApiClientStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
 }
 
 enum WorkspaceLinkType {
@@ -399,6 +411,32 @@ model ClientOnboardingTask {
 
   @@unique([organizationId, key])
   @@index([organizationId, sortOrder])
+}
+
+/// WhatsApp API recharge customers (Official or unofficial). Not a workspace login.
+model WhatsAppApiClient {
+  id              String                   @id @default(cuid())
+  name            String
+  company         String?
+  phone           String                   @unique
+  email           String?
+  planKind        WhatsAppApiPlanKind
+  planId          String
+  planLabel       String
+  amountPaise     Int
+  durationDays    Int
+  startedAt       DateTime
+  expiresAt       DateTime
+  status          WhatsAppApiClientStatus  @default(ACTIVE)
+  lastReminderAt  DateTime?
+  reminderCount   Int                      @default(0)
+  notes           String?
+  createdByUserId String?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  @@index([expiresAt, status])
+  @@index([status, expiresAt])
 }
 
 model LegalCase {
@@ -2782,6 +2820,7 @@ enum LeadPaymentType {
   WHATSAPP_API_RECHARGE
   YOUTUBE_ADSENSE
   COURSE_FEE
+  ADJUSTMENT
 }
 
 enum LeadPaymentMethod {

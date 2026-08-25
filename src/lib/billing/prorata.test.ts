@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { addUtcMonths, daysBetweenUtc, isPastDueDate, monthlyPeriodFrom } from "@/lib/billing/dates";
 import { applyGst, rupeesToPaise } from "@/lib/billing/money";
 import { extraUsers, buildInvoiceQuote, prorataFraction } from "@/lib/billing/prorata";
-import { shouldSendReminder } from "@/lib/billing/lifecycle";
+import { shouldSendReminder } from "@/lib/billing/dates";
 
 describe("subscription prorata", () => {
   it("counts extra users beyond included seats", () => {

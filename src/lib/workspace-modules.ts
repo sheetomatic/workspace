@@ -13,6 +13,7 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
   "APPROVALS",
   "REPORTS",
   "APP_BUILDER",
+  "SOCIAL",
 ];
 
 /** BCI / platform modules — legal Cases is a dedicated-portal product only (Hingorani). */
@@ -30,6 +31,7 @@ export const WORKSPACE_MODULE_LABELS: Record<WorkspaceModule, string> = {
   APPROVALS: "Approvals",
   REPORTS: "Reports & MIS",
   APP_BUILDER: "App Builder",
+  SOCIAL: "Social",
 };
 
 export const WORKSPACE_MODULE_HREFS: Partial<Record<WorkspaceModule, string>> = {
@@ -42,6 +44,7 @@ export const WORKSPACE_MODULE_HREFS: Partial<Record<WorkspaceModule, string>> = 
   APPROVALS: "/app/approvals",
   REPORTS: "/app/reports",
   APP_BUILDER: "/app/app-builder",
+  SOCIAL: "/app/social",
 };
 
 /** Defaults when admin leaves modules empty (legacy rows use migration backfill).
@@ -182,6 +185,9 @@ export function pathnameRequiresModule(pathname: string): WorkspaceModule | null
   }
   if (pathname.startsWith("/app/fms")) {
     return "FMS";
+  }
+  if (pathname.startsWith("/app/social") || pathname.startsWith("/app/my-space/social")) {
+    return "SOCIAL";
   }
   return null;
 }

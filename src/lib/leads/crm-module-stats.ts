@@ -52,7 +52,7 @@ export async function getCrmModuleNavCounts(
       _sum: { totalAmount: true },
     }),
     prisma.inboundLeadPayment.aggregate({
-      where: { organizationId },
+      where: { organizationId, paymentType: { not: "ADJUSTMENT" } },
       _count: { _all: true },
       _sum: { receivedAmount: true },
     }),

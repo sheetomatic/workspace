@@ -1,19 +1,10 @@
 import { prisma } from "@/lib/db";
 import { PRIMARY_ORG_SLUG } from "@/lib/platform";
-import { daysUntilDue, isPastDueDate } from "@/lib/billing/dates";
+import { daysUntilDue, isPastDueDate, shouldSendReminder } from "@/lib/billing/dates";
+import { runWhatsAppApiRechargeReminders } from "@/lib/billing/whatsapp-api-reminders";
 import { generateSubscriptionInvoice } from "@/lib/billing/invoices";
 import { sendSubscriptionInvoiceEmail } from "@/lib/billing/email";
 import { syncOrganizationPlanRecord } from "@/lib/organization-plan";
-
-const REMINDER_DAYS = [7, 3, 1, 0] as const;
-
-export function shouldSendReminder(daysLeft: number, alreadyOn: Date | null, now: Date) {
-  if (!REMINDER_DAYS.includes(daysLeft as (typeof REMINDER_DAYS)[number])) {
-    return false;
-  }
-  if (!alreadyOn) return true;
-  return alreadyOn.toISOString().slice(0, 10) !== now.toISOString().slice(0, 10);
-}
 
 export async function runSubscriptionBillingCron(now = new Date()) {
   const remindersSent: string[] = [];
@@ -132,6 +123,8 @@ export async function runSubscriptionBillingCron(now = new Date()) {
     }
   }
 
+  const whatsappApi = await runWhatsAppApiRechargeReminders(now);
+
   return {
     remindersSent: remindersSent.length,
     held: held.length,
@@ -139,5 +132,6 @@ export async function runSubscriptionBillingCron(now = new Date()) {
     reminderNumbers: remindersSent,
     heldNumbers: held,
     generatedNumbers: generated,
+    ...whatsappApi,
   };
 }

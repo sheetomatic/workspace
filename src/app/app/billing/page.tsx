@@ -11,6 +11,8 @@ import {
 import { formatBillingDate } from "@/lib/billing/dates";
 import { extraUsers } from "@/lib/billing/prorata";
 import { formatInrPaise } from "@/lib/billing/money";
+import { listWhatsAppApiClients } from "@/lib/billing/whatsapp-api-clients";
+import { whatsAppApiPlanOptions } from "@/lib/billing/whatsapp-api-plans";
 import {
   getWorkspaceBillingSnapshot,
   listClientBillingRows,
@@ -28,9 +30,19 @@ export default async function WorkspaceBillingPage() {
   }
 
   if (canManageSuperAdmins(user, user.organizationSlug)) {
-    const rows = await listClientBillingRows();
+    const [rows, whatsappApiClients] = await Promise.all([
+      listClientBillingRows(),
+      listWhatsAppApiClients(),
+    ]);
     await Promise.all(rows.map((row) => ensureOnboardingTasks(row.id)));
-    return <ClientsBillingDashboard rows={rows} title="Billing" />;
+    return (
+      <ClientsBillingDashboard
+        rows={rows}
+        whatsappApiClients={whatsappApiClients}
+        whatsappApiPlans={whatsAppApiPlanOptions()}
+        title="Billing"
+      />
+    );
   }
 
   const org = await getWorkspaceBillingSnapshot(user.organizationId);
