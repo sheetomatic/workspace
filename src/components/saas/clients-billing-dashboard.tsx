@@ -34,7 +34,7 @@ export function ClientsBillingDashboard({
             <Link className="saas-ws-action" href="/app/billing">
               Billing
             </Link>
-            <Link className="btn-cta" href="/app/team">
+            <Link className="saas-ws-action" href="/app/team">
               Create workspace
             </Link>
           </>

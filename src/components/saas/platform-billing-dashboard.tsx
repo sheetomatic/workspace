@@ -31,7 +31,7 @@ export function PlatformBillingDashboard({
         title="Billing"
         description="Invoices and collections across client workspaces. Plans, add-ons, and WhatsApp API clients live on Clients."
         actions={
-          <Link className="btn-cta" href="/app/clients">
+          <Link className="saas-ws-action" href="/app/clients">
             View clients
           </Link>
         }
