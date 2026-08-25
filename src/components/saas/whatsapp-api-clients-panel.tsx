@@ -16,6 +16,7 @@ import { whatsAppApiClientCsvTemplate } from "@/lib/billing/whatsapp-api-import-
 import type { WhatsAppApiClientRow } from "@/lib/billing/whatsapp-api-clients.shared";
 import type { WhatsAppApiPlanOption } from "@/lib/billing/whatsapp-api-plans";
 import { normalizeWhatsAppPhone } from "@/lib/phone";
+import "@/components/saas/crm-client-groups.css";
 
 const initial: BillingActionState = { ok: false, message: "" };
 
@@ -71,8 +72,10 @@ export function WhatsAppApiClientsPanel({
   const regular = visible.filter((row) => row.accountGroup === "REGULAR");
   const inactive = visible.filter((row) => row.accountGroup === "INACTIVE");
   const searching = Boolean(query.trim());
-  const dueSoon = regular.filter((row) => row.dueSoon).length;
-  const expired = regular.filter((row) => row.status === "EXPIRED").length;
+  const totalRegular = clients.filter((row) => row.accountGroup === "REGULAR");
+  const dueSoon = totalRegular.filter((row) => row.dueSoon).length;
+  const expired = totalRegular.filter((row) => row.status === "EXPIRED").length;
+  const inactiveTotal = clients.filter((row) => row.accountGroup === "INACTIVE").length;
 
   return (
     <article className="saas-panel">
@@ -80,19 +83,40 @@ export function WhatsAppApiClientsPanel({
         <div>
           <h3>
             WhatsApp API{" "}
-            <span className="ws-billing-pill">{regular.length}</span>
+            <span className="ws-billing-pill">{totalRegular.length}</span>
           </h3>
           <p>
             Regular clients get auto WhatsApp reminders 10, 7, 3, and 1 day
             before expiry. Click a group to expand it.
             {dueSoon ? ` ${dueSoon} due in 10 days.` : ""}
             {expired ? ` ${expired} expired.` : ""}
-            {inactive.length ? ` ${inactive.length} inactive.` : ""}
+            {inactiveTotal ? ` ${inactiveTotal} inactive.` : ""}
           </p>
         </div>
         <WhatsAppApiClientUpload />
       </div>
 
+      {clients.length > 0 ? (
+        <div className="crm-client-groups-toolbar">
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Filter clients…"
+            aria-label="Filter WhatsApp API customers"
+          />
+          <div className="crm-client-groups-toolbar-meta">
+            <span className="crm-client-groups-count">
+              {searching
+                ? `${visible.length} match${visible.length === 1 ? "" : "es"} of ${clients.length}`
+                : `${clients.length} client${clients.length === 1 ? "" : "s"}`}
+            </span>
+          </div>
+        </div>
+      ) : null}
+
+      <details className="ws-wa-add">
+        <summary>Add client</summary>
       <form action={addAction} className="ws-billing-form">
         <label>
           Client name
@@ -198,6 +222,7 @@ export function WhatsAppApiClientsPanel({
           ) : null}
         </div>
       </form>
+      </details>
 
       {clients.length === 0 ? (
         <p className="ws-wa-empty">
@@ -206,21 +231,6 @@ export function WhatsAppApiClientsPanel({
         </p>
       ) : (
         <div className="ws-wa-groups">
-          <label className="ws-wa-search">
-            Search customers
-            <input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Name, WhatsApp number, email, company…"
-              aria-label="Search WhatsApp API customers"
-            />
-            <small>
-              {searching
-                ? `${visible.length} match${visible.length === 1 ? "" : "es"} of ${clients.length}`
-                : `${clients.length} customers`}
-            </small>
-          </label>
           {searching && visible.length === 0 ? (
             <p className="ws-wa-empty">No customer matches that search.</p>
           ) : (

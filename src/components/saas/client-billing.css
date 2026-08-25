@@ -118,27 +118,31 @@
   margin-top: 1rem;
 }
 
-.ws-wa-search {
-  display: grid;
-  gap: 0.35rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #334155;
+.ws-billing-page .crm-client-groups-toolbar {
+  margin: 0.85rem 0 0.35rem;
 }
 
-.ws-wa-search input {
-  width: 100%;
-  max-width: 28rem;
-  border: 1px solid #d6dee8;
-  border-radius: 8px;
-  padding: 0.55rem 0.7rem;
-  font: inherit;
-  font-weight: 500;
+.ws-wa-add {
+  margin: 0.75rem 0 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
 }
 
-.ws-wa-search small {
-  font-weight: 500;
-  color: #64748b;
+.ws-wa-add > summary {
+  cursor: pointer;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.ws-wa-add[open] > summary {
+  border-bottom: 1px solid #eef2f6;
+}
+
+.ws-wa-add .ws-billing-form {
+  padding: 1rem;
 }
 
 .ws-wa-group {
