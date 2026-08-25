@@ -442,7 +442,7 @@ export async function sendTaskAssignmentWhatsApp(params: {
     organizationName: params.organizationName,
     frequencyLabel: params.frequencyLabel,
     isRecurring: params.isRecurring,
-    skipTemplate: isDueReminder,
+    skipTemplate: isDueReminder && !params.whatsappOnly,
     whatsappOnly: params.whatsappOnly,
   });
 }

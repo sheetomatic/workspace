@@ -5,9 +5,12 @@ import { hasMinimumRole } from "@/lib/permissions";
 /** Anmol Traders — dedicated Tasks Management portal. */
 export const ANMOL_TRADERS_SLUG = ANMOL_PORTAL_SLUG;
 
+/** Approved Utility template on Anmol's WABA ({{1}} name, {{2}} task, {{3}} due). */
+export const ANMOL_TASK_TEMPLATE_NAME = "sheetomatic1";
+
 export type OrgTaskPolicy = {
-  /** Repeat WhatsApp due pings every N hours until the task is done. */
-  intervalReminderHours: number | null;
+  /** Repeat WhatsApp pings every N minutes until the task is done. */
+  intervalReminderMinutes: number | null;
   /** Staff/viewers cannot use the web panel. Owner/managers still assign. */
   whatsappOnlyTeam: boolean;
   /** Official API only — never Web Based API. */
@@ -15,14 +18,14 @@ export type OrgTaskPolicy = {
 };
 
 const DEFAULT_POLICY: OrgTaskPolicy = {
-  intervalReminderHours: null,
+  intervalReminderMinutes: null,
   whatsappOnlyTeam: false,
   officialWhatsAppOnly: false,
 };
 
 const ORG_TASK_POLICIES: Record<string, OrgTaskPolicy> = {
   [ANMOL_TRADERS_SLUG]: {
-    intervalReminderHours: 4,
+    intervalReminderMinutes: 90,
     whatsappOnlyTeam: true,
     officialWhatsAppOnly: true,
   },
@@ -67,26 +70,33 @@ export function isIstWorkHours(date: Date) {
   return hour >= 9 && hour < 20;
 }
 
+export function lastTaskWhatsAppAt(task: {
+  whatsappReminderSentAt: Date | null;
+  whatsappAssignmentSentAt: Date | null;
+  createdAt: Date;
+}) {
+  return (
+    task.whatsappReminderSentAt ??
+    task.whatsappAssignmentSentAt ??
+    task.createdAt
+  );
+}
+
 export function shouldSendIntervalReminder(params: {
   slug: string | null | undefined;
   now: Date;
-  dueAt: Date;
-  lastWhatsAppReminderAt: Date | null;
+  lastWhatsAppAt: Date | null;
 }) {
   const policy = getOrgTaskPolicy(params.slug);
-  if (!policy.intervalReminderHours) {
+  if (!policy.intervalReminderMinutes) {
     return false;
   }
-  if (params.dueAt.getTime() > params.now.getTime()) {
-    return false;
-  }
-  if (!params.lastWhatsAppReminderAt) {
+  if (!params.lastWhatsAppAt) {
     return false;
   }
   if (!isIstWorkHours(params.now)) {
     return false;
   }
-  const elapsedMs =
-    params.now.getTime() - params.lastWhatsAppReminderAt.getTime();
-  return elapsedMs >= policy.intervalReminderHours * 60 * 60 * 1000;
+  const elapsedMs = params.now.getTime() - params.lastWhatsAppAt.getTime();
+  return elapsedMs >= policy.intervalReminderMinutes * 60 * 1000;
 }

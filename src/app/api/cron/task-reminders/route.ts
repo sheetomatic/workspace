@@ -6,6 +6,7 @@ import { ACTIVE_TASK_STATUSES } from "@/lib/tasks";
 import {
   ANMOL_TRADERS_SLUG,
   getOrgTaskPolicy,
+  lastTaskWhatsAppAt,
   shouldSendIntervalReminder,
 } from "@/lib/tasks/org-task-policy";
 
@@ -22,7 +23,9 @@ export async function GET(request: Request) {
   }
 
   const now = new Date();
-  const intervalCutoff = new Date(now.getTime() - 4 * 60 * 60 * 1000);
+  const anmolGapMinutes =
+    getOrgTaskPolicy(ANMOL_TRADERS_SLUG).intervalReminderMinutes ?? 90;
+  const intervalCutoff = new Date(now.getTime() - anmolGapMinutes * 60 * 1000);
   const seenIds: string[] = [];
   let processed = 0;
   let sent = 0;
@@ -33,20 +36,32 @@ export async function GET(request: Request) {
       where: {
         id: seenIds.length > 0 ? { notIn: seenIds } : undefined,
         status: { in: ACTIVE_TASK_STATUSES },
-        dueAt: { lte: now },
         OR: [
           {
+            dueAt: { lte: now },
             remindViaEmail: true,
             emailReminderSentAt: null,
           },
           {
+            dueAt: { lte: now },
             remindViaWhatsApp: true,
             whatsappReminderSentAt: null,
           },
           {
             remindViaWhatsApp: true,
-            whatsappReminderSentAt: { lte: intervalCutoff },
             organization: { slug: ANMOL_TRADERS_SLUG },
+            OR: [
+              { whatsappReminderSentAt: { lte: intervalCutoff } },
+              {
+                whatsappReminderSentAt: null,
+                whatsappAssignmentSentAt: { lte: intervalCutoff },
+              },
+              {
+                whatsappReminderSentAt: null,
+                whatsappAssignmentSentAt: null,
+                createdAt: { lte: intervalCutoff },
+              },
+            ],
           },
         ],
       },
@@ -67,16 +82,16 @@ export async function GET(request: Request) {
     for (const task of dueTasks) {
       seenIds.push(task.id);
       const policy = getOrgTaskPolicy(task.organization.slug);
-      const needsFirstEmail = task.remindViaEmail && !task.emailReminderSentAt;
+      const isDue = task.dueAt.getTime() <= now.getTime();
+      const needsFirstEmail = task.remindViaEmail && !task.emailReminderSentAt && isDue;
       const needsFirstWhatsApp =
-        task.remindViaWhatsApp && !task.whatsappReminderSentAt;
+        task.remindViaWhatsApp && !task.whatsappReminderSentAt && isDue;
       const needsInterval =
         task.remindViaWhatsApp &&
         shouldSendIntervalReminder({
           slug: task.organization.slug,
           now,
-          dueAt: task.dueAt,
-          lastWhatsAppReminderAt: task.whatsappReminderSentAt,
+          lastWhatsAppAt: lastTaskWhatsAppAt(task),
         });
 
       if (!needsFirstEmail && !needsFirstWhatsApp && !needsInterval) {

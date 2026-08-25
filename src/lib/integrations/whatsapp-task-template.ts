@@ -4,6 +4,10 @@ import type { WhatsAppTemplateVariable } from "@/lib/whatsapp-templates";
 import { formatTaskDue } from "@/lib/tasks";
 import { normalizeWhatsAppPhone } from "@/lib/phone";
 import {
+  ANMOL_TASK_TEMPLATE_NAME,
+  getOrgTaskPolicy,
+} from "@/lib/tasks/org-task-policy";
+import {
   ASSIGN_TASK_NEW_TEMPLATE_LANGUAGE,
   ASSIGN_TASK_NEW_TEMPLATE_NAME,
   enforceRedlavaTemplateLanguage,
@@ -179,7 +183,25 @@ function buildAssignTaskNewBodyComponent(params: TaskTemplateParams) {
   };
 }
 
+function buildSheetomatic1BodyComponent(params: TaskTemplateParams) {
+  const values = buildTemplateValueMap(params);
+  return {
+    type: "body" as const,
+    parameters: [
+      values.get("1") ?? "-",
+      values.get("2") ?? "-",
+      values.get("4") ?? "-",
+    ].map((text) => ({
+      type: "text" as const,
+      text: sliceTemplateParam(text),
+    })),
+  };
+}
+
 function buildTemplateComponents(template: ResolvedTemplate, params: TaskTemplateParams) {
+  if (template.name === ANMOL_TASK_TEMPLATE_NAME) {
+    return [buildSheetomatic1BodyComponent(params)];
+  }
   if (isTaskAssignmentTemplateName(template.name)) {
     return [buildAssignTaskNewBodyComponent(params)];
   }
@@ -254,27 +276,39 @@ function buildAssignTaskNewFallback(): ResolvedTemplate {
 async function resolveTaskAssignmentTemplates(
   organizationId: string,
 ): Promise<ResolvedTemplate[]> {
+  const org = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: { slug: true },
+  });
+  const names = [...TASK_ASSIGNMENT_TEMPLATE_ALIASES];
+  if (getOrgTaskPolicy(org?.slug).officialWhatsAppOnly) {
+    names.push(ANMOL_TASK_TEMPLATE_NAME);
+  }
+
   const fromDb = await prisma.whatsAppTemplate.findMany({
     where: {
       organizationId,
-      name: { in: [...TASK_ASSIGNMENT_TEMPLATE_ALIASES] },
+      name: { in: names },
       status: "APPROVED",
     },
     orderBy: [{ approvedAt: "desc" }, { submittedAt: "desc" }],
   });
 
-  if (fromDb.length > 0) {
-    const canonical = fromDb
-      .map(toResolvedTemplate)
-      .map(canonicalTaskAssignmentTemplate)
-      .filter(
-        (template) =>
-          template.name === TASK_ASSIGNMENT_TEMPLATE_NAME &&
-          template.language === TASK_ASSIGNMENT_TEMPLATE_LANGUAGE,
-      );
-    if (canonical.length > 0) {
-      return dedupeResolvedTemplates(canonical);
-    }
+  const resolved = fromDb.map(toResolvedTemplate);
+  const approvedPending = resolved.filter(
+    (template) => template.name === ANMOL_TASK_TEMPLATE_NAME,
+  );
+  const approvedAssign = resolved
+    .filter((template) => isTaskAssignmentTemplateName(template.name))
+    .map(canonicalTaskAssignmentTemplate)
+    .filter(
+      (template) =>
+        template.name === TASK_ASSIGNMENT_TEMPLATE_NAME &&
+        template.language === TASK_ASSIGNMENT_TEMPLATE_LANGUAGE,
+    );
+
+  if (approvedPending.length > 0 || approvedAssign.length > 0) {
+    return dedupeResolvedTemplates([...approvedPending, ...approvedAssign]);
   }
 
   return [buildAssignTaskNewFallback()];
@@ -388,18 +422,11 @@ function isTemplateLanguageMismatch(result: WhatsAppSendResult) {
 export async function sendTaskAssignmentTemplate(
   params: TaskTemplateParams,
 ): Promise<WhatsAppSendResult> {
-  const templates = dedupeResolvedTemplates([
-    buildAssignTaskNewFallback(),
-    ...(await resolveTaskAssignmentTemplates(params.organizationId)),
-  ]).map(canonicalTaskAssignmentTemplate);
+  const templates = await resolveTaskAssignmentTemplates(params.organizationId);
 
   let lastResult: WhatsAppSendResult = { sent: false, reason: "api_error" };
 
   for (const template of templates) {
-    if (template.name !== TASK_ASSIGNMENT_TEMPLATE_NAME) {
-      continue;
-    }
-
     const result = await sendTemplatePayload(
       params,
       template,
@@ -409,11 +436,9 @@ export async function sendTaskAssignmentTemplate(
       return result;
     }
     lastResult = result;
-
     if (isTemplateLanguageMismatch(result)) {
       continue;
     }
-    break;
   }
 
   return lastResult;
