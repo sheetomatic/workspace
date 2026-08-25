@@ -83,6 +83,7 @@ import {
   resolveTeamMemberByPhone,
   type ResolvedWhatsAppTeamMember,
 } from "@/lib/whatsapp-bot/resolve-org";
+import { PRIMARY_ORG_SLUG } from "@/lib/platform";
 import {
   buildMyTasksList,
   buildTaskActionButtons,
@@ -1490,9 +1491,19 @@ async function processSingleMessage(
 
   const delegator = await resolveTeamMemberByPhone(org.id, message.from);
   if (!delegator) {
-    // Official Cloud line: team phones get the workspace bot; everyone else is
-    // redirected to the communication WhatsApp / enquiry form.
-    await handleNonTeamOfficialRedirect(org, message);
+    // Sheetomatic's own line only: strangers get the sales WhatsApp / form.
+    // Client numbers (Anmol, etc.) must not send that redirect.
+    if (org.slug === PRIMARY_ORG_SLUG) {
+      await handleNonTeamOfficialRedirect(org, message);
+      return;
+    }
+    await captureInboundMessage(org.id, message, "Lead");
+    await markEvent(message.id, {
+      organizationId: org.id,
+      fromPhone: message.from,
+      messageType: message.type,
+      status: "ignored_non_team",
+    });
     return;
   }
 
