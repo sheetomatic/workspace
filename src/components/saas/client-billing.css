@@ -21,6 +21,41 @@
   padding: 0.9rem 1rem;
 }
 
+.ws-billing-kpi--clients {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.ws-billing-kpi--users {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+
+.ws-billing-kpi--invoiced {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.ws-billing-kpi--pending {
+  background: #fefce8;
+  border-color: #fde68a;
+}
+
+.ws-billing-kpi--received {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.ws-billing-kpi--hold {
+  background: #fff1f2;
+  border-color: #fecdd3;
+}
+
+.ws-billing-kpi--wa {
+  background: #ecfeff;
+  border-color: #a5f3fc;
+}
+
 .ws-billing-kpi span {
   display: block;
   color: #64748b;
@@ -130,11 +165,11 @@
 }
 
 .ws-wa-add > summary {
-  cursor: pointer;
-  padding: 0.75rem 1rem;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #0f172a;
+  list-style: none;
+}
+
+.ws-wa-add > summary::-webkit-details-marker {
+  display: none;
 }
 
 .ws-wa-add[open] > summary {
@@ -143,6 +178,17 @@
 
 .ws-wa-add .ws-billing-form {
   padding: 1rem;
+}
+
+.ws-wa-chevron {
+  flex: 0 0 auto;
+  color: #94a3b8;
+  transition: transform 0.15s ease;
+}
+
+.ws-wa-add[open] .ws-wa-chevron,
+.ws-wa-group[open] .ws-wa-chevron {
+  transform: rotate(180deg);
 }
 
 .ws-wa-group {
@@ -164,6 +210,12 @@
   font-weight: 700;
 }
 
+.ws-wa-group-summary > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
 .ws-wa-group-summary::-webkit-details-marker {
   display: none;
 }
@@ -175,6 +227,10 @@
 
 .ws-wa-group[open] .ws-wa-group-summary {
   border-bottom: 1px solid #eef2f6;
+}
+
+.ws-wa-group .crm-client-groups-list {
+  padding: 0.75rem 1rem 1rem;
 }
 
 .ws-billing-pill.inactive,
@@ -198,12 +254,105 @@
   max-width: 26rem;
 }
 
+.ws-wa-detail {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.75rem 1rem;
+  margin: 0;
+}
+
+.ws-wa-detail div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.ws-wa-detail dt {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.ws-wa-detail dd {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #0f172a;
+}
+
+.ws-wa-detail dd div {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.ws-wa-group .crm-client-head .ws-billing-pill {
+  flex: 0 0 auto;
+}
+
+.ws-wa-notes {
+  grid-column: 1 / -1;
+}
+
+.ws-wa-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: flex-end;
+  padding-top: 0.15rem;
+}
+
+.ws-wa-icon-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.ws-billing-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+}
+
+.ws-billing-icon-btn:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.ws-billing-icon-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.ws-billing-icon-btn.danger {
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.ws-billing-icon-btn.danger:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.ws-billing-icon-btn.is-busy svg {
+  animation: ws-billing-spin 0.7s linear infinite;
+}
+
+@keyframes ws-billing-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .ws-wa-plan-box {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 5.5rem 5.5rem auto;
   gap: 0.4rem 0.5rem;
   align-items: end;
-  margin-bottom: 0.45rem;
 }
 
 .ws-wa-plan-box label {

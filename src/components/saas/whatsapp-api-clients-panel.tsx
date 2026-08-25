@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useRef, useState, useTransition } from "react";
+import { Bell, BellOff, Check, ChevronDown, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   addWhatsAppApiClientAction,
@@ -116,7 +117,13 @@ export function WhatsAppApiClientsPanel({
       ) : null}
 
       <details className="ws-wa-add">
-        <summary>Add client</summary>
+        <summary className="ws-wa-group-summary">
+          <span>
+            <ChevronDown className="ws-wa-chevron" size={16} aria-hidden />
+            Add client
+          </span>
+          <small>New recharge client</small>
+        </summary>
       <form action={addAction} className="ws-billing-form">
         <label>
           Client name
@@ -274,6 +281,7 @@ function WhatsAppApiClientGroup({
     <details className="ws-wa-group" open={defaultOpen}>
       <summary className="ws-wa-group-summary">
         <span>
+          <ChevronDown className="ws-wa-chevron" size={16} aria-hidden />
           {title} <span className="ws-billing-pill">{rows.length}</span>
         </span>
         <small>{hint}</small>
@@ -281,60 +289,107 @@ function WhatsAppApiClientGroup({
       {rows.length === 0 ? (
         <p className="ws-wa-empty">No {title.toLowerCase()} clients.</p>
       ) : (
-        <div className="ws-billing-table-wrap">
-          <table className="ws-billing-table">
-            <thead>
-              <tr>
-                <th>Client</th>
-                <th>Plan</th>
-                <th>Amount</th>
-                <th>Credits</th>
-                <th>Recharge by</th>
-                <th>Reminders</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.id}>
-                  <td>
-                    <strong>{row.name}</strong>
-                    <div>
-                      {row.phoneLabel}
-                      {row.company ? ` · ${row.company}` : ""}
-                      {row.email ? ` · ${row.email}` : ""}
-                    </div>
-                    <span className={`ws-billing-pill ${statusClass(row.status)}`}>
-                      {row.status}
-                    </span>{" "}
-                    <span className="ws-billing-pill">{row.planKindLabel}</span>
-                  </td>
-                  <td>
-                    {row.planLabel}
-                    <div>
-                      {row.durationDays} days · started {row.startedLabel}
-                    </div>
-                  </td>
-                  <td>{row.amountLabel}</td>
-                  <td>{row.creditPoints.toLocaleString("en-IN")}</td>
-                  <td>
-                    {row.expiresLabel}
-                    <div>{row.daysLeftLabel}</div>
-                  </td>
-                  <td>
-                    <WhatsAppApiClientActions
-                      clientId={row.id}
-                      clientName={row.name}
-                      reminderCount={row.reminderCount}
-                      canRemind={row.accountGroup === "REGULAR"}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ul className="crm-client-groups-list">
+          {rows.map((row) => (
+            <WhatsAppApiClientCard key={row.id} row={row} />
+          ))}
+        </ul>
       )}
     </details>
+  );
+}
+
+function WhatsAppApiClientCard({ row }: { row: WhatsAppApiClientRow }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <li className={`crm-client-card${open ? " is-open" : ""}`}>
+      <button
+        type="button"
+        className="crm-client-head"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span className="crm-client-avatar" aria-hidden>
+          {(row.name.trim()[0] || "?").toUpperCase()}
+        </span>
+        <span className="crm-client-copy">
+          <strong>{row.name}</strong>
+          <span>
+            {row.phoneLabel}
+            {row.company ? ` · ${row.company}` : ""}
+          </span>
+          <span className="crm-client-meta">
+            {row.planLabel} · {row.daysLeftLabel} ·{" "}
+            {row.creditPoints.toLocaleString("en-IN")} credits
+          </span>
+        </span>
+        <span className={`ws-billing-pill ${statusClass(row.status)}`}>
+          {row.status}
+        </span>
+        <ChevronDown className="crm-client-chevron" size={18} aria-hidden />
+      </button>
+      {open ? (
+        <div className="crm-client-body">
+          <dl className="ws-wa-detail">
+            <div>
+              <dt>Plan</dt>
+              <dd>
+                {row.planLabel}
+                <div>{row.durationDays} days</div>
+              </dd>
+            </div>
+            <div>
+              <dt>Amount</dt>
+              <dd>{row.amountLabel}</dd>
+            </div>
+            <div>
+              <dt>Credits</dt>
+              <dd>{row.creditPoints.toLocaleString("en-IN")}</dd>
+            </div>
+            <div>
+              <dt>API</dt>
+              <dd>{row.planKindLabel}</dd>
+            </div>
+            <div>
+              <dt>Started</dt>
+              <dd>{row.startedLabel}</dd>
+            </div>
+            <div>
+              <dt>Recharge by</dt>
+              <dd>
+                {row.expiresLabel}
+                <div>{row.daysLeftLabel}</div>
+              </dd>
+            </div>
+            {row.email ? (
+              <div>
+                <dt>Email</dt>
+                <dd>{row.email}</dd>
+              </div>
+            ) : null}
+            {row.externalId ? (
+              <div>
+                <dt>Panel id</dt>
+                <dd>{row.externalId}</dd>
+              </div>
+            ) : null}
+            {row.notes ? (
+              <div className="ws-wa-notes">
+                <dt>Notes</dt>
+                <dd>{row.notes}</dd>
+              </div>
+            ) : null}
+          </dl>
+          <WhatsAppApiClientActions
+            clientId={row.id}
+            clientName={row.name}
+            reminderCount={row.reminderCount}
+            canRemind={row.accountGroup === "REGULAR"}
+          />
+        </div>
+      ) : null}
+    </li>
   );
 }
 
@@ -455,45 +510,83 @@ function WhatsAppApiClientActions({
 
   return (
     <div className="ws-plan-actions">
-      <form action={planAction} className="ws-wa-plan-box">
-        <input name="clientId" type="hidden" value={clientId} />
-        <label>
-          Days
-          <input name="days" type="number" min={1} max={1095} placeholder="30" />
-        </label>
-        <label>
-          Credits
-          <input name="credits" type="number" min={1} max={1000000} placeholder="4000" />
-        </label>
-        <button className="btn-cta btn-sm" disabled={applying} type="submit">
-          {applying ? "Saving…" : "Save plan"}
-        </button>
-      </form>
-      <div className="ws-billing-actions">
-        {canRemind ? (
-          <form action={remindAction}>
-            <input name="clientId" type="hidden" value={clientId} />
-            <button className="saas-ws-action" disabled={reminding} type="submit">
-              {reminding ? "Sending…" : "Remind now"}
-            </button>
-          </form>
-        ) : null}
-        <form
-          action={cancelAction}
-          onSubmit={(event) => {
-            if (!window.confirm(`Stop reminders for ${clientName}?`)) {
-              event.preventDefault();
-            }
-          }}
-        >
+      <div className="ws-wa-row-actions">
+        <form action={planAction} className="ws-wa-plan-box">
           <input name="clientId" type="hidden" value={clientId} />
-          <button className="saas-ws-action danger" disabled={cancelling} type="submit">
-            {cancelling ? "…" : "Cancel"}
+          <label>
+            Days
+            <input name="days" type="number" min={1} max={1095} placeholder="30" />
+          </label>
+          <label>
+            Credits
+            <input
+              name="credits"
+              type="number"
+              min={1}
+              max={1000000}
+              placeholder="4000"
+            />
+          </label>
+          <button
+            className={`ws-billing-icon-btn${applying ? " is-busy" : ""}`}
+            disabled={applying}
+            type="submit"
+            title="Save days and credits"
+            aria-label="Save days and credits"
+          >
+            {applying ? (
+              <Loader2 size={16} aria-hidden />
+            ) : (
+              <Check size={16} aria-hidden />
+            )}
           </button>
         </form>
+        <div className="ws-wa-icon-row">
+          {canRemind ? (
+            <form action={remindAction}>
+              <input name="clientId" type="hidden" value={clientId} />
+              <button
+                className={`ws-billing-icon-btn${reminding ? " is-busy" : ""}`}
+                disabled={reminding}
+                type="submit"
+                title="Send reminder now"
+                aria-label="Send reminder now"
+              >
+                {reminding ? (
+                  <Loader2 size={16} aria-hidden />
+                ) : (
+                  <Bell size={16} aria-hidden />
+                )}
+              </button>
+            </form>
+          ) : null}
+          <form
+            action={cancelAction}
+            onSubmit={(event) => {
+              if (!window.confirm(`Stop reminders for ${clientName}?`)) {
+                event.preventDefault();
+              }
+            }}
+          >
+            <input name="clientId" type="hidden" value={clientId} />
+            <button
+              className={`ws-billing-icon-btn danger${cancelling ? " is-busy" : ""}`}
+              disabled={cancelling}
+              type="submit"
+              title="Stop reminders"
+              aria-label="Stop reminders"
+            >
+              {cancelling ? (
+                <Loader2 size={16} aria-hidden />
+              ) : (
+                <BellOff size={16} aria-hidden />
+              )}
+            </button>
+          </form>
+        </div>
       </div>
-      <div>
-        {reminderCount} sent
+      <div className="crm-client-meta">
+        {reminderCount} reminder{reminderCount === 1 ? "" : "s"} sent
         {message ? ` · ${message}` : ""}
       </div>
     </div>
