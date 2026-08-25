@@ -24,53 +24,51 @@ export function logoutHref(callbackUrl = "/login") {
   )}`;
 }
 
-function expireCookie(
-  response: NextResponse,
+function expireCookieHeader(
   name: string,
   extras?: { domain?: string; secure?: boolean },
 ) {
-  const expired = new Date(0);
-  response.cookies.set({
-    name,
-    value: "",
-    path: "/",
-    maxAge: 0,
-    expires: expired,
-    httpOnly: true,
-    sameSite: "lax",
-    ...(extras?.secure ? { secure: true } : {}),
-    ...(extras?.domain ? { domain: extras.domain } : {}),
-  });
-  response.cookies.delete({
-    name,
-    path: "/",
-    ...(extras?.domain ? { domain: extras.domain } : {}),
-  });
+  const parts = [
+    `${name}=`,
+    "Path=/",
+    "Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+    "Max-Age=0",
+    "HttpOnly",
+    "SameSite=Lax",
+  ];
+  if (extras?.secure || name.startsWith("__Secure-") || name.startsWith("__Host-")) {
+    parts.push("Secure");
+  }
+  if (extras?.domain && !name.startsWith("__Host-")) {
+    parts.push(`Domain=${extras.domain}`);
+  }
+  return parts.join("; ");
+}
+
+function cookieDomainVariants(rawDomain: string | undefined) {
+  const domain = rawDomain?.trim();
+  if (!domain) {
+    return [];
+  }
+  return Array.from(
+    new Set([domain, domain.startsWith(".") ? domain.slice(1) : `.${domain}`]),
+  );
 }
 
 /** Clear Auth.js cookies, including Domain=AUTH_COOKIE_DOMAIN copies. */
 export function applySignedOutCookies(response: NextResponse) {
-  const domain = process.env.AUTH_COOKIE_DOMAIN?.trim() || undefined;
-  const domainVariants = domain
-    ? Array.from(
-        new Set([
-          domain,
-          domain.startsWith(".") ? domain.slice(1) : `.${domain}`,
-        ]),
-      )
-    : [];
+  const domains = cookieDomainVariants(process.env.AUTH_COOKIE_DOMAIN);
 
   for (const name of AUTH_COOKIE_NAMES) {
-    const secure = name.startsWith("__Secure-") || name.startsWith("__Host-");
-    expireCookie(response, name, secure ? { secure: true } : undefined);
+    response.headers.append("Set-Cookie", expireCookieHeader(name));
     if (name.startsWith("__Host-")) {
       continue;
     }
-    for (const cookieDomain of domainVariants) {
-      expireCookie(response, name, {
-        domain: cookieDomain,
-        ...(secure ? { secure: true } : {}),
-      });
+    for (const domain of domains) {
+      response.headers.append(
+        "Set-Cookie",
+        expireCookieHeader(name, { domain }),
+      );
     }
   }
 }
