@@ -77,7 +77,7 @@ export function WhatsAppApiClientsPanel({
   const inactiveTotal = clients.filter((row) => row.accountGroup === "INACTIVE").length;
 
   return (
-    <article className="saas-panel">
+    <article className="saas-panel ws-billing-section ws-billing-section--wa">
       <div className="saas-panel-head">
         <div>
           <h3>
@@ -86,7 +86,9 @@ export function WhatsAppApiClientsPanel({
           </h3>
           <p>
             Regular clients get auto WhatsApp reminders 10, 7, 3, and 1 day
-            before expiry. Click a group to expand it.
+            before expiry. Click a group to expand it. Sync pulls every
+            customer from the Web Based API panel — same number merges, a new
+            number is added.
             {dueSoon ? ` ${dueSoon} due in 10 days.` : ""}
             {expired ? ` ${expired} expired.` : ""}
             {inactiveTotal ? ` ${inactiveTotal} inactive.` : ""}
@@ -419,11 +421,6 @@ function WhatsAppApiClientSync() {
       >
         {pending ? "Syncing…" : "Sync from panel"}
       </button>
-      <p className="ws-wa-upload-hint">
-        Sync pulls every customer from the Web Based API panel. Same WhatsApp
-        number merges; a new number is added. Recharge and credits write back
-        to the panel.
-      </p>
       {message ? <span className="ws-billing-pill active">{message}</span> : null}
       {error ? <span className="ws-billing-pill overdue">{error}</span> : null}
     </div>

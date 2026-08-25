@@ -30,7 +30,10 @@ export function ClientsBillingBoard({ rows }: { rows: ClientBillingRow[] }) {
   return (
     <div className="ws-billing-groups">
       {groups.map((group) => (
-        <article className="saas-panel" key={group.product}>
+        <article
+          className={`saas-panel ws-billing-section ws-billing-section--${group.product.toLowerCase().replaceAll("_", "-")}`}
+          key={group.product}
+        >
           <div className="saas-panel-head">
             <div>
               <h3>

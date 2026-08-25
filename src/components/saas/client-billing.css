@@ -271,17 +271,62 @@
 
 .ws-billing-page .saas-panel-head {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: space-between;
   gap: 1rem;
   align-items: flex-start;
 }
 
+.ws-billing-page .saas-panel-head > div:first-child {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .ws-wa-upload {
   display: grid;
-  gap: 0.45rem;
+  gap: 0.4rem;
   justify-items: end;
-  max-width: 26rem;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.ws-billing-section {
+  border-color: transparent;
+}
+
+.ws-billing-section--wa {
+  background: #ecfeff;
+  border-color: #a5f3fc;
+}
+
+.ws-billing-section--bci {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.ws-billing-section--tasks {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+
+.ws-billing-section--hrms {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.ws-billing-section--crm {
+  background: #fff1f2;
+  border-color: #fecdd3;
+}
+
+.ws-billing-section--app-builder {
+  background: #fefce8;
+  border-color: #fde68a;
+}
+
+.ws-billing-section--workspace {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
 }
 
 .ws-wa-detail {
@@ -433,13 +478,13 @@
     justify-content: flex-end;
   }
 
-  .ws-wa-upload {
-    justify-items: start;
-    max-width: none;
+  .ws-billing-page .saas-panel-head {
+    flex-wrap: wrap;
   }
 
-  .ws-wa-upload-hint {
-    text-align: left;
+  .ws-wa-upload {
+    width: 100%;
+    justify-items: end;
   }
 }
 
