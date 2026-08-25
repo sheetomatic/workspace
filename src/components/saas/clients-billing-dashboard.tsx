@@ -22,7 +22,8 @@ export function ClientsBillingDashboard({
   title?: string;
 }) {
   const totals = summarizeClientBilling(rows);
-  const waDueSoon = whatsappApiClients.filter((row) => row.dueSoon).length;
+  const waRegular = whatsappApiClients.filter((row) => row.accountGroup === "REGULAR");
+  const waDueSoon = waRegular.filter((row) => row.dueSoon).length;
 
   return (
     <div className="saas-page ws-billing-page">
@@ -68,7 +69,7 @@ export function ClientsBillingDashboard({
         <div className="ws-billing-kpi">
           <span>WhatsApp API</span>
           <strong>
-            {whatsappApiClients.length}
+            {waRegular.length}
             <small>
               {waDueSoon} due in 7 days
             </small>

@@ -1,14 +1,17 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   addWhatsAppApiClientAction,
   cancelWhatsAppApiClientAction,
+  importWhatsAppApiClientsAction,
   rechargeWhatsAppApiClientAction,
   remindWhatsAppApiClientAction,
   type BillingActionState,
 } from "@/app/app/clients/actions";
 import { CUSTOM_WHATSAPP_API_PLAN_ID } from "@/lib/billing/whatsapp-api-plans";
+import { whatsAppApiClientCsvTemplate } from "@/lib/billing/whatsapp-api-import-template";
 import type { WhatsAppApiClientRow } from "@/lib/billing/whatsapp-api-clients.shared";
 import type { WhatsAppApiPlanOption } from "@/lib/billing/whatsapp-api-plans";
 
@@ -32,8 +35,10 @@ export function WhatsAppApiClientsPanel({
   const [planId, setPlanId] = useState(plans[0]?.id ?? CUSTOM_WHATSAPP_API_PLAN_ID);
   const official = plans.filter((plan) => plan.kind === "OFFICIAL");
   const unofficial = plans.filter((plan) => plan.kind === "UNOFFICIAL");
-  const dueSoon = clients.filter((row) => row.dueSoon).length;
-  const expired = clients.filter((row) => row.status === "EXPIRED").length;
+  const regular = clients.filter((row) => row.accountGroup === "REGULAR");
+  const inactive = clients.filter((row) => row.accountGroup === "INACTIVE");
+  const dueSoon = regular.filter((row) => row.dueSoon).length;
+  const expired = regular.filter((row) => row.status === "EXPIRED").length;
 
   return (
     <article className="saas-panel">
@@ -41,15 +46,17 @@ export function WhatsAppApiClientsPanel({
         <div>
           <h3>
             WhatsApp API{" "}
-            <span className="ws-billing-pill">{clients.length}</span>
+            <span className="ws-billing-pill">{regular.length}</span>
           </h3>
           <p>
-            Recharge clients — Official or unofficial plans. We remind them on
-            WhatsApp 7, 3, and 1 day before expiry, and on the due date.
+            Regular clients get recharge reminders 7, 3, and 1 day before
+            expiry, and on the due date. Click a group to expand it.
             {dueSoon ? ` ${dueSoon} due in 7 days.` : ""}
             {expired ? ` ${expired} expired.` : ""}
+            {inactive.length ? ` ${inactive.length} inactive.` : ""}
           </p>
         </div>
+        <WhatsAppApiClientUpload />
       </div>
 
       <form action={addAction} className="ws-billing-form">
@@ -138,9 +145,49 @@ export function WhatsAppApiClientsPanel({
 
       {clients.length === 0 ? (
         <p className="ws-wa-empty">
-          No WhatsApp API clients yet. Add a number and plan to start recharge
-          reminders.
+          No WhatsApp API clients yet. Add a number and plan, or upload the
+          panel customer list.
         </p>
+      ) : (
+        <div className="ws-wa-groups">
+          <WhatsAppApiClientGroup
+            title="Regular"
+            hint="Active clients — reminders are on"
+            rows={regular}
+            defaultOpen
+          />
+          <WhatsAppApiClientGroup
+            title="Inactive"
+            hint="Rest of the list — no reminders"
+            rows={inactive}
+          />
+        </div>
+      )}
+    </article>
+  );
+}
+
+function WhatsAppApiClientGroup({
+  title,
+  hint,
+  rows,
+  defaultOpen = false,
+}: {
+  title: string;
+  hint: string;
+  rows: WhatsAppApiClientRow[];
+  defaultOpen?: boolean;
+}) {
+  return (
+    <details className="ws-wa-group" open={defaultOpen}>
+      <summary className="ws-wa-group-summary">
+        <span>
+          {title} <span className="ws-billing-pill">{rows.length}</span>
+        </span>
+        <small>{hint}</small>
+      </summary>
+      {rows.length === 0 ? (
+        <p className="ws-wa-empty">No {title.toLowerCase()} clients.</p>
       ) : (
         <div className="ws-billing-table-wrap">
           <table className="ws-billing-table">
@@ -154,7 +201,7 @@ export function WhatsAppApiClientsPanel({
               </tr>
             </thead>
             <tbody>
-              {clients.map((row) => (
+              {rows.map((row) => (
                 <tr key={row.id}>
                   <td>
                     <strong>{row.name}</strong>
@@ -170,7 +217,9 @@ export function WhatsAppApiClientsPanel({
                   </td>
                   <td>
                     {row.planLabel}
-                    <div>{row.durationDays} days · started {row.startedLabel}</div>
+                    <div>
+                      {row.durationDays} days · started {row.startedLabel}
+                    </div>
                   </td>
                   <td>{row.amountLabel}</td>
                   <td>
@@ -182,6 +231,7 @@ export function WhatsAppApiClientsPanel({
                       clientId={row.id}
                       clientName={row.name}
                       reminderCount={row.reminderCount}
+                      canRemind={row.accountGroup === "REGULAR"}
                     />
                   </td>
                 </tr>
@@ -190,7 +240,75 @@ export function WhatsAppApiClientsPanel({
           </table>
         </div>
       )}
-    </article>
+    </details>
+  );
+}
+
+function WhatsAppApiClientUpload() {
+  const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [pending, startTransition] = useTransition();
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  function downloadTemplate() {
+    const blob = new Blob([whatsAppApiClientCsvTemplate()], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "whatsapp-api-clients-template.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <div className="ws-wa-upload">
+      <div className="ws-billing-actions">
+        <button className="saas-ws-action" type="button" onClick={downloadTemplate}>
+          Download template
+        </button>
+        <button
+          className="btn-cta"
+          disabled={pending}
+          type="button"
+          onClick={() => inputRef.current?.click()}
+        >
+          {pending ? "Uploading…" : "Upload clients"}
+        </button>
+        <input
+          ref={inputRef}
+          accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          hidden
+          type="file"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            event.target.value = "";
+            if (!file) return;
+            setMessage(null);
+            setError(null);
+            const formData = new FormData();
+            formData.set("file", file);
+            startTransition(async () => {
+              const result = await importWhatsAppApiClientsAction(formData);
+              if (!result.ok) {
+                setError(result.message);
+                return;
+              }
+              setMessage(result.message);
+              router.refresh();
+            });
+          }}
+        />
+      </div>
+      <p className="ws-wa-upload-hint">
+        CSV, Excel, or the panel Customers List. Regular goes in Regular;
+        everything else is Inactive. Same panel Id updates that client.
+      </p>
+      {message ? <span className="ws-billing-pill active">{message}</span> : null}
+      {error ? <span className="ws-billing-pill overdue">{error}</span> : null}
+    </div>
   );
 }
 
@@ -198,10 +316,12 @@ function WhatsAppApiClientActions({
   clientId,
   clientName,
   reminderCount,
+  canRemind,
 }: {
   clientId: string;
   clientName: string;
   reminderCount: number;
+  canRemind: boolean;
 }) {
   const [rechargeState, rechargeAction, recharging] = useActionState(
     rechargeWhatsAppApiClientAction,
@@ -227,12 +347,14 @@ function WhatsAppApiClientActions({
             {recharging ? "Saving…" : "Recharged"}
           </button>
         </form>
-        <form action={remindAction}>
-          <input name="clientId" type="hidden" value={clientId} />
-          <button className="saas-ws-action" disabled={reminding} type="submit">
-            {reminding ? "Sending…" : "Remind now"}
-          </button>
-        </form>
+        {canRemind ? (
+          <form action={remindAction}>
+            <input name="clientId" type="hidden" value={clientId} />
+            <button className="saas-ws-action" disabled={reminding} type="submit">
+              {reminding ? "Sending…" : "Remind now"}
+            </button>
+          </form>
+        ) : null}
         <form
           action={cancelAction}
           onSubmit={(event) => {

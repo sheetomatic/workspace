@@ -160,31 +160,96 @@ export function catalogRateForPlan(plan: OrgPlan): BillingRateCard {
 }
 
 const ADDON_MODULE_RATES: Partial<Record<WorkspaceModule, number>> = {
+  FMS: rupeesToPaise(
+    emReadyModulePlans.find((row) => row.id === "module_fms")?.priceMonthlyInr ?? 2999,
+  ),
+  TASKS: rupeesToPaise(
+    emReadyModulePlans.find((row) => row.id === "module_tasks")?.priceMonthlyInr ?? 2499,
+  ),
   CRM: rupeesToPaise(
-    emReadyModulePlans.find((row) => row.id === "module_crm")?.priceMonthlyInr ??
-      2999,
+    emReadyModulePlans.find((row) => row.id === "module_crm")?.priceMonthlyInr ?? 2999,
   ),
   IMS: rupeesToPaise(
-    emReadyModulePlans.find((row) => row.id === "module_ims")?.priceMonthlyInr ??
-      2999,
+    emReadyModulePlans.find((row) => row.id === "module_ims")?.priceMonthlyInr ?? 2999,
   ),
   HR: rupeesToPaise(10_000),
   APP_BUILDER: rupeesToPaise(2499),
+  SOCIAL: rupeesToPaise(2499),
+  CASES: 0,
 };
 
-export function extraAddonMonthlyPaise(
+export type BillableAddon = {
+  module: WorkspaceModule;
+  label: string;
+  amountPaise: number;
+  grantModules: WorkspaceModule[];
+};
+
+const BILLABLE_ADDONS: BillableAddon[] = [
+  { module: "FMS", label: "FMS Bundle", amountPaise: ADDON_MODULE_RATES.FMS ?? 0, grantModules: ["FMS", "REPORTS", "APPROVALS"] },
+  { module: "TASKS", label: "Tasks Management", amountPaise: ADDON_MODULE_RATES.TASKS ?? 0, grantModules: ["TASKS"] },
+  { module: "CRM", label: "CRM", amountPaise: ADDON_MODULE_RATES.CRM ?? 0, grantModules: ["CRM"] },
+  { module: "IMS", label: "IMS / Stock", amountPaise: ADDON_MODULE_RATES.IMS ?? 0, grantModules: ["IMS"] },
+  { module: "HR", label: "HRMS", amountPaise: ADDON_MODULE_RATES.HR ?? 0, grantModules: ["HR"] },
+  { module: "APP_BUILDER", label: "App Builder", amountPaise: ADDON_MODULE_RATES.APP_BUILDER ?? 0, grantModules: ["APP_BUILDER"] },
+  { module: "SOCIAL", label: "Social", amountPaise: ADDON_MODULE_RATES.SOCIAL ?? 0, grantModules: ["SOCIAL"] },
+  { module: "CASES", label: "Legal", amountPaise: ADDON_MODULE_RATES.CASES ?? 0, grantModules: ["CASES"] },
+];
+
+export function listBillableAddons() {
+  return BILLABLE_ADDONS;
+}
+
+export function billableAddonByModule(module: WorkspaceModule) {
+  return BILLABLE_ADDONS.find((addon) => addon.module === module) ?? null;
+}
+
+export type WorkspaceAddonCharge = {
+  module: WorkspaceModule;
+  label: string;
+  amountPaise: number;
+};
+
+export function workspaceAddonCharges(
+  modules: WorkspaceModule[],
+  plan: OrgPlan,
+  product?: WorkspaceProduct | null,
+): WorkspaceAddonCharge[] {
+  const sold = resolveSoldProduct({ product, allowedModules: modules });
+  const included = new Set(modulesIncludedInSoldSku(sold, plan));
+  const charges: WorkspaceAddonCharge[] = [];
+  for (const addon of BILLABLE_ADDONS) {
+    if (!modules.includes(addon.module) || included.has(addon.module)) continue;
+    charges.push({
+      module: addon.module,
+      label: addon.label,
+      amountPaise: addon.amountPaise,
+    });
+  }
+  return charges;
+}
+
+export function availableWorkspaceAddons(
   modules: WorkspaceModule[],
   plan: OrgPlan,
   product?: WorkspaceProduct | null,
 ) {
   const sold = resolveSoldProduct({ product, allowedModules: modules });
   const included = new Set(modulesIncludedInSoldSku(sold, plan));
-  let extra = 0;
-  for (const module of modules) {
-    if (included.has(module)) continue;
-    extra += ADDON_MODULE_RATES[module] ?? 0;
-  }
-  return extra;
+  return BILLABLE_ADDONS.filter(
+    (addon) => !modules.includes(addon.module) && !included.has(addon.module),
+  );
+}
+
+export function extraAddonMonthlyPaise(
+  modules: WorkspaceModule[],
+  plan: OrgPlan,
+  product?: WorkspaceProduct | null,
+) {
+  return workspaceAddonCharges(modules, plan, product).reduce(
+    (sum, row) => sum + row.amountPaise,
+    0,
+  );
 }
 
 function modulesIncludedInSoldSku(

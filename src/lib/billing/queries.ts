@@ -1,8 +1,11 @@
 import { prisma } from "@/lib/db";
 import {
+  availableWorkspaceAddons,
   catalogRateForWorkspace,
+  extraAddonMonthlyPaise,
   resolveSoldProduct,
   SOLD_PRODUCT_LABELS,
+  workspaceAddonCharges,
 } from "@/lib/billing/catalog";
 import { onboardingProgress } from "@/lib/billing/checklist";
 import { formatBillingDate } from "@/lib/billing/dates";
@@ -74,6 +77,8 @@ export async function listClientBillingRows() {
     const includedUsers = billing?.includedUsers ?? catalog.includedUsers;
     const gstPercent = billing?.gstPercent ?? catalog.gstPercent;
     const hasPlan = monthly > 0;
+    const addonLines = workspaceAddonCharges(org.allowedModules, org.plan, org.product);
+    const addonPaise = extraAddonMonthlyPaise(org.allowedModules, org.plan, org.product);
     return {
       id: org.id,
       name: org.name,
@@ -82,7 +87,13 @@ export async function listClientBillingRows() {
       plan: org.plan,
       product,
       productLabel: SOLD_PRODUCT_LABELS[product],
+      allowedModules: org.allowedModules,
       planLabel: ORG_PLAN_LABELS[org.plan] ?? org.plan,
+      addonLines,
+      availableAddons: availableWorkspaceAddons(org.allowedModules, org.plan, org.product),
+      addonPaise,
+      monthlyTotalPaise: monthly + addonPaise,
+      monthlyTotalLabel: formatInrPaise(monthly + addonPaise),
       planStatus: org.organizationPlan?.status ?? org.planStatus,
       activeUsers: org.memberships.length,
       maxMembers: org.maxMembers,

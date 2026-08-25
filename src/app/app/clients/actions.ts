@@ -1,6 +1,10 @@
 "use server";
 
-import type { PlanBillingPeriod, SubscriptionPaymentMethod } from "@prisma/client";
+import type {
+  PlanBillingPeriod,
+  SubscriptionPaymentMethod,
+  WorkspaceModule,
+} from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -9,8 +13,10 @@ import { sendSubscriptionInvoiceEmail } from "@/lib/billing/email";
 import {
   cancelWhatsAppApiClient,
   markWhatsAppApiClientRecharged,
+  parseWhatsAppApiClientInput,
   upsertWhatsAppApiClient,
 } from "@/lib/billing/whatsapp-api-clients";
+import { parseWhatsAppApiClientSpreadsheet } from "@/lib/billing/whatsapp-api-import";
 import { sendWhatsAppApiClientReminder } from "@/lib/billing/whatsapp-api-reminders";
 import {
   ensureOnboardingTasks,
@@ -20,9 +26,12 @@ import {
   recordSubscriptionPayment,
   voidSubscriptionInvoice,
 } from "@/lib/billing/invoices";
+import { billableAddonByModule } from "@/lib/billing/catalog";
 import { parseRupeesInput } from "@/lib/billing/money";
+import { clampModulesToOrg, mergeAllowedModules } from "@/lib/org-plan-presets";
 import { syncOrganizationPlanRecord } from "@/lib/organization-plan";
 import { canManageSuperAdmins } from "@/lib/platform";
+import { resolveMemberModules } from "@/lib/workspace-modules";
 
 export type BillingActionState = { ok: boolean; message: string };
 
@@ -171,6 +180,110 @@ export async function deleteClientBillingPlanAction(
 
   revalidateBilling(organizationId);
   return { ok: true, message: "Billing plan removed. Invoices already issued stay on the record." };
+}
+
+async function syncMembershipModulesToOrg(
+  organizationId: string,
+  allowedModules: WorkspaceModule[],
+) {
+  const memberships = await prisma.membership.findMany({
+    where: { organizationId },
+    select: { id: true, role: true, modules: true },
+  });
+  for (const membership of memberships) {
+    const modules =
+      membership.role === "OWNER" || membership.role === "ADMIN"
+        ? allowedModules
+        : clampModulesToOrg(
+            resolveMemberModules(membership.role, membership.modules),
+            allowedModules,
+          );
+    await prisma.membership.update({
+      where: { id: membership.id },
+      data: { modules },
+    });
+  }
+}
+
+export async function addClientAddonsAction(
+  _prev: BillingActionState,
+  formData: FormData,
+): Promise<BillingActionState> {
+  const user = await requirePlatformAdmin();
+  if (!user) {
+    return { ok: false, message: "Only Sheetomatic super admins can add client add-ons." };
+  }
+
+  const organizationId = String(formData.get("organizationId") ?? "").trim();
+  const selected = formData
+    .getAll("addon")
+    .map((value) => String(value))
+    .map((module) => billableAddonByModule(module as WorkspaceModule))
+    .filter((addon): addon is NonNullable<typeof addon> => Boolean(addon));
+
+  if (!organizationId || selected.length === 0) {
+    return { ok: false, message: "Choose at least one add-on service." };
+  }
+
+  const organization = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: { id: true, isPrimary: true, allowedModules: true },
+  });
+  if (!organization || organization.isPrimary) {
+    return { ok: false, message: "Workspace not found." };
+  }
+
+  const allowedModules = mergeAllowedModules(
+    organization.allowedModules,
+    ...selected.map((addon) => addon.grantModules),
+  );
+  await prisma.organization.update({
+    where: { id: organizationId },
+    data: { allowedModules },
+  });
+  await syncMembershipModulesToOrg(organizationId, allowedModules);
+  revalidateBilling(organizationId);
+  return {
+    ok: true,
+    message: `Added ${selected.map((addon) => addon.label).join(", ")}. Next invoice bills those plan rates.`,
+  };
+}
+
+export async function removeClientAddonAction(
+  _prev: BillingActionState,
+  formData: FormData,
+): Promise<BillingActionState> {
+  const user = await requirePlatformAdmin();
+  if (!user) {
+    return { ok: false, message: "Only Sheetomatic super admins can remove a client add-on." };
+  }
+
+  const organizationId = String(formData.get("organizationId") ?? "").trim();
+  const addon = billableAddonByModule(String(formData.get("module") ?? "") as WorkspaceModule);
+  if (!organizationId || !addon) {
+    return { ok: false, message: "Add-on not found." };
+  }
+
+  const organization = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: { id: true, isPrimary: true, allowedModules: true },
+  });
+  if (!organization || organization.isPrimary) {
+    return { ok: false, message: "Workspace not found." };
+  }
+
+  const allowedModules = organization.allowedModules.filter((module) => module !== addon.module);
+  if (allowedModules.length === 0) {
+    return { ok: false, message: "Keep at least one service on the workspace." };
+  }
+
+  await prisma.organization.update({
+    where: { id: organizationId },
+    data: { allowedModules },
+  });
+  await syncMembershipModulesToOrg(organizationId, allowedModules);
+  revalidateBilling(organizationId);
+  return { ok: true, message: `${addon.label} removed from this client.` };
 }
 
 export async function generateClientInvoiceAction(
@@ -342,6 +455,83 @@ export async function addWhatsAppApiClientAction(
   return {
     ok: true,
     message: `${result.client.name} added. Recharge reminders go on WhatsApp 7, 3, and 1 day before expiry, and on the due date.`,
+  };
+}
+
+export async function importWhatsAppApiClientsAction(
+  formData: FormData,
+): Promise<BillingActionState> {
+  const user = await requirePlatformAdmin();
+  if (!user) {
+    return { ok: false, message: "Only Sheetomatic super admins can upload WhatsApp API clients." };
+  }
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, message: "Choose a CSV or Excel file to upload." };
+  }
+  if (!/\.(csv|xlsx|xls)$/i.test(file.name)) {
+    return { ok: false, message: "Upload a .csv, .xlsx, or .xls file." };
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    return { ok: false, message: "File must be under 5 MB." };
+  }
+
+  const parsed = parseWhatsAppApiClientSpreadsheet(Buffer.from(await file.arrayBuffer()));
+  const rows = parsed.rows.slice(0, 1000);
+  if (!rows.length) {
+    return {
+      ok: false,
+      message: parsed.errors[0] ?? "No valid client rows found in the file.",
+    };
+  }
+
+  let created = 0;
+  let updated = 0;
+  const errors = [...parsed.errors];
+
+  for (const input of rows) {
+    const ready = parseWhatsAppApiClientInput({
+      ...input,
+      createdByUserId: user.id,
+    });
+    if (!ready.ok) {
+      errors.push(`${input.name}: ${ready.message}`);
+      continue;
+    }
+
+    const existing = await prisma.whatsAppApiClient.findUnique({
+      where: { phone: ready.value.phone },
+      select: { id: true },
+    });
+    const result = await upsertWhatsAppApiClient({
+      ...input,
+      createdByUserId: user.id,
+    });
+    if (!result.ok) {
+      errors.push(`${input.name}: ${result.message}`);
+      continue;
+    }
+    if (existing) updated += 1;
+    else created += 1;
+  }
+
+  if (created + updated === 0) {
+    return {
+      ok: false,
+      message: errors[0] ?? "Could not import any WhatsApp API clients.",
+    };
+  }
+
+  revalidateBilling();
+  const extra =
+    parsed.rows.length > 1000 ? " First 1000 rows were imported." : "";
+  const failed = errors.length ? ` ${errors.length} row${errors.length === 1 ? "" : "s"} skipped.` : "";
+  return {
+    ok: true,
+    message: `Uploaded ${created} new and updated ${updated} WhatsApp API client${
+      created + updated === 1 ? "" : "s"
+    }.${extra}${failed}`,
   };
 }
 

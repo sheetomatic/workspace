@@ -39,6 +39,29 @@ describe("subscription prorata", () => {
       applyGst(rupeesToPaise(4999 + 599 * 2 + 2999), 18).gstPaise,
     );
     expect(quote.totalPaise).toBe(quote.subtotalPaise + quote.extraPaise + quote.gstPaise);
+    expect(quote.lineItems.some((line) => line.kind === "addon")).toBe(true);
+  });
+
+  it("lists each add-on service on the invoice", () => {
+    const quote = buildInvoiceQuote({
+      monthlyRatePaise: rupeesToPaise(0),
+      extraUserMonthlyPaise: 0,
+      includedUsers: 8,
+      activeUsers: 3,
+      extraAddonLines: [
+        { label: "Tasks Management", amountPaise: rupeesToPaise(2499) },
+        { label: "CRM", amountPaise: rupeesToPaise(2999) },
+      ],
+      gstPercent: 18,
+      periodStart: new Date("2026-08-01T00:00:00.000Z"),
+      periodEnd: new Date("2026-08-30T00:00:00.000Z"),
+      prorate: false,
+    });
+    expect(quote.lineItems.filter((line) => line.kind === "addon").map((line) => line.label)).toEqual([
+      "Tasks Management",
+      "CRM",
+    ]);
+    expect(quote.extraPaise).toBe(rupeesToPaise(2499 + 2999));
   });
 
   it("keeps access through the due date and holds the next day", () => {

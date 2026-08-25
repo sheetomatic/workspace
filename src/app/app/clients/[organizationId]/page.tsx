@@ -10,8 +10,10 @@ import { PageHeader } from "@/components/saas/page-header";
 import "@/components/saas/client-billing.css";
 import {
   catalogRateForWorkspace,
+  extraAddonMonthlyPaise,
   resolveSoldProduct,
   SOLD_PRODUCT_LABELS,
+  workspaceAddonCharges,
 } from "@/lib/billing/catalog";
 import { formatBillingDate } from "@/lib/billing/dates";
 import {
@@ -46,6 +48,11 @@ export default async function ClientBillingDetailPage({
   if (!detail) notFound();
 
   const catalog = catalogRateForWorkspace(detail);
+  const addonCharges = workspaceAddonCharges(
+    detail.allowedModules,
+    detail.plan,
+    detail.product,
+  );
   const progress = onboardingProgress(detail.onboardingTasks);
   const renewal = detail.organizationPlan?.renewalAt;
   const renewalInput = renewal ? renewal.toISOString().slice(0, 10) : "";
@@ -75,7 +82,12 @@ export default async function ClientBillingDetailPage({
         </div>
         <div className="ws-billing-kpi">
           <span>Monthly (excl. GST)</span>
-          <strong>{formatInrPaise(billing.monthlyRatePaise || catalog.monthlyRatePaise)}</strong>
+          <strong>
+            {formatInrPaise(
+              (billing.monthlyRatePaise || catalog.monthlyRatePaise) +
+                extraAddonMonthlyPaise(detail.allowedModules, detail.plan, detail.product),
+            )}
+          </strong>
         </div>
         <div className="ws-billing-kpi">
           <span>Renewal</span>
@@ -101,8 +113,23 @@ export default async function ClientBillingDetailPage({
         <h3>Subscription rates</h3>
         <p className="saas-panel-lead">
           List prices come from /pricing. Override here for the sold deal. Extra
-          users and mid-cycle changes bill prorata plus add-on charges.
+          users and mid-cycle changes bill prorata plus add-on charges. Use
+          Add-On on the clients board to attach more services.
         </p>
+        {addonCharges.length > 0 ? (
+          <ul className="ws-addon-lines">
+            {addonCharges.map((line) => (
+              <li key={line.module}>
+                <span>
+                  {line.label}
+                  {line.amountPaise > 0
+                    ? ` · ${formatInrPaise(line.amountPaise)} / month`
+                    : " · quote"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
         <ClientBillingRatesForm
           organizationId={detail.id}
           monthlyRatePaise={billing.monthlyRatePaise}

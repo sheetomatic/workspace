@@ -1,5 +1,6 @@
 export type WhatsAppApiClientRow = {
   id: string;
+  externalId: string | null;
   name: string;
   company: string | null;
   phone: string;
@@ -19,6 +20,7 @@ export type WhatsAppApiClientRow = {
   daysLeft: number;
   daysLeftLabel: string;
   status: string;
+  accountGroup: "REGULAR" | "INACTIVE";
   reminderCount: number;
   notes: string | null;
   dueSoon: boolean;

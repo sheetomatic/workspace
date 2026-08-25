@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { catalogRateForPlan, catalogRateForWorkspace } from "@/lib/billing/catalog";
+import {
+  availableWorkspaceAddons,
+  catalogRateForPlan,
+  catalogRateForWorkspace,
+  extraAddonMonthlyPaise,
+  workspaceAddonCharges,
+} from "@/lib/billing/catalog";
 import { rupeesToPaise } from "@/lib/billing/money";
 import { isBillingPortalPath } from "@/lib/billing/access";
 
@@ -41,6 +47,28 @@ describe("billing catalog", () => {
         allowedModules: ["CRM"],
       }).monthlyRatePaise,
     ).toBe(rupeesToPaise(2999));
+  });
+
+  it("bills extra services as add-ons on top of the sold SKU", () => {
+    const legal = {
+      plan: "LEGAL_ADDON" as const,
+      product: "WORKSPACE" as const,
+      allowedModules: ["CASES", "REPORTS", "TASKS", "CRM"] as const,
+    };
+    const charges = workspaceAddonCharges(
+      [...legal.allowedModules],
+      legal.plan,
+      legal.product,
+    );
+    expect(charges.map((row) => row.module)).toEqual(["TASKS", "CRM"]);
+    expect(extraAddonMonthlyPaise([...legal.allowedModules], legal.plan, legal.product)).toBe(
+      rupeesToPaise(2499 + 2999),
+    );
+    expect(
+      availableWorkspaceAddons(["CASES", "REPORTS"], legal.plan, legal.product).some(
+        (addon) => addon.module === "TASKS",
+      ),
+    ).toBe(true);
   });
 
   it("allows billing routes while a workspace is on hold", () => {

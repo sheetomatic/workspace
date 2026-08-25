@@ -170,6 +170,11 @@ enum WhatsAppApiClientStatus {
   CANCELLED
 }
 
+enum WhatsAppApiAccountGroup {
+  REGULAR
+  INACTIVE
+}
+
 enum WorkspaceLinkType {
   GOOGLE_SHEET
   LOOKER_STUDIO
@@ -416,9 +421,10 @@ model ClientOnboardingTask {
 /// WhatsApp API recharge customers (Official or unofficial). Not a workspace login.
 model WhatsAppApiClient {
   id              String                   @id @default(cuid())
+  externalId      String?                  @unique
   name            String
   company         String?
-  phone           String                   @unique
+  phone           String
   email           String?
   planKind        WhatsAppApiPlanKind
   planId          String
@@ -428,6 +434,7 @@ model WhatsAppApiClient {
   startedAt       DateTime
   expiresAt       DateTime
   status          WhatsAppApiClientStatus  @default(ACTIVE)
+  accountGroup    WhatsAppApiAccountGroup  @default(REGULAR)
   lastReminderAt  DateTime?
   reminderCount   Int                      @default(0)
   notes           String?
@@ -435,6 +442,8 @@ model WhatsAppApiClient {
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
 
+  @@index([phone])
+  @@index([accountGroup, status, expiresAt])
   @@index([expiresAt, status])
   @@index([status, expiresAt])
 }

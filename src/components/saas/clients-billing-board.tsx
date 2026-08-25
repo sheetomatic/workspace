@@ -35,8 +35,8 @@ export function ClientsBillingBoard({ rows }: { rows: Row[] }) {
                 <span className="ws-billing-pill">{group.rows.length}</span>
               </h3>
               <p>
-                One workspace per client for this product. Users, monthly rate,
-                renewal, and onboarding stay on that workspace.
+                One workspace per client. Add-On lets them take more services;
+                each add-on bills at its plan rate on the next invoice.
               </p>
             </div>
           </div>
@@ -84,9 +84,16 @@ function ProductTable({ rows }: { rows: Row[] }) {
                 </strong>
               </td>
               <td>
-                {row.monthlyLabel}
+                {row.monthlyTotalLabel}
                 <div>{row.planLabel}</div>
+                {row.addonLines.length > 0 ? (
+                  <div className="ws-addon-summary">
+                    incl. {row.addonLines.map((line) => line.label).join(", ")}
+                  </div>
+                ) : null}
                 <ClientPlanActions
+                  addonLines={row.addonLines}
+                  availableAddons={row.availableAddons}
                   billingPeriod={row.billingPeriod}
                   clientName={row.name}
                   extraUserMonthlyPaise={row.extraUserMonthlyPaise}

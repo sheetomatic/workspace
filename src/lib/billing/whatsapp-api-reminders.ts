@@ -95,7 +95,7 @@ async function sendWhatsAppApiReminderChannels(input: {
 
 export async function sendWhatsAppApiClientReminder(id: string, now = new Date()) {
   const client = await prisma.whatsAppApiClient.findUnique({ where: { id } });
-  if (!client || client.status === "CANCELLED") {
+  if (!client || client.status === "CANCELLED" || client.accountGroup === "INACTIVE") {
     return { ok: false as const, message: "WhatsApp API client not found." };
   }
 
@@ -138,7 +138,7 @@ export async function runWhatsAppApiRechargeReminders(now = new Date()) {
   const expired: string[] = [];
 
   const clients = await prisma.whatsAppApiClient.findMany({
-    where: { status: { in: ["ACTIVE", "EXPIRED"] } },
+    where: { accountGroup: "REGULAR", status: { in: ["ACTIVE", "EXPIRED"] } },
   });
 
   for (const client of clients) {

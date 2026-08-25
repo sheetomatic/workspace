@@ -1,6 +1,12 @@
-import type { WhatsAppApiClient, WhatsAppApiPlanKind } from "@prisma/client";
+import type {
+  WhatsAppApiAccountGroup,
+  WhatsAppApiClient,
+  WhatsAppApiClientStatus,
+  WhatsAppApiPlanKind,
+} from "@prisma/client";
 import { prisma } from "@/lib/db";
 import {
+  addUtcDays,
   daysUntilDue,
   formatBillingDate,
   isPastDueDate,
@@ -17,6 +23,7 @@ import {
 import { formatWhatsAppPhone, normalizeWhatsAppPhone } from "@/lib/phone";
 
 export type WhatsAppApiClientInput = {
+  externalId?: string | null;
   name: string;
   company?: string | null;
   phone: string;
@@ -27,7 +34,10 @@ export type WhatsAppApiClientInput = {
   customAmountRupees?: string | null;
   customDurationDays?: string | null;
   startedAt?: string | null;
+  expiresAt?: string | null;
   notes?: string | null;
+  accountGroup?: WhatsAppApiAccountGroup;
+  allowZeroAmount?: boolean;
   createdByUserId?: string | null;
 };
 
@@ -38,6 +48,7 @@ export function parseWhatsAppApiClientInput(input: WhatsAppApiClientInput) {
   const emailRaw = input.email?.trim().toLowerCase() || null;
   const notes = input.notes?.trim() || null;
   const startedRaw = input.startedAt?.trim();
+  const expiresRaw = input.expiresAt?.trim();
 
   if (name.length < 2) {
     return { ok: false as const, message: "Enter the client name." };
@@ -66,7 +77,7 @@ export function parseWhatsAppApiClientInput(input: WhatsAppApiClientInput) {
     const amount = parseRupeesInput(input.customAmountRupees ?? "");
     const days = Number(input.customDurationDays ?? "");
     const label = input.customLabel?.trim() || "Custom WhatsApp API plan";
-    if (amount === null || amount <= 0) {
+    if (amount === null || amount < 0 || (amount === 0 && !input.allowZeroAmount)) {
       return { ok: false as const, message: "Enter the recharge amount." };
     }
     if (!Number.isFinite(days) || days < 1 || days > 1095) {
@@ -81,16 +92,31 @@ export function parseWhatsAppApiClientInput(input: WhatsAppApiClientInput) {
     return { ok: false as const, message: "Choose a WhatsApp API plan." };
   }
 
+  const expiresAt = expiresRaw
+    ? startOfUtcDay(new Date(`${expiresRaw}T00:00:00.000Z`))
+    : null;
+  if (expiresRaw && (!expiresAt || Number.isNaN(expiresAt.getTime()))) {
+    return { ok: false as const, message: "Enter a valid expiry date." };
+  }
+
   const startedAt = startedRaw
     ? startOfUtcDay(new Date(`${startedRaw}T00:00:00.000Z`))
-    : startOfUtcDay(new Date());
+    : expiresAt
+      ? addUtcDays(expiresAt, -durationDays)
+      : startOfUtcDay(new Date());
   if (Number.isNaN(startedAt.getTime())) {
     return { ok: false as const, message: "Enter a valid start date." };
   }
 
+  const accountGroup: WhatsAppApiAccountGroup =
+    input.accountGroup === "INACTIVE" ? "INACTIVE" : "REGULAR";
+  const status: WhatsAppApiClientStatus =
+    accountGroup === "INACTIVE" ? "CANCELLED" : "ACTIVE";
+
   return {
     ok: true as const,
     value: {
+      externalId: input.externalId?.trim() || null,
       name,
       company,
       phone,
@@ -101,8 +127,10 @@ export function parseWhatsAppApiClientInput(input: WhatsAppApiClientInput) {
       amountPaise,
       durationDays,
       startedAt,
-      expiresAt: expiryFromStart(startedAt, durationDays),
+      expiresAt: expiresAt ?? expiryFromStart(startedAt, durationDays),
       notes,
+      accountGroup,
+      status,
       createdByUserId: input.createdByUserId ?? null,
     },
   };
@@ -114,36 +142,55 @@ export async function upsertWhatsAppApiClient(input: WhatsAppApiClientInput) {
     return parsed;
   }
 
-  const row = await prisma.whatsAppApiClient.upsert({
-    where: { phone: parsed.value.phone },
-    create: {
-      ...parsed.value,
-      status: "ACTIVE",
-      lastReminderAt: null,
-      reminderCount: 0,
-    },
-    update: {
-      name: parsed.value.name,
-      company: parsed.value.company,
-      email: parsed.value.email,
-      planKind: parsed.value.planKind,
-      planId: parsed.value.planId,
-      planLabel: parsed.value.planLabel,
-      amountPaise: parsed.value.amountPaise,
-      durationDays: parsed.value.durationDays,
-      startedAt: parsed.value.startedAt,
-      expiresAt: parsed.value.expiresAt,
-      status: "ACTIVE",
-      notes: parsed.value.notes,
-    },
-  });
+  const existing = parsed.value.externalId
+    ? await prisma.whatsAppApiClient.findUnique({
+        where: { externalId: parsed.value.externalId },
+        select: { id: true },
+      })
+    : await prisma.whatsAppApiClient.findFirst({
+        where: { phone: parsed.value.phone },
+        select: { id: true },
+        orderBy: { createdAt: "asc" },
+      });
+
+  const data = {
+    externalId: parsed.value.externalId,
+    name: parsed.value.name,
+    company: parsed.value.company,
+    phone: parsed.value.phone,
+    email: parsed.value.email,
+    planKind: parsed.value.planKind,
+    planId: parsed.value.planId,
+    planLabel: parsed.value.planLabel,
+    amountPaise: parsed.value.amountPaise,
+    durationDays: parsed.value.durationDays,
+    startedAt: parsed.value.startedAt,
+    expiresAt: parsed.value.expiresAt,
+    status: parsed.value.status,
+    accountGroup: parsed.value.accountGroup,
+    notes: parsed.value.notes,
+    createdByUserId: parsed.value.createdByUserId,
+  };
+
+  const row = existing
+    ? await prisma.whatsAppApiClient.update({
+        where: { id: existing.id },
+        data,
+      })
+    : await prisma.whatsAppApiClient.create({
+        data: {
+          ...data,
+          lastReminderAt: null,
+          reminderCount: 0,
+        },
+      });
 
   return { ok: true as const, client: row };
 }
 
 export async function markWhatsAppApiClientRecharged(id: string, now = new Date()) {
   const existing = await prisma.whatsAppApiClient.findUnique({ where: { id } });
-  if (!existing || existing.status === "CANCELLED") {
+  if (!existing) {
     return { ok: false as const, message: "WhatsApp API client not found." };
   }
 
@@ -158,6 +205,7 @@ export async function markWhatsAppApiClientRecharged(id: string, now = new Date(
       startedAt: startOfUtcDay(now),
       expiresAt,
       status: "ACTIVE",
+      accountGroup: "REGULAR",
       lastReminderAt: null,
     },
   });
@@ -174,7 +222,7 @@ export async function cancelWhatsAppApiClient(id: string) {
   }
   await prisma.whatsAppApiClient.update({
     where: { id },
-    data: { status: "CANCELLED" },
+    data: { status: "CANCELLED", accountGroup: "INACTIVE" },
   });
   return { ok: true as const };
 }
@@ -185,8 +233,17 @@ export function toWhatsAppApiClientRow(
 ): WhatsAppApiClientRow {
   const daysLeft = daysUntilDue(client.expiresAt, now);
   const expired = isPastDueDate(client.expiresAt, now);
+  const accountGroup = client.accountGroup;
+  const displayStatus =
+    accountGroup === "INACTIVE"
+      ? "INACTIVE"
+      : expired && client.status !== "CANCELLED"
+        ? "EXPIRED"
+        : client.status;
+
   return {
     id: client.id,
+    externalId: client.externalId,
     name: client.name,
     company: client.company,
     phone: client.phone,
@@ -197,7 +254,7 @@ export function toWhatsAppApiClientRow(
     planId: client.planId,
     planLabel: client.planLabel,
     amountPaise: client.amountPaise,
-    amountLabel: formatInrPaise(client.amountPaise),
+    amountLabel: client.amountPaise > 0 ? formatInrPaise(client.amountPaise) : "—",
     durationDays: client.durationDays,
     startedAt: client.startedAt,
     startedLabel: formatBillingDate(client.startedAt),
@@ -209,17 +266,21 @@ export function toWhatsAppApiClientRow(
       : daysLeft === 0
         ? "Expires today"
         : `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`,
-    status: expired && client.status === "ACTIVE" ? "EXPIRED" : client.status,
+    status: displayStatus,
+    accountGroup,
     reminderCount: client.reminderCount,
     notes: client.notes,
-    dueSoon: !expired && daysLeft <= 7 && client.status !== "CANCELLED",
+    dueSoon:
+      accountGroup === "REGULAR" &&
+      !expired &&
+      daysLeft <= 7 &&
+      client.status !== "CANCELLED",
   };
 }
 
 export async function listWhatsAppApiClients(now = new Date()) {
   const rows = await prisma.whatsAppApiClient.findMany({
-    where: { status: { not: "CANCELLED" } },
-    orderBy: [{ expiresAt: "asc" }, { name: "asc" }],
+    orderBy: [{ accountGroup: "desc" }, { expiresAt: "asc" }, { name: "asc" }],
   });
   return rows.map((row) => toWhatsAppApiClientRow(row, now));
 }

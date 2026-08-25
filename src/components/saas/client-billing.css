@@ -112,6 +112,84 @@
   font-size: 0.875rem;
 }
 
+.ws-wa-groups {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.ws-wa-group {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.ws-wa-group-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 700;
+}
+
+.ws-wa-group-summary::-webkit-details-marker {
+  display: none;
+}
+
+.ws-wa-group-summary small {
+  font-weight: 500;
+  color: #64748b;
+}
+
+.ws-wa-group[open] .ws-wa-group-summary {
+  border-bottom: 1px solid #eef2f6;
+}
+
+.ws-billing-pill.inactive,
+.ws-billing-pill.cancelled {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.ws-billing-page .saas-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.ws-wa-upload {
+  display: grid;
+  gap: 0.45rem;
+  justify-items: end;
+  max-width: 22rem;
+}
+
+.ws-wa-upload-hint {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  text-align: right;
+}
+
+@media (max-width: 720px) {
+  .ws-wa-upload {
+    justify-items: start;
+    max-width: none;
+  }
+
+  .ws-wa-upload-hint {
+    text-align: left;
+  }
+}
+
 .ws-billing-form {
   display: grid;
   gap: 0.75rem;
@@ -151,6 +229,49 @@
   display: grid;
   gap: 0.5rem;
   margin-top: 0.55rem;
+}
+
+.ws-addon-summary {
+  color: #64748b;
+  font-size: 0.75rem;
+  margin-top: 0.2rem;
+}
+
+.ws-addon-lines {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.ws-addon-lines li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.75rem;
+  color: #334155;
+}
+
+.ws-addon-form-lead {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.ws-addon-option {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  font-weight: 600;
+}
+
+.ws-addon-option small {
+  display: block;
+  font-weight: 500;
+  color: #64748b;
 }
 
 .ws-plan-form {

@@ -13,12 +13,18 @@ export type InvoiceLineItem = {
   amountPaise: number;
 };
 
+export type QuoteAddonLine = {
+  label: string;
+  amountPaise: number;
+};
+
 export type QuoteInput = {
   monthlyRatePaise: number;
   extraUserMonthlyPaise: number;
   includedUsers: number;
   activeUsers: number;
   extraAddonPaise?: number;
+  extraAddonLines?: QuoteAddonLine[];
   gstPercent: number;
   periodStart: Date;
   periodEnd: Date;
@@ -62,7 +68,12 @@ export function buildInvoiceQuote(input: QuoteInput): InvoiceQuote {
 
   const baseAmount = scale(input.monthlyRatePaise);
   const extraAmount = scale(input.extraUserMonthlyPaise * extras);
-  const addonAmount = scale(input.extraAddonPaise ?? 0);
+  const addonLines =
+    input.extraAddonLines?.filter((line) => line.amountPaise > 0) ??
+    (input.extraAddonPaise && input.extraAddonPaise > 0
+      ? [{ label: "Add-on modules", amountPaise: input.extraAddonPaise }]
+      : []);
+  const addonAmount = scale(addonLines.reduce((sum, line) => sum + line.amountPaise, 0));
 
   const lineItems: InvoiceLineItem[] = [];
   if (baseAmount > 0 || input.monthlyRatePaise > 0) {
@@ -86,16 +97,16 @@ export function buildInvoiceQuote(input: QuoteInput): InvoiceQuote {
       amountPaise: extraAmount,
     });
   }
-  if (addonAmount > 0) {
+  for (const line of addonLines) {
+    const amount = scale(line.amountPaise);
+    if (amount <= 0) continue;
     lineItems.push({
       kind: "addon",
       label:
-        input.prorate && fraction < 1
-          ? "Add-on modules (prorata)"
-          : "Add-on modules",
+        input.prorate && fraction < 1 ? `${line.label} (prorata)` : line.label,
       quantity: 1,
-      unitPaise: input.extraAddonPaise ?? 0,
-      amountPaise: addonAmount,
+      unitPaise: line.amountPaise,
+      amountPaise: amount,
     });
   }
 

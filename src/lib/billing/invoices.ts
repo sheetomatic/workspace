@@ -1,6 +1,10 @@
 import type { OrgPlan, Prisma, WorkspaceModule, WorkspaceProduct } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { catalogRateForWorkspace, extraAddonMonthlyPaise } from "@/lib/billing/catalog";
+import {
+  catalogRateForWorkspace,
+  extraAddonMonthlyPaise,
+  workspaceAddonCharges,
+} from "@/lib/billing/catalog";
 import { CLIENT_ONBOARDING_TASKS } from "@/lib/billing/checklist";
 import { addUtcDays, monthlyPeriodFrom, startOfUtcDay } from "@/lib/billing/dates";
 import { buildInvoiceQuote, type InvoiceLineItem } from "@/lib/billing/prorata";
@@ -119,6 +123,11 @@ export function quoteForOrganization(input: {
       input.plan,
       input.product,
     ),
+    extraAddonLines: workspaceAddonCharges(
+      input.allowedModules,
+      input.plan,
+      input.product,
+    ).map((row) => ({ label: row.label, amountPaise: row.amountPaise })),
     gstPercent: input.billing.gstPercent,
     periodStart: input.periodStart,
     periodEnd: input.periodEnd,

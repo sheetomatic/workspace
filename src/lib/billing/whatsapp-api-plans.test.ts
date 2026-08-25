@@ -80,6 +80,19 @@ describe("parseWhatsAppApiClientInput", () => {
       false,
     );
   });
+
+  it("uses an uploaded expiry date when present", () => {
+    const parsed = parseWhatsAppApiClientInput({
+      name: "Neeraj",
+      phone: "9876543210",
+      planId: "official-basic-monthly",
+      expiresAt: "2026-09-10",
+    });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.value.expiresAt.toISOString()).toBe("2026-09-10T00:00:00.000Z");
+    expect(parsed.value.startedAt.toISOString()).toBe("2026-08-11T00:00:00.000Z");
+  });
 });
 
 describe("whatsAppApiReminderText", () => {
