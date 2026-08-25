@@ -14,6 +14,7 @@ import { CUSTOM_WHATSAPP_API_PLAN_ID } from "@/lib/billing/whatsapp-api-plans";
 import { whatsAppApiClientCsvTemplate } from "@/lib/billing/whatsapp-api-import-template";
 import type { WhatsAppApiClientRow } from "@/lib/billing/whatsapp-api-clients.shared";
 import type { WhatsAppApiPlanOption } from "@/lib/billing/whatsapp-api-plans";
+import { normalizeWhatsAppPhone } from "@/lib/phone";
 
 const initial: BillingActionState = { ok: false, message: "" };
 
@@ -33,8 +34,16 @@ export function WhatsAppApiClientsPanel({
     initial,
   );
   const [planId, setPlanId] = useState(plans[0]?.id ?? CUSTOM_WHATSAPP_API_PLAN_ID);
+  const [phoneDraft, setPhoneDraft] = useState("");
   const official = plans.filter((plan) => plan.kind === "OFFICIAL");
   const unofficial = plans.filter((plan) => plan.kind === "UNOFFICIAL");
+  const phoneMatch = (() => {
+    const normalized = normalizeWhatsAppPhone(phoneDraft);
+    if (!normalized) return null;
+    return (
+      clients.find((row) => normalizeWhatsAppPhone(row.phone) === normalized) ?? null
+    );
+  })();
   const regular = clients.filter((row) => row.accountGroup === "REGULAR");
   const inactive = clients.filter((row) => row.accountGroup === "INACTIVE");
   const dueSoon = regular.filter((row) => row.dueSoon).length;
@@ -70,7 +79,21 @@ export function WhatsAppApiClientsPanel({
         </label>
         <label>
           WhatsApp number
-          <input name="phone" required placeholder="98765 43210" inputMode="tel" />
+          <input
+            name="phone"
+            required
+            placeholder="98765 43210"
+            inputMode="tel"
+            value={phoneDraft}
+            onChange={(event) => setPhoneDraft(event.target.value)}
+          />
+          {phoneMatch ? (
+            <small className="ws-wa-phone-match">
+              Matches {phoneMatch.name}
+              {phoneMatch.company ? ` · ${phoneMatch.company}` : ""} — save
+              updates this client, not a new row.
+            </small>
+          ) : null}
         </label>
         <label>
           Email
@@ -133,7 +156,11 @@ export function WhatsAppApiClientsPanel({
         </label>
         <div className="ws-billing-actions ws-billing-form-wide">
           <button className="btn-cta" disabled={adding} type="submit">
-            {adding ? "Saving…" : "Add WhatsApp API client"}
+            {adding
+              ? "Saving…"
+              : phoneMatch
+                ? "Save to existing client"
+                : "Add WhatsApp API client"}
           </button>
           {addState.message ? (
             <span className={addState.ok ? "ws-billing-pill active" : "ws-billing-pill overdue"}>
@@ -304,7 +331,8 @@ function WhatsAppApiClientUpload() {
       </div>
       <p className="ws-wa-upload-hint">
         CSV, Excel, or the panel Customers List. Regular goes in Regular;
-        everything else is Inactive. Same panel Id updates that client.
+        everything else is Inactive. Same WhatsApp number merges into that
+        client; a new number is added.
       </p>
       {message ? <span className="ws-billing-pill active">{message}</span> : null}
       {error ? <span className="ws-billing-pill overdue">{error}</span> : null}

@@ -41,6 +41,52 @@ export type WhatsAppApiClientInput = {
   createdByUserId?: string | null;
 };
 
+/** Stored and typed phones that should count as the same WhatsApp number. */
+export function whatsAppApiPhoneKeys(phone: string) {
+  const normalized = normalizeWhatsAppPhone(phone);
+  if (!normalized) return [];
+  const last10 = normalized.slice(-10);
+  return [...new Set([normalized, last10, `91${last10}`])];
+}
+
+export function mergeWhatsAppApiNotes(
+  existing: string | null | undefined,
+  incoming: string | null | undefined,
+) {
+  const prev = existing?.trim() || "";
+  const next = incoming?.trim() || "";
+  if (!next) return prev || null;
+  if (!prev) return next;
+  if (prev.includes(next)) return prev;
+  if (next.includes(prev)) return next;
+  return `${prev} · ${next}`;
+}
+
+export async function findWhatsAppApiClientMatch(params: {
+  phone: string;
+  externalId?: string | null;
+}) {
+  const phones = whatsAppApiPhoneKeys(params.phone);
+  if (phones.length) {
+    const regular = await prisma.whatsAppApiClient.findFirst({
+      where: { phone: { in: phones }, accountGroup: "REGULAR" },
+      orderBy: { createdAt: "asc" },
+    });
+    if (regular) return regular;
+    const byPhone = await prisma.whatsAppApiClient.findFirst({
+      where: { phone: { in: phones } },
+      orderBy: { createdAt: "asc" },
+    });
+    if (byPhone) return byPhone;
+  }
+
+  const externalId = params.externalId?.trim();
+  if (!externalId) return null;
+  return prisma.whatsAppApiClient.findUnique({
+    where: { externalId },
+  });
+}
+
 export function parseWhatsAppApiClientInput(input: WhatsAppApiClientInput) {
   const name = input.name.trim();
   const company = input.company?.trim() || null;
@@ -142,23 +188,32 @@ export async function upsertWhatsAppApiClient(input: WhatsAppApiClientInput) {
     return parsed;
   }
 
-  const existing = parsed.value.externalId
-    ? await prisma.whatsAppApiClient.findUnique({
+  const existing = await findWhatsAppApiClientMatch({
+    phone: parsed.value.phone,
+    externalId: parsed.value.externalId,
+  });
+
+  let externalId = existing?.externalId ?? parsed.value.externalId;
+  if (parsed.value.externalId) {
+    if (!existing?.externalId || existing.externalId === parsed.value.externalId) {
+      externalId = parsed.value.externalId;
+    } else {
+      const taken = await prisma.whatsAppApiClient.findUnique({
         where: { externalId: parsed.value.externalId },
         select: { id: true },
-      })
-    : await prisma.whatsAppApiClient.findFirst({
-        where: { phone: parsed.value.phone },
-        select: { id: true },
-        orderBy: { createdAt: "asc" },
       });
+      if (!taken || taken.id === existing.id) {
+        externalId = parsed.value.externalId;
+      }
+    }
+  }
 
   const data = {
-    externalId: parsed.value.externalId,
+    externalId,
     name: parsed.value.name,
-    company: parsed.value.company,
+    company: parsed.value.company ?? existing?.company ?? null,
     phone: parsed.value.phone,
-    email: parsed.value.email,
+    email: parsed.value.email ?? existing?.email ?? null,
     planKind: parsed.value.planKind,
     planId: parsed.value.planId,
     planLabel: parsed.value.planLabel,
@@ -168,8 +223,7 @@ export async function upsertWhatsAppApiClient(input: WhatsAppApiClientInput) {
     expiresAt: parsed.value.expiresAt,
     status: parsed.value.status,
     accountGroup: parsed.value.accountGroup,
-    notes: parsed.value.notes,
-    createdByUserId: parsed.value.createdByUserId,
+    notes: mergeWhatsAppApiNotes(existing?.notes, parsed.value.notes),
   };
 
   const row = existing
@@ -182,10 +236,11 @@ export async function upsertWhatsAppApiClient(input: WhatsAppApiClientInput) {
           ...data,
           lastReminderAt: null,
           reminderCount: 0,
+          createdByUserId: parsed.value.createdByUserId,
         },
       });
 
-  return { ok: true as const, client: row };
+  return { ok: true as const, client: row, merged: Boolean(existing) };
 }
 
 export async function markWhatsAppApiClientRecharged(id: string, now = new Date()) {

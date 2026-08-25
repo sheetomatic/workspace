@@ -13,7 +13,6 @@ import { sendSubscriptionInvoiceEmail } from "@/lib/billing/email";
 import {
   cancelWhatsAppApiClient,
   markWhatsAppApiClientRecharged,
-  parseWhatsAppApiClientInput,
   upsertWhatsAppApiClient,
 } from "@/lib/billing/whatsapp-api-clients";
 import { parseWhatsAppApiClientSpreadsheet } from "@/lib/billing/whatsapp-api-import";
@@ -454,7 +453,9 @@ export async function addWhatsAppApiClientAction(
   revalidateBilling();
   return {
     ok: true,
-    message: `${result.client.name} added. Recharge reminders go on WhatsApp 7, 3, and 1 day before expiry, and on the due date.`,
+    message: result.merged
+      ? `${result.client.name} already had this WhatsApp number — details were merged into that client.`
+      : `${result.client.name} added. Recharge reminders go on WhatsApp 7, 3, and 1 day before expiry, and on the due date.`,
   };
 }
 
@@ -491,19 +492,6 @@ export async function importWhatsAppApiClientsAction(
   const errors = [...parsed.errors];
 
   for (const input of rows) {
-    const ready = parseWhatsAppApiClientInput({
-      ...input,
-      createdByUserId: user.id,
-    });
-    if (!ready.ok) {
-      errors.push(`${input.name}: ${ready.message}`);
-      continue;
-    }
-
-    const existing = await prisma.whatsAppApiClient.findFirst({
-      where: { phone: ready.value.phone },
-      select: { id: true },
-    });
     const result = await upsertWhatsAppApiClient({
       ...input,
       createdByUserId: user.id,
@@ -512,7 +500,7 @@ export async function importWhatsAppApiClientsAction(
       errors.push(`${input.name}: ${result.message}`);
       continue;
     }
-    if (existing) updated += 1;
+    if (result.merged) updated += 1;
     else created += 1;
   }
 

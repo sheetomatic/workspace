@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { parseWhatsAppApiClientInput } from "@/lib/billing/whatsapp-api-clients";
+import {
+  mergeWhatsAppApiNotes,
+  parseWhatsAppApiClientInput,
+  whatsAppApiPhoneKeys,
+} from "@/lib/billing/whatsapp-api-clients";
 import {
   matchWhatsAppApiImportPlan,
   parseWhatsAppApiClientRows,
@@ -125,5 +129,20 @@ describe("WhatsApp API client import", () => {
       expect(regular.value.status).toBe("ACTIVE");
       expect(regular.value.expiresAt.toISOString()).toBe("2027-08-19T00:00:00.000Z");
     }
+  });
+
+  it("treats the same WhatsApp number as one client", () => {
+    expect(whatsAppApiPhoneKeys("98765 43210")).toEqual([
+      "919876543210",
+      "9876543210",
+    ]);
+    expect(whatsAppApiPhoneKeys("919876543210")).toEqual([
+      "919876543210",
+      "9876543210",
+    ]);
+    expect(mergeWhatsAppApiNotes("Panel #100", "Panel #100 · 12 credits")).toBe(
+      "Panel #100 · 12 credits",
+    );
+    expect(mergeWhatsAppApiNotes("Panel #100", "Panel #100")).toBe("Panel #100");
   });
 });
