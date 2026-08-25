@@ -6,7 +6,6 @@ import { whatsAppApiPlanOptions } from "@/lib/billing/whatsapp-api-plans";
 import {
   listMonthlyServiceAssignees,
   listMonthlyServiceClients,
-  listMonthlyServiceLeadOptions,
 } from "@/lib/billing/monthly-service-clients";
 import { listClientBillingRows } from "@/lib/billing/queries";
 import { ensureOnboardingTasks } from "@/lib/billing/invoices";
@@ -19,12 +18,11 @@ export default async function ClientsBillingPage() {
     redirect("/app/billing");
   }
 
-  const [rows, whatsappApiClients, monthlyServiceClients, monthlyServiceLeads, monthlyServiceAssignees] =
+  const [rows, whatsappApiClients, monthlyServiceClients, monthlyServiceAssignees] =
     await Promise.all([
       listClientBillingRows(),
       listWhatsAppApiClients(),
       listMonthlyServiceClients(user.organizationId),
-      listMonthlyServiceLeadOptions(user.organizationId),
       listMonthlyServiceAssignees(user.organizationId),
     ]);
   await Promise.all(rows.map((row) => ensureOnboardingTasks(row.id)));
@@ -35,7 +33,6 @@ export default async function ClientsBillingPage() {
       whatsappApiClients={whatsappApiClients}
       whatsappApiPlans={whatsAppApiPlanOptions()}
       monthlyServiceClients={monthlyServiceClients}
-      monthlyServiceLeads={monthlyServiceLeads}
       monthlyServiceAssignees={monthlyServiceAssignees}
     />
   );

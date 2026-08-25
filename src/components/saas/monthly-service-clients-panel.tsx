@@ -1,11 +1,12 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { BellOff, ChevronDown, ExternalLink } from "lucide-react";
 import {
   addMonthlyServiceClientAction,
   cancelMonthlyServiceClientAction,
+  searchMonthlyServiceLeadsAction,
   type BillingActionState,
 } from "@/app/app/clients/actions";
 import { crmLeadOpenHref } from "@/lib/leads/crm-open";
@@ -26,11 +27,9 @@ function statusClass(value: string) {
 
 export function MonthlyServiceClientsPanel({
   clients,
-  leads,
   assignees,
 }: {
   clients: MonthlyServiceClientRow[];
-  leads: MonthlyServiceLeadOption[];
   assignees: MonthlyServiceAssigneeOption[];
 }) {
   const [addState, addAction, adding] = useActionState(
@@ -45,12 +44,18 @@ export function MonthlyServiceClientsPanel({
   const [email, setEmail] = useState("");
   const [assignedToId, setAssignedToId] = useState("");
   const [query, setQuery] = useState("");
-  const selectedLead = leads.find((lead) => lead.id === leadId) ?? null;
+  const [leadQuery, setLeadQuery] = useState("");
+  const [leadHits, setLeadHits] = useState<MonthlyServiceLeadOption[]>([]);
+  const [leadSearching, setLeadSearching] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<MonthlyServiceLeadOption | null>(
+    null,
+  );
 
-  function applyLead(id: string) {
-    setLeadId(id);
-    const lead = leads.find((row) => row.id === id);
-    if (!lead) return;
+  function applyLead(lead: MonthlyServiceLeadOption) {
+    setLeadId(lead.id);
+    setSelectedLead(lead);
+    setLeadQuery("");
+    setLeadHits([]);
     setName(lead.name);
     setCompany(lead.company ?? "");
     setPhone(lead.phone ?? "");
@@ -58,6 +63,40 @@ export function MonthlyServiceClientsPanel({
     setCategory(lead.category || "TRAINING_GWS");
     setAssignedToId(lead.assignedToId ?? "");
   }
+
+  function clearLead() {
+    setLeadId("");
+    setSelectedLead(null);
+    setLeadHits([]);
+  }
+
+  useEffect(() => {
+    const q = leadQuery.trim();
+    if (q.length < 2) {
+      setLeadHits([]);
+      setLeadSearching(false);
+      return;
+    }
+    let cancelled = false;
+    setLeadSearching(true);
+    const timer = window.setTimeout(() => {
+      void searchMonthlyServiceLeadsAction(q)
+        .then((hits) => {
+          if (cancelled) return;
+          setLeadHits(hits);
+          setLeadSearching(false);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setLeadHits([]);
+          setLeadSearching(false);
+        });
+    }, 280);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [leadQuery]);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -138,27 +177,54 @@ export function MonthlyServiceClientsPanel({
         </summary>
         <form action={addAction} className="ws-billing-form">
           <label className="ws-billing-form-wide">
-            Lead
-            <select
-              name="inboundLeadId"
-              value={leadId}
-              onChange={(event) => applyLead(event.target.value)}
-            >
-              <option value="">New client — not from a lead</option>
-              {leads.map((lead) => (
-                <option key={lead.id} value={lead.id}>
-                  {lead.name}
-                  {lead.company ? ` · ${lead.company}` : ""}
-                  {lead.phone ? ` · ${lead.phone}` : ""}
-                </option>
-              ))}
-            </select>
+            Search lead
+            <input type="hidden" name="inboundLeadId" value={leadId} />
+            <input
+              type="search"
+              value={leadQuery}
+              onChange={(event) => setLeadQuery(event.target.value)}
+              placeholder="Name, phone, or email…"
+              aria-label="Search leads by name, phone, or email"
+              autoComplete="off"
+            />
+            {leadSearching ? (
+              <small>Searching CRM…</small>
+            ) : leadQuery.trim().length >= 2 && leadHits.length === 0 ? (
+              <small>No lead matches that name, phone, or email.</small>
+            ) : null}
+            {leadHits.length > 0 ? (
+              <ul className="ws-lead-search-hits">
+                {leadHits.map((lead) => (
+                  <li key={lead.id}>
+                    <button type="button" onClick={() => applyLead(lead)}>
+                      <strong>{lead.name}</strong>
+                      <span>
+                        {[lead.phone, lead.email, lead.company]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
             {selectedLead ? (
               <small className="ws-wa-phone-match">
-                {selectedLead.status.replaceAll("_", " ")} · fills name, phone,
-                and category from CRM
+                {selectedLead.name}
+                {selectedLead.phone ? ` · ${selectedLead.phone}` : ""}
+                {selectedLead.email ? ` · ${selectedLead.email}` : ""}{" "}
+                — name, phone, and category filled from CRM.{" "}
+                <button
+                  className="ws-lead-search-clear"
+                  type="button"
+                  onClick={clearLead}
+                >
+                  Clear
+                </button>
               </small>
-            ) : null}
+            ) : (
+              <small>Leave empty to add a client who is not in Leads yet.</small>
+            )}
           </label>
           <label>
             Category

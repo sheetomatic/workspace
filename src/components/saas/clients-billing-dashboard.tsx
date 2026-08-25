@@ -6,7 +6,6 @@ import { WhatsAppApiClientsPanel } from "@/components/saas/whatsapp-api-clients-
 import type {
   MonthlyServiceAssigneeOption,
   MonthlyServiceClientRow,
-  MonthlyServiceLeadOption,
 } from "@/lib/billing/monthly-service-clients.shared";
 import {
   summarizeClientBilling,
@@ -23,7 +22,6 @@ export function ClientsBillingDashboard({
   whatsappApiClients = [],
   whatsappApiPlans = [],
   monthlyServiceClients = [],
-  monthlyServiceLeads = [],
   monthlyServiceAssignees = [],
   title = "Clients",
 }: {
@@ -31,7 +29,6 @@ export function ClientsBillingDashboard({
   whatsappApiClients?: WhatsAppApiClientRow[];
   whatsappApiPlans?: WhatsAppApiPlanOption[];
   monthlyServiceClients?: MonthlyServiceClientRow[];
-  monthlyServiceLeads?: MonthlyServiceLeadOption[];
   monthlyServiceAssignees?: MonthlyServiceAssigneeOption[];
   title?: string;
 }) {
@@ -93,7 +90,6 @@ export function ClientsBillingDashboard({
       </div>
       <MonthlyServiceClientsPanel
         clients={monthlyServiceClients}
-        leads={monthlyServiceLeads}
         assignees={monthlyServiceAssignees}
       />
       <WhatsAppApiClientsPanel

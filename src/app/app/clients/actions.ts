@@ -17,8 +17,10 @@ import {
 } from "@/lib/billing/whatsapp-api-clients";
 import {
   cancelMonthlyServiceClient,
+  searchMonthlyServiceLeads,
   upsertMonthlyServiceClient,
 } from "@/lib/billing/monthly-service-clients";
+import type { MonthlyServiceLeadOption } from "@/lib/billing/monthly-service-clients.shared";
 import { parseWhatsAppApiClientSpreadsheet } from "@/lib/billing/whatsapp-api-import";
 import { sendWhatsAppApiClientReminder } from "@/lib/billing/whatsapp-api-reminders";
 import {
@@ -607,6 +609,14 @@ export async function toggleOnboardingTaskAction(
   await markOnboardingTask(organizationId, key, completed, user.id);
   revalidateBilling(organizationId);
   return { ok: true, message: completed ? "Step marked done." : "Step reopened." };
+}
+
+export async function searchMonthlyServiceLeadsAction(
+  query: string,
+): Promise<MonthlyServiceLeadOption[]> {
+  const user = await requirePlatformAdmin();
+  if (!user) return [];
+  return searchMonthlyServiceLeads(user.organizationId, query);
 }
 
 export async function addMonthlyServiceClientAction(

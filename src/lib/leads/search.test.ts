@@ -12,8 +12,9 @@ describe("leadSearchWhere", () => {
     expect(where.OR).toEqual(
       expect.arrayContaining([
         { name: { contains: "shyam", mode: "insensitive" } },
-        { company: { contains: "shyam", mode: "insensitive" } },
+        { phone: { contains: "shyam", mode: "insensitive" } },
         { email: { contains: "shyam", mode: "insensitive" } },
+        { company: { contains: "shyam", mode: "insensitive" } },
       ]),
     );
   });
@@ -40,5 +41,11 @@ describe("leadMatchesSearchQuery", () => {
     expect(
       leadMatchesSearchQuery({ name: "Ravi", phone: "919876543210" }, "shyam"),
     ).toBe(false);
+    expect(
+      leadMatchesSearchQuery(
+        { name: "Neha", email: "neha@studio.in", phone: "919811112222" },
+        "neha@studio.in",
+      ),
+    ).toBe(true);
   });
 });

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { parseMonthlyServiceClientInput } from "@/lib/billing/monthly-service-clients";
+import {
+  parseMonthlyServiceClientInput,
+  searchMonthlyServiceLeads,
+} from "@/lib/billing/monthly-service-clients";
 
 describe("parseMonthlyServiceClientInput", () => {
   it("defaults GWS training category and monthly rate", () => {
@@ -23,5 +26,12 @@ describe("parseMonthlyServiceClientInput", () => {
         category: "TRAINING_GWS",
       }).ok,
     ).toBe(false);
+  });
+});
+
+describe("searchMonthlyServiceLeads", () => {
+  it("does not query until the user types at least two characters", async () => {
+    await expect(searchMonthlyServiceLeads("org_1", "N")).resolves.toEqual([]);
+    await expect(searchMonthlyServiceLeads("org_1", " ")).resolves.toEqual([]);
   });
 });

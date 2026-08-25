@@ -24,6 +24,7 @@ import {
   resolveLeadCategoryId,
 } from "@/lib/leads/categories";
 import { logInboundLeadActivity } from "@/lib/leads/activity";
+import { leadSearchWhere } from "@/lib/leads/search";
 import { formatWhatsAppPhone, normalizeWhatsAppPhone } from "@/lib/phone";
 
 export type MonthlyServiceClientInput = {
@@ -137,18 +138,22 @@ export async function listMonthlyServiceClients(
   return rows.map((row) => toMonthlyServiceClientRow(row, now));
 }
 
-export async function listMonthlyServiceLeadOptions(
+export async function searchMonthlyServiceLeads(
   organizationId: string,
+  raw: string,
 ): Promise<MonthlyServiceLeadOption[]> {
+  const q = raw.trim();
+  if (q.length < 2) return [];
   const leads = await prisma.inboundLead.findMany({
     where: {
       organizationId,
       archivedAt: null,
       mergedIntoId: null,
       status: { not: "LOST" },
+      AND: [leadSearchWhere(q)],
     },
     orderBy: [{ modifiedAt: "desc" }, { createdAt: "desc" }],
-    take: 80,
+    take: 20,
     select: {
       id: true,
       name: true,
