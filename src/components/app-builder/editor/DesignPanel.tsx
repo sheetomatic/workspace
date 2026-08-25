@@ -1,13 +1,17 @@
 import { useState } from "react";
 import {
+  FIELD_TYPE_OPTIONS,
+  fieldTypeOf,
   relatedForView,
   styleLabel,
+  withColumnType,
   type AppAction,
   type AppComputedColumn,
   type AppConfig,
   type AppFormField,
   type AppView,
   type CollectionStyle,
+  type FieldType,
 } from "@/lib/app-builder";
 import { fieldFromColumn } from "@/lib/app-builder/infer";
 import type { SheetAdapter } from "../sheet/mockAdapter";
@@ -422,6 +426,20 @@ function ScreenDesign({
         {shown.map((c) => (
           <li key={c}>
             {c}
+            <select
+              className="col-type"
+              aria-label={`Type for ${c}`}
+              value={fieldTypeOf(view, c)}
+              onChange={(e) =>
+                onChange(withColumnType(config, view.tab, c, e.target.value as FieldType))
+              }
+            >
+              {FIELD_TYPE_OPTIONS.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
             <button
               type="button"
               onClick={() =>

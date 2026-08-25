@@ -3,13 +3,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createEmptyConfig,
+  FIELD_TYPE_OPTIONS,
+  fieldTypeOf,
   inferAppFromWorkbook,
   parseGoogleSheetId,
   setTableInApp,
   SPREADSHEET_ACCEPT,
   styleLabel,
+  withColumnType,
   workbookFromSpreadsheetFile,
   type AppConfig,
+  type FieldType,
   type SheetWorkbook,
 } from "@/lib/app-builder";
 import { DesignPanel } from "./editor/DesignPanel";
@@ -827,8 +831,15 @@ function DataEditor({
 }) {
   const book = sheet.getWorkbook();
   const tab = book.tabs[tabName];
+  const view = config.views.find((item) => item.tab === tabName);
   const [col, setCol] = useState("");
+  const [colType, setColType] = useState<FieldType>("text");
   const [newTab, setNewTab] = useState("");
+
+  function applyType(name: string, type: FieldType) {
+    const values = tab?.rows.map((row) => row.cells[name]) || [];
+    onConfigChange(withColumnType(config, tabName, name, type, values));
+  }
 
   return (
     <div className="data-editor">
@@ -961,6 +972,22 @@ function DataEditor({
                             ‹
                           </button>
                           <span>{h}</span>
+                          <select
+                            className="col-type"
+                            aria-label={`Type for ${h}`}
+                            value={fieldTypeOf(
+                              view,
+                              h,
+                              tab.rows.map((row) => row.cells[h]),
+                            )}
+                            onChange={(e) => applyType(h, e.target.value as FieldType)}
+                          >
+                            {FIELD_TYPE_OPTIONS.map((option) => (
+                              <option key={option.id} value={option.id}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
                           <button
                             type="button"
                             className="col-move"
@@ -1037,13 +1064,28 @@ function DataEditor({
                 onChange={(e) => setCol(e.target.value)}
                 placeholder="New column"
               />
+              <select
+                className="col-type"
+                aria-label="New column type"
+                value={colType}
+                onChange={(e) => setColType(e.target.value as FieldType)}
+              >
+                {FIELD_TYPE_OPTIONS.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
               <button
                 type="button"
                 className="btn ghost"
                 onClick={() => {
-                  if (!col.trim()) return;
-                  sheet.addColumn(tab.name, col.trim());
+                  const name = col.trim();
+                  if (!name) return;
+                  sheet.addColumn(tab.name, name);
+                  applyType(name, colType);
                   setCol("");
+                  setColType("text");
                   onChange();
                 }}
               >

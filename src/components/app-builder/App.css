@@ -637,6 +637,19 @@
   cursor: pointer;
 }
 .ab-studio .col-move:disabled{ opacity: .28; cursor: default; }
+.ab-studio .col-type{
+  max-width: 92px;
+  min-height: 24px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: 0;
+  padding: 0 4px;
+}
 .ab-studio .idx{ color: var(--muted); width: 40px; }
 
 .ab-studio .credits{
@@ -738,9 +751,11 @@
 }
 .ab-studio .chip-list{ list-style: none; padding: 0; margin: 0 0 10px; }
 .ab-studio .chip-list li{
-  display: flex; justify-content: space-between; align-items: center;
+  display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: center;
+  gap: 8px;
   padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13px;
 }
+.ab-studio .chip-list li .col-type{ margin-left: auto; }
 .ab-studio .chip-list button{ border: 0; background: none; color: #b42318; font: inherit; font-size: 12px; cursor: pointer; }
 .ab-studio .inspector{ overflow: auto; }
 .ab-studio .aside-pad{ padding: 8px; }
