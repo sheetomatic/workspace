@@ -44,7 +44,7 @@ export function MonthlyServiceClientsPanel({
   const [email, setEmail] = useState("");
   const [assignedToId, setAssignedToId] = useState("");
   const [query, setQuery] = useState("");
-  const [leadQuery, setLeadQuery] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
   const [leadHits, setLeadHits] = useState<MonthlyServiceLeadOption[]>([]);
   const [leadSearching, setLeadSearching] = useState(false);
   const [selectedLead, setSelectedLead] = useState<MonthlyServiceLeadOption | null>(
@@ -54,8 +54,7 @@ export function MonthlyServiceClientsPanel({
   function applyLead(lead: MonthlyServiceLeadOption) {
     setLeadId(lead.id);
     setSelectedLead(lead);
-    setLeadQuery("");
-    setLeadHits([]);
+    setAddOpen(true);
     setName(lead.name);
     setCompany(lead.company ?? "");
     setPhone(lead.phone ?? "");
@@ -71,7 +70,7 @@ export function MonthlyServiceClientsPanel({
   }
 
   useEffect(() => {
-    const q = leadQuery.trim();
+    const q = query.trim();
     if (q.length < 2) {
       setLeadHits([]);
       setLeadSearching(false);
@@ -96,7 +95,7 @@ export function MonthlyServiceClientsPanel({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [leadQuery]);
+  }, [query]);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -148,26 +147,52 @@ export function MonthlyServiceClientsPanel({
         </div>
       </div>
 
-      {clients.length > 0 ? (
-        <div className="crm-client-groups-toolbar">
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Filter monthly clients…"
-            aria-label="Filter monthly service clients"
-          />
-          <div className="crm-client-groups-toolbar-meta">
-            <span className="crm-client-groups-count">
-              {searching
-                ? `${visible.length} match${visible.length === 1 ? "" : "es"} of ${clients.length}`
+      <div className="crm-client-groups-toolbar">
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Name, phone, or email…"
+          aria-label="Search leads by name, phone, or email"
+          autoComplete="off"
+        />
+        <div className="crm-client-groups-toolbar-meta">
+          <span className="crm-client-groups-count">
+            {leadSearching
+              ? "Searching Leads…"
+              : query.trim().length >= 2
+                ? `${leadHits.length} lead${leadHits.length === 1 ? "" : "s"} · ${visible.length} client${visible.length === 1 ? "" : "s"}`
                 : `${clients.length} client${clients.length === 1 ? "" : "s"}`}
-            </span>
-          </div>
+          </span>
         </div>
+      </div>
+      {query.trim().length >= 2 && !leadSearching && leadHits.length === 0 ? (
+        <p className="ws-wa-empty">No lead matches that name, phone, or email.</p>
+      ) : null}
+      {leadHits.length > 0 ? (
+        <ul className="ws-lead-search-hits">
+          {leadHits.map((lead) => (
+            <li key={lead.id}>
+              <button type="button" onClick={() => applyLead(lead)}>
+                <strong>{lead.name}</strong>
+                <span>
+                  {[lead.phone, lead.email, lead.company]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
       ) : null}
 
-      <details className="ws-wa-add">
+      <details
+        className="ws-wa-add"
+        open={addOpen}
+        onToggle={(event) =>
+          setAddOpen((event.currentTarget as HTMLDetailsElement).open)
+        }
+      >
         <summary className="ws-wa-group-summary">
           <span>
             <ChevronDown className="ws-wa-chevron" size={16} aria-hidden />
@@ -176,56 +201,29 @@ export function MonthlyServiceClientsPanel({
           <small>From a lead · category · assign work</small>
         </summary>
         <form action={addAction} className="ws-billing-form">
-          <label className="ws-billing-form-wide">
-            Search lead
-            <input type="hidden" name="inboundLeadId" value={leadId} />
-            <input
-              type="search"
-              value={leadQuery}
-              onChange={(event) => setLeadQuery(event.target.value)}
-              placeholder="Name, phone, or email…"
-              aria-label="Search leads by name, phone, or email"
-              autoComplete="off"
-            />
-            {leadSearching ? (
-              <small>Searching CRM…</small>
-            ) : leadQuery.trim().length >= 2 && leadHits.length === 0 ? (
-              <small>No lead matches that name, phone, or email.</small>
-            ) : null}
-            {leadHits.length > 0 ? (
-              <ul className="ws-lead-search-hits">
-                {leadHits.map((lead) => (
-                  <li key={lead.id}>
-                    <button type="button" onClick={() => applyLead(lead)}>
-                      <strong>{lead.name}</strong>
-                      <span>
-                        {[lead.phone, lead.email, lead.company]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-            {selectedLead ? (
-              <small className="ws-wa-phone-match">
-                {selectedLead.name}
-                {selectedLead.phone ? ` · ${selectedLead.phone}` : ""}
-                {selectedLead.email ? ` · ${selectedLead.email}` : ""}{" "}
-                — name, phone, and category filled from CRM.{" "}
-                <button
-                  className="ws-lead-search-clear"
-                  type="button"
-                  onClick={clearLead}
-                >
-                  Clear
-                </button>
+          <input type="hidden" name="inboundLeadId" value={leadId} />
+          {selectedLead ? (
+            <p className="ws-wa-phone-match ws-billing-form-wide">
+              {selectedLead.name}
+              {selectedLead.phone ? ` · ${selectedLead.phone}` : ""}
+              {selectedLead.email ? ` · ${selectedLead.email}` : ""}{" "}
+              — filled from Leads.{" "}
+              <button
+                className="ws-lead-search-clear"
+                type="button"
+                onClick={clearLead}
+              >
+                Clear
+              </button>
+            </p>
+          ) : (
+            <p className="ws-billing-form-wide">
+              <small>
+                Search above by name, phone, or email — same as Leads — or fill
+                the form for someone new.
               </small>
-            ) : (
-              <small>Leave empty to add a client who is not in Leads yet.</small>
-            )}
-          </label>
+            </p>
+          )}
           <label>
             Category
             <select
@@ -328,14 +326,14 @@ export function MonthlyServiceClientsPanel({
         </form>
       </details>
 
-      {clients.length === 0 ? (
+      {clients.length === 0 && query.trim().length < 2 ? (
         <p className="ws-wa-empty">
-          No monthly service clients yet. Pick a lead, choose GWS training (or
-          another category), set the monthly fee, and assign the work.
+          Search a lead above by name, phone, or email — same as Leads — then
+          add them as a monthly client.
         </p>
-      ) : searching && visible.length === 0 ? (
-        <p className="ws-wa-empty">No client matches that search.</p>
-      ) : (
+      ) : searching && visible.length === 0 && clients.length > 0 ? (
+        <p className="ws-wa-empty">No monthly client matches that search.</p>
+      ) : clients.length > 0 && visible.length > 0 ? (
         <div className="ws-wa-groups">
           {groups.map(([categoryId, rows]) => (
             <MonthlyServiceGroup
@@ -346,7 +344,7 @@ export function MonthlyServiceClientsPanel({
             />
           ))}
         </div>
-      )}
+      ) : null}
     </article>
   );
 }

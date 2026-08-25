@@ -24,6 +24,7 @@ import {
   resolveLeadCategoryId,
 } from "@/lib/leads/categories";
 import { logInboundLeadActivity } from "@/lib/leads/activity";
+import { mergeLeadContactWhere } from "@/lib/leads/contact-validation";
 import { leadSearchWhere } from "@/lib/leads/search";
 import { formatWhatsAppPhone, normalizeWhatsAppPhone } from "@/lib/phone";
 
@@ -145,14 +146,15 @@ export async function searchMonthlyServiceLeads(
   const q = raw.trim();
   if (q.length < 2) return [];
   const leads = await prisma.inboundLead.findMany({
-    where: {
-      organizationId,
-      archivedAt: null,
-      mergedIntoId: null,
-      status: { not: "LOST" },
-      AND: [leadSearchWhere(q)],
-    },
-    orderBy: [{ modifiedAt: "desc" }, { createdAt: "desc" }],
+    where: mergeLeadContactWhere(
+      {
+        organizationId,
+        mergedIntoId: null,
+        ...leadSearchWhere(q),
+      },
+      { includeArchived: true },
+    ),
+    orderBy: [{ capturedAt: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }],
     take: 20,
     select: {
       id: true,

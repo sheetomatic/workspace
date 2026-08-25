@@ -21,6 +21,7 @@ import {
   upsertMonthlyServiceClient,
 } from "@/lib/billing/monthly-service-clients";
 import type { MonthlyServiceLeadOption } from "@/lib/billing/monthly-service-clients.shared";
+import { importSheetLeadsMatchingSearch } from "@/lib/leads/search-sheet";
 import { parseWhatsAppApiClientSpreadsheet } from "@/lib/billing/whatsapp-api-import";
 import { sendWhatsAppApiClientReminder } from "@/lib/billing/whatsapp-api-reminders";
 import {
@@ -616,7 +617,18 @@ export async function searchMonthlyServiceLeadsAction(
 ): Promise<MonthlyServiceLeadOption[]> {
   const user = await requirePlatformAdmin();
   if (!user) return [];
-  return searchMonthlyServiceLeads(user.organizationId, query);
+  const q = query.trim();
+  if (q.length >= 2) {
+    try {
+      await importSheetLeadsMatchingSearch({
+        organizationId: user.organizationId,
+        q,
+      });
+    } catch {
+      // Same as CRM: a sheet miss must not hide leads already in Postgres.
+    }
+  }
+  return searchMonthlyServiceLeads(user.organizationId, q);
 }
 
 export async function addMonthlyServiceClientAction(
