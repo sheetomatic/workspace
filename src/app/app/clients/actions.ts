@@ -8,12 +8,10 @@ import type {
 import { revalidatePath } from "next/cache";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { formatBillingDate } from "@/lib/billing/dates";
 import { sendSubscriptionInvoiceEmail } from "@/lib/billing/email";
 import {
-  addWhatsAppApiClientPanelCredits,
+  applyWhatsAppApiClientCustomPlan,
   cancelWhatsAppApiClient,
-  rechargeWhatsAppApiClientOnPanel,
   syncWhatsAppApiClientsFromPanel,
   upsertWhatsAppApiClient,
 } from "@/lib/billing/whatsapp-api-clients";
@@ -448,6 +446,7 @@ export async function addWhatsAppApiClientAction(
     customDurationDays: String(formData.get("customDurationDays") ?? ""),
     startedAt: String(formData.get("startedAt") ?? ""),
     notes: String(formData.get("notes") ?? ""),
+    creditPoints: Number(formData.get("credits") ?? "") || null,
     createdByUserId: user.id,
   });
   if (!result.ok) return result;
@@ -525,25 +524,21 @@ export async function importWhatsAppApiClientsAction(
   };
 }
 
-export async function rechargeWhatsAppApiClientAction(
+export async function applyWhatsAppApiClientPlanAction(
   _prev: BillingActionState,
   formData: FormData,
 ): Promise<BillingActionState> {
   const user = await requirePlatformAdmin();
   if (!user) {
-    return { ok: false, message: "Only Sheetomatic super admins can mark a recharge." };
+    return { ok: false, message: "Only Sheetomatic super admins can apply a plan." };
   }
-  const days = Number(formData.get("days") ?? "");
-  const result = await rechargeWhatsAppApiClientOnPanel(
-    String(formData.get("clientId") ?? ""),
-    days,
-  );
+  const result = await applyWhatsAppApiClientCustomPlan(String(formData.get("clientId") ?? ""), {
+    days: Number(formData.get("days") ?? ""),
+    credits: Number(formData.get("credits") ?? ""),
+  });
   if (!result.ok) return result;
   revalidateBilling();
-  return {
-    ok: true,
-    message: `${result.client.name} recharged on the panel until ${formatBillingDate(result.client.expiresAt)}.`,
-  };
+  return { ok: true, message: `${result.client.name}: ${result.message}` };
 }
 
 export async function remindWhatsAppApiClientAction(
@@ -589,23 +584,6 @@ export async function syncWhatsAppApiClientsFromPanelAction(): Promise<BillingAc
   return { ok: true, message: result.message };
 }
 
-export async function addWhatsAppApiClientCreditsAction(
-  _prev: BillingActionState,
-  formData: FormData,
-): Promise<BillingActionState> {
-  const user = await requirePlatformAdmin();
-  if (!user) {
-    return { ok: false, message: "Only Sheetomatic super admins can add credits." };
-  }
-  const credits = Number(formData.get("credits") ?? "");
-  const result = await addWhatsAppApiClientPanelCredits(
-    String(formData.get("clientId") ?? ""),
-    credits,
-  );
-  if (!result.ok) return result;
-  revalidateBilling();
-  return { ok: true, message: `${result.client.name}: ${result.message}` };
-}
 
 export async function toggleOnboardingTaskAction(
   _prev: BillingActionState,

@@ -401,6 +401,83 @@ export async function syncWhatsAppApiClientsFromPanel(createdByUserId?: string |
   };
 }
 
+export async function applyWhatsAppApiClientCustomPlan(
+  id: string,
+  input: { days?: number; credits?: number },
+) {
+  const existing = await prisma.whatsAppApiClient.findUnique({ where: { id } });
+  if (!existing) {
+    return { ok: false as const, message: "WhatsApp API client not found." };
+  }
+
+  const days =
+    typeof input.days === "number" && Number.isFinite(input.days) && input.days >= 1
+      ? Math.min(1095, Math.round(input.days))
+      : 0;
+  const credits =
+    typeof input.credits === "number" && Number.isFinite(input.credits) && input.credits >= 1
+      ? Math.min(1_000_000, Math.round(input.credits))
+      : 0;
+  if (!days && !credits) {
+    return { ok: false as const, message: "Enter days, credits, or both." };
+  }
+
+  const panelNotes: string[] = [];
+  let expiresAt = existing.expiresAt;
+  let creditPoints = existing.creditPoints;
+
+  if (days) {
+    expiresAt = nextExpiryAfterRecharge(existing.expiresAt, days, new Date());
+    const panel = await updateMasResellerValidity({
+      username: existing.name,
+      externalId: existing.externalId,
+      validUpto: `${expiresAt.toISOString().slice(0, 10)} 23:59:59`,
+    });
+    panelNotes.push(
+      panel.ok ? `Panel expiry updated.` : `Panel recharge skipped (${panel.error}).`,
+    );
+  }
+  if (credits) {
+    creditPoints = existing.creditPoints + credits;
+    const panel = await addMasResellerCredits({
+      username: existing.name,
+      externalId: existing.externalId,
+      credits,
+    });
+    panelNotes.push(
+      panel.ok ? `Panel credits added.` : `Panel credits skipped (${panel.error}).`,
+    );
+  }
+
+  const row = await prisma.whatsAppApiClient.update({
+    where: { id },
+    data: {
+      ...(days
+        ? {
+            startedAt: startOfUtcDay(new Date()),
+            expiresAt,
+            durationDays: days,
+            status: "ACTIVE" as const,
+            accountGroup: "REGULAR" as const,
+            lastReminderAt: null,
+          }
+        : {}),
+      ...(credits ? { creditPoints } : {}),
+    },
+  });
+
+  const localBits = [
+    days ? `${days} days` : null,
+    credits ? `${credits.toLocaleString("en-IN")} credits` : null,
+  ].filter(Boolean);
+
+  return {
+    ok: true as const,
+    client: row,
+    message: `Saved ${localBits.join(" + ")} on this board. ${panelNotes.join(" ")}`,
+  };
+}
+
 export async function addWhatsAppApiClientPanelCredits(id: string, credits: number) {
   const existing = await prisma.whatsAppApiClient.findUnique({ where: { id } });
   if (!existing) {

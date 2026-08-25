@@ -4,10 +4,9 @@ import { useActionState, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   addWhatsAppApiClientAction,
-  addWhatsAppApiClientCreditsAction,
+  applyWhatsAppApiClientPlanAction,
   cancelWhatsAppApiClientAction,
   importWhatsAppApiClientsAction,
-  rechargeWhatsAppApiClientAction,
   remindWhatsAppApiClientAction,
   syncWhatsAppApiClientsFromPanelAction,
   type BillingActionState,
@@ -138,6 +137,10 @@ export function WhatsAppApiClientsPanel({
             <label>
               Days
               <input name="customDurationDays" inputMode="numeric" placeholder="60" />
+            </label>
+            <label>
+              Starting credits
+              <input name="credits" inputMode="numeric" placeholder="4000" />
             </label>
             <label>
               API type
@@ -375,12 +378,8 @@ function WhatsAppApiClientActions({
   reminderCount: number;
   canRemind: boolean;
 }) {
-  const [rechargeState, rechargeAction, recharging] = useActionState(
-    rechargeWhatsAppApiClientAction,
-    initial,
-  );
-  const [creditState, creditAction, addingCredits] = useActionState(
-    addWhatsAppApiClientCreditsAction,
+  const [planState, planAction, applying] = useActionState(
+    applyWhatsAppApiClientPlanAction,
     initial,
   );
   const [remindState, remindAction, reminding] = useActionState(
@@ -392,28 +391,25 @@ function WhatsAppApiClientActions({
     initial,
   );
   const message =
-    rechargeState.message ||
-    creditState.message ||
-    remindState.message ||
-    cancelState.message;
+    planState.message || remindState.message || cancelState.message;
 
   return (
     <div className="ws-plan-actions">
+      <form action={planAction} className="ws-wa-plan-box">
+        <input name="clientId" type="hidden" value={clientId} />
+        <label>
+          Days
+          <input name="days" type="number" min={1} max={1095} placeholder="30" />
+        </label>
+        <label>
+          Credits
+          <input name="credits" type="number" min={1} max={1000000} placeholder="4000" />
+        </label>
+        <button className="btn-cta btn-sm" disabled={applying} type="submit">
+          {applying ? "Saving…" : "Save plan"}
+        </button>
+      </form>
       <div className="ws-billing-actions">
-        <form action={rechargeAction} className="ws-wa-inline-form">
-          <input name="clientId" type="hidden" value={clientId} />
-          <input name="days" type="number" min={1} max={1095} placeholder="Days" />
-          <button className="saas-ws-action" disabled={recharging} type="submit">
-            {recharging ? "Saving…" : "Recharge"}
-          </button>
-        </form>
-        <form action={creditAction} className="ws-wa-inline-form">
-          <input name="clientId" type="hidden" value={clientId} />
-          <input name="credits" type="number" min={1} max={1000000} placeholder="Credits" />
-          <button className="saas-ws-action" disabled={addingCredits} type="submit">
-            {addingCredits ? "Saving…" : "Add credits"}
-          </button>
-        </form>
         {canRemind ? (
           <form action={remindAction}>
             <input name="clientId" type="hidden" value={clientId} />
