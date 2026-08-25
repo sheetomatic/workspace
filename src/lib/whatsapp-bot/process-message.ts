@@ -22,6 +22,7 @@ import {
   expandTaskCopy,
   isCancelAssignment,
   looksLikeNewAssignment,
+  mergeAssignmentFollowUp,
 } from "@/lib/whatsapp-bot/task-assignment-complete";
 import {
   clearPendingTaskDraft,
@@ -1858,7 +1859,7 @@ async function runTaskPipeline(
   );
   const combined =
     pending && !looksLikeNewAssignment(instruction)
-      ? `${pending.instruction}\n\nAdditional details from assigner: ${instruction}`
+      ? mergeAssignmentFollowUp(pending.instruction, instruction)
       : instruction;
 
   if (!pending && (isWhatsAppGreeting(instruction) || instruction.length < 8)) {

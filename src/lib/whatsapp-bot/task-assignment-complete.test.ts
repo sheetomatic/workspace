@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { ParsedTaskDraft } from "@/lib/integrations/openai";
 import {
+  assignmentClarifyText,
   assignmentGaps,
   expandTaskCopy,
+  extractCounterparty,
+  mergeAssignmentFollowUp,
   needsCounterparty,
 } from "@/lib/whatsapp-bot/task-assignment-complete";
 
@@ -40,16 +43,30 @@ describe("needsCounterparty", () => {
 });
 
 describe("assignmentGaps", () => {
-  it("asks for due time when the assigner did not say one", () => {
-    expect(
-      assignmentGaps("Assign AP to collect cash from Ramesh", draft()),
-    ).toContain("due_at");
-    expect(
-      assignmentGaps("Assign AP to collect cash from Ramesh", draft()),
-    ).not.toContain("counterparty");
+  it("asks for collect-from and due date/time on a short assign like Neeraj / X", () => {
+    const gaps = assignmentGaps(
+      "Assign task to Neeraj to collect cash from X",
+      draft({ assigneeHint: "Neeraj", assigneeUserId: "u-neeraj" }),
+    );
+    expect(gaps).toEqual(["counterparty", "due_date", "due_time"]);
   });
 
-  it("is complete when party and clock time are present", () => {
+  it("asks for due time when the assigner said a day but no clock time", () => {
+    expect(
+      assignmentGaps("Assign AP to collect cash from Ramesh today", draft()),
+    ).toEqual(["due_time"]);
+  });
+
+  it("asks for due date when only a clock time is present", () => {
+    expect(
+      assignmentGaps(
+        "Assign AP to collect cash from Ramesh at 5:00 PM",
+        draft({ dueAtIso: "2026-08-25T11:30:00.000Z" }),
+      ),
+    ).toEqual(["due_date"]);
+  });
+
+  it("is complete when party, date, and clock time are present", () => {
     expect(
       assignmentGaps(
         "Assign AP to collect cash from Ramesh today 5:00 PM",
@@ -62,14 +79,58 @@ describe("assignmentGaps", () => {
   });
 });
 
+describe("mergeAssignmentFollowUp", () => {
+  it("treats a name-only reply as the collect-from person", () => {
+    const merged = mergeAssignmentFollowUp(
+      "Assign task to Neeraj to collect cash from X",
+      "Ramesh",
+    );
+    expect(extractCounterparty(merged)).toBe("Ramesh");
+    expect(needsCounterparty(merged)).toBe(false);
+  });
+
+  it("keeps date and time from a follow-up reply", () => {
+    const merged = mergeAssignmentFollowUp(
+      "Assign task to Neeraj to collect cash from X",
+      "from Ramesh, today 5:00 PM",
+    );
+    expect(needsCounterparty(merged)).toBe(false);
+    expect(
+      assignmentGaps(
+        merged,
+        draft({
+          assigneeHint: "Neeraj",
+          assigneeUserId: "u-neeraj",
+          dueAtIso: "2026-08-25T11:30:00.000Z",
+        }),
+      ),
+    ).toEqual([]);
+  });
+});
+
 describe("expandTaskCopy", () => {
   it("writes a full title and how-to description", () => {
     const copy = expandTaskCopy(
-      draft(),
-      "Assign AP to collect cash from Ramesh today 5pm",
+      draft({ assigneeHint: "Neeraj" }),
+      "Assign Neeraj to collect cash from Ramesh today 5pm",
     );
     expect(copy.title.split(/\s+/).length).toBeGreaterThanOrEqual(8);
     expect(copy.instructions).toMatch(/Ramesh/);
+    expect(copy.instructions).toMatch(/How to/i);
     expect(copy.instructions).toMatch(/Done/i);
+    expect(copy.instructions).toMatch(/count/i);
+  });
+});
+
+describe("assignmentClarifyText", () => {
+  it("asks collect-from and due date time together", () => {
+    const text = assignmentClarifyText({
+      missing: ["counterparty", "due_date", "due_time"],
+      assigneeHint: "Neeraj",
+      title: "Collect cash",
+    });
+    expect(text).toMatch(/Collect from whom/);
+    expect(text).toMatch(/Due date and time/);
+    expect(text).toMatch(/Neeraj/);
   });
 });

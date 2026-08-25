@@ -1,10 +1,10 @@
 const IST = "Asia/Kolkata";
 
 const DUE_TIME_RE =
-  /\b(?:\d{1,2}(?::\d{2})?\s*(?:am|pm)\b|\d{1,2}\s*(?:am|pm)\b|\d{1,2}[:.]\d{2}\b|noon|midnight|morning|afternoon|evening|night|o'?clock)\b/i;
+  /\b(?:\d{1,2}(?::\d{2})?\s*(?:am|pm)\b|\d{1,2}\s*(?:am|pm)\b|\d{1,2}[:.]\d{2}\b|\d{1,2}\s*baje\b|noon|midnight|morning|afternoon|evening|night|o'?clock|subah|dopahar|shaam|raat)\b/i;
 
 const DUE_DATE_RE =
-  /\b(?:today|tonight|tomorrow|tmrw|tmw|monday|tuesday|wednesday|thursday|friday|saturday|sunday|next\s+week|\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?)\b/i;
+  /\b(?:today|tonight|tomorrow|tmrw|tmw|aaj|kal|parso|monday|tuesday|wednesday|thursday|friday|saturday|sunday|next\s+week|\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?)\b/i;
 
 export function instructionSpecifiesDueTime(text: string) {
   return DUE_TIME_RE.test(text);

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  instructionSpecifiesDueDate,
   instructionSpecifiesDueTime,
   parseIstDateTime,
 } from "@/lib/task-due-ist";
@@ -42,5 +43,14 @@ describe("instructionSpecifiesDueTime", () => {
     expect(
       instructionSpecifiesDueTime("collect cash from Ramesh by 11:00 AM"),
     ).toBe(true);
+    expect(instructionSpecifiesDueTime("kal shaam 5 baje")).toBe(true);
+  });
+});
+
+describe("instructionSpecifiesDueDate", () => {
+  it("requires a day, not only a clock time", () => {
+    expect(instructionSpecifiesDueDate("collect cash at 5:00 PM")).toBe(false);
+    expect(instructionSpecifiesDueDate("collect cash today 5:00 PM")).toBe(true);
+    expect(instructionSpecifiesDueDate("kal 5 baje collect karo")).toBe(true);
   });
 });

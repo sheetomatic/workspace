@@ -150,7 +150,7 @@ export function helpText(role: Role = "STAFF") {
       "*Assign a task*",
       "1. Choose *Assign a task* from the menu",
       "2. Send a voice note (Hindi/English) or typed message",
-      "3. I match the teammate and ask if due time or other details are missing",
+      "3. I match the teammate and ask who to collect from and the due date/time if those are missing",
       "4. Assignee gets WhatsApp with Start / Done / Help buttons",
     );
   }
