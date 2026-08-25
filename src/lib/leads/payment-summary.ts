@@ -1,11 +1,13 @@
 import { formatInr } from "@/lib/leads/categories";
 
+type Moneyish = string | number | { toString(): string } | null | undefined;
+
 /** Remaining invoice amount after cash + adjustments. Null when no known total. */
 export function leadOutstandingBalance(params: {
-  invoiceTotal?: string | number | null;
-  quotationValue?: string | number | null;
+  invoiceTotal?: Moneyish;
+  quotationValue?: Moneyish;
   payments: Array<{
-    receivedAmount: string | number;
+    receivedAmount: Moneyish;
     paymentType?: string | null;
   }>;
 }) {
@@ -23,17 +25,18 @@ export function isLeadPaymentAdjustment(type: string | null | undefined) {
   return type === "ADJUSTMENT";
 }
 
-function money(value: string | number | null | undefined) {
-  const amount = Number(value);
+function money(value: Moneyish) {
+  if (value == null) return 0;
+  const amount = Number(typeof value === "object" ? value.toString() : value);
   return Number.isFinite(amount) ? amount : 0;
 }
 
 /** CRM Payments tab strip — Total / Received / Adjusted / Due / Last date. */
 export function computeLeadPaymentSummary(params: {
-  quotationValue?: string | number | null;
-  quotations?: Array<{ totalAmount: string | number; lockedAt?: string | null }>;
+  quotationValue?: Moneyish;
+  quotations?: Array<{ totalAmount: Moneyish; lockedAt?: string | null }>;
   payments: Array<{
-    receivedAmount: string | number;
+    receivedAmount: Moneyish;
     receivedDate: string;
     paymentType?: string | null;
   }>;
