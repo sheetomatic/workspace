@@ -7,7 +7,10 @@ import {
   unofficialWhatsAppApiPlans,
 } from "@/lib/billing/whatsapp-api-plans";
 import { parseWhatsAppApiClientInput } from "@/lib/billing/whatsapp-api-clients";
-import { whatsAppApiReminderText } from "@/lib/billing/whatsapp-api-reminders";
+import {
+  shouldSendWhatsAppApiReminder,
+  whatsAppApiReminderText,
+} from "@/lib/billing/whatsapp-api-reminders";
 
 describe("WhatsApp API plan catalog", () => {
   it("maps unofficial recharge packs to days and paise", () => {
@@ -108,5 +111,16 @@ describe("whatsAppApiReminderText", () => {
     expect(text).toMatch(/3 days/);
     expect(text).toMatch(/Basic Plan - Monthly/);
     expect(text).toMatch(/paid/i);
+  });
+
+  it("sends auto reminders at 10, 7, 3, and 1 day", () => {
+    const now = new Date("2026-08-25T06:00:00.000Z");
+    expect(shouldSendWhatsAppApiReminder(10, null, now)).toBe(true);
+    expect(shouldSendWhatsAppApiReminder(7, null, now)).toBe(true);
+    expect(shouldSendWhatsAppApiReminder(3, null, now)).toBe(true);
+    expect(shouldSendWhatsAppApiReminder(1, null, now)).toBe(true);
+    expect(shouldSendWhatsAppApiReminder(0, null, now)).toBe(false);
+    expect(shouldSendWhatsAppApiReminder(5, null, now)).toBe(false);
+    expect(shouldSendWhatsAppApiReminder(10, now, now)).toBe(false);
   });
 });

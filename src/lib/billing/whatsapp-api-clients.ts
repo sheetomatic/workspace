@@ -340,7 +340,7 @@ export function toWhatsAppApiClientRow(
     dueSoon:
       accountGroup === "REGULAR" &&
       !expired &&
-      daysLeft <= 7 &&
+      daysLeft <= 10 &&
       client.status !== "CANCELLED",
   };
 }

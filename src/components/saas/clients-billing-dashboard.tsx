@@ -71,7 +71,7 @@ export function ClientsBillingDashboard({
           <strong>
             {waRegular.length}
             <small>
-              {waDueSoon} due in 7 days
+              {waDueSoon} due in 10 days
             </small>
           </strong>
         </div>

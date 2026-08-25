@@ -456,7 +456,7 @@ export async function addWhatsAppApiClientAction(
     ok: true,
     message: result.merged
       ? `${result.client.name} already had this WhatsApp number — details were merged into that client.`
-      : `${result.client.name} added. Recharge reminders go on WhatsApp 7, 3, and 1 day before expiry, and on the due date.`,
+      : `${result.client.name} added. Auto WhatsApp reminders go out 10, 7, 3, and 1 day before expiry.`,
   };
 }
 

@@ -59,9 +59,9 @@ export function WhatsAppApiClientsPanel({
             <span className="ws-billing-pill">{regular.length}</span>
           </h3>
           <p>
-            Regular clients get recharge reminders 7, 3, and 1 day before
-            expiry, and on the due date. Click a group to expand it.
-            {dueSoon ? ` ${dueSoon} due in 7 days.` : ""}
+            Regular clients get auto WhatsApp reminders 10, 7, 3, and 1 day
+            before expiry. Click a group to expand it.
+            {dueSoon ? ` ${dueSoon} due in 10 days.` : ""}
             {expired ? ` ${expired} expired.` : ""}
             {inactive.length ? ` ${inactive.length} inactive.` : ""}
           </p>

@@ -1,11 +1,25 @@
 import { prisma } from "@/lib/db";
 import { daysUntilDue, formatBillingDate, isPastDueDate } from "@/lib/billing/dates";
-import { shouldSendReminder } from "@/lib/billing/dates";
 import { formatInrPaise } from "@/lib/billing/money";
 import { whatsAppApiRechargePay } from "@/lib/billing/whatsapp-api-plans";
 import { sendPlainEmail } from "@/lib/integrations/email";
 import { deliverWhatsAppMessage } from "@/lib/integrations/whatsapp-provider";
 import { PRIMARY_ORG_SLUG } from "@/lib/platform";
+
+/** Auto WhatsApp reminders for Regular API clients only. */
+export const WHATSAPP_API_REMINDER_DAYS = [10, 7, 3, 1] as const;
+
+export function shouldSendWhatsAppApiReminder(
+  daysLeft: number,
+  alreadyOn: Date | null,
+  now: Date,
+) {
+  if (!(WHATSAPP_API_REMINDER_DAYS as readonly number[]).includes(daysLeft)) {
+    return false;
+  }
+  if (!alreadyOn) return true;
+  return alreadyOn.toISOString().slice(0, 10) !== now.toISOString().slice(0, 10);
+}
 
 export function whatsAppApiReminderText(input: {
   name: string;
@@ -151,7 +165,7 @@ export async function runWhatsAppApiRechargeReminders(now = new Date()) {
     }
 
     const daysLeft = daysUntilDue(client.expiresAt, now);
-    if (!shouldSendReminder(daysLeft, client.lastReminderAt, now)) {
+    if (!shouldSendWhatsAppApiReminder(daysLeft, client.lastReminderAt, now)) {
       continue;
     }
     if (client.status === "CANCELLED") {
