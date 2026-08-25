@@ -195,14 +195,14 @@ export async function upsertMonthlyServiceClient(params: {
   if (!parsed.ok) return parsed;
   const value = parsed.value;
 
-  if (value.inboundLeadId) {
-    const lead = await prisma.inboundLead.findFirst({
-      where: { id: value.inboundLeadId, organizationId: params.organizationId },
-      select: { id: true, status: true },
-    });
-    if (!lead) {
-      return { ok: false as const, message: "That lead is not in this workspace." };
-    }
+  const lead = value.inboundLeadId
+    ? await prisma.inboundLead.findFirst({
+        where: { id: value.inboundLeadId, organizationId: params.organizationId },
+        select: { id: true, status: true },
+      })
+    : null;
+  if (value.inboundLeadId && !lead) {
+    return { ok: false as const, message: "That lead is not in this workspace." };
   }
   if (value.assignedToId) {
     const member = await prisma.membership.findFirst({
@@ -255,7 +255,7 @@ export async function upsertMonthlyServiceClient(params: {
         },
       });
 
-  if (value.inboundLeadId) {
+  if (value.inboundLeadId && lead) {
     const bumpStatus =
       lead.status !== "WON" &&
       lead.status !== "LOST" &&
