@@ -27,6 +27,7 @@ export async function listClientBillingRows() {
       billing: true,
       organizationPlan: { select: { renewalAt: true, status: true } },
       memberships: {
+        where: { deactivatedAt: null },
         select: {
           role: true,
           user: { select: { name: true, email: true } },
@@ -35,12 +36,12 @@ export async function listClientBillingRows() {
       subscriptionInvoices: {
         where: { status: { not: "VOID" } },
         orderBy: { issuedAt: "desc" },
-        take: 1,
         select: {
           id: true,
           number: true,
           status: true,
           totalPaise: true,
+          paidPaise: true,
           dueAt: true,
         },
       },
@@ -54,7 +55,16 @@ export async function listClientBillingRows() {
     const catalog = catalogRateForWorkspace(org);
     const product = resolveSoldProduct(org);
     const billing = org.billing;
-    const latest = org.subscriptionInvoices[0] ?? null;
+    const invoices = org.subscriptionInvoices;
+    const latest = invoices[0] ?? null;
+    const invoicedPaise = invoices.reduce((sum, row) => sum + row.totalPaise, 0);
+    const receivedPaise = invoices.reduce((sum, row) => sum + row.paidPaise, 0);
+    const pendingPaise = invoices
+      .filter((row) => row.status === "DRAFT" || row.status === "SENT" || row.status === "OVERDUE")
+      .reduce((sum, row) => sum + Math.max(0, row.totalPaise - row.paidPaise), 0);
+    const pendingInvoices = invoices.filter(
+      (row) => row.status === "DRAFT" || row.status === "SENT" || row.status === "OVERDUE",
+    ).length;
     const owner = org.memberships.find((row) => row.role === "OWNER") ?? org.memberships[0];
     const progress = onboardingProgress(org.onboardingTasks);
     const monthly = billing?.monthlyRatePaise ?? catalog.monthlyRatePaise;
@@ -89,9 +99,32 @@ export async function listClientBillingRows() {
             dueLabel: formatBillingDate(latest.dueAt),
           }
         : null,
+      invoicedPaise,
+      receivedPaise,
+      pendingPaise,
+      pendingInvoices,
+      invoicedLabel: formatInrPaise(invoicedPaise),
+      receivedLabel: formatInrPaise(receivedPaise),
+      pendingLabel: formatInrPaise(pendingPaise),
       onboarding: progress,
     };
   });
+}
+
+export type ClientBillingRow = Awaited<ReturnType<typeof listClientBillingRows>>[number];
+
+export function summarizeClientBilling(rows: ClientBillingRow[]) {
+  return {
+    clients: rows.length,
+    activeUsers: rows.reduce((sum, row) => sum + row.activeUsers, 0),
+    invoicedPaise: rows.reduce((sum, row) => sum + row.invoicedPaise, 0),
+    pendingPaise: rows.reduce((sum, row) => sum + row.pendingPaise, 0),
+    receivedPaise: rows.reduce((sum, row) => sum + row.receivedPaise, 0),
+    pendingInvoices: rows.reduce((sum, row) => sum + row.pendingInvoices, 0),
+    onHold: rows.filter(
+      (row) => row.status === "HOLD" || row.planStatus === "PAST_DUE",
+    ).length,
+  };
 }
 
 export async function getClientBillingDetail(organizationId: string) {

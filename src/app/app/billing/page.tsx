@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ClientsBillingDashboard } from "@/components/saas/clients-billing-dashboard";
 import { PageHeader } from "@/components/saas/page-header";
 import "@/components/saas/client-billing.css";
 import {
@@ -10,15 +11,26 @@ import {
 import { formatBillingDate } from "@/lib/billing/dates";
 import { extraUsers } from "@/lib/billing/prorata";
 import { formatInrPaise } from "@/lib/billing/money";
-import { getWorkspaceBillingSnapshot } from "@/lib/billing/queries";
+import {
+  getWorkspaceBillingSnapshot,
+  listClientBillingRows,
+} from "@/lib/billing/queries";
+import { ensureOnboardingTasks } from "@/lib/billing/invoices";
 import { SHEETOMATIC_QUOTATION_ACCOUNT } from "@/lib/leads/seller-account";
 import { hasMinimumRole } from "@/lib/permissions";
+import { canManageSuperAdmins } from "@/lib/platform";
 import { requireSession } from "@/lib/require-session";
 
 export default async function WorkspaceBillingPage() {
   const user = await requireSession();
   if (!hasMinimumRole(user.role, "ADMIN")) {
     redirect("/app/settings");
+  }
+
+  if (canManageSuperAdmins(user, user.organizationSlug)) {
+    const rows = await listClientBillingRows();
+    await Promise.all(rows.map((row) => ensureOnboardingTasks(row.id)));
+    return <ClientsBillingDashboard rows={rows} title="Billing" />;
   }
 
   const org = await getWorkspaceBillingSnapshot(user.organizationId);

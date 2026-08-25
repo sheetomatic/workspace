@@ -54,10 +54,11 @@ function ProductTable({ rows }: { rows: Row[] }) {
           <tr>
             <th>Client</th>
             <th>Users</th>
-            <th>Plan / month</th>
+            <th>Monthly</th>
+            <th>Invoiced</th>
+            <th>Pending</th>
+            <th>Received</th>
             <th>Renewal</th>
-            <th>Invoice</th>
-            <th>Onboarding</th>
           </tr>
         </thead>
         <tbody>
@@ -85,22 +86,18 @@ function ProductTable({ rows }: { rows: Row[] }) {
                 {row.monthlyLabel}
                 <div>{row.planLabel}</div>
               </td>
-              <td>{row.renewalLabel}</td>
+              <td>{row.invoicedLabel}</td>
               <td>
-                {row.latestInvoice ? (
-                  <>
-                    <span className={`ws-billing-pill ${statusClass(row.latestInvoice.status)}`}>
-                      {row.latestInvoice.status}
-                    </span>
-                    <div>
-                      {row.latestInvoice.number} · {row.latestInvoice.totalLabel}
-                    </div>
-                  </>
-                ) : (
-                  "—"
-                )}
+                {row.pendingLabel}
+                {row.pendingInvoices > 0 ? (
+                  <div>
+                    {row.pendingInvoices} open
+                    {row.latestInvoice ? ` · ${row.latestInvoice.number}` : ""}
+                  </div>
+                ) : null}
               </td>
-              <td>{row.onboarding.percent}%</td>
+              <td>{row.receivedLabel}</td>
+              <td>{row.renewalLabel}</td>
             </tr>
           ))}
         </tbody>
