@@ -21,6 +21,7 @@ export type WhatsAppApiClientRow = {
   daysLeftLabel: string;
   status: string;
   accountGroup: "REGULAR" | "INACTIVE";
+  creditPoints: number;
   reminderCount: number;
   notes: string | null;
   dueSoon: boolean;

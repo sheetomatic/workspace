@@ -168,7 +168,22 @@
   display: grid;
   gap: 0.45rem;
   justify-items: end;
-  max-width: 22rem;
+  max-width: 26rem;
+}
+
+.ws-wa-inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.ws-wa-inline-form input[type="number"] {
+  width: 5.2rem;
+  border: 1px solid #d6dee8;
+  border-radius: 8px;
+  padding: 0.35rem 0.45rem;
+  font: inherit;
 }
 
 .ws-wa-upload-hint {

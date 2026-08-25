@@ -21,6 +21,11 @@ import {
   resolveWhatsAppApiPlan,
 } from "@/lib/billing/whatsapp-api-plans";
 import { formatWhatsAppPhone, normalizeWhatsAppPhone } from "@/lib/phone";
+import {
+  addMasResellerCredits,
+  listMasResellerCustomers,
+  updateMasResellerValidity,
+} from "@/lib/integrations/mas-reseller";
 
 export type WhatsAppApiClientInput = {
   externalId?: string | null;
@@ -36,6 +41,7 @@ export type WhatsAppApiClientInput = {
   startedAt?: string | null;
   expiresAt?: string | null;
   notes?: string | null;
+  creditPoints?: number | null;
   accountGroup?: WhatsAppApiAccountGroup;
   allowZeroAmount?: boolean;
   createdByUserId?: string | null;
@@ -175,6 +181,10 @@ export function parseWhatsAppApiClientInput(input: WhatsAppApiClientInput) {
       startedAt,
       expiresAt: expiresAt ?? expiryFromStart(startedAt, durationDays),
       notes,
+      creditPoints:
+        typeof input.creditPoints === "number" && Number.isFinite(input.creditPoints)
+          ? Math.max(0, Math.round(input.creditPoints))
+          : null,
       accountGroup,
       status,
       createdByUserId: input.createdByUserId ?? null,
@@ -224,6 +234,7 @@ export async function upsertWhatsAppApiClient(input: WhatsAppApiClientInput) {
     status: parsed.value.status,
     accountGroup: parsed.value.accountGroup,
     notes: mergeWhatsAppApiNotes(existing?.notes, parsed.value.notes),
+    ...(parsed.value.creditPoints != null ? { creditPoints: parsed.value.creditPoints } : {}),
   };
 
   const row = existing
@@ -323,6 +334,7 @@ export function toWhatsAppApiClientRow(
         : `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`,
     status: displayStatus,
     accountGroup,
+    creditPoints: client.creditPoints,
     reminderCount: client.reminderCount,
     notes: client.notes,
     dueSoon:
@@ -338,6 +350,105 @@ export async function listWhatsAppApiClients(now = new Date()) {
     orderBy: [{ accountGroup: "desc" }, { expiresAt: "asc" }, { name: "asc" }],
   });
   return rows.map((row) => toWhatsAppApiClientRow(row, now));
+}
+
+export async function syncWhatsAppApiClientsFromPanel(createdByUserId?: string | null) {
+  const listed = await listMasResellerCustomers();
+  if (!listed.ok) return listed;
+
+  let created = 0;
+  let updated = 0;
+  let skipped = 0;
+  for (const customer of listed.customers) {
+    if (!customer.phone) {
+      skipped += 1;
+      continue;
+    }
+    const result = await upsertWhatsAppApiClient({
+      externalId: customer.externalId,
+      name: customer.username,
+      phone: customer.phone,
+      email: customer.email,
+      planId: CUSTOM_WHATSAPP_API_PLAN_ID,
+      planKind: "UNOFFICIAL",
+      customLabel: "WhatsApp API panel",
+      customAmountRupees: "0",
+      customDurationDays: "365",
+      expiresAt: customer.expiresAt,
+      creditPoints: customer.creditPoints,
+      notes: customer.externalId ? `Panel #${customer.externalId}` : null,
+      accountGroup: customer.accountGroup,
+      allowZeroAmount: true,
+      createdByUserId,
+    });
+    if (!result.ok) {
+      skipped += 1;
+      continue;
+    }
+    if (result.merged) updated += 1;
+    else created += 1;
+  }
+
+  return {
+    ok: true as const,
+    created,
+    updated,
+    skipped,
+    total: listed.customers.length,
+    message: `Synced ${created} new and ${updated} existing clients from the panel.${
+      skipped ? ` ${skipped} skipped (no valid number).` : ""
+    }`,
+  };
+}
+
+export async function addWhatsAppApiClientPanelCredits(id: string, credits: number) {
+  const existing = await prisma.whatsAppApiClient.findUnique({ where: { id } });
+  if (!existing) {
+    return { ok: false as const, message: "WhatsApp API client not found." };
+  }
+  const panel = await addMasResellerCredits({
+    username: existing.name,
+    externalId: existing.externalId,
+    credits,
+  });
+  if (!panel.ok) {
+    return { ok: false as const, message: panel.error };
+  }
+  const row = await prisma.whatsAppApiClient.update({
+    where: { id },
+    data: { creditPoints: existing.creditPoints + Math.round(credits) },
+  });
+  return { ok: true as const, client: row, message: panel.message };
+}
+
+export async function rechargeWhatsAppApiClientOnPanel(id: string, days: number) {
+  const existing = await prisma.whatsAppApiClient.findUnique({ where: { id } });
+  if (!existing) {
+    return { ok: false as const, message: "WhatsApp API client not found." };
+  }
+  const duration = Number.isFinite(days) && days >= 1 && days <= 1095 ? Math.round(days) : existing.durationDays;
+  const expiresAt = nextExpiryAfterRecharge(existing.expiresAt, duration, new Date());
+  const validUpto = `${expiresAt.toISOString().slice(0, 10)} 23:59:59`;
+  const panel = await updateMasResellerValidity({
+    username: existing.name,
+    externalId: existing.externalId,
+    validUpto,
+  });
+  if (!panel.ok) {
+    return { ok: false as const, message: panel.error };
+  }
+  const row = await prisma.whatsAppApiClient.update({
+    where: { id },
+    data: {
+      startedAt: startOfUtcDay(new Date()),
+      expiresAt,
+      durationDays: duration,
+      status: "ACTIVE",
+      accountGroup: "REGULAR",
+      lastReminderAt: null,
+    },
+  });
+  return { ok: true as const, client: row, message: panel.message };
 }
 
 export type { WhatsAppApiClientRow } from "@/lib/billing/whatsapp-api-clients.shared";

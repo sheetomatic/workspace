@@ -435,6 +435,7 @@ model WhatsAppApiClient {
   expiresAt       DateTime
   status          WhatsAppApiClientStatus  @default(ACTIVE)
   accountGroup    WhatsAppApiAccountGroup  @default(REGULAR)
+  creditPoints    Int                      @default(0)
   lastReminderAt  DateTime?
   reminderCount   Int                      @default(0)
   notes           String?

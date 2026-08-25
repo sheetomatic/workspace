@@ -4,10 +4,12 @@ import { useActionState, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   addWhatsAppApiClientAction,
+  addWhatsAppApiClientCreditsAction,
   cancelWhatsAppApiClientAction,
   importWhatsAppApiClientsAction,
   rechargeWhatsAppApiClientAction,
   remindWhatsAppApiClientAction,
+  syncWhatsAppApiClientsFromPanelAction,
   type BillingActionState,
 } from "@/app/app/clients/actions";
 import { CUSTOM_WHATSAPP_API_PLAN_ID } from "@/lib/billing/whatsapp-api-plans";
@@ -223,6 +225,7 @@ function WhatsAppApiClientGroup({
                 <th>Client</th>
                 <th>Plan</th>
                 <th>Amount</th>
+                <th>Credits</th>
                 <th>Recharge by</th>
                 <th>Reminders</th>
               </tr>
@@ -249,6 +252,7 @@ function WhatsAppApiClientGroup({
                     </div>
                   </td>
                   <td>{row.amountLabel}</td>
+                  <td>{row.creditPoints.toLocaleString("en-IN")}</td>
                   <td>
                     {row.expiresLabel}
                     <div>{row.daysLeftLabel}</div>
@@ -300,9 +304,29 @@ function WhatsAppApiClientUpload() {
           className="btn-cta"
           disabled={pending}
           type="button"
+          onClick={() => {
+            setMessage(null);
+            setError(null);
+            startTransition(async () => {
+              const result = await syncWhatsAppApiClientsFromPanelAction();
+              if (!result.ok) {
+                setError(result.message);
+                return;
+              }
+              setMessage(result.message);
+              router.refresh();
+            });
+          }}
+        >
+          {pending ? "Syncing…" : "Sync from panel"}
+        </button>
+        <button
+          className="saas-ws-action"
+          disabled={pending}
+          type="button"
           onClick={() => inputRef.current?.click()}
         >
-          {pending ? "Uploading…" : "Upload clients"}
+          Upload file
         </button>
         <input
           ref={inputRef}
@@ -330,9 +354,9 @@ function WhatsAppApiClientUpload() {
         />
       </div>
       <p className="ws-wa-upload-hint">
-        CSV, Excel, or the panel Customers List. Regular goes in Regular;
-        everything else is Inactive. Same WhatsApp number merges into that
-        client; a new number is added.
+        Sync pulls every customer from the Web Based API panel. Same WhatsApp
+        number merges; a new number is added. Recharge and credits write back
+        to the panel.
       </p>
       {message ? <span className="ws-billing-pill active">{message}</span> : null}
       {error ? <span className="ws-billing-pill overdue">{error}</span> : null}
@@ -355,6 +379,10 @@ function WhatsAppApiClientActions({
     rechargeWhatsAppApiClientAction,
     initial,
   );
+  const [creditState, creditAction, addingCredits] = useActionState(
+    addWhatsAppApiClientCreditsAction,
+    initial,
+  );
   const [remindState, remindAction, reminding] = useActionState(
     remindWhatsAppApiClientAction,
     initial,
@@ -364,15 +392,26 @@ function WhatsAppApiClientActions({
     initial,
   );
   const message =
-    rechargeState.message || remindState.message || cancelState.message;
+    rechargeState.message ||
+    creditState.message ||
+    remindState.message ||
+    cancelState.message;
 
   return (
     <div className="ws-plan-actions">
       <div className="ws-billing-actions">
-        <form action={rechargeAction}>
+        <form action={rechargeAction} className="ws-wa-inline-form">
           <input name="clientId" type="hidden" value={clientId} />
+          <input name="days" type="number" min={1} max={1095} placeholder="Days" />
           <button className="saas-ws-action" disabled={recharging} type="submit">
-            {recharging ? "Saving…" : "Recharged"}
+            {recharging ? "Saving…" : "Recharge"}
+          </button>
+        </form>
+        <form action={creditAction} className="ws-wa-inline-form">
+          <input name="clientId" type="hidden" value={clientId} />
+          <input name="credits" type="number" min={1} max={1000000} placeholder="Credits" />
+          <button className="saas-ws-action" disabled={addingCredits} type="submit">
+            {addingCredits ? "Saving…" : "Add credits"}
           </button>
         </form>
         {canRemind ? (

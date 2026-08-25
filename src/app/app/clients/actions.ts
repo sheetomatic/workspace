@@ -11,8 +11,10 @@ import { prisma } from "@/lib/db";
 import { formatBillingDate } from "@/lib/billing/dates";
 import { sendSubscriptionInvoiceEmail } from "@/lib/billing/email";
 import {
+  addWhatsAppApiClientPanelCredits,
   cancelWhatsAppApiClient,
-  markWhatsAppApiClientRecharged,
+  rechargeWhatsAppApiClientOnPanel,
+  syncWhatsAppApiClientsFromPanel,
   upsertWhatsAppApiClient,
 } from "@/lib/billing/whatsapp-api-clients";
 import { parseWhatsAppApiClientSpreadsheet } from "@/lib/billing/whatsapp-api-import";
@@ -531,12 +533,16 @@ export async function rechargeWhatsAppApiClientAction(
   if (!user) {
     return { ok: false, message: "Only Sheetomatic super admins can mark a recharge." };
   }
-  const result = await markWhatsAppApiClientRecharged(String(formData.get("clientId") ?? ""));
+  const days = Number(formData.get("days") ?? "");
+  const result = await rechargeWhatsAppApiClientOnPanel(
+    String(formData.get("clientId") ?? ""),
+    days,
+  );
   if (!result.ok) return result;
   revalidateBilling();
   return {
     ok: true,
-    message: `${result.client.name} recharged until ${formatBillingDate(result.client.expiresAt)}.`,
+    message: `${result.client.name} recharged on the panel until ${formatBillingDate(result.client.expiresAt)}.`,
   };
 }
 
@@ -570,6 +576,35 @@ export async function cancelWhatsAppApiClientAction(
   if (!result.ok) return result;
   revalidateBilling();
   return { ok: true, message: "WhatsApp API client cancelled. Reminders stopped." };
+}
+
+export async function syncWhatsAppApiClientsFromPanelAction(): Promise<BillingActionState> {
+  const user = await requirePlatformAdmin();
+  if (!user) {
+    return { ok: false, message: "Only Sheetomatic super admins can sync the panel." };
+  }
+  const result = await syncWhatsAppApiClientsFromPanel(user.id);
+  if (!result.ok) return { ok: false, message: result.error };
+  revalidateBilling();
+  return { ok: true, message: result.message };
+}
+
+export async function addWhatsAppApiClientCreditsAction(
+  _prev: BillingActionState,
+  formData: FormData,
+): Promise<BillingActionState> {
+  const user = await requirePlatformAdmin();
+  if (!user) {
+    return { ok: false, message: "Only Sheetomatic super admins can add credits." };
+  }
+  const credits = Number(formData.get("credits") ?? "");
+  const result = await addWhatsAppApiClientPanelCredits(
+    String(formData.get("clientId") ?? ""),
+    credits,
+  );
+  if (!result.ok) return result;
+  revalidateBilling();
+  return { ok: true, message: `${result.client.name}: ${result.message}` };
 }
 
 export async function toggleOnboardingTaskAction(
