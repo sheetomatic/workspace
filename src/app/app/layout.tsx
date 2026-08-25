@@ -38,6 +38,8 @@ import { resolveMemberHrSubModules } from "@/lib/hr/hr-sub-modules";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
 import { isWhatsAppOnlyTeamMember } from "@/lib/tasks/org-task-policy";
 import { WhatsAppOnlyGate } from "@/components/saas/whatsapp-only-gate";
+import { isBillingPortalPath } from "@/lib/billing/access";
+import { hasMinimumRole } from "@/lib/permissions";
 
 export async function generateMetadata(): Promise<Metadata> {
   if (await isLearnPortalRequest()) {
@@ -180,12 +182,22 @@ export default async function AppLayout({
   }
 
   if (organization.status !== "ACTIVE" && !sessionUser.isSuperAdmin) {
-    return (
-      <WorkspacePendingApproval
-        organizationName={organization.name}
-        status={organization.status}
-      />
-    );
+    const pathname = await getRequestPathname();
+    const canOpenBilling =
+      (organization.status === "HOLD" || organization.status === "INACTIVE") &&
+      hasMinimumRole(sessionUser.role, "ADMIN") &&
+      isBillingPortalPath(pathname);
+    if (!canOpenBilling) {
+      return (
+        <WorkspacePendingApproval
+          billingHref={
+            hasMinimumRole(sessionUser.role, "ADMIN") ? "/app/billing" : undefined
+          }
+          organizationName={organization.name}
+          status={organization.status}
+        />
+      );
+    }
   }
 
   if (

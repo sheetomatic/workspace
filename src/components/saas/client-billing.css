@@ -1,0 +1,220 @@
+.ws-billing-page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.ws-billing-groups {
+  display: grid;
+  gap: 1rem;
+}
+
+.ws-billing-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem;
+}
+
+.ws-billing-kpi {
+  border: 1px solid var(--ws-border, #e5e7eb);
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.9rem 1rem;
+}
+
+.ws-billing-kpi span {
+  display: block;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.ws-billing-kpi strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 1.15rem;
+}
+
+.ws-billing-table-wrap {
+  overflow-x: auto;
+}
+
+.ws-billing-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.ws-billing-table th,
+.ws-billing-table td {
+  padding: 0.7rem 0.65rem;
+  border-bottom: 1px solid #eef2f6;
+  text-align: left;
+  vertical-align: top;
+}
+
+.ws-billing-table th {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ws-billing-table a {
+  font-weight: 650;
+  color: inherit;
+}
+
+.ws-billing-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.ws-billing-pill.paid,
+.ws-billing-pill.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.ws-billing-pill.overdue,
+.ws-billing-pill.hold,
+.ws-billing-pill.past_due {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.ws-billing-pill.sent,
+.ws-billing-pill.onboarding {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.ws-billing-form {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+
+.ws-billing-form label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.ws-billing-form input,
+.ws-billing-form select,
+.ws-billing-form textarea {
+  width: 100%;
+  border: 1px solid #d6dee8;
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  font: inherit;
+}
+
+.ws-billing-form-wide {
+  grid-column: 1 / -1;
+}
+
+.ws-billing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.ws-billing-check {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.ws-billing-check li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+  border: 1px solid #eef2f6;
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+}
+
+.ws-billing-check li.done {
+  background: #f0fdf4;
+}
+
+.ws-invoice-print {
+  max-width: 52rem;
+  margin: 0 auto;
+  background: #fff;
+  padding: 1.5rem;
+}
+
+.ws-invoice-print header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 2px solid #111;
+  padding-bottom: 1rem;
+}
+
+.ws-invoice-print h1 {
+  font-size: 1.4rem;
+  margin: 0 0 0.25rem;
+}
+
+.ws-invoice-print table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0;
+}
+
+.ws-invoice-print th,
+.ws-invoice-print td {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.ws-invoice-print td.num,
+.ws-invoice-print th.num {
+  text-align: right;
+}
+
+.ws-invoice-totals {
+  margin-left: auto;
+  width: min(18rem, 100%);
+}
+
+.ws-invoice-pay {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px dashed #cbd5e1;
+  font-size: 0.85rem;
+}
+
+@media print {
+  .saas-sidebar,
+  .saas-mobile-nav,
+  .ws-shell-desktop,
+  .ws-page-header-actions,
+  .no-print {
+    display: none !important;
+  }
+
+  .saas-main {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}

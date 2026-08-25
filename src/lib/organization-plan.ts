@@ -3,6 +3,7 @@ import type {
   PlanBillingPeriod,
   PlanSubscriptionStatus,
   WorkspaceModule,
+  WorkspaceProduct,
 } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
@@ -17,6 +18,7 @@ export type OrganizationPlanSnapshot = {
 
 type EntitlementPatch = {
   plan: OrgPlan;
+  product?: WorkspaceProduct;
   allowedModules: WorkspaceModule[];
   maxMembers: number;
   maxFmsTemplates: number;
@@ -126,6 +128,7 @@ export async function applyOrganizationEntitlements(
       where: { id: organizationId },
       data: {
         plan: data.plan,
+        product: data.product,
         allowedModules: data.allowedModules,
         maxMembers: data.maxMembers,
         maxFmsTemplates: data.maxFmsTemplates,

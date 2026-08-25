@@ -29,6 +29,8 @@ export const DEFAULT_FOCUSED_NAV_IDS = [
 /** Never hidden by focus/custom prefs (still role/module gated). */
 export const ALWAYS_VISIBLE_NAV_IDS = new Set([
   "settings",
+  "billing",
+  "clients",
   "cases-home",
   "cases-import",
 ]);

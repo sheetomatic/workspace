@@ -12,6 +12,12 @@ import { createUniqueOrganizationSlug } from "@/lib/org-slug";
 import { organizationEntitlementsData } from "@/lib/org-onboarding";
 import { applyOrganizationEntitlements } from "@/lib/organization-plan";
 import {
+  ensureOnboardingTasks,
+  ensureOrganizationBilling,
+  markOnboardingTask,
+} from "@/lib/billing/invoices";
+import { monthlyPeriodFrom } from "@/lib/billing/dates";
+import {
   resolveActivationPreset,
   activationSummaryMessage,
   isActivationBundleKey,
@@ -109,6 +115,7 @@ export async function provisionClientWorkspace(
       slug,
       status: "ACTIVE",
       plan: entitlements.plan,
+      product: entitlements.product,
       allowedModules: entitlements.allowedModules,
       maxMembers: entitlements.maxMembers,
       maxFmsTemplates: entitlements.maxFmsTemplates,
@@ -121,7 +128,16 @@ export async function provisionClientWorkspace(
     ...entitlements,
     status: "ACTIVE",
     activatedAt: new Date(),
+    renewalAt: monthlyPeriodFrom(new Date()).dueAt,
   });
+  await ensureOrganizationBilling({
+    id: organization.id,
+    plan: entitlements.plan,
+    allowedModules: entitlements.allowedModules,
+  });
+  await ensureOnboardingTasks(organization.id);
+  await markOnboardingTask(organization.id, "workspace_created", true);
+  await markOnboardingTask(organization.id, "modules_enabled", true);
 
   let tempPassword: string | undefined;
   let userId = existingUser?.id;

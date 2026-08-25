@@ -30,7 +30,7 @@ export function WorkspaceBundleSelect({
   return (
     <div className="mt-3 space-y-2">
       <label className="block text-sm font-medium text-slate-700" htmlFor={name}>
-        Module bundle
+        Product workspace
       </label>
       <select
         id={name}
@@ -40,11 +40,24 @@ export function WorkspaceBundleSelect({
         onChange={(e) => setSelected(e.target.value as ActivationBundleKey)}
         className="w-full max-w-md rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200 disabled:opacity-60"
       >
-        {ACTIVATION_BUNDLE_OPTIONS.map((item) => (
-          <option key={item.value} value={item.value}>
-            {item.label}
-          </option>
-        ))}
+        <optgroup label="One product per workspace">
+          {ACTIVATION_BUNDLE_OPTIONS.filter((item) => item.group === "product").map(
+            (item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ),
+          )}
+        </optgroup>
+        <optgroup label="Combined workspace">
+          {ACTIVATION_BUNDLE_OPTIONS.filter((item) => item.group === "bundle").map(
+            (item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ),
+          )}
+        </optgroup>
       </select>
       {option ? (
         <p className="max-w-xl text-xs text-slate-500">

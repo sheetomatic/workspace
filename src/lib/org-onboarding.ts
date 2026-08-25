@@ -1,8 +1,7 @@
-import type { OrgPlan, WorkspaceModule } from "@prisma/client";
+import type { OrgPlan, WorkspaceModule, WorkspaceProduct } from "@prisma/client";
 import {
   allowedModulesForPlan,
   BCI_GROWTH_ALLOWED,
-  BCI_STARTER_ALLOWED,
   limitsForPlan,
   mergeAllowedModules,
   TASKS_ADDON_ALLOWED,
@@ -22,6 +21,7 @@ export const CLIENT_50_LIMITS = {
 
 export type ClientOnboardingPreset = {
   plan: OrgPlan;
+  product: WorkspaceProduct;
   allowedModules: WorkspaceModule[];
   maxMembers: number;
   maxFmsTemplates: number;
@@ -31,6 +31,7 @@ export type ClientOnboardingPreset = {
 export function client50OnboardingPreset(): ClientOnboardingPreset {
   return {
     plan: "ENTERPRISE",
+    product: "WORKSPACE",
     allowedModules: [...CLIENT_50_MODULES],
     maxMembers: CLIENT_50_LIMITS.maxMembers,
     maxFmsTemplates: CLIENT_50_LIMITS.maxFmsTemplates,
@@ -41,6 +42,7 @@ export function planOnboardingPreset(plan: OrgPlan): ClientOnboardingPreset {
   const limits = limitsForPlan(plan);
   return {
     plan,
+    product: plan === "BCI_GROWTH" || plan === "BCI_STARTER" ? "BCI" : "WORKSPACE",
     allowedModules: allowedModulesForPlan(plan),
     maxMembers: limits.maxMembers,
     maxFmsTemplates: limits.maxFmsTemplates,
@@ -54,15 +56,39 @@ export function bciStarterOnboardingPreset(): ClientOnboardingPreset {
 
 /** Tasks Management only — no FMS, EA, or PC. */
 export function tasksAddonOnboardingPreset(): ClientOnboardingPreset {
-  return planOnboardingPreset("TASKS_ADDON");
+  const preset = planOnboardingPreset("TASKS_ADDON");
+  return { ...preset, product: "TASKS" };
 }
 
 /** Phone apps on a Gmail Sheet — sold as App Builder, not FMS. */
 export function appBuilderOnboardingPreset(): ClientOnboardingPreset {
   return {
     plan: "ENTERPRISE",
+    product: "APP_BUILDER",
     allowedModules: ["APP_BUILDER"],
     maxMembers: 25,
+    maxFmsTemplates: 0,
+  };
+}
+
+/** HRMS only — attendance, payroll, field. Not BCI. */
+export function hrmsOnboardingPreset(): ClientOnboardingPreset {
+  return {
+    plan: "ENTERPRISE",
+    product: "HRMS",
+    allowedModules: ["HR"],
+    maxMembers: 25,
+    maxFmsTemplates: 0,
+  };
+}
+
+/** CRM / Leads Machine only. */
+export function crmOnboardingPreset(): ClientOnboardingPreset {
+  return {
+    plan: "ENTERPRISE",
+    product: "CRM",
+    allowedModules: ["CRM"],
+    maxMembers: 8,
     maxFmsTemplates: 0,
   };
 }
@@ -72,6 +98,7 @@ export function bciWithTasksOnboardingPreset(): ClientOnboardingPreset {
   const bci = planOnboardingPreset("BCI_STARTER");
   return {
     plan: "BCI_STARTER",
+    product: "BCI",
     allowedModules: mergeAllowedModules(bci.allowedModules, TASKS_ADDON_ALLOWED),
     maxMembers: bci.maxMembers,
     maxFmsTemplates: bci.maxFmsTemplates,
@@ -81,6 +108,7 @@ export function bciWithTasksOnboardingPreset(): ClientOnboardingPreset {
 export function organizationEntitlementsData(preset: ClientOnboardingPreset) {
   return {
     plan: preset.plan,
+    product: preset.product,
     allowedModules: preset.allowedModules,
     maxMembers: preset.maxMembers,
     maxFmsTemplates: preset.maxFmsTemplates,

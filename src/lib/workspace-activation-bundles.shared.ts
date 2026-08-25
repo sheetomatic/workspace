@@ -4,10 +4,12 @@ import type { WorkspaceModule } from "@prisma/client";
 export const ACTIVATION_BUNDLE_KEYS = [
   "bci_starter",
   "tasks_addon",
+  "hrms",
+  "crm",
+  "app_builder",
   "bci_with_tasks",
   "bci_growth",
   "client_50",
-  "app_builder",
 ] as const;
 
 export type ActivationBundleKey = (typeof ACTIVATION_BUNDLE_KEYS)[number];
@@ -17,44 +19,65 @@ export type ActivationBundleOption = {
   label: string;
   description: string;
   modules: WorkspaceModule[];
+  group: "product" | "bundle";
 };
 
 export const ACTIVATION_BUNDLE_OPTIONS: ActivationBundleOption[] = [
   {
     value: "bci_starter",
-    label: "BCI FMS only",
-    description: "Split flows, EM Ready, Reports, Approvals. No Tasks.",
+    label: "BCI",
+    description: "Own workspace — split FMS, EM Ready, Reports, Approvals. No Tasks.",
     modules: ["FMS", "REPORTS", "APPROVALS"],
+    group: "product",
   },
   {
     value: "tasks_addon",
-    label: "Tasks Management only",
-    description: "Task assignment, owners, due dates, and scores. Not EA. Not PC.",
+    label: "Tasks",
+    description: "Own workspace — task assignment, owners, due dates, scores. Not EA. Not PC.",
     modules: ["TASKS"],
+    group: "product",
   },
   {
-    value: "bci_with_tasks",
-    label: "BCI + Tasks Management",
-    description: "FMS bundle plus Tasks Management. EA and PC stay separate.",
-    modules: ["FMS", "REPORTS", "APPROVALS", "TASKS"],
+    value: "hrms",
+    label: "HRMS",
+    description: "Own workspace — attendance, payroll, field staff, hiring.",
+    modules: ["HR"],
+    group: "product",
   },
   {
-    value: "bci_growth",
-    label: "BCI Growth",
-    description: "BCI FMS + CRM + IMS / Stock + HRMS. No Tasks unless added later.",
-    modules: ["FMS", "REPORTS", "APPROVALS", "CRM", "IMS", "HR"],
-  },
-  {
-    value: "client_50",
-    label: "Full client (50 users)",
-    description: "Growth modules + Tasks + Legal (HRMS sold separately). Enterprise rollout.",
-    modules: ["FMS", "REPORTS", "APPROVALS", "CRM", "IMS", "TASKS", "CASES", "APP_BUILDER"],
+    value: "crm",
+    label: "CRM",
+    description: "Own workspace — Leads Machine, pipeline, follow-ups, quotations.",
+    modules: ["CRM"],
+    group: "product",
   },
   {
     value: "app_builder",
     label: "App Builder",
-    description: "Phone apps on a Gmail Sheet. Staff use a link and PIN — not a Google seat.",
+    description: "Own workspace — phone apps on a Gmail Sheet. Staff use a link and PIN.",
     modules: ["APP_BUILDER"],
+    group: "product",
+  },
+  {
+    value: "bci_with_tasks",
+    label: "BCI + Tasks",
+    description: "One workspace with FMS bundle plus Tasks. EA and PC stay separate.",
+    modules: ["FMS", "REPORTS", "APPROVALS", "TASKS"],
+    group: "bundle",
+  },
+  {
+    value: "bci_growth",
+    label: "BCI Growth",
+    description: "One workspace — BCI FMS + CRM + IMS / Stock + HRMS.",
+    modules: ["FMS", "REPORTS", "APPROVALS", "CRM", "IMS", "HR"],
+    group: "bundle",
+  },
+  {
+    value: "client_50",
+    label: "Full client (50 users)",
+    description: "One workspace — Growth + Tasks + Legal (HRMS sold separately).",
+    modules: ["FMS", "REPORTS", "APPROVALS", "CRM", "IMS", "TASKS", "CASES", "APP_BUILDER"],
+    group: "bundle",
   },
 ];
 

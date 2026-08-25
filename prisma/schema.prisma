@@ -115,10 +115,14 @@ enum OrgPlan {
   TASKS_ADDON
 }
 
-/** Which Sheetomatic product this org belongs to. App Builder is not Workspace. */
+/** Which Sheetomatic product this org belongs to. One sold SKU per workspace. */
 enum WorkspaceProduct {
   WORKSPACE
   APP_BUILDER
+  TASKS
+  HRMS
+  BCI
+  CRM
 }
 
 enum PlanSubscriptionStatus {
@@ -131,6 +135,27 @@ enum PlanSubscriptionStatus {
 enum PlanBillingPeriod {
   MONTHLY
   ANNUAL
+}
+
+enum SubscriptionInvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  VOID
+}
+
+enum SubscriptionInvoiceKind {
+  CYCLE
+  PRORATA
+  EXTRA
+}
+
+enum SubscriptionPaymentMethod {
+  UPI
+  BANK
+  CASH
+  OTHER
 }
 
 enum WorkspaceLinkType {
@@ -255,6 +280,10 @@ model Organization {
   logoUrl               String?
   workspaceAppearance   Json?
   organizationPlan     OrganizationPlan?
+  billing              OrganizationBilling?
+  subscriptionInvoices SubscriptionInvoice[]
+  subscriptionPayments SubscriptionPayment[]
+  onboardingTasks      ClientOnboardingTask[]
   appBuilderGoogleConnection AppBuilderGoogleConnection?
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
@@ -288,6 +317,88 @@ model OrganizationPlan {
   activatedAt    DateTime?
   createdAt      DateTime                 @default(now())
   updatedAt      DateTime                 @updatedAt
+}
+
+/// Sheetomatic subscription rates for a client workspace (ops-set, GST extra).
+model OrganizationBilling {
+  id                  String       @id @default(cuid())
+  organizationId      String       @unique
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  monthlyRatePaise    Int          @default(0)
+  extraUserMonthlyPaise Int        @default(0)
+  includedUsers       Int          @default(0)
+  gstPercent          Int          @default(18)
+  billingEmail        String?
+  billingName         String?
+  gstin               String?
+  notes               String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+}
+
+model SubscriptionInvoice {
+  id             String                     @id @default(cuid())
+  organizationId String
+  organization   Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  number         String                     @unique
+  status         SubscriptionInvoiceStatus  @default(DRAFT)
+  kind           SubscriptionInvoiceKind    @default(CYCLE)
+  periodStart    DateTime
+  periodEnd      DateTime
+  dueAt          DateTime
+  issuedAt       DateTime                   @default(now())
+  sentAt         DateTime?
+  paidAt         DateTime?
+  lastReminderAt DateTime?
+  reminderCount  Int                        @default(0)
+  currency       String                     @default("INR")
+  subtotalPaise  Int
+  extraPaise     Int                        @default(0)
+  gstPaise       Int
+  totalPaise     Int
+  paidPaise      Int                        @default(0)
+  lineItems      Json
+  notes          String?
+  payments       SubscriptionPayment[]
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+
+  @@index([organizationId, status])
+  @@index([dueAt, status])
+}
+
+model SubscriptionPayment {
+  id               String                     @id @default(cuid())
+  invoiceId        String
+  invoice          SubscriptionInvoice        @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  organizationId   String
+  organization     Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  amountPaise      Int
+  method           SubscriptionPaymentMethod  @default(UPI)
+  reference        String?
+  paidAt           DateTime                   @default(now())
+  recordedByUserId String?
+  notes            String?
+  createdAt        DateTime                   @default(now())
+
+  @@index([organizationId, paidAt])
+  @@index([invoiceId])
+}
+
+model ClientOnboardingTask {
+  id                String       @id @default(cuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  key               String
+  label             String
+  sortOrder         Int
+  completedAt       DateTime?
+  completedByUserId String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@unique([organizationId, key])
+  @@index([organizationId, sortOrder])
 }
 
 model LegalCase {

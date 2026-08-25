@@ -49,10 +49,10 @@ export function CreateClientWorkspacePanel({
             Create client workspace
           </h3>
           <p>
-            Makes a separate account from Sheetomatic Technologies. The client
-            gets their own login, tasks, and team. Pick Tasks Management only
-            — that is not EA and not PC. App Builder is a Sheet-to-phone
-            app, not FMS.
+            Each client gets their own workspace for one product — BCI, Tasks,
+            HRMS, CRM, or App Builder — with its own users and monthly bill.
+            Use a combined workspace only when they bought more than one SKU
+            on the same login.
           </p>
         </div>
       </div>

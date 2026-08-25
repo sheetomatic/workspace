@@ -19,7 +19,7 @@ describe("workspace activation bundles", () => {
 
   it("labels Tasks Management as its own SKU, not EA or PC", () => {
     const option = ACTIVATION_BUNDLE_OPTIONS.find((o) => o.value === "tasks_addon");
-    expect(option?.label).toBe("Tasks Management only");
+    expect(option?.label).toBe("Tasks");
     expect(option?.label).not.toMatch(/EA|PC/);
     expect(option?.description).toMatch(/Not EA/);
     expect(option?.description).toMatch(/Not PC/);
@@ -29,8 +29,18 @@ describe("workspace activation bundles", () => {
     const preset = resolveActivationPreset("app_builder");
     expect(preset.allowedModules).toEqual(["APP_BUILDER"]);
     expect(preset.allowedModules).not.toContain("FMS");
+    expect(preset.product).toBe("APP_BUILDER");
     const option = ACTIVATION_BUNDLE_OPTIONS.find((o) => o.value === "app_builder");
     expect(option?.label).toBe("App Builder");
+  });
+
+  it("resolves HRMS and CRM as their own workspaces", () => {
+    const hrms = resolveActivationPreset("hrms");
+    expect(hrms.product).toBe("HRMS");
+    expect(hrms.allowedModules).toEqual(["HR"]);
+    const crm = resolveActivationPreset("crm");
+    expect(crm.product).toBe("CRM");
+    expect(crm.allowedModules).toEqual(["CRM"]);
   });
 
   it("resolves BCI + Tasks bundle", () => {

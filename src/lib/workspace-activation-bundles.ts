@@ -3,6 +3,8 @@ import {
   bciWithTasksOnboardingPreset,
   appBuilderOnboardingPreset,
   client50OnboardingPreset,
+  crmOnboardingPreset,
+  hrmsOnboardingPreset,
   planOnboardingPreset,
   tasksAddonOnboardingPreset,
   type ClientOnboardingPreset,
@@ -40,6 +42,10 @@ export function resolveActivationPreset(bundle: string): ClientOnboardingPreset 
       return client50OnboardingPreset();
     case "app_builder":
       return appBuilderOnboardingPreset();
+    case "hrms":
+      return hrmsOnboardingPreset();
+    case "crm":
+      return crmOnboardingPreset();
     case "bci_starter":
     default:
       return bciStarterOnboardingPreset();
@@ -49,5 +55,5 @@ export function resolveActivationPreset(bundle: string): ClientOnboardingPreset 
 export function activationSummaryMessage(preset: ClientOnboardingPreset): string {
   const planLabel = ORG_PLAN_LABELS[preset.plan];
   const modules = formatAllowedModules(preset.allowedModules);
-  return `${planLabel} - ${modules} (max ${preset.maxMembers} users, ${preset.maxFmsTemplates} FMS templates)`;
+  return `${preset.product} workspace · ${planLabel} - ${modules} (max ${preset.maxMembers} users)`;
 }

@@ -186,9 +186,13 @@ export default async function TeamPage({
         {showSuperAdminPanel ? (
           <TeamCollapsibleSection
             title="Super Admin panel"
-            description="Create a separate client workspace, or grant platform admin access."
+            description="Create a separate client workspace, or open Clients & billing for subscriptions."
             defaultOpen
           >
+            <p className="ws-tenant-portal-hint">
+              <a href="/app/clients">Clients & billing</a> — onboarding
+              checklist, monthly invoices, reminders, and hold after renewal.
+            </p>
             <CreateClientWorkspacePanel
               workspaces={clientWorkspaces.map((row) => ({
                 id: row.id,

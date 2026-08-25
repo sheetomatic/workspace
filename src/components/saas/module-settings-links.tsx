@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bot, Briefcase, Users } from "lucide-react";
+import { Bot, Briefcase, CreditCard, Users } from "lucide-react";
 import { isLegalAdmin } from "@/lib/legal-cases/access";
 import type { SessionUser } from "@/lib/auth";
 import { hasMinimumRole } from "@/lib/permissions";
@@ -33,6 +33,13 @@ export function ModuleSettingsLinks({ user }: { user: SessionUser }) {
       label: "Team & access",
       description: "Members, roles, modules, staff codes, and HR defaults.",
       icon: Users,
+    });
+    links.push({
+      key: "billing",
+      href: "/app/billing",
+      label: "Billing & invoices",
+      description: "Plan, users, invoices, download, and pay before renewal.",
+      icon: CreditCard,
     });
   }
 

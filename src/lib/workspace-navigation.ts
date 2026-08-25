@@ -35,6 +35,7 @@ import {
 import type { SessionUser } from "@/lib/auth";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
 import { getDedicatedClientPortal, isDedicatedClientPortal } from "@/lib/dedicated-client-portals";
+import { PRIMARY_ORG_SLUG } from "@/lib/platform";
 import {
   isNavIdVisible,
   type NavPreferenceOption,
@@ -48,6 +49,8 @@ export type WorkspaceNavItem = {
   label: string;
   icon: LucideIcon;
   minRole?: SessionUser["role"];
+  /** Sheetomatic Technologies super admins only. */
+  platformOnly?: boolean;
   module?: WorkspaceModule;
   /** When set, item is hidden unless this HR sub-module is enabled for the member. */
   hrSubModule?: string;
@@ -600,6 +603,12 @@ export function canAccessWorkspaceNav(
   enabledHrSubModules?: string[] | null,
   enabledCrmSubModules?: string[] | null,
 ) {
+  if (
+    item.platformOnly &&
+    !(user.isSuperAdmin && user.organizationSlug === PRIMARY_ORG_SLUG)
+  ) {
+    return false;
+  }
   if (item.minRole) {
     const roleOk =
       ROLE_ORDER.indexOf(user.role) >= ROLE_ORDER.indexOf(item.minRole);
@@ -823,6 +832,14 @@ export function getWorkspaceNavSections(params: {
               minRole: "ADMIN",
               allowDepartmentHead: true,
             },
+            {
+              id: "billing",
+              href: "/app/billing",
+              label: "Billing",
+              icon: CreditCard,
+              minRole: "ADMIN",
+              matchPrefix: "/app/billing",
+            },
           ],
         },
       ];
@@ -880,6 +897,14 @@ export function getWorkspaceNavSections(params: {
             icon: Users,
             minRole: "ADMIN",
             allowDepartmentHead: true,
+          },
+          {
+            id: "billing",
+            href: "/app/billing",
+            label: "Billing",
+            icon: CreditCard,
+            minRole: "ADMIN",
+            matchPrefix: "/app/billing",
           },
         ],
       },
@@ -983,6 +1008,23 @@ export function getWorkspaceNavSections(params: {
           icon: Users,
           minRole: "ADMIN",
           allowDepartmentHead: true,
+        },
+        {
+          id: "billing",
+          href: "/app/billing",
+          label: "Billing",
+          icon: CreditCard,
+          minRole: "ADMIN",
+          matchPrefix: "/app/billing",
+        },
+        {
+          id: "clients",
+          href: "/app/clients",
+          label: "Clients",
+          icon: Briefcase,
+          minRole: "OWNER",
+          platformOnly: true,
+          matchPrefix: "/app/clients",
         },
       ],
     },

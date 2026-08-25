@@ -6,9 +6,11 @@ import { logoutHref } from "@/lib/auth-logout";
 export function WorkspacePendingApproval({
   organizationName,
   status = "ONBOARDING",
+  billingHref,
 }: {
   organizationName: string;
   status?: "ONBOARDING" | "ACTIVE" | "HOLD" | "INACTIVE";
+  billingHref?: string;
 }) {
   const copy =
     status === "HOLD"
@@ -17,7 +19,8 @@ export function WorkspacePendingApproval({
           body: (
             <>
               <strong>{organizationName}</strong> is paused. Staff cannot use
-              it until Sheetomatic takes it off hold.
+              it until the open invoice is paid or Sheetomatic takes it off
+              hold.
             </>
           ),
           wa: `Hi, the workspace "${organizationName}" is on hold. Please resume it.`,
@@ -58,6 +61,14 @@ export function WorkspacePendingApproval({
         </h1>
         <p className="mt-3 text-sm leading-6 text-slate-600">{copy.body}</p>
         <div className="mt-6 flex flex-col items-center gap-3">
+          {billingHref ? (
+            <a
+              className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+              href={billingHref}
+            >
+              View invoices and pay
+            </a>
+          ) : null}
           <a
             className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
             href={whatsappUrl}
