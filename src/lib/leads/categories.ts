@@ -16,7 +16,7 @@ export type LeadCategoryId =
 
 export const LEAD_CATEGORIES: Record<
   LeadCategoryId,
-  { label: string; defaultPipeValue: number; keywords: string[] }
+  { label: string; shortLabel?: string; defaultPipeValue: number; keywords: string[] }
 > = {
   CUSTOM_SOFTWARE: {
     label: "Custom Software",
@@ -76,6 +76,7 @@ export const LEAD_CATEGORIES: Record<
   },
   GWS_DEVELOPMENT: {
     label: "GWS — Development",
+    shortLabel: "GWS development",
     defaultPipeValue: 45000,
     keywords: [
       "google sheets",
@@ -92,6 +93,7 @@ export const LEAD_CATEGORIES: Record<
   },
   TRAINING_GWS: {
     label: "Training — GWS (Google Sheets / AppSheet)",
+    shortLabel: "GWS training",
     defaultPipeValue: 15000,
     keywords: [
       "training",
@@ -240,6 +242,11 @@ export function migrateLegacyLeadCategory(
     return categoryId;
   }
   return LEGACY_LEAD_CATEGORY_MAP[categoryId] ?? null;
+}
+
+export function leadCategoryShortLabel(categoryId: string | null | undefined) {
+  const id = resolveLeadCategoryId(categoryId);
+  return LEAD_CATEGORIES[id].shortLabel ?? LEAD_CATEGORIES[id].label;
 }
 
 export function leadCategoryLabel(categoryId: string | null | undefined) {

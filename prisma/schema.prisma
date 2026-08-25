@@ -298,6 +298,7 @@ model Organization {
   workspaceAppearance   Json?
   organizationPlan     OrganizationPlan?
   billing              OrganizationBilling?
+  monthlyServiceClients MonthlyServiceClient[]
   subscriptionInvoices SubscriptionInvoice[]
   subscriptionPayments SubscriptionPayment[]
   onboardingTasks      ClientOnboardingTask[]
@@ -447,6 +448,42 @@ model WhatsAppApiClient {
   @@index([accountGroup, status, expiresAt])
   @@index([expiresAt, status])
   @@index([status, expiresAt])
+}
+
+enum MonthlyServiceClientStatus {
+  ACTIVE
+  CANCELLED
+}
+
+/// Monthly retainer / training clients billed from a CRM lead (no workspace login).
+model MonthlyServiceClient {
+  id               String                      @id @default(cuid())
+  organizationId   String
+  organization     Organization                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inboundLeadId    String?                     @unique
+  inboundLead      InboundLead?                @relation(fields: [inboundLeadId], references: [id], onDelete: SetNull)
+  name             String
+  company          String?
+  phone            String
+  email            String?
+  category         String
+  monthlyRatePaise Int
+  startedAt        DateTime
+  nextDueAt        DateTime
+  status           MonthlyServiceClientStatus  @default(ACTIVE)
+  assignedToId     String?
+  assignedTo       User?                       @relation("MonthlyServiceAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  workNote         String?
+  reminderCount    Int                         @default(0)
+  lastReminderAt   DateTime?
+  notes            String?
+  createdByUserId  String?
+  createdAt        DateTime                    @default(now())
+  updatedAt        DateTime                    @updatedAt
+
+  @@index([organizationId, status, nextDueAt])
+  @@index([organizationId, category])
+  @@index([organizationId, phone])
 }
 
 model LegalCase {
@@ -1143,6 +1180,7 @@ model User {
   imsQcInspected         ImsQcInspection[]     @relation("ImsQcInspector")
   imsAttachmentsUploaded ImsAttachment[]       @relation("ImsAttachmentUploader")
   assignedInboundLeads         InboundLead[]         @relation("InboundLeadAssignee")
+  assignedMonthlyServiceClients MonthlyServiceClient[] @relation("MonthlyServiceAssignee")
   createdInboundLeads          InboundLead[]         @relation("InboundLeadCreator")
   assignedInboundLeadFollowUps InboundLeadFollowUp[] @relation("InboundLeadFollowUpAssignee")
   createdInboundLeadFollowUps  InboundLeadFollowUp[] @relation("InboundLeadFollowUpCreator")
@@ -2932,6 +2970,7 @@ model InboundLead {
   waContact      WaContact?           @relation(fields: [waContactId], references: [id], onDelete: SetNull)
   assignedToId   String?
   assignedTo     User?                @relation("InboundLeadAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  monthlyServiceClient MonthlyServiceClient?
   createdByUserId String?
   createdBy      User?                @relation("InboundLeadCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
   nextFollowUpAt DateTime?

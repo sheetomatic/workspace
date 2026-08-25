@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { ClientsBillingBoard } from "@/components/saas/clients-billing-board";
+import { MonthlyServiceClientsPanel } from "@/components/saas/monthly-service-clients-panel";
 import { PageHeader } from "@/components/saas/page-header";
 import { WhatsAppApiClientsPanel } from "@/components/saas/whatsapp-api-clients-panel";
+import type {
+  MonthlyServiceAssigneeOption,
+  MonthlyServiceClientRow,
+  MonthlyServiceLeadOption,
+} from "@/lib/billing/monthly-service-clients.shared";
 import {
   summarizeClientBilling,
   type ClientBillingRow,
@@ -16,11 +22,17 @@ export function ClientsBillingDashboard({
   rows,
   whatsappApiClients = [],
   whatsappApiPlans = [],
+  monthlyServiceClients = [],
+  monthlyServiceLeads = [],
+  monthlyServiceAssignees = [],
   title = "Clients",
 }: {
   rows: ClientBillingRow[];
   whatsappApiClients?: WhatsAppApiClientRow[];
   whatsappApiPlans?: WhatsAppApiPlanOption[];
+  monthlyServiceClients?: MonthlyServiceClientRow[];
+  monthlyServiceLeads?: MonthlyServiceLeadOption[];
+  monthlyServiceAssignees?: MonthlyServiceAssigneeOption[];
   title?: string;
 }) {
   const totals = summarizeClientBilling(rows);
@@ -28,12 +40,13 @@ export function ClientsBillingDashboard({
   const waMonthly = waRegular.filter((row) => isMonthlyWhatsAppDuration(row.durationDays));
   const waDueSoon = waRegular.filter((row) => row.dueSoon).length;
   const monthlyWorkspaces = rows.filter((row) => row.billingPeriod === "MONTHLY").length;
+  const monthlyServices = monthlyServiceClients.filter((row) => row.status !== "CANCELLED").length;
 
   return (
     <div className="saas-page ws-billing-page">
       <PageHeader
         title={title}
-        description="Workspace clients and WhatsApp API recharge clients. Click a row for details. Invoices and collections are on Billing. Sheetomatic Technologies is not listed here."
+        description="Workspace clients, monthly services from leads (GWS training and more), and WhatsApp API recharge. Click a row for details. Invoices are on Billing."
         actions={
           <>
             <Link className="saas-ws-action" href="/app/billing">
@@ -61,9 +74,10 @@ export function ClientsBillingDashboard({
         <div className="ws-billing-kpi ws-billing-kpi--invoiced">
           <span>Monthly</span>
           <strong>
-            {monthlyWorkspaces + waMonthly.length}
+            {monthlyWorkspaces + waMonthly.length + monthlyServices}
             <small>
-              {monthlyWorkspaces} workspace · {waMonthly.length} WhatsApp API
+              {monthlyServices} services · {waMonthly.length} WhatsApp ·{" "}
+              {monthlyWorkspaces} workspace
             </small>
           </strong>
         </div>
@@ -77,6 +91,11 @@ export function ClientsBillingDashboard({
           </strong>
         </div>
       </div>
+      <MonthlyServiceClientsPanel
+        clients={monthlyServiceClients}
+        leads={monthlyServiceLeads}
+        assignees={monthlyServiceAssignees}
+      />
       <WhatsAppApiClientsPanel
         clients={whatsappApiClients}
         plans={whatsappApiPlans}

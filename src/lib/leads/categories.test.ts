@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   categorizeLeadRequirement,
   leadCategoryLabel,
+  leadCategoryShortLabel,
   migrateLegacyLeadCategory,
   resolveLeadCategoryId,
 } from "@/lib/leads/categories";
@@ -32,6 +33,7 @@ describe("categorizeLeadRequirement", () => {
 
   it("returns readable labels", () => {
     expect(leadCategoryLabel("GWS_DEVELOPMENT")).toBe("GWS — Development");
+    expect(leadCategoryShortLabel("TRAINING_GWS")).toBe("GWS training");
     expect(leadCategoryLabel("CRM_AUTOMATION")).toBe("Custom Software");
   });
 

@@ -15,6 +15,10 @@ import {
   syncWhatsAppApiClientsFromPanel,
   upsertWhatsAppApiClient,
 } from "@/lib/billing/whatsapp-api-clients";
+import {
+  cancelMonthlyServiceClient,
+  upsertMonthlyServiceClient,
+} from "@/lib/billing/monthly-service-clients";
 import { parseWhatsAppApiClientSpreadsheet } from "@/lib/billing/whatsapp-api-import";
 import { sendWhatsAppApiClientReminder } from "@/lib/billing/whatsapp-api-reminders";
 import {
@@ -603,4 +607,56 @@ export async function toggleOnboardingTaskAction(
   await markOnboardingTask(organizationId, key, completed, user.id);
   revalidateBilling(organizationId);
   return { ok: true, message: completed ? "Step marked done." : "Step reopened." };
+}
+
+export async function addMonthlyServiceClientAction(
+  _prev: BillingActionState,
+  formData: FormData,
+): Promise<BillingActionState> {
+  const user = await requirePlatformAdmin();
+  if (!user) {
+    return { ok: false, message: "Only Sheetomatic super admins can add monthly clients." };
+  }
+  const result = await upsertMonthlyServiceClient({
+    organizationId: user.organizationId,
+    createdByUserId: user.id,
+    input: {
+      inboundLeadId: String(formData.get("inboundLeadId") ?? ""),
+      name: String(formData.get("name") ?? ""),
+      company: String(formData.get("company") ?? ""),
+      phone: String(formData.get("phone") ?? ""),
+      email: String(formData.get("email") ?? ""),
+      category: String(formData.get("category") ?? "TRAINING_GWS"),
+      monthlyRateRupees: String(formData.get("monthlyRate") ?? ""),
+      startedAt: String(formData.get("startedAt") ?? ""),
+      assignedToId: String(formData.get("assignedToId") ?? ""),
+      workNote: String(formData.get("workNote") ?? ""),
+      notes: String(formData.get("notes") ?? ""),
+    },
+  });
+  if (!result.ok) return result;
+  revalidateBilling();
+  return {
+    ok: true,
+    message: result.merged
+      ? "Updated the existing monthly client from this lead or number."
+      : "Monthly client added. Work is assigned on the lead.",
+  };
+}
+
+export async function cancelMonthlyServiceClientAction(
+  _prev: BillingActionState,
+  formData: FormData,
+): Promise<BillingActionState> {
+  const user = await requirePlatformAdmin();
+  if (!user) {
+    return { ok: false, message: "Only Sheetomatic super admins can stop a monthly client." };
+  }
+  const result = await cancelMonthlyServiceClient({
+    organizationId: user.organizationId,
+    id: String(formData.get("clientId") ?? ""),
+  });
+  if (!result.ok) return result;
+  revalidateBilling();
+  return { ok: true, message: "Monthly client stopped." };
 }
