@@ -18,6 +18,20 @@ describe("parseMonthlyServiceClientInput", () => {
     expect(parsed.value.phone).toBe("919876543210");
   });
 
+  it("keeps a provided start date for edits", () => {
+    const parsed = parseMonthlyServiceClientInput({
+      name: "Manpreet Singh",
+      phone: "9811033073",
+      category: "TRAINING_GWS",
+      monthlyRateRupees: "15000",
+      startedAt: "2026-08-25",
+    });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.value.startedAt.toISOString().slice(0, 10)).toBe("2026-08-25");
+    expect(parsed.value.monthlyRatePaise).toBe(1_500_000);
+  });
+
   it("rejects a missing phone", () => {
     expect(
       parseMonthlyServiceClientInput({

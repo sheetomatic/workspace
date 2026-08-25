@@ -2,13 +2,15 @@
 
 import { useActionState, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { BellOff, ChevronDown, ExternalLink } from "lucide-react";
+import { Check, ChevronDown, ExternalLink, Loader2, Pencil, Trash2, X } from "lucide-react";
 import {
   addMonthlyServiceClientAction,
-  cancelMonthlyServiceClientAction,
+  deleteMonthlyServiceClientAction,
   searchMonthlyServiceLeadsAction,
+  updateMonthlyServiceClientAction,
   type BillingActionState,
 } from "@/app/app/clients/actions";
+import { paiseToRupees } from "@/lib/billing/money";
 import { crmLeadOpenHref } from "@/lib/leads/crm-open";
 import { listLeadCategoryOptions } from "@/lib/leads/categories";
 import type {
@@ -340,6 +342,7 @@ export function MonthlyServiceClientsPanel({
               key={categoryId}
               title={rows[0]?.categoryLabel ?? categoryId}
               rows={rows}
+              assignees={assignees}
               defaultOpen
             />
           ))}
@@ -349,13 +352,21 @@ export function MonthlyServiceClientsPanel({
   );
 }
 
+function dateInputValue(value: Date | string) {
+  const date = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
+}
+
 function MonthlyServiceGroup({
   title,
   rows,
+  assignees,
   defaultOpen = false,
 }: {
   title: string;
   rows: MonthlyServiceClientRow[];
+  assignees: MonthlyServiceAssigneeOption[];
   defaultOpen?: boolean;
 }) {
   return (
@@ -369,17 +380,28 @@ function MonthlyServiceGroup({
       </summary>
       <ul className="crm-client-groups-list">
         {rows.map((row) => (
-          <MonthlyServiceCard key={row.id} row={row} />
+          <MonthlyServiceCard key={row.id} row={row} assignees={assignees} />
         ))}
       </ul>
     </details>
   );
 }
 
-function MonthlyServiceCard({ row }: { row: MonthlyServiceClientRow }) {
+function MonthlyServiceCard({
+  row,
+  assignees,
+}: {
+  row: MonthlyServiceClientRow;
+  assignees: MonthlyServiceAssigneeOption[];
+}) {
   const [open, setOpen] = useState(false);
-  const [cancelState, cancelAction, cancelling] = useActionState(
-    cancelMonthlyServiceClientAction,
+  const [editing, setEditing] = useState(false);
+  const [updateState, updateAction, updating] = useActionState(
+    updateMonthlyServiceClientAction,
+    initial,
+  );
+  const [deleteState, deleteAction, deleting] = useActionState(
+    deleteMonthlyServiceClientAction,
     initial,
   );
 
@@ -412,33 +434,137 @@ function MonthlyServiceCard({ row }: { row: MonthlyServiceClientRow }) {
       </button>
       {open ? (
         <div className="crm-client-body">
-          <dl className="ws-wa-detail">
-            <div>
-              <dt>Category</dt>
-              <dd>{row.categoryLabel}</dd>
-            </div>
-            <div>
-              <dt>Monthly</dt>
-              <dd>{row.monthlyRateLabel}</dd>
-            </div>
-            <div>
-              <dt>Next due</dt>
-              <dd>
-                {row.nextDueLabel}
-                <div>{row.daysLeftLabel}</div>
-              </dd>
-            </div>
-            <div>
-              <dt>Assigned</dt>
-              <dd>{row.assignedToName ?? "Unassigned"}</dd>
-            </div>
-            {row.workNote ? (
-              <div className="ws-wa-notes">
-                <dt>Work</dt>
-                <dd>{row.workNote}</dd>
+          {editing ? (
+            <form action={updateAction} className="ws-billing-form">
+              <input name="clientId" type="hidden" value={row.id} />
+              <label>
+                Category
+                <select name="category" defaultValue={row.category}>
+                  {categories.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Client name
+                <input
+                  name="name"
+                  required
+                  minLength={2}
+                  defaultValue={row.name}
+                />
+              </label>
+              <label>
+                Company
+                <input name="company" defaultValue={row.company ?? ""} />
+              </label>
+              <label>
+                WhatsApp number
+                <input
+                  name="phone"
+                  required
+                  inputMode="tel"
+                  defaultValue={row.phone}
+                />
+              </label>
+              <label>
+                Email
+                <input
+                  name="email"
+                  type="email"
+                  defaultValue={row.email ?? ""}
+                />
+              </label>
+              <label>
+                Monthly (₹)
+                <input
+                  name="monthlyRate"
+                  inputMode="decimal"
+                  defaultValue={String(paiseToRupees(row.monthlyRatePaise))}
+                />
+              </label>
+              <label>
+                Start
+                <input
+                  name="startedAt"
+                  type="date"
+                  defaultValue={dateInputValue(row.startedAt)}
+                />
+              </label>
+              <label>
+                Assign work to
+                <select name="assignedToId" defaultValue={row.assignedToId ?? ""}>
+                  <option value="">Unassigned</option>
+                  {assignees.map((person) => (
+                    <option key={person.id} value={person.id}>
+                      {person.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="ws-billing-form-wide">
+                Work
+                <input name="workNote" defaultValue={row.workNote ?? ""} />
+              </label>
+              <div className="ws-billing-actions ws-billing-form-wide">
+                <button
+                  className={`ws-billing-icon-btn${updating ? " is-busy" : ""}`}
+                  disabled={updating}
+                  type="submit"
+                  title="Save"
+                  aria-label="Save monthly client"
+                >
+                  {updating ? (
+                    <Loader2 size={16} aria-hidden />
+                  ) : (
+                    <Check size={16} aria-hidden />
+                  )}
+                </button>
+                <button
+                  className="ws-billing-icon-btn"
+                  type="button"
+                  title="Cancel edit"
+                  aria-label="Cancel edit"
+                  onClick={() => setEditing(false)}
+                >
+                  <X size={16} aria-hidden />
+                </button>
+                {updateState.message ? (
+                  <span className="crm-client-meta">{updateState.message}</span>
+                ) : null}
               </div>
-            ) : null}
-          </dl>
+            </form>
+          ) : (
+            <dl className="ws-wa-detail">
+              <div>
+                <dt>Category</dt>
+                <dd>{row.categoryLabel}</dd>
+              </div>
+              <div>
+                <dt>Monthly</dt>
+                <dd>{row.monthlyRateLabel}</dd>
+              </div>
+              <div>
+                <dt>Next due</dt>
+                <dd>
+                  {row.nextDueLabel}
+                  <div>{row.daysLeftLabel}</div>
+                </dd>
+              </div>
+              <div>
+                <dt>Assigned</dt>
+                <dd>{row.assignedToName ?? "Unassigned"}</dd>
+              </div>
+              {row.workNote ? (
+                <div className="ws-wa-notes">
+                  <dt>Work</dt>
+                  <dd>{row.workNote}</dd>
+                </div>
+              ) : null}
+            </dl>
+          )}
           <div className="ws-wa-icon-row">
             {row.inboundLeadId ? (
               <Link
@@ -450,29 +576,40 @@ function MonthlyServiceCard({ row }: { row: MonthlyServiceClientRow }) {
                 <ExternalLink size={16} aria-hidden />
               </Link>
             ) : null}
-            {row.status !== "CANCELLED" ? (
-              <form
-                action={cancelAction}
-                onSubmit={(event) => {
-                  if (!window.confirm(`Stop monthly billing for ${row.name}?`)) {
-                    event.preventDefault();
-                  }
-                }}
+            <button
+              className="ws-billing-icon-btn"
+              type="button"
+              title="Edit"
+              aria-label={`Edit ${row.name}`}
+              onClick={() => setEditing((value) => !value)}
+            >
+              <Pencil size={16} aria-hidden />
+            </button>
+            <form
+              action={deleteAction}
+              onSubmit={(event) => {
+                if (!window.confirm(`Delete ${row.name} from monthly clients?`)) {
+                  event.preventDefault();
+                }
+              }}
+            >
+              <input name="clientId" type="hidden" value={row.id} />
+              <button
+                className={`ws-billing-icon-btn danger${deleting ? " is-busy" : ""}`}
+                disabled={deleting}
+                type="submit"
+                title="Delete"
+                aria-label={`Delete ${row.name}`}
               >
-                <input name="clientId" type="hidden" value={row.id} />
-                <button
-                  className={`ws-billing-icon-btn danger${cancelling ? " is-busy" : ""}`}
-                  disabled={cancelling}
-                  type="submit"
-                  title="Stop monthly client"
-                  aria-label="Stop monthly client"
-                >
-                  <BellOff size={16} aria-hidden />
-                </button>
-              </form>
-            ) : null}
-            {cancelState.message ? (
-              <span className="crm-client-meta">{cancelState.message}</span>
+                {deleting ? (
+                  <Loader2 size={16} aria-hidden />
+                ) : (
+                  <Trash2 size={16} aria-hidden />
+                )}
+              </button>
+            </form>
+            {deleteState.message ? (
+              <span className="crm-client-meta">{deleteState.message}</span>
             ) : null}
           </div>
         </div>

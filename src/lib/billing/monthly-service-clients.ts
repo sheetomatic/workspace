@@ -311,3 +311,80 @@ export async function cancelMonthlyServiceClient(params: {
   });
   return { ok: true as const };
 }
+
+export async function updateMonthlyServiceClient(params: {
+  organizationId: string;
+  id: string;
+  input: MonthlyServiceClientInput;
+}) {
+  const parsed = parseMonthlyServiceClientInput(params.input);
+  if (!parsed.ok) return parsed;
+  const existing = await prisma.monthlyServiceClient.findFirst({
+    where: { id: params.id, organizationId: params.organizationId },
+  });
+  if (!existing) {
+    return { ok: false as const, message: "Client not found." };
+  }
+  if (parsed.value.assignedToId) {
+    const member = await prisma.membership.findFirst({
+      where: {
+        organizationId: params.organizationId,
+        userId: parsed.value.assignedToId,
+        deactivatedAt: null,
+      },
+      select: { id: true },
+    });
+    if (!member) {
+      return { ok: false as const, message: "Pick a teammate from this workspace." };
+    }
+  }
+  const sameStart =
+    startOfUtcDay(existing.startedAt).getTime() === parsed.value.startedAt.getTime();
+  await prisma.monthlyServiceClient.update({
+    where: { id: existing.id },
+    data: {
+      name: parsed.value.name,
+      company: parsed.value.company,
+      phone: parsed.value.phone,
+      email: parsed.value.email,
+      category: parsed.value.category,
+      monthlyRatePaise: parsed.value.monthlyRatePaise,
+      startedAt: parsed.value.startedAt,
+      nextDueAt: sameStart ? existing.nextDueAt : parsed.value.nextDueAt,
+      assignedToId: parsed.value.assignedToId,
+      workNote: parsed.value.workNote,
+      notes: parsed.value.notes,
+    },
+  });
+  if (existing.inboundLeadId) {
+    await prisma.inboundLead.updateMany({
+      where: {
+        id: existing.inboundLeadId,
+        organizationId: params.organizationId,
+      },
+      data: {
+        category: parsed.value.category,
+        assignedToId: parsed.value.assignedToId,
+        modifiedAt: new Date(),
+      },
+    });
+  }
+  return { ok: true as const };
+}
+
+export async function deleteMonthlyServiceClient(params: {
+  organizationId: string;
+  id: string;
+}) {
+  const existing = await prisma.monthlyServiceClient.findFirst({
+    where: { id: params.id, organizationId: params.organizationId },
+    select: { id: true },
+  });
+  if (!existing) {
+    return { ok: false as const, message: "Client not found." };
+  }
+  await prisma.monthlyServiceClient.delete({
+    where: { id: existing.id },
+  });
+  return { ok: true as const };
+}

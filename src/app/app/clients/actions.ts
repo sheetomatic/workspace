@@ -17,7 +17,9 @@ import {
 } from "@/lib/billing/whatsapp-api-clients";
 import {
   cancelMonthlyServiceClient,
+  deleteMonthlyServiceClient,
   searchMonthlyServiceLeads,
+  updateMonthlyServiceClient,
   upsertMonthlyServiceClient,
 } from "@/lib/billing/monthly-service-clients";
 import type { MonthlyServiceLeadOption } from "@/lib/billing/monthly-service-clients.shared";
@@ -681,4 +683,50 @@ export async function cancelMonthlyServiceClientAction(
   if (!result.ok) return result;
   revalidateBilling();
   return { ok: true, message: "Monthly client stopped." };
+}
+
+export async function updateMonthlyServiceClientAction(
+  _prev: BillingActionState,
+  formData: FormData,
+): Promise<BillingActionState> {
+  const user = await requirePlatformAdmin();
+  if (!user) {
+    return { ok: false, message: "Only Sheetomatic super admins can edit a monthly client." };
+  }
+  const result = await updateMonthlyServiceClient({
+    organizationId: user.organizationId,
+    id: String(formData.get("clientId") ?? ""),
+    input: {
+      name: String(formData.get("name") ?? ""),
+      company: String(formData.get("company") ?? ""),
+      phone: String(formData.get("phone") ?? ""),
+      email: String(formData.get("email") ?? ""),
+      category: String(formData.get("category") ?? "TRAINING_GWS"),
+      monthlyRateRupees: String(formData.get("monthlyRate") ?? ""),
+      startedAt: String(formData.get("startedAt") ?? ""),
+      assignedToId: String(formData.get("assignedToId") ?? ""),
+      workNote: String(formData.get("workNote") ?? ""),
+      notes: String(formData.get("notes") ?? ""),
+    },
+  });
+  if (!result.ok) return result;
+  revalidateBilling();
+  return { ok: true, message: "Monthly client updated." };
+}
+
+export async function deleteMonthlyServiceClientAction(
+  _prev: BillingActionState,
+  formData: FormData,
+): Promise<BillingActionState> {
+  const user = await requirePlatformAdmin();
+  if (!user) {
+    return { ok: false, message: "Only Sheetomatic super admins can delete a monthly client." };
+  }
+  const result = await deleteMonthlyServiceClient({
+    organizationId: user.organizationId,
+    id: String(formData.get("clientId") ?? ""),
+  });
+  if (!result.ok) return result;
+  revalidateBilling();
+  return { ok: true, message: "Monthly client deleted." };
 }
