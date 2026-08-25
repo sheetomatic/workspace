@@ -500,7 +500,7 @@ export async function importWhatsAppApiClientsAction(
       continue;
     }
 
-    const existing = await prisma.whatsAppApiClient.findUnique({
+    const existing = await prisma.whatsAppApiClient.findFirst({
       where: { phone: ready.value.phone },
       select: { id: true },
     });
