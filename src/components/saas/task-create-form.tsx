@@ -11,6 +11,7 @@ import {
   initWeeklyDaysFromDue,
 } from "@/components/saas/task-recurrence-fields";
 import { isRecurringFrequency } from "@/lib/task-schedule";
+import { istDateTimeLocalValue, parseIstDateTime } from "@/lib/task-due-ist";
 import {
   TASK_DEPARTMENT_LABELS,
   TASK_FREQUENCY_LABELS,
@@ -37,12 +38,11 @@ function defaultDueLocal() {
 }
 
 function dueLocalFromIso(iso: string) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) {
+  const d = parseIstDateTime(iso);
+  if (!d) {
     return defaultDueLocal();
   }
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return istDateTimeLocalValue(d);
 }
 
 export function TaskCreateForm({
@@ -148,8 +148,10 @@ export function TaskCreateForm({
     setPriority(draft.priority);
     setDepartment(draft.department);
     setCategory(draft.category ?? "");
-    const localDue = dueLocalFromIso(draft.dueAtIso);
-    setDueAt(localDue);
+    const localDue = draft.dueAtIso ? dueLocalFromIso(draft.dueAtIso) : dueAt;
+    if (draft.dueAtIso) {
+      setDueAt(localDue);
+    }
     setFrequency(draft.frequency);
     setIsRecurring(draft.isRecurring);
     if (draft.recurrenceWeeklyDays?.length) {

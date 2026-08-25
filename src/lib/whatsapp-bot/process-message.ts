@@ -17,6 +17,18 @@ import { formatWhatsAppPhone, normalizeWhatsAppPhone } from "@/lib/phone";
 import { createDelegatedTaskFromDraft } from "@/lib/tasks/create-from-draft";
 import { formatTaskDue } from "@/lib/tasks";
 import {
+  assignmentClarifyText,
+  assignmentGaps,
+  expandTaskCopy,
+  isCancelAssignment,
+  looksLikeNewAssignment,
+} from "@/lib/whatsapp-bot/task-assignment-complete";
+import {
+  clearPendingTaskDraft,
+  loadPendingTaskDraft,
+  savePendingTaskDraft,
+} from "@/lib/whatsapp-bot/pending-task-draft";
+import {
   isWhatsAppGreeting,
   isWhatsAppMenuCommand,
   normalizeWhatsAppCommand,
@@ -487,6 +499,8 @@ async function handleMenuAction(
     role: ctx.role,
     phone: ctx.fromPhone,
   };
+
+  await clearPendingTaskDraft(ctx.organizationId, ctx.fromPhone);
 
   switch (actionId) {
     case WA_MENU.DELEGATE_TASK:
@@ -1680,7 +1694,12 @@ async function handleTeamMemberMessage(
       return;
     }
 
-    if (command.length < 8) {
+    const pendingDraft = await loadPendingTaskDraft(org.id, message.from);
+    if (
+      command.length < 8 &&
+      !pendingDraft &&
+      !isCancelAssignment(rawText)
+    ) {
       await markEvent(message.id, {
         organizationId: org.id,
         fromPhone: message.from,
@@ -1817,7 +1836,32 @@ async function runTaskPipeline(
   },
 ) {
   const instruction = params.instruction.trim();
-  if (isWhatsAppGreeting(instruction) || instruction.length < 8) {
+  if (isCancelAssignment(instruction)) {
+    await clearPendingTaskDraft(delegator.organizationId, params.fromPhone);
+    await markEvent(params.externalId, {
+      organizationId: delegator.organizationId,
+      fromPhone: params.fromPhone,
+      messageType: params.messageType,
+      status: "assignment_cancelled",
+    });
+    await replyText(
+      delegator.organizationId,
+      params.fromPhone,
+      "Draft cancelled. Send a new assignment when ready.",
+    );
+    return;
+  }
+
+  const pending = await loadPendingTaskDraft(
+    delegator.organizationId,
+    params.fromPhone,
+  );
+  const combined =
+    pending && !looksLikeNewAssignment(instruction)
+      ? `${pending.instruction}\n\nAdditional details from assigner: ${instruction}`
+      : instruction;
+
+  if (!pending && (isWhatsAppGreeting(instruction) || instruction.length < 8)) {
     await markEvent(params.externalId, {
       organizationId: delegator.organizationId,
       fromPhone: params.fromPhone,
@@ -1837,7 +1881,7 @@ async function runTaskPipeline(
 
   let draft;
   try {
-    ({ draft } = await parseTaskFromInstruction(instruction, members));
+    ({ draft } = await parseTaskFromInstruction(combined, members));
   } catch (error) {
     const raw = error instanceof Error ? error.message : "Parse failed";
     await markEvent(params.externalId, {
@@ -1851,6 +1895,37 @@ async function runTaskPipeline(
       delegator.organizationId,
       params.fromPhone,
       mapOpenAiServiceError(raw.replace(/^OPENAI_ERROR:/, "")),
+    );
+    return;
+  }
+
+  draft = { ...draft, ...expandTaskCopy(draft, combined) };
+  const missing = assignmentGaps(combined, draft);
+  if (missing.length > 0) {
+    await savePendingTaskDraft({
+      organizationId: delegator.organizationId,
+      fromPhone: params.fromPhone,
+      pending: {
+        instruction: combined,
+        draft,
+        missing,
+        askedAt: new Date().toISOString(),
+      },
+    });
+    await markEvent(params.externalId, {
+      organizationId: delegator.organizationId,
+      fromPhone: params.fromPhone,
+      messageType: params.messageType,
+      status: "assignment_needs_details",
+    });
+    await replyText(
+      delegator.organizationId,
+      params.fromPhone,
+      assignmentClarifyText({
+        missing,
+        assigneeHint: draft.assigneeHint,
+        title: draft.title,
+      }),
     );
     return;
   }
@@ -1874,6 +1949,8 @@ async function runTaskPipeline(
     await replyText(delegator.organizationId, params.fromPhone, result.error);
     return;
   }
+
+  await clearPendingTaskDraft(delegator.organizationId, params.fromPhone);
 
   await markEvent(params.externalId, {
     organizationId: delegator.organizationId,

@@ -11,6 +11,10 @@ import {
   serializeWeeklyDays,
 } from "@/lib/task-schedule";
 import { formatOpenAiError } from "@/lib/integrations/openai-errors";
+import {
+  instructionSpecifiesDueTime,
+  parseIstDateTime,
+} from "@/lib/task-due-ist";
 import { slugifyFieldKey, normalizeTableColumn, type FmsTableColumn } from "@/lib/fms/constants";
 import { isStubFmsForm } from "@/lib/fms/form-ai";
 
@@ -31,7 +35,8 @@ export type ParsedTaskDraft = {
   priority: TaskPriority;
   department: TaskDepartment;
   category: string | null;
-  dueAtIso: string;
+  dueAtIso: string | null;
+  dueTimeSpecified: boolean;
   frequency: TaskFrequency;
   isRecurring: boolean;
   remindViaEmail: boolean;
@@ -50,12 +55,7 @@ const DEPARTMENTS: TaskDepartment[] = [
 ];
 
 function defaultDueIso() {
-  const d = new Date();
-  d.setHours(17, 0, 0, 0);
-  if (d.getTime() < Date.now()) {
-    d.setDate(d.getDate() + 1);
-  }
-  return d.toISOString();
+  return null;
 }
 
 function resolveAssignee(
@@ -82,6 +82,7 @@ function resolveAssignee(
 function normalizeDraft(
   raw: Record<string, unknown>,
   members: TaskMemberHint[],
+  instruction = "",
 ): ParsedTaskDraft {
   const priority = PRIORITIES.includes(raw.priority as TaskPriority)
     ? (raw.priority as TaskPriority)
@@ -90,19 +91,16 @@ function normalizeDraft(
     ? (raw.department as TaskDepartment)
     : "GENERAL";
 
-  // Guardrail: the model must not hallucinate a stale year (e.g. its
-  // training-era 2023) or a date decades away. Out-of-range → default due.
-  let dueAtIso = defaultDueIso();
-  if (typeof raw.dueAtIso === "string") {
-    const parsed = new Date(raw.dueAtIso);
+  // Never invent a clock time. Naive ISO is IST, not UTC (06:00Z → 11:30 AM).
+  const timeSpecified =
+    raw.dueTimeSpecified === true || instructionSpecifiesDueTime(instruction);
+  let dueAtIso: string | null = defaultDueIso();
+  if (timeSpecified && typeof raw.dueAtIso === "string") {
+    const parsed = parseIstDateTime(raw.dueAtIso);
     const now = Date.now();
-    const minMs = now - 6 * 60 * 60 * 1000; // allow "today morning" slack
+    const minMs = now - 6 * 60 * 60 * 1000;
     const maxMs = now + 2 * 365 * 86_400_000;
-    if (
-      !Number.isNaN(parsed.getTime()) &&
-      parsed.getTime() >= minMs &&
-      parsed.getTime() <= maxMs
-    ) {
+    if (parsed && parsed.getTime() >= minMs && parsed.getTime() <= maxMs) {
       dueAtIso = parsed.toISOString();
     }
   }
@@ -123,6 +121,7 @@ function normalizeDraft(
         : "New delegated task",
     instructions:
       typeof raw.instructions === "string" ? raw.instructions.trim() : "",
+    dueTimeSpecified: Boolean(dueAtIso && timeSpecified),
     assigneeUserId,
     assigneeHint,
     priority,
@@ -200,13 +199,14 @@ export async function parseTaskFromInstruction(
 Input may be in ANY language or mix (e.g. Hindi, Hinglish, Tamil, Marathi, Gujarati, English). Understand meaning across languages.
 
 Output JSON only with these keys. All string values MUST be in English:
-- title (English, concise)
-- instructions (English; empty string if none)
+- title (English, FULL sentence, 8+ words: who does what, with whom, and the outcome. Never a 2-3 word label.)
+- instructions (English how-to: 2-4 sentences on what to do, who to meet, what to collect or complete, and how to confirm done)
 - assigneeHint (name or email fragment as spoken; may stay as proper name)
 - priority: HIGH | MEDIUM | LOW
 - department: OPERATIONS | SALES | ACCOUNTS | ADMIN | GENERAL
 - category: optional project or category label in English (e.g. "MIS rollout", "Client onboarding"); empty string if none
-- dueAtIso: ISO 8601 in Asia/Kolkata
+- dueAtIso: ISO 8601 with offset +05:30 ONLY when the user stated a clock time. Empty string if time was not said. NEVER invent 11:30 or 17:00.
+- dueTimeSpecified: true only if the user said a clock time (5pm, 11:00 AM, evening, etc.)
 - frequency: ONCE | DAILY | WEEKLY | MONTHLY (use WEEKLY for "every week", DAILY for daily, etc.)
 - isRecurring: true if frequency is not ONCE or user asks for recurring task
 - remindViaEmail: true if user wants email reminder
@@ -224,7 +224,7 @@ Current date/time: ${new Date().toLocaleString("en-IN", {
             minute: "2-digit",
             hour12: false,
           })} IST. Resolve ALL relative dates ("today", "tomorrow", "Friday", "next week") from this — never from any other year.
-Use Asia/Kolkata for "today", "tomorrow", and relative dates. Default due time 17:00 IST if not specified.
+Use Asia/Kolkata. If the user did not say a time, leave dueAtIso empty — do not default.
 Match assignee to team by name or email when possible.
 Default reminders: remindViaWhatsApp true when user mentions WhatsApp/WA; remindViaEmail true when user mentions email.
 
@@ -258,7 +258,7 @@ ${memberList}`,
 
   const parsed = JSON.parse(content) as Record<string, unknown>;
   return {
-    draft: normalizeDraft(parsed, members),
+    draft: normalizeDraft(parsed, members, instruction),
     usage: {
       promptTokens: payload.usage?.prompt_tokens ?? 0,
       completionTokens: payload.usage?.completion_tokens ?? 0,

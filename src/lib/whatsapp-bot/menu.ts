@@ -121,10 +121,12 @@ export function delegateTaskPromptText() {
   return [
     "*Assign a task*",
     "",
-    "Send a voice note or type your instruction in one message.",
+    "Send a voice note or type who should do what, from whom if needed, and the due date + time.",
     "",
     "Example:",
-    "_Satyam, please finish the website front-end phase 1 by today._",
+    "_Assign AP to collect cash from Ramesh, due today 5:00 PM._",
+    "",
+    "If due time or the person to collect from is missing, I will ask before creating the task.",
   ].join("\n");
 }
 
@@ -148,7 +150,7 @@ export function helpText(role: Role = "STAFF") {
       "*Assign a task*",
       "1. Choose *Assign a task* from the menu",
       "2. Send a voice note (Hindi/English) or typed message",
-      "3. AI picks assignee, due date, and priority",
+      "3. I match the teammate and ask if due time or other details are missing",
       "4. Assignee gets WhatsApp with Start / Done / Help buttons",
     );
   }

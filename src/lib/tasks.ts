@@ -13,6 +13,7 @@ import { hasMinimumRole } from "@/lib/permissions";
 import { isTaskActiveStatus } from "@/lib/task-due-urgency";
 import { buildTaskVisibilityWhere } from "@/lib/task-verification";
 import { isWhatsAppOnlyTeamMember } from "@/lib/tasks/org-task-policy";
+import { istYmd } from "@/lib/task-due-ist";
 
 export const ACTIVE_TASK_STATUSES: TaskStatus[] = [
   "PENDING",
@@ -766,8 +767,9 @@ export function resolveTaskDescription(
 
 export function formatTaskDue(dueAt: Date) {
   const now = new Date();
-  const isToday = dueAt.toDateString() === now.toDateString();
+  const isToday = istYmd(dueAt) === istYmd(now);
   const time = dueAt.toLocaleTimeString("en-IN", {
+    timeZone: "Asia/Kolkata",
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
@@ -776,6 +778,7 @@ export function formatTaskDue(dueAt: Date) {
     return `Today, ${time}`;
   }
   return dueAt.toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata",
     day: "numeric",
     month: "short",
     hour: "numeric",
@@ -786,8 +789,9 @@ export function formatTaskDue(dueAt: Date) {
 
 export function formatTaskAssignedDate(createdAt: Date) {
   const now = new Date();
-  const isToday = createdAt.toDateString() === now.toDateString();
+  const isToday = istYmd(createdAt) === istYmd(now);
   const time = createdAt.toLocaleTimeString("en-IN", {
+    timeZone: "Asia/Kolkata",
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
@@ -796,6 +800,7 @@ export function formatTaskAssignedDate(createdAt: Date) {
     return `Today, ${time}`;
   }
   return createdAt.toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata",
     day: "numeric",
     month: "short",
     year: createdAt.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
@@ -828,6 +833,7 @@ export function formatTaskDueLabel(dueAt: Date, status: TaskStatus) {
   }
   if (days === 1) {
     const time = dueAt.toLocaleTimeString("en-IN", {
+      timeZone: "Asia/Kolkata",
       hour: "numeric",
       minute: "2-digit",
       hour12: true,

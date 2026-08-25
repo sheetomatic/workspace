@@ -57,6 +57,12 @@ export async function createDelegatedTaskFromDraft(params: {
     return { ok: false, error: "Assignee is not in this organization." };
   }
 
+  if (!draft.dueAtIso) {
+    return {
+      ok: false,
+      error: "Due date and time are required. Ask the assigner for both.",
+    };
+  }
   const dueAt = new Date(draft.dueAtIso);
   if (Number.isNaN(dueAt.getTime())) {
     return { ok: false, error: "Could not parse due date from instruction." };
