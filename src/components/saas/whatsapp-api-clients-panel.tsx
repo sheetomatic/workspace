@@ -1,19 +1,17 @@
 "use client";
 
-import { useActionState, useMemo, useRef, useState, useTransition } from "react";
+import { useActionState, useMemo, useState, useTransition } from "react";
 import { Bell, BellOff, Check, ChevronDown, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   addWhatsAppApiClientAction,
   applyWhatsAppApiClientPlanAction,
   cancelWhatsAppApiClientAction,
-  importWhatsAppApiClientsAction,
   remindWhatsAppApiClientAction,
   syncWhatsAppApiClientsFromPanelAction,
   type BillingActionState,
 } from "@/app/app/clients/actions";
 import { CUSTOM_WHATSAPP_API_PLAN_ID } from "@/lib/billing/whatsapp-api-plans";
-import { whatsAppApiClientCsvTemplate } from "@/lib/billing/whatsapp-api-import-template";
 import type { WhatsAppApiClientRow } from "@/lib/billing/whatsapp-api-clients.shared";
 import type { WhatsAppApiPlanOption } from "@/lib/billing/whatsapp-api-plans";
 import { normalizeWhatsAppPhone } from "@/lib/phone";
@@ -395,29 +393,13 @@ function WhatsAppApiClientCard({ row }: { row: WhatsAppApiClientRow }) {
 
 function WhatsAppApiClientUpload() {
   const router = useRouter();
-  const inputRef = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  function downloadTemplate() {
-    const blob = new Blob([whatsAppApiClientCsvTemplate()], {
-      type: "text/csv;charset=utf-8;",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "whatsapp-api-clients-template.csv";
-    link.click();
-    URL.revokeObjectURL(url);
-  }
-
   return (
     <div className="ws-wa-upload">
       <div className="ws-billing-actions">
-        <button className="saas-ws-action" type="button" onClick={downloadTemplate}>
-          Download template
-        </button>
         <button
           className="btn-cta"
           disabled={pending}
@@ -438,43 +420,10 @@ function WhatsAppApiClientUpload() {
         >
           {pending ? "Syncing…" : "Sync from panel"}
         </button>
-        <button
-          className="saas-ws-action"
-          disabled={pending}
-          type="button"
-          onClick={() => inputRef.current?.click()}
-        >
-          Upload file
-        </button>
-        <input
-          ref={inputRef}
-          accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          hidden
-          type="file"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            event.target.value = "";
-            if (!file) return;
-            setMessage(null);
-            setError(null);
-            const formData = new FormData();
-            formData.set("file", file);
-            startTransition(async () => {
-              const result = await importWhatsAppApiClientsAction(formData);
-              if (!result.ok) {
-                setError(result.message);
-                return;
-              }
-              setMessage(result.message);
-              router.refresh();
-            });
-          }}
-        />
       </div>
       <p className="ws-wa-upload-hint">
         Sync pulls every customer from the Web Based API panel. Same WhatsApp
-        number merges; a new number is added. Recharge and credits write back
-        to the panel.
+        number merges; a new number is added.
       </p>
       {message ? <span className="ws-billing-pill active">{message}</span> : null}
       {error ? <span className="ws-billing-pill overdue">{error}</span> : null}
