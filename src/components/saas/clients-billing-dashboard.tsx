@@ -37,19 +37,19 @@ export function ClientsBillingDashboard({
         }
       />
       <div className="ws-billing-kpis">
-        <div className="ws-billing-kpi">
+        <div className="ws-billing-kpi ws-billing-kpi--clients">
           <span>Clients</span>
           <strong>{totals.clients}</strong>
         </div>
-        <div className="ws-billing-kpi">
+        <div className="ws-billing-kpi ws-billing-kpi--users">
           <span>Active users</span>
           <strong>{totals.activeUsers}</strong>
         </div>
-        <div className="ws-billing-kpi">
+        <div className="ws-billing-kpi ws-billing-kpi--invoiced">
           <span>Invoiced</span>
           <strong>{formatInrPaise(totals.invoicedPaise)}</strong>
         </div>
-        <div className="ws-billing-kpi">
+        <div className="ws-billing-kpi ws-billing-kpi--pending">
           <span>Pending</span>
           <strong>
             {formatInrPaise(totals.pendingPaise)}
@@ -58,15 +58,15 @@ export function ClientsBillingDashboard({
             </small>
           </strong>
         </div>
-        <div className="ws-billing-kpi">
+        <div className="ws-billing-kpi ws-billing-kpi--received">
           <span>Received</span>
           <strong>{formatInrPaise(totals.receivedPaise)}</strong>
         </div>
-        <div className="ws-billing-kpi">
+        <div className="ws-billing-kpi ws-billing-kpi--hold">
           <span>On hold</span>
           <strong>{totals.onHold}</strong>
         </div>
-        <div className="ws-billing-kpi">
+        <div className="ws-billing-kpi ws-billing-kpi--wa">
           <span>WhatsApp API</span>
           <strong>
             {waRegular.length}
