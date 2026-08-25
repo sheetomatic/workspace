@@ -75,6 +75,8 @@ function WorkspaceClientList({ rows }: { rows: ClientBillingRow[] }) {
     });
   }, [query, rows]);
   const searching = Boolean(query.trim());
+  const monthly = visible.filter((row) => row.billingPeriod === "MONTHLY");
+  const annual = visible.filter((row) => row.billingPeriod !== "MONTHLY");
 
   return (
     <>
@@ -99,13 +101,55 @@ function WorkspaceClientList({ rows }: { rows: ClientBillingRow[] }) {
       {visible.length === 0 ? (
         <p className="ws-wa-empty">No client matches that search.</p>
       ) : (
-        <ul className="crm-client-groups-list">
-          {visible.map((row) => (
-            <WorkspaceClientCard key={row.id} row={row} />
-          ))}
-        </ul>
+        <div className="ws-wa-groups">
+          {monthly.length > 0 ? (
+            <WorkspaceClientPeriodGroup
+              title="Monthly"
+              hint="Billed every month"
+              rows={monthly}
+              defaultOpen
+            />
+          ) : null}
+          {annual.length > 0 ? (
+            <WorkspaceClientPeriodGroup
+              title="Annual"
+              hint="Billed once a year"
+              rows={annual}
+              defaultOpen={monthly.length === 0}
+            />
+          ) : null}
+        </div>
       )}
     </>
+  );
+}
+
+function WorkspaceClientPeriodGroup({
+  title,
+  hint,
+  rows,
+  defaultOpen = false,
+}: {
+  title: string;
+  hint: string;
+  rows: ClientBillingRow[];
+  defaultOpen?: boolean;
+}) {
+  return (
+    <details className="ws-wa-group" open={defaultOpen}>
+      <summary className="ws-wa-group-summary">
+        <span>
+          <ChevronDown className="ws-wa-chevron" size={16} aria-hidden />
+          {title} <span className="ws-billing-pill">{rows.length}</span>
+        </span>
+        <small>{hint}</small>
+      </summary>
+      <ul className="crm-client-groups-list">
+        {rows.map((row) => (
+          <WorkspaceClientCard key={row.id} row={row} />
+        ))}
+      </ul>
+    </details>
   );
 }
 
@@ -136,6 +180,7 @@ function WorkspaceClientCard({ row }: { row: ClientBillingRow[][number] }) {
             {row.ownerEmail ? ` · ${row.ownerEmail}` : ""}
           </span>
           <span className="crm-client-meta">
+            {row.billingPeriod === "MONTHLY" ? "Monthly" : "Annual"} ·{" "}
             {row.planLabel} · {row.activeUsers}/{row.maxMembers} users ·{" "}
             {row.renewalLabel}
           </span>
@@ -153,6 +198,10 @@ function WorkspaceClientCard({ row }: { row: ClientBillingRow[][number] }) {
               <dd>
                 {row.activeUsers}/{row.maxMembers}
               </dd>
+            </div>
+            <div>
+              <dt>Billing</dt>
+              <dd>{row.billingPeriod === "MONTHLY" ? "Monthly" : "Annual"}</dd>
             </div>
             <div>
               <dt>Monthly / plan</dt>

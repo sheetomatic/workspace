@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   expiryFromStart,
   nextExpiryAfterRecharge,
+  isMonthlyWhatsAppDuration,
   officialWhatsAppApiPlans,
   resolveWhatsAppApiPlan,
   unofficialWhatsAppApiPlans,
@@ -29,6 +30,8 @@ describe("WhatsApp API plan catalog", () => {
     expect(officialWhatsAppApiPlans().some((plan) => plan.id === "official-advance-monthly")).toBe(
       true,
     );
+    expect(isMonthlyWhatsAppDuration(30)).toBe(true);
+    expect(isMonthlyWhatsAppDuration(365)).toBe(false);
   });
 });
 

@@ -7,7 +7,10 @@ import {
   type ClientBillingRow,
 } from "@/lib/billing/queries";
 import type { WhatsAppApiClientRow } from "@/lib/billing/whatsapp-api-clients.shared";
-import type { WhatsAppApiPlanOption } from "@/lib/billing/whatsapp-api-plans";
+import {
+  isMonthlyWhatsAppDuration,
+  type WhatsAppApiPlanOption,
+} from "@/lib/billing/whatsapp-api-plans";
 
 export function ClientsBillingDashboard({
   rows,
@@ -22,7 +25,9 @@ export function ClientsBillingDashboard({
 }) {
   const totals = summarizeClientBilling(rows);
   const waRegular = whatsappApiClients.filter((row) => row.accountGroup === "REGULAR");
+  const waMonthly = waRegular.filter((row) => isMonthlyWhatsAppDuration(row.durationDays));
   const waDueSoon = waRegular.filter((row) => row.dueSoon).length;
+  const monthlyWorkspaces = rows.filter((row) => row.billingPeriod === "MONTHLY").length;
 
   return (
     <div className="saas-page ws-billing-page">
@@ -52,6 +57,15 @@ export function ClientsBillingDashboard({
         <div className="ws-billing-kpi ws-billing-kpi--hold">
           <span>On hold</span>
           <strong>{totals.onHold}</strong>
+        </div>
+        <div className="ws-billing-kpi ws-billing-kpi--invoiced">
+          <span>Monthly</span>
+          <strong>
+            {monthlyWorkspaces + waMonthly.length}
+            <small>
+              {monthlyWorkspaces} workspace · {waMonthly.length} WhatsApp API
+            </small>
+          </strong>
         </div>
         <div className="ws-billing-kpi ws-billing-kpi--wa">
           <span>WhatsApp API</span>

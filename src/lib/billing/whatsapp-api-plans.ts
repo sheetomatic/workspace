@@ -57,6 +57,10 @@ export function resolveWhatsAppApiPlan(planId: string) {
   return whatsAppApiPlanOptions().find((plan) => plan.id === planId) ?? null;
 }
 
+export function isMonthlyWhatsAppDuration(days: number) {
+  return days > 0 && days <= 31;
+}
+
 export function expiryFromStart(startedAt: Date, durationDays: number) {
   return addUtcDays(startOfUtcDay(startedAt), Math.max(1, durationDays));
 }

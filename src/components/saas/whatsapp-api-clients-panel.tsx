@@ -11,7 +11,10 @@ import {
   syncWhatsAppApiClientsFromPanelAction,
   type BillingActionState,
 } from "@/app/app/clients/actions";
-import { CUSTOM_WHATSAPP_API_PLAN_ID } from "@/lib/billing/whatsapp-api-plans";
+import {
+  CUSTOM_WHATSAPP_API_PLAN_ID,
+  isMonthlyWhatsAppDuration,
+} from "@/lib/billing/whatsapp-api-plans";
 import type { WhatsAppApiClientRow } from "@/lib/billing/whatsapp-api-clients.shared";
 import type { WhatsAppApiPlanOption } from "@/lib/billing/whatsapp-api-plans";
 import { normalizeWhatsAppPhone } from "@/lib/phone";
@@ -69,6 +72,8 @@ export function WhatsAppApiClientsPanel({
     });
   }, [clients, query]);
   const regular = visible.filter((row) => row.accountGroup === "REGULAR");
+  const monthly = regular.filter((row) => isMonthlyWhatsAppDuration(row.durationDays));
+  const longer = regular.filter((row) => !isMonthlyWhatsAppDuration(row.durationDays));
   const inactive = visible.filter((row) => row.accountGroup === "INACTIVE");
   const searching = Boolean(query.trim());
   const totalRegular = clients.filter((row) => row.accountGroup === "REGULAR");
@@ -85,10 +90,10 @@ export function WhatsAppApiClientsPanel({
             <span className="ws-billing-pill">{totalRegular.length}</span>
           </h3>
           <p>
-            Regular clients get auto WhatsApp reminders 10, 7, 3, and 1 day
-            before expiry. Click a group to expand it. Sync pulls every
-            customer from the Web Based API panel — same number merges, a new
-            number is added.
+            Monthly and longer-plan clients get auto WhatsApp reminders 10, 7,
+            3, and 1 day before expiry. Click a group to expand it. Sync pulls
+            every customer from the Web Based API panel — same number merges, a
+            new number is added.
             {dueSoon ? ` ${dueSoon} due in 10 days.` : ""}
             {expired ? ` ${expired} expired.` : ""}
             {inactiveTotal ? ` ${inactiveTotal} inactive.` : ""}
@@ -242,12 +247,20 @@ export function WhatsAppApiClientsPanel({
             <p className="ws-wa-empty">No customer matches that search.</p>
           ) : (
             <>
-              {!searching || regular.length > 0 ? (
+              {!searching || monthly.length > 0 ? (
                 <WhatsAppApiClientGroup
-                  title="Regular"
-                  hint="Active clients — reminders are on"
-                  rows={regular}
+                  title="Monthly"
+                  hint="30-day plans — reminders are on"
+                  rows={monthly}
                   defaultOpen
+                />
+              ) : null}
+              {!searching || longer.length > 0 ? (
+                <WhatsAppApiClientGroup
+                  title="Longer plans"
+                  hint="3 months and above — reminders are on"
+                  rows={longer}
+                  defaultOpen={searching && monthly.length === 0}
                 />
               ) : null}
               {!searching || inactive.length > 0 ? (
@@ -320,7 +333,8 @@ function WhatsAppApiClientCard({ row }: { row: WhatsAppApiClientRow }) {
             {row.company ? ` · ${row.company}` : ""}
           </span>
           <span className="crm-client-meta">
-            {row.planLabel} · {row.daysLeftLabel} ·{" "}
+            {isMonthlyWhatsAppDuration(row.durationDays) ? "Monthly" : "Longer plan"}{" "}
+            · {row.planLabel} · {row.daysLeftLabel} ·{" "}
             {row.creditPoints.toLocaleString("en-IN")} credits
           </span>
         </span>
