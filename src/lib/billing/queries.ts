@@ -23,6 +23,7 @@ export async function listClientBillingRows() {
       product: true,
       allowedModules: true,
       planStatus: true,
+      billingPeriod: true,
       maxMembers: true,
       billing: true,
       organizationPlan: { select: { renewalAt: true, status: true } },
@@ -68,6 +69,11 @@ export async function listClientBillingRows() {
     const owner = org.memberships.find((row) => row.role === "OWNER") ?? org.memberships[0];
     const progress = onboardingProgress(org.onboardingTasks);
     const monthly = billing?.monthlyRatePaise ?? catalog.monthlyRatePaise;
+    const extraUserMonthlyPaise =
+      billing?.extraUserMonthlyPaise ?? catalog.extraUserMonthlyPaise;
+    const includedUsers = billing?.includedUsers ?? catalog.includedUsers;
+    const gstPercent = billing?.gstPercent ?? catalog.gstPercent;
+    const hasPlan = monthly > 0;
     return {
       id: org.id,
       name: org.name,
@@ -82,6 +88,11 @@ export async function listClientBillingRows() {
       maxMembers: org.maxMembers,
       monthlyLabel: formatInrPaise(monthly),
       monthlyPaise: monthly,
+      extraUserMonthlyPaise,
+      includedUsers,
+      gstPercent,
+      billingPeriod: org.billingPeriod,
+      hasPlan,
       renewalAt: org.organizationPlan?.renewalAt ?? latest?.dueAt ?? null,
       renewalLabel: org.organizationPlan?.renewalAt
         ? formatBillingDate(org.organizationPlan.renewalAt)

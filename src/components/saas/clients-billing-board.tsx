@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { WorkspaceProduct } from "@prisma/client";
+import { ClientPlanActions } from "@/components/saas/client-plan-actions";
 import { SOLD_PRODUCT_ORDER } from "@/lib/billing/catalog";
 import type { listClientBillingRows } from "@/lib/billing/queries";
 
@@ -54,7 +55,7 @@ function ProductTable({ rows }: { rows: Row[] }) {
           <tr>
             <th>Client</th>
             <th>Users</th>
-            <th>Monthly</th>
+            <th>Monthly / plan</th>
             <th>Invoiced</th>
             <th>Pending</th>
             <th>Received</th>
@@ -85,6 +86,19 @@ function ProductTable({ rows }: { rows: Row[] }) {
               <td>
                 {row.monthlyLabel}
                 <div>{row.planLabel}</div>
+                <ClientPlanActions
+                  billingPeriod={row.billingPeriod}
+                  clientName={row.name}
+                  extraUserMonthlyPaise={row.extraUserMonthlyPaise}
+                  gstPercent={row.gstPercent}
+                  hasPlan={row.hasPlan}
+                  includedUsers={row.includedUsers}
+                  monthlyPaise={row.monthlyPaise}
+                  organizationId={row.id}
+                  renewalAt={
+                    row.renewalAt ? row.renewalAt.toISOString().slice(0, 10) : ""
+                  }
+                />
               </td>
               <td>{row.invoicedLabel}</td>
               <td>

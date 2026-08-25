@@ -105,7 +105,65 @@ export async function updateClientBillingAction(
   await markOnboardingTask(organizationId, "sale_locked", true, user.id);
 
   revalidateBilling(organizationId);
-  return { ok: true, message: "Billing rates saved." };
+  return { ok: true, message: "Billing plan saved." };
+}
+
+export async function deleteClientBillingPlanAction(
+  _prev: BillingActionState,
+  formData: FormData,
+): Promise<BillingActionState> {
+  const user = await requirePlatformAdmin();
+  if (!user) {
+    return { ok: false, message: "Only Sheetomatic super admins can delete a billing plan." };
+  }
+
+  const organizationId = String(formData.get("organizationId") ?? "").trim();
+  if (!organizationId) {
+    return { ok: false, message: "Workspace not found." };
+  }
+
+  const organization = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: { id: true, isPrimary: true, billing: { select: { id: true } } },
+  });
+  if (!organization || organization.isPrimary) {
+    return { ok: false, message: "Workspace not found." };
+  }
+
+  const openInvoice = await prisma.subscriptionInvoice.findFirst({
+    where: {
+      organizationId,
+      status: { in: ["DRAFT", "SENT", "OVERDUE"] },
+    },
+    select: { number: true },
+  });
+  if (openInvoice) {
+    return {
+      ok: false,
+      message: `Void or collect ${openInvoice.number} before deleting the plan.`,
+    };
+  }
+
+  await prisma.organizationBilling.upsert({
+    where: { organizationId },
+    create: {
+      organizationId,
+      monthlyRatePaise: 0,
+      extraUserMonthlyPaise: 0,
+      includedUsers: 0,
+    },
+    update: {
+      monthlyRatePaise: 0,
+      extraUserMonthlyPaise: 0,
+      includedUsers: 0,
+    },
+  });
+
+  await syncOrganizationPlanRecord(organizationId, { renewalAt: null });
+  await markOnboardingTask(organizationId, "billing_set", false, user.id);
+
+  revalidateBilling(organizationId);
+  return { ok: true, message: "Billing plan removed. Invoices already issued stay on the record." };
 }
 
 export async function generateClientInvoiceAction(
