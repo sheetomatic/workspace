@@ -1,0 +1,200 @@
+.crm-meet-cal {
+  display: grid;
+  gap: 1rem;
+}
+
+.crm-meet-cal-today {
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  background: #eff6ff;
+  padding: 1rem 1.1rem;
+}
+
+.crm-meet-cal-kicker {
+  margin: 0 0 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #1d4ed8;
+}
+
+.crm-meet-cal-today h3,
+.crm-meet-cal-day h3,
+.crm-meet-cal-nav h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+}
+
+.crm-meet-cal-empty-today {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.crm-meet-cal-board {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  padding: 1rem;
+}
+
+.crm-meet-cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.crm-meet-cal-weekdays,
+.crm-meet-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.crm-meet-cal-weekdays span {
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.crm-meet-cal-cell {
+  min-height: 3.1rem;
+  border: 1px solid #eef2f6;
+  border-radius: 10px;
+  background: #f8fafc;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 0.15rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.crm-meet-cal-cell.is-pad {
+  background: transparent;
+  border-color: transparent;
+  cursor: default;
+}
+
+.crm-meet-cal-cell.is-past {
+  color: #94a3b8;
+}
+
+.crm-meet-cal-cell.has-meetings {
+  background: #fff;
+  border-color: #bfdbfe;
+}
+
+.crm-meet-cal-cell.is-today {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px #dbeafe;
+  background: #eff6ff;
+  font-weight: 700;
+}
+
+.crm-meet-cal-cell.is-selected {
+  border-color: #0f172a;
+}
+
+.crm-meet-cal-cell em {
+  font-style: normal;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #1d4ed8;
+}
+
+.crm-meet-cal-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.crm-meet-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.85rem 1rem;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.crm-meet-card.is-today {
+  border-color: #93c5fd;
+  background: #f8fbff;
+}
+
+.crm-meet-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.crm-meet-card-head strong {
+  display: block;
+}
+
+.crm-meet-card-head span,
+.crm-meet-notes,
+.crm-meet-missing {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.crm-meet-card-head em {
+  font-style: normal;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #334155;
+  background: #f1f5f9;
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem;
+}
+
+.crm-meet-card-actions,
+.crm-meet-save {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.crm-meet-save {
+  display: grid;
+}
+
+.crm-meet-save label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.crm-meet-save input,
+.crm-meet-save textarea {
+  width: 100%;
+  border: 1px solid #d6dee8;
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  font: inherit;
+}
+
+.crm-meet-cal-msg {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.crm-meet-cal-msg.is-ok {
+  color: #166534;
+}
+
+.crm-meet-cal-msg.is-err {
+  color: #b91c1c;
+}

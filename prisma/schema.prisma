@@ -2988,6 +2988,7 @@ model InboundLeadFollowUp {
   type            InboundLeadFollowUpType  @default(LEAD)
   scheduledAt     DateTime
   completedAt     DateTime?
+  meetUrl         String?
   notes           String?
   waNotifiedAt    DateTime?
   createdByUserId String?

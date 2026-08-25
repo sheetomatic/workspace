@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/db";
+import { startOfIstDay } from "@/lib/leads/crm-meetings";
 import { mergeLeadContactWhere } from "@/lib/leads/contact-validation";
 import type { CrmModuleNavCounts } from "@/lib/leads/crm-module-stats-types";
 import { NEXT_TIME_LEAD_STATUSES } from "@/lib/leads/status-labels";
@@ -43,7 +44,7 @@ export async function getCrmModuleNavCounts(
       where: {
         organizationId,
         completedAt: null,
-        scheduledAt: { gte: now },
+        scheduledAt: { gte: startOfIstDay(now) },
       },
     }),
     prisma.inboundLeadQuotation.aggregate({
@@ -86,8 +87,12 @@ export async function getCrmModuleNavCounts(
 
 export async function listCrmMeetings(organizationId: string, take = 100) {
   return prisma.inboundLeadFollowUp.findMany({
-    where: { organizationId },
-    orderBy: { scheduledAt: "desc" },
+    where: {
+      organizationId,
+      completedAt: null,
+      scheduledAt: { gte: startOfIstDay() },
+    },
+    orderBy: { scheduledAt: "asc" },
     take,
     include: {
       lead: {
@@ -97,6 +102,7 @@ export async function listCrmMeetings(organizationId: string, take = 100) {
           phone: true,
           company: true,
           status: true,
+          meetingNotes: true,
         },
       },
       assignee: { select: { id: true, name: true, email: true } },
@@ -173,22 +179,15 @@ export async function listCrmNextTimeLeads(
 }
 
 export async function getCrmMeetingsStats(organizationId: string) {
-  const now = new Date();
-  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const dayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-  const [upcoming, overdue, today] = await Promise.all([
+  const dayStart = startOfIstDay();
+  const dayEnd = new Date(dayStart.getTime() + 86_400_000);
+  const weekEnd = new Date(dayStart.getTime() + 7 * 86_400_000);
+  const [upcoming, today, week] = await Promise.all([
     prisma.inboundLeadFollowUp.count({
       where: {
         organizationId,
         completedAt: null,
-        scheduledAt: { gte: now },
-      },
-    }),
-    prisma.inboundLeadFollowUp.count({
-      where: {
-        organizationId,
-        completedAt: null,
-        scheduledAt: { lt: now },
+        scheduledAt: { gte: dayStart },
       },
     }),
     prisma.inboundLeadFollowUp.count({
@@ -198,6 +197,13 @@ export async function getCrmMeetingsStats(organizationId: string) {
         scheduledAt: { gte: dayStart, lt: dayEnd },
       },
     }),
+    prisma.inboundLeadFollowUp.count({
+      where: {
+        organizationId,
+        completedAt: null,
+        scheduledAt: { gte: dayStart, lt: weekEnd },
+      },
+    }),
   ]);
-  return { upcoming, overdue, today, total: upcoming + overdue };
+  return { upcoming, today, week, total: upcoming };
 }

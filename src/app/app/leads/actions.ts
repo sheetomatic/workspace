@@ -1697,6 +1697,54 @@ export async function applyAiSuggestedLeadStatus(leadId: string) {
   return { ok: true, status: nextStatus };
 }
 
+export async function saveCrmMeetingDetailsAction(formData: FormData) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  const followUpId = String(formData.get("followUpId") ?? "").trim();
+  const meetUrlRaw = String(formData.get("meetUrl") ?? "").trim();
+  const notes = String(formData.get("notes") ?? "").trim();
+
+  if (!hasMinimumRole(user.role, "MANAGER")) {
+    return { ok: false as const, message: "Managers can save meeting details." };
+  }
+
+  const followUp = await prisma.inboundLeadFollowUp.findFirst({
+    where: { id: followUpId, organizationId: user.organizationId },
+    select: { id: true, leadId: true, notes: true },
+  });
+  if (!followUp) {
+    return { ok: false as const, message: "Meeting not found." };
+  }
+  if (!(await canWorkLead(user, followUp.leadId))) {
+    return { ok: false as const, message: LEAD_WORK_DENIED };
+  }
+
+  let meetUrl: string | null = null;
+  if (meetUrlRaw) {
+    if (!/^https?:\/\//i.test(meetUrlRaw)) {
+      return { ok: false as const, message: "Meet link must start with https://." };
+    }
+    meetUrl = meetUrlRaw.slice(0, 500);
+  }
+
+  await prisma.inboundLeadFollowUp.update({
+    where: { id: followUp.id },
+    data: {
+      meetUrl,
+      notes: notes || followUp.notes,
+    },
+  });
+  if (notes) {
+    await prisma.inboundLead.update({
+      where: { id: followUp.leadId },
+      data: { meetingNotes: notes, modifiedAt: new Date() },
+    });
+  }
+
+  revalidatePath("/app/leads/meetings");
+  revalidatePath("/app/leads");
+  return { ok: true as const, message: "Meeting details saved." };
+}
+
 export async function updateLeadMeetingNotes(leadId: string, meetingNotes: string) {
   const user = await requireSession(undefined, { module: "CRM" });
   if (!(await canWorkLead(user, leadId))) {
@@ -1882,6 +1930,7 @@ export async function scheduleLeadClientMeeting(params: {
       leadId: lead.id,
       type: "MEETING",
       scheduledAt: startsAt,
+      meetUrl,
       notes:
         scheduleNote ||
         `Client meeting scheduled (${durationMinutes} min)${meetUrl ? ` · ${meetUrl}` : ""}${hostIsScheduler ? "" : ` · with ${hostLabel}`}`,
