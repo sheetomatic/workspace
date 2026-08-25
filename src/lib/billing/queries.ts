@@ -184,6 +184,57 @@ export async function getClientBillingDetail(organizationId: string) {
   return org;
 }
 
+export async function listPlatformInvoices() {
+  const invoices = await prisma.subscriptionInvoice.findMany({
+    where: {
+      status: { not: "VOID" },
+      organization: { isPrimary: false, slug: { not: PRIMARY_ORG_SLUG } },
+    },
+    orderBy: [{ dueAt: "asc" }, { issuedAt: "desc" }],
+    select: {
+      id: true,
+      number: true,
+      status: true,
+      totalPaise: true,
+      paidPaise: true,
+      dueAt: true,
+      issuedAt: true,
+      periodStart: true,
+      periodEnd: true,
+      reminderCount: true,
+      organization: { select: { id: true, name: true, slug: true } },
+    },
+  });
+
+  return invoices.map((invoice) => {
+    const duePaise = Math.max(0, invoice.totalPaise - invoice.paidPaise);
+    const group =
+      invoice.status === "PAID"
+        ? "PAID"
+        : invoice.status === "OVERDUE"
+          ? "OVERDUE"
+          : "OPEN";
+    return {
+      id: invoice.id,
+      number: invoice.number,
+      status: invoice.status,
+      group,
+      organizationId: invoice.organization.id,
+      clientName: invoice.organization.name,
+      clientSlug: invoice.organization.slug,
+      totalLabel: formatInrPaise(invoice.totalPaise),
+      paidLabel: formatInrPaise(invoice.paidPaise),
+      dueAmountLabel: formatInrPaise(duePaise),
+      dueDateLabel: formatBillingDate(invoice.dueAt),
+      issuedLabel: formatBillingDate(invoice.issuedAt),
+      periodLabel: `${formatBillingDate(invoice.periodStart)} – ${formatBillingDate(invoice.periodEnd)}`,
+      reminderCount: invoice.reminderCount,
+    };
+  });
+}
+
+export type PlatformInvoiceRow = Awaited<ReturnType<typeof listPlatformInvoices>>[number];
+
 export async function getWorkspaceBillingSnapshot(organizationId: string) {
   return prisma.organization.findUnique({
     where: { id: organizationId },

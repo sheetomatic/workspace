@@ -70,17 +70,17 @@ export default async function ClientBillingDetailPage({
       />
 
       <div className="ws-billing-kpis">
-        <div className="ws-billing-kpi">
+        <div className="ws-billing-kpi ws-billing-kpi--clients">
           <span>Status</span>
           <strong>{detail.status}</strong>
         </div>
-        <div className="ws-billing-kpi">
+        <div className="ws-billing-kpi ws-billing-kpi--users">
           <span>Active users</span>
           <strong>
             {detail.memberships.length}/{detail.maxMembers}
           </strong>
         </div>
-        <div className="ws-billing-kpi">
+        <div className="ws-billing-kpi ws-billing-kpi--invoiced">
           <span>Monthly (excl. GST)</span>
           <strong>
             {formatInrPaise(
@@ -89,7 +89,7 @@ export default async function ClientBillingDetailPage({
             )}
           </strong>
         </div>
-        <div className="ws-billing-kpi">
+        <div className="ws-billing-kpi ws-billing-kpi--pending">
           <span>Renewal</span>
           <strong>{renewal ? formatBillingDate(renewal) : "Not set"}</strong>
         </div>

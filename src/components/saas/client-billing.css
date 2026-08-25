@@ -318,6 +318,16 @@
   background: #fff;
   color: #334155;
   cursor: pointer;
+  text-decoration: none;
+}
+
+.ws-billing-groups .crm-client-groups-toolbar,
+.saas-panel .crm-client-groups-toolbar {
+  margin: 0.85rem 0 0.35rem;
+}
+
+.ws-billing-groups .crm-client-groups-list {
+  margin-top: 0.65rem;
 }
 
 .ws-billing-icon-btn:hover:not(:disabled) {

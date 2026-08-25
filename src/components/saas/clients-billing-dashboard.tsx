@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ClientsBillingBoard } from "@/components/saas/clients-billing-board";
 import { PageHeader } from "@/components/saas/page-header";
 import { WhatsAppApiClientsPanel } from "@/components/saas/whatsapp-api-clients-panel";
-import { formatInrPaise } from "@/lib/billing/money";
 import {
   summarizeClientBilling,
   type ClientBillingRow,
@@ -14,7 +13,7 @@ export function ClientsBillingDashboard({
   rows,
   whatsappApiClients = [],
   whatsappApiPlans = [],
-  title = "Clients & billing",
+  title = "Clients",
 }: {
   rows: ClientBillingRow[];
   whatsappApiClients?: WhatsAppApiClientRow[];
@@ -29,11 +28,16 @@ export function ClientsBillingDashboard({
     <div className="saas-page ws-billing-page">
       <PageHeader
         title={title}
-        description="Workspace clients plus WhatsApp API recharge clients. Reminders go out before each plan expires. Sheetomatic Technologies is not billed here."
+        description="Workspace clients and WhatsApp API recharge clients. Click a row for details. Invoices and collections are on Billing. Sheetomatic Technologies is not listed here."
         actions={
-          <Link className="btn-cta" href="/app/team">
-            Create workspace
-          </Link>
+          <>
+            <Link className="saas-ws-action" href="/app/billing">
+              Billing
+            </Link>
+            <Link className="btn-cta" href="/app/team">
+              Create workspace
+            </Link>
+          </>
         }
       />
       <div className="ws-billing-kpis">
@@ -44,23 +48,6 @@ export function ClientsBillingDashboard({
         <div className="ws-billing-kpi ws-billing-kpi--users">
           <span>Active users</span>
           <strong>{totals.activeUsers}</strong>
-        </div>
-        <div className="ws-billing-kpi ws-billing-kpi--invoiced">
-          <span>Invoiced</span>
-          <strong>{formatInrPaise(totals.invoicedPaise)}</strong>
-        </div>
-        <div className="ws-billing-kpi ws-billing-kpi--pending">
-          <span>Pending</span>
-          <strong>
-            {formatInrPaise(totals.pendingPaise)}
-            <small>
-              {totals.pendingInvoices} invoice{totals.pendingInvoices === 1 ? "" : "s"}
-            </small>
-          </strong>
-        </div>
-        <div className="ws-billing-kpi ws-billing-kpi--received">
-          <span>Received</span>
-          <strong>{formatInrPaise(totals.receivedPaise)}</strong>
         </div>
         <div className="ws-billing-kpi ws-billing-kpi--hold">
           <span>On hold</span>

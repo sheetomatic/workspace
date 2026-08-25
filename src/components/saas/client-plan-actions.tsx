@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { Check, Loader2, PackagePlus, Pencil, Plus, Trash2, X } from "lucide-react";
 import {
   addClientAddonsAction,
   deleteClientBillingPlanAction,
@@ -58,31 +59,37 @@ export function ClientPlanActions({
 
   return (
     <div className="ws-plan-actions">
-      <div className="ws-billing-actions">
+      <div className="ws-wa-icon-row">
         {hasPlan ? (
           <button
-            className="saas-ws-action"
+            className="ws-billing-icon-btn"
             type="button"
+            title="Change plan"
+            aria-label="Change plan"
             onClick={() => setOpen(open === "change" ? null : "change")}
           >
-            Change
+            <Pencil size={16} aria-hidden />
           </button>
         ) : (
           <button
-            className="saas-ws-action"
+            className="ws-billing-icon-btn"
             type="button"
+            title="Add plan"
+            aria-label="Add plan"
             onClick={() => setOpen(open === "add" ? null : "add")}
           >
-            Add plan
+            <Plus size={16} aria-hidden />
           </button>
         )}
         {availableAddons.length > 0 ? (
           <button
-            className="saas-ws-action"
+            className="ws-billing-icon-btn"
             type="button"
+            title="Add-on"
+            aria-label="Add-on"
             onClick={() => setOpen(open === "addon" ? null : "addon")}
           >
-            Add-On
+            <PackagePlus size={16} aria-hidden />
           </button>
         ) : null}
         {hasPlan ? (
@@ -99,8 +106,18 @@ export function ClientPlanActions({
             }}
           >
             <input name="organizationId" type="hidden" value={organizationId} />
-            <button className="saas-ws-action danger" disabled={deleting} type="submit">
-              {deleting ? "Removing…" : "Delete"}
+            <button
+              className={`ws-billing-icon-btn danger${deleting ? " is-busy" : ""}`}
+              disabled={deleting}
+              type="submit"
+              title="Remove plan"
+              aria-label="Remove plan"
+            >
+              {deleting ? (
+                <Loader2 size={16} aria-hidden />
+              ) : (
+                <Trash2 size={16} aria-hidden />
+              )}
             </button>
           </form>
         ) : null}
@@ -131,8 +148,18 @@ export function ClientPlanActions({
               <form action={removeAddonAction}>
                 <input name="organizationId" type="hidden" value={organizationId} />
                 <input name="module" type="hidden" value={line.module} />
-                <button className="saas-ws-action danger" disabled={removingAddon} type="submit">
-                  Remove
+                <button
+                  className={`ws-billing-icon-btn danger${removingAddon ? " is-busy" : ""}`}
+                  disabled={removingAddon}
+                  type="submit"
+                  title="Remove add-on"
+                  aria-label={`Remove ${line.label}`}
+                >
+                  {removingAddon ? (
+                    <Loader2 size={16} aria-hidden />
+                  ) : (
+                    <X size={16} aria-hidden />
+                  )}
                 </button>
               </form>
             </li>
@@ -159,12 +186,28 @@ export function ClientPlanActions({
               </span>
             </label>
           ))}
-          <div className="ws-billing-actions">
-            <button className="btn-cta btn-primary" disabled={addingAddons} type="submit">
-              {addingAddons ? "Adding…" : "Add selected"}
+          <div className="ws-wa-icon-row">
+            <button
+              className={`ws-billing-icon-btn${addingAddons ? " is-busy" : ""}`}
+              disabled={addingAddons}
+              type="submit"
+              title="Add selected add-ons"
+              aria-label="Add selected add-ons"
+            >
+              {addingAddons ? (
+                <Loader2 size={16} aria-hidden />
+              ) : (
+                <Check size={16} aria-hidden />
+              )}
             </button>
-            <button className="saas-ws-action" type="button" onClick={() => setOpen(null)}>
-              Cancel
+            <button
+              className="ws-billing-icon-btn"
+              type="button"
+              title="Cancel"
+              aria-label="Cancel"
+              onClick={() => setOpen(null)}
+            >
+              <X size={16} aria-hidden />
             </button>
           </div>
         </form>
@@ -217,16 +260,28 @@ export function ClientPlanActions({
             Renewal
             <input defaultValue={renewalAt} name="renewalAt" type="date" />
           </label>
-          <div className="ws-billing-actions">
-            <button className="btn-cta btn-primary" disabled={saving} type="submit">
-              {saving ? "Saving…" : open === "add" ? "Add plan" : "Save plan"}
+          <div className="ws-wa-icon-row">
+            <button
+              className={`ws-billing-icon-btn${saving ? " is-busy" : ""}`}
+              disabled={saving}
+              type="submit"
+              title={open === "add" ? "Add plan" : "Save plan"}
+              aria-label={open === "add" ? "Add plan" : "Save plan"}
+            >
+              {saving ? (
+                <Loader2 size={16} aria-hidden />
+              ) : (
+                <Check size={16} aria-hidden />
+              )}
             </button>
             <button
-              className="saas-ws-action"
+              className="ws-billing-icon-btn"
               type="button"
+              title="Cancel"
+              aria-label="Cancel"
               onClick={() => setOpen(null)}
             >
-              Cancel
+              <X size={16} aria-hidden />
             </button>
           </div>
           {saveState.message ? (

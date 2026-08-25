@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ClientsBillingDashboard } from "@/components/saas/clients-billing-dashboard";
+import { PlatformBillingDashboard } from "@/components/saas/platform-billing-dashboard";
 import { PageHeader } from "@/components/saas/page-header";
 import "@/components/saas/client-billing.css";
 import {
@@ -11,13 +11,12 @@ import {
 import { formatBillingDate } from "@/lib/billing/dates";
 import { extraUsers } from "@/lib/billing/prorata";
 import { formatInrPaise } from "@/lib/billing/money";
-import { listWhatsAppApiClients } from "@/lib/billing/whatsapp-api-clients";
-import { whatsAppApiPlanOptions } from "@/lib/billing/whatsapp-api-plans";
 import {
   getWorkspaceBillingSnapshot,
   listClientBillingRows,
+  listPlatformInvoices,
+  summarizeClientBilling,
 } from "@/lib/billing/queries";
-import { ensureOnboardingTasks } from "@/lib/billing/invoices";
 import { SHEETOMATIC_QUOTATION_ACCOUNT } from "@/lib/leads/seller-account";
 import { hasMinimumRole } from "@/lib/permissions";
 import { canManageSuperAdmins } from "@/lib/platform";
@@ -30,17 +29,14 @@ export default async function WorkspaceBillingPage() {
   }
 
   if (canManageSuperAdmins(user, user.organizationSlug)) {
-    const [rows, whatsappApiClients] = await Promise.all([
+    const [rows, invoices] = await Promise.all([
       listClientBillingRows(),
-      listWhatsAppApiClients(),
+      listPlatformInvoices(),
     ]);
-    await Promise.all(rows.map((row) => ensureOnboardingTasks(row.id)));
     return (
-      <ClientsBillingDashboard
-        rows={rows}
-        whatsappApiClients={whatsappApiClients}
-        whatsappApiPlans={whatsAppApiPlanOptions()}
-        title="Billing"
+      <PlatformBillingDashboard
+        totals={summarizeClientBilling(rows)}
+        invoices={invoices}
       />
     );
   }
@@ -77,21 +73,21 @@ export default async function WorkspaceBillingPage() {
       ) : null}
 
       <div className="ws-billing-kpis">
-        <div className="ws-billing-kpi">
+        <div className="ws-billing-kpi ws-billing-kpi--clients">
           <span>Product</span>
           <strong>{productLabel}</strong>
         </div>
-        <div className="ws-billing-kpi">
+        <div className="ws-billing-kpi ws-billing-kpi--users">
           <span>Users</span>
           <strong>
             {org.memberships.length}/{org.maxMembers}
           </strong>
         </div>
-        <div className="ws-billing-kpi">
+        <div className="ws-billing-kpi ws-billing-kpi--invoiced">
           <span>Monthly (excl. GST)</span>
           <strong>{formatInrPaise(monthly)}</strong>
         </div>
-        <div className="ws-billing-kpi">
+        <div className="ws-billing-kpi ws-billing-kpi--pending">
           <span>Next renewal</span>
           <strong>{renewal ? formatBillingDate(renewal) : "—"}</strong>
         </div>
