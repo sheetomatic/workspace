@@ -27,6 +27,8 @@ import { addCredits, readCredits, spendCredit, WELCOME_CREDITS } from "./credits
 import { AppRuntime } from "./runtime/AppRuntime";
 import { createMockAdapter, type SheetAdapter } from "./sheet/mockAdapter";
 import { withLiveSheetSync } from "./sheet/liveSync";
+import { saveAppBuilderStudioAction } from "@/app/app/app-builder/actions";
+import type { AppBuilderStudioSnapshot } from "@/lib/app-builder/persist";
 import "./App.css";
 
 type Editor = "layout" | "data" | "users" | "settings";
@@ -64,13 +66,21 @@ function googleCallbackNote(flag: string | null) {
 
 export default function AppBuilderStudio({
   googleAuthReady = false,
+  initial = null,
 }: {
   googleAuthReady?: boolean;
+  initial?: AppBuilderStudioSnapshot | null;
 }) {
-  const [config, setConfig] = useState<AppConfig>(() => createEmptyConfig("My app"));
+  const [config, setConfig] = useState<AppConfig>(
+    () => initial?.config ?? createEmptyConfig("My app"),
+  );
   const liveSheetId = useRef<string | null>(null);
+  const skipSave = useRef(true);
   const [sheet] = useState<SheetAdapter>(() =>
-    withLiveSheetSync(createMockAdapter(emptyBook), () => liveSheetId.current),
+    withLiveSheetSync(
+      createMockAdapter(initial?.workbook ?? emptyBook),
+      () => liveSheetId.current,
+    ),
   );
   const [editor, setEditor] = useState<Editor>("layout");
   const [focus, setFocus] = useState("home");
@@ -95,7 +105,9 @@ export default function AppBuilderStudio({
   const [importTabs, setImportTabs] = useState<string[]>([]);
   const [importTab, setImportTab] = useState("");
   const [importHeaderRow, setImportHeaderRow] = useState(1);
-  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(
+    initial?.templateId ?? null,
+  );
   const [lastPrompt, setLastPrompt] = useState("");
   const [dataPane, setDataPane] = useState<"rows" | "schema">("rows");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -104,6 +116,24 @@ export default function AppBuilderStudio({
   const workbook = useMemo(() => sheet.getWorkbook(), [sheet, rev]);
   const screens = config.views;
   const bump = () => setRev((n) => n + 1);
+
+  useEffect(() => {
+    if (skipSave.current) {
+      skipSave.current = false;
+      return;
+    }
+    if (Object.keys(workbook.tabs).length === 0) return;
+    const timer = window.setTimeout(() => {
+      void saveAppBuilderStudioAction({
+        config,
+        workbook,
+        templateId: activeTemplateId,
+      }).then((result) => {
+        if (result.ok) setNote(result.message);
+      });
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [config, workbook, activeTemplateId]);
 
   function applyGeneratedPlan(plan: AppPlan, noteText: string) {
     sheet.replace(structuredClone(plan.workbook));

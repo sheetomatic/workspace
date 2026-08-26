@@ -303,6 +303,7 @@ model Organization {
   subscriptionPayments SubscriptionPayment[]
   onboardingTasks      ClientOnboardingTask[]
   appBuilderGoogleConnection AppBuilderGoogleConnection?
+  appBuilderApp              AppBuilderApp?
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
 }
@@ -321,6 +322,18 @@ model AppBuilderGoogleConnection {
   updatedAt            DateTime     @updatedAt
 
   @@index([googleEmail])
+}
+
+model AppBuilderApp {
+  id             String       @id @default(cuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  config         Json
+  workbook       Json
+  templateId     String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }
 
 model OrganizationPlan {
