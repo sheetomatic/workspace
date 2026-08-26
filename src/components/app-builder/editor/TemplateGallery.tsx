@@ -172,8 +172,8 @@ export function TemplateGallery(props: Props) {
             </ul>
           </div>
           <aside>
-            <em>From Sheet to phone</em>
-            <small>Connect a Gmail Sheet. Infer screens. Staff use PIN.</small>
+            <em>AppSheet + Glide</em>
+            <small>Formulas and bots. Screens that look finished. Gmail Sheet + PIN.</small>
             <button type="button" className="gs-cta" onClick={() => setPage("store")}>
               See the store
             </button>
@@ -321,10 +321,11 @@ function Home({
   return (
     <>
       <section className="gs-home is-lead">
-        <h1>Start a phone app from your Sheet</h1>
+        <h1>AppSheet power. Glide screens. Your Sheet.</h1>
         <p className="store-lead">
-          No spreadsheet yet? Describe the app and create a new one. Or upload, paste a
-          link, or pick a template. Staff use a link and PIN.
+          Formulas, refs, and bots like AppSheet. Phone, tablet, and desktop like
+          Glide. No spreadsheet yet? Describe the app. Or upload, paste a link,
+          or pick a template. Staff use a link and PIN — no Workspace seat.
         </p>
         <AskBar
           prompt={prompt}

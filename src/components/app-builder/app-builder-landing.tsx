@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { EyeOff, ImageIcon, Sigma, Zap } from "lucide-react";
 import { MarketingPage, SiteFooter, SiteHeader } from "@/app/components";
-import { TEMPLATES } from "@/lib/app-builder";
+import {
+  APP_BUILDER_USP_LINE,
+  APP_BUILDER_USP_PILLARS,
+  APP_BUILDER_USP_ROWS,
+  APP_BUILDER_USP_WHY,
+  TEMPLATES,
+} from "@/lib/app-builder";
 import { APP_BUILDER_LOGIN_HREF, APP_BUILDER_STUDIO_HREF } from "@/lib/workspace-auth-links";
 import { AppBuilderHeroSplit } from "./app-builder-hero-split";
 import { TemplateNamePicker } from "./template-name-picker";
@@ -60,13 +66,13 @@ export function AppBuilderLanding() {
         titleAs="h1"
         title={
           <>
-            Your Sheet.
+            AppSheet power.
             <br />
-            A phone app.
+            Glide screens.
           </>
         }
-        lead="On Google Workspace. Staff open a link and PIN — no extra seat, no Marketplace."
-        facts={["Google Workspace", "40 free credits", "PIN for staff"]}
+        lead={APP_BUILDER_USP_WHY}
+        facts={["Gmail Sheet", "PIN for staff", "Phone · tablet · desktop"]}
         plan={featured}
         actions={
           <>
@@ -118,14 +124,63 @@ export function AppBuilderLanding() {
         </div>
       </section>
 
+      <section className="ab-land-section">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8">
+          <div className="ab-land-head">
+            <p className="type-kicker text-sky-700">Why us</p>
+            <h2>{APP_BUILDER_USP_LINE}</h2>
+            <p>
+              AppSheet is powerful and ugly. Glide is beautiful and thin. We
+              ship the combination owners actually buy — on a Gmail Sheet.
+            </p>
+          </div>
+          <div className="ab-land-pillars">
+            {APP_BUILDER_USP_PILLARS.map((pillar) => (
+              <article className={`ab-land-card is-${pillar.id}`} key={pillar.id}>
+                <em>{pillar.id === "us" ? "USP" : pillar.id}</em>
+                <strong>{pillar.title}</strong>
+                <ul>
+                  {pillar.items.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+          <div className="ab-land-compare-wrap">
+            <table className="ab-land-compare">
+              <caption>What we take from AppSheet and Glide</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Need</th>
+                  <th scope="col">AppSheet</th>
+                  <th scope="col">Glide</th>
+                  <th scope="col">Sheetomatic</th>
+                </tr>
+              </thead>
+              <tbody>
+                {APP_BUILDER_USP_ROWS.map((row) => (
+                  <tr key={row.feature}>
+                    <th scope="row">{row.feature}</th>
+                    <td>{row.appsheet}</td>
+                    <td>{row.glide}</td>
+                    <td>{row.us}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       <section className="ab-land-section soft">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
           <div className="ab-land-head">
-            <p className="type-kicker text-sky-700">On the phone</p>
-            <h2>The Glide pieces owners actually ask for.</h2>
+            <p className="type-kicker text-sky-700">On every device</p>
+            <h2>Glide look. AppSheet depth.</h2>
             <p>
-              Screens come from your tabs. Relations, lookups, and buttons sit
-              on top — without formulas in the Sheet.
+              Screens come from your tabs. Formulas, bots, and buttons sit on
+              top — without IMPORTRANGE in the Sheet.
             </p>
           </div>
           <div className="ab-land-feats">

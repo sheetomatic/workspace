@@ -594,7 +594,13 @@ function GlideExtrasEditor({
 
   function addComputed(kind: AppComputedColumn["kind"]) {
     const name =
-      kind === "math" ? "Line Amount" : kind === "lookup" ? "Lookup" : "Flag";
+      kind === "math"
+        ? "Line Amount"
+        : kind === "lookup"
+          ? "Lookup"
+          : kind === "formula"
+            ? "Formula"
+            : "Flag";
     const rel = relations[0];
     const next: AppComputedColumn = {
       id: `${view.tab}-${kind}-${Date.now().toString().slice(-4)}`,
@@ -611,6 +617,7 @@ function GlideExtrasEditor({
       whenValue: "Open",
       thenValue: "Needs action",
       elseValue: "Ok",
+      formula: headers[0] ? `CONCATENATE([${headers[0]}])` : "[Name]",
     };
     onChange({
       ...config,
@@ -639,7 +646,10 @@ function GlideExtrasEditor({
   return (
     <>
       <p className="aside-label">Computed columns</p>
-      <p className="hint">Lookup, math, or if-then-else. Shown in the phone, not written to the Sheet.</p>
+      <p className="hint">
+        Glide: lookup, math, if-then. AppSheet: + Formula with [Col]. Shown on
+        the phone, not written back to the Sheet.
+      </p>
       {computed.map((col) => (
         <div className="rel-add" key={col.id}>
           <input value={col.name} onChange={(e) => patchComputed(col.id, { name: e.target.value })} />
@@ -705,6 +715,13 @@ function GlideExtrasEditor({
               </select>
             </>
           ) : null}
+          {col.kind === "formula" ? (
+            <input
+              value={col.formula || ""}
+              placeholder={'CONCATENATE([Name]," — ",[Company])'}
+              onChange={(e) => patchComputed(col.id, { formula: e.target.value })}
+            />
+          ) : null}
           {col.kind === "if" ? (
             <>
               <select
@@ -762,6 +779,7 @@ function GlideExtrasEditor({
         <button type="button" onClick={() => addComputed("math")}>+ Math</button>
         <button type="button" onClick={() => addComputed("lookup")}>+ Lookup</button>
         <button type="button" onClick={() => addComputed("if")}>+ If-then</button>
+        <button type="button" onClick={() => addComputed("formula")}>+ Formula</button>
       </div>
 
       <p className="aside-label">Visibility</p>

@@ -1550,6 +1550,11 @@ function SettingsEditor({
         />
       </label>
       <p className="hint">
+        <strong>Why us:</strong> AppSheet formulas, refs, bots, and PDFs — on
+        Glide-style phone, tablet, and desktop. Staff use a PIN. Data stays a
+        Gmail Sheet.
+      </p>
+      <p className="hint">
         <strong>Connect to Google is blocked for everyone</strong> until the
         Cloud OAuth consent screen is published. Today it is in Testing — that
         is the 403 you saw. In Google Cloud Console → APIs &amp; Services →

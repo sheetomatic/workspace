@@ -488,6 +488,64 @@ body:has(.ab-land-hero) {
   margin-bottom: 10px;
 }
 
+.ab-land-pillars {
+  display: grid;
+  gap: 14px;
+}
+@media (min-width: 800px) {
+  .ab-land-pillars {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.ab-land-pillars ul {
+  margin: 0.7rem 0 0;
+  padding-left: 1.1rem;
+  color: #475569;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.ab-land-card.is-us {
+  border-color: #0f766e;
+}
+.ab-land-compare-wrap {
+  margin-top: 1.75rem;
+  overflow-x: auto;
+}
+.ab-land-compare {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.ab-land-compare caption {
+  text-align: left;
+  font-weight: 650;
+  margin-bottom: 0.6rem;
+  color: #0f172a;
+}
+.ab-land-compare th,
+.ab-land-compare td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0.65rem 0.7rem;
+  text-align: left;
+  vertical-align: top;
+  color: #475569;
+}
+.ab-land-compare thead th {
+  color: #0f172a;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.ab-land-compare tbody th {
+  color: #0f172a;
+  font-weight: 650;
+  width: 22%;
+}
+.ab-land-compare td:last-child {
+  color: #0f766e;
+  font-weight: 600;
+}
+
 .ab-land-hero-inner .iphone {
   justify-self: center;
 }
