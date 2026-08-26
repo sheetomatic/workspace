@@ -4,6 +4,7 @@ import type {
   AppConfig,
   AppFormField,
   AppRelated,
+  AppUser,
   AppView,
   CellValue,
   SheetRow,
@@ -22,14 +23,17 @@ import {
   parentKeyFromRow,
   planBotsForRow,
   relatedForView,
-  rowVisibleToUser,
+  rowsForUser,
   searchRows,
   themeById,
   themeVars,
   tone,
+  userCanMutate,
+  userCanOpenView,
+  userMaySignIn,
+  viewsForUser,
   visibleActions,
   visibleFields,
-  visibleNavViews,
 } from "@/lib/app-builder";
 import { dispatchAppBuilderBotAction } from "@/app/app/app-builder/actions";
 import {
@@ -56,6 +60,8 @@ type Props = {
   onSheetChange: () => void;
   focusViewId?: string | null;
   device?: PreviewDevice;
+  /** Studio “Preview as”. Empty string = ask for PIN. */
+  previewAs?: string | null;
 };
 
 export function AppRuntime({
@@ -64,6 +70,7 @@ export function AppRuntime({
   onSheetChange,
   focusViewId,
   device = "phone",
+  previewAs = null,
 }: Props) {
   const wide = device !== "phone";
   const split = device === "desktop";
@@ -75,12 +82,19 @@ export function AppRuntime({
   const [form, setForm] = useState<FormMode | null>(null);
   const [tick, setTick] = useState(0);
   const [pin, setPin] = useState("");
-  const [who, setWho] = useState<string | null>(null);
+  const [pinError, setPinError] = useState("");
+  const [who, setWho] = useState<string | null>(previewAs);
   const [statusFilter, setStatusFilter] = useState("");
+
+  useEffect(() => {
+    setWho(previewAs);
+    setPin("");
+    setPinError("");
+  }, [previewAs]);
 
   const signed = (config.users || []).find((u) => u.name === who);
   const role: UserRole | null = signed?.role ?? (who ? "owner" : null);
-  const tabs = visibleNavViews(config, role);
+  const tabs = viewsForUser(config, signed);
   const view = config.views.find((v) => v.id === viewId) || null;
 
   useEffect(() => {
@@ -102,9 +116,7 @@ export function AppRuntime({
       enrichRow(r, view.tab, config, sheet),
     );
     const signedUser = (config.users || []).find((u) => u.name === who);
-    if (view.ownerCol) {
-      rows = rows.filter((r) => rowVisibleToUser(r, view.ownerCol, signedUser));
-    }
+    rows = rowsForUser(rows, view, signedUser);
     if (statusFilter && view.statusCol) {
       rows = rows.filter((r) => cellStr(r, view.statusCol || "") === statusFilter);
     }
@@ -119,11 +131,17 @@ export function AppRuntime({
       return {
         rel,
         key,
-        children: filterRelated(sheet.listRows(rel.childTab), rel.childKeys, key),
+        children: rowsForUser(
+          filterRelated(sheet.listRows(rel.childTab), rel.childKeys, key),
+          config.views.find((item) => item.id === rel.childViewId) ||
+            config.views.find((item) => item.tab === rel.childTab) ||
+            {},
+          signed,
+        ),
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, row, tick, config, sheet]);
+  }, [view, row, tick, config, sheet, who]);
 
   function bump() {
     setTick((t) => t + 1);
@@ -162,6 +180,8 @@ export function AppRuntime({
   }
 
   function openView(id: string) {
+    const next = config.views.find((item) => item.id === id);
+    if (next && !userCanOpenView(signed, next)) return;
     setViewId(id);
     setQ("");
     setStatusFilter("");
@@ -199,7 +219,11 @@ export function AppRuntime({
 
   const featured = tabs[0];
   const recent = featured
-    ? applySlice(sheet.listRows(featured.tab), featured.sliceCols)
+    ? rowsForUser(
+        applySlice(sheet.listRows(featured.tab), featured.sliceCols),
+        featured,
+        signed,
+      )
         .slice(0, 3)
         .map((r) => enrichRow(r, featured.tab, config, sheet))
     : [];
@@ -222,27 +246,35 @@ export function AppRuntime({
 
   const skin = themeVars(themeById(config.meta.themeId), config.meta.themeAccent);
 
-  if (config.meta.requirePin && !who) {
+  if (config.meta.requirePin !== false && !who) {
     return (
       <div className="runtime pin-gate" style={skin}>
         <p className="kicker">Staff sign-in</p>
         <h2>Enter PIN</h2>
-        <p className="help">No Google account. Owner shares this PIN. Try 1234.</p>
+        <p className="help">The owner shared a PIN with you. No Google account.</p>
         <input
           className="pin-input"
           value={pin}
-          onChange={(e) => setPin(e.target.value)}
+          onChange={(e) => {
+            setPin(e.target.value);
+            setPinError("");
+          }}
           inputMode="numeric"
           maxLength={6}
           placeholder="••••"
         />
+        {pinError ? <p className="help">{pinError}</p> : null}
         <button
           type="button"
           className="btn primary"
           onClick={() => {
             const hit = (config.users || []).find((u) => u.pin === pin.trim());
-            if (hit) setWho(hit.name);
-            else setPin("");
+            const gate = userMaySignIn(hit, config.meta);
+            if (gate.ok && hit) setWho(hit.name);
+            else {
+              setPinError(gate.reason || "PIN does not match anyone.");
+              setPin("");
+            }
           }}
         >
           Open app
@@ -293,7 +325,7 @@ export function AppRuntime({
           <span className="wordmark">{config.meta.brand || "Sheetomatic"}</span>
         )}
         <h1>{title}</h1>
-        {(screen === "collection" || showSplit) && view?.addFields?.length && view.allowAdds !== false ? (
+        {(screen === "collection" || showSplit) && view?.addFields?.length && userCanMutate(signed, view, "adds") ? (
           <button
             type="button"
             className="ghost-btn add"
@@ -306,7 +338,7 @@ export function AppRuntime({
           >
             +
           </button>
-        ) : (screen === "detail" || (showSplit && row)) && view?.editFields?.length && view.allowUpdates !== false ? (
+        ) : (screen === "detail" || (showSplit && row)) && view?.editFields?.length && userCanMutate(signed, view, "updates") ? (
           <button
             type="button"
             className="text-link"
@@ -328,7 +360,7 @@ export function AppRuntime({
           <HomeScreen
             config={config}
             sheet={sheet}
-            role={role}
+            user={signed}
             recent={recent}
             featured={featured}
             onOpenView={openView}
@@ -403,14 +435,14 @@ export function AppRuntime({
                     openDetail(child);
                   }}
                   onDelete={
-                    view.allowDelete === false
-                      ? undefined
-                      : () => {
+                    userCanMutate(signed, view, "deletes")
+                      ? () => {
                           sheet.deleteRow(view.tab, detailRow._row);
                           bump();
                           setRow(null);
                           setScreen("collection");
                         }
+                      : undefined
                   }
                 />
               ) : (
@@ -510,14 +542,14 @@ export function AppRuntime({
               openDetail(child);
             }}
             onDelete={
-              view.allowDelete === false
-                ? undefined
-                : () => {
+              userCanMutate(signed, view, "deletes")
+                ? () => {
                     sheet.deleteRow(view.tab, detailRow._row);
                     bump();
                     setRow(null);
                     setScreen("collection");
                   }
+                : undefined
             }
           />
         )}
@@ -538,6 +570,8 @@ export function AppRuntime({
             voiceHint={config.intelligence?.voiceHint}
             onCancel={back}
             onSave={(cells) => {
+              if (form.kind === "add" && !userCanMutate(signed, form.view, "adds")) return;
+              if (form.kind === "edit" && !userCanMutate(signed, form.view, "updates")) return;
               if (form.kind === "add") {
                 sheet.appendRow(form.view.tab, cells);
                 void fireBots(form.view.tab, "adds", { ...cells });
@@ -601,7 +635,7 @@ export function AppRuntime({
 function HomeScreen({
   config,
   sheet,
-  role,
+  user,
   recent,
   featured,
   device = "phone",
@@ -611,7 +645,7 @@ function HomeScreen({
 }: {
   config: AppConfig;
   sheet: SheetAdapter;
-  role: UserRole | null;
+  user?: AppUser;
   recent: SheetRow[];
   featured?: AppView;
   device?: PreviewDevice;
@@ -619,7 +653,7 @@ function HomeScreen({
   onAdd: (view: AppView) => void;
   onOpenRow: (view: AppView, row: SheetRow) => void;
 }) {
-  const tabs = visibleNavViews(config, role);
+  const tabs = viewsForUser(config, user);
   const moneyViews = isCashbookHome(config.views) ? config.views.filter(isMoneyView) : [];
   const [range, setRange] = useState<MoneyRange>("month");
   const summary = summarizeMoney(sheet.getWorkbook(), moneyViews, range);
@@ -679,7 +713,7 @@ function HomeScreen({
       ) : null}
       {moneyViews.length > 1 ? (
         <div className="home-adds">
-          {moneyViews.slice(0, 2).map((view) => (
+          {moneyViews.slice(0, 2).filter((view) => userCanMutate(user, view, "adds")).map((view) => (
             <button
               key={view.id}
               type="button"
@@ -690,7 +724,7 @@ function HomeScreen({
             </button>
           ))}
         </div>
-      ) : featured?.addFields?.length ? (
+      ) : featured?.addFields?.length && userCanMutate(user, featured, "adds") ? (
         <button type="button" className="btn primary home-add" onClick={() => onAdd(featured)}>
           {addButtonLabel(featured, config.meta.formTitle)}
         </button>

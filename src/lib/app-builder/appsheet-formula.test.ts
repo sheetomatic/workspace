@@ -28,6 +28,37 @@ describe("evaluateAppSheetFormula", () => {
     expect(evaluateAppSheetFormula("[_THISROW].[Company]", { row })).toBe("Bafna Steels");
   });
 
+  it("reads USEREMAIL, USERNAME, and USERROLE like AppSheet", () => {
+    expect(
+      evaluateAppSheetFormula("USEREMAIL()", {
+        row,
+        userEmail: "asha@firm.com",
+        userName: "Asha",
+        userRole: "Staff",
+      }),
+    ).toBe("asha@firm.com");
+    expect(
+      evaluateAppSheetFormula("USERNAME()", {
+        row,
+        userEmail: "asha@firm.com",
+        userName: "Asha",
+        userRole: "Staff",
+      }),
+    ).toBe("Asha");
+    expect(
+      evaluateAppSheetFormula('IF(USERROLE()="Staff","Mine","All")', {
+        row,
+        userRole: "Staff",
+      }),
+    ).toBe("Mine");
+    expect(
+      evaluateAppSheetFormula('OR(USERROLE()="Owner",[Email]="x")', {
+        row: { Email: "no" },
+        userRole: "Owner",
+      }),
+    ).toBe(true);
+  });
+
   it("LOOKUPs a value from another table", () => {
     expect(
       evaluateAppSheetFormula('LOOKUP([Name],"Leads","Name","Company")', {

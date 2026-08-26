@@ -46,6 +46,16 @@ export function TableSettingsPanel({
         <em>Name staff see on the phone. The Sheet tab stays {tabName}.</em>
       </label>
 
+      <label className="field-label">
+        Security filter
+        <input
+          value={view?.securityFilter || ""}
+          placeholder="[Email]=USEREMAIL()"
+          onChange={(e) => onPatchView({ securityFilter: e.target.value || undefined })}
+        />
+        <em>AppSheet formula. Staff only see rows where this is true.</em>
+      </label>
+
       <p className="aside-label">Are updates allowed?</p>
       <div className="ab-perm">
         <button

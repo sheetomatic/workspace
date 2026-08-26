@@ -10,11 +10,11 @@ const LINKS: { id: StudioSection; label: string }[] = [
 ];
 
 export function editorToSection(
-  editor: "layout" | "data" | "bots" | "intelligence" | "users" | "settings",
+  editor: "layout" | "data" | "bots" | "intelligence" | "users" | "security" | "settings",
 ): StudioSection {
   if (editor === "data") return "data";
   if (editor === "bots" || editor === "intelligence") return "automate";
-  if (editor === "users" || editor === "settings") return "people";
+  if (editor === "users" || editor === "security" || editor === "settings") return "people";
   return "app";
 }
 

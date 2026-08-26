@@ -5,6 +5,9 @@ export type FormulaTables = Record<string, SheetRow[]>;
 export type FormulaContext = {
   row: Record<string, CellValue>;
   user?: string | null;
+  userEmail?: string | null;
+  userName?: string | null;
+  userRole?: string | null;
   tables?: FormulaTables;
 };
 
@@ -270,6 +273,10 @@ class Parser {
         return args.map(asText).join("");
       case "IF":
         return truthy(args[0]) ? (args[1] ?? "") : (args[2] ?? "");
+      case "OR":
+        return args.some((item) => truthy(item));
+      case "AND":
+        return args.every((item) => truthy(item));
       case "IFS": {
         for (let i = 0; i < args.length - 1; i += 2) {
           if (truthy(args[i]) || asText(args[i]).toUpperCase() === "TRUE") return args[i + 1] ?? "";
@@ -304,8 +311,11 @@ class Parser {
       case "TODAY":
         return new Date().toLocaleDateString("en-GB");
       case "USERNAME":
+        return this.ctx.userName || this.ctx.user || "Owner";
       case "USEREMAIL":
-        return this.ctx.user || "Owner";
+        return this.ctx.userEmail || this.ctx.user || "";
+      case "USERROLE":
+        return this.ctx.userRole || "Owner";
       case "UNIQUEID":
         return `row-${Date.now().toString(36)}`;
       case "LOOKUP": {

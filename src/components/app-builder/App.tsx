@@ -34,6 +34,7 @@ import { ThemePicker } from "./editor/ThemePicker";
 import { BotsPanel } from "./editor/BotsPanel";
 import { IntelligencePanel } from "./editor/IntelligencePanel";
 import { PeoplePanel } from "./editor/PeoplePanel";
+import { SecurityPanel } from "./editor/SecurityPanel";
 import { SheetConnector } from "./editor/SheetConnector";
 import { editorToSection, StudioChrome, type StudioSection } from "./editor/StudioChrome";
 import { DeviceFrame, PREVIEW_DEVICES, type PreviewDevice } from "./preview/DeviceFrame";
@@ -48,7 +49,7 @@ import { dispatchAppBuilderBotAction, saveAppBuilderStudioAction } from "@/app/a
 import type { AppBuilderStudioSnapshot } from "@/lib/app-builder/persist";
 import "./App.css";
 
-type Editor = "layout" | "data" | "bots" | "intelligence" | "users" | "settings";
+type Editor = "layout" | "data" | "bots" | "intelligence" | "users" | "security" | "settings";
 
 type GoogleFile = { id: string; name: string };
 
@@ -122,6 +123,7 @@ export default function AppBuilderStudio({
   const [googleBusy, setGoogleBusy] = useState(false);
   const [preview, setPreview] = useState(false);
   const [previewDevice, setPreviewDevice] = useState<PreviewDevice>("phone");
+  const [previewAs, setPreviewAs] = useState<string>("Owner");
   const [showAllDevices, setShowAllDevices] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -543,7 +545,9 @@ export default function AppBuilderStudio({
       setEditor(editor === "intelligence" ? "intelligence" : "bots");
       return;
     }
-    setEditor(editor === "settings" ? "settings" : "users");
+    setEditor(
+      editor === "settings" ? "settings" : editor === "users" ? "users" : "security",
+    );
   }
 
   return (
@@ -634,6 +638,21 @@ export default function AppBuilderStudio({
                   >
                     All
                   </button>
+                  <label className="preview-as">
+                    Preview as
+                    <select
+                      value={previewAs}
+                      onChange={(e) => setPreviewAs(e.target.value)}
+                    >
+                      <option value="">PIN</option>
+                      {(config.users || []).map((user) => (
+                        <option key={user.id} value={user.name}>
+                          {user.name}
+                          {user.disabled ? " (off)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </>
               ) : section === "automate" ? (
                 <>
@@ -660,6 +679,13 @@ export default function AppBuilderStudio({
                     onClick={() => setEditor("users")}
                   >
                     Users
+                  </button>
+                  <button
+                    type="button"
+                    className={editor === "security" ? "on" : ""}
+                    onClick={() => setEditor("security")}
+                  >
+                    Security
                   </button>
                   <button
                     type="button"
@@ -729,6 +755,7 @@ export default function AppBuilderStudio({
                         sheet={sheet}
                         focusViewId={focus}
                         device={device.id}
+                        previewAs={previewAs || null}
                         onSheetChange={bump}
                       />
                     </DeviceFrame>
@@ -838,6 +865,13 @@ export default function AppBuilderStudio({
 
       {editor === "users" && (
         <PeoplePanel
+          config={config}
+          onChange={setConfig}
+        />
+      )}
+
+      {editor === "security" && (
+        <SecurityPanel
           config={config}
           onChange={setConfig}
         />

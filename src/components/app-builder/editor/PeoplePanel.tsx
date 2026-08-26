@@ -24,39 +24,13 @@ export function PeoplePanel({ config, onChange }: Props) {
     });
   }
 
-  function setStaffScreen(viewId: string, open: boolean) {
-    const rest = (config.visibility || []).filter(
-      (rule) => !(rule.target === "view" && rule.targetId === viewId),
-    );
-    onChange({
-      ...config,
-      visibility: open
-        ? rest
-        : [...rest, { id: `vis-${viewId}`, target: "view", targetId: viewId, when: "owner" }],
-    });
-  }
-
   return (
     <div className="plain people-panel">
-      <h2>Who can open this app</h2>
+      <h2>Users</h2>
       <p className="hint">
-        Google Sheets cannot hide rows. Staff get a PIN — no Gmail seat. They
-        only see rows that match their name or email in the row-owner column.
+        Name, PIN, and email. App sign-in, allow-lists, and who can add or
+        delete are on Security.
       </p>
-
-      <label className="check">
-        <input
-          type="checkbox"
-          checked={!!config.meta.requirePin}
-          onChange={(e) =>
-            onChange({
-              ...config,
-              meta: { ...config.meta, requirePin: e.target.checked },
-            })
-          }
-        />
-        Ask for PIN when the phone opens
-      </label>
 
       <ul className="people-list">
         {users.map((user) => (
@@ -64,6 +38,7 @@ export function PeoplePanel({ config, onChange }: Props) {
             <header>
               <strong>{user.name}</strong>
               {user.role === "owner" ? <em>Owner</em> : <em>Staff</em>}
+              {user.disabled ? <em>Off</em> : null}
               {user.id !== "owner" ? (
                 <button
                   type="button"
@@ -94,10 +69,10 @@ export function PeoplePanel({ config, onChange }: Props) {
                 />
               </label>
               <label>
-                Email (optional)
+                Email
                 <input
                   value={user.email || ""}
-                  placeholder="Matches the row-owner column"
+                  placeholder="Needed for USEREMAIL() and allow-list"
                   onChange={(e) => patchUser(user.id, { email: e.target.value })}
                 />
               </label>
@@ -124,7 +99,7 @@ export function PeoplePanel({ config, onChange }: Props) {
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email (optional)"
+          placeholder="Email"
         />
         <button
           type="button"
@@ -152,41 +127,10 @@ export function PeoplePanel({ config, onChange }: Props) {
         </button>
       </div>
 
-      <section className="ab-block">
-        <p className="aside-label">Screens staff can open</p>
-        {config.views.length ? (
-          <ul className="people-screens">
-            {config.views.map((view) => {
-              const hidden = config.visibility?.some(
-                (rule) =>
-                  rule.target === "view" &&
-                  rule.targetId === view.id &&
-                  rule.when === "owner",
-              );
-              return (
-                <li key={view.id}>
-                  <label className="check">
-                    <input
-                      type="checkbox"
-                      checked={!hidden}
-                      onChange={(e) => setStaffScreen(view.id, e.target.checked)}
-                    />
-                    {view.name}
-                    {view.ownerCol ? <em> · rows by {view.ownerCol}</em> : null}
-                  </label>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p className="hint">Add a screen on App first.</p>
-        )}
-      </section>
-
       <p className="hint">
         {ownerCols.length
-          ? `Row owner is on: ${ownerCols.join(" · ")}. Set it on Data for any other table.`
-          : "On Data, pick a Row owner column (name or email). Until then, staff see every row."}
+          ? `Row owner is on: ${ownerCols.join(" · ")}. Security filter is on Security.`
+          : "On Data, pick a Row owner column. On Security, add [Email]=USEREMAIL() if the column is email."}
       </p>
     </div>
   );

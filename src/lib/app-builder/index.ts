@@ -20,6 +20,11 @@ export interface AppMeta {
   version: number;
   plan?: "free" | "paid";
   requirePin?: boolean;
+  /** AppSheet allow-list. Empty = any listed user with a PIN. */
+  allowedEmails?: string[];
+  allowedDomain?: string;
+  /** Bots and writes run as this identity. */
+  runAs?: "user" | "owner";
   formTitle?: string;
   brand?: string;
   greeting?: string;
@@ -37,6 +42,12 @@ export interface AppUser {
   email?: string;
   pin: string;
   role: UserRole;
+  disabled?: boolean;
+  allowAdds?: boolean;
+  allowUpdates?: boolean;
+  allowDeletes?: boolean;
+  /** If set, staff may open only these Sheet tabs. */
+  tables?: string[];
 }
 
 export type FieldType =
@@ -139,6 +150,8 @@ export interface AppView {
   allowAdds?: boolean;
   allowUpdates?: boolean;
   allowDelete?: boolean;
+  /** AppSheet security filter, e.g. [Email]=USEREMAIL() */
+  securityFilter?: string;
   addFields?: AppFormField[];
   editFields?: AppFormField[];
   /** AppSheet menu icon id (users, cart, calendar…). */
@@ -195,7 +208,7 @@ export function createEmptyConfig(name = "Untitled app"): AppConfig {
       version: 1,
       plan: "free",
       themeAccent: "#111113",
-      requirePin: false,
+      requirePin: true,
       showFormBanner: false,
       formTitle: "New record",
     },
@@ -463,6 +476,15 @@ export {
   ownerValueMatchesUser,
   rowVisibleToUser,
 } from "./row-access";
+export {
+  emailAllowed,
+  rowPassesSecurity,
+  rowsForUser,
+  userCanMutate,
+  userCanOpenView,
+  userMaySignIn,
+  viewsForUser,
+} from "./security";
 export {
   evaluateAppSheetFormula,
   suggestAppSheetFormula,

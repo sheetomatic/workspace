@@ -231,7 +231,7 @@ export function inferAppFromWorkbook(workbook: SheetWorkbook, appName?: string):
       version: 1,
       plan: "free",
       themeAccent: "#111113",
-      requirePin: false,
+      requirePin: true,
       showFormBanner: false,
     },
     hubs: ["App"],

@@ -95,7 +95,7 @@ function baseMeta(name: string, formTitle: string): AppConfig["meta"] {
     version: 1,
     plan: "free",
     themeAccent: "#111113",
-    requirePin: false,
+    requirePin: true,
     formTitle,
   };
 }

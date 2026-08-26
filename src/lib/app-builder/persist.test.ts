@@ -15,6 +15,47 @@ describe("parseAppBuilderConfig", () => {
     expect(parsed?.bots).toEqual([]);
   });
 
+  it("keeps AppSheet security fields", () => {
+    const base = createEmptyConfig("Secure Desk");
+    const parsed = parseAppBuilderConfig({
+      ...base,
+      meta: {
+        ...base.meta,
+        allowedEmails: ["asha@firm.com"],
+        allowedDomain: "firm.com",
+        runAs: "user",
+      },
+      views: [
+        {
+          id: "leads",
+          hub: "App",
+          name: "Leads",
+          kind: "deck",
+          tab: "Leads",
+          cols: ["Name", "Email"],
+          securityFilter: "[Email]=USEREMAIL()",
+        },
+      ],
+      related: [],
+      users: [
+        {
+          id: "s",
+          name: "Asha",
+          pin: "2222",
+          role: "staff",
+          email: "asha@firm.com",
+          allowAdds: false,
+          tables: ["Leads"],
+        },
+      ],
+    });
+    expect(parsed?.meta.allowedEmails).toEqual(["asha@firm.com"]);
+    expect(parsed?.meta.allowedDomain).toBe("firm.com");
+    expect(parsed?.views[0].securityFilter).toBe("[Email]=USEREMAIL()");
+    expect(parsed?.users?.[0].tables).toEqual(["Leads"]);
+    expect(parsed?.users?.[0].allowAdds).toBe(false);
+  });
+
   it("keeps bots and intelligence on a saved app", () => {
     const base = createEmptyConfig("Sales CRM");
     const parsed = parseAppBuilderConfig({
