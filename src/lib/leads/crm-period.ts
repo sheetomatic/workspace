@@ -51,11 +51,11 @@ export function crmPeriodKpis(
   active: CrmPeriod,
 ) {
   return [
-    { label: "Today", value: String(counts.day), href: `${hrefBase}?period=day`, active: active === "day", accent: "blue" },
+    { label: "Today", value: String(counts.day), href: `${hrefBase}?period=day`, active: active === "day", accent: "blue" as const },
     { label: "This week", value: String(counts.week), href: `${hrefBase}?period=week`, active: active === "week" },
     { label: "This month", value: String(counts.month), href: `${hrefBase}?period=month`, active: active === "month" },
     { label: "This year", value: String(counts.year), href: `${hrefBase}?period=year`, active: active === "year" },
-    { label: "All", value: String(counts.all), href: `${hrefBase}?period=all`, active: active === "all", accent: "success" },
+    { label: "All", value: String(counts.all), href: `${hrefBase}?period=all`, active: active === "all", accent: "success" as const },
   ];
 }
 
