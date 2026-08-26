@@ -1104,6 +1104,29 @@
   align-items: end;
 }
 .ab-studio .col-inspector label{ display: grid; gap: 4px; font-size: 12px; color: var(--muted); flex: 1; }
+.ab-studio .col-inspector label.check{
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--ink);
+}
+.ab-studio .col-inspector label.check input{
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex: none;
+}
+.ab-studio .col-inspector label.check span{ display: grid; gap: 2px; }
+.ab-studio .col-inspector label.check b{ font-weight: 650; }
+.ab-studio .col-inspector label.check em{
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+}
 .ab-studio .col-inspector input, .ab-studio .col-inspector select{
   min-height: 34px;
   border: 1px solid var(--line);
@@ -2077,9 +2100,10 @@
 .ab-studio .col-inspector > p{
   margin: 0;
   color: var(--muted);
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: 13px;
+  line-height: 1.45;
 }
+.ab-studio .col-inspector > .aside-label{ margin: 12px 0 4px; }
 .ab-studio .field-label textarea{
   min-height: 72px;
   border: 1px solid var(--line);

@@ -1473,12 +1473,18 @@ function ColumnInspector({
   const hiddenFromStaff = config.visibility?.some(
     (rule) => rule.target === "field" && rule.targetId === col && rule.when === "owner",
   );
+  const typeLabel = FIELD_TYPE_OPTIONS.find((item) => item.id === type)?.label || type;
+  const ownerElsewhere = viewOwner && viewOwner !== col ? viewOwner : null;
   return (
     <div className="col-inspector">
       <strong>
-        {col} · {FIELD_TYPE_OPTIONS.find((item) => item.id === type)?.label || type}
+        {col} · {typeLabel}
       </strong>
-      <p>This type drives the phone form. The Sheet stays a table of values.</p>
+      <p className="aside-label">Who sees this</p>
+      <p>
+        Google Sheets shows every row to everyone. Tick one box if this column
+        should not.
+      </p>
       <label className="check">
         <input
           type="checkbox"
@@ -1494,7 +1500,16 @@ function ColumnInspector({
             })
           }
         />
-        Row owner — staff only see rows that match their name or email
+        <span>
+          <b>Staff only see their own rows</b>
+          <em>
+            {viewOwner === col
+              ? `On. A staff PIN only opens rows where ${col} is their name or email.`
+              : ownerElsewhere
+                ? `${ownerElsewhere} already does this. Tick here only to move it to ${col}.`
+                : "Tick this on a name or email column. Staff with a PIN then only see their rows."}
+          </em>
+        </span>
       </label>
       <label className="check">
         <input
@@ -1512,7 +1527,10 @@ function ColumnInspector({
             });
           }}
         />
-        Hide this field from staff
+        <span>
+          <b>Hide {col} from staff</b>
+          <em>Owners still see it. Staff do not — for cost, notes, or anything private.</em>
+        </span>
       </label>
       {type === "enum" || type === "choice" ? (
         <label>
