@@ -181,8 +181,14 @@ export function BotsPanel({
                   type="button"
                   className={on ? "on" : ""}
                   onClick={() => {
-                    const adds = kind === "adds" ? !on : bot.changes?.adds ?? bot.event !== "updates" && bot.event !== "deletes";
-                    const updates = kind === "updates" ? !on : bot.changes?.updates ?? bot.event !== "adds" && bot.event !== "deletes";
+                    const adds =
+                      kind === "adds"
+                        ? !on
+                        : (bot.changes?.adds ?? (bot.event !== "updates" && bot.event !== "deletes"));
+                    const updates =
+                      kind === "updates"
+                        ? !on
+                        : (bot.changes?.updates ?? (bot.event !== "adds" && bot.event !== "deletes"));
                     const deletes = kind === "deletes" ? !on : Boolean(bot.changes?.deletes);
                     const event: BotEventKind = deletes && !adds && !updates
                       ? "deletes"
