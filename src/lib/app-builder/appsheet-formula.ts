@@ -320,7 +320,7 @@ class Parser {
       case "COUNT":
         return args.filter((item) => asText(item).trim() !== "").length;
       case "SUM":
-        return args.reduce((sum, item) => sum + (asNum(item) || 0), 0);
+        return args.reduce<number>((sum, item) => sum + (Number.isFinite(asNum(item)) ? asNum(item) : 0), 0);
       default:
         throw new Error(`Unsupported function ${name}`);
     }
