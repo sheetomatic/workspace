@@ -81,8 +81,8 @@ export async function saveAppBuilderStudio(
 ) {
   const data = {
     name: input.name,
-    config: input.config as Prisma.InputJsonValue,
-    workbook: input.workbook as Prisma.InputJsonValue,
+    config: input.config as unknown as Prisma.InputJsonValue,
+    workbook: input.workbook as unknown as Prisma.InputJsonValue,
     templateId: input.templateId,
   };
   return prisma.appBuilderApp.upsert({
