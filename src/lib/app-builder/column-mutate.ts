@@ -1,6 +1,10 @@
 import type { AppConfig, SheetTab } from "./index";
 
-function renameKey<T extends Record<string, unknown>>(row: T, from: string, to: string): T {
+function renameKey(
+  row: Record<string, unknown>,
+  from: string,
+  to: string,
+): Record<string, unknown> {
   if (from === to || !(from in row)) return row;
   const next = { ...row };
   next[to] = next[from];
@@ -16,7 +20,7 @@ export function renameTabColumn(tab: SheetTab, from: string, to: string): SheetT
     headers: tab.headers.map((col) => (col === from ? name : col)),
     rows: tab.rows.map((row) => ({
       ...row,
-      cells: renameKey(row.cells, from, name),
+      cells: renameKey(row.cells, from, name) as SheetTab["rows"][number]["cells"],
     })),
   };
 }
