@@ -105,6 +105,7 @@ export function TrainingStudentsPanel({
   const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({});
   const [groupMeetDraft, setGroupMeetDraft] = useState("");
   const [groupLabelDraft, setGroupLabelDraft] = useState("");
+  const [groupOpen, setGroupOpen] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   // Instant feedback while the server data refreshes in the background.
   const [statusOverride, setStatusOverride] = useState<Record<string, SlotStatus>>({});
@@ -302,72 +303,94 @@ export function TrainingStudentsPanel({
       </div>
 
       {canManage ? (
-        <div className="training-group-class">
-          <div>
-            <strong>Group class</strong>
-            <p>
-              Paste one Meet URL. Every selected student sees the same link
-              on Learn. Start class marks the group live, pings WhatsApp, and
-              opens the board. Voice stays on Meet.
-            </p>
+        <div className={`crm-meet-row${groupOpen ? " is-open" : ""}`}>
+          <div className="crm-meet-row-main">
+            <button
+              type="button"
+              className="crm-meet-row-toggle"
+              aria-expanded={groupOpen}
+              onClick={() => setGroupOpen((open) => !open)}
+            >
+              <ChevronDown size={16} aria-hidden />
+              <span className="crm-meet-row-who">
+                <strong>Group class</strong>
+                <span>
+                  {selectedStudents.length
+                    ? `${selectedStudents.length} selected · apply one Meet link`
+                    : "Paste one Meet URL for selected students"}
+                </span>
+              </span>
+              <em>Tools</em>
+            </button>
+            <div className="crm-meet-row-actions">
+              <button
+                type="button"
+                className="btn-secondary btn-sm"
+                onClick={selectAllVisible}
+              >
+                Select all
+              </button>
+            </div>
           </div>
-          <label>
-            Group Meet / join URL
-            <input
-              type="url"
-              placeholder="https://meet.google.com/…"
-              value={groupMeetDraft}
-              onChange={(event) => setGroupMeetDraft(event.target.value)}
-            />
-          </label>
-          <label>
-            Group label (optional)
-            <input
-              type="text"
-              placeholder="e.g. Tuesday evening"
-              value={groupLabelDraft}
-              onChange={(event) => setGroupLabelDraft(event.target.value)}
-            />
-          </label>
-          <div className="training-group-class-actions">
-            <button
-              type="button"
-              className="ws-btn ws-btn-secondary"
-              onClick={selectAllVisible}
-            >
-              Select all visible
-            </button>
-            <button
-              type="button"
-              className="ws-btn ws-btn-primary"
-              disabled={pending}
-              onClick={() => onSaveGroupClass(false)}
-            >
-              {pending ? "Saving…" : "Apply group link"}
-            </button>
-            <button
-              type="button"
-              className="ws-btn ws-btn-secondary"
-              disabled={pending}
-              onClick={() => onSaveGroupClass(true)}
-            >
-              Remove from selected
-            </button>
-            <button
-              type="button"
-              className="ws-btn ws-btn-secondary"
-              disabled={selectedStudents.length === 0}
-              onClick={() =>
-                copyShare(
-                  buildGroupLoginShareText(selectedStudents.map(shareInput)),
-                  "group",
-                )
-              }
-            >
-              <Copy size={16} aria-hidden />
-              {copiedKey === "group" ? "Copied logins" : "Copy selected logins"}
-            </button>
-          </div>
+          {groupOpen ? (
+            <div className="crm-meet-row-body training-group-class">
+              <p>
+                Paste one Meet URL. Every selected student sees the same link
+                on Learn. Start class marks the group live, pings WhatsApp, and
+                opens the board. Voice stays on Meet.
+              </p>
+              <label>
+                Group Meet / join URL
+                <input
+                  type="url"
+                  placeholder="https://meet.google.com/…"
+                  value={groupMeetDraft}
+                  onChange={(event) => setGroupMeetDraft(event.target.value)}
+                />
+              </label>
+              <label>
+                Group label (optional)
+                <input
+                  type="text"
+                  placeholder="e.g. Tuesday evening"
+                  value={groupLabelDraft}
+                  onChange={(event) => setGroupLabelDraft(event.target.value)}
+                />
+              </label>
+              <div className="training-group-class-actions">
+                <button
+                  type="button"
+                  className="btn-primary btn-sm"
+                  disabled={pending}
+                  onClick={() => onSaveGroupClass(false)}
+                >
+                  {pending ? "Saving…" : "Apply group link"}
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary btn-sm"
+                  disabled={pending}
+                  onClick={() => onSaveGroupClass(true)}
+                >
+                  Remove from selected
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary btn-sm"
+                  disabled={selectedStudents.length === 0}
+                  onClick={() =>
+                    copyShare(
+                      buildGroupLoginShareText(selectedStudents.map(shareInput)),
+                      "group",
+                    )
+                  }
+                >
+                  <Copy size={14} aria-hidden />
+                  {copiedKey === "group" ? "Copied logins" : "Copy selected logins"}
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
