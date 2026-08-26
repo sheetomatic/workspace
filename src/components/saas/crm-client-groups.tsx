@@ -10,6 +10,7 @@ import {
 } from "@/lib/leads/crm-open";
 import { leadWhatsAppHref } from "@/lib/leads/contact-links";
 import type { LeadNurtureEventId } from "@/lib/leads/nurture/events";
+import "./crm-module-rows.css";
 import "./crm-client-groups.css";
 
 export type CrmClientGroupCell =
@@ -179,7 +180,7 @@ export function CrmClientGroups({
       {visible.length === 0 ? (
         <p className="ws-apple-record-empty">No clients match this filter.</p>
       ) : (
-        <ul className="crm-client-groups-list">
+        <ul className="crm-meet-rows">
           {visible.map((group) => {
             const open = openIds.has(group.id);
             const waHref = leadWhatsAppHref(group.phone, group.name);
@@ -188,79 +189,73 @@ export function CrmClientGroups({
             return (
               <li
                 key={group.id}
-                className={`crm-client-card${open ? " is-open" : ""}`}
+                className={`crm-meet-row${open ? " is-open" : ""}`}
               >
-                <button
-                  type="button"
-                  className="crm-client-head"
-                  aria-expanded={open}
-                  onClick={() => toggle(group.id)}
-                >
-                  <span className="crm-client-avatar" aria-hidden>
-                    {(group.name.trim()[0] || "?").toUpperCase()}
-                  </span>
-                  <span className="crm-client-copy">
-                    <strong>{group.name}</strong>
-                    <span>{group.phone || "No phone"}</span>
-                    <span className="crm-client-meta">
-                      {group.summary}
-                      {group.meta ? ` · ${group.meta}` : ""}
+                <div className="crm-meet-row-main">
+                  <button
+                    type="button"
+                    className="crm-meet-row-toggle"
+                    aria-expanded={open}
+                    onClick={() => toggle(group.id)}
+                  >
+                    <ChevronDown size={16} aria-hidden />
+                    <span className="crm-meet-row-who">
+                      <strong>{group.name}</strong>
+                      <span>
+                        {group.phone || "No phone"}
+                        {group.summary ? ` · ${group.summary}` : ""}
+                      </span>
                     </span>
-                  </span>
-                  <ChevronDown
-                    className="crm-client-chevron"
-                    size={18}
-                    aria-hidden
-                  />
-                </button>
+                    {group.meta ? <em>{group.meta}</em> : null}
+                  </button>
+                  <div className="crm-meet-row-actions">
+                    {canManage ? (
+                      <button
+                        type="button"
+                        className="btn-primary btn-sm"
+                        disabled={pendingLeadId === group.inboundLeadId}
+                        onClick={() => sendReminder(group)}
+                      >
+                        {pendingLeadId === group.inboundLeadId
+                          ? "Sending…"
+                          : "Remind"}
+                      </button>
+                    ) : null}
+                    {waHref ? (
+                      <a
+                        className="btn-secondary btn-sm"
+                        href={waHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <MessageCircle size={14} aria-hidden />
+                        WhatsApp
+                      </a>
+                    ) : null}
+                    <Link
+                      className="btn-secondary btn-sm"
+                      href={crmLeadOpenHref(group.inboundLeadId, {
+                        tab: openTab,
+                      })}
+                    >
+                      Open
+                      <ExternalLink size={14} aria-hidden />
+                    </Link>
+                  </div>
+                </div>
 
                 {open ? (
-                  <div className="crm-client-body">
-                    <div className="crm-client-actions">
-                      <Link
-                        className="btn-secondary btn-sm"
-                        href={crmLeadOpenHref(group.inboundLeadId, {
-                          tab: openTab,
-                        })}
+                  <div className="crm-meet-row-body crm-client-body">
+                    {groupFeedback ? (
+                      <p
+                        className={`crm-client-feedback${
+                          groupFeedback.ok ? " is-ok" : " is-err"
+                        }`}
+                        role="status"
                       >
-                        Open
-                        <ExternalLink size={14} aria-hidden />
-                      </Link>
-                      {canManage ? (
-                        <button
-                          type="button"
-                          className="btn-primary btn-sm"
-                          disabled={pendingLeadId === group.inboundLeadId}
-                          onClick={() => sendReminder(group)}
-                        >
-                          {pendingLeadId === group.inboundLeadId
-                            ? "Sending…"
-                            : "WA reminder"}
-                        </button>
-                      ) : null}
-                      {waHref ? (
-                        <a
-                          className="crm-client-wa-icon"
-                          href={waHref}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="Open WhatsApp"
-                          aria-label="Open WhatsApp"
-                        >
-                          <MessageCircle size={16} aria-hidden />
-                        </a>
-                      ) : null}
-                      {groupFeedback ? (
-                        <p
-                          className={`crm-client-feedback${
-                            groupFeedback.ok ? " is-ok" : " is-err"
-                          }`}
-                          role="status"
-                        >
-                          {groupFeedback.message}
-                        </p>
-                      ) : null}
-                    </div>
+                        {groupFeedback.message}
+                      </p>
+                    ) : null}
 
                     {group.rows.length === 0 ? (
                       <p className="ws-apple-record-empty">No rows.</p>

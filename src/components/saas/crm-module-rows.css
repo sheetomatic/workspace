@@ -1,0 +1,137 @@
+.crm-meet-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.crm-meet-row {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.crm-meet-row.is-today {
+  border-color: #93c5fd;
+  background: #f8fbff;
+}
+
+.crm-meet-row-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.75rem;
+  padding: 0.45rem 0.55rem;
+}
+
+.crm-meet-row-toggle {
+  flex: 1 1 16rem;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.55rem;
+  border: 0;
+  background: transparent;
+  padding: 0.2rem 0.15rem;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.crm-meet-row-toggle svg {
+  color: #64748b;
+  transition: transform 0.15s ease;
+}
+
+.crm-meet-row.is-open .crm-meet-row-toggle svg {
+  transform: rotate(180deg);
+}
+
+.crm-meet-row-who {
+  min-width: 0;
+}
+
+.crm-meet-row-who strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crm-meet-row-who span,
+.crm-meet-notes,
+.crm-meet-missing {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.crm-meet-row-toggle em {
+  font-style: normal;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #334155;
+  background: #f1f5f9;
+  border-radius: 999px;
+  padding: 0.18rem 0.45rem;
+  white-space: nowrap;
+}
+
+.crm-meet-row-actions,
+.crm-meet-save {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.crm-meet-row-actions .btn-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.crm-meet-row-body {
+  border-top: 1px solid #eef2f6;
+  padding: 0.7rem 0.75rem 0.8rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.crm-meet-save {
+  display: grid;
+}
+
+.crm-meet-save label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.crm-meet-save input,
+.crm-meet-save textarea {
+  width: 100%;
+  border: 1px solid #d6dee8;
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  font: inherit;
+}
+
+.crm-meet-row.is-done {
+  opacity: 0.92;
+}
+
+.crm-meet-row-check {
+  display: grid;
+  place-items: center;
+  padding-left: 0.15rem;
+}
+
+.crm-meet-row-check input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #2563eb;
+}

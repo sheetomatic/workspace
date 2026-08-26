@@ -23,6 +23,7 @@ import {
   learnPortalOrigin,
   workspacePortalOrigin,
 } from "@/lib/workspace-auth-links";
+import "./crm-module-rows.css";
 
 export type TrainingStudentSlotView = {
   id: string;
@@ -376,17 +377,18 @@ export function TrainingStudentsPanel({
       {visible.length === 0 ? (
         <p className="ws-apple-record-empty">No students match this filter.</p>
       ) : (
-        <ul className="training-students-list">
+        <ul className="crm-meet-rows">
           {visible.map((student) => {
             const open = openId === student.id;
+            const joinUrl = student.groupMeetUrl || student.joinUrl;
             return (
               <li
                 key={student.id}
-                className={`training-student-card${open ? " is-open" : ""}`}
+                className={`crm-meet-row${open ? " is-open" : ""}`}
               >
-                <div className="training-student-head-row">
+                <div className="crm-meet-row-main">
                   {canManage ? (
-                    <label className="training-student-select">
+                    <label className="crm-meet-row-check">
                       <input
                         type="checkbox"
                         checked={Boolean(selectedIds[student.id])}
@@ -399,59 +401,60 @@ export function TrainingStudentsPanel({
                   ) : null}
                   <button
                     type="button"
-                    className="training-student-head"
+                    className="crm-meet-row-toggle"
                     aria-expanded={open}
                     onClick={() => setOpenId(open ? null : student.id)}
                   >
-                    <span className="training-student-avatar" aria-hidden>
-                      {(student.name.trim()[0] || "?").toUpperCase()}
-                    </span>
-                    <span className="training-student-copy">
-                      <strong>
-                        {student.name}
-                        {student.groupMeetUrl ? (
-                          <em className="training-group-badge">
-                            {student.groupLabel?.trim()
-                              ? student.groupLabel
-                              : "Group class"}
-                          </em>
-                        ) : null}
-                      </strong>
+                    <ChevronDown size={16} aria-hidden />
+                    <span className="crm-meet-row-who">
+                      <strong>{student.name}</strong>
                       <span>
                         {student.daysLabel} · {student.sessionTimeIst} IST ·{" "}
                         {durationLabel(student.sessionDurationMin)}
-                      </span>
-                      <span className="training-student-meta">
-                        {statusLabel(student.status)} · {student.upcomingCount} upcoming
                         {student.nextWhenLabel
                           ? ` · next ${student.nextWhenLabel}`
                           : ""}
                       </span>
                     </span>
-                    <ChevronDown
-                      className="training-student-chevron"
-                      size={18}
-                      aria-hidden
-                    />
+                    <em>
+                      {student.groupMeetUrl
+                        ? student.groupLabel?.trim() || "Group class"
+                        : statusLabel(student.status)}
+                    </em>
                   </button>
-                  <button
-                    type="button"
-                    className="ws-btn ws-btn-secondary training-copy-login"
-                    onClick={() =>
-                      copyShare(
-                        buildStudentLoginShareText(shareInput(student)),
-                        student.id,
-                      )
-                    }
-                    title="Copy Learn login (email + WhatsApp or token link)"
-                  >
-                    <Copy size={16} aria-hidden />
-                    {copiedKey === student.id ? "Copied" : "Copy login"}
-                  </button>
+                  <div className="crm-meet-row-actions">
+                    {joinUrl ? (
+                      <a
+                        className="btn-primary btn-sm"
+                        href={joinUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Video size={14} aria-hidden />
+                        Join
+                      </a>
+                    ) : (
+                      <span className="crm-meet-missing">No Meet link</span>
+                    )}
+                    <button
+                      type="button"
+                      className="btn-secondary btn-sm"
+                      onClick={() =>
+                        copyShare(
+                          buildStudentLoginShareText(shareInput(student)),
+                          student.id,
+                        )
+                      }
+                      title="Copy Learn login (email + WhatsApp or token link)"
+                    >
+                      <Copy size={14} aria-hidden />
+                      {copiedKey === student.id ? "Copied" : "Copy login"}
+                    </button>
+                  </div>
                 </div>
 
                 {open ? (
-                  <div className="training-student-body">
+                  <div className="crm-meet-row-body training-student-body">
                     <div className="training-student-actions">
                       {canManage ? (
                         <button

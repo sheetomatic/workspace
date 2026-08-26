@@ -115,52 +115,6 @@
   gap: 0.35rem;
 }
 
-.training-student-head-row {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.training-student-select {
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  padding: 0 0.15rem 0 0.75rem;
-}
-
-.training-student-select input {
-  width: 1.05rem;
-  height: 1.05rem;
-  accent-color: #4338ca;
-}
-
-.training-student-head-row .training-student-head {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.training-copy-login {
-  flex: 0 0 auto;
-  margin-right: 0.75rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-.training-group-badge {
-  display: inline-block;
-  margin-left: 0.45rem;
-  padding: 0.08rem 0.45rem;
-  border-radius: 999px;
-  background: #e0e7ff;
-  color: #3730a3;
-  font-size: 0.68rem;
-  font-style: normal;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  vertical-align: middle;
-}
-
 .training-students-toolbar input[type="search"] {
   flex: 1 1 16rem;
   min-width: 0;
@@ -177,91 +131,9 @@
   font-weight: 600;
 }
 
-.training-students-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0.65rem;
-}
-
-.training-student-card {
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  background: #fff;
-  overflow: hidden;
-}
-
-.training-student-card.is-open {
-  border-color: #cbd5e1;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-}
-
-.training-student-head {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.85rem 1rem;
-  border: 0;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-}
-
-.training-student-head:hover {
-  background: #f8fafc;
-}
-
-.training-student-avatar {
-  flex: 0 0 auto;
-  width: 2.35rem;
-  height: 2.35rem;
-  border-radius: 999px;
-  display: inline-grid;
-  place-items: center;
-  background: #eef2ff;
-  color: #3730a3;
-  font-weight: 700;
-  font-size: 0.95rem;
-}
-
-.training-student-copy {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: grid;
-  gap: 0.15rem;
-}
-
-.training-student-copy strong {
-  font-size: 0.95rem;
-  color: #0f172a;
-}
-
-.training-student-copy > span {
-  font-size: 0.8rem;
-  color: #475569;
-}
-
-.training-student-meta {
-  color: #64748b !important;
-}
-
-.training-student-chevron {
-  flex: 0 0 auto;
-  color: #94a3b8;
-  transition: transform 0.15s ease;
-}
-
-.training-student-card.is-open .training-student-chevron {
-  transform: rotate(180deg);
-}
-
 .training-student-body {
   display: grid;
-  gap: 0.85rem;
-  padding: 0 1rem 1rem;
-  border-top: 1px solid #f1f5f9;
+  gap: 0.75rem;
 }
 
 .training-student-actions {
@@ -269,7 +141,6 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
-  padding-top: 0.85rem;
 }
 
 .training-student-actions .ws-btn {

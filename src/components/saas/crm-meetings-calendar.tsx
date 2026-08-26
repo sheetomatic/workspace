@@ -18,6 +18,7 @@ import {
   monthLabel,
   type CrmMeetingView,
 } from "@/lib/leads/crm-meetings";
+import "./crm-module-rows.css";
 import "./crm-meetings-calendar.css";
 
 export type CrmCalendarMeeting = {
