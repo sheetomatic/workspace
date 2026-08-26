@@ -51,7 +51,7 @@ export default async function CrmMeetingsPage() {
   return (
     <CrmSubmoduleShell
       title="Meetings"
-      description="Upcoming meetings only — calendar view in IST. Today is highlighted. Add the Meet link and save details like the students schedule."
+      description="Upcoming meetings in IST. Rows stay collapsed — expand to edit the Meet link. Auto WhatsApp reminders still run; use Remind to send one now."
       kpis={[
         { label: "Today", value: String(stats.today), accent: "blue" },
         { label: "This week", value: String(stats.week) },

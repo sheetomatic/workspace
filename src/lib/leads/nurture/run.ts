@@ -312,7 +312,7 @@ export async function triggerLeadNurtureEvent(params: {
         type: "MEETING",
       },
       orderBy: { scheduledAt: "desc" },
-      select: { scheduledAt: true, notes: true },
+      select: { scheduledAt: true, notes: true, meetUrl: true },
     });
     const { resolveMeetingJoinDetails } = await import(
       "@/lib/leads/meeting-invite"
@@ -320,7 +320,7 @@ export async function triggerLeadNurtureEvent(params: {
     const join = resolveMeetingJoinDetails({
       startsAt: meeting?.scheduledAt ?? lead.nextFollowUpAt,
       notes: meeting?.notes,
-      meetUrl,
+      meetUrl: meetUrl || meeting?.meetUrl,
     });
     whenLabel = whenLabel || join.whenLabel;
     meetUrl = meetUrl || join.meetUrl;

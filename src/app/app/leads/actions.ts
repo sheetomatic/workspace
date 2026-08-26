@@ -85,7 +85,11 @@ import {
   notifyLeadAssigned,
   notifyLeadsBulkAssigned,
 } from "@/lib/leads/notify";
-import { sendLeadNurtureStep } from "@/lib/leads/nurture/run";
+import {
+  sendLeadNurtureStep,
+  triggerLeadNurtureEvent,
+} from "@/lib/leads/nurture/run";
+import { resolveMeetingJoinDetails } from "@/lib/leads/meeting-invite";
 import {
   getLeadNurtureConfig,
   NURTURE_EVENT_ORDER,
@@ -1743,6 +1747,61 @@ export async function saveCrmMeetingDetailsAction(formData: FormData) {
   revalidatePath("/app/leads/meetings");
   revalidatePath("/app/leads");
   return { ok: true as const, message: "Meeting details saved." };
+}
+
+export async function sendCrmMeetingReminderAction(followUpId: string) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  const followUp = await prisma.inboundLeadFollowUp.findFirst({
+    where: { id: followUpId, organizationId: user.organizationId },
+    select: {
+      id: true,
+      leadId: true,
+      scheduledAt: true,
+      notes: true,
+      meetUrl: true,
+      lead: { select: { phone: true } },
+    },
+  });
+  if (!followUp) {
+    return { ok: false as const, message: "Meeting not found." };
+  }
+  if (!(await canWorkLead(user, followUp.leadId))) {
+    return { ok: false as const, message: LEAD_WORK_DENIED };
+  }
+  if (!followUp.lead.phone?.trim()) {
+    return { ok: false as const, message: "Add a WhatsApp number on the lead first." };
+  }
+
+  const join = resolveMeetingJoinDetails({
+    startsAt: followUp.scheduledAt,
+    notes: followUp.notes,
+    meetUrl: followUp.meetUrl,
+  });
+
+  const result = await triggerLeadNurtureEvent({
+    organizationId: user.organizationId,
+    leadId: followUp.leadId,
+    event: "alert_meeting_join",
+    actorUserId: user.id,
+    force: true,
+    whenLabel: join.whenLabel,
+    meetUrl: join.meetUrl,
+  });
+
+  if (!result.sent) {
+    const reason =
+      result.reason === "web_based_api_not_configured" ||
+      result.reason === "nurture_disabled_or_not_configured"
+        ? "Save Web Based API credentials and enable nurture under Leads → Settings."
+        : result.reason === "web_based_api_disabled"
+          ? "Enable nurture messages under Leads → Settings."
+          : result.reason ?? "Could not send reminder.";
+    return { ok: false as const, message: reason };
+  }
+
+  revalidatePath("/app/leads/meetings");
+  revalidatePath("/app/leads");
+  return { ok: true as const, message: "Meeting reminder sent on WhatsApp." };
 }
 
 export async function updateLeadMeetingNotes(leadId: string, meetingNotes: string) {

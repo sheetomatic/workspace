@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { ExternalLink, Video } from "lucide-react";
-import { saveCrmMeetingDetailsAction } from "@/app/app/leads/actions";
+import { Bell, ChevronDown, ExternalLink, Video } from "lucide-react";
+import {
+  saveCrmMeetingDetailsAction,
+  sendCrmMeetingReminderAction,
+} from "@/app/app/leads/actions";
 import { crmLeadOpenHref } from "@/lib/leads/crm-open";
 import {
   addIstMonths,
-  isIstToday,
   istYmd,
   monthGrid,
   monthLabel,
@@ -42,7 +44,9 @@ export function CrmMeetingsCalendar({
   const todayYmd = istYmd(new Date());
   const [month, setMonth] = useState(todayYmd.slice(0, 7));
   const [selectedYmd, setSelectedYmd] = useState(todayYmd);
+  const [openId, setOpenId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [remindingId, setRemindingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,6 +55,22 @@ export function CrmMeetingsCalendar({
       setError(null);
       setMessage(null);
       const result = await saveCrmMeetingDetailsAction(formData);
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setMessage(result.message);
+      router.refresh();
+    });
+  }
+
+  function sendReminder(followUpId: string) {
+    setRemindingId(followUpId);
+    startTransition(async () => {
+      setError(null);
+      setMessage(null);
+      const result = await sendCrmMeetingReminderAction(followUpId);
+      setRemindingId(null);
       if (!result.ok) {
         setError(result.message);
         return;
@@ -82,17 +102,16 @@ export function CrmMeetingsCalendar({
           <h3>
             {todayMeetings.length} meeting{todayMeetings.length === 1 ? "" : "s"} today
           </h3>
-          <ul className="crm-meet-cal-cards">
-            {todayMeetings.map((meeting) => (
-              <MeetingCard
-                key={meeting.id}
-                meeting={meeting}
-                canManage={canManage}
-                pending={pending}
-                onSave={saveDetails}
-              />
-            ))}
-          </ul>
+          <MeetingRows
+            meetings={todayMeetings}
+            canManage={canManage}
+            openId={openId}
+            pending={pending}
+            remindingId={remindingId}
+            onToggle={setOpenId}
+            onSave={saveDetails}
+            onRemind={sendReminder}
+          />
         </section>
       ) : (
         <p className="crm-meet-cal-empty-today">No meetings today. Upcoming dates are on the calendar.</p>
@@ -155,17 +174,16 @@ export function CrmMeetingsCalendar({
           {selected.length === 0 ? (
             <p className="ws-apple-record-empty">No upcoming meetings on this date.</p>
           ) : (
-            <ul className="crm-meet-cal-cards">
-              {selected.map((meeting) => (
-                <MeetingCard
-                  key={`sel-${meeting.id}`}
-                  meeting={meeting}
-                  canManage={canManage}
-                  pending={pending}
-                  onSave={saveDetails}
-                />
-              ))}
-            </ul>
+            <MeetingRows
+              meetings={selected}
+              canManage={canManage}
+              openId={openId}
+              pending={pending}
+              remindingId={remindingId}
+              onToggle={setOpenId}
+              onSave={saveDetails}
+              onRemind={sendReminder}
+            />
           )}
         </section>
       ) : null}
@@ -176,85 +194,155 @@ export function CrmMeetingsCalendar({
   );
 }
 
-function MeetingCard({
+function MeetingRows({
+  meetings,
+  canManage,
+  openId,
+  pending,
+  remindingId,
+  onToggle,
+  onSave,
+  onRemind,
+}: {
+  meetings: CrmCalendarMeeting[];
+  canManage: boolean;
+  openId: string | null;
+  pending: boolean;
+  remindingId: string | null;
+  onToggle: (id: string | null) => void;
+  onSave: (formData: FormData) => void;
+  onRemind: (followUpId: string) => void;
+}) {
+  return (
+    <ul className="crm-meet-rows">
+      {meetings.map((meeting) => (
+        <MeetingRow
+          key={meeting.id}
+          meeting={meeting}
+          canManage={canManage}
+          open={openId === meeting.id}
+          pending={pending}
+          reminding={remindingId === meeting.id}
+          onToggle={() => onToggle(openId === meeting.id ? null : meeting.id)}
+          onSave={onSave}
+          onRemind={onRemind}
+        />
+      ))}
+    </ul>
+  );
+}
+
+function MeetingRow({
   meeting,
   canManage,
+  open,
   pending,
+  reminding,
+  onToggle,
   onSave,
+  onRemind,
 }: {
   meeting: CrmCalendarMeeting;
   canManage: boolean;
+  open: boolean;
   pending: boolean;
+  reminding: boolean;
+  onToggle: () => void;
   onSave: (formData: FormData) => void;
+  onRemind: (followUpId: string) => void;
 }) {
   return (
-    <li className={`crm-meet-card${meeting.isToday ? " is-today" : ""}`}>
-      <div className="crm-meet-card-head">
-        <div>
-          <strong>{meeting.name}</strong>
-          <span>
-            {meeting.whenLabel}
-            {meeting.phone ? ` · ${meeting.phone}` : ""}
-            {meeting.assignee ? ` · ${meeting.assignee}` : ""}
+    <li className={`crm-meet-row${meeting.isToday ? " is-today" : ""}${open ? " is-open" : ""}`}>
+      <div className="crm-meet-row-main">
+        <button
+          type="button"
+          className="crm-meet-row-toggle"
+          aria-expanded={open}
+          onClick={onToggle}
+        >
+          <ChevronDown size={16} aria-hidden />
+          <span className="crm-meet-row-who">
+            <strong>{meeting.name}</strong>
+            <span>
+              {meeting.whenLabel}
+              {meeting.phone ? ` · ${meeting.phone}` : ""}
+            </span>
           </span>
-        </div>
-        <em>{meeting.typeLabel}</em>
-      </div>
-      <div className="crm-meet-card-actions">
-        {meeting.meetUrl ? (
-          <a
-            className="btn-primary btn-sm"
-            href={meeting.meetUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+          <em>{meeting.typeLabel}</em>
+        </button>
+        <div className="crm-meet-row-actions">
+          {meeting.meetUrl ? (
+            <a
+              className="btn-primary btn-sm"
+              href={meeting.meetUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Video size={14} aria-hidden />
+              Join
+            </a>
+          ) : (
+            <span className="crm-meet-missing">No Meet link</span>
+          )}
+          <button
+            type="button"
+            className="btn-secondary btn-sm"
+            disabled={reminding || pending}
+            onClick={() => onRemind(meeting.id)}
           >
-            <Video size={14} aria-hidden />
-            Join Meet
-          </a>
-        ) : (
-          <span className="crm-meet-missing">No Meet link yet — paste it below.</span>
-        )}
-        <Link
-          className="btn-secondary btn-sm"
-          href={crmLeadOpenHref(meeting.leadId, { tab: "meeting" })}
-        >
-          Open lead
-          <ExternalLink size={14} aria-hidden />
-        </Link>
-      </div>
-      {canManage ? (
-        <form
-          className="crm-meet-save"
-          onSubmit={(event) => {
-            event.preventDefault();
-            onSave(new FormData(event.currentTarget));
-          }}
-        >
-          <label>
-            Google Meet link
-            <input
-              name="meetUrl"
-              type="url"
-              defaultValue={meeting.meetUrl ?? ""}
-              placeholder="https://meet.google.com/…"
-            />
-          </label>
-          <label>
-            Meeting details
-            <textarea
-              name="notes"
-              rows={3}
-              defaultValue={meeting.notes}
-              placeholder="What you discussed, next step, who joined…"
-            />
-          </label>
-          <input name="followUpId" type="hidden" value={meeting.id} />
-          <button className="btn-primary btn-sm" disabled={pending} type="submit">
-            {pending ? "Saving…" : "Save details"}
+            <Bell size={14} aria-hidden />
+            {reminding ? "Sending…" : "Remind"}
           </button>
-        </form>
-      ) : meeting.notes ? (
-        <p className="crm-meet-notes">{meeting.notes}</p>
+          <Link
+            className="btn-secondary btn-sm"
+            href={crmLeadOpenHref(meeting.leadId, { tab: "meeting" })}
+          >
+            Open
+            <ExternalLink size={14} aria-hidden />
+          </Link>
+        </div>
+      </div>
+
+      {open ? (
+        <div className="crm-meet-row-body">
+          {meeting.assignee ? (
+            <p className="crm-meet-notes">Assigned · {meeting.assignee}</p>
+          ) : null}
+          {canManage ? (
+            <form
+              className="crm-meet-save"
+              onSubmit={(event) => {
+                event.preventDefault();
+                onSave(new FormData(event.currentTarget));
+              }}
+            >
+              <label>
+                Google Meet link
+                <input
+                  name="meetUrl"
+                  type="url"
+                  defaultValue={meeting.meetUrl ?? ""}
+                  placeholder="https://meet.google.com/…"
+                />
+              </label>
+              <label>
+                Meeting details
+                <textarea
+                  name="notes"
+                  rows={3}
+                  defaultValue={meeting.notes}
+                  placeholder="What you discussed, next step, who joined…"
+                />
+              </label>
+              <input name="followUpId" type="hidden" value={meeting.id} />
+              <button className="btn-primary btn-sm" disabled={pending} type="submit">
+                {pending ? "Saving…" : "Save details"}
+              </button>
+            </form>
+          ) : meeting.notes ? (
+            <p className="crm-meet-notes">{meeting.notes}</p>
+          ) : null}
+        </div>
       ) : null}
     </li>
   );
