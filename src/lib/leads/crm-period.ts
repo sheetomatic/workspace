@@ -1,3 +1,4 @@
+import type { CrmKpi } from "@/components/saas/crm-submodule-shell";
 import { addIstDays, istYmd, startOfIstWeekYmd } from "@/lib/leads/crm-meetings";
 
 export const CRM_PERIODS = ["day", "week", "month", "year", "all"] as const;
@@ -49,7 +50,7 @@ export function crmPeriodKpis(
   hrefBase: string,
   counts: ReturnType<typeof countCrmPeriods>,
   active: CrmPeriod,
-) {
+): CrmKpi[] {
   return [
     { label: "Today", value: String(counts.day), href: `${hrefBase}?period=day`, active: active === "day", accent: "blue" as const },
     { label: "This week", value: String(counts.week), href: `${hrefBase}?period=week`, active: active === "week" },
