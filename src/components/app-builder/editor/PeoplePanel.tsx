@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import type { AppConfig, AppUser, UserRole } from "@/lib/app-builder";
+import {
+  APP_ROLES,
+  roleLabel,
+  type AppConfig,
+  type AppUser,
+  type UserRole,
+} from "@/lib/app-builder";
 
 type Props = {
   config: AppConfig;
@@ -13,6 +19,7 @@ export function PeoplePanel({ config, onChange }: Props) {
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
   const [email, setEmail] = useState("");
+  const [role, setRole] = useState<UserRole>("user");
   const ownerCols = config.views
     .filter((view) => view.ownerCol)
     .map((view) => `${view.name} · ${view.ownerCol}`);
@@ -28,8 +35,8 @@ export function PeoplePanel({ config, onChange }: Props) {
     <div className="plain people-panel">
       <h2>Users</h2>
       <p className="hint">
-        Name, PIN, and email. App sign-in, allow-lists, and who can add or
-        delete are on Security.
+        Assign Owner, Admin, Manager, or User. What that role can do is on
+        Security.
       </p>
 
       <ul className="people-list">
@@ -37,7 +44,7 @@ export function PeoplePanel({ config, onChange }: Props) {
           <li key={user.id} className="ab-card">
             <header>
               <strong>{user.name}</strong>
-              {user.role === "owner" ? <em>Owner</em> : <em>Staff</em>}
+              <em>{roleLabel(user.role)}</em>
               {user.disabled ? <em>Off</em> : null}
               {user.id !== "owner" ? (
                 <button
@@ -79,13 +86,16 @@ export function PeoplePanel({ config, onChange }: Props) {
               <label>
                 Role
                 <select
-                  value={user.role}
+                  value={user.role === "staff" ? "user" : user.role}
                   onChange={(e) =>
                     patchUser(user.id, { role: e.target.value as UserRole })
                   }
                 >
-                  <option value="owner">Owner — every row</option>
-                  <option value="staff">Staff — own rows only</option>
+                  {APP_ROLES.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.label} — {item.hint}
+                    </option>
+                  ))}
                 </select>
               </label>
             </div>
@@ -94,13 +104,20 @@ export function PeoplePanel({ config, onChange }: Props) {
       </ul>
 
       <div className="add-inline">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Staff name" />
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
         <input value={pin} onChange={(e) => setPin(e.target.value)} placeholder="PIN" />
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
         />
+        <select value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
+          {APP_ROLES.filter((item) => item.id !== "owner").map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.label}
+            </option>
+          ))}
+        </select>
         <button
           type="button"
           onClick={() => {
@@ -114,23 +131,24 @@ export function PeoplePanel({ config, onChange }: Props) {
                   name: name.trim(),
                   pin: pin.trim(),
                   email: email.trim() || undefined,
-                  role: "staff",
+                  role,
                 },
               ],
             });
             setName("");
             setPin("");
             setEmail("");
+            setRole("user");
           }}
         >
-          Add staff
+          Add person
         </button>
       </div>
 
       <p className="hint">
         {ownerCols.length
           ? `Row owner is on: ${ownerCols.join(" · ")}. Security filter is on Security.`
-          : "On Data, pick a Row owner column. On Security, add [Email]=USEREMAIL() if the column is email."}
+          : "On Data, pick a Row owner column. Users then only see their own rows."}
       </p>
     </div>
   );

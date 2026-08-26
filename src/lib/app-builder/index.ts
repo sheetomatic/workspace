@@ -11,7 +11,7 @@ export type ViewKind =
   | "calendar"
   | "chart";
 export type CollectionStyle = "list" | "cards" | "table" | "kanban" | "calendar" | "chart";
-export type UserRole = "owner" | "staff";
+export type UserRole = "owner" | "admin" | "manager" | "user" | "staff";
 
 export interface AppMeta {
   name: string;
@@ -476,6 +476,15 @@ export {
   ownerValueMatchesUser,
   rowVisibleToUser,
 } from "./row-access";
+export {
+  APP_ROLES,
+  appsheetUserRole,
+  canSeeAllRows,
+  isAppAdmin,
+  normalizeAppRole,
+  parseAppRole,
+  roleLabel,
+} from "./roles";
 export {
   emailAllowed,
   rowPassesSecurity,

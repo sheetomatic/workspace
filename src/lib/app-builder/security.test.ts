@@ -12,9 +12,17 @@ const staff = {
   id: "s",
   name: "Asha",
   pin: "2222",
-  role: "staff" as const,
+  role: "user" as const,
   email: "asha@firm.com",
 };
+const manager = {
+  id: "m",
+  name: "Meera",
+  pin: "1111",
+  role: "manager" as const,
+  email: "meera@firm.com",
+};
+const admin = { id: "a", name: "Admin", pin: "9999", role: "admin" as const };
 const owner = { id: "o", name: "Owner", pin: "1234", role: "owner" as const };
 
 describe("app security", () => {
@@ -60,10 +68,15 @@ describe("user security", () => {
     expect(userCanOpenView({ ...staff, tables: ["Orders"] }, view)).toBe(false);
     expect(userCanOpenView({ ...staff, tables: [] }, view)).toBe(false);
     expect(userCanOpenView(owner, { ...view, tab: "Orders" })).toBe(true);
+    expect(userCanOpenView(admin, { ...view, tab: "Orders" })).toBe(true);
     expect(userCanMutate({ ...staff, allowAdds: false }, view, "adds")).toBe(false);
     expect(userCanMutate(staff, { ...view, allowAdds: false }, "adds")).toBe(false);
     expect(userCanMutate(staff, view, "adds")).toBe(true);
     expect(userCanMutate({ ...staff, allowDeletes: false }, view, "deletes")).toBe(false);
+    expect(userCanMutate(manager, view, "adds")).toBe(true);
+    expect(userCanMutate(manager, view, "deletes")).toBe(false);
+    expect(userCanMutate({ ...manager, allowDeletes: true }, view, "deletes")).toBe(true);
+    expect(userCanMutate(admin, view, "deletes")).toBe(true);
   });
 
   it("applies a security filter like [Email]=USEREMAIL()", () => {
@@ -80,9 +93,19 @@ describe("user security", () => {
     ).toBe(false);
     expect(
       rowPassesSecurity(theirs, {
-        securityFilter: 'OR(USERROLE()="Owner",[Email]=USEREMAIL())',
+        securityFilter: 'OR(USERROLE()="Admin",[Email]=USEREMAIL())',
       }, owner),
     ).toBe(true);
+    expect(
+      rowPassesSecurity(theirs, {
+        securityFilter: 'IN(USERROLE(),"Admin","Manager")',
+      }, manager),
+    ).toBe(true);
+    expect(
+      rowPassesSecurity(theirs, {
+        securityFilter: 'IN(USERROLE(),"Admin","Manager")',
+      }, staff),
+    ).toBe(false);
   });
 });
 

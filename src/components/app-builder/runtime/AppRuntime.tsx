@@ -23,6 +23,7 @@ import {
   parentKeyFromRow,
   planBotsForRow,
   relatedForView,
+  roleLabel,
   rowsForUser,
   searchRows,
   themeById,
@@ -661,6 +662,11 @@ function HomeScreen({
     <div className={`home is-${device}`}>
       <p className="kicker">{config.meta.greeting || "Good morning"}</p>
       <h2>{config.meta.name}</h2>
+      {user ? (
+        <p className="help">
+          {user.name} · {roleLabel(user.role)}
+        </p>
+      ) : null}
       {moneyViews.length ? (
         <section className="home-money">
           <div className="home-range" role="tablist" aria-label="Date range">

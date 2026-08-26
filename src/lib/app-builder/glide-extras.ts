@@ -8,6 +8,7 @@ import type {
   SheetRow,
   UserRole,
 } from "./index";
+import { isAppAdmin } from "./roles";
 import {
   cellStr,
   filterRelated,
@@ -116,8 +117,8 @@ export function visibilityAllows(
 ) {
   if (!rule || rule.when === "always") return true;
   if (rule.when === "never") return false;
-  if (rule.when === "owner") return role === "owner";
-  if (rule.when === "staff") return role === "staff" || role === "owner";
+  if (rule.when === "owner") return isAppAdmin(role);
+  if (rule.when === "staff") return role != null;
   if (!row || !rule.col) return true;
   return cellStr(row, rule.col) === (rule.equals ?? "");
 }

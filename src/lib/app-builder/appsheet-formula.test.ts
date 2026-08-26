@@ -52,9 +52,15 @@ describe("evaluateAppSheetFormula", () => {
       }),
     ).toBe("Mine");
     expect(
-      evaluateAppSheetFormula('OR(USERROLE()="Owner",[Email]="x")', {
+      evaluateAppSheetFormula('IN(USERROLE(),"Admin","Manager")', {
+        row,
+        userRole: "Manager",
+      }),
+    ).toBe(true);
+    expect(
+      evaluateAppSheetFormula('OR(USERROLE()="Admin",[Email]="x")', {
         row: { Email: "no" },
-        userRole: "Owner",
+        userRole: "Admin",
       }),
     ).toBe(true);
   });

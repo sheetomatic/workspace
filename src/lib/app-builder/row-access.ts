@@ -1,4 +1,5 @@
 import type { AppUser, CellValue, SheetRow } from "./index";
+import { canSeeAllRows } from "./roles";
 
 function key(value: unknown) {
   return String(value ?? "")
@@ -22,12 +23,12 @@ export function ownerValueMatchesUser(
   return ownerKeysForUser(user).includes(want);
 }
 
-/** Owners see every row. Staff see only rows they own when ownerCol is set. */
+/** Owner, Admin, and Manager see every row. Users see only rows they own. */
 export function rowVisibleToUser(
   row: SheetRow,
   ownerCol: string | undefined,
   user: AppUser | undefined,
 ): boolean {
-  if (!ownerCol || !user || user.role === "owner") return true;
+  if (!ownerCol || !user || canSeeAllRows(user.role)) return true;
   return ownerValueMatchesUser(row.cells[ownerCol], user);
 }

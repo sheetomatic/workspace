@@ -17,6 +17,7 @@ import {
   workbookFromSpreadsheetFile,
   downloadPdf,
   planBotsForRow,
+  roleLabel,
   renameColumnInConfig,
   deleteColumnInConfig,
   type AppConfig,
@@ -647,7 +648,7 @@ export default function AppBuilderStudio({
                       <option value="">PIN</option>
                       {(config.users || []).map((user) => (
                         <option key={user.id} value={user.name}>
-                          {user.name}
+                          {user.name} · {roleLabel(user.role)}
                           {user.disabled ? " (off)" : ""}
                         </option>
                       ))}

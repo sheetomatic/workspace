@@ -277,6 +277,10 @@ class Parser {
         return args.some((item) => truthy(item));
       case "AND":
         return args.every((item) => truthy(item));
+      case "IN": {
+        const want = asText(args[0]);
+        return args.slice(1).some((item) => asText(item) === want);
+      }
       case "IFS": {
         for (let i = 0; i < args.length - 1; i += 2) {
           if (truthy(args[i]) || asText(args[i]).toUpperCase() === "TRUE") return args[i + 1] ?? "";

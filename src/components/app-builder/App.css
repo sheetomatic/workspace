@@ -2108,6 +2108,30 @@
   line-height: 1.45;
 }
 .ab-studio .people-panel{ max-width: 720px; }
+.ab-studio .role-defs{
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  display: grid;
+  gap: 8px;
+}
+.ab-studio .role-defs li{
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.ab-studio .role-defs em{
+  font-style: normal;
+  color: var(--muted);
+  font-size: 12px;
+}
+.ab-studio .role-defs span{
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
 .ab-studio .security-panel textarea{
   width: 100%;
   min-height: 88px;

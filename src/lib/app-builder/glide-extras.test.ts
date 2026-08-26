@@ -131,10 +131,16 @@ describe("glide extras", () => {
     expect(evaluateComputed(column, row, config, sheet)).toBe("Needs action");
   });
 
-  it("hides a field from staff and keeps it for owners", () => {
+  it("hides a field from Users and keeps it for Admin", () => {
     expect(
-      visibilityAllows({ id: "1", target: "field", targetId: "Amount", when: "owner" }, "staff", row),
+      visibilityAllows({ id: "1", target: "field", targetId: "Amount", when: "owner" }, "user", row),
     ).toBe(false);
+    expect(
+      visibilityAllows({ id: "1", target: "field", targetId: "Amount", when: "owner" }, "manager", row),
+    ).toBe(false);
+    expect(
+      visibilityAllows({ id: "1", target: "field", targetId: "Amount", when: "owner" }, "admin", row),
+    ).toBe(true);
     expect(
       visibilityAllows({ id: "1", target: "field", targetId: "Amount", when: "owner" }, "owner", row),
     ).toBe(true);

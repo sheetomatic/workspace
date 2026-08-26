@@ -47,6 +47,13 @@ describe("parseAppBuilderConfig", () => {
           allowAdds: false,
           tables: ["Leads"],
         },
+        {
+          id: "m",
+          name: "Meera",
+          pin: "1111",
+          role: "manager",
+          email: "meera@firm.com",
+        },
       ],
     });
     expect(parsed?.meta.allowedEmails).toEqual(["asha@firm.com"]);
@@ -54,6 +61,7 @@ describe("parseAppBuilderConfig", () => {
     expect(parsed?.views[0].securityFilter).toBe("[Email]=USEREMAIL()");
     expect(parsed?.users?.[0].tables).toEqual(["Leads"]);
     expect(parsed?.users?.[0].allowAdds).toBe(false);
+    expect(parsed?.users?.[1].role).toBe("manager");
   });
 
   it("keeps bots and intelligence on a saved app", () => {

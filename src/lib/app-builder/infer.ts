@@ -240,7 +240,8 @@ export function inferAppFromWorkbook(workbook: SheetWorkbook, appName?: string):
     computed: tabs.flatMap((tab) => defaultComputedForTab(tab.name, tab.headers)),
     users: [
       { id: "owner", name: "Owner", pin: "1234", role: "owner" },
-      { id: "staff", name: "Staff", pin: "0000", role: "staff" },
+      { id: "manager", name: "Manager", pin: "1111", role: "manager" },
+      { id: "staff", name: "User", pin: "0000", role: "user" },
     ],
   };
 }

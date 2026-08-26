@@ -1,6 +1,14 @@
 "use client";
 
-import type { AppConfig, AppUser, AppView } from "@/lib/app-builder";
+import {
+  APP_ROLES,
+  isAppAdmin,
+  roleLabel,
+  type AppConfig,
+  type AppUser,
+  type AppView,
+  type UserRole,
+} from "@/lib/app-builder";
 
 type Props = {
   config: AppConfig;
@@ -46,9 +54,22 @@ export function SecurityPanel({ config, onChange }: Props) {
     <div className="plain people-panel security-panel">
       <h2>App security</h2>
       <p className="hint">
-        Google Sheets cannot lock a row. This app can. Staff open a link + PIN.
-        They never get the spreadsheet.
+        Google Sheets cannot lock a row. This app can. People open a link + PIN.
+        Their role decides what they see and change.
       </p>
+
+      <section className="ab-block">
+        <p className="aside-label">Roles</p>
+        <ul className="role-defs">
+          {APP_ROLES.map((item) => (
+            <li key={item.id}>
+              <strong>{item.label}</strong>
+              <em>USERROLE()=&quot;{item.userRole}&quot;</em>
+              <span>{item.hint}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <label className="check">
         <input
@@ -82,7 +103,7 @@ export function SecurityPanel({ config, onChange }: Props) {
           placeholder="firm.com"
           onChange={(e) => patchMeta({ allowedDomain: e.target.value.trim() || undefined })}
         />
-        <em>Staff email must match this domain. Owners always get in.</em>
+        <em>User and Manager email must match this domain. Owner and Admin always get in.</em>
       </label>
 
       <p className="aside-label">Bots run as</p>
@@ -117,16 +138,15 @@ export function SecurityPanel({ config, onChange }: Props) {
                   Security filter
                   <input
                     value={view.securityFilter || ""}
-                    placeholder="[Email]=USEREMAIL()"
+                    placeholder='IN(USERROLE(),"Admin","Manager")'
                     onChange={(e) =>
                       patchTable(view.tab, { securityFilter: e.target.value || undefined })
                     }
                   />
                   <em>
                     AppSheet formula. Owner column
-                    {view.ownerCol ? ` is ${view.ownerCol}` : " is not set"}. Use
-                    OR(USERROLE()=&quot;Owner&quot;,[Email]=USEREMAIL()) if the owner
-                    should see every row.
+                    {view.ownerCol ? ` is ${view.ownerCol}` : " is not set"}. Example:
+                    OR(IN(USERROLE(),&quot;Admin&quot;,&quot;Manager&quot;),[Email]=USEREMAIL())
                   </em>
                 </label>
               </li>
@@ -138,7 +158,7 @@ export function SecurityPanel({ config, onChange }: Props) {
       </section>
 
       <section className="ab-block">
-        <p className="aside-label">Screens staff can open</p>
+        <p className="aside-label">Screens Users and Managers can open</p>
         {config.views.length ? (
           <ul className="people-screens">
             {config.views.map((view) => {
@@ -175,10 +195,25 @@ export function SecurityPanel({ config, onChange }: Props) {
             <li key={user.id} className="ab-card">
               <header>
                 <strong>{user.name}</strong>
-                {user.role === "owner" ? <em>Owner</em> : <em>Staff</em>}
+                <em>{roleLabel(user.role)}</em>
               </header>
-              {user.role === "owner" ? (
-                <p className="hint">Owners see every screen. PIN is on Users.</p>
+              <label className="field-label">
+                Role
+                <select
+                  value={user.role === "staff" ? "user" : user.role}
+                  onChange={(e) =>
+                    patchUser(user.id, { role: e.target.value as UserRole })
+                  }
+                >
+                  {APP_ROLES.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {isAppAdmin(user.role) ? (
+                <p className="hint">Owner and Admin see every screen and every row.</p>
               ) : (
                 <>
                   <label className="check">
@@ -209,9 +244,22 @@ export function SecurityPanel({ config, onChange }: Props) {
                     </button>
                     <button
                       type="button"
-                      className={user.allowDeletes !== false ? "on" : ""}
+                      className={
+                        user.role === "manager"
+                          ? user.allowDeletes === true
+                            ? "on"
+                            : ""
+                          : user.allowDeletes !== false
+                            ? "on"
+                            : ""
+                      }
                       onClick={() =>
-                        patchUser(user.id, { allowDeletes: user.allowDeletes === false })
+                        patchUser(user.id, {
+                          allowDeletes:
+                            user.role === "manager"
+                              ? user.allowDeletes !== true
+                              : user.allowDeletes === false,
+                        })
                       }
                     >
                       Deletes
@@ -231,7 +279,12 @@ export function SecurityPanel({ config, onChange }: Props) {
                                   checked={listed}
                                   onChange={(e) =>
                                     patchUser(user.id, {
-                                      tables: nextTables(user.tables, tables.map((t) => t.tab), view.tab, e.target.checked),
+                                      tables: nextTables(
+                                        user.tables,
+                                        tables.map((t) => t.tab),
+                                        view.tab,
+                                        e.target.checked,
+                                      ),
                                     })
                                   }
                                 />

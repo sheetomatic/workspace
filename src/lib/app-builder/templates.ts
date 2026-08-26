@@ -86,7 +86,8 @@ function book(
 
 const owner: AppUser[] = [
   { id: "owner", name: "Owner", pin: "1234", role: "owner", phone: "9876543210" },
-  { id: "staff", name: "Staff", pin: "0000", role: "staff", phone: "9123456780" },
+  { id: "manager", name: "Manager", pin: "1111", role: "manager", phone: "9123456781" },
+  { id: "staff", name: "User", pin: "0000", role: "user", phone: "9123456780" },
 ];
 
 function baseMeta(name: string, formTitle: string): AppConfig["meta"] {

@@ -50,10 +50,10 @@ export function TableSettingsPanel({
         Security filter
         <input
           value={view?.securityFilter || ""}
-          placeholder="[Email]=USEREMAIL()"
+          placeholder='OR(IN(USERROLE(),"Admin","Manager"),[Email]=USEREMAIL())'
           onChange={(e) => onPatchView({ securityFilter: e.target.value || undefined })}
         />
-        <em>AppSheet formula. Staff only see rows where this is true.</em>
+        <em>AppSheet formula. Users only see rows where this is true. Admin and Manager skip row-owner.</em>
       </label>
 
       <p className="aside-label">Are updates allowed?</p>

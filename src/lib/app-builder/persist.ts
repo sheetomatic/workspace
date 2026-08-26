@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { createEmptyConfig, type AppConfig, type SheetWorkbook } from "@/lib/app-builder";
+import { createEmptyConfig, parseAppRole, type AppConfig, type AppUser, type SheetWorkbook } from "@/lib/app-builder";
 import { workbookFromClient } from "@/lib/app-builder/workbook-payload";
 
 export type AppBuilderStudioSnapshot = {
@@ -17,6 +17,17 @@ function asString(value: unknown, fallback = "") {
 function asStringArray(value: unknown) {
   if (!Array.isArray(value)) return [];
   return value.map((item) => String(item ?? "")).filter(Boolean);
+}
+
+function normalizePersistedUser(raw: unknown, fallback?: AppUser): AppUser {
+  const input = (raw && typeof raw === "object" ? raw : {}) as Partial<AppUser>;
+  return {
+    ...input,
+    id: asString(input.id) || fallback?.id || `u-${Date.now()}`,
+    name: asString(input.name) || fallback?.name || "User",
+    pin: asString(input.pin) || fallback?.pin || "0000",
+    role: parseAppRole(input.role),
+  };
 }
 
 export function parseAppBuilderConfig(raw: unknown): AppConfig | null {
@@ -41,7 +52,9 @@ export function parseAppBuilderConfig(raw: unknown): AppConfig | null {
     hubs: asStringArray(input.hubs),
     views: input.views,
     related: input.related,
-    users: Array.isArray(input.users) ? input.users : empty.users,
+    users: Array.isArray(input.users)
+      ? input.users.map((user) => normalizePersistedUser(user, empty.users?.[0]))
+      : empty.users,
     computed: Array.isArray(input.computed) ? input.computed : [],
     visibility: Array.isArray(input.visibility) ? input.visibility : [],
     actions: Array.isArray(input.actions) ? input.actions : [],

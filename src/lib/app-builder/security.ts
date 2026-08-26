@@ -1,6 +1,7 @@
 import { navViews, type AppConfig, type AppUser, type AppView, type CellValue, type SheetRow } from "./index";
 import { evaluateAppSheetFormula } from "./appsheet-formula";
 import { ruleFor, visibilityAllows } from "./glide-extras";
+import { appsheetUserRole, isAppAdmin, normalizeAppRole } from "./roles";
 import { rowVisibleToUser } from "./row-access";
 
 function normEmail(value: string | undefined) {
@@ -19,7 +20,7 @@ export function emailAllowed(
   meta: Pick<AppConfig["meta"], "allowedEmails" | "allowedDomain">,
   role?: AppUser["role"],
 ): boolean {
-  if (role === "owner") return true;
+  if (isAppAdmin(role)) return true;
   const list = (meta.allowedEmails || []).map(normEmail).filter(Boolean);
   const domain = String(meta.allowedDomain ?? "")
     .trim()
@@ -46,7 +47,7 @@ export function userMaySignIn(
 }
 
 export function userCanOpenView(user: AppUser | undefined, view: AppView): boolean {
-  if (!user || user.role === "owner") return true;
+  if (!user || isAppAdmin(user.role)) return true;
   if (user.tables == null) return true;
   return user.tables.includes(view.tab) || user.tables.includes(view.id);
 }
@@ -72,14 +73,16 @@ export function userCanMutate(
         ? view.allowUpdates !== false
         : view.allowDelete !== false;
   if (!tableOk) return false;
-  if (!user || user.role === "owner") return true;
-  const personOk =
-    kind === "adds"
-      ? user.allowAdds !== false
-      : kind === "updates"
-        ? user.allowUpdates !== false
-        : user.allowDeletes !== false;
-  return personOk;
+  if (!user || isAppAdmin(user.role)) return true;
+  const role = normalizeAppRole(user.role);
+  if (role === "manager") {
+    if (kind === "deletes") return user.allowDeletes === true;
+    if (kind === "adds") return user.allowAdds !== false;
+    return user.allowUpdates !== false;
+  }
+  if (kind === "adds") return user.allowAdds !== false;
+  if (kind === "updates") return user.allowUpdates !== false;
+  return user.allowDeletes !== false;
 }
 
 function formulaTruthy(value: CellValue) {
@@ -104,7 +107,7 @@ export function rowPassesSecurity(
     user: user?.email || user?.name || "Owner",
     userEmail: user?.email || "",
     userName: user?.name || "",
-    userRole: user?.role === "staff" ? "Staff" : "Owner",
+    userRole: appsheetUserRole(user?.role),
   });
   return formulaTruthy(result);
 }
