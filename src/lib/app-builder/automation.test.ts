@@ -4,8 +4,10 @@ import {
   conditionPasses,
   interpolateTemplate,
   parseBotScript,
+  parseLinkToView,
   planBotTasks,
   planBotsForRow,
+  viewIdFromDeepLink,
   type AppBot,
 } from "./automation";
 
@@ -100,5 +102,39 @@ CREATE_PDF folder "Quotes/[Company]" file "[Name].pdf"`,
     expect(botsForEvent([bot], "Leads", "adds")).toEqual([]);
     expect(botsForEvent([bot], "Leads", "updates")).toHaveLength(1);
     expect(botsForEvent([bot], "Leads", "deletes")).toHaveLength(1);
+  });
+
+  it("plans a notify with <<[Col]>> and a DeepLink", () => {
+    const planned = planBotTasks(
+      {
+        ...quoteBot,
+        tasks: [
+          {
+            id: "n",
+            kind: "notify",
+            subject: "Quote | <<[Company]>>",
+            body: "Hi <<[Name]>>, value [Value]",
+            deepLink: 'LINKTOVIEW("Leads")',
+          },
+        ],
+      },
+      row,
+    );
+    expect(planned[0]).toMatchObject({
+      kind: "notify",
+      subject: "Quote | East Infra",
+      body: "Hi Rina, value 240000",
+      deepLink: 'LINKTOVIEW("Leads")',
+    });
+  });
+
+  it("reads LINKTOVIEW into a screen id", () => {
+    const views = [
+      { id: "leads", name: "Leads" },
+      { id: "home", name: "Home" },
+    ];
+    expect(viewIdFromDeepLink('LINKTOVIEW("Leads")', views)).toBe("leads");
+    expect(viewIdFromDeepLink("home", views)).toBe("home");
+    expect(parseLinkToView("")).toBeUndefined();
   });
 });

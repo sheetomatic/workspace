@@ -10,17 +10,21 @@ export type BotEventKind =
   | "schedule"
   | "manual";
 
-export type BotTaskKind = "email" | "whatsapp" | "pdf" | "script";
+export type BotTaskKind = "email" | "whatsapp" | "pdf" | "script" | "notify";
+export type BotSource = "app" | "schedule";
 
 export interface AppBotTask {
   id: string;
   kind: BotTaskKind;
   to?: string;
+  /** Email subject or notification title. */
   subject?: string;
   body?: string;
   folder?: string;
   fileName?: string;
   script?: string;
+  /** AppSheet DeepLink, e.g. LINKTOVIEW("Leads"). */
+  deepLink?: string;
 }
 
 export interface AppBot {
@@ -29,9 +33,15 @@ export interface AppBot {
   enabled: boolean;
   table: string;
   event: BotEventKind;
+  /** AppSheet event name on the Event card. */
+  eventName?: string;
+  /** App = row change. Schedule = Run now / later. */
+  source?: BotSource;
   /** AppSheet Adds / Updates / Deletes. When set, overrides event for data changes. */
   changes?: { adds?: boolean; updates?: boolean; deletes?: boolean };
   condition?: string;
+  /** When true, scheduled/manual runs ignore row security filters. */
+  bypassSecurity?: boolean;
   tasks: AppBotTask[];
 }
 
@@ -42,13 +52,14 @@ export interface AppIntelligence {
 }
 
 export type PlannedBotAction = {
-  kind: "email" | "whatsapp" | "pdf" | "log";
+  kind: "email" | "whatsapp" | "pdf" | "notify" | "log";
   to?: string;
   subject?: string;
   body?: string;
   folder?: string;
   fileName?: string;
   pdfBase64?: string;
+  deepLink?: string;
   message: string;
 };
 
@@ -73,6 +84,61 @@ export function interpolateTemplate(
   );
 }
 
+export function parseLinkToView(expr: string | undefined): string | undefined {
+  const text = expr?.trim();
+  if (!text) return undefined;
+  const match =
+    text.match(/LINKTOVIEW\(\s*"([^"]+)"\s*\)/i) ||
+    text.match(/LINKTOVIEW\(\s*'([^']+)'\s*\)/i);
+  return (match?.[1] || text).trim() || undefined;
+}
+
+export function viewIdFromDeepLink(
+  expr: string | undefined,
+  views: { id: string; name: string }[],
+): string | undefined {
+  const target = parseLinkToView(expr);
+  if (!target) return undefined;
+  return views.find((view) => view.id === target || view.name === target)?.id;
+}
+
+function changeOn(bot: AppBot, kind: "adds" | "updates" | "deletes"): boolean {
+  if (bot.changes) {
+    if (kind === "deletes") return Boolean(bot.changes.deletes);
+    return bot.changes[kind] !== false;
+  }
+  if (bot.event === "adds_or_updates" || bot.event === "manual" || bot.event === "schedule") {
+    return kind !== "deletes";
+  }
+  return bot.event === kind;
+}
+
+export function botFiresOn(bot: AppBot, kind: "adds" | "updates" | "deletes"): boolean {
+  if (bot.source === "schedule" || bot.event === "schedule") return false;
+  return changeOn(bot, kind);
+}
+
+export function withBotChange(
+  bot: AppBot,
+  kind: "adds" | "updates" | "deletes",
+  on: boolean,
+): Pick<AppBot, "changes" | "event" | "source"> {
+  const adds = kind === "adds" ? on : changeOn(bot, "adds");
+  const updates = kind === "updates" ? on : changeOn(bot, "updates");
+  const deletes = kind === "deletes" ? on : changeOn(bot, "deletes");
+  const event: BotEventKind =
+    deletes && !adds && !updates
+      ? "deletes"
+      : adds && updates
+        ? "adds_or_updates"
+        : adds
+          ? "adds"
+          : updates
+            ? "updates"
+            : "manual";
+  return { changes: { adds, updates, deletes }, event, source: "app" };
+}
+
 export function botsForEvent(
   bots: AppBot[] | undefined,
   table: string,
@@ -81,7 +147,7 @@ export function botsForEvent(
   return (bots || []).filter((bot) => {
     if (!bot.enabled) return false;
     if (bot.table !== table) return false;
-    if (bot.event === "manual" || bot.event === "schedule") {
+    if (bot.source === "schedule" || bot.event === "manual" || bot.event === "schedule") {
       return event === "manual";
     }
     if (bot.changes) {
@@ -204,12 +270,14 @@ export function planBotTasks(
     const body = interpolateTemplate(task.body || "", row);
     const folder = interpolateTemplate(task.folder || "", row);
     const fileName = interpolateTemplate(task.fileName || `${bot.name}.pdf`, row);
+    const deepLink = interpolateTemplate(task.deepLink || "", row);
     if (task.kind === "email") {
       planned.push({
         kind: "email",
         to,
         subject,
         body,
+        deepLink,
         message: `Email → ${to || "(missing address)"}: ${subject}`,
       });
     } else if (task.kind === "whatsapp") {
@@ -217,7 +285,17 @@ export function planBotTasks(
         kind: "whatsapp",
         to,
         body,
+        deepLink,
         message: `WhatsApp → ${to || "(missing phone)"}`,
+      });
+    } else if (task.kind === "notify") {
+      planned.push({
+        kind: "notify",
+        to,
+        subject,
+        body,
+        deepLink,
+        message: subject || body || bot.name,
       });
     } else {
       planned.push(planPdf(folder, fileName, body, row));

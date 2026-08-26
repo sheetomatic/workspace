@@ -582,16 +582,21 @@ export {
   visibleNavViews,
 } from "./glide-extras";
 export {
+  botFiresOn,
   botsForEvent,
   interpolateTemplate,
   parseBotScript,
+  parseLinkToView,
   planBotTasks,
   planBotsForRow,
   SCRIPT_HELP,
+  viewIdFromDeepLink,
+  withBotChange,
   type AppBot,
   type AppBotTask,
   type AppIntelligence,
   type BotEventKind,
+  type BotSource,
   type BotTaskKind,
   type PlannedBotAction,
 } from "./automation";

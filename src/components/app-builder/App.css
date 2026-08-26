@@ -2071,33 +2071,256 @@
 .ab-studio.previewing .canvas{
   padding-bottom: 36px;
 }
-.ab-studio .bots-panel{ max-width: 720px; }
-.ab-studio .bot-card{
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 12px 14px 16px;
-  margin: 16px 0;
+.ab-studio .bot-studio{
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) minmax(300px, 360px);
+  min-height: 0;
+  height: 100%;
+  background: #f5f5f7;
 }
-.ab-studio .bot-card header{
+.ab-studio .bot-rail{
+  border-right: 0.5px solid #d2d2d7;
+  padding: 12px 10px 24px;
+  overflow: auto;
+}
+.ab-studio .bot-rail header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 10px;
+}
+.ab-studio .bot-rail header strong{ font-size: 17px; letter-spacing: -0.02em; }
+.ab-studio .bot-icon-btn{
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: #e8e8ed;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+.ab-studio .bot-rail h3{
+  margin: 14px 8px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6e6e73;
+}
+.ab-studio .bot-rail section button{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  border-radius: 8px;
+  padding: 7px 8px;
+  font: inherit;
+  font-size: 13px;
+  color: #1d1d1f;
+  cursor: pointer;
+}
+.ab-studio .bot-rail section button.on{ background: #007aff; color: #fff; }
+.ab-studio .bot-rail section button.off{ font-style: italic; color: #8e8e93; }
+.ab-studio .bot-rail section button.off.on{ color: #fff; }
+.ab-studio .bot-rail section button i{
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: .45;
+}
+.ab-studio .bot-empty{ margin: 8px; color: #6e6e73; font-size: 13px; }
+.ab-studio .bot-flow{
+  overflow: auto;
+  padding: 22px 28px 40px;
+}
+.ab-studio .bot-flow-head{
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-bottom: 22px;
 }
-.ab-studio .bot-card header input{
+.ab-studio .bot-flow-head input{
   flex: 1;
-  min-height: 36px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 0 10px;
+  min-height: 40px;
+  border: 0;
+  background: transparent;
   font: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+.ab-studio .bot-when{
+  margin: 0 0 8px;
+  font-size: 12px;
   font-weight: 650;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: #6e6e73;
 }
-.ab-studio .bot-task{
-  border-top: 1px solid var(--line);
-  margin-top: 10px;
-  padding-top: 8px;
+.ab-studio .bot-node{
+  display: block;
+  width: min(420px, 100%);
+  text-align: left;
+  border: 0;
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 0 0 0.5px rgb(0 0 0 / 8%), 0 8px 20px rgb(0 0 0 / 4%);
+  font: inherit;
+  cursor: pointer;
 }
-.ab-studio .bot-row-pick{ flex: 1; margin: 0; min-width: 160px; }
+.ab-studio .bot-node.slim{ width: min(280px, 100%); }
+.ab-studio .bot-node.on{ box-shadow: 0 0 0 2px #007aff, 0 8px 20px rgb(0 0 0 / 4%); }
+.ab-studio .bot-node b{ display: block; font-size: 15px; }
+.ab-studio .bot-node small, .ab-studio .bot-node em{
+  display: block;
+  margin-top: 2px;
+  color: #6e6e73;
+  font-size: 12px;
+  font-style: normal;
+}
+.ab-studio .bot-node em{ font-weight: 650; color: #007aff; }
+.ab-studio .bot-line{
+  display: block;
+  width: 1px;
+  height: 18px;
+  margin: 0 0 0 20px;
+  background: #d2d2d7;
+}
+.ab-studio .bot-step{ position: relative; }
+.ab-studio .bot-plus{
+  position: absolute;
+  left: 12px;
+  top: 6px;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 50%;
+  background: #007aff;
+  color: #fff;
+  font: 12px/18px inherit;
+  cursor: pointer;
+  z-index: 1;
+}
+.ab-studio .bot-add-step{
+  border: 0;
+  background: #007aff;
+  color: #fff;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.ab-studio .bot-end{
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: #8e8e93;
+}
+.ab-studio .bot-empty-flow{
+  max-width: 360px;
+  margin: 48px auto;
+  text-align: center;
+}
+.ab-studio .bot-empty-flow strong{ display: block; margin-bottom: 14px; font-size: 18px; }
+.ab-studio .bot-inspector{
+  border-left: 0.5px solid #d2d2d7;
+  background: #fff;
+  padding: 18px 18px 28px;
+  overflow: auto;
+}
+.ab-studio .bot-insp h2{
+  margin: 0 0 14px;
+  font-size: 22px;
+  letter-spacing: -0.03em;
+}
+.ab-studio .bot-insp label,
+.ab-studio .bot-run label{
+  display: grid;
+  gap: 5px;
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: #6e6e73;
+}
+.ab-studio .bot-insp input,
+.ab-studio .bot-insp select,
+.ab-studio .bot-insp textarea,
+.ab-studio .bot-run select{
+  width: 100%;
+  border: 0.5px solid #d2d2d7;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 14px;
+  color: #1d1d1f;
+  background: #f5f5f7;
+}
+.ab-studio .bot-insp textarea{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+.ab-studio .bot-tiles{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 0 0 14px;
+}
+.ab-studio .bot-tiles button{
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  border: 0.5px solid #d2d2d7;
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 10px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.ab-studio .bot-tiles button.on{ border-color: #007aff; background: #f0f7ff; color: #007aff; }
+.ab-studio .bot-tiles button i{
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 0.5px solid #d2d2d7;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+}
+.ab-studio .bot-tiles button.on i{ border-color: #007aff; background: #007aff; color: #fff; }
+.ab-studio .bot-kinds{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+.ab-studio .bot-kinds button{
+  text-align: left;
+  border: 0.5px solid #d2d2d7;
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font: inherit;
+  cursor: pointer;
+}
+.ab-studio .bot-kinds button.on{ border-color: #007aff; background: #f0f7ff; }
+.ab-studio .bot-kinds b{ display: block; font-size: 13px; }
+.ab-studio .bot-kinds small{ color: #6e6e73; font-size: 11px; }
+.ab-studio .bot-run{
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 0.5px solid #d2d2d7;
+}
+.ab-studio .bot-run p{ margin: 10px 0 0; font-size: 12px; color: #6e6e73; line-height: 1.4; }
+@media (max-width: 980px) {
+  .ab-studio .bot-studio{ grid-template-columns: 1fr; }
+  .ab-studio .bot-rail, .ab-studio .bot-inspector{ border: 0; }
+}
 .ab-studio .data-empty{
   margin: 16px 0 0;
   padding: 18px 16px;

@@ -19,6 +19,7 @@ import {
   defaultIconForView,
   downloadPdf,
   enrichRow,
+  viewIdFromDeepLink,
   filterRelated,
   initials,
   parentKeyFromRow,
@@ -190,6 +191,9 @@ export function AppRuntime({
     } else {
       setToast(planned.map((item) => item.message).join(" · "));
     }
+    const jump = planned.find((action) => action.kind === "notify" && action.deepLink);
+    const viewId = jump ? viewIdFromDeepLink(jump.deepLink, config.views) : undefined;
+    if (viewId) openView(viewId);
   }
 
   function openView(id: string) {
