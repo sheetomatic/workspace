@@ -799,7 +799,7 @@ export default function AppBuilderStudio({
           onTemplates={openGallery}
           onUpload={pickSpreadsheet}
           spreadsheetId={google.spreadsheetId}
-          spreadsheetTitle={google.spreadsheetTitle}
+          spreadsheetTitle={google.spreadsheetTitle ?? undefined}
           connected={google.connected}
           onRefreshSheet={() => {
             if (google.spreadsheetId) void loadWorkbook(google.spreadsheetId);
