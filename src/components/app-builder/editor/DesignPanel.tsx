@@ -8,6 +8,8 @@ import {
   MENU_ICONS,
   relatedForView,
   withColumnType,
+  type ActionDoThis,
+  type ActionPosition,
   type AppAction,
   type AppComputedColumn,
   type AppConfig,
@@ -676,6 +678,8 @@ function GlideExtrasEditor({
       id: `act-${Date.now().toString().slice(-4)}`,
       label: "Mark done",
       viewId: view.id,
+      doThis: "set",
+      position: "prominent",
       steps: [
         { kind: "set", col: view.statusCol || headers[0], value: "Done" },
         { kind: "notify", message: "Updated" },
@@ -958,6 +962,53 @@ function GlideExtrasEditor({
                 </button>
               </header>
               <div className="ab-card-grid">
+                <label>
+                  Do this
+                  <select
+                    value={action.doThis || "set"}
+                    onChange={(e) =>
+                      patchAction(action.id, (item) => ({
+                        ...item,
+                        doThis: e.target.value as ActionDoThis,
+                      }))
+                    }
+                  >
+                    <option value="set">Set columns in this row</option>
+                    <option value="delete">Delete this row</option>
+                    <option value="go">Go to another view</option>
+                    <option value="notify">Show a message</option>
+                  </select>
+                </label>
+                <label>
+                  Position
+                  <select
+                    value={action.position || "prominent"}
+                    onChange={(e) =>
+                      patchAction(action.id, (item) => ({
+                        ...item,
+                        position: e.target.value as ActionPosition,
+                      }))
+                    }
+                  >
+                    <option value="primary">Primary</option>
+                    <option value="prominent">Prominent</option>
+                    <option value="inline">Inline</option>
+                    <option value="hide">Hide</option>
+                  </select>
+                </label>
+                <label>
+                  Only if
+                  <input
+                    value={action.onlyIf || ""}
+                    placeholder={'[Stage]="Won"'}
+                    onChange={(e) =>
+                      patchAction(action.id, (item) => ({
+                        ...item,
+                        onlyIf: e.target.value || undefined,
+                      }))
+                    }
+                  />
+                </label>
                 <label>
                   Set
                   <select

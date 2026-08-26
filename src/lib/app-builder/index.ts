@@ -104,11 +104,20 @@ export interface AppActionStep {
   screen?: "home" | "collection" | "detail";
 }
 
+export type ActionDoThis = "set" | "delete" | "go" | "notify";
+export type ActionPosition = "primary" | "prominent" | "inline" | "hide";
+
 export interface AppAction {
   id: string;
   label: string;
   viewId: string;
   steps: AppActionStep[];
+  /** AppSheet “Do this”. */
+  doThis?: ActionDoThis;
+  /** AppSheet “Only if this condition is true”. */
+  onlyIf?: string;
+  position?: ActionPosition;
+  icon?: string;
 }
 
 export interface AppFormField {
@@ -126,6 +135,34 @@ export interface AppFormField {
   refKeyCol?: string;
   refLabelCol?: string;
   fileFolder?: string;
+  /** AppSheet Show_if / Edit_if / Required_if / Valid_if. */
+  showIf?: string;
+  editIf?: string;
+  requiredIf?: string;
+  validIf?: string;
+  invalidMessage?: string;
+  format?: FieldFormat;
+}
+
+export type FieldFormatKind = "text" | "number" | "currency" | "percent" | "date";
+
+export interface FieldFormat {
+  kind?: FieldFormatKind;
+  decimals?: number;
+  currency?: string;
+  dateStyle?: "short" | "medium" | "long";
+}
+
+export interface AppSlice {
+  id: string;
+  name: string;
+  tab: string;
+  /** AppSheet row filter, e.g. [Category]="Direct Sale" */
+  filter?: string;
+  cols?: string[];
+  allowAdds?: boolean;
+  allowUpdates?: boolean;
+  allowDelete?: boolean;
 }
 
 export interface AppView {
@@ -152,6 +189,9 @@ export interface AppView {
   allowDelete?: boolean;
   /** AppSheet security filter, e.g. [Email]=USEREMAIL() */
   securityFilter?: string;
+  /** Named slice, or an inline row-filter formula. */
+  sliceId?: string;
+  sliceFilter?: string;
   addFields?: AppFormField[];
   editFields?: AppFormField[];
   /** AppSheet menu icon id (users, cart, calendar…). */
@@ -179,6 +219,7 @@ export interface AppConfig {
   computed?: AppComputedColumn[];
   visibility?: AppVisibility[];
   actions?: AppAction[];
+  slices?: AppSlice[];
   bots?: import("./automation").AppBot[];
   intelligence?: import("./automation").AppIntelligence;
 }
@@ -216,6 +257,7 @@ export function createEmptyConfig(name = "Untitled app"): AppConfig {
     views: [],
     related: [],
     users: [{ id: "owner", name: "Owner", pin: "1234", role: "owner" }],
+    slices: [],
     bots: [],
     intelligence: { voiceEnabled: false, aiFormulas: true },
   };
@@ -494,6 +536,19 @@ export {
   userMaySignIn,
   viewsForUser,
 } from "./security";
+export {
+  actionShown,
+  applySliceFilter,
+  displayField,
+  fieldEditable,
+  fieldRequired,
+  fieldShown,
+  fieldValid,
+  formatCell,
+  formulaTrue,
+  sliceAllows,
+  sliceOf,
+} from "./behavior";
 export {
   evaluateAppSheetFormula,
   suggestAppSheetFormula,

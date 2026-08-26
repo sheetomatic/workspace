@@ -1,5 +1,5 @@
 import type { AppView, SheetRow } from "@/lib/app-builder";
-import { cellStr, initials, isImageUrl, tone } from "@/lib/app-builder";
+import { cellStr, displayField, initials, isImageUrl, tone } from "@/lib/app-builder";
 
 export function CellVisual({ value, asImage }: { value: string; asImage?: boolean }) {
   if ((asImage || isImageUrl(value)) && /^https?:\/\//i.test(value)) {
@@ -9,11 +9,12 @@ export function CellVisual({ value, asImage }: { value: string; asImage?: boolea
 }
 
 function titleOf(view: AppView, row: SheetRow) {
-  return cellStr(row, view.titleCol || view.cols[0] || "") || `Item ${row._row}`;
+  const col = view.titleCol || view.cols[0] || "";
+  return displayField(view, col, row.cells[col]) || `Item ${row._row}`;
 }
 
 function subtitleOf(view: AppView, row: SheetRow) {
-  if (view.subtitleCol) return cellStr(row, view.subtitleCol);
+  if (view.subtitleCol) return displayField(view, view.subtitleCol, row.cells[view.subtitleCol]);
   const extra = view.cols.find((c) => c !== view.titleCol && c !== view.statusCol);
   return extra ? cellStr(row, extra) : "";
 }
@@ -61,7 +62,7 @@ export function CollectionList({
               <tr key={r._row} onClick={() => onOpen(r)}>
                 {cols.map((c) => (
                   <td key={c}>
-                    <CellVisual value={cellStr(r, c)} asImage={c === view.imageCol} />
+                    <CellVisual value={displayField(view, c, r.cells[c])} asImage={c === view.imageCol} />
                   </td>
                 ))}
               </tr>
@@ -223,10 +224,12 @@ export function FieldBlocks({
   row,
   hide,
   imageCol,
+  view,
 }: {
   row: SheetRow;
   hide?: string[];
   imageCol?: string;
+  view?: AppView;
 }) {
   const skip = new Set(hide ?? []);
   const keys = Object.keys(row.cells).filter(
@@ -239,7 +242,7 @@ export function FieldBlocks({
         <div className="field" key={k}>
           <dt>{k}</dt>
           <dd>
-            <CellVisual value={cellStr(row, k)} asImage={k === imageCol} />
+            <CellVisual value={displayField(view, k, row.cells[k])} asImage={k === imageCol} />
           </dd>
         </div>
       ))}

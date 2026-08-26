@@ -30,6 +30,7 @@ import { DesignPanel } from "./editor/DesignPanel";
 import { SchemaStudio } from "./editor/SchemaStudio";
 import { TableColumnsPanel } from "./editor/TableColumnsPanel";
 import { TableSettingsPanel } from "./editor/TableSettingsPanel";
+import { SlicesPanel } from "./editor/SlicesPanel";
 import { TemplateGallery } from "./editor/TemplateGallery";
 import { ThemePicker } from "./editor/ThemePicker";
 import { BotsPanel } from "./editor/BotsPanel";
@@ -135,7 +136,7 @@ export default function AppBuilderStudio({
     initial?.templateId ?? null,
   );
   const [lastPrompt, setLastPrompt] = useState("");
-  const [dataPane, setDataPane] = useState<"columns" | "rows" | "settings" | "schema">("columns");
+  const [dataPane, setDataPane] = useState<"columns" | "rows" | "settings" | "slices" | "schema">("columns");
   const fileRef = useRef<HTMLInputElement>(null);
 
   liveSheetId.current = google.spreadsheetId || connected;
@@ -912,8 +913,8 @@ function DataEditor({
   sheet: SheetAdapter;
   config: AppConfig;
   tabName: string;
-  pane: "columns" | "rows" | "settings" | "schema";
-  onPane: (pane: "columns" | "rows" | "settings" | "schema") => void;
+  pane: "columns" | "rows" | "settings" | "slices" | "schema";
+  onPane: (pane: "columns" | "rows" | "settings" | "slices" | "schema") => void;
   onTab: (name: string) => void;
   onChange: () => void;
   onConfigChange: (next: AppConfig) => void;
@@ -1107,6 +1108,9 @@ function DataEditor({
                 <button type="button" className={pane === "settings" ? "on" : ""} onClick={() => onPane("settings")}>
                   Settings
                 </button>
+                <button type="button" className={pane === "slices" ? "on" : ""} onClick={() => onPane("slices")}>
+                  Slices
+                </button>
               </div>
               <div className="sheet-toolbar">
                 {spreadsheetId ? (
@@ -1161,6 +1165,14 @@ function DataEditor({
                   setFocusCol(col);
                   applyType(col, "virtual", { virtual: true, formula: fieldOf(view, col)?.formula || `[${col}]` });
                 }}
+              />
+            ) : null}
+            {pane === "slices" ? (
+              <SlicesPanel
+                config={config}
+                tabName={tab.name}
+                headers={tab.headers}
+                onChange={onConfigChange}
               />
             ) : null}
             {pane === "settings" ? (
@@ -1567,6 +1579,122 @@ function ColumnInspector({
           <em>Owners still see it. Staff do not — for cost, notes, or anything private.</em>
         </span>
       </label>
+      <p className="aside-label">Behavior</p>
+      <label>
+        Show_if
+        <input
+          defaultValue={field?.showIf || ""}
+          placeholder={'[Stage]="Won"'}
+          onBlur={(e) => onApply(type, { showIf: e.target.value.trim() || undefined })}
+        />
+      </label>
+      <label>
+        Edit_if
+        <input
+          defaultValue={field?.editIf || ""}
+          placeholder={'USERROLE()="Admin"'}
+          onBlur={(e) => onApply(type, { editIf: e.target.value.trim() || undefined })}
+        />
+      </label>
+      <label>
+        Required_if
+        <input
+          defaultValue={field?.requiredIf || ""}
+          placeholder="ISNOTBLANK([Party])"
+          onBlur={(e) => onApply(type, { requiredIf: e.target.value.trim() || undefined })}
+        />
+      </label>
+      <label>
+        Valid_if
+        <input
+          defaultValue={field?.validIf || ""}
+          placeholder="[Qty]>0"
+          onBlur={(e) => onApply(type, { validIf: e.target.value.trim() || undefined })}
+        />
+      </label>
+      <label>
+        Error message
+        <input
+          defaultValue={field?.invalidMessage || ""}
+          placeholder="Enter a valid value"
+          onBlur={(e) => onApply(type, { invalidMessage: e.target.value.trim() || undefined })}
+        />
+      </label>
+      {type === "number" || type === "date" ? (
+        <div className="col-inspector-row">
+          <label>
+            Format
+            <select
+              value={field?.format?.kind || (type === "date" ? "date" : "number")}
+              onChange={(e) =>
+                onApply(type, {
+                  format: { ...field?.format, kind: e.target.value as NonNullable<AppFormField["format"]>["kind"] },
+                })
+              }
+            >
+              {type === "date" ? (
+                <>
+                  <option value="date">Date</option>
+                </>
+              ) : (
+                <>
+                  <option value="number">Number</option>
+                  <option value="currency">Currency</option>
+                  <option value="percent">Percent</option>
+                </>
+              )}
+            </select>
+          </label>
+          {type === "number" ? (
+            <label>
+              Decimals
+              <input
+                defaultValue={String(field?.format?.decimals ?? (field?.format?.kind === "currency" ? 2 : 0))}
+                onBlur={(e) =>
+                  onApply(type, {
+                    format: { ...field?.format, decimals: Number(e.target.value) || 0 },
+                  })
+                }
+              />
+            </label>
+          ) : (
+            <label>
+              Date style
+              <select
+                value={field?.format?.dateStyle || "short"}
+                onChange={(e) =>
+                  onApply(type, {
+                    format: {
+                      ...field?.format,
+                      kind: "date",
+                      dateStyle: e.target.value as "short" | "medium" | "long",
+                    },
+                  })
+                }
+              >
+                <option value="short">Short</option>
+                <option value="medium">Medium</option>
+                <option value="long">Long</option>
+              </select>
+            </label>
+          )}
+        </div>
+      ) : null}
+      {field?.format?.kind === "currency" ? (
+        <label>
+          Currency
+          <select
+            value={field.format.currency || "INR"}
+            onChange={(e) =>
+              onApply(type, { format: { ...field.format, kind: "currency", currency: e.target.value } })
+            }
+          >
+            <option value="INR">INR ₹</option>
+            <option value="USD">USD $</option>
+            <option value="EUR">EUR €</option>
+          </select>
+        </label>
+      ) : null}
       {type === "enum" || type === "choice" ? (
         <label>
           Dropdown values (AppSheet Enum)

@@ -64,6 +64,41 @@ describe("parseAppBuilderConfig", () => {
     expect(parsed?.users?.[1].role).toBe("manager");
   });
 
+  it("keeps slices and column behavior formulas", () => {
+    const base = createEmptyConfig("Desk");
+    const parsed = parseAppBuilderConfig({
+      ...base,
+      views: [
+        {
+          id: "menu",
+          hub: "App",
+          name: "Menu",
+          kind: "deck",
+          tab: "Menu",
+          cols: ["Name"],
+          sliceId: "direct",
+          addFields: [
+            {
+              name: "qty",
+              label: "Qty",
+              col: "Qty",
+              type: "number",
+              showIf: '[Stage]="Won"',
+              validIf: "[Qty]>0",
+              invalidMessage: "Need qty",
+              format: { kind: "currency", currency: "INR" },
+            },
+          ],
+        },
+      ],
+      related: [],
+      slices: [{ id: "direct", name: "Direct Sale", tab: "Menu", filter: '[Category]="Direct Sale"' }],
+    });
+    expect(parsed?.slices?.[0]?.name).toBe("Direct Sale");
+    expect(parsed?.views[0].addFields?.[0].showIf).toBe('[Stage]="Won"');
+    expect(parsed?.views[0].addFields?.[0].format?.kind).toBe("currency");
+  });
+
   it("keeps bots and intelligence on a saved app", () => {
     const base = createEmptyConfig("Sales CRM");
     const parsed = parseAppBuilderConfig({

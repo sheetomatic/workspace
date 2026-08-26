@@ -58,6 +58,7 @@ export function parseAppBuilderConfig(raw: unknown): AppConfig | null {
     computed: Array.isArray(input.computed) ? input.computed : [],
     visibility: Array.isArray(input.visibility) ? input.visibility : [],
     actions: Array.isArray(input.actions) ? input.actions : [],
+    slices: Array.isArray(input.slices) ? input.slices : [],
     bots: Array.isArray(input.bots) ? input.bots : [],
     intelligence:
       input.intelligence && typeof input.intelligence === "object"

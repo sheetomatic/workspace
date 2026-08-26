@@ -2107,6 +2107,8 @@
   font-size: 13px;
   line-height: 1.45;
 }
+.ab-studio .ab-slices{ max-width: 640px; padding: 8px 0 24px; }
+.ab-studio .ab-slices .ab-card{ margin: 0 0 12px; }
 .ab-studio .people-panel{ max-width: 560px; }
 .ab-studio .security-panel{
   max-width: 560px;

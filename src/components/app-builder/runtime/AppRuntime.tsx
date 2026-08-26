@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type {
   AppAction,
   AppConfig,
+  AppUser,
   AppFormField,
   AppRelated,
   AppUser,
@@ -14,6 +15,7 @@ import {
   addButtonLabel,
   applyAction,
   applySlice,
+  applySliceFilter,
   cellStr,
   defaultIconForView,
   downloadPdf,
@@ -24,7 +26,13 @@ import {
   planBotsForRow,
   relatedForView,
   roleLabel,
+  fieldEditable,
+  fieldRequired,
+  fieldShown,
+  fieldValid,
   rowsForUser,
+  sliceAllows,
+  sliceOf,
   searchRows,
   themeById,
   themeVars,
@@ -96,6 +104,9 @@ export function AppRuntime({
   const signed = (config.users || []).find((u) => u.name === who);
   const role: UserRole | null = signed?.role ?? (who ? "owner" : null);
   const tabs = viewsForUser(config, signed);
+  function mayChange(target: typeof view, kind: "adds" | "updates" | "deletes") {
+    return userCanMutate(signed, target, kind) && sliceAllows(sliceOf(config, target || undefined), kind);
+  }
   const view = config.views.find((v) => v.id === viewId) || null;
 
   useEffect(() => {
@@ -117,6 +128,7 @@ export function AppRuntime({
       enrichRow(r, view.tab, config, sheet),
     );
     const signedUser = (config.users || []).find((u) => u.name === who);
+    rows = applySliceFilter(rows, view, config, signedUser);
     rows = rowsForUser(rows, view, signedUser);
     if (statusFilter && view.statusCol) {
       rows = rows.filter((r) => cellStr(r, view.statusCol || "") === statusFilter);
@@ -221,7 +233,12 @@ export function AppRuntime({
   const featured = tabs[0];
   const recent = featured
     ? rowsForUser(
-        applySlice(sheet.listRows(featured.tab), featured.sliceCols),
+        applySliceFilter(
+          applySlice(sheet.listRows(featured.tab), featured.sliceCols),
+          featured,
+          config,
+          signed,
+        ),
         featured,
         signed,
       )
@@ -284,10 +301,17 @@ export function AppRuntime({
     );
   }
 
-  const collectionView =
-    view && split && (view.collectionStyle === "list" || !view.collectionStyle)
-      ? { ...view, collectionStyle: "table" as const }
-      : view;
+  const sliceCols = sliceOf(config, view || undefined)?.cols;
+  const collectionView = view
+    ? {
+        ...view,
+        cols: sliceCols?.length ? sliceCols : view.cols,
+        collectionStyle:
+          split && (view.collectionStyle === "list" || !view.collectionStyle)
+            ? ("table" as const)
+            : view.collectionStyle,
+      }
+    : view;
 
   const showSplit = split && view && (screen === "collection" || screen === "detail");
 
@@ -326,7 +350,7 @@ export function AppRuntime({
           <span className="wordmark">{config.meta.brand || "Sheetomatic"}</span>
         )}
         <h1>{title}</h1>
-        {(screen === "collection" || showSplit) && view?.addFields?.length && userCanMutate(signed, view, "adds") ? (
+        {(screen === "collection" || showSplit) && view?.addFields?.length && mayChange(view, "adds") ? (
           <button
             type="button"
             className="ghost-btn add"
@@ -339,7 +363,7 @@ export function AppRuntime({
           >
             +
           </button>
-        ) : (screen === "detail" || (showSplit && row)) && view?.editFields?.length && userCanMutate(signed, view, "updates") ? (
+        ) : (screen === "detail" || (showSplit && row)) && view?.editFields?.length && mayChange(view, "updates") ? (
           <button
             type="button"
             className="text-link"
@@ -400,13 +424,21 @@ export function AppRuntime({
                   row={detailRow}
                   hiddenFields={Object.keys(detailRow.cells).filter(
                     (key) =>
-                      !visibleFields(Object.keys(detailRow.cells), config, role, detailRow).includes(
+                      !visibleFields(Object.keys(detailRow.cells), config, role, detailRow, view, signed).includes(
                         key,
                       ),
                   )}
-                  actions={visibleActions(config, view.id, role, detailRow)}
+                  actions={visibleActions(config, view.id, role, detailRow, signed)}
                   onRunAction={(action) => {
                     const result = applyAction(action, detailRow, who);
+                    if (result.deleteRow) {
+                      sheet.deleteRow(view.tab, detailRow._row);
+                      bump();
+                      setRow(null);
+                      setScreen("collection");
+                      if (result.notify) setToast(result.notify);
+                      return;
+                    }
                     if (Object.keys(result.cells).length) {
                       sheet.updateRow(view.tab, detailRow._row, {
                         ...detailRow.cells,
@@ -420,6 +452,10 @@ export function AppRuntime({
                     }
                     if (result.notify) setToast(result.notify);
                     if (result.go === "home") goHome();
+                    if (result.go === "collection") {
+                      setRow(null);
+                      setScreen("collection");
+                    }
                   }}
                   relatedBlocks={relatedBlocks}
                   onAddRelated={(rel) => {
@@ -436,7 +472,7 @@ export function AppRuntime({
                     openDetail(child);
                   }}
                   onDelete={
-                    userCanMutate(signed, view, "deletes")
+                    mayChange(view, "deletes")
                       ? () => {
                           sheet.deleteRow(view.tab, detailRow._row);
                           bump();
@@ -505,11 +541,19 @@ export function AppRuntime({
             view={view}
             row={detailRow}
             hiddenFields={Object.keys(detailRow.cells).filter(
-              (key) => !visibleFields(Object.keys(detailRow.cells), config, role, detailRow).includes(key),
+              (key) => !visibleFields(Object.keys(detailRow.cells), config, role, detailRow, view, signed).includes(key),
             )}
-            actions={visibleActions(config, view.id, role, detailRow)}
+            actions={visibleActions(config, view.id, role, detailRow, signed)}
             onRunAction={(action) => {
               const result = applyAction(action, detailRow, who);
+              if (result.deleteRow) {
+                sheet.deleteRow(view.tab, detailRow._row);
+                bump();
+                setRow(null);
+                setScreen("collection");
+                if (result.notify) setToast(result.notify);
+                return;
+              }
               if (Object.keys(result.cells).length) {
                 sheet.updateRow(view.tab, detailRow._row, {
                   ...detailRow.cells,
@@ -543,7 +587,7 @@ export function AppRuntime({
               openDetail(child);
             }}
             onDelete={
-              userCanMutate(signed, view, "deletes")
+              mayChange(view, "deletes")
                 ? () => {
                     sheet.deleteRow(view.tab, detailRow._row);
                     bump();
@@ -557,6 +601,7 @@ export function AppRuntime({
 
         {screen === "form" && form && (
           <FormPane
+            user={signed}
             key={
               form.kind +
               (form.kind === "edit"
@@ -571,8 +616,8 @@ export function AppRuntime({
             voiceHint={config.intelligence?.voiceHint}
             onCancel={back}
             onSave={(cells) => {
-              if (form.kind === "add" && !userCanMutate(signed, form.view, "adds")) return;
-              if (form.kind === "edit" && !userCanMutate(signed, form.view, "updates")) return;
+              if (form.kind === "add" && !mayChange(form.view, "adds")) return;
+              if (form.kind === "edit" && !mayChange(form.view, "updates")) return;
               if (form.kind === "add") {
                 sheet.appendRow(form.view.tab, cells);
                 void fireBots(form.view.tab, "adds", { ...cells });
@@ -835,6 +880,7 @@ function DetailPane({
       <section className="block">
         <h3>Details</h3>
         <FieldBlocks
+          view={view}
           row={row}
           hide={[view.titleCol || "", ...hiddenFields]}
           imageCol={view.imageCol}
@@ -849,7 +895,7 @@ function DetailPane({
               <button
                 key={action.id}
                 type="button"
-                className="btn ghost"
+                className={action.position === "primary" ? "btn primary" : "btn ghost"}
                 onClick={() => onRunAction(action)}
               >
                 {action.label}
@@ -914,6 +960,7 @@ function DetailPane({
 function FormPane({
   mode,
   sheet,
+  user,
   onCancel,
   onSave,
   voiceEnabled = false,
@@ -921,6 +968,7 @@ function FormPane({
 }: {
   mode: FormMode;
   sheet: SheetAdapter;
+  user?: AppUser;
   onCancel: () => void;
   onSave: (cells: Record<string, CellValue>) => void;
   voiceEnabled?: boolean;
@@ -1009,12 +1057,21 @@ function FormPane({
         try {
           setErr("");
           const cells: Record<string, CellValue> = {};
+          const draft: Record<string, CellValue> =
+            mode.kind === "edit" ? { ...mode.row.cells } : {};
           for (const f of fields) {
             const raw = values[f.name] ?? "";
-            if (f.required && !String(raw).trim()) {
+            draft[f.col] = f.type === "number" ? (raw === "" ? "" : Number(raw)) : raw;
+          }
+          for (const f of fields) {
+            if (!fieldShown(f, draft, user)) continue;
+            const raw = values[f.name] ?? "";
+            if (fieldRequired(f, draft, user) && !String(raw).trim()) {
               throw new Error(`${f.label} is required`);
             }
-            cells[f.col] = f.type === "number" ? (raw === "" ? "" : Number(raw)) : raw;
+            const check = fieldValid(f, draft[f.col], draft, user);
+            if (!check.ok) throw new Error(check.message || `${f.label} is not valid`);
+            cells[f.col] = draft[f.col];
           }
           if (mode.kind === "add" && mode.view.statusCol && !cells[mode.view.statusCol]) {
             cells[mode.view.statusCol] = "Open";
@@ -1035,7 +1092,15 @@ function FormPane({
           <strong>{parentKeyFromRow(mode.parent, mode.related.parentKeys) || "—"}</strong>
         </p>
       ) : null}
-      {fields.map((f) => {
+      {fields.filter((f) => {
+        const draft: Record<string, CellValue> =
+          mode.kind === "edit" ? { ...mode.row.cells } : {};
+        for (const item of fields) {
+          const raw = values[item.name] ?? "";
+          draft[item.col] = item.type === "number" ? (raw === "" ? "" : Number(raw)) : raw;
+        }
+        return fieldShown(f, draft, user);
+      }).map((f) => {
         const choiceValues = f.choiceTab
           ? [
               ...new Set(
@@ -1055,14 +1120,23 @@ function FormPane({
         const refRows = f.type === "ref" && f.refTab ? sheet.listRows(f.refTab) : [];
         const refKey = f.refKeyCol || f.refLabelCol || "";
         const fileFolder = f.fileFolder || "";
+        const draft: Record<string, CellValue> =
+          mode.kind === "edit" ? { ...mode.row.cells } : {};
+        for (const item of fields) {
+          const raw = values[item.name] ?? "";
+          draft[item.col] = item.type === "number" ? (raw === "" ? "" : Number(raw)) : raw;
+        }
+        const locked = !fieldEditable(f, draft, user);
+        const need = fieldRequired(f, draft, user);
         return (
           <label key={f.name}>
             {f.label}
-            {f.required ? " *" : ""}
+            {need ? " *" : ""}
             {f.type === "file" ? (
               <input
                 type="file"
-                required={!!f.required && !values[f.name]}
+                required={need && !values[f.name]}
+                disabled={locked}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
@@ -1081,7 +1155,8 @@ function FormPane({
             ) : useChoice ? (
               <select
                 value={values[f.name] ?? ""}
-                required={!!f.required}
+                required={need}
+                disabled={locked}
                 onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
               >
                 <option value="">Select</option>
@@ -1111,7 +1186,8 @@ function FormPane({
                   f.type === "number" ? "number" : f.type === "phone" ? "tel" : f.type === "email" ? "email" : "text"
                 }
                 step={f.type === "number" ? "0.01" : undefined}
-                required={!!f.required}
+                required={need}
+                disabled={locked}
                 placeholder={
                   f.type === "date"
                     ? "DD/MM/YYYY"

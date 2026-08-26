@@ -1,8 +1,11 @@
 import { evaluateAppSheetFormula } from "./appsheet-formula";
+import { actionShown, fieldShown } from "./behavior";
 import type {
   AppAction,
   AppComputedColumn,
   AppConfig,
+  AppUser,
+  AppView,
   AppVisibility,
   CellValue,
   SheetRow,
@@ -139,8 +142,21 @@ export function visibleNavViews(config: AppConfig, role: UserRole | null) {
   );
 }
 
-export function visibleFields(keys: string[], config: AppConfig, role: UserRole | null, row: SheetRow) {
-  return keys.filter((key) => visibilityAllows(ruleFor(config, "field", key), role, row));
+export function visibleFields(
+  keys: string[],
+  config: AppConfig,
+  role: UserRole | null,
+  row: SheetRow,
+  view?: AppView,
+  user?: AppUser,
+) {
+  return keys.filter((key) => {
+    if (!visibilityAllows(ruleFor(config, "field", key), role, row)) return false;
+    const field =
+      view?.addFields?.find((item) => item.col === key) ||
+      view?.editFields?.find((item) => item.col === key);
+    return fieldShown(field, row.cells, user);
+  });
 }
 
 export function visibleActions(
@@ -148,11 +164,13 @@ export function visibleActions(
   viewId: string,
   role: UserRole | null,
   row: SheetRow,
+  user?: AppUser,
 ) {
   return (config.actions || []).filter(
     (action) =>
       action.viewId === viewId &&
-      visibilityAllows(ruleFor(config, "action", action.id), role, row),
+      visibilityAllows(ruleFor(config, "action", action.id), role, row) &&
+      actionShown(action, row.cells, user),
   );
 }
 
@@ -160,10 +178,22 @@ export function applyAction(
   action: AppAction,
   row: SheetRow,
   who: string | null,
-): { cells: Record<string, CellValue>; notify?: string; go?: "home" | "collection" | "detail" } {
+): {
+  cells: Record<string, CellValue>;
+  notify?: string;
+  go?: "home" | "collection" | "detail";
+  deleteRow?: boolean;
+} {
   const cells: Record<string, CellValue> = {};
   let notify: string | undefined;
   let go: "home" | "collection" | "detail" | undefined;
+  if (action.doThis === "delete") {
+    return { cells, notify: action.steps.find((step) => step.kind === "notify")?.message, deleteRow: true };
+  }
+  if (action.doThis === "go") {
+    const screen = action.steps.find((step) => step.kind === "go")?.screen || "collection";
+    return { cells, go: screen };
+  }
   for (const step of action.steps) {
     if (step.kind === "set" && step.col) {
       cells[step.col] = interpolate(step.value ?? "", who);
@@ -175,7 +205,7 @@ export function applyAction(
       go = step.screen || "collection";
     }
   }
-  return { cells, notify, go };
+  return { cells, notify, go, deleteRow: false };
 }
 
 export function defaultComputedForTab(tab: string, headers: string[]): AppComputedColumn[] {
