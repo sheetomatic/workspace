@@ -7,7 +7,7 @@ import {
   appBuilderOAuthFromTokens,
   createAppBuilderSpreadsheet,
   isAppBuilderGoogleConfigured,
-  listAppBuilderSpreadsheets,
+  listAppBuilderSpreadsheetsTimed,
   mergeSheetFiles,
 } from "@/lib/app-builder/google";
 import { prisma } from "@/lib/db";
@@ -48,7 +48,7 @@ export async function GET(request: Request) {
   let listError: string | null = null;
   if (oauth2) {
     try {
-      files = await listAppBuilderSpreadsheets(oauth2);
+      files = await listAppBuilderSpreadsheetsTimed(oauth2);
       const fresh = oauth2.credentials;
       if (fresh.access_token && fresh.access_token !== connection.accessToken) {
         await prisma.appBuilderGoogleConnection.update({

@@ -361,19 +361,15 @@ export default function AppBuilderStudio({
   }
 
   async function refreshGoogle() {
-    const res = await fetch("/api/app-builder/google", { cache: "no-store" });
-    if (!res.ok) return;
-    const data = (await res.json()) as GoogleStatus;
-    setGoogle(data);
-  }
-
-  async function usePickedSheet() {
-    const spreadsheetId = pickedSheet.trim();
-    if (!spreadsheetId) {
-      setNote("Choose a Google Sheet from the list.");
-      return;
+    setGoogleBusy(true);
+    try {
+      const res = await fetch("/api/app-builder/google", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = (await res.json()) as GoogleStatus;
+      setGoogle(data);
+    } finally {
+      setGoogleBusy(false);
     }
-    await selectSheet(spreadsheetId);
   }
 
   async function selectSheet(spreadsheetId: string) {
@@ -407,7 +403,19 @@ export default function AppBuilderStudio({
         headerRow: importHeaderRow,
         askSchema: true,
       });
-      await refreshGoogle();
+      setGoogle((prev) => ({
+        ...prev,
+        spreadsheetId,
+        spreadsheetTitle: body?.spreadsheetTitle ?? prev.spreadsheetTitle,
+        files: [
+          {
+            id: spreadsheetId,
+            name: body?.spreadsheetTitle || prev.spreadsheetTitle || "Google Sheet",
+          },
+          ...(prev.files ?? []).filter((file) => file.id !== spreadsheetId),
+        ],
+      }));
+      setSheetOpen(false);
     } finally {
       setGoogleBusy(false);
     }
@@ -463,7 +471,9 @@ export default function AppBuilderStudio({
   async function connectSheet() {
     const id = parseGoogleSheetId(sheetUrl);
     if (!id) {
-      pickSpreadsheet();
+      setNote(
+        "Paste a full Google Sheets link (docs.google.com/spreadsheets/d/…), then Open.",
+      );
       return;
     }
     if (google.connected) {

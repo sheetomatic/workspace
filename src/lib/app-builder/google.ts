@@ -162,15 +162,29 @@ export async function listAppBuilderSpreadsheets(
   const res = await drive.files.list({
     q: "mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
     orderBy: "modifiedTime desc",
-    pageSize: 50,
-    fields: "files(id,name,modifiedTime)",
-    corpora: "user",
-    includeItemsFromAllDrives: true,
-    supportsAllDrives: true,
+    pageSize: 40,
+    fields: "files(id,name)",
   });
   return (res.data.files ?? [])
     .filter((file): file is { id: string; name: string } => Boolean(file.id && file.name))
     .map((file) => ({ id: file.id, name: file.name }));
+}
+
+export async function listAppBuilderSpreadsheetsTimed(
+  oauth2: InstanceType<typeof google.auth.OAuth2>,
+  ms = 4000,
+): Promise<AppBuilderDriveFile[]> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      listAppBuilderSpreadsheets(oauth2),
+      new Promise<AppBuilderDriveFile[]>((_, reject) => {
+        timer = setTimeout(() => reject(new Error("list-timeout")), ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 export async function listAppBuilderTabs(
