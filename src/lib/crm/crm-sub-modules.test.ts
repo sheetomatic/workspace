@@ -3,6 +3,7 @@ import {
   applyCrmModuleOrder,
   crmSubModuleIdFromPath,
   moveCrmModuleId,
+  reorderCrmModuleIds,
   resolveMemberCrmSubModules,
 } from "@/lib/crm/crm-sub-modules";
 
@@ -42,5 +43,11 @@ describe("CRM sub-modules", () => {
       "leads",
       "services",
     ]);
+    expect(
+      reorderCrmModuleIds(["leads", "services", "payments"], "leads", "payments"),
+    ).toEqual(["services", "payments", "leads"]);
+    expect(
+      reorderCrmModuleIds(["leads", "services", "payments"], "payments", "leads"),
+    ).toEqual(["payments", "leads", "services"]);
   });
 });

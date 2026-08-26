@@ -187,6 +187,29 @@ export function moveCrmModuleId(
   return next;
 }
 
+/** Move `fromId` into `toId`'s slot. */
+export function reorderCrmModuleIds(
+  ids: string[],
+  fromId: string,
+  toId: string,
+): string[] {
+  if (fromId === toId) {
+    return ids;
+  }
+  const from = ids.indexOf(fromId);
+  const to = ids.indexOf(toId);
+  if (from < 0 || to < 0) {
+    return ids;
+  }
+  const next = [...ids];
+  const [moved] = next.splice(from, 1);
+  if (!moved) {
+    return ids;
+  }
+  next.splice(to, 0, moved);
+  return next;
+}
+
 export function firstAllowedCrmHref(enabled: CrmSubModuleId[]): string {
   for (const mod of CRM_SUB_MODULES) {
     if (enabled.includes(mod.id)) {

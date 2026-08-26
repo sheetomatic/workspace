@@ -2,15 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import {
   CalendarDays,
-  ChevronDown,
-  ChevronUp,
   ClipboardList,
   CreditCard,
   FolderKanban,
   GraduationCap,
+  GripVertical,
   History,
   ListTree,
   Megaphone,
@@ -21,7 +20,7 @@ import type { CrmModuleNavCounts } from "@/lib/leads/crm-module-stats-types";
 import { formatCrmNavValue } from "@/lib/leads/crm-nav-format";
 import {
   applyCrmModuleOrder,
-  moveCrmModuleId,
+  reorderCrmModuleIds,
   type CrmSubModuleId,
 } from "@/lib/crm/crm-sub-modules";
 import "./crm-module-nav.css";
@@ -54,6 +53,10 @@ export function CrmModuleNav({
 }) {
   const pathname = usePathname();
   const [order, setOrder] = useState(moduleOrder);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const dragIdRef = useRef<string | null>(null);
+  const startIdsRef = useRef<string[] | null>(null);
+  const idsRef = useRef<string[]>([]);
   const [, startTransition] = useTransition();
   const allowed = enabledSubModules
     ? new Set(enabledSubModules)
@@ -121,21 +124,72 @@ export function CrmModuleNav({
       count: counts.training,
     },
   ];
-  const items = applyCrmModuleOrder(
-    allItems.filter((item) => !allowed || allowed.has(item.id)),
-    order,
-  );
+  const visibleItems = allItems.filter((item) => !allowed || allowed.has(item.id));
+  const items = applyCrmModuleOrder(visibleItems, order);
+  idsRef.current = items.map((item) => item.id);
 
-  function move(id: CrmSubModuleId, direction: -1 | 1) {
-    const next = moveCrmModuleId(
-      items.map((item) => item.id),
-      id,
-      direction,
-    );
+  function persist(next: string[]) {
     setOrder(next);
     startTransition(() => {
       void saveCrmModuleOrder(next);
     });
+  }
+
+  function moveOver(overId: string) {
+    const fromId = dragIdRef.current;
+    if (!fromId || fromId === overId) {
+      return;
+    }
+    setOrder((current) =>
+      reorderCrmModuleIds(
+        applyCrmModuleOrder(
+          visibleItems.map((item) => ({ id: item.id })),
+          current,
+        ).map((item) => item.id),
+        fromId,
+        overId,
+      ),
+    );
+  }
+
+  function onPointerDown(event: React.PointerEvent<HTMLButtonElement>, id: string) {
+    if (event.button !== 0) {
+      return;
+    }
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragIdRef.current = id;
+    startIdsRef.current = idsRef.current;
+    setDraggingId(id);
+  }
+
+  function onPointerMove(event: React.PointerEvent<HTMLButtonElement>) {
+    if (!dragIdRef.current) {
+      return;
+    }
+    const node = document.elementFromPoint(event.clientX, event.clientY);
+    const row = node?.closest("[data-crm-module]");
+    const overId = row instanceof HTMLElement ? row.dataset.crmModule : undefined;
+    if (overId) {
+      moveOver(overId);
+    }
+  }
+
+  function onPointerUp(event: React.PointerEvent<HTMLButtonElement>) {
+    if (!dragIdRef.current) {
+      return;
+    }
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    const next = idsRef.current;
+    const started = startIdsRef.current;
+    dragIdRef.current = null;
+    startIdsRef.current = null;
+    setDraggingId(null);
+    if (started && started.join("\0") !== next.join("\0")) {
+      persist(next);
+    }
   }
 
   return (
@@ -144,20 +198,37 @@ export function CrmModuleNav({
         <Megaphone size={18} aria-hidden />
         <div>
           <strong>CRM</strong>
-          <span>Pipeline modules</span>
+          <span>Drag modules to reorder</span>
         </div>
       </div>
       <ul className="ws-module-subnav-list">
-        {items.map((item, index) => {
+        {items.map((item) => {
           const Icon = item.icon;
           const active = isActive(pathname, item.href, item.matchExact);
+          const dragging = draggingId === item.id;
           return (
-            <li key={item.href} className="crm-module-subnav-row">
+            <li
+              key={item.href}
+              data-crm-module={item.id}
+              className={`crm-module-subnav-row${dragging ? " is-dragging" : ""}`}
+            >
+              <button
+                type="button"
+                className="crm-module-subnav-handle"
+                aria-label={`Drag ${item.label} to reorder`}
+                onPointerDown={(event) => onPointerDown(event, item.id)}
+                onPointerMove={onPointerMove}
+                onPointerUp={onPointerUp}
+                onPointerCancel={onPointerUp}
+              >
+                <GripVertical size={14} aria-hidden />
+              </button>
               <Link
                 href={item.href}
                 prefetch={false}
                 className={`ws-module-subnav-link${active ? " is-active" : ""}`}
                 aria-current={active ? "page" : undefined}
+                draggable={false}
               >
                 <Icon size={16} aria-hidden strokeWidth={1.75} />
                 <span>
@@ -168,24 +239,6 @@ export function CrmModuleNav({
                   </small>
                 </span>
               </Link>
-              <div className="crm-module-subnav-move">
-                <button
-                  type="button"
-                  aria-label={`Move ${item.label} up`}
-                  disabled={index === 0}
-                  onClick={() => move(item.id, -1)}
-                >
-                  <ChevronUp size={14} aria-hidden />
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Move ${item.label} down`}
-                  disabled={index === items.length - 1}
-                  onClick={() => move(item.id, 1)}
-                >
-                  <ChevronDown size={14} aria-hidden />
-                </button>
-              </div>
             </li>
           );
         })}

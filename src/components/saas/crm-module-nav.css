@@ -2,6 +2,7 @@
   display: flex;
   align-items: stretch;
   gap: 2px;
+  border-radius: 6px;
 }
 
 .workspace-app .crm-module-subnav-row .ws-module-subnav-link {
@@ -9,34 +10,37 @@
   min-width: 0;
 }
 
-.workspace-app .crm-module-subnav-move {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 1px;
-  padding: 2px 0;
-}
-
-.workspace-app .crm-module-subnav-move button {
+.workspace-app .crm-module-subnav-handle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 22px;
-  height: 18px;
+  flex-shrink: 0;
+  margin: 2px 0;
   padding: 0;
   border: 0;
   border-radius: 4px;
   background: transparent;
   color: var(--sf-text-secondary);
-  cursor: pointer;
+  cursor: grab;
+  touch-action: none;
 }
 
-.workspace-app .crm-module-subnav-move button:hover:not(:disabled) {
-  background: var(--sf-card-border);
+.workspace-app .crm-module-subnav-handle:hover,
+.workspace-app .crm-module-subnav-row.is-dragging .crm-module-subnav-handle {
   color: var(--sf-text);
+  background: var(--sf-card-border);
 }
 
-.workspace-app .crm-module-subnav-move button:disabled {
-  opacity: 0.28;
-  cursor: default;
+.workspace-app .crm-module-subnav-row.is-dragging {
+  opacity: 0.55;
+}
+
+.workspace-app .crm-module-subnav-row.is-dragging .crm-module-subnav-handle {
+  cursor: grabbing;
+}
+
+.workspace-app .crm-module-subnav-row.is-dragging,
+.workspace-app .crm-module-subnav-handle {
+  user-select: none;
 }
