@@ -51,6 +51,9 @@ export function TableColumnsPanel({
             <th>Key?</th>
             <th>Label?</th>
             <th>Formula</th>
+            <th>Show_if</th>
+            <th>Edit_if</th>
+            <th>Required_if</th>
             <th />
           </tr>
         </thead>
@@ -122,6 +125,21 @@ export function TableColumnsPanel({
                       =
                     </button>
                   )}
+                </td>
+                <td>
+                  <button type="button" className={field?.showIf ? "ab-cols-fx" : "ab-cols-fx is-off"} onClick={() => onFocusCol(col)}>
+                    {field?.showIf || "—"}
+                  </button>
+                </td>
+                <td>
+                  <button type="button" className={field?.editIf ? "ab-cols-fx" : "ab-cols-fx is-off"} onClick={() => onFocusCol(col)}>
+                    {field?.editIf || "—"}
+                  </button>
+                </td>
+                <td>
+                  <button type="button" className={field?.requiredIf ? "ab-cols-fx" : "ab-cols-fx is-off"} onClick={() => onFocusCol(col)}>
+                    {field?.requiredIf || "—"}
+                  </button>
                 </td>
                 <td>
                   <button type="button" className="linkish" onClick={() => onDelete(col)}>

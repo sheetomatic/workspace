@@ -8,7 +8,6 @@ import {
   fieldOf,
   fieldTypeOf,
   inferAppFromWorkbook,
-  suggestAppSheetFormula,
   parseGoogleSheetId,
   setTableInApp,
   SPREADSHEET_ACCEPT,
@@ -28,6 +27,7 @@ import {
 } from "@/lib/app-builder";
 import { DesignPanel } from "./editor/DesignPanel";
 import { SchemaStudio } from "./editor/SchemaStudio";
+import { ColumnInspector } from "./editor/ColumnInspector";
 import { TableColumnsPanel } from "./editor/TableColumnsPanel";
 import { TableSettingsPanel } from "./editor/TableSettingsPanel";
 import { SlicesPanel } from "./editor/SlicesPanel";
@@ -935,7 +935,7 @@ function DataEditor({
   const [colType, setColType] = useState<FieldType>("text");
   const [newTab, setNewTab] = useState("");
   const [focusCol, setFocusCol] = useState(tab?.headers[0] || "");
-  const [aiHint, setAiHint] = useState("");
+  const [editingCol, setEditingCol] = useState<string | null>(null);
   const [botNote, setBotNote] = useState("");
   const tables = Object.keys(book.tabs);
 
@@ -998,6 +998,7 @@ function DataEditor({
     sheet.renameColumn(tabName, from, to);
     onConfigChange(renameColumnInConfig(config, tabName, from, to));
     setFocusCol(to);
+    if (editingCol === from) setEditingCol(to);
     onChange();
   }
 
@@ -1005,6 +1006,7 @@ function DataEditor({
     sheet.deleteColumn(tabName, name);
     onConfigChange(deleteColumnInConfig(config, tabName, name));
     if (focusCol === name) setFocusCol(sheet.getTab(tabName)?.headers[0] || "");
+    if (editingCol === name) setEditingCol(null);
     onChange();
   }
 
@@ -1147,25 +1149,48 @@ function DataEditor({
               </div>
             </header>
             {pane === "columns" ? (
-              <TableColumnsPanel
-                tab={tab}
-                config={config}
-                view={view}
-                focusCol={focusCol}
-                onFocusCol={setFocusCol}
-                onType={(col, type) => {
-                  setFocusCol(col);
-                  applyType(col, type);
-                }}
-                onRename={renameCol}
-                onDelete={deleteCol}
-                onKey={(col) => patchView({ keyCol: view?.keyCol === col ? undefined : col })}
-                onLabel={(col) => patchView({ titleCol: col })}
-                onFormula={(col) => {
-                  setFocusCol(col);
-                  applyType(col, "virtual", { virtual: true, formula: fieldOf(view, col)?.formula || `[${col}]` });
-                }}
-              />
+              <div className={`ab-cols-wrap${editingCol ? " is-open" : ""}`}>
+                <TableColumnsPanel
+                  tab={tab}
+                  config={config}
+                  view={view}
+                  focusCol={editingCol || focusCol}
+                  onFocusCol={(col) => {
+                    setFocusCol(col);
+                    setEditingCol(col);
+                  }}
+                  onType={(col, type) => {
+                    setFocusCol(col);
+                    setEditingCol(col);
+                    applyType(col, type);
+                  }}
+                  onRename={renameCol}
+                  onDelete={deleteCol}
+                  onKey={(col) => patchView({ keyCol: view?.keyCol === col ? undefined : col })}
+                  onLabel={(col) => patchView({ titleCol: col })}
+                  onFormula={(col) => {
+                    setFocusCol(col);
+                    setEditingCol(col);
+                    applyType(col, "virtual", { virtual: true, formula: fieldOf(view, col)?.formula || `[${col}]` });
+                  }}
+                />
+                {editingCol ? (
+                  <ColumnInspector
+                    col={editingCol}
+                    type={fieldTypeOf(view, editingCol, tab.rows.map((row) => row.cells[editingCol]))}
+                    field={fieldOf(view, editingCol)}
+                    tables={tables}
+                    tabName={tab.name}
+                    headers={tab.headers}
+                    config={config}
+                    viewOwner={view?.ownerCol}
+                    onApply={(type, extras) => applyType(editingCol, type, extras)}
+                    onConfigChange={onConfigChange}
+                    onRename={(next) => renameCol(editingCol, next)}
+                    onDone={() => setEditingCol(null)}
+                  />
+                ) : null}
+              </div>
             ) : null}
             {pane === "slices" ? (
               <SlicesPanel
@@ -1222,8 +1247,11 @@ function DataEditor({
                           </button>
                           <button
                             type="button"
-                            className={focusCol === h ? "col-name on" : "col-name"}
-                            onClick={() => setFocusCol(h)}
+                            className={editingCol === h ? "col-name on" : "col-name"}
+                            onClick={() => {
+                              setFocusCol(h);
+                              setEditingCol(h);
+                            }}
                           >
                             {h}
                           </button>
@@ -1337,20 +1365,20 @@ function DataEditor({
             ) : null}
             {pane === "columns" || pane === "rows" ? (
               <>
-                {focusCol ? (
+                {pane === "rows" && editingCol ? (
                   <ColumnInspector
-                    col={focusCol}
-                    type={fieldTypeOf(view, focusCol, tab.rows.map((row) => row.cells[focusCol]))}
-                    field={fieldOf(view, focusCol)}
+                    col={editingCol}
+                    type={fieldTypeOf(view, editingCol, tab.rows.map((row) => row.cells[editingCol]))}
+                    field={fieldOf(view, editingCol)}
                     tables={tables}
                     tabName={tab.name}
                     headers={tab.headers}
                     config={config}
                     viewOwner={view?.ownerCol}
-                    aiHint={aiHint}
-                    onAiHint={setAiHint}
-                    onApply={(type, extras) => applyType(focusCol, type, extras)}
+                    onApply={(type, extras) => applyType(editingCol, type, extras)}
                     onConfigChange={onConfigChange}
+                    onRename={(next) => renameCol(editingCol, next)}
+                    onDone={() => setEditingCol(null)}
                   />
                 ) : null}
                 {pane === "columns" ? (
@@ -1383,6 +1411,7 @@ function DataEditor({
                         setCol("");
                         setColType("text");
                         setFocusCol(name);
+                        setEditingCol(name);
                         onChange();
                       }}
                     >
@@ -1490,304 +1519,6 @@ function DataCell({
   );
 }
 
-function ColumnInspector({
-  col,
-  type,
-  field,
-  tables,
-  tabName,
-  headers,
-  config,
-  viewOwner,
-  aiHint,
-  onAiHint,
-  onApply,
-  onConfigChange,
-}: {
-  col: string;
-  type: FieldType;
-  field?: AppFormField;
-  tables: string[];
-  tabName: string;
-  headers: string[];
-  config: AppConfig;
-  viewOwner?: string;
-  aiHint: string;
-  onAiHint: (value: string) => void;
-  onApply: (type: FieldType, extras: Partial<AppFormField>) => void;
-  onConfigChange: (next: AppConfig) => void;
-}) {
-  const hiddenFromStaff = config.visibility?.some(
-    (rule) => rule.target === "field" && rule.targetId === col && rule.when === "owner",
-  );
-  const typeLabel = FIELD_TYPE_OPTIONS.find((item) => item.id === type)?.label || type;
-  const ownerElsewhere = viewOwner && viewOwner !== col ? viewOwner : null;
-  return (
-    <div className="col-inspector">
-      <strong>
-        {col} · {typeLabel}
-      </strong>
-      <p className="aside-label">Who sees this</p>
-      <p>
-        Google Sheets shows every row to everyone. Tick one box if this column
-        should not.
-      </p>
-      <label className="check">
-        <input
-          type="checkbox"
-          checked={viewOwner === col}
-          onChange={(e) =>
-            onConfigChange({
-              ...config,
-              views: config.views.map((item) =>
-                item.tab === tabName
-                  ? { ...item, ownerCol: e.target.checked ? col : undefined }
-                  : item,
-              ),
-            })
-          }
-        />
-        <span>
-          <b>Staff only see their own rows</b>
-          <em>
-            {viewOwner === col
-              ? `On. A staff PIN only opens rows where ${col} is their name or email.`
-              : ownerElsewhere
-                ? `${ownerElsewhere} already does this. Tick here only to move it to ${col}.`
-                : "Tick this on a name or email column. Staff with a PIN then only see their rows."}
-          </em>
-        </span>
-      </label>
-      <label className="check">
-        <input
-          type="checkbox"
-          checked={!!hiddenFromStaff}
-          onChange={(e) => {
-            const rest = (config.visibility || []).filter(
-              (rule) => !(rule.target === "field" && rule.targetId === col),
-            );
-            onConfigChange({
-              ...config,
-              visibility: e.target.checked
-                ? [...rest, { id: `vis-field-${col}`, target: "field", targetId: col, when: "owner" }]
-                : rest,
-            });
-          }}
-        />
-        <span>
-          <b>Hide {col} from staff</b>
-          <em>Owners still see it. Staff do not — for cost, notes, or anything private.</em>
-        </span>
-      </label>
-      <p className="aside-label">Behavior</p>
-      <label>
-        Show_if
-        <input
-          defaultValue={field?.showIf || ""}
-          placeholder={'[Stage]="Won"'}
-          onBlur={(e) => onApply(type, { showIf: e.target.value.trim() || undefined })}
-        />
-      </label>
-      <label>
-        Edit_if
-        <input
-          defaultValue={field?.editIf || ""}
-          placeholder={'USERROLE()="Admin"'}
-          onBlur={(e) => onApply(type, { editIf: e.target.value.trim() || undefined })}
-        />
-      </label>
-      <label>
-        Required_if
-        <input
-          defaultValue={field?.requiredIf || ""}
-          placeholder="ISNOTBLANK([Party])"
-          onBlur={(e) => onApply(type, { requiredIf: e.target.value.trim() || undefined })}
-        />
-      </label>
-      <label>
-        Valid_if
-        <input
-          defaultValue={field?.validIf || ""}
-          placeholder="[Qty]>0"
-          onBlur={(e) => onApply(type, { validIf: e.target.value.trim() || undefined })}
-        />
-      </label>
-      <label>
-        Error message
-        <input
-          defaultValue={field?.invalidMessage || ""}
-          placeholder="Enter a valid value"
-          onBlur={(e) => onApply(type, { invalidMessage: e.target.value.trim() || undefined })}
-        />
-      </label>
-      {type === "number" || type === "date" ? (
-        <div className="col-inspector-row">
-          <label>
-            Format
-            <select
-              value={field?.format?.kind || (type === "date" ? "date" : "number")}
-              onChange={(e) =>
-                onApply(type, {
-                  format: { ...field?.format, kind: e.target.value as NonNullable<AppFormField["format"]>["kind"] },
-                })
-              }
-            >
-              {type === "date" ? (
-                <>
-                  <option value="date">Date</option>
-                </>
-              ) : (
-                <>
-                  <option value="number">Number</option>
-                  <option value="currency">Currency</option>
-                  <option value="percent">Percent</option>
-                </>
-              )}
-            </select>
-          </label>
-          {type === "number" ? (
-            <label>
-              Decimals
-              <input
-                defaultValue={String(field?.format?.decimals ?? (field?.format?.kind === "currency" ? 2 : 0))}
-                onBlur={(e) =>
-                  onApply(type, {
-                    format: { ...field?.format, decimals: Number(e.target.value) || 0 },
-                  })
-                }
-              />
-            </label>
-          ) : (
-            <label>
-              Date style
-              <select
-                value={field?.format?.dateStyle || "short"}
-                onChange={(e) =>
-                  onApply(type, {
-                    format: {
-                      ...field?.format,
-                      kind: "date",
-                      dateStyle: e.target.value as "short" | "medium" | "long",
-                    },
-                  })
-                }
-              >
-                <option value="short">Short</option>
-                <option value="medium">Medium</option>
-                <option value="long">Long</option>
-              </select>
-            </label>
-          )}
-        </div>
-      ) : null}
-      {field?.format?.kind === "currency" ? (
-        <label>
-          Currency
-          <select
-            value={field.format.currency || "INR"}
-            onChange={(e) =>
-              onApply(type, { format: { ...field.format, kind: "currency", currency: e.target.value } })
-            }
-          >
-            <option value="INR">INR ₹</option>
-            <option value="USD">USD $</option>
-            <option value="EUR">EUR €</option>
-          </select>
-        </label>
-      ) : null}
-      {type === "enum" || type === "choice" ? (
-        <label>
-          Dropdown values (AppSheet Enum)
-          <input
-            defaultValue={(field?.options || []).join(", ")}
-            placeholder="New, Quote, Won"
-            onBlur={(e) =>
-              onApply(type, {
-                options: e.target.value
-                  .split(",")
-                  .map((item) => item.trim())
-                  .filter(Boolean),
-              })
-            }
-          />
-        </label>
-      ) : null}
-      {type === "ref" ? (
-        <div className="col-inspector-row">
-          <label>
-            Referenced table
-            <select
-              value={field?.refTab || ""}
-              onChange={(e) => onApply("ref", { refTab: e.target.value })}
-            >
-              <option value="">Pick table</option>
-              {tables
-                .filter((item) => item !== tabName)
-                .map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <label>
-            Key / label column
-            <input
-              defaultValue={field?.refLabelCol || field?.refKeyCol || ""}
-              placeholder="Name"
-              onBlur={(e) =>
-                onApply("ref", {
-                  refKeyCol: e.target.value.trim(),
-                  refLabelCol: e.target.value.trim(),
-                })
-              }
-            />
-          </label>
-        </div>
-      ) : null}
-      {type === "file" ? (
-        <label>
-          Custom folder (folder / file)
-          <input
-            defaultValue={field?.fileFolder || ""}
-            placeholder={`${tabName}/Files`}
-            onBlur={(e) => onApply("file", { fileFolder: e.target.value.trim() })}
-          />
-        </label>
-      ) : null}
-      {type === "virtual" ? (
-        <>
-          <label>
-            App formula
-            <input
-              defaultValue={field?.formula || ""}
-              placeholder='CONCATENATE([Name]," — ",[Company])'
-              onBlur={(e) => onApply("virtual", { formula: e.target.value, virtual: true })}
-            />
-          </label>
-          <div className="col-inspector-row">
-            <input
-              value={aiHint}
-              onChange={(e) => onAiHint(e.target.value)}
-              placeholder="AI: combine name and company"
-            />
-            <button
-              type="button"
-              className="btn ghost"
-              onClick={() => {
-                const formula = suggestAppSheetFormula(aiHint || col, headers);
-                onApply("virtual", { formula, virtual: true });
-                onAiHint("");
-              }}
-            >
-              AI formula
-            </button>
-          </div>
-        </>
-      ) : null}
-    </div>
-  );
-}
 
 function SettingsEditor({
   config,

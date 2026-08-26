@@ -982,8 +982,13 @@
 .ab-studio .sheet-toolbar{ display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
 .ab-studio .sheet-toolbar .btn{ min-height: 40px; padding: 0 14px; font-size: 13px; }
 .ab-studio .sheet header .ab-insp-seg{ margin: 0 0 14px; max-width: 360px; }
+.ab-studio .ab-cols-wrap{ display: grid; gap: 16px; }
+.ab-studio .ab-cols-wrap.is-open{
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+  align-items: start;
+}
 .ab-studio .ab-cols{ overflow: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); }
-.ab-studio .ab-cols table{ width: 100%; min-width: 720px; }
+.ab-studio .ab-cols table{ width: 100%; min-width: 980px; }
 .ab-studio .ab-cols th{ font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
 .ab-studio .ab-cols tr.on{ background: var(--soft); }
 .ab-studio .ab-cols input[type="text"],
@@ -1104,14 +1109,80 @@
 }
 .ab-studio .col-name.on{ color: var(--warn); }
 .ab-studio .col-inspector{
-  margin-top: 12px;
-  padding: 12px;
+  margin: 0;
+  padding: 16px 16px 20px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 14px;
   background: var(--paper);
   display: grid;
-  gap: 8px;
+  gap: 10px;
+  position: sticky;
+  top: 12px;
 }
+.ab-studio .col-inspector header{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ab-studio .col-inspector header strong{ display: block; font-size: 16px; letter-spacing: -0.02em; }
+.ab-studio .col-inspector header p{ margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+.ab-studio .col-fx,
+.ab-studio .col-show{
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--ink);
+}
+.ab-studio .col-fx span,
+.ab-studio .col-show span{ display: grid; gap: 2px; font-weight: 650; }
+.ab-studio .col-fx small,
+.ab-studio .col-show small{ font-weight: 400; color: var(--muted); }
+.ab-studio .col-fx{ grid-template-columns: 1fr; }
+.ab-studio .col-fx i{
+  display: none;
+}
+.ab-studio .col-fx:has(i){
+  grid-template-columns: 22px 1fr;
+  align-items: center;
+}
+.ab-studio .col-fx:has(i) span{ grid-column: 1 / -1; }
+.ab-studio .col-fx i{
+  display: grid;
+  place-items: center;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-right: 0;
+  border-radius: 8px 0 0 8px;
+  background: var(--soft);
+  color: #007aff;
+  font: 650 14px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.ab-studio .col-fx:has(i) input{
+  border-radius: 0 8px 8px 0;
+}
+.ab-studio .col-show{
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+.ab-studio .col-show > input[type="checkbox"]{ width: 18px; height: 18px; }
+.ab-studio .col-show > input:not([type="checkbox"]){ grid-column: 1 / -1; }
+.ab-studio .col-acc{ border-top: 0.5px solid var(--line); padding-top: 4px; }
+.ab-studio .col-acc > button{
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  border: 0;
+  background: none;
+  padding: 8px 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.ab-studio .col-acc > button:after{ content: "›"; color: var(--muted); font-weight: 400; }
+.ab-studio .col-acc > button.on:after{ content: "⌄"; }
+.ab-studio .col-acc > div{ display: grid; gap: 10px; padding: 0 0 8px; }
 .ab-studio .col-inspector-row{
   display: flex;
   flex-wrap: wrap;
@@ -1463,6 +1534,7 @@
 @media (max-width: 720px) {
   .ab-studio .pages{ display: none; }
   .ab-studio .layout, .ab-studio .data-editor{ grid-template-columns: 1fr; }
+  .ab-studio .ab-cols-wrap.is-open{ grid-template-columns: 1fr; }
   .ab-studio .canvas{ padding: 0; }
   .ab-studio .phone{
     width: 100%; height: calc(100dvh - 56px);
@@ -2483,13 +2555,13 @@
 .ab-studio .people-list .ab-card{ margin: 0 0 10px; }
 .ab-studio .people-screens{ list-style: none; padding: 0; margin: 0 8px; }
 .ab-studio .people-screens em{ font-style: normal; color: var(--muted); font-size: 12px; }
-.ab-studio .col-inspector > p{
+.ab-studio .col-inspector > p,
+.ab-studio .col-acc p{
   margin: 0;
   color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
 }
-.ab-studio .col-inspector > .aside-label{ margin: 12px 0 4px; }
 .ab-studio .field-label textarea{
   min-height: 72px;
   border: 1px solid var(--line);
