@@ -1260,7 +1260,7 @@ function DataCell({
     <input
       className="cell"
       type={type === "number" ? "number" : type === "date" ? "date" : "text"}
-      value={type === "file" ? text.split("::")[0] : text}
+      value={text}
       onChange={(e) => onChange(e.target.value)}
     />
   );
