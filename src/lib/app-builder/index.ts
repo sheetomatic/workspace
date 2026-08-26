@@ -605,6 +605,7 @@ export {
   pickRowIdColumn,
   refColumnName,
   setTableInApp,
+  viewFromWorkbookTab,
   suggestMissingLinks,
   withRefColumnOnView,
 } from "./schema";

@@ -20,12 +20,15 @@ import {
   menuViews,
   primaryViews,
   refViews,
+  viewFromWorkbookTab,
   viewLabel,
   viewPosition,
+  withViewPosition,
   renameColumnInConfig,
   deleteColumnInConfig,
   type AppConfig,
   type AppFormField,
+  type ViewPosition,
   type CellValue,
   type FieldType,
   type SheetWorkbook,
@@ -556,6 +559,22 @@ export default function AppBuilderStudio({
     );
   }
 
+  function addNewView(position: ViewPosition = "middle") {
+    const tabs = Object.keys(workbook.tabs);
+    const unused = tabs.find((tab) => !config.views.some((view) => view.tab === tab));
+    const name = unused || `New view ${config.views.length + 1}`;
+    if (!unused) sheet.addTab(name);
+    const tab = sheet.getTab(name) || { name, headers: ["Name"], rows: [] };
+    const next = {
+      ...viewFromWorkbookTab(tab),
+      name: unused || "New view",
+      ...withViewPosition(position),
+    };
+    setConfig({ ...config, views: [...config.views, next] });
+    setFocus(next.id);
+    bump();
+  }
+
   return (
     <div className={`ab-studio glide${preview ? " previewing" : ""}${showGallery ? " gallery-open" : ""}${showSub ? " has-sub" : ""}${showSheet ? " has-sheet" : ""}`}>
       <input
@@ -710,7 +729,12 @@ export default function AppBuilderStudio({
       {editor === "layout" && (
         <div className="layout">
           <aside className="pages">
-            <p className="aside-label">Views</p>
+            <div className="pages-head">
+              <p className="aside-label">Views</p>
+              <button type="button" className="pages-add" onClick={() => addNewView("middle")} aria-label="Add view">
+                +
+              </button>
+            </div>
             <button
               type="button"
               className={focus === "home" ? "on" : ""}
@@ -721,7 +745,12 @@ export default function AppBuilderStudio({
             >
               Home
             </button>
-            <p className="aside-label">Primary</p>
+            <div className="pages-head">
+              <p className="aside-label">Primary</p>
+              <button type="button" className="pages-add" onClick={() => addNewView("middle")} aria-label="Add primary view">
+                +
+              </button>
+            </div>
             {primaryViews(config).map((s) => (
               <button
                 key={s.id}
@@ -733,7 +762,12 @@ export default function AppBuilderStudio({
                 <em>{styleLabel(s.collectionStyle)}</em>
               </button>
             ))}
-            {menuViews(config).length ? <p className="aside-label">Menu</p> : null}
+            <div className="pages-head">
+              <p className="aside-label">Menu</p>
+              <button type="button" className="pages-add" onClick={() => addNewView("menu")} aria-label="Add menu view">
+                +
+              </button>
+            </div>
             {menuViews(config).map((s) => (
               <button
                 key={s.id}
@@ -745,7 +779,12 @@ export default function AppBuilderStudio({
                 <em>menu</em>
               </button>
             ))}
-            {refViews(config).length ? <p className="aside-label">Reference</p> : null}
+            <div className="pages-head">
+              <p className="aside-label">Reference</p>
+              <button type="button" className="pages-add" onClick={() => addNewView("ref")} aria-label="Add reference view">
+                +
+              </button>
+            </div>
             {refViews(config).map((s) => (
               <button
                 key={s.id}

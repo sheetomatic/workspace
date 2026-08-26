@@ -425,7 +425,27 @@
   text-transform: uppercase;
   color: var(--muted);
 }
-.ab-studio .pages button{
+.ab-studio .pages-head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 10px 0 2px;
+}
+.ab-studio .pages-head .aside-label{ margin: 0 8px; }
+.ab-studio .pages-add{
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border: 0;
+  border-radius: 8px;
+  background: #e8e8ed;
+  color: #1d1d1f;
+  font: 650 18px/1 inherit;
+  cursor: pointer;
+}
+.ab-studio .pages-add:hover{ background: #d2d2d7; }
+.ab-studio .pages > button{
   width: 100%;
   display: flex;
   justify-content: space-between;
@@ -440,8 +460,8 @@
   border-radius: 10px;
   cursor: pointer;
 }
-.ab-studio .pages button em{ font-style: normal; font-size: 11px; color: var(--muted); font-weight: 500; }
-.ab-studio .pages button.on, .ab-studio .pages button:hover{ background: var(--soft); }
+.ab-studio .pages > button em{ font-style: normal; font-size: 11px; color: var(--muted); font-weight: 500; }
+.ab-studio .pages > button.on, .ab-studio .pages > button:hover{ background: var(--soft); }
 .ab-studio .table-row{
   display: flex;
   align-items: center;
@@ -1362,7 +1382,7 @@
 .ab-studio .view-icon-grid,
 .ab-studio .view-type-grid{
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
 }
 .ab-studio .view-icon-grid button,
