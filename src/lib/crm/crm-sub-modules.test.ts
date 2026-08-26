@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyCrmModuleOrder,
   crmSubModuleIdFromPath,
+  moveCrmModuleId,
   resolveMemberCrmSubModules,
 } from "@/lib/crm/crm-sub-modules";
 
@@ -22,5 +24,23 @@ describe("CRM sub-modules", () => {
     expect(resolveMemberCrmSubModules(["leads", "quotations"])).toEqual(
       expect.arrayContaining(["services"]),
     );
+  });
+
+  it("reorders CRM modules and appends unknown ids", () => {
+    const items = [
+      { id: "leads" },
+      { id: "services" },
+      { id: "payments" },
+    ];
+    expect(
+      applyCrmModuleOrder(items, ["payments", "leads"]).map((item) => item.id),
+    ).toEqual(["payments", "leads", "services"]);
+    expect(moveCrmModuleId(["leads", "services", "payments"], "services", -1)).toEqual(
+      ["services", "leads", "payments"],
+    );
+    expect(moveCrmModuleId(["leads", "services"], "leads", -1)).toEqual([
+      "leads",
+      "services",
+    ]);
   });
 });

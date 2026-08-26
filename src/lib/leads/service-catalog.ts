@@ -201,26 +201,19 @@ export async function ensureLeadServiceCatalog(organizationId: string) {
     select: { serviceCategory: true, subCategory: true, sortOrder: true },
   });
 
-  const existingKeys = new Set(
-    existing.map((item) =>
-      serviceCatalogUniquenessKey(item.serviceCategory, item.subCategory),
-    ),
-  );
-  const missing = standardServiceCatalogSeeds().filter(
-    (item) =>
-      !existingKeys.has(
-        serviceCatalogUniquenessKey(item.serviceCategory, item.subCategory),
-      ),
-  );
-
-  if (missing.length === 0) {
+  // Seed only a first empty catalog. Re-inserting "missing" standards would
+  // restore rows the owner just deleted from Service Master.
+  if (existing.length > 0) {
     return;
   }
 
-  const maxSort = existing.reduce((max, item) => Math.max(max, item.sortOrder), -1);
+  const seeds = standardServiceCatalogSeeds();
+  if (seeds.length === 0) {
+    return;
+  }
 
   await prisma.leadServiceCatalog.createMany({
-    data: missing.map((item, index) => ({
+    data: seeds.map((item, index) => ({
       organizationId,
       serviceCategory: item.serviceCategory,
       subCategory: item.subCategory,
@@ -228,7 +221,7 @@ export async function ensureLeadServiceCatalog(organizationId: string) {
       perUserCost: item.perUserCost ?? null,
       durationDays: item.durationDays ?? null,
       isActive: true,
-      sortOrder: existing.length === 0 ? index : maxSort + 1 + index,
+      sortOrder: index,
     })),
     skipDuplicates: true,
   });

@@ -41,7 +41,7 @@ export default async function LeadsLayout({
     );
   }
 
-  const { effective } = await getEffectiveCrmSubModulesForUser(user);
+  const { effective, moduleOrder } = await getEffectiveCrmSubModulesForUser(user);
   if (effective.length === 0) {
     redirect("/app");
   }
@@ -59,7 +59,11 @@ export default async function LeadsLayout({
   return (
     <div className="ws-module-layout leads-module-layout">
       <WorkspacePageScrollBridge preferSelector=".ws-module-layout-main" />
-      <CrmModuleNav counts={counts} enabledSubModules={effective} />
+      <CrmModuleNav
+        counts={counts}
+        enabledSubModules={effective}
+        moduleOrder={moduleOrder}
+      />
       <div className="ws-module-layout-main">{children}</div>
     </div>
   );

@@ -10,6 +10,8 @@ export type WorkspaceNavPrefs = {
   mode: WorkspaceNavPrefsMode;
   /** When mode is custom, only these nav ids are shown (plus always-on). */
   visibleIds: string[];
+  /** CRM pipeline module ids in the order the owner pinned. */
+  crmModuleOrder?: string[];
 };
 
 /**
@@ -98,6 +100,11 @@ export function parseWorkspaceNavPrefs(value: unknown): WorkspaceNavPrefs {
   const visibleIds = Array.isArray(raw.visibleIds)
     ? raw.visibleIds.filter((id): id is string => typeof id === "string" && id.length > 0)
     : [...DEFAULT_FOCUSED_NAV_IDS];
+  const crmModuleOrder = Array.isArray(raw.crmModuleOrder)
+    ? raw.crmModuleOrder.filter(
+        (id): id is string => typeof id === "string" && id.length > 0,
+      )
+    : undefined;
 
   return {
     version: 1,
@@ -106,6 +113,7 @@ export function parseWorkspaceNavPrefs(value: unknown): WorkspaceNavPrefs {
       mode === "custom" && visibleIds.length === 0
         ? [...DEFAULT_FOCUSED_NAV_IDS]
         : visibleIds,
+    ...(crmModuleOrder?.length ? { crmModuleOrder } : {}),
   };
 }
 

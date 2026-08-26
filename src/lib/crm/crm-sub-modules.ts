@@ -154,6 +154,39 @@ export function crmSubModuleIdFromPath(pathname: string): CrmSubModuleId | null 
   return null;
 }
 
+/** Apply a saved CRM module order; unknown ids stay at the end in current order. */
+export function applyCrmModuleOrder<T extends { id: string }>(
+  items: T[],
+  order: readonly string[] | null | undefined,
+): T[] {
+  if (!order?.length) {
+    return items;
+  }
+  const rank = new Map(order.map((id, index) => [id, index]));
+  return [...items].sort((a, b) => {
+    const aRank = rank.has(a.id) ? rank.get(a.id)! : order.length;
+    const bRank = rank.has(b.id) ? rank.get(b.id)! : order.length;
+    return aRank - bRank;
+  });
+}
+
+export function moveCrmModuleId(
+  ids: string[],
+  id: string,
+  direction: -1 | 1,
+): string[] {
+  const index = ids.indexOf(id);
+  const nextIndex = index + direction;
+  if (index < 0 || nextIndex < 0 || nextIndex >= ids.length) {
+    return ids;
+  }
+  const next = [...ids];
+  const swap = next[index];
+  next[index] = next[nextIndex]!;
+  next[nextIndex] = swap!;
+  return next;
+}
+
 export function firstAllowedCrmHref(enabled: CrmSubModuleId[]): string {
   for (const mod of CRM_SUB_MODULES) {
     if (enabled.includes(mod.id)) {

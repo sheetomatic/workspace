@@ -14,7 +14,9 @@ import {
 import { listNavPreferenceOptions } from "@/lib/workspace-navigation";
 
 function revalidateNavPrefs() {
-  ["/app", "/app/settings"].forEach((path) => revalidatePath(path));
+  ["/app", "/app/settings", "/app/leads"].forEach((path) =>
+    revalidatePath(path),
+  );
 }
 
 async function updateMembershipPrefs(prefs: WorkspaceNavPrefs) {
@@ -85,6 +87,7 @@ export async function saveWorkspaceNavPrefs(formData: FormData) {
     .map((value) => String(value))
     .filter((id) => allowed.has(id));
 
+  const current = await getWorkspaceNavPrefsForUser();
   const prefs: WorkspaceNavPrefs = {
     version: 1,
     mode,
@@ -94,6 +97,9 @@ export async function saveWorkspaceNavPrefs(formData: FormData) {
         : mode === "focus"
           ? [...DEFAULT_FOCUSED_NAV_IDS]
           : [...allowed],
+    ...(current.crmModuleOrder?.length
+      ? { crmModuleOrder: current.crmModuleOrder }
+      : {}),
   };
 
   return updateMembershipPrefs(prefs);
@@ -118,9 +124,21 @@ export async function setWorkspaceNavPrefsMode(mode: WorkspaceNavPrefsMode) {
         : mode === "focus"
           ? [...DEFAULT_FOCUSED_NAV_IDS]
           : allowed,
+    ...(current.crmModuleOrder?.length
+      ? { crmModuleOrder: current.crmModuleOrder }
+      : {}),
   };
 
   return updateMembershipPrefs(prefs);
+}
+
+export async function saveCrmModuleOrder(order: string[]) {
+  const current = await getWorkspaceNavPrefsForUser();
+  const crmModuleOrder = order.filter((id) => id.trim().length > 0);
+  const { crmModuleOrder: _ignored, ...rest } = current;
+  return updateMembershipPrefs(
+    crmModuleOrder.length ? { ...rest, crmModuleOrder } : rest,
+  );
 }
 
 export async function resetWorkspaceNavPrefs() {

@@ -1,0 +1,42 @@
+.workspace-app .crm-module-subnav-row {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+}
+
+.workspace-app .crm-module-subnav-row .ws-module-subnav-link {
+  flex: 1;
+  min-width: 0;
+}
+
+.workspace-app .crm-module-subnav-move {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  padding: 2px 0;
+}
+
+.workspace-app .crm-module-subnav-move button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--sf-text-secondary);
+  cursor: pointer;
+}
+
+.workspace-app .crm-module-subnav-move button:hover:not(:disabled) {
+  background: var(--sf-card-border);
+  color: var(--sf-text);
+}
+
+.workspace-app .crm-module-subnav-move button:disabled {
+  opacity: 0.28;
+  cursor: default;
+}

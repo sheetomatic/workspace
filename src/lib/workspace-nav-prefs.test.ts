@@ -48,6 +48,15 @@ describe("workspace-nav-prefs", () => {
     expect(isNavIdVisible(prefs, "team")).toBe(false);
   });
 
+  it("keeps a saved CRM module order", () => {
+    const prefs = parseWorkspaceNavPrefs({
+      mode: "focus",
+      visibleIds: [...DEFAULT_FOCUSED_NAV_IDS],
+      crmModuleOrder: ["payments", "leads"],
+    });
+    expect(prefs.crmModuleOrder).toEqual(["payments", "leads"]);
+  });
+
   it("maps home widgets to nav visibility without granting ACL", () => {
     const prefs = parseWorkspaceNavPrefs({
       mode: "focus",

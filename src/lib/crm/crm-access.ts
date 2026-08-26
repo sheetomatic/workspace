@@ -7,6 +7,7 @@ import {
   resolveMemberCrmSubModules,
   type CrmSubModuleId,
 } from "@/lib/crm/crm-sub-modules";
+import { parseWorkspaceNavPrefs } from "@/lib/workspace-nav-prefs";
 
 /** Effective CRM sub-modules for the signed-in user. */
 export async function getEffectiveCrmSubModulesForUser(user: {
@@ -20,13 +21,15 @@ export async function getEffectiveCrmSubModulesForUser(user: {
         organizationId: user.organizationId,
       },
     },
-    select: { enabledCrmSubModules: true },
+    select: { enabledCrmSubModules: true, workspacePrefs: true },
   });
   const effective = resolveMemberCrmSubModules(
     membership?.enabledCrmSubModules,
   );
   return {
     effective,
+    moduleOrder:
+      parseWorkspaceNavPrefs(membership?.workspacePrefs).crmModuleOrder ?? [],
     allowed: (id: CrmSubModuleId) => effective.includes(id),
   };
 }
