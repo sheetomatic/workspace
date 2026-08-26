@@ -40,6 +40,7 @@ import {
   type MoneyRange,
 } from "@/lib/app-builder/money-summary";
 import type { SheetAdapter } from "../sheet/mockAdapter";
+import type { PreviewDevice } from "../preview/DeviceFrame";
 import { Avatar, CollectionList, FieldBlocks } from "./Collection";
 
 type Screen = "home" | "collection" | "detail" | "form";
@@ -54,9 +55,18 @@ type Props = {
   sheet: SheetAdapter;
   onSheetChange: () => void;
   focusViewId?: string | null;
+  device?: PreviewDevice;
 };
 
-export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props) {
+export function AppRuntime({
+  config,
+  sheet,
+  onSheetChange,
+  focusViewId,
+  device = "phone",
+}: Props) {
+  const wide = device !== "phone";
+  const split = device === "desktop";
   const [screen, setScreen] = useState<Screen>("home");
   const [toast, setToast] = useState("");
   const [viewId, setViewId] = useState<string | null>(null);
@@ -241,8 +251,37 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
     );
   }
 
+  const collectionView =
+    view && split && (view.collectionStyle === "list" || !view.collectionStyle)
+      ? { ...view, collectionStyle: "table" as const }
+      : view;
+
+  const showSplit = split && view && (screen === "collection" || screen === "detail");
+
   return (
-    <div className="runtime" style={skin}>
+    <div className={`runtime is-${device}`} style={skin}>
+      {wide ? (
+        <aside className="rt-side" aria-label="App screens">
+          <button type="button" className={screen === "home" ? "on" : ""} onClick={goHome}>
+            <HomeIcon />
+            <span>Home</span>
+          </button>
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={viewId === tab.id ? "on" : ""}
+              onClick={() => openView(tab.id)}
+            >
+              <i style={{ background: tone(tab.name) }}>
+                {(tab.icon || defaultIconForView(tab.name)).slice(0, 1).toUpperCase()}
+              </i>
+              <span>{tab.name}</span>
+            </button>
+          ))}
+        </aside>
+      ) : null}
+      <div className="rt-main">
       <header className="rt-top">
         {screen !== "home" ? (
           <button type="button" className="ghost-btn" onClick={back} aria-label="Back">
@@ -254,7 +293,7 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
           <span className="wordmark">{config.meta.brand || "Sheetomatic"}</span>
         )}
         <h1>{title}</h1>
-        {screen === "collection" && view?.addFields?.length ? (
+        {(screen === "collection" || showSplit) && view?.addFields?.length ? (
           <button
             type="button"
             className="ghost-btn add"
@@ -267,7 +306,7 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
           >
             +
           </button>
-        ) : screen === "detail" && view?.editFields?.length ? (
+        ) : (screen === "detail" || (showSplit && row)) && view?.editFields?.length ? (
           <button
             type="button"
             className="text-link"
@@ -293,6 +332,7 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
             recent={recent}
             featured={featured}
             onOpenView={openView}
+            device={device}
             onAdd={(v) => {
               setViewId(v.id);
               setForm({ kind: "add", view: v });
@@ -305,7 +345,82 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
           />
         )}
 
-        {screen === "collection" && view && (
+        {showSplit && collectionView ? (
+          <div className="rt-split">
+            <div className="rt-split-list">
+              {config.meta.showSearch === false ? null : (
+                <div className="search">
+                  <SearchIcon />
+                  <input
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Search"
+                  />
+                </div>
+              )}
+              <CollectionList view={collectionView} rows={deckRows} onOpen={openDetail} />
+            </div>
+            <div className="rt-split-detail">
+              {detailRow ? (
+                <DetailPane
+                  view={view}
+                  row={detailRow}
+                  hiddenFields={Object.keys(detailRow.cells).filter(
+                    (key) =>
+                      !visibleFields(Object.keys(detailRow.cells), config, role, detailRow).includes(
+                        key,
+                      ),
+                  )}
+                  actions={visibleActions(config, view.id, role, detailRow)}
+                  onRunAction={(action) => {
+                    const result = applyAction(action, detailRow, who);
+                    if (Object.keys(result.cells).length) {
+                      sheet.updateRow(view.tab, detailRow._row, {
+                        ...detailRow.cells,
+                        ...result.cells,
+                      });
+                      setRow({
+                        ...detailRow,
+                        cells: { ...detailRow.cells, ...result.cells },
+                      });
+                      bump();
+                    }
+                    if (result.notify) setToast(result.notify);
+                    if (result.go === "home") goHome();
+                  }}
+                  relatedBlocks={relatedBlocks}
+                  onAddRelated={(rel) => {
+                    if (!row) return;
+                    setForm({ kind: "related", view, related: rel, parent: row });
+                    setScreen("form");
+                  }}
+                  onOpenRelated={(rel, child) => {
+                    const childView =
+                      config.views.find((v) => v.id === rel.childViewId) ||
+                      config.views.find((v) => v.tab === rel.childTab);
+                    if (!childView) return;
+                    setViewId(childView.id);
+                    openDetail(child);
+                  }}
+                  onDelete={
+                    view.allowDelete === false
+                      ? undefined
+                      : () => {
+                          sheet.deleteRow(view.tab, detailRow._row);
+                          bump();
+                          setRow(null);
+                          setScreen("collection");
+                        }
+                  }
+                />
+              ) : (
+                <p className="help">Pick a row. Desktop keeps the list and the record open together.</p>
+              )}
+            </div>
+          </div>
+        ) : null}
+
+        {!showSplit && screen === "collection" && view && (
           <>
             {config.meta.showSearch === false ? null : (
               <div className="search">
@@ -345,14 +460,14 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
               </div>
             ) : null}
             <CollectionList
-              view={view}
+              view={device === "tablet" && view.collectionStyle === "list" ? { ...view, collectionStyle: "cards" } : view}
               rows={deckRows}
               onOpen={openDetail}
             />
           </>
         )}
 
-        {screen === "detail" && view && detailRow && (
+        {!showSplit && screen === "detail" && view && detailRow && (
           <DetailPane
             view={view}
             row={detailRow}
@@ -466,7 +581,7 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
         </p>
       ) : null}
 
-      {screen !== "form" && (
+      {!wide && screen !== "form" && (
         <nav className="rt-dock" aria-label="Home">
           <button
             type="button"
@@ -478,6 +593,7 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
           </button>
         </nav>
       )}
+      </div>
     </div>
   );
 }
@@ -488,6 +604,7 @@ function HomeScreen({
   role,
   recent,
   featured,
+  device = "phone",
   onOpenView,
   onAdd,
   onOpenRow,
@@ -497,6 +614,7 @@ function HomeScreen({
   role: UserRole | null;
   recent: SheetRow[];
   featured?: AppView;
+  device?: PreviewDevice;
   onOpenView: (id: string) => void;
   onAdd: (view: AppView) => void;
   onOpenRow: (view: AppView, row: SheetRow) => void;
@@ -506,7 +624,7 @@ function HomeScreen({
   const [range, setRange] = useState<MoneyRange>("month");
   const summary = summarizeMoney(sheet.getWorkbook(), moneyViews, range);
   return (
-    <div className="home">
+    <div className={`home is-${device}`}>
       <p className="kicker">{config.meta.greeting || "Good morning"}</p>
       <h2>{config.meta.name}</h2>
       {moneyViews.length ? (

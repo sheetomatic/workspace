@@ -784,6 +784,7 @@ export default function AppBuilderStudio({
                         config={config}
                         sheet={sheet}
                         focusViewId={focus}
+                        device={device.id}
                         onSheetChange={bump}
                       />
                     </DeviceFrame>

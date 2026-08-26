@@ -15,23 +15,24 @@ export function DeviceFrame({
   device: PreviewDevice;
   children: ReactNode;
 }) {
-  if (device === "desktop") {
-    return (
-      <div className="device-frame is-desktop">
+  return (
+    <figure className={`device-frame is-${device}`}>
+      {device === "desktop" ? (
         <div className="device-chrome">
           <i />
           <i />
           <i />
           <span>app.sheetomatic.com/app</span>
         </div>
-        <div className="device-screen">{children}</div>
-      </div>
-    );
-  }
-  return (
-    <div className={`device-frame is-${device}`}>
-      {device === "phone" ? <div className="island" /> : <div className="device-cam" />}
+      ) : device === "phone" ? (
+        <div className="island" />
+      ) : (
+        <div className="device-cam" />
+      )}
       <div className="device-screen">{children}</div>
-    </div>
+      <figcaption className="device-caption">
+        {device === "phone" ? "Phone" : device === "tablet" ? "Tablet" : "Desktop"}
+      </figcaption>
+    </figure>
   );
 }
