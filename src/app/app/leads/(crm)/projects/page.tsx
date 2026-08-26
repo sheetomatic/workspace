@@ -12,7 +12,14 @@ import {
   salesOrderStatusLabel,
   type SalesOrderListItem,
 } from "@/lib/leads/sales-order-types";
-import { getSalesOrderStats } from "@/lib/sales-orders/queries";
+import { istYmd } from "@/lib/leads/crm-meetings";
+import {
+  countCrmPeriods,
+  crmPeriodKpis,
+  crmPeriodLabel,
+  parseCrmPeriod,
+  ymdInCrmPeriod,
+} from "@/lib/leads/crm-period";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
@@ -157,14 +164,21 @@ function groupLeadsWithQuote(
   });
 }
 
-export default async function CrmProjectsPage() {
+export default async function CrmProjectsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string }>;
+}) {
   const user = await requireSession(undefined, { module: "CRM" });
   await requireCrmSubModule(user, "projects");
   const canManage = hasMinimumRole(user.role, "MANAGER");
-  const [{ orders }, stats] = await Promise.all([
-    listSalesOrders(user.organizationId, { limit: 150 }),
-    getSalesOrderStats(user.organizationId),
-  ]);
+  const period = parseCrmPeriod((await searchParams).period);
+  const { orders: allOrders } = await listSalesOrders(user.organizationId, {
+    limit: 400,
+  });
+  const orders = allOrders.filter((order) =>
+    ymdInCrmPeriod(istYmd(new Date(order.createdAt)), period),
+  );
 
   const preProjectLeadSelect = {
     id: true,
@@ -230,8 +244,31 @@ export default async function CrmProjectsPage() {
       }),
     ]);
 
+  const quoteYmd = (lead: (typeof upcomingLeads)[number]) => {
+    const quote = lead.quotations[0];
+    if (!quote) {
+      return null;
+    }
+    return istYmd(new Date(quote.sentAt ?? quote.quotationDate));
+  };
+  const inPeriodLead = (lead: (typeof upcomingLeads)[number]) => {
+    const ymd = quoteYmd(lead);
+    return ymd ? ymdInCrmPeriod(ymd, period) : period === "all";
+  };
+
   const upcomingIds = new Set(upcomingLeads.map((lead) => lead.id));
-  const pipelineLeads = pipelineLeadsRaw.filter((lead) => !upcomingIds.has(lead.id));
+  const upcomingVisible = upcomingLeads.filter(inPeriodLead);
+  const pipelineLeads = pipelineLeadsRaw
+    .filter((lead) => !upcomingIds.has(lead.id))
+    .filter(inPeriodLead);
+  const periodCounts = countCrmPeriods([
+    ...allOrders.map((order) => istYmd(new Date(order.createdAt))),
+    ...upcomingLeads.map(quoteYmd).filter((ymd): ymd is string => Boolean(ymd)),
+    ...pipelineLeadsRaw
+      .filter((lead) => !upcomingIds.has(lead.id))
+      .map(quoteYmd)
+      .filter((ymd): ymd is string => Boolean(ymd)),
+  ]);
   // Leads whose payment reminder has aged past the configured wait.
   const overdueDaysByLead = new Map<string, number>(
     alertItems
@@ -268,7 +305,7 @@ export default async function CrmProjectsPage() {
     overdueDaysByLead,
   );
   const upcomingGroups = groupLeadsWithQuote(
-    upcomingLeads,
+    upcomingVisible,
     "upcoming",
     "alert_payment_pending",
   );
@@ -281,16 +318,17 @@ export default async function CrmProjectsPage() {
   return (
     <CrmSubmoduleShell
       title="Projects"
-      description="Running work, accepted deals waiting on advance, quotes in pipeline, and completed handovers."
+      description={`Running work, upcoming advances, pipeline quotes, and completed handovers for ${crmPeriodLabel(period)}. Click a number to change the range.`}
       kpis={[
-        { label: "Running", value: String(stats.inProgress), accent: "blue" },
+        ...crmPeriodKpis("/app/leads/projects", periodCounts, period),
+        { label: "Running", value: String(running.length), accent: "blue" },
         {
           label: "Upcoming",
-          value: String(upcomingLeads.length),
+          value: String(upcomingVisible.length),
           accent: "warning",
         },
         { label: "Pipeline", value: String(pipelineLeads.length) },
-        { label: "Completed", value: String(stats.delivered), accent: "success" },
+        { label: "Completed", value: String(delivered.length), accent: "success" },
         {
           label: "Received",
           value: formatCrmNavValue(receivedOnProjects),
@@ -325,7 +363,7 @@ export default async function CrmProjectsPage() {
           />
         </section>
         <section>
-          <h3>Upcoming ({upcomingLeads.length})</h3>
+          <h3>Upcoming ({upcomingVisible.length})</h3>
           <p className="leads-machine-muted">
             Quotation accepted — advance payment pending. Record the advance to
             start the project.

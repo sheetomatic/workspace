@@ -4,36 +4,46 @@ import "@/components/saas/leads-machine.css";
 import { formatInr } from "@/lib/leads/categories";
 import { formatCrmNavValue } from "@/lib/leads/crm-nav-format";
 import { listCrmQuotations } from "@/lib/leads/crm-module-stats";
+import { istYmd } from "@/lib/leads/crm-meetings";
+import {
+  countCrmPeriods,
+  crmPeriodKpis,
+  crmPeriodLabel,
+  parseCrmPeriod,
+  ymdInCrmPeriod,
+} from "@/lib/leads/crm-period";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
-import { prisma } from "@/lib/db";
 
-export default async function CrmQuotationsPage() {
+export default async function CrmQuotationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string }>;
+}) {
   const user = await requireSession(undefined, { module: "CRM" });
   await requireCrmSubModule(user, "quotations");
   const canManage = hasMinimumRole(user.role, "MANAGER");
-  const [rows, agg] = await Promise.all([
-    listCrmQuotations(user.organizationId, 150),
-    prisma.inboundLeadQuotation.aggregate({
-      where: { organizationId: user.organizationId },
-      _count: { _all: true },
-      _sum: { totalAmount: true },
-    }),
-  ]);
-  const sent = rows.filter((r) => r.sentAt || r.status === "SENT").length;
-  const locked = rows.filter((r) => r.lockedAt).length;
-  const value = Number(agg._sum.totalAmount ?? 0);
+  const period = parseCrmPeriod((await searchParams).period);
+  const rows = await listCrmQuotations(user.organizationId, 500);
+  const ymds = rows.map((row) => istYmd(new Date(row.quotationDate)));
+  const periodCounts = countCrmPeriods(ymds);
+  const visible = rows.filter((row) =>
+    ymdInCrmPeriod(istYmd(new Date(row.quotationDate)), period),
+  );
+  const sent = visible.filter((r) => r.sentAt || r.status === "SENT").length;
+  const locked = visible.filter((r) => r.lockedAt).length;
+  const value = visible.reduce((sum, row) => sum + Number(row.totalAmount), 0);
 
   const byLead = new Map<
     string,
     {
-      lead: (typeof rows)[number]["lead"];
-      quotations: typeof rows;
+      lead: (typeof visible)[number]["lead"];
+      quotations: typeof visible;
       total: number;
     }
   >();
-  for (const row of rows) {
+  for (const row of visible) {
     const existing = byLead.get(row.lead.id);
     const amount = Number(row.totalAmount);
     if (existing) {
@@ -82,12 +92,12 @@ export default async function CrmQuotationsPage() {
   return (
     <CrmSubmoduleShell
       title="Quotations"
-      description="All proposals and invoices with count and value."
+      description={`Proposals and invoices for ${crmPeriodLabel(period)}. Click a number to change the range.`}
       kpis={[
-        { label: "Count", value: String(agg._count._all), accent: "blue" },
+        ...crmPeriodKpis("/app/leads/quotations", periodCounts, period),
         { label: "Value", value: formatCrmNavValue(value), accent: "success" },
-        { label: "Sent (page)", value: String(sent) },
-        { label: "Locked (page)", value: String(locked), accent: "warning" },
+        { label: "Sent", value: String(sent) },
+        { label: "Locked", value: String(locked), accent: "warning" },
       ]}
     >
       <CrmClientGroups
@@ -96,7 +106,7 @@ export default async function CrmQuotationsPage() {
         openTab="quote"
         waEvent="alert_quotation_pending"
         canManage={canManage}
-        emptyMessage="No quotations yet."
+        emptyMessage={`No quotations ${crmPeriodLabel(period)}.`}
         filterPlaceholder="Filter quotation clients…"
       />
     </CrmSubmoduleShell>

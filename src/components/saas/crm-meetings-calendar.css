@@ -235,3 +235,21 @@
 .crm-meet-cal-msg.is-err {
   color: #b91c1c;
 }
+
+.crm-meet-row.is-done {
+  opacity: 0.92;
+}
+
+.crm-submodule-kpis a.crm-submodule-kpi {
+  text-decoration: none;
+  color: inherit;
+}
+
+.crm-submodule-kpis a.crm-submodule-kpi:hover {
+  border-color: #94a3b8;
+}
+
+.crm-submodule-kpi.is-active {
+  border-color: #0f172a;
+  box-shadow: 0 0 0 2px #dbeafe;
+}

@@ -4,34 +4,44 @@ import "@/components/saas/leads-machine.css";
 import { formatInr } from "@/lib/leads/categories";
 import { formatCrmNavValue } from "@/lib/leads/crm-nav-format";
 import { listCrmPayments } from "@/lib/leads/crm-module-stats";
+import { istYmd } from "@/lib/leads/crm-meetings";
+import {
+  countCrmPeriods,
+  crmPeriodKpis,
+  crmPeriodLabel,
+  parseCrmPeriod,
+  ymdInCrmPeriod,
+} from "@/lib/leads/crm-period";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
-import { prisma } from "@/lib/db";
 
-export default async function CrmPaymentsPage() {
+export default async function CrmPaymentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string }>;
+}) {
   const user = await requireSession(undefined, { module: "CRM" });
   await requireCrmSubModule(user, "payments");
   const canManage = hasMinimumRole(user.role, "MANAGER");
-  const [rows, agg] = await Promise.all([
-    listCrmPayments(user.organizationId, 150),
-    prisma.inboundLeadPayment.aggregate({
-      where: { organizationId: user.organizationId },
-      _count: { _all: true },
-      _sum: { receivedAmount: true },
-    }),
-  ]);
-  const value = Number(agg._sum.receivedAmount ?? 0);
+  const period = parseCrmPeriod((await searchParams).period);
+  const rows = await listCrmPayments(user.organizationId, 500);
+  const ymds = rows.map((row) => istYmd(new Date(row.receivedDate)));
+  const periodCounts = countCrmPeriods(ymds);
+  const visible = rows.filter((row) =>
+    ymdInCrmPeriod(istYmd(new Date(row.receivedDate)), period),
+  );
+  const value = visible.reduce((sum, row) => sum + Number(row.receivedAmount), 0);
 
   const byLead = new Map<
     string,
     {
-      lead: (typeof rows)[number]["lead"];
-      payments: typeof rows;
+      lead: (typeof visible)[number]["lead"];
+      payments: typeof visible;
       total: number;
     }
   >();
-  for (const row of rows) {
+  for (const row of visible) {
     const existing = byLead.get(row.lead.id);
     const amount = Number(row.receivedAmount);
     if (existing) {
@@ -77,20 +87,16 @@ export default async function CrmPaymentsPage() {
   return (
     <CrmSubmoduleShell
       title="Payments"
-      description="Received payments across all CRM clients — count and value."
+      description={`Receipts for ${crmPeriodLabel(period)}. Click a number to change the range.`}
       kpis={[
-        { label: "Receipts", value: String(agg._count._all), accent: "blue" },
-        { label: "Received value", value: formatCrmNavValue(value), accent: "success" },
+        ...crmPeriodKpis("/app/leads/payments", periodCounts, period),
+        { label: "Received", value: formatCrmNavValue(value), accent: "success" },
         {
           label: "Avg receipt",
           value:
-            agg._count._all > 0
-              ? formatCrmNavValue(value / agg._count._all)
+            visible.length > 0
+              ? formatCrmNavValue(value / visible.length)
               : "₹0",
-        },
-        {
-          label: "Clients on page",
-          value: String(groups.length),
         },
       ]}
     >
@@ -100,7 +106,7 @@ export default async function CrmPaymentsPage() {
         openTab="payments"
         waEvent="alert_payment_pending"
         canManage={canManage}
-        emptyMessage="No payments recorded yet."
+        emptyMessage={`No payments ${crmPeriodLabel(period)}.`}
         filterPlaceholder="Filter payment clients…"
       />
     </CrmSubmoduleShell>

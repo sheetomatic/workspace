@@ -56,6 +56,122 @@ export function monthGrid(yearMonth: string) {
   return cells;
 }
 
+export function addIstDays(ymd: string, days: number) {
+  const [year, month, day] = ymd.split("-").map(Number);
+  const next = new Date(Date.UTC(year, month - 1, day + days));
+  return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, "0")}-${String(next.getUTCDate()).padStart(2, "0")}`;
+}
+
+/** Sunday-start week, matching the meetings calendar. */
+export function startOfIstWeekYmd(ymd: string) {
+  const [year, month, day] = ymd.split("-").map(Number);
+  const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  return addIstDays(ymd, -weekday);
+}
+
+export const CRM_MEETING_VIEWS = [
+  "today",
+  "week",
+  "month",
+  "upcoming",
+  "done",
+  "day",
+] as const;
+
+export type CrmMeetingView = (typeof CRM_MEETING_VIEWS)[number];
+
+export function parseCrmMeetingView(raw: string | null | undefined): CrmMeetingView {
+  if (raw && (CRM_MEETING_VIEWS as readonly string[]).includes(raw)) {
+    return raw as CrmMeetingView;
+  }
+  return "today";
+}
+
+export type CrmMeetingCountRow = {
+  ymd: string;
+  completed: boolean;
+};
+
+export function countCrmMeetings(rows: CrmMeetingCountRow[], now = new Date()) {
+  const today = istYmd(now);
+  const month = today.slice(0, 7);
+  const weekStart = startOfIstWeekYmd(today);
+  const weekEnd = addIstDays(weekStart, 6);
+  const counts = { today: 0, week: 0, month: 0, upcoming: 0, done: 0 };
+  for (const row of rows) {
+    if (row.completed) {
+      counts.done += 1;
+      continue;
+    }
+    if (row.ymd >= today) {
+      counts.upcoming += 1;
+    }
+    if (row.ymd === today) {
+      counts.today += 1;
+    }
+    if (row.ymd >= weekStart && row.ymd <= weekEnd) {
+      counts.week += 1;
+    }
+    if (row.ymd.startsWith(month)) {
+      counts.month += 1;
+    }
+  }
+  return counts;
+}
+
+export function filterCrmMeetings<T extends CrmMeetingCountRow>(
+  rows: T[],
+  view: CrmMeetingView,
+  options?: { date?: string | null; now?: Date },
+) {
+  const today = istYmd(options?.now ?? new Date());
+  const month = today.slice(0, 7);
+  const weekStart = startOfIstWeekYmd(today);
+  const weekEnd = addIstDays(weekStart, 6);
+  const day = options?.date && /^\d{4}-\d{2}-\d{2}$/.test(options.date)
+    ? options.date
+    : today;
+
+  return rows.filter((row) => {
+    switch (view) {
+      case "done":
+        return row.completed;
+      case "upcoming":
+        return !row.completed && row.ymd >= today;
+      case "week":
+        return !row.completed && row.ymd >= weekStart && row.ymd <= weekEnd;
+      case "month":
+        return !row.completed && row.ymd.startsWith(month);
+      case "day":
+        return row.ymd === day;
+      default:
+        return !row.completed && row.ymd === today;
+    }
+  });
+}
+
+export function meetingViewTitle(
+  view: CrmMeetingView,
+  count: number,
+  date?: string | null,
+) {
+  const noun = count === 1 ? "meeting" : "meetings";
+  switch (view) {
+    case "done":
+      return `${count} ${noun} done`;
+    case "upcoming":
+      return `${count} upcoming ${noun}`;
+    case "week":
+      return `${count} ${noun} this week`;
+    case "month":
+      return `${count} ${noun} this month`;
+    case "day":
+      return `${date ?? "Day"} · ${count} ${noun}`;
+    default:
+      return `${count} ${noun} today`;
+  }
+}
+
 export function monthLabel(yearMonth: string) {
   const [year, month] = yearMonth.split("-").map(Number);
   return new Date(Date.UTC(year, month - 1, 1)).toLocaleString("en-IN", {

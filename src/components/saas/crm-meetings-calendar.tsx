@@ -11,9 +11,12 @@ import {
 import { crmLeadOpenHref } from "@/lib/leads/crm-open";
 import {
   addIstMonths,
+  filterCrmMeetings,
   istYmd,
+  meetingViewTitle,
   monthGrid,
   monthLabel,
+  type CrmMeetingView,
 } from "@/lib/leads/crm-meetings";
 import "./crm-meetings-calendar.css";
 
@@ -29,6 +32,7 @@ export type CrmCalendarMeeting = {
   meetUrl: string | null;
   notes: string;
   isToday: boolean;
+  completed: boolean;
 };
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -36,14 +40,19 @@ const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 export function CrmMeetingsCalendar({
   meetings,
   canManage,
+  view,
+  selectedDate,
 }: {
   meetings: CrmCalendarMeeting[];
   canManage: boolean;
+  view: CrmMeetingView;
+  selectedDate?: string | null;
 }) {
   const router = useRouter();
   const todayYmd = istYmd(new Date());
-  const [month, setMonth] = useState(todayYmd.slice(0, 7));
-  const [selectedYmd, setSelectedYmd] = useState(todayYmd);
+  const [month, setMonth] = useState(
+    (selectedDate && selectedDate.slice(0, 7)) || todayYmd.slice(0, 7),
+  );
   const [openId, setOpenId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [remindingId, setRemindingId] = useState<string | null>(null);
@@ -90,20 +99,25 @@ export function CrmMeetingsCalendar({
     return map;
   }, [meetings]);
 
-  const selected = byDay.get(selectedYmd) ?? [];
-  const todayMeetings = byDay.get(todayYmd) ?? [];
+  const selectedYmd =
+    view === "day" && selectedDate ? selectedDate : todayYmd;
+  const visible = filterCrmMeetings(meetings, view, { date: selectedDate });
   const cells = monthGrid(month);
 
   return (
     <div className="crm-meet-cal">
-      {todayMeetings.length > 0 ? (
-        <section className="crm-meet-cal-today" aria-label="Today's meetings">
-          <p className="crm-meet-cal-kicker">Today</p>
-          <h3>
-            {todayMeetings.length} meeting{todayMeetings.length === 1 ? "" : "s"} today
-          </h3>
+      <section className="crm-meet-cal-today" aria-label="Meeting list">
+        <p className="crm-meet-cal-kicker">
+          {view === "day" ? selectedYmd : view}
+        </p>
+        <h3>{meetingViewTitle(view, visible.length, selectedDate)}</h3>
+        {visible.length === 0 ? (
+          <p className="crm-meet-cal-empty-today">
+            No meetings in this view. Pick another number or a date on the calendar.
+          </p>
+        ) : (
           <MeetingRows
-            meetings={todayMeetings}
+            meetings={visible}
             canManage={canManage}
             openId={openId}
             pending={pending}
@@ -112,10 +126,8 @@ export function CrmMeetingsCalendar({
             onSave={saveDetails}
             onRemind={sendReminder}
           />
-        </section>
-      ) : (
-        <p className="crm-meet-cal-empty-today">No meetings today. Upcoming dates are on the calendar.</p>
-      )}
+        )}
+      </section>
 
       <section className="crm-meet-cal-board" aria-label="Upcoming meetings calendar">
         <div className="crm-meet-cal-nav">
@@ -156,7 +168,10 @@ export function CrmMeetingsCalendar({
                 className={`crm-meet-cal-cell${isToday ? " is-today" : ""}${
                   isSelected ? " is-selected" : ""
                 }${count ? " has-meetings" : ""}${isPast ? " is-past" : ""}`}
-                onClick={() => setSelectedYmd(cell.ymd!)}
+                onClick={() => {
+                  setMonth(cell.ymd!.slice(0, 7));
+                  router.push(`/app/leads/meetings?view=day&date=${cell.ymd}`);
+                }}
               >
                 <span>{cell.day}</span>
                 {count ? <em>{count}</em> : null}
@@ -165,28 +180,6 @@ export function CrmMeetingsCalendar({
           })}
         </div>
       </section>
-
-      {selectedYmd !== todayYmd ? (
-        <section className="crm-meet-cal-day" aria-label="Selected day">
-          <h3>
-            {selectedYmd} · {selected.length} upcoming
-          </h3>
-          {selected.length === 0 ? (
-            <p className="ws-apple-record-empty">No upcoming meetings on this date.</p>
-          ) : (
-            <MeetingRows
-              meetings={selected}
-              canManage={canManage}
-              openId={openId}
-              pending={pending}
-              remindingId={remindingId}
-              onToggle={setOpenId}
-              onSave={saveDetails}
-              onRemind={sendReminder}
-            />
-          )}
-        </section>
-      ) : null}
 
       {message ? <p className="crm-meet-cal-msg is-ok">{message}</p> : null}
       {error ? <p className="crm-meet-cal-msg is-err">{error}</p> : null}
@@ -252,7 +245,7 @@ function MeetingRow({
   onRemind: (followUpId: string) => void;
 }) {
   return (
-    <li className={`crm-meet-row${meeting.isToday ? " is-today" : ""}${open ? " is-open" : ""}`}>
+    <li className={`crm-meet-row${meeting.isToday ? " is-today" : ""}${meeting.completed ? " is-done" : ""}${open ? " is-open" : ""}`}>
       <div className="crm-meet-row-main">
         <button
           type="button"
@@ -284,15 +277,17 @@ function MeetingRow({
           ) : (
             <span className="crm-meet-missing">No Meet link</span>
           )}
-          <button
-            type="button"
-            className="btn-secondary btn-sm"
-            disabled={reminding || pending}
-            onClick={() => onRemind(meeting.id)}
-          >
-            <Bell size={14} aria-hidden />
-            {reminding ? "Sending…" : "Remind"}
-          </button>
+          {meeting.completed ? null : (
+            <button
+              type="button"
+              className="btn-secondary btn-sm"
+              disabled={reminding || pending}
+              onClick={() => onRemind(meeting.id)}
+            >
+              <Bell size={14} aria-hidden />
+              {reminding ? "Sending…" : "Remind"}
+            </button>
+          )}
           <Link
             className="btn-secondary btn-sm"
             href={crmLeadOpenHref(meeting.leadId, { tab: "meeting" })}
