@@ -244,6 +244,7 @@ function ScreenDesign({
 }) {
   const [newName, setNewName] = useState("");
   const [pickTab, setPickTab] = useState(unusedTables[0] || tables[0] || "");
+  const [pane, setPane] = useState<"look" | "data">("data");
 
   function set(patch: Partial<AppView>) {
     onChange(patchView(config, view.id, patch));
@@ -310,235 +311,266 @@ function ScreenDesign({
 
   return (
     <>
-      <h3>Screen</h3>
-      <label className="field-label">
-        Header title
-        <input value={view.name} onChange={(e) => set({ name: e.target.value })} />
-      </label>
-      <label className="field-label">
-        Sheet tab
-        <select
-          value={view.tab}
-          onChange={(e) => {
-            const tab = e.target.value;
-            const heads = sheet.getTab(tab)?.headers || [];
-            set({
-              tab,
-              titleCol: heads[0] || view.titleCol,
-              cols: heads.length ? heads : view.cols,
-            });
-          }}
+      <h3>{view.name}</h3>
+      <div className="ab-insp-seg" role="tablist" aria-label="Screen settings">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={pane === "look"}
+          className={pane === "look" ? "on" : ""}
+          onClick={() => setPane("look")}
         >
-          {tables.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-          {!tables.includes(view.tab) ? <option value={view.tab}>{view.tab}</option> : null}
-        </select>
-      </label>
-
-      <p className="hint">AppSheet view type</p>
-      <div className="style-picks">
-        {APPSHEET_VIEW_TYPES.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={view.kind === item.id || view.collectionStyle === item.style ? "on" : ""}
-            onClick={() => set(applyAppSheetViewType(view, item.id))}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-      <p className="hint">Menu icon</p>
-      <div className="style-picks">
-        {MENU_ICONS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={(view.icon || defaultIconForView(view.name)) === item.id ? "on" : ""}
-            onClick={() => set({ icon: item.id })}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-
-      <Toggle
-        label="Show as app on Home"
-        on={view.nav !== false}
-        onChange={(v) => set({ nav: v })}
-      />
-      <Toggle
-        label="Allow delete"
-        on={view.allowDelete !== false}
-        onChange={(v) => set({ allowDelete: v })}
-      />
-
-      <label className="field-label">
-        Title column
-        <select
-          value={view.titleCol || ""}
-          onChange={(e) => set({ titleCol: e.target.value })}
+          Look
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={pane === "data"}
+          className={pane === "data" ? "on" : ""}
+          onClick={() => setPane("data")}
         >
-          {headers.map((h) => (
-            <option key={h}>{h}</option>
-          ))}
-        </select>
-      </label>
-      <label className="field-label">
-        Subtitle
-        <select
-          value={view.subtitleCol || ""}
-          onChange={(e) => set({ subtitleCol: e.target.value || undefined })}
-        >
-          <option value="">None</option>
-          {headers.map((h) => (
-            <option key={h}>{h}</option>
-          ))}
-        </select>
-      </label>
-      <label className="field-label">
-        Status (for board)
-        <select
-          value={view.statusCol || ""}
-          onChange={(e) => set({ statusCol: e.target.value || undefined })}
-        >
-          <option value="">None</option>
-          {headers.map((h) => (
-            <option key={h}>{h}</option>
-          ))}
-        </select>
-      </label>
-      <label className="field-label">
-        Image
-        <select
-          value={view.imageCol || ""}
-          onChange={(e) => set({ imageCol: e.target.value || undefined })}
-        >
-          <option value="">None</option>
-          {headers.map((h) => (
-            <option key={h}>{h}</option>
-          ))}
-        </select>
-      </label>
-      <label className="field-label">
-        Phone (Call / WhatsApp)
-        <select
-          value={view.phoneCol || ""}
-          onChange={(e) => set({ phoneCol: e.target.value || undefined })}
-        >
-          <option value="">None</option>
-          {headers.map((h) => (
-            <option key={h}>{h}</option>
-          ))}
-        </select>
-      </label>
-
-      <p className="aside-label">Fields on this screen</p>
-      <ul className="chip-list">
-        {shown.map((c) => (
-          <li key={c}>
-            {c}
-            <select
-              className="col-type"
-              aria-label={`Type for ${c}`}
-              value={fieldTypeOf(view, c)}
-              onChange={(e) =>
-                onChange(withColumnType(config, view.tab, c, e.target.value as FieldType))
-              }
-            >
-              {FIELD_TYPE_OPTIONS.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={() =>
-                set({
-                  cols: shown.filter((x) => x !== c),
-                  addFields: (view.addFields || []).filter((f) => f.col !== c),
-                })
-              }
-            >
-              Remove
-            </button>
-          </li>
-        ))}
-      </ul>
-      {hidden.length ? (
-        <div className="style-picks">
-          {hidden.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() =>
-                set({
-                  cols: [...shown, c],
-                  addFields: [...(view.addFields || []), fieldFromCol(c)],
-                })
-              }
-            >
-              + {c}
-            </button>
-          ))}
-        </div>
-      ) : (
-        <p className="hint">All sheet columns are on this screen.</p>
-      )}
-
-      <label className="field-label">
-        Row owner (staff sees only their rows)
-        <select
-          value={view.ownerCol || ""}
-          onChange={(e) => set({ ownerCol: e.target.value || undefined })}
-        >
-          <option value="">Everyone</option>
-          {headers.map((h) => (
-            <option key={h}>{h}</option>
-          ))}
-        </select>
-      </label>
-
-      <RelationsEditor config={config} view={view} tables={tables} sheet={sheet} onChange={onChange} />
-      <GlideExtrasEditor
-        config={config}
-        view={view}
-        headers={headers}
-        sheet={sheet}
-        onChange={onChange}
-      />
-
-      <p className="aside-label">Add a screen</p>
-      {unusedTables.length ? (
-        <div className="add-inline">
-          <select value={pickTab} onChange={(e) => setPickTab(e.target.value)}>
-            {unusedTables.map((t) => (
-              <option key={t}>{t}</option>
-            ))}
-          </select>
-          <button type="button" onClick={addScreen}>
-            Add
-          </button>
-        </div>
-      ) : null}
-      <div className="add-inline">
-        <input
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          placeholder="New screen name"
-        />
-        <button type="button" onClick={addBlank}>
-          Create
+          Data
         </button>
       </div>
 
-      <button type="button" className="linkish" onClick={removeScreen}>
-        Remove this screen
-      </button>
+      {pane === "look" ? (
+        <>
+          <label className="field-label">
+            Header title
+            <input value={view.name} onChange={(e) => set({ name: e.target.value })} />
+          </label>
+          <label className="field-label">
+            Sheet tab
+            <select
+              value={view.tab}
+              onChange={(e) => {
+                const tab = e.target.value;
+                const heads = sheet.getTab(tab)?.headers || [];
+                set({
+                  tab,
+                  titleCol: heads[0] || view.titleCol,
+                  cols: heads.length ? heads : view.cols,
+                });
+              }}
+            >
+              {tables.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+              {!tables.includes(view.tab) ? <option value={view.tab}>{view.tab}</option> : null}
+            </select>
+          </label>
+
+          <p className="aside-label">View type</p>
+          <div className="style-picks">
+            {APPSHEET_VIEW_TYPES.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={view.kind === item.id || view.collectionStyle === item.style ? "on" : ""}
+                onClick={() => set(applyAppSheetViewType(view, item.id))}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <p className="aside-label">Menu icon</p>
+          <div className="style-picks">
+            {MENU_ICONS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={(view.icon || defaultIconForView(view.name)) === item.id ? "on" : ""}
+                onClick={() => set({ icon: item.id })}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+
+          <Toggle
+            label="Show as app on Home"
+            on={view.nav !== false}
+            onChange={(v) => set({ nav: v })}
+          />
+          <Toggle
+            label="Allow delete"
+            on={view.allowDelete !== false}
+            onChange={(v) => set({ allowDelete: v })}
+          />
+
+          <label className="field-label">
+            Title column
+            <select
+              value={view.titleCol || ""}
+              onChange={(e) => set({ titleCol: e.target.value })}
+            >
+              {headers.map((h) => (
+                <option key={h}>{h}</option>
+              ))}
+            </select>
+          </label>
+          <label className="field-label">
+            Subtitle
+            <select
+              value={view.subtitleCol || ""}
+              onChange={(e) => set({ subtitleCol: e.target.value || undefined })}
+            >
+              <option value="">None</option>
+              {headers.map((h) => (
+                <option key={h}>{h}</option>
+              ))}
+            </select>
+          </label>
+          <label className="field-label">
+            Status (for board)
+            <select
+              value={view.statusCol || ""}
+              onChange={(e) => set({ statusCol: e.target.value || undefined })}
+            >
+              <option value="">None</option>
+              {headers.map((h) => (
+                <option key={h}>{h}</option>
+              ))}
+            </select>
+          </label>
+          <label className="field-label">
+            Image
+            <select
+              value={view.imageCol || ""}
+              onChange={(e) => set({ imageCol: e.target.value || undefined })}
+            >
+              <option value="">None</option>
+              {headers.map((h) => (
+                <option key={h}>{h}</option>
+              ))}
+            </select>
+          </label>
+          <label className="field-label">
+            Phone (Call / WhatsApp)
+            <select
+              value={view.phoneCol || ""}
+              onChange={(e) => set({ phoneCol: e.target.value || undefined })}
+            >
+              <option value="">None</option>
+              {headers.map((h) => (
+                <option key={h}>{h}</option>
+              ))}
+            </select>
+          </label>
+
+          <p className="aside-label">Add a screen</p>
+          {unusedTables.length ? (
+            <div className="add-inline">
+              <select value={pickTab} onChange={(e) => setPickTab(e.target.value)}>
+                {unusedTables.map((t) => (
+                  <option key={t}>{t}</option>
+                ))}
+              </select>
+              <button type="button" onClick={addScreen}>
+                Add
+              </button>
+            </div>
+          ) : null}
+          <div className="add-inline">
+            <input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="New screen name"
+            />
+            <button type="button" onClick={addBlank}>
+              Create
+            </button>
+          </div>
+          <button type="button" className="linkish" onClick={removeScreen}>
+            Remove this screen
+          </button>
+        </>
+      ) : (
+        <>
+          <section className="ab-block">
+            <p className="aside-label">Columns</p>
+            <p className="hint">Type controls the form and the phone. Hide keeps the Sheet column.</p>
+            <ul className="ab-col-list">
+              {shown.map((c) => (
+                <li key={c}>
+                  <header>
+                    <strong>{c}</strong>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        set({
+                          cols: shown.filter((x) => x !== c),
+                          addFields: (view.addFields || []).filter((f) => f.col !== c),
+                        })
+                      }
+                    >
+                      Hide
+                    </button>
+                  </header>
+                  <select
+                    aria-label={`Type for ${c}`}
+                    value={fieldTypeOf(view, c)}
+                    onChange={(e) =>
+                      onChange(withColumnType(config, view.tab, c, e.target.value as FieldType))
+                    }
+                  >
+                    {FIELD_TYPE_OPTIONS.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </li>
+              ))}
+            </ul>
+            {hidden.length ? (
+              <div className="style-picks">
+                {hidden.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() =>
+                      set({
+                        cols: [...shown, c],
+                        addFields: [...(view.addFields || []), fieldFromCol(c)],
+                      })
+                    }
+                  >
+                    + {c}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="hint">Every Sheet column is on this screen.</p>
+            )}
+          </section>
+
+          <label className="field-label">
+            Row owner
+            <select
+              value={view.ownerCol || ""}
+              onChange={(e) => set({ ownerCol: e.target.value || undefined })}
+            >
+              <option value="">Everyone sees every row</option>
+              {headers.map((h) => (
+                <option key={h}>{h}</option>
+              ))}
+            </select>
+          </label>
+          <p className="hint">Staff only see rows where this column matches their email or PIN name.</p>
+
+          <RelationsEditor config={config} view={view} tables={tables} sheet={sheet} onChange={onChange} />
+          <GlideExtrasEditor
+            config={config}
+            view={view}
+            headers={headers}
+            sheet={sheet}
+            onChange={onChange}
+          />
+        </>
+      )}
     </>
   );
 }
@@ -577,11 +609,20 @@ function GlideExtrasEditor({
   }
 
   function patchComputed(id: string, patch: Partial<AppComputedColumn>) {
+    const prev = (config.computed || []).find((item) => item.id === id);
     onChange({
       ...config,
       computed: (config.computed || []).map((item) =>
         item.id === id ? { ...item, ...patch } : item,
       ),
+      views:
+        patch.name && prev && patch.name !== prev.name
+          ? config.views.map((item) =>
+              item.tab === view.tab
+                ? { ...item, cols: item.cols.map((col) => (col === prev.name ? patch.name! : col)) }
+                : item,
+            )
+          : config.views,
     });
   }
 
@@ -643,270 +684,336 @@ function GlideExtrasEditor({
     onChange({ ...config, actions: [...(config.actions || []), next] });
   }
 
+  const kindLabel =
+    { math: "Math", lookup: "Lookup", if: "If-then", formula: "Formula" } as const;
+
   return (
     <>
-      <p className="aside-label">Computed columns</p>
-      <p className="hint">
-        Glide: lookup, math, if-then. AppSheet: + Formula with [Col]. Shown on
-        the phone, not written back to the Sheet.
-      </p>
-      {computed.map((col) => (
-        <div className="rel-add" key={col.id}>
-          <input value={col.name} onChange={(e) => patchComputed(col.id, { name: e.target.value })} />
-          {col.kind === "math" ? (
-            <>
-              <select
-                value={col.leftCol || ""}
-                onChange={(e) => patchComputed(col.id, { leftCol: e.target.value })}
-              >
-                {headers.map((h) => (
-                  <option key={h}>{h}</option>
-                ))}
-              </select>
-              <select
-                value={col.op || "mul"}
-                onChange={(e) =>
-                  patchComputed(col.id, { op: e.target.value as AppComputedColumn["op"] })
-                }
-              >
-                <option value="mul">×</option>
-                <option value="add">+</option>
-                <option value="sub">−</option>
-                <option value="div">÷</option>
-              </select>
-              <select
-                value={col.rightCol || ""}
-                onChange={(e) => patchComputed(col.id, { rightCol: e.target.value })}
-              >
-                {headers.map((h) => (
-                  <option key={h}>{h}</option>
-                ))}
-              </select>
-            </>
-          ) : null}
-          {col.kind === "lookup" ? (
-            <>
-              <select
-                value={col.relationId || ""}
-                onChange={(e) =>
-                  patchComputed(col.id, {
-                    relationId: e.target.value,
-                    lookupCol: lookupCols(e.target.value)[0],
+      <section className="ab-block">
+        <p className="aside-label">Computed columns</p>
+        <p className="hint">Shown on the phone. Not written back to the Sheet.</p>
+        {computed.map((col) => (
+          <article className="ab-card" key={col.id}>
+            <header>
+              <input
+                value={col.name}
+                aria-label="Column name"
+                onChange={(e) => patchComputed(col.id, { name: e.target.value })}
+              />
+              <em>{kindLabel[col.kind]}</em>
+              <button
+                type="button"
+                onClick={() =>
+                  onChange({
+                    ...config,
+                    computed: (config.computed || []).filter((item) => item.id !== col.id),
+                    views: config.views.map((item) =>
+                      item.id === view.id
+                        ? { ...item, cols: item.cols.filter((name) => name !== col.name) }
+                        : item,
+                    ),
                   })
                 }
               >
-                {relations.length ? (
-                  relations.map((rel) => (
-                    <option key={rel.id} value={rel.id}>
-                      {rel.name}
-                    </option>
-                  ))
-                ) : (
-                  <option value="">Add a relation first</option>
-                )}
-              </select>
-              <select
-                value={col.lookupCol || ""}
-                onChange={(e) => patchComputed(col.id, { lookupCol: e.target.value })}
-              >
-                {lookupCols(col.relationId).map((h) => (
-                  <option key={h}>{h}</option>
-                ))}
-              </select>
-            </>
-          ) : null}
-          {col.kind === "formula" ? (
-            <input
-              value={col.formula || ""}
-              placeholder={'CONCATENATE([Name]," — ",[Company])'}
-              onChange={(e) => patchComputed(col.id, { formula: e.target.value })}
-            />
-          ) : null}
-          {col.kind === "if" ? (
-            <>
-              <select
-                value={col.whenCol || ""}
-                onChange={(e) => patchComputed(col.id, { whenCol: e.target.value })}
-              >
-                {headers.map((h) => (
-                  <option key={h}>{h}</option>
-                ))}
-              </select>
-              <select
-                value={col.whenOp || "eq"}
-                onChange={(e) =>
-                  patchComputed(col.id, { whenOp: e.target.value as AppComputedColumn["whenOp"] })
-                }
-              >
-                <option value="eq">=</option>
-                <option value="neq">≠</option>
-                <option value="empty">empty</option>
-                <option value="notempty">filled</option>
-              </select>
-              {col.whenOp === "empty" || col.whenOp === "notempty" ? null : (
+                Remove
+              </button>
+            </header>
+            {col.kind === "math" ? (
+              <div className="ab-card-grid">
+                <label>
+                  Left
+                  <select
+                    value={col.leftCol || ""}
+                    onChange={(e) => patchComputed(col.id, { leftCol: e.target.value })}
+                  >
+                    {headers.map((h) => (
+                      <option key={h}>{h}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Op
+                  <select
+                    value={col.op || "mul"}
+                    onChange={(e) =>
+                      patchComputed(col.id, { op: e.target.value as AppComputedColumn["op"] })
+                    }
+                  >
+                    <option value="mul">×</option>
+                    <option value="add">+</option>
+                    <option value="sub">−</option>
+                    <option value="div">÷</option>
+                  </select>
+                </label>
+                <label>
+                  Right
+                  <select
+                    value={col.rightCol || ""}
+                    onChange={(e) => patchComputed(col.id, { rightCol: e.target.value })}
+                  >
+                    {headers.map((h) => (
+                      <option key={h}>{h}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            ) : null}
+            {col.kind === "lookup" ? (
+              <div className="ab-card-grid">
+                <label>
+                  Relation
+                  <select
+                    value={col.relationId || ""}
+                    onChange={(e) =>
+                      patchComputed(col.id, {
+                        relationId: e.target.value,
+                        lookupCol: lookupCols(e.target.value)[0],
+                      })
+                    }
+                  >
+                    {relations.length ? (
+                      relations.map((rel) => (
+                        <option key={rel.id} value={rel.id}>
+                          {rel.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="">Link a table first</option>
+                    )}
+                  </select>
+                </label>
+                <label>
+                  Bring back
+                  <select
+                    value={col.lookupCol || ""}
+                    onChange={(e) => patchComputed(col.id, { lookupCol: e.target.value })}
+                  >
+                    {lookupCols(col.relationId).map((h) => (
+                      <option key={h}>{h}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            ) : null}
+            {col.kind === "formula" ? (
+              <label>
+                AppSheet formula
                 <input
-                  value={col.whenValue || ""}
-                  placeholder="When"
-                  onChange={(e) => patchComputed(col.id, { whenValue: e.target.value })}
+                  value={col.formula || ""}
+                  placeholder={'CONCATENATE([Name]," — ",[Company])'}
+                  onChange={(e) => patchComputed(col.id, { formula: e.target.value })}
                 />
-              )}
-              <input
-                value={col.thenValue || ""}
-                placeholder="Then"
-                onChange={(e) => patchComputed(col.id, { thenValue: e.target.value })}
-              />
-              <input
-                value={col.elseValue || ""}
-                placeholder="Else"
-                onChange={(e) => patchComputed(col.id, { elseValue: e.target.value })}
-              />
-            </>
-          ) : null}
-          <button
-            type="button"
-            onClick={() =>
-              onChange({
-                ...config,
-                computed: (config.computed || []).filter((item) => item.id !== col.id),
-              })
-            }
-          >
-            Remove
-          </button>
+              </label>
+            ) : null}
+            {col.kind === "if" ? (
+              <div className="ab-card-grid">
+                <label>
+                  When
+                  <select
+                    value={col.whenCol || ""}
+                    onChange={(e) => patchComputed(col.id, { whenCol: e.target.value })}
+                  >
+                    {headers.map((h) => (
+                      <option key={h}>{h}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Is
+                  <select
+                    value={col.whenOp || "eq"}
+                    onChange={(e) =>
+                      patchComputed(col.id, { whenOp: e.target.value as AppComputedColumn["whenOp"] })
+                    }
+                  >
+                    <option value="eq">=</option>
+                    <option value="neq">≠</option>
+                    <option value="empty">empty</option>
+                    <option value="notempty">filled</option>
+                  </select>
+                </label>
+                {col.whenOp === "empty" || col.whenOp === "notempty" ? null : (
+                  <label>
+                    Value
+                    <input
+                      value={col.whenValue || ""}
+                      onChange={(e) => patchComputed(col.id, { whenValue: e.target.value })}
+                    />
+                  </label>
+                )}
+                <label>
+                  Then
+                  <input
+                    value={col.thenValue || ""}
+                    onChange={(e) => patchComputed(col.id, { thenValue: e.target.value })}
+                  />
+                </label>
+                <label>
+                  Else
+                  <input
+                    value={col.elseValue || ""}
+                    onChange={(e) => patchComputed(col.id, { elseValue: e.target.value })}
+                  />
+                </label>
+              </div>
+            ) : null}
+          </article>
+        ))}
+        <div className="style-picks">
+          <button type="button" onClick={() => addComputed("math")}>+ Math</button>
+          <button type="button" onClick={() => addComputed("lookup")}>+ Lookup</button>
+          <button type="button" onClick={() => addComputed("if")}>+ If-then</button>
+          <button type="button" onClick={() => addComputed("formula")}>+ Formula</button>
         </div>
-      ))}
-      <div className="style-picks">
-        <button type="button" onClick={() => addComputed("math")}>+ Math</button>
-        <button type="button" onClick={() => addComputed("lookup")}>+ Lookup</button>
-        <button type="button" onClick={() => addComputed("if")}>+ If-then</button>
-        <button type="button" onClick={() => addComputed("formula")}>+ Formula</button>
-      </div>
+      </section>
 
-      <p className="aside-label">Visibility</p>
-      <p className="hint">Hide this screen from staff, or hide a field unless the person is owner.</p>
-      <Toggle
-        label="Staff can open this screen"
-        on={!config.visibility?.some((rule) => rule.target === "view" && rule.targetId === view.id && rule.when === "owner")}
-        onChange={(on) => {
-          const rest = (config.visibility || []).filter(
-            (rule) => !(rule.target === "view" && rule.targetId === view.id),
-          );
-          onChange({
-            ...config,
-            visibility: on
-              ? rest
-              : [...rest, { id: `vis-${view.id}`, target: "view", targetId: view.id, when: "owner" }],
-          });
-        }}
-      />
-      {fieldRules.map((rule) => (
-        <div className="rel-add" key={rule.id}>
-          <span>{rule.targetId} · owner only</span>
-          <button
-            type="button"
-            onClick={() =>
-              onChange({
-                ...config,
-                visibility: (config.visibility || []).filter((item) => item.id !== rule.id),
-              })
-            }
-          >
-            Remove
-          </button>
-        </div>
-      ))}
-      <div className="add-inline">
-        <select
-          defaultValue=""
-          onChange={(e) => {
-            const targetId = e.target.value;
-            if (!targetId) return;
-            e.target.value = "";
-            if (fieldRules.some((rule) => rule.targetId === targetId)) return;
+      <section className="ab-block">
+        <p className="aside-label">Visibility</p>
+        <Toggle
+          label="Staff can open this screen"
+          on={!config.visibility?.some((rule) => rule.target === "view" && rule.targetId === view.id && rule.when === "owner")}
+          onChange={(on) => {
+            const rest = (config.visibility || []).filter(
+              (rule) => !(rule.target === "view" && rule.targetId === view.id),
+            );
             onChange({
               ...config,
-              visibility: [
-                ...(config.visibility || []),
-                { id: `vis-field-${targetId}`, target: "field", targetId, when: "owner" },
-              ],
+              visibility: on
+                ? rest
+                : [...rest, { id: `vis-${view.id}`, target: "view", targetId: view.id, when: "owner" }],
             });
           }}
-        >
-          <option value="">Hide field from staff…</option>
-          {allCols
-            .filter((col) => !fieldRules.some((rule) => rule.targetId === col))
-            .map((col) => (
-              <option key={col}>{col}</option>
+        />
+        {fieldRules.length ? (
+          <ul className="ab-mini-list">
+            {fieldRules.map((rule) => (
+              <li key={rule.id}>
+                <span>{rule.targetId} · owner only</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onChange({
+                      ...config,
+                      visibility: (config.visibility || []).filter((item) => item.id !== rule.id),
+                    })
+                  }
+                >
+                  Show
+                </button>
+              </li>
             ))}
-        </select>
-      </div>
-
-      <p className="aside-label">Action buttons</p>
-      {actions.map((action) => {
-        const setStep = action.steps.find((step) => step.kind === "set");
-        const notifyStep = action.steps.find((step) => step.kind === "notify");
-        return (
-          <div className="rel-add" key={action.id}>
-            <input
-              value={action.label}
-              onChange={(e) => patchAction(action.id, (item) => ({ ...item, label: e.target.value }))}
-            />
-            <select
-              value={setStep?.col || ""}
-              onChange={(e) =>
-                patchAction(action.id, (item) => ({
-                  ...item,
-                  steps: item.steps.map((step) =>
-                    step.kind === "set" ? { ...step, col: e.target.value } : step,
-                  ),
-                }))
-              }
-            >
-              {allCols.map((h) => (
-                <option key={h}>{h}</option>
+          </ul>
+        ) : null}
+        <label className="field-label">
+          Hide a field from staff
+          <select
+            defaultValue=""
+            onChange={(e) => {
+              const targetId = e.target.value;
+              if (!targetId) return;
+              e.target.value = "";
+              if (fieldRules.some((rule) => rule.targetId === targetId)) return;
+              onChange({
+                ...config,
+                visibility: [
+                  ...(config.visibility || []),
+                  { id: `vis-field-${targetId}`, target: "field", targetId, when: "owner" },
+                ],
+              });
+            }}
+          >
+            <option value="">Choose a field…</option>
+            {allCols
+              .filter((col) => !fieldRules.some((rule) => rule.targetId === col))
+              .map((col) => (
+                <option key={col}>{col}</option>
               ))}
-            </select>
-            <input
-              value={setStep?.value || ""}
-              placeholder="{{now}} or Done"
-              onChange={(e) =>
-                patchAction(action.id, (item) => ({
-                  ...item,
-                  steps: item.steps.map((step) =>
-                    step.kind === "set" ? { ...step, value: e.target.value } : step,
-                  ),
-                }))
-              }
-            />
-            <input
-              value={notifyStep?.message || ""}
-              placeholder="Toast"
-              onChange={(e) =>
-                patchAction(action.id, (item) => ({
-                  ...item,
-                  steps: item.steps.map((step) =>
-                    step.kind === "notify" ? { ...step, message: e.target.value } : step,
-                  ),
-                }))
-              }
-            />
-            <button
-              type="button"
-              onClick={() =>
-                onChange({
-                  ...config,
-                  actions: (config.actions || []).filter((item) => item.id !== action.id),
-                })
-              }
-            >
-              Remove
-            </button>
-          </div>
-        );
-      })}
-      <button type="button" onClick={addAction}>
-        + Action sequence
-      </button>
+          </select>
+        </label>
+      </section>
+
+      <section className="ab-block">
+        <p className="aside-label">Actions</p>
+        {actions.map((action) => {
+          const setStep = action.steps.find((step) => step.kind === "set");
+          const notifyStep = action.steps.find((step) => step.kind === "notify");
+          return (
+            <article className="ab-card" key={action.id}>
+              <header>
+                <input
+                  value={action.label}
+                  aria-label="Button label"
+                  onChange={(e) => patchAction(action.id, (item) => ({ ...item, label: e.target.value }))}
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    onChange({
+                      ...config,
+                      actions: (config.actions || []).filter((item) => item.id !== action.id),
+                    })
+                  }
+                >
+                  Remove
+                </button>
+              </header>
+              <div className="ab-card-grid">
+                <label>
+                  Set
+                  <select
+                    value={setStep?.col || ""}
+                    onChange={(e) =>
+                      patchAction(action.id, (item) => ({
+                        ...item,
+                        steps: item.steps.map((step) =>
+                          step.kind === "set" ? { ...step, col: e.target.value } : step,
+                        ),
+                      }))
+                    }
+                  >
+                    {allCols.map((h) => (
+                      <option key={h}>{h}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  To
+                  <input
+                    value={setStep?.value || ""}
+                    placeholder="Done or {{now}}"
+                    onChange={(e) =>
+                      patchAction(action.id, (item) => ({
+                        ...item,
+                        steps: item.steps.map((step) =>
+                          step.kind === "set" ? { ...step, value: e.target.value } : step,
+                        ),
+                      }))
+                    }
+                  />
+                </label>
+                <label>
+                  Toast
+                  <input
+                    value={notifyStep?.message || ""}
+                    placeholder="Updated"
+                    onChange={(e) =>
+                      patchAction(action.id, (item) => ({
+                        ...item,
+                        steps: item.steps.map((step) =>
+                          step.kind === "notify" ? { ...step, message: e.target.value } : step,
+                        ),
+                      }))
+                    }
+                  />
+                </label>
+              </div>
+            </article>
+          );
+        })}
+        <button type="button" className="ab-text-add" onClick={addAction}>
+          + Action button
+        </button>
+      </section>
     </>
   );
 }
@@ -931,52 +1038,70 @@ function RelationsEditor({
   const [childKey, setChildKey] = useState(childHeaders[0] || "");
 
   return (
-    <>
+    <section className="ab-block">
       <p className="aside-label">Relations</p>
-      <p className="hint">Match a column here to a column on another table — like Glide.</p>
-      {existing.map((rel) => (
-        <div className="rel-row" key={rel.id}>
-          <span>
-            {rel.name}: {rel.parentKeys[0]} → {rel.childTab}.{rel.childKeys[0]}
-          </span>
-          <button
-            type="button"
-            onClick={() =>
-              onChange({
-                ...config,
-                related: config.related.filter((r) => r.id !== rel.id),
-              })
-            }
-          >
-            Remove
-          </button>
-        </div>
-      ))}
+      <p className="hint">Match a column here to a column on another table.</p>
+      {existing.length ? (
+        <ul className="ab-mini-list">
+          {existing.map((rel) => (
+            <li key={rel.id}>
+              <span>
+                {rel.parentKeys[0]} → {rel.childTab}.{rel.childKeys[0]}
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  onChange({
+                    ...config,
+                    related: config.related.filter((r) => r.id !== rel.id),
+                  })
+                }
+              >
+                Unlink
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="hint">No links yet.</p>
+      )}
       {tables.length > 1 ? (
-        <div className="rel-add">
-          <select value={parentKey} onChange={(e) => setParentKey(e.target.value)}>
-            {(sheet.getTab(view.tab)?.headers || view.cols).map((h) => (
-              <option key={h}>{h}</option>
-            ))}
-          </select>
-          <select
-            value={childTab}
-            onChange={(e) => {
-              setChildTab(e.target.value);
-              setChildKey(sheet.getTab(e.target.value)?.headers[0] || "");
-            }}
-          >
-            {tables.filter((t) => t !== view.tab).map((t) => (
-              <option key={t}>{t}</option>
-            ))}
-          </select>
-          <select value={childKey} onChange={(e) => setChildKey(e.target.value)}>
-            {childHeaders.map((h) => (
-              <option key={h}>{h}</option>
-            ))}
-          </select>
+        <div className="ab-card">
+          <div className="ab-card-grid">
+            <label>
+              This column
+              <select value={parentKey} onChange={(e) => setParentKey(e.target.value)}>
+                {(sheet.getTab(view.tab)?.headers || view.cols).map((h) => (
+                  <option key={h}>{h}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Other table
+              <select
+                value={childTab}
+                onChange={(e) => {
+                  setChildTab(e.target.value);
+                  setChildKey(sheet.getTab(e.target.value)?.headers[0] || "");
+                }}
+              >
+                {tables.filter((t) => t !== view.tab).map((t) => (
+                  <option key={t}>{t}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Their column
+              <select value={childKey} onChange={(e) => setChildKey(e.target.value)}>
+                {childHeaders.map((h) => (
+                  <option key={h}>{h}</option>
+                ))}
+              </select>
+            </label>
+          </div>
           <button
             type="button"
+            className="ab-text-add"
             onClick={() => {
               if (!childTab || !parentKey || !childKey) return;
               const childView = config.views.find((v) => v.tab === childTab);
@@ -1000,11 +1125,13 @@ function RelationsEditor({
               });
             }}
           >
-            Link
+            Link tables
           </button>
         </div>
-      ) : null}
-    </>
+      ) : (
+        <p className="hint">Add another table first, then link it here.</p>
+      )}
+    </section>
   );
 }
 

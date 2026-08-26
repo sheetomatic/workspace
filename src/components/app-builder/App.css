@@ -393,7 +393,7 @@
 
 .ab-studio .layout{
   display: grid;
-  grid-template-columns: 220px 1fr 260px;
+  grid-template-columns: 220px 1fr minmax(280px, 320px);
   min-height: 0;
 }
 .ab-studio .pages, .ab-studio .inspector{
@@ -1200,6 +1200,126 @@
 .ab-studio .chip-list li .col-type{ margin-left: auto; }
 .ab-studio .chip-list button{ border: 0; background: none; color: #b42318; font: inherit; font-size: 12px; cursor: pointer; }
 .ab-studio .inspector{ overflow: auto; }
+.ab-studio .ab-insp-seg{
+  display: flex;
+  gap: 4px;
+  margin: 0 8px 16px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--soft);
+}
+.ab-studio .ab-insp-seg button{
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.ab-studio .ab-insp-seg button.on{
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+}
+.ab-studio .ab-block{ margin: 0 0 18px; }
+.ab-studio .ab-block > .aside-label{ margin-top: 4px; }
+.ab-studio .ab-col-list{ list-style: none; padding: 0; margin: 0 8px 8px; }
+.ab-studio .ab-col-list li{
+  display: grid;
+  gap: 6px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.ab-studio .ab-col-list header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ab-studio .ab-col-list strong{ font-size: 13px; font-weight: 650; }
+.ab-studio .ab-col-list header button,
+.ab-studio .ab-mini-list button,
+.ab-studio .ab-card header button{
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.ab-studio .ab-col-list select,
+.ab-studio .ab-card select,
+.ab-studio .ab-card input{
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 8px;
+  font: inherit;
+  background: var(--paper);
+  color: var(--ink);
+}
+.ab-studio .ab-card{
+  margin: 0 8px 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  display: grid;
+  gap: 8px;
+}
+.ab-studio .ab-card header{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ab-studio .ab-card header input{ flex: 1; min-width: 0; font-weight: 650; }
+.ab-studio .ab-card header em{
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--muted);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.ab-studio .ab-card label,
+.ab-studio .ab-card-grid label{
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--muted);
+}
+.ab-studio .ab-card-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.ab-studio .ab-mini-list{ list-style: none; padding: 0; margin: 0 8px 10px; }
+.ab-studio .ab-mini-list li{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+.ab-studio .ab-text-add{
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  padding: 4px 8px;
+  cursor: pointer;
+  text-align: left;
+}
 .ab-studio .aside-pad{ padding: 8px; }
 .ab-studio .palettes{
   display: grid;

@@ -762,7 +762,6 @@ export default function AppBuilderStudio({
           </div>
 
           <aside className="inspector">
-            <p className="aside-label">Design</p>
             <DesignPanel
               config={config}
               sheet={sheet}
