@@ -1,11 +1,7 @@
 import { useState } from "react";
 import {
-  APPSHEET_VIEW_TYPES,
-  applyAppSheetViewType,
-  defaultIconForView,
   FIELD_TYPE_OPTIONS,
   fieldTypeOf,
-  MENU_ICONS,
   relatedForView,
   withColumnType,
   type ActionDoThis,
@@ -17,6 +13,7 @@ import {
   type AppView,
   type FieldType,
 } from "@/lib/app-builder";
+import { ViewInspector } from "./ViewInspector";
 import { fieldFromColumn } from "@/lib/app-builder/infer";
 import type { SheetAdapter } from "../sheet/mockAdapter";
 import { ThemePicker } from "./ThemePicker";
@@ -337,130 +334,29 @@ function ScreenDesign({
 
       {pane === "look" ? (
         <>
-          <label className="field-label">
-            Header title
-            <input value={view.name} onChange={(e) => set({ name: e.target.value })} />
-          </label>
-          <label className="field-label">
-            Sheet tab
-            <select
-              value={view.tab}
-              onChange={(e) => {
-                const tab = e.target.value;
-                const heads = sheet.getTab(tab)?.headers || [];
+          <ViewInspector
+            view={view}
+            config={config}
+            tables={tables}
+            headers={headers}
+            onChange={(patch) => {
+              if (patch.tab && patch.tab !== view.tab) {
+                const heads = sheet.getTab(patch.tab)?.headers || [];
                 set({
-                  tab,
+                  ...patch,
                   titleCol: heads[0] || view.titleCol,
                   cols: heads.length ? heads : view.cols,
                 });
-              }}
-            >
-              {tables.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-              {!tables.includes(view.tab) ? <option value={view.tab}>{view.tab}</option> : null}
-            </select>
-          </label>
-
-          <p className="aside-label">View type</p>
-          <div className="style-picks">
-            {APPSHEET_VIEW_TYPES.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={view.kind === item.id || view.collectionStyle === item.style ? "on" : ""}
-                onClick={() => set(applyAppSheetViewType(view, item.id))}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-          <p className="aside-label">Menu icon</p>
-          <div className="style-picks">
-            {MENU_ICONS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={(view.icon || defaultIconForView(view.name)) === item.id ? "on" : ""}
-                onClick={() => set({ icon: item.id })}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-
-          <Toggle
-            label="Show as app on Home"
-            on={view.nav !== false}
-            onChange={(v) => set({ nav: v })}
+                return;
+              }
+              set(patch);
+            }}
           />
           <Toggle
             label="Allow delete"
             on={view.allowDelete !== false}
             onChange={(v) => set({ allowDelete: v })}
           />
-
-          <label className="field-label">
-            Title column
-            <select
-              value={view.titleCol || ""}
-              onChange={(e) => set({ titleCol: e.target.value })}
-            >
-              {headers.map((h) => (
-                <option key={h}>{h}</option>
-              ))}
-            </select>
-          </label>
-          <label className="field-label">
-            Subtitle
-            <select
-              value={view.subtitleCol || ""}
-              onChange={(e) => set({ subtitleCol: e.target.value || undefined })}
-            >
-              <option value="">None</option>
-              {headers.map((h) => (
-                <option key={h}>{h}</option>
-              ))}
-            </select>
-          </label>
-          <label className="field-label">
-            Status (for board)
-            <select
-              value={view.statusCol || ""}
-              onChange={(e) => set({ statusCol: e.target.value || undefined })}
-            >
-              <option value="">None</option>
-              {headers.map((h) => (
-                <option key={h}>{h}</option>
-              ))}
-            </select>
-          </label>
-          <label className="field-label">
-            Image
-            <select
-              value={view.imageCol || ""}
-              onChange={(e) => set({ imageCol: e.target.value || undefined })}
-            >
-              <option value="">None</option>
-              {headers.map((h) => (
-                <option key={h}>{h}</option>
-              ))}
-            </select>
-          </label>
-          <label className="field-label">
-            Phone (Call / WhatsApp)
-            <select
-              value={view.phoneCol || ""}
-              onChange={(e) => set({ phoneCol: e.target.value || undefined })}
-            >
-              <option value="">None</option>
-              {headers.map((h) => (
-                <option key={h}>{h}</option>
-              ))}
-            </select>
-          </label>
 
           <p className="aside-label">Add a screen</p>
           {unusedTables.length ? (

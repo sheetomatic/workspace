@@ -19,6 +19,7 @@ import {
   normKey,
   parentKeyFromRow,
 } from "./index";
+import { orderViews } from "./view-options";
 
 type RowSource = { listRows: (tab: string) => SheetRow[] };
 
@@ -137,8 +138,8 @@ export function ruleFor(
 }
 
 export function visibleNavViews(config: AppConfig, role: UserRole | null) {
-  return navViews(config).filter((view) =>
-    visibilityAllows(ruleFor(config, "view", view.id), role),
+  return orderViews(
+    navViews(config).filter((view) => visibilityAllows(ruleFor(config, "view", view.id), role)),
   );
 }
 

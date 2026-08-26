@@ -17,6 +17,11 @@ import {
   downloadPdf,
   planBotsForRow,
   roleLabel,
+  menuViews,
+  primaryViews,
+  refViews,
+  viewLabel,
+  viewPosition,
   renameColumnInConfig,
   deleteColumnInConfig,
   type AppConfig,
@@ -141,7 +146,6 @@ export default function AppBuilderStudio({
 
   liveSheetId.current = google.spreadsheetId || connected;
   const workbook = useMemo(() => sheet.getWorkbook(), [sheet, rev]);
-  const screens = config.views;
   const bump = () => setRev((n) => n + 1);
 
   useEffect(() => {
@@ -706,7 +710,7 @@ export default function AppBuilderStudio({
       {editor === "layout" && (
         <div className="layout">
           <aside className="pages">
-            <p className="aside-label">Screens</p>
+            <p className="aside-label">Views</p>
             <button
               type="button"
               className={focus === "home" ? "on" : ""}
@@ -717,22 +721,42 @@ export default function AppBuilderStudio({
             >
               Home
             </button>
-            {screens.map((s) => (
+            <p className="aside-label">Primary</p>
+            {primaryViews(config).map((s) => (
               <button
                 key={s.id}
                 type="button"
                 className={focus === s.id ? "on" : ""}
                 onClick={() => setFocus(s.id)}
               >
-                {s.name}
-                <em>
-                  {s.nav === false ? "Hidden" : styleLabel(s.collectionStyle)}
-                </em>
+                {viewLabel(s)}
+                <em>{styleLabel(s.collectionStyle)}</em>
               </button>
             ))}
-            <p className="hint aside-pad">
-              Select a screen, then add or remove on the right.
-            </p>
+            {menuViews(config).length ? <p className="aside-label">Menu</p> : null}
+            {menuViews(config).map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className={focus === s.id ? "on" : ""}
+                onClick={() => setFocus(s.id)}
+              >
+                {viewLabel(s)}
+                <em>menu</em>
+              </button>
+            ))}
+            {refViews(config).length ? <p className="aside-label">Reference</p> : null}
+            {refViews(config).map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className={focus === s.id ? "on" : ""}
+                onClick={() => setFocus(s.id)}
+              >
+                {viewLabel(s)}
+                <em>{viewPosition(s)}</em>
+              </button>
+            ))}
           </aside>
 
           <div className="canvas-col">

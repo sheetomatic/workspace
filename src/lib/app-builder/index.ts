@@ -9,8 +9,14 @@ export type ViewKind =
   | "table"
   | "gallery"
   | "calendar"
-  | "chart";
+  | "chart"
+  | "map"
+  | "card";
 export type CollectionStyle = "list" | "cards" | "table" | "kanban" | "calendar" | "chart";
+export type ViewPosition = "first" | "next" | "middle" | "later" | "last" | "menu" | "ref";
+export type CardLayout = "list" | "photo" | "backdrop" | "large";
+export type GroupAggregate = "none" | "count" | "sum" | "avg";
+export type ViewSort = { col: string; dir: "asc" | "desc" };
 export type UserRole = "owner" | "admin" | "manager" | "user" | "staff";
 
 export interface AppMeta {
@@ -196,6 +202,22 @@ export interface AppView {
   editFields?: AppFormField[];
   /** AppSheet menu icon id (users, cart, calendar…). */
   icon?: string;
+  /** AppSheet nav slot: first … last, menu, or ref. */
+  position?: ViewPosition;
+  /** Label in the app. Plain text or [Column] / formula. */
+  displayName?: string;
+  /** AppSheet Show_if for the view. */
+  showIf?: string;
+  sortBy?: ViewSort[];
+  groupBy?: string[];
+  groupAggregate?: GroupAggregate;
+  groupAggregateCol?: string;
+  cardLayout?: CardLayout;
+  dashboardViews?: string[];
+  dashboardTabs?: boolean;
+  dashboardInteractive?: boolean;
+  eventActionId?: string;
+  notes?: string;
 }
 
 export interface AppRelated {
@@ -333,7 +355,10 @@ export function relatedForView(config: AppConfig, viewId: string): AppRelated[] 
 }
 
 export function navViews(config: AppConfig): AppView[] {
-  return config.views.filter((v) => v.nav !== false);
+  return config.views.filter((view) => {
+    if (view.position === "ref" || view.position === "menu") return false;
+    return view.nav !== false;
+  });
 }
 
 export function addButtonLabel(
@@ -559,6 +584,22 @@ export {
   applyAppSheetViewType,
   defaultIconForView,
 } from "./appsheet-views";
+export {
+  CARD_LAYOUTS,
+  VIEW_POSITIONS,
+  groupAggregateValue,
+  groupViewRows,
+  linkToViewExpr,
+  menuViews,
+  orderViews,
+  primaryViews,
+  refViews,
+  sortViewRows,
+  viewLabel,
+  viewPosition,
+  viewShown,
+  withViewPosition,
+} from "./view-options";
 export {
   makeRelation,
   pickRowIdColumn,

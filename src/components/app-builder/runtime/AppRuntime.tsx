@@ -31,6 +31,8 @@ import {
   fieldShown,
   fieldValid,
   rowsForUser,
+  sortViewRows,
+  viewLabel,
   sliceAllows,
   sliceOf,
   searchRows,
@@ -134,7 +136,7 @@ export function AppRuntime({
     if (statusFilter && view.statusCol) {
       rows = rows.filter((r) => cellStr(r, view.statusCol || "") === statusFilter);
     }
-    return rows;
+    return sortViewRows(rows, view.sortBy);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, q, tick, sheet, who, statusFilter, config.users]);
 
@@ -208,9 +210,18 @@ export function AppRuntime({
   }
 
   function openDetail(r: SheetRow) {
+    if (view?.dashboardInteractive) {
+      setRow(r);
+      return;
+    }
     setRow(r);
     setForm(null);
     setScreen("detail");
+    const action = (config.actions || []).find((item) => item.id === view?.eventActionId);
+    if (action) {
+      const result = applyAction(action, r, who);
+      if (result.notify) setToast(result.notify);
+    }
   }
 
   function goHome() {
@@ -255,7 +266,7 @@ export function AppRuntime({
     screen === "home"
       ? config.meta.name
       : screen === "collection"
-        ? view?.name || "Collection"
+        ? (view ? viewLabel(view) : "Collection")
         : screen === "detail"
           ? view && detailRow
             ? cellStr(detailRow, view.titleCol || view.cols[0] || "")
@@ -337,7 +348,7 @@ export function AppRuntime({
               <i style={{ background: tone(tab.name) }}>
                 {(tab.icon || defaultIconForView(tab.name)).slice(0, 1).toUpperCase()}
               </i>
-              <span>{tab.name}</span>
+              <span>{viewLabel(tab)}</span>
             </button>
           ))}
         </aside>
@@ -532,11 +543,50 @@ export function AppRuntime({
                 ))}
               </div>
             ) : null}
-            <CollectionList
-              view={device === "tablet" && view.collectionStyle === "list" ? { ...view, collectionStyle: "cards" } : view}
-              rows={deckRows}
-              onOpen={openDetail}
-            />
+            {view.kind === "dashboard" && view.dashboardViews?.length ? (
+              <div className={view.dashboardTabs ? "dash-tabs" : "dash-stack"}>
+                {view.dashboardViews.map((id) => {
+                  const child = config.views.find((item) => item.id === id);
+                  if (!child) return null;
+                  const childRows = sortViewRows(
+                    rowsForUser(
+                      applySliceFilter(
+                        applySlice(sheet.listRows(child.tab), child.sliceCols),
+                        child,
+                        config,
+                        signed,
+                      ),
+                      child,
+                      signed,
+                    ),
+                    child.sortBy,
+                  );
+                  return (
+                    <section key={id} className="block">
+                      <h3>{viewLabel(child)}</h3>
+                      <CollectionList
+                        view={child}
+                        rows={childRows.slice(0, view.dashboardTabs ? 40 : 8)}
+                        onOpen={(row) => {
+                          if (view.dashboardInteractive) {
+                            setRow(row);
+                            return;
+                          }
+                          setViewId(child.id);
+                          openDetail(row);
+                        }}
+                      />
+                    </section>
+                  );
+                })}
+              </div>
+            ) : (
+              <CollectionList
+                view={device === "tablet" && view.collectionStyle === "list" ? { ...view, collectionStyle: "cards" } : view}
+                rows={deckRows}
+                onOpen={openDetail}
+              />
+            )}
           </>
         )}
 
@@ -796,7 +846,7 @@ function HomeScreen({
               <i className="phone-app-icon" data-icon={t.icon || defaultIconForView(t.name)} style={{ background: tone(t.name) }}>
                 {(t.icon || defaultIconForView(t.name)).slice(0, 1).toUpperCase()}
               </i>
-              <span>{t.name}</span>
+              <span>{viewLabel(t)}</span>
             </button>
           ))}
         </div>

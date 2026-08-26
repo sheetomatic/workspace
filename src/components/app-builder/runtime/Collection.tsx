@@ -1,5 +1,13 @@
 import type { AppView, SheetRow } from "@/lib/app-builder";
-import { cellStr, displayField, initials, isImageUrl, tone } from "@/lib/app-builder";
+import {
+  cellStr,
+  displayField,
+  groupAggregateValue,
+  groupViewRows,
+  initials,
+  isImageUrl,
+  tone,
+} from "@/lib/app-builder";
 
 export function CellVisual({ value, asImage }: { value: string; asImage?: boolean }) {
   if ((asImage || isImageUrl(value)) && /^https?:\/\//i.test(value)) {
@@ -41,6 +49,26 @@ export function CollectionList({
       <div className="empty">
         <strong>Nothing here yet</strong>
         <p>Add an item to grow this collection.</p>
+      </div>
+    );
+  }
+
+  if (view.groupBy?.[0] && view.collectionStyle !== "kanban") {
+    return (
+      <div className="view-groups">
+        {groupViewRows(rows, view.groupBy).map((group) => (
+          <section key={group.key}>
+            <h4>
+              {group.key}
+              <em>{groupAggregateValue(group.rows, view.groupAggregate, view.groupAggregateCol)}</em>
+            </h4>
+            <CollectionList
+              view={{ ...view, groupBy: undefined }}
+              rows={group.rows}
+              onOpen={onOpen}
+            />
+          </section>
+        ))}
       </div>
     );
   }
@@ -151,9 +179,10 @@ export function CollectionList({
     );
   }
 
-  if (view.collectionStyle === "cards") {
+  const cardLayout = view.cardLayout || (view.collectionStyle === "cards" ? "photo" : "list");
+  if (view.collectionStyle === "cards" || cardLayout === "photo" || cardLayout === "backdrop" || cardLayout === "large") {
     return (
-      <div className="cards">
+      <div className={`cards is-${cardLayout}`}>
         {rows.map((r) => {
           const title = titleOf(view, r);
           const sub = subtitleOf(view, r);

@@ -3,6 +3,7 @@ import { evaluateAppSheetFormula } from "./appsheet-formula";
 import { ruleFor, visibilityAllows } from "./glide-extras";
 import { appsheetUserRole, isAppAdmin, normalizeAppRole } from "./roles";
 import { rowVisibleToUser } from "./row-access";
+import { orderViews, viewShown } from "./view-options";
 
 function normEmail(value: string | undefined) {
   return String(value ?? "")
@@ -53,9 +54,12 @@ export function userCanOpenView(user: AppUser | undefined, view: AppView): boole
 }
 
 export function viewsForUser(config: AppConfig, user: AppUser | undefined) {
-  return navViews(config)
-    .filter((view) => visibilityAllows(ruleFor(config, "view", view.id), user?.role ?? null))
-    .filter((view) => userCanOpenView(user, view));
+  return orderViews(
+    navViews(config)
+      .filter((view) => visibilityAllows(ruleFor(config, "view", view.id), user?.role ?? null))
+      .filter((view) => userCanOpenView(user, view))
+      .filter((view) => viewShown(view, user)),
+  );
 }
 
 export type MutateKind = "adds" | "updates" | "deletes";

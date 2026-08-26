@@ -5,15 +5,17 @@ export const APPSHEET_VIEW_TYPES: {
   label: string;
   style: CollectionStyle;
 }[] = [
+  { id: "calendar", label: "Calendar", style: "calendar" },
   { id: "deck", label: "Deck", style: "list" },
   { id: "table", label: "Table", style: "table" },
   { id: "gallery", label: "Gallery", style: "cards" },
-  { id: "detail", label: "Detail / card", style: "list" },
-  { id: "form", label: "Form", style: "list" },
-  { id: "calendar", label: "Calendar", style: "calendar" },
+  { id: "detail", label: "Detail", style: "list" },
+  { id: "map", label: "Map", style: "list" },
   { id: "chart", label: "Chart", style: "chart" },
   { id: "dashboard", label: "Dashboard", style: "list" },
-  { id: "menu", label: "Menu", style: "list" },
+  { id: "form", label: "Form", style: "list" },
+  { id: "card", label: "Card", style: "cards" },
+  { id: "menu", label: "Onboarding / menu", style: "list" },
 ];
 
 export const MENU_ICONS: { id: string; label: string }[] = [
@@ -46,5 +48,6 @@ export function applyAppSheetViewType(view: AppView, kind: ViewKind): Partial<Ap
   return {
     kind,
     collectionStyle: hit?.style || view.collectionStyle || "list",
+    cardLayout: kind === "card" || kind === "gallery" ? view.cardLayout || "photo" : view.cardLayout,
   };
 }
