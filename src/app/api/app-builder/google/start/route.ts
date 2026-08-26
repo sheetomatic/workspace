@@ -47,6 +47,7 @@ export async function GET(request: Request) {
     include_granted_scopes: true,
     scope: [...APP_BUILDER_GOOGLE_SCOPES],
     state: signed,
+    login_hint: user.email,
   });
 
   return NextResponse.redirect(url);

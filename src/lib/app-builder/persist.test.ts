@@ -12,6 +12,29 @@ describe("parseAppBuilderConfig", () => {
     const parsed = parseAppBuilderConfig(createEmptyConfig("Orders Desk"));
     expect(parsed?.meta.name).toBe("Orders Desk");
     expect(parsed?.views).toEqual([]);
+    expect(parsed?.bots).toEqual([]);
+  });
+
+  it("keeps bots and intelligence on a saved app", () => {
+    const base = createEmptyConfig("Sales CRM");
+    const parsed = parseAppBuilderConfig({
+      ...base,
+      views: [],
+      related: [],
+      bots: [
+        {
+          id: "lead-quote",
+          name: "Quote pack",
+          enabled: true,
+          table: "Leads",
+          event: "adds_or_updates",
+          tasks: [],
+        },
+      ],
+      intelligence: { voiceEnabled: true, aiFormulas: true },
+    });
+    expect(parsed?.bots?.[0]?.name).toBe("Quote pack");
+    expect(parsed?.intelligence?.voiceEnabled).toBe(true);
   });
 });
 

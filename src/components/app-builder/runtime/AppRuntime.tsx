@@ -15,11 +15,13 @@ import {
   applySlice,
   cellStr,
   defaultIconForView,
+  downloadPdf,
   enrichRow,
   filterRelated,
   initials,
   normKey,
   parentKeyFromRow,
+  planBotsForRow,
   relatedForView,
   searchRows,
   themeById,
@@ -29,6 +31,7 @@ import {
   visibleFields,
   visibleNavViews,
 } from "@/lib/app-builder";
+import { dispatchAppBuilderBotAction } from "@/app/app/app-builder/actions";
 import {
   isCashbookHome,
   isMoneyView,
@@ -115,6 +118,37 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
   function bump() {
     setTick((t) => t + 1);
     onSheetChange();
+  }
+
+  async function fireBots(
+    table: string,
+    event: "adds" | "updates" | "deletes",
+    cells: Record<string, CellValue>,
+  ) {
+    const planned = planBotsForRow(config.bots, table, event, cells);
+    if (!planned.length) return;
+    for (const action of planned) {
+      if (action.kind === "pdf" && action.pdfBase64) {
+        const bytes = Uint8Array.from(atob(action.pdfBase64), (ch) => ch.charCodeAt(0));
+        downloadPdf(action.fileName || "document.pdf", bytes);
+      }
+    }
+    const sendable = planned.filter(
+      (action) => action.kind === "email" || action.kind === "whatsapp",
+    );
+    if (sendable.length) {
+      const result = await dispatchAppBuilderBotAction(
+        sendable.map((action) => ({
+          kind: action.kind as "email" | "whatsapp",
+          to: action.to,
+          subject: action.subject,
+          body: action.body,
+        })),
+      );
+      setToast(result.message || planned.map((item) => item.message).join(" · "));
+    } else {
+      setToast(planned.map((item) => item.message).join(" · "));
+    }
   }
 
   function openView(id: string) {
@@ -385,16 +419,21 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
             }
             mode={form}
             sheet={sheet}
+            voiceEnabled={!!config.intelligence?.voiceEnabled}
+            voiceHint={config.intelligence?.voiceHint}
             onCancel={back}
             onSave={(cells) => {
               if (form.kind === "add") {
                 sheet.appendRow(form.view.tab, cells);
+                void fireBots(form.view.tab, "adds", { ...cells });
               } else if (form.kind === "edit") {
+                const next = { ...form.row.cells, ...cells };
                 sheet.updateRow(form.view.tab, form.row._row, cells);
                 setRow({
                   ...form.row,
-                  cells: { ...form.row.cells, ...cells },
+                  cells: next,
                 });
+                void fireBots(form.view.tab, "updates", next);
               } else {
                 const key = parentKeyFromRow(form.parent, form.related.parentKeys);
                 if (!key) throw new Error("Set the parent key first");
@@ -411,6 +450,7 @@ export function AppRuntime({ config, sheet, onSheetChange, focusViewId }: Props)
                   }
                 }
                 sheet.appendRow(form.related.childTab, stamped);
+                void fireBots(form.related.childTab, "adds", stamped);
               }
               bump();
               setForm(null);
@@ -718,11 +758,15 @@ function FormPane({
   sheet,
   onCancel,
   onSave,
+  voiceEnabled = false,
+  voiceHint,
 }: {
   mode: FormMode;
   sheet: SheetAdapter;
   onCancel: () => void;
   onSave: (cells: Record<string, CellValue>) => void;
+  voiceEnabled?: boolean;
+  voiceHint?: string;
 }) {
   const fields: AppFormField[] =
     mode.kind === "add"
@@ -738,6 +782,66 @@ function FormPane({
 
   const [values, setValues] = useState<Record<string, string>>(initial);
   const [err, setErr] = useState("");
+  const [listening, setListening] = useState(false);
+
+  function fillFromVoice(transcript: string) {
+    const spoken = transcript.trim();
+    if (!spoken) return;
+    const empty = fields.find((field) => !String(values[field.name] || "").trim());
+    const target = empty || fields[0];
+    if (!target) return;
+    setValues((current) => ({ ...current, [target.name]: spoken }));
+  }
+
+  function startVoice() {
+    const Speech = (
+      window as unknown as {
+        SpeechRecognition?: new () => {
+          lang: string;
+          interimResults: boolean;
+          onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+          onerror: (() => void) | null;
+          onend: (() => void) | null;
+          start: () => void;
+        };
+        webkitSpeechRecognition?: new () => {
+          lang: string;
+          interimResults: boolean;
+          onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+          onerror: (() => void) | null;
+          onend: (() => void) | null;
+          start: () => void;
+        };
+      }
+    ).SpeechRecognition ||
+      (
+        window as unknown as {
+          webkitSpeechRecognition?: new () => {
+            lang: string;
+            interimResults: boolean;
+            onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+            onerror: (() => void) | null;
+            onend: (() => void) | null;
+            start: () => void;
+          };
+        }
+      ).webkitSpeechRecognition;
+    if (!Speech) {
+      setErr("Voice needs Chrome or Edge in this browser.");
+      return;
+    }
+    const rec = new Speech();
+    rec.lang = "en-IN";
+    rec.interimResults = false;
+    rec.onresult = (event) => {
+      fillFromVoice(event.results[0]?.[0]?.transcript || "");
+      setListening(false);
+    };
+    rec.onerror = () => setListening(false);
+    rec.onend = () => setListening(false);
+    setListening(true);
+    rec.start();
+  }
 
   return (
     <form
@@ -863,6 +967,14 @@ function FormPane({
           </label>
         );
       })}
+      {voiceEnabled ? (
+        <p className="help">
+          <button type="button" className={listening ? "mic on" : "mic"} onClick={startVoice}>
+            {listening ? "Listening…" : "Voice"}
+          </button>
+          {voiceHint || "Speak a value for the next empty field."}
+        </p>
+      ) : null}
       {err ? <p className="err">{err}</p> : null}
       <div className="form-actions">
         <button type="submit" className="btn primary">

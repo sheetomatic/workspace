@@ -25,7 +25,8 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const error = url.searchParams.get("error");
   if (error) {
-    return studioRedirect(request, "google=denied");
+    const testing = /access_denied/i.test(error);
+    return studioRedirect(request, testing ? "google=testing" : "google=denied");
   }
 
   const code = url.searchParams.get("code");

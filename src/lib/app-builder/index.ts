@@ -161,6 +161,8 @@ export interface AppConfig {
   computed?: AppComputedColumn[];
   visibility?: AppVisibility[];
   actions?: AppAction[];
+  bots?: import("./automation").AppBot[];
+  intelligence?: import("./automation").AppIntelligence;
 }
 
 export type CellValue = string | number | boolean | null;
@@ -196,6 +198,8 @@ export function createEmptyConfig(name = "Untitled app"): AppConfig {
     views: [],
     related: [],
     users: [{ id: "owner", name: "Owner", pin: "1234", role: "owner" }],
+    bots: [],
+    intelligence: { voiceEnabled: false, aiFormulas: true },
   };
 }
 
@@ -475,3 +479,18 @@ export {
   visibleFields,
   visibleNavViews,
 } from "./glide-extras";
+export {
+  botsForEvent,
+  interpolateTemplate,
+  parseBotScript,
+  planBotTasks,
+  planBotsForRow,
+  SCRIPT_HELP,
+  type AppBot,
+  type AppBotTask,
+  type AppIntelligence,
+  type BotEventKind,
+  type BotTaskKind,
+  type PlannedBotAction,
+} from "./automation";
+export { downloadPdf, pdfBase64, pdfDataUrl, renderTextPdf } from "./pdf";

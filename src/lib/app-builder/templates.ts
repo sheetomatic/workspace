@@ -1,4 +1,5 @@
 import type {
+  AppBot,
   AppConfig,
   AppFormField,
   AppRelated,
@@ -301,6 +302,32 @@ export const TEMPLATES: AppPlan[] = [
           addFields: fields(["Date", "Note", "Next"], ["Note"]),
         }),
       ],
+      bots: [
+        {
+          id: "lead-quote",
+          name: "Quote pack",
+          enabled: true,
+          table: "Leads",
+          event: "adds_or_updates",
+          condition: '[Stage]="Quote"',
+          tasks: [
+            {
+              id: "wa",
+              kind: "whatsapp",
+              to: "[Phone]",
+              body: "Hi [Name], we are preparing your quote for [Company].",
+            },
+            {
+              id: "pdf",
+              kind: "pdf",
+              folder: "Quotes/[Company]",
+              fileName: "[Name] quote.pdf",
+              body: "Quote for [Name] at [Company]\nValue: [Value]\nStage: [Stage]",
+            },
+          ],
+        } satisfies AppBot,
+      ],
+      intelligence: { voiceEnabled: true, aiFormulas: true },
     },
     workbook: book("CRM Sheet", {
       Leads: {

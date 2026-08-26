@@ -1,0 +1,92 @@
+import { describe, expect, it } from "vitest";
+import {
+  conditionPasses,
+  interpolateTemplate,
+  parseBotScript,
+  planBotTasks,
+  planBotsForRow,
+  type AppBot,
+} from "./automation";
+
+const row = {
+  Name: "Rina",
+  Company: "East Infra",
+  Phone: "9822222222",
+  Stage: "Quote",
+  Value: 240000,
+  Email: "rina@example.com",
+};
+
+const quoteBot: AppBot = {
+  id: "lead-quote",
+  name: "Quote pack",
+  enabled: true,
+  table: "Leads",
+  event: "adds_or_updates",
+  condition: '[Stage]="Quote"',
+  tasks: [
+    {
+      id: "wa",
+      kind: "whatsapp",
+      to: "[Phone]",
+      body: "Hi [Name], quote for [Company]",
+    },
+    {
+      id: "pdf",
+      kind: "pdf",
+      folder: "Quotes/[Company]",
+      fileName: "[Name] quote.pdf",
+      body: "Value [Value]",
+    },
+  ],
+};
+
+describe("AppSheet-style bot templates", () => {
+  it("fills [Col] and <<[Col]>>", () => {
+    expect(interpolateTemplate("Hi [Name] at <<[Company]>>", row)).toBe(
+      "Hi Rina at East Infra",
+    );
+  });
+
+  it("skips the bot when the condition is false", () => {
+    expect(conditionPasses('[Stage]="Quote"', row)).toBe(true);
+    expect(conditionPasses('[Stage]="Won"', row)).toBe(false);
+    expect(planBotTasks({ ...quoteBot, condition: '[Stage]="Won"' }, row)).toEqual([]);
+  });
+
+  it("plans WhatsApp and a PDF in a folder", () => {
+    const planned = planBotTasks(quoteBot, row);
+    expect(planned[0]).toMatchObject({
+      kind: "whatsapp",
+      to: "9822222222",
+      body: "Hi Rina, quote for East Infra",
+    });
+    expect(planned[1].kind).toBe("pdf");
+    expect(planned[1].folder).toBe("Quotes/East Infra");
+    expect(planned[1].fileName).toBe("Rina quote.pdf");
+    expect(planned[1].pdfBase64).toMatch(/^[A-Za-z0-9+/=]+$/);
+  });
+
+  it("parses SEND_EMAIL / SEND_WA / CREATE_PDF scripts", () => {
+    const planned = parseBotScript(
+      `SEND_EMAIL to [Email] subject "Quote for [Name]" body "Hi [Name]"
+SEND_WA to [Phone] "Call [Company]"
+CREATE_PDF folder "Quotes/[Company]" file "[Name].pdf"`,
+      row,
+    );
+    expect(planned.map((item) => item.kind)).toEqual(["email", "whatsapp", "pdf"]);
+    expect(planned[0]).toMatchObject({
+      to: "rina@example.com",
+      subject: "Quote for Rina",
+    });
+  });
+
+  it("runs only matching table + event bots", () => {
+    const planned = planBotsForRow([quoteBot], "Leads", "adds", row);
+    expect(planned).toHaveLength(2);
+    expect(planBotsForRow([quoteBot], "Follow-ups", "adds", row)).toEqual([]);
+    expect(planBotsForRow([{ ...quoteBot, enabled: false }], "Leads", "adds", row)).toEqual(
+      [],
+    );
+  });
+});

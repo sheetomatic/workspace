@@ -25,6 +25,9 @@ import { DesignPanel } from "./editor/DesignPanel";
 import { SchemaStudio } from "./editor/SchemaStudio";
 import { TemplateGallery } from "./editor/TemplateGallery";
 import { ThemePicker } from "./editor/ThemePicker";
+import { BotsPanel } from "./editor/BotsPanel";
+import { IntelligencePanel } from "./editor/IntelligencePanel";
+import { DeviceFrame, PREVIEW_DEVICES, type PreviewDevice } from "./preview/DeviceFrame";
 import { AiBar } from "./ai/AiBar";
 import { planFromPrompt } from "./ai/planner";
 import { type AppPlan } from "@/lib/app-builder";
@@ -36,7 +39,7 @@ import { saveAppBuilderStudioAction } from "@/app/app/app-builder/actions";
 import type { AppBuilderStudioSnapshot } from "@/lib/app-builder/persist";
 import "./App.css";
 
-type Editor = "layout" | "data" | "users" | "settings";
+type Editor = "layout" | "data" | "bots" | "intelligence" | "users" | "settings";
 
 type GoogleFile = { id: string; name: string };
 
@@ -54,8 +57,10 @@ const PENDING_SHEET_KEY = "sheetomatic-ab-pending-sheet";
 
 function googleCallbackNote(flag: string | null) {
   switch (flag) {
+    case "testing":
+      return "Google blocked Connect: the Cloud app is still in Testing. Add this Gmail as a tester, or publish the OAuth consent screen to In production. Upload a spreadsheet works without Connect.";
     case "denied":
-      return "Google sign-in was cancelled.";
+      return "Google sign-in was cancelled. If you saw “verification process”, the Cloud app is in Testing — add testers or publish it.";
     case "missing":
       return "Google connect is not set up on this server yet. Paste a Sheet link for now.";
     case "invalid":
@@ -106,6 +111,8 @@ export default function AppBuilderStudio({
   const [pickedSheet, setPickedSheet] = useState("");
   const [googleBusy, setGoogleBusy] = useState(false);
   const [preview, setPreview] = useState(false);
+  const [previewDevice, setPreviewDevice] = useState<PreviewDevice>("phone");
+  const [showAllDevices, setShowAllDevices] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [importTabs, setImportTabs] = useState<string[]>([]);
   const [importTab, setImportTab] = useState("");
@@ -499,6 +506,12 @@ export default function AppBuilderStudio({
           void onSpreadsheetFile(file);
         }}
       />
+      {/Testing|verification process/.test(note) ? (
+        <p className="google-alert" role="status">
+          {note} Google Cloud → APIs &amp; Services → OAuth consent screen →
+          Test users (add the Gmail) or Publish app.
+        </p>
+      ) : null}
       <div className="connect-bar">
         {google.connected ? (
           <>
@@ -641,6 +654,8 @@ export default function AppBuilderStudio({
             [
               ["layout", "Layout"],
               ["data", "Data"],
+              ["bots", "Bots"],
+              ["intelligence", "Intelligence"],
               ["users", "Users"],
               ["settings", "Settings"],
             ] as const
@@ -666,6 +681,34 @@ export default function AppBuilderStudio({
           <button type="button" className="ghost-bar" onClick={pickSpreadsheet}>
             Upload
           </button>
+          <div className="device-switch" role="group" aria-label="Preview device">
+            {PREVIEW_DEVICES.map((device) => (
+              <button
+                key={device.id}
+                type="button"
+                className={
+                  !showAllDevices && previewDevice === device.id ? "on" : ""
+                }
+                onClick={() => {
+                  setPreviewDevice(device.id);
+                  setShowAllDevices(false);
+                  setPreview(true);
+                }}
+              >
+                {device.label}
+              </button>
+            ))}
+            <button
+              type="button"
+              className={showAllDevices ? "on" : ""}
+              onClick={() => {
+                setShowAllDevices(true);
+                setPreview(true);
+              }}
+            >
+              All
+            </button>
+          </div>
           <button
             type="button"
             className={preview ? "on preview-btn" : "preview-btn"}
@@ -733,18 +776,19 @@ export default function AppBuilderStudio({
           onBack={emptyApp ? undefined : () => setGalleryOpen(false)}
               />
             ) : (
-              <div className="canvas">
-                <div className="phone">
-                  <div className="island" />
-                  <div className="phone-screen">
-                    <AppRuntime
-                      config={config}
-                      sheet={sheet}
-                      focusViewId={focus}
-                      onSheetChange={bump}
-                    />
-                  </div>
-                </div>
+              <div className={`canvas${showAllDevices ? " is-all-devices" : ""}`}>
+                {(showAllDevices ? PREVIEW_DEVICES : [PREVIEW_DEVICES.find((d) => d.id === previewDevice)!]).map(
+                  (device) => (
+                    <DeviceFrame key={device.id} device={device.id}>
+                      <AppRuntime
+                        config={config}
+                        sheet={sheet}
+                        focusViewId={focus}
+                        onSheetChange={bump}
+                      />
+                    </DeviceFrame>
+                  ),
+                )}
               </div>
             )}
             {preview ? null : (
@@ -815,6 +859,27 @@ export default function AppBuilderStudio({
             setEditor("layout");
             setFocus("home");
             setPreview(true);
+          }}
+        />
+      )}
+
+      {editor === "bots" && (
+        <BotsPanel
+          config={config}
+          sheet={sheet}
+          onChange={(next) => {
+            setConfig(next);
+            bump();
+          }}
+        />
+      )}
+
+      {editor === "intelligence" && (
+        <IntelligencePanel
+          config={config}
+          onChange={(next) => {
+            setConfig(next);
+            bump();
           }}
         />
       )}
@@ -1485,14 +1550,17 @@ function SettingsEditor({
         />
       </label>
       <p className="hint">
-        Google Connect works for any Gmail after the Cloud app is in{" "}
-        <strong>Production</strong> and verification is submitted. Privacy page
-        Google will ask for:{" "}
+        <strong>Connect to Google is blocked for everyone</strong> until the
+        Cloud OAuth consent screen is published. Today it is in Testing — that
+        is the 403 you saw. In Google Cloud Console → APIs &amp; Services →
+        OAuth consent screen: add each Gmail as a <strong>Test user</strong>,
+        or click <strong>Publish app</strong> (In production). Users then see
+        an “unverified app” warning and can continue. Verification is only
+        needed to hide that warning. Privacy URL Google asks for:{" "}
         <a href="/app-builder/privacy" target="_blank" rel="noreferrer">
           sheetomatic.com/app-builder/privacy
         </a>
-        . Homepage: sheetomatic.com/app-builder. Scopes: Sheets + drive.file
-        only. Until Google approves, add each new Gmail as a tester.
+        . Until that is done, use <strong>Upload spreadsheet</strong>.
       </p>
       <ThemePicker
         meta={config.meta}
