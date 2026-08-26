@@ -781,10 +781,7 @@
   display: grid;
   place-items: center;
   color: #fff;
-  font-size: 15px;
-  font-weight: 700;
   font-style: normal;
-  letter-spacing: -0.03em;
 }
 .ab-studio .phone-app span{
   width: 100%;
@@ -1327,14 +1324,12 @@
   color: var(--ink);
 }
 .ab-studio .view-field textarea{ padding: 8px; min-height: 72px; }
-.ab-studio .view-types,
 .ab-studio .view-pos{
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin: 0 0 8px;
 }
-.ab-studio .view-types button,
 .ab-studio .view-pos button{
   border: 1px solid var(--line);
   background: var(--paper);
@@ -1345,8 +1340,59 @@
   font-weight: 650;
   cursor: pointer;
 }
-.ab-studio .view-types button.on,
 .ab-studio .view-pos button.on{ background: #007aff; color: #fff; border-color: #007aff; }
+.ab-studio .view-icon-block,
+.ab-studio .view-type-block{ margin: 2px 0 8px; }
+.ab-studio .view-icon-now{
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 8px;
+  align-items: center;
+  margin: 0 0 8px;
+}
+.ab-studio .view-icon-mark{
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #f0f7ff;
+  color: #007aff;
+  display: grid;
+  place-items: center;
+}
+.ab-studio .view-icon-grid,
+.ab-studio .view-type-grid{
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+.ab-studio .view-icon-grid button,
+.ab-studio .view-type-grid button{
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  border: 0.5px solid #d2d2d7;
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px 4px 6px;
+  min-height: 58px;
+  color: #1d1d1f;
+  font: inherit;
+  cursor: pointer;
+}
+.ab-studio .view-icon-grid button em,
+.ab-studio .view-type-grid button em{
+  font-style: normal;
+  font-size: 9px;
+  font-weight: 650;
+  line-height: 1.15;
+  text-align: center;
+}
+.ab-studio .view-icon-grid button.on,
+.ab-studio .view-type-grid button.on{
+  border-color: #007aff;
+  background: #f0f7ff;
+  color: #007aff;
+}
 .ab-studio .view-pair{ display: flex; gap: 6px; align-items: center; margin: 0 0 6px; }
 .ab-studio .view-pair select{ flex: 1; min-height: 32px; }
 .ab-studio .view-layout{ display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }

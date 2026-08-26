@@ -46,6 +46,7 @@ import {
   visibleActions,
   visibleFields,
 } from "@/lib/app-builder";
+import { ViewGlyph } from "../editor/view-glyphs";
 import { dispatchAppBuilderBotAction } from "@/app/app/app-builder/actions";
 import {
   isCashbookHome,
@@ -346,7 +347,7 @@ export function AppRuntime({
               onClick={() => openView(tab.id)}
             >
               <i style={{ background: tone(tab.name) }}>
-                {(tab.icon || defaultIconForView(tab.name)).slice(0, 1).toUpperCase()}
+                <ViewGlyph id={tab.icon || defaultIconForView(tab.name)} size={16} />
               </i>
               <span>{viewLabel(tab)}</span>
             </button>
@@ -844,7 +845,7 @@ function HomeScreen({
               onClick={() => onOpenView(t.id)}
             >
               <i className="phone-app-icon" data-icon={t.icon || defaultIconForView(t.name)} style={{ background: tone(t.name) }}>
-                {(t.icon || defaultIconForView(t.name)).slice(0, 1).toUpperCase()}
+                <ViewGlyph id={t.icon || defaultIconForView(t.name)} size={24} />
               </i>
               <span>{viewLabel(t)}</span>
             </button>

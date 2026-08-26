@@ -19,6 +19,7 @@ import {
   type ViewKind,
   type ViewSort,
 } from "@/lib/app-builder";
+import { ViewGlyph } from "./view-glyphs";
 
 type Props = {
   view: AppView;
@@ -76,14 +77,19 @@ export function ViewInspector({ view, config, tables, headers, onChange }: Props
     behavior: false,
     docs: false,
   });
+  const [iconQ, setIconQ] = useState("");
   const slices = (config.slices || []).filter((slice) => slice.tab === view.tab || !view.tab);
   const actions = (config.actions || []).filter((action) => action.viewId === view.id);
   const dataValue = view.sliceId ? `slice:${view.sliceId}` : view.tab;
   const slot = viewPosition(view);
+  const icon = view.icon || defaultIconForView(view.name);
+  const icons = MENU_ICONS.filter((item) =>
+    !iconQ.trim() || item.label.toLowerCase().includes(iconQ.trim().toLowerCase()) || item.id.includes(iconQ.trim().toLowerCase()),
+  );
 
   return (
     <div className="view-insp">
-      <Field label="View name" hint="The unique name for this view.">
+      <Field label="View name" hint="Name of this screen in the app.">
         <input value={view.name} onChange={(e) => onChange({ name: e.target.value })} />
       </Field>
       <Field label="For this data" hint="Table or slice.">
@@ -112,18 +118,54 @@ export function ViewInspector({ view, config, tables, headers, onChange }: Props
         </select>
       </Field>
 
-      <p className="aside-label">View type</p>
-      <div className="view-types">
-        {APPSHEET_VIEW_TYPES.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={view.kind === item.id ? "on" : ""}
-            onClick={() => onChange(applyAppSheetViewType(view, item.id as ViewKind))}
-          >
-            {item.label}
-          </button>
-        ))}
+      <div className="view-icon-block">
+        <p className="aside-label">Icon</p>
+        <p className="hint">Shown on Home and in the menu.</p>
+        <div className="view-icon-now">
+          <span className="view-icon-mark" aria-hidden>
+            <ViewGlyph id={icon} size={22} />
+          </span>
+          <input
+            value={iconQ}
+            onChange={(e) => setIconQ(e.target.value)}
+            placeholder="Search icons"
+            aria-label="Search icons"
+          />
+        </div>
+        <div className="view-icon-grid" role="listbox" aria-label="Icon">
+          {icons.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              role="option"
+              aria-selected={icon === item.id}
+              className={icon === item.id ? "on" : ""}
+              title={item.label}
+              onClick={() => onChange({ icon: item.id })}
+            >
+              <ViewGlyph id={item.id} />
+              <em>{item.label}</em>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="view-type-block">
+        <p className="aside-label">View type</p>
+        <p className="hint">How this screen looks on the phone.</p>
+        <div className="view-type-grid">
+          {APPSHEET_VIEW_TYPES.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={view.kind === item.id ? "on" : ""}
+              onClick={() => onChange(applyAppSheetViewType(view, item.id as ViewKind))}
+            >
+              <ViewGlyph id={item.id} size={22} />
+              <em>{item.label}</em>
+            </button>
+          ))}
+        </div>
       </div>
 
       <p className="aside-label">Position</p>
@@ -407,19 +449,6 @@ export function ViewInspector({ view, config, tables, headers, onChange }: Props
         open={open.display}
         onToggle={() => setOpen((prev) => ({ ...prev, display: !prev.display }))}
       >
-        <p className="aside-label">Icon</p>
-        <div className="style-picks">
-          {MENU_ICONS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={(view.icon || defaultIconForView(view.name)) === item.id ? "on" : ""}
-              onClick={() => onChange({ icon: item.id })}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
         <Field
           label="Display name"
           hint='Name shown in the app. Empty uses the view name. Quote text or use [Column].'
