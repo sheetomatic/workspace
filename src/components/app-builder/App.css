@@ -213,6 +213,155 @@
 .ab-studio .ab-sheet .header-row input{ width: 56px; }
 .ab-studio .ab-sheet .try-hint{ color: var(--muted); font-size: 12px; }
 
+.ab-studio .ab-connect{
+  padding: 18px 28px 22px;
+  background: #f5f5f7;
+  border-bottom: 1px solid var(--line);
+}
+.ab-studio .ab-connect header{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+  margin-bottom: 14px;
+}
+.ab-studio .ab-connect header p{
+  margin: 0;
+  width: 100%;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6e6e73;
+}
+.ab-studio .ab-connect header h2{
+  margin: 0;
+  flex: 1;
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+.ab-studio .ab-connect header button,
+.ab-studio .ab-connect-add button,
+.ab-studio .ab-connect-paste button{
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0066cc;
+  cursor: pointer;
+  padding: 0;
+}
+.ab-studio .ab-connect-sources{
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  max-width: 520px;
+}
+.ab-studio .ab-connect-card{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  border: 1px solid #d2d2d7;
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px 16px;
+  cursor: pointer;
+  font: inherit;
+}
+.ab-studio .ab-connect-card i{
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #1d1d1f;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  font-weight: 700;
+}
+.ab-studio .ab-connect-card strong,
+.ab-studio .ab-connect-list strong{ display: block; font-size: 15px; }
+.ab-studio .ab-connect-card em,
+.ab-studio .ab-connect-list em{
+  display: block;
+  font-style: normal;
+  font-size: 12px;
+  color: #6e6e73;
+}
+.ab-studio .ab-connect-search{
+  width: min(520px, 100%);
+  min-height: 40px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 14px;
+  font: inherit;
+  background: #fff;
+  margin-bottom: 10px;
+}
+.ab-studio .ab-connect-list{
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  max-width: 520px;
+  max-height: 240px;
+  overflow: auto;
+  background: #fff;
+  border-radius: 14px;
+}
+.ab-studio .ab-connect-list button{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  border: 0;
+  background: none;
+  border-bottom: 1px solid #f5f5f7;
+  padding: 12px 14px;
+  cursor: pointer;
+  font: inherit;
+}
+.ab-studio .ab-connect-list button.on{ background: #f5f5f7; }
+.ab-studio .ab-connect-list i{
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #34a853;
+  flex: none;
+}
+.ab-studio .ab-connect-empty{
+  margin: 0 0 12px;
+  max-width: 36rem;
+  color: #6e6e73;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.ab-studio .ab-connect-add{ display: flex; gap: 18px; margin: 4px 0 14px; }
+.ab-studio .ab-connect-paste{
+  display: grid;
+  gap: 6px;
+  max-width: 520px;
+  font-size: 12px;
+  color: #6e6e73;
+}
+.ab-studio .ab-connect-paste span{ display: flex; gap: 10px; }
+.ab-studio .ab-connect-paste input{
+  flex: 1;
+  min-height: 40px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 12px;
+  font: inherit;
+  background: #fff;
+}
+.ab-studio .ab-connect-meta{ margin: 12px 0 0; font-size: 12px; color: #6e6e73; }
+
 .ab-studio .topbar{
   display: flex;
   align-items: center;

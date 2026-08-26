@@ -8,6 +8,7 @@ import {
   createAppBuilderSpreadsheet,
   isAppBuilderGoogleConfigured,
   listAppBuilderSpreadsheets,
+  mergeSheetFiles,
 } from "@/lib/app-builder/google";
 import { prisma } from "@/lib/db";
 
@@ -44,13 +45,31 @@ export async function GET(request: Request) {
     connection,
   );
   let files: { id: string; name: string }[] = [];
+  let listError: string | null = null;
   if (oauth2) {
     try {
       files = await listAppBuilderSpreadsheets(oauth2);
+      const fresh = oauth2.credentials;
+      if (fresh.access_token && fresh.access_token !== connection.accessToken) {
+        await prisma.appBuilderGoogleConnection.update({
+          where: { organizationId: user.organizationId },
+          data: {
+            accessToken: fresh.access_token,
+            accessTokenExpiresAt: fresh.expiry_date
+              ? new Date(fresh.expiry_date)
+              : null,
+          },
+        });
+      }
     } catch (error) {
       console.error("[app-builder google list]", error);
+      listError = "Could not list Sheets. Reconnect Google, or paste a link.";
     }
   }
+  files = mergeSheetFiles(files, {
+    id: connection.spreadsheetId,
+    name: connection.spreadsheetTitle,
+  });
 
   return NextResponse.json({
     configured,
@@ -59,6 +78,7 @@ export async function GET(request: Request) {
     spreadsheetId: connection.spreadsheetId,
     spreadsheetTitle: connection.spreadsheetTitle,
     files,
+    listError,
   });
 }
 

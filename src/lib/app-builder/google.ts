@@ -140,6 +140,21 @@ export function valuesToTab(
   return { name, headers, rows };
 }
 
+export function mergeSheetFiles(
+  files: AppBuilderDriveFile[],
+  current?: { id?: string | null; name?: string | null } | null,
+): AppBuilderDriveFile[] {
+  const out = [...files];
+  const id = current?.id?.trim();
+  if (id && !out.some((file) => file.id === id)) {
+    out.unshift({
+      id,
+      name: current?.name?.trim() || "Current Sheet",
+    });
+  }
+  return out;
+}
+
 export async function listAppBuilderSpreadsheets(
   oauth2: InstanceType<typeof google.auth.OAuth2>,
 ): Promise<AppBuilderDriveFile[]> {
@@ -147,9 +162,11 @@ export async function listAppBuilderSpreadsheets(
   const res = await drive.files.list({
     q: "mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
     orderBy: "modifiedTime desc",
-    pageSize: 25,
-    fields: "files(id,name)",
-    spaces: "drive",
+    pageSize: 50,
+    fields: "files(id,name,modifiedTime)",
+    corpora: "user",
+    includeItemsFromAllDrives: true,
+    supportsAllDrives: true,
   });
   return (res.data.files ?? [])
     .filter((file): file is { id: string; name: string } => Boolean(file.id && file.name))

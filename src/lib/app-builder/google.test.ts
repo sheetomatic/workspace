@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   APP_BUILDER_GOOGLE_SCOPES,
   appBuilderGoogleRedirectUri,
+  mergeSheetFiles,
   signAppBuilderGoogleState,
   valuesToTab,
   verifyAppBuilderGoogleState,
@@ -47,6 +48,15 @@ describe("app builder google oauth helpers", () => {
         }),
       ),
     ).toBeNull();
+  });
+
+  it("keeps the open Sheet in the connector list even when Drive is empty", () => {
+    expect(
+      mergeSheetFiles([], { id: "abc", name: "Sales CRM" }),
+    ).toEqual([{ id: "abc", name: "Sales CRM" }]);
+    expect(
+      mergeSheetFiles([{ id: "abc", name: "Sales CRM" }], { id: "abc", name: "Sales CRM" }),
+    ).toHaveLength(1);
   });
 
   it("maps sheet values into workbook tabs", () => {

@@ -27,6 +27,7 @@ import { TemplateGallery } from "./editor/TemplateGallery";
 import { ThemePicker } from "./editor/ThemePicker";
 import { BotsPanel } from "./editor/BotsPanel";
 import { IntelligencePanel } from "./editor/IntelligencePanel";
+import { SheetConnector } from "./editor/SheetConnector";
 import { editorToSection, StudioChrome, type StudioSection } from "./editor/StudioChrome";
 import { DeviceFrame, PREVIEW_DEVICES, type PreviewDevice } from "./preview/DeviceFrame";
 import { AiBar } from "./ai/AiBar";
@@ -51,6 +52,7 @@ type GoogleStatus = {
   spreadsheetId?: string | null;
   spreadsheetTitle?: string | null;
   files?: GoogleFile[];
+  listError?: string | null;
 };
 
 const emptyBook = { title: "My Sheet", tabs: {} };
@@ -358,12 +360,28 @@ export default function AppBuilderStudio({
     setRev((n) => n + 1);
   }
 
+  async function refreshGoogle() {
+    const res = await fetch("/api/app-builder/google", { cache: "no-store" });
+    if (!res.ok) return;
+    const data = (await res.json()) as GoogleStatus;
+    setGoogle(data);
+  }
+
   async function usePickedSheet() {
     const spreadsheetId = pickedSheet.trim();
     if (!spreadsheetId) {
       setNote("Choose a Google Sheet from the list.");
       return;
     }
+    await selectSheet(spreadsheetId);
+  }
+
+  async function selectSheet(spreadsheetId: string) {
+    if (!spreadsheetId.trim()) {
+      setNote("Choose a Google Sheet from the list.");
+      return;
+    }
+    setPickedSheet(spreadsheetId);
     setGoogleBusy(true);
     try {
       const res = await fetch("/api/app-builder/google", {
@@ -389,6 +407,7 @@ export default function AppBuilderStudio({
         headerRow: importHeaderRow,
         askSchema: true,
       });
+      await refreshGoogle();
     } finally {
       setGoogleBusy(false);
     }
@@ -448,13 +467,7 @@ export default function AppBuilderStudio({
       return;
     }
     if (google.connected) {
-      setGoogleBusy(true);
-      try {
-        await loadWorkbook(id, { askSchema: true });
-        setPreview(false);
-      } finally {
-        setGoogleBusy(false);
-      }
+      await selectSheet(id);
       return;
     }
     setConnected(id);
@@ -544,130 +557,39 @@ export default function AppBuilderStudio({
         sheetLabel={google.connected ? "Sheet" : "Connect"}
         sheetPanel={
           showSheet ? (
-            <div className="ab-sheet">
-              {/Testing|verification process/.test(note) ? (
-                <p className="google-alert" role="status">
-                  {note}
-                </p>
-              ) : null}
-              {google.connected ? (
-                <>
-                  <p>
-                    {google.googleEmail}
-                    {google.spreadsheetTitle ? ` · ${google.spreadsheetTitle}` : ""}
-                    {` · ${credits} credits`}
-                  </p>
-                  {!google.spreadsheetId ? (
-                    <>
-                      <select
-                        value={pickedSheet}
-                        onChange={(e) => {
-                          const id = e.target.value;
-                          setPickedSheet(id);
-                          if (id) void loadSheetMeta(id);
-                          else {
-                            setImportTabs([]);
-                            setImportTab("");
-                          }
-                        }}
-                        aria-label="Google Sheets in your Drive"
-                      >
-                        <option value="">Choose a Google Sheet</option>
-                        {(google.files ?? []).map((file) => (
-                          <option key={file.id} value={file.id}>
-                            {file.name}
-                          </option>
-                        ))}
-                      </select>
-                      {importTabs.length > 0 ? (
-                        <>
-                          <select
-                            value={importTab}
-                            onChange={(e) => setImportTab(e.target.value)}
-                            aria-label="Sheet tab name"
-                          >
-                            {importTabs.map((name) => (
-                              <option key={name} value={name}>
-                                {name}
-                              </option>
-                            ))}
-                          </select>
-                          <label className="header-row">
-                            Header row
-                            <input
-                              type="number"
-                              min={1}
-                              max={50}
-                              value={importHeaderRow}
-                              onChange={(e) =>
-                                setImportHeaderRow(Number(e.target.value) || 1)
-                              }
-                            />
-                          </label>
-                        </>
-                      ) : null}
-                      <button
-                        type="button"
-                        disabled={googleBusy}
-                        onClick={() => void usePickedSheet()}
-                      >
-                        Use this Sheet
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        disabled={googleBusy}
-                        onClick={() =>
-                          setGoogle((prev) => ({
-                            ...prev,
-                            spreadsheetId: null,
-                            spreadsheetTitle: null,
-                          }))
-                        }
-                      >
-                        Change
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => applyWorkbook(sheet.getWorkbook(), dataTab, true)}
-                      >
-                        Rebuild
-                      </button>
-                    </>
-                  )}
-                  <button type="button" onClick={pickSpreadsheet}>
-                    Upload
-                  </button>
-                  <button
-                    type="button"
-                    disabled={googleBusy}
-                    onClick={() => void disconnectGoogle()}
-                  >
-                    Disconnect
-                  </button>
-                </>
-              ) : (
-                <>
-                  <a href="/api/app-builder/google/start">Connect with Google</a>
-                  <input
-                    value={sheetUrl}
-                    onChange={(e) => setSheetUrl(e.target.value)}
-                    placeholder="Paste a Sheet link"
-                  />
-                  <button type="button" onClick={() => void connectSheet()}>
-                    Open
-                  </button>
-                  <button type="button" onClick={pickSpreadsheet}>
-                    Upload
-                  </button>
-                  <span className="try-hint">
-                    {credits} credits · testers only until Google publishes the app
-                  </span>
-                </>
-              )}
-            </div>
+            <SheetConnector
+              connected={google.connected}
+              googleEmail={google.googleEmail}
+              spreadsheetId={google.spreadsheetId}
+              files={google.files ?? []}
+              listError={google.listError}
+              busy={googleBusy}
+              credits={credits}
+              sheetUrl={sheetUrl}
+              onSheetUrl={setSheetUrl}
+              onConnectGoogle={() => {
+                window.location.href = "/api/app-builder/google/start";
+              }}
+              onOpenLink={() => void connectSheet()}
+              onPickFile={(id) => void selectSheet(id)}
+              onUpload={pickSpreadsheet}
+              onCreate={
+                Object.keys(workbook.tabs).length
+                  ? () =>
+                      void createSheetFromPlan({
+                        id: activeTemplateId || "custom",
+                        label: config.meta.name,
+                        blurb: "",
+                        prompt: "",
+                        config,
+                        workbook,
+                      })
+                  : undefined
+              }
+              onDisconnect={() => void disconnectGoogle()}
+              onRefresh={() => void refreshGoogle()}
+              note={/Testing|verification process/.test(note) ? note : undefined}
+            />
           ) : null
         }
         subbar={
