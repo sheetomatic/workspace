@@ -21,6 +21,7 @@ import { LEAD_CHANNEL_LABELS } from "@/lib/leads/channels";
 import type { LeadSourceChannel } from "@prisma/client";
 import { leadTelHref, leadWhatsAppHref } from "@/lib/leads/contact-links";
 import {
+  LEADS_PAGE_SIZE,
   buildLeadsListQuery,
   type LeadsListSearchParams,
   type LeadsViewMode,
@@ -111,6 +112,10 @@ function leadSecondaryLabel(lead: LeadRow) {
     return lead.email.trim();
   }
   return null;
+}
+
+function assigneeLabel(lead: LeadRow) {
+  return lead.assignedTo?.name?.trim() || lead.assignedTo?.email || "Unassigned";
 }
 
 function leadDeepLink(listParams: LeadsListSearchParams, leadId: string) {
@@ -366,15 +371,33 @@ export function LeadsCrmWorkspace({
           >
             {showCreate ? "Cancel" : "Add lead"}
           </button>
-          <span className="leads-crm-count">
-            {committedSearch
-              ? pending
-                ? "Searching…"
-                : `${total} match${total === 1 ? "" : "es"}`
-              : isBoard
-                ? `${Math.min(localLeads.length, total)} of ${total} on board`
-                : `${total} leads · p${page}/${totalPages}`}
-          </span>
+          <div className="leads-crm-pager">
+            <span className="leads-crm-count">
+              {committedSearch
+                ? pending
+                  ? "Searching…"
+                  : `${total} match${total === 1 ? "" : "es"}`
+                : isBoard
+                  ? `${Math.min(localLeads.length, total)} of ${total} on board`
+                  : `${total} leads · ${LEADS_PAGE_SIZE} / page · p${page}/${totalPages}`}
+            </span>
+            {!isBoard && page > 1 ? (
+              <Link
+                className="btn-secondary btn-sm"
+                href={`/app/leads?${buildLeadsListQuery(listParams, { page: String(page - 1) })}`}
+              >
+                Previous
+              </Link>
+            ) : null}
+            {!isBoard && page < totalPages ? (
+              <Link
+                className="btn-primary btn-sm"
+                href={`/app/leads?${buildLeadsListQuery(listParams, { page: String(page + 1) })}`}
+              >
+                Next
+              </Link>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -582,6 +605,7 @@ export function LeadsCrmWorkspace({
                 </th>
               ) : null}
               <th className="leads-row-lead">Lead</th>
+              <th>Assignee</th>
               <th>Inquiry time</th>
               <th>Lead Source</th>
               <th>Category</th>
@@ -593,7 +617,7 @@ export function LeadsCrmWorkspace({
           <tbody>
             {visibleLeads.length === 0 ? (
               <tr>
-                <td colSpan={bulkMode && canManage ? 8 : 7}>
+                <td colSpan={bulkMode && canManage ? 9 : 8}>
                   <div className="leads-empty-state">
                     <p className="leads-machine-muted">
                       {committedSearch
@@ -683,6 +707,11 @@ export function LeadsCrmWorkspace({
                           />
                         </div>
                       </div>
+                    </td>
+                    <td
+                      className={`leads-row-assignee${lead.assignedTo ? "" : " is-empty"}`}
+                    >
+                      {assigneeLabel(lead)}
                     </td>
                     <td className="leads-row-time">
                       {formatInquiryTime(lead.capturedAt)}

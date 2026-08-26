@@ -2,7 +2,7 @@ import type { InboundLeadStatus } from "@prisma/client";
 import { LEAD_STATUS_ORDER } from "@/lib/leads/status-labels";
 
 /** Page size for the CRM list. Search uses `q` on the server, not this window. */
-export const LEADS_PAGE_SIZE = 100;
+export const LEADS_PAGE_SIZE = 30;
 export const LEADS_BOARD_PAGE_SIZE = 200;
 
 export type LeadsSortOrder = "newest" | "oldest";

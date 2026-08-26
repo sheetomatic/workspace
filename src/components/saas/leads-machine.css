@@ -1182,6 +1182,26 @@
   color: #64748b;
 }
 
+.leads-crm-pager {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-left: auto;
+}
+
+.leads-row-assignee {
+  font-size: 0.8rem;
+  color: #334155;
+  white-space: nowrap;
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.leads-row-assignee.is-empty {
+  color: #94a3b8;
+}
+
 .leads-crm-table-wrap {
   /* No nested vertical scroll — module layout main owns page scroll. */
   overflow-x: auto;
