@@ -2008,6 +2008,27 @@
   margin-top: 10px;
   padding-top: 8px;
 }
+.ab-studio .bot-row-pick{ flex: 1; margin: 0; min-width: 160px; }
+.ab-studio .data-empty{
+  margin: 16px 0 0;
+  padding: 18px 16px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.ab-studio .people-panel{ max-width: 720px; }
+.ab-studio .people-list{ list-style: none; padding: 0; margin: 16px 0; }
+.ab-studio .people-list .ab-card{ margin: 0 0 10px; }
+.ab-studio .people-screens{ list-style: none; padding: 0; margin: 0 8px; }
+.ab-studio .people-screens em{ font-style: normal; color: var(--muted); font-size: 12px; }
+.ab-studio .col-inspector > p{
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
 .ab-studio .field-label textarea{
   min-height: 72px;
   border: 1px solid var(--line);

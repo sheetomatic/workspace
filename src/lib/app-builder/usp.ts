@@ -4,7 +4,7 @@ export const APP_BUILDER_USP_LINE =
   "AppSheet power. Glide screens. Your Gmail Sheet.";
 
 export const APP_BUILDER_USP_WHY =
-  "Formulas, refs, bots, and PDFs like AppSheet. Phone, tablet, and desktop that look like Glide. Staff open a link and PIN — no Workspace seat, no Marketplace.";
+  "Google Sheets cannot hide rows. Staff open a PIN and see only theirs. Formulas, refs, and bots like AppSheet. Phone, tablet, and desktop like Glide."
 
 export type UspSide = "appsheet" | "glide" | "us";
 
@@ -105,7 +105,7 @@ export const APP_BUILDER_USP_PILLARS = [
     title: "Only here",
     items: [
       "Gmail Sheet — no Workspace bill",
-      "Staff PIN, not a Google seat",
+      "PIN + row owner — RBAC Sheets cannot do",
       "WhatsApp from the same bot as PDF",
       "Phone, tablet, and desktop preview",
     ],

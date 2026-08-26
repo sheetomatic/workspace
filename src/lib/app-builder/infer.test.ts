@@ -175,6 +175,7 @@ describe("inferFieldType", () => {
   it("reads column names the way Glide does", () => {
     expect(inferFieldType("Photo")).toBe("image");
     expect(inferFieldType("Mobile")).toBe("phone");
+    expect(inferFieldType("Timestamp")).toBe("date");
     expect(inferFieldType("Amount", [10, 20, 30])).toBe("number");
     expect(inferFieldType("Status", ["Open", "Open", "Done", "Done"])).toBe("enum");
   });

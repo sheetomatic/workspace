@@ -39,7 +39,7 @@ export function inferFieldType(col: string, values: CellValue[] = []): AppFormFi
   if (/phone|mobile|whatsapp|whats\s*app/i.test(col)) return "phone";
   if (/photo|image|picture|img|^logo$/i.test(col)) return "image";
   if (/e-?mail/i.test(col)) return "email";
-  if (/date|due|when/i.test(col)) return "date";
+  if (/date|due|when|timestamp|created.?at|updated.?at/i.test(col)) return "date";
   if (/status|stage|priority/i.test(col)) return "enum";
   if (/qty|quantity|rate|amount|stock|price|count|hours|days/i.test(col)) return "number";
   const filled = values.filter((v) => v != null && String(v).trim() !== "");

@@ -34,6 +34,7 @@ export interface AppUser {
   id: string;
   name: string;
   phone?: string;
+  email?: string;
   pin: string;
   role: UserRole;
 }
@@ -447,6 +448,11 @@ export { THEMES, themeById, themeVars, type ThemePalette } from "./themes";
 export { moveColumnHeaders } from "./column-order";
 export { defaultNavForTab, inferAppFromWorkbook, inferFieldType } from "./infer";
 export { FIELD_TYPE_OPTIONS, fieldOf, fieldTypeOf, withColumnType } from "./column-type";
+export {
+  ownerKeysForUser,
+  ownerValueMatchesUser,
+  rowVisibleToUser,
+} from "./row-access";
 export {
   evaluateAppSheetFormula,
   suggestAppSheetFormula,

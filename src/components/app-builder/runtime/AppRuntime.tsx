@@ -19,10 +19,10 @@ import {
   enrichRow,
   filterRelated,
   initials,
-  normKey,
   parentKeyFromRow,
   planBotsForRow,
   relatedForView,
+  rowVisibleToUser,
   searchRows,
   themeById,
   themeVars,
@@ -102,8 +102,8 @@ export function AppRuntime({
       enrichRow(r, view.tab, config, sheet),
     );
     const signedUser = (config.users || []).find((u) => u.name === who);
-    if (view.ownerCol && signedUser && signedUser.role !== "owner") {
-      rows = rows.filter((r) => normKey(cellStr(r, view.ownerCol || "")) === normKey(signedUser.name));
+    if (view.ownerCol) {
+      rows = rows.filter((r) => rowVisibleToUser(r, view.ownerCol, signedUser));
     }
     if (statusFilter && view.statusCol) {
       rows = rows.filter((r) => cellStr(r, view.statusCol || "") === statusFilter);

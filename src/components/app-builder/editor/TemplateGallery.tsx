@@ -323,9 +323,9 @@ function Home({
       <section className="gs-home is-lead">
         <h1>AppSheet power. Glide screens. Your Sheet.</h1>
         <p className="store-lead">
-          Formulas, refs, and bots like AppSheet. Phone, tablet, and desktop like
-          Glide. No spreadsheet yet? Describe the app. Or upload, paste a link,
-          or pick a template. Staff use a link and PIN — no Workspace seat.
+          Google Sheets cannot hide rows. Staff get a PIN and see only theirs.
+          Formulas and bots like AppSheet. Phone like Glide. Paste a Sheet,
+          describe the app, or pick a template.
         </p>
         <AskBar
           prompt={prompt}

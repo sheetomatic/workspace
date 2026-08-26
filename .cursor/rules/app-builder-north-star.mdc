@@ -1,0 +1,39 @@
+---
+description: App Builder north star — apps from Google Sheets with RBAC, AppSheet+Glide, Apple UI
+globs: src/components/app-builder/**,src/lib/app-builder/**,src/app/api/app-builder/**,src/app/app/app-builder/**
+alwaysApply: true
+---
+
+# App Builder north star
+
+**Build an app from a Google Sheet.** Staff open a link + PIN. They never get the spreadsheet.
+
+## Why we exist (say this, build this)
+
+Google Sheets cannot do **RBAC**. Everyone with the link sees every row.
+
+Sheetomatic does: owner / staff / PIN, **row owner**, field visibility, screen visibility. That is the product reason — not a prettier Sheet.
+
+## Functions = AppSheet + Glide (one product)
+
+| Side | Ship this |
+|---|---|
+| AppSheet | Enum, Ref, File, Virtual `[Col]` formulas, view types, bots (WA / email / PDF) |
+| Glide | Phone / tablet / desktop, lookup / math / if-then, relations, actions, themes |
+| Us | Gmail Sheet, PIN staff (no Workspace seat), WhatsApp + PDF on the same bot |
+
+Do **not** invent a third formula language. Use `[Column]` like AppSheet.
+
+## UI = Apple.com
+
+- Few words. Labeled controls. Cards, not unlabeled dropdown rows.
+- One job per surface: **App** = Look, **Data** = columns / relations / computed / RBAC, **Automate** = bots, **People** = who can open what.
+- No marketing paragraphs inside inspectors.
+
+## When choosing work
+
+1. Does this make RBAC real (row / field / screen)?
+2. Does this make an AppSheet or Glide feature work on the phone?
+3. Does the UI stay Apple-quiet?
+
+If no, do not add it.

@@ -47,6 +47,7 @@ export function BotsPanel({
   const tables = Object.keys(sheet.getWorkbook().tabs);
   const [log, setLog] = useState("");
   const [busy, setBusy] = useState(false);
+  const [runRow, setRunRow] = useState<Record<string, number>>({});
 
   function setBots(next: AppBot[]) {
     onChange({ ...config, bots: next });
@@ -72,22 +73,31 @@ export function BotsPanel({
   }
 
   async function runNow(bot: AppBot) {
-    const row = sheet.listRows(bot.table)[0];
-    if (!row) {
+    const rows = sheet.listRows(bot.table);
+    const picked = rows.find((row) => row._row === runRow[bot.id]) || rows[0];
+    if (!picked) {
       setLog(`No rows in ${bot.table || "that table"} to run against.`);
       return;
     }
     setBusy(true);
-    const planned = planBotTasks(bot, row.cells);
+    const planned = planBotTasks(bot, picked.cells);
     if (!planned.length) {
       setBusy(false);
       setLog("Bot did not fire — check the condition against the first row.");
       return;
     }
+    const view = config.views.find((item) => item.tab === bot.table);
+    const fileCol =
+      view?.addFields?.find((field) => field.type === "file")?.col ||
+      view?.cols.find((col) => /file|pdf|quote|attachment/i.test(col));
     for (const action of planned) {
       if (action.kind === "pdf" && action.pdfBase64) {
         const bytes = Uint8Array.from(atob(action.pdfBase64), (ch) => ch.charCodeAt(0));
         downloadPdf(action.fileName || "document.pdf", bytes);
+        if (fileCol) {
+          const path = [action.folder, action.fileName].filter(Boolean).join("/");
+          sheet.setCell(bot.table, picked._row, fileCol, path);
+        }
       }
     }
     const sendable = planned.filter(
@@ -115,10 +125,10 @@ export function BotsPanel({
 
   return (
     <div className="plain bots-panel">
-      <h2>Bots & automation</h2>
+      <h2>Bots</h2>
       <p className="hint">
-        AppSheet-style: a data change (or Run now) starts a bot. Tasks can send
-        WhatsApp, email, create a PDF in a folder, or run a short script.
+        A row change starts the bot — same as AppSheet. Tasks can send WhatsApp,
+        email, or a PDF. Use [Column] in any field.
       </p>
       {bots.map((bot) => (
         <article key={bot.id} className="bot-card">
@@ -289,6 +299,22 @@ export function BotsPanel({
             </div>
           ))}
           <div className="actions">
+            <label className="field-label bot-row-pick">
+              Run against
+              <select
+                value={runRow[bot.id] ?? sheet.listRows(bot.table)[0]?._row ?? ""}
+                onChange={(e) =>
+                  setRunRow((prev) => ({ ...prev, [bot.id]: Number(e.target.value) }))
+                }
+              >
+                {sheet.listRows(bot.table).map((row) => (
+                  <option key={row._row} value={row._row}>
+                    Row {row._row}
+                    {row.cells.Name != null ? ` · ${row.cells.Name}` : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
             <button
               type="button"
               className="btn ghost"
@@ -334,8 +360,9 @@ export function BotsPanel({
               tasks: [
                 {
                   id: newId("task"),
-                  kind: "whatsapp",
-                  to: "[Phone]",
+                  kind: "pdf",
+                  folder: "Quotes/[Company]",
+                  fileName: "[Name] quote.pdf",
                   body: "Hi [Name]",
                 },
               ],

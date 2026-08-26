@@ -10,7 +10,6 @@ type Props = {
   initialId?: string | null;
   onPick?: (plan: AppPlan) => void;
   onFormat?: (plan: AppPlan) => void;
-  buyHref?: string;
 };
 
 export function TemplateNamePicker({
@@ -18,7 +17,6 @@ export function TemplateNamePicker({
   initialId = null,
   onPick,
   onFormat,
-  buyHref = "/contact?intent=app-builder",
 }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(initialId);
   const ids = templates.map((plan) => plan.id).join(",");
@@ -78,14 +76,11 @@ export function TemplateNamePicker({
                 Format
               </button>
             ) : null}
-            <a className="ab-ios-btn ab-ios-btn-tint" href={buyHref}>
-              Buy
-            </a>
           </div>
         </article>
       ) : (
         <p className="tpl-name-hint">
-          Click a template name to preview the phone. Then start or buy.
+          Click a name to preview the phone. Then start.
         </p>
       )}
     </div>

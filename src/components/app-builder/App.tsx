@@ -15,6 +15,8 @@ import {
   styleLabel,
   withColumnType,
   workbookFromSpreadsheetFile,
+  downloadPdf,
+  planBotsForRow,
   type AppConfig,
   type AppFormField,
   type CellValue,
@@ -27,6 +29,7 @@ import { TemplateGallery } from "./editor/TemplateGallery";
 import { ThemePicker } from "./editor/ThemePicker";
 import { BotsPanel } from "./editor/BotsPanel";
 import { IntelligencePanel } from "./editor/IntelligencePanel";
+import { PeoplePanel } from "./editor/PeoplePanel";
 import { SheetConnector } from "./editor/SheetConnector";
 import { editorToSection, StudioChrome, type StudioSection } from "./editor/StudioChrome";
 import { DeviceFrame, PREVIEW_DEVICES, type PreviewDevice } from "./preview/DeviceFrame";
@@ -37,7 +40,7 @@ import { addCredits, readCredits, spendCredit, WELCOME_CREDITS } from "./credits
 import { AppRuntime } from "./runtime/AppRuntime";
 import { createMockAdapter, type SheetAdapter } from "./sheet/mockAdapter";
 import { withLiveSheetSync } from "./sheet/liveSync";
-import { saveAppBuilderStudioAction } from "@/app/app/app-builder/actions";
+import { dispatchAppBuilderBotAction, saveAppBuilderStudioAction } from "@/app/app/app-builder/actions";
 import type { AppBuilderStudioSnapshot } from "@/lib/app-builder/persist";
 import "./App.css";
 
@@ -822,10 +825,9 @@ export default function AppBuilderStudio({
       )}
 
       {editor === "users" && (
-        <UsersEditor
+        <PeoplePanel
           config={config}
           onChange={setConfig}
-          onBuy={() => setCredits(addCredits(20))}
         />
       )}
 
@@ -874,7 +876,39 @@ function DataEditor({
   const [newTab, setNewTab] = useState("");
   const [focusCol, setFocusCol] = useState(tab?.headers[0] || "");
   const [aiHint, setAiHint] = useState("");
+  const [botNote, setBotNote] = useState("");
   const tables = Object.keys(book.tabs);
+
+  async function runBots(
+    table: string,
+    event: "adds" | "updates",
+    cells: Record<string, CellValue>,
+  ) {
+    const planned = planBotsForRow(config.bots, table, event, cells);
+    if (!planned.length) return;
+    for (const action of planned) {
+      if (action.kind === "pdf" && action.pdfBase64) {
+        const bytes = Uint8Array.from(atob(action.pdfBase64), (ch) => ch.charCodeAt(0));
+        downloadPdf(action.fileName || "document.pdf", bytes);
+      }
+    }
+    const sendable = planned.filter(
+      (action) => action.kind === "email" || action.kind === "whatsapp",
+    );
+    if (sendable.length) {
+      const sent = await dispatchAppBuilderBotAction(
+        sendable.map((action) => ({
+          kind: action.kind as "email" | "whatsapp",
+          to: action.to,
+          subject: action.subject,
+          body: action.body,
+        })),
+      );
+      setBotNote([ ...planned.map((item) => item.message), sent.message ].join(" · "));
+      return;
+    }
+    setBotNote(planned.map((item) => item.message).join(" · "));
+  }
 
   function applyType(name: string, type: FieldType, extras: Parameters<typeof withColumnType>[5] = {}) {
     const values = tab?.rows.map((row) => row.cells[name]) || [];
@@ -979,7 +1013,7 @@ function DataEditor({
             <header>
               <h2>{tab.name}</h2>
               <p>
-                {book.title} · edit cells like Google Sheets
+                {book.title} · types, row owner, and bots live here — not in the Sheet
               </p>
               <div className="sheet-toolbar">
                 <button type="button" className="btn ghost" onClick={onTemplates}>
@@ -1092,6 +1126,7 @@ function DataEditor({
                             onChange={(next) => {
                               sheet.setCell(tab.name, r._row, h, next);
                               onChange();
+                              void runBots(tab.name, "updates", { ...r.cells, [h]: next });
                             }}
                           />
                         </td>
@@ -1113,6 +1148,12 @@ function DataEditor({
                 </tbody>
               </table>
             </div>
+            {tab.rows.length === 0 ? (
+              <p className="data-empty">
+                No rows yet. Add a row, or this table is headers only. Staff still
+                need a row-owner column before PIN login hides anyone else’s data.
+              </p>
+            ) : null}
             {focusCol ? (
               <ColumnInspector
                 col={focusCol}
@@ -1121,11 +1162,15 @@ function DataEditor({
                 tables={tables}
                 tabName={tab.name}
                 headers={tab.headers}
+                config={config}
+                viewOwner={view?.ownerCol}
                 aiHint={aiHint}
                 onAiHint={setAiHint}
                 onApply={(type, extras) => applyType(focusCol, type, extras)}
+                onConfigChange={onConfigChange}
               />
             ) : null}
+            {botNote ? <p className="build-note">{botNote}</p> : null}
             <div className="sheet-actions">
               <button
                 type="button"
@@ -1133,6 +1178,8 @@ function DataEditor({
                 onClick={() => {
                   sheet.appendRow(tab.name, {});
                   onChange();
+                  const last = sheet.listRows(tab.name).at(-1);
+                  if (last) void runBots(tab.name, "adds", last.cells);
                 }}
               >
                 Add row
@@ -1275,9 +1322,12 @@ function ColumnInspector({
   tables,
   tabName,
   headers,
+  config,
+  viewOwner,
   aiHint,
   onAiHint,
   onApply,
+  onConfigChange,
 }: {
   col: string;
   type: FieldType;
@@ -1285,15 +1335,57 @@ function ColumnInspector({
   tables: string[];
   tabName: string;
   headers: string[];
+  config: AppConfig;
+  viewOwner?: string;
   aiHint: string;
   onAiHint: (value: string) => void;
   onApply: (type: FieldType, extras: Partial<AppFormField>) => void;
+  onConfigChange: (next: AppConfig) => void;
 }) {
+  const hiddenFromStaff = config.visibility?.some(
+    (rule) => rule.target === "field" && rule.targetId === col && rule.when === "owner",
+  );
   return (
     <div className="col-inspector">
       <strong>
         {col} · {FIELD_TYPE_OPTIONS.find((item) => item.id === type)?.label || type}
       </strong>
+      <p>This type drives the phone form. The Sheet stays a table of values.</p>
+      <label className="check">
+        <input
+          type="checkbox"
+          checked={viewOwner === col}
+          onChange={(e) =>
+            onConfigChange({
+              ...config,
+              views: config.views.map((item) =>
+                item.tab === tabName
+                  ? { ...item, ownerCol: e.target.checked ? col : undefined }
+                  : item,
+              ),
+            })
+          }
+        />
+        Row owner — staff only see rows that match their name or email
+      </label>
+      <label className="check">
+        <input
+          type="checkbox"
+          checked={!!hiddenFromStaff}
+          onChange={(e) => {
+            const rest = (config.visibility || []).filter(
+              (rule) => !(rule.target === "field" && rule.targetId === col),
+            );
+            onConfigChange({
+              ...config,
+              visibility: e.target.checked
+                ? [...rest, { id: `vis-field-${col}`, target: "field", targetId: col, when: "owner" }]
+                : rest,
+            });
+          }}
+        />
+        Hide this field from staff
+      </label>
       {type === "enum" || type === "choice" ? (
         <label>
           Dropdown values (AppSheet Enum)
@@ -1384,81 +1476,6 @@ function ColumnInspector({
           </div>
         </>
       ) : null}
-    </div>
-  );
-}
-
-function UsersEditor({
-  config,
-  onChange,
-  onBuy,
-}: {
-  config: AppConfig;
-  onChange: (c: AppConfig) => void;
-  onBuy: () => void;
-}) {
-  const [name, setName] = useState("");
-  const [pin, setPin] = useState("");
-  const users = config.users || [];
-  return (
-    <div className="plain">
-      <h2>Users</h2>
-      <p className="hint">
-        Staff do not need Gmail. Share a PIN. Never billed per person.
-      </p>
-      <ul className="user-list">
-        {users.map((u) => (
-          <li key={u.id}>
-            <strong>{u.name}</strong>
-            <span>
-              {u.role} · PIN {u.pin}
-            </span>
-          </li>
-        ))}
-      </ul>
-      <div className="add-inline">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
-        <input value={pin} onChange={(e) => setPin(e.target.value)} placeholder="PIN" />
-        <button
-          type="button"
-          onClick={() => {
-            if (!name.trim() || !pin.trim()) return;
-            onChange({
-              ...config,
-              users: [
-                ...users,
-                {
-                  id: `u-${Date.now()}`,
-                  name: name.trim(),
-                  pin: pin.trim(),
-                  role: "staff",
-                },
-              ],
-            });
-            setName("");
-            setPin("");
-          }}
-        >
-          Add staff
-        </button>
-      </div>
-      <label className="check">
-        <input
-          type="checkbox"
-          checked={!!config.meta.requirePin}
-          onChange={(e) =>
-            onChange({
-              ...config,
-              meta: { ...config.meta, requirePin: e.target.checked },
-            })
-          }
-        />
-        Ask PIN when the phone app opens
-      </label>
-      <p className="hint">Credits are for AI and publish — not for adding staff.</p>
-      <button type="button" className="btn ghost" onClick={onBuy}>
-        +20 credits (demo)
-      </button>
     </div>
   );
 }
