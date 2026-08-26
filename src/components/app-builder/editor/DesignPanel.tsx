@@ -1,16 +1,18 @@
 import { useState } from "react";
 import {
+  APPSHEET_VIEW_TYPES,
+  applyAppSheetViewType,
+  defaultIconForView,
   FIELD_TYPE_OPTIONS,
   fieldTypeOf,
+  MENU_ICONS,
   relatedForView,
-  styleLabel,
   withColumnType,
   type AppAction,
   type AppComputedColumn,
   type AppConfig,
   type AppFormField,
   type AppView,
-  type CollectionStyle,
   type FieldType,
 } from "@/lib/app-builder";
 import { fieldFromColumn } from "@/lib/app-builder/infer";
@@ -336,16 +338,29 @@ function ScreenDesign({
         </select>
       </label>
 
-      <p className="hint">How this collection looks</p>
+      <p className="hint">AppSheet view type</p>
       <div className="style-picks">
-        {(["list", "cards", "table", "kanban"] as CollectionStyle[]).map((s) => (
+        {APPSHEET_VIEW_TYPES.map((item) => (
           <button
-            key={s}
+            key={item.id}
             type="button"
-            className={view.collectionStyle === s ? "on" : ""}
-            onClick={() => set({ collectionStyle: s })}
+            className={view.kind === item.id || view.collectionStyle === item.style ? "on" : ""}
+            onClick={() => set(applyAppSheetViewType(view, item.id))}
           >
-            {styleLabel(s)}
+            {item.label}
+          </button>
+        ))}
+      </div>
+      <p className="hint">Menu icon</p>
+      <div className="style-picks">
+        {MENU_ICONS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className={(view.icon || defaultIconForView(view.name)) === item.id ? "on" : ""}
+            onClick={() => set({ icon: item.id })}
+          >
+            {item.label}
           </button>
         ))}
       </div>

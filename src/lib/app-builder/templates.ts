@@ -28,7 +28,11 @@ function fields(cols: string[], required: string[] = []): AppFormField[] {
       ? "number"
       : /date/i.test(col)
         ? "date"
-        : "text",
+        : /stage|status|priority/i.test(col)
+          ? "enum"
+          : /^(lead|party|customer)$/i.test(col)
+            ? "ref"
+            : "text",
     required: required.includes(col),
   }));
 }
@@ -260,8 +264,16 @@ export const TEMPLATES: AppPlan[] = [
           phoneCol: "Phone",
           collectionStyle: "kanban",
           cols: ["Name", "Company", "Phone", "Stage", "Value"],
-          addFields: fields(["Name", "Company", "Phone", "Stage", "Value"], ["Name"]),
-          editFields: fields(["Stage", "Value", "Phone"], ["Stage"]),
+          addFields: fields(["Name", "Company", "Phone", "Stage", "Value"], ["Name"]).map((field) =>
+            field.col === "Stage"
+              ? { ...field, type: "enum" as const, options: ["New", "Quote", "Won"] }
+              : field,
+          ),
+          editFields: fields(["Stage", "Value", "Phone"], ["Stage"]).map((field) =>
+            field.col === "Stage"
+              ? { ...field, type: "enum" as const, options: ["New", "Quote", "Won"] }
+              : field,
+          ),
         }),
         view({
           id: "followups",
@@ -270,7 +282,11 @@ export const TEMPLATES: AppPlan[] = [
           titleCol: "Note",
           subtitleCol: "Lead",
           cols: ["Lead", "Date", "Note", "Next"],
-          addFields: fields(["Lead", "Date", "Note", "Next"], ["Lead", "Note"]),
+          addFields: fields(["Lead", "Date", "Note", "Next"], ["Lead", "Note"]).map((field) =>
+            field.col === "Lead"
+              ? { ...field, type: "ref" as const, refTab: "Leads", refKeyCol: "Name", refLabelCol: "Name" }
+              : field,
+          ),
         }),
       ],
       related: [
@@ -704,8 +720,10 @@ export const TEMPLATES: AppPlan[] = [
 ];
 
 export function styleLabel(style?: CollectionStyle): string {
-  if (style === "cards") return "Cards";
+  if (style === "cards") return "Gallery";
   if (style === "table") return "Table";
-  if (style === "kanban") return "Board";
-  return "List";
+  if (style === "kanban") return "Deck / board";
+  if (style === "calendar") return "Calendar";
+  if (style === "chart") return "Chart";
+  return "Deck";
 }

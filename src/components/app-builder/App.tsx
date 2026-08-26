@@ -3,9 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createEmptyConfig,
+  evaluateAppSheetFormula,
   FIELD_TYPE_OPTIONS,
+  fieldOf,
   fieldTypeOf,
   inferAppFromWorkbook,
+  suggestAppSheetFormula,
   parseGoogleSheetId,
   setTableInApp,
   SPREADSHEET_ACCEPT,
@@ -13,6 +16,8 @@ import {
   withColumnType,
   workbookFromSpreadsheetFile,
   type AppConfig,
+  type AppFormField,
+  type CellValue,
   type FieldType,
   type SheetWorkbook,
 } from "@/lib/app-builder";
@@ -865,10 +870,24 @@ function DataEditor({
   const [col, setCol] = useState("");
   const [colType, setColType] = useState<FieldType>("text");
   const [newTab, setNewTab] = useState("");
+  const [focusCol, setFocusCol] = useState(tab?.headers[0] || "");
+  const [aiHint, setAiHint] = useState("");
+  const tables = Object.keys(book.tabs);
 
-  function applyType(name: string, type: FieldType) {
+  function applyType(name: string, type: FieldType, extras: Parameters<typeof withColumnType>[5] = {}) {
     const values = tab?.rows.map((row) => row.cells[name]) || [];
-    onConfigChange(withColumnType(config, tabName, name, type, values));
+    const field = fieldOf(view, name);
+    onConfigChange(
+      withColumnType(config, tabName, name, type, values, {
+        ...field,
+        ...extras,
+        fileFolder:
+          extras.fileFolder ||
+          field?.fileFolder ||
+          `${config.meta.name}/${tabName}`,
+        refTab: extras.refTab || field?.refTab || tables.find((item) => item !== tabName),
+      }),
+    );
   }
 
   return (
@@ -1001,7 +1020,13 @@ function DataEditor({
                           >
                             ‹
                           </button>
-                          <span>{h}</span>
+                          <button
+                            type="button"
+                            className={focusCol === h ? "col-name on" : "col-name"}
+                            onClick={() => setFocusCol(h)}
+                          >
+                            {h}
+                          </button>
                           <select
                             className="col-type"
                             aria-label={`Type for ${h}`}
@@ -1010,7 +1035,10 @@ function DataEditor({
                               h,
                               tab.rows.map((row) => row.cells[h]),
                             )}
-                            onChange={(e) => applyType(h, e.target.value as FieldType)}
+                            onChange={(e) => {
+                              setFocusCol(h);
+                              applyType(h, e.target.value as FieldType);
+                            }}
                           >
                             {FIELD_TYPE_OPTIONS.map((option) => (
                               <option key={option.id} value={option.id}>
@@ -1051,11 +1079,16 @@ function DataEditor({
                       <td className="idx">{r._row}</td>
                       {tab.headers.map((h) => (
                         <td key={h}>
-                          <input
-                            className="cell"
-                            value={r.cells[h] == null ? "" : String(r.cells[h])}
-                            onChange={(e) => {
-                              sheet.setCell(tab.name, r._row, h, e.target.value);
+                          <DataCell
+                            type={fieldTypeOf(view, h, tab.rows.map((row) => row.cells[h]))}
+                            field={fieldOf(view, h)}
+                            value={r.cells[h]}
+                            row={r.cells}
+                            tables={tables}
+                            sheet={sheet}
+                            folder={`${config.meta.name}/${tab.name}`}
+                            onChange={(next) => {
+                              sheet.setCell(tab.name, r._row, h, next);
                               onChange();
                             }}
                           />
@@ -1078,6 +1111,19 @@ function DataEditor({
                 </tbody>
               </table>
             </div>
+            {focusCol ? (
+              <ColumnInspector
+                col={focusCol}
+                type={fieldTypeOf(view, focusCol, tab.rows.map((row) => row.cells[focusCol]))}
+                field={fieldOf(view, focusCol)}
+                tables={tables}
+                tabName={tab.name}
+                headers={tab.headers}
+                aiHint={aiHint}
+                onAiHint={setAiHint}
+                onApply={(type, extras) => applyType(focusCol, type, extras)}
+              />
+            ) : null}
             <div className="sheet-actions">
               <button
                 type="button"
@@ -1125,6 +1171,217 @@ function DataEditor({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function DataCell({
+  type,
+  field,
+  value,
+  row,
+  tables,
+  sheet,
+  folder,
+  onChange,
+}: {
+  type: FieldType;
+  field?: AppFormField;
+  value: CellValue;
+  row: Record<string, CellValue>;
+  tables: string[];
+  sheet: SheetAdapter;
+  folder: string;
+  onChange: (next: CellValue) => void;
+}) {
+  const text = value == null ? "" : String(value).split("::")[0];
+  if (type === "virtual") {
+    const tablesMap = Object.fromEntries(tables.map((name) => [name, sheet.listRows(name)]));
+    const shown = evaluateAppSheetFormula(field?.formula || "", { row, tables: tablesMap });
+    return <span className="cell-virtual">{shown === "" ? "—" : String(shown)}</span>;
+  }
+  if (type === "enum" || type === "choice") {
+    const options = field?.options || [];
+    return (
+      <select className="cell" value={text} onChange={(e) => onChange(e.target.value)}>
+        <option value="">Select</option>
+        {options.map((opt) => (
+          <option key={opt} value={opt}>
+            {opt}
+          </option>
+        ))}
+        {text && !options.includes(text) ? <option value={text}>{text}</option> : null}
+      </select>
+    );
+  }
+  if (type === "ref") {
+    const refTab = field?.refTab || tables[0] || "";
+    const keyCol = field?.refKeyCol || field?.refLabelCol || "";
+    const labelCol = field?.refLabelCol || keyCol;
+    const rows = refTab ? sheet.listRows(refTab) : [];
+    const key = keyCol || Object.keys(rows[0]?.cells || {})[0] || "";
+    const label = labelCol || key;
+    return (
+      <select className="cell" value={text} onChange={(e) => onChange(e.target.value)}>
+        <option value="">Select</option>
+        {rows.map((row) => {
+          const id = row.cells[key] == null ? "" : String(row.cells[key]);
+          const name = row.cells[label] == null ? id : String(row.cells[label]);
+          return (
+            <option key={`${row._row}-${id}`} value={id}>
+              {name}
+            </option>
+          );
+        })}
+      </select>
+    );
+  }
+  if (type === "file") {
+    return (
+      <label className="cell-file">
+        <span>{text ? text.split("/").slice(-1)[0] : `${folder}/`}</span>
+        <input
+          type="file"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+              const path = `${field?.fileFolder || folder}/${file.name}`;
+              onChange(typeof reader.result === "string" ? `${path}::${reader.result}` : path);
+            };
+            reader.readAsDataURL(file);
+          }}
+        />
+      </label>
+    );
+  }
+  return (
+    <input
+      className="cell"
+      type={type === "number" ? "number" : type === "date" ? "date" : "text"}
+      value={type === "file" ? text.split("::")[0] : text}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  );
+}
+
+function ColumnInspector({
+  col,
+  type,
+  field,
+  tables,
+  tabName,
+  headers,
+  aiHint,
+  onAiHint,
+  onApply,
+}: {
+  col: string;
+  type: FieldType;
+  field?: AppFormField;
+  tables: string[];
+  tabName: string;
+  headers: string[];
+  aiHint: string;
+  onAiHint: (value: string) => void;
+  onApply: (type: FieldType, extras: Partial<AppFormField>) => void;
+}) {
+  return (
+    <div className="col-inspector">
+      <strong>
+        {col} · {FIELD_TYPE_OPTIONS.find((item) => item.id === type)?.label || type}
+      </strong>
+      {type === "enum" || type === "choice" ? (
+        <label>
+          Dropdown values (AppSheet Enum)
+          <input
+            defaultValue={(field?.options || []).join(", ")}
+            placeholder="New, Quote, Won"
+            onBlur={(e) =>
+              onApply(type, {
+                options: e.target.value
+                  .split(",")
+                  .map((item) => item.trim())
+                  .filter(Boolean),
+              })
+            }
+          />
+        </label>
+      ) : null}
+      {type === "ref" ? (
+        <div className="col-inspector-row">
+          <label>
+            Referenced table
+            <select
+              value={field?.refTab || ""}
+              onChange={(e) => onApply("ref", { refTab: e.target.value })}
+            >
+              <option value="">Pick table</option>
+              {tables
+                .filter((item) => item !== tabName)
+                .map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <label>
+            Key / label column
+            <input
+              defaultValue={field?.refLabelCol || field?.refKeyCol || ""}
+              placeholder="Name"
+              onBlur={(e) =>
+                onApply("ref", {
+                  refKeyCol: e.target.value.trim(),
+                  refLabelCol: e.target.value.trim(),
+                })
+              }
+            />
+          </label>
+        </div>
+      ) : null}
+      {type === "file" ? (
+        <label>
+          Custom folder (folder / file)
+          <input
+            defaultValue={field?.fileFolder || ""}
+            placeholder={`${tabName}/Files`}
+            onBlur={(e) => onApply("file", { fileFolder: e.target.value.trim() })}
+          />
+        </label>
+      ) : null}
+      {type === "virtual" ? (
+        <>
+          <label>
+            App formula
+            <input
+              defaultValue={field?.formula || ""}
+              placeholder='CONCATENATE([Name]," — ",[Company])'
+              onBlur={(e) => onApply("virtual", { formula: e.target.value, virtual: true })}
+            />
+          </label>
+          <div className="col-inspector-row">
+            <input
+              value={aiHint}
+              onChange={(e) => onAiHint(e.target.value)}
+              placeholder="AI: combine name and company"
+            />
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={() => {
+                const formula = suggestAppSheetFormula(aiHint || col, headers);
+                onApply("virtual", { formula, virtual: true });
+                onAiHint("");
+              }}
+            >
+              AI formula
+            </button>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }

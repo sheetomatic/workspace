@@ -14,6 +14,7 @@ import {
   applyAction,
   applySlice,
   cellStr,
+  defaultIconForView,
   enrichRow,
   filterRelated,
   initials,
@@ -545,8 +546,8 @@ function HomeScreen({
               className="phone-app"
               onClick={() => onOpenView(t.id)}
             >
-              <i className="phone-app-icon" style={{ background: tone(t.name) }}>
-                {initials(t.name)}
+              <i className="phone-app-icon" data-icon={t.icon || defaultIconForView(t.name)} style={{ background: tone(t.name) }}>
+                {(t.icon || defaultIconForView(t.name)).slice(0, 1).toUpperCase()}
               </i>
               <span>{t.name}</span>
             </button>
@@ -783,23 +784,60 @@ function FormPane({
               ),
             ]
           : f.options || [];
-        const useChoice = f.type === "choice" || Boolean(f.choiceTab);
+        const useChoice =
+          f.type === "choice" ||
+          f.type === "enum" ||
+          f.type === "ref" ||
+          Boolean(f.choiceTab) ||
+          Boolean(f.refTab);
+        const refRows = f.type === "ref" && f.refTab ? sheet.listRows(f.refTab) : [];
+        const refKey = f.refKeyCol || f.refLabelCol || "";
+        const fileFolder = f.fileFolder || "";
         return (
           <label key={f.name}>
             {f.label}
             {f.required ? " *" : ""}
-            {useChoice ? (
+            {f.type === "file" ? (
+              <input
+                type="file"
+                required={!!f.required && !values[f.name]}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    const path = `${fileFolder || "Files"}/${file.name}`;
+                    setValues((v) => ({
+                      ...v,
+                      [f.name]:
+                        typeof reader.result === "string" ? `${path}::${reader.result}` : path,
+                    }));
+                  };
+                  reader.readAsDataURL(file);
+                }}
+              />
+            ) : useChoice ? (
               <select
                 value={values[f.name] ?? ""}
                 required={!!f.required}
                 onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
               >
                 <option value="">Select</option>
-                {choiceValues.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
+                {f.type === "ref"
+                  ? refRows.map((row) => {
+                      const key = refKey || Object.keys(row.cells)[0] || "";
+                      const id = String(row.cells[key] ?? "");
+                      return (
+                        <option key={`${row._row}-${id}`} value={id}>
+                          {id}
+                        </option>
+                      );
+                    })
+                  : choiceValues.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
                 {values[f.name] && !choiceValues.includes(values[f.name]) ? (
                   <option value={values[f.name]}>{values[f.name]}</option>
                 ) : null}

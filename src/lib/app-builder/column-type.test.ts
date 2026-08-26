@@ -55,4 +55,30 @@ describe("column types", () => {
     );
     expect(fieldTypeOf(started.views[0], "Phone")).toBe("text");
   });
+
+  it("stores a virtual AppSheet formula on the table", () => {
+    const config = createEmptyConfig("Demo");
+    const next = withColumnType(
+      {
+        ...config,
+        views: [
+          {
+            id: "leads",
+            hub: "App",
+            name: "Leads",
+            kind: "deck",
+            tab: "Leads",
+            cols: ["Name", "Company"],
+          },
+        ],
+      },
+      "Leads",
+      "Label",
+      "virtual",
+      [],
+      { formula: 'CONCATENATE([Name]," — ",[Company])' },
+    );
+    expect(next.computed?.[0]?.kind).toBe("formula");
+    expect(next.computed?.[0]?.formula).toContain("[Name]");
+  });
 });

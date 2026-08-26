@@ -1,3 +1,4 @@
+import { evaluateAppSheetFormula } from "./appsheet-formula";
 import type {
   AppAction,
   AppComputedColumn,
@@ -52,6 +53,17 @@ export function evaluateComputed(
     if (column.op === "sub") return left - right;
     if (column.op === "div") return right === 0 ? "" : Math.round((left / right) * 100) / 100;
     return Math.round(left * right * 100) / 100;
+  }
+
+  if (column.kind === "formula") {
+    const tables: Record<string, SheetRow[]> = {};
+    for (const view of config.views) {
+      tables[view.tab] = sheet.listRows(view.tab);
+    }
+    return evaluateAppSheetFormula(column.formula || "", {
+      row: row.cells,
+      tables,
+    });
   }
 
   if (column.kind === "if") {

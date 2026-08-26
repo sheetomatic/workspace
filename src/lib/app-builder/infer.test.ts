@@ -176,7 +176,7 @@ describe("inferFieldType", () => {
     expect(inferFieldType("Photo")).toBe("image");
     expect(inferFieldType("Mobile")).toBe("phone");
     expect(inferFieldType("Amount", [10, 20, 30])).toBe("number");
-    expect(inferFieldType("Status", ["Open", "Open", "Done", "Done"])).toBe("choice");
+    expect(inferFieldType("Status", ["Open", "Open", "Done", "Done"])).toBe("enum");
   });
 
   it("matches Party to Party Name", () => {

@@ -102,6 +102,54 @@ export function CollectionList({
     );
   }
 
+  if (view.collectionStyle === "calendar") {
+    const col = view.cols.find((c) => /date|due|when/i.test(c)) || view.cols[1] || "Date";
+    const buckets = new Map<string, typeof rows>();
+    for (const r of rows) {
+      const key = cellStr(r, col) || "No date";
+      if (!buckets.has(key)) buckets.set(key, []);
+      buckets.get(key)!.push(r);
+    }
+    return (
+      <div className="kanban">
+        {[...buckets.entries()].map(([day, list]) => (
+          <div className="lane" key={day}>
+            <h4>
+              {day} <em>{list.length}</em>
+            </h4>
+            {list.map((r) => (
+              <button key={r._row} type="button" className="lane-card" onClick={() => onOpen(r)}>
+                <strong>{titleOf(view, r)}</strong>
+                <span>{subtitleOf(view, r)}</span>
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (view.collectionStyle === "chart") {
+    const col = view.statusCol || view.cols.find((c) => /stage|status/i.test(c)) || view.cols[0];
+    const counts = new Map<string, number>();
+    for (const r of rows) {
+      const key = cellStr(r, col) || "Blank";
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+    const max = Math.max(1, ...counts.values());
+    return (
+      <div className="ab-chart">
+        {[...counts.entries()].map(([label, count]) => (
+          <button key={label} type="button" className="ab-chart-row" onClick={() => onOpen(rows[0])}>
+            <span>{label}</span>
+            <i style={{ width: `${Math.round((count / max) * 100)}%` }} />
+            <em>{count}</em>
+          </button>
+        ))}
+      </div>
+    );
+  }
+
   if (view.collectionStyle === "cards") {
     return (
       <div className="cards">

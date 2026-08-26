@@ -1,7 +1,16 @@
 /** Shared types + view helpers for Sheetomatic App Builder. */
 
-export type ViewKind = "deck" | "detail" | "form" | "dashboard" | "menu";
-export type CollectionStyle = "list" | "cards" | "table" | "kanban";
+export type ViewKind =
+  | "deck"
+  | "detail"
+  | "form"
+  | "dashboard"
+  | "menu"
+  | "table"
+  | "gallery"
+  | "calendar"
+  | "chart";
+export type CollectionStyle = "list" | "cards" | "table" | "kanban" | "calendar" | "chart";
 export type UserRole = "owner" | "staff";
 
 export interface AppMeta {
@@ -29,9 +38,20 @@ export interface AppUser {
   role: UserRole;
 }
 
-export type FieldType = "text" | "number" | "date" | "phone" | "email" | "choice" | "image";
+export type FieldType =
+  | "text"
+  | "number"
+  | "date"
+  | "phone"
+  | "email"
+  | "choice"
+  | "enum"
+  | "ref"
+  | "file"
+  | "image"
+  | "virtual";
 
-export type ComputedKind = "lookup" | "math" | "if";
+export type ComputedKind = "lookup" | "math" | "if" | "formula";
 export type MathOp = "mul" | "add" | "sub" | "div";
 export type IfOp = "eq" | "neq" | "empty" | "notempty";
 export type VisibilityWhen = "always" | "never" | "owner" | "staff" | "column";
@@ -52,6 +72,7 @@ export interface AppComputedColumn {
   whenValue?: string;
   thenValue?: string;
   elseValue?: string;
+  formula?: string;
 }
 
 export interface AppVisibility {
@@ -87,6 +108,12 @@ export interface AppFormField {
   options?: string[];
   choiceTab?: string;
   choiceCol?: string;
+  formula?: string;
+  virtual?: boolean;
+  refTab?: string;
+  refKeyCol?: string;
+  refLabelCol?: string;
+  fileFolder?: string;
 }
 
 export interface AppView {
@@ -109,6 +136,8 @@ export interface AppView {
   allowDelete?: boolean;
   addFields?: AppFormField[];
   editFields?: AppFormField[];
+  /** AppSheet menu icon id (users, cart, calendar…). */
+  icon?: string;
 }
 
 export interface AppRelated {
@@ -413,7 +442,17 @@ export { TEMPLATES, styleLabel, type AppPlan } from "./templates";
 export { THEMES, themeById, themeVars, type ThemePalette } from "./themes";
 export { moveColumnHeaders } from "./column-order";
 export { defaultNavForTab, inferAppFromWorkbook, inferFieldType } from "./infer";
-export { FIELD_TYPE_OPTIONS, fieldTypeOf, withColumnType } from "./column-type";
+export { FIELD_TYPE_OPTIONS, fieldOf, fieldTypeOf, withColumnType } from "./column-type";
+export {
+  evaluateAppSheetFormula,
+  suggestAppSheetFormula,
+} from "./appsheet-formula";
+export {
+  APPSHEET_VIEW_TYPES,
+  MENU_ICONS,
+  applyAppSheetViewType,
+  defaultIconForView,
+} from "./appsheet-views";
 export {
   makeRelation,
   pickRowIdColumn,

@@ -40,7 +40,7 @@ export function inferFieldType(col: string, values: CellValue[] = []): AppFormFi
   if (/photo|image|picture|img|^logo$/i.test(col)) return "image";
   if (/e-?mail/i.test(col)) return "email";
   if (/date|due|when/i.test(col)) return "date";
-  if (/status|stage|priority/i.test(col)) return "choice";
+  if (/status|stage|priority/i.test(col)) return "enum";
   if (/qty|quantity|rate|amount|stock|price|count|hours|days/i.test(col)) return "number";
   const filled = values.filter((v) => v != null && String(v).trim() !== "");
   if (
@@ -67,7 +67,7 @@ export function fieldFromColumn(col: string, values: CellValue[] = []): AppFormF
     col,
     type,
     required: /^(name|title|order no|id|party|item|task)$/i.test(col),
-    options: type === "choice" ? unique : undefined,
+    options: type === "choice" || type === "enum" ? unique : undefined,
   };
 }
 
