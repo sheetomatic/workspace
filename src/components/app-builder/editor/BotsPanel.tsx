@@ -168,15 +168,51 @@ export function BotsPanel({
               ))}
             </select>
           </label>
+          <p className="aside-label">Data change</p>
+          <div className="ab-perm">
+            {(["adds", "updates", "deletes"] as const).map((kind) => {
+              const on =
+                bot.changes?.[kind] ??
+                (bot.event === kind ||
+                  (kind !== "deletes" && bot.event === "adds_or_updates"));
+              return (
+                <button
+                  key={kind}
+                  type="button"
+                  className={on ? "on" : ""}
+                  onClick={() => {
+                    const adds = kind === "adds" ? !on : bot.changes?.adds ?? bot.event !== "updates" && bot.event !== "deletes";
+                    const updates = kind === "updates" ? !on : bot.changes?.updates ?? bot.event !== "adds" && bot.event !== "deletes";
+                    const deletes = kind === "deletes" ? !on : Boolean(bot.changes?.deletes);
+                    const event: BotEventKind = deletes && !adds && !updates
+                      ? "deletes"
+                      : adds && updates
+                        ? "adds_or_updates"
+                        : adds
+                          ? "adds"
+                          : updates
+                            ? "updates"
+                            : "manual";
+                    patch(bot.id, { changes: { adds, updates, deletes }, event });
+                  }}
+                >
+                  {kind === "adds" ? "Adds" : kind === "updates" ? "Updates" : "Deletes"}
+                </button>
+              );
+            })}
+          </div>
           <label className="field-label">
-            Event
+            Also run
             <select
-              value={bot.event}
-              onChange={(e) =>
-                patch(bot.id, { event: e.target.value as BotEventKind })
-              }
+              value={bot.event === "manual" || bot.event === "schedule" ? bot.event : ""}
+              onChange={(e) => {
+                const extra = e.target.value as BotEventKind | "";
+                if (!extra) return;
+                patch(bot.id, { event: extra });
+              }}
             >
-              {EVENTS.map((event) => (
+              <option value="">When data changes (above)</option>
+              {EVENTS.filter((event) => event.id === "manual" || event.id === "schedule").map((event) => (
                 <option key={event.id} value={event.id}>
                   {event.label}
                 </option>

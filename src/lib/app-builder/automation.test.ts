@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  botsForEvent,
   conditionPasses,
   interpolateTemplate,
   parseBotScript,
@@ -88,5 +89,16 @@ CREATE_PDF folder "Quotes/[Company]" file "[Name].pdf"`,
     expect(planBotsForRow([{ ...quoteBot, enabled: false }], "Leads", "adds", row)).toEqual(
       [],
     );
+  });
+
+  it("honours Adds / Updates / Deletes toggles", () => {
+    const bot: AppBot = {
+      ...quoteBot,
+      event: "adds",
+      changes: { adds: false, updates: true, deletes: true },
+    };
+    expect(botsForEvent([bot], "Leads", "adds")).toEqual([]);
+    expect(botsForEvent([bot], "Leads", "updates")).toHaveLength(1);
+    expect(botsForEvent([bot], "Leads", "deletes")).toHaveLength(1);
   });
 });

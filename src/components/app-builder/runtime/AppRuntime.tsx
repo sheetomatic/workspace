@@ -293,7 +293,7 @@ export function AppRuntime({
           <span className="wordmark">{config.meta.brand || "Sheetomatic"}</span>
         )}
         <h1>{title}</h1>
-        {(screen === "collection" || showSplit) && view?.addFields?.length ? (
+        {(screen === "collection" || showSplit) && view?.addFields?.length && view.allowAdds !== false ? (
           <button
             type="button"
             className="ghost-btn add"
@@ -306,7 +306,7 @@ export function AppRuntime({
           >
             +
           </button>
-        ) : (screen === "detail" || (showSplit && row)) && view?.editFields?.length ? (
+        ) : (screen === "detail" || (showSplit && row)) && view?.editFields?.length && view.allowUpdates !== false ? (
           <button
             type="button"
             className="text-link"

@@ -1,5 +1,7 @@
 import {
+  deleteTabColumn,
   moveColumnHeaders,
+  renameTabColumn,
   type CellValue,
   type SheetRow,
   type SheetTab,
@@ -111,6 +113,8 @@ export type SheetAdapter = {
   setCell: (tabName: string, rowNum: number, col: string, value: CellValue) => void;
   deleteRow: (tabName: string, rowNum: number) => void;
   addColumn: (tabName: string, col: string) => void;
+  renameColumn: (tabName: string, from: string, to: string) => void;
+  deleteColumn: (tabName: string, col: string) => void;
   moveColumn: (tabName: string, col: string, direction: -1 | 1) => void;
   addTab: (tabName: string) => void;
   replace: (next: SheetWorkbook) => void;
@@ -164,6 +168,12 @@ export function createMockAdapter(seed?: SheetWorkbook): SheetAdapter {
       const t = ensureTab(tabName);
       const name = col.trim();
       if (name && !t.headers.includes(name)) t.headers.push(name);
+    },
+    renameColumn: (tabName, from, to) => {
+      book.tabs[tabName] = renameTabColumn(ensureTab(tabName), from, to);
+    },
+    deleteColumn: (tabName, col) => {
+      book.tabs[tabName] = deleteTabColumn(ensureTab(tabName), col);
     },
     moveColumn: (tabName, col, direction) => {
       const t = ensureTab(tabName);

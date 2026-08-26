@@ -17,6 +17,8 @@ import {
   workbookFromSpreadsheetFile,
   downloadPdf,
   planBotsForRow,
+  renameColumnInConfig,
+  deleteColumnInConfig,
   type AppConfig,
   type AppFormField,
   type CellValue,
@@ -25,6 +27,8 @@ import {
 } from "@/lib/app-builder";
 import { DesignPanel } from "./editor/DesignPanel";
 import { SchemaStudio } from "./editor/SchemaStudio";
+import { TableColumnsPanel } from "./editor/TableColumnsPanel";
+import { TableSettingsPanel } from "./editor/TableSettingsPanel";
 import { TemplateGallery } from "./editor/TemplateGallery";
 import { ThemePicker } from "./editor/ThemePicker";
 import { BotsPanel } from "./editor/BotsPanel";
@@ -128,7 +132,7 @@ export default function AppBuilderStudio({
     initial?.templateId ?? null,
   );
   const [lastPrompt, setLastPrompt] = useState("");
-  const [dataPane, setDataPane] = useState<"rows" | "schema">("rows");
+  const [dataPane, setDataPane] = useState<"columns" | "rows" | "settings" | "schema">("columns");
   const fileRef = useRef<HTMLInputElement>(null);
 
   liveSheetId.current = google.spreadsheetId || connected;
@@ -794,8 +798,16 @@ export default function AppBuilderStudio({
           }}
           onTemplates={openGallery}
           onUpload={pickSpreadsheet}
+          spreadsheetId={google.spreadsheetId}
+          spreadsheetTitle={google.spreadsheetTitle}
+          connected={google.connected}
+          onRefreshSheet={() => {
+            if (google.spreadsheetId) void loadWorkbook(google.spreadsheetId);
+          }}
+          onLinkSheet={() => setSheetOpen(true)}
+          onDelinkSheet={() => void disconnectGoogle()}
           onSeePhone={() => {
-            setDataPane("rows");
+            setDataPane("columns");
             setEditor("layout");
             setFocus("home");
             setPreview(true);
@@ -854,18 +866,30 @@ function DataEditor({
   onConfigChange,
   onTemplates,
   onUpload,
+  spreadsheetId,
+  spreadsheetTitle,
+  connected,
+  onRefreshSheet,
+  onLinkSheet,
+  onDelinkSheet,
   onSeePhone,
 }: {
   sheet: SheetAdapter;
   config: AppConfig;
   tabName: string;
-  pane: "rows" | "schema";
-  onPane: (pane: "rows" | "schema") => void;
+  pane: "columns" | "rows" | "settings" | "schema";
+  onPane: (pane: "columns" | "rows" | "settings" | "schema") => void;
   onTab: (name: string) => void;
   onChange: () => void;
   onConfigChange: (next: AppConfig) => void;
   onTemplates: () => void;
   onUpload: () => void;
+  spreadsheetId?: string | null;
+  spreadsheetTitle?: string;
+  connected?: boolean;
+  onRefreshSheet: () => void;
+  onLinkSheet: () => void;
+  onDelinkSheet: () => void;
   onSeePhone: () => void;
 }) {
   const book = sheet.getWorkbook();
@@ -926,6 +950,28 @@ function DataEditor({
     );
   }
 
+  function patchView(patch: Partial<NonNullable<typeof view>>) {
+    if (!view) return;
+    onConfigChange({
+      ...config,
+      views: config.views.map((item) => (item.id === view.id ? { ...item, ...patch } : item)),
+    });
+  }
+
+  function renameCol(from: string, to: string) {
+    sheet.renameColumn(tabName, from, to);
+    onConfigChange(renameColumnInConfig(config, tabName, from, to));
+    setFocusCol(to);
+    onChange();
+  }
+
+  function deleteCol(name: string) {
+    sheet.deleteColumn(tabName, name);
+    onConfigChange(deleteColumnInConfig(config, tabName, name));
+    if (focusCol === name) setFocusCol(sheet.getTab(tabName)?.headers[0] || "");
+    onChange();
+  }
+
   return (
     <div className="data-editor">
       <aside className="pages">
@@ -963,10 +1009,10 @@ function DataEditor({
               </label>
               <button
                 type="button"
-                className={tabName === t.name && pane === "rows" ? "on" : ""}
+                className={tabName === t.name && pane !== "schema" ? "on" : ""}
                 onClick={() => {
                   onTab(t.name);
-                  onPane("rows");
+                  onPane("columns");
                 }}
               >
                 {t.name}
@@ -1011,22 +1057,93 @@ function DataEditor({
         ) : (
           <div className="sheet">
             <header>
-              <h2>{tab.name}</h2>
+              <h2>Table: {view?.name || tab.name}</h2>
               <p>
-                {book.title} · types, row owner, and bots live here — not in the Sheet
+                {connected ? spreadsheetTitle || book.title : book.title} · {tab.headers.length} columns
+                {connected ? " · Google Sheets" : " · not linked"}
               </p>
-              <div className="sheet-toolbar">
-                <button type="button" className="btn ghost" onClick={onTemplates}>
-                  ← Templates
+              <div className="ab-insp-seg" role="tablist" aria-label="Table">
+                <button type="button" className={pane === "columns" ? "on" : ""} onClick={() => onPane("columns")}>
+                  Columns
                 </button>
+                <button type="button" className={pane === "rows" ? "on" : ""} onClick={() => onPane("rows")}>
+                  Rows
+                </button>
+                <button type="button" className={pane === "settings" ? "on" : ""} onClick={() => onPane("settings")}>
+                  Settings
+                </button>
+              </div>
+              <div className="sheet-toolbar">
+                {spreadsheetId ? (
+                  <a
+                    className="btn ghost"
+                    href={`https://docs.google.com/spreadsheets/d/${spreadsheetId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    View data source
+                  </a>
+                ) : null}
+                <button type="button" className="btn ghost" onClick={onRefreshSheet} disabled={!connected}>
+                  Refresh
+                </button>
+                {connected ? (
+                  <button type="button" className="btn ghost" onClick={onDelinkSheet}>
+                    Delink
+                  </button>
+                ) : (
+                  <button type="button" className="btn ghost" onClick={onLinkSheet}>
+                    Link Sheet
+                  </button>
+                )}
                 <button type="button" className="btn ghost" onClick={() => onPane("schema")}>
-                  Tables & relations
+                  Relations
                 </button>
                 <button type="button" className="btn ghost" onClick={onUpload}>
-                  Upload spreadsheet
+                  Upload
+                </button>
+                <button type="button" className="btn ghost" onClick={onTemplates}>
+                  Templates
                 </button>
               </div>
             </header>
+            {pane === "columns" ? (
+              <TableColumnsPanel
+                tab={tab}
+                config={config}
+                view={view}
+                focusCol={focusCol}
+                onFocusCol={setFocusCol}
+                onType={(col, type) => {
+                  setFocusCol(col);
+                  applyType(col, type);
+                }}
+                onRename={renameCol}
+                onDelete={deleteCol}
+                onKey={(col) => patchView({ keyCol: view?.keyCol === col ? undefined : col })}
+                onLabel={(col) => patchView({ titleCol: col })}
+                onFormula={(col) => {
+                  setFocusCol(col);
+                  applyType(col, "virtual", { virtual: true, formula: fieldOf(view, col)?.formula || `[${col}]` });
+                }}
+              />
+            ) : null}
+            {pane === "settings" ? (
+              <TableSettingsPanel
+                config={config}
+                view={view}
+                tabName={tab.name}
+                sourceTitle={spreadsheetTitle || book.title}
+                spreadsheetId={spreadsheetId}
+                connected={connected}
+                onPatchView={patchView}
+                onRefresh={onRefreshSheet}
+                onLink={onLinkSheet}
+                onDelink={onDelinkSheet}
+              />
+            ) : null}
+            {pane === "rows" ? (
+            <>
             <div className="grid-scroll">
               <table>
                 <thead>
@@ -1154,22 +1271,6 @@ function DataEditor({
                 need a row-owner column before PIN login hides anyone else’s data.
               </p>
             ) : null}
-            {focusCol ? (
-              <ColumnInspector
-                col={focusCol}
-                type={fieldTypeOf(view, focusCol, tab.rows.map((row) => row.cells[focusCol]))}
-                field={fieldOf(view, focusCol)}
-                tables={tables}
-                tabName={tab.name}
-                headers={tab.headers}
-                config={config}
-                viewOwner={view?.ownerCol}
-                aiHint={aiHint}
-                onAiHint={setAiHint}
-                onApply={(type, extras) => applyType(focusCol, type, extras)}
-                onConfigChange={onConfigChange}
-              />
-            ) : null}
             {botNote ? <p className="build-note">{botNote}</p> : null}
             <div className="sheet-actions">
               <button
@@ -1184,39 +1285,66 @@ function DataEditor({
               >
                 Add row
               </button>
-              <input
-                value={col}
-                onChange={(e) => setCol(e.target.value)}
-                placeholder="New column"
-              />
-              <select
-                className="col-type"
-                aria-label="New column type"
-                value={colType}
-                onChange={(e) => setColType(e.target.value as FieldType)}
-              >
-                {FIELD_TYPE_OPTIONS.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                className="btn ghost"
-                onClick={() => {
-                  const name = col.trim();
-                  if (!name) return;
-                  sheet.addColumn(tab.name, name);
-                  applyType(name, colType);
-                  setCol("");
-                  setColType("text");
-                  onChange();
-                }}
-              >
-                Add column
-              </button>
             </div>
+            </>
+            ) : null}
+            {pane === "columns" || pane === "rows" ? (
+              <>
+                {focusCol ? (
+                  <ColumnInspector
+                    col={focusCol}
+                    type={fieldTypeOf(view, focusCol, tab.rows.map((row) => row.cells[focusCol]))}
+                    field={fieldOf(view, focusCol)}
+                    tables={tables}
+                    tabName={tab.name}
+                    headers={tab.headers}
+                    config={config}
+                    viewOwner={view?.ownerCol}
+                    aiHint={aiHint}
+                    onAiHint={setAiHint}
+                    onApply={(type, extras) => applyType(focusCol, type, extras)}
+                    onConfigChange={onConfigChange}
+                  />
+                ) : null}
+                {pane === "columns" ? (
+                  <div className="sheet-actions">
+                    <input
+                      value={col}
+                      onChange={(e) => setCol(e.target.value)}
+                      placeholder="New column"
+                    />
+                    <select
+                      className="col-type"
+                      aria-label="New column type"
+                      value={colType}
+                      onChange={(e) => setColType(e.target.value as FieldType)}
+                    >
+                      {FIELD_TYPE_OPTIONS.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="btn ghost"
+                      onClick={() => {
+                        const name = col.trim();
+                        if (!name) return;
+                        sheet.addColumn(tab.name, name);
+                        applyType(name, colType);
+                        setCol("");
+                        setColType("text");
+                        setFocusCol(name);
+                        onChange();
+                      }}
+                    >
+                      Add column
+                    </button>
+                  </div>
+                ) : null}
+              </>
+            ) : null}
           </div>
         )}
       </div>

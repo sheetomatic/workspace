@@ -29,6 +29,8 @@ export interface AppBot {
   enabled: boolean;
   table: string;
   event: BotEventKind;
+  /** AppSheet Adds / Updates / Deletes. When set, overrides event for data changes. */
+  changes?: { adds?: boolean; updates?: boolean; deletes?: boolean };
   condition?: string;
   tasks: AppBotTask[];
 }
@@ -81,6 +83,12 @@ export function botsForEvent(
     if (bot.table !== table) return false;
     if (bot.event === "manual" || bot.event === "schedule") {
       return event === "manual";
+    }
+    if (bot.changes) {
+      if (event === "adds") return bot.changes.adds !== false;
+      if (event === "updates") return bot.changes.updates !== false;
+      if (event === "deletes") return Boolean(bot.changes.deletes);
+      return false;
     }
     if (bot.event === "adds_or_updates") {
       return event === "adds" || event === "updates";

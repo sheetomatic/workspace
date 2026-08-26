@@ -125,6 +125,8 @@ export interface AppView {
   tab: string;
   titleCol?: string;
   subtitleCol?: string;
+  /** AppSheet KEY — unique id for refs and row identity. */
+  keyCol?: string;
   cols: string[];
   sliceCols?: string[];
   /** Hide from bottom tabs — show only as a related collection. */
@@ -134,6 +136,8 @@ export interface AppView {
   phoneCol?: string;
   imageCol?: string;
   ownerCol?: string;
+  allowAdds?: boolean;
+  allowUpdates?: boolean;
   allowDelete?: boolean;
   addFields?: AppFormField[];
   editFields?: AppFormField[];
@@ -448,6 +452,12 @@ export { THEMES, themeById, themeVars, type ThemePalette } from "./themes";
 export { moveColumnHeaders } from "./column-order";
 export { defaultNavForTab, inferAppFromWorkbook, inferFieldType } from "./infer";
 export { FIELD_TYPE_OPTIONS, fieldOf, fieldTypeOf, withColumnType } from "./column-type";
+export {
+  deleteColumnInConfig,
+  deleteTabColumn,
+  renameColumnInConfig,
+  renameTabColumn,
+} from "./column-mutate";
 export {
   ownerKeysForUser,
   ownerValueMatchesUser,
