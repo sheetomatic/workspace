@@ -62,7 +62,7 @@ export type MutateKind = "adds" | "updates" | "deletes";
 
 export function userCanMutate(
   user: AppUser | undefined,
-  view: AppView | undefined,
+  view: AppView | null | undefined,
   kind: MutateKind,
 ): boolean {
   if (!view) return false;

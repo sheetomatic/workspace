@@ -74,7 +74,7 @@ export function actionShown(action: AppAction, row: Record<string, CellValue>, u
   return formulaTrue(action.onlyIf, row, user, true);
 }
 
-export function sliceOf(config: AppConfig, view?: AppView): AppSlice | undefined {
+export function sliceOf(config: AppConfig, view?: AppView | null): AppSlice | undefined {
   if (!view?.sliceId) return undefined;
   return (config.slices || []).find((slice) => slice.id === view.sliceId);
 }
@@ -88,7 +88,7 @@ export function sliceAllows(slice: AppSlice | undefined, kind: "adds" | "updates
 
 export function applySliceFilter(
   rows: SheetRow[],
-  view: AppView | undefined,
+  view: AppView | null | undefined,
   config: AppConfig,
   user?: AppUser,
 ): SheetRow[] {

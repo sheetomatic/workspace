@@ -103,10 +103,11 @@ export function AppRuntime({
   const signed = (config.users || []).find((u) => u.name === who);
   const role: UserRole | null = signed?.role ?? (who ? "owner" : null);
   const tabs = viewsForUser(config, signed);
-  function mayChange(target: typeof view, kind: "adds" | "updates" | "deletes") {
-    return userCanMutate(signed, target, kind) && sliceAllows(sliceOf(config, target || undefined), kind);
-  }
   const view = config.views.find((v) => v.id === viewId) || null;
+  function mayChange(target: AppView | null | undefined, kind: "adds" | "updates" | "deletes") {
+    const next = target ?? undefined;
+    return userCanMutate(signed, next, kind) && sliceAllows(sliceOf(config, next), kind);
+  }
 
   useEffect(() => {
     if (!focusViewId) return;
