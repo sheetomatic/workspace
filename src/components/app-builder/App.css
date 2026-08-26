@@ -2107,39 +2107,102 @@
   font-size: 13px;
   line-height: 1.45;
 }
-.ab-studio .people-panel{ max-width: 720px; }
-.ab-studio .role-defs{
-  list-style: none;
-  padding: 0;
-  margin: 0 0 16px;
-  display: grid;
-  gap: 8px;
+.ab-studio .people-panel{ max-width: 640px; }
+.ab-studio .security-panel .sec-seg{ margin: 16px 0 20px; }
+.ab-studio .security-panel .sec-pane{ display: grid; gap: 4px; animation: sec-in .22s ease; }
+@keyframes sec-in{
+  from{ opacity: 0; transform: translateY(4px); }
+  to{ opacity: 1; transform: none; }
 }
-.ab-studio .role-defs li{
+.ab-studio .sec-roles{
   display: grid;
-  gap: 2px;
-  padding: 10px 12px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 0 0 18px;
+}
+.ab-studio .sec-roles div{
+  padding: 10px 8px;
   border: 1px solid var(--line);
   border-radius: 12px;
+  display: grid;
+  gap: 2px;
 }
-.ab-studio .role-defs em{
-  font-style: normal;
-  color: var(--muted);
-  font-size: 12px;
+.ab-studio .sec-roles strong{ font-size: 13px; font-weight: 650; }
+.ab-studio .sec-roles span{ font-size: 11px; color: var(--muted); }
+.ab-studio .sec-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
 }
-.ab-studio .role-defs span{
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.4;
-}
+.ab-studio .sec-row strong{ display: block; font-size: 14px; font-weight: 650; }
+.ab-studio .sec-row span{ display: block; margin-top: 2px; font-size: 12px; color: var(--muted); }
+.ab-studio .sec-row .ab-perm{ margin: 0; flex-shrink: 0; }
+.ab-studio .security-panel .field-label{ margin: 14px 0 0; }
 .ab-studio .security-panel textarea{
   width: 100%;
-  min-height: 88px;
+  min-height: 72px;
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 8px 10px;
   font: inherit;
   resize: vertical;
+}
+.ab-studio .sec-chips{
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  margin: 0 0 8px;
+}
+.ab-studio .sec-chips button,
+.ab-studio .sec-people header button{
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--muted);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.ab-studio .sec-chips button.on,
+.ab-studio .sec-people header button.on{
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+.ab-studio .sec-tables{ list-style: none; padding: 0; margin: 0; }
+.ab-studio .sec-tables li{ padding: 8px 0; border-bottom: 1px solid var(--line); }
+.ab-studio .sec-tables label{
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 650;
+}
+.ab-studio .sec-tables input{
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0 10px;
+  font: inherit;
+  font-weight: 400;
+}
+.ab-studio .sec-people{ list-style: none; padding: 0; margin: 0; }
+.ab-studio .sec-people .ab-card{ margin: 0 0 10px; }
+.ab-studio .sec-people header select{
+  margin-left: auto;
+  min-height: 32px;
+  min-width: 110px;
+}
+.ab-studio .sec-people .ab-perm{ margin: 0; }
+@media (max-width: 640px){
+  .ab-studio .sec-roles{ grid-template-columns: 1fr 1fr; }
+  .ab-studio .sec-row{ flex-wrap: wrap; }
 }
 .ab-studio .people-list{ list-style: none; padding: 0; margin: 16px 0; }
 .ab-studio .people-list .ab-card{ margin: 0 0 10px; }

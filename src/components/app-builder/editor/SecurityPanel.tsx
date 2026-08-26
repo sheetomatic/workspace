@@ -1,14 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import {
   APP_ROLES,
   isAppAdmin,
-  roleLabel,
   type AppConfig,
   type AppUser,
   type AppView,
   type UserRole,
 } from "@/lib/app-builder";
+
+type Pane = "app" | "tables" | "people";
 
 type Props = {
   config: AppConfig;
@@ -16,9 +18,11 @@ type Props = {
 };
 
 export function SecurityPanel({ config, onChange }: Props) {
+  const [pane, setPane] = useState<Pane>("app");
   const users = config.users || [];
   const tables = uniqueTables(config.views);
   const emails = (config.meta.allowedEmails || []).join("\n");
+  const pinOn = config.meta.requirePin !== false;
 
   function patchMeta(patch: Partial<AppConfig["meta"]>) {
     onChange({ ...config, meta: { ...config.meta, ...patch } });
@@ -52,258 +56,273 @@ export function SecurityPanel({ config, onChange }: Props) {
 
   return (
     <div className="plain people-panel security-panel">
-      <h2>App security</h2>
-      <p className="hint">
-        Google Sheets cannot lock a row. This app can. People open a link + PIN.
-        Their role decides what they see and change.
-      </p>
+      <h2>Security</h2>
+      <p className="hint">Who can open the app, and what they can see.</p>
 
-      <section className="ab-block">
-        <p className="aside-label">Roles</p>
-        <ul className="role-defs">
-          {APP_ROLES.map((item) => (
-            <li key={item.id}>
-              <strong>{item.label}</strong>
-              <em>USERROLE()=&quot;{item.userRole}&quot;</em>
-              <span>{item.hint}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <label className="check">
-        <input
-          type="checkbox"
-          checked={config.meta.requirePin !== false}
-          onChange={(e) => patchMeta({ requirePin: e.target.checked })}
-        />
-        Require sign-in (PIN)
-      </label>
-
-      <label className="field-label">
-        Allowed emails
-        <textarea
-          value={emails}
-          placeholder="One email per line. Empty = any listed person with a PIN."
-          onChange={(e) =>
-            patchMeta({
-              allowedEmails: e.target.value
-                .split(/\n/)
-                .map((line) => line.trim())
-                .filter(Boolean),
-            })
-          }
-        />
-      </label>
-
-      <label className="field-label">
-        Allowed domain
-        <input
-          value={config.meta.allowedDomain || ""}
-          placeholder="firm.com"
-          onChange={(e) => patchMeta({ allowedDomain: e.target.value.trim() || undefined })}
-        />
-        <em>User and Manager email must match this domain. Owner and Admin always get in.</em>
-      </label>
-
-      <p className="aside-label">Bots run as</p>
-      <div className="ab-perm">
-        <button
-          type="button"
-          className={config.meta.runAs !== "owner" ? "on" : ""}
-          onClick={() => patchMeta({ runAs: "user" })}
-        >
-          Signed-in user
-        </button>
-        <button
-          type="button"
-          className={config.meta.runAs === "owner" ? "on" : ""}
-          onClick={() => patchMeta({ runAs: "owner" })}
-        >
-          App owner
-        </button>
+      <div className="ab-insp-seg sec-seg" role="tablist" aria-label="Security">
+        {(
+          [
+            ["app", "App"],
+            ["tables", "Tables"],
+            ["people", "People"],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={pane === id}
+            className={pane === id ? "on" : ""}
+            onClick={() => setPane(id)}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      <section className="ab-block">
-        <p className="aside-label">Table security</p>
-        {tables.length ? (
-          <ul className="people-list">
-            {tables.map((view) => (
-              <li key={view.tab} className="ab-card">
-                <header>
-                  <strong>{view.name}</strong>
-                  <em>{view.tab}</em>
-                </header>
-                <label className="field-label">
-                  Security filter
-                  <input
-                    value={view.securityFilter || ""}
-                    placeholder='IN(USERROLE(),"Admin","Manager")'
-                    onChange={(e) =>
-                      patchTable(view.tab, { securityFilter: e.target.value || undefined })
-                    }
-                  />
-                  <em>
-                    AppSheet formula. Owner column
-                    {view.ownerCol ? ` is ${view.ownerCol}` : " is not set"}. Example:
-                    OR(IN(USERROLE(),&quot;Admin&quot;,&quot;Manager&quot;),[Email]=USEREMAIL())
-                  </em>
-                </label>
-              </li>
+      {pane === "app" ? (
+        <div className="sec-pane">
+          <div className="sec-roles">
+            {APP_ROLES.map((item) => (
+              <div key={item.id}>
+                <strong>{item.label}</strong>
+                <span>{roleShort(item.id)}</span>
+              </div>
             ))}
-          </ul>
-        ) : (
-          <p className="hint">Add a screen on App first.</p>
-        )}
-      </section>
+          </div>
 
-      <section className="ab-block">
-        <p className="aside-label">Screens Users and Managers can open</p>
-        {config.views.length ? (
-          <ul className="people-screens">
-            {config.views.map((view) => {
-              const hidden = config.visibility?.some(
-                (rule) =>
-                  rule.target === "view" &&
-                  rule.targetId === view.id &&
-                  rule.when === "owner",
-              );
-              return (
-                <li key={view.id}>
-                  <label className="check">
-                    <input
-                      type="checkbox"
-                      checked={!hidden}
-                      onChange={(e) => setStaffScreen(view.id, e.target.checked)}
-                    />
+          <div className="sec-row">
+            <div>
+              <strong>Require PIN</strong>
+              <span>Sign in. No Google account.</span>
+            </div>
+            <div className="ab-perm">
+              <button type="button" className={pinOn ? "on" : ""} onClick={() => patchMeta({ requirePin: true })}>
+                On
+              </button>
+              <button type="button" className={!pinOn ? "on" : ""} onClick={() => patchMeta({ requirePin: false })}>
+                Off
+              </button>
+            </div>
+          </div>
+
+          <label className="field-label">
+            Allowed emails
+            <textarea
+              value={emails}
+              rows={3}
+              placeholder="One per line"
+              onChange={(e) =>
+                patchMeta({
+                  allowedEmails: e.target.value
+                    .split(/\n/)
+                    .map((line) => line.trim())
+                    .filter(Boolean),
+                })
+              }
+            />
+          </label>
+
+          <label className="field-label">
+            Allowed domain
+            <input
+              value={config.meta.allowedDomain || ""}
+              placeholder="firm.com"
+              onChange={(e) => patchMeta({ allowedDomain: e.target.value.trim() || undefined })}
+            />
+          </label>
+
+          <div className="sec-row">
+            <div>
+              <strong>Bots run as</strong>
+              <span>Who USEREMAIL() is when a bot fires.</span>
+            </div>
+            <div className="ab-perm">
+              <button
+                type="button"
+                className={config.meta.runAs !== "owner" ? "on" : ""}
+                onClick={() => patchMeta({ runAs: "user" })}
+              >
+                Signed-in
+              </button>
+              <button
+                type="button"
+                className={config.meta.runAs === "owner" ? "on" : ""}
+                onClick={() => patchMeta({ runAs: "owner" })}
+              >
+                Owner
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {pane === "tables" ? (
+        <div className="sec-pane">
+          <p className="aside-label">Screens</p>
+          {config.views.length ? (
+            <ul className="sec-chips">
+              {config.views.map((view) => {
+                const hidden = config.visibility?.some(
+                  (rule) =>
+                    rule.target === "view" &&
+                    rule.targetId === view.id &&
+                    rule.when === "owner",
+                );
+                return (
+                  <li key={view.id}>
+                    <button
+                      type="button"
+                      className={hidden ? "" : "on"}
+                      onClick={() => setStaffScreen(view.id, hidden)}
+                    >
+                      {view.name}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="hint">Add a screen on App first.</p>
+          )}
+          <p className="hint">Off = Owner and Admin only.</p>
+
+          <p className="aside-label">Row filter</p>
+          {tables.length ? (
+            <ul className="sec-tables">
+              {tables.map((view) => (
+                <li key={view.tab}>
+                  <label>
                     {view.name}
-                    {view.ownerCol ? <em> · rows by {view.ownerCol}</em> : null}
+                    <input
+                      value={view.securityFilter || ""}
+                      placeholder="[Email]=USEREMAIL()"
+                      onChange={(e) =>
+                        patchTable(view.tab, { securityFilter: e.target.value || undefined })
+                      }
+                    />
                   </label>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="hint">Add a screen on App first.</p>
+          )}
+        </div>
+      ) : null}
+
+      {pane === "people" ? (
+        <div className="sec-pane">
+          <ul className="sec-people">
+            {users.map((user) => {
+              const admin = isAppAdmin(user.role);
+              const deletesOn =
+                user.role === "manager" ? user.allowDeletes === true : user.allowDeletes !== false;
+              return (
+                <li key={user.id} className="ab-card">
+                  <header>
+                    <strong>{user.name}</strong>
+                    <select
+                      value={user.role === "staff" ? "user" : user.role}
+                      aria-label={`Role for ${user.name}`}
+                      onChange={(e) =>
+                        patchUser(user.id, { role: e.target.value as UserRole })
+                      }
+                    >
+                      {APP_ROLES.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                    {admin ? null : (
+                      <button
+                        type="button"
+                        className={user.disabled ? "" : "on"}
+                        onClick={() => patchUser(user.id, { disabled: !user.disabled })}
+                      >
+                        {user.disabled ? "Off" : "On"}
+                      </button>
+                    )}
+                  </header>
+                  {admin ? null : (
+                    <>
+                      <div className="ab-perm">
+                        <button
+                          type="button"
+                          className={user.allowAdds !== false ? "on" : ""}
+                          onClick={() => patchUser(user.id, { allowAdds: user.allowAdds === false })}
+                        >
+                          Adds
+                        </button>
+                        <button
+                          type="button"
+                          className={user.allowUpdates !== false ? "on" : ""}
+                          onClick={() =>
+                            patchUser(user.id, { allowUpdates: user.allowUpdates === false })
+                          }
+                        >
+                          Updates
+                        </button>
+                        <button
+                          type="button"
+                          className={deletesOn ? "on" : ""}
+                          onClick={() =>
+                            patchUser(user.id, {
+                              allowDeletes:
+                                user.role === "manager"
+                                  ? user.allowDeletes !== true
+                                  : user.allowDeletes === false,
+                            })
+                          }
+                        >
+                          Deletes
+                        </button>
+                      </div>
+                      {tables.length ? (
+                        <ul className="sec-chips">
+                          {tables.map((view) => {
+                            const listed = user.tables == null || user.tables.includes(view.tab);
+                            return (
+                              <li key={view.tab}>
+                                <button
+                                  type="button"
+                                  className={listed ? "on" : ""}
+                                  onClick={() =>
+                                    patchUser(user.id, {
+                                      tables: nextTables(
+                                        user.tables,
+                                        tables.map((item) => item.tab),
+                                        view.tab,
+                                        !listed,
+                                      ),
+                                    })
+                                  }
+                                >
+                                  {view.name}
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : null}
+                    </>
+                  )}
                 </li>
               );
             })}
           </ul>
-        ) : (
-          <p className="hint">Add a screen on App first.</p>
-        )}
-      </section>
-
-      <section className="ab-block">
-        <p className="aside-label">This person</p>
-        <ul className="people-list">
-          {users.map((user) => (
-            <li key={user.id} className="ab-card">
-              <header>
-                <strong>{user.name}</strong>
-                <em>{roleLabel(user.role)}</em>
-              </header>
-              <label className="field-label">
-                Role
-                <select
-                  value={user.role === "staff" ? "user" : user.role}
-                  onChange={(e) =>
-                    patchUser(user.id, { role: e.target.value as UserRole })
-                  }
-                >
-                  {APP_ROLES.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {isAppAdmin(user.role) ? (
-                <p className="hint">Owner and Admin see every screen and every row.</p>
-              ) : (
-                <>
-                  <label className="check">
-                    <input
-                      type="checkbox"
-                      checked={!!user.disabled}
-                      onChange={(e) => patchUser(user.id, { disabled: e.target.checked })}
-                    />
-                    Turned off
-                  </label>
-                  <p className="aside-label">This person may</p>
-                  <div className="ab-perm">
-                    <button
-                      type="button"
-                      className={user.allowAdds !== false ? "on" : ""}
-                      onClick={() => patchUser(user.id, { allowAdds: user.allowAdds === false })}
-                    >
-                      Adds
-                    </button>
-                    <button
-                      type="button"
-                      className={user.allowUpdates !== false ? "on" : ""}
-                      onClick={() =>
-                        patchUser(user.id, { allowUpdates: user.allowUpdates === false })
-                      }
-                    >
-                      Updates
-                    </button>
-                    <button
-                      type="button"
-                      className={
-                        user.role === "manager"
-                          ? user.allowDeletes === true
-                            ? "on"
-                            : ""
-                          : user.allowDeletes !== false
-                            ? "on"
-                            : ""
-                      }
-                      onClick={() =>
-                        patchUser(user.id, {
-                          allowDeletes:
-                            user.role === "manager"
-                              ? user.allowDeletes !== true
-                              : user.allowDeletes === false,
-                        })
-                      }
-                    >
-                      Deletes
-                    </button>
-                  </div>
-                  {tables.length ? (
-                    <>
-                      <p className="aside-label">Tables they can open</p>
-                      <ul className="people-screens">
-                        {tables.map((view) => {
-                          const listed = user.tables == null || user.tables.includes(view.tab);
-                          return (
-                            <li key={view.tab}>
-                              <label className="check">
-                                <input
-                                  type="checkbox"
-                                  checked={listed}
-                                  onChange={(e) =>
-                                    patchUser(user.id, {
-                                      tables: nextTables(
-                                        user.tables,
-                                        tables.map((t) => t.tab),
-                                        view.tab,
-                                        e.target.checked,
-                                      ),
-                                    })
-                                  }
-                                />
-                                {view.name}
-                              </label>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </>
-                  ) : null}
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
-      </section>
+          <p className="hint">Name and PIN are on Users.</p>
+        </div>
+      ) : null}
     </div>
   );
+}
+
+function roleShort(id: string) {
+  if (id === "owner" || id === "admin") return "All rows";
+  if (id === "manager") return "All rows";
+  return "Own rows";
 }
 
 function uniqueTables(views: AppView[]) {
