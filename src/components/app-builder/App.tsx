@@ -27,6 +27,7 @@ import { TemplateGallery } from "./editor/TemplateGallery";
 import { ThemePicker } from "./editor/ThemePicker";
 import { BotsPanel } from "./editor/BotsPanel";
 import { IntelligencePanel } from "./editor/IntelligencePanel";
+import { editorToSection, StudioChrome, type StudioSection } from "./editor/StudioChrome";
 import { DeviceFrame, PREVIEW_DEVICES, type PreviewDevice } from "./preview/DeviceFrame";
 import { AiBar } from "./ai/AiBar";
 import { planFromPrompt } from "./ai/planner";
@@ -113,6 +114,7 @@ export default function AppBuilderStudio({
   const [preview, setPreview] = useState(false);
   const [previewDevice, setPreviewDevice] = useState<PreviewDevice>("phone");
   const [showAllDevices, setShowAllDevices] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [importTabs, setImportTabs] = useState<string[]>([]);
   const [importTab, setImportTab] = useState("");
@@ -493,8 +495,29 @@ export default function AppBuilderStudio({
     );
   }
 
+  const section = editorToSection(editor);
+  const showSheet = sheetOpen && !preview;
+  const showSub = preview || section === "automate" || section === "people";
+  function goSection(next: StudioSection) {
+    setSheetOpen(false);
+    if (next === "app") {
+      setEditor("layout");
+      setGalleryOpen(false);
+      return;
+    }
+    if (next === "data") {
+      setEditor("data");
+      return;
+    }
+    if (next === "automate") {
+      setEditor(editor === "intelligence" ? "intelligence" : "bots");
+      return;
+    }
+    setEditor(editor === "settings" ? "settings" : "users");
+  }
+
   return (
-    <div className={`ab-studio glide${preview ? " previewing" : ""}${showGallery ? " gallery-open" : ""}`}>
+    <div className={`ab-studio glide${preview ? " previewing" : ""}${showGallery ? " gallery-open" : ""}${showSub ? " has-sub" : ""}${showSheet ? " has-sheet" : ""}`}>
       <input
         ref={fileRef}
         type="file"
@@ -506,219 +529,212 @@ export default function AppBuilderStudio({
           void onSpreadsheetFile(file);
         }}
       />
-      {/Testing|verification process/.test(note) ? (
-        <p className="google-alert" role="status">
-          {note} Google Cloud → APIs &amp; Services → OAuth consent screen →
-          Test users (add the Gmail) or Publish app.
-        </p>
-      ) : null}
-      <div className="connect-bar">
-        {google.connected ? (
-          <>
-            <p>
-              Google <strong>{google.googleEmail}</strong>
-              {google.spreadsheetTitle
-                ? ` · ${google.spreadsheetTitle}`
-                : connected
-                  ? ` · Sheet ${connected.slice(0, 8)}…`
-                  : " · pick a Sheet"}
-              {" · "}
-              {credits} credits left
-            </p>
-            {!google.spreadsheetId ? (
-              <>
-                <select
-                  value={pickedSheet}
-                  onChange={(e) => {
-                    const id = e.target.value;
-                    setPickedSheet(id);
-                    if (id) void loadSheetMeta(id);
-                    else {
-                      setImportTabs([]);
-                      setImportTab("");
-                    }
-                  }}
-                  aria-label="Google Sheets in your Drive"
-                >
-                  <option value="">Choose a Google Sheet</option>
-                  {(google.files ?? []).map((file) => (
-                    <option key={file.id} value={file.id}>
-                      {file.name}
-                    </option>
-                  ))}
-                </select>
-                {importTabs.length > 0 ? (
-                  <>
-                    <select
-                      value={importTab}
-                      onChange={(e) => setImportTab(e.target.value)}
-                      aria-label="Sheet tab name"
+      <StudioChrome
+        appName={config.meta.name}
+        section={section}
+        onSection={goSection}
+        sheetOpen={showSheet}
+        onToggleSheet={() => setSheetOpen((open) => !open)}
+        preview={preview}
+        onTogglePreview={() => {
+          setSheetOpen(false);
+          setPreview((on) => !on);
+        }}
+        onTemplates={openGallery}
+        sheetLabel={google.connected ? "Sheet" : "Connect"}
+        sheetPanel={
+          showSheet ? (
+            <div className="ab-sheet">
+              {/Testing|verification process/.test(note) ? (
+                <p className="google-alert" role="status">
+                  {note}
+                </p>
+              ) : null}
+              {google.connected ? (
+                <>
+                  <p>
+                    {google.googleEmail}
+                    {google.spreadsheetTitle ? ` · ${google.spreadsheetTitle}` : ""}
+                    {` · ${credits} credits`}
+                  </p>
+                  {!google.spreadsheetId ? (
+                    <>
+                      <select
+                        value={pickedSheet}
+                        onChange={(e) => {
+                          const id = e.target.value;
+                          setPickedSheet(id);
+                          if (id) void loadSheetMeta(id);
+                          else {
+                            setImportTabs([]);
+                            setImportTab("");
+                          }
+                        }}
+                        aria-label="Google Sheets in your Drive"
+                      >
+                        <option value="">Choose a Google Sheet</option>
+                        {(google.files ?? []).map((file) => (
+                          <option key={file.id} value={file.id}>
+                            {file.name}
+                          </option>
+                        ))}
+                      </select>
+                      {importTabs.length > 0 ? (
+                        <>
+                          <select
+                            value={importTab}
+                            onChange={(e) => setImportTab(e.target.value)}
+                            aria-label="Sheet tab name"
+                          >
+                            {importTabs.map((name) => (
+                              <option key={name} value={name}>
+                                {name}
+                              </option>
+                            ))}
+                          </select>
+                          <label className="header-row">
+                            Header row
+                            <input
+                              type="number"
+                              min={1}
+                              max={50}
+                              value={importHeaderRow}
+                              onChange={(e) =>
+                                setImportHeaderRow(Number(e.target.value) || 1)
+                              }
+                            />
+                          </label>
+                        </>
+                      ) : null}
+                      <button
+                        type="button"
+                        disabled={googleBusy}
+                        onClick={() => void usePickedSheet()}
+                      >
+                        Use this Sheet
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        disabled={googleBusy}
+                        onClick={() =>
+                          setGoogle((prev) => ({
+                            ...prev,
+                            spreadsheetId: null,
+                            spreadsheetTitle: null,
+                          }))
+                        }
+                      >
+                        Change
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyWorkbook(sheet.getWorkbook(), dataTab, true)}
+                      >
+                        Rebuild
+                      </button>
+                    </>
+                  )}
+                  <button type="button" onClick={pickSpreadsheet}>
+                    Upload
+                  </button>
+                  <button
+                    type="button"
+                    disabled={googleBusy}
+                    onClick={() => void disconnectGoogle()}
+                  >
+                    Disconnect
+                  </button>
+                </>
+              ) : (
+                <>
+                  <a href="/api/app-builder/google/start">Connect with Google</a>
+                  <input
+                    value={sheetUrl}
+                    onChange={(e) => setSheetUrl(e.target.value)}
+                    placeholder="Paste a Sheet link"
+                  />
+                  <button type="button" onClick={() => void connectSheet()}>
+                    Open
+                  </button>
+                  <button type="button" onClick={pickSpreadsheet}>
+                    Upload
+                  </button>
+                  <span className="try-hint">
+                    {credits} credits · testers only until Google publishes the app
+                  </span>
+                </>
+              )}
+            </div>
+          ) : null
+        }
+        subbar={
+          showSub ? (
+            <div className="ab-sub" role="navigation">
+              {preview ? (
+                <>
+                  {PREVIEW_DEVICES.map((device) => (
+                    <button
+                      key={device.id}
+                      type="button"
+                      className={!showAllDevices && previewDevice === device.id ? "on" : ""}
+                      onClick={() => {
+                        setPreviewDevice(device.id);
+                        setShowAllDevices(false);
+                      }}
                     >
-                      {importTabs.map((name) => (
-                        <option key={name} value={name}>
-                          {name}
-                        </option>
-                      ))}
-                    </select>
-                    <label className="header-row">
-                      Header row
-                      <input
-                        type="number"
-                        min={1}
-                        max={50}
-                        value={importHeaderRow}
-                        onChange={(e) => setImportHeaderRow(Number(e.target.value) || 1)}
-                      />
-                    </label>
-                  </>
-                ) : null}
-                <button type="button" disabled={googleBusy} onClick={() => void usePickedSheet()}>
-                  Use this Sheet
-                </button>
-              </>
-            ) : (
-              <>
-            <button
-              type="button"
-              className="ghost"
-              disabled={googleBusy}
-              onClick={() =>
-                setGoogle((prev) => ({ ...prev, spreadsheetId: null, spreadsheetTitle: null }))
-              }
-            >
-              Change Sheet
-            </button>
-            <button
-              type="button"
-              className="ghost"
-              onClick={() => applyWorkbook(sheet.getWorkbook(), dataTab, true)}
-            >
-              Rebuild from Sheet
-            </button>
-            <button type="button" className="ghost" onClick={pickSpreadsheet}>
-              Upload spreadsheet
-            </button>
-              </>
-            )}
-            <button
-              type="button"
-              className="ghost"
-              disabled={googleBusy}
-              onClick={() => void disconnectGoogle()}
-            >
-              Disconnect
-            </button>
-          </>
-        ) : (
-          <>
-            <a className="google-btn" href="/api/app-builder/google/start">
-              Connect with Google
-            </a>
-            <input
-              value={sheetUrl}
-              onChange={(e) => setSheetUrl(e.target.value)}
-              placeholder="or paste a Sheet link"
-            />
-            <button type="button" onClick={() => void connectSheet()}>
-              Open Sheet
-            </button>
-            <button type="button" className="ghost" onClick={pickSpreadsheet}>
-              Upload spreadsheet
-            </button>
-          </>
-        )}
-        {credits < 1 ? (
-          <a className="buy-now" href="/contact?intent=app-builder">
-            Buy credits
-          </a>
-        ) : (
-          <span className="try-hint">
-            New Gmail works after we add it as a tester, until Google verifies the app
-          </span>
-        )}
-      </div>
-      <header className="topbar">
-        <div className="brand">
-          <div className="logo">S</div>
-          <div>
-            <strong>{config.meta.name}</strong>
-            <span>
-              {google.connected
-                ? `${google.googleEmail} · live Google Sheet`
-                : "Gmail Sheet · no Workspace seat needed"}
-            </span>
-          </div>
-        </div>
-        <nav className="modes">
-          {(
-            [
-              ["layout", "Layout"],
-              ["data", "Data"],
-              ["bots", "Bots"],
-              ["intelligence", "Intelligence"],
-              ["users", "Users"],
-              ["settings", "Settings"],
-            ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              className={editor === id ? "on" : ""}
-              onClick={() => setEditor(id)}
-            >
-              {label}
-            </button>
-          ))}
-        </nav>
-        <div className="topbar-actions">
-          <button
-            type="button"
-            className="templates-btn"
-            onClick={openGallery}
-          >
-            ← Templates
-          </button>
-          <button type="button" className="ghost-bar" onClick={pickSpreadsheet}>
-            Upload
-          </button>
-          <div className="device-switch" role="group" aria-label="Preview device">
-            {PREVIEW_DEVICES.map((device) => (
-              <button
-                key={device.id}
-                type="button"
-                className={
-                  !showAllDevices && previewDevice === device.id ? "on" : ""
-                }
-                onClick={() => {
-                  setPreviewDevice(device.id);
-                  setShowAllDevices(false);
-                  setPreview(true);
-                }}
-              >
-                {device.label}
-              </button>
-            ))}
-            <button
-              type="button"
-              className={showAllDevices ? "on" : ""}
-              onClick={() => {
-                setShowAllDevices(true);
-                setPreview(true);
-              }}
-            >
-              All
-            </button>
-          </div>
-          <button
-            type="button"
-            className={preview ? "on preview-btn" : "preview-btn"}
-            onClick={() => setPreview((on) => !on)}
-          >
-            {preview ? "← Exit preview" : "Preview"}
-          </button>
-          <span className={`credits ${credits < 5 ? "low" : ""}`}>{credits} credits</span>
-        </div>
-      </header>
+                      {device.label}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className={showAllDevices ? "on" : ""}
+                    onClick={() => setShowAllDevices(true)}
+                  >
+                    All
+                  </button>
+                </>
+              ) : section === "automate" ? (
+                <>
+                  <button
+                    type="button"
+                    className={editor === "bots" ? "on" : ""}
+                    onClick={() => setEditor("bots")}
+                  >
+                    Bots
+                  </button>
+                  <button
+                    type="button"
+                    className={editor === "intelligence" ? "on" : ""}
+                    onClick={() => setEditor("intelligence")}
+                  >
+                    Intelligence
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className={editor === "users" ? "on" : ""}
+                    onClick={() => setEditor("users")}
+                  >
+                    Users
+                  </button>
+                  <button
+                    type="button"
+                    className={editor === "settings" ? "on" : ""}
+                    onClick={() => setEditor("settings")}
+                  >
+                    Settings
+                  </button>
+                </>
+              )}
+            </div>
+          ) : null
+        }
+      />
 
       {editor === "layout" && (
         <div className="layout">
@@ -733,17 +749,6 @@ export default function AppBuilderStudio({
               }}
             >
               Home
-              <em>{emptyApp ? "Custom" : "Home"}</em>
-            </button>
-            <button type="button" onClick={openGallery}>
-              Templates
-              <em>Ready apps</em>
-            </button>
-            <button type="button" onClick={() => setFocus("home")}>
-              Tables in app
-              <em>
-                {screens.filter((s) => s.nav !== false).length} of {screens.length}
-              </em>
             </button>
             {screens.map((s) => (
               <button
