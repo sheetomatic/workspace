@@ -59,10 +59,7 @@ export function withColumnType(
     ...extras,
     type: resolved,
     virtual: resolved === "virtual" || extras.virtual,
-    options:
-      resolved === "enum" || resolved === "choice"
-        ? extras.options || base.options
-        : extras.options,
+    options: resolved === "enum" ? extras.options || base.options : extras.options,
   };
   const computed = (config.computed || []).filter(
     (item) => !(item.tab === tab && item.name === name),
