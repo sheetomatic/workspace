@@ -50,7 +50,7 @@ export function CreateClientWorkspacePanel({
           </h3>
           <p>
             Each client gets their own workspace for one product — BCI, Tasks,
-            HRMS, CRM, or App Builder — with its own users and monthly bill.
+            HRMS, or CRM — with its own users and monthly bill.
             Use a combined workspace only when they bought more than one SKU
             on the same login.
           </p>

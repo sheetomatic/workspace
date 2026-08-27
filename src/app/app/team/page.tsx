@@ -241,31 +241,6 @@ export default async function TeamPage({
             />
           </TeamCollapsibleSection>
         ) : null}
-        {canManage ? (
-          <TeamCollapsibleSection
-            title="App Builder"
-            description="New client: a phone app on their Gmail Sheet. Grant the module on the invite."
-            defaultOpen
-          >
-            <article className="saas-panel">
-              <div className="saas-panel-head">
-                <div>
-                  <h3>Start from a Sheet</h3>
-                  <p>
-                    Connect Gmail, pick a template, staff use a link and PIN.
-                    Tick <strong>App Builder</strong> on the invite so they see
-                    it in the left sidebar.
-                  </p>
-                </div>
-              </div>
-              <p>
-                <a className="btn-cta btn-secondary" href="/app/app-builder">
-                  Open App Builder
-                </a>
-              </p>
-            </article>
-          </TeamCollapsibleSection>
-        ) : null}
         <TeamManagementPanel
           canManage={canManage}
           currentUserId={user.id}

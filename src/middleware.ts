@@ -152,9 +152,7 @@ function handleProtectedAppRoutes(request: NextRequest, isLoggedIn: boolean) {
           ? "/ai/app"
           : product === "learn"
             ? LEARN_ADMIN_HOME
-            : product === "app-builder"
-              ? "/app/app-builder"
-              : "/app";
+            : "/app";
     appUrl.search = "";
     return NextResponse.redirect(appUrl);
   }

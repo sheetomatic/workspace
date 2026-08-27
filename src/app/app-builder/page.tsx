@@ -1,14 +1,5 @@
-import type { Metadata } from "next";
-import { AppBuilderLanding } from "@/components/app-builder/app-builder-landing";
-import { marketingMetadata } from "@/lib/marketing-metadata";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = marketingMetadata({
-  title: "App Builder — phone app on Google Workspace | sheetomatic.com",
-  description:
-    "Speak or type an app. Connect your Gmail Google Sheet. Free credits to try. Buy when it works. No Google Workspace. No Marketplace install.",
-  path: "/app-builder",
-});
-
-export default function AppBuilderLandingPage() {
-  return <AppBuilderLanding />;
+export default function RemovedAppBuilderPage() {
+  redirect("/");
 }

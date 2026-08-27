@@ -13,7 +13,6 @@ export const mainNav = [
   { href: "/pricing", label: "Pricing" },
   { href: "/courses", label: "Courses" },
   { href: "/templates", label: "Templates" },
-  { href: "/app-builder", label: "App Builder" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];
@@ -26,7 +25,6 @@ export const footerCompanyLinks = [
   { href: "/courses", label: "Courses" },
   { href: "/learn/login", label: "Student login" },
   { href: "/templates", label: "Templates" },
-  { href: "/app-builder", label: "App Builder" },
 ];
 
 export const footerProductLinks = [
@@ -35,7 +33,6 @@ export const footerProductLinks = [
   { href: "/services/inventory", label: "IMS" },
   { href: "/services/checklist", label: "Checklists" },
   { href: "/services/tasks", label: "Tasks" },
-  { href: "/app-builder", label: "App Builder" },
   { href: "/ai", label: "Sheetomatic AI" },
   { href: "/whatsapp-plans", label: "WhatsApp API" },
   { href: "/pricing", label: "Pricing" },

@@ -110,23 +110,9 @@ export function isLoginPath(pathname: string) {
   return pathname === "/login" || pathname.startsWith("/login/");
 }
 
-/** Workspace app routes only — not marketing /app-builder. */
+/** Workspace app routes only. */
 export function isWorkspaceAppPath(pathname: string) {
   return pathname === "/app" || pathname.startsWith("/app/");
-}
-
-export function isAppBuilderStudioPath(pathname: string) {
-  return pathname === "/app/app-builder" || pathname.startsWith("/app/app-builder/");
-}
-
-export function isAppBuilderAuthIntent(
-  pathname: string,
-  searchParams: { get(name: string): string | null },
-) {
-  if (isAppBuilderStudioPath(pathname)) return true;
-  if (searchParams.get("product") === "app-builder") return true;
-  const callback = searchParams.get("callbackUrl") ?? "";
-  return callback === "/app/app-builder" || callback.startsWith("/app/app-builder/");
 }
 
 export function isWorkspacePath(pathname: string) {
