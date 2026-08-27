@@ -298,6 +298,7 @@ model Organization {
   workspaceAppearance   Json?
   organizationPlan     OrganizationPlan?
   billing              OrganizationBilling?
+  addonBillings        OrganizationAddonBilling[]
   monthlyServiceClients MonthlyServiceClient[]
   subscriptionInvoices SubscriptionInvoice[]
   subscriptionPayments SubscriptionPayment[]
