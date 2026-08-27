@@ -250,11 +250,78 @@ export async function addClientAddonsAction(
     data: { allowedModules },
   });
   await syncMembershipModulesToOrg(organizationId, allowedModules);
+  for (const addon of selected) {
+    const rate = parseRupeesInput(String(formData.get(`rate_${addon.module}`) ?? ""));
+    const period = String(formData.get(`period_${addon.module}`) ?? "MONTHLY");
+    const ratePaise = rate ?? addon.amountPaise;
+    const billingPeriod =
+      period === "ANNUAL" ? ("ANNUAL" as PlanBillingPeriod) : "MONTHLY";
+    await prisma.organizationAddonBilling.upsert({
+      where: {
+        organizationId_module: {
+          organizationId,
+          module: addon.module,
+        },
+      },
+      create: {
+        organizationId,
+        module: addon.module,
+        ratePaise,
+        billingPeriod,
+      },
+      update: {
+        ratePaise,
+        billingPeriod,
+      },
+    });
+  }
   revalidateBilling(organizationId);
   return {
     ok: true,
-    message: `Added ${selected.map((addon) => addon.label).join(", ")}. Next invoice bills those plan rates.`,
+    message: `Added ${selected.map((addon) => addon.label).join(", ")} with your rates.`,
   };
+}
+
+export async function updateClientAddonBillingAction(
+  _prev: BillingActionState,
+  formData: FormData,
+): Promise<BillingActionState> {
+  const user = await requirePlatformAdmin();
+  if (!user) {
+    return { ok: false, message: "Only Sheetomatic super admins can edit add-on rates." };
+  }
+
+  const organizationId = String(formData.get("organizationId") ?? "").trim();
+  const module = String(formData.get("module") ?? "").trim() as WorkspaceModule;
+  const addon = billableAddonByModule(module);
+  const rate = parseRupeesInput(String(formData.get("rate") ?? ""));
+  const periodRaw = String(formData.get("billingPeriod") ?? "MONTHLY");
+
+  if (!organizationId || !addon || rate === null) {
+    return { ok: false, message: "Enter a valid add-on rate." };
+  }
+  if (periodRaw !== "MONTHLY" && periodRaw !== "ANNUAL") {
+    return { ok: false, message: "Choose monthly or annual billing." };
+  }
+
+  await prisma.organizationAddonBilling.upsert({
+    where: {
+      organizationId_module: { organizationId, module: addon.module },
+    },
+    create: {
+      organizationId,
+      module: addon.module,
+      ratePaise: rate,
+      billingPeriod: periodRaw as PlanBillingPeriod,
+    },
+    update: {
+      ratePaise: rate,
+      billingPeriod: periodRaw as PlanBillingPeriod,
+    },
+  });
+
+  revalidateBilling(organizationId);
+  return { ok: true, message: `${addon.label} rate saved.` };
 }
 
 export async function removeClientAddonAction(
@@ -288,6 +355,9 @@ export async function removeClientAddonAction(
   await prisma.organization.update({
     where: { id: organizationId },
     data: { allowedModules },
+  });
+  await prisma.organizationAddonBilling.deleteMany({
+    where: { organizationId, module: addon.module },
   });
   await syncMembershipModulesToOrg(organizationId, allowedModules);
   revalidateBilling(organizationId);

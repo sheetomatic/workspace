@@ -48,10 +48,18 @@ export default async function ClientBillingDetailPage({
   if (!detail) notFound();
 
   const catalog = catalogRateForWorkspace(detail);
+  const addonOverrides = detail.addonBillings.map((row) => ({
+    module: row.module,
+    ratePaise: row.ratePaise,
+    billingPeriod: row.billingPeriod,
+  }));
+  const orgBillingPeriod = detail.organizationPlan?.billingPeriod ?? detail.billingPeriod;
   const addonCharges = workspaceAddonCharges(
     detail.allowedModules,
     detail.plan,
     detail.product,
+    addonOverrides,
+    orgBillingPeriod,
   );
   const progress = onboardingProgress(detail.onboardingTasks);
   const renewal = detail.organizationPlan?.renewalAt;
@@ -122,8 +130,8 @@ export default async function ClientBillingDetailPage({
               <li key={line.module}>
                 <span>
                   {line.label}
-                  {line.amountPaise > 0
-                    ? ` · ${formatInrPaise(line.amountPaise)} / month`
+                  {line.ratePaise > 0
+                    ? ` · ${formatInrPaise(line.ratePaise)} / ${line.billingPeriod === "ANNUAL" ? "year" : "month"}`
                     : " · quote"}
                 </span>
               </li>

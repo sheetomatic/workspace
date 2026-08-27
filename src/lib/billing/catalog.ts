@@ -8,6 +8,11 @@ import {
   emReadyModulePlans,
   emReadyPlans,
 } from "@/app/em-ready-plans";
+import {
+  addonInvoiceAmountPaise,
+  resolveAddonBilling,
+  type OrgAddonBillingRow,
+} from "@/lib/billing/org-addon-billing";
 import { rupeesToPaise } from "@/lib/billing/money";
 
 export type BillingRateCard = {
@@ -208,22 +213,35 @@ export type WorkspaceAddonCharge = {
   module: WorkspaceModule;
   label: string;
   amountPaise: number;
+  ratePaise: number;
+  billingPeriod: PlanBillingPeriod;
 };
 
 export function workspaceAddonCharges(
   modules: WorkspaceModule[],
   plan: OrgPlan,
   product?: WorkspaceProduct | null,
+  overrides?: OrgAddonBillingRow[],
+  orgBillingPeriod: PlanBillingPeriod = "MONTHLY",
 ): WorkspaceAddonCharge[] {
   const sold = resolveSoldProduct({ product, allowedModules: modules });
   const included = new Set(modulesIncludedInSoldSku(sold, plan));
   const charges: WorkspaceAddonCharge[] = [];
   for (const addon of BILLABLE_ADDONS) {
     if (!modules.includes(addon.module) || included.has(addon.module)) continue;
+    const billing = resolveAddonBilling(
+      addon.module,
+      addon.amountPaise,
+      overrides,
+      orgBillingPeriod,
+    );
+    const invoicePaise = addonInvoiceAmountPaise(billing, orgBillingPeriod);
     charges.push({
       module: addon.module,
       label: addon.label,
-      amountPaise: addon.amountPaise,
+      amountPaise: invoicePaise,
+      ratePaise: billing.ratePaise,
+      billingPeriod: billing.billingPeriod,
     });
   }
   return charges;
@@ -245,11 +263,16 @@ export function extraAddonMonthlyPaise(
   modules: WorkspaceModule[],
   plan: OrgPlan,
   product?: WorkspaceProduct | null,
+  overrides?: OrgAddonBillingRow[],
+  orgBillingPeriod: PlanBillingPeriod = "MONTHLY",
 ) {
-  return workspaceAddonCharges(modules, plan, product).reduce(
-    (sum, row) => sum + row.amountPaise,
-    0,
-  );
+  return workspaceAddonCharges(
+    modules,
+    plan,
+    product,
+    overrides,
+    orgBillingPeriod,
+  ).reduce((sum, row) => sum + row.amountPaise, 0);
 }
 
 function modulesIncludedInSoldSku(

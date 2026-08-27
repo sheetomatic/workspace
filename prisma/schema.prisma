@@ -367,6 +367,21 @@ model OrganizationBilling {
   updatedAt           DateTime     @updatedAt
 }
 
+/// Per-client add-on rate (overrides catalog defaults on invoices).
+model OrganizationAddonBilling {
+  id             String            @id @default(cuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  module         WorkspaceModule
+  ratePaise      Int               @default(0)
+  billingPeriod  PlanBillingPeriod @default(MONTHLY)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@unique([organizationId, module])
+  @@index([organizationId])
+}
+
 model SubscriptionInvoice {
   id             String                     @id @default(cuid())
   organizationId String

@@ -1,4 +1,10 @@
-import type { OrgPlan, Prisma, WorkspaceModule, WorkspaceProduct } from "@prisma/client";
+import type {
+  OrgPlan,
+  PlanBillingPeriod,
+  Prisma,
+  WorkspaceModule,
+  WorkspaceProduct,
+} from "@prisma/client";
 import { prisma } from "@/lib/db";
 import {
   catalogRateForWorkspace,
@@ -112,7 +118,10 @@ export function quoteForOrganization(input: {
   periodEnd: Date;
   prorate: boolean;
   asOf?: Date;
+  orgBillingPeriod?: PlanBillingPeriod;
+  addonOverrides?: import("@/lib/billing/org-addon-billing").OrgAddonBillingRow[];
 }) {
+  const period = input.orgBillingPeriod ?? "MONTHLY";
   return buildInvoiceQuote({
     monthlyRatePaise: input.billing.monthlyRatePaise,
     extraUserMonthlyPaise: input.billing.extraUserMonthlyPaise,
@@ -122,12 +131,22 @@ export function quoteForOrganization(input: {
       input.allowedModules,
       input.plan,
       input.product,
+      input.addonOverrides,
+      period,
     ),
     extraAddonLines: workspaceAddonCharges(
       input.allowedModules,
       input.plan,
       input.product,
-    ).map((row) => ({ label: row.label, amountPaise: row.amountPaise })),
+      input.addonOverrides,
+      period,
+    ).map((row) => ({
+      label:
+        row.billingPeriod === "ANNUAL"
+          ? `${row.label} (annual)`
+          : row.label,
+      amountPaise: row.amountPaise,
+    })),
     gstPercent: input.billing.gstPercent,
     periodStart: input.periodStart,
     periodEnd: input.periodEnd,
@@ -150,6 +169,9 @@ export async function generateSubscriptionInvoice(input: {
       product: true,
       allowedModules: true,
       billingPeriod: true,
+      addonBillings: {
+        select: { module: true, ratePaise: true, billingPeriod: true },
+      },
       organizationPlan: { select: { renewalAt: true, billingPeriod: true } },
     },
   });
@@ -210,6 +232,8 @@ export async function generateSubscriptionInvoice(input: {
     periodEnd,
     prorate,
     asOf,
+    orgBillingPeriod: organization.billingPeriod,
+    addonOverrides: organization.addonBillings,
   });
 
   if (quote.totalPaise <= 0) {

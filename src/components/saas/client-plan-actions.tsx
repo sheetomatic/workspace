@@ -6,13 +6,121 @@ import {
   addClientAddonsAction,
   deleteClientBillingPlanAction,
   removeClientAddonAction,
+  updateClientAddonBillingAction,
   updateClientBillingAction,
   type BillingActionState,
 } from "@/app/app/clients/actions";
+import type { WorkspaceAddonCharge } from "@/lib/billing/catalog";
+import type { BillableAddon } from "@/lib/billing/catalog";
+import { addonRateLabel } from "@/lib/billing/org-addon-billing";
 import { formatInrPaise, paiseToRupees } from "@/lib/billing/money";
-import type { BillableAddon, WorkspaceAddonCharge } from "@/lib/billing/catalog";
 
 const initial: BillingActionState = { ok: false, message: "" };
+
+function formatAddonRate(line: Pick<WorkspaceAddonCharge, "ratePaise" | "billingPeriod">) {
+  if (line.ratePaise <= 0) {
+    return "quote";
+  }
+  return `${formatInrPaise(line.ratePaise)} / ${addonRateLabel(line.billingPeriod)}`;
+}
+
+function AddonLineEditor({
+  organizationId,
+  line,
+  removingAddon,
+  removeAddonAction,
+}: {
+  organizationId: string;
+  line: WorkspaceAddonCharge;
+  removingAddon: boolean;
+  removeAddonAction: (payload: FormData) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [editState, editAction, saving] = useActionState(
+    updateClientAddonBillingAction,
+    initial,
+  );
+
+  return (
+    <li className="ws-addon-line">
+      <div className="ws-addon-line-main">
+        <strong>{line.label}</strong>
+        <span className="ws-addon-line-rate">{formatAddonRate(line)}</span>
+      </div>
+      {editing ? (
+        <form action={editAction} className="ws-addon-edit-form">
+          <input name="organizationId" type="hidden" value={organizationId} />
+          <input name="module" type="hidden" value={line.module} />
+          <label>
+            Rate (₹)
+            <input
+              defaultValue={paiseToRupees(line.ratePaise) || ""}
+              name="rate"
+              required
+            />
+          </label>
+          <label>
+            Billed
+            <select defaultValue={line.billingPeriod} name="billingPeriod">
+              <option value="MONTHLY">Monthly</option>
+              <option value="ANNUAL">Annual</option>
+            </select>
+          </label>
+          <div className="ws-wa-icon-row">
+            <button
+              className={`ws-billing-icon-btn${saving ? " is-busy" : ""}`}
+              disabled={saving}
+              type="submit"
+              title="Save add-on rate"
+              aria-label="Save add-on rate"
+            >
+              {saving ? <Loader2 size={16} aria-hidden /> : <Check size={16} aria-hidden />}
+            </button>
+            <button
+              className="ws-billing-icon-btn"
+              type="button"
+              title="Cancel"
+              aria-label="Cancel"
+              onClick={() => setEditing(false)}
+            >
+              <X size={16} aria-hidden />
+            </button>
+          </div>
+          {editState.message ? (
+            <p className={editState.ok ? "saas-form-success" : "saas-form-error"}>
+              {editState.message}
+            </p>
+          ) : null}
+        </form>
+      ) : (
+        <div className="ws-addon-line-actions">
+          <button
+            className="ws-billing-icon-btn"
+            type="button"
+            title="Edit add-on rate"
+            aria-label={`Edit ${line.label} rate`}
+            onClick={() => setEditing(true)}
+          >
+            <Pencil size={16} aria-hidden />
+          </button>
+          <form action={removeAddonAction}>
+            <input name="organizationId" type="hidden" value={organizationId} />
+            <input name="module" type="hidden" value={line.module} />
+            <button
+              className={`ws-billing-icon-btn danger${removingAddon ? " is-busy" : ""}`}
+              disabled={removingAddon}
+              type="submit"
+              title="Remove add-on"
+              aria-label={`Remove ${line.label}`}
+            >
+              {removingAddon ? <Loader2 size={16} aria-hidden /> : <X size={16} aria-hidden />}
+            </button>
+          </form>
+        </div>
+      )}
+    </li>
+  );
+}
 
 export function ClientPlanActions({
   organizationId,
@@ -81,7 +189,7 @@ export function ClientPlanActions({
             <Plus size={16} aria-hidden />
           </button>
         )}
-        {availableAddons.length > 0 ? (
+        {availableAddons.length > 0 || addonLines.length > 0 ? (
           <button
             className="ws-billing-icon-btn"
             type="button"
@@ -140,77 +248,87 @@ export function ClientPlanActions({
       {addonLines.length > 0 ? (
         <ul className="ws-addon-lines">
           {addonLines.map((line) => (
-            <li key={line.module}>
-              <span>
-                {line.label}
-                {line.amountPaise > 0 ? ` · ${formatInrPaise(line.amountPaise)}` : " · quote"}
-              </span>
-              <form action={removeAddonAction}>
-                <input name="organizationId" type="hidden" value={organizationId} />
-                <input name="module" type="hidden" value={line.module} />
-                <button
-                  className={`ws-billing-icon-btn danger${removingAddon ? " is-busy" : ""}`}
-                  disabled={removingAddon}
-                  type="submit"
-                  title="Remove add-on"
-                  aria-label={`Remove ${line.label}`}
-                >
-                  {removingAddon ? (
-                    <Loader2 size={16} aria-hidden />
-                  ) : (
-                    <X size={16} aria-hidden />
-                  )}
-                </button>
-              </form>
-            </li>
+            <AddonLineEditor
+              key={line.module}
+              line={line}
+              organizationId={organizationId}
+              removeAddonAction={removeAddonAction}
+              removingAddon={removingAddon}
+            />
           ))}
         </ul>
       ) : null}
       {open === "addon" ? (
-        <form action={addonAction} className="ws-plan-form">
-          <input name="organizationId" type="hidden" value={organizationId} />
+        <div className="ws-addon-panel">
           <p className="ws-addon-form-lead">
-            Extra services on this workspace. Next invoice uses the plan rate
-            for each one.
+            Add services with your deal rate. Each add-on can bill monthly or
+            annually — independent of the base plan period.
           </p>
-          {availableAddons.map((addon) => (
-            <label key={addon.module} className="ws-addon-option">
-              <input name="addon" type="checkbox" value={addon.module} />
-              <span>
-                {addon.label}
-                <small>
-                  {addon.amountPaise > 0
-                    ? `${formatInrPaise(addon.amountPaise)} / month`
-                    : "Custom / quote"}
-                </small>
-              </span>
-            </label>
-          ))}
-          <div className="ws-wa-icon-row">
-            <button
-              className={`ws-billing-icon-btn${addingAddons ? " is-busy" : ""}`}
-              disabled={addingAddons}
-              type="submit"
-              title="Add selected add-ons"
-              aria-label="Add selected add-ons"
-            >
-              {addingAddons ? (
-                <Loader2 size={16} aria-hidden />
-              ) : (
-                <Check size={16} aria-hidden />
-              )}
-            </button>
-            <button
-              className="ws-billing-icon-btn"
-              type="button"
-              title="Cancel"
-              aria-label="Cancel"
-              onClick={() => setOpen(null)}
-            >
-              <X size={16} aria-hidden />
-            </button>
-          </div>
-        </form>
+          {availableAddons.length > 0 ? (
+            <form action={addonAction} className="ws-addon-add-form">
+              <input name="organizationId" type="hidden" value={organizationId} />
+              {availableAddons.map((addon) => (
+                <div key={addon.module} className="ws-addon-card">
+                  <label className="ws-addon-option">
+                    <input name="addon" type="checkbox" value={addon.module} />
+                    <span>
+                      {addon.label}
+                      <small>
+                        Catalog default:{" "}
+                        {addon.amountPaise > 0
+                          ? `${formatInrPaise(addon.amountPaise)} / month`
+                          : "Custom / quote"}
+                      </small>
+                    </span>
+                  </label>
+                  <div className="ws-addon-rate-row">
+                    <label>
+                      Rate (₹)
+                      <input
+                        defaultValue={paiseToRupees(addon.amountPaise) || ""}
+                        name={`rate_${addon.module}`}
+                        placeholder="Deal rate"
+                      />
+                    </label>
+                    <label>
+                      Billed
+                      <select defaultValue="MONTHLY" name={`period_${addon.module}`}>
+                        <option value="MONTHLY">Monthly</option>
+                        <option value="ANNUAL">Annual</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+              ))}
+              <div className="ws-wa-icon-row">
+                <button
+                  className={`ws-billing-icon-btn${addingAddons ? " is-busy" : ""}`}
+                  disabled={addingAddons}
+                  type="submit"
+                  title="Add selected add-ons"
+                  aria-label="Add selected add-ons"
+                >
+                  {addingAddons ? (
+                    <Loader2 size={16} aria-hidden />
+                  ) : (
+                    <Check size={16} aria-hidden />
+                  )}
+                </button>
+                <button
+                  className="ws-billing-icon-btn"
+                  type="button"
+                  title="Cancel"
+                  aria-label="Cancel"
+                  onClick={() => setOpen(null)}
+                >
+                  <X size={16} aria-hidden />
+                </button>
+              </div>
+            </form>
+          ) : (
+            <p className="ws-addon-form-lead">All catalog add-ons are already on this client.</p>
+          )}
+        </div>
       ) : null}
       {open === "add" || open === "change" ? (
         <form action={saveAction} className="ws-plan-form">

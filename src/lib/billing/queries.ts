@@ -29,6 +29,9 @@ export async function listClientBillingRows() {
       billingPeriod: true,
       maxMembers: true,
       billing: true,
+      addonBillings: {
+        select: { module: true, ratePaise: true, billingPeriod: true },
+      },
       organizationPlan: { select: { renewalAt: true, status: true } },
       memberships: {
         where: { deactivatedAt: null },
@@ -77,8 +80,25 @@ export async function listClientBillingRows() {
     const includedUsers = billing?.includedUsers ?? catalog.includedUsers;
     const gstPercent = billing?.gstPercent ?? catalog.gstPercent;
     const hasPlan = monthly > 0;
-    const addonLines = workspaceAddonCharges(org.allowedModules, org.plan, org.product);
-    const addonPaise = extraAddonMonthlyPaise(org.allowedModules, org.plan, org.product);
+    const addonOverrides = org.addonBillings.map((row) => ({
+      module: row.module,
+      ratePaise: row.ratePaise,
+      billingPeriod: row.billingPeriod,
+    }));
+    const addonLines = workspaceAddonCharges(
+      org.allowedModules,
+      org.plan,
+      org.product,
+      addonOverrides,
+      org.billingPeriod,
+    );
+    const addonPaise = extraAddonMonthlyPaise(
+      org.allowedModules,
+      org.plan,
+      org.product,
+      addonOverrides,
+      org.billingPeriod,
+    );
     return {
       id: org.id,
       name: org.name,
@@ -165,6 +185,9 @@ export async function getClientBillingDetail(organizationId: string) {
       maxMembers: true,
       isPrimary: true,
       billing: true,
+      addonBillings: {
+        select: { module: true, ratePaise: true, billingPeriod: true },
+      },
       organizationPlan: true,
       memberships: {
         orderBy: { createdAt: "asc" },
