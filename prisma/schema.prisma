@@ -302,38 +302,8 @@ model Organization {
   subscriptionInvoices SubscriptionInvoice[]
   subscriptionPayments SubscriptionPayment[]
   onboardingTasks      ClientOnboardingTask[]
-  appBuilderGoogleConnection AppBuilderGoogleConnection?
-  appBuilderApp              AppBuilderApp?
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
-}
-
-model AppBuilderGoogleConnection {
-  id                   String       @id @default(cuid())
-  organizationId       String       @unique
-  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  googleEmail          String
-  refreshToken         String
-  accessToken          String?
-  accessTokenExpiresAt DateTime?
-  spreadsheetId        String?
-  spreadsheetTitle     String?
-  createdAt            DateTime     @default(now())
-  updatedAt            DateTime     @updatedAt
-
-  @@index([googleEmail])
-}
-
-model AppBuilderApp {
-  id             String       @id @default(cuid())
-  organizationId String       @unique
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  name           String
-  config         Json
-  workbook       Json
-  templateId     String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
 }
 
 model OrganizationPlan {
