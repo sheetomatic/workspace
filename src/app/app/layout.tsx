@@ -31,6 +31,8 @@ import {
   getRequestTenantSlug,
   isLearnPortalRequest,
 } from "@/lib/tenant-host";
+import { isAppBuilderStudioPath } from "@/lib/subdomain";
+import { AppBuilderShell } from "@/components/app-builder/app-builder-shell";
 import { getOrCreateHrSettings } from "@/lib/hr/hr-store";
 import { resolveMemberHrSubModules } from "@/lib/hr/hr-sub-modules";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
@@ -211,6 +213,31 @@ export default async function AppLayout({
           organizationName={organization.name}
           userName={sessionUser.name?.trim() || sessionUser.email}
         />
+      </AuthSessionProvider>
+    );
+  }
+
+  if (organization.product === "APP_BUILDER") {
+    const pathname = await getRequestPathname();
+    const pathOnly = pathname.split("?")[0] ?? pathname;
+    // getRequestPathname() falls back to "/app" when middleware did not set
+    // x-pathname. Redirecting that default looped the studio.
+    if (
+      pathOnly !== "/app" &&
+      !isAppBuilderStudioPath(pathOnly) &&
+      !pathOnly.startsWith("/app/manifest")
+    ) {
+      redirect("/app/app-builder");
+    }
+
+    return (
+      <AuthSessionProvider>
+        <AppBuilderShell
+          organizationName={organization.name}
+          userEmail={sessionUser.email}
+        >
+          {children}
+        </AppBuilderShell>
       </AuthSessionProvider>
     );
   }

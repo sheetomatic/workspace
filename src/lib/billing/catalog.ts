@@ -80,7 +80,7 @@ export function resolveSoldProduct(org: {
     return org.product;
   }
   const mods = new Set(org.allowedModules ?? []);
-  const sellable = (["FMS", "TASKS", "HR", "CRM"] as const).filter(
+  const sellable = (["FMS", "TASKS", "HR", "CRM", "APP_BUILDER"] as const).filter(
     (module) => mods.has(module),
   );
   if (sellable.length === 1) {
@@ -93,6 +93,8 @@ export function resolveSoldProduct(org: {
         return "HRMS";
       case "CRM":
         return "CRM";
+      case "APP_BUILDER":
+        return "APP_BUILDER";
     }
   }
   const onlyBciCore = [...mods].every((module) =>
@@ -194,6 +196,7 @@ const BILLABLE_ADDONS: BillableAddon[] = [
   { module: "CRM", label: "CRM", amountPaise: ADDON_MODULE_RATES.CRM ?? 0, grantModules: ["CRM"] },
   { module: "IMS", label: "IMS / Stock", amountPaise: ADDON_MODULE_RATES.IMS ?? 0, grantModules: ["IMS"] },
   { module: "HR", label: "HRMS", amountPaise: ADDON_MODULE_RATES.HR ?? 0, grantModules: ["HR"] },
+  { module: "APP_BUILDER", label: "App Builder", amountPaise: ADDON_MODULE_RATES.APP_BUILDER ?? 0, grantModules: ["APP_BUILDER"] },
   { module: "SOCIAL", label: "Social", amountPaise: ADDON_MODULE_RATES.SOCIAL ?? 0, grantModules: ["SOCIAL"] },
   { module: "CASES", label: "Legal", amountPaise: ADDON_MODULE_RATES.CASES ?? 0, grantModules: ["CASES"] },
 ];

@@ -1,4 +1,5 @@
 import {
+  isAppBuilderStudioPath,
   isWorkspaceAppPath,
   parseHost,
 } from "@/lib/subdomain";
@@ -10,6 +11,7 @@ import {
 export function shouldShowWorkspaceAssistant(pathname: string, hostname: string) {
   const { kind } = parseHost(hostname);
   if (kind === "ai" || kind === "learn") return false;
+  if (isAppBuilderStudioPath(pathname)) return false;
   if (kind === "workspace" || kind === "tenant") {
     if (pathname.startsWith("/login")) return false;
     return true;

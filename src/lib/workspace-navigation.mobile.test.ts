@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  canAccessWorkspaceNav,
+  listNavPreferenceOptions,
   mobileWorkspaceNavItems,
   mobileWorkspaceNavSplit,
   navIsActive,
@@ -98,5 +100,41 @@ describe("mobileWorkspaceNavItems", () => {
     expect(
       navIsActive("/app/checklists/hr", "/app/checklists", "/app/checklists"),
     ).toBe(false);
+  });
+});
+
+describe("App Builder nav", () => {
+  const staff: SessionUser = {
+    id: "u1",
+    email: "staff@sheetomatic.com",
+    name: "Staff",
+    role: "STAFF",
+    organizationId: "org1",
+    organizationName: "Sheetomatic",
+    organizationSlug: "sheetomatic",
+    isSuperAdmin: false,
+    isDepartmentHead: false,
+    modules: ["TASKS", "FMS"],
+    staffCode: null,
+  };
+
+  it("lets staff open App Builder without the module assigned", () => {
+    expect(
+      canAccessWorkspaceNav(staff, {
+        id: "app-builder",
+        href: "/app/app-builder",
+        label: "App Builder",
+        icon: LayoutDashboard,
+        module: "APP_BUILDER",
+      }),
+    ).toBe(true);
+  });
+
+  it("lists App Builder in Customize show/hide", () => {
+    const options = listNavPreferenceOptions({
+      user: staff,
+      organizationSlug: "sheetomatic",
+    });
+    expect(options.some((option) => option.id === "app-builder")).toBe(true);
   });
 });

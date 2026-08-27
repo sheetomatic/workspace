@@ -25,9 +25,13 @@ describe("workspace activation bundles", () => {
     expect(option?.description).toMatch(/Not PC/);
   });
 
-  it("does not sell App Builder as an activation SKU", () => {
-    expect(ACTIVATION_BUNDLE_OPTIONS.find((o) => o.value === "app_builder")).toBeUndefined();
-    expect(resolveActivationPreset("app_builder").allowedModules).not.toContain("APP_BUILDER");
+  it("resolves App Builder as its own SKU", () => {
+    const preset = resolveActivationPreset("app_builder");
+    expect(preset.allowedModules).toEqual(["APP_BUILDER"]);
+    expect(preset.allowedModules).not.toContain("FMS");
+    expect(preset.product).toBe("APP_BUILDER");
+    const option = ACTIVATION_BUNDLE_OPTIONS.find((o) => o.value === "app_builder");
+    expect(option?.label).toBe("App Builder");
   });
 
   it("resolves HRMS and CRM as their own workspaces", () => {

@@ -6,6 +6,7 @@ export const ACTIVATION_BUNDLE_KEYS = [
   "tasks_addon",
   "hrms",
   "crm",
+  "app_builder",
   "bci_with_tasks",
   "bci_growth",
   "client_50",
@@ -51,6 +52,13 @@ export const ACTIVATION_BUNDLE_OPTIONS: ActivationBundleOption[] = [
     group: "product",
   },
   {
+    value: "app_builder",
+    label: "App Builder",
+    description: "Own workspace — phone apps on a Gmail Sheet. Staff use a link and PIN.",
+    modules: ["APP_BUILDER"],
+    group: "product",
+  },
+  {
     value: "bci_with_tasks",
     label: "BCI + Tasks",
     description: "One workspace with FMS bundle plus Tasks. EA and PC stay separate.",
@@ -68,7 +76,7 @@ export const ACTIVATION_BUNDLE_OPTIONS: ActivationBundleOption[] = [
     value: "client_50",
     label: "Full client (50 users)",
     description: "One workspace — Growth + Tasks + Legal (HRMS sold separately).",
-    modules: ["FMS", "REPORTS", "APPROVALS", "CRM", "IMS", "TASKS", "CASES"],
+    modules: ["FMS", "REPORTS", "APPROVALS", "CRM", "IMS", "TASKS", "CASES", "APP_BUILDER"],
     group: "bundle",
   },
 ];

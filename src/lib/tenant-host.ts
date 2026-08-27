@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import type { SessionUser } from "@/lib/auth";
 import { isDedicatedClientPortal } from "@/lib/dedicated-client-portals";
 import {
+  isAppBuilderStudioPath,
   isLearnPortalHostname,
   parseHost,
   requestHostname,
@@ -98,6 +99,10 @@ export async function ensureSessionTenantHost(sessionUser: SessionUser) {
   const tenantSlug = await getRequestTenantSlug();
   const pathname = await getRequestPathname();
   const pathOnly = pathname.split("?")[0] ?? pathname;
+
+  if (isAppBuilderStudioPath(pathOnly)) {
+    return;
+  }
 
   if (tenantSlug) {
     if (tenantSlug === sessionUser.organizationSlug) {

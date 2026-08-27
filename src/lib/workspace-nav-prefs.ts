@@ -25,6 +25,7 @@ export const DEFAULT_FOCUSED_NAV_IDS = [
   "dept-hr",
   "em",
   "tasks",
+  "app-builder",
 ] as const;
 
 /** Never hidden by focus/custom prefs (still role/module gated). */

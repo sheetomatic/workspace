@@ -18,7 +18,14 @@ describe("billing catalog", () => {
     expect(card.gstPercent).toBe(18);
   });
 
-  it("bills Tasks / HRMS / CRM from the sold workspace, not Enterprise", () => {
+  it("bills App Builder / Tasks / HRMS / CRM from the sold workspace, not Enterprise", () => {
+    expect(
+      catalogRateForWorkspace({
+        plan: "ENTERPRISE",
+        product: "APP_BUILDER",
+        allowedModules: ["APP_BUILDER"],
+      }).monthlyRatePaise,
+    ).toBe(rupeesToPaise(2499));
     expect(
       catalogRateForWorkspace({
         plan: "TASKS_ADDON",

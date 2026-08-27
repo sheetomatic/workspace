@@ -14,6 +14,8 @@ const marketingRoutes = [
   "/career",
   "/contact",
   "/templates",
+  "/app-builder",
+  "/app-builder/signup",
 ] as const;
 
 export default function sitemap(): MetadataRoute.Sitemap {

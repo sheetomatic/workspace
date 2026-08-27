@@ -1,0 +1,1642 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  createEmptyConfig,
+  evaluateAppSheetFormula,
+  FIELD_TYPE_OPTIONS,
+  fieldOf,
+  fieldTypeOf,
+  inferAppFromWorkbook,
+  parseGoogleSheetId,
+  setTableInApp,
+  SPREADSHEET_ACCEPT,
+  styleLabel,
+  withColumnType,
+  workbookFromSpreadsheetFile,
+  downloadPdf,
+  planBotsForRow,
+  roleLabel,
+  menuViews,
+  primaryViews,
+  refViews,
+  viewFromWorkbookTab,
+  viewLabel,
+  viewPosition,
+  withViewPosition,
+  renameColumnInConfig,
+  deleteColumnInConfig,
+  type AppConfig,
+  type AppFormField,
+  type ViewPosition,
+  type CellValue,
+  type FieldType,
+  type SheetWorkbook,
+} from "@/lib/app-builder";
+import { DesignPanel } from "./editor/DesignPanel";
+import { SchemaStudio } from "./editor/SchemaStudio";
+import { ColumnInspector } from "./editor/ColumnInspector";
+import { TableColumnsPanel } from "./editor/TableColumnsPanel";
+import { TableSettingsPanel } from "./editor/TableSettingsPanel";
+import { SlicesPanel } from "./editor/SlicesPanel";
+import { TemplateGallery } from "./editor/TemplateGallery";
+import { ThemePicker } from "./editor/ThemePicker";
+import { BotsPanel } from "./editor/BotsPanel";
+import { IntelligencePanel } from "./editor/IntelligencePanel";
+import { PeoplePanel } from "./editor/PeoplePanel";
+import { SecurityPanel } from "./editor/SecurityPanel";
+import { SheetConnector } from "./editor/SheetConnector";
+import { editorToSection, StudioChrome, type StudioSection } from "./editor/StudioChrome";
+import { DeviceFrame, PREVIEW_DEVICES, type PreviewDevice } from "./preview/DeviceFrame";
+import { AiBar } from "./ai/AiBar";
+import { planFromPrompt } from "./ai/planner";
+import { type AppPlan } from "@/lib/app-builder";
+import { addCredits, readCredits, spendCredit, WELCOME_CREDITS } from "./credits";
+import { AppRuntime } from "./runtime/AppRuntime";
+import { createMockAdapter, type SheetAdapter } from "./sheet/mockAdapter";
+import { withLiveSheetSync } from "./sheet/liveSync";
+import { dispatchAppBuilderBotAction, saveAppBuilderStudioAction } from "@/app/app/app-builder/actions";
+import type { AppBuilderStudioSnapshot } from "@/lib/app-builder/persist";
+import "./App.css";
+
+type Editor = "layout" | "data" | "bots" | "intelligence" | "users" | "security" | "settings";
+
+type GoogleFile = { id: string; name: string };
+
+type GoogleStatus = {
+  configured: boolean;
+  connected: boolean;
+  googleEmail?: string;
+  spreadsheetId?: string | null;
+  spreadsheetTitle?: string | null;
+  files?: GoogleFile[];
+  listError?: string | null;
+};
+
+const emptyBook = { title: "My Sheet", tabs: {} };
+const PENDING_SHEET_KEY = "sheetomatic-ab-pending-sheet";
+
+function googleCallbackNote(flag: string | null) {
+  switch (flag) {
+    case "testing":
+      return "Google blocked Connect: the Cloud app is still in Testing. Add this Gmail as a tester, or publish the OAuth consent screen to In production. Upload a spreadsheet works without Connect.";
+    case "denied":
+      return "Google sign-in was cancelled. If you saw “verification process”, the Cloud app is in Testing — add testers or publish it.";
+    case "missing":
+      return "Google connect is not set up on this server yet. Paste a Sheet link for now.";
+    case "invalid":
+      return "Google sign-in expired. Click Connect with Google again.";
+    case "norefresh":
+      return "Google did not keep the login. Click Connect with Google and allow access.";
+    case "failed":
+      return "Google sign-in failed. Try again.";
+    default:
+      return "";
+  }
+}
+
+export default function AppBuilderStudio({
+  googleAuthReady = false,
+  initial = null,
+}: {
+  googleAuthReady?: boolean;
+  initial?: AppBuilderStudioSnapshot | null;
+}) {
+  const [config, setConfig] = useState<AppConfig>(
+    () => initial?.config ?? createEmptyConfig("My app"),
+  );
+  const liveSheetId = useRef<string | null>(null);
+  const skipSave = useRef(true);
+  const [sheet] = useState<SheetAdapter>(() =>
+    withLiveSheetSync(
+      createMockAdapter(initial?.workbook ?? emptyBook),
+      () => liveSheetId.current,
+    ),
+  );
+  const [editor, setEditor] = useState<Editor>("layout");
+  const [focus, setFocus] = useState("home");
+  const [rev, setRev] = useState(0);
+  const [dataTab, setDataTab] = useState("");
+  const [credits, setCredits] = useState(WELCOME_CREDITS);
+
+  useEffect(() => {
+    setCredits(readCredits());
+  }, []);
+  const [note, setNote] = useState("");
+  const [sheetUrl, setSheetUrl] = useState("");
+  const [connected, setConnected] = useState<string | null>(null);
+  const [google, setGoogle] = useState<GoogleStatus>({
+    configured: googleAuthReady,
+    connected: false,
+  });
+  const [pickedSheet, setPickedSheet] = useState("");
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const [preview, setPreview] = useState(false);
+  const [previewDevice, setPreviewDevice] = useState<PreviewDevice>("phone");
+  const [previewAs, setPreviewAs] = useState<string>("Owner");
+  const [showAllDevices, setShowAllDevices] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [importTabs, setImportTabs] = useState<string[]>([]);
+  const [importTab, setImportTab] = useState("");
+  const [importHeaderRow, setImportHeaderRow] = useState(1);
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(
+    initial?.templateId ?? null,
+  );
+  const [lastPrompt, setLastPrompt] = useState("");
+  const [dataPane, setDataPane] = useState<"columns" | "rows" | "settings" | "slices" | "schema">("columns");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  liveSheetId.current = google.spreadsheetId || connected;
+  const workbook = useMemo(() => sheet.getWorkbook(), [sheet, rev]);
+  const bump = () => setRev((n) => n + 1);
+
+  useEffect(() => {
+    if (skipSave.current) {
+      skipSave.current = false;
+      return;
+    }
+    if (Object.keys(workbook.tabs).length === 0) return;
+    const timer = window.setTimeout(() => {
+      void saveAppBuilderStudioAction({
+        config,
+        workbook,
+        templateId: activeTemplateId,
+      }).then((result) => {
+        if (result.ok) setNote(result.message);
+      });
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [config, workbook, activeTemplateId]);
+
+  function applyGeneratedPlan(plan: AppPlan, noteText: string) {
+    sheet.replace(structuredClone(plan.workbook));
+    setConfig({
+      ...plan.config,
+      meta: { ...plan.config.meta },
+    });
+    setFocus("home");
+    setDataTab(Object.keys(plan.workbook.tabs)[0] || "");
+    bump();
+    setActiveTemplateId(plan.id);
+    setGalleryOpen(false);
+    setEditor("layout");
+    setNote(noteText);
+  }
+
+  function build(prompt: string) {
+    if (credits < 1) {
+      setNote("Credits finished. Buy more to keep building.");
+      return;
+    }
+    const rebuilding = config.views.length > 0;
+    const plan = planFromPrompt(prompt);
+    setLastPrompt(prompt.trim());
+    setCredits(spendCredit());
+    applyGeneratedPlan(
+      plan,
+      rebuilding
+        ? `Rebuilt “${plan.config.meta.name}” from your prompt. Use Layout or Data if you only need a small change.`
+        : google.connected && !google.spreadsheetId
+          ? `Built “${plan.config.meta.name}”. Create this as a new Sheet in Drive — you do not need to upload one.`
+          : `Built “${plan.config.meta.name}” from your words. Preview it in the phone.`,
+    );
+  }
+
+  async function createNewSpreadsheet(prompt: string) {
+    const plan = planFromPrompt(prompt.trim() || "custom blank app with one table");
+    applyGeneratedPlan(
+      plan,
+      google.connected
+        ? `Creating “${plan.config.meta.name}” as a new Sheet in your Drive…`
+        : `“${plan.config.meta.name}” is ready. Connect Google to save it as a new Sheet — no upload needed.`,
+    );
+    if (google.connected) {
+      await createSheetFromPlan(plan);
+    }
+  }
+
+  function applyPlan(plan: AppPlan) {
+    sheet.replace(structuredClone(plan.workbook));
+    setConfig({
+      ...plan.config,
+      meta: { ...plan.config.meta },
+    });
+    setFocus("home");
+    setDataTab(Object.keys(plan.workbook.tabs)[0] || "");
+    bump();
+    setActiveTemplateId(plan.id);
+    setGalleryOpen(false);
+    setEditor("layout");
+    setNote(
+      google.connected
+        ? `Loaded “${plan.label}”. Create that Sheet in Drive, or keep editing the preview.`
+        : `Loaded “${plan.label}”. Connect Google to create this Sheet in your Drive.`,
+    );
+  }
+
+  async function createSheetFromPlan(plan: AppPlan) {
+    if (!google.connected) {
+      setNote("Connect with Google first, then we can create the Sheet.");
+      return;
+    }
+    setGoogleBusy(true);
+    try {
+      const res = await fetch("/api/app-builder/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create",
+          templateId: plan.id,
+          title: `${plan.config.meta.name} · Sheetomatic`,
+          workbook: plan.workbook,
+        }),
+      });
+      const body = (await res.json().catch(() => null)) as {
+        error?: string;
+        spreadsheetId?: string;
+        spreadsheetTitle?: string;
+      } | null;
+      if (!res.ok || !body?.spreadsheetId) {
+        setNote(body?.error || "Could not create that Sheet. Reconnect Google and allow Sheets.");
+        return;
+      }
+      setGoogle((prev) => ({
+        ...prev,
+        spreadsheetId: body.spreadsheetId,
+        spreadsheetTitle: body.spreadsheetTitle,
+      }));
+      setConnected(body.spreadsheetId);
+      setNote(`Created “${body.spreadsheetTitle}” in your Google Drive.`);
+    } finally {
+      setGoogleBusy(false);
+    }
+  }
+
+  async function loadSheetMeta(spreadsheetId: string) {
+    const res = await fetch(
+      `/api/app-builder/google/workbook?id=${encodeURIComponent(spreadsheetId)}&meta=1`,
+      { cache: "no-store" },
+    );
+    if (!res.ok) {
+      setImportTabs([]);
+      return;
+    }
+    const body = (await res.json()) as { tabs?: string[] };
+    const tabs = body.tabs ?? [];
+    setImportTabs(tabs);
+    setImportTab(tabs[0] || "");
+    setImportHeaderRow(1);
+  }
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const flag = params.get("google");
+    const fromCallback = googleCallbackNote(flag);
+    if (fromCallback) setNote(fromCallback);
+    if (flag) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+
+    let cancelled = false;
+    async function hydrateGoogle() {
+      try {
+        const res = await fetch("/api/app-builder/google", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as GoogleStatus;
+        if (cancelled) return;
+        setGoogle(data);
+        const pending =
+          typeof sessionStorage !== "undefined"
+            ? sessionStorage.getItem(PENDING_SHEET_KEY)
+            : null;
+        if (data.connected && pending) {
+          sessionStorage.removeItem(PENDING_SHEET_KEY);
+          setPickedSheet(pending);
+          setConnected(pending);
+          await loadWorkbook(pending);
+        } else if (data.spreadsheetId) {
+          setPickedSheet(data.spreadsheetId);
+          setConnected(data.spreadsheetId);
+          await loadWorkbook(data.spreadsheetId);
+        } else if (data.files?.[0]) {
+          setPickedSheet(data.files[0].id);
+        }
+      } catch {
+        /* stay on paste fallback */
+      }
+    }
+    void hydrateGoogle();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function loadWorkbook(
+    spreadsheetId: string,
+    options?: { tab?: string; headerRow?: number; askSchema?: boolean },
+  ) {
+    const params = new URLSearchParams({ id: spreadsheetId });
+    if (options?.headerRow && options.headerRow > 1) {
+      params.set("headerRow", String(options.headerRow));
+    }
+    const res = await fetch(`/api/app-builder/google/workbook?${params}`, {
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      const body = (await res.json().catch(() => null)) as { error?: string } | null;
+      setNote(body?.error || "Could not read that Google Sheet.");
+      return;
+    }
+    const body = (await res.json()) as { workbook: SheetWorkbook };
+    applyWorkbook(body.workbook, options?.tab, options?.askSchema);
+    setConnected(spreadsheetId);
+    setNote(
+      options?.askSchema
+        ? `Opened “${body.workbook.title}”. Tick the tables for the phone, then link parent and child.`
+        : `Opened “${body.workbook.title}”. Screens and relations were built from your tables.`,
+    );
+  }
+
+  function applyWorkbook(
+    workbook: SheetWorkbook,
+    focusTab?: string,
+    askSchema = false,
+  ) {
+    sheet.replace(workbook);
+    const next = inferAppFromWorkbook(workbook);
+    setConfig(next);
+    const focusView = next.views.find((v) => v.tab === focusTab);
+    setFocus(focusView?.id || "home");
+    setDataTab(focusTab || Object.keys(workbook.tabs)[0] || "");
+    setGalleryOpen(false);
+    setActiveTemplateId(null);
+    if (askSchema) {
+      setEditor("data");
+      setDataPane("schema");
+    }
+    setRev((n) => n + 1);
+  }
+
+  async function refreshGoogle() {
+    setGoogleBusy(true);
+    try {
+      const res = await fetch("/api/app-builder/google", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = (await res.json()) as GoogleStatus;
+      setGoogle(data);
+    } finally {
+      setGoogleBusy(false);
+    }
+  }
+
+  async function selectSheet(spreadsheetId: string) {
+    if (!spreadsheetId.trim()) {
+      setNote("Choose a Google Sheet from the list.");
+      return;
+    }
+    setPickedSheet(spreadsheetId);
+    setGoogleBusy(true);
+    try {
+      const res = await fetch("/api/app-builder/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "select", spreadsheetId }),
+      });
+      const body = (await res.json().catch(() => null)) as {
+        error?: string;
+        spreadsheetTitle?: string;
+      } | null;
+      if (!res.ok) {
+        setNote(body?.error || "Could not use that Sheet.");
+        return;
+      }
+      setGoogle((prev) => ({
+        ...prev,
+        spreadsheetId,
+        spreadsheetTitle: body?.spreadsheetTitle ?? prev.spreadsheetTitle,
+      }));
+      await loadWorkbook(spreadsheetId, {
+        tab: importTab || undefined,
+        headerRow: importHeaderRow,
+        askSchema: true,
+      });
+      setGoogle((prev) => ({
+        ...prev,
+        spreadsheetId,
+        spreadsheetTitle: body?.spreadsheetTitle ?? prev.spreadsheetTitle,
+        files: [
+          {
+            id: spreadsheetId,
+            name: body?.spreadsheetTitle || prev.spreadsheetTitle || "Google Sheet",
+          },
+          ...(prev.files ?? []).filter((file) => file.id !== spreadsheetId),
+        ],
+      }));
+      setSheetOpen(false);
+    } finally {
+      setGoogleBusy(false);
+    }
+  }
+
+  async function disconnectGoogle() {
+    setGoogleBusy(true);
+    try {
+      await fetch("/api/app-builder/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "disconnect" }),
+      });
+      setGoogle({ configured: google.configured, connected: false, files: [] });
+      setConnected(null);
+      setPickedSheet("");
+      setNote("Google disconnected. Connect again to pick a Sheet.");
+    } finally {
+      setGoogleBusy(false);
+    }
+  }
+
+  function openGallery() {
+    setPreview(false);
+    setEditor("layout");
+    setGalleryOpen(true);
+  }
+
+  function pickSpreadsheet() {
+    fileRef.current?.click();
+  }
+
+  async function onSpreadsheetFile(file: File | undefined) {
+    if (!file) return;
+    try {
+      const book = await workbookFromSpreadsheetFile(file);
+      applyWorkbook(book, undefined, true);
+      setPreview(false);
+      setEditor("data");
+      setDataPane("schema");
+      setNote(
+        `Opened “${book.title}”. Tick the tables for the phone, then link parent and child.`,
+      );
+    } catch (error) {
+      setNote(
+        error instanceof Error
+          ? error.message
+          : "Could not read that spreadsheet.",
+      );
+    }
+  }
+
+  async function connectSheet() {
+    const id = parseGoogleSheetId(sheetUrl);
+    if (!id) {
+      setNote(
+        "Paste a full Google Sheets link (docs.google.com/spreadsheets/d/…), then Open.",
+      );
+      return;
+    }
+    if (google.connected) {
+      await selectSheet(id);
+      return;
+    }
+    setConnected(id);
+    sessionStorage.setItem(PENDING_SHEET_KEY, id);
+    setNote(
+      "Connect with Google to open that Sheet live, or upload a .xlsx / .csv.",
+    );
+  }
+
+  const emptyApp = config.views.length === 0;
+  const showGallery = galleryOpen || (emptyApp && editor === "layout" && !preview);
+
+  if (showGallery) {
+    return (
+      <div className="ab-studio">
+        <input
+          ref={fileRef}
+          type="file"
+          hidden
+          accept={SPREADSHEET_ACCEPT}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            void onSpreadsheetFile(file);
+          }}
+        />
+        <TemplateGallery
+          onPick={applyPlan}
+          onBuild={build}
+          onCreateNew={createNewSpreadsheet}
+          sheetUrl={sheetUrl}
+          onSheetUrl={setSheetUrl}
+          onConnectSheet={connectSheet}
+          onUploadFile={onSpreadsheetFile}
+          onBack={emptyApp ? undefined : () => setGalleryOpen(false)}
+        />
+      </div>
+    );
+  }
+
+  const section = editorToSection(editor);
+  const showSheet = sheetOpen && !preview;
+  const showSub = preview || section === "automate" || section === "people";
+  function goSection(next: StudioSection) {
+    setSheetOpen(false);
+    if (next === "app") {
+      setEditor("layout");
+      setGalleryOpen(false);
+      return;
+    }
+    if (next === "data") {
+      setEditor("data");
+      return;
+    }
+    if (next === "automate") {
+      setEditor(editor === "intelligence" ? "intelligence" : "bots");
+      return;
+    }
+    setEditor(
+      editor === "settings" ? "settings" : editor === "users" ? "users" : "security",
+    );
+  }
+
+  function addNewView(position: ViewPosition = "middle") {
+    const tabs = Object.keys(workbook.tabs);
+    const unused = tabs.find((tab) => !config.views.some((view) => view.tab === tab));
+    const name = unused || `New view ${config.views.length + 1}`;
+    if (!unused) sheet.addTab(name);
+    const tab = sheet.getTab(name) || { name, headers: ["Name"], rows: [] };
+    const next = {
+      ...viewFromWorkbookTab(tab),
+      name: unused || "New view",
+      ...withViewPosition(position),
+    };
+    setConfig({ ...config, views: [...config.views, next] });
+    setFocus(next.id);
+    bump();
+  }
+
+  return (
+    <div className={`ab-studio glide${preview ? " previewing" : ""}${showGallery ? " gallery-open" : ""}${showSub ? " has-sub" : ""}${showSheet ? " has-sheet" : ""}`}>
+      <input
+        ref={fileRef}
+        type="file"
+        hidden
+        accept={SPREADSHEET_ACCEPT}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          void onSpreadsheetFile(file);
+        }}
+      />
+      <StudioChrome
+        appName={config.meta.name}
+        section={section}
+        onSection={goSection}
+        sheetOpen={showSheet}
+        onToggleSheet={() => setSheetOpen((open) => !open)}
+        preview={preview}
+        onTogglePreview={() => {
+          setSheetOpen(false);
+          setPreview((on) => !on);
+        }}
+        onTemplates={openGallery}
+        sheetLabel={google.connected ? "Sheet" : "Connect"}
+        sheetPanel={
+          showSheet ? (
+            <SheetConnector
+              connected={google.connected}
+              googleEmail={google.googleEmail}
+              spreadsheetId={google.spreadsheetId}
+              files={google.files ?? []}
+              listError={google.listError}
+              busy={googleBusy}
+              credits={credits}
+              sheetUrl={sheetUrl}
+              onSheetUrl={setSheetUrl}
+              onConnectGoogle={() => {
+                window.location.href = "/api/app-builder/google/start";
+              }}
+              onOpenLink={() => void connectSheet()}
+              onPickFile={(id) => void selectSheet(id)}
+              onUpload={pickSpreadsheet}
+              onCreate={
+                Object.keys(workbook.tabs).length
+                  ? () =>
+                      void createSheetFromPlan({
+                        id: activeTemplateId || "custom",
+                        label: config.meta.name,
+                        blurb: "",
+                        prompt: "",
+                        config,
+                        workbook,
+                      })
+                  : undefined
+              }
+              onDisconnect={() => void disconnectGoogle()}
+              onRefresh={() => void refreshGoogle()}
+              note={/Testing|verification process/.test(note) ? note : undefined}
+            />
+          ) : null
+        }
+        subbar={
+          showSub ? (
+            <div className="ab-sub" role="navigation">
+              {preview ? (
+                <>
+                  {PREVIEW_DEVICES.map((device) => (
+                    <button
+                      key={device.id}
+                      type="button"
+                      className={!showAllDevices && previewDevice === device.id ? "on" : ""}
+                      onClick={() => {
+                        setPreviewDevice(device.id);
+                        setShowAllDevices(false);
+                      }}
+                    >
+                      {device.label}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className={showAllDevices ? "on" : ""}
+                    onClick={() => setShowAllDevices(true)}
+                  >
+                    All
+                  </button>
+                  <label className="preview-as">
+                    Preview as
+                    <select
+                      value={previewAs}
+                      onChange={(e) => setPreviewAs(e.target.value)}
+                    >
+                      <option value="">PIN</option>
+                      {(config.users || []).map((user) => (
+                        <option key={user.id} value={user.name}>
+                          {user.name} · {roleLabel(user.role)}
+                          {user.disabled ? " (off)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </>
+              ) : section === "automate" ? (
+                <>
+                  <button
+                    type="button"
+                    className={editor === "bots" ? "on" : ""}
+                    onClick={() => setEditor("bots")}
+                  >
+                    Bots
+                  </button>
+                  <button
+                    type="button"
+                    className={editor === "intelligence" ? "on" : ""}
+                    onClick={() => setEditor("intelligence")}
+                  >
+                    Intelligence
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className={editor === "users" ? "on" : ""}
+                    onClick={() => setEditor("users")}
+                  >
+                    Users
+                  </button>
+                  <button
+                    type="button"
+                    className={editor === "security" ? "on" : ""}
+                    onClick={() => setEditor("security")}
+                  >
+                    Security
+                  </button>
+                  <button
+                    type="button"
+                    className={editor === "settings" ? "on" : ""}
+                    onClick={() => setEditor("settings")}
+                  >
+                    Settings
+                  </button>
+                </>
+              )}
+            </div>
+          ) : null
+        }
+      />
+
+      {editor === "layout" && (
+        <div className="layout">
+          <aside className="pages">
+            <div className="pages-head">
+              <p className="aside-label">Views</p>
+              <button type="button" className="pages-add" onClick={() => addNewView("middle")} aria-label="Add view">
+                +
+              </button>
+            </div>
+            <button
+              type="button"
+              className={focus === "home" ? "on" : ""}
+              onClick={() => {
+                setFocus("home");
+                if (emptyApp) setGalleryOpen(true);
+              }}
+            >
+              Home
+            </button>
+            <div className="pages-head">
+              <p className="aside-label">Primary</p>
+              <button type="button" className="pages-add" onClick={() => addNewView("middle")} aria-label="Add primary view">
+                +
+              </button>
+            </div>
+            {primaryViews(config).map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className={focus === s.id ? "on" : ""}
+                onClick={() => setFocus(s.id)}
+              >
+                {viewLabel(s)}
+                <em>{styleLabel(s.collectionStyle)}</em>
+              </button>
+            ))}
+            <div className="pages-head">
+              <p className="aside-label">Menu</p>
+              <button type="button" className="pages-add" onClick={() => addNewView("menu")} aria-label="Add menu view">
+                +
+              </button>
+            </div>
+            {menuViews(config).map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className={focus === s.id ? "on" : ""}
+                onClick={() => setFocus(s.id)}
+              >
+                {viewLabel(s)}
+                <em>menu</em>
+              </button>
+            ))}
+            <div className="pages-head">
+              <p className="aside-label">Reference</p>
+              <button type="button" className="pages-add" onClick={() => addNewView("ref")} aria-label="Add reference view">
+                +
+              </button>
+            </div>
+            {refViews(config).map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className={focus === s.id ? "on" : ""}
+                onClick={() => setFocus(s.id)}
+              >
+                {viewLabel(s)}
+                <em>{viewPosition(s)}</em>
+              </button>
+            ))}
+          </aside>
+
+          <div className="canvas-col">
+            {showGallery ? (
+              <TemplateGallery
+                onPick={applyPlan}
+                onBuild={build}
+                onCreateNew={createNewSpreadsheet}
+                sheetUrl={sheetUrl}
+                onSheetUrl={setSheetUrl}
+          onConnectSheet={connectSheet}
+          onUploadFile={onSpreadsheetFile}
+          onBack={emptyApp ? undefined : () => setGalleryOpen(false)}
+              />
+            ) : (
+              <div className={`canvas${showAllDevices ? " is-all-devices" : ""}`}>
+                {(showAllDevices ? PREVIEW_DEVICES : [PREVIEW_DEVICES.find((d) => d.id === previewDevice)!]).map(
+                  (device) => (
+                    <DeviceFrame key={device.id} device={device.id}>
+                      <AppRuntime
+                        config={config}
+                        sheet={sheet}
+                        focusViewId={focus}
+                        device={device.id}
+                        previewAs={previewAs || null}
+                        onSheetChange={bump}
+                      />
+                    </DeviceFrame>
+                  ),
+                )}
+              </div>
+            )}
+            {preview ? null : (
+              <AiBar
+                credits={credits}
+                built={config.views.length > 0}
+                lastPrompt={lastPrompt}
+                onBuild={build}
+              />
+            )}
+            {note ? <p className="build-note">{note}</p> : null}
+            {google.connected && !google.spreadsheetId && Object.keys(workbook.tabs).length ? (
+              <p className="build-note">
+                <button
+                  type="button"
+                  className="linkish"
+                  disabled={googleBusy}
+                  onClick={() =>
+                    void createSheetFromPlan({
+                      id: activeTemplateId || "custom",
+                      label: config.meta.name,
+                      blurb: "",
+                      prompt: "",
+                      config,
+                      workbook,
+                    })
+                  }
+                >
+                  Create this Sheet in my Google Drive
+                </button>
+              </p>
+            ) : null}
+          </div>
+
+          <aside className="inspector">
+            <DesignPanel
+              config={config}
+              sheet={sheet}
+              focus={focus}
+              onFocus={setFocus}
+              onChange={(next) => {
+                setConfig(next);
+                bump();
+              }}
+            />
+          </aside>
+        </div>
+      )}
+
+      {editor === "data" && (
+        <DataEditor
+          sheet={sheet}
+          config={config}
+          tabName={dataTab || Object.keys(workbook.tabs)[0] || ""}
+          pane={dataPane}
+          onPane={setDataPane}
+          onTab={setDataTab}
+          onChange={bump}
+          onConfigChange={(next) => {
+            setConfig(next);
+            bump();
+          }}
+          onTemplates={openGallery}
+          onUpload={pickSpreadsheet}
+          spreadsheetId={google.spreadsheetId}
+          spreadsheetTitle={google.spreadsheetTitle ?? undefined}
+          connected={google.connected}
+          onRefreshSheet={() => {
+            if (google.spreadsheetId) void loadWorkbook(google.spreadsheetId);
+          }}
+          onLinkSheet={() => setSheetOpen(true)}
+          onDelinkSheet={() => void disconnectGoogle()}
+          onSeePhone={() => {
+            setDataPane("columns");
+            setEditor("layout");
+            setFocus("home");
+            setPreview(true);
+          }}
+        />
+      )}
+
+      {editor === "bots" && (
+        <BotsPanel
+          config={config}
+          sheet={sheet}
+          onChange={(next) => {
+            setConfig(next);
+            bump();
+          }}
+        />
+      )}
+
+      {editor === "intelligence" && (
+        <IntelligencePanel
+          config={config}
+          onChange={(next) => {
+            setConfig(next);
+            bump();
+          }}
+        />
+      )}
+
+      {editor === "users" && (
+        <PeoplePanel
+          config={config}
+          onChange={setConfig}
+        />
+      )}
+
+      {editor === "security" && (
+        <SecurityPanel
+          config={config}
+          onChange={setConfig}
+        />
+      )}
+
+      {editor === "settings" && (
+        <SettingsEditor
+          config={config}
+          credits={credits}
+          onChange={setConfig}
+          onBuy={() => setCredits(addCredits(20))}
+        />
+      )}
+    </div>
+  );
+}
+
+function DataEditor({
+  sheet,
+  config,
+  tabName,
+  pane,
+  onPane,
+  onTab,
+  onChange,
+  onConfigChange,
+  onTemplates,
+  onUpload,
+  spreadsheetId,
+  spreadsheetTitle,
+  connected,
+  onRefreshSheet,
+  onLinkSheet,
+  onDelinkSheet,
+  onSeePhone,
+}: {
+  sheet: SheetAdapter;
+  config: AppConfig;
+  tabName: string;
+  pane: "columns" | "rows" | "settings" | "slices" | "schema";
+  onPane: (pane: "columns" | "rows" | "settings" | "slices" | "schema") => void;
+  onTab: (name: string) => void;
+  onChange: () => void;
+  onConfigChange: (next: AppConfig) => void;
+  onTemplates: () => void;
+  onUpload: () => void;
+  spreadsheetId?: string | null;
+  spreadsheetTitle?: string;
+  connected?: boolean;
+  onRefreshSheet: () => void;
+  onLinkSheet: () => void;
+  onDelinkSheet: () => void;
+  onSeePhone: () => void;
+}) {
+  const book = sheet.getWorkbook();
+  const tab = book.tabs[tabName];
+  const view = config.views.find((item) => item.tab === tabName);
+  const [col, setCol] = useState("");
+  const [colType, setColType] = useState<FieldType>("text");
+  const [newTab, setNewTab] = useState("");
+  const [focusCol, setFocusCol] = useState(tab?.headers[0] || "");
+  const [editingCol, setEditingCol] = useState<string | null>(null);
+  const [botNote, setBotNote] = useState("");
+  const tables = Object.keys(book.tabs);
+
+  async function runBots(
+    table: string,
+    event: "adds" | "updates",
+    cells: Record<string, CellValue>,
+  ) {
+    const planned = planBotsForRow(config.bots, table, event, cells);
+    if (!planned.length) return;
+    for (const action of planned) {
+      if (action.kind === "pdf" && action.pdfBase64) {
+        const bytes = Uint8Array.from(atob(action.pdfBase64), (ch) => ch.charCodeAt(0));
+        downloadPdf(action.fileName || "document.pdf", bytes);
+      }
+    }
+    const sendable = planned.filter(
+      (action) => action.kind === "email" || action.kind === "whatsapp",
+    );
+    if (sendable.length) {
+      const sent = await dispatchAppBuilderBotAction(
+        sendable.map((action) => ({
+          kind: action.kind as "email" | "whatsapp",
+          to: action.to,
+          subject: action.subject,
+          body: action.body,
+        })),
+      );
+      setBotNote([ ...planned.map((item) => item.message), sent.message ].join(" · "));
+      return;
+    }
+    setBotNote(planned.map((item) => item.message).join(" · "));
+  }
+
+  function applyType(name: string, type: FieldType, extras: Parameters<typeof withColumnType>[5] = {}) {
+    const values = tab?.rows.map((row) => row.cells[name]) || [];
+    const field = fieldOf(view, name);
+    onConfigChange(
+      withColumnType(config, tabName, name, type, values, {
+        ...field,
+        ...extras,
+        fileFolder:
+          extras.fileFolder ||
+          field?.fileFolder ||
+          `${config.meta.name}/${tabName}`,
+        refTab: extras.refTab || field?.refTab || tables.find((item) => item !== tabName),
+      }),
+    );
+  }
+
+  function patchView(patch: Partial<NonNullable<typeof view>>) {
+    if (!view) return;
+    onConfigChange({
+      ...config,
+      views: config.views.map((item) => (item.id === view.id ? { ...item, ...patch } : item)),
+    });
+  }
+
+  function renameCol(from: string, to: string) {
+    sheet.renameColumn(tabName, from, to);
+    onConfigChange(renameColumnInConfig(config, tabName, from, to));
+    setFocusCol(to);
+    if (editingCol === from) setEditingCol(to);
+    onChange();
+  }
+
+  function deleteCol(name: string) {
+    sheet.deleteColumn(tabName, name);
+    onConfigChange(deleteColumnInConfig(config, tabName, name));
+    if (focusCol === name) setFocusCol(sheet.getTab(tabName)?.headers[0] || "");
+    if (editingCol === name) setEditingCol(null);
+    onChange();
+  }
+
+  return (
+    <div className="data-editor">
+      <aside className="pages">
+        <p className="aside-label">Tables</p>
+        <button type="button" onClick={onTemplates}>
+          Templates
+          <em>Change app</em>
+        </button>
+        <button
+          type="button"
+          className={pane === "schema" ? "on" : ""}
+          onClick={() => onPane("schema")}
+        >
+          Tables & relations
+          <em>
+            {config.views.filter((v) => v.nav !== false).length} in app
+          </em>
+        </button>
+        {Object.values(book.tabs).map((t) => {
+          const view = config.views.find((v) => v.tab === t.name);
+          const inApp = view ? view.nav !== false : false;
+          return (
+            <div key={t.name} className="table-row">
+              <label className="table-check">
+                <input
+                  type="checkbox"
+                  checked={inApp}
+                  onChange={(e) =>
+                    onConfigChange(
+                      setTableInApp(config, book, t.name, e.target.checked),
+                    )
+                  }
+                  aria-label={`${t.name} in app`}
+                />
+              </label>
+              <button
+                type="button"
+                className={tabName === t.name && pane !== "schema" ? "on" : ""}
+                onClick={() => {
+                  onTab(t.name);
+                  onPane("columns");
+                }}
+              >
+                {t.name}
+                <em>
+                  {t.rows.length}
+                  {inApp ? "" : " · off"}
+                </em>
+              </button>
+            </div>
+          );
+        })}
+        <div className="add-inline">
+          <input
+            value={newTab}
+            onChange={(e) => setNewTab(e.target.value)}
+            placeholder="New table"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              if (!newTab.trim()) return;
+              sheet.addTab(newTab.trim());
+              onTab(newTab.trim());
+              setNewTab("");
+              onChange();
+            }}
+          >
+            Add
+          </button>
+        </div>
+      </aside>
+      <div className="sheet-wrap">
+        {pane === "schema" ? (
+          <SchemaStudio
+            config={config}
+            sheet={sheet}
+            onChange={onConfigChange}
+            onDone={onSeePhone}
+          />
+        ) : !tab ? (
+          <p className="hint">Build an app first — tables appear here like your Sheet.</p>
+        ) : (
+          <div className="sheet">
+            <header>
+              <h2>Table: {view?.name || tab.name}</h2>
+              <p>
+                {connected ? spreadsheetTitle || book.title : book.title} · {tab.headers.length} columns
+                {connected ? " · Google Sheets" : " · not linked"}
+              </p>
+              <div className="ab-insp-seg" role="tablist" aria-label="Table">
+                <button type="button" className={pane === "columns" ? "on" : ""} onClick={() => onPane("columns")}>
+                  Columns
+                </button>
+                <button type="button" className={pane === "rows" ? "on" : ""} onClick={() => onPane("rows")}>
+                  Rows
+                </button>
+                <button type="button" className={pane === "settings" ? "on" : ""} onClick={() => onPane("settings")}>
+                  Settings
+                </button>
+                <button type="button" className={pane === "slices" ? "on" : ""} onClick={() => onPane("slices")}>
+                  Slices
+                </button>
+              </div>
+              <div className="sheet-toolbar">
+                {spreadsheetId ? (
+                  <a
+                    className="btn ghost"
+                    href={`https://docs.google.com/spreadsheets/d/${spreadsheetId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    View data source
+                  </a>
+                ) : null}
+                <button type="button" className="btn ghost" onClick={onRefreshSheet} disabled={!connected}>
+                  Refresh
+                </button>
+                {connected ? (
+                  <button type="button" className="btn ghost" onClick={onDelinkSheet}>
+                    Delink
+                  </button>
+                ) : (
+                  <button type="button" className="btn ghost" onClick={onLinkSheet}>
+                    Link Sheet
+                  </button>
+                )}
+                <button type="button" className="btn ghost" onClick={() => onPane("schema")}>
+                  Relations
+                </button>
+                <button type="button" className="btn ghost" onClick={onUpload}>
+                  Upload
+                </button>
+                <button type="button" className="btn ghost" onClick={onTemplates}>
+                  Templates
+                </button>
+              </div>
+            </header>
+            {pane === "columns" ? (
+              <div className={`ab-cols-wrap${editingCol ? " is-open" : ""}`}>
+                <TableColumnsPanel
+                  tab={tab}
+                  config={config}
+                  view={view}
+                  focusCol={editingCol || focusCol}
+                  onFocusCol={(col) => {
+                    setFocusCol(col);
+                    setEditingCol(col);
+                  }}
+                  onType={(col, type) => {
+                    setFocusCol(col);
+                    setEditingCol(col);
+                    applyType(col, type);
+                  }}
+                  onRename={renameCol}
+                  onDelete={deleteCol}
+                  onKey={(col) => patchView({ keyCol: view?.keyCol === col ? undefined : col })}
+                  onLabel={(col) => patchView({ titleCol: col })}
+                  onFormula={(col) => {
+                    setFocusCol(col);
+                    setEditingCol(col);
+                    applyType(col, "virtual", { virtual: true, formula: fieldOf(view, col)?.formula || `[${col}]` });
+                  }}
+                />
+                {editingCol ? (
+                  <ColumnInspector
+                    col={editingCol}
+                    type={fieldTypeOf(view, editingCol, tab.rows.map((row) => row.cells[editingCol]))}
+                    field={fieldOf(view, editingCol)}
+                    tables={tables}
+                    tabName={tab.name}
+                    headers={tab.headers}
+                    config={config}
+                    viewOwner={view?.ownerCol}
+                    onApply={(type, extras) => applyType(editingCol, type, extras)}
+                    onConfigChange={onConfigChange}
+                    onRename={(next) => renameCol(editingCol, next)}
+                    onDone={() => setEditingCol(null)}
+                  />
+                ) : null}
+              </div>
+            ) : null}
+            {pane === "slices" ? (
+              <SlicesPanel
+                config={config}
+                tabName={tab.name}
+                headers={tab.headers}
+                onChange={onConfigChange}
+              />
+            ) : null}
+            {pane === "settings" ? (
+              <TableSettingsPanel
+                config={config}
+                view={view}
+                tabName={tab.name}
+                sourceTitle={spreadsheetTitle || book.title}
+                spreadsheetId={spreadsheetId}
+                connected={connected}
+                onPatchView={patchView}
+                onRefresh={onRefreshSheet}
+                onLink={onLinkSheet}
+                onDelink={onDelinkSheet}
+              />
+            ) : null}
+            {pane === "rows" ? (
+            <>
+            <div className="grid-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th className="idx">#</th>
+                    {tab.headers.map((h, index) => (
+                      <th key={h}>
+                        <span className="col-head">
+                          <button
+                            type="button"
+                            className="col-move"
+                            disabled={index === 0}
+                            aria-label={`Move ${h} left`}
+                            onClick={() => {
+                              sheet.moveColumn(tab.name, h, -1);
+                              const headers =
+                                sheet.getTab(tab.name)?.headers || [];
+                              onConfigChange({
+                                ...config,
+                                views: config.views.map((view) =>
+                                  view.tab === tab.name
+                                    ? { ...view, cols: headers }
+                                    : view,
+                                ),
+                              });
+                            }}
+                          >
+                            ‹
+                          </button>
+                          <button
+                            type="button"
+                            className={editingCol === h ? "col-name on" : "col-name"}
+                            onClick={() => {
+                              setFocusCol(h);
+                              setEditingCol(h);
+                            }}
+                          >
+                            {h}
+                          </button>
+                          <select
+                            className="col-type"
+                            aria-label={`Type for ${h}`}
+                            value={fieldTypeOf(
+                              view,
+                              h,
+                              tab.rows.map((row) => row.cells[h]),
+                            )}
+                            onChange={(e) => {
+                              setFocusCol(h);
+                              applyType(h, e.target.value as FieldType);
+                            }}
+                          >
+                            {FIELD_TYPE_OPTIONS.map((option) => (
+                              <option key={option.id} value={option.id}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            className="col-move"
+                            disabled={index === tab.headers.length - 1}
+                            aria-label={`Move ${h} right`}
+                            onClick={() => {
+                              sheet.moveColumn(tab.name, h, 1);
+                              const headers =
+                                sheet.getTab(tab.name)?.headers || [];
+                              onConfigChange({
+                                ...config,
+                                views: config.views.map((view) =>
+                                  view.tab === tab.name
+                                    ? { ...view, cols: headers }
+                                    : view,
+                                ),
+                              });
+                            }}
+                          >
+                            ›
+                          </button>
+                        </span>
+                      </th>
+                    ))}
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {tab.rows.map((r) => (
+                    <tr key={r._row}>
+                      <td className="idx">{r._row}</td>
+                      {tab.headers.map((h) => (
+                        <td key={h}>
+                          <DataCell
+                            type={fieldTypeOf(view, h, tab.rows.map((row) => row.cells[h]))}
+                            field={fieldOf(view, h)}
+                            value={r.cells[h]}
+                            row={r.cells}
+                            tables={tables}
+                            sheet={sheet}
+                            folder={`${config.meta.name}/${tab.name}`}
+                            onChange={(next) => {
+                              sheet.setCell(tab.name, r._row, h, next);
+                              onChange();
+                              void runBots(tab.name, "updates", { ...r.cells, [h]: next });
+                            }}
+                          />
+                        </td>
+                      ))}
+                      <td>
+                        <button
+                          type="button"
+                          className="linkish"
+                          onClick={() => {
+                            sheet.deleteRow(tab.name, r._row);
+                            onChange();
+                          }}
+                        >
+                          Del
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {tab.rows.length === 0 ? (
+              <p className="data-empty">
+                No rows yet. Add a row, or this table is headers only. Staff still
+                need a row-owner column before PIN login hides anyone else’s data.
+              </p>
+            ) : null}
+            {botNote ? <p className="build-note">{botNote}</p> : null}
+            <div className="sheet-actions">
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={() => {
+                  sheet.appendRow(tab.name, {});
+                  onChange();
+                  const last = sheet.listRows(tab.name).at(-1);
+                  if (last) void runBots(tab.name, "adds", last.cells);
+                }}
+              >
+                Add row
+              </button>
+            </div>
+            </>
+            ) : null}
+            {pane === "columns" || pane === "rows" ? (
+              <>
+                {pane === "rows" && editingCol ? (
+                  <ColumnInspector
+                    col={editingCol}
+                    type={fieldTypeOf(view, editingCol, tab.rows.map((row) => row.cells[editingCol]))}
+                    field={fieldOf(view, editingCol)}
+                    tables={tables}
+                    tabName={tab.name}
+                    headers={tab.headers}
+                    config={config}
+                    viewOwner={view?.ownerCol}
+                    onApply={(type, extras) => applyType(editingCol, type, extras)}
+                    onConfigChange={onConfigChange}
+                    onRename={(next) => renameCol(editingCol, next)}
+                    onDone={() => setEditingCol(null)}
+                  />
+                ) : null}
+                {pane === "columns" ? (
+                  <div className="sheet-actions">
+                    <input
+                      value={col}
+                      onChange={(e) => setCol(e.target.value)}
+                      placeholder="New column"
+                    />
+                    <select
+                      className="col-type"
+                      aria-label="New column type"
+                      value={colType}
+                      onChange={(e) => setColType(e.target.value as FieldType)}
+                    >
+                      {FIELD_TYPE_OPTIONS.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="btn ghost"
+                      onClick={() => {
+                        const name = col.trim();
+                        if (!name) return;
+                        sheet.addColumn(tab.name, name);
+                        applyType(name, colType);
+                        setCol("");
+                        setColType("text");
+                        setFocusCol(name);
+                        setEditingCol(name);
+                        onChange();
+                      }}
+                    >
+                      Add column
+                    </button>
+                  </div>
+                ) : null}
+              </>
+            ) : null}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DataCell({
+  type,
+  field,
+  value,
+  row,
+  tables,
+  sheet,
+  folder,
+  onChange,
+}: {
+  type: FieldType;
+  field?: AppFormField;
+  value: CellValue;
+  row: Record<string, CellValue>;
+  tables: string[];
+  sheet: SheetAdapter;
+  folder: string;
+  onChange: (next: CellValue) => void;
+}) {
+  const text = value == null ? "" : String(value).split("::")[0];
+  if (type === "virtual") {
+    const tablesMap = Object.fromEntries(tables.map((name) => [name, sheet.listRows(name)]));
+    const shown = evaluateAppSheetFormula(field?.formula || "", { row, tables: tablesMap });
+    return <span className="cell-virtual">{shown === "" ? "—" : String(shown)}</span>;
+  }
+  if (type === "enum" || type === "choice") {
+    const options = field?.options || [];
+    return (
+      <select className="cell" value={text} onChange={(e) => onChange(e.target.value)}>
+        <option value="">Select</option>
+        {options.map((opt) => (
+          <option key={opt} value={opt}>
+            {opt}
+          </option>
+        ))}
+        {text && !options.includes(text) ? <option value={text}>{text}</option> : null}
+      </select>
+    );
+  }
+  if (type === "ref") {
+    const refTab = field?.refTab || tables[0] || "";
+    const keyCol = field?.refKeyCol || field?.refLabelCol || "";
+    const labelCol = field?.refLabelCol || keyCol;
+    const rows = refTab ? sheet.listRows(refTab) : [];
+    const key = keyCol || Object.keys(rows[0]?.cells || {})[0] || "";
+    const label = labelCol || key;
+    return (
+      <select className="cell" value={text} onChange={(e) => onChange(e.target.value)}>
+        <option value="">Select</option>
+        {rows.map((row) => {
+          const id = row.cells[key] == null ? "" : String(row.cells[key]);
+          const name = row.cells[label] == null ? id : String(row.cells[label]);
+          return (
+            <option key={`${row._row}-${id}`} value={id}>
+              {name}
+            </option>
+          );
+        })}
+      </select>
+    );
+  }
+  if (type === "file") {
+    return (
+      <label className="cell-file">
+        <span>{text ? text.split("/").slice(-1)[0] : `${folder}/`}</span>
+        <input
+          type="file"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+              const path = `${field?.fileFolder || folder}/${file.name}`;
+              onChange(typeof reader.result === "string" ? `${path}::${reader.result}` : path);
+            };
+            reader.readAsDataURL(file);
+          }}
+        />
+      </label>
+    );
+  }
+  return (
+    <input
+      className="cell"
+      type={type === "number" ? "number" : type === "date" ? "date" : "text"}
+      value={text}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  );
+}
+
+
+function SettingsEditor({
+  config,
+  credits,
+  onChange,
+  onBuy,
+}: {
+  config: AppConfig;
+  credits: number;
+  onChange: (c: AppConfig) => void;
+  onBuy: () => void;
+}) {
+  return (
+    <div className="plain">
+      <h2>Settings</h2>
+      <label className="field-label">
+        App name
+        <input
+          value={config.meta.name}
+          onChange={(e) =>
+            onChange({ ...config, meta: { ...config.meta, name: e.target.value } })
+          }
+        />
+      </label>
+      <p className="hint">
+        <strong>Why us:</strong> AppSheet formulas, refs, bots, and PDFs — on
+        Glide-style phone, tablet, and desktop. Staff use a PIN. Data stays a
+        Gmail Sheet.
+      </p>
+      <p className="hint">
+        <strong>Connect to Google is blocked for everyone</strong> until the
+        Cloud OAuth consent screen is published. Today it is in Testing — that
+        is the 403 you saw. In Google Cloud Console → APIs &amp; Services →
+        OAuth consent screen: add each Gmail as a <strong>Test user</strong>,
+        or click <strong>Publish app</strong> (In production). Users then see
+        an “unverified app” warning and can continue. Verification is only
+        needed to hide that warning. Privacy URL Google asks for:{" "}
+        <a href="/app-builder/privacy" target="_blank" rel="noreferrer">
+          sheetomatic.com/app-builder/privacy
+        </a>
+        . Until that is done, use <strong>Upload spreadsheet</strong>.
+      </p>
+      <ThemePicker
+        meta={config.meta}
+        onChange={(patch) =>
+          onChange({ ...config, meta: { ...config.meta, ...patch } })
+        }
+      />
+      <p className="hint">
+        {credits} credits left. Welcome pack is 40. When empty, buy more — never
+        a Google Workspace bill.
+      </p>
+      <button type="button" className="btn primary" onClick={onBuy}>
+        Buy 20 credits (demo)
+      </button>
+    </div>
+  );
+}
