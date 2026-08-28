@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ExternalLink } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import type { WorkspaceProduct } from "@prisma/client";
 import { ClientPlanActions } from "@/components/saas/client-plan-actions";
 import { SOLD_PRODUCT_ORDER } from "@/lib/billing/catalog";
@@ -192,77 +192,60 @@ function WorkspaceClientCard({ row }: { row: ClientBillingRow[][number] }) {
       </button>
       {open ? (
         <div className="crm-client-body">
-          <dl className="ws-wa-detail">
-            <div>
-              <dt>Users</dt>
-              <dd>
+          <div className="ws-client-stats" aria-label="Subscription summary">
+            <div className="ws-client-stat">
+              <span className="ws-client-stat-value">
                 {row.activeUsers}/{row.maxMembers}
-              </dd>
+              </span>
+              <span className="ws-client-stat-label">Users</span>
             </div>
-            <div>
-              <dt>Billing</dt>
-              <dd>{row.billingPeriod === "MONTHLY" ? "Monthly" : "Annual"}</dd>
+            <div className="ws-client-stat">
+              <span className="ws-client-stat-value">
+                {row.billingPeriod === "MONTHLY" ? "Monthly" : "Annual"}
+              </span>
+              <span className="ws-client-stat-label">Billing</span>
             </div>
-            <div>
-              <dt>Monthly / plan</dt>
-              <dd>
-                {row.monthlyTotalLabel}
-                <div>{row.planLabel}</div>
-              </dd>
+            <div className="ws-client-stat ws-client-stat--wide">
+              <span className="ws-client-stat-value">{row.monthlyTotalLabel}</span>
+              <span className="ws-client-stat-label">{row.planLabel}</span>
             </div>
-            <div>
-              <dt>Invoiced</dt>
-              <dd>{row.invoicedLabel}</dd>
+            <div className="ws-client-stat">
+              <span className="ws-client-stat-value">{row.invoicedLabel}</span>
+              <span className="ws-client-stat-label">Invoiced</span>
             </div>
-            <div>
-              <dt>Pending</dt>
-              <dd>
-                {row.pendingLabel}
-                {row.pendingInvoices > 0 ? (
-                  <div>
-                    {row.pendingInvoices} open
-                    {row.latestInvoice ? ` · ${row.latestInvoice.number}` : ""}
-                  </div>
-                ) : null}
-              </dd>
+            <div className="ws-client-stat">
+              <span className="ws-client-stat-value">{row.pendingLabel}</span>
+              <span className="ws-client-stat-label">
+                Pending
+                {row.pendingInvoices > 0 ? ` · ${row.pendingInvoices} open` : ""}
+              </span>
             </div>
-            <div>
-              <dt>Received</dt>
-              <dd>{row.receivedLabel}</dd>
+            <div className="ws-client-stat">
+              <span className="ws-client-stat-value">{row.receivedLabel}</span>
+              <span className="ws-client-stat-label">Received</span>
             </div>
-            <div>
-              <dt>Renewal</dt>
-              <dd>{row.renewalLabel}</dd>
+            <div className="ws-client-stat">
+              <span className="ws-client-stat-value">{row.renewalLabel}</span>
+              <span className="ws-client-stat-label">Renewal</span>
             </div>
-            {row.latestInvoice ? (
-              <div>
-                <dt>Latest invoice</dt>
-                <dd>
-                  <Link href={`/app/billing/invoices/${row.latestInvoice.id}`}>
-                    {row.latestInvoice.number}
-                  </Link>
-                  <div>
-                    {row.latestInvoice.totalLabel} · {row.latestInvoice.dueLabel}
-                  </div>
-                </dd>
-              </div>
-            ) : null}
-          </dl>
-          <div className="ws-wa-row-actions">
-            <Link
-              className="ws-billing-icon-btn"
-              href={`/app/clients/${row.id}`}
-              title="Open client"
-              aria-label={`Open ${row.name}`}
-            >
-              <ExternalLink size={16} aria-hidden />
-            </Link>
           </div>
+          {row.latestInvoice ? (
+            <div className="ws-client-invoice">
+              <span className="ws-client-invoice-label">Latest invoice</span>
+              <Link href={`/app/billing/invoices/${row.latestInvoice.id}`}>
+                {row.latestInvoice.number}
+              </Link>
+              <span className="ws-client-invoice-meta">
+                {row.latestInvoice.totalLabel} · {row.latestInvoice.dueLabel}
+              </span>
+            </div>
+          ) : null}
           <ClientPlanActions
             addonLines={row.addonLines}
             availableAddons={row.availableAddons}
             billingPeriod={row.billingPeriod}
             clientName={row.name}
+            clientUrl={`/app/clients/${row.id}`}
             extraUserMonthlyPaise={row.extraUserMonthlyPaise}
             gstPercent={row.gstPercent}
             hasPlan={row.hasPlan}

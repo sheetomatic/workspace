@@ -45,60 +45,40 @@
 }
 
 .ws-billing-kpi {
-  border: 1px solid var(--ws-border, #e5e7eb);
-  border-radius: 12px;
+  border: none;
+  border-radius: 18px;
   background: #fff;
-  padding: 0.9rem 1rem;
+  padding: 1rem 1.15rem;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
 }
 
-.ws-billing-kpi--clients {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-}
-
-.ws-billing-kpi--users {
-  background: #eef2ff;
-  border-color: #c7d2fe;
-}
-
-.ws-billing-kpi--invoiced {
-  background: #fff7ed;
-  border-color: #fed7aa;
-}
-
-.ws-billing-kpi--pending {
-  background: #fefce8;
-  border-color: #fde68a;
-}
-
-.ws-billing-kpi--received {
-  background: #ecfdf5;
-  border-color: #a7f3d0;
-}
-
-.ws-billing-kpi--hold {
-  background: #fff1f2;
-  border-color: #fecdd3;
-}
-
+.ws-billing-kpi--clients,
+.ws-billing-kpi--users,
+.ws-billing-kpi--invoiced,
+.ws-billing-kpi--pending,
+.ws-billing-kpi--received,
+.ws-billing-kpi--hold,
 .ws-billing-kpi--wa {
-  background: #ecfeff;
-  border-color: #a5f3fc;
+  background: #fff;
+  border-color: transparent;
 }
 
 .ws-billing-kpi span {
   display: block;
-  color: #64748b;
+  color: #86868b;
   font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .ws-billing-kpi strong {
   display: block;
-  margin-top: 0.35rem;
-  font-size: 1.15rem;
+  margin-top: 0.25rem;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #1d1d1f;
 }
 
 .ws-billing-kpi small {
@@ -144,17 +124,18 @@
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  padding: 0.15rem 0.55rem;
-  font-size: 0.72rem;
-  font-weight: 700;
-  background: #f1f5f9;
-  color: #334155;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: #f5f5f7;
+  color: #1d1d1f;
 }
 
 .ws-billing-pill.paid,
 .ws-billing-pill.active {
-  background: #dcfce7;
-  color: #166534;
+  background: #e8f5e9;
+  color: #1b7f3a;
 }
 
 .ws-billing-pill.overdue,
@@ -223,10 +204,11 @@
 }
 
 .ws-wa-group {
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border: none;
+  border-radius: 18px;
   background: #fff;
   overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
 .ws-wa-group-summary {
@@ -235,10 +217,13 @@
   justify-content: space-between;
   gap: 0.5rem;
   align-items: center;
-  padding: 0.75rem 1rem;
+  padding: 0.85rem 1.15rem;
   cursor: pointer;
   list-style: none;
-  font-weight: 700;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: #1d1d1f;
+  letter-spacing: -0.01em;
 }
 
 .ws-wa-group-summary > span:first-child {
@@ -252,16 +237,18 @@
 }
 
 .ws-wa-group-summary small {
-  font-weight: 500;
-  color: #64748b;
+  font-weight: 400;
+  color: #86868b;
 }
 
 .ws-wa-group[open] .ws-wa-group-summary {
-  border-bottom: 1px solid #eef2f6;
+  border-bottom: 1px solid #f0f0f2;
 }
 
 .ws-wa-group .crm-client-groups-list {
-  padding: 0.75rem 1rem 1rem;
+  padding: 0.85rem 1rem 1rem;
+  display: grid;
+  gap: 0.65rem;
 }
 
 .ws-billing-pill.inactive,
@@ -292,47 +279,22 @@
 }
 
 .ws-billing-section {
-  border-color: transparent;
+  border: none;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
 }
 
-.ws-billing-section--wa {
-  background: #ecfeff;
-  border-color: #a5f3fc;
-}
-
-.ws-billing-section--bci {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-}
-
-.ws-billing-section--tasks {
-  background: #eef2ff;
-  border-color: #c7d2fe;
-}
-
-.ws-billing-section--hrms {
-  background: #fff7ed;
-  border-color: #fed7aa;
-}
-
-.ws-billing-section--crm {
-  background: #fff1f2;
-  border-color: #fecdd3;
-}
-
-.ws-billing-section--app-builder {
-  background: #fefce8;
-  border-color: #fde68a;
-}
-
-.ws-billing-section--workspace {
-  background: #ecfdf5;
-  border-color: #a7f3d0;
-}
-
+.ws-billing-section--wa,
+.ws-billing-section--bci,
+.ws-billing-section--tasks,
+.ws-billing-section--hrms,
+.ws-billing-section--crm,
+.ws-billing-section--app-builder,
+.ws-billing-section--workspace,
 .ws-billing-section--monthly {
-  background: #f5f3ff;
-  border-color: #ddd6fe;
+  background: #fff;
+  border-color: transparent;
 }
 
 .ws-wa-detail {
@@ -591,8 +553,167 @@
 
 .ws-plan-actions {
   display: grid;
+  gap: 1rem;
+  margin-top: 0.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f0f0f2;
+}
+
+/* Apple-style client stats strip */
+.ws-client-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: 1.25rem 1.5rem;
+  padding: 0 0.15rem;
+}
+
+.ws-client-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.ws-client-stat--wide {
+  grid-column: span 1;
+}
+
+.ws-client-stat-value {
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #1d1d1f;
+  line-height: 1.15;
+}
+
+.ws-client-stat-label {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #86868b;
+  line-height: 1.3;
+}
+
+.ws-client-invoice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.65rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: #f5f5f7;
+}
+
+.ws-client-invoice-label {
+  font-size: 0.75rem;
+  color: #86868b;
+}
+
+.ws-client-invoice a {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0071e3;
+  text-decoration: none;
+}
+
+.ws-client-invoice a:hover {
+  text-decoration: underline;
+}
+
+.ws-client-invoice-meta {
+  font-size: 0.75rem;
+  color: #86868b;
+}
+
+/* Add-ons section */
+.ws-client-addons h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1d1d1f;
+  letter-spacing: -0.01em;
+}
+
+/* Toolbar actions */
+.ws-client-toolbar {
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 0.55rem;
+  align-items: center;
+}
+
+.ws-client-toolbar form {
+  display: contents;
+}
+
+.ws-client-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  padding: 0.35rem 0.85rem;
+  border: none;
+  border-radius: 980px;
+  background: #f5f5f7;
+  color: #1d1d1f;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+}
+
+.ws-client-action:hover:not(:disabled) {
+  background: #e8e8ed;
+}
+
+.ws-client-action:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.ws-client-action--compact {
+  min-height: 1.75rem;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+}
+
+.ws-client-action--primary {
+  background: #0071e3;
+  color: #fff;
+}
+
+.ws-client-action--primary:hover:not(:disabled) {
+  background: #0077ed;
+}
+
+.ws-client-action--link {
+  background: transparent;
+  color: #0071e3;
+  padding-left: 0;
+  padding-right: 0.65rem;
+}
+
+.ws-client-action--link:hover:not(:disabled) {
+  background: transparent;
+  text-decoration: underline;
+}
+
+.ws-client-action--danger {
+  background: transparent;
+  color: #bf4800;
+}
+
+.ws-client-action--danger:hover:not(:disabled) {
+  background: #fff5f0;
+}
+
+.ws-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.35rem;
 }
 
 .ws-addon-summary {
@@ -603,10 +724,10 @@
 
 .ws-addon-lines {
   list-style: none;
-  margin: 0.35rem 0 0;
+  margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.35rem;
+  gap: 0.5rem;
 }
 
 .ws-addon-lines li {
@@ -637,11 +758,11 @@
 
 .ws-addon-panel {
   display: grid;
-  gap: 0.55rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 0.65rem 0.75rem;
-  background: #f8fafc;
+  gap: 0.75rem;
+  border: none;
+  border-radius: 14px;
+  padding: 1rem 1.15rem;
+  background: #f5f5f7;
 }
 
 .ws-addon-add-form {
@@ -651,11 +772,12 @@
 
 .ws-addon-card {
   display: grid;
-  gap: 0.45rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 0.55rem 0.65rem;
+  gap: 0.55rem;
+  border: none;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
   background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 .ws-addon-rate-row {
@@ -682,38 +804,50 @@
 }
 
 .ws-addon-line {
-  display: grid;
-  gap: 0.35rem;
-  border: 1px solid #eef2f6;
-  border-radius: 10px;
-  padding: 0.45rem 0.55rem;
-  background: #fff;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  background: #f5f5f7;
 }
 
-.ws-addon-line-main {
+.ws-addon-line-copy {
   display: grid;
-  gap: 0.1rem;
+  gap: 0.15rem;
+  min-width: 0;
 }
 
-.ws-addon-line-main strong {
-  font-size: 0.78rem;
-  color: #0f172a;
+.ws-addon-line-copy strong {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1d1d1f;
+  letter-spacing: -0.01em;
 }
 
 .ws-addon-line-rate {
-  font-size: 0.72rem;
-  color: #64748b;
+  font-size: 0.75rem;
+  color: #86868b;
 }
 
 .ws-addon-line-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.35rem;
-  justify-content: flex-end;
+  align-items: center;
+  margin-left: auto;
 }
 
 .ws-addon-edit-form {
+  flex: 1 1 100%;
   display: grid;
-  gap: 0.4rem;
+  gap: 0.55rem;
+  margin-top: 0.35rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid #e8e8ed;
 }
 
 .ws-addon-edit-form label {
@@ -735,8 +869,10 @@
 
 .ws-plan-form {
   display: grid;
-  gap: 0.45rem;
-  min-width: 14rem;
+  gap: 0.65rem;
+  padding: 1rem 1.15rem;
+  border-radius: 14px;
+  background: #f5f5f7;
 }
 
 .ws-plan-form label {

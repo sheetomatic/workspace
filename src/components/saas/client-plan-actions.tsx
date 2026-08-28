@@ -1,7 +1,7 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
-import { Check, Loader2, PackagePlus, Pencil, Plus, Trash2, X } from "lucide-react";
 import {
   addClientAddonsAction,
   deleteClientBillingPlanAction,
@@ -43,7 +43,7 @@ function AddonLineEditor({
 
   return (
     <li className="ws-addon-line">
-      <div className="ws-addon-line-main">
+      <div className="ws-addon-line-copy">
         <strong>{line.label}</strong>
         <span className="ws-addon-line-rate">{formatAddonRate(line)}</span>
       </div>
@@ -66,24 +66,20 @@ function AddonLineEditor({
               <option value="ANNUAL">Annual</option>
             </select>
           </label>
-          <div className="ws-wa-icon-row">
+          <div className="ws-form-actions">
             <button
-              className={`ws-billing-icon-btn${saving ? " is-busy" : ""}`}
+              className="ws-client-action ws-client-action--primary"
               disabled={saving}
               type="submit"
-              title="Save add-on rate"
-              aria-label="Save add-on rate"
             >
-              {saving ? <Loader2 size={16} aria-hidden /> : <Check size={16} aria-hidden />}
+              {saving ? "Saving…" : "Save"}
             </button>
             <button
-              className="ws-billing-icon-btn"
+              className="ws-client-action"
               type="button"
-              title="Cancel"
-              aria-label="Cancel"
               onClick={() => setEditing(false)}
             >
-              <X size={16} aria-hidden />
+              Cancel
             </button>
           </div>
           {editState.message ? (
@@ -95,25 +91,21 @@ function AddonLineEditor({
       ) : (
         <div className="ws-addon-line-actions">
           <button
-            className="ws-billing-icon-btn"
+            className="ws-client-action ws-client-action--compact"
             type="button"
-            title="Edit add-on rate"
-            aria-label={`Edit ${line.label} rate`}
             onClick={() => setEditing(true)}
           >
-            <Pencil size={16} aria-hidden />
+            Edit
           </button>
           <form action={removeAddonAction}>
             <input name="organizationId" type="hidden" value={organizationId} />
             <input name="module" type="hidden" value={line.module} />
             <button
-              className={`ws-billing-icon-btn danger${removingAddon ? " is-busy" : ""}`}
+              className="ws-client-action ws-client-action--compact ws-client-action--danger"
               disabled={removingAddon}
               type="submit"
-              title="Remove add-on"
-              aria-label={`Remove ${line.label}`}
             >
-              {removingAddon ? <Loader2 size={16} aria-hidden /> : <X size={16} aria-hidden />}
+              {removingAddon ? "Removing…" : "Remove"}
             </button>
           </form>
         </div>
@@ -125,6 +117,7 @@ function AddonLineEditor({
 export function ClientPlanActions({
   organizationId,
   clientName,
+  clientUrl,
   hasPlan,
   monthlyPaise,
   extraUserMonthlyPaise,
@@ -137,6 +130,7 @@ export function ClientPlanActions({
 }: {
   organizationId: string;
   clientName: string;
+  clientUrl: string;
   hasPlan: boolean;
   monthlyPaise: number;
   extraUserMonthlyPaise: number;
@@ -167,37 +161,50 @@ export function ClientPlanActions({
 
   return (
     <div className="ws-plan-actions">
-      <div className="ws-wa-icon-row">
+      {addonLines.length > 0 ? (
+        <section className="ws-client-addons">
+          <h4>Add-ons</h4>
+          <ul className="ws-addon-lines">
+            {addonLines.map((line) => (
+              <AddonLineEditor
+                key={line.module}
+                line={line}
+                organizationId={organizationId}
+                removeAddonAction={removeAddonAction}
+                removingAddon={removingAddon}
+              />
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      <div className="ws-client-toolbar">
+        <Link className="ws-client-action ws-client-action--link" href={clientUrl}>
+          Open client
+        </Link>
         {hasPlan ? (
           <button
-            className="ws-billing-icon-btn"
+            className="ws-client-action"
             type="button"
-            title="Change plan"
-            aria-label="Change plan"
             onClick={() => setOpen(open === "change" ? null : "change")}
           >
-            <Pencil size={16} aria-hidden />
+            Edit plan
           </button>
         ) : (
           <button
-            className="ws-billing-icon-btn"
+            className="ws-client-action ws-client-action--primary"
             type="button"
-            title="Add plan"
-            aria-label="Add plan"
             onClick={() => setOpen(open === "add" ? null : "add")}
           >
-            <Plus size={16} aria-hidden />
+            Add plan
           </button>
         )}
         {availableAddons.length > 0 || addonLines.length > 0 ? (
           <button
-            className="ws-billing-icon-btn"
+            className="ws-client-action"
             type="button"
-            title="Add-on"
-            aria-label="Add-on"
             onClick={() => setOpen(open === "addon" ? null : "addon")}
           >
-            <PackagePlus size={16} aria-hidden />
+            Add-on
           </button>
         ) : null}
         {hasPlan ? (
@@ -215,17 +222,11 @@ export function ClientPlanActions({
           >
             <input name="organizationId" type="hidden" value={organizationId} />
             <button
-              className={`ws-billing-icon-btn danger${deleting ? " is-busy" : ""}`}
+              className="ws-client-action ws-client-action--danger"
               disabled={deleting}
               type="submit"
-              title="Remove plan"
-              aria-label="Remove plan"
             >
-              {deleting ? (
-                <Loader2 size={16} aria-hidden />
-              ) : (
-                <Trash2 size={16} aria-hidden />
-              )}
+              {deleting ? "Removing…" : "Remove plan"}
             </button>
           </form>
         ) : null}
@@ -244,19 +245,6 @@ export function ClientPlanActions({
         <p className={removeAddonState.ok ? "saas-form-success" : "saas-form-error"}>
           {removeAddonState.message}
         </p>
-      ) : null}
-      {addonLines.length > 0 ? (
-        <ul className="ws-addon-lines">
-          {addonLines.map((line) => (
-            <AddonLineEditor
-              key={line.module}
-              line={line}
-              organizationId={organizationId}
-              removeAddonAction={removeAddonAction}
-              removingAddon={removingAddon}
-            />
-          ))}
-        </ul>
       ) : null}
       {open === "addon" ? (
         <div className="ws-addon-panel">
@@ -300,28 +288,20 @@ export function ClientPlanActions({
                   </div>
                 </div>
               ))}
-              <div className="ws-wa-icon-row">
+              <div className="ws-form-actions">
                 <button
-                  className={`ws-billing-icon-btn${addingAddons ? " is-busy" : ""}`}
+                  className="ws-client-action ws-client-action--primary"
                   disabled={addingAddons}
                   type="submit"
-                  title="Add selected add-ons"
-                  aria-label="Add selected add-ons"
                 >
-                  {addingAddons ? (
-                    <Loader2 size={16} aria-hidden />
-                  ) : (
-                    <Check size={16} aria-hidden />
-                  )}
+                  {addingAddons ? "Adding…" : "Add selected"}
                 </button>
                 <button
-                  className="ws-billing-icon-btn"
+                  className="ws-client-action"
                   type="button"
-                  title="Cancel"
-                  aria-label="Cancel"
                   onClick={() => setOpen(null)}
                 >
-                  <X size={16} aria-hidden />
+                  Cancel
                 </button>
               </div>
             </form>
@@ -378,28 +358,20 @@ export function ClientPlanActions({
             Renewal
             <input defaultValue={renewalAt} name="renewalAt" type="date" />
           </label>
-          <div className="ws-wa-icon-row">
+          <div className="ws-form-actions">
             <button
-              className={`ws-billing-icon-btn${saving ? " is-busy" : ""}`}
+              className="ws-client-action ws-client-action--primary"
               disabled={saving}
               type="submit"
-              title={open === "add" ? "Add plan" : "Save plan"}
-              aria-label={open === "add" ? "Add plan" : "Save plan"}
             >
-              {saving ? (
-                <Loader2 size={16} aria-hidden />
-              ) : (
-                <Check size={16} aria-hidden />
-              )}
+              {saving ? "Saving…" : open === "add" ? "Add plan" : "Save plan"}
             </button>
             <button
-              className="ws-billing-icon-btn"
+              className="ws-client-action"
               type="button"
-              title="Cancel"
-              aria-label="Cancel"
               onClick={() => setOpen(null)}
             >
-              <X size={16} aria-hidden />
+              Cancel
             </button>
           </div>
           {saveState.message ? (
