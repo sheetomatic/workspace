@@ -1,6 +1,7 @@
 import type { Role } from "@prisma/client";
 import { ANMOL_PORTAL_SLUG } from "@/lib/dedicated-client-portals";
 import { hasMinimumRole } from "@/lib/permissions";
+import { isReminderWindowOpen } from "@/lib/task-due-ist";
 
 /** Anmol Traders — dedicated Tasks Management portal. */
 export const ANMOL_TRADERS_SLUG = ANMOL_PORTAL_SLUG;
@@ -25,7 +26,8 @@ const DEFAULT_POLICY: OrgTaskPolicy = {
 
 const ORG_TASK_POLICIES: Record<string, OrgTaskPolicy> = {
   [ANMOL_TRADERS_SLUG]: {
-    intervalReminderMinutes: 90,
+    // Match Anmol portal: every 4 hours during IST work hours after Start.
+    intervalReminderMinutes: 4 * 60,
     whatsappOnlyTeam: true,
     officialWhatsAppOnly: true,
   },
@@ -86,9 +88,17 @@ export function shouldSendIntervalReminder(params: {
   slug: string | null | undefined;
   now: Date;
   lastWhatsAppAt: Date | null;
+  dueAt?: Date;
+  startAt?: Date | null;
 }) {
   const policy = getOrgTaskPolicy(params.slug);
   if (!policy.intervalReminderMinutes) {
+    return false;
+  }
+  if (
+    params.dueAt &&
+    !isReminderWindowOpen(params.dueAt, params.now, params.startAt)
+  ) {
     return false;
   }
   if (!params.lastWhatsAppAt) {

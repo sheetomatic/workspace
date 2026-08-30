@@ -6,6 +6,10 @@ import {
 import { sendTaskAssignmentWhatsApp } from "@/lib/integrations/whatsapp";
 import { TASK_FREQUENCY_LABELS } from "@/lib/task-schedule";
 import { buildAssignSuccessMessage } from "@/lib/task-assign-feedback";
+import {
+  isReminderWindowOpen,
+  resolveEffectiveStartAt,
+} from "@/lib/task-due-ist";
 import { formatTaskDue, resolveTaskDescription } from "@/lib/tasks";
 
 type Assignee = {
@@ -30,6 +34,8 @@ export async function dispatchTaskReminders(params: {
   taskDescription?: string | null;
   priority: TaskPriority;
   dueAt: Date;
+  /** When work begins — WhatsApp stays quiet until this instant. */
+  startAt?: Date | null;
   frequency: TaskFrequency;
   isRecurring: boolean;
   assignee: Assignee;
@@ -42,6 +48,21 @@ export async function dispatchTaskReminders(params: {
   attachments?: Array<{ fileName: string; url: string }>;
 }) {
   const kind = params.kind ?? "assignment";
+  const effectiveStartAt = resolveEffectiveStartAt({
+    instructions: params.taskDescription,
+    storedStartAt: params.startAt,
+  });
+  // Hard gate: never email/WhatsApp before Start (or before due day if no Start).
+  // Critical for Anmol: Sheetomatic cron shares the same DB as the portal.
+  if (!isReminderWindowOpen(params.dueAt, new Date(), effectiveStartAt)) {
+    return {
+      emailSent: false,
+      whatsappSent: false,
+      summary: "held until start date",
+      whatsappDetail: "Reminder held until Start date",
+    };
+  }
+
   const assigneeName =
     params.assignee.name ?? params.assignee.email.split("@")[0];
   const dueLabel = formatTaskDue(params.dueAt);

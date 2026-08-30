@@ -9,6 +9,11 @@ import {
   lastTaskWhatsAppAt,
   shouldSendIntervalReminder,
 } from "@/lib/tasks/org-task-policy";
+import {
+  endOfIstDay,
+  isReminderWindowOpen,
+  resolveEffectiveStartAt,
+} from "@/lib/task-due-ist";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -24,12 +29,14 @@ export async function GET(request: Request) {
 
   const now = new Date();
   const anmolGapMinutes =
-    getOrgTaskPolicy(ANMOL_TRADERS_SLUG).intervalReminderMinutes ?? 90;
+    getOrgTaskPolicy(ANMOL_TRADERS_SLUG).intervalReminderMinutes ?? 240;
   const intervalCutoff = new Date(now.getTime() - anmolGapMinutes * 60 * 1000);
+  const dayCutoff = endOfIstDay(now);
   const seenIds: string[] = [];
   let processed = 0;
   let sent = 0;
   let batches = 0;
+  let skippedBeforeStart = 0;
 
   while (batches < SCALE.CRON_REMINDER_MAX_BATCHES) {
     const dueTasks = await prisma.delegatedTask.findMany({
@@ -38,28 +45,37 @@ export async function GET(request: Request) {
         status: { in: ACTIVE_TASK_STATUSES },
         OR: [
           {
-            dueAt: { lte: now },
+            dueAt: { lte: dayCutoff },
             remindViaEmail: true,
             emailReminderSentAt: null,
           },
           {
-            dueAt: { lte: now },
+            dueAt: { lte: dayCutoff },
             remindViaWhatsApp: true,
             whatsappReminderSentAt: null,
           },
           {
+            // Anmol interval pings — only once Start (or due day) is reachable.
             remindViaWhatsApp: true,
             organization: { slug: ANMOL_TRADERS_SLUG },
             OR: [
-              { whatsappReminderSentAt: { lte: intervalCutoff } },
+              { startAt: { lte: dayCutoff } },
+              { startAt: null, dueAt: { lte: dayCutoff } },
+            ],
+            AND: [
               {
-                whatsappReminderSentAt: null,
-                whatsappAssignmentSentAt: { lte: intervalCutoff },
-              },
-              {
-                whatsappReminderSentAt: null,
-                whatsappAssignmentSentAt: null,
-                createdAt: { lte: intervalCutoff },
+                OR: [
+                  { whatsappReminderSentAt: { lte: intervalCutoff } },
+                  {
+                    whatsappReminderSentAt: null,
+                    whatsappAssignmentSentAt: { lte: intervalCutoff },
+                  },
+                  {
+                    whatsappReminderSentAt: null,
+                    whatsappAssignmentSentAt: null,
+                    createdAt: { lte: intervalCutoff },
+                  },
+                ],
               },
             ],
           },
@@ -82,15 +98,42 @@ export async function GET(request: Request) {
     for (const task of dueTasks) {
       seenIds.push(task.id);
       const policy = getOrgTaskPolicy(task.organization.slug);
-      const isDue = task.dueAt.getTime() <= now.getTime();
-      const needsFirstEmail = task.remindViaEmail && !task.emailReminderSentAt && isDue;
+      const effectiveStartAt = resolveEffectiveStartAt({
+        instructions: task.instructions,
+        storedStartAt: task.startAt,
+      });
+      const windowOpen = isReminderWindowOpen(
+        task.dueAt,
+        now,
+        effectiveStartAt,
+      );
+      if (!windowOpen) {
+        skippedBeforeStart += 1;
+        // Heal rows stored early: persist labeled Start from instructions.
+        if (
+          effectiveStartAt &&
+          (!task.startAt ||
+            task.startAt.getTime() !== effectiveStartAt.getTime())
+        ) {
+          await prisma.delegatedTask.update({
+            where: { id: task.id },
+            data: { startAt: effectiveStartAt },
+          });
+        }
+        continue;
+      }
+
+      const needsFirstEmail =
+        task.remindViaEmail && !task.emailReminderSentAt && windowOpen;
       const needsFirstWhatsApp =
-        task.remindViaWhatsApp && !task.whatsappReminderSentAt && isDue;
+        task.remindViaWhatsApp && !task.whatsappReminderSentAt && windowOpen;
       const needsInterval =
         task.remindViaWhatsApp &&
         shouldSendIntervalReminder({
           slug: task.organization.slug,
           now,
+          dueAt: task.dueAt,
+          startAt: effectiveStartAt,
           lastWhatsAppAt: lastTaskWhatsAppAt(task),
         });
 
@@ -104,6 +147,7 @@ export async function GET(request: Request) {
         taskDescription: task.instructions,
         priority: task.priority,
         dueAt: task.dueAt,
+        startAt: effectiveStartAt,
         frequency: task.frequency,
         isRecurring: task.isRecurring,
         assignee: task.assignee,
@@ -126,11 +170,21 @@ export async function GET(request: Request) {
             whatsappReminderSentAt: reminders.whatsappSent
               ? new Date()
               : task.whatsappReminderSentAt,
+            ...(effectiveStartAt &&
+            (!task.startAt ||
+              task.startAt.getTime() !== effectiveStartAt.getTime())
+              ? { startAt: effectiveStartAt }
+              : {}),
           },
         });
       }
     }
   }
 
-  return NextResponse.json({ processed, sent, batches });
+  return NextResponse.json({
+    processed,
+    sent,
+    batches,
+    skippedBeforeStart,
+  });
 }
