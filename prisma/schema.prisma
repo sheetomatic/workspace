@@ -642,6 +642,8 @@ model DelegatedTask {
   whatsappAssignmentError  String?
   emailReminderSentAt    DateTime?
   whatsappReminderSentAt DateTime?
+  /** When work / WhatsApp reminders may begin (Anmol Start date). */
+  startAt                DateTime?
   dueAt                  DateTime
   assigneeUserId         String
   assignee               User           @relation("TaskAssignee", fields: [assigneeUserId], references: [id], onDelete: Cascade)
@@ -662,6 +664,7 @@ model DelegatedTask {
   @@index([organizationId, dueAt])
   @@index([organizationId, status, dueAt])
   @@index([organizationId, seriesId])
+  @@index([organizationId, startAt])
 }
 
 model RateLimitBucket {
