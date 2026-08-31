@@ -62,6 +62,12 @@ function slotStatusLabel(status: string) {
   return status;
 }
 
+function slotStatusTone(status: string) {
+  if (status === "COMPLETED") return "done";
+  if (status === "CANCELLED") return "cancelled";
+  return "scheduled";
+}
+
 export function LeadTrainingSlotsPanel({
   leadId,
   canManage,
@@ -314,12 +320,12 @@ export function LeadTrainingSlotsPanel({
               </div>
             ) : null}
 
-            <div className="leads-training-table-wrap">
-              <table className="leads-training-table">
+            <div className="training-schedule-table-wrap">
+              <table className="training-schedule-table">
                 <thead>
                   <tr>
                     <th>#</th>
-                    <th>When (IST)</th>
+                    <th>When</th>
                     <th>Status</th>
                     <th>Join</th>
                     <th>Content</th>
@@ -339,26 +345,31 @@ export function LeadTrainingSlotsPanel({
                     return (
                       <Fragment key={slot.id}>
                       <tr>
-                        <td>{slot.sessionNumber}</td>
-                        <td>{slot.whenLabel}</td>
-                        <td>{slotStatusLabel(slot.status)}</td>
+                        <td className="training-session-no">{slot.sessionNumber}</td>
+                        <td className="training-session-when">{slot.whenLabel}</td>
+                        <td>
+                          <span className={`training-status-pill is-${slotStatusTone(slot.status)}`}>
+                            {slotStatusLabel(slot.status)}
+                          </span>
+                        </td>
                         <td>
                           {slotJoin ? (
                             <a
+                              className="training-meet-link"
                               href={slotJoin}
                               target="_blank"
                               rel="noopener noreferrer"
                             >
-                              Join
+                              Meet
                             </a>
                           ) : (
-                            "—"
+                            <span className="training-cell-muted">—</span>
                           )}
                         </td>
                         <td>
                           <button
                             type="button"
-                            className="btn-secondary btn-sm"
+                            className="training-content-chip"
                             onClick={() =>
                               setContentSlotId(open ? null : slot.id)
                             }
@@ -373,7 +384,7 @@ export function LeadTrainingSlotsPanel({
                           </button>
                         </td>
                         {canManage ? (
-                          <td className="leads-training-slot-actions">
+                          <td className="training-slot-actions">
                             {slot.status === "SCHEDULED" ? (
                               <>
                                 <TrainingSessionBotButton

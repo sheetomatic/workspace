@@ -77,6 +77,13 @@ function slotStatusLabel(status: string) {
   return status;
 }
 
+function slotStatusTone(status: string) {
+  if (status === "COMPLETED") return "done";
+  if (status === "CANCELLED") return "cancelled";
+  if (status === "SCHEDULED") return "scheduled";
+  return "live";
+}
+
 function durationLabel(minutes: number) {
   if (minutes === 180) return "3 hours";
   if (minutes === 90) return "1.5 hours";
@@ -642,18 +649,19 @@ export function TrainingStudentsPanel({
                       ) : null}
                     </dl>
 
+                    <section className="training-schedule">
                     <h3 className="training-schedule-title">Schedules</h3>
                     {student.slots.length === 0 ? (
                       <p className="ws-apple-record-empty">No sessions on file.</p>
                     ) : (
-                      <div className="ws-ims-table-wrap">
-                        <table className="ws-ims-table ws-apple-data-table">
+                      <div className="training-schedule-table-wrap">
+                        <table className="training-schedule-table">
                           <thead>
                             <tr>
                               <th>#</th>
-                              <th>When (IST)</th>
+                              <th>When</th>
                               <th>Status</th>
-                              <th>Link to join</th>
+                              <th>Join</th>
                               <th>Content</th>
                               {canManage ? <th>Update</th> : null}
                             </tr>
@@ -671,22 +679,32 @@ export function TrainingStudentsPanel({
                               return (
                                 <Fragment key={slot.id}>
                                 <tr>
-                                  <td>{slot.sessionNumber}</td>
-                                  <td className="ws-apple-cell-primary">
+                                  <td className="training-session-no">
+                                    {slot.sessionNumber}
+                                  </td>
+                                  <td className="training-session-when">
                                     {slot.whenLabel}
                                   </td>
                                   <td>
-                                    {slot.classroomLive
-                                      ? "Live"
-                                      : slotStatusLabel(status)}
+                                    <span
+                                      className={`training-status-pill is-${slot.classroomLive ? "live" : slotStatusTone(status)}`}
+                                    >
+                                      {slot.classroomLive
+                                        ? "Live"
+                                        : slotStatusLabel(status)}
+                                    </span>
                                   </td>
                                   <td>
                                     {slot.classroomLive && canManage ? (
-                                      <Link href={teacherClassPath(slot.id)}>
+                                      <Link
+                                        className="training-meet-link"
+                                        href={teacherClassPath(slot.id)}
+                                      >
                                         In panel
                                       </Link>
                                     ) : slot.joinUrl ? (
                                       <a
+                                        className="training-meet-link"
                                         href={slot.joinUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
@@ -694,13 +712,13 @@ export function TrainingStudentsPanel({
                                         Meet
                                       </a>
                                     ) : (
-                                      "—"
+                                      <span className="training-cell-muted">—</span>
                                     )}
                                   </td>
                                   <td>
                                     <button
                                       type="button"
-                                      className="ws-btn ws-btn-secondary training-slot-btn training-content-chip"
+                                      className="training-content-chip"
                                       onClick={() =>
                                         setContentSlotId(open ? null : slot.id)
                                       }
@@ -819,6 +837,7 @@ export function TrainingStudentsPanel({
                         </table>
                       </div>
                     )}
+                    </section>
                   </div>
                 ) : null}
               </li>

@@ -1,39 +1,185 @@
 .training-students {
   display: grid;
-  gap: 0.85rem;
+  gap: 1.1rem;
 }
 
-.training-student-body .ws-ims-table th,
-.training-student-body .ws-ims-table td {
+.training-students .crm-meet-rows {
+  gap: 10px;
+}
+
+.training-students .crm-meet-row {
+  border: 1px solid var(--apple-border-light, #e8e8ed);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.training-students .crm-meet-row-main {
+  padding: 14px 16px;
+}
+
+.training-students .crm-meet-row-who strong {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.016em;
+  color: #1d1d1f;
+}
+
+.training-students .crm-meet-row-who span {
+  color: #6e6e73;
+  font-size: 0.8125rem;
+}
+
+.training-students .crm-meet-row-body {
+  padding: 16px 18px 20px;
+  gap: 1.1rem;
+  border-top: 1px solid #e8e8ed;
+}
+
+.training-schedule {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.training-schedule-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e8e8ed;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.training-schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.training-schedule-table th,
+.training-schedule-table td {
+  padding: 13px 16px;
+  border-bottom: 1px solid #e8e8ed;
+  text-align: left;
   vertical-align: middle;
-  padding: 0.55rem 0.7rem;
 }
 
-.training-student-body .ws-ims-table td.training-slot-actions {
-  width: 1%;
+.training-schedule-table th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6e6e73;
+  background: #f5f5f7;
+  letter-spacing: 0;
+  text-transform: none;
   white-space: nowrap;
+}
+
+.training-schedule-table tbody tr:last-child > td {
+  border-bottom: none;
+}
+
+.training-schedule-table tbody tr:hover {
+  background: #fbfbfd;
+}
+
+.training-session-no {
+  width: 2.25rem;
+  color: #86868b;
+  font-variant-numeric: tabular-nums;
+}
+
+.training-session-when {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.011em;
+  color: #1d1d1f;
+  white-space: nowrap;
+}
+
+.training-status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 9px;
+  border-radius: 980px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.training-status-pill.is-done {
+  background: rgba(52, 199, 89, 0.14);
+  color: #248a3d;
+}
+
+.training-status-pill.is-scheduled {
+  background: rgba(0, 113, 227, 0.1);
+  color: #0071e3;
+}
+
+.training-status-pill.is-cancelled {
+  background: #f5f5f7;
+  color: #6e6e73;
+}
+
+.training-status-pill.is-live {
+  background: rgba(255, 59, 48, 0.12);
+  color: #d70015;
+}
+
+.training-meet-link {
+  color: #0071e3;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.training-meet-link:hover {
+  text-decoration: underline;
+}
+
+.training-cell-muted {
+  color: #86868b;
+}
+
+.training-content-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  min-width: 5.75rem;
+  padding: 0 12px;
+  border: 1px solid #d2d2d7;
+  border-radius: 980px;
+  background: #fff;
+  color: #1d1d1f;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.training-content-chip:hover {
+  background: #f5f5f7;
 }
 
 .training-slot-actions {
   display: inline-flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.45rem;
+  gap: 8px;
 }
 
-.training-slot-actions .training-slot-btn {
-  min-height: 30px;
-  padding: 0.28rem 0.7rem;
-  border-radius: 8px;
-  font-size: 0.76rem;
+.training-schedule-table td.training-slot-actions {
+  min-width: 12.5rem;
+}
+
+.training-slot-actions .training-slot-btn,
+.training-slot-actions .ws-btn {
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 980px;
+  font-size: 0.75rem;
+  font-weight: 600;
   line-height: 1;
   white-space: nowrap;
-}
-
-.training-slot-actions .training-content-chip,
-.training-student-body .training-content-chip {
-  min-width: 5.5rem;
-  justify-content: center;
 }
 
 .training-session-bot {
@@ -236,9 +382,10 @@
 
 .training-schedule-title {
   margin: 0;
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #0f172a;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.016em;
+  color: #1d1d1f;
 }
 
 .training-slot-content {
