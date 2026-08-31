@@ -56,10 +56,11 @@
 
 .training-schedule-table th,
 .training-schedule-table td {
-  padding: 13px 16px;
+  padding: 10px 14px;
   border-bottom: 1px solid #e8e8ed;
   text-align: left;
   vertical-align: middle;
+  white-space: nowrap;
 }
 
 .training-schedule-table th {
@@ -143,9 +144,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 28px;
-  min-width: 5.75rem;
-  padding: 0 12px;
+  min-height: 26px;
+  width: max-content;
+  padding: 0 10px;
   border: 1px solid #d2d2d7;
   border-radius: 980px;
   background: #fff;
@@ -153,6 +154,7 @@
   font-size: 0.75rem;
   font-weight: 600;
   line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
 }
 

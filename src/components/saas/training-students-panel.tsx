@@ -726,7 +726,9 @@ export function TrainingStudentsPanel({
                                       {open
                                         ? "Close"
                                         : recs || docs
-                                          ? `${recs ? `${recs} rec` : ""}${recs && docs ? " · " : ""}${docs ? `${docs} doc` : ""}`
+                                          ? [recs && `${recs} rec`, docs && `${docs} doc`]
+                                              .filter(Boolean)
+                                              .join(" · ")
                                           : canManage
                                             ? "Add"
                                             : "—"}
