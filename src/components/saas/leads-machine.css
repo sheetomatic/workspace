@@ -2282,14 +2282,18 @@
 }
 
 .leads-training-slot-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
 }
 
-.leads-training-slot-actions .btn-sm {
-  padding: 0.2rem 0.5rem;
-  font-size: 0.74rem;
+.leads-training-slot-actions .btn-sm,
+.leads-training-slot-actions .training-slot-btn {
+  min-height: 30px;
+  padding: 0.28rem 0.7rem;
+  font-size: 0.76rem;
 }
 
 .leads-training-table th,

@@ -30,22 +30,33 @@ export function TrainingSessionBotButton({
     });
   }
 
+  const button = (
+    <button
+      type="button"
+      className={
+        variant === "bar"
+          ? "learn-btn-primary training-session-bot-btn"
+          : "ws-btn ws-btn-secondary training-slot-btn training-session-bot-btn"
+      }
+      disabled={disabled || pending}
+      onClick={run}
+      title={
+        hint ||
+        "Pick the lesson and recording, then write them to the student Learn panel"
+      }
+    >
+      <SheetomaticAiMark variant="icon" sizes="sm" />
+      {pending ? "Updating Learn…" : "Update Learn"}
+    </button>
+  );
+
+  if (variant === "row") {
+    return button;
+  }
+
   return (
-    <div className={`training-session-bot is-${variant}`}>
-      <button
-        type="button"
-        className={
-          variant === "bar"
-            ? "learn-btn-primary training-session-bot-btn"
-            : "ws-btn ws-btn-secondary training-slot-btn training-session-bot-btn"
-        }
-        disabled={disabled || pending}
-        onClick={run}
-        title="Pick the lesson and recording, then write them to the student Learn panel"
-      >
-        <SheetomaticAiMark variant="icon" sizes="sm" />
-        {pending ? "Updating Learn…" : "Update Learn"}
-      </button>
+    <div className="training-session-bot is-bar">
+      {button}
       {hint ? (
         <button
           type="button"

@@ -700,7 +700,7 @@ export function TrainingStudentsPanel({
                                   <td>
                                     <button
                                       type="button"
-                                      className="ws-btn ws-btn-secondary training-slot-btn"
+                                      className="ws-btn ws-btn-secondary training-slot-btn training-content-chip"
                                       onClick={() =>
                                         setContentSlotId(open ? null : slot.id)
                                       }
