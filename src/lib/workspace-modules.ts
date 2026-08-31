@@ -12,7 +12,6 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
   "IMS",
   "APPROVALS",
   "REPORTS",
-  "APP_BUILDER",
   "SOCIAL",
 ];
 
@@ -55,7 +54,7 @@ export function defaultModulesForRole(role: Role): WorkspaceModule[] {
     return [...PLATFORM_WORKSPACE_MODULES];
   }
   if (role === "MANAGER") {
-    return ["TASKS", "FMS", "CRM", "HR", "IMS", "APPROVALS", "REPORTS", "APP_BUILDER"];
+    return ["TASKS", "FMS", "CRM", "HR", "IMS", "APPROVALS", "REPORTS"];
   }
   if (role === "STAFF") {
     return ["TASKS", "FMS", "CRM", "HR"];

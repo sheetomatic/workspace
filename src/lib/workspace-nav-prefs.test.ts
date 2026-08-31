@@ -17,7 +17,7 @@ describe("workspace-nav-prefs", () => {
       expect(isNavIdVisible(prefs, id)).toBe(true);
     }
     expect(isNavIdVisible(prefs, "dept-hr")).toBe(true);
-    expect(isNavIdVisible(prefs, "app-builder")).toBe(true);
+    expect(isNavIdVisible(prefs, "app-builder")).toBe(false);
     expect(isNavIdVisible(prefs, "dept-store")).toBe(false);
     expect(isNavIdVisible(prefs, "settings")).toBe(true);
     expect(isNavIdVisible(prefs, "checklists")).toBe(false);

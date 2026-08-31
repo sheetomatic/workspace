@@ -43,9 +43,4 @@ describe("workspace add-ons", () => {
     expect(parseAddonModulesFromForm(formData)).toEqual(["CRM"]);
   });
 
-  it("parses App Builder add-on from form", () => {
-    const formData = new FormData();
-    formData.set("addon_app_builder", "on");
-    expect(parseAddonModulesFromForm(formData)).toEqual(["APP_BUILDER"]);
-  });
 });

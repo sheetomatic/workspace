@@ -48,16 +48,13 @@ export function LoginForm() {
   const orgSlug = searchParams.get("org")?.trim() || undefined;
   const isAiProduct = product === "ai";
   const isLearnProduct = product === "learn";
-  const isAppBuilderProduct = product === "app-builder";
   const callbackUrl = safeCallbackUrl(
     searchParams.get("callbackUrl"),
     isAiProduct
       ? aiAppEntryHref(intent)
       : isLearnProduct
         ? LEARN_ADMIN_HOME
-        : isAppBuilderProduct
-          ? "/app/app-builder"
-          : "/app/tasks",
+        : "/app/tasks",
   );
 
   const [email, setEmail] = useState("");
@@ -346,15 +343,7 @@ export function LoginForm() {
         </div>
       </form>
 
-      {isAppBuilderProduct ||
-      callbackUrl.includes("/app/app-builder") ||
-      callbackUrl.includes("/app-builder") ? (
-        <p className="login-team-hint form-field-full">
-          New to App Builder?{" "}
-          <Link href="/app-builder/signup">Create an account</Link> — we ask
-          team size, industry, and city so we can call you after you try.
-        </p>
-      ) : !isAiProduct ? (
+      {!isAiProduct ? (
         <p className="login-team-hint form-field-full">
           Need access? Purchase a plan, then your admin will share login email
           and password. Self-registration is closed.

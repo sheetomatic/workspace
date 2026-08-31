@@ -12,7 +12,6 @@ export type WorkspaceAddonKey =
   | "hr"
   | "approvals"
   | "reports"
-  | "app_builder"
   | "social"
   | "legal";
 
@@ -81,14 +80,6 @@ export const WORKSPACE_ADDON_CATALOG: WorkspaceAddonDefinition[] = [
     label: "HRMS add-on",
     shortLabel: "HRMS",
     description: "Attendance, payroll, field staff, and hiring workflows.",
-    isBciCore: false,
-  },
-  {
-    key: "app_builder",
-    module: "APP_BUILDER",
-    label: "App Builder",
-    shortLabel: "App Builder",
-    description: "Phone apps on a Gmail Sheet. Staff use a link and PIN.",
     isBciCore: false,
   },
   {

@@ -11,7 +11,7 @@ import {
 export const CLIENT_50_MODULES: WorkspaceModule[] = mergeAllowedModules(
   BCI_GROWTH_ALLOWED,
   TASKS_ADDON_ALLOWED,
-  ["CASES", "APP_BUILDER"],
+  ["CASES"],
 ).filter((module) => module !== "HR");
 
 export const CLIENT_50_LIMITS = {
@@ -58,17 +58,6 @@ export function bciStarterOnboardingPreset(): ClientOnboardingPreset {
 export function tasksAddonOnboardingPreset(): ClientOnboardingPreset {
   const preset = planOnboardingPreset("TASKS_ADDON");
   return { ...preset, product: "TASKS" };
-}
-
-/** Phone apps on a Gmail Sheet — sold as App Builder, not FMS. */
-export function appBuilderOnboardingPreset(): ClientOnboardingPreset {
-  return {
-    plan: "ENTERPRISE",
-    product: "APP_BUILDER",
-    allowedModules: ["APP_BUILDER"],
-    maxMembers: 25,
-    maxFmsTemplates: 0,
-  };
 }
 
 /** HRMS only — attendance, payroll, field. Not BCI. */
