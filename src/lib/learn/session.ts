@@ -81,7 +81,6 @@ export async function getLearnEnrollment() {
     where: { id: session.enrollmentId },
     include: {
       slots: {
-        where: { status: { in: ["SCHEDULED", "COMPLETED"] } },
         orderBy: { startsAt: "asc" },
         take: 80,
         include: {

@@ -40,9 +40,39 @@ export function meetCodeFromText(value: string | null | undefined) {
   return match?.[1]?.toLowerCase() ?? null;
 }
 
+const MONTH_INDEX: Record<string, number> = {
+  jan: 1,
+  feb: 2,
+  mar: 3,
+  apr: 4,
+  may: 5,
+  jun: 6,
+  jul: 7,
+  aug: 8,
+  sep: 9,
+  oct: 10,
+  nov: 11,
+  dec: 12,
+};
+
+function padDay(value: string) {
+  return value.padStart(2, "0");
+}
+
 export function parseIstDateFromTitle(title: string) {
-  const match = title.match(/(\d{4}-\d{2}-\d{2})/);
-  return match?.[1] ?? null;
+  const iso = title.match(/(\d{4}-\d{2}-\d{2})/);
+  if (iso) return iso[1];
+  const slash = title.match(/(\d{4})\/(\d{2})\/(\d{2})/);
+  if (slash) return `${slash[1]}-${slash[2]}-${slash[3]}`;
+  const dmy = title.match(
+    /\b(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?,?\s+(\d{4})\b/i,
+  );
+  if (dmy) {
+    const monthKey = dmy[2].slice(0, 3).toLowerCase();
+    const month = MONTH_INDEX[monthKey];
+    if (month) return `${dmy[3]}-${padDay(String(month))}-${padDay(dmy[1])}`;
+  }
+  return null;
 }
 
 export function isUsableClassRecording(title: string) {

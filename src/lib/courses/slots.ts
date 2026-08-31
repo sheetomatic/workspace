@@ -515,16 +515,12 @@ export async function listActiveTrainingStudents(params: {
     where: {
       status: { in: ["CONFIRMED", "PAYMENT_PENDING"] },
       slots: {
-        some: {
-          status: { in: ["SCHEDULED", "COMPLETED"] },
-          ...orgFilter,
-        },
+        some: {},
       },
       ...orgFilter,
     },
     include: {
       slots: {
-        where: { status: { not: "CANCELLED" } },
         orderBy: { sessionNumber: "asc" },
         include: {
           materials: {
@@ -635,7 +631,6 @@ export async function listLeadTrainingEnrollments(params: {
     },
     include: {
       slots: {
-        where: { status: { not: "CANCELLED" } },
         orderBy: { sessionNumber: "asc" },
         include: {
           materials: {

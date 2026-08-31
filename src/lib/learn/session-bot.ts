@@ -32,6 +32,15 @@ function boardSnippet(raw: unknown) {
   return cells.join(" | ").slice(0, 600);
 }
 
+function looksLikeClassRecording(title: string, mime: string) {
+  if (!isUsableClassRecording(title)) return false;
+  if (mime.startsWith("video/") || mime === "application/vnd.google-apps.video") {
+    return true;
+  }
+  if (parseIstDateFromTitle(title) || meetCodeFromText(title)) return true;
+  return /recording|\bmeet\b/i.test(title);
+}
+
 async function listDriveRecordings(): Promise<SessionBotRecording[]> {
   const folderId =
     process.env.LEARN_RECORDINGS_FOLDER_ID?.trim() || DEFAULT_RECORDINGS_FOLDER;
@@ -44,31 +53,35 @@ async function listDriveRecordings(): Promise<SessionBotRecording[]> {
       scopes: ["https://www.googleapis.com/auth/drive.readonly"],
     });
     const drive = google.drive({ version: "v3", auth });
-    const listed = await drive.files.list({
-      q: `'${folderId}' in parents and trashed = false`,
-      fields: "files(id,name,mimeType)",
-      pageSize: 100,
-      supportsAllDrives: true,
-      includeItemsFromAllDrives: true,
-    });
     const out: SessionBotRecording[] = [];
-    for (const file of listed.data.files ?? []) {
-      const id = file.id?.trim();
-      const title = file.name?.trim() ?? "";
-      const mime = file.mimeType ?? "";
-      if (!id || !title || !isUsableClassRecording(title)) continue;
-      const isVideo =
-        mime.startsWith("video/") ||
-        mime === "application/vnd.google-apps.video" ||
-        /\(\d{4}-\d{2}-\d{2}/.test(title);
-      if (!isVideo) continue;
-      out.push({
-        id,
-        title,
-        url: driveFileViewUrl(id),
-        dateIst: parseIstDateFromTitle(title),
-        meetCode: meetCodeFromText(title),
+    let pageToken: string | undefined;
+    for (let page = 0; page < 3; page += 1) {
+      const listed = await drive.files.list({
+        q: `'${folderId}' in parents and trashed = false`,
+        fields: "nextPageToken,files(id,name,mimeType,createdTime)",
+        pageSize: 200,
+        orderBy: "modifiedTime desc",
+        pageToken,
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true,
       });
+      for (const file of listed.data.files ?? []) {
+        const id = file.id?.trim();
+        const title = file.name?.trim() ?? "";
+        const mime = file.mimeType ?? "";
+        if (!id || !title || !looksLikeClassRecording(title, mime)) continue;
+        out.push({
+          id,
+          title,
+          url: driveFileViewUrl(id),
+          dateIst:
+            parseIstDateFromTitle(title) ||
+            (file.createdTime ? istDateKey(new Date(file.createdTime)) : null),
+          meetCode: meetCodeFromText(title),
+        });
+      }
+      pageToken = listed.data.nextPageToken ?? undefined;
+      if (!pageToken) break;
     }
     return out;
   } catch (error) {
@@ -82,10 +95,15 @@ async function listDbRecordings(): Promise<SessionBotRecording[]> {
     where: {
       kind: "RECORDING",
       url: { not: null },
-      createdAt: { gte: new Date(Date.now() - 120 * 86_400_000) },
+      createdAt: { gte: new Date(Date.now() - 180 * 86_400_000) },
     },
-    select: { id: true, title: true, url: true },
-    take: 80,
+    select: {
+      id: true,
+      title: true,
+      url: true,
+      slot: { select: { startsAt: true } },
+    },
+    take: 160,
   });
   return rows.flatMap((row) => {
     const url = normalizeTrainingContentUrl(row.url);
@@ -96,7 +114,8 @@ async function listDbRecordings(): Promise<SessionBotRecording[]> {
         id: driveId,
         title: row.title,
         url,
-        dateIst: parseIstDateFromTitle(row.title),
+        dateIst:
+          parseIstDateFromTitle(row.title) || istDateKey(row.slot.startsAt),
         meetCode: meetCodeFromText(row.title),
       },
     ];

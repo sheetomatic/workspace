@@ -60,6 +60,10 @@ describe("meet and date parsers", () => {
     expect(
       parseIstDateFromTitle("qqp-wfer-fzp (2026-08-18 09:00 GMT+5:30)"),
     ).toBe("2026-08-18");
+    expect(parseIstDateFromTitle("Class recording 29 Aug 2026")).toBe(
+      "2026-08-29",
+    );
+    expect(parseIstDateFromTitle("Meet 2026/08/30 morning")).toBe("2026-08-30");
   });
 });
 
@@ -101,6 +105,38 @@ describe("pickLessonForSession", () => {
 });
 
 describe("fallbackSessionBotPick", () => {
+  it("attaches same-day 29 Aug recording for session 4", () => {
+    const pick = fallbackSessionBotPick({
+      sessionNumber: 4,
+      sessionDateIst: "2026-08-29",
+      meetCode: "hza-nrzu-dsa",
+      studentName: "Netai Ghosh",
+      hasGroup: false,
+      lessons: [
+        ...lessons,
+        {
+          id: "l4",
+          slug: "session-4",
+          title: "Session 4 lesson",
+          moduleLabel: "Sheets",
+          summary: "Weekend class.",
+          sortOrder: 4,
+        },
+      ],
+      recordings: [
+        {
+          id: "rec29",
+          title: "hza-nrzu-dsa (2026-08-29 08:30 GMT+5:30)",
+          url: "https://drive.google.com/file/d/rec29/view",
+          dateIst: "2026-08-29",
+          meetCode: "hza-nrzu-dsa",
+        },
+      ],
+    });
+    expect(pick.lessonId).toBe("l4");
+    expect(pick.recordingId).toBe("rec29");
+  });
+
   it("attaches the matched recording to a group class", () => {
     const pick = fallbackSessionBotPick({
       sessionNumber: 7,

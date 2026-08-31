@@ -35,7 +35,6 @@ export async function listGroupSessionSlots(origin: {
   const candidates = await prisma.trainingCourseSlot.findMany({
     where: {
       enrollmentId: { in: enrollments.map((row) => row.id) },
-      status: { not: "CANCELLED" },
     },
     include: { enrollment: { select: enrollmentSelect } },
   });
