@@ -29,7 +29,7 @@ export async function GET(request: Request) {
 
   const now = new Date();
   const anmolGapMinutes =
-    getOrgTaskPolicy(ANMOL_TRADERS_SLUG).intervalReminderMinutes ?? 240;
+    getOrgTaskPolicy(ANMOL_TRADERS_SLUG).intervalReminderMinutes ?? 90;
   const intervalCutoff = new Date(now.getTime() - anmolGapMinutes * 60 * 1000);
   const dayCutoff = endOfIstDay(now);
   const seenIds: string[] = [];

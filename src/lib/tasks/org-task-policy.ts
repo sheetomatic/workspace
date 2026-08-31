@@ -26,8 +26,7 @@ const DEFAULT_POLICY: OrgTaskPolicy = {
 
 const ORG_TASK_POLICIES: Record<string, OrgTaskPolicy> = {
   [ANMOL_TRADERS_SLUG]: {
-    // Match Anmol portal: every 4 hours during IST work hours after Start.
-    intervalReminderMinutes: 4 * 60,
+    intervalReminderMinutes: 90,
     whatsappOnlyTeam: true,
     officialWhatsAppOnly: true,
   },
