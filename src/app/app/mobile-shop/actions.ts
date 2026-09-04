@@ -7,6 +7,10 @@ import { parseRupeesInput } from "@/lib/billing/money";
 import { MOBILE_SHOP_KIT_KEY } from "@/lib/addons/licensed-kits";
 import { orgHasActiveKitLicense } from "@/lib/addons/kit-license";
 import {
+  isStockInReason,
+  movementKindForOutReason,
+} from "@/lib/mobile-shop/reasons";
+import {
   advanceRepair,
   createRepair,
   sellPhoneByImei,
@@ -35,6 +39,8 @@ function refreshShop() {
   revalidatePath("/app/mobile-shop/used-in");
   revalidatePath("/app/mobile-shop/repairs");
   revalidatePath("/app/mobile-shop/accessories");
+  revalidatePath("/app/mobile-shop/stock-in");
+  revalidatePath("/app/mobile-shop/stock-out");
   revalidatePath("/app/mobile-shop/sales");
 }
 
@@ -42,6 +48,8 @@ export async function stockInAction(formData: FormData): Promise<ShopActionResul
   const gate = await requireShopUser();
   if (!gate.ok) return gate;
   const kind = String(formData.get("kind") ?? "");
+  const reasonRaw = String(formData.get("reason") ?? "PURCHASE");
+  const reason = isStockInReason(reasonRaw) ? reasonRaw : "PURCHASE";
   if (kind === "PHONE") {
     const condition = String(formData.get("condition") ?? "NEW") as MobileShopPhoneCondition;
     const result = await stockInPhone({
@@ -52,6 +60,7 @@ export async function stockInAction(formData: FormData): Promise<ShopActionResul
       imei: String(formData.get("imei") ?? ""),
       condition:
         condition === "USED" || condition === "REFURBISHED" ? condition : "NEW",
+      reason,
       notes: String(formData.get("notes") ?? ""),
     });
     if (!result.ok) return result;
@@ -65,6 +74,7 @@ export async function stockInAction(formData: FormData): Promise<ShopActionResul
     kind: kind === "PART" ? "PART" : "ACCESSORY",
     name: String(formData.get("name") ?? ""),
     qty: Number.isFinite(qty) ? qty : 0,
+    reason,
     notes: String(formData.get("notes") ?? ""),
   });
   if (!result.ok) return result;
@@ -76,12 +86,14 @@ export async function stockOutAction(formData: FormData): Promise<ShopActionResu
   const gate = await requireShopUser();
   if (!gate.ok) return gate;
   const qty = Number.parseInt(String(formData.get("qty") ?? "1"), 10);
+  const reason = String(formData.get("reason") ?? "RETURN_TO_SUPPLIER");
   const result = await stockOut({
     organizationId: gate.user.organizationId,
     createdById: gate.user.id,
     itemId: String(formData.get("itemId") ?? ""),
     qty: Number.isFinite(qty) ? qty : 0,
-    kind: "STOCK_OUT",
+    kind: movementKindForOutReason(reason),
+    reason,
     notes: String(formData.get("notes") ?? ""),
   });
   if (!result.ok) return result;
@@ -116,6 +128,7 @@ export async function sellAction(formData: FormData): Promise<ShopActionResult> 
     itemId: String(formData.get("itemId") ?? ""),
     qty: Number.isFinite(qty) ? qty : 0,
     kind: "SALE",
+    reason: "ACCESSORY_SALE",
     amountPaise,
     customerName: String(formData.get("customerName") ?? ""),
     customerPhone: String(formData.get("customerPhone") ?? ""),
@@ -179,6 +192,7 @@ export async function repairPartOutAction(formData: FormData): Promise<ShopActio
     itemId: String(formData.get("itemId") ?? ""),
     qty: Number.isFinite(qty) ? qty : 0,
     kind: "PART_TO_REPAIR",
+    reason: "PART_USED",
     repairId: String(formData.get("repairId") ?? ""),
     notes: String(formData.get("notes") ?? ""),
   });

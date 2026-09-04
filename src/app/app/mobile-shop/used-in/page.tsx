@@ -6,11 +6,12 @@ export default async function MobileShopUsedInPage() {
   await requireMobileShopPage();
   return (
     <section>
-      <h1>Used phone in</h1>
-      <p className="ms-shop-lead">पुराना फोन इन. Brand, model, IMEI — then it is in stock.</p>
+      <h1>Used phone</h1>
+      <p className="ms-shop-lead">पुराना फोन. Brand, model, IMEI — then it is in stock.</p>
       <ShopForm action={stockInAction} submitLabel="Add used phone">
         <input name="kind" type="hidden" value="PHONE" />
         <input name="condition" type="hidden" value="USED" />
+        <input name="reason" type="hidden" value="PURCHASE" />
         <label>
           Brand
           <input name="brand" required placeholder="Samsung / Redmi" autoComplete="off" />

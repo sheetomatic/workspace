@@ -447,12 +447,14 @@ model MobileShopMovement {
   customerName   String?
   customerPhone  String?
   notes          String?
+  reason         String                   @default("PURCHASE")
   repairId       String?
   repair         MobileShopRepair?      @relation(fields: [repairId], references: [id], onDelete: SetNull)
   createdById    String
   createdAt      DateTime               @default(now())
 
   @@index([organizationId, createdAt])
+  @@index([organizationId, reason])
   @@index([itemId, createdAt])
   @@index([repairId])
 }

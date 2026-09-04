@@ -50,7 +50,7 @@ export async function mobileShopDashboard(organizationId: string, now = new Date
     prisma.mobileShopMovement.count({
       where: {
         organizationId,
-        kind: { in: ["SALE", "STOCK_OUT"] },
+        kind: { in: ["SALE", "STOCK_OUT", "PART_TO_REPAIR"] },
         createdAt: { gte: dayStart },
       },
     }),
@@ -108,6 +108,7 @@ export async function stockInPhone(input: {
   model: string;
   imei: string;
   condition: MobileShopPhoneCondition;
+  reason?: string;
   notes?: string;
 }) {
   const imei = input.imei.trim();
@@ -140,6 +141,7 @@ export async function stockInPhone(input: {
       itemId: item.id,
       kind: "STOCK_IN",
       qty: 1,
+      reason: input.reason?.trim() || "PURCHASE",
       notes: input.notes?.trim() || null,
       createdById: input.createdById,
     },
@@ -153,6 +155,7 @@ export async function stockInQtyItem(input: {
   kind: "ACCESSORY" | "PART";
   name: string;
   qty: number;
+  reason?: string;
   notes?: string;
 }) {
   if (input.qty <= 0) return { ok: false as const, message: "Qty must be more than 0." };
@@ -182,6 +185,7 @@ export async function stockInQtyItem(input: {
       itemId: item.id,
       kind: "STOCK_IN",
       qty: input.qty,
+      reason: input.reason?.trim() || "PURCHASE",
       notes: input.notes?.trim() || null,
       createdById: input.createdById,
     },
@@ -212,6 +216,7 @@ export async function stockOut(input: {
   itemId: string;
   qty: number;
   kind: Extract<MobileShopMovementKind, "STOCK_OUT" | "SALE" | "PART_TO_REPAIR">;
+  reason?: string;
   amountPaise?: number;
   customerName?: string;
   customerPhone?: string;
@@ -227,6 +232,7 @@ export async function stockOut(input: {
       itemId: input.itemId,
       kind: input.kind,
       qty: input.qty,
+      reason: input.reason?.trim() || (input.kind === "SALE" ? "SALE" : input.kind === "PART_TO_REPAIR" ? "PART_USED" : "RETURN_TO_SUPPLIER"),
       amountPaise: input.amountPaise ?? 0,
       customerName: input.customerName?.trim() || null,
       customerPhone: input.customerPhone?.trim() || null,
@@ -263,6 +269,7 @@ export async function sellPhoneByImei(input: {
     itemId: phone.id,
     qty: 1,
     kind: "SALE",
+    reason: input.condition === "NEW" ? "SALE" : "USED_SALE",
     amountPaise: input.amountPaise,
     customerName: input.customerName,
     customerPhone: input.customerPhone,
@@ -330,4 +337,24 @@ export async function advanceRepair(
     data: { status },
   });
   return { ok: true as const, repair: updated };
+}
+
+export async function listRecentMovements(
+  organizationId: string,
+  take = 12,
+  kind?: "in" | "out",
+) {
+  return prisma.mobileShopMovement.findMany({
+    where: {
+      organizationId,
+      ...(kind === "in"
+        ? { kind: "STOCK_IN" }
+        : kind === "out"
+          ? { kind: { in: ["SALE", "STOCK_OUT", "PART_TO_REPAIR"] } }
+          : {}),
+    },
+    orderBy: { createdAt: "desc" },
+    take,
+    include: { item: true },
+  });
 }

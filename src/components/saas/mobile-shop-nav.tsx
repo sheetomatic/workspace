@@ -5,11 +5,11 @@ import { usePathname } from "next/navigation";
 
 const LINKS = [
   { href: "/app/mobile-shop", label: "Home", hi: "होम", exact: true },
-  { href: "/app/mobile-shop/sales", label: "New sale", hi: "नया सेल" },
-  { href: "/app/mobile-shop/used-in", label: "Used in", hi: "पुराना इन" },
+  { href: "/app/mobile-shop/sales", label: "Sale", hi: "सेल" },
+  { href: "/app/mobile-shop/used-in", label: "Used", hi: "पुराना" },
   { href: "/app/mobile-shop/repairs", label: "Repair", hi: "रिपेयर" },
-  { href: "/app/mobile-shop/accessories", label: "Accessory", hi: "एक्सेसरी" },
-  { href: "/app/mobile-shop/stock", label: "Stock", hi: "स्टॉक" },
+  { href: "/app/mobile-shop/stock-in", label: "In", hi: "इन" },
+  { href: "/app/mobile-shop/stock-out", label: "Out", hi: "आउट" },
 ];
 
 export function MobileShopNav() {

@@ -37,11 +37,11 @@ export function AddonsPageContent() {
               <p>{featured.icp}</p>
               <p>{featured.description}</p>
               <ul>
-                <li>New sale — नया सेल (IMEI out)</li>
-                <li>Used phone in — पुराना फोन इन</li>
-                <li>Repair job — रिपेयर जॉब (received → ready → delivered)</li>
-                <li>Accessory sale — एक्सेसरी सेल</li>
-                <li>Stock check — स्टॉक चेक</li>
+                <li>New sale — नया सेल</li>
+                <li>Used phone — पुराना फोन</li>
+                <li>Repair job — रिपेयर जॉब</li>
+                <li>Stock in — स्टॉक इन (purchase / return / transfer; IMEI or qty)</li>
+                <li>Stock out — स्टॉक आउट (sale, used sale, accessory, part used, supplier return)</li>
               </ul>
               <p>
                 <strong>{formatInrPaise(rupeesToPaise(featured.priceMonthlyInr))}</strong>

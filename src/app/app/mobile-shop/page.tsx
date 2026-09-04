@@ -38,12 +38,12 @@ export default async function MobileShopHomePage() {
           <strong>{stats.phonesInStock}</strong>
         </div>
         <div className="ms-shop-kpi">
-          <span>Repairs open</span>
-          <strong>{stats.repairsOpen}</strong>
+          <span>In today</span>
+          <strong>{stats.stockInToday}</strong>
         </div>
         <div className="ms-shop-kpi">
-          <span>Ready</span>
-          <strong>{stats.repairsReady}</strong>
+          <span>Out today</span>
+          <strong>{stats.soldToday}</strong>
         </div>
       </div>
       <div className="ms-shop-actions">

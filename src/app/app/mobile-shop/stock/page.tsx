@@ -13,7 +13,12 @@ export default async function MobileShopStockPage() {
   return (
     <section>
       <h1>Stock check</h1>
-      <p className="ms-shop-lead">स्टॉक चेक. What is in the shop right now. Tap a phone to sell.</p>
+      <p className="ms-shop-lead">
+        What is in the shop. Tap a phone to sell.{" "}
+        <Link href="/app/mobile-shop/stock-in">Stock in</Link>
+        {" · "}
+        <Link href="/app/mobile-shop/stock-out">Stock out</Link>
+      </p>
 
       <h2>Phones</h2>
       {phones.length === 0 ? (
