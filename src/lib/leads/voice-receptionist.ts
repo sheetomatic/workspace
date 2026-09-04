@@ -138,7 +138,8 @@ export function mapVoiceCallPayload(payload: unknown): MappedVoiceCall | null {
   const directionRaw = (
     pick(nested, ["Direction", "direction", "CallType"]) ?? ""
   ).toLowerCase();
-  const direction: MappedVoiceCall["direction"] = directionRaw.includes("inbound")
+  const direction: MappedVoiceCall["direction"] = directionRaw.includes("inbound") ||
+    directionRaw.includes("incoming")
     ? "inbound"
     : directionRaw.includes("outbound") || directionRaw.includes("outgoing")
       ? "outbound"
