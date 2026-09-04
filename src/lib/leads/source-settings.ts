@@ -5,12 +5,26 @@ import {
   generateLeadWebhookSecret,
   generateMetaVerifyToken,
   hashLeadWebhookSecret,
+  indiaMartLeadWebhookUrl,
+  justdialLeadWebhookUrl,
   maskTokenHint,
   metaLeadWebhookUrl,
+  parseIndiaMartLeadConfig,
+  parseIndiaMartPullConfig,
+  parseJustdialLeadConfig,
   parseMetaLeadAdsConfig,
+  parseShopifyLeadConfig,
+  parseShopifyPullConfig,
   parseTelegramLeadConfig,
+  parseTradeIndiaLeadConfig,
+  parseTradeIndiaPullConfig,
+  parseWooCommerceLeadConfig,
+  parseWooCommercePullConfig,
   readString,
+  shopifyLeadWebhookUrl,
   telegramLeadWebhookUrl,
+  tradeIndiaLeadWebhookUrl,
+  wooCommerceLeadWebhookUrl,
   type LeadSourceStatus,
 } from "@/lib/leads/connection-config";
 import { resolveWorkspaceWhatsAppCredentials } from "@/lib/whatsapp-settings";
@@ -61,7 +75,19 @@ export async function getLeadSourceCardModels(
     prisma.leadIngestConnection.findMany({
       where: {
         organizationId,
-        channel: { in: ["WHATSAPP", "FACEBOOK", "INSTAGRAM", "TELEGRAM"] },
+        channel: {
+          in: [
+            "WHATSAPP",
+            "FACEBOOK",
+            "INSTAGRAM",
+            "TELEGRAM",
+            "INDIAMART",
+            "TRADEINDIA",
+            "SHOPIFY",
+            "WOOCOMMERCE",
+            "JUSTDIAL",
+          ],
+        },
       },
     }),
     resolveWorkspaceWhatsAppCredentials(organizationId),
@@ -175,6 +201,180 @@ export async function getLeadSourceCardModels(
         ),
         webhookSecretHint: maskTokenHint(webhookSecret),
         botUsername: readString(record, "botUsername") || null,
+      },
+    });
+  }
+
+  {
+    const row = byChannel.get("INDIAMART");
+    const config = parseIndiaMartLeadConfig(row?.config);
+    const pull = parseIndiaMartPullConfig(row?.config);
+    const record = asConfigRecord(row?.config);
+    const webhookSecret =
+      config?.webhookSecret ?? readString(record, "webhookSecret");
+    const ready = Boolean(pull);
+    const { status, statusLabel } = statusFrom({
+      enabled: Boolean(row?.enabled),
+      ready,
+      error: row?.lastSyncError ?? null,
+    });
+    cards.push({
+      channel: "INDIAMART",
+      label: "IndiaMART",
+      description:
+        "Paste your Lead Manager Pull API key. Enable to pull enquiries and receive Push API posts on the webhook URL.",
+      enabled: Boolean(row?.enabled),
+      status: ready ? status : "needs_setup",
+      statusLabel: ready ? statusLabel : "Needs setup",
+      lastSyncAt: row?.lastSyncAt?.toISOString() ?? null,
+      lastSyncError: row?.lastSyncError ?? null,
+      webhookUrl: webhookSecret ? indiaMartLeadWebhookUrl(webhookSecret) : null,
+      setupHref: null,
+      fields: {
+        glusrCrmKeyHint: maskTokenHint(
+          pull?.glusrCrmKey ?? readString(record, "glusrCrmKey"),
+        ),
+        webhookSecretHint: maskTokenHint(webhookSecret),
+      },
+    });
+  }
+
+  {
+    const row = byChannel.get("TRADEINDIA");
+    const config = parseTradeIndiaLeadConfig(row?.config);
+    const pull = parseTradeIndiaPullConfig(row?.config);
+    const record = asConfigRecord(row?.config);
+    const webhookSecret =
+      config?.webhookSecret ?? readString(record, "webhookSecret");
+    const ready = Boolean(pull);
+    const { status, statusLabel } = statusFrom({
+      enabled: Boolean(row?.enabled),
+      ready,
+      error: row?.lastSyncError ?? null,
+    });
+    cards.push({
+      channel: "TRADEINDIA",
+      label: "TradeIndia",
+      description:
+        "Paste userid, profile id, and Inquiry API key from My Inquiry API. Cron pulls new enquiries after you save and enable.",
+      enabled: Boolean(row?.enabled),
+      status: ready ? status : "needs_setup",
+      statusLabel: ready ? statusLabel : "Needs setup",
+      lastSyncAt: row?.lastSyncAt?.toISOString() ?? null,
+      lastSyncError: row?.lastSyncError ?? null,
+      webhookUrl: webhookSecret ? tradeIndiaLeadWebhookUrl(webhookSecret) : null,
+      setupHref: null,
+      fields: {
+        userId: pull?.userId ?? (readString(record, "userId") || null),
+        profileId: pull?.profileId ?? (readString(record, "profileId") || null),
+        apiKeyHint: maskTokenHint(pull?.apiKey ?? readString(record, "apiKey")),
+        webhookSecretHint: maskTokenHint(webhookSecret),
+      },
+    });
+  }
+
+  {
+    const row = byChannel.get("SHOPIFY");
+    const config = parseShopifyLeadConfig(row?.config);
+    const pull = parseShopifyPullConfig(row?.config);
+    const record = asConfigRecord(row?.config);
+    const webhookSecret =
+      config?.webhookSecret ?? readString(record, "webhookSecret");
+    const ready = Boolean(pull);
+    const { status, statusLabel } = statusFrom({
+      enabled: Boolean(row?.enabled),
+      ready,
+      error: row?.lastSyncError ?? null,
+    });
+    cards.push({
+      channel: "SHOPIFY",
+      label: "Shopify",
+      description:
+        "Custom app Admin API token for your shop. Save & enable registers orders/create and customers/create webhooks, then pulls recent orders.",
+      enabled: Boolean(row?.enabled),
+      status: ready ? status : "needs_setup",
+      statusLabel: ready ? statusLabel : "Needs setup",
+      lastSyncAt: row?.lastSyncAt?.toISOString() ?? null,
+      lastSyncError: row?.lastSyncError ?? null,
+      webhookUrl: webhookSecret ? shopifyLeadWebhookUrl(webhookSecret) : null,
+      setupHref: null,
+      fields: {
+        shopDomain: pull?.shopDomain ?? (readString(record, "shopDomain") || null),
+        accessTokenHint: maskTokenHint(
+          pull?.accessToken ?? readString(record, "accessToken"),
+        ),
+        hasApiSecret: Boolean(pull?.apiSecret ?? readString(record, "apiSecret")),
+        webhookSecretHint: maskTokenHint(webhookSecret),
+      },
+    });
+  }
+
+  {
+    const row = byChannel.get("WOOCOMMERCE");
+    const config = parseWooCommerceLeadConfig(row?.config);
+    const pull = parseWooCommercePullConfig(row?.config);
+    const record = asConfigRecord(row?.config);
+    const webhookSecret =
+      config?.webhookSecret ?? readString(record, "webhookSecret");
+    const ready = Boolean(pull);
+    const { status, statusLabel } = statusFrom({
+      enabled: Boolean(row?.enabled),
+      ready,
+      error: row?.lastSyncError ?? null,
+    });
+    cards.push({
+      channel: "WOOCOMMERCE",
+      label: "WooCommerce",
+      description:
+        "REST API consumer key + secret from WooCommerce → Settings → Advanced → REST API. Save & enable registers order.created.",
+      enabled: Boolean(row?.enabled),
+      status: ready ? status : "needs_setup",
+      statusLabel: ready ? statusLabel : "Needs setup",
+      lastSyncAt: row?.lastSyncAt?.toISOString() ?? null,
+      lastSyncError: row?.lastSyncError ?? null,
+      webhookUrl: webhookSecret
+        ? wooCommerceLeadWebhookUrl(webhookSecret)
+        : null,
+      setupHref: null,
+      fields: {
+        storeUrl: pull?.storeUrl ?? (readString(record, "storeUrl") || null),
+        consumerKeyHint: maskTokenHint(
+          pull?.consumerKey ?? readString(record, "consumerKey"),
+        ),
+        hasConsumerSecret: Boolean(
+          pull?.consumerSecret ?? readString(record, "consumerSecret"),
+        ),
+        webhookSecretHint: maskTokenHint(webhookSecret),
+      },
+    });
+  }
+
+  {
+    const row = byChannel.get("JUSTDIAL");
+    const config = parseJustdialLeadConfig(row?.config);
+    const record = asConfigRecord(row?.config);
+    const webhookSecret =
+      config?.webhookSecret ?? readString(record, "webhookSecret");
+    const ready = Boolean(webhookSecret);
+    const { status, statusLabel } = statusFrom({
+      enabled: Boolean(row?.enabled),
+      ready,
+      error: row?.lastSyncError ?? null,
+    });
+    cards.push({
+      channel: "JUSTDIAL",
+      label: "Justdial",
+      description:
+        "Save to generate a webhook URL, then send it to your Justdial account manager (GET). No Sheetomatic-held Justdial key.",
+      enabled: Boolean(row?.enabled),
+      status: ready ? status : "needs_setup",
+      statusLabel: ready ? statusLabel : "Needs setup",
+      lastSyncAt: row?.lastSyncAt?.toISOString() ?? null,
+      lastSyncError: row?.lastSyncError ?? null,
+      webhookUrl: webhookSecret ? justdialLeadWebhookUrl(webhookSecret) : null,
+      setupHref: null,
+      fields: {
+        webhookSecretHint: maskTokenHint(webhookSecret),
       },
     });
   }

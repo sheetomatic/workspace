@@ -2796,6 +2796,11 @@ enum LeadSourceChannel {
   MANUAL
   API
   TELEGRAM
+  INDIAMART
+  TRADEINDIA
+  SHOPIFY
+  WOOCOMMERCE
+  JUSTDIAL
 }
 
 enum InboundLeadActivityType {

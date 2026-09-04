@@ -111,10 +111,19 @@ import { inferLeadStageFromRequirement } from "@/lib/leads/stage-ai";
 import { leadStatusLabel } from "@/lib/leads/status-labels";
 import {
   asConfigRecord,
+  indiaMartLeadWebhookUrl,
+  justdialLeadWebhookUrl,
   metaLeadWebhookUrl,
+  normalizeShopifyShopDomain,
+  normalizeWooStoreUrl,
   parseMetaLeadAdsConfig,
+  parseShopifyPullConfig,
+  parseWooCommercePullConfig,
   readString,
+  shopifyLeadWebhookUrl,
   telegramLeadWebhookUrl,
+  tradeIndiaLeadWebhookUrl,
+  wooCommerceLeadWebhookUrl,
 } from "@/lib/leads/connection-config";
 import {
   mergeMetaLeadAdsConfig,
@@ -124,6 +133,19 @@ import {
   defaultMetaVerifyTokenForOrg,
   ensureTelegramWebhookSecret,
 } from "@/lib/leads/source-settings";
+import { pullIndiaMartLeads } from "@/lib/leads/indiamart";
+import { pullTradeIndiaLeads } from "@/lib/leads/tradeindia";
+import {
+  registerShopifyLeadWebhooks,
+  verifyShopifyCredentials,
+  pullShopifyLeads,
+} from "@/lib/leads/shopify";
+import {
+  registerWooCommerceLeadWebhooks,
+  verifyWooCommerceCredentials,
+  pullWooCommerceLeads,
+} from "@/lib/leads/woocommerce";
+import { ensureLeadWebhookSecret } from "@/lib/leads/webhook-secret";
 import {
   setTelegramWebhook,
   verifyTelegramBotToken,
@@ -1194,6 +1216,18 @@ export async function updateLeadConnection(params: {
     return {
       ok: false,
       message: "Use saveTelegramLeadConnection for Telegram bot credentials.",
+    };
+  }
+  if (
+    params.channel === "INDIAMART" ||
+    params.channel === "TRADEINDIA" ||
+    params.channel === "SHOPIFY" ||
+    params.channel === "WOOCOMMERCE" ||
+    params.channel === "JUSTDIAL"
+  ) {
+    return {
+      ok: false,
+      message: "Use the Lead sources cards to save this connector.",
     };
   }
 
@@ -4122,6 +4156,485 @@ export async function saveTelegramLeadConnection(params: {
     message: params.enabled
       ? `Telegram connected${verified.botUsername ? ` (@${verified.botUsername})` : ""}.`
       : "Telegram settings saved (intake disabled).",
+    webhookUrl,
+  };
+}
+
+export async function saveIndiaMartLeadConnection(params: {
+  enabled: boolean;
+  glusrCrmKey: string;
+}) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Admin only." };
+  }
+
+  await ensureLeadConnections(user.organizationId);
+  const existing = await prisma.leadIngestConnection.findUnique({
+    where: {
+      organizationId_channel: {
+        organizationId: user.organizationId,
+        channel: "INDIAMART",
+      },
+    },
+  });
+  const current = asConfigRecord(existing?.config);
+  const glusrCrmKey =
+    params.glusrCrmKey.trim() ||
+    readString(current, "glusrCrmKey") ||
+    readString(current, "glusr_crm_key");
+  if (!glusrCrmKey) {
+    return { ok: false, message: "IndiaMART Pull API key is required." };
+  }
+
+  const webhook = ensureLeadWebhookSecret(existing?.config, "im");
+  const webhookUrl = indiaMartLeadWebhookUrl(webhook.secret);
+
+  await prisma.leadIngestConnection.update({
+    where: {
+      organizationId_channel: {
+        organizationId: user.organizationId,
+        channel: "INDIAMART",
+      },
+    },
+    data: {
+      enabled: params.enabled,
+      ingestSecretHash: webhook.hash,
+      config: {
+        ...current,
+        glusrCrmKey,
+        webhookSecret: webhook.secret,
+      } as Prisma.InputJsonValue,
+      lastSyncError: null,
+      syncStatus: "IDLE",
+      label: "IndiaMART Lead Manager",
+    },
+  });
+
+  if (params.enabled) {
+    after(() => {
+      void pullIndiaMartLeads({
+        organizationId: user.organizationId,
+        interactive: true,
+      }).catch((error) => console.error("indiamart first pull", error));
+    });
+  }
+
+  revalidatePath("/app/leads/settings");
+  revalidatePath("/app/leads");
+  return {
+    ok: true,
+    message: params.enabled
+      ? "IndiaMART connected. Pull started; paste the webhook URL in Push API if you want realtime."
+      : "IndiaMART settings saved (intake disabled).",
+    webhookUrl,
+  };
+}
+
+export async function verifyIndiaMartLeadConnection() {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Admin only." };
+  }
+  const result = await pullIndiaMartLeads({
+    organizationId: user.organizationId,
+    interactive: true,
+    allowDisabled: true,
+  });
+  revalidatePath("/app/leads/settings");
+  if (!result.ok) {
+    return { ok: false, message: formatLeadSyncError(result.reason) };
+  }
+  return {
+    ok: true,
+    message: formatLeadSyncCounts(result.counts, result.partial),
+  };
+}
+
+export async function saveTradeIndiaLeadConnection(params: {
+  enabled: boolean;
+  userId: string;
+  profileId: string;
+  apiKey: string;
+}) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Admin only." };
+  }
+
+  await ensureLeadConnections(user.organizationId);
+  const existing = await prisma.leadIngestConnection.findUnique({
+    where: {
+      organizationId_channel: {
+        organizationId: user.organizationId,
+        channel: "TRADEINDIA",
+      },
+    },
+  });
+  const current = asConfigRecord(existing?.config);
+  const userId = params.userId.trim() || readString(current, "userId");
+  const profileId = params.profileId.trim() || readString(current, "profileId");
+  const apiKey = params.apiKey.trim() || readString(current, "apiKey");
+  if (!userId || !profileId || !apiKey) {
+    return { ok: false, message: "TradeIndia userid, profile id, and key are required." };
+  }
+
+  const webhook = ensureLeadWebhookSecret(existing?.config, "ti");
+  const webhookUrl = tradeIndiaLeadWebhookUrl(webhook.secret);
+
+  await prisma.leadIngestConnection.update({
+    where: {
+      organizationId_channel: {
+        organizationId: user.organizationId,
+        channel: "TRADEINDIA",
+      },
+    },
+    data: {
+      enabled: params.enabled,
+      ingestSecretHash: webhook.hash,
+      config: {
+        ...current,
+        userId,
+        profileId,
+        apiKey,
+        webhookSecret: webhook.secret,
+      } as Prisma.InputJsonValue,
+      lastSyncError: null,
+      syncStatus: "IDLE",
+      label: "TradeIndia inquiries",
+    },
+  });
+
+  if (params.enabled) {
+    after(() => {
+      void pullTradeIndiaLeads({
+        organizationId: user.organizationId,
+        interactive: true,
+      }).catch((error) => console.error("tradeindia first pull", error));
+    });
+  }
+
+  revalidatePath("/app/leads/settings");
+  revalidatePath("/app/leads");
+  return {
+    ok: true,
+    message: params.enabled
+      ? "TradeIndia connected. First pull started."
+      : "TradeIndia settings saved (intake disabled).",
+    webhookUrl,
+  };
+}
+
+export async function verifyTradeIndiaLeadConnection() {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Admin only." };
+  }
+  const result = await pullTradeIndiaLeads({
+    organizationId: user.organizationId,
+    interactive: true,
+    allowDisabled: true,
+  });
+  revalidatePath("/app/leads/settings");
+  if (!result.ok) {
+    return { ok: false, message: formatLeadSyncError(result.reason) };
+  }
+  return {
+    ok: true,
+    message: formatLeadSyncCounts(result.counts, result.partial),
+  };
+}
+
+export async function saveShopifyLeadConnection(params: {
+  enabled: boolean;
+  shopDomain: string;
+  accessToken: string;
+  apiSecret: string;
+  registerWebhook: boolean;
+}) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Admin only." };
+  }
+
+  await ensureLeadConnections(user.organizationId);
+  const existing = await prisma.leadIngestConnection.findUnique({
+    where: {
+      organizationId_channel: {
+        organizationId: user.organizationId,
+        channel: "SHOPIFY",
+      },
+    },
+  });
+  const current = asConfigRecord(existing?.config);
+  const shopDomain = normalizeShopifyShopDomain(
+    params.shopDomain || readString(current, "shopDomain"),
+  );
+  const accessToken =
+    params.accessToken.trim() || readString(current, "accessToken");
+  const apiSecret = params.apiSecret.trim() || readString(current, "apiSecret");
+  if (!shopDomain || !accessToken) {
+    return { ok: false, message: "Shop domain and Admin API access token are required." };
+  }
+
+  const verified = await verifyShopifyCredentials({ shopDomain, accessToken });
+  if (!verified.ok) {
+    return { ok: false, message: `Shopify check failed: ${verified.message}` };
+  }
+
+  const webhook = ensureLeadWebhookSecret(existing?.config, "sh");
+  const webhookUrl = shopifyLeadWebhookUrl(webhook.secret);
+
+  if (params.enabled && params.registerWebhook) {
+    const registered = await registerShopifyLeadWebhooks({
+      shopDomain,
+      accessToken,
+      webhookUrl,
+    });
+    if (!registered.ok) {
+      return { ok: false, message: `Webhook register failed: ${registered.message}` };
+    }
+  }
+
+  await prisma.leadIngestConnection.update({
+    where: {
+      organizationId_channel: {
+        organizationId: user.organizationId,
+        channel: "SHOPIFY",
+      },
+    },
+    data: {
+      enabled: params.enabled,
+      ingestSecretHash: webhook.hash,
+      config: {
+        ...current,
+        shopDomain,
+        accessToken,
+        ...(apiSecret ? { apiSecret } : {}),
+        webhookSecret: webhook.secret,
+      } as Prisma.InputJsonValue,
+      lastSyncError: null,
+      syncStatus: "IDLE",
+      label: "Shopify orders",
+    },
+  });
+
+  if (params.enabled) {
+    after(() => {
+      void pullShopifyLeads({ organizationId: user.organizationId }).catch(
+        (error) => console.error("shopify first pull", error),
+      );
+    });
+  }
+
+  revalidatePath("/app/leads/settings");
+  revalidatePath("/app/leads");
+  return {
+    ok: true,
+    message: params.enabled
+      ? `Shopify connected${verified.shopName ? ` (${verified.shopName})` : ""}.`
+      : "Shopify settings saved (intake disabled).",
+    webhookUrl,
+  };
+}
+
+export async function verifyShopifyLeadConnection() {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Admin only." };
+  }
+  const connection = await prisma.leadIngestConnection.findUnique({
+    where: {
+      organizationId_channel: {
+        organizationId: user.organizationId,
+        channel: "SHOPIFY",
+      },
+    },
+  });
+  const config = parseShopifyPullConfig(connection?.config);
+  if (!config) {
+    return { ok: false, message: "Save shop domain and access token first." };
+  }
+  const verified = await verifyShopifyCredentials(config);
+  revalidatePath("/app/leads/settings");
+  return verified.ok
+    ? { ok: true, message: `Verified shop: ${verified.shopName}` }
+    : { ok: false, message: verified.message };
+}
+
+export async function saveWooCommerceLeadConnection(params: {
+  enabled: boolean;
+  storeUrl: string;
+  consumerKey: string;
+  consumerSecret: string;
+  registerWebhook: boolean;
+}) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Admin only." };
+  }
+
+  await ensureLeadConnections(user.organizationId);
+  const existing = await prisma.leadIngestConnection.findUnique({
+    where: {
+      organizationId_channel: {
+        organizationId: user.organizationId,
+        channel: "WOOCOMMERCE",
+      },
+    },
+  });
+  const current = asConfigRecord(existing?.config);
+  const storeUrl = normalizeWooStoreUrl(
+    params.storeUrl || readString(current, "storeUrl"),
+  );
+  const consumerKey =
+    params.consumerKey.trim() || readString(current, "consumerKey");
+  const consumerSecret =
+    params.consumerSecret.trim() || readString(current, "consumerSecret");
+  if (!storeUrl || !consumerKey || !consumerSecret) {
+    return {
+      ok: false,
+      message: "Store URL, consumer key, and consumer secret are required.",
+    };
+  }
+
+  const verified = await verifyWooCommerceCredentials({
+    storeUrl,
+    consumerKey,
+    consumerSecret,
+  });
+  if (!verified.ok) {
+    return { ok: false, message: `WooCommerce check failed: ${verified.message}` };
+  }
+
+  const webhook = ensureLeadWebhookSecret(existing?.config, "wc");
+  const webhookUrl = wooCommerceLeadWebhookUrl(webhook.secret);
+
+  if (params.enabled && params.registerWebhook) {
+    const registered = await registerWooCommerceLeadWebhooks({
+      storeUrl,
+      consumerKey,
+      consumerSecret,
+      webhookUrl,
+      webhookSecret: webhook.secret,
+    });
+    if (!registered.ok) {
+      return { ok: false, message: `Webhook register failed: ${registered.message}` };
+    }
+  }
+
+  await prisma.leadIngestConnection.update({
+    where: {
+      organizationId_channel: {
+        organizationId: user.organizationId,
+        channel: "WOOCOMMERCE",
+      },
+    },
+    data: {
+      enabled: params.enabled,
+      ingestSecretHash: webhook.hash,
+      config: {
+        ...current,
+        storeUrl,
+        consumerKey,
+        consumerSecret,
+        webhookSecret: webhook.secret,
+      } as Prisma.InputJsonValue,
+      lastSyncError: null,
+      syncStatus: "IDLE",
+      label: "WooCommerce orders",
+    },
+  });
+
+  if (params.enabled) {
+    after(() => {
+      void pullWooCommerceLeads({ organizationId: user.organizationId }).catch(
+        (error) => console.error("woocommerce first pull", error),
+      );
+    });
+  }
+
+  revalidatePath("/app/leads/settings");
+  revalidatePath("/app/leads");
+  return {
+    ok: true,
+    message: params.enabled
+      ? "WooCommerce connected. Order webhook registered and pull started."
+      : "WooCommerce settings saved (intake disabled).",
+    webhookUrl,
+  };
+}
+
+export async function verifyWooCommerceLeadConnection() {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Admin only." };
+  }
+  const connection = await prisma.leadIngestConnection.findUnique({
+    where: {
+      organizationId_channel: {
+        organizationId: user.organizationId,
+        channel: "WOOCOMMERCE",
+      },
+    },
+  });
+  const config = parseWooCommercePullConfig(connection?.config);
+  if (!config) {
+    return { ok: false, message: "Save store URL and REST API keys first." };
+  }
+  const verified = await verifyWooCommerceCredentials(config);
+  revalidatePath("/app/leads/settings");
+  return verified.ok
+    ? { ok: true, message: "WooCommerce REST API verified." }
+    : { ok: false, message: verified.message };
+}
+
+export async function saveJustdialLeadConnection(params: { enabled: boolean }) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Admin only." };
+  }
+
+  await ensureLeadConnections(user.organizationId);
+  const existing = await prisma.leadIngestConnection.findUnique({
+    where: {
+      organizationId_channel: {
+        organizationId: user.organizationId,
+        channel: "JUSTDIAL",
+      },
+    },
+  });
+  const current = asConfigRecord(existing?.config);
+  const webhook = ensureLeadWebhookSecret(existing?.config, "jd");
+  const webhookUrl = justdialLeadWebhookUrl(webhook.secret);
+
+  await prisma.leadIngestConnection.update({
+    where: {
+      organizationId_channel: {
+        organizationId: user.organizationId,
+        channel: "JUSTDIAL",
+      },
+    },
+    data: {
+      enabled: params.enabled,
+      ingestSecretHash: webhook.hash,
+      config: {
+        ...current,
+        webhookSecret: webhook.secret,
+      } as Prisma.InputJsonValue,
+      lastSyncError: null,
+      syncStatus: "IDLE",
+      label: "Justdial enquiries",
+    },
+  });
+
+  revalidatePath("/app/leads/settings");
+  revalidatePath("/app/leads");
+  return {
+    ok: true,
+    message: params.enabled
+      ? "Justdial webhook is live. Send this URL to your Justdial account manager (GET)."
+      : "Justdial settings saved (intake disabled).",
     webhookUrl,
   };
 }

@@ -8,6 +8,11 @@ export const LEAD_CHANNEL_LABELS: Record<LeadSourceChannel, string> = {
   MANUAL: "Manual",
   API: "API",
   TELEGRAM: "Telegram",
+  INDIAMART: "IndiaMART",
+  TRADEINDIA: "TradeIndia",
+  SHOPIFY: "Shopify",
+  WOOCOMMERCE: "WooCommerce",
+  JUSTDIAL: "Justdial",
 };
 
 export const LEAD_CHANNEL_DEFAULTS: Array<{
@@ -19,6 +24,11 @@ export const LEAD_CHANNEL_DEFAULTS: Array<{
   { channel: "INSTAGRAM", label: "Instagram Lead Ads" },
   { channel: "FACEBOOK", label: "Facebook Lead Ads" },
   { channel: "TELEGRAM", label: "Telegram Bot intake" },
+  { channel: "INDIAMART", label: "IndiaMART Lead Manager" },
+  { channel: "TRADEINDIA", label: "TradeIndia inquiries" },
+  { channel: "SHOPIFY", label: "Shopify orders" },
+  { channel: "WOOCOMMERCE", label: "WooCommerce orders" },
+  { channel: "JUSTDIAL", label: "Justdial enquiries" },
 ];
 
 export const LEAD_DASHBOARD_SOURCE_FILTERS = [
@@ -28,6 +38,11 @@ export const LEAD_DASHBOARD_SOURCE_FILTERS = [
   "INSTAGRAM",
   "FACEBOOK",
   "TELEGRAM",
+  "INDIAMART",
+  "TRADEINDIA",
+  "SHOPIFY",
+  "WOOCOMMERCE",
+  "JUSTDIAL",
   "MANUAL",
 ] as const;
 
@@ -56,6 +71,16 @@ export function fmsSourceLabelForChannel(channel: LeadSourceChannel): string {
       return "Google Sheets";
     case "TELEGRAM":
       return "Telegram";
+    case "INDIAMART":
+      return "IndiaMART";
+    case "TRADEINDIA":
+      return "TradeIndia";
+    case "SHOPIFY":
+      return "Shopify";
+    case "WOOCOMMERCE":
+      return "WooCommerce";
+    case "JUSTDIAL":
+      return "Justdial";
     case "MANUAL":
       return "Walk-in";
     default:
@@ -78,6 +103,11 @@ export function parseLeadSourceChannel(
     "MANUAL",
     "API",
     "TELEGRAM",
+    "INDIAMART",
+    "TRADEINDIA",
+    "SHOPIFY",
+    "WOOCOMMERCE",
+    "JUSTDIAL",
   ];
   return allowed.includes(normalized as LeadSourceChannel)
     ? (normalized as LeadSourceChannel)

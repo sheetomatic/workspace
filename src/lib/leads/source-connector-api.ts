@@ -8,6 +8,11 @@
  * Webhooks (no session):
  * - Meta Lead Ads: GET/POST `/api/webhooks/meta/leads`
  * - Telegram: POST `/api/webhooks/telegram/leads/{webhookSecret}`
+ * - IndiaMART: POST `/api/webhooks/indiamart/leads/{webhookSecret}`
+ * - TradeIndia (optional push): POST `/api/webhooks/tradeindia/leads/{webhookSecret}`
+ * - Shopify: POST `/api/webhooks/shopify/leads/{webhookSecret}`
+ * - WooCommerce: POST `/api/webhooks/woocommerce/leads/{webhookSecret}`
+ * - Justdial: GET/POST `/api/webhooks/justdial/leads/{webhookSecret}`
  *
  * WhatsApp Official: inbound Meta Cloud → `/api/webhooks/whatsapp` →
  * `queueLeadSyncFromWhatsApp` when WHATSAPP connector is enabled.
@@ -25,8 +30,18 @@ export {
 export {
   metaLeadWebhookUrl,
   telegramLeadWebhookUrl,
+  indiaMartLeadWebhookUrl,
+  tradeIndiaLeadWebhookUrl,
+  shopifyLeadWebhookUrl,
+  wooCommerceLeadWebhookUrl,
+  justdialLeadWebhookUrl,
   type MetaLeadAdsConfig,
   type TelegramLeadConfig,
+  type IndiaMartLeadConfig,
+  type TradeIndiaLeadConfig,
+  type ShopifyLeadConfig,
+  type WooCommerceLeadConfig,
+  type JustdialLeadConfig,
   type LeadSourceStatus,
 } from "@/lib/leads/connection-config";
 
@@ -56,5 +71,35 @@ export const LEAD_SOURCE_CONNECTOR_FIELDS = {
     generated: ["webhookSecret"] as const,
     actions: ["saveTelegramLeadConnection"] as const,
     webhookPath: "/api/webhooks/telegram/leads/{webhookSecret}",
+  },
+  INDIAMART: {
+    required: ["glusrCrmKey"] as const,
+    generated: ["webhookSecret"] as const,
+    actions: ["saveIndiaMartLeadConnection", "verifyIndiaMartLeadConnection"] as const,
+    webhookPath: "/api/webhooks/indiamart/leads/{webhookSecret}",
+  },
+  TRADEINDIA: {
+    required: ["userId", "profileId", "apiKey"] as const,
+    generated: ["webhookSecret"] as const,
+    actions: ["saveTradeIndiaLeadConnection", "verifyTradeIndiaLeadConnection"] as const,
+    webhookPath: "/api/webhooks/tradeindia/leads/{webhookSecret}",
+  },
+  SHOPIFY: {
+    required: ["shopDomain", "accessToken"] as const,
+    optional: ["apiSecret"] as const,
+    generated: ["webhookSecret"] as const,
+    actions: ["saveShopifyLeadConnection", "verifyShopifyLeadConnection"] as const,
+    webhookPath: "/api/webhooks/shopify/leads/{webhookSecret}",
+  },
+  WOOCOMMERCE: {
+    required: ["storeUrl", "consumerKey", "consumerSecret"] as const,
+    generated: ["webhookSecret"] as const,
+    actions: ["saveWooCommerceLeadConnection", "verifyWooCommerceLeadConnection"] as const,
+    webhookPath: "/api/webhooks/woocommerce/leads/{webhookSecret}",
+  },
+  JUSTDIAL: {
+    generated: ["webhookSecret"] as const,
+    actions: ["saveJustdialLeadConnection"] as const,
+    webhookPath: "/api/webhooks/justdial/leads/{webhookSecret}",
   },
 } as const;

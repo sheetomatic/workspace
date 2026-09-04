@@ -477,3 +477,183 @@ export function mergeMetaLeadAdsConfig(params: {
     ...(appSecret ? { appSecret } : {}),
   };
 }
+
+async function graphGet(
+  path: string,
+  pageAccessToken: string,
+  search: Record<string, string>,
+) {
+  const url = new URL(`https://graph.facebook.com/${metaGraphVersion()}${path}`);
+  for (const [key, value] of Object.entries(search)) {
+    url.searchParams.set(key, value);
+  }
+  url.searchParams.set("access_token", pageAccessToken);
+  const response = await fetch(url.toString(), { method: "GET" });
+  const json = (await response.json()) as Record<string, unknown>;
+  if (!response.ok) {
+    const message =
+      typeof json.error === "object" &&
+      json.error &&
+      typeof (json.error as { message?: unknown }).message === "string"
+        ? (json.error as { message: string }).message
+        : `Graph API ${response.status}`;
+    throw new Error(message);
+  }
+  return json;
+}
+
+async function ingestGraphLeadRecord(params: {
+  connection: MetaConnectionRow;
+  details: Record<string, unknown>;
+  pageId: string;
+}) {
+  const fields = fieldMap(params.details.field_data);
+  const name = pickField(fields, ["full_name", "full name", "name", "first_name"]);
+  const first = pickField(fields, ["first_name", "firstname"]);
+  const last = pickField(fields, ["last_name", "lastname"]);
+  const phone = pickField(fields, [
+    "phone_number",
+    "phone",
+    "mobile_number",
+    "mobile",
+  ]);
+  const email = pickField(fields, ["email", "email_address"]);
+  const city = pickField(fields, ["city", "town"]);
+  const company = pickField(fields, ["company_name", "company"]);
+  const requirement = pickField(fields, [
+    "requirement",
+    "message",
+    "notes",
+    "what_is_your_requirement",
+  ]);
+  const platform =
+    typeof params.details.platform === "string" ? params.details.platform : null;
+  const channel = resolveChannel(params.connection, platform);
+  const displayName =
+    name || [first, last].filter(Boolean).join(" ").trim() || null;
+
+  return ingestInboundLead({
+    organizationId: params.connection.organizationId,
+    channel,
+    connectionId: params.connection.id,
+    skipConnectionSetup: true,
+    suppressOwnerNotify: true,
+    externalId: String(params.details.id ?? ""),
+    name: displayName,
+    phone,
+    email,
+    city,
+    company,
+    requirement,
+    sourceDetail:
+      typeof params.details.ad_name === "string"
+        ? params.details.ad_name
+        : typeof params.details.campaign_name === "string"
+          ? params.details.campaign_name
+          : "Meta Lead Ads",
+    campaign:
+      typeof params.details.campaign_name === "string"
+        ? params.details.campaign_name
+        : null,
+    utmSource: channel === "INSTAGRAM" ? "instagram" : "facebook",
+    utmMedium: "lead_ads",
+    utmCampaign:
+      typeof params.details.campaign_id === "string"
+        ? params.details.campaign_id
+        : null,
+    capturedAt:
+      typeof params.details.created_time === "string"
+        ? new Date(params.details.created_time)
+        : new Date(),
+    rawPayload: {
+      pageId: params.pageId,
+      details: params.details,
+    } as object,
+  });
+}
+
+/** Catch-up pull when the leadgen webhook was missed. Uses the tenant Page token. */
+export async function pullMetaLeadAds(params: {
+  organizationId: string;
+  channel: "FACEBOOK" | "INSTAGRAM";
+  allowDisabled?: boolean;
+}): Promise<import("@/lib/leads/sync-messages").LeadPullResult> {
+  const connection = await prisma.leadIngestConnection.findUnique({
+    where: {
+      organizationId_channel: {
+        organizationId: params.organizationId,
+        channel: params.channel,
+      },
+    },
+  });
+  if (!connection || (!connection.enabled && !params.allowDisabled)) {
+    return { ok: false, reason: "connection_disabled" };
+  }
+  const config = parseMetaLeadAdsConfig(connection.config);
+  if (!config) {
+    return { ok: false, reason: "missing_credentials" };
+  }
+
+  await prisma.leadIngestConnection.update({
+    where: { id: connection.id },
+    data: { syncStatus: "SYNCING", lastSyncError: null },
+  });
+
+  try {
+    const formsJson = await graphGet(`/${config.pageId}/leadgen_forms`, config.pageAccessToken, {
+      fields: "id,name,status",
+      limit: "25",
+    });
+    const forms = Array.isArray(formsJson.data)
+      ? (formsJson.data as Array<{ id?: string }>)
+      : [];
+    const allowed = config.formIds;
+    const formIds = forms
+      .map((form) => String(form.id ?? "").trim())
+      .filter((id) => id && (allowed.length === 0 || allowed.includes(id)));
+
+    const counts = { processed: 0, created: 0, updated: 0, skipped: 0 };
+    for (const formId of formIds.slice(0, 10)) {
+      const leadsJson = await graphGet(`/${formId}/leads`, config.pageAccessToken, {
+        fields:
+          "id,created_time,ad_id,ad_name,campaign_id,campaign_name,form_id,field_data,platform",
+        limit: "25",
+      });
+      const leads = Array.isArray(leadsJson.data)
+        ? (leadsJson.data as Record<string, unknown>[])
+        : [];
+      for (const details of leads) {
+        if (!details.id) continue;
+        const result = await ingestGraphLeadRecord({
+          connection,
+          details,
+          pageId: config.pageId,
+        });
+        if (result.skipped || !result.lead) {
+          counts.skipped += 1;
+          continue;
+        }
+        counts.processed += 1;
+        if (result.created) counts.created += 1;
+        else counts.updated += 1;
+      }
+    }
+
+    await prisma.leadIngestConnection.update({
+      where: { id: connection.id },
+      data: {
+        syncStatus: "IDLE",
+        lastSyncAt: new Date(),
+        lastSyncError: null,
+      },
+    });
+    return { ok: true, imported: counts.processed, counts };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Meta Lead Ads pull failed";
+    await prisma.leadIngestConnection.update({
+      where: { id: connection.id },
+      data: { syncStatus: "ERROR", lastSyncError: message },
+    });
+    return { ok: false, reason: message };
+  }
+}
