@@ -85,7 +85,6 @@ export function ShopCombo({
           className="ms-shop-combo-add"
           data-ms-add-new=""
           aria-label="Add / New"
-          onMouseDown={(event) => event.preventDefault()}
           onClick={startAdd}
         >
           Add / New

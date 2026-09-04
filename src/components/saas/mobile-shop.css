@@ -80,7 +80,7 @@
 }
 
 .ms-shop-nav-extra {
-  display: none;
+  display: none !important;
 }
 
 .ms-shop-nav-more-btn {
@@ -99,7 +99,7 @@
   }
 
   .ms-shop-nav-extra {
-    display: flex;
+    display: flex !important;
   }
 
   .ms-shop-nav-more-btn,
