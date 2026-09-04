@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   MOBILE_SHOP_HOME_ACTIONS,
+  MOBILE_SHOP_NAV_BAR,
   MOBILE_SHOP_NAV_LINKS,
+  MOBILE_SHOP_NAV_MORE,
 } from "@/lib/mobile-shop/home-actions";
 import { STOCK_IN_REASONS, STOCK_OUT_FORM_REASONS, STOCK_OUT_SALE_LINKS } from "@/lib/mobile-shop/reasons";
 
@@ -30,21 +32,23 @@ describe("mobile shop home actions", () => {
     ).toBe(false);
   });
 
-  it("keeps Accessories as a full nav word, not Acc, and hides Used + Stock out", () => {
-    const navLabels: string[] = MOBILE_SHOP_NAV_LINKS.map((link) => link.label);
-    expect(navLabels).toEqual([
+  it("keeps a short phone bar without Used, Acc, or Out", () => {
+    expect(MOBILE_SHOP_NAV_BAR.map((link) => link.label)).toEqual([
       "Home",
       "Sale",
-      "Repair",
-      "Accessories",
-      "Stock",
       "Stock in",
+      "Repair",
     ]);
-    expect(navLabels).not.toContain("Used");
-    expect(navLabels).not.toContain("Acc");
-    expect(navLabels).not.toContain("Out");
-    expect(MOBILE_SHOP_NAV_LINKS).toHaveLength(6);
-    expect(MOBILE_SHOP_NAV_LINKS.some((link) => link.href.includes("used-in"))).toBe(
+    expect(MOBILE_SHOP_NAV_MORE.map((link) => link.label)).toEqual([
+      "Stock",
+      "Accessories",
+      "Used phone in",
+    ]);
+    const barLabels: string[] = MOBILE_SHOP_NAV_BAR.map((link) => link.label);
+    expect(barLabels).not.toContain("Used");
+    expect(barLabels).not.toContain("Acc");
+    expect(barLabels).not.toContain("Out");
+    expect(MOBILE_SHOP_NAV_BAR.some((link) => link.href.includes("used-in"))).toBe(
       false,
     );
     expect(MOBILE_SHOP_NAV_LINKS.map((link) => link.label)).not.toContain("Acc");
