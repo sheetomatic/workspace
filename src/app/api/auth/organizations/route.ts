@@ -27,9 +27,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ organizations });
   } catch (error) {
-    console.error("[auth/organizations]", error);
+    console.error(
+      "[auth/organizations]",
+      error instanceof Error ? error.message : "unknown error",
+    );
     return NextResponse.json(
-      { error: "Could not reach the database. Restart the dev server if this persists." },
+      { error: "Could not load workspaces." },
       { status: 503 },
     );
   }

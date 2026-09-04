@@ -78,9 +78,9 @@ function resolvePrismaClient() {
   }
 
   const fresh = createPrismaClient();
-  if (process.env.NODE_ENV !== "production") {
-    globalForPrisma.prisma = fresh;
-  }
+  // Cache in production too — one client per serverless isolate. Skipping
+  // this opened a new pool on every query and the login org list 503'd.
+  globalForPrisma.prisma = fresh;
   return fresh;
 }
 

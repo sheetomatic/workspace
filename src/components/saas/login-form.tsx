@@ -85,7 +85,8 @@ export function LoginForm() {
     !orgLookupPending &&
     email.trim().length > 0 &&
     password.length > 0 &&
-    (!orgOptions ||
+    (Boolean(orgLookupError) ||
+      !orgOptions ||
       orgOptions.length <= 1 ||
       (selectedOrg.length > 0 && orgOptions.some((org) => org.slug === selectedOrg)));
 
@@ -130,29 +131,32 @@ export function LoginForm() {
         }
 
         if (!response.ok) {
-          setOrgLookupError("Could not load workspaces. Try again.");
+          setOrgOptions(null);
+          setSelectedOrg("");
+          setOrgLookupError("Could not load workspaces. You can still sign in.");
           return;
         }
 
         const data = (await response.json()) as { organizations?: LoginOrgOption[] };
-        const organizations = data.organizations ?? [];
+        const organizations = Array.isArray(data.organizations)
+          ? data.organizations
+          : [];
         setOrgOptions(organizations);
+        setOrgLookupError(null);
 
-        if (organizations.length === 1) {
-          setSelectedOrg(organizations[0].slug);
+        if (organizations.length <= 1) {
+          setSelectedOrg(organizations[0]?.slug ?? "");
           return;
         }
 
-        if (organizations.length > 1) {
-          const preferred =
-            organizations.find((org) => org.isPrimary) ?? organizations[0];
-          setSelectedOrg(preferred.slug);
-        }
+        const preferred =
+          organizations.find((org) => org.isPrimary) ?? organizations[0];
+        setSelectedOrg(preferred.slug);
       } catch {
         if (requestId === orgLookupRequestId.current) {
           setOrgOptions(null);
           setSelectedOrg("");
-          setOrgLookupError("Network error while loading workspaces.");
+          setOrgLookupError("Network error while loading workspaces. You can still sign in.");
         }
       } finally {
         if (requestId === orgLookupRequestId.current) {
