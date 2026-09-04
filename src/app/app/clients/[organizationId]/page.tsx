@@ -29,8 +29,8 @@ import { requireSession } from "@/lib/require-session";
 import { tenantPortalOrigin } from "@/lib/workspace-auth-links";
 import { kitInvoiceCharges, listShippableFmsKits } from "@/lib/addons/licensed-kits";
 import {
-  cancelKitLicenseAction,
-  grantKitLicenseAction,
+  cancelKitLicenseForm,
+  grantKitLicenseForm,
 } from "@/app/app/fms/kits/actions";
 
 export default async function ClientBillingDetailPage({
@@ -183,7 +183,7 @@ export default async function ClientBillingDetailPage({
                   {row ? ` · ${row.status.toLowerCase()}` : " · not licensed"}
                 </span>
                 {row?.status === "ACTIVE" ? (
-                  <form action={cancelKitLicenseAction}>
+                  <form action={cancelKitLicenseForm}>
                     <input name="organizationId" type="hidden" value={detail.id} />
                     <input name="kitKey" type="hidden" value={kit.key} />
                     <button className="ws-client-action" type="submit">
@@ -191,7 +191,7 @@ export default async function ClientBillingDetailPage({
                     </button>
                   </form>
                 ) : (
-                  <form action={grantKitLicenseAction}>
+                  <form action={grantKitLicenseForm}>
                     <input name="organizationId" type="hidden" value={detail.id} />
                     <input name="kitKey" type="hidden" value={kit.key} />
                     <button className="ws-client-action ws-client-action--primary" type="submit">

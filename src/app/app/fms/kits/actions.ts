@@ -140,3 +140,12 @@ export async function cancelKitLicenseAction(
   revalidateKits(organizationId);
   return { ok: true, message: "License cancelled. Existing jobs were not deleted." };
 }
+
+/** Native <form action> helpers (must return void). */
+export async function grantKitLicenseForm(formData: FormData) {
+  await grantKitLicenseAction(formData);
+}
+
+export async function cancelKitLicenseForm(formData: FormData) {
+  await cancelKitLicenseAction(formData);
+}
