@@ -26,21 +26,16 @@
   margin: 1.5rem 0 0.6rem;
 }
 
-.ms-shop-nav-wrap {
-  margin: 0 0 0.25rem;
-}
-
 .ms-shop-nav {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.4rem;
   overflow: visible;
-  padding: 0.15rem 0 0.55rem;
+  padding: 0.15rem 0 0.85rem;
+  margin: 0 0 0.25rem;
 }
 
-.ms-shop-nav a,
-.ms-shop-nav button,
-.ms-shop-nav-more a {
+.ms-shop-nav a {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -49,63 +44,27 @@
   min-width: 0;
   min-height: 3.4rem;
   padding: 0.45rem 0.5rem;
-  border: 0;
   border-radius: 0.95rem;
   background: #f1f5f9;
   color: #0f172a;
   text-decoration: none;
-  font: inherit;
   font-size: 0.88rem;
   font-weight: 700;
   line-height: 1.15;
   white-space: normal;
   text-align: center;
   overflow: visible;
-  cursor: pointer;
 }
 
-.ms-shop-nav a small,
-.ms-shop-nav button small,
-.ms-shop-nav-more a small {
+.ms-shop-nav a small {
   font-weight: 500;
   opacity: 0.65;
   font-size: 0.65rem;
 }
 
-.ms-shop-nav a.is-active,
-.ms-shop-nav button.is-active,
-.ms-shop-nav-more a.is-active {
+.ms-shop-nav a.is-active {
   background: var(--ms-ink);
   color: #fff;
-}
-
-.ms-shop-nav-extra {
-  display: none;
-}
-
-.ms-shop-nav-more-btn {
-  grid-column: 1 / -1;
-}
-
-.ms-shop-nav-more {
-  display: grid;
-  gap: 0.4rem;
-  padding: 0 0 0.85rem;
-}
-
-@media (min-width: 720px) {
-  .ms-shop-nav {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .ms-shop-nav-extra {
-    display: flex;
-  }
-
-  .ms-shop-nav-more-btn,
-  .ms-shop-nav-more {
-    display: none !important;
-  }
 }
 
 .ms-shop-type {
@@ -218,6 +177,21 @@
 
   .ms-shop-actions {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .ms-shop-combo-row {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .ms-shop-combo-row > input {
+    flex: 1 1 11rem;
+    min-width: 0;
+  }
+
+  .ms-shop-combo-add {
+    flex: 0 0 7.5rem;
+    width: auto;
   }
 }
 
@@ -565,24 +539,20 @@ button.ms-shop-card {
 }
 
 .ms-shop-combo-row {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 0.4rem;
   align-items: stretch;
 }
 
-.ms-shop-combo-row > input {
-  flex: 1 1 11rem;
-  min-width: 0;
-}
-
 .ms-shop-combo-add {
-  flex: 1 1 7rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.05rem;
+  width: 100%;
+  box-sizing: border-box;
   min-height: 3rem;
   padding: 0.4rem 0.7rem;
   border: 0;
