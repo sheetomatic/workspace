@@ -31,7 +31,8 @@ describe("mobile shop home actions", () => {
   });
 
   it("keeps Accessories as a full nav word, not Acc, and hides Stock out", () => {
-    expect(MOBILE_SHOP_NAV_LINKS.map((link) => link.label)).toEqual([
+    const navLabels: string[] = MOBILE_SHOP_NAV_LINKS.map((link) => link.label);
+    expect(navLabels).toEqual([
       "Home",
       "Sale",
       "Used",
@@ -39,9 +40,7 @@ describe("mobile shop home actions", () => {
       "Accessories",
       "Stock in",
     ]);
-    expect(MOBILE_SHOP_NAV_LINKS.some((link) => link.label === "Acc")).toBe(
-      false,
-    );
+    expect(navLabels).not.toContain("Acc");
     expect(MOBILE_SHOP_NAV_LINKS.some((link) => link.href.includes("stock-out"))).toBe(
       false,
     );
