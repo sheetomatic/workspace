@@ -3,12 +3,17 @@ import { ShopForm } from "@/components/saas/mobile-shop-form";
 import { createRepairAction } from "@/app/app/mobile-shop/actions";
 import { requireMobileShopPage } from "@/lib/mobile-shop/access";
 import { formatPromisedAt } from "@/lib/mobile-shop/promised-at";
-import { listRepairs, MOBILE_REPAIR_JOB_TYPES } from "@/lib/mobile-shop/store";
-import { JobTypeField } from "@/components/saas/mobile-shop-job-type";
+import { listPhoneCatalog, listRepairs, MOBILE_REPAIR_JOB_TYPES } from "@/lib/mobile-shop/store";
+import { uniqueCatalogValues } from "@/lib/mobile-shop/phone-catalog";
+import { JobTypeField, ShopPickField } from "@/components/saas/mobile-shop-job-type";
 
 export default async function MobileShopRepairsPage() {
   const user = await requireMobileShopPage();
-  const repairs = await listRepairs(user.organizationId);
+  const [repairs, catalog] = await Promise.all([
+    listRepairs(user.organizationId),
+    listPhoneCatalog(user.organizationId),
+  ]);
+  const models = uniqueCatalogValues(catalog, "model");
 
   return (
     <section>
@@ -27,10 +32,13 @@ export default async function MobileShopRepairsPage() {
           WhatsApp / phone
           <input name="customerPhone" required inputMode="tel" autoComplete="tel" />
         </label>
-        <label>
-          Phone model
-          <input name="deviceName" required placeholder="Redmi 13" autoComplete="off" />
-        </label>
+        <ShopPickField
+          name="deviceName"
+          label="Phone model"
+          options={models}
+          placeholder="Redmi 13"
+          required
+        />
         <label>
           IMEI
           <input name="imei" inputMode="numeric" autoComplete="off" />

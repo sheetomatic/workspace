@@ -70,31 +70,34 @@ export function AccessoriesFloor({ items }: { items: AccessoryRow[] }) {
     <>
       <label>
         Search · खोजें
-        <input
-          value={query}
-          onChange={(event) => {
-            const next = event.target.value;
-            setQuery(next);
-            if (next.trim() && !items.some((item) => item.name.toLowerCase() === next.trim().toLowerCase())) {
-              setAddName(next.trim());
-            }
-          }}
-          placeholder="Cover / charger / earphone"
-          autoComplete="off"
-        />
+        <div className="ms-shop-combo-row">
+          <input
+            value={query}
+            onChange={(event) => {
+              const next = event.target.value;
+              setQuery(next);
+              if (next.trim() && !items.some((item) => item.name.toLowerCase() === next.trim().toLowerCase())) {
+                setAddName(next.trim());
+              }
+            }}
+            placeholder="Cover / charger / earphone"
+            autoComplete="off"
+          />
+          <button
+            type="button"
+            className="ms-shop-combo-add"
+            data-ms-add-new=""
+            aria-label="Add / New"
+            onClick={() => {
+              setAddName(query.trim());
+              document.getElementById("ms-acc-stock-in")?.scrollIntoView({ behavior: "smooth" });
+            }}
+          >
+            Add / New
+            <small>नया</small>
+          </button>
+        </div>
       </label>
-      <button
-        type="button"
-        className="ms-shop-combo-add"
-        data-ms-add-new=""
-        onClick={() => {
-          setAddName(query.trim());
-          document.getElementById("ms-acc-stock-in")?.scrollIntoView({ behavior: "smooth" });
-        }}
-      >
-        Add / New
-        <small>जोड़ें</small>
-      </button>
 
       <div className="ms-shop-panel">
         <h2>Sell · बेचें</h2>

@@ -186,36 +186,51 @@ export function StockInForm({
                 <>
                   <label>
                     Select phone · फोन चुनें
-                    <input
-                      value={line.query}
-                      onFocus={() => setOpenKey(line.key)}
-                      onChange={(event) => {
-                        patch(line.key, { query: event.target.value });
-                        setOpenKey(line.key);
-                      }}
-                      onBlur={() => {
-                        window.setTimeout(() => setOpenKey((open) => (open === line.key ? null : open)), 120);
-                      }}
-                      placeholder="Make, model, color"
-                      autoComplete="off"
-                      aria-autocomplete="list"
-                      aria-controls={`${listId}-${line.key}`}
-                    />
+                    <div className="ms-shop-combo-row">
+                      <input
+                        value={line.query}
+                        onFocus={() => setOpenKey(line.key)}
+                        onChange={(event) => {
+                          patch(line.key, { query: event.target.value });
+                          setOpenKey(line.key);
+                        }}
+                        onBlur={() => {
+                          window.setTimeout(() => setOpenKey((open) => (open === line.key ? null : open)), 120);
+                        }}
+                        placeholder="Make, model, color"
+                        autoComplete="off"
+                        aria-autocomplete="list"
+                        aria-controls={`${listId}-${line.key}`}
+                      />
+                      <button
+                        type="button"
+                        className="ms-shop-combo-add"
+                        data-ms-add-new=""
+                        aria-label="Add / New"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => {
+                          const q = line.query.trim();
+                          if (q) {
+                            const parts = q.split(/\s+/);
+                            patch(line.key, {
+                              brand: line.brand || parts[0] || "",
+                              model:
+                                line.model ||
+                                (parts.length > 1 ? parts.slice(1).join(" ") : ""),
+                              query: "",
+                            });
+                          } else {
+                            patch(line.key, { query: "" });
+                          }
+                          setOpenKey(null);
+                        }}
+                      >
+                        Add / New
+                        <small>नया</small>
+                      </button>
+                    </div>
                   </label>
-                  <button
-                    type="button"
-                    className="ms-shop-combo-add"
-                    data-ms-add-new=""
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => {
-                      patch(line.key, { query: "" });
-                      setOpenKey(null);
-                    }}
-                  >
-                    Add / New
-                    <small>जोड़ें</small>
-                  </button>
-                  {hits.length > 0 || line.query.trim() ? (
+                  {hits.length > 0 ? (
                     <ul className="ms-shop-suggest" id={`${listId}-${line.key}`} role="listbox">
                       {hits.map((hit) => (
                         <li key={`${hit.brand}-${hit.model}-${hit.color}`}>
@@ -225,26 +240,6 @@ export function StockInForm({
                           </button>
                         </li>
                       ))}
-                      {line.query.trim() &&
-                      !hits.some(
-                        (hit) =>
-                          [hit.brand, hit.model, hit.color]
-                            .filter(Boolean)
-                            .join(" ")
-                            .toLowerCase() === line.query.trim().toLowerCase(),
-                      ) ? (
-                        <li>
-                          <button
-                            type="button"
-                            onMouseDown={() => {
-                              patch(line.key, { query: "" });
-                              setOpenKey(null);
-                            }}
-                          >
-                            Add new · {line.query.trim()}
-                          </button>
-                        </li>
-                      ) : null}
                     </ul>
                   ) : null}
                   <label>

@@ -42,17 +42,19 @@ export function SalePhoneForm({
 
       <label>
         Search phone · फोन खोजें
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Make, model, color"
-          autoComplete="off"
-        />
+        <div className="ms-shop-combo-row">
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Make, model, color"
+            autoComplete="off"
+          />
+          <a className="ms-shop-combo-add" data-ms-add-new="" href="/app/mobile-shop/stock-in">
+            Add / New
+            <small>नया · stock in</small>
+          </a>
+        </div>
       </label>
-      <a className="ms-shop-combo-add" data-ms-add-new="" href="/app/mobile-shop/stock-in">
-        Add / New
-        <small>जोड़ें · stock in</small>
-      </a>
 
       {phones.length === 0 ? (
         <p className="ms-shop-empty">

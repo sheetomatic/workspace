@@ -1,7 +1,11 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { comboSuggestions } from "@/lib/mobile-shop/addable";
+
+function fold(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
 
 export function ShopCombo({
   name,
@@ -19,69 +23,100 @@ export function ShopCombo({
   required?: boolean;
 }) {
   const listId = useId();
-  const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [adding, setAdding] = useState(false);
-  const { hits, addNew } = comboSuggestions(options, value);
-  const show = open && (hits.length > 0 || addNew);
+  const [draft, setDraft] = useState("");
+  const [extra, setExtra] = useState<string[]>([]);
+  const allOptions = [...options];
+  for (const item of extra) {
+    if (!allOptions.some((option) => fold(option) === fold(item))) {
+      allOptions.push(item);
+    }
+  }
+  const { hits } = comboSuggestions(allOptions, value);
+  const show = !adding && open && hits.length > 0;
 
-  function focusInput() {
-    window.requestAnimationFrame(() => inputRef.current?.focus());
+  function commit(raw: string) {
+    const next = raw.trim();
+    if (!next) return;
+    onChange(next);
+    if (!allOptions.some((option) => fold(option) === fold(next))) {
+      setExtra((prev) =>
+        prev.some((item) => fold(item) === fold(next)) ? prev : [...prev, next],
+      );
+    }
+    setAdding(false);
+    setDraft("");
+    setOpen(false);
   }
 
   function startAdd() {
+    const typed = value.trim();
+    const listed = typed && allOptions.some((option) => fold(option) === fold(typed));
+    setDraft(listed ? "" : typed);
     setAdding(true);
-    setOpen(true);
-    focusInput();
-  }
-
-  function saveTyped() {
-    const next = value.trim();
-    if (next) {
-      onChange(next);
-      setAdding(false);
-      setOpen(false);
-      return;
-    }
-    startAdd();
+    setOpen(false);
   }
 
   return (
     <div className="ms-shop-combo">
-      <input
-        ref={inputRef}
-        name={name}
-        value={value}
-        required={required}
-        placeholder={adding ? "Type new value" : placeholder}
-        autoComplete="off"
-        aria-autocomplete="list"
-        aria-controls={listId}
-        onFocus={() => setOpen(true)}
-        onChange={(event) => {
-          onChange(event.target.value);
-          setOpen(true);
-        }}
-        onBlur={() => {
-          window.setTimeout(() => setOpen(false), 120);
-        }}
-      />
-      <button
-        type="button"
-        className="ms-shop-combo-add"
-        data-ms-add-new=""
-        onMouseDown={(event) => event.preventDefault()}
-        onClick={adding ? saveTyped : startAdd}
-      >
-        {adding && value.trim() ? (
-          <>Save · {value.trim()}</>
-        ) : (
-          <>
-            Add / New
-            <small>जोड़ें</small>
-          </>
-        )}
-      </button>
+      <div className="ms-shop-combo-row">
+        <input
+          name={name}
+          value={value}
+          required={required}
+          placeholder={placeholder}
+          autoComplete="off"
+          aria-autocomplete="list"
+          aria-controls={listId}
+          onFocus={() => {
+            if (!adding) setOpen(true);
+          }}
+          onChange={(event) => {
+            onChange(event.target.value);
+            setOpen(true);
+          }}
+          onBlur={() => {
+            window.setTimeout(() => setOpen(false), 120);
+          }}
+        />
+        <button
+          type="button"
+          className="ms-shop-combo-add"
+          data-ms-add-new=""
+          aria-label="Add / New"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={startAdd}
+        >
+          Add / New
+          <small>नया</small>
+        </button>
+      </div>
+      {adding ? (
+        <div className="ms-shop-combo-new">
+          <p>Type a value that is not listed, then save and keep going.</p>
+          <input
+            value={draft}
+            autoFocus
+            placeholder="Type new · नया लिखें"
+            autoComplete="off"
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                commit(draft);
+              }
+            }}
+          />
+          <button
+            type="button"
+            className="ms-shop-combo-add"
+            onClick={() => commit(draft)}
+          >
+            Save · सेव
+          </button>
+        </div>
+      ) : null}
       {show ? (
         <ul className="ms-shop-suggest" id={listId} role="listbox">
           {hits.map((hit) => (
@@ -98,20 +133,6 @@ export function ShopCombo({
               </button>
             </li>
           ))}
-          {addNew ? (
-            <li>
-              <button
-                type="button"
-                onMouseDown={() => {
-                  onChange(addNew);
-                  setAdding(false);
-                  setOpen(false);
-                }}
-              >
-                Add new · {addNew}
-              </button>
-            </li>
-          ) : null}
         </ul>
       ) : null}
     </div>

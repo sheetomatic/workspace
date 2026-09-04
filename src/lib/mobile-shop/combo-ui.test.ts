@@ -14,7 +14,7 @@ describe("mobile shop visible Add / New", () => {
     expect(combo).toContain("data-ms-add-new");
     expect(combo).toContain("ms-shop-combo-add");
     expect(combo).toContain("Add / New");
-    expect(combo).toContain("जोड़ें");
+    expect(combo).toContain("नया");
     expect(combo.indexOf("ms-shop-combo-add")).toBeLessThan(combo.indexOf("ms-shop-suggest"));
   });
 
