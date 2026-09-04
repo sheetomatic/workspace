@@ -45,6 +45,10 @@
       "schedule": "0 3-15 * * *"
     },
     {
+      "path": "/api/cron/leads-marketplace",
+      "schedule": "*/15 3-16 * * *"
+    },
+    {
       "path": "/api/cron/hr-attendance-reminders?kind=mark",
       "schedule": "15 4 * * *"
     },
@@ -93,6 +97,9 @@
     },
     "src/app/api/cron/leads-sync/route.ts": {
       "maxDuration": 300
+    },
+    "src/app/api/cron/leads-marketplace/route.ts": {
+      "maxDuration": 120
     },
     "src/app/api/cron/hr-attendance-reminders/route.ts": {
       "maxDuration": 60

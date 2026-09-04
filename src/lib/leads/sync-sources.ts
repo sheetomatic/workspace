@@ -17,6 +17,11 @@ import {
   type SheetSyncProgress,
 } from "@/lib/leads/sheet-sync-progress";
 import type { LeadPullResult, LeadSyncCounts } from "@/lib/leads/sync-messages";
+import { pullIndiaMartLeads } from "@/lib/leads/indiamart";
+import { pullTradeIndiaLeads } from "@/lib/leads/tradeindia";
+import { pullShopifyLeads } from "@/lib/leads/shopify";
+import { pullWooCommerceLeads } from "@/lib/leads/woocommerce";
+import { pullMetaLeadAds } from "@/lib/leads/meta-lead-ads";
 
 export type ExternalLeadRow = {
   externalId: string;
@@ -86,6 +91,46 @@ export async function pullLeadsFromConnection(params: {
       forceFull: params.forceFull === true,
       interactive: params.interactive === true,
     });
+  }
+
+  if (params.channel === "INDIAMART") {
+    return pullIndiaMartLeads({
+      organizationId: params.organizationId,
+      forceFull: params.forceFull,
+      interactive: params.interactive,
+    });
+  }
+  if (params.channel === "TRADEINDIA") {
+    return pullTradeIndiaLeads({
+      organizationId: params.organizationId,
+      forceFull: params.forceFull,
+      interactive: params.interactive,
+    });
+  }
+  if (params.channel === "SHOPIFY") {
+    return pullShopifyLeads({
+      organizationId: params.organizationId,
+      forceFull: params.forceFull,
+    });
+  }
+  if (params.channel === "WOOCOMMERCE") {
+    return pullWooCommerceLeads({
+      organizationId: params.organizationId,
+      forceFull: params.forceFull,
+    });
+  }
+  if (params.channel === "FACEBOOK" || params.channel === "INSTAGRAM") {
+    return pullMetaLeadAds({
+      organizationId: params.organizationId,
+      channel: params.channel,
+    });
+  }
+  if (params.channel === "TELEGRAM" || params.channel === "JUSTDIAL") {
+    return {
+      ok: true as const,
+      imported: 0,
+      counts: { processed: 0, created: 0, updated: 0 },
+    };
   }
 
   const config = connection.config as Record<string, unknown>;

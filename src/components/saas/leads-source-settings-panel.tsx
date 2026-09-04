@@ -4,10 +4,20 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  saveIndiaMartLeadConnection,
+  saveJustdialLeadConnection,
   saveMetaLeadAdsConnection,
+  saveShopifyLeadConnection,
   saveTelegramLeadConnection,
+  saveTradeIndiaLeadConnection,
+  saveWooCommerceLeadConnection,
   setWhatsAppLeadIngestEnabled,
+  syncLeadChannelNow,
+  verifyIndiaMartLeadConnection,
   verifyMetaLeadAdsConnection,
+  verifyShopifyLeadConnection,
+  verifyTradeIndiaLeadConnection,
+  verifyWooCommerceLeadConnection,
 } from "@/app/app/leads/actions";
 import type { LeadSourceCardModel } from "@/lib/leads/source-settings";
 
@@ -333,6 +343,27 @@ function MetaSourceCard({ card }: { card: LeadSourceCardModel }) {
           >
             {pending ? "Working…" : "Verify token"}
           </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={pending}
+            onClick={() => {
+              if (pending) return;
+              setMessage(null);
+              setError(null);
+              startTransition(async () => {
+                const result = await syncLeadChannelNow(channel);
+                if (result.ok) {
+                  setMessage(result.message);
+                  router.refresh();
+                } else {
+                  setError(result.message);
+                }
+              });
+            }}
+          >
+            Sync now
+          </button>
         </div>
       </form>
 
@@ -456,6 +487,558 @@ function TelegramSourceCard({ card }: { card: LeadSourceCardModel }) {
   );
 }
 
+function IndiaMartSourceCard({ card }: { card: LeadSourceCardModel }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const hasKey = Boolean(card.fields.glusrCrmKeyHint);
+
+  return (
+    <article className="leads-settings-card leads-source-card">
+      <div className="leads-settings-card-head">
+        <h4>{card.label}</h4>
+        <StatusPill card={card} />
+      </div>
+      <p className="leads-machine-muted">{card.description}</p>
+      <form
+        className="leads-source-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (pending) return;
+          const form = new FormData(event.currentTarget);
+          setMessage(null);
+          setError(null);
+          startTransition(async () => {
+            const result = await saveIndiaMartLeadConnection({
+              enabled: form.get("enabled") === "on",
+              glusrCrmKey: String(form.get("glusrCrmKey") ?? ""),
+            });
+            if (result.ok) {
+              setMessage(result.message);
+              router.refresh();
+            } else {
+              setError(result.message);
+            }
+          });
+        }}
+      >
+        <fieldset disabled={pending} className="leads-source-fieldset">
+          <label className="leads-settings-field">
+            <span>Pull API key (glusr_crm_key)</span>
+            <input
+              name="glusrCrmKey"
+              type="password"
+              placeholder={
+                hasKey
+                  ? String(card.fields.glusrCrmKeyHint)
+                  : "From Lead Manager → Pull API"
+              }
+              required={!hasKey}
+              autoComplete="off"
+            />
+            <small className="leads-machine-muted">
+              {hasKey
+                ? "Leave blank to keep the saved key."
+                : "Seller portal → Lead Manager → Import/Export Leads → Pull API."}
+            </small>
+          </label>
+          {card.webhookUrl ? (
+            <CopyableWebhook
+              label="Push API callback URL"
+              url={card.webhookUrl}
+              hint="In IndiaMART Push API choose Other and paste this URL. No Sheetomatic-held key."
+            />
+          ) : (
+            <p className="leads-machine-muted">
+              Saving generates a unique Push API URL for this workspace.
+            </p>
+          )}
+          <label className="leads-nurture-toggle">
+            <input type="checkbox" name="enabled" defaultChecked={card.enabled} />
+            <span>Enable lead intake</span>
+          </label>
+        </fieldset>
+        <div className="leads-source-actions">
+          <button type="submit" className="btn-primary" disabled={pending}>
+            {pending ? "Saving…" : "Save"}
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={pending}
+            onClick={() => {
+              setMessage(null);
+              setError(null);
+              startTransition(async () => {
+                const result = await verifyIndiaMartLeadConnection();
+                if (result.ok) {
+                  setMessage(result.message);
+                  router.refresh();
+                } else setError(result.message);
+              });
+            }}
+          >
+            Test pull
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={pending}
+            onClick={() => {
+              setMessage(null);
+              setError(null);
+              startTransition(async () => {
+                const result = await syncLeadChannelNow("INDIAMART");
+                if (result.ok) {
+                  setMessage(result.message);
+                  router.refresh();
+                } else setError(result.message);
+              });
+            }}
+          >
+            Sync now
+          </button>
+        </div>
+      </form>
+      <Feedback message={message} error={error} lastSyncError={card.lastSyncError} />
+    </article>
+  );
+}
+
+function TradeIndiaSourceCard({ card }: { card: LeadSourceCardModel }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const hasKey = Boolean(card.fields.apiKeyHint);
+
+  return (
+    <article className="leads-settings-card leads-source-card">
+      <div className="leads-settings-card-head">
+        <h4>{card.label}</h4>
+        <StatusPill card={card} />
+      </div>
+      <p className="leads-machine-muted">{card.description}</p>
+      <form
+        className="leads-source-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (pending) return;
+          const form = new FormData(event.currentTarget);
+          setMessage(null);
+          setError(null);
+          startTransition(async () => {
+            const result = await saveTradeIndiaLeadConnection({
+              enabled: form.get("enabled") === "on",
+              userId: String(form.get("userId") ?? ""),
+              profileId: String(form.get("profileId") ?? ""),
+              apiKey: String(form.get("apiKey") ?? ""),
+            });
+            if (result.ok) {
+              setMessage(result.message);
+              router.refresh();
+            } else setError(result.message);
+          });
+        }}
+      >
+        <fieldset disabled={pending} className="leads-source-fieldset">
+          <label className="leads-settings-field">
+            <span>User ID</span>
+            <input
+              name="userId"
+              defaultValue={String(card.fields.userId ?? "")}
+              required={!card.fields.userId}
+              autoComplete="off"
+            />
+          </label>
+          <label className="leads-settings-field">
+            <span>Profile ID</span>
+            <input
+              name="profileId"
+              defaultValue={String(card.fields.profileId ?? "")}
+              required={!card.fields.profileId}
+              autoComplete="off"
+            />
+          </label>
+          <label className="leads-settings-field">
+            <span>Inquiry API key</span>
+            <input
+              name="apiKey"
+              type="password"
+              placeholder={hasKey ? String(card.fields.apiKeyHint) : "From My Inquiry API"}
+              required={!hasKey}
+              autoComplete="off"
+            />
+            <small className="leads-machine-muted">
+              {hasKey
+                ? "Leave blank to keep the saved key."
+                : "TradeIndia → Inquiries & Contacts → My Inquiry API."}
+            </small>
+          </label>
+          {card.webhookUrl ? (
+            <CopyableWebhook
+              label="Optional push URL"
+              url={card.webhookUrl}
+              hint="TradeIndia itself is pull-only. Use this URL only if a middleware posts JSON."
+            />
+          ) : null}
+          <label className="leads-nurture-toggle">
+            <input type="checkbox" name="enabled" defaultChecked={card.enabled} />
+            <span>Enable lead intake</span>
+          </label>
+        </fieldset>
+        <div className="leads-source-actions">
+          <button type="submit" className="btn-primary" disabled={pending}>
+            {pending ? "Saving…" : "Save"}
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={pending}
+            onClick={() => {
+              setMessage(null);
+              setError(null);
+              startTransition(async () => {
+                const result = await verifyTradeIndiaLeadConnection();
+                if (result.ok) {
+                  setMessage(result.message);
+                  router.refresh();
+                } else setError(result.message);
+              });
+            }}
+          >
+            Test pull
+          </button>
+        </div>
+      </form>
+      <Feedback message={message} error={error} lastSyncError={card.lastSyncError} />
+    </article>
+  );
+}
+
+function ShopifySourceCard({ card }: { card: LeadSourceCardModel }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const hasToken = Boolean(card.fields.accessTokenHint);
+
+  return (
+    <article className="leads-settings-card leads-source-card">
+      <div className="leads-settings-card-head">
+        <h4>{card.label}</h4>
+        <StatusPill card={card} />
+      </div>
+      <p className="leads-machine-muted">{card.description}</p>
+      <form
+        className="leads-source-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (pending) return;
+          const form = new FormData(event.currentTarget);
+          setMessage(null);
+          setError(null);
+          startTransition(async () => {
+            const result = await saveShopifyLeadConnection({
+              enabled: form.get("enabled") === "on",
+              shopDomain: String(form.get("shopDomain") ?? ""),
+              accessToken: String(form.get("accessToken") ?? ""),
+              apiSecret: String(form.get("apiSecret") ?? ""),
+              registerWebhook: form.get("registerWebhook") === "on",
+            });
+            if (result.ok) {
+              setMessage(result.message);
+              router.refresh();
+            } else setError(result.message);
+          });
+        }}
+      >
+        <fieldset disabled={pending} className="leads-source-fieldset">
+          <label className="leads-settings-field">
+            <span>Shop domain</span>
+            <input
+              name="shopDomain"
+              defaultValue={String(card.fields.shopDomain ?? "")}
+              placeholder="your-store.myshopify.com"
+              required
+              autoComplete="off"
+            />
+          </label>
+          <label className="leads-settings-field">
+            <span>Admin API access token</span>
+            <input
+              name="accessToken"
+              type="password"
+              placeholder={
+                hasToken
+                  ? String(card.fields.accessTokenHint)
+                  : "shpat_… from a custom app"
+              }
+              required={!hasToken}
+              autoComplete="off"
+            />
+            <small className="leads-machine-muted">
+              {hasToken
+                ? "Leave blank to keep the saved token."
+                : "Shopify admin → Settings → Apps → Develop apps → API credentials. Needs read_orders and read_customers."}
+            </small>
+          </label>
+          <label className="leads-settings-field">
+            <span>API secret (optional, webhook HMAC)</span>
+            <input
+              name="apiSecret"
+              type="password"
+              placeholder={
+                card.fields.hasApiSecret
+                  ? "******** (leave blank to keep)"
+                  : "Custom app API secret key"
+              }
+              autoComplete="off"
+            />
+          </label>
+          {card.webhookUrl ? (
+            <CopyableWebhook
+              label="Webhook URL"
+              url={card.webhookUrl}
+              hint="Registered automatically when “Register Shopify webhooks on save” is checked."
+            />
+          ) : null}
+          <label className="leads-nurture-toggle">
+            <input type="checkbox" name="registerWebhook" defaultChecked />
+            <span>Register Shopify webhooks on save</span>
+          </label>
+          <label className="leads-nurture-toggle">
+            <input type="checkbox" name="enabled" defaultChecked={card.enabled} />
+            <span>Enable lead intake</span>
+          </label>
+        </fieldset>
+        <div className="leads-source-actions">
+          <button type="submit" className="btn-primary" disabled={pending}>
+            {pending ? "Saving…" : "Save"}
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={pending}
+            onClick={() => {
+              setMessage(null);
+              setError(null);
+              startTransition(async () => {
+                const result = await verifyShopifyLeadConnection();
+                if (result.ok) {
+                  setMessage(result.message);
+                  router.refresh();
+                } else setError(result.message);
+              });
+            }}
+          >
+            Test token
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={pending}
+            onClick={() => {
+              setMessage(null);
+              setError(null);
+              startTransition(async () => {
+                const result = await syncLeadChannelNow("SHOPIFY");
+                if (result.ok) {
+                  setMessage(result.message);
+                  router.refresh();
+                } else setError(result.message);
+              });
+            }}
+          >
+            Sync now
+          </button>
+        </div>
+      </form>
+      <Feedback message={message} error={error} lastSyncError={card.lastSyncError} />
+    </article>
+  );
+}
+
+function WooCommerceSourceCard({ card }: { card: LeadSourceCardModel }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const hasKey = Boolean(card.fields.consumerKeyHint);
+
+  return (
+    <article className="leads-settings-card leads-source-card">
+      <div className="leads-settings-card-head">
+        <h4>{card.label}</h4>
+        <StatusPill card={card} />
+      </div>
+      <p className="leads-machine-muted">{card.description}</p>
+      <form
+        className="leads-source-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (pending) return;
+          const form = new FormData(event.currentTarget);
+          setMessage(null);
+          setError(null);
+          startTransition(async () => {
+            const result = await saveWooCommerceLeadConnection({
+              enabled: form.get("enabled") === "on",
+              storeUrl: String(form.get("storeUrl") ?? ""),
+              consumerKey: String(form.get("consumerKey") ?? ""),
+              consumerSecret: String(form.get("consumerSecret") ?? ""),
+              registerWebhook: form.get("registerWebhook") === "on",
+            });
+            if (result.ok) {
+              setMessage(result.message);
+              router.refresh();
+            } else setError(result.message);
+          });
+        }}
+      >
+        <fieldset disabled={pending} className="leads-source-fieldset">
+          <label className="leads-settings-field">
+            <span>Store URL</span>
+            <input
+              name="storeUrl"
+              defaultValue={String(card.fields.storeUrl ?? "")}
+              placeholder="https://yourstore.com"
+              required
+              autoComplete="off"
+            />
+          </label>
+          <label className="leads-settings-field">
+            <span>Consumer key</span>
+            <input
+              name="consumerKey"
+              type="password"
+              placeholder={
+                hasKey ? String(card.fields.consumerKeyHint) : "ck_…"
+              }
+              required={!hasKey}
+              autoComplete="off"
+            />
+          </label>
+          <label className="leads-settings-field">
+            <span>Consumer secret</span>
+            <input
+              name="consumerSecret"
+              type="password"
+              placeholder={
+                card.fields.hasConsumerSecret
+                  ? "******** (leave blank to keep)"
+                  : "cs_…"
+              }
+              required={!card.fields.hasConsumerSecret}
+              autoComplete="off"
+            />
+          </label>
+          {card.webhookUrl ? (
+            <CopyableWebhook
+              label="Webhook URL"
+              url={card.webhookUrl}
+              hint="Registered as order.created when the checkbox below is on."
+            />
+          ) : null}
+          <label className="leads-nurture-toggle">
+            <input type="checkbox" name="registerWebhook" defaultChecked />
+            <span>Register WooCommerce webhook on save</span>
+          </label>
+          <label className="leads-nurture-toggle">
+            <input type="checkbox" name="enabled" defaultChecked={card.enabled} />
+            <span>Enable lead intake</span>
+          </label>
+        </fieldset>
+        <div className="leads-source-actions">
+          <button type="submit" className="btn-primary" disabled={pending}>
+            {pending ? "Saving…" : "Save"}
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={pending}
+            onClick={() => {
+              setMessage(null);
+              setError(null);
+              startTransition(async () => {
+                const result = await verifyWooCommerceLeadConnection();
+                if (result.ok) {
+                  setMessage(result.message);
+                  router.refresh();
+                } else setError(result.message);
+              });
+            }}
+          >
+            Test keys
+          </button>
+        </div>
+      </form>
+      <Feedback message={message} error={error} lastSyncError={card.lastSyncError} />
+    </article>
+  );
+}
+
+function JustdialSourceCard({ card }: { card: LeadSourceCardModel }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  return (
+    <article className="leads-settings-card leads-source-card">
+      <div className="leads-settings-card-head">
+        <h4>{card.label}</h4>
+        <StatusPill card={card} />
+      </div>
+      <p className="leads-machine-muted">{card.description}</p>
+      <form
+        className="leads-source-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (pending) return;
+          const form = new FormData(event.currentTarget);
+          setMessage(null);
+          setError(null);
+          startTransition(async () => {
+            const result = await saveJustdialLeadConnection({
+              enabled: form.get("enabled") === "on",
+            });
+            if (result.ok) {
+              setMessage(result.message);
+              router.refresh();
+            } else setError(result.message);
+          });
+        }}
+      >
+        <fieldset disabled={pending} className="leads-source-fieldset">
+          {card.webhookUrl ? (
+            <CopyableWebhook
+              label="Justdial webhook URL (GET)"
+              url={card.webhookUrl}
+              hint="Send this URL to your Justdial account manager. They configure GET leadid, name, mobile, email, city, category."
+            />
+          ) : (
+            <p className="leads-machine-muted">
+              Save to generate a unique webhook URL for this workspace.
+            </p>
+          )}
+          <label className="leads-nurture-toggle">
+            <input type="checkbox" name="enabled" defaultChecked={card.enabled} />
+            <span>Enable lead intake</span>
+          </label>
+        </fieldset>
+        <div className="leads-source-actions">
+          <button type="submit" className="btn-primary" disabled={pending}>
+            {pending ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </form>
+      <Feedback message={message} error={error} lastSyncError={card.lastSyncError} />
+    </article>
+  );
+}
+
 export function LeadsSourceSettingsPanel({
   sources,
 }: {
@@ -466,6 +1049,11 @@ export function LeadsSourceSettingsPanel({
   const facebook = byChannel.get("FACEBOOK");
   const instagram = byChannel.get("INSTAGRAM");
   const telegram = byChannel.get("TELEGRAM");
+  const indiamart = byChannel.get("INDIAMART");
+  const tradeindia = byChannel.get("TRADEINDIA");
+  const shopify = byChannel.get("SHOPIFY");
+  const woocommerce = byChannel.get("WOOCOMMERCE");
+  const justdial = byChannel.get("JUSTDIAL");
 
   return (
     <section className="saas-panel leads-settings-card" id="lead-sources">
@@ -473,9 +1061,9 @@ export function LeadsSourceSettingsPanel({
         <div>
           <h3>Lead sources</h3>
           <p className="leads-machine-muted">
-            Google Sheets sync stays on the main Leads page. Connect Official
-            WhatsApp intake, Meta Lead Ads, and Telegram here. Web Based API
-            above is for nurture sends only.
+            Paste each source’s own keys here — nothing waits on a Sheetomatic-held
+            credential. Save, test, and enable independently. Google Sheets stays
+            on the main Leads page. Web Based API above is for nurture sends only.
           </p>
         </div>
       </div>
@@ -484,6 +1072,11 @@ export function LeadsSourceSettingsPanel({
         {whatsapp ? <WhatsAppSourceCard card={whatsapp} /> : null}
         {facebook ? <MetaSourceCard card={facebook} /> : null}
         {instagram ? <MetaSourceCard card={instagram} /> : null}
+        {indiamart ? <IndiaMartSourceCard card={indiamart} /> : null}
+        {tradeindia ? <TradeIndiaSourceCard card={tradeindia} /> : null}
+        {justdial ? <JustdialSourceCard card={justdial} /> : null}
+        {shopify ? <ShopifySourceCard card={shopify} /> : null}
+        {woocommerce ? <WooCommerceSourceCard card={woocommerce} /> : null}
         {telegram ? <TelegramSourceCard card={telegram} /> : null}
       </div>
     </section>

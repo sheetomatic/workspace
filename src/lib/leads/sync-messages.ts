@@ -33,7 +33,7 @@ export function formatLeadSyncCounts(
     if ((counts.skipped ?? 0) > 0) {
       return `${counts.skipped} row${counts.skipped === 1 ? "" : "s"} skipped (need valid phone).`;
     }
-    return "Sheet already up to date — no new rows to import.";
+    return "Already up to date — no new rows to import.";
   }
 
   const parts: string[] = [];
@@ -65,11 +65,15 @@ export function formatLeadSyncCounts(
 export function formatLeadSyncError(reason: string) {
   switch (reason) {
     case "connection_disabled":
-      return "Google Sheets is disabled. Enable it, save, then sync again.";
+      return "This source is disabled. Enable it, save, then try again.";
     case "missing_spreadsheet":
       return "Add a spreadsheet URL before syncing.";
     case "missing_api_url":
       return "API URL is not configured for this connector.";
+    case "missing_credentials":
+      return "Paste this source’s keys in Lead sources, save, then try again.";
+    case "rate_limited":
+      return "This source limits how often we can pull. Wait a few minutes and retry.";
     case "export_failed":
       return "Imported from sheet but could not push CRM updates back to Google Sheets.";
     case "sync_in_progress":

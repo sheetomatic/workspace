@@ -16,6 +16,36 @@ export type TelegramLeadConfig = {
   webhookSecret: string;
 };
 
+export type IndiaMartLeadConfig = {
+  glusrCrmKey: string;
+  webhookSecret: string;
+};
+
+export type TradeIndiaLeadConfig = {
+  userId: string;
+  profileId: string;
+  apiKey: string;
+  webhookSecret: string;
+};
+
+export type ShopifyLeadConfig = {
+  shopDomain: string;
+  accessToken: string;
+  apiSecret?: string;
+  webhookSecret: string;
+};
+
+export type WooCommerceLeadConfig = {
+  storeUrl: string;
+  consumerKey: string;
+  consumerSecret: string;
+  webhookSecret: string;
+};
+
+export type JustdialLeadConfig = {
+  webhookSecret: string;
+};
+
 export type LeadSourceStatus = "connected" | "needs_setup" | "error" | "disabled";
 
 export function asConfigRecord(
@@ -75,6 +105,152 @@ export function parseTelegramLeadConfig(config: unknown): TelegramLeadConfig | n
   return { botToken, webhookSecret };
 }
 
+export function parseIndiaMartLeadConfig(config: unknown): IndiaMartLeadConfig | null {
+  const record = asConfigRecord(config);
+  const glusrCrmKey =
+    readString(record, "glusrCrmKey") || readString(record, "glusr_crm_key");
+  const webhookSecret = readString(record, "webhookSecret");
+  if (!glusrCrmKey || !webhookSecret) {
+    return null;
+  }
+  return { glusrCrmKey, webhookSecret };
+}
+
+export function parseTradeIndiaLeadConfig(config: unknown): TradeIndiaLeadConfig | null {
+  const record = asConfigRecord(config);
+  const userId = readString(record, "userId") || readString(record, "userid");
+  const profileId =
+    readString(record, "profileId") || readString(record, "profile_id");
+  const apiKey = readString(record, "apiKey") || readString(record, "key");
+  const webhookSecret = readString(record, "webhookSecret");
+  if (!userId || !profileId || !apiKey || !webhookSecret) {
+    return null;
+  }
+  return { userId, profileId, apiKey, webhookSecret };
+}
+
+/** Pull can run before the webhook secret exists (key-only save). */
+export function parseIndiaMartPullConfig(config: unknown): { glusrCrmKey: string } | null {
+  const record = asConfigRecord(config);
+  const glusrCrmKey =
+    readString(record, "glusrCrmKey") || readString(record, "glusr_crm_key");
+  if (!glusrCrmKey) {
+    return null;
+  }
+  return { glusrCrmKey };
+}
+
+export function parseTradeIndiaPullConfig(config: unknown): {
+  userId: string;
+  profileId: string;
+  apiKey: string;
+} | null {
+  const record = asConfigRecord(config);
+  const userId = readString(record, "userId") || readString(record, "userid");
+  const profileId =
+    readString(record, "profileId") || readString(record, "profile_id");
+  const apiKey = readString(record, "apiKey") || readString(record, "key");
+  if (!userId || !profileId || !apiKey) {
+    return null;
+  }
+  return { userId, profileId, apiKey };
+}
+
+export function normalizeShopifyShopDomain(raw: string) {
+  let value = raw.trim().toLowerCase().replace(/^https?:\/\//, "");
+  value = value.split("/")[0] ?? value;
+  return value.replace(/\/$/, "");
+}
+
+export function parseShopifyLeadConfig(config: unknown): ShopifyLeadConfig | null {
+  const record = asConfigRecord(config);
+  const shopDomain = normalizeShopifyShopDomain(
+    readString(record, "shopDomain") || readString(record, "shop"),
+  );
+  const accessToken = readString(record, "accessToken");
+  const webhookSecret = readString(record, "webhookSecret");
+  if (!shopDomain || !accessToken || !webhookSecret) {
+    return null;
+  }
+  return {
+    shopDomain,
+    accessToken,
+    apiSecret: readString(record, "apiSecret") || undefined,
+    webhookSecret,
+  };
+}
+
+export function parseShopifyPullConfig(config: unknown): {
+  shopDomain: string;
+  accessToken: string;
+  apiSecret?: string;
+} | null {
+  const record = asConfigRecord(config);
+  const shopDomain = normalizeShopifyShopDomain(
+    readString(record, "shopDomain") || readString(record, "shop"),
+  );
+  const accessToken = readString(record, "accessToken");
+  if (!shopDomain || !accessToken) {
+    return null;
+  }
+  return {
+    shopDomain,
+    accessToken,
+    apiSecret: readString(record, "apiSecret") || undefined,
+  };
+}
+
+export function normalizeWooStoreUrl(raw: string) {
+  let value = raw.trim().replace(/\/$/, "");
+  if (!value) return "";
+  if (!/^https?:\/\//i.test(value)) {
+    value = `https://${value}`;
+  }
+  return value.replace(/\/$/, "");
+}
+
+export function parseWooCommerceLeadConfig(
+  config: unknown,
+): WooCommerceLeadConfig | null {
+  const record = asConfigRecord(config);
+  const storeUrl = normalizeWooStoreUrl(
+    readString(record, "storeUrl") || readString(record, "url"),
+  );
+  const consumerKey = readString(record, "consumerKey");
+  const consumerSecret = readString(record, "consumerSecret");
+  const webhookSecret = readString(record, "webhookSecret");
+  if (!storeUrl || !consumerKey || !consumerSecret || !webhookSecret) {
+    return null;
+  }
+  return { storeUrl, consumerKey, consumerSecret, webhookSecret };
+}
+
+export function parseWooCommercePullConfig(config: unknown): {
+  storeUrl: string;
+  consumerKey: string;
+  consumerSecret: string;
+} | null {
+  const record = asConfigRecord(config);
+  const storeUrl = normalizeWooStoreUrl(
+    readString(record, "storeUrl") || readString(record, "url"),
+  );
+  const consumerKey = readString(record, "consumerKey");
+  const consumerSecret = readString(record, "consumerSecret");
+  if (!storeUrl || !consumerKey || !consumerSecret) {
+    return null;
+  }
+  return { storeUrl, consumerKey, consumerSecret };
+}
+
+export function parseJustdialLeadConfig(config: unknown): JustdialLeadConfig | null {
+  const record = asConfigRecord(config);
+  const webhookSecret = readString(record, "webhookSecret");
+  if (!webhookSecret) {
+    return null;
+  }
+  return { webhookSecret };
+}
+
 export function hashLeadWebhookSecret(secret: string) {
   return createHash("sha256").update(secret.trim()).digest("hex");
 }
@@ -115,6 +291,30 @@ export function metaLeadWebhookUrl() {
 
 export function telegramLeadWebhookUrl(webhookSecret: string) {
   return `${publicSiteUrl()}/api/webhooks/telegram/leads/${encodeURIComponent(webhookSecret)}`;
+}
+
+export function indiaMartLeadWebhookUrl(webhookSecret: string) {
+  return `${publicSiteUrl()}/api/webhooks/indiamart/leads/${encodeURIComponent(webhookSecret)}`;
+}
+
+export function tradeIndiaLeadWebhookUrl(webhookSecret: string) {
+  return `${publicSiteUrl()}/api/webhooks/tradeindia/leads/${encodeURIComponent(webhookSecret)}`;
+}
+
+export function shopifyLeadWebhookUrl(webhookSecret: string) {
+  return `${publicSiteUrl()}/api/webhooks/shopify/leads/${encodeURIComponent(webhookSecret)}`;
+}
+
+export function wooCommerceLeadWebhookUrl(webhookSecret: string) {
+  return `${publicSiteUrl()}/api/webhooks/woocommerce/leads/${encodeURIComponent(webhookSecret)}`;
+}
+
+export function justdialLeadWebhookUrl(webhookSecret: string) {
+  return `${publicSiteUrl()}/api/webhooks/justdial/leads/${encodeURIComponent(webhookSecret)}`;
+}
+
+export function shopifyApiVersion() {
+  return process.env.SHOPIFY_API_VERSION?.trim() || "2025-01";
 }
 
 export function metaGraphVersion() {
