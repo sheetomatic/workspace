@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import { canManageSuperAdmins } from "@/lib/platform";
-import { findFmsTemplateByPresetId, ensureFmsPresetProvisioned } from "@/lib/fms/provision-preset";
 import {
   getLicensedKit,
   isKitInstallAllowed,
@@ -23,6 +22,7 @@ function revalidateKits(organizationId?: string) {
   revalidatePath("/app/fms/setup");
   revalidatePath("/app/billing");
   revalidatePath("/app/clients");
+  revalidatePath("/app/mobile-shop");
   if (organizationId) {
     revalidatePath(`/app/clients/${organizationId}`);
   }
@@ -31,7 +31,7 @@ function revalidateKits(organizationId?: string) {
 export async function requestKitLicenseAction(
   formData: FormData,
 ): Promise<KitActionResult> {
-  const user = await requireSession("ADMIN", { module: "FMS" });
+  const user = await requireSession("ADMIN");
   if (!hasMinimumRole(user.role, "ADMIN")) {
     return { ok: false, message: "Only admins can request a kit license." };
   }
@@ -44,24 +44,24 @@ export async function requestKitLicenseAction(
   if (!result.ok) return result;
   revalidateKits();
   if (result.alreadyActive) {
-    return { ok: true, message: "License is already active. You can install the FMS." };
+    return { ok: true, message: "License is already active. Open Mobile shop." };
   }
   return {
     ok: true,
     message:
-      "License requested. It will appear on the next invoice. After Sheetomatic confirms UPI, install the Job Card FMS here.",
+      "License requested. It will appear on the next invoice. After UPI is confirmed, open Mobile shop.",
   };
 }
 
 export async function installKitAction(formData: FormData): Promise<KitActionResult> {
-  const user = await requireSession("MANAGER", { module: "FMS" });
+  const user = await requireSession("MANAGER");
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
 
   const kitKey = String(formData.get("kitKey") ?? "").trim();
   const kit = getLicensedKit(kitKey);
-  if (!kit || kit.kind !== "fms_kit" || !kit.shippable || !kit.presetId) {
+  if (!kit || !kit.shippable || kit.kind === "module_addon") {
     return { ok: false, message: "This kit cannot be installed yet." };
   }
 
@@ -73,25 +73,11 @@ export async function installKitAction(formData: FormData): Promise<KitActionRes
     };
   }
 
-  const existing = await findFmsTemplateByPresetId(user.organizationId, kit.presetId);
-  if (existing) {
-    return { ok: true, message: `${kit.shortName} FMS is already installed.` };
-  }
-
-  try {
-    await ensureFmsPresetProvisioned(user.organizationId, kit.presetId, user.id);
-  } catch (error) {
-    const text = error instanceof Error ? error.message : "";
-    if (text.startsWith("LICENSE_REQUIRED:")) {
-      return { ok: false, message: "Active license required before install." };
-    }
-    console.error("installKitAction failed", error);
-    return { ok: false, message: "Install failed. Try again." };
-  }
-
   revalidateKits();
-  revalidatePath("/app/fms");
-  return { ok: true, message: `${kit.name} is live. Open Setup to start jobs.` };
+  return {
+    ok: true,
+    message: `${kit.name} is live. Open Mobile shop on the counter.`,
+  };
 }
 
 export async function grantKitLicenseAction(
@@ -118,7 +104,7 @@ export async function grantKitLicenseAction(
   });
   if (!result.ok) return result;
   revalidateKits(organizationId);
-  return { ok: true, message: "License is active. The org can install the FMS." };
+  return { ok: true, message: "License is active. The org can open Mobile shop." };
 }
 
 export async function cancelKitLicenseAction(

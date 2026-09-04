@@ -67,7 +67,7 @@ export async function requestKitLicense(input: {
   billingPeriod?: PlanBillingPeriod;
 }) {
   const kit = getLicensedKit(input.kitKey);
-  if (!kit || kit.kind !== "fms_kit" || !kit.shippable) {
+  if (!kit || kit.kind === "module_addon" || !kit.shippable) {
     return { ok: false as const, message: "This kit is not for sale yet." };
   }
 
@@ -119,7 +119,7 @@ export async function grantKitLicense(input: {
   notes?: string | null;
 }) {
   const kit = getLicensedKit(input.kitKey);
-  if (!kit || kit.kind !== "fms_kit" || !kit.shippable) {
+  if (!kit || kit.kind === "module_addon" || !kit.shippable) {
     return { ok: false as const, message: "Unknown kit." };
   }
 

@@ -21,6 +21,7 @@ export type WorkspaceNavPrefs = {
  */
 export const DEFAULT_FOCUSED_NAV_IDS = [
   "fms",
+  "mobile-shop",
   "leads",
   "dept-hr",
   "em",

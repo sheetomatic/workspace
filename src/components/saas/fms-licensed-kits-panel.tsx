@@ -7,7 +7,6 @@ import type { LicensedKitStatus } from "@prisma/client";
 import type { LicensedKitDefinition } from "@/lib/addons/licensed-kits";
 import { formatInrPaise, rupeesToPaise } from "@/lib/billing/money";
 import {
-  installKitAction,
   requestKitLicenseAction,
   type KitActionResult,
 } from "@/app/app/fms/kits/actions";
@@ -30,26 +29,22 @@ function statusLabel(status: LicensedKitStatus | null) {
 export function FmsLicensedKitsPanel({
   kits,
   licenses,
-  installedPresetIds,
   canRequest,
-  canInstall,
 }: {
   kits: LicensedKitDefinition[];
   licenses: KitLicenseSnapshot[];
-  installedPresetIds: string[];
   canRequest: boolean;
-  canInstall: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<KitActionResult | null>(null);
   const licenseByKey = new Map(licenses.map((row) => [row.kitKey, row]));
 
-  const run = (action: (formData: FormData) => Promise<KitActionResult>, kitKey: string) => {
+  const run = (kitKey: string) => {
     const formData = new FormData();
     formData.set("kitKey", kitKey);
     startTransition(async () => {
-      const result = await action(formData);
+      const result = await requestKitLicenseAction(formData);
       setMessage(result);
       if (result.ok) router.refresh();
     });
@@ -58,7 +53,7 @@ export function FmsLicensedKitsPanel({
   return (
     <div className="ws-fms-kits">
       {message ? (
-        <p className={message.ok ? "saas-panel-lead" : "saas-panel-lead"} role="status">
+        <p className="saas-panel-lead" role="status">
           {message.message}
         </p>
       ) : null}
@@ -66,7 +61,6 @@ export function FmsLicensedKitsPanel({
       <ul className="ws-fms-setup-list">
         {kits.map((kit) => {
           const license = licenseByKey.get(kit.key) ?? null;
-          const installed = Boolean(kit.presetId && installedPresetIds.includes(kit.presetId));
           const active = license?.status === "ACTIVE";
           return (
             <li className="ws-fms-setup-item" key={kit.key}>
@@ -79,7 +73,6 @@ export function FmsLicensedKitsPanel({
                   {formatInrPaise(rupeesToPaise(kit.priceMonthlyInr))} / month per org
                   {" · "}
                   {statusLabel(license?.status ?? null)}
-                  {installed ? " · Installed" : ""}
                 </p>
                 <div className="ws-form-actions" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
                   {canRequest && !active ? (
@@ -87,24 +80,14 @@ export function FmsLicensedKitsPanel({
                       className="btn-primary btn-sm"
                       disabled={pending || license?.status === "REQUESTED"}
                       type="button"
-                      onClick={() => run(requestKitLicenseAction, kit.key)}
+                      onClick={() => run(kit.key)}
                     >
                       {license?.status === "REQUESTED" ? "Requested" : "Request license"}
                     </button>
                   ) : null}
-                  {canInstall && active && !installed ? (
-                    <button
-                      className="btn-primary btn-sm"
-                      disabled={pending}
-                      type="button"
-                      onClick={() => run(installKitAction, kit.key)}
-                    >
-                      Install FMS
-                    </button>
-                  ) : null}
-                  {installed ? (
-                    <Link className="btn-secondary btn-sm" href="/app/fms/setup">
-                      Open Setup
+                  {active ? (
+                    <Link className="btn-primary btn-sm" href={kit.appHref ?? "/app/mobile-shop"}>
+                      Open shop
                     </Link>
                   ) : null}
                   <Link className="btn-secondary btn-sm" href="/app/billing">

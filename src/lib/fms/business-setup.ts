@@ -125,7 +125,7 @@ export const BUSINESS_TYPE_PROFILES: BusinessTypeProfile[] = [
     id: "repair-workshop",
     label: "Electronic workshop / repair",
     description:
-      "Job-card counter work — mobiles, computers, electronics. Diagnose, estimate, repair, collect.",
+      "Optional FMS for a repair counter. The paid first SKU is the Mobile Shop app (new/used phones, repairs, accessories) — not this job-card flow.",
     exampleIndustries: [
       "Mobile repair",
       "Computer repair",

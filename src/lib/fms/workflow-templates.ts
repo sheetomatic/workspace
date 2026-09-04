@@ -586,7 +586,7 @@ export const FMS_WORKFLOW_TEMPLATES: FmsWorkflowTemplate[] = [
     department: "support",
     name: "Workshop Job Card",
     description:
-      "Repair counter job: log device, diagnose, approve estimate, repair, QC, collect, and deliver.",
+      "Optional FMS job-card flow. Not the sold SKU — the paid product is the Mobile Shop app.",
     steps: [
       {
         stepName: "Log job",

@@ -66,7 +66,7 @@ export async function provisionBusinessProcesses(input: {
       return {
         ok: false,
         message:
-          "Workshop Job Card needs an active license. Open Licensed kits, request the license, then install.",
+          "A licensed kit is required first. Open Licensed kits, request the Mobile Shop app license, then continue.",
         provisioned: [],
         licenseRequired,
       };
@@ -74,7 +74,7 @@ export async function provisionBusinessProcesses(input: {
 
     const licenseNote =
       licenseRequired.length > 0
-        ? " Job Card was skipped — request the license under Licensed kits."
+        ? " A licensed kit was skipped — request the Mobile Shop app under Licensed kits."
         : "";
 
     return {

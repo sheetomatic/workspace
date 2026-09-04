@@ -1,0 +1,133 @@
+.ms-shop {
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 2.5rem;
+}
+
+.ms-shop-nav {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.ms-shop-nav a {
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.ms-shop-nav a.is-active {
+  background: #0f172a;
+  color: #fff;
+}
+
+.ms-shop-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+@media (min-width: 720px) {
+  .ms-shop-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.ms-shop-kpi {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 0.9rem 1rem;
+}
+
+.ms-shop-kpi span {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.ms-shop-kpi strong {
+  font-size: 1.5rem;
+  letter-spacing: -0.03em;
+}
+
+.ms-shop-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 560px) {
+  .ms-shop-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.ms-shop-btn {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 5.5rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1.1rem;
+  background: #0f172a;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.ms-shop-btn small {
+  font-weight: 500;
+  opacity: 0.75;
+  margin-top: 0.2rem;
+}
+
+.ms-shop form {
+  display: grid;
+  gap: 0.65rem;
+  margin: 1rem 0;
+}
+
+.ms-shop label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.ms-shop input,
+.ms-shop select,
+.ms-shop textarea {
+  font: inherit;
+  font-weight: 500;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.6rem;
+}
+
+.ms-shop table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.ms-shop th,
+.ms-shop td {
+  text-align: left;
+  padding: 0.45rem 0.3rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.ms-shop-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.75rem 0;
+}

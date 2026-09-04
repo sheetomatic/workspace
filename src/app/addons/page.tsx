@@ -5,7 +5,7 @@ import { marketingMetadata } from "@/lib/marketing-metadata";
 export const metadata: Metadata = marketingMetadata({
   title: "Add-ons & licensed kits",
   description:
-    "Right-to-use FMS kits and workspace modules for clinics, workshops, jewellery, and other Sheetomatic businesses. Monthly license, native in-app forms.",
+    "Mobile shop app for shops that sell new and used phones, do repairs, and sell accessories. Monthly right-to-use license.",
   path: "/addons",
 });
 

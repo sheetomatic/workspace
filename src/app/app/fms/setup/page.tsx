@@ -60,12 +60,18 @@ export default async function FmsSetupPage() {
         <article className="saas-panel">
           <h3>Licensed kits</h3>
           <p>
-            Vertical FMS packs (Workshop Job Card first). Right to use for this
-            org — request the license, pay the invoice, then install.
+            First SKU is the Mobile Shop app (new/used phones, repairs,
+            accessories). Request the license, pay the invoice, then open the
+            counter.
           </p>
-          <Link href="/app/fms/kits" className="btn-primary btn-sm">
-            Open licensed kits
-          </Link>
+          <div className="ws-form-actions" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <Link href="/app/fms/kits" className="btn-primary btn-sm">
+              Open licensed kits
+            </Link>
+            <Link href="/app/mobile-shop" className="btn-secondary btn-sm">
+              Mobile shop
+            </Link>
+          </div>
         </article>
       ) : null}
 

@@ -27,7 +27,7 @@ import { ORG_PLAN_LABELS } from "@/lib/org-plan-presets";
 import { canManageSuperAdmins } from "@/lib/platform";
 import { requireSession } from "@/lib/require-session";
 import { tenantPortalOrigin } from "@/lib/workspace-auth-links";
-import { kitInvoiceCharges, listShippableFmsKits } from "@/lib/addons/licensed-kits";
+import { kitInvoiceCharges, listShippableShopKits } from "@/lib/addons/licensed-kits";
 import {
   cancelKitLicenseForm,
   grantKitLicenseForm,
@@ -67,7 +67,7 @@ export default async function ClientBillingDetailPage({
     orgBillingPeriod,
   );
   const kitCharges = kitInvoiceCharges(detail.licensedKits ?? [], orgBillingPeriod);
-  const shippableKits = listShippableFmsKits();
+  const shippableKits = listShippableShopKits();
   const progress = onboardingProgress(detail.onboardingTasks);
   const renewal = detail.organizationPlan?.renewalAt;
   const renewalInput = renewal ? renewal.toISOString().slice(0, 10) : "";
@@ -168,10 +168,10 @@ export default async function ClientBillingDetailPage({
       </article>
 
       <article className="saas-panel">
-        <h3>Licensed FMS kits</h3>
+        <h3>Licensed kits</h3>
         <p className="saas-panel-lead">
-          Org-wide right to use. Grant after UTR, or before if you trust the
-          client. Next invoice picks up requested and active kits.
+          Org-wide right to use the Mobile Shop app. Grant after UTR, or before
+          if you trust the client. Next invoice picks up requested and active kits.
         </p>
         <ul className="ws-addon-lines">
           {shippableKits.map((kit) => {

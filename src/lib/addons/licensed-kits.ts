@@ -1,81 +1,46 @@
 import { rupeesToPaise } from "@/lib/billing/money";
 import type { PlanBillingPeriod } from "@prisma/client";
 
-export type LicensedKitKey =
-  | "workshop-job-card"
-  | "clinic-visit-to-collection"
-  | "jewellery-order-to-delivery";
+export const MOBILE_SHOP_KIT_KEY = "mobile-shop-ops";
 
-export type LicensedKitKind = "fms_kit" | "module_addon";
+export type LicensedKitKind = "shop_app" | "module_addon";
 
 export type LicensedKitDefinition = {
-  key: LicensedKitKey | "ims-module" | "tasks-module";
+  key: string;
   kind: LicensedKitKind;
-  /** Native FMS workflow id. Empty for module add-ons already in /pricing. */
-  presetId: string;
   name: string;
   shortName: string;
   icp: string;
   description: string;
   priceMonthlyInr: number;
   priceAnnualInr: number;
-  /** Ready to install in this repo. */
   shippable: boolean;
   href: string;
+  appHref?: string;
 };
 
 export const LICENSED_KIT_CATALOG: LicensedKitDefinition[] = [
   {
-    key: "workshop-job-card",
-    kind: "fms_kit",
-    presetId: "workshop-job-card",
-    name: "Repair Workshop Job Card FMS",
-    shortName: "Job Card",
-    icp: "Electronic workshop / mobile & computer repair",
+    key: MOBILE_SHOP_KIT_KEY,
+    kind: "shop_app",
+    name: "Mobile Shop app",
+    shortName: "Mobile shop",
+    icp: "Mobile shops — new phones, used/refurbished, repairs, accessories",
     description:
-      "Device in, diagnose, estimate, repair, QC, collect, deliver. Native FMS with in-app job form — not a Google Form, not a Sheet.",
+      "Shop-floor app: today’s numbers, stock in/out (IMEI or qty), repair job cards, accessory sell, new and used phone sale. Not a spreadsheet.",
     priceMonthlyInr: 999,
     priceAnnualInr: 9990,
     shippable: true,
-    href: "/addons#workshop-job-card",
-  },
-  {
-    key: "clinic-visit-to-collection",
-    kind: "fms_kit",
-    presetId: "clinic-visit-to-collection",
-    name: "Clinic Visit-to-Collection FMS",
-    shortName: "Clinic visits",
-    icp: "Doctors / clinics",
-    description:
-      "Appointment through consult, follow-up, bill, and collection. Next licensed kit after Job Card.",
-    priceMonthlyInr: 999,
-    priceAnnualInr: 9990,
-    shippable: false,
-    href: "/addons#clinic-visit-to-collection",
-  },
-  {
-    key: "jewellery-order-to-delivery",
-    kind: "fms_kit",
-    presetId: "jewellery-order-to-delivery",
-    name: "Jewellery Order-to-Delivery FMS",
-    shortName: "Jewellery orders",
-    icp: "Jewellery shops",
-    description:
-      "Order booking (weight, making, stone) through workshop, QC, delivery, and balance collection.",
-    priceMonthlyInr: 1499,
-    priceAnnualInr: 14990,
-    shippable: false,
-    href: "/addons#jewellery-order-to-delivery",
+    href: "/addons#mobile-shop-ops",
+    appHref: "/app/mobile-shop",
   },
   {
     key: "ims-module",
     kind: "module_addon",
-    presetId: "",
-    name: "IMS / Stock add-on",
+    name: "IMS / Stock module",
     shortName: "IMS",
-    icp: "Furniture, electronics, jewellery, manufacturing (not grocery)",
-    description:
-      "Inventory, reorder exceptions, stock in/out. Already on /pricing — enable IMS on the workspace.",
+    icp: "Optional extra if the shop wants full IMS besides the floor app",
+    description: "Workspace IMS on /pricing. Not the first SKU.",
     priceMonthlyInr: 2999,
     priceAnnualInr: 29990,
     shippable: true,
@@ -84,12 +49,10 @@ export const LICENSED_KIT_CATALOG: LicensedKitDefinition[] = [
   {
     key: "tasks-module",
     kind: "module_addon",
-    presetId: "",
-    name: "Tasks Management add-on",
+    name: "Tasks Management",
     shortName: "Tasks",
-    icp: "Any ICP workspace that bought FMS-only",
-    description:
-      "Assignment, owners, due dates, scores. Already on /pricing as a module.",
+    icp: "Optional extra for owner follow-ups beyond the shop floor",
+    description: "Workspace Tasks module on /pricing. Not the first SKU.",
     priceMonthlyInr: 2499,
     priceAnnualInr: 24990,
     shippable: true,
@@ -101,21 +64,23 @@ export function listLicensedKits() {
   return LICENSED_KIT_CATALOG;
 }
 
-export function listShippableFmsKits() {
+export function listShippableShopKits() {
   return LICENSED_KIT_CATALOG.filter(
-    (kit) => kit.kind === "fms_kit" && kit.shippable,
+    (kit) => kit.kind === "shop_app" && kit.shippable,
   );
+}
+
+/** @deprecated Use listShippableShopKits — first SKU is the mobile shop app. */
+export function listShippableFmsKits() {
+  return listShippableShopKits();
 }
 
 export function getLicensedKit(key: string) {
   return LICENSED_KIT_CATALOG.find((kit) => kit.key === key) ?? null;
 }
 
-export function licensedKitKeyForPreset(presetId: string) {
-  const kit = LICENSED_KIT_CATALOG.find(
-    (row) => row.kind === "fms_kit" && row.presetId === presetId && row.shippable,
-  );
-  return kit?.key ?? null;
+export function licensedKitKeyForPreset(_presetId: string) {
+  return null;
 }
 
 export function kitCatalogRatePaise(
@@ -144,7 +109,6 @@ export function kitInvoiceLabel(name: string) {
   return `${name} license`;
 }
 
-/** REQUESTED and ACTIVE kits appear on the workspace invoice. */
 export function kitInvoiceCharges(
   rows: LicensedKitBillingRow[],
   orgBillingPeriod: PlanBillingPeriod = "MONTHLY",
@@ -160,7 +124,7 @@ export function kitInvoiceCharges(
   for (const row of rows) {
     if (row.status !== "REQUESTED" && row.status !== "ACTIVE") continue;
     const kit = getLicensedKit(row.kitKey);
-    if (!kit || kit.kind !== "fms_kit") continue;
+    if (!kit || kit.kind === "module_addon") continue;
     const period = row.billingPeriod || orgBillingPeriod;
     const ratePaise =
       row.ratePaise > 0 ? row.ratePaise : kitCatalogRatePaise(kit, period);

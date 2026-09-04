@@ -271,7 +271,7 @@ export function FmsModuleNav({
               {!collapsed ? (
                 <span>
                   Licensed kits
-                  <small>Job Card and paid FMS packs</small>
+                  <small>Mobile shop app license</small>
                 </span>
               ) : null}
             </Link>
