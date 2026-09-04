@@ -27,6 +27,7 @@ describe("licensed kits catalog", () => {
     expect(kit?.name).toBe("Mobile Shop app");
     expect(kit?.description).toContain("Accessories");
     expect(kit?.description).toContain("Repairs");
+    expect(kit?.description).toContain("today");
   });
 
   it("does not sell workshop job card, clinic, or jewellery kits", () => {

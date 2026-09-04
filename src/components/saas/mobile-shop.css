@@ -64,6 +64,34 @@
   color: #fff;
 }
 
+.ms-shop-hero {
+  background: var(--ms-ink);
+  color: #fff;
+  border-radius: 1.35rem;
+  padding: 1.05rem 1.15rem 1.15rem;
+  margin-bottom: 0.65rem;
+}
+
+.ms-shop-hero span {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  opacity: 0.72;
+}
+
+.ms-shop-hero strong {
+  display: block;
+  font-size: 2rem;
+  letter-spacing: -0.045em;
+  margin: 0.15rem 0 0.2rem;
+}
+
+.ms-shop-hero small {
+  display: block;
+  font-size: 0.82rem;
+  opacity: 0.8;
+}
+
 .ms-shop-kpis {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -84,6 +112,10 @@
   padding: 0.7rem 0.65rem;
 }
 
+.ms-shop-kpi--wide {
+  grid-column: 1 / -1;
+}
+
 .ms-shop-kpi span {
   display: block;
   font-size: 0.7rem;
@@ -91,8 +123,32 @@
 }
 
 .ms-shop-kpi strong {
+  display: block;
   font-size: 1.35rem;
   letter-spacing: -0.03em;
+}
+
+.ms-shop-kpi small {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+  color: var(--ms-muted);
+  font-weight: 600;
+}
+
+.ms-shop-exceptions {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0 0 0.5rem;
+}
+
+.ms-shop-exceptions h2 {
+  margin: 0.35rem 0 0.15rem;
+}
+
+.ms-shop-chip--warn {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .ms-shop-actions {

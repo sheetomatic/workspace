@@ -27,7 +27,7 @@ export const LICENSED_KIT_CATALOG: LicensedKitDefinition[] = [
     shortName: "Mobile shop",
     icp: "Mobile shops — new phones, used/refurbished, repairs, accessories",
     description:
-      "Counter app — not a spreadsheet. Home (equal weight): New phone sale, Used phone, Repairs, Accessories, Stock in, Stock out. IMEI for phones, qty for accessories and parts. Repairs auto-stock-out a matching part when in stock.",
+      "Counter app — not a spreadsheet. Home is today’s sales, stock, and repairs, then six equal buttons: New phone sale, Used phone, Repairs, Accessories, Stock in, Stock out. IMEI for phones, qty for accessories and parts. Repairs auto-stock-out a matching part when in stock.",
     priceMonthlyInr: 999,
     priceAnnualInr: 9990,
     shippable: true,
