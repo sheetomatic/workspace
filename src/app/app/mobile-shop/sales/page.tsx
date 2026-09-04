@@ -1,52 +1,54 @@
-import Link from "next/link";
-import { redirect } from "next/navigation";
-import { requireSession } from "@/lib/require-session";
-import { MOBILE_SHOP_KIT_KEY } from "@/lib/addons/licensed-kits";
-import { orgHasActiveKitLicense } from "@/lib/addons/kit-license";
 import { ShopForm } from "@/components/saas/mobile-shop-form";
 import { sellAction } from "@/app/app/mobile-shop/actions";
+import { requireMobileShopPage } from "@/lib/mobile-shop/access";
 
 export default async function MobileShopSalesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string }>;
+  searchParams: Promise<{ type?: string; imei?: string }>;
 }) {
-  const user = await requireSession();
-  if (!(await orgHasActiveKitLicense(user.organizationId, MOBILE_SHOP_KIT_KEY))) {
-    redirect("/app/mobile-shop");
-  }
-  const { type } = await searchParams;
+  await requireMobileShopPage();
+  const { type, imei } = await searchParams;
   const used = type === "used";
 
   return (
     <section>
-      <h1>{used ? "Used phone sale" : "New sale"}</h1>
-      <p>
-        {used
-          ? "Stock-out a used or refurbished IMEI."
-          : "Stock-out a new phone IMEI."}{" "}
-        <Link href={used ? "/app/mobile-shop/sales?type=new" : "/app/mobile-shop/sales?type=used"}>
-          {used ? "Switch to new sale" : "Switch to used sale"}
-        </Link>
+      <h1>{used ? "Used sale" : "New sale"}</h1>
+      <p className="ms-shop-lead">
+        {used ? "पुराना फोन सेल · IMEI out." : "नया सेल · IMEI out."} Customer
+        takes the phone. Four fields.
       </p>
-      <ShopForm action={sellAction} submitLabel="Record sale">
+      <ShopForm action={sellAction} submitLabel={used ? "Sell used phone" : "Sell new phone"}>
         <input name="mode" type="hidden" value="PHONE" />
         <input name="saleType" type="hidden" value={used ? "USED" : "NEW"} />
         <label>
-          IMEI
-          <input name="imei" required />
+          IMEI / serial
+          <input
+            name="imei"
+            required
+            inputMode="numeric"
+            autoComplete="off"
+            defaultValue={imei ?? ""}
+            placeholder="15 digits"
+          />
         </label>
         <label>
           Customer
-          <input name="customerName" required />
+          <input name="customerName" required autoComplete="name" placeholder="Name" />
         </label>
         <label>
-          Phone
-          <input name="customerPhone" required />
+          WhatsApp / phone
+          <input
+            name="customerPhone"
+            required
+            inputMode="tel"
+            autoComplete="tel"
+            placeholder="98xxxxxxxx"
+          />
         </label>
         <label>
           Amount (₹)
-          <input name="amount" required />
+          <input name="amount" required inputMode="decimal" placeholder="0" />
         </label>
       </ShopForm>
     </section>

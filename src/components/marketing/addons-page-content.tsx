@@ -22,8 +22,8 @@ export function AddonsPageContent() {
           <p className="type-kicker text-sky-700">Right to use — mobile shops</p>
           <h1 className="minimal-hero-title mt-4">Mobile Shop app</h1>
           <p className="minimal-hero-lead">
-            Counter software for shops that sell new phones, used phones, repairs,
-            and accessories. Today’s numbers and big buttons. Not a spreadsheet.
+            Counter app for shops that sell new phones, used phones, repairs,
+            and accessories. Big buttons. Few taps. Not a spreadsheet.
           </p>
         </div>
       </section>
@@ -37,11 +37,11 @@ export function AddonsPageContent() {
               <p>{featured.icp}</p>
               <p>{featured.description}</p>
               <ul>
-                <li>Home: daily numbers + big buttons</li>
-                <li>Stock in / out — IMEI for phones, qty for accessories and parts</li>
-                <li>Repairs — received → in progress → ready → delivered; parts stock-out</li>
-                <li>Accessories — sell + stock</li>
-                <li>New sale and used phone sale</li>
+                <li>New sale — नया सेल (IMEI out)</li>
+                <li>Used phone in — पुराना फोन इन</li>
+                <li>Repair job — रिपेयर जॉब (received → ready → delivered)</li>
+                <li>Accessory sale — एक्सेसरी सेल</li>
+                <li>Stock check — स्टॉक चेक</li>
               </ul>
               <p>
                 <strong>{formatInrPaise(rupeesToPaise(featured.priceMonthlyInr))}</strong>

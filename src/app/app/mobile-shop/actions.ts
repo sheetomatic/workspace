@@ -32,6 +32,7 @@ async function requireShopUser() {
 function refreshShop() {
   revalidatePath("/app/mobile-shop");
   revalidatePath("/app/mobile-shop/stock");
+  revalidatePath("/app/mobile-shop/used-in");
   revalidatePath("/app/mobile-shop/repairs");
   revalidatePath("/app/mobile-shop/accessories");
   revalidatePath("/app/mobile-shop/sales");

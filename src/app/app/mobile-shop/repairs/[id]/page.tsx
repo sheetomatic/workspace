@@ -1,23 +1,18 @@
-import { notFound, redirect } from "next/navigation";
-import { requireSession } from "@/lib/require-session";
-import { MOBILE_SHOP_KIT_KEY } from "@/lib/addons/licensed-kits";
-import { orgHasActiveKitLicense } from "@/lib/addons/kit-license";
-import { getRepair, listMobileShopItems } from "@/lib/mobile-shop/store";
+import { notFound } from "next/navigation";
 import { ShopForm } from "@/components/saas/mobile-shop-form";
 import {
   advanceRepairAction,
   repairPartOutAction,
 } from "@/app/app/mobile-shop/actions";
+import { requireMobileShopPage } from "@/lib/mobile-shop/access";
+import { getRepair, listMobileShopItems } from "@/lib/mobile-shop/store";
 
 export default async function MobileShopRepairDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const user = await requireSession();
-  if (!(await orgHasActiveKitLicense(user.organizationId, MOBILE_SHOP_KIT_KEY))) {
-    redirect("/app/mobile-shop");
-  }
+  const user = await requireMobileShopPage();
   const { id } = await params;
   const repair = await getRepair(user.organizationId, id);
   if (!repair) notFound();
@@ -28,19 +23,23 @@ export default async function MobileShopRepairDetailPage({
   return (
     <section>
       <h1>{repair.deviceName}</h1>
-      <p>
+      <p className="ms-shop-lead">
         {repair.customerName} · {repair.customerPhone}
         {repair.imei ? ` · IMEI ${repair.imei}` : ""} · {repair.jobType}
       </p>
-      <p>Status: {repair.status.replaceAll("_", " ")}</p>
+      <p>
+        Status: <strong>{repair.status.replaceAll("_", " ")}</strong>
+      </p>
       {repair.complaint ? <p>{repair.complaint}</p> : null}
 
       <div className="ms-shop-status">
-        {([
-          ["IN_PROGRESS", "In progress"],
-          ["READY", "Ready"],
-          ["DELIVERED", "Delivered"],
-        ] as const).map(([status, label]) => (
+        {(
+          [
+            ["IN_PROGRESS", "In progress"],
+            ["READY", "Ready"],
+            ["DELIVERED", "Delivered"],
+          ] as const
+        ).map(([status, label]) => (
           <ShopForm action={advanceRepairAction} key={status} submitLabel={label}>
             <input name="repairId" type="hidden" value={repair.id} />
             <input name="status" type="hidden" value={status} />
@@ -48,37 +47,43 @@ export default async function MobileShopRepairDetailPage({
         ))}
       </div>
 
-      <h2>Parts stock-out</h2>
-      <ShopForm action={repairPartOutAction}>
-        <input name="repairId" type="hidden" value={repair.id} />
-        <label>
-          Part
-          <select name="itemId" required>
-            {parts.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name} · qty {item.qty}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Qty
-          <input name="qty" type="number" min={1} defaultValue={1} />
-        </label>
-      </ShopForm>
-
-      <h2>Parts on this job</h2>
-      <ul>
-        {repair.parts.length === 0 ? (
-          <li>None yet.</li>
-        ) : (
-          repair.parts.map((part) => (
-            <li key={part.id}>
-              {part.item.name} × {part.qty}
-            </li>
-          ))
-        )}
-      </ul>
+      <details>
+        <summary>Parts stock-out</summary>
+        <ShopForm action={repairPartOutAction} submitLabel="Take part">
+          <input name="repairId" type="hidden" value={repair.id} />
+          <label>
+            Part
+            <select name="itemId" required>
+              {parts.length === 0 ? (
+                <option value="" disabled>
+                  No parts in stock
+                </option>
+              ) : (
+                parts.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name} · qty {item.qty}
+                  </option>
+                ))
+              )}
+            </select>
+          </label>
+          <label>
+            Qty
+            <input name="qty" type="number" min={1} defaultValue={1} inputMode="numeric" />
+          </label>
+        </ShopForm>
+        <ul>
+          {repair.parts.length === 0 ? (
+            <li>None yet.</li>
+          ) : (
+            repair.parts.map((part) => (
+              <li key={part.id}>
+                {part.item.name} × {part.qty}
+              </li>
+            ))
+          )}
+        </ul>
+      </details>
     </section>
   );
 }

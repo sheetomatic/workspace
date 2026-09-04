@@ -1,92 +1,60 @@
-import { redirect } from "next/navigation";
-import { requireSession } from "@/lib/require-session";
-import { MOBILE_SHOP_KIT_KEY } from "@/lib/addons/licensed-kits";
-import { orgHasActiveKitLicense } from "@/lib/addons/kit-license";
-import { listMobileShopItems } from "@/lib/mobile-shop/store";
 import { ShopForm } from "@/components/saas/mobile-shop-form";
 import { sellAction, stockInAction } from "@/app/app/mobile-shop/actions";
+import { requireMobileShopPage } from "@/lib/mobile-shop/access";
+import { listMobileShopItems } from "@/lib/mobile-shop/store";
 
 export default async function MobileShopAccessoriesPage() {
-  const user = await requireSession();
-  if (!(await orgHasActiveKitLicense(user.organizationId, MOBILE_SHOP_KIT_KEY))) {
-    redirect("/app/mobile-shop");
-  }
+  const user = await requireMobileShopPage();
   const accessories = await listMobileShopItems(user.organizationId, "ACCESSORY");
+  const onHand = accessories.filter((item) => item.qty > 0);
 
   return (
     <section>
-      <h1>Accessories</h1>
-      <p>Covers, chargers, earphones, glass — qty, not grocery SKUs.</p>
+      <h1>Accessory sale</h1>
+      <p className="ms-shop-lead">एक्सेसरी सेल. Cover, charger, earphones, glass — qty, not grocery.</p>
 
-      <h2>Stock in</h2>
-      <ShopForm action={stockInAction} submitLabel="Add stock">
-        <input name="kind" type="hidden" value="ACCESSORY" />
-        <label>
-          Name
-          <input name="name" required placeholder="Plain cover / 20W charger" />
-        </label>
-        <label>
-          Qty
-          <input name="qty" type="number" min={1} defaultValue={1} />
-        </label>
-      </ShopForm>
-
-      <h2>Sell</h2>
-      <ShopForm action={sellAction} submitLabel="Sell">
+      <ShopForm action={sellAction} submitLabel="Sell accessory">
         <input name="mode" type="hidden" value="ACCESSORY" />
         <label>
           Item
-          <select name="itemId" required>
-            {accessories
-              .filter((item) => item.qty > 0)
-              .map((item) => (
+          <select name="itemId" required defaultValue={onHand[0]?.id ?? ""}>
+            {onHand.length === 0 ? (
+              <option value="" disabled>
+                Add stock first
+              </option>
+            ) : (
+              onHand.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.name} · qty {item.qty}
                 </option>
-              ))}
+              ))
+            )}
           </select>
         </label>
         <label>
           Qty
-          <input name="qty" type="number" min={1} defaultValue={1} />
-        </label>
-        <label>
-          Customer
-          <input name="customerName" />
-        </label>
-        <label>
-          Phone
-          <input name="customerPhone" />
+          <input name="qty" type="number" min={1} defaultValue={1} inputMode="numeric" />
         </label>
         <label>
           Amount (₹)
-          <input name="amount" />
+          <input name="amount" inputMode="decimal" placeholder="0" />
         </label>
       </ShopForm>
 
-      <h2>On hand</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th>Qty</th>
-          </tr>
-        </thead>
-        <tbody>
-          {accessories.length === 0 ? (
-            <tr>
-              <td colSpan={2}>No accessory SKUs yet.</td>
-            </tr>
-          ) : (
-            accessories.map((item) => (
-              <tr key={item.id}>
-                <td>{item.name}</td>
-                <td>{item.qty}</td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+      <details>
+        <summary>Add accessory stock</summary>
+        <ShopForm action={stockInAction} submitLabel="Add stock">
+          <input name="kind" type="hidden" value="ACCESSORY" />
+          <label>
+            Name
+            <input name="name" required placeholder="Plain cover / 20W charger" />
+          </label>
+          <label>
+            Qty
+            <input name="qty" type="number" min={1} defaultValue={1} inputMode="numeric" />
+          </label>
+        </ShopForm>
+      </details>
     </section>
   );
 }

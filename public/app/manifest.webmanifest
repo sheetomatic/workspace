@@ -9,6 +9,14 @@
   "orientation": "portrait-primary",
   "background_color": "#f8fafc",
   "theme_color": "#111111",
+  "shortcuts": [
+    {
+      "name": "Mobile shop",
+      "short_name": "Shop",
+      "description": "New sale, used phone in, repair job, accessory sale, stock check",
+      "url": "/app/mobile-shop"
+    }
+  ],
   "icons": [
     {
       "src": "/icons/workspace-icon-192.png?v=6",

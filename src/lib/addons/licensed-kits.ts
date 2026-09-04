@@ -27,7 +27,7 @@ export const LICENSED_KIT_CATALOG: LicensedKitDefinition[] = [
     shortName: "Mobile shop",
     icp: "Mobile shops — new phones, used/refurbished, repairs, accessories",
     description:
-      "Shop-floor app: today’s numbers, stock in/out (IMEI or qty), repair job cards, accessory sell, new and used phone sale. Not a spreadsheet.",
+      "Counter app — not a spreadsheet. Big buttons: New sale, Used phone in, Repair job, Accessory sale, Stock check. IMEI for phones, qty for accessories.",
     priceMonthlyInr: 999,
     priceAnnualInr: 9990,
     shippable: true,

@@ -20,7 +20,7 @@ export default async function FmsLicensedKitsPage() {
     <div className="saas-page ws-fms-page ws-fms-sf">
       <TaskPageToolbar
         title="Licensed kits"
-        description="Mobile shop app — right to use for this workspace. Pay the invoice, then open the counter."
+        description="Mobile shop app — counter buttons, not a spreadsheet. Pay the invoice, then open the shop."
         actions={
           <Link href="/app/mobile-shop" className="btn-secondary btn-sm">
             Mobile shop

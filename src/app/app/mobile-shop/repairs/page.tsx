@@ -1,44 +1,33 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { requireSession } from "@/lib/require-session";
-import { MOBILE_SHOP_KIT_KEY } from "@/lib/addons/licensed-kits";
-import { orgHasActiveKitLicense } from "@/lib/addons/kit-license";
-import { listRepairs, MOBILE_REPAIR_JOB_TYPES } from "@/lib/mobile-shop/store";
 import { ShopForm } from "@/components/saas/mobile-shop-form";
 import { createRepairAction } from "@/app/app/mobile-shop/actions";
+import { requireMobileShopPage } from "@/lib/mobile-shop/access";
+import { listRepairs, MOBILE_REPAIR_JOB_TYPES } from "@/lib/mobile-shop/store";
 
 export default async function MobileShopRepairsPage() {
-  const user = await requireSession();
-  if (!(await orgHasActiveKitLicense(user.organizationId, MOBILE_SHOP_KIT_KEY))) {
-    redirect("/app/mobile-shop");
-  }
+  const user = await requireMobileShopPage();
   const repairs = await listRepairs(user.organizationId);
 
   return (
     <section>
-      <h1>Repairs</h1>
-      <p>Job card: received → in progress → ready → delivered. Parts stock-out on the job.</p>
+      <h1>Repair job</h1>
+      <p className="ms-shop-lead">रिपेयर जॉब. Open a card. Then: in progress → ready → delivered.</p>
 
-      <h2>New job</h2>
-      <ShopForm action={createRepairAction}>
+      <ShopForm action={createRepairAction} submitLabel="Open job">
         <label>
           Customer
-          <input name="customerName" required />
+          <input name="customerName" required autoComplete="name" />
         </label>
         <label>
-          Phone
-          <input name="customerPhone" required />
+          WhatsApp / phone
+          <input name="customerPhone" required inputMode="tel" autoComplete="tel" />
         </label>
         <label>
           Device
-          <input name="deviceName" required placeholder="Redmi 13 / screen" />
+          <input name="deviceName" required placeholder="Redmi 13" autoComplete="off" />
         </label>
         <label>
-          IMEI
-          <input name="imei" />
-        </label>
-        <label>
-          Job type
+          Job
           <select name="jobType" defaultValue="Screen">
             {MOBILE_REPAIR_JOB_TYPES.map((type) => (
               <option key={type} value={type}>
@@ -48,42 +37,31 @@ export default async function MobileShopRepairsPage() {
           </select>
         </label>
         <label>
-          Complaint
-          <textarea name="complaint" rows={2} />
+          IMEI (if you have it)
+          <input name="imei" inputMode="numeric" autoComplete="off" />
         </label>
       </ShopForm>
 
       <h2>Open jobs</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Customer</th>
-            <th>Device</th>
-            <th>Type</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {repairs.length === 0 ? (
-            <tr>
-              <td colSpan={4}>No jobs yet.</td>
-            </tr>
-          ) : (
-            repairs.map((job) => (
-              <tr key={job.id}>
-                <td>
-                  <Link href={`/app/mobile-shop/repairs/${job.id}`}>
-                    {job.customerName}
-                  </Link>
-                </td>
-                <td>{job.deviceName}</td>
-                <td>{job.jobType}</td>
-                <td>{job.status.replaceAll("_", " ")}</td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+      {repairs.length === 0 ? (
+        <p className="ms-shop-empty">No jobs yet.</p>
+      ) : (
+        <div className="ms-shop-cards">
+          {repairs.map((job) => (
+            <Link className="ms-shop-card" href={`/app/mobile-shop/repairs/${job.id}`} key={job.id}>
+              <div className="ms-shop-card-row">
+                <div>
+                  <strong>{job.customerName}</strong>
+                  <span>
+                    {job.deviceName} · {job.jobType}
+                  </span>
+                </div>
+                <span className="ms-shop-chip">{job.status.replaceAll("_", " ")}</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

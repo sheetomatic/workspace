@@ -30,7 +30,7 @@ export function ShopForm({
       }}
     >
       {children}
-      <button className="btn-primary btn-sm" disabled={pending} type="submit">
+      <button className="btn-primary" disabled={pending} type="submit">
         {pending ? "Saving…" : submitLabel}
       </button>
       {message ? <p role="status">{message.message}</p> : null}
