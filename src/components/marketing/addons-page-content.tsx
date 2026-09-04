@@ -42,8 +42,8 @@ export function AddonsPageContent() {
                 <li>Used sale — पुराना सेल</li>
                 <li>Repairs — रिपेयर</li>
                 <li>Accessories — एक्सेसरी (covers, chargers, earphones — qty)</li>
-                <li>Stock in — स्टॉक इन (purchase / return / transfer; IMEI or qty)</li>
-                <li>Stock out — स्टॉक आउट (sale, used sale, accessory, part used, supplier return)</li>
+                <li>Stock in — स्टॉक इन (purchase invoice + IMEI/qty lines; pick phone by make/model/color)</li>
+                <li>Sale is the stock out — new, used, accessory, or repair part used</li>
               </ul>
               <p>
                 <strong>{formatInrPaise(rupeesToPaise(featured.priceMonthlyInr))}</strong>

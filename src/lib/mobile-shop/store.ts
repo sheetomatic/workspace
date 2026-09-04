@@ -14,6 +14,8 @@ import {
   startOfShopDay,
   summarizeShopDay,
 } from "@/lib/mobile-shop/day-glance";
+import type { StockInLineInput } from "@/lib/mobile-shop/inbound";
+import { uniquePhoneCatalog } from "@/lib/mobile-shop/phone-catalog";
 
 export const MOBILE_REPAIR_JOB_TYPES = [
   "Screen",
@@ -100,15 +102,31 @@ export async function findPhoneByImei(organizationId: string, imei: string) {
   });
 }
 
+function phoneDisplayName(brand: string, model: string, color?: string | null) {
+  return [brand.trim(), model.trim(), color?.trim()].filter(Boolean).join(" ").trim();
+}
+
+export async function listPhoneCatalog(organizationId: string) {
+  const items = await prisma.mobileShopItem.findMany({
+    where: { organizationId, kind: "PHONE" },
+    select: { brand: true, model: true, color: true, condition: true, kind: true },
+    orderBy: { updatedAt: "desc" },
+    take: 400,
+  });
+  return uniquePhoneCatalog(items);
+}
+
 export async function stockInPhone(input: {
   organizationId: string;
   createdById: string;
   brand: string;
   model: string;
+  color?: string;
   imei: string;
   condition: MobileShopPhoneCondition;
   reason?: string;
   notes?: string;
+  inboundId?: string;
 }) {
   const imei = input.imei.trim();
   if (!imei) return { ok: false as const, message: "IMEI is required for phones." };
@@ -116,19 +134,23 @@ export async function stockInPhone(input: {
   if (existing && existing.qty > 0) {
     return { ok: false as const, message: "This IMEI is already in stock." };
   }
-  const name = `${input.brand.trim()} ${input.model.trim()}`.trim();
+  const brand = input.brand.trim();
+  const model = input.model.trim();
+  const color = input.color?.trim() || null;
+  const name = phoneDisplayName(brand, model, color);
   const item = existing
     ? await prisma.mobileShopItem.update({
         where: { id: existing.id },
-        data: { qty: 1, condition: input.condition, name, brand: input.brand.trim(), model: input.model.trim() },
+        data: { qty: 1, condition: input.condition, name, brand, model, color },
       })
     : await prisma.mobileShopItem.create({
         data: {
           organizationId: input.organizationId,
           kind: "PHONE",
           name,
-          brand: input.brand.trim(),
-          model: input.model.trim(),
+          brand,
+          model,
+          color,
           imei,
           condition: input.condition,
           qty: 1,
@@ -142,6 +164,7 @@ export async function stockInPhone(input: {
       qty: 1,
       reason: input.reason?.trim() || "PURCHASE",
       notes: input.notes?.trim() || null,
+      inboundId: input.inboundId ?? null,
       createdById: input.createdById,
     },
   });
@@ -156,6 +179,7 @@ export async function stockInQtyItem(input: {
   qty: number;
   reason?: string;
   notes?: string;
+  inboundId?: string;
 }) {
   if (input.qty <= 0) return { ok: false as const, message: "Qty must be more than 0." };
   const name = input.name.trim();
@@ -186,10 +210,158 @@ export async function stockInQtyItem(input: {
       qty: input.qty,
       reason: input.reason?.trim() || "PURCHASE",
       notes: input.notes?.trim() || null,
+      inboundId: input.inboundId ?? null,
       createdById: input.createdById,
     },
   });
   return { ok: true as const, item };
+}
+
+export async function stockInInvoice(input: {
+  organizationId: string;
+  createdById: string;
+  invoiceNo: string;
+  invoiceDate?: Date | null;
+  supplier?: string;
+  reason?: string;
+  notes?: string;
+  lines: StockInLineInput[];
+}) {
+  const invoiceNo = input.invoiceNo.trim();
+  if (!invoiceNo) return { ok: false as const, message: "Invoice number is required." };
+  if (input.lines.length === 0) {
+    return { ok: false as const, message: "Add at least one line on this invoice." };
+  }
+
+  const phoneImeis = input.lines
+    .filter((line): line is Extract<StockInLineInput, { kind: "PHONE" }> => line.kind === "PHONE")
+    .map((line) => line.imei);
+  if (phoneImeis.length > 0) {
+    const alreadyIn = await prisma.mobileShopItem.findMany({
+      where: {
+        organizationId: input.organizationId,
+        kind: "PHONE",
+        imei: { in: phoneImeis },
+        qty: { gt: 0 },
+      },
+      select: { imei: true },
+    });
+    if (alreadyIn[0]?.imei) {
+      return { ok: false as const, message: `IMEI ${alreadyIn[0].imei} is already in stock.` };
+    }
+  }
+
+  const reason = input.reason?.trim() || "PURCHASE";
+  try {
+    const inbound = await prisma.$transaction(async (tx) => {
+      const header = await tx.mobileShopInbound.create({
+        data: {
+          organizationId: input.organizationId,
+          invoiceNo,
+          invoiceDate: input.invoiceDate ?? null,
+          supplier: input.supplier?.trim() || null,
+          notes: input.notes?.trim() || null,
+          createdById: input.createdById,
+        },
+      });
+
+      for (const line of input.lines) {
+        let itemId: string;
+        let qty: number;
+        if (line.kind === "PHONE") {
+          const existing = await tx.mobileShopItem.findFirst({
+            where: {
+              organizationId: input.organizationId,
+              kind: "PHONE",
+              imei: line.imei,
+            },
+          });
+          if (existing && existing.qty > 0) {
+            throw new Error(`IMEI ${line.imei} is already in stock.`);
+          }
+          const brand = line.brand.trim();
+          const model = line.model.trim();
+          const color = line.color.trim() || null;
+          const name = phoneDisplayName(brand, model, color);
+          const item = existing
+            ? await tx.mobileShopItem.update({
+                where: { id: existing.id },
+                data: { qty: 1, condition: line.condition, name, brand, model, color },
+              })
+            : await tx.mobileShopItem.create({
+                data: {
+                  organizationId: input.organizationId,
+                  kind: "PHONE",
+                  name,
+                  brand,
+                  model,
+                  color,
+                  imei: line.imei,
+                  condition: line.condition,
+                  qty: 1,
+                },
+              });
+          itemId = item.id;
+          qty = 1;
+        } else {
+          if (line.qty <= 0) throw new Error("Qty must be more than 0.");
+          const name = line.name.trim();
+          let item = await tx.mobileShopItem.findFirst({
+            where: { organizationId: input.organizationId, kind: line.kind, name },
+          });
+          item = item
+            ? await tx.mobileShopItem.update({
+                where: { id: item.id },
+                data: { qty: item.qty + line.qty },
+              })
+            : await tx.mobileShopItem.create({
+                data: {
+                  organizationId: input.organizationId,
+                  kind: line.kind,
+                  name,
+                  qty: line.qty,
+                },
+              });
+          itemId = item.id;
+          qty = line.qty;
+        }
+
+        await tx.mobileShopMovement.create({
+          data: {
+            organizationId: input.organizationId,
+            itemId,
+            kind: "STOCK_IN",
+            qty,
+            reason,
+            notes: input.notes?.trim() || null,
+            inboundId: header.id,
+            createdById: input.createdById,
+          },
+        });
+        await tx.mobileShopInboundLine.create({
+          data: { inboundId: header.id, itemId, qty },
+        });
+      }
+
+      return tx.mobileShopInbound.findFirstOrThrow({
+        where: { id: header.id, organizationId: input.organizationId },
+        include: { lines: { include: { item: true } } },
+      });
+    });
+    return { ok: true as const, inbound };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not save invoice.";
+    return { ok: false as const, message };
+  }
+}
+
+export async function listRecentInbounds(organizationId: string, take = 12) {
+  return prisma.mobileShopInbound.findMany({
+    where: { organizationId },
+    orderBy: { createdAt: "desc" },
+    take,
+    include: { lines: { include: { item: true }, orderBy: { createdAt: "asc" } } },
+  });
 }
 
 async function decrementItem(

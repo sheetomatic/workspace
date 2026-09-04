@@ -1,40 +1,55 @@
 import Link from "next/link";
 import { requireMobileShopPage } from "@/lib/mobile-shop/access";
-import { listRecentMovements } from "@/lib/mobile-shop/store";
-import { reasonLabel } from "@/lib/mobile-shop/reasons";
+import { listPhoneCatalog, listRecentInbounds } from "@/lib/mobile-shop/store";
+import { formatPromisedAt } from "@/lib/mobile-shop/promised-at";
 import { StockInForm } from "@/components/saas/mobile-shop-stock-forms";
 
 export default async function MobileShopStockInPage() {
   const user = await requireMobileShopPage();
-  const recent = await listRecentMovements(user.organizationId, 12, "in");
+  const [catalog, invoices] = await Promise.all([
+    listPhoneCatalog(user.organizationId),
+    listRecentInbounds(user.organizationId, 12),
+  ]);
 
   return (
     <section>
       <h1>Stock in</h1>
       <p className="ms-shop-lead">
-        स्टॉक इन. New phone, used phone, accessory, or part. Purchase, return, or
-        transfer in. IMEI for phones, qty for the rest.
+        स्टॉक इन. Invoice header, then every phone / accessory on that bill.
+        Select a phone — make, model, color fill. Type IMEI or qty.
       </p>
-      <StockInForm />
+      <StockInForm catalog={catalog} />
       <p>
         <Link href="/app/mobile-shop/stock">See stock</Link>
         {" · "}
         <Link href="/app/mobile-shop/used-in">Used phone in</Link>
       </p>
-      <h2>Today’s in</h2>
-      {recent.length === 0 ? (
+      <h2>Recent invoices</h2>
+      {invoices.length === 0 ? (
         <p className="ms-shop-empty">
-          Nothing in yet — add a phone or accessory above.
+          Nothing in yet — add an invoice above.
         </p>
       ) : (
         <div className="ms-shop-cards">
-          {recent.map((row) => (
-            <div className="ms-shop-card" key={row.id}>
-              <strong>{row.item.name}</strong>
+          {invoices.map((invoice) => (
+            <div className="ms-shop-card" key={invoice.id}>
+              <strong>
+                {invoice.invoiceNo}
+                {invoice.supplier ? ` · ${invoice.supplier}` : ""}
+              </strong>
               <span>
-                {reasonLabel(row.reason)} · qty {row.qty}
-                {row.item.imei ? ` · ${row.item.imei}` : ""}
+                {invoice.invoiceDate ? formatPromisedAt(invoice.invoiceDate) : "No date"}
+                {" · "}
+                {invoice.lines.length} line{invoice.lines.length === 1 ? "" : "s"}
               </span>
+              <ul className="ms-shop-invoice-lines">
+                {invoice.lines.map((line) => (
+                  <li key={line.id}>
+                    {line.item.name}
+                    {line.item.imei ? ` · ${line.item.imei}` : ` · qty ${line.qty}`}
+                  </li>
+                ))}
+              </ul>
             </div>
           ))}
         </div>

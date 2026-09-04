@@ -12,18 +12,22 @@ export default async function MobileShopUsedInPage() {
         <input name="kind" type="hidden" value="PHONE" />
         <input name="condition" type="hidden" value="USED" />
         <input name="reason" type="hidden" value="PURCHASE" />
-        <label>
-          Brand
-          <input name="brand" required placeholder="Samsung / Redmi" autoComplete="off" />
-        </label>
-        <label>
-          Model
-          <input name="model" required placeholder="A15 / Note 13" autoComplete="off" />
-        </label>
-        <label>
-          IMEI / serial
-          <input name="imei" required inputMode="numeric" autoComplete="off" placeholder="15 digits" />
-        </label>
+          <label>
+            Brand
+            <input name="brand" required placeholder="Samsung / Redmi" autoComplete="off" />
+          </label>
+          <label>
+            Model
+            <input name="model" required placeholder="A15 / Note 13" autoComplete="off" />
+          </label>
+          <label>
+            Color · रंग
+            <input name="color" placeholder="Black" autoComplete="off" />
+          </label>
+          <label>
+            IMEI / serial
+            <input name="imei" required inputMode="numeric" autoComplete="off" placeholder="15 digits" />
+          </label>
       </ShopForm>
     </section>
   );

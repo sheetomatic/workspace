@@ -16,8 +16,6 @@ export default async function MobileShopStockPage() {
       <p className="ms-shop-lead">
         What is in the shop. Tap a phone to sell.{" "}
         <Link href="/app/mobile-shop/stock-in">Stock in</Link>
-        {" · "}
-        <Link href="/app/mobile-shop/stock-out">Stock out</Link>
       </p>
 
       <h2>Phones</h2>
@@ -84,6 +82,10 @@ export default async function MobileShopStockPage() {
           <label>
             Model
             <input name="model" required placeholder="A15" />
+          </label>
+          <label>
+            Color
+            <input name="color" placeholder="Black" autoComplete="off" />
           </label>
           <label>
             IMEI / serial

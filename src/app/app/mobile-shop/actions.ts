@@ -9,10 +9,13 @@ import {
   isStockInReason,
   movementKindForOutReason,
 } from "@/lib/mobile-shop/reasons";
+import { parsePromisedAt } from "@/lib/mobile-shop/promised-at";
+import { parseInboundLines } from "@/lib/mobile-shop/inbound";
 import {
   advanceRepair,
   createRepair,
   sellPhoneByImei,
+  stockInInvoice,
   stockInPhone,
   stockInQtyItem,
   stockOut,
@@ -53,6 +56,7 @@ export async function stockInAction(formData: FormData): Promise<ShopActionResul
       createdById: gate.user.id,
       brand: String(formData.get("brand") ?? ""),
       model: String(formData.get("model") ?? ""),
+      color: String(formData.get("color") ?? ""),
       imei: String(formData.get("imei") ?? ""),
       condition:
         condition === "USED" || condition === "REFURBISHED" ? condition : "NEW",
@@ -76,6 +80,37 @@ export async function stockInAction(formData: FormData): Promise<ShopActionResul
   if (!result.ok) return result;
   refreshShop();
   return { ok: true, message: "Stock in recorded." };
+}
+
+export async function stockInInvoiceAction(formData: FormData): Promise<ShopActionResult> {
+  const gate = await requireShopUser();
+  if (!gate.ok) return gate;
+  const parsed = parseInboundLines(String(formData.get("lines") ?? "[]"));
+  if (!parsed.ok) return parsed;
+  const invoiceDate = parsePromisedAt(String(formData.get("invoiceDate") ?? ""));
+  if (invoiceDate === "invalid") {
+    return { ok: false, message: "Invoice date is invalid." };
+  }
+  const reasonRaw = String(formData.get("reason") ?? "PURCHASE");
+  const reason = isStockInReason(reasonRaw) ? reasonRaw : "PURCHASE";
+  const result = await stockInInvoice({
+    organizationId: gate.user.organizationId,
+    createdById: gate.user.id,
+    invoiceNo: String(formData.get("invoiceNo") ?? ""),
+    invoiceDate,
+    supplier: String(formData.get("supplier") ?? ""),
+    reason,
+    notes: String(formData.get("notes") ?? ""),
+    lines: parsed.lines,
+  });
+  if (!result.ok) return result;
+  refreshShop();
+  return {
+    ok: true,
+    message: `Invoice ${result.inbound.invoiceNo} in · ${result.inbound.lines.length} line${
+      result.inbound.lines.length === 1 ? "" : "s"
+    }.`,
+  };
 }
 
 export async function stockOutAction(formData: FormData): Promise<ShopActionResult> {

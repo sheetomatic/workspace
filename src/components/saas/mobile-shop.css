@@ -359,6 +359,73 @@
   font-weight: 700;
 }
 
+.ms-shop-lines {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ms-shop-line {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.75rem 0.85rem 0.9rem;
+  border: 1px solid var(--ms-line);
+  border-radius: 1rem;
+  background: #fff;
+}
+
+.ms-shop-line-remove,
+.ms-shop-add-line {
+  font: inherit;
+  font-weight: 700;
+  border: 0;
+  background: transparent;
+  color: #0f172a;
+  min-height: 2.5rem;
+  padding: 0.35rem 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ms-shop-line-remove {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.ms-shop-suggest {
+  list-style: none;
+  margin: -0.35rem 0 0;
+  padding: 0;
+  border: 1px solid var(--ms-line);
+  border-radius: 0.85rem;
+  overflow: hidden;
+  background: #fff;
+}
+
+.ms-shop-suggest button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: #fff;
+  font: inherit;
+  font-weight: 600;
+  min-height: 2.85rem;
+  padding: 0.55rem 0.8rem;
+  cursor: pointer;
+}
+
+.ms-shop-suggest button:hover,
+.ms-shop-suggest button:focus {
+  background: #f1f5f9;
+}
+
+.ms-shop-invoice-lines {
+  margin: 0.45rem 0 0;
+  padding: 0 0 0 1.1rem;
+  color: var(--ms-muted);
+  font-size: 0.85rem;
+}
+
 @media (min-width: 900px) {
   .ms-shop {
     max-width: 44rem;

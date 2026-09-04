@@ -6,14 +6,13 @@ import {
 import { STOCK_IN_REASONS, STOCK_OUT_FORM_REASONS, STOCK_OUT_SALE_LINKS } from "@/lib/mobile-shop/reasons";
 
 describe("mobile shop home actions", () => {
-  it("puts six equal-weight apps on the home grid", () => {
+  it("puts five equal-weight apps on the home grid, with no standalone Out", () => {
     expect(MOBILE_SHOP_HOME_ACTIONS.map((action) => action.label)).toEqual([
       "New sale",
-      "Used",
+      "Used sale",
       "Repair",
       "Accessories",
       "Stock in",
-      "Stock out",
     ]);
     expect(MOBILE_SHOP_HOME_ACTIONS.map((action) => action.href)).toEqual([
       "/app/mobile-shop/sales",
@@ -21,15 +20,17 @@ describe("mobile shop home actions", () => {
       "/app/mobile-shop/repairs",
       "/app/mobile-shop/accessories",
       "/app/mobile-shop/stock-in",
-      "/app/mobile-shop/stock-out",
     ]);
-    expect(MOBILE_SHOP_HOME_ACTIONS).toHaveLength(6);
+    expect(MOBILE_SHOP_HOME_ACTIONS).toHaveLength(5);
     expect(MOBILE_SHOP_HOME_ACTIONS.every((action) => action.hi.length > 0)).toBe(
       true,
     );
+    expect(
+      MOBILE_SHOP_HOME_ACTIONS.some((action) => action.href.includes("stock-out")),
+    ).toBe(false);
   });
 
-  it("keeps Accessories as a full nav word, not Acc", () => {
+  it("keeps Accessories as a full nav word, not Acc, and hides Stock out", () => {
     expect(MOBILE_SHOP_NAV_LINKS.map((link) => link.label)).toEqual([
       "Home",
       "Sale",
@@ -37,9 +38,11 @@ describe("mobile shop home actions", () => {
       "Repair",
       "Accessories",
       "Stock in",
-      "Stock out",
     ]);
     expect(MOBILE_SHOP_NAV_LINKS.some((link) => link.label === "Acc")).toBe(
+      false,
+    );
+    expect(MOBILE_SHOP_NAV_LINKS.some((link) => link.href.includes("stock-out"))).toBe(
       false,
     );
   });

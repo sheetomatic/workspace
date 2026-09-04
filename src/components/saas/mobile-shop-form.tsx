@@ -8,11 +8,13 @@ export function ShopForm({
   children,
   className,
   submitLabel = "Save",
+  onResult,
 }: {
   action: (formData: FormData) => Promise<ShopActionResult>;
   children: React.ReactNode;
   className?: string;
   submitLabel?: string;
+  onResult?: (result: ShopActionResult) => void;
 }) {
   const [pending, start] = useTransition();
   const [message, setMessage] = useState<ShopActionResult | null>(null);
@@ -25,6 +27,7 @@ export function ShopForm({
         start(async () => {
           const result = await action(formData);
           setMessage(result);
+          onResult?.(result);
           if (result.ok) event.currentTarget.reset();
         });
       }}

@@ -337,6 +337,7 @@ model Organization {
   mobileShopItems      MobileShopItem[]
   mobileShopMovements  MobileShopMovement[]
   mobileShopRepairs    MobileShopRepair[]
+  mobileShopInbounds   MobileShopInbound[]
   monthlyServiceClients MonthlyServiceClient[]
   subscriptionInvoices SubscriptionInvoice[]
   subscriptionPayments SubscriptionPayment[]
@@ -424,15 +425,18 @@ model MobileShopItem {
   name           String
   brand          String?
   model          String?
+  color          String?
   imei           String?
   condition      MobileShopPhoneCondition?
   qty            Int                       @default(0)
   movements      MobileShopMovement[]
+  inboundLines   MobileShopInboundLine[]
   createdAt      DateTime                  @default(now())
   updatedAt      DateTime                  @updatedAt
 
   @@index([organizationId, kind])
   @@index([organizationId, imei])
+  @@index([organizationId, brand, model])
 }
 
 model MobileShopMovement {
@@ -450,6 +454,8 @@ model MobileShopMovement {
   reason         String                   @default("PURCHASE")
   repairId       String?
   repair         MobileShopRepair?      @relation(fields: [repairId], references: [id], onDelete: SetNull)
+  inboundId      String?
+  inbound        MobileShopInbound?     @relation(fields: [inboundId], references: [id], onDelete: SetNull)
   createdById    String
   createdAt      DateTime               @default(now())
 
@@ -457,6 +463,38 @@ model MobileShopMovement {
   @@index([organizationId, reason])
   @@index([itemId, createdAt])
   @@index([repairId])
+  @@index([inboundId])
+}
+
+/// GST-style purchase invoice header. Child lines are MobileShopInboundLine.
+model MobileShopInbound {
+  id             String                 @id @default(cuid())
+  organizationId String
+  organization   Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invoiceNo      String
+  invoiceDate    DateTime?
+  supplier       String?
+  notes          String?
+  createdById    String
+  createdAt      DateTime               @default(now())
+  lines          MobileShopInboundLine[]
+  movements      MobileShopMovement[]
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, invoiceNo])
+}
+
+model MobileShopInboundLine {
+  id        String            @id @default(cuid())
+  inboundId String
+  inbound   MobileShopInbound @relation(fields: [inboundId], references: [id], onDelete: Cascade)
+  itemId    String
+  item      MobileShopItem   @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  qty       Int
+  createdAt DateTime          @default(now())
+
+  @@index([inboundId])
+  @@index([itemId])
 }
 
 model MobileShopRepair {
