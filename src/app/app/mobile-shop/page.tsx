@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { requireSession } from "@/lib/require-session";
-import { MOBILE_SHOP_KIT_KEY } from "@/lib/addons/licensed-kits";
-import { orgHasActiveKitLicense } from "@/lib/addons/kit-license";
+import { getMobileShopAccess } from "@/lib/mobile-shop/access";
 import { formatInrPaise } from "@/lib/billing/money";
 import { formatIndianGreetingDate } from "@/lib/format-datetime";
 import { MOBILE_SHOP_HOME_ACTIONS } from "@/lib/mobile-shop/home-actions";
@@ -36,11 +35,8 @@ function moneyHint(row: MoneyCount) {
 
 export default async function MobileShopHomePage() {
   const user = await requireSession();
-  const licensed = await orgHasActiveKitLicense(
-    user.organizationId,
-    MOBILE_SHOP_KIT_KEY,
-  );
-  if (!licensed) {
+  const access = await getMobileShopAccess(user);
+  if (!access.allowed) {
     return (
       <section>
         <h1>Mobile shop</h1>

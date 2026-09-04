@@ -2,10 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import type { MobileShopPhoneCondition, MobileShopRepairStatus } from "@prisma/client";
-import { requireSession } from "@/lib/require-session";
 import { parseRupeesInput } from "@/lib/billing/money";
-import { MOBILE_SHOP_KIT_KEY } from "@/lib/addons/licensed-kits";
-import { orgHasActiveKitLicense } from "@/lib/addons/kit-license";
+import { getMobileShopAccess } from "@/lib/mobile-shop/access";
+import { requireSession } from "@/lib/require-session";
 import {
   isStockInReason,
   movementKindForOutReason,
@@ -23,11 +22,8 @@ export type ShopActionResult = { ok: boolean; message: string };
 
 async function requireShopUser() {
   const user = await requireSession();
-  const licensed = await orgHasActiveKitLicense(
-    user.organizationId,
-    MOBILE_SHOP_KIT_KEY,
-  );
-  if (!licensed) {
+  const access = await getMobileShopAccess(user);
+  if (!access.allowed) {
     return { ok: false as const, message: "Mobile shop license is not active." };
   }
   return { ok: true as const, user };

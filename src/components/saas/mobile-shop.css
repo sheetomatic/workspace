@@ -151,6 +151,22 @@
   color: #991b1b;
 }
 
+.ms-shop-license-banner {
+  margin: 0 0 0.85rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.95rem;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #9a3412;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.ms-shop-license-banner a {
+  color: #9a3412;
+  font-weight: 700;
+}
+
 .ms-shop-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
