@@ -28,7 +28,7 @@ export default async function MobileShopStockInPage() {
       <p>
         <Link href="/app/mobile-shop/stock">See stock</Link>
         {" · "}
-        <Link href="/app/mobile-shop/used-in">Used phone in</Link>
+        Used phones: pick <strong>Used phone</strong> on a line.
       </p>
       <h2>Recent invoices</h2>
       {invoices.length === 0 ? (

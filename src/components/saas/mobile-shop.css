@@ -27,32 +27,32 @@
 }
 
 .ms-shop-nav {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 0.4rem;
-  overflow-x: auto;
-  overflow-y: visible;
-  -webkit-overflow-scrolling: touch;
+  overflow: visible;
   padding: 0.15rem 0 0.85rem;
-  margin: 0 -0.15rem 0.25rem;
+  margin: 0 0 0.25rem;
 }
 
 .ms-shop-nav a {
-  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: fit-content;
-  min-height: 3.1rem;
-  padding: 0.35rem 0.7rem;
+  width: 100%;
+  min-width: 0;
+  min-height: 3.4rem;
+  padding: 0.45rem 0.5rem;
   border-radius: 0.95rem;
   background: #f1f5f9;
   color: #0f172a;
   text-decoration: none;
-  font-size: 0.78rem;
+  font-size: 0.88rem;
   font-weight: 700;
   line-height: 1.15;
-  white-space: nowrap;
+  white-space: normal;
+  text-align: center;
   overflow: visible;
 }
 
@@ -65,6 +65,45 @@
 .ms-shop-nav a.is-active {
   background: var(--ms-ink);
   color: #fff;
+}
+
+.ms-shop-type {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+
+.ms-shop-type a,
+.ms-shop-type button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.4rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.95rem;
+  background: #f8fafc;
+  color: #0f172a;
+  text-decoration: none;
+  font: inherit;
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.ms-shop-type a small,
+.ms-shop-type button small {
+  font-weight: 500;
+  opacity: 0.7;
+  font-size: 0.72rem;
+}
+
+.ms-shop-type a.is-active,
+.ms-shop-type button.is-active {
+  background: var(--ms-ink);
+  color: #fff;
+  border-color: var(--ms-ink);
 }
 
 .ms-shop-glance {
@@ -124,6 +163,20 @@
 @media (min-width: 720px) {
   .ms-shop-kpis {
     grid-template-columns: repeat(3, minmax(8rem, 1fr));
+  }
+
+  .ms-shop-nav {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .ms-shop-nav a {
+    flex: 1 1 6.5rem;
+    white-space: nowrap;
+  }
+
+  .ms-shop-actions {
+    grid-template-columns: 1fr 1fr;
   }
 }
 
@@ -200,7 +253,7 @@ a.ms-shop-kpi {
 
 .ms-shop-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 0.7rem;
 }
 
@@ -467,7 +520,32 @@ button.ms-shop-card {
 
 .ms-shop-combo {
   display: grid;
-  gap: 0.35rem;
+  grid-template-columns: 1fr;
+  gap: 0.4rem;
+}
+
+.ms-shop-combo-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.85rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px dashed #64748b;
+  border-radius: 0.85rem;
+  background: #f8fafc;
+  color: #0f172a;
+  font: inherit;
+  font-weight: 800;
+  font-size: 0.92rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ms-shop-combo-add small {
+  font-weight: 500;
+  opacity: 0.7;
+  font-size: 0.75rem;
 }
 
 .ms-shop input[readonly] {

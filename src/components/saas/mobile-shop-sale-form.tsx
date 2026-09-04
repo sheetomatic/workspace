@@ -49,6 +49,10 @@ export function SalePhoneForm({
           autoComplete="off"
         />
       </label>
+      <a className="ms-shop-combo-add" data-ms-add-new="" href="/app/mobile-shop/stock-in">
+        Add / New
+        <small>जोड़ें · stock in</small>
+      </a>
 
       {phones.length === 0 ? (
         <p className="ms-shop-empty">

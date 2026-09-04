@@ -83,6 +83,18 @@ export function AccessoriesFloor({ items }: { items: AccessoryRow[] }) {
           autoComplete="off"
         />
       </label>
+      <button
+        type="button"
+        className="ms-shop-combo-add"
+        data-ms-add-new=""
+        onClick={() => {
+          setAddName(query.trim());
+          document.getElementById("ms-acc-stock-in")?.scrollIntoView({ behavior: "smooth" });
+        }}
+      >
+        Add / New
+        <small>जोड़ें</small>
+      </button>
 
       <div className="ms-shop-panel">
         <h2>Sell · बेचें</h2>
@@ -138,7 +150,7 @@ export function AccessoriesFloor({ items }: { items: AccessoryRow[] }) {
         </ShopForm>
       </div>
 
-      <div className="ms-shop-panel">
+      <div className="ms-shop-panel" id="ms-acc-stock-in">
         <h2>Stock in · स्टॉक इन</h2>
         {addNew ? (
           <p className="ms-shop-empty">

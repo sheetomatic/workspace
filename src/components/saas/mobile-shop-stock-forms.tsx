@@ -16,6 +16,13 @@ import { ShopCombo } from "@/components/saas/mobile-shop-combo";
 
 type LineWhat = "PHONE_NEW" | "PHONE_USED" | "ACCESSORY" | "PART";
 
+const LINE_WHATS: Array<{ value: LineWhat; label: string; hi: string }> = [
+  { value: "PHONE_NEW", label: "New phone", hi: "नया फोन" },
+  { value: "PHONE_USED", label: "Used phone", hi: "पुराना फोन" },
+  { value: "ACCESSORY", label: "Accessory", hi: "एक्सेसरी" },
+  { value: "PART", label: "Repair part", hi: "पार्ट" },
+];
+
 type DraftLine = {
   key: string;
   what: LineWhat;
@@ -161,17 +168,19 @@ export function StockInForm({
               </div>
               <label>
                 What
-                <select
-                  value={line.what}
-                  onChange={(event) =>
-                    patch(line.key, { what: event.target.value as LineWhat, query: "" })
-                  }
-                >
-                  <option value="PHONE_NEW">New phone · नया फोन</option>
-                  <option value="PHONE_USED">Used phone · पुराना फोन</option>
-                  <option value="ACCESSORY">Accessory · एक्सेसरी</option>
-                  <option value="PART">Repair part · पार्ट</option>
-                </select>
+                <div className="ms-shop-type" role="group">
+                  {LINE_WHATS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={line.what === option.value ? "is-active" : undefined}
+                      onClick={() => patch(line.key, { what: option.value, query: "" })}
+                    >
+                      {option.label}
+                      <small>{option.hi}</small>
+                    </button>
+                  ))}
+                </div>
               </label>
               {phone ? (
                 <>
@@ -193,6 +202,19 @@ export function StockInForm({
                       aria-controls={`${listId}-${line.key}`}
                     />
                   </label>
+                  <button
+                    type="button"
+                    className="ms-shop-combo-add"
+                    data-ms-add-new=""
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      patch(line.key, { query: "" });
+                      setOpenKey(null);
+                    }}
+                  >
+                    Add / New
+                    <small>जोड़ें</small>
+                  </button>
                   {hits.length > 0 || line.query.trim() ? (
                     <ul className="ms-shop-suggest" id={`${listId}-${line.key}`} role="listbox">
                       {hits.map((hit) => (

@@ -30,19 +30,23 @@ describe("mobile shop home actions", () => {
     ).toBe(false);
   });
 
-  it("keeps Accessories as a full nav word, not Acc, and hides Stock out", () => {
+  it("keeps Accessories as a full nav word, not Acc, and hides Used + Stock out", () => {
     const navLabels: string[] = MOBILE_SHOP_NAV_LINKS.map((link) => link.label);
     expect(navLabels).toEqual([
       "Home",
       "Stock",
       "Sale",
-      "Used",
       "Repair",
       "Accessories",
       "Stock in",
     ]);
+    expect(navLabels).not.toContain("Used");
     expect(navLabels).not.toContain("Acc");
     expect(navLabels).not.toContain("Out");
+    expect(MOBILE_SHOP_NAV_LINKS).toHaveLength(6);
+    expect(MOBILE_SHOP_NAV_LINKS.some((link) => link.href.includes("used-in"))).toBe(
+      false,
+    );
     expect(MOBILE_SHOP_NAV_LINKS.find((link) => link.label === "Stock")?.exact).toBe(
       true,
     );
