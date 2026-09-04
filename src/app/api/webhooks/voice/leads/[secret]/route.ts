@@ -61,13 +61,14 @@ export async function POST(request: Request, context: RouteContext) {
   }
   const url = new URL(request.url);
   const payload = await readPayload(request);
-  const merged =
+  const merged: Record<string, unknown> =
     payload && typeof payload === "object" && !Array.isArray(payload)
       ? { ...(payload as Record<string, unknown>) }
       : { payload };
-  if (url.searchParams.get("leadId") && !merged.leadId) {
-    merged.leadId = url.searchParams.get("leadId");
+  const leadId = url.searchParams.get("leadId");
+  if (leadId && !merged.leadId) {
+    merged.leadId = leadId;
   }
-  queueVoice(secret, merged, url.searchParams.get("leadId"));
+  queueVoice(secret, merged, leadId);
   return NextResponse.json({ ok: true });
 }

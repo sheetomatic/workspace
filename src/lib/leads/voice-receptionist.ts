@@ -701,7 +701,7 @@ export async function persistVoiceConfirmation(params: {
         confirmedAt: new Date().toISOString(),
       },
       voiceWebhook: params.mapped.raw,
-    },
+    } as object,
   });
 
   const lead = result.lead;
