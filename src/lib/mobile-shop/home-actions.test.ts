@@ -5,8 +5,8 @@ import { STOCK_IN_REASONS, STOCK_OUT_FORM_REASONS, STOCK_OUT_SALE_LINKS } from "
 describe("mobile shop home actions", () => {
   it("puts six equal-weight apps on the home grid", () => {
     expect(MOBILE_SHOP_HOME_ACTIONS.map((action) => action.label)).toEqual([
-      "New phone sale",
-      "Used phone",
+      "New sale",
+      "Used sale",
       "Repairs",
       "Accessories",
       "Stock in",
@@ -14,7 +14,7 @@ describe("mobile shop home actions", () => {
     ]);
     expect(MOBILE_SHOP_HOME_ACTIONS.map((action) => action.href)).toEqual([
       "/app/mobile-shop/sales",
-      "/app/mobile-shop/used-in",
+      "/app/mobile-shop/sales?type=used",
       "/app/mobile-shop/repairs",
       "/app/mobile-shop/accessories",
       "/app/mobile-shop/stock-in",

@@ -64,8 +64,8 @@ export default async function MobileShopHomePage() {
     <section>
       <h1>Today</h1>
       <p className="ms-shop-lead">
-        {formatIndianGreetingDate(new Date())} · आज की नज़र. Money and counts —
-        not a spreadsheet.
+        {formatIndianGreetingDate(new Date())} · आज की नज़र. Counts and rupees
+        — not % done.
       </p>
 
       <div className="ms-shop-hero">

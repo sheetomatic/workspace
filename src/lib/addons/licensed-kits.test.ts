@@ -27,6 +27,8 @@ describe("licensed kits catalog", () => {
     expect(kit?.name).toBe("Mobile Shop app");
     expect(kit?.description).toContain("Accessories");
     expect(kit?.description).toContain("Repairs");
+    expect(kit?.description).toContain("not % done");
+    expect(kit?.description).toContain("Used sale");
     expect(kit?.description).toContain("today");
   });
 
