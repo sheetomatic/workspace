@@ -118,11 +118,14 @@ import {
   normalizeWooStoreUrl,
   parseMetaLeadAdsConfig,
   parseShopifyPullConfig,
+  parseVoiceProvider,
   parseWooCommercePullConfig,
   readString,
   shopifyLeadWebhookUrl,
   telegramLeadWebhookUrl,
   tradeIndiaLeadWebhookUrl,
+  voiceLeadTwimlUrl,
+  voiceLeadWebhookUrl,
   wooCommerceLeadWebhookUrl,
 } from "@/lib/leads/connection-config";
 import {
@@ -146,6 +149,10 @@ import {
   pullWooCommerceLeads,
 } from "@/lib/leads/woocommerce";
 import { ensureLeadWebhookSecret } from "@/lib/leads/webhook-secret";
+import {
+  startVoiceReceptionistCall,
+  verifyVoiceLeadConnection,
+} from "@/lib/leads/voice-receptionist";
 import {
   setTelegramWebhook,
   verifyTelegramBotToken,
@@ -1223,7 +1230,8 @@ export async function updateLeadConnection(params: {
     params.channel === "TRADEINDIA" ||
     params.channel === "SHOPIFY" ||
     params.channel === "WOOCOMMERCE" ||
-    params.channel === "JUSTDIAL"
+    params.channel === "JUSTDIAL" ||
+    params.channel === "VOICE"
   ) {
     return {
       ok: false,
@@ -4637,6 +4645,169 @@ export async function saveJustdialLeadConnection(params: { enabled: boolean }) {
       : "Justdial settings saved (intake disabled).",
     webhookUrl,
   };
+}
+
+export async function saveVoiceLeadConnection(params: {
+  enabled: boolean;
+  provider: string;
+  clinicName: string;
+  openaiApiKey?: string;
+  exotelSid?: string;
+  exotelApiKey?: string;
+  exotelApiToken?: string;
+  exotelSubdomain?: string;
+  exotelCallerId?: string;
+  exotelAppId?: string;
+  twilioAccountSid?: string;
+  twilioAuthToken?: string;
+  twilioFromNumber?: string;
+  knowlarityApiKey?: string;
+  knowlarityAuth?: string;
+  knowlarityKNumber?: string;
+  knowlarityAgentNumber?: string;
+}) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Admin only." };
+  }
+
+  const provider = parseVoiceProvider(params.provider);
+  if (!provider) {
+    return { ok: false, message: "Choose Exotel, Twilio, or Knowlarity." };
+  }
+
+  await ensureLeadConnections(user.organizationId);
+  const existing = await prisma.leadIngestConnection.findUnique({
+    where: {
+      organizationId_channel: {
+        organizationId: user.organizationId,
+        channel: "VOICE",
+      },
+    },
+  });
+  const current = asConfigRecord(existing?.config);
+  const keep = (incoming: string | undefined, key: string) =>
+    incoming?.trim() || readString(current, key);
+
+  const clinicName =
+    params.clinicName.trim() ||
+    readString(current, "clinicName") ||
+    "the clinic";
+
+  const nextConfig = {
+    ...current,
+    provider,
+    clinicName,
+    openaiApiKey: keep(params.openaiApiKey, "openaiApiKey"),
+    exotelSid: keep(params.exotelSid, "exotelSid"),
+    exotelApiKey: keep(params.exotelApiKey, "exotelApiKey"),
+    exotelApiToken: keep(params.exotelApiToken, "exotelApiToken"),
+    exotelSubdomain:
+      params.exotelSubdomain?.trim() ||
+      readString(current, "exotelSubdomain") ||
+      "api.exotel.com",
+    exotelCallerId: keep(params.exotelCallerId, "exotelCallerId"),
+    exotelAppId: keep(params.exotelAppId, "exotelAppId"),
+    twilioAccountSid: keep(params.twilioAccountSid, "twilioAccountSid"),
+    twilioAuthToken: keep(params.twilioAuthToken, "twilioAuthToken"),
+    twilioFromNumber: keep(params.twilioFromNumber, "twilioFromNumber"),
+    knowlarityApiKey: keep(params.knowlarityApiKey, "knowlarityApiKey"),
+    knowlarityAuth: keep(params.knowlarityAuth, "knowlarityAuth"),
+    knowlarityKNumber: keep(params.knowlarityKNumber, "knowlarityKNumber"),
+    knowlarityAgentNumber: keep(
+      params.knowlarityAgentNumber,
+      "knowlarityAgentNumber",
+    ),
+  };
+
+  if (provider === "EXOTEL") {
+    if (
+      !nextConfig.exotelSid ||
+      !nextConfig.exotelApiKey ||
+      !nextConfig.exotelApiToken ||
+      !nextConfig.exotelCallerId
+    ) {
+      return {
+        ok: false,
+        message: "Exotel needs API key, API token, Account SID, and ExoPhone.",
+      };
+    }
+  } else if (provider === "TWILIO") {
+    if (
+      !nextConfig.twilioAccountSid ||
+      !nextConfig.twilioAuthToken ||
+      !nextConfig.twilioFromNumber
+    ) {
+      return {
+        ok: false,
+        message: "Twilio needs Account SID, Auth Token, and From number.",
+      };
+    }
+  } else if (!nextConfig.knowlarityApiKey || !nextConfig.knowlarityKNumber) {
+    return {
+      ok: false,
+      message: "Knowlarity needs API key and k-number.",
+    };
+  }
+
+  const webhook = ensureLeadWebhookSecret(existing?.config, "vc");
+  const webhookUrl = voiceLeadWebhookUrl(webhook.secret);
+  const twimlUrl = voiceLeadTwimlUrl(webhook.secret);
+
+  await prisma.leadIngestConnection.update({
+    where: {
+      organizationId_channel: {
+        organizationId: user.organizationId,
+        channel: "VOICE",
+      },
+    },
+    data: {
+      enabled: params.enabled,
+      ingestSecretHash: webhook.hash,
+      config: {
+        ...nextConfig,
+        webhookSecret: webhook.secret,
+      } as Prisma.InputJsonValue,
+      lastSyncError: null,
+      syncStatus: "IDLE",
+      label: "AI receptionist (voice)",
+    },
+  });
+
+  revalidatePath("/app/leads/settings");
+  revalidatePath("/app/leads");
+  return {
+    ok: true,
+    message: params.enabled
+      ? "AI receptionist saved. Paste the webhook URL on your Exotel/Twilio/Knowlarity app, then Call to confirm from a lead."
+      : "AI receptionist settings saved (calls disabled).",
+    webhookUrl,
+    twimlUrl,
+  };
+}
+
+export async function verifyVoiceLeadConnectionAction() {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Admin only." };
+  }
+  const result = await verifyVoiceLeadConnection(user.organizationId);
+  revalidatePath("/app/leads/settings");
+  return result;
+}
+
+export async function startReceptionistCall(leadId: string) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  if (!(await canWorkLead(user, leadId))) {
+    return { ok: false as const, message: LEAD_WORK_DENIED };
+  }
+  const result = await startVoiceReceptionistCall({
+    organizationId: user.organizationId,
+    leadId,
+    actorUserId: user.id,
+  });
+  revalidatePath("/app/leads");
+  return result;
 }
 
 export async function importLeadsFromCsvAction(formData: FormData) {

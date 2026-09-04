@@ -11,6 +11,7 @@ import {
   saveTelegramLeadConnection,
   saveTradeIndiaLeadConnection,
   saveWooCommerceLeadConnection,
+  saveVoiceLeadConnection,
   setWhatsAppLeadIngestEnabled,
   syncLeadChannelNow,
   verifyIndiaMartLeadConnection,
@@ -18,6 +19,7 @@ import {
   verifyShopifyLeadConnection,
   verifyTradeIndiaLeadConnection,
   verifyWooCommerceLeadConnection,
+  verifyVoiceLeadConnectionAction,
 } from "@/app/app/leads/actions";
 import type { LeadSourceCardModel } from "@/lib/leads/source-settings";
 
@@ -1039,6 +1041,300 @@ function JustdialSourceCard({ card }: { card: LeadSourceCardModel }) {
   );
 }
 
+function fieldString(card: LeadSourceCardModel, key: string) {
+  const value = card.fields[key];
+  return typeof value === "string" && value.trim() ? value : "";
+}
+
+function VoiceSourceCard({ card }: { card: LeadSourceCardModel }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [provider, setProvider] = useState(
+    fieldString(card, "provider") || "EXOTEL",
+  );
+  const twimlUrl = fieldString(card, "twimlUrl");
+
+  return (
+    <article className="leads-settings-card leads-source-card">
+      <div className="leads-settings-card-head">
+        <h4>{card.label}</h4>
+        <StatusPill card={card} />
+      </div>
+      <p className="leads-machine-muted">{card.description}</p>
+      <form
+        className="leads-source-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (pending) return;
+          const form = new FormData(event.currentTarget);
+          setMessage(null);
+          setError(null);
+          startTransition(async () => {
+            const result = await saveVoiceLeadConnection({
+              enabled: form.get("enabled") === "on",
+              provider: String(form.get("provider") ?? ""),
+              clinicName: String(form.get("clinicName") ?? ""),
+              openaiApiKey: String(form.get("openaiApiKey") ?? ""),
+              exotelSid: String(form.get("exotelSid") ?? ""),
+              exotelApiKey: String(form.get("exotelApiKey") ?? ""),
+              exotelApiToken: String(form.get("exotelApiToken") ?? ""),
+              exotelSubdomain: String(form.get("exotelSubdomain") ?? ""),
+              exotelCallerId: String(form.get("exotelCallerId") ?? ""),
+              exotelAppId: String(form.get("exotelAppId") ?? ""),
+              twilioAccountSid: String(form.get("twilioAccountSid") ?? ""),
+              twilioAuthToken: String(form.get("twilioAuthToken") ?? ""),
+              twilioFromNumber: String(form.get("twilioFromNumber") ?? ""),
+              knowlarityApiKey: String(form.get("knowlarityApiKey") ?? ""),
+              knowlarityAuth: String(form.get("knowlarityAuth") ?? ""),
+              knowlarityKNumber: String(form.get("knowlarityKNumber") ?? ""),
+              knowlarityAgentNumber: String(
+                form.get("knowlarityAgentNumber") ?? "",
+              ),
+            });
+            if (result.ok) {
+              setMessage(result.message);
+              router.refresh();
+            } else setError(result.message);
+          });
+        }}
+      >
+        <fieldset disabled={pending} className="leads-source-fieldset">
+          <label className="leads-settings-field">
+            <span>Clinic name (spoken on the call)</span>
+            <input
+              name="clinicName"
+              type="text"
+              defaultValue={fieldString(card, "clinicName")}
+              placeholder="Sharma Clinic"
+              autoComplete="off"
+            />
+          </label>
+          <label className="leads-settings-field">
+            <span>Voice provider</span>
+            <select
+              name="provider"
+              value={provider}
+              onChange={(event) => setProvider(event.target.value)}
+            >
+              <option value="EXOTEL">Exotel</option>
+              <option value="TWILIO">Twilio</option>
+              <option value="KNOWLARITY">Knowlarity</option>
+            </select>
+          </label>
+          {provider === "EXOTEL" ? (
+            <>
+              <label className="leads-settings-field">
+                <span>API key</span>
+                <input
+                  name="exotelApiKey"
+                  type="password"
+                  placeholder={
+                    fieldString(card, "exotelApiKeyHint") || "Exotel API key"
+                  }
+                  autoComplete="off"
+                />
+              </label>
+              <label className="leads-settings-field">
+                <span>API token</span>
+                <input
+                  name="exotelApiToken"
+                  type="password"
+                  placeholder="Leave blank to keep the saved token"
+                  autoComplete="off"
+                />
+              </label>
+              <label className="leads-settings-field">
+                <span>Account SID</span>
+                <input
+                  name="exotelSid"
+                  type="text"
+                  placeholder={
+                    fieldString(card, "exotelSidHint") || "Exotel Account SID"
+                  }
+                  autoComplete="off"
+                />
+              </label>
+              <label className="leads-settings-field">
+                <span>Subdomain</span>
+                <input
+                  name="exotelSubdomain"
+                  type="text"
+                  defaultValue={
+                    fieldString(card, "exotelSubdomain") || "api.exotel.com"
+                  }
+                  autoComplete="off"
+                />
+              </label>
+              <label className="leads-settings-field">
+                <span>ExoPhone (caller ID)</span>
+                <input
+                  name="exotelCallerId"
+                  type="text"
+                  defaultValue={fieldString(card, "exotelCallerId")}
+                  placeholder="0xxxxxxxxxx"
+                  autoComplete="off"
+                />
+              </label>
+              <label className="leads-settings-field">
+                <span>App ID (optional ExoML applet)</span>
+                <input
+                  name="exotelAppId"
+                  type="text"
+                  defaultValue={fieldString(card, "exotelAppId")}
+                  autoComplete="off"
+                />
+              </label>
+            </>
+          ) : null}
+          {provider === "TWILIO" ? (
+            <>
+              <label className="leads-settings-field">
+                <span>Account SID</span>
+                <input
+                  name="twilioAccountSid"
+                  type="text"
+                  placeholder={
+                    fieldString(card, "twilioAccountSidHint") || "ACxxxx"
+                  }
+                  autoComplete="off"
+                />
+              </label>
+              <label className="leads-settings-field">
+                <span>Auth Token</span>
+                <input
+                  name="twilioAuthToken"
+                  type="password"
+                  placeholder="Leave blank to keep the saved token"
+                  autoComplete="off"
+                />
+              </label>
+              <label className="leads-settings-field">
+                <span>From number</span>
+                <input
+                  name="twilioFromNumber"
+                  type="text"
+                  defaultValue={fieldString(card, "twilioFromNumber")}
+                  placeholder="+91xxxxxxxxxx"
+                  autoComplete="off"
+                />
+              </label>
+            </>
+          ) : null}
+          {provider === "KNOWLARITY" ? (
+            <>
+              <label className="leads-settings-field">
+                <span>API key (x-api-key)</span>
+                <input
+                  name="knowlarityApiKey"
+                  type="password"
+                  placeholder={
+                    fieldString(card, "knowlarityApiKeyHint") ||
+                    "Knowlarity API key"
+                  }
+                  autoComplete="off"
+                />
+              </label>
+              <label className="leads-settings-field">
+                <span>Authorization header</span>
+                <input
+                  name="knowlarityAuth"
+                  type="password"
+                  placeholder="Leave blank to keep the saved value"
+                  autoComplete="off"
+                />
+              </label>
+              <label className="leads-settings-field">
+                <span>k-number (DID)</span>
+                <input
+                  name="knowlarityKNumber"
+                  type="text"
+                  defaultValue={fieldString(card, "knowlarityKNumber")}
+                  placeholder="+91xxxxxxxxxx"
+                  autoComplete="off"
+                />
+              </label>
+              <label className="leads-settings-field">
+                <span>Agent / clinic number (optional)</span>
+                <input
+                  name="knowlarityAgentNumber"
+                  type="text"
+                  defaultValue={fieldString(card, "knowlarityAgentNumber")}
+                  autoComplete="off"
+                />
+              </label>
+            </>
+          ) : null}
+          <label className="leads-settings-field">
+            <span>OpenAI API key (optional)</span>
+            <input
+              name="openaiApiKey"
+              type="password"
+              placeholder={
+                card.fields.hasOpenaiKey
+                  ? String(card.fields.openaiApiKeyHint || "Saved · leave blank to keep")
+                  : "sk-… for Whisper confirm parse"
+              }
+              autoComplete="off"
+            />
+            <small className="leads-machine-muted">
+              Used to transcribe the recording. Press-1 confirm works without it.
+              Platform OPENAI_API_KEY is only a fallback.
+            </small>
+          </label>
+          {card.webhookUrl ? (
+            <CopyableWebhook
+              label="Status / recording webhook"
+              url={card.webhookUrl}
+              hint="Paste this as the status and recording callback. Org is resolved from this secret — never send organizationId."
+            />
+          ) : (
+            <p className="leads-machine-muted">
+              Saving generates a unique webhook URL for this workspace.
+            </p>
+          )}
+          {provider === "TWILIO" && twimlUrl ? (
+            <CopyableWebhook
+              label="Twilio voice URL (TwiML)"
+              url={twimlUrl}
+              hint="Use this as the Twilio call Url. Greeting asks the patient to press 1 or speak the visit time."
+            />
+          ) : null}
+          <label className="leads-nurture-toggle">
+            <input type="checkbox" name="enabled" defaultChecked={card.enabled} />
+            <span>Enable AI receptionist calls</span>
+          </label>
+        </fieldset>
+        <div className="leads-source-actions">
+          <button type="submit" className="btn-primary" disabled={pending}>
+            {pending ? "Saving…" : "Save"}
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={pending}
+            onClick={() => {
+              setMessage(null);
+              setError(null);
+              startTransition(async () => {
+                const result = await verifyVoiceLeadConnectionAction();
+                if (result.ok) {
+                  setMessage(result.message);
+                  router.refresh();
+                } else setError(result.message);
+              });
+            }}
+          >
+            Test
+          </button>
+        </div>
+      </form>
+      <Feedback message={message} error={error} lastSyncError={card.lastSyncError} />
+    </article>
+  );
+}
+
 export function LeadsSourceSettingsPanel({
   sources,
 }: {
@@ -1054,6 +1350,7 @@ export function LeadsSourceSettingsPanel({
   const shopify = byChannel.get("SHOPIFY");
   const woocommerce = byChannel.get("WOOCOMMERCE");
   const justdial = byChannel.get("JUSTDIAL");
+  const voice = byChannel.get("VOICE");
 
   return (
     <section className="saas-panel leads-settings-card" id="lead-sources">
@@ -1069,6 +1366,7 @@ export function LeadsSourceSettingsPanel({
       </div>
 
       <div className="leads-sources-grid">
+        {voice ? <VoiceSourceCard card={voice} /> : null}
         {whatsapp ? <WhatsAppSourceCard card={whatsapp} /> : null}
         {facebook ? <MetaSourceCard card={facebook} /> : null}
         {instagram ? <MetaSourceCard card={instagram} /> : null}

@@ -8,6 +8,7 @@ import {
   parseShopifyLeadConfig,
   parseTelegramLeadConfig,
   parseTradeIndiaLeadConfig,
+  parseVoiceLeadConfig,
   parseWooCommerceLeadConfig,
   normalizeShopifyShopDomain,
   normalizeWooStoreUrl,
@@ -32,6 +33,7 @@ describe("lead source gates", () => {
     expect(isLeadSourceComingSoon("SHOPIFY")).toBe(false);
     expect(isLeadSourceComingSoon("WOOCOMMERCE")).toBe(false);
     expect(isLeadSourceComingSoon("JUSTDIAL")).toBe(false);
+    expect(isLeadSourceComingSoon("VOICE")).toBe(false);
     expect(isLeadSourceComingSoon("MANUAL")).toBe(true);
   });
 });
@@ -119,6 +121,20 @@ describe("connection-config parsers", () => {
       webhookSecret: "jd_x",
     });
     expect(parseJustdialLeadConfig({})).toBeNull();
+  });
+
+  it("parses Voice receptionist Exotel config", () => {
+    expect(
+      parseVoiceLeadConfig({
+        provider: "EXOTEL",
+        exotelSid: "sid",
+        exotelApiKey: "k",
+        exotelApiToken: "t",
+        exotelCallerId: "0221",
+        webhookSecret: "vc_x",
+      }),
+    ).toMatchObject({ provider: "EXOTEL", webhookSecret: "vc_x" });
+    expect(parseVoiceLeadConfig({ provider: "TWILIO", webhookSecret: "vc_x" })).toBeNull();
   });
 });
 

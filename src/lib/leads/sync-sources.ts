@@ -125,7 +125,7 @@ export async function pullLeadsFromConnection(params: {
       channel: params.channel,
     });
   }
-  if (params.channel === "TELEGRAM" || params.channel === "JUSTDIAL") {
+  if (params.channel === "TELEGRAM" || params.channel === "JUSTDIAL" || params.channel === "VOICE") {
     return {
       ok: true as const,
       imported: 0,
