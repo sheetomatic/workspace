@@ -48,6 +48,7 @@ export type ShopDayGlance = {
     inProgress: number;
     ready: number;
     delivered: number;
+    open: number;
   };
   accessoriesSold: MoneyCount;
   lowStock: ShopStockRow[];
@@ -135,11 +136,15 @@ export function summarizeShopDay(input: {
     inProgress: 0,
     ready: 0,
     delivered: 0,
+    open: 0,
   };
   const overdueRepairs: ShopDayGlance["overdueRepairs"] = [];
   const seenOverdue = new Set<string>();
 
   for (const job of input.repairs) {
+    if (job.status === "RECEIVED" || job.status === "IN_PROGRESS") {
+      repairs.open += 1;
+    }
     if (job.status === "IN_PROGRESS") repairs.inProgress += 1;
     if (job.status === "READY") repairs.ready += 1;
     if (job.status !== "CANCELLED" && job.createdAt >= dayStart) {

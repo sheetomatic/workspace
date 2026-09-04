@@ -23,7 +23,9 @@ export default async function MobileShopStockInPage() {
       </p>
       <h2>Today’s in</h2>
       {recent.length === 0 ? (
-        <p className="ms-shop-empty">Nothing in yet.</p>
+        <p className="ms-shop-empty">
+          Nothing in yet — add a phone or accessory above.
+        </p>
       ) : (
         <div className="ms-shop-cards">
           {recent.map((row) => (

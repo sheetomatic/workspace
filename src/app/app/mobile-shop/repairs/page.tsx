@@ -56,7 +56,9 @@ export default async function MobileShopRepairsPage() {
 
       <h2>Open jobs</h2>
       {repairs.length === 0 ? (
-        <p className="ms-shop-empty">No jobs yet.</p>
+        <p className="ms-shop-empty">
+          No jobs yet — tap Open job above.
+        </p>
       ) : (
         <div className="ms-shop-cards">
           {repairs.map((job) => (

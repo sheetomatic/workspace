@@ -11,12 +11,12 @@
 .ms-shop h1 {
   font-size: 1.65rem;
   letter-spacing: -0.03em;
-  margin: 0 0 0.25rem;
+  margin: 0 0 0.15rem;
 }
 
 .ms-shop h1 + p,
 .ms-shop .ms-shop-lead {
-  margin: 0 0 1rem;
+  margin: 0 0 0.65rem;
   color: var(--ms-muted);
   font-size: 0.95rem;
 }
@@ -30,6 +30,7 @@
   display: flex;
   gap: 0.4rem;
   overflow-x: auto;
+  overflow-y: visible;
   -webkit-overflow-scrolling: touch;
   padding: 0.15rem 0 0.85rem;
   margin: 0 -0.15rem 0.25rem;
@@ -41,16 +42,18 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: 4.6rem;
+  min-width: fit-content;
   min-height: 3.1rem;
-  padding: 0.35rem 0.55rem;
+  padding: 0.35rem 0.7rem;
   border-radius: 0.95rem;
   background: #f1f5f9;
-  color: var(--ms-ink);
+  color: #0f172a;
   text-decoration: none;
   font-size: 0.78rem;
   font-weight: 700;
   line-height: 1.15;
+  white-space: nowrap;
+  overflow: visible;
 }
 
 .ms-shop-nav a small {
@@ -64,12 +67,26 @@
   color: #fff;
 }
 
+.ms-shop-glance {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0 0 0.85rem;
+  min-height: 12rem;
+  height: auto;
+  overflow: visible;
+  visibility: visible;
+}
+
 .ms-shop-hero {
-  background: var(--ms-ink);
+  background: #0f172a;
   color: #fff;
   border-radius: 1.35rem;
   padding: 1.05rem 1.15rem 1.15rem;
-  margin-bottom: 0.65rem;
+  margin: 0;
+  min-height: 5.5rem;
+  height: auto;
+  overflow: visible;
+  visibility: visible;
 }
 
 .ms-shop-hero span {
@@ -94,22 +111,31 @@
 
 .ms-shop-kpis {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(7.5rem, 1fr));
+  grid-auto-rows: minmax(4.6rem, auto);
   gap: 0.5rem;
-  margin-bottom: 1rem;
+  margin: 0;
+  min-height: 9.5rem;
+  height: auto;
+  overflow: visible;
+  visibility: visible;
 }
 
 @media (min-width: 720px) {
   .ms-shop-kpis {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(8rem, 1fr));
   }
 }
 
 .ms-shop-kpi {
   background: #fff;
-  border: 1px solid var(--ms-line);
+  border: 1px solid #e2e8f0;
   border-radius: 1rem;
   padding: 0.7rem 0.65rem;
+  min-height: 4.6rem;
+  height: auto;
+  overflow: visible;
+  color: #0f172a;
 }
 
 .ms-shop-kpi--wide {
@@ -119,20 +145,21 @@
 .ms-shop-kpi span {
   display: block;
   font-size: 0.7rem;
-  color: var(--ms-muted);
+  color: #64748b;
 }
 
 .ms-shop-kpi strong {
   display: block;
   font-size: 1.35rem;
   letter-spacing: -0.03em;
+  color: #0f172a;
 }
 
 .ms-shop-kpi small {
   display: block;
   margin-top: 0.15rem;
   font-size: 0.75rem;
-  color: var(--ms-muted);
+  color: #64748b;
   font-weight: 600;
 }
 
@@ -152,18 +179,18 @@
 }
 
 .ms-shop-license-banner {
-  margin: 0 0 0.85rem;
-  padding: 0.7rem 0.85rem;
-  border-radius: 0.95rem;
-  background: #fff7ed;
-  border: 1px solid #fdba74;
-  color: #9a3412;
-  font-size: 0.88rem;
-  line-height: 1.4;
+  margin: 0 0 0.45rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.8rem;
+  line-height: 1.3;
 }
 
 .ms-shop-license-banner a {
-  color: #9a3412;
+  color: #0f172a;
   font-weight: 700;
 }
 
@@ -180,13 +207,15 @@
   min-height: 5.25rem;
   padding: 0.85rem 0.8rem;
   border-radius: 1.2rem;
-  background: var(--ms-ink);
+  background: #0f172a;
   color: #fff;
   text-decoration: none;
   font-weight: 800;
   font-size: 1.05rem;
   line-height: 1.2;
   letter-spacing: -0.02em;
+  overflow: visible;
+  white-space: normal;
 }
 
 .ms-shop-btn small {
@@ -319,8 +348,15 @@
 }
 
 .ms-shop-empty {
-  color: var(--ms-muted);
-  padding: 1rem 0;
+  color: #64748b;
+  padding: 0.15rem 0 0.35rem;
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.ms-shop-empty a {
+  color: #0f172a;
+  font-weight: 700;
 }
 
 @media (min-width: 900px) {
@@ -333,4 +369,18 @@
     min-height: 6.25rem;
     font-size: 1.3rem;
   }
+}
+
+.workspace-app .saas-content:has(.ms-shop) {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.workspace-app .ms-shop-glance,
+.workspace-app .ms-shop-hero,
+.workspace-app .ms-shop-kpis,
+.workspace-app .ms-shop-kpi {
+  height: auto;
+  overflow: visible;
+  visibility: visible;
 }

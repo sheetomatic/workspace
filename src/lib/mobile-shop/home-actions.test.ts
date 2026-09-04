@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { MOBILE_SHOP_HOME_ACTIONS } from "@/lib/mobile-shop/home-actions";
+import {
+  MOBILE_SHOP_HOME_ACTIONS,
+  MOBILE_SHOP_NAV_LINKS,
+} from "@/lib/mobile-shop/home-actions";
 import { STOCK_IN_REASONS, STOCK_OUT_FORM_REASONS, STOCK_OUT_SALE_LINKS } from "@/lib/mobile-shop/reasons";
 
 describe("mobile shop home actions", () => {
   it("puts six equal-weight apps on the home grid", () => {
     expect(MOBILE_SHOP_HOME_ACTIONS.map((action) => action.label)).toEqual([
       "New sale",
-      "Used sale",
-      "Repairs",
+      "Used",
+      "Repair",
       "Accessories",
       "Stock in",
       "Stock out",
@@ -23,6 +26,21 @@ describe("mobile shop home actions", () => {
     expect(MOBILE_SHOP_HOME_ACTIONS).toHaveLength(6);
     expect(MOBILE_SHOP_HOME_ACTIONS.every((action) => action.hi.length > 0)).toBe(
       true,
+    );
+  });
+
+  it("keeps Accessories as a full nav word, not Acc", () => {
+    expect(MOBILE_SHOP_NAV_LINKS.map((link) => link.label)).toEqual([
+      "Home",
+      "Sale",
+      "Used",
+      "Repair",
+      "Accessories",
+      "Stock in",
+      "Stock out",
+    ]);
+    expect(MOBILE_SHOP_NAV_LINKS.some((link) => link.label === "Acc")).toBe(
+      false,
     );
   });
 });

@@ -17,7 +17,9 @@ export default async function MobileShopAccessoriesPage() {
       </p>
 
       {onHand.length === 0 ? (
-        <p className="ms-shop-empty">No accessory qty on hand. Stock in below.</p>
+        <p className="ms-shop-empty">
+          No accessory qty on hand — tap Add stock below.
+        </p>
       ) : (
         <div className="ms-shop-cards">
           {onHand.map((item) => (
