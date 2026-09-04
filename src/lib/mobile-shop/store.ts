@@ -10,12 +10,13 @@ import { prisma } from "@/lib/db";
 import { matchPartForRepair } from "@/lib/mobile-shop/match-part";
 import { parsePromisedAt } from "@/lib/mobile-shop/promised-at";
 import {
-  LOW_STOCK_MAX_QTY,
   startOfShopDay,
   summarizeShopDay,
 } from "@/lib/mobile-shop/day-glance";
 import type { StockInLineInput } from "@/lib/mobile-shop/inbound";
 import { uniquePhoneCatalog } from "@/lib/mobile-shop/phone-catalog";
+import { isBelowMoq } from "@/lib/mobile-shop/moq";
+import { notifyIfBelowMoq } from "@/lib/mobile-shop/moq-alerts";
 
 export const MOBILE_REPAIR_JOB_TYPES = [
   "Screen",
@@ -75,15 +76,17 @@ export async function mobileShopDashboard(organizationId: string, now = new Date
       where: {
         organizationId,
         kind: { in: ["ACCESSORY", "PART"] },
-        qty: { lte: LOW_STOCK_MAX_QTY },
       },
       orderBy: [{ qty: "asc" }, { name: "asc" }],
-      take: 8,
-      select: { id: true, name: true, kind: true, qty: true },
+      take: 80,
+      select: { id: true, name: true, kind: true, qty: true, moq: true },
     }),
   ]);
 
-  return summarizeShopDay({ now, movements, repairs, stockItems });
+  const lowStockItems = stockItems
+    .filter((item) => isBelowMoq(item.qty, item.moq, item.kind))
+    .slice(0, 8);
+  return summarizeShopDay({ now, movements, repairs, stockItems: lowStockItems });
 }
 
 export async function listMobileShopItems(
@@ -94,6 +97,118 @@ export async function listMobileShopItems(
     where: { organizationId, ...(kind ? { kind } : {}) },
     orderBy: [{ kind: "asc" }, { name: "asc" }],
   });
+}
+
+export async function listUnsoldPhones(
+  organizationId: string,
+  saleType: "NEW" | "USED",
+) {
+  return prisma.mobileShopItem.findMany({
+    where: {
+      organizationId,
+      kind: "PHONE",
+      qty: { gt: 0 },
+      ...(saleType === "NEW"
+        ? { condition: "NEW" }
+        : { NOT: { condition: "NEW" } }),
+    },
+    orderBy: [{ brand: "asc" }, { model: "asc" }, { name: "asc" }],
+    take: 200,
+    select: {
+      id: true,
+      name: true,
+      brand: true,
+      model: true,
+      color: true,
+      imei: true,
+      condition: true,
+      qty: true,
+    },
+  });
+}
+
+export async function listQtyItemNames(
+  organizationId: string,
+  kind: "ACCESSORY" | "PART",
+) {
+  const items = await prisma.mobileShopItem.findMany({
+    where: { organizationId, kind },
+    select: { name: true },
+    orderBy: { name: "asc" },
+    take: 200,
+  });
+  const seen = new Set<string>();
+  const names: string[] = [];
+  for (const item of items) {
+    const name = item.name.trim();
+    if (!name || seen.has(name.toLowerCase())) continue;
+    seen.add(name.toLowerCase());
+    names.push(name);
+  }
+  return names;
+}
+
+export async function mobileShopStockSummary(organizationId: string) {
+  const [phones, accessories, qtyItems] = await Promise.all([
+    prisma.mobileShopItem.count({
+      where: { organizationId, kind: "PHONE", qty: { gt: 0 } },
+    }),
+    prisma.mobileShopItem.count({
+      where: { organizationId, kind: "ACCESSORY", qty: { gt: 0 } },
+    }),
+    prisma.mobileShopItem.findMany({
+      where: { organizationId, kind: { in: ["ACCESSORY", "PART"] } },
+      select: { qty: true, moq: true, kind: true },
+    }),
+  ]);
+  return {
+    phones,
+    accessories,
+    belowMoq: qtyItems.filter((item) => isBelowMoq(item.qty, item.moq, item.kind)).length,
+  };
+}
+
+export async function listStockDashboard(organizationId: string) {
+  const items = await prisma.mobileShopItem.findMany({
+    where: { organizationId },
+    orderBy: [{ kind: "asc" }, { name: "asc" }],
+  });
+  const phones = items.filter((item) => item.kind === "PHONE" && item.qty > 0).slice(0, 80);
+  const accessories = items
+    .filter((item) => item.kind === "ACCESSORY")
+    .sort((a, b) => a.qty - b.qty || a.name.localeCompare(b.name));
+  const parts = items.filter((item) => item.kind === "PART" && item.qty > 0).slice(0, 40);
+  const belowMoq = items
+    .filter((item) => isBelowMoq(item.qty, item.moq, item.kind))
+    .sort((a, b) => a.qty - b.qty || a.name.localeCompare(b.name))
+    .slice(0, 40);
+  return {
+    phones,
+    accessories: accessories.filter((item) => item.qty > 0).slice(0, 80),
+    parts,
+    belowMoq,
+    phoneCount: items.filter((item) => item.kind === "PHONE" && item.qty > 0).length,
+    accessoryCount: accessories.filter((item) => item.qty > 0).length,
+  };
+}
+
+export async function setItemMoq(
+  organizationId: string,
+  itemId: string,
+  moq: number,
+) {
+  if (!Number.isFinite(moq) || moq < 0) {
+    return { ok: false as const, message: "MOQ must be 0 or more." };
+  }
+  const item = await prisma.mobileShopItem.findFirst({
+    where: { id: itemId, organizationId },
+  });
+  if (!item) return { ok: false as const, message: "Item not found." };
+  const updated = await prisma.mobileShopItem.update({
+    where: { id: item.id },
+    data: { moq: Math.floor(moq) },
+  });
+  return { ok: true as const, item: updated };
 }
 
 export async function findPhoneByImei(organizationId: string, imei: string) {
@@ -177,6 +292,7 @@ export async function stockInQtyItem(input: {
   kind: "ACCESSORY" | "PART";
   name: string;
   qty: number;
+  moq?: number;
   reason?: string;
   notes?: string;
   inboundId?: string;
@@ -184,13 +300,17 @@ export async function stockInQtyItem(input: {
   if (input.qty <= 0) return { ok: false as const, message: "Qty must be more than 0." };
   const name = input.name.trim();
   if (!name) return { ok: false as const, message: "Name is required." };
+  const moq =
+    input.moq != null && Number.isFinite(input.moq) && input.moq >= 0
+      ? Math.floor(input.moq)
+      : undefined;
   let item = await prisma.mobileShopItem.findFirst({
     where: { organizationId: input.organizationId, kind: input.kind, name },
   });
   if (item) {
     item = await prisma.mobileShopItem.update({
       where: { id: item.id },
-      data: { qty: item.qty + input.qty },
+      data: { qty: item.qty + input.qty, ...(moq != null ? { moq } : {}) },
     });
   } else {
     item = await prisma.mobileShopItem.create({
@@ -199,6 +319,7 @@ export async function stockInQtyItem(input: {
         kind: input.kind,
         name,
         qty: input.qty,
+        moq: moq ?? 0,
       },
     });
   }
@@ -306,13 +427,20 @@ export async function stockInInvoice(input: {
         } else {
           if (line.qty <= 0) throw new Error("Qty must be more than 0.");
           const name = line.name.trim();
+          const moq =
+            line.moq != null && Number.isFinite(line.moq) && line.moq >= 0
+              ? Math.floor(line.moq)
+              : undefined;
           let item = await tx.mobileShopItem.findFirst({
             where: { organizationId: input.organizationId, kind: line.kind, name },
           });
           item = item
             ? await tx.mobileShopItem.update({
                 where: { id: item.id },
-                data: { qty: item.qty + line.qty },
+                data: {
+                  qty: item.qty + line.qty,
+                  ...(moq != null ? { moq } : {}),
+                },
               })
             : await tx.mobileShopItem.create({
                 data: {
@@ -320,6 +448,7 @@ export async function stockInInvoice(input: {
                   kind: line.kind,
                   name,
                   qty: line.qty,
+                  moq: moq ?? 0,
                 },
               });
           itemId = item.id;
@@ -411,6 +540,11 @@ export async function stockOut(input: {
       repairId: input.repairId ?? null,
       createdById: input.createdById,
     },
+  });
+  void notifyIfBelowMoq({
+    organizationId: input.organizationId,
+    qtyBefore: result.item.qty + input.qty,
+    item: result.item,
   });
   return { ok: true as const, item: result.item };
 }

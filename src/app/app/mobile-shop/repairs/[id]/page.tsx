@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { ShopForm } from "@/components/saas/mobile-shop-form";
+import { PartPickField } from "@/components/saas/mobile-shop-part-pick";
 import {
   advanceRepairAction,
   repairPartOutAction,
@@ -68,22 +69,7 @@ export default async function MobileShopRepairDetailPage({
         </ul>
         <ShopForm action={repairPartOutAction} submitLabel="Take part">
           <input name="repairId" type="hidden" value={repair.id} />
-          <label>
-            Part
-            <select name="itemId" required>
-              {parts.length === 0 ? (
-                <option value="" disabled>
-                  No parts in stock
-                </option>
-              ) : (
-                parts.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name} · qty {item.qty}
-                  </option>
-                ))
-              )}
-            </select>
-          </label>
+          <PartPickField parts={parts} />
           <label>
             Qty
             <input name="qty" type="number" min={1} defaultValue={1} inputMode="numeric" />

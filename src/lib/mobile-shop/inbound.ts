@@ -13,6 +13,7 @@ export type StockInQtyLine = {
   kind: "ACCESSORY" | "PART";
   name: string;
   qty: number;
+  moq?: number;
 };
 
 export type StockInLineInput = StockInPhoneLine | StockInQtyLine;
@@ -72,7 +73,9 @@ export function parseInboundLines(
       if (!Number.isFinite(qty) || qty <= 0) {
         return { ok: false, message: "Qty must be more than 0." };
       }
-      lines.push({ kind: kindRaw, name, qty });
+      const moqRaw = Number.parseInt(String(row.moq ?? "").trim(), 10);
+      const moq = Number.isFinite(moqRaw) && moqRaw > 0 ? moqRaw : undefined;
+      lines.push(moq ? { kind: kindRaw, name, qty, moq } : { kind: kindRaw, name, qty });
       continue;
     }
 

@@ -2,15 +2,17 @@
 
 import { useId, useState } from "react";
 import { ShopForm } from "@/components/saas/mobile-shop-form";
-import { stockInInvoiceAction, stockOutAction } from "@/app/app/mobile-shop/actions";
+import { stockInAction, stockInInvoiceAction, stockOutAction } from "@/app/app/mobile-shop/actions";
 import {
   STOCK_IN_REASONS,
   STOCK_OUT_FORM_REASONS,
 } from "@/lib/mobile-shop/reasons";
 import {
   searchPhoneCatalog,
+  uniqueCatalogValues,
   type PhoneCatalogEntry,
 } from "@/lib/mobile-shop/phone-catalog";
+import { ShopCombo } from "@/components/saas/mobile-shop-combo";
 
 type LineWhat = "PHONE_NEW" | "PHONE_USED" | "ACCESSORY" | "PART";
 
@@ -23,6 +25,7 @@ type DraftLine = {
   imei: string;
   name: string;
   qty: string;
+  moq: string;
   query: string;
 };
 
@@ -36,6 +39,7 @@ function newLine(what: LineWhat = "PHONE_NEW"): DraftLine {
     imei: "",
     name: "",
     qty: "1",
+    moq: "2",
     query: "",
   };
 }
@@ -43,7 +47,13 @@ function newLine(what: LineWhat = "PHONE_NEW"): DraftLine {
 function serializeLines(lines: DraftLine[]) {
   return lines.map((line) => {
     if (line.what === "ACCESSORY" || line.what === "PART") {
-      return { kind: line.what, name: line.name, qty: Number(line.qty) || 0 };
+      const moq = Number(line.moq);
+      return {
+        kind: line.what,
+        name: line.name,
+        qty: Number(line.qty) || 0,
+        ...(Number.isFinite(moq) && moq > 0 ? { moq } : {}),
+      };
     }
     return {
       kind: "PHONE",
@@ -63,10 +73,21 @@ function conditionLabel(condition: PhoneCatalogEntry["condition"]) {
   return "";
 }
 
-export function StockInForm({ catalog }: { catalog: PhoneCatalogEntry[] }) {
+export function StockInForm({
+  catalog,
+  accessoryNames = [],
+  partNames = [],
+}: {
+  catalog: PhoneCatalogEntry[];
+  accessoryNames?: string[];
+  partNames?: string[];
+}) {
   const [lines, setLines] = useState<DraftLine[]>(() => [newLine()]);
   const [openKey, setOpenKey] = useState<string | null>(null);
   const listId = useId();
+  const brands = uniqueCatalogValues(catalog, "brand");
+  const models = uniqueCatalogValues(catalog, "model");
+  const colors = uniqueCatalogValues(catalog, "color");
 
   function patch(key: string, next: Partial<DraftLine>) {
     setLines((rows) => rows.map((row) => (row.key === key ? { ...row, ...next } : row)));
@@ -172,7 +193,7 @@ export function StockInForm({ catalog }: { catalog: PhoneCatalogEntry[] }) {
                       aria-controls={`${listId}-${line.key}`}
                     />
                   </label>
-                  {hits.length > 0 ? (
+                  {hits.length > 0 || line.query.trim() ? (
                     <ul className="ms-shop-suggest" id={`${listId}-${line.key}`} role="listbox">
                       {hits.map((hit) => (
                         <li key={`${hit.brand}-${hit.model}-${hit.color}`}>
@@ -182,33 +203,53 @@ export function StockInForm({ catalog }: { catalog: PhoneCatalogEntry[] }) {
                           </button>
                         </li>
                       ))}
+                      {line.query.trim() &&
+                      !hits.some(
+                        (hit) =>
+                          [hit.brand, hit.model, hit.color]
+                            .filter(Boolean)
+                            .join(" ")
+                            .toLowerCase() === line.query.trim().toLowerCase(),
+                      ) ? (
+                        <li>
+                          <button
+                            type="button"
+                            onMouseDown={() => {
+                              patch(line.key, { query: "" });
+                              setOpenKey(null);
+                            }}
+                          >
+                            Add new · {line.query.trim()}
+                          </button>
+                        </li>
+                      ) : null}
                     </ul>
                   ) : null}
                   <label>
                     Brand · मेक
-                    <input
+                    <ShopCombo
                       value={line.brand}
-                      onChange={(event) => patch(line.key, { brand: event.target.value })}
+                      onChange={(brand) => patch(line.key, { brand })}
+                      options={brands}
                       placeholder="Samsung / Redmi"
-                      autoComplete="off"
                     />
                   </label>
                   <label>
                     Model
-                    <input
+                    <ShopCombo
                       value={line.model}
-                      onChange={(event) => patch(line.key, { model: event.target.value })}
+                      onChange={(model) => patch(line.key, { model })}
+                      options={models}
                       placeholder="A15"
-                      autoComplete="off"
                     />
                   </label>
                   <label>
                     Color · रंग
-                    <input
+                    <ShopCombo
                       value={line.color}
-                      onChange={(event) => patch(line.key, { color: event.target.value })}
+                      onChange={(color) => patch(line.key, { color })}
+                      options={colors}
                       placeholder="Black"
-                      autoComplete="off"
                     />
                   </label>
                   <label>
@@ -225,11 +266,11 @@ export function StockInForm({ catalog }: { catalog: PhoneCatalogEntry[] }) {
                 <>
                   <label>
                     Name
-                    <input
+                    <ShopCombo
                       value={line.name}
-                      onChange={(event) => patch(line.key, { name: event.target.value })}
+                      onChange={(name) => patch(line.key, { name })}
+                      options={line.what === "PART" ? partNames : accessoryNames}
                       placeholder={line.what === "PART" ? "A15 screen" : "Cover / charger"}
-                      autoComplete="off"
                     />
                   </label>
                   <label>
@@ -242,6 +283,16 @@ export function StockInForm({ catalog }: { catalog: PhoneCatalogEntry[] }) {
                       inputMode="numeric"
                     />
                   </label>
+                  <label>
+                    MOQ · न्यूनतम
+                    <input
+                      value={line.moq}
+                      onChange={(event) => patch(line.key, { moq: event.target.value })}
+                      type="number"
+                      min={0}
+                      inputMode="numeric"
+                    />
+                  </label>
                 </>
               )}
             </div>
@@ -251,6 +302,65 @@ export function StockInForm({ catalog }: { catalog: PhoneCatalogEntry[] }) {
       <button className="ms-shop-add-line" type="button" onClick={() => setLines((rows) => [...rows, newLine()])}>
         Add line · लाइन जोड़ें
       </button>
+    </ShopForm>
+  );
+}
+
+export function UsedPhoneForm({ catalog }: { catalog: PhoneCatalogEntry[] }) {
+  const [brand, setBrand] = useState("");
+  const [model, setModel] = useState("");
+  const [color, setColor] = useState("");
+  return (
+    <ShopForm
+      action={stockInAction}
+      submitLabel="Add used phone"
+      onResult={(result) => {
+        if (result.ok) {
+          setBrand("");
+          setModel("");
+          setColor("");
+        }
+      }}
+    >
+      <input name="kind" type="hidden" value="PHONE" />
+      <input name="condition" type="hidden" value="USED" />
+      <input name="reason" type="hidden" value="PURCHASE" />
+      <label>
+        Brand · मेक
+        <ShopCombo
+          name="brand"
+          value={brand}
+          onChange={setBrand}
+          options={uniqueCatalogValues(catalog, "brand")}
+          placeholder="Samsung / Redmi"
+          required
+        />
+      </label>
+      <label>
+        Model
+        <ShopCombo
+          name="model"
+          value={model}
+          onChange={setModel}
+          options={uniqueCatalogValues(catalog, "model")}
+          placeholder="A15 / Note 13"
+          required
+        />
+      </label>
+      <label>
+        Color · रंग
+        <ShopCombo
+          name="color"
+          value={color}
+          onChange={setColor}
+          options={uniqueCatalogValues(catalog, "color")}
+          placeholder="Black"
+        />
+      </label>
+      <label>
+        IMEI / serial
+        <input name="imei" required inputMode="numeric" autoComplete="off" placeholder="15 digits" />
+      </label>
     </ShopForm>
   );
 }

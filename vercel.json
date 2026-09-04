@@ -33,6 +33,10 @@
       "schedule": "0 6 * * *"
     },
     {
+      "path": "/api/cron/mobile-shop-moq-alerts",
+      "schedule": "15 6 * * *"
+    },
+    {
       "path": "/api/cron/checklist-pc",
       "schedule": "0 7 * * *"
     },
@@ -87,6 +91,9 @@
       "maxDuration": 60
     },
     "src/app/api/cron/ims-reorder-alerts/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/cron/mobile-shop-moq-alerts/route.ts": {
       "maxDuration": 60
     },
     "src/app/api/cron/checklist-pc/route.ts": {

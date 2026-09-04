@@ -34,6 +34,7 @@ describe("mobile shop home actions", () => {
     const navLabels: string[] = MOBILE_SHOP_NAV_LINKS.map((link) => link.label);
     expect(navLabels).toEqual([
       "Home",
+      "Stock",
       "Sale",
       "Used",
       "Repair",
@@ -41,6 +42,10 @@ describe("mobile shop home actions", () => {
       "Stock in",
     ]);
     expect(navLabels).not.toContain("Acc");
+    expect(navLabels).not.toContain("Out");
+    expect(MOBILE_SHOP_NAV_LINKS.find((link) => link.label === "Stock")?.exact).toBe(
+      true,
+    );
     expect(MOBILE_SHOP_NAV_LINKS.some((link) => link.href.includes("stock-out"))).toBe(
       false,
     );

@@ -1,14 +1,16 @@
 import Link from "next/link";
 import { requireMobileShopPage } from "@/lib/mobile-shop/access";
-import { listPhoneCatalog, listRecentInbounds } from "@/lib/mobile-shop/store";
+import { listPhoneCatalog, listQtyItemNames, listRecentInbounds } from "@/lib/mobile-shop/store";
 import { formatPromisedAt } from "@/lib/mobile-shop/promised-at";
 import { StockInForm } from "@/components/saas/mobile-shop-stock-forms";
 
 export default async function MobileShopStockInPage() {
   const user = await requireMobileShopPage();
-  const [catalog, invoices] = await Promise.all([
+  const [catalog, invoices, accessoryNames, partNames] = await Promise.all([
     listPhoneCatalog(user.organizationId),
     listRecentInbounds(user.organizationId, 12),
+    listQtyItemNames(user.organizationId, "ACCESSORY"),
+    listQtyItemNames(user.organizationId, "PART"),
   ]);
 
   return (
@@ -18,7 +20,11 @@ export default async function MobileShopStockInPage() {
         स्टॉक इन. Invoice header, then every phone / accessory on that bill.
         Select a phone — make, model, color fill. Type IMEI or qty.
       </p>
-      <StockInForm catalog={catalog} />
+      <StockInForm
+        catalog={catalog}
+        accessoryNames={accessoryNames}
+        partNames={partNames}
+      />
       <p>
         <Link href="/app/mobile-shop/stock">See stock</Link>
         {" · "}

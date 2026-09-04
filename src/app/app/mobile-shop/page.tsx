@@ -6,24 +6,34 @@ import { formatIndianGreetingDate } from "@/lib/format-datetime";
 import { MOBILE_SHOP_HOME_ACTIONS } from "@/lib/mobile-shop/home-actions";
 import { formatPromisedAt } from "@/lib/mobile-shop/promised-at";
 import { summarizeShopDay, type MoneyCount } from "@/lib/mobile-shop/day-glance";
-import { mobileShopDashboard } from "@/lib/mobile-shop/store";
+import { mobileShopDashboard, mobileShopStockSummary } from "@/lib/mobile-shop/store";
 
 function Tile({
   label,
   value,
   hint,
+  href,
 }: {
   label: string;
   value: string;
   hint?: string;
+  href?: string;
 }) {
-  return (
-    <div className="ms-shop-kpi">
+  const inner = (
+    <>
       <span>{label}</span>
       <strong>{value}</strong>
       {hint ? <small>{hint}</small> : null}
-    </div>
+    </>
   );
+  if (href) {
+    return (
+      <Link className="ms-shop-kpi" href={href}>
+        {inner}
+      </Link>
+    );
+  }
+  return <div className="ms-shop-kpi">{inner}</div>;
 }
 
 function rupees(row: MoneyCount) {
@@ -59,8 +69,14 @@ export default async function MobileShopHomePage() {
   }
 
   let stats = emptyGlance();
+  let onHand = { phones: 0, accessories: 0, belowMoq: 0 };
   try {
-    stats = await mobileShopDashboard(user.organizationId);
+    const [glance, summary] = await Promise.all([
+      mobileShopDashboard(user.organizationId),
+      mobileShopStockSummary(user.organizationId),
+    ]);
+    stats = glance;
+    onHand = summary;
   } catch (error) {
     console.error("[mobile-shop] day glance failed", error);
   }
@@ -90,21 +106,35 @@ export default async function MobileShopHomePage() {
             label="New phones"
             value={String(sales.newPhones.count)}
             hint={rupees(sales.newPhones)}
+            href="/app/mobile-shop/sales"
           />
           <Tile
             label="Used phones"
             value={String(sales.usedPhones.count)}
             hint={rupees(sales.usedPhones)}
+            href="/app/mobile-shop/sales?type=used"
           />
           <Tile
             label="Accessories"
             value={String(sales.accessories.qty)}
             hint={rupees(sales.accessories)}
+            href="/app/mobile-shop/accessories"
+          />
+          <Tile
+            label="Stock"
+            value={String(onHand.phones)}
+            hint={
+              onHand.belowMoq > 0
+                ? `${onHand.belowMoq} below MOQ`
+                : `${onHand.accessories} accessories`
+            }
+            href="/app/mobile-shop/stock"
           />
           <Tile
             label="Stock in"
             value={String(stockIn.count)}
             hint={`qty ${stockIn.qty}`}
+            href="/app/mobile-shop/stock-in"
           />
           <Tile
             label="Stock out"
@@ -115,6 +145,7 @@ export default async function MobileShopHomePage() {
             label="Repairs"
             value={`${repairs.open} open`}
             hint={`${repairs.ready} ready`}
+            href="/app/mobile-shop/repairs"
           />
         </div>
 
@@ -149,11 +180,7 @@ export default async function MobileShopHomePage() {
           {lowStock.map((item) => (
             <Link
               className="ms-shop-card"
-              href={
-                item.kind === "ACCESSORY"
-                  ? "/app/mobile-shop/accessories"
-                  : "/app/mobile-shop/stock-in"
-              }
+              href="/app/mobile-shop/stock"
               key={item.id}
             >
               <div className="ms-shop-card-row">
@@ -163,6 +190,7 @@ export default async function MobileShopHomePage() {
                 </div>
                 <span className="ms-shop-chip ms-shop-chip--warn">
                   Qty {item.qty}
+                  {item.moq ? ` · MOQ ${item.moq}` : ""}
                 </span>
               </div>
             </Link>

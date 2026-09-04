@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { parseInboundLines } from "@/lib/mobile-shop/inbound";
 import {
+  pickImeiFromStock,
   searchPhoneCatalog,
+  searchUnsoldPhones,
+  uniqueCatalogValues,
   uniquePhoneCatalog,
 } from "@/lib/mobile-shop/phone-catalog";
 
@@ -82,5 +85,65 @@ describe("parseInboundLines", () => {
         { kind: "PHONE", brand: "A", model: "B", imei: "111" },
       ]).ok,
     ).toBe(false);
+  });
+
+  it("keeps MOQ on accessory lines when set", () => {
+    expect(
+      parseInboundLines([{ kind: "ACCESSORY", name: "Cover", qty: 4, moq: 6 }]),
+    ).toEqual({
+      ok: true,
+      lines: [{ kind: "ACCESSORY", name: "Cover", qty: 4, moq: 6 }],
+    });
+  });
+});
+
+describe("uniqueCatalogValues", () => {
+  it("lists distinct make / model / color for add-if-missing combos", () => {
+    expect(uniqueCatalogValues(catalog, "brand")).toEqual(["Redmi", "Samsung"]);
+    expect(uniqueCatalogValues(catalog, "color")).toEqual(["Black", "Blue"]);
+  });
+});
+
+describe("pickImeiFromStock", () => {
+  const unsold = [
+    {
+      id: "1",
+      name: "Samsung A15 Black",
+      brand: "Samsung",
+      model: "A15",
+      color: "Black",
+      imei: "111",
+      condition: "NEW",
+      qty: 1,
+    },
+    {
+      id: "2",
+      name: "Samsung A15 Blue",
+      brand: "Samsung",
+      model: "A15",
+      color: "Blue",
+      imei: "222",
+      condition: "NEW",
+      qty: 1,
+    },
+    {
+      id: "3",
+      name: "Sold one",
+      brand: "Samsung",
+      model: "A15",
+      color: "Black",
+      imei: "000",
+      condition: "NEW",
+      qty: 0,
+    },
+  ];
+
+  it("auto-fills the first unsold IMEI for make/model/color", () => {
+    expect(
+      pickImeiFromStock(unsold, { brand: "Samsung", model: "A15", color: "Black" }),
+    ).toBe("111");
+    expect(pickImeiFromStock(unsold, { imei: "222" })).toBe("222");
+    expect(pickImeiFromStock(unsold, { imei: "000" })).toBeNull();
+    expect(searchUnsoldPhones(unsold, "a15 blue").map((row) => row.imei)).toEqual(["222"]);
   });
 });

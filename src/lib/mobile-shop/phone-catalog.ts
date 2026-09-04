@@ -71,3 +71,74 @@ export function searchPhoneCatalog(
         });
   return matched.slice(0, limit);
 }
+
+export function uniqueCatalogValues(
+  catalog: PhoneCatalogEntry[],
+  field: "brand" | "model" | "color",
+): string[] {
+  const seen = new Set<string>();
+  const values: string[] = [];
+  for (const entry of catalog) {
+    const value = entry[field]?.trim() ?? "";
+    if (!value) continue;
+    const key = fold(value);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    values.push(value);
+  }
+  return values.sort((a, b) => a.localeCompare(b));
+}
+
+export type UnsoldPhone = {
+  id: string;
+  name: string;
+  brand: string | null;
+  model: string | null;
+  color: string | null;
+  imei: string | null;
+  condition: string | null;
+  qty: number;
+};
+
+/** Typeahead over unsold phones (make/model/color/IMEI). */
+export function searchUnsoldPhones(
+  phones: UnsoldPhone[],
+  query: string,
+  limit = 12,
+): UnsoldPhone[] {
+  const tokens = fold(query).split(" ").filter(Boolean);
+  const inStock = phones.filter((phone) => phone.qty > 0 && phone.imei);
+  const matched =
+    tokens.length === 0
+      ? inStock
+      : inStock.filter((phone) => {
+          const hay = `${fold(phone.brand ?? "")} ${fold(phone.model ?? "")} ${fold(phone.color ?? "")} ${fold(phone.name)} ${fold(phone.imei ?? "")}`;
+          return tokens.every((token) => hay.includes(token));
+        });
+  return matched.slice(0, limit);
+}
+
+/** First unsold IMEI matching make/model/color, or the given IMEI if still in stock. */
+export function pickImeiFromStock(
+  phones: UnsoldPhone[],
+  pick: { brand?: string; model?: string; color?: string; imei?: string },
+): string | null {
+  const wantedImei = pick.imei?.trim() ?? "";
+  if (wantedImei) {
+    const exact = phones.find((phone) => phone.qty > 0 && phone.imei === wantedImei);
+    return exact?.imei ?? null;
+  }
+  const brand = fold(pick.brand ?? "");
+  const model = fold(pick.model ?? "");
+  const color = fold(pick.color ?? "");
+  if (!brand && !model && !color) return null;
+  const hit = phones.find((phone) => {
+    if (phone.qty <= 0 || !phone.imei) return false;
+    if (brand && fold(phone.brand ?? "") !== brand) return false;
+    if (model && fold(phone.model ?? "") !== model) return false;
+    if (color && fold(phone.color ?? "") !== color) return false;
+    return true;
+  });
+  return hit?.imei ?? null;
+}
+

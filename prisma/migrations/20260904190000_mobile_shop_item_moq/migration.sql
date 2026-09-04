@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "MobileShopItem" ADD COLUMN "moq" INTEGER NOT NULL DEFAULT 0;

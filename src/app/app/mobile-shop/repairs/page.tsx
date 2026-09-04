@@ -4,6 +4,7 @@ import { createRepairAction } from "@/app/app/mobile-shop/actions";
 import { requireMobileShopPage } from "@/lib/mobile-shop/access";
 import { formatPromisedAt } from "@/lib/mobile-shop/promised-at";
 import { listRepairs, MOBILE_REPAIR_JOB_TYPES } from "@/lib/mobile-shop/store";
+import { JobTypeField } from "@/components/saas/mobile-shop-job-type";
 
 export default async function MobileShopRepairsPage() {
   const user = await requireMobileShopPage();
@@ -34,16 +35,7 @@ export default async function MobileShopRepairsPage() {
           IMEI
           <input name="imei" inputMode="numeric" autoComplete="off" />
         </label>
-        <label>
-          Job
-          <select name="jobType" defaultValue="Screen">
-            {MOBILE_REPAIR_JOB_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
-        </label>
+        <JobTypeField options={MOBILE_REPAIR_JOB_TYPES} />
         <label>
           Issue
           <textarea name="complaint" rows={2} placeholder="Cracked glass / no charge" />

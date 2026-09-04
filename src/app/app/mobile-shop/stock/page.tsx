@@ -1,98 +1,42 @@
 import Link from "next/link";
-import { ShopForm } from "@/components/saas/mobile-shop-form";
-import { stockInAction } from "@/app/app/mobile-shop/actions";
 import { requireMobileShopPage } from "@/lib/mobile-shop/access";
-import { listMobileShopItems } from "@/lib/mobile-shop/store";
+import { listStockDashboard } from "@/lib/mobile-shop/store";
+import { StockBoard } from "@/components/saas/mobile-shop-stock-board";
 
 export default async function MobileShopStockPage() {
   const user = await requireMobileShopPage();
-  const items = await listMobileShopItems(user.organizationId);
-  const phones = items.filter((item) => item.kind === "PHONE" && item.qty > 0);
-  const accessories = items.filter((item) => item.kind === "ACCESSORY" && item.qty > 0);
+  const stock = await listStockDashboard(user.organizationId);
 
   return (
     <section>
-      <h1>Stock check</h1>
+      <h1>Stock</h1>
       <p className="ms-shop-lead">
-        What is in the shop. Tap a phone to sell.{" "}
+        स्टॉक. Phones by IMEI, accessories by qty, below MOQ on top — not a
+        spreadsheet dump.{" "}
         <Link href="/app/mobile-shop/stock-in">Stock in</Link>
       </p>
-
-      <h2>Phones</h2>
-      {phones.length === 0 ? (
-        <p className="ms-shop-empty">
-          No phones in stock — tap{" "}
-          <Link href="/app/mobile-shop/stock-in">Stock in</Link>.
-        </p>
-      ) : (
-        <div className="ms-shop-cards">
-          {phones.map((item) => {
-            const used = item.condition !== "NEW";
-            const href = used
-              ? `/app/mobile-shop/sales?type=used&imei=${encodeURIComponent(item.imei ?? "")}`
-              : `/app/mobile-shop/sales?imei=${encodeURIComponent(item.imei ?? "")}`;
-            return (
-              <Link className="ms-shop-card" href={href} key={item.id}>
-                <div className="ms-shop-card-row">
-                  <div>
-                    <strong>{item.name}</strong>
-                    <span>
-                      {item.imei ?? "No IMEI"} · {used ? "Used" : "New"}
-                    </span>
-                  </div>
-                  <span className="ms-shop-chip">Sell</span>
-                </div>
-              </Link>
-            );
-          })}
+      <div className="ms-shop-kpis">
+        <div className="ms-shop-kpi">
+          <span>Phones in</span>
+          <strong>{String(stock.phoneCount)}</strong>
+          <small>by IMEI</small>
         </div>
-      )}
-
-      <h2>Accessories</h2>
-      {accessories.length === 0 ? (
-        <p className="ms-shop-empty">
-          No accessory qty on hand — tap{" "}
-          <Link href="/app/mobile-shop/accessories">Accessories</Link>.
-        </p>
-      ) : (
-        <div className="ms-shop-cards">
-          {accessories.map((item) => (
-            <Link className="ms-shop-card" href="/app/mobile-shop/accessories" key={item.id}>
-              <div className="ms-shop-card-row">
-                <div>
-                  <strong>{item.name}</strong>
-                  <span>Qty {item.qty}</span>
-                </div>
-                <span className="ms-shop-chip">Sell</span>
-              </div>
-            </Link>
-          ))}
+        <div className="ms-shop-kpi">
+          <span>Accessories</span>
+          <strong>{String(stock.accessoryCount)}</strong>
+          <small>with qty</small>
         </div>
-      )}
-
-      <details>
-        <summary>Add a new phone to stock</summary>
-        <ShopForm action={stockInAction} submitLabel="Add new phone">
-          <input name="kind" type="hidden" value="PHONE" />
-          <input name="condition" type="hidden" value="NEW" />
-          <label>
-            Brand
-            <input name="brand" required placeholder="Samsung" />
-          </label>
-          <label>
-            Model
-            <input name="model" required placeholder="A15" />
-          </label>
-          <label>
-            Color
-            <input name="color" placeholder="Black" autoComplete="off" />
-          </label>
-          <label>
-            IMEI / serial
-            <input name="imei" required inputMode="numeric" />
-          </label>
-        </ShopForm>
-      </details>
+        <div className="ms-shop-kpi">
+          <span>Below MOQ</span>
+          <strong>{String(stock.belowMoq.length)}</strong>
+          <small>reorder</small>
+        </div>
+      </div>
+      <StockBoard
+        phones={stock.phones}
+        accessories={stock.accessories}
+        belowMoq={stock.belowMoq}
+      />
     </section>
   );
 }

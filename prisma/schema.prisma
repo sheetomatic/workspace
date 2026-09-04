@@ -429,6 +429,8 @@ model MobileShopItem {
   imei           String?
   condition      MobileShopPhoneCondition?
   qty            Int                       @default(0)
+  /** Reorder level. 0 = use app fallback for qty items (accessories/parts). */
+  moq            Int                       @default(0)
   movements      MobileShopMovement[]
   inboundLines   MobileShopInboundLine[]
   createdAt      DateTime                  @default(now())

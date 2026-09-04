@@ -1,6 +1,8 @@
 /** Shop-floor "today" is India, not UTC. */
 
-export const LOW_STOCK_MAX_QTY = 2;
+import { isBelowMoq, QTY_MOQ_FALLBACK } from "@/lib/mobile-shop/moq";
+
+export const LOW_STOCK_MAX_QTY = QTY_MOQ_FALLBACK;
 
 export type MoneyCount = {
   count: number;
@@ -31,6 +33,7 @@ export type ShopStockRow = {
   name: string;
   kind: string;
   qty: number;
+  moq?: number;
 };
 
 export type ShopDayGlance = {
@@ -172,7 +175,7 @@ export function summarizeShopDay(input: {
     .filter(
       (item) =>
         (item.kind === "ACCESSORY" || item.kind === "PART") &&
-        item.qty <= LOW_STOCK_MAX_QTY,
+        isBelowMoq(item.qty, item.moq ?? 0, item.kind),
     )
     .slice(0, 8);
 

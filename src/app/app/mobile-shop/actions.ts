@@ -11,10 +11,12 @@ import {
 } from "@/lib/mobile-shop/reasons";
 import { parsePromisedAt } from "@/lib/mobile-shop/promised-at";
 import { parseInboundLines } from "@/lib/mobile-shop/inbound";
+import { parseMoqInput } from "@/lib/mobile-shop/moq";
 import {
   advanceRepair,
   createRepair,
   sellPhoneByImei,
+  setItemMoq,
   stockInInvoice,
   stockInPhone,
   stockInQtyItem,
@@ -68,12 +70,14 @@ export async function stockInAction(formData: FormData): Promise<ShopActionResul
     return { ok: true, message: "Phone in stock." };
   }
   const qty = Number.parseInt(String(formData.get("qty") ?? "0"), 10);
+  const moq = Number.parseInt(String(formData.get("moq") ?? ""), 10);
   const result = await stockInQtyItem({
     organizationId: gate.user.organizationId,
     createdById: gate.user.id,
     kind: kind === "PART" ? "PART" : "ACCESSORY",
     name: String(formData.get("name") ?? ""),
     qty: Number.isFinite(qty) ? qty : 0,
+    moq: Number.isFinite(moq) ? moq : undefined,
     reason,
     notes: String(formData.get("notes") ?? ""),
   });
@@ -166,7 +170,22 @@ export async function sellAction(formData: FormData): Promise<ShopActionResult> 
   });
   if (!result.ok) return result;
   refreshShop();
-  return { ok: true, message: "Accessory sold." };
+    return { ok: true, message: "Accessory sold." };
+}
+
+export async function setMoqAction(formData: FormData): Promise<ShopActionResult> {
+  const gate = await requireShopUser();
+  if (!gate.ok) return gate;
+  const moq = parseMoqInput(formData.get("moq"));
+  if (moq == null) return { ok: false, message: "MOQ must be 0 or more." };
+  const result = await setItemMoq(
+    gate.user.organizationId,
+    String(formData.get("itemId") ?? ""),
+    moq,
+  );
+  if (!result.ok) return result;
+  refreshShop();
+  return { ok: true, message: `MOQ set to ${moq}.` };
 }
 
 export async function createRepairAction(formData: FormData): Promise<ShopActionResult> {

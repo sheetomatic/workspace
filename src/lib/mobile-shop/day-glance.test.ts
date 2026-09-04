@@ -127,6 +127,7 @@ describe("summarizeShopDay", () => {
         { id: "s2", name: "A15 screen", kind: "PART", qty: 0 },
         { id: "s3", name: "20W charger", kind: "ACCESSORY", qty: 12 },
         { id: "s4", name: "Pixel 8", kind: "PHONE", qty: 1 },
+        { id: "s5", name: "Tempered glass", kind: "ACCESSORY", qty: 8, moq: 10 },
       ],
     });
 
@@ -148,6 +149,7 @@ describe("summarizeShopDay", () => {
     expect(glance.lowStock.map((item) => item.name)).toEqual([
       "Plain cover",
       "A15 screen",
+      "Tempered glass",
     ]);
     expect(glance.overdueRepairs.map((job) => job.id)).toEqual(["r1"]);
   });

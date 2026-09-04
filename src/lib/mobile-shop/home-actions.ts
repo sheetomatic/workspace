@@ -28,6 +28,7 @@ export const MOBILE_SHOP_HOME_ACTIONS = [
 
 export const MOBILE_SHOP_NAV_LINKS = [
   { href: "/app/mobile-shop", label: "Home", hi: "होम", exact: true as const },
+  { href: "/app/mobile-shop/stock", label: "Stock", hi: "स्टॉक", exact: true as const },
   { href: "/app/mobile-shop/sales", label: "Sale", hi: "सेल" },
   { href: "/app/mobile-shop/used-in", label: "Used", hi: "पुराना" },
   { href: "/app/mobile-shop/repairs", label: "Repair", hi: "रिपेयर" },
