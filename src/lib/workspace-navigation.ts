@@ -26,6 +26,7 @@ import {
   Presentation,
   Settings,
   ShoppingCart,
+  Smartphone,
   TrendingUp,
   Truck,
   Users,
@@ -612,7 +613,16 @@ const SOCIAL_NAV_ITEM: WorkspaceNavItem = {
   ],
 };
 
+const MOBILE_SHOP_NAV_ITEM: WorkspaceNavItem = {
+  id: "mobile-shop",
+  href: "/app/mobile-shop",
+  label: "Mobile shop",
+  icon: Smartphone,
+  matchPrefix: "/app/mobile-shop",
+};
+
 const SELLABLE_MODULE_ITEMS: WorkspaceNavItem[] = [
+  MOBILE_SHOP_NAV_ITEM,
   CRM_NAV_ITEM,
   HRMS_NAV_ITEM,
   IMS_STOCK_NAV_ITEM,

@@ -17,6 +17,8 @@ import {
   getFmsWorkflowTemplate,
   templateToFlowchartSteps,
 } from "@/lib/fms/workflow-templates";
+import { licensedKitKeyForPreset } from "@/lib/addons/licensed-kits";
+import { orgHasActiveKitLicense } from "@/lib/addons/kit-license";
 
 async function loadAssignableMembers(organizationId: string): Promise<FmsAssignableMember[]> {
   const memberships = await prisma.membership.findMany({
@@ -93,6 +95,14 @@ export async function ensureFmsPresetProvisioned(
   const workflow = getFmsWorkflowTemplate(presetId);
   if (!workflow) {
     throw new Error(`Unknown FMS preset: ${presetId}`);
+  }
+
+  const kitKey = licensedKitKeyForPreset(presetId);
+  if (kitKey) {
+    const licensed = await orgHasActiveKitLicense(organizationId, kitKey);
+    if (!licensed) {
+      throw new Error(`LICENSE_REQUIRED:${kitKey}`);
+    }
   }
 
   const members = await loadAssignableMembers(organizationId);

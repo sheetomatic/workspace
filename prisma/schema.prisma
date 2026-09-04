@@ -159,6 +159,40 @@ enum SubscriptionPaymentMethod {
   OTHER
 }
 
+enum LicensedKitStatus {
+  REQUESTED
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+}
+
+enum MobileShopItemKind {
+  PHONE
+  ACCESSORY
+  PART
+}
+
+enum MobileShopPhoneCondition {
+  NEW
+  USED
+  REFURBISHED
+}
+
+enum MobileShopMovementKind {
+  STOCK_IN
+  STOCK_OUT
+  SALE
+  PART_TO_REPAIR
+}
+
+enum MobileShopRepairStatus {
+  RECEIVED
+  IN_PROGRESS
+  READY
+  DELIVERED
+  CANCELLED
+}
+
 enum WhatsAppApiPlanKind {
   OFFICIAL
   UNOFFICIAL
@@ -299,6 +333,10 @@ model Organization {
   organizationPlan     OrganizationPlan?
   billing              OrganizationBilling?
   addonBillings        OrganizationAddonBilling[]
+  licensedKits         OrganizationLicensedKit[]
+  mobileShopItems      MobileShopItem[]
+  mobileShopMovements  MobileShopMovement[]
+  mobileShopRepairs    MobileShopRepair[]
   monthlyServiceClients MonthlyServiceClient[]
   subscriptionInvoices SubscriptionInvoice[]
   subscriptionPayments SubscriptionPayment[]
@@ -351,6 +389,95 @@ model OrganizationAddonBilling {
 
   @@unique([organizationId, module])
   @@index([organizationId])
+}
+
+/// Right-to-use license for a vertical FMS/IMS kit (org-wide, not a seat).
+model OrganizationLicensedKit {
+  id               String            @id @default(cuid())
+  organizationId   String
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  kitKey           String
+  status           LicensedKitStatus @default(REQUESTED)
+  billingPeriod    PlanBillingPeriod @default(MONTHLY)
+  /// 0 = use catalog list price for this kit.
+  ratePaise        Int               @default(0)
+  requestedAt      DateTime          @default(now())
+  activatedAt      DateTime?
+  renewalAt        DateTime?
+  cancelledAt      DateTime?
+  grantedByUserId  String?
+  notes            String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@unique([organizationId, kitKey])
+  @@index([organizationId, status])
+  @@index([kitKey, status])
+}
+
+/// Mobile shop floor — phones (IMEI), accessories/parts (qty), repairs, sales.
+model MobileShopItem {
+  id             String                    @id @default(cuid())
+  organizationId String
+  organization   Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  kind           MobileShopItemKind
+  name           String
+  brand          String?
+  model          String?
+  imei           String?
+  condition      MobileShopPhoneCondition?
+  qty            Int                       @default(0)
+  movements      MobileShopMovement[]
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+
+  @@index([organizationId, kind])
+  @@index([organizationId, imei])
+}
+
+model MobileShopMovement {
+  id             String                 @id @default(cuid())
+  organizationId String
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           MobileShopItem         @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  kind           MobileShopMovementKind
+  qty            Int
+  amountPaise    Int                    @default(0)
+  customerName   String?
+  customerPhone  String?
+  notes          String?
+  reason         String                   @default("PURCHASE")
+  repairId       String?
+  repair         MobileShopRepair?      @relation(fields: [repairId], references: [id], onDelete: SetNull)
+  createdById    String
+  createdAt      DateTime               @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, reason])
+  @@index([itemId, createdAt])
+  @@index([repairId])
+}
+
+model MobileShopRepair {
+  id             String                 @id @default(cuid())
+  organizationId String
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  status         MobileShopRepairStatus @default(RECEIVED)
+  customerName   String
+  customerPhone  String
+  deviceName     String
+  imei           String?
+  jobType        String
+  complaint      String?
+  promisedAt     DateTime?
+  parts          MobileShopMovement[]
+  createdById    String
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
 }
 
 model SubscriptionInvoice {

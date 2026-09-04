@@ -56,6 +56,25 @@ export default async function FmsSetupPage() {
 
       <FmsOnboardingChecklist status={onboarding} />
 
+      {canDesign ? (
+        <article className="saas-panel">
+          <h3>Licensed kits</h3>
+          <p>
+            First SKU is the Mobile Shop app (new/used phones, repairs,
+            accessories). Request the license, pay the invoice, then open the
+            counter.
+          </p>
+          <div className="ws-form-actions" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <Link href="/app/fms/kits" className="btn-primary btn-sm">
+              Open licensed kits
+            </Link>
+            <Link href="/app/mobile-shop" className="btn-secondary btn-sm">
+              Mobile shop
+            </Link>
+          </div>
+        </article>
+      ) : null}
+
       <div className="ws-sf-metrics ws-fms-metrics">
         <div className="ws-sf-metric-tile">
           <span>Forms</span>
