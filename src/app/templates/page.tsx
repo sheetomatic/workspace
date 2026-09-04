@@ -11,6 +11,8 @@ import {
   seedTemplateProducts,
 } from "@/lib/templates/store";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = marketingMetadata({
   title: "AppSheet & Google Sheets Templates | Smart Office Templates",
   description:
