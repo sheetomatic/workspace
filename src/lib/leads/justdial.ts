@@ -125,7 +125,7 @@ export async function processJustdialLeadPush(params: {
       utmSource: "justdial",
       utmMedium: "enquiry",
       utmCampaign: lead.campaign,
-      rawPayload: lead.raw,
+      rawPayload: lead.raw as object,
     });
     if (result.lead) {
       processed += 1;

@@ -128,7 +128,7 @@ async function ingestMapped(params: {
     pipeValue: params.lead.pipeValue,
     utmSource: "woocommerce",
     utmMedium: "store",
-    rawPayload: params.lead.raw,
+    rawPayload: params.lead.raw as object,
   });
 }
 

@@ -215,7 +215,7 @@ async function ingestMappedLeads(params: {
       utmSource: "tradeindia",
       utmMedium: "inquiry_api",
       utmCampaign: lead.campaign,
-      rawPayload: lead.raw,
+      rawPayload: lead.raw as object,
     });
     if (result.skipped || !result.lead) {
       counts.skipped = (counts.skipped ?? 0) + 1;

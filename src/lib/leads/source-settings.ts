@@ -265,8 +265,8 @@ export async function getLeadSourceCardModels(
       webhookUrl: webhookSecret ? tradeIndiaLeadWebhookUrl(webhookSecret) : null,
       setupHref: null,
       fields: {
-        userId: pull?.userId ?? readString(record, "userId") || null,
-        profileId: pull?.profileId ?? readString(record, "profileId") || null,
+        userId: pull?.userId ?? (readString(record, "userId") || null),
+        profileId: pull?.profileId ?? (readString(record, "profileId") || null),
         apiKeyHint: maskTokenHint(pull?.apiKey ?? readString(record, "apiKey")),
         webhookSecretHint: maskTokenHint(webhookSecret),
       },
@@ -299,7 +299,7 @@ export async function getLeadSourceCardModels(
       webhookUrl: webhookSecret ? shopifyLeadWebhookUrl(webhookSecret) : null,
       setupHref: null,
       fields: {
-        shopDomain: pull?.shopDomain ?? readString(record, "shopDomain") || null,
+        shopDomain: pull?.shopDomain ?? (readString(record, "shopDomain") || null),
         accessTokenHint: maskTokenHint(
           pull?.accessToken ?? readString(record, "accessToken"),
         ),
@@ -337,7 +337,7 @@ export async function getLeadSourceCardModels(
         : null,
       setupHref: null,
       fields: {
-        storeUrl: pull?.storeUrl ?? readString(record, "storeUrl") || null,
+        storeUrl: pull?.storeUrl ?? (readString(record, "storeUrl") || null),
         consumerKeyHint: maskTokenHint(
           pull?.consumerKey ?? readString(record, "consumerKey"),
         ),
