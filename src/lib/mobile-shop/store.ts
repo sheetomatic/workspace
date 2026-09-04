@@ -7,7 +7,13 @@ import type {
   MobileShopRepairStatus,
 } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { startOfUtcDay } from "@/lib/billing/dates";
+import { matchPartForRepair } from "@/lib/mobile-shop/match-part";
+import { parsePromisedAt } from "@/lib/mobile-shop/promised-at";
+import {
+  LOW_STOCK_MAX_QTY,
+  startOfShopDay,
+  summarizeShopDay,
+} from "@/lib/mobile-shop/day-glance";
 
 export const MOBILE_REPAIR_JOB_TYPES = [
   "Screen",
@@ -28,61 +34,54 @@ export const REPAIR_STATUS_ORDER: MobileShopRepairStatus[] = [
 ];
 
 export async function mobileShopDashboard(organizationId: string, now = new Date()) {
-  const dayStart = startOfUtcDay(now);
-  const [
-    phonesInStock,
-    accessoryLines,
-    stockInToday,
-    soldToday,
-    repairsOpen,
-    repairsReady,
-    accessorySoldQty,
-  ] = await Promise.all([
-    prisma.mobileShopItem.count({
-      where: { organizationId, kind: "PHONE", qty: { gt: 0 } },
-    }),
-    prisma.mobileShopItem.count({
-      where: { organizationId, kind: "ACCESSORY", qty: { gt: 0 } },
-    }),
-    prisma.mobileShopMovement.count({
-      where: { organizationId, kind: "STOCK_IN", createdAt: { gte: dayStart } },
-    }),
-    prisma.mobileShopMovement.count({
-      where: {
-        organizationId,
-        kind: { in: ["SALE", "STOCK_OUT", "PART_TO_REPAIR"] },
-        createdAt: { gte: dayStart },
+  const dayStart = startOfShopDay(now);
+  const [movements, repairs, stockItems] = await Promise.all([
+    prisma.mobileShopMovement.findMany({
+      where: { organizationId, createdAt: { gte: dayStart } },
+      select: {
+        kind: true,
+        qty: true,
+        amountPaise: true,
+        createdAt: true,
+        item: { select: { kind: true, condition: true } },
       },
     }),
-    prisma.mobileShopRepair.count({
+    prisma.mobileShopRepair.findMany({
       where: {
         organizationId,
-        status: { in: ["RECEIVED", "IN_PROGRESS"] },
+        OR: [
+          { createdAt: { gte: dayStart }, status: { not: "CANCELLED" } },
+          { status: { in: ["RECEIVED", "IN_PROGRESS", "READY"] } },
+          { status: "DELIVERED", updatedAt: { gte: dayStart } },
+          {
+            promisedAt: { lt: now },
+            status: { notIn: ["DELIVERED", "CANCELLED"] },
+          },
+        ],
+      },
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        promisedAt: true,
+        customerName: true,
+        deviceName: true,
       },
     }),
-    prisma.mobileShopRepair.count({
-      where: { organizationId, status: "READY" },
-    }),
-    prisma.mobileShopMovement.aggregate({
+    prisma.mobileShopItem.findMany({
       where: {
         organizationId,
-        kind: "SALE",
-        item: { kind: "ACCESSORY" },
-        createdAt: { gte: dayStart },
+        kind: { in: ["ACCESSORY", "PART"] },
+        qty: { lte: LOW_STOCK_MAX_QTY },
       },
-      _sum: { qty: true },
+      orderBy: [{ qty: "asc" }, { name: "asc" }],
+      take: 8,
+      select: { id: true, name: true, kind: true, qty: true },
     }),
   ]);
 
-  return {
-    phonesInStock,
-    accessoryLines,
-    stockInToday,
-    soldToday,
-    repairsOpen,
-    repairsReady,
-    accessorySoldQty: accessorySoldQty._sum.qty ?? 0,
-  };
+  return summarizeShopDay({ now, movements, repairs, stockItems });
 }
 
 export async function listMobileShopItems(
@@ -292,6 +291,50 @@ export async function getRepair(organizationId: string, repairId: string) {
   });
 }
 
+export type AutoPartResult =
+  | { used: true; name: string; message: string }
+  | { used: false; message: string };
+
+async function autoStockOutRepairPart(input: {
+  organizationId: string;
+  createdById: string;
+  repairId: string;
+  deviceName: string;
+  jobType: string;
+}): Promise<AutoPartResult> {
+  const parts = await prisma.mobileShopItem.findMany({
+    where: {
+      organizationId: input.organizationId,
+      kind: "PART",
+      qty: { gt: 0 },
+    },
+  });
+  const match = matchPartForRepair(parts, input.deviceName, input.jobType);
+  if (!match) {
+    return {
+      used: false,
+      message: "No matching part in stock — pick one on the job card.",
+    };
+  }
+  const result = await stockOut({
+    organizationId: input.organizationId,
+    createdById: input.createdById,
+    itemId: match.id,
+    qty: 1,
+    kind: "PART_TO_REPAIR",
+    reason: "PART_USED",
+    repairId: input.repairId,
+  });
+  if (!result.ok) {
+    return { used: false, message: result.message };
+  }
+  return {
+    used: true,
+    name: match.name,
+    message: `${match.name} stocked out.`,
+  };
+}
+
 export async function createRepair(input: {
   organizationId: string;
   createdById: string;
@@ -301,12 +344,17 @@ export async function createRepair(input: {
   imei?: string;
   jobType: string;
   complaint?: string;
+  promisedAt?: string | Date | null;
 }) {
   const customerName = input.customerName.trim();
   const customerPhone = input.customerPhone.trim();
   const deviceName = input.deviceName.trim();
   if (!customerName || !customerPhone || !deviceName) {
     return { ok: false as const, message: "Customer, phone, and device are required." };
+  }
+  const promisedAt = parsePromisedAt(input.promisedAt);
+  if (promisedAt === "invalid") {
+    return { ok: false as const, message: "Promise date is invalid." };
   }
   const repair = await prisma.mobileShopRepair.create({
     data: {
@@ -317,26 +365,46 @@ export async function createRepair(input: {
       imei: input.imei?.trim() || null,
       jobType: input.jobType.trim() || "Other",
       complaint: input.complaint?.trim() || null,
+      promisedAt,
       createdById: input.createdById,
     },
   });
-  return { ok: true as const, repair };
+  const autoPart = await autoStockOutRepairPart({
+    organizationId: input.organizationId,
+    createdById: input.createdById,
+    repairId: repair.id,
+    deviceName: repair.deviceName,
+    jobType: repair.jobType,
+  });
+  return { ok: true as const, repair, autoPart };
 }
 
 export async function advanceRepair(
   organizationId: string,
   repairId: string,
   status: MobileShopRepairStatus,
+  createdById?: string,
 ) {
   const repair = await prisma.mobileShopRepair.findFirst({
     where: { id: repairId, organizationId },
+    include: { parts: true },
   });
   if (!repair) return { ok: false as const, message: "Job not found." };
   const updated = await prisma.mobileShopRepair.update({
     where: { id: repair.id },
     data: { status },
   });
-  return { ok: true as const, repair: updated };
+  let autoPart: AutoPartResult | null = null;
+  if (status === "IN_PROGRESS" && repair.parts.length === 0 && createdById) {
+    autoPart = await autoStockOutRepairPart({
+      organizationId,
+      createdById,
+      repairId: repair.id,
+      deviceName: repair.deviceName,
+      jobType: repair.jobType,
+    });
+  }
+  return { ok: true as const, repair: updated, autoPart };
 }
 
 export async function listRecentMovements(

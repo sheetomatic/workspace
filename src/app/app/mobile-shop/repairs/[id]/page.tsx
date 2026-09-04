@@ -5,6 +5,7 @@ import {
   repairPartOutAction,
 } from "@/app/app/mobile-shop/actions";
 import { requireMobileShopPage } from "@/lib/mobile-shop/access";
+import { formatPromisedAt } from "@/lib/mobile-shop/promised-at";
 import { getRepair, listMobileShopItems } from "@/lib/mobile-shop/store";
 
 export default async function MobileShopRepairDetailPage({
@@ -26,6 +27,7 @@ export default async function MobileShopRepairDetailPage({
       <p className="ms-shop-lead">
         {repair.customerName} · {repair.customerPhone}
         {repair.imei ? ` · IMEI ${repair.imei}` : ""} · {repair.jobType}
+        {repair.promisedAt ? ` · promise ${formatPromisedAt(repair.promisedAt)}` : ""}
       </p>
       <p>
         Status: <strong>{repair.status.replaceAll("_", " ")}</strong>
@@ -47,8 +49,23 @@ export default async function MobileShopRepairDetailPage({
         ))}
       </div>
 
-      <details>
-        <summary>Parts stock-out</summary>
+      <div className="ms-shop-panel">
+        <h2>Parts used</h2>
+        <p className="ms-shop-lead">
+          Matching part stocks out on open / in progress when possible. Else pick
+          one here.
+        </p>
+        <ul>
+          {repair.parts.length === 0 ? (
+            <li>None yet.</li>
+          ) : (
+            repair.parts.map((part) => (
+              <li key={part.id}>
+                {part.item.name} × {part.qty}
+              </li>
+            ))
+          )}
+        </ul>
         <ShopForm action={repairPartOutAction} submitLabel="Take part">
           <input name="repairId" type="hidden" value={repair.id} />
           <label>
@@ -72,18 +89,7 @@ export default async function MobileShopRepairDetailPage({
             <input name="qty" type="number" min={1} defaultValue={1} inputMode="numeric" />
           </label>
         </ShopForm>
-        <ul>
-          {repair.parts.length === 0 ? (
-            <li>None yet.</li>
-          ) : (
-            repair.parts.map((part) => (
-              <li key={part.id}>
-                {part.item.name} × {part.qty}
-              </li>
-            ))
-          )}
-        </ul>
-      </details>
+      </div>
     </section>
   );
 }

@@ -37,9 +37,10 @@ export function AddonsPageContent() {
               <p>{featured.icp}</p>
               <p>{featured.description}</p>
               <ul>
-                <li>New sale — नया सेल</li>
+                <li>New phone sale — नया सेल</li>
                 <li>Used phone — पुराना फोन</li>
-                <li>Repair job — रिपेयर जॉब</li>
+                <li>Repairs — रिपेयर</li>
+                <li>Accessories — एक्सेसरी (covers, chargers, earphones — qty)</li>
                 <li>Stock in — स्टॉक इन (purchase / return / transfer; IMEI or qty)</li>
                 <li>Stock out — स्टॉक आउट (sale, used sale, accessory, part used, supplier return)</li>
               </ul>

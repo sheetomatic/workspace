@@ -66,9 +66,15 @@
 
 .ms-shop-kpis {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
   margin-bottom: 1rem;
+}
+
+@media (min-width: 720px) {
+  .ms-shop-kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .ms-shop-kpi {
@@ -91,28 +97,23 @@
 
 .ms-shop-actions {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 0.7rem;
-}
-
-@media (min-width: 560px) {
-  .ms-shop-actions {
-    grid-template-columns: 1fr 1fr;
-  }
 }
 
 .ms-shop-btn {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-height: 5.75rem;
-  padding: 1rem 1.1rem;
+  min-height: 5.25rem;
+  padding: 0.85rem 0.8rem;
   border-radius: 1.2rem;
   background: var(--ms-ink);
   color: #fff;
   text-decoration: none;
   font-weight: 800;
-  font-size: 1.2rem;
+  font-size: 1.05rem;
+  line-height: 1.2;
   letter-spacing: -0.02em;
 }
 
@@ -123,8 +124,16 @@
   font-size: 0.85rem;
 }
 
-.ms-shop-btn--wide {
-  grid-column: 1 / -1;
+.ms-shop-panel {
+  margin: 1rem 0 1.25rem;
+  border: 1px solid var(--ms-line);
+  border-radius: 1rem;
+  padding: 0.85rem 1rem 0.35rem;
+  background: #fff;
+}
+
+.ms-shop-panel h2 {
+  margin-top: 0;
 }
 
 .ms-shop form {

@@ -25,6 +25,8 @@ describe("licensed kits catalog", () => {
     expect(kit?.priceMonthlyInr).toBe(999);
     expect(kit?.appHref).toBe("/app/mobile-shop");
     expect(kit?.name).toBe("Mobile Shop app");
+    expect(kit?.description).toContain("Accessories");
+    expect(kit?.description).toContain("Repairs");
   });
 
   it("does not sell workshop job card, clinic, or jewellery kits", () => {

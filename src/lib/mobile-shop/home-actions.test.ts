@@ -3,14 +3,24 @@ import { MOBILE_SHOP_HOME_ACTIONS } from "@/lib/mobile-shop/home-actions";
 import { STOCK_IN_REASONS, STOCK_OUT_FORM_REASONS, STOCK_OUT_SALE_LINKS } from "@/lib/mobile-shop/reasons";
 
 describe("mobile shop home actions", () => {
-  it("puts stock in/out on the home row with sale, used phone, and repair", () => {
+  it("puts six equal-weight apps on the home grid", () => {
     expect(MOBILE_SHOP_HOME_ACTIONS.map((action) => action.label)).toEqual([
-      "New sale",
+      "New phone sale",
       "Used phone",
-      "Repair",
+      "Repairs",
+      "Accessories",
       "Stock in",
       "Stock out",
     ]);
+    expect(MOBILE_SHOP_HOME_ACTIONS.map((action) => action.href)).toEqual([
+      "/app/mobile-shop/sales",
+      "/app/mobile-shop/used-in",
+      "/app/mobile-shop/repairs",
+      "/app/mobile-shop/accessories",
+      "/app/mobile-shop/stock-in",
+      "/app/mobile-shop/stock-out",
+    ]);
+    expect(MOBILE_SHOP_HOME_ACTIONS).toHaveLength(6);
     expect(MOBILE_SHOP_HOME_ACTIONS.every((action) => action.hi.length > 0)).toBe(
       true,
     );

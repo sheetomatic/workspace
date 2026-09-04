@@ -45,18 +45,14 @@ export default async function MobileShopHomePage() {
           <span>Out today</span>
           <strong>{stats.soldToday}</strong>
         </div>
+        <div className="ms-shop-kpi">
+          <span>Repairs open</span>
+          <strong>{stats.repairsOpen}</strong>
+        </div>
       </div>
       <div className="ms-shop-actions">
-        {MOBILE_SHOP_HOME_ACTIONS.map((action, index) => (
-          <Link
-            className={
-              index === MOBILE_SHOP_HOME_ACTIONS.length - 1
-                ? "ms-shop-btn ms-shop-btn--wide"
-                : "ms-shop-btn"
-            }
-            href={action.href}
-            key={action.href}
-          >
+        {MOBILE_SHOP_HOME_ACTIONS.map((action) => (
+          <Link className="ms-shop-btn" href={action.href} key={action.href}>
             {action.label}
             <small>{action.hi}</small>
           </Link>

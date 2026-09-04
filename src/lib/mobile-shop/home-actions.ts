@@ -1,7 +1,7 @@
 export const MOBILE_SHOP_HOME_ACTIONS = [
   {
     href: "/app/mobile-shop/sales",
-    label: "New sale",
+    label: "New phone sale",
     hi: "नया सेल",
   },
   {
@@ -11,8 +11,13 @@ export const MOBILE_SHOP_HOME_ACTIONS = [
   },
   {
     href: "/app/mobile-shop/repairs",
-    label: "Repair",
+    label: "Repairs",
     hi: "रिपेयर",
+  },
+  {
+    href: "/app/mobile-shop/accessories",
+    label: "Accessories",
+    hi: "एक्सेसरी",
   },
   {
     href: "/app/mobile-shop/stock-in",

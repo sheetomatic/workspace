@@ -150,11 +150,12 @@ export async function createRepairAction(formData: FormData): Promise<ShopAction
     imei: String(formData.get("imei") ?? ""),
     jobType: String(formData.get("jobType") ?? "Other"),
     complaint: String(formData.get("complaint") ?? ""),
+    promisedAt: String(formData.get("promisedAt") ?? ""),
   });
   if (!result.ok) return result;
   refreshShop();
   revalidatePath(`/app/mobile-shop/repairs/${result.repair.id}`);
-  return { ok: true, message: "Job card opened." };
+  return { ok: true, message: `Job opened. ${result.autoPart.message}` };
 }
 
 export async function advanceRepairAction(formData: FormData): Promise<ShopActionResult> {
@@ -175,11 +176,16 @@ export async function advanceRepairAction(formData: FormData): Promise<ShopActio
     gate.user.organizationId,
     String(formData.get("repairId") ?? ""),
     status,
+    gate.user.id,
   );
   if (!result.ok) return result;
   refreshShop();
   revalidatePath(`/app/mobile-shop/repairs/${result.repair.id}`);
-  return { ok: true, message: `Job marked ${status.replace("_", " ").toLowerCase()}.` };
+  const marked = `Job marked ${status.replace("_", " ").toLowerCase()}.`;
+  if (result.autoPart) {
+    return { ok: true, message: `${marked} ${result.autoPart.message}` };
+  }
+  return { ok: true, message: marked };
 }
 
 export async function repairPartOutAction(formData: FormData): Promise<ShopActionResult> {
