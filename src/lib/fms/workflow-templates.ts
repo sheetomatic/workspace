@@ -582,6 +582,71 @@ export const FMS_WORKFLOW_TEMPLATES: FmsWorkflowTemplate[] = [
     ],
   },
   {
+    id: "workshop-job-card",
+    department: "support",
+    name: "Workshop Job Card",
+    description:
+      "Repair counter job: log device, diagnose, approve estimate, repair, QC, collect, and deliver.",
+    steps: [
+      {
+        stepName: "Log job",
+        ownerRoleLabel: "Counter",
+        howInstructions:
+          "Take the device, fill customer, brand/model, serial/IMEI, complaint, and accessories received.",
+        tatValue: "1",
+        tatUnit: "hours",
+      },
+      {
+        stepName: "Diagnose",
+        ownerRoleLabel: "Technician",
+        howInstructions:
+          "Open the device, write fault, spare needed, and estimate. Do not start paid repair until estimate is approved.",
+        tatValue: "4",
+        tatUnit: "hours",
+      },
+      {
+        stepName: "Approve estimate",
+        ownerRoleLabel: "Manager",
+        howInstructions:
+          "Call the customer with the estimate. Approve, wait, or close if they refuse.",
+        tatValue: "1",
+        tatUnit: "days",
+      },
+      {
+        stepName: "Repair",
+        ownerRoleLabel: "Technician",
+        howInstructions:
+          "Fit spare, complete work, note parts used and any delay reason.",
+        tatValue: "2",
+        tatUnit: "days",
+      },
+      {
+        stepName: "QC / test",
+        ownerRoleLabel: "Senior technician",
+        howInstructions:
+          "Power on, test the reported fault, and reject back to Repair if it fails.",
+        tatValue: "4",
+        tatUnit: "hours",
+      },
+      {
+        stepName: "Collect payment",
+        ownerRoleLabel: "Counter",
+        howInstructions:
+          "Take the billed amount, record payment mode, and do not hand over until paid or credit is approved.",
+        tatValue: "4",
+        tatUnit: "hours",
+      },
+      {
+        stepName: "Deliver / close",
+        ownerRoleLabel: "Counter",
+        howInstructions:
+          "Hand device to customer, note warranty days, and close the job card.",
+        tatValue: "2",
+        tatUnit: "hours",
+      },
+    ],
+  },
+  {
     id: "it-helpdesk",
     department: "it",
     name: "IT Helpdesk",

@@ -27,6 +27,11 @@ import { ORG_PLAN_LABELS } from "@/lib/org-plan-presets";
 import { canManageSuperAdmins } from "@/lib/platform";
 import { requireSession } from "@/lib/require-session";
 import { tenantPortalOrigin } from "@/lib/workspace-auth-links";
+import { kitInvoiceCharges, listShippableFmsKits } from "@/lib/addons/licensed-kits";
+import {
+  cancelKitLicenseAction,
+  grantKitLicenseAction,
+} from "@/app/app/fms/kits/actions";
 
 export default async function ClientBillingDetailPage({
   params,
@@ -61,6 +66,8 @@ export default async function ClientBillingDetailPage({
     addonOverrides,
     orgBillingPeriod,
   );
+  const kitCharges = kitInvoiceCharges(detail.licensedKits ?? [], orgBillingPeriod);
+  const shippableKits = listShippableFmsKits();
   const progress = onboardingProgress(detail.onboardingTasks);
   const renewal = detail.organizationPlan?.renewalAt;
   const renewalInput = renewal ? renewal.toISOString().slice(0, 10) : "";
@@ -93,7 +100,14 @@ export default async function ClientBillingDetailPage({
           <strong>
             {formatInrPaise(
               (billing.monthlyRatePaise || catalog.monthlyRatePaise) +
-                extraAddonMonthlyPaise(detail.allowedModules, detail.plan, detail.product),
+                extraAddonMonthlyPaise(
+                  detail.allowedModules,
+                  detail.plan,
+                  detail.product,
+                  addonOverrides,
+                  orgBillingPeriod,
+                ) +
+                kitCharges.reduce((sum, row) => sum + row.amountPaise, 0),
             )}
           </strong>
         </div>
@@ -151,6 +165,44 @@ export default async function ClientBillingDetailPage({
           billingPeriod={detail.organizationPlan?.billingPeriod ?? detail.billingPeriod}
           renewalAt={renewalInput}
         />
+      </article>
+
+      <article className="saas-panel">
+        <h3>Licensed FMS kits</h3>
+        <p className="saas-panel-lead">
+          Org-wide right to use. Grant after UTR, or before if you trust the
+          client. Next invoice picks up requested and active kits.
+        </p>
+        <ul className="ws-addon-lines">
+          {shippableKits.map((kit) => {
+            const row = (detail.licensedKits ?? []).find((item) => item.kitKey === kit.key);
+            return (
+              <li key={kit.key}>
+                <span>
+                  {kit.shortName}
+                  {row ? ` · ${row.status.toLowerCase()}` : " · not licensed"}
+                </span>
+                {row?.status === "ACTIVE" ? (
+                  <form action={cancelKitLicenseAction}>
+                    <input name="organizationId" type="hidden" value={detail.id} />
+                    <input name="kitKey" type="hidden" value={kit.key} />
+                    <button className="ws-client-action" type="submit">
+                      Cancel license
+                    </button>
+                  </form>
+                ) : (
+                  <form action={grantKitLicenseAction}>
+                    <input name="organizationId" type="hidden" value={detail.id} />
+                    <input name="kitKey" type="hidden" value={kit.key} />
+                    <button className="ws-client-action ws-client-action--primary" type="submit">
+                      Activate license
+                    </button>
+                  </form>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       </article>
 
       <article className="saas-panel">

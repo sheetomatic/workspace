@@ -121,6 +121,30 @@ export const BUSINESS_TYPE_PROFILES: BusinessTypeProfile[] = [
       { presetId: "recruitment", label: "Recruitment", processArea: "HR", recommended: false },
     ],
   },
+  {
+    id: "repair-workshop",
+    label: "Electronic workshop / repair",
+    description:
+      "Job-card counter work — mobiles, computers, electronics. Diagnose, estimate, repair, collect.",
+    exampleIndustries: [
+      "Mobile repair",
+      "Computer repair",
+      "Electronic workshop",
+      "Laptop service centre",
+    ],
+    processes: [
+      {
+        presetId: "workshop-job-card",
+        label: "Workshop Job Card",
+        processArea: "Jobs",
+        recommended: true,
+      },
+      { presetId: "inquiry-to-quotation", label: "Inquiry to Quotation", processArea: "Leads", recommended: false },
+      { presetId: "payment-collection", label: "Payment Collection", processArea: "Accounts", recommended: true },
+      { presetId: "complaint-ticket", label: "Complaint Ticket", processArea: "Support", recommended: false },
+      { presetId: "task-delegation", label: "Task Delegation", processArea: "MIS", recommended: false },
+    ],
+  },
 ];
 
 export function getBusinessTypeProfile(id: string) {

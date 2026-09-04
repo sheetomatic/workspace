@@ -263,6 +263,24 @@ export function FmsModuleNav({
         {canSetup ? (
           <li>
             <Link
+              href="/app/fms/kits"
+              className={`ws-module-subnav-link${navIsActive(pathname, "/app/fms/kits") ? " is-active" : ""}`}
+              title="Licensed kits"
+            >
+              <ShoppingCart size={16} aria-hidden />
+              {!collapsed ? (
+                <span>
+                  Licensed kits
+                  <small>Job Card and paid FMS packs</small>
+                </span>
+              ) : null}
+            </Link>
+          </li>
+        ) : null}
+
+        {canSetup ? (
+          <li>
+            <Link
               href="/app/fms/setup"
               className={`ws-module-subnav-link${navIsActive(pathname, "/app/fms/setup") ? " is-active" : ""}`}
               title="Setup"

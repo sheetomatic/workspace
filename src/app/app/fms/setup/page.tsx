@@ -56,6 +56,19 @@ export default async function FmsSetupPage() {
 
       <FmsOnboardingChecklist status={onboarding} />
 
+      {canDesign ? (
+        <article className="saas-panel">
+          <h3>Licensed kits</h3>
+          <p>
+            Vertical FMS packs (Workshop Job Card first). Right to use for this
+            org — request the license, pay the invoice, then install.
+          </p>
+          <Link href="/app/fms/kits" className="btn-primary btn-sm">
+            Open licensed kits
+          </Link>
+        </article>
+      ) : null}
+
       <div className="ws-sf-metrics ws-fms-metrics">
         <div className="ws-sf-metric-tile">
           <span>Forms</span>

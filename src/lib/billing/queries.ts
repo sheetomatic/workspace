@@ -188,6 +188,17 @@ export async function getClientBillingDetail(organizationId: string) {
       addonBillings: {
         select: { module: true, ratePaise: true, billingPeriod: true },
       },
+      licensedKits: {
+        select: {
+          kitKey: true,
+          status: true,
+          billingPeriod: true,
+          ratePaise: true,
+          requestedAt: true,
+          activatedAt: true,
+          renewalAt: true,
+        },
+      },
       organizationPlan: true,
       memberships: {
         orderBy: { createdAt: "asc" },

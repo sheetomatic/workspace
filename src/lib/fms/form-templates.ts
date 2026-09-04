@@ -184,6 +184,60 @@ const INTAKE_FORM_TEMPLATES: Record<string, FmsIntakeFormFieldTemplate[]> = {
       placeholder: "JD highlights, must-have skills",
     },
   ],
+  "workshop-job-card": [
+    {
+      label: "Customer name",
+      fieldType: "TEXT",
+      required: true,
+    },
+    {
+      label: "Phone",
+      fieldType: "PHONE",
+      required: true,
+    },
+    {
+      label: "Device type",
+      fieldType: "ENUM",
+      required: true,
+      options: ["Mobile", "Laptop", "Desktop", "TV", "AC", "Printer", "Other"],
+    },
+    {
+      label: "Brand / model",
+      fieldType: "TEXT",
+      required: true,
+      placeholder: "e.g. Samsung A15 / Dell Inspiron",
+    },
+    {
+      label: "Serial / IMEI",
+      fieldType: "TEXT",
+    },
+    {
+      label: "Complaint",
+      fieldType: "TEXTAREA",
+      required: true,
+      placeholder: "What the customer says is wrong",
+    },
+    {
+      label: "Accessories received",
+      fieldType: "TEXTAREA",
+      placeholder: "Charger, SIM tray, bag…",
+    },
+    {
+      label: "Warranty status",
+      fieldType: "ENUM",
+      options: ["In warranty", "Out of warranty", "Unknown"],
+    },
+    {
+      label: "Promised delivery date",
+      fieldType: "DATE",
+      required: true,
+    },
+    {
+      label: "Estimate amount",
+      fieldType: "NUMBER",
+      helpText: "Fill after diagnose. Customer approval is a later step.",
+    },
+  ],
   "purchase-order": [
     {
       label: "Sales Order #",
@@ -284,6 +338,9 @@ export function getIntakeFieldsForDesignName(designName: string) {
   }
   if (normalized === "dispatch to delivery") {
     return getIntakeFieldsForWorkflowTemplate("dispatch-to-delivery");
+  }
+  if (normalized === "workshop job card") {
+    return getIntakeFieldsForWorkflowTemplate("workshop-job-card");
   }
   return null;
 }

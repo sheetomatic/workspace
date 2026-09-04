@@ -15,6 +15,11 @@ import { CLIENT_ONBOARDING_TASKS } from "@/lib/billing/checklist";
 import { addUtcDays, monthlyPeriodFrom, startOfUtcDay } from "@/lib/billing/dates";
 import { buildInvoiceQuote, type InvoiceLineItem } from "@/lib/billing/prorata";
 import { syncOrganizationPlanRecord } from "@/lib/organization-plan";
+import {
+  kitInvoiceCharges,
+  type LicensedKitBillingRow,
+} from "@/lib/addons/licensed-kits";
+import { activateRequestedKitsForOrganization } from "@/lib/addons/kit-license";
 
 export type BillingProfile = {
   monthlyRatePaise: number;
@@ -120,21 +125,12 @@ export function quoteForOrganization(input: {
   asOf?: Date;
   orgBillingPeriod?: PlanBillingPeriod;
   addonOverrides?: import("@/lib/billing/org-addon-billing").OrgAddonBillingRow[];
+  licensedKits?: LicensedKitBillingRow[];
 }) {
   const period = input.orgBillingPeriod ?? "MONTHLY";
-  return buildInvoiceQuote({
-    monthlyRatePaise: input.billing.monthlyRatePaise,
-    extraUserMonthlyPaise: input.billing.extraUserMonthlyPaise,
-    includedUsers: input.billing.includedUsers,
-    activeUsers: input.activeUsers,
-    extraAddonPaise: extraAddonMonthlyPaise(
-      input.allowedModules,
-      input.plan,
-      input.product,
-      input.addonOverrides,
-      period,
-    ),
-    extraAddonLines: workspaceAddonCharges(
+  const kitCharges = kitInvoiceCharges(input.licensedKits ?? [], period);
+  const addonLines = [
+    ...workspaceAddonCharges(
       input.allowedModules,
       input.plan,
       input.product,
@@ -147,6 +143,25 @@ export function quoteForOrganization(input: {
           : row.label,
       amountPaise: row.amountPaise,
     })),
+    ...kitCharges.map((row) => ({
+      label: row.label,
+      amountPaise: row.amountPaise,
+    })),
+  ];
+  return buildInvoiceQuote({
+    monthlyRatePaise: input.billing.monthlyRatePaise,
+    extraUserMonthlyPaise: input.billing.extraUserMonthlyPaise,
+    includedUsers: input.billing.includedUsers,
+    activeUsers: input.activeUsers,
+    extraAddonPaise:
+      extraAddonMonthlyPaise(
+        input.allowedModules,
+        input.plan,
+        input.product,
+        input.addonOverrides,
+        period,
+      ) + kitCharges.reduce((sum, row) => sum + row.amountPaise, 0),
+    extraAddonLines: addonLines,
     gstPercent: input.billing.gstPercent,
     periodStart: input.periodStart,
     periodEnd: input.periodEnd,
@@ -171,6 +186,9 @@ export async function generateSubscriptionInvoice(input: {
       billingPeriod: true,
       addonBillings: {
         select: { module: true, ratePaise: true, billingPeriod: true },
+      },
+      licensedKits: {
+        select: { kitKey: true, status: true, billingPeriod: true, ratePaise: true },
       },
       organizationPlan: { select: { renewalAt: true, billingPeriod: true } },
     },
@@ -234,6 +252,7 @@ export async function generateSubscriptionInvoice(input: {
     asOf,
     orgBillingPeriod: organization.billingPeriod,
     addonOverrides: organization.addonBillings,
+    licensedKits: organization.licensedKits,
   });
 
   if (quote.totalPaise <= 0) {
@@ -343,6 +362,10 @@ export async function recordSubscriptionPayment(input: RecordPaymentInput) {
       "first_payment",
       true,
       input.recordedByUserId,
+    );
+    await activateRequestedKitsForOrganization(
+      invoice.organizationId,
+      invoice.dueAt,
     );
   }
 

@@ -159,6 +159,13 @@ enum SubscriptionPaymentMethod {
   OTHER
 }
 
+enum LicensedKitStatus {
+  REQUESTED
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+}
+
 enum WhatsAppApiPlanKind {
   OFFICIAL
   UNOFFICIAL
@@ -299,6 +306,7 @@ model Organization {
   organizationPlan     OrganizationPlan?
   billing              OrganizationBilling?
   addonBillings        OrganizationAddonBilling[]
+  licensedKits         OrganizationLicensedKit[]
   monthlyServiceClients MonthlyServiceClient[]
   subscriptionInvoices SubscriptionInvoice[]
   subscriptionPayments SubscriptionPayment[]
@@ -351,6 +359,30 @@ model OrganizationAddonBilling {
 
   @@unique([organizationId, module])
   @@index([organizationId])
+}
+
+/// Right-to-use license for a vertical FMS/IMS kit (org-wide, not a seat).
+model OrganizationLicensedKit {
+  id               String            @id @default(cuid())
+  organizationId   String
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  kitKey           String
+  status           LicensedKitStatus @default(REQUESTED)
+  billingPeriod    PlanBillingPeriod @default(MONTHLY)
+  /// 0 = use catalog list price for this kit.
+  ratePaise        Int               @default(0)
+  requestedAt      DateTime          @default(now())
+  activatedAt      DateTime?
+  renewalAt        DateTime?
+  cancelledAt      DateTime?
+  grantedByUserId  String?
+  notes            String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@unique([organizationId, kitKey])
+  @@index([organizationId, status])
+  @@index([kitKey, status])
 }
 
 model SubscriptionInvoice {
