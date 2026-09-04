@@ -22,7 +22,10 @@ export default async function MobileShopStockPage() {
 
       <h2>Phones</h2>
       {phones.length === 0 ? (
-        <p className="ms-shop-empty">No phones in stock.</p>
+        <p className="ms-shop-empty">
+          No phones in stock — tap{" "}
+          <Link href="/app/mobile-shop/stock-in">Stock in</Link>.
+        </p>
       ) : (
         <div className="ms-shop-cards">
           {phones.map((item) => {
@@ -49,7 +52,10 @@ export default async function MobileShopStockPage() {
 
       <h2>Accessories</h2>
       {accessories.length === 0 ? (
-        <p className="ms-shop-empty">No accessory qty on hand.</p>
+        <p className="ms-shop-empty">
+          No accessory qty on hand — tap{" "}
+          <Link href="/app/mobile-shop/accessories">Accessories</Link>.
+        </p>
       ) : (
         <div className="ms-shop-cards">
           {accessories.map((item) => (

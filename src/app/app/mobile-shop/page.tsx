@@ -5,22 +5,20 @@ import { formatInrPaise } from "@/lib/billing/money";
 import { formatIndianGreetingDate } from "@/lib/format-datetime";
 import { MOBILE_SHOP_HOME_ACTIONS } from "@/lib/mobile-shop/home-actions";
 import { formatPromisedAt } from "@/lib/mobile-shop/promised-at";
+import { summarizeShopDay, type MoneyCount } from "@/lib/mobile-shop/day-glance";
 import { mobileShopDashboard } from "@/lib/mobile-shop/store";
-import type { MoneyCount } from "@/lib/mobile-shop/day-glance";
 
 function Tile({
   label,
   value,
   hint,
-  wide,
 }: {
   label: string;
   value: string;
   hint?: string;
-  wide?: boolean;
 }) {
   return (
-    <div className={wide ? "ms-shop-kpi ms-shop-kpi--wide" : "ms-shop-kpi"}>
+    <div className="ms-shop-kpi">
       <span>{label}</span>
       <strong>{value}</strong>
       {hint ? <small>{hint}</small> : null}
@@ -28,9 +26,17 @@ function Tile({
   );
 }
 
-function moneyHint(row: MoneyCount) {
-  if (row.count === 0) return "—";
+function rupees(row: MoneyCount) {
   return formatInrPaise(row.paise);
+}
+
+function emptyGlance() {
+  return summarizeShopDay({
+    now: new Date(),
+    movements: [],
+    repairs: [],
+    stockItems: [],
+  });
 }
 
 export default async function MobileShopHomePage() {
@@ -52,54 +58,72 @@ export default async function MobileShopHomePage() {
     );
   }
 
-  const stats = await mobileShopDashboard(user.organizationId);
+  let stats = emptyGlance();
+  try {
+    stats = await mobileShopDashboard(user.organizationId);
+  } catch (error) {
+    console.error("[mobile-shop] day glance failed", error);
+  }
   const { sales, stockIn, stockOut, repairs, lowStock, overdueRepairs } = stats;
   const hasExceptions = lowStock.length > 0 || overdueRepairs.length > 0;
+  const noSales = sales.total.count === 0;
 
   return (
     <section>
       <h1>Today</h1>
       <p className="ms-shop-lead">
-        {formatIndianGreetingDate(new Date())} · आज की नज़र. Counts and rupees
-        — not % done.
+        {formatIndianGreetingDate(new Date())}
       </p>
 
-      <div className="ms-shop-hero">
-        <span>Sales today</span>
-        <strong>{formatInrPaise(sales.total.paise)}</strong>
-        <small>
-          {sales.newPhones.count} new · {sales.usedPhones.count} used ·{" "}
-          {sales.accessories.qty} accessories
-        </small>
-      </div>
+      <div className="ms-shop-glance">
+        <div className="ms-shop-hero">
+          <span>Sales today</span>
+          <strong>{formatInrPaise(sales.total.paise)}</strong>
+          <small>
+            {sales.newPhones.count} new · {sales.usedPhones.count} used ·{" "}
+            {sales.accessories.qty} accessories
+          </small>
+        </div>
 
-      <div className="ms-shop-kpis">
-        <Tile
-          label="New phones"
-          value={String(sales.newPhones.count)}
-          hint={moneyHint(sales.newPhones)}
-        />
-        <Tile
-          label="Used phones"
-          value={String(sales.usedPhones.count)}
-          hint={moneyHint(sales.usedPhones)}
-        />
-        <Tile
-          label="Accessories sold"
-          value={String(sales.accessories.qty)}
-          hint={moneyHint(sales.accessories)}
-        />
-        <Tile
-          label="Stock in / out"
-          value={`${stockIn.count} / ${stockOut.count}`}
-          hint={`qty ${stockIn.qty} in · ${stockOut.qty} out`}
-        />
-        <Tile
-          wide
-          label="Repairs today"
-          value={`${repairs.received} received · ${repairs.delivered} delivered`}
-          hint={`${repairs.inProgress} in progress · ${repairs.ready} ready`}
-        />
+        <div className="ms-shop-kpis">
+          <Tile
+            label="New phones"
+            value={String(sales.newPhones.count)}
+            hint={rupees(sales.newPhones)}
+          />
+          <Tile
+            label="Used phones"
+            value={String(sales.usedPhones.count)}
+            hint={rupees(sales.usedPhones)}
+          />
+          <Tile
+            label="Accessories"
+            value={String(sales.accessories.qty)}
+            hint={rupees(sales.accessories)}
+          />
+          <Tile
+            label="Stock in"
+            value={String(stockIn.count)}
+            hint={`qty ${stockIn.qty}`}
+          />
+          <Tile
+            label="Stock out"
+            value={String(stockOut.count)}
+            hint={`qty ${stockOut.qty}`}
+          />
+          <Tile
+            label="Repairs"
+            value={`${repairs.open} open`}
+            hint={`${repairs.ready} ready`}
+          />
+        </div>
+
+        {noSales ? (
+          <p className="ms-shop-empty">
+            No sales yet — tap{" "}
+            <Link href="/app/mobile-shop/sales">New sale</Link>
+          </p>
+        ) : null}
       </div>
 
       {hasExceptions ? (

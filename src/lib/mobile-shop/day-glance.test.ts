@@ -143,12 +143,35 @@ describe("summarizeShopDay", () => {
       inProgress: 1,
       ready: 1,
       delivered: 1,
+      open: 1,
     });
     expect(glance.lowStock.map((item) => item.name)).toEqual([
       "Plain cover",
       "A15 screen",
     ]);
     expect(glance.overdueRepairs.map((job) => job.id)).toEqual(["r1"]);
+  });
+
+  it("still returns zero counts when the shop is quiet", () => {
+    const glance = summarizeShopDay({
+      now: NOW,
+      movements: [],
+      repairs: [],
+      stockItems: [],
+    });
+    expect(glance.sales.total).toEqual({ count: 0, qty: 0, paise: 0 });
+    expect(glance.sales.newPhones.paise).toBe(0);
+    expect(glance.stockIn.count).toBe(0);
+    expect(glance.stockOut.count).toBe(0);
+    expect(glance.repairs).toEqual({
+      received: 0,
+      inProgress: 0,
+      ready: 0,
+      delivered: 0,
+      open: 0,
+    });
+    expect(glance.lowStock).toEqual([]);
+    expect(glance.overdueRepairs).toEqual([]);
   });
 });
 

@@ -16,10 +16,9 @@ export default async function MobileShopLayout({
       <MobileShopNav />
       {access.previewBypass ? (
         <p className="ms-shop-license-banner">
-          License isn’t billed or ACTIVE. Owner/admin preview only — request
-          and pay on Licensed kits for the real unlock.
+          Owner preview.
           {" "}
-          <Link href="/app/fms/kits">Licensed kits</Link>
+          <Link href="/app/fms/kits">Get license</Link>
         </p>
       ) : null}
       {children}

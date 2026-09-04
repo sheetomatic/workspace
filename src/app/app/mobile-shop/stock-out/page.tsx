@@ -43,7 +43,12 @@ export default async function MobileShopStockOutPage() {
       </p>
       <h2>Recent out</h2>
       {outs.length === 0 ? (
-        <p className="ms-shop-empty">Nothing out yet.</p>
+        <p className="ms-shop-empty">
+          Nothing out yet — tap{" "}
+          <Link href="/app/mobile-shop/sales">New sale</Link>,{" "}
+          <Link href="/app/mobile-shop/sales?type=used">Used</Link>, or{" "}
+          <Link href="/app/mobile-shop/accessories">Accessories</Link>.
+        </p>
       ) : (
         <div className="ms-shop-cards">
           {outs.map((row) => (
