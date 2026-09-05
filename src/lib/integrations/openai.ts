@@ -745,8 +745,9 @@ export async function parseFmsFormFromDescription(
 export async function transcribeAudioBuffer(
   audio: Buffer,
   mimeType: string,
+  apiKeyOverride?: string | null,
 ): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  const apiKey = apiKeyOverride?.trim() || process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) {
     throw new Error("OPENAI_NOT_CONFIGURED");
   }

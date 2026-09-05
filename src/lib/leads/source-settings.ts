@@ -18,12 +18,16 @@ import {
   parseTelegramLeadConfig,
   parseTradeIndiaLeadConfig,
   parseTradeIndiaPullConfig,
+  parseVoiceLeadConfig,
+  parseVoiceProviderConfig,
   parseWooCommerceLeadConfig,
   parseWooCommercePullConfig,
   readString,
   shopifyLeadWebhookUrl,
   telegramLeadWebhookUrl,
   tradeIndiaLeadWebhookUrl,
+  voiceLeadTwimlUrl,
+  voiceLeadWebhookUrl,
   wooCommerceLeadWebhookUrl,
   type LeadSourceStatus,
 } from "@/lib/leads/connection-config";
@@ -86,6 +90,7 @@ export async function getLeadSourceCardModels(
             "SHOPIFY",
             "WOOCOMMERCE",
             "JUSTDIAL",
+            "VOICE",
           ],
         },
       },
@@ -375,6 +380,75 @@ export async function getLeadSourceCardModels(
       setupHref: null,
       fields: {
         webhookSecretHint: maskTokenHint(webhookSecret),
+      },
+    });
+  }
+
+  {
+    const row = byChannel.get("VOICE");
+    const config = parseVoiceLeadConfig(row?.config);
+    const providerConfig = parseVoiceProviderConfig(row?.config);
+    const record = asConfigRecord(row?.config);
+    const webhookSecret =
+      config?.webhookSecret ?? readString(record, "webhookSecret");
+    const ready = Boolean(providerConfig && webhookSecret);
+    const { status, statusLabel } = statusFrom({
+      enabled: Boolean(row?.enabled),
+      ready,
+      error: row?.lastSyncError ?? null,
+    });
+    const provider =
+      config?.provider ??
+      providerConfig?.provider ??
+      (readString(record, "provider") || "EXOTEL");
+    cards.push({
+      channel: "VOICE",
+      label: "AI receptionist (voice)",
+      description:
+        "Calls the patient, confirms the visit, then writes into this workspace’s CRM. Paste Exotel, Twilio, or Knowlarity keys — no Sheetomatic-held voice credential.",
+      enabled: Boolean(row?.enabled),
+      status: ready ? status : "needs_setup",
+      statusLabel: ready ? statusLabel : "Needs setup",
+      lastSyncAt: row?.lastSyncAt?.toISOString() ?? null,
+      lastSyncError: row?.lastSyncError ?? null,
+      webhookUrl: webhookSecret ? voiceLeadWebhookUrl(webhookSecret) : null,
+      setupHref: null,
+      fields: {
+        provider,
+        clinicName: config?.clinicName ?? readString(record, "clinicName"),
+        twimlUrl: webhookSecret ? voiceLeadTwimlUrl(webhookSecret) : null,
+        hasOpenaiKey: Boolean(
+          config?.openaiApiKey || readString(record, "openaiApiKey"),
+        ),
+        openaiApiKeyHint: maskTokenHint(
+          config?.openaiApiKey ?? readString(record, "openaiApiKey"),
+        ),
+        exotelSidHint: maskTokenHint(
+          config?.exotelSid ?? readString(record, "exotelSid"),
+        ),
+        exotelApiKeyHint: maskTokenHint(
+          config?.exotelApiKey ?? readString(record, "exotelApiKey"),
+        ),
+        exotelSubdomain:
+          config?.exotelSubdomain ??
+          readString(record, "exotelSubdomain") ??
+          "api.exotel.com",
+        exotelCallerId:
+          config?.exotelCallerId ?? readString(record, "exotelCallerId"),
+        exotelAppId: config?.exotelAppId ?? readString(record, "exotelAppId"),
+        twilioAccountSidHint: maskTokenHint(
+          config?.twilioAccountSid ?? readString(record, "twilioAccountSid"),
+        ),
+        twilioFromNumber:
+          config?.twilioFromNumber ?? readString(record, "twilioFromNumber"),
+        knowlarityKNumber:
+          config?.knowlarityKNumber ?? readString(record, "knowlarityKNumber"),
+        knowlarityApiKeyHint: maskTokenHint(
+          config?.knowlarityApiKey ?? readString(record, "knowlarityApiKey"),
+        ),
+        knowlarityAgentNumber:
+          config?.knowlarityAgentNumber ??
+          readString(record, "knowlarityAgentNumber"),
       },
     });
   }

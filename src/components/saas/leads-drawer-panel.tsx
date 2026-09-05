@@ -33,6 +33,7 @@ import {
   scheduleLeadClientMeeting,
   sendLeadNurtureWhatsAppAction,
   unarchiveInboundLeadAction,
+  startReceptionistCall,
   updateInboundLeadDetails,
   updateInboundLeadStatus,
   updateLeadMeetingNotes,
@@ -421,6 +422,8 @@ export function LeadDrawerPanel({
   const [meetingScheduleMsg, setMeetingScheduleMsg] = useState<string | null>(null);
   const [meetingScheduleErr, setMeetingScheduleErr] = useState<string | null>(null);
   const [callingStatusErr, setCallingStatusErr] = useState<string | null>(null);
+  const [receptionistMsg, setReceptionistMsg] = useState<string | null>(null);
+  const [receptionistErr, setReceptionistErr] = useState<string | null>(null);
   const [projectAssigneeId, setProjectAssigneeId] = useState("");
   const [projectWorkTitle, setProjectWorkTitle] = useState("");
   const [projectDeadline, setProjectDeadline] = useState("");
@@ -1580,6 +1583,45 @@ export function LeadDrawerPanel({
           {callingStatusErr ? (
             <p className="leads-schedule-meeting__err" role="alert">
               {callingStatusErr}
+            </p>
+          ) : null}
+          {canWork ? (
+            <div className="leads-source-actions">
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={savingKey === "receptionist" || !lead.phone}
+                onClick={() => {
+                  setReceptionistErr(null);
+                  setReceptionistMsg(null);
+                  runAction("receptionist", async () => {
+                    const result = await startReceptionistCall(lead.id);
+                    if (!result.ok) {
+                      setReceptionistErr(result.message);
+                      return;
+                    }
+                    setCallingStatus("CALLING");
+                    onLeadPatched?.(lead.id, { callingStatus: "CALLING" });
+                    setReceptionistMsg(result.message);
+                    appendActivity({
+                      type: "CALL",
+                      body: result.message,
+                    });
+                  });
+                }}
+              >
+                {savingKey === "receptionist" ? "Calling…" : "Call to confirm"}
+              </button>
+            </div>
+          ) : null}
+          {receptionistErr ? (
+            <p className="leads-schedule-meeting__err" role="alert">
+              {receptionistErr}
+            </p>
+          ) : null}
+          {receptionistMsg ? (
+            <p className="leads-settings-notice is-success" role="status">
+              {receptionistMsg}
             </p>
           ) : null}
           <textarea

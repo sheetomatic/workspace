@@ -2968,6 +2968,7 @@ enum LeadSourceChannel {
   SHOPIFY
   WOOCOMMERCE
   JUSTDIAL
+  VOICE
 }
 
 enum InboundLeadActivityType {
