@@ -18,12 +18,19 @@ export default async function MobileShopStockInPage() {
       <h1>Stock in</h1>
       <p className="ms-shop-lead">
         स्टॉक इन. Invoice header, then every phone / accessory on that bill.
-        Select a phone — make, model, color fill. Type IMEI or qty.
+        Family → model → color. Rest fills in. Type IMEI or qty.
       </p>
       <StockInForm
         catalog={catalog}
         accessoryNames={accessoryNames}
         partNames={partNames}
+        suppliers={[
+          ...new Set(
+            invoices
+              .map((invoice) => invoice.supplier?.trim() ?? "")
+              .filter(Boolean),
+          ),
+        ]}
       />
       <p>
         <Link href="/app/mobile-shop/stock">See stock</Link>

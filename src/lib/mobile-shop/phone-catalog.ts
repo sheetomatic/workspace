@@ -89,6 +89,104 @@ export function uniqueCatalogValues(
   return values.sort((a, b) => a.localeCompare(b));
 }
 
+export type PhonePick = {
+  brand: string;
+  model: string;
+  color: string;
+};
+
+/** Models for a family. Empty family → every model (Add/New still works). */
+export function catalogModelsFor(catalog: PhoneCatalogEntry[], brand: string): string[] {
+  const wanted = fold(brand);
+  const source = wanted
+    ? catalog.filter((entry) => fold(entry.brand) === wanted)
+    : catalog;
+  return uniqueCatalogValues(source, "model");
+}
+
+/** Colors for family + model. Missing steps → remaining colors. */
+export function catalogColorsFor(
+  catalog: PhoneCatalogEntry[],
+  brand: string,
+  model: string,
+): string[] {
+  const wantedBrand = fold(brand);
+  const wantedModel = fold(model);
+  const source = catalog.filter((entry) => {
+    if (wantedBrand && fold(entry.brand) !== wantedBrand) return false;
+    if (wantedModel && fold(entry.model) !== wantedModel) return false;
+    return Boolean(entry.color?.trim());
+  });
+  return uniqueCatalogValues(source, "color");
+}
+
+/**
+ * Apple-style pick: family → model → color.
+ * Later fields clear when they no longer match. Model/color can infer the rest
+ * when only one catalog hit exists.
+ */
+export function cascadeAfterPick(
+  catalog: PhoneCatalogEntry[],
+  current: PhonePick,
+  field: keyof PhonePick,
+  value: string,
+): PhonePick {
+  const next: PhonePick = { ...current, [field]: value };
+
+  if (field === "brand") {
+    const models = catalogModelsFor(catalog, next.brand);
+    if (!models.some((item) => fold(item) === fold(next.model))) next.model = "";
+    const colors = catalogColorsFor(catalog, next.brand, next.model);
+    if (!colors.some((item) => fold(item) === fold(next.color))) next.color = "";
+    return next;
+  }
+
+  if (field === "model") {
+    if (!fold(next.brand)) {
+      const owners = catalog.filter((entry) => fold(entry.model) === fold(next.model));
+      const brands = uniqueCatalogValues(owners, "brand");
+      if (brands.length === 1) next.brand = brands[0];
+    }
+    const colors = catalogColorsFor(catalog, next.brand, next.model);
+    if (!colors.some((item) => fold(item) === fold(next.color))) next.color = "";
+    return next;
+  }
+
+  if (!fold(next.brand) || !fold(next.model)) {
+    const hits = catalog.filter((entry) => {
+      if (fold(entry.color) !== fold(next.color)) return false;
+      if (fold(next.brand) && fold(entry.brand) !== fold(next.brand)) return false;
+      if (fold(next.model) && fold(entry.model) !== fold(next.model)) return false;
+      return true;
+    });
+    if (hits.length === 1) {
+      next.brand = hits[0].brand;
+      next.model = hits[0].model;
+    }
+  }
+  return next;
+}
+
+export function unsoldAsCatalog(phones: UnsoldPhone[]): PhoneCatalogEntry[] {
+  return uniquePhoneCatalog(phones);
+}
+
+export function unsoldMatching(
+  phones: UnsoldPhone[],
+  pick: PhonePick,
+): UnsoldPhone[] {
+  const brand = fold(pick.brand);
+  const model = fold(pick.model);
+  const color = fold(pick.color);
+  return phones.filter((phone) => {
+    if (phone.qty <= 0 || !phone.imei) return false;
+    if (brand && fold(phone.brand ?? "") !== brand) return false;
+    if (model && fold(phone.model ?? "") !== model) return false;
+    if (color && fold(phone.color ?? "") !== color) return false;
+    return true;
+  });
+}
+
 export type UnsoldPhone = {
   id: string;
   name: string;

@@ -1,18 +1,15 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
 import { ShopForm } from "@/components/saas/mobile-shop-form";
 import { stockInAction, stockInInvoiceAction, stockOutAction } from "@/app/app/mobile-shop/actions";
 import {
   STOCK_IN_REASONS,
   STOCK_OUT_FORM_REASONS,
 } from "@/lib/mobile-shop/reasons";
-import {
-  searchPhoneCatalog,
-  uniqueCatalogValues,
-  type PhoneCatalogEntry,
-} from "@/lib/mobile-shop/phone-catalog";
+import { type PhoneCatalogEntry } from "@/lib/mobile-shop/phone-catalog";
 import { ShopCombo } from "@/components/saas/mobile-shop-combo";
+import { PhoneCascade } from "@/components/saas/mobile-shop-phone-cascade";
 
 type LineWhat = "PHONE_NEW" | "PHONE_USED" | "ACCESSORY" | "PART";
 
@@ -33,7 +30,6 @@ type DraftLine = {
   name: string;
   qty: string;
   moq: string;
-  query: string;
 };
 
 function newLine(what: LineWhat = "PHONE_NEW"): DraftLine {
@@ -47,7 +43,6 @@ function newLine(what: LineWhat = "PHONE_NEW"): DraftLine {
     name: "",
     qty: "1",
     moq: "2",
-    query: "",
   };
 }
 
@@ -73,43 +68,22 @@ function serializeLines(lines: DraftLine[]) {
   });
 }
 
-function conditionLabel(condition: PhoneCatalogEntry["condition"]) {
-  if (condition === "USED") return "Used";
-  if (condition === "REFURBISHED") return "Refurbished";
-  if (condition === "NEW") return "New";
-  return "";
-}
-
 export function StockInForm({
   catalog,
   accessoryNames = [],
   partNames = [],
+  suppliers = [],
 }: {
   catalog: PhoneCatalogEntry[];
   accessoryNames?: string[];
   partNames?: string[];
+  suppliers?: string[];
 }) {
   const [lines, setLines] = useState<DraftLine[]>(() => [newLine()]);
-  const [openKey, setOpenKey] = useState<string | null>(null);
-  const listId = useId();
-  const brands = uniqueCatalogValues(catalog, "brand");
-  const models = uniqueCatalogValues(catalog, "model");
-  const colors = uniqueCatalogValues(catalog, "color");
+  const [supplier, setSupplier] = useState("");
 
   function patch(key: string, next: Partial<DraftLine>) {
     setLines((rows) => rows.map((row) => (row.key === key ? { ...row, ...next } : row)));
-  }
-
-  function pickPhone(line: DraftLine, hit: PhoneCatalogEntry) {
-    const used = hit.condition === "USED" || hit.condition === "REFURBISHED";
-    patch(line.key, {
-      brand: hit.brand,
-      model: hit.model,
-      color: hit.color,
-      query: "",
-      what: used ? "PHONE_USED" : line.what === "PHONE_USED" ? "PHONE_USED" : "PHONE_NEW",
-    });
-    setOpenKey(null);
   }
 
   return (
@@ -117,7 +91,10 @@ export function StockInForm({
       action={stockInInvoiceAction}
       submitLabel="Stock in"
       onResult={(result) => {
-        if (result.ok) setLines([newLine()]);
+        if (result.ok) {
+          setLines([newLine()]);
+          setSupplier("");
+        }
       }}
     >
       <label>
@@ -130,7 +107,13 @@ export function StockInForm({
       </label>
       <label>
         Supplier · सप्लायर
-        <input name="supplier" placeholder="Distributor / walk-in" autoComplete="off" />
+        <ShopCombo
+          name="supplier"
+          value={supplier}
+          onChange={setSupplier}
+          options={suppliers}
+          placeholder="Distributor / walk-in"
+        />
       </label>
       <label>
         Why
@@ -148,10 +131,6 @@ export function StockInForm({
       <div className="ms-shop-lines">
         {lines.map((line, index) => {
           const phone = line.what === "PHONE_NEW" || line.what === "PHONE_USED";
-          const hits =
-            phone && (openKey === line.key || line.query.trim())
-              ? searchPhoneCatalog(catalog, line.query)
-              : [];
           return (
             <div className="ms-shop-line" key={line.key}>
               <div className="ms-shop-card-row">
@@ -174,7 +153,7 @@ export function StockInForm({
                       key={option.value}
                       type="button"
                       className={line.what === option.value ? "is-active" : undefined}
-                      onClick={() => patch(line.key, { what: option.value, query: "" })}
+                      onClick={() => patch(line.key, { what: option.value })}
                     >
                       {option.label}
                       <small>{option.hi}</small>
@@ -184,91 +163,11 @@ export function StockInForm({
               </label>
               {phone ? (
                 <>
-                  <label>
-                    Select phone · फोन चुनें
-                    <div className="ms-shop-combo-row">
-                      <input
-                        value={line.query}
-                        onFocus={() => setOpenKey(line.key)}
-                        onChange={(event) => {
-                          patch(line.key, { query: event.target.value });
-                          setOpenKey(line.key);
-                        }}
-                        onBlur={() => {
-                          window.setTimeout(() => setOpenKey((open) => (open === line.key ? null : open)), 120);
-                        }}
-                        placeholder="Make, model, color"
-                        autoComplete="off"
-                        aria-autocomplete="list"
-                        aria-controls={`${listId}-${line.key}`}
-                      />
-                      <button
-                        type="button"
-                        className="ms-shop-combo-add"
-                        data-ms-add-new=""
-                        aria-label="Add / New"
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => {
-                          const q = line.query.trim();
-                          if (q) {
-                            const parts = q.split(/\s+/);
-                            patch(line.key, {
-                              brand: line.brand || parts[0] || "",
-                              model:
-                                line.model ||
-                                (parts.length > 1 ? parts.slice(1).join(" ") : ""),
-                              query: "",
-                            });
-                          } else {
-                            patch(line.key, { query: "" });
-                          }
-                          setOpenKey(null);
-                        }}
-                      >
-                        Add / New
-                        <small>नया</small>
-                      </button>
-                    </div>
-                  </label>
-                  {hits.length > 0 ? (
-                    <ul className="ms-shop-suggest" id={`${listId}-${line.key}`} role="listbox">
-                      {hits.map((hit) => (
-                        <li key={`${hit.brand}-${hit.model}-${hit.color}`}>
-                          <button type="button" onMouseDown={() => pickPhone(line, hit)}>
-                            {[hit.brand, hit.model, hit.color].filter(Boolean).join(" ")}
-                            {hit.condition ? ` · ${conditionLabel(hit.condition)}` : ""}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                  <label>
-                    Brand · मेक
-                    <ShopCombo
-                      value={line.brand}
-                      onChange={(brand) => patch(line.key, { brand })}
-                      options={brands}
-                      placeholder="Samsung / Redmi"
-                    />
-                  </label>
-                  <label>
-                    Model
-                    <ShopCombo
-                      value={line.model}
-                      onChange={(model) => patch(line.key, { model })}
-                      options={models}
-                      placeholder="A15"
-                    />
-                  </label>
-                  <label>
-                    Color · रंग
-                    <ShopCombo
-                      value={line.color}
-                      onChange={(color) => patch(line.key, { color })}
-                      options={colors}
-                      placeholder="Black"
-                    />
-                  </label>
+                  <PhoneCascade
+                    catalog={catalog}
+                    value={{ brand: line.brand, model: line.model, color: line.color }}
+                    onChange={(next) => patch(line.key, next)}
+                  />
                   <label>
                     IMEI / serial
                     <input
@@ -324,56 +223,27 @@ export function StockInForm({
 }
 
 export function UsedPhoneForm({ catalog }: { catalog: PhoneCatalogEntry[] }) {
-  const [brand, setBrand] = useState("");
-  const [model, setModel] = useState("");
-  const [color, setColor] = useState("");
+  const [pick, setPick] = useState({ brand: "", model: "", color: "" });
   return (
     <ShopForm
       action={stockInAction}
       submitLabel="Add used phone"
       onResult={(result) => {
-        if (result.ok) {
-          setBrand("");
-          setModel("");
-          setColor("");
-        }
+        if (result.ok) setPick({ brand: "", model: "", color: "" });
       }}
     >
       <input name="kind" type="hidden" value="PHONE" />
       <input name="condition" type="hidden" value="USED" />
       <input name="reason" type="hidden" value="PURCHASE" />
-      <label>
-        Brand · मेक
-        <ShopCombo
-          name="brand"
-          value={brand}
-          onChange={setBrand}
-          options={uniqueCatalogValues(catalog, "brand")}
-          placeholder="Samsung / Redmi"
-          required
-        />
-      </label>
-      <label>
-        Model
-        <ShopCombo
-          name="model"
-          value={model}
-          onChange={setModel}
-          options={uniqueCatalogValues(catalog, "model")}
-          placeholder="A15 / Note 13"
-          required
-        />
-      </label>
-      <label>
-        Color · रंग
-        <ShopCombo
-          name="color"
-          value={color}
-          onChange={setColor}
-          options={uniqueCatalogValues(catalog, "color")}
-          placeholder="Black"
-        />
-      </label>
+      <PhoneCascade
+        catalog={catalog}
+        value={pick}
+        onChange={setPick}
+        brandName="brand"
+        modelName="model"
+        colorName="color"
+        required
+      />
       <label>
         IMEI / serial
         <input name="imei" required inputMode="numeric" autoComplete="off" placeholder="15 digits" />

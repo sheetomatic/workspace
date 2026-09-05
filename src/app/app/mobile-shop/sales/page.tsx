@@ -17,8 +17,8 @@ export default async function MobileShopSalesPage({
     <section>
       <h1>Sale</h1>
       <p className="ms-shop-lead">
-        सेल. New or used — pick the phone, IMEI fills from unsold stock. Sale
-        posts the out.
+        सेल. Family → model → color. IMEI fills from unsold stock. Sale posts
+        the out.
       </p>
       <div className="ms-shop-type" role="group" aria-label="Sale type">
         <Link className={used ? undefined : "is-active"} href="/app/mobile-shop/sales">

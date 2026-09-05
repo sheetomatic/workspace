@@ -8,7 +8,7 @@ export default async function MobileShopUsedInPage() {
   return (
     <section>
       <h1>Used phone</h1>
-      <p className="ms-shop-lead">पुराना फोन. Brand, model, IMEI — then it is in stock.</p>
+      <p className="ms-shop-lead">पुराना फोन. Family → model → color, then IMEI.</p>
       <UsedPhoneForm catalog={catalog} />
     </section>
   );

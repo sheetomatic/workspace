@@ -2,9 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { ShopForm } from "@/components/saas/mobile-shop-form";
+import { PhoneCascade } from "@/components/saas/mobile-shop-phone-cascade";
 import { sellAction } from "@/app/app/mobile-shop/actions";
 import {
-  searchUnsoldPhones,
+  pickImeiFromStock,
+  unsoldAsCatalog,
+  unsoldMatching,
+  type PhonePick,
   type UnsoldPhone,
 } from "@/lib/mobile-shop/phone-catalog";
 
@@ -18,13 +22,26 @@ export function SalePhoneForm({
   presetImei?: string;
 }) {
   const preset = phones.find((phone) => phone.imei === presetImei && phone.qty > 0);
-  const [query, setQuery] = useState("");
+  const catalog = useMemo(() => unsoldAsCatalog(phones), [phones]);
+  const [pick, setPick] = useState<PhonePick>({
+    brand: preset?.brand ?? "",
+    model: preset?.model ?? "",
+    color: preset?.color ?? "",
+  });
   const [imei, setImei] = useState(preset?.imei ?? "");
-  const hits = useMemo(
-    () => searchUnsoldPhones(phones, query, 12),
-    [phones, query],
-  );
+
+  const complete = Boolean(pick.brand.trim() && pick.model.trim() && pick.color.trim());
+  const matches = complete ? unsoldMatching(phones, pick) : [];
   const selected = phones.find((phone) => phone.imei === imei && phone.qty > 0);
+
+  function applyPick(next: PhonePick) {
+    setPick(next);
+    if (next.brand.trim() && next.model.trim() && next.color.trim()) {
+      setImei(pickImeiFromStock(phones, next) ?? "");
+    } else {
+      setImei("");
+    }
+  }
 
   return (
     <ShopForm
@@ -33,48 +50,33 @@ export function SalePhoneForm({
       onResult={(result) => {
         if (result.ok) {
           setImei("");
-          setQuery("");
+          setPick({ brand: "", model: "", color: "" });
         }
       }}
     >
       <input name="mode" type="hidden" value="PHONE" />
       <input name="saleType" type="hidden" value={used ? "USED" : "NEW"} />
 
-      <label>
-        Search phone · फोन खोजें
-        <div className="ms-shop-combo-row">
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Make, model, color"
-            autoComplete="off"
-          />
-          <a className="ms-shop-combo-add" data-ms-add-new="" href="/app/mobile-shop/stock-in">
-            Add / New
-            <small>नया · stock in</small>
-          </a>
-        </div>
-      </label>
+      <PhoneCascade catalog={catalog} value={pick} onChange={applyPick} />
 
       {phones.length === 0 ? (
         <p className="ms-shop-empty">
           No {used ? "used" : "new"} phones in stock — tap Stock in.
+          <a className="ms-shop-combo-add" data-ms-add-new="" href="/app/mobile-shop/stock-in">
+            Add / New
+            <small>नया · stock in</small>
+          </a>
         </p>
-      ) : hits.length === 0 ? (
-        <p className="ms-shop-empty">No match. Type to search, or add stock.</p>
-      ) : (
+      ) : matches.length > 1 ? (
         <div className="ms-shop-cards">
-          {hits.map((phone) => {
+          {matches.map((phone) => {
             const active = phone.imei === imei;
             return (
               <button
                 className={active ? "ms-shop-card is-selected" : "ms-shop-card"}
                 key={phone.id}
                 type="button"
-                onClick={() => {
-                  setImei(phone.imei ?? "");
-                  setQuery("");
-                }}
+                onClick={() => setImei(phone.imei ?? "")}
               >
                 <div className="ms-shop-card-row">
                   <div>
@@ -89,7 +91,7 @@ export function SalePhoneForm({
             );
           })}
         </div>
-      )}
+      ) : null}
 
       {selected ? (
         <label>
@@ -99,7 +101,13 @@ export function SalePhoneForm({
       ) : (
         <>
           <input name="imei" value="" required readOnly placeholder="Pick a phone above" />
-          <p className="ms-shop-empty">Pick a phone — IMEI fills from unsold stock.</p>
+          <p className="ms-shop-empty">
+            Pick family → model → color. IMEI fills from unsold stock.
+          </p>
+          <a className="ms-shop-combo-add" data-ms-add-new="" href="/app/mobile-shop/stock-in">
+            Add / New
+            <small>नया · stock in</small>
+          </a>
         </>
       )}
 

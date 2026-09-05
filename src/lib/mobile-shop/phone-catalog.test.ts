@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { parseInboundLines } from "@/lib/mobile-shop/inbound";
 import {
+  cascadeAfterPick,
+  catalogColorsFor,
+  catalogModelsFor,
   pickImeiFromStock,
   searchPhoneCatalog,
   searchUnsoldPhones,
   uniqueCatalogValues,
   uniquePhoneCatalog,
+  unsoldMatching,
 } from "@/lib/mobile-shop/phone-catalog";
 
 const catalog = uniquePhoneCatalog([
@@ -145,5 +149,61 @@ describe("pickImeiFromStock", () => {
     expect(pickImeiFromStock(unsold, { imei: "222" })).toBe("222");
     expect(pickImeiFromStock(unsold, { imei: "000" })).toBeNull();
     expect(searchUnsoldPhones(unsold, "a15 blue").map((row) => row.imei)).toEqual(["222"]);
+  });
+});
+
+describe("family → model → color cascade", () => {
+  it("narrows models and colors after each pick", () => {
+    expect(catalogModelsFor(catalog, "Samsung")).toEqual(["A15"]);
+    expect(catalogModelsFor(catalog, "Redmi")).toEqual(["Note 13"]);
+    expect(catalogColorsFor(catalog, "Samsung", "A15")).toEqual(["Black", "Blue"]);
+    expect(catalogColorsFor(catalog, "Redmi", "Note 13")).toEqual(["Black"]);
+  });
+
+  it("clears model and color when the family changes", () => {
+    expect(
+      cascadeAfterPick(
+        catalog,
+        { brand: "Samsung", model: "A15", color: "Blue" },
+        "brand",
+        "Redmi",
+      ),
+    ).toEqual({ brand: "Redmi", model: "", color: "" });
+  });
+
+  it("fills family when a model belongs to only one brand", () => {
+    expect(
+      cascadeAfterPick(catalog, { brand: "", model: "", color: "" }, "model", "Note 13"),
+    ).toEqual({ brand: "Redmi", model: "Note 13", color: "" });
+  });
+
+  it("lists unsold IMEIs for the finished pick", () => {
+    const unsold = [
+      {
+        id: "1",
+        name: "Samsung A15 Black",
+        brand: "Samsung",
+        model: "A15",
+        color: "Black",
+        imei: "111",
+        condition: "NEW",
+        qty: 1,
+      },
+      {
+        id: "2",
+        name: "Samsung A15 Blue",
+        brand: "Samsung",
+        model: "A15",
+        color: "Blue",
+        imei: "222",
+        condition: "NEW",
+        qty: 1,
+      },
+    ];
+    expect(
+      unsoldMatching(unsold, { brand: "Samsung", model: "A15", color: "Black" }).map(
+        (row) => row.imei,
+      ),
+    ).toEqual(["111"]);
   });
 });

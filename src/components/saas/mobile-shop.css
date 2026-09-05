@@ -1,24 +1,28 @@
 .ms-shop {
   --ms-ink: #0f172a;
   --ms-muted: #64748b;
-  --ms-line: #e2e8f0;
+  --ms-line: #e8eef4;
   --ms-bg: #f8fafc;
+  --ms-accent: #0f766e;
   max-width: 40rem;
   margin: 0 auto;
-  padding: 0.75rem 1rem 6.5rem;
+  padding: 1.1rem 1.15rem 6.75rem;
 }
 
 .ms-shop h1 {
-  font-size: 1.65rem;
-  letter-spacing: -0.03em;
-  margin: 0 0 0.15rem;
+  font-size: 2.05rem;
+  font-weight: 650;
+  letter-spacing: -0.045em;
+  margin: 0.35rem 0 0.2rem;
 }
 
 .ms-shop h1 + p,
 .ms-shop .ms-shop-lead {
-  margin: 0 0 0.65rem;
+  margin: 0 0 1.15rem;
   color: var(--ms-muted);
-  font-size: 0.95rem;
+  font-size: 0.98rem;
+  font-weight: 500;
+  max-width: 28rem;
 }
 
 .ms-shop h2 {
@@ -75,7 +79,7 @@
 .ms-shop-nav a.is-active,
 .ms-shop-nav button.is-active,
 .ms-shop-nav-more a.is-active {
-  background: var(--ms-ink);
+  background: var(--ms-accent);
   color: #fff;
 }
 
@@ -142,9 +146,9 @@
 
 .ms-shop-type a.is-active,
 .ms-shop-type button.is-active {
-  background: var(--ms-ink);
+  background: var(--ms-accent);
   color: #fff;
-  border-color: var(--ms-ink);
+  border-color: var(--ms-accent);
 }
 
 .ms-shop-glance {
@@ -158,10 +162,10 @@
 }
 
 .ms-shop-hero {
-  background: #0f172a;
-  color: #fff;
-  border-radius: 1.35rem;
-  padding: 1.05rem 1.15rem 1.15rem;
+  background: transparent;
+  color: var(--ms-ink);
+  border-radius: 0;
+  padding: 0.35rem 0 0.85rem;
   margin: 0;
   min-height: 5.5rem;
   height: auto;
@@ -173,20 +177,20 @@
   display: block;
   font-size: 0.78rem;
   font-weight: 600;
-  opacity: 0.72;
+  color: var(--ms-muted);
 }
 
 .ms-shop-hero strong {
   display: block;
-  font-size: 2rem;
-  letter-spacing: -0.045em;
-  margin: 0.15rem 0 0.2rem;
+  font-size: 2.7rem;
+  letter-spacing: -0.055em;
+  margin: 0.15rem 0 0.25rem;
 }
 
 .ms-shop-hero small {
   display: block;
-  font-size: 0.82rem;
-  opacity: 0.8;
+  font-size: 0.88rem;
+  color: var(--ms-muted);
 }
 
 .ms-shop-kpis {
@@ -320,7 +324,7 @@ a.ms-shop-kpi {
   min-height: 5.25rem;
   padding: 0.85rem 0.8rem;
   border-radius: 1.2rem;
-  background: #0f172a;
+  background: var(--ms-accent);
   color: #fff;
   text-decoration: none;
   font-weight: 800;
@@ -547,8 +551,8 @@ button.ms-shop-card {
 }
 
 .ms-shop-card.is-selected {
-  border-color: #0f172a;
-  box-shadow: inset 0 0 0 1px #0f172a;
+  border-color: var(--ms-accent);
+  box-shadow: inset 0 0 0 1px var(--ms-accent);
 }
 
 .ms-shop-chip--tap {
@@ -586,6 +590,47 @@ button.ms-shop-card {
   align-items: stretch;
 }
 
+.ms-shop-cascade {
+  display: grid;
+  gap: 0.95rem;
+}
+
+.ms-shop-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.ms-shop-chips button {
+  min-height: 2.85rem;
+  padding: 0.4rem 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ms-ink);
+  font: inherit;
+  font-weight: 650;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.ms-shop-chips button.is-active {
+  background: var(--ms-accent);
+  border-color: var(--ms-accent);
+  color: #fff;
+}
+
+.ms-shop-picked {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border-radius: 1.1rem;
+  background: #f0fdfa;
+  color: var(--ms-ink);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
 .ms-shop-combo-add {
   display: flex;
   flex-direction: column;
@@ -598,7 +643,7 @@ button.ms-shop-card {
   padding: 0.4rem 0.7rem;
   border: 0;
   border-radius: 0.85rem;
-  background: #0f172a;
+  background: var(--ms-accent);
   color: #fff;
   font: inherit;
   font-weight: 800;
@@ -618,7 +663,7 @@ button.ms-shop-card {
   display: grid;
   gap: 0.4rem;
   padding: 0.7rem 0.75rem;
-  border: 2px solid #0f172a;
+  border: 2px solid var(--ms-accent);
   border-radius: 0.95rem;
   background: #fff;
 }

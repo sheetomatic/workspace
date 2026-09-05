@@ -19,14 +19,22 @@ describe("mobile shop visible Add / New", () => {
   });
 
   it("shows Add / New on stock-in, sale, and accessories floors", () => {
-    for (const file of [
-      "mobile-shop-stock-forms.tsx",
-      "mobile-shop-sale-form.tsx",
-      "mobile-shop-accessories.tsx",
-    ]) {
-      const text = src(file);
-      expect(text, file).toContain("Add / New");
-      expect(text, file).toContain("data-ms-add-new");
-    }
+    expect(src("mobile-shop-stock-forms.tsx")).toContain("PhoneCascade");
+    expect(src("mobile-shop-stock-forms.tsx")).toContain("ShopCombo");
+    expect(src("mobile-shop-sale-form.tsx")).toContain("PhoneCascade");
+    expect(src("mobile-shop-sale-form.tsx")).toContain("data-ms-add-new");
+    expect(src("mobile-shop-sale-form.tsx")).toContain("Add / New");
+    expect(src("mobile-shop-accessories.tsx")).toContain("Add / New");
+    expect(src("mobile-shop-accessories.tsx")).toContain("data-ms-add-new");
+  });
+
+  it("keeps family, model, and color pickers each with Add / New via ShopCombo", () => {
+    const cascade = src("mobile-shop-phone-cascade.tsx");
+    expect(cascade).toContain("Family");
+    expect(cascade).toContain("Model");
+    expect(cascade).toContain("Color");
+    expect(cascade.split("<ShopCombo").length).toBeGreaterThan(3);
+    expect(cascade).toContain("ms-shop-chips");
+    expect(src("mobile-shop-combo.tsx")).toContain("Add / New");
   });
 });

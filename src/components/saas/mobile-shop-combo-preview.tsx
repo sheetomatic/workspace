@@ -2,27 +2,41 @@
 
 import { useState } from "react";
 import { ShopCombo } from "@/components/saas/mobile-shop-combo";
+import { PhoneCascade } from "@/components/saas/mobile-shop-phone-cascade";
 import { MobileShopNav } from "@/components/saas/mobile-shop-nav";
+import type { PhoneCatalogEntry } from "@/lib/mobile-shop/phone-catalog";
 
-const BRANDS = ["Samsung", "Redmi", "Vivo"];
-const MODELS = ["A15", "Note 13", "Y16"];
-const COLORS = ["Black", "Blue"];
+const CATALOG: PhoneCatalogEntry[] = [
+  { brand: "Samsung", model: "A15", color: "Black", condition: "NEW" },
+  { brand: "Samsung", model: "A15", color: "Blue", condition: "NEW" },
+  { brand: "Redmi", model: "Note 13", color: "Black", condition: "USED" },
+];
 const ACCESSORIES = ["Plain cover", "20W charger"];
+const SUPPLIERS = ["Raj Mobile Dist.", "Walk-in"];
 
 export function MobileShopComboPreview() {
-  const [brand, setBrand] = useState("");
-  const [model, setModel] = useState("");
-  const [color, setColor] = useState("");
+  const [pick, setPick] = useState({ brand: "", model: "", color: "" });
   const [accessory, setAccessory] = useState("");
-  const [query, setQuery] = useState("");
+  const [supplier, setSupplier] = useState("");
 
   return (
     <div className="saas-page ms-shop">
       <MobileShopNav />
       <section data-preview="stock-in">
         <h1>Stock in</h1>
-        <p className="ms-shop-lead">स्टॉक इन. Make, model, color each have Add / New.</p>
+        <p className="ms-shop-lead">
+          स्टॉक इन. Family → model → color. Add / New on every picker.
+        </p>
         <form onSubmit={(event) => event.preventDefault()}>
+          <label>
+            Supplier · सप्लायर
+            <ShopCombo
+              value={supplier}
+              onChange={setSupplier}
+              options={SUPPLIERS}
+              placeholder="Distributor / walk-in"
+            />
+          </label>
           <div className="ms-shop-line">
             <strong>Line 1</strong>
             <label>
@@ -38,33 +52,7 @@ export function MobileShopComboPreview() {
                 </button>
               </div>
             </label>
-            <label>
-              Brand · मेक
-              <ShopCombo
-                value={brand}
-                onChange={setBrand}
-                options={BRANDS}
-                placeholder="Samsung / Redmi"
-              />
-            </label>
-            <label>
-              Model
-              <ShopCombo
-                value={model}
-                onChange={setModel}
-                options={MODELS}
-                placeholder="A15"
-              />
-            </label>
-            <label>
-              Color · रंग
-              <ShopCombo
-                value={color}
-                onChange={setColor}
-                options={COLORS}
-                placeholder="Black"
-              />
-            </label>
+            <PhoneCascade catalog={CATALOG} value={pick} onChange={setPick} />
           </div>
         </form>
       </section>
@@ -82,21 +70,11 @@ export function MobileShopComboPreview() {
           </a>
         </div>
         <form onSubmit={(event) => event.preventDefault()}>
-          <label>
-            Search phone · फोन खोजें
-            <div className="ms-shop-combo-row">
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Make, model, color"
-                autoComplete="off"
-              />
-              <a className="ms-shop-combo-add" data-ms-add-new="" href="#stock-in">
-                Add / New
-                <small>नया · stock in</small>
-              </a>
-            </div>
-          </label>
+          <PhoneCascade catalog={CATALOG} value={pick} onChange={setPick} />
+          <a className="ms-shop-combo-add" data-ms-add-new="" href="#stock-in">
+            Add / New
+            <small>नया · stock in</small>
+          </a>
         </form>
       </section>
       <section data-preview="accessories">
