@@ -1,12 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { buildWhatsAppUrl, whatsappDisplayNumber } from "@/app/site-content";
+import { marketingButtonClass } from "@/components/marketing/marketing-button-class";
+import { WhatsAppIcon } from "@/components/marketing/marketing-icons";
+import {
+  CLOUD_SOFTWARES_ANCHOR,
+  TEMPLATE_STORE_CATEGORIES,
+  type TemplateStoreCategoryId,
+  templateTypeToCategory,
+} from "@/lib/templates/categories";
+import type { CloudSoftwareProduct } from "@/lib/templates/cloud-softwares";
 import {
   SHEETOMATIC_UPI_PAYMENT,
   buildUpiPayUrl,
   isMobileDevice,
   openPhonePePayment,
 } from "@/lib/payments/upi-phonepe";
+import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
 import "./templates-store.css";
 
 export type PublicTemplateProduct = {
@@ -20,6 +32,10 @@ export type PublicTemplateProduct = {
 };
 
 type Step = "catalog" | "details" | "pay";
+type CategoryFilter = TemplateStoreCategoryId | "all";
+type Selection =
+  | { kind: "template"; id: string }
+  | { kind: "cloud"; id: string };
 
 function typeLabel(type: PublicTemplateProduct["type"]) {
   if (type === "APPSHEET") return "AppSheet";
@@ -27,12 +43,35 @@ function typeLabel(type: PublicTemplateProduct["type"]) {
   return "Excel";
 }
 
+function selectionFromCategory(
+  category: CategoryFilter,
+  products: PublicTemplateProduct[],
+  cloudProducts: CloudSoftwareProduct[],
+): Selection | null {
+  if (category === "cloud" || (category === "all" && products.length === 0)) {
+    const first = cloudProducts[0];
+    return first ? { kind: "cloud", id: first.id } : null;
+  }
+  const match =
+    category === "all"
+      ? products[0]
+      : products.find((product) => templateTypeToCategory(product.type) === category);
+  return match ? { kind: "template", id: match.id } : null;
+}
+
 export function TemplatesStoreContent({
   products,
+  cloudProducts,
+  initialCategory = "all",
 }: {
   products: PublicTemplateProduct[];
+  cloudProducts: CloudSoftwareProduct[];
+  initialCategory?: CategoryFilter;
 }) {
-  const [selectedId, setSelectedId] = useState(products[0]?.id ?? "");
+  const [category, setCategory] = useState<CategoryFilter>(initialCategory);
+  const [selected, setSelected] = useState<Selection | null>(() =>
+    selectionFromCategory(initialCategory, products, cloudProducts),
+  );
   const [step, setStep] = useState<Step>("catalog");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -51,13 +90,84 @@ export function TemplatesStoreContent({
   const [proofDone, setProofDone] = useState<string | null>(null);
   const [upiCopied, setUpiCopied] = useState(false);
 
-  const selected = useMemo(
-    () => products.find((p) => p.id === selectedId) ?? null,
-    [products, selectedId],
+  useEffect(() => {
+    const hash = window.location.hash.replace("#", "");
+    if (hash === CLOUD_SOFTWARES_ANCHOR || hash === "mobile-shop-ops") {
+      setCategory("cloud");
+      const first = cloudProducts[0];
+      if (first) {
+        setSelected({ kind: "cloud", id: first.id });
+        setStep("catalog");
+      }
+    }
+  }, [cloudProducts]);
+
+  const selectedTemplate = useMemo(
+    () =>
+      selected?.kind === "template"
+        ? (products.find((product) => product.id === selected.id) ?? null)
+        : null,
+    [products, selected],
+  );
+  const selectedCloud = useMemo(
+    () =>
+      selected?.kind === "cloud"
+        ? (cloudProducts.find((product) => product.id === selected.id) ?? null)
+        : null,
+    [cloudProducts, selected],
   );
 
+  const groupedTemplates = useMemo(() => {
+    const sheets = products.filter(
+      (product) => templateTypeToCategory(product.type) === "sheets",
+    );
+    const appsheet = products.filter(
+      (product) => templateTypeToCategory(product.type) === "appsheet",
+    );
+    return { sheets, appsheet };
+  }, [products]);
+
+  const visibleCategories = TEMPLATE_STORE_CATEGORIES.filter((item) => {
+    if (category !== "all" && item.id !== category) return false;
+    if (item.id === "sheets") return groupedTemplates.sheets.length > 0;
+    if (item.id === "appsheet") return groupedTemplates.appsheet.length > 0;
+    return cloudProducts.length > 0;
+  });
+
+  function selectTemplate(product: PublicTemplateProduct) {
+    setSelected({ kind: "template", id: product.id });
+    setStep("catalog");
+    setOrderId(null);
+    setError(null);
+    setUtr("");
+    setProofFile(null);
+    setProofError(null);
+    setProofDone(null);
+  }
+
+  function selectCloud(product: CloudSoftwareProduct) {
+    setSelected({ kind: "cloud", id: product.id });
+    setStep("catalog");
+    setOrderId(null);
+    setError(null);
+  }
+
+  function changeCategory(next: CategoryFilter) {
+    setCategory(next);
+    const nextSelection = selectionFromCategory(next, products, cloudProducts);
+    if (nextSelection) {
+      if (nextSelection.kind === "template") {
+        const product = products.find((row) => row.id === nextSelection.id);
+        if (product) selectTemplate(product);
+      } else {
+        const product = cloudProducts.find((row) => row.id === nextSelection.id);
+        if (product) selectCloud(product);
+      }
+    }
+  }
+
   async function submitOrder() {
-    if (!selected) return;
+    if (!selectedTemplate) return;
     setBusy(true);
     setError(null);
     try {
@@ -65,7 +175,7 @@ export function TemplatesStoreContent({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          productId: selected.id,
+          productId: selectedTemplate.id,
           customerName: name,
           customerEmail: email,
           customerPhone: phone,
@@ -94,13 +204,13 @@ export function TemplatesStoreContent({
   }
 
   function payNow() {
-    if (!selected) return;
-    const note = `Template ${selected.slug}`.slice(0, 80);
+    if (!selectedTemplate) return;
+    const note = `Template ${selectedTemplate.slug}`.slice(0, 80);
     if (isMobileDevice()) {
       openPhonePePayment({
         upiId: SHEETOMATIC_UPI_PAYMENT.upiId,
         payeeName: SHEETOMATIC_UPI_PAYMENT.payeeName,
-        amount: selected.priceInr,
+        amount: selectedTemplate.priceInr,
         note,
       });
       return;
@@ -108,7 +218,7 @@ export function TemplatesStoreContent({
     window.location.href = buildUpiPayUrl({
       upiId: SHEETOMATIC_UPI_PAYMENT.upiId,
       payeeName: SHEETOMATIC_UPI_PAYMENT.payeeName,
-      amount: selected.priceInr,
+      amount: selectedTemplate.priceInr,
       note,
     });
   }
@@ -159,80 +269,200 @@ export function TemplatesStoreContent({
     }
   }
 
+  const shopWa = selectedCloud
+    ? buildWhatsAppUrl(
+        `Hi Sheetomatic, I want the ${selectedCloud.name} license (₹${selectedCloud.priceMonthlyInr.toLocaleString("en-IN")}/mo) for my mobile shop — new/used phones, repairs, accessories.`,
+      )
+    : buildWhatsAppUrl(
+        "Hi Sheetomatic, I want a Cloud Software license for my shop.",
+      );
+
   return (
     <div className="tpl-page">
       <header className="tpl-hero">
         <p className="tpl-eyebrow">Smart Office Templates</p>
-        <h1>Google Sheets & AppSheet templates</h1>
+        <h1>Google Sheets, AppSheet &amp; Cloud Softwares</h1>
         <p className="tpl-lead">
-          Add to cart → share your details → pay UPI. We confirm in CRM Leads,
-          then email your private Make a copy link.
+          Three shelves: Google Sheets Based copies, AppSheet Based apps, and
+          Cloud Softwares — native Sheetomatic apps you run in Workspace, not
+          another spreadsheet.
         </p>
       </header>
 
+      <nav className="tpl-cats" aria-label="Template categories">
+        <button
+          type="button"
+          className={category === "all" ? "tpl-cat is-active" : "tpl-cat"}
+          onClick={() => changeCategory("all")}
+        >
+          All
+        </button>
+        {TEMPLATE_STORE_CATEGORIES.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className={category === item.id ? "tpl-cat is-active" : "tpl-cat"}
+            onClick={() => changeCategory(item.id)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </nav>
+
       <div className="tpl-layout">
         <section className="tpl-catalog" aria-label="Catalog">
-          {products.length === 0 ? (
+          {visibleCategories.length === 0 ? (
             <p>No templates listed yet.</p>
           ) : (
-            <ul className="tpl-product-list">
-              {products.map((product) => (
-                <li key={product.id}>
-                  <button
-                    type="button"
-                    className={
-                      product.id === selectedId
-                        ? "tpl-card is-selected"
-                        : "tpl-card"
-                    }
-                    onClick={() => {
-                      setSelectedId(product.id);
-                      setStep("catalog");
-                      setOrderId(null);
-                      setError(null);
-                      setUtr("");
-                      setProofFile(null);
-                      setProofError(null);
-                      setProofDone(null);
-                    }}
-                  >
-                    {product.thumbnailUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        className="tpl-thumb"
-                        src={product.thumbnailUrl}
-                        alt=""
-                        width={120}
-                        height={120}
-                      />
-                    ) : (
-                      <span className="tpl-thumb tpl-thumb-empty" aria-hidden />
-                    )}
-                    <span className="tpl-card-body">
-                      <span className="tpl-card-name">{product.name}</span>
-                      <span className="tpl-card-meta">
-                        {typeLabel(product.type)} · ₹
-                        {product.priceInr.toLocaleString("en-IN")}
-                      </span>
-                      {product.description ? (
-                        <span className="tpl-card-desc">
-                          {product.description}
-                        </span>
-                      ) : null}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+            visibleCategories.map((item) => {
+              const rows =
+                item.id === "sheets"
+                  ? groupedTemplates.sheets
+                  : item.id === "appsheet"
+                    ? groupedTemplates.appsheet
+                    : [];
+              return (
+                <div
+                  className="tpl-group"
+                  key={item.id}
+                  id={item.id === "cloud" ? CLOUD_SOFTWARES_ANCHOR : item.id}
+                >
+                  <h2>{item.label}</h2>
+                  {item.id === "cloud" ? (
+                    <ul className="tpl-product-list">
+                      {cloudProducts.map((product) => {
+                        const isSelected =
+                          selected?.kind === "cloud" && selected.id === product.id;
+                        return (
+                          <li key={product.id} id={product.key}>
+                            <button
+                              type="button"
+                              className={isSelected ? "tpl-card is-selected" : "tpl-card"}
+                              onClick={() => selectCloud(product)}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                className="tpl-thumb tpl-thumb-mark"
+                                src={product.thumbnailUrl}
+                                alt=""
+                                width={120}
+                                height={120}
+                              />
+                              <span className="tpl-card-body">
+                                <span className="tpl-card-name">{product.name}</span>
+                                <span className="tpl-card-meta">
+                                  Cloud Softwares · ₹
+                                  {product.priceMonthlyInr.toLocaleString("en-IN")}
+                                  / month
+                                </span>
+                                <span className="tpl-card-desc">{product.icp}</span>
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <ul className="tpl-product-list">
+                      {rows.map((product) => {
+                        const isSelected =
+                          selected?.kind === "template" &&
+                          selected.id === product.id;
+                        return (
+                          <li key={product.id}>
+                            <button
+                              type="button"
+                              className={isSelected ? "tpl-card is-selected" : "tpl-card"}
+                              onClick={() => selectTemplate(product)}
+                            >
+                              {product.thumbnailUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  className="tpl-thumb"
+                                  src={product.thumbnailUrl}
+                                  alt=""
+                                  width={120}
+                                  height={120}
+                                />
+                              ) : (
+                                <span className="tpl-thumb tpl-thumb-empty" aria-hidden />
+                              )}
+                              <span className="tpl-card-body">
+                                <span className="tpl-card-name">{product.name}</span>
+                                <span className="tpl-card-meta">
+                                  {typeLabel(product.type)} · ₹
+                                  {product.priceInr.toLocaleString("en-IN")}
+                                </span>
+                                {product.description ? (
+                                  <span className="tpl-card-desc">
+                                    {product.description}
+                                  </span>
+                                ) : null}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              );
+            })
           )}
         </section>
 
         <aside className="tpl-checkout" aria-label="Checkout">
-          {!selected ? (
+          {selectedCloud ? (
+            <div className="tpl-form">
+              <p className="tpl-eyebrow">Cloud Softwares</p>
+              <h2>{selectedCloud.name}</h2>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className="tpl-checkout-thumb tpl-thumb-mark"
+                src={selectedCloud.thumbnailUrl}
+                alt=""
+                width={280}
+                height={280}
+              />
+              <p className="tpl-price">
+                ₹{selectedCloud.priceMonthlyInr.toLocaleString("en-IN")}
+                <span className="tpl-price-period"> / month per shop</span>
+              </p>
+              <p className="tpl-fine">
+                ₹{selectedCloud.priceAnnualInr.toLocaleString("en-IN")} / year ·
+                excl. GST. Native Sheetomatic app — not a Google Sheet or
+                AppSheet copy.
+              </p>
+              <p className="tpl-fine">{selectedCloud.description}</p>
+              <ol className="tpl-steps">
+                <li>Have (or buy) a Sheetomatic workspace</li>
+                <li>Admin: Licensed kits → Request license</li>
+                <li>Pay the UPI invoice. We confirm the UTR</li>
+                <li>Open Mobile shop. Counter starts</li>
+              </ol>
+              <div className="tpl-cloud-actions">
+                <a className={marketingButtonClass("whatsapp")} href={shopWa}>
+                  <span className="btn-cta-icon-wrap" aria-hidden>
+                    <WhatsAppIcon className="btn-cta-icon" size={18} />
+                  </span>
+                  <span>WhatsApp {whatsappDisplayNumber}</span>
+                </a>
+                <Link
+                  className={marketingButtonClass("secondary")}
+                  href={WORKSPACE_LOGIN_HREF}
+                >
+                  Existing customer — sign in
+                </Link>
+                <Link className={marketingButtonClass("secondary")} href="/pricing">
+                  Workspace plans
+                </Link>
+              </div>
+            </div>
+          ) : !selectedTemplate ? (
             <p>Select a template to continue.</p>
           ) : step === "pay" && orderId ? (
             <div className="tpl-done">
-              <h2>Pay ₹{selected.priceInr.toLocaleString("en-IN")}</h2>
+              <h2>Pay ₹{selectedTemplate.priceInr.toLocaleString("en-IN")}</h2>
               <ol className="tpl-steps">
                 <li className={proofDone ? "is-done" : "is-active"}>
                   Pay on UPI — scan the QR or tap the button
@@ -248,7 +478,7 @@ export function TemplatesStoreContent({
               <div className="tpl-pay-card">
                 <div className="tpl-pay-amount">
                   <span>Amount</span>
-                  <strong>₹{selected.priceInr.toLocaleString("en-IN")}</strong>
+                  <strong>₹{selectedTemplate.priceInr.toLocaleString("en-IN")}</strong>
                 </div>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -333,7 +563,8 @@ export function TemplatesStoreContent({
             >
               <h2>Your details</h2>
               <p className="tpl-price">
-                {selected.name} · ₹{selected.priceInr.toLocaleString("en-IN")}
+                {selectedTemplate.name} · ₹
+                {selectedTemplate.priceInr.toLocaleString("en-IN")}
               </p>
               <label>
                 Full name *
@@ -415,22 +646,22 @@ export function TemplatesStoreContent({
             </form>
           ) : (
             <div className="tpl-form">
-              <h2>{selected.name}</h2>
-              {selected.thumbnailUrl ? (
+              <h2>{selectedTemplate.name}</h2>
+              {selectedTemplate.thumbnailUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   className="tpl-checkout-thumb"
-                  src={selected.thumbnailUrl}
+                  src={selectedTemplate.thumbnailUrl}
                   alt=""
                   width={280}
                   height={280}
                 />
               ) : null}
               <p className="tpl-price">
-                ₹{selected.priceInr.toLocaleString("en-IN")}
+                ₹{selectedTemplate.priceInr.toLocaleString("en-IN")}
               </p>
-              {selected.description ? (
-                <p className="tpl-fine">{selected.description}</p>
+              {selectedTemplate.description ? (
+                <p className="tpl-fine">{selectedTemplate.description}</p>
               ) : null}
               <button
                 type="button"

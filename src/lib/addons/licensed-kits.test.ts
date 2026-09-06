@@ -24,7 +24,8 @@ describe("licensed kits catalog", () => {
     expect(kit?.kind).toBe("shop_app");
     expect(kit?.priceMonthlyInr).toBe(999);
     expect(kit?.appHref).toBe("/app/mobile-shop");
-    expect(kit?.name).toBe("Mobile Shop app");
+    expect(kit?.name).toBe("Mobile Shop Counter");
+    expect(kit?.href).toBe("/templates?category=cloud#cloud-softwares");
     expect(kit?.description).toContain("Accessories");
     expect(kit?.description).toContain("Repairs");
     expect(kit?.description).toContain("not % done");
@@ -72,7 +73,7 @@ describe("licensed kits catalog", () => {
       "MONTHLY",
     );
     expect(lines).toHaveLength(1);
-    expect(lines[0]?.label).toBe(kitInvoiceLabel("Mobile Shop app"));
+    expect(lines[0]?.label).toBe(kitInvoiceLabel("Mobile Shop Counter"));
     expect(lines[0]?.amountPaise).toBe(rupeesToPaise(999));
   });
 

@@ -1,11 +1,37 @@
 .tpl-page {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 2rem 1.25rem 4rem;
+  padding: 3rem 1.25rem 5rem;
 }
 
 .tpl-hero {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.tpl-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.75rem;
+}
+
+.tpl-cat {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #334155;
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.tpl-cat.is-active {
+  border-color: #0284c7;
+  background: #f0f9ff;
+  color: #0369a1;
+  box-shadow: 0 0 0 1px #0284c7;
 }
 
 .tpl-eyebrow {
@@ -87,6 +113,12 @@
   display: inline-block;
 }
 
+.tpl-thumb-mark {
+  object-fit: contain;
+  padding: 0.55rem;
+  background: #f8fafc;
+}
+
 .tpl-card-body {
   display: grid;
   gap: 0.25rem;
@@ -148,11 +180,19 @@
   font-size: 1.05rem;
 }
 
-.tpl-price {
-  margin: 0;
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: #0f172a;
+.tpl-price-period {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.tpl-cloud-actions {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.tpl-cloud-actions .btn-cta {
+  justify-content: center;
 }
 
 .tpl-form label {

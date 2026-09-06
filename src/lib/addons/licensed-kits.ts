@@ -23,7 +23,7 @@ export const LICENSED_KIT_CATALOG: LicensedKitDefinition[] = [
   {
     key: MOBILE_SHOP_KIT_KEY,
     kind: "shop_app",
-    name: "Mobile Shop app",
+    name: "Mobile Shop Counter",
     shortName: "Mobile shop",
     icp: "Mobile shops — new phones, used/refurbished, repairs, accessories",
     description:
@@ -31,7 +31,7 @@ export const LICENSED_KIT_CATALOG: LicensedKitDefinition[] = [
     priceMonthlyInr: 999,
     priceAnnualInr: 9990,
     shippable: true,
-    href: "/addons#mobile-shop-ops",
+    href: "/templates?category=cloud#cloud-softwares",
     appHref: "/app/mobile-shop",
   },
   {
