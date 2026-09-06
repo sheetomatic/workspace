@@ -113,12 +113,6 @@
   display: inline-block;
 }
 
-.tpl-thumb-mark {
-  object-fit: contain;
-  padding: 0.55rem;
-  background: #f8fafc;
-}
-
 .tpl-card-body {
   display: grid;
   gap: 0.25rem;
@@ -157,6 +151,36 @@
   font-size: 0.85rem;
   color: #64748b;
   line-height: 1.4;
+}
+
+.tpl-card-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.65rem;
+  margin: 0.1rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.78rem;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.tpl-card-features li {
+  position: relative;
+  padding-left: 0.7rem;
+}
+
+.tpl-card-features li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #0284c7;
+  font-weight: 700;
+}
+
+.tpl-checkout-features {
+  gap: 0.2rem 0.75rem;
+  font-size: 0.82rem;
 }
 
 .tpl-checkout {

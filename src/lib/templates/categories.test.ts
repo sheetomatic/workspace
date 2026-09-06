@@ -7,7 +7,11 @@ import {
   parseTemplateCategoryParam,
   templateTypeToCategory,
 } from "@/lib/templates/categories";
-import { listCloudSoftwareCatalog } from "@/lib/templates/cloud-softwares";
+import {
+  MOBILE_SHOP_COUNTER_FEATURES,
+  MOBILE_SHOP_COUNTER_THUMB,
+  listCloudSoftwareCatalog,
+} from "@/lib/templates/cloud-softwares";
 
 describe("templates store categories", () => {
   it("splits the catalog into Google Sheets Based, AppSheet Based, and Cloud Softwares", () => {
@@ -33,5 +37,20 @@ describe("templates store categories", () => {
     expect(cloud).toHaveLength(1);
     expect(cloud[0]?.id).toBe(MOBILE_SHOP_KIT_KEY);
     expect(cloud[0]?.name).toBe("Mobile Shop Counter");
+    expect(cloud[0]?.thumbnailUrl).toBe(MOBILE_SHOP_COUNTER_THUMB);
+    expect(cloud[0]?.thumbnailUrl).toBe("/images/templates/mobile-shop-counter.png");
+    expect(cloud[0]?.features).toEqual([...MOBILE_SHOP_COUNTER_FEATURES]);
+    expect(cloud[0]?.features).toEqual(
+      expect.arrayContaining([
+        "New + used phones",
+        "Repairs",
+        "Accessories",
+        "IMEI from stock",
+        "Invoice stock-in",
+        "Sale is the out",
+        "Today numbers",
+        "MOQ alerts",
+      ]),
+    );
   });
 });

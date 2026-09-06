@@ -342,7 +342,7 @@ export function TemplatesStoreContent({
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
-                                className="tpl-thumb tpl-thumb-mark"
+                                className="tpl-thumb"
                                 src={product.thumbnailUrl}
                                 alt=""
                                 width={120}
@@ -355,7 +355,15 @@ export function TemplatesStoreContent({
                                   {product.priceMonthlyInr.toLocaleString("en-IN")}
                                   / month
                                 </span>
-                                <span className="tpl-card-desc">{product.icp}</span>
+                                {product.features.length > 0 ? (
+                                  <ul className="tpl-card-features">
+                                    {product.features.map((feature) => (
+                                      <li key={feature}>{feature}</li>
+                                    ))}
+                                  </ul>
+                                ) : (
+                                  <span className="tpl-card-desc">{product.icp}</span>
+                                )}
                               </span>
                             </button>
                           </li>
@@ -418,7 +426,7 @@ export function TemplatesStoreContent({
               <h2>{selectedCloud.name}</h2>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                className="tpl-checkout-thumb tpl-thumb-mark"
+                className="tpl-checkout-thumb"
                 src={selectedCloud.thumbnailUrl}
                 alt=""
                 width={280}
@@ -434,6 +442,13 @@ export function TemplatesStoreContent({
                 AppSheet copy.
               </p>
               <p className="tpl-fine">{selectedCloud.description}</p>
+              {selectedCloud.features.length > 0 ? (
+                <ul className="tpl-card-features tpl-checkout-features">
+                  {selectedCloud.features.map((feature) => (
+                    <li key={feature}>{feature}</li>
+                  ))}
+                </ul>
+              ) : null}
               <ol className="tpl-steps">
                 <li>Have (or buy) a Sheetomatic workspace</li>
                 <li>Admin: Licensed kits → Request license</li>
