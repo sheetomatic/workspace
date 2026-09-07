@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { formatInr, leadCategoryLabel } from "@/lib/leads/categories";
 import { LEAD_CHANNEL_LABELS } from "@/lib/leads/channels";
 import { leadCapturedAtWhere, type LeadsPeriodRange } from "@/lib/leads/period";
+import { isLeadPaymentAdjustment } from "@/lib/leads/payment-summary";
 import {
   LEAD_PAYMENT_TYPE_LABELS,
   ORG_EXPENSE_CATEGORY_LABELS,
@@ -140,6 +141,7 @@ export async function getMySpaceSnapshot(organizationId: string, period: LeadsPe
     fixedExpenses,
     expenseRows,
     payments,
+    adjustments,
     paymentRows,
     leadsCount,
     leadSourceRows,
@@ -169,6 +171,16 @@ export async function getMySpaceSnapshot(organizationId: string, period: LeadsPe
     prisma.inboundLeadPayment.aggregate({
       where: {
         organizationId,
+        paymentType: { not: "ADJUSTMENT" },
+        ...paymentDateFilter(period),
+      },
+      _sum: { receivedAmount: true },
+      _count: { _all: true },
+    }),
+    prisma.inboundLeadPayment.aggregate({
+      where: {
+        organizationId,
+        paymentType: "ADJUSTMENT",
         ...paymentDateFilter(period),
       },
       _sum: { receivedAmount: true },
@@ -235,6 +247,7 @@ export async function getMySpaceSnapshot(organizationId: string, period: LeadsPe
     .sort((a, b) => b.amount - a.amount);
 
   const paymentReceivedByCategory = paymentRows
+    .filter((row) => !isLeadPaymentAdjustment(row.paymentType))
     .map((row) => ({
       key: row.paymentType,
       label: LEAD_PAYMENT_TYPE_LABELS[row.paymentType] ?? row.paymentType,
@@ -255,6 +268,7 @@ export async function getMySpaceSnapshot(organizationId: string, period: LeadsPe
   const expenseIncurred = Number(expenses._sum.amount ?? 0);
   const fixedExpenseTotal = Number(fixedExpenses._sum.amount ?? 0);
   const paymentReceived = Number(payments._sum.receivedAmount ?? 0);
+  const paymentAdjusted = Number(adjustments._sum.receivedAmount ?? 0);
   const proposalValue = Number(proposals._sum.totalAmount ?? 0);
   const invoicedValue = Number(invoices._sum.totalAmount ?? 0);
 
@@ -276,6 +290,9 @@ export async function getMySpaceSnapshot(organizationId: string, period: LeadsPe
     paymentReceived,
     paymentReceivedLabel: formatInr(paymentReceived),
     paymentCount: payments._count._all,
+    paymentAdjusted,
+    paymentAdjustedLabel: formatInr(paymentAdjusted),
+    paymentAdjustedCount: adjustments._count._all,
     totalLeads: leadsCount,
     invoicedValue,
     invoicedValueLabel: formatInr(invoicedValue),

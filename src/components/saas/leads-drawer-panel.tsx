@@ -747,7 +747,7 @@ export function LeadDrawerPanel({
   const waPaymentHref = leadWhatsAppHref(
     lead.phone,
     lead.name,
-    `Hi ${lead.name?.split(/\s+/)[0] || "there"}, friendly reminder — Total ${paymentSummary.totalLabel}, Received ${paymentSummary.receivedLabel}, Due ${paymentSummary.dueLabel}. Last payment date: ${paymentSummary.lastDateLabel}. — Sheetomatic`,
+    `Hi ${lead.name?.split(/\s+/)[0] || "there"}, friendly reminder — Total ${paymentSummary.totalLabel}, Collected ${paymentSummary.receivedLabel}${paymentSummary.adjusted > 0 ? `, Adjustment ${paymentSummary.adjustedLabel}` : ""}, Due ${paymentSummary.dueLabel}. Last payment date: ${paymentSummary.lastDateLabel}. — Sheetomatic`,
   );
 
   return (
@@ -2172,15 +2172,13 @@ export function LeadDrawerPanel({
               <strong>{paymentSummary.totalLabel}</strong>
             </div>
             <div>
-              <span>Received</span>
+              <span>Collected</span>
               <strong>{paymentSummary.receivedLabel}</strong>
             </div>
-            {paymentSummary.adjusted > 0 ? (
-              <div>
-                <span>Adjusted</span>
-                <strong>{paymentSummary.adjustedLabel}</strong>
-              </div>
-            ) : null}
+            <div>
+              <span>Adjustment</span>
+              <strong>{paymentSummary.adjustedLabel}</strong>
+            </div>
             <div>
               <span>Due</span>
               <strong>{paymentSummary.dueLabel}</strong>
@@ -2573,7 +2571,8 @@ export function LeadDrawerPanel({
                     {PAYMENT_METHOD_LABELS[payment.paymentMethod]}
                   </span>
                   <em>
-                    Received {new Date(payment.receivedDate).toLocaleDateString("en-IN")}
+                    {payment.paymentType === "ADJUSTMENT" ? "Adjusted" : "Received"}{" "}
+                    {new Date(payment.receivedDate).toLocaleDateString("en-IN")}
                   </em>
                   {payment.notes?.trim() ? <p>{payment.notes}</p> : null}
                   {canWork ? (

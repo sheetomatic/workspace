@@ -31,33 +31,43 @@ export default async function CrmPaymentsPage({
   const visible = rows.filter((row) =>
     ymdInCrmPeriod(istYmd(new Date(row.receivedDate)), period),
   );
-  const value = visible.reduce((sum, row) => sum + Number(row.receivedAmount), 0);
+  const cashRows = visible.filter((row) => row.paymentType !== "ADJUSTMENT");
+  const collected = cashRows.reduce((sum, row) => sum + Number(row.receivedAmount), 0);
+  const adjusted = visible
+    .filter((row) => row.paymentType === "ADJUSTMENT")
+    .reduce((sum, row) => sum + Number(row.receivedAmount), 0);
 
   const byLead = new Map<
     string,
     {
       lead: (typeof visible)[number]["lead"];
       payments: typeof visible;
-      total: number;
+      collected: number;
+      adjusted: number;
     }
   >();
   for (const row of visible) {
     const existing = byLead.get(row.lead.id);
     const amount = Number(row.receivedAmount);
+    const isAdj = row.paymentType === "ADJUSTMENT";
     if (existing) {
       existing.payments.push(row);
-      existing.total += amount;
+      if (isAdj) existing.adjusted += amount;
+      else existing.collected += amount;
     } else {
       byLead.set(row.lead.id, {
         lead: row.lead,
         payments: [row],
-        total: amount,
+        collected: isAdj ? 0 : amount,
+        adjusted: isAdj ? amount : 0,
       });
     }
   }
 
   const groups: CrmClientGroup[] = [...byLead.values()].map((entry) => {
     const name = entry.lead.name || entry.lead.company || "Lead";
+    const adjPart =
+      entry.adjusted > 0 ? ` · adj ${formatInr(entry.adjusted)}` : "";
     return {
       id: entry.lead.id,
       name,
@@ -65,7 +75,7 @@ export default async function CrmPaymentsPage({
       inboundLeadId: entry.lead.id,
       summary: `${entry.payments.length} receipt${
         entry.payments.length === 1 ? "" : "s"
-      } · ${formatInr(entry.total)}`,
+      } · collected ${formatInr(entry.collected)}${adjPart}`,
       rows: entry.payments.map((row) => ({
         id: row.id,
         cells: [
@@ -90,12 +100,13 @@ export default async function CrmPaymentsPage({
       description={`Receipts for ${crmPeriodLabel(period)}. Click a number to change the range.`}
       kpis={[
         ...crmPeriodKpis("/app/leads/payments", periodCounts, period),
-        { label: "Received", value: formatCrmNavValue(value), accent: "success" },
+        { label: "Collected", value: formatCrmNavValue(collected), accent: "success" },
+        { label: "Adjustment", value: formatCrmNavValue(adjusted) },
         {
           label: "Avg receipt",
           value:
-            visible.length > 0
-              ? formatCrmNavValue(value / visible.length)
+            cashRows.length > 0
+              ? formatCrmNavValue(collected / cashRows.length)
               : "₹0",
         },
       ]}

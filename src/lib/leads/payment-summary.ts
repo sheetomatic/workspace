@@ -66,6 +66,7 @@ export function computeLeadPaymentSummary(params: {
 
   let lastDate: string | null = null;
   for (const p of params.payments) {
+    if (isLeadPaymentAdjustment(p.paymentType)) continue;
     const t = new Date(p.receivedDate).getTime();
     if (Number.isNaN(t)) continue;
     if (!lastDate || t > new Date(lastDate).getTime()) {

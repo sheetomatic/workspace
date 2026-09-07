@@ -108,10 +108,19 @@ export default async function MySpacePage({ searchParams }: PageProps) {
             </strong>
           </article>
           <article className="hs-quick-stat accent-success">
-            <span>Payment received</span>
+            <span>Collected</span>
             <strong>
               {snapshot.paymentReceivedLabel}
-              <small className="leads-kpi-sub">{snapshot.paymentCount} by received date</small>
+              <small className="leads-kpi-sub">{snapshot.paymentCount} cash receipts</small>
+            </strong>
+          </article>
+          <article className="hs-quick-stat">
+            <span>Adjustment</span>
+            <strong>
+              {snapshot.paymentAdjustedLabel}
+              <small className="leads-kpi-sub">
+                {snapshot.paymentAdjustedCount} write-off{snapshot.paymentAdjustedCount === 1 ? "" : "s"}
+              </small>
             </strong>
           </article>
           <article className="hs-quick-stat accent-blue">
@@ -142,8 +151,8 @@ export default async function MySpacePage({ searchParams }: PageProps) {
             rows={snapshot.expenseIncurredByCategory}
           />
           <AnalysisTable
-            title="Received Payment (Category wise)"
-            empty="No payments received in this period."
+            title="Collected (cash only)"
+            empty="No cash collected in this period. Adjustments are listed separately."
             columns={["Category", "Entries", "Amount"]}
             rows={snapshot.paymentReceivedByCategory}
           />
@@ -188,9 +197,16 @@ export default async function MySpacePage({ searchParams }: PageProps) {
                   <td className="ws-apple-cell-secondary">{snapshot.proposalCount} by generated date</td>
                 </tr>
                 <tr>
-                  <td className="ws-apple-cell-secondary">Payment received</td>
+                  <td className="ws-apple-cell-secondary">Collected</td>
                   <td className="ws-apple-cell-primary">{snapshot.paymentReceivedLabel}</td>
-                  <td className="ws-apple-cell-secondary">{snapshot.paymentCount} by received date</td>
+                  <td className="ws-apple-cell-secondary">{snapshot.paymentCount} cash receipts</td>
+                </tr>
+                <tr>
+                  <td className="ws-apple-cell-secondary">Adjustment</td>
+                  <td className="ws-apple-cell-primary">{snapshot.paymentAdjustedLabel}</td>
+                  <td className="ws-apple-cell-secondary">
+                    {snapshot.paymentAdjustedCount} invoiced, not paid
+                  </td>
                 </tr>
                 <tr>
                   <td className="ws-apple-cell-secondary">Active Numbers · Plan</td>

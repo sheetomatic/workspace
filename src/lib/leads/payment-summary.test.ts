@@ -47,5 +47,6 @@ describe("computeLeadPaymentSummary", () => {
     expect(summary.received).toBe(8_500);
     expect(summary.adjusted).toBe(1_500);
     expect(summary.due).toBe(0);
+    expect(summary.lastDate).toBe("2026-08-20");
   });
 });
