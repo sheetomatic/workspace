@@ -57,12 +57,16 @@
       "schedule": "25 4 * * *"
     },
     {
+      "path": "/api/cron/hr-attendance-reminders?kind=summary_morning",
+      "schedule": "0 6 * * *"
+    },
+    {
       "path": "/api/cron/hr-attendance-reminders?kind=checkout",
       "schedule": "0 15 * * *"
     },
     {
-      "path": "/api/cron/hr-attendance-reminders?kind=summary",
-      "schedule": "15 15 * * *"
+      "path": "/api/cron/hr-attendance-reminders?kind=summary_evening",
+      "schedule": "30 15 * * *"
     },
     {
       "path": "/api/cron/leads-nurture",

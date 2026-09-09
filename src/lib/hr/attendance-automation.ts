@@ -17,7 +17,12 @@ export { computeLateDeduction, lateToDayRatio } from "@/lib/hr/late-deduction";
 
 export const HR_TZ = "Asia/Kolkata";
 
-export type AttendanceReminderKind = "mark" | "checkout" | "summary";
+export type AttendanceReminderKind =
+  | "mark"
+  | "checkout"
+  | "summary"
+  | "summary_morning"
+  | "summary_evening";
 
 /** Weekday check in IST (Mon–Fri). */
 export function isWeekdayIst(reference = new Date()): boolean {
@@ -127,15 +132,23 @@ function firstName(name: string | null, fallback = "there") {
   return trimmed.split(/\s+/)[0] ?? fallback;
 }
 
-function summaryMessage(orgName: string, s: AttendanceSummary) {
+function summaryMessage(
+  orgName: string,
+  s: AttendanceSummary,
+  window: "morning" | "evening" = "evening",
+) {
   const dayLabel = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
     day: "numeric",
     month: "short",
     timeZone: HR_TZ,
   });
+  const title =
+    window === "morning"
+      ? `*Morning attendance summary — ${dayLabel}*`
+      : `*Evening attendance summary — ${dayLabel}*`;
   return [
-    `*Attendance summary — ${dayLabel}*`,
+    title,
     "",
     `Team: ${orgName}`,
     `Present: ${s.present}/${s.total}`,
@@ -284,17 +297,23 @@ export async function runHrAttendanceReminders(
     const orgName = orgRow?.name ?? "Your team";
     orgsProcessed += 1;
 
-    if (kind === "summary") {
+    if (
+      kind === "summary" ||
+      kind === "summary_morning" ||
+      kind === "summary_evening"
+    ) {
       const summary = summarizeAttendance(members, records);
       const admins = members.filter(
         (m) => hasMinimumRole(m.role as never, "MANAGER") && m.phone,
       );
       recipients += admins.length;
+      const window =
+        kind === "summary_morning" ? "morning" : "evening";
       for (const admin of admins) {
         const res = await sendWorkspaceNoticeWhatsApp({
           toPhone: admin.phone!,
           organizationId: org.organizationId,
-          body: summaryMessage(orgName, summary),
+          body: summaryMessage(orgName, summary, window),
         });
         if (res.sent) sent += 1;
       }

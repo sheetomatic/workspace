@@ -5,7 +5,13 @@ import {
   type AttendanceReminderKind,
 } from "@/lib/hr/attendance-automation";
 
-const VALID_KINDS: AttendanceReminderKind[] = ["mark", "checkout", "summary"];
+const VALID_KINDS: AttendanceReminderKind[] = [
+  "mark",
+  "checkout",
+  "summary",
+  "summary_morning",
+  "summary_evening",
+];
 
 function parseKind(value: string | null): AttendanceReminderKind {
   return VALID_KINDS.includes(value as AttendanceReminderKind)
