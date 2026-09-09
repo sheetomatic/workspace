@@ -195,7 +195,8 @@ export type WhatsAppInteractivePayload = {
         typeof import("@/lib/whatsapp-bot/knowledge-menu").buildCustomerFollowUpButtons
       >
     | ReturnType<typeof import("@/lib/whatsapp-bot/task-user").buildMyTasksList>
-    | ReturnType<typeof import("@/lib/whatsapp-bot/task-user").buildTaskActionButtons>;
+    | ReturnType<typeof import("@/lib/whatsapp-bot/task-user").buildTaskActionButtons>
+    | ReturnType<typeof import("@/lib/hr/attendance-whatsapp").buildAttendanceMarkButtons>;
 };
 
 export function wrapInteractive(

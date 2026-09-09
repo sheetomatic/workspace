@@ -36,6 +36,7 @@ function normalizeMetaMessage(raw: UnknownRecord) {
     ...(isRecord(raw.audio) ? { audio: raw.audio } : {}),
     ...(isRecord(raw.voice) ? { voice: raw.voice } : {}),
     ...(isRecord(raw.interactive) ? { interactive: raw.interactive } : {}),
+    ...(isRecord(raw.button) ? { button: raw.button } : {}),
   };
 }
 

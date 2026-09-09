@@ -61,14 +61,16 @@ describe("attendance reminder selection", () => {
     expect(ids).toEqual(["u3", "u4"]);
   });
 
-  it("reminds only members checked in but not out", () => {
+  it("reminds evening for the same unmarked members (Present/Late/Absent)", () => {
     const records = [
-      rec("u1", { checkInAt: new Date() }), // in, not out → remind
-      rec("u2", { checkInAt: new Date(), checkOutAt: new Date() }), // done → skip
-      rec("u4", { checkInAt: new Date() }), // in, not out → remind
+      rec("u1", { checkInAt: new Date() }), // already marked → skip
+      rec("u2", { status: "ABSENT" }), // marked absent → skip
+      // u3, u4 unmarked → remind
     ];
-    const ids = selectCheckoutReminderRecipients(members, records).map((m) => m.userId);
-    expect(ids).toEqual(["u1", "u4"]);
+    const ids = selectCheckoutReminderRecipients(members, records).map(
+      (m) => m.userId,
+    );
+    expect(ids).toEqual(["u3", "u4"]);
   });
 });
 

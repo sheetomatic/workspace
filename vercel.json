@@ -54,15 +54,15 @@
     },
     {
       "path": "/api/cron/hr-attendance-reminders?kind=mark",
-      "schedule": "15 4 * * *"
+      "schedule": "25 4 * * *"
     },
     {
       "path": "/api/cron/hr-attendance-reminders?kind=checkout",
-      "schedule": "15 13 * * *"
+      "schedule": "0 15 * * *"
     },
     {
       "path": "/api/cron/hr-attendance-reminders?kind=summary",
-      "schedule": "30 13 * * *"
+      "schedule": "15 15 * * *"
     },
     {
       "path": "/api/cron/leads-nurture",

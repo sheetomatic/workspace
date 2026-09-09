@@ -1500,6 +1500,7 @@ enum AttendanceMethod {
   GEO
   BIOMETRIC
   FACE
+  WHATSAPP
 }
 
 enum AttendanceDayStatus {

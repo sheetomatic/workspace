@@ -16,6 +16,7 @@ import { mapOpenAiServiceError } from "@/lib/integrations/openai-messages";
 import { formatWhatsAppPhone, normalizeWhatsAppPhone } from "@/lib/phone";
 import { createDelegatedTaskFromDraft } from "@/lib/tasks/create-from-draft";
 import { formatTaskDue } from "@/lib/tasks";
+import { resolveDueAtIso } from "@/lib/task-due-ist";
 import {
   assignmentClarifyText,
   assignmentGaps,
@@ -44,6 +45,13 @@ import {
   wrapInteractive,
   type WaMenuActionId,
 } from "@/lib/whatsapp-bot/interactive-menu";
+import {
+  markAttendanceFromWhatsApp,
+  parseAttendanceButtonId,
+  parseAttendanceTextChoice,
+} from "@/lib/hr/attendance-whatsapp";
+import { resolveEnabledHrSubModules } from "@/lib/hr/hr-sub-modules";
+import { istCalendarYmd } from "@/lib/hr/payroll";
 import {
   buildCustomerFollowUpButtons,
   buildCustomerKnowledgeMenu,
@@ -131,6 +139,8 @@ type MetaMessage = {
     button_reply?: { id?: string; title?: string };
     list_reply?: { id?: string; title?: string; description?: string };
   };
+  /** Template quick-reply taps arrive as type=button (not interactive). */
+  button?: { payload?: string; text?: string };
 };
 
 export type MetaWebhookPayload = {
@@ -198,7 +208,45 @@ function extractInboundBody(message: MetaMessage) {
   if (message.type === "interactive" && message.interactive) {
     const reply =
       message.interactive.button_reply ?? message.interactive.list_reply;
-    return reply?.title?.trim() || reply?.id?.trim() || null;
+    return reply?.title?.trim() || reply?.id?.trim() || "";
+  }
+
+  if (message.type === "button" && message.button) {
+    return (
+      message.button.text?.trim() ||
+      message.button.payload?.trim() ||
+      ""
+    );
+  }
+
+  return "";
+}
+
+function parseAttendanceAction(message: MetaMessage): {
+  choice: "present" | "late" | "absent";
+  workDateYmd: string;
+} | null {
+  if (message.type === "interactive" && message.interactive) {
+    const reply =
+      message.interactive.button_reply ?? message.interactive.list_reply;
+    const fromId = parseAttendanceButtonId(reply?.id);
+    if (fromId) return fromId;
+  }
+
+  if (message.type === "button" && message.button) {
+    const fromPayload = parseAttendanceButtonId(message.button.payload);
+    if (fromPayload) return fromPayload;
+    const fromText = parseAttendanceTextChoice(message.button.text ?? "");
+    if (fromText) {
+      return { choice: fromText, workDateYmd: istCalendarYmd() };
+    }
+  }
+
+  if (message.type === "text" && message.text?.body) {
+    const fromText = parseAttendanceTextChoice(message.text.body);
+    if (fromText) {
+      return { choice: fromText, workDateYmd: istCalendarYmd() };
+    }
   }
 
   return null;
@@ -284,6 +332,45 @@ async function sendMyTasksMenu(
 async function sendPerformanceSummary(member: WhatsAppTeamMember, toPhone: string) {
   const text = await getPerformanceForMember(member);
   await replyText(member.organizationId, toPhone, text);
+}
+
+async function handleAttendanceButtonAction(
+  org: { id: string; name: string },
+  member: ResolvedWhatsAppTeamMember,
+  message: MetaMessage,
+  action: { choice: "present" | "late" | "absent"; workDateYmd: string },
+): Promise<boolean> {
+  const hr = await prisma.workspaceHrSettings.findUnique({
+    where: { organizationId: org.id },
+    select: { enabledHrSubModules: true },
+  });
+  const attendanceOn = resolveEnabledHrSubModules(
+    hr?.enabledHrSubModules,
+  ).includes("attendance");
+  if (!attendanceOn) {
+    return false;
+  }
+
+  const result = await markAttendanceFromWhatsApp({
+    organizationId: org.id,
+    userId: member.userId,
+    choice: action.choice,
+    workDateYmd: action.workDateYmd,
+  });
+
+  await markEvent(message.id, {
+    organizationId: org.id,
+    fromPhone: message.from,
+    messageType: message.type,
+    status: result.ok
+      ? result.already
+        ? "attendance_already"
+        : "attendance_marked"
+      : `attendance_${result.reason}`,
+  });
+
+  await replyText(org.id, message.from, result.message);
+  return true;
 }
 
 async function handleTaskButtonAction(
@@ -1607,6 +1694,23 @@ async function handleTeamMemberMessage(
     return;
   }
 
+  const attendanceAction = parseAttendanceAction(message);
+  if (attendanceAction) {
+    // Don't steal assignment follow-ups that happen to say a status word.
+    const pendingDraft = await loadPendingTaskDraft(org.id, message.from);
+    if (!pendingDraft || message.type === "interactive" || message.type === "button") {
+      const handled = await handleAttendanceButtonAction(
+        org,
+        member,
+        message,
+        attendanceAction,
+      );
+      if (handled) {
+        return;
+      }
+    }
+  }
+
   const taskAction = parseInteractiveTaskAction(message);
   if (taskAction) {
     await handleTaskButtonAction(member, taskAction, {
@@ -1900,6 +2004,10 @@ async function runTaskPipeline(
     return;
   }
 
+  const resolvedDue = resolveDueAtIso(combined, draft.dueAtIso);
+  if (resolvedDue) {
+    draft = { ...draft, dueAtIso: resolvedDue };
+  }
   draft = { ...draft, ...expandTaskCopy(draft, combined) };
   const missing = assignmentGaps(combined, draft);
   if (missing.length > 0) {

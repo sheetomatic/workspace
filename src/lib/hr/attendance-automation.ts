@@ -1,8 +1,17 @@
 import { prisma } from "@/lib/db";
 import { hasMinimumRole } from "@/lib/permissions";
 import { sendWorkspaceNoticeWhatsApp } from "@/lib/integrations/whatsapp";
+import { hasActiveWhatsAppSession } from "@/lib/whatsapp-session";
+import {
+  sendWhatsAppInteractiveWithFallback,
+} from "@/lib/whatsapp-bot/send";
+import { wrapInteractive } from "@/lib/whatsapp-bot/interactive-menu";
 import { resolveEnabledHrSubModules } from "@/lib/hr/hr-sub-modules";
 import { istCalendarYmd, istNoonDate } from "@/lib/hr/payroll";
+import {
+  attendanceMarkFallbackText,
+  buildAttendanceMarkButtons,
+} from "@/lib/hr/attendance-whatsapp";
 
 export { computeLateDeduction, lateToDayRatio } from "@/lib/hr/late-deduction";
 
@@ -34,7 +43,10 @@ type RecordLike = {
   isLate?: boolean | null;
 };
 
-/** Members with no check-in today (and not already on leave/holiday). */
+/**
+ * Members who still need to mark attendance today
+ * (no Present/Late/Absent yet; skip leave/holiday).
+ */
 export function selectMarkReminderRecipients(
   members: MemberLike[],
   records: RecordLike[],
@@ -42,23 +54,20 @@ export function selectMarkReminderRecipients(
   const byUser = new Map(records.map((r) => [r.userId, r]));
   return members.filter((m) => {
     const rec = byUser.get(m.userId);
-    if (!rec) return true; // no record at all → hasn't marked
-    if (rec.checkInAt) return false; // already checked in
-    // A manager-marked ON_LEAVE / HOLIDAY should not be nagged.
-    return rec.status !== "ON_LEAVE" && rec.status !== "HOLIDAY";
+    if (!rec) return true;
+    if (rec.status === "ON_LEAVE" || rec.status === "HOLIDAY") return false;
+    if (rec.status === "ABSENT") return false;
+    if (rec.checkInAt || rec.status === "PRESENT") return false;
+    return true;
   });
 }
 
-/** Members who checked in but have not checked out yet. */
+/** @deprecated Evening also uses mark recipients (Present/Late/Absent). Kept for tests. */
 export function selectCheckoutReminderRecipients(
   members: MemberLike[],
   records: RecordLike[],
 ): MemberLike[] {
-  const byUser = new Map(records.map((r) => [r.userId, r]));
-  return members.filter((m) => {
-    const rec = byUser.get(m.userId);
-    return Boolean(rec?.checkInAt) && !rec?.checkOutAt;
-  });
+  return selectMarkReminderRecipients(members, records);
 }
 
 export type AttendanceSummary = {
@@ -84,7 +93,7 @@ export function summarizeAttendance(
 
   for (const member of members) {
     const rec = byUser.get(member.userId);
-    if (!rec || (!rec.checkInAt && rec.status !== "ON_LEAVE")) {
+    if (!rec || (!rec.checkInAt && rec.status !== "ON_LEAVE" && rec.status !== "ABSENT")) {
       notMarked += 1;
       continue;
     }
@@ -92,7 +101,10 @@ export function summarizeAttendance(
       onLeave += 1;
       continue;
     }
-    if (rec.checkInAt) {
+    if (rec.status === "ABSENT") {
+      continue;
+    }
+    if (rec.checkInAt || rec.status === "PRESENT") {
       present += 1;
       if (rec.isLate) late += 1;
       if (!rec.checkOutAt) pendingCheckout += 1;
@@ -113,30 +125,6 @@ function firstName(name: string | null, fallback = "there") {
   const trimmed = name?.trim();
   if (!trimmed) return fallback;
   return trimmed.split(/\s+/)[0] ?? fallback;
-}
-
-function markMessage(name: string | null, orgName: string, startTime: string) {
-  return [
-    "*Mark your attendance*",
-    "",
-    `Hi ${firstName(name)}, please check in for today on Sheetomatic.`,
-    `Work starts at ${startTime}. Check in after that is marked *Late*.`,
-    "",
-    `Team: ${orgName}`,
-    "Open Attendance: /app/hr/attendance",
-  ].join("\n");
-}
-
-function checkoutMessage(name: string | null, orgName: string, endTime: string) {
-  return [
-    "*Check out reminder*",
-    "",
-    `Hi ${firstName(name)}, you checked in today but haven't checked out.`,
-    `Work ends at ${endTime}. Please check out to close your day.`,
-    "",
-    `Team: ${orgName}`,
-    "Open Attendance: /app/hr/attendance",
-  ].join("\n");
 }
 
 function summaryMessage(orgName: string, s: AttendanceSummary) {
@@ -172,7 +160,9 @@ async function attendanceEnabledOrgIds(): Promise<
     },
   });
   return settings
-    .filter((s) => resolveEnabledHrSubModules(s.enabledHrSubModules).includes("attendance"))
+    .filter((s) =>
+      resolveEnabledHrSubModules(s.enabledHrSubModules).includes("attendance"),
+    )
     .map((s) => ({
       organizationId: s.organizationId,
       workStartTime: s.workStartTime,
@@ -180,10 +170,54 @@ async function attendanceEnabledOrgIds(): Promise<
     }));
 }
 
+async function sendAttendanceMarkPrompt(params: {
+  organizationId: string;
+  toPhone: string;
+  name: string | null;
+  orgName: string;
+  workStartTime: string;
+  workDateYmd: string;
+  window: "morning" | "evening";
+}) {
+  const hasSession = await hasActiveWhatsAppSession(
+    params.organizationId,
+    params.toPhone,
+  );
+  if (!hasSession) {
+    return {
+      sent: false as const,
+      reason: "session_required" as const,
+    };
+  }
+
+  const first = firstName(params.name);
+  const interactive = wrapInteractive(
+    buildAttendanceMarkButtons({
+      workDateYmd: params.workDateYmd,
+      firstName: first,
+      orgName: params.orgName,
+      window: params.window,
+      workStartTime: params.workStartTime,
+    }),
+  );
+  const fallback = attendanceMarkFallbackText({
+    firstName: first,
+    orgName: params.orgName,
+    window: params.window,
+    workStartTime: params.workStartTime,
+  });
+
+  return sendWhatsAppInteractiveWithFallback({
+    organizationId: params.organizationId,
+    toPhone: params.toPhone,
+    interactive,
+    fallbackText: fallback,
+  });
+}
+
 /**
- * Send attendance reminders / summary for every HR-attendance org.
- * WhatsApp send is a no-op (reason: not_configured / session_required) when the
- * org has no active WhatsApp channel; the recipient computation still runs.
+ * Send attendance mark prompts / summary for every HR-attendance org.
+ * Mark + evening both use Present / Late / Absent WhatsApp buttons (no app).
  */
 export async function runHrAttendanceReminders(
   kind: AttendanceReminderKind,
@@ -199,7 +233,8 @@ export async function runHrAttendanceReminders(
     return { kind, skipped: "weekend", orgs: 0, recipients: 0, sent: 0 };
   }
 
-  const workDate = istNoonDate(istCalendarYmd(now));
+  const workDateYmd = istCalendarYmd(now);
+  const workDate = istNoonDate(workDateYmd);
   const orgs = await attendanceEnabledOrgIds();
 
   let recipients = 0;
@@ -207,7 +242,6 @@ export async function runHrAttendanceReminders(
   let orgsProcessed = 0;
 
   for (const org of orgs) {
-    // Skip company holidays.
     const holiday = await prisma.hrHoliday.findFirst({
       where: { organizationId: org.organizationId, date: workDate },
       select: { id: true },
@@ -267,22 +301,21 @@ export async function runHrAttendanceReminders(
       continue;
     }
 
-    const targets =
-      kind === "mark"
-        ? selectMarkReminderRecipients(members, records)
-        : selectCheckoutReminderRecipients(members, records);
+    // Morning + evening: same Present / Late / Absent WhatsApp buttons.
+    const targets = selectMarkReminderRecipients(members, records);
     const withPhone = targets.filter((m) => m.phone);
     recipients += withPhone.length;
+    const window = kind === "mark" ? "morning" : "evening";
 
     for (const member of withPhone) {
-      const body =
-        kind === "mark"
-          ? markMessage(member.name, orgName, org.workStartTime)
-          : checkoutMessage(member.name, orgName, org.workEndTime);
-      const res = await sendWorkspaceNoticeWhatsApp({
-        toPhone: member.phone!,
+      const res = await sendAttendanceMarkPrompt({
         organizationId: org.organizationId,
-        body,
+        toPhone: member.phone!,
+        name: member.name,
+        orgName,
+        workStartTime: org.workStartTime,
+        workDateYmd,
+        window,
       });
       if (res.sent) sent += 1;
     }
