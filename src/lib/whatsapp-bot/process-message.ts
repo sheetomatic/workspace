@@ -1197,7 +1197,7 @@ async function handleCustomerMessage(
     contact = phone ? await loadLeadCaptureContact(org.id, message.from) : contact;
 
     if (contact && !contact.leadCaptureComplete) {
-      let customerMessage = extractInboundBody(message);
+      let customerMessage: string | null = extractInboundBody(message) || null;
       if (
         !customerMessage &&
         (message.type === "audio" || message.type === "voice")
@@ -1219,7 +1219,7 @@ async function handleCustomerMessage(
         org,
         message,
         contact,
-        customerMessage,
+        customerMessage ?? "",
       );
       if (handled) {
         return;
