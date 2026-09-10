@@ -680,24 +680,31 @@ export async function recalculateAttendanceForPeriod(params: {
   const { listHolidays, syncHolidayAttendance } = await import("@/lib/hr/holidays");
   const startYear = params.periodStart.getUTCFullYear();
   const endYear = params.periodEnd.getUTCFullYear();
-  let holidayRows = 0;
-
+  const years: number[] = [];
   for (let year = startYear; year <= endYear; year += 1) {
-    const holidays = await listHolidays(params.organizationId, year);
-    for (const holiday of holidays) {
-      const time = holiday.date.getTime();
-      if (time < params.periodStart.getTime() || time > params.periodEnd.getTime()) {
-        continue;
-      }
-      const result = await syncHolidayAttendance({
+    years.push(year);
+  }
+
+  const holidayLists = await Promise.all(
+    years.map((year) => listHolidays(params.organizationId, year)),
+  );
+  const holidaysInRange = holidayLists.flat().filter((holiday) => {
+    const time = holiday.date.getTime();
+    return time >= params.periodStart.getTime() && time <= params.periodEnd.getTime();
+  });
+
+  // Parallel holiday sync — sequential was one members query per holiday day.
+  const holidayResults = await Promise.all(
+    holidaysInRange.map((holiday) =>
+      syncHolidayAttendance({
         organizationId: params.organizationId,
         date: holiday.date,
         name: holiday.name,
         isOptional: holiday.isOptional,
-      });
-      holidayRows += result.synced;
-    }
-  }
+      }),
+    ),
+  );
+  const holidayRows = holidayResults.reduce((sum, row) => sum + row.synced, 0);
 
   const leaves = await prisma.leaveRequest.findMany({
     where: {
@@ -741,41 +748,64 @@ export async function recalculateAttendanceForPeriod(params: {
         workDate: { gte: params.periodStart, lte: params.periodEnd },
         userId: { in: [...new Set(needed.map((row) => row.userId))] },
       },
-      select: { userId: true, workDate: true, status: true },
+      select: { id: true, userId: true, workDate: true, status: true },
     });
-    const statusByKey = new Map(
-      existing.map((row) => [`${row.userId}:${dateYmdUtc(row.workDate)}`, row.status]),
+    const existingByKey = new Map(
+      existing.map((row) => [
+        `${row.userId}:${dateYmdUtc(row.workDate)}`,
+        row,
+      ] as const),
     );
     const keepWorked = new Set(["PRESENT", "HALF_DAY", "SHORT_LEAVE"]);
 
+    const toCreate: Array<{
+      organizationId: string;
+      userId: string;
+      workDate: Date;
+      status: "ON_LEAVE";
+      method: "WEB";
+      notes: string;
+    }> = [];
+    const updateByNotes = new Map<string, string[]>();
+
     for (const row of needed) {
-      const current = statusByKey.get(`${row.userId}:${dateYmdUtc(row.workDate)}`);
-      if (current && keepWorked.has(current)) {
+      const key = `${row.userId}:${dateYmdUtc(row.workDate)}`;
+      const current = existingByKey.get(key);
+      if (current && keepWorked.has(current.status)) {
         continue;
       }
-      await prisma.attendanceRecord.upsert({
-        where: {
-          organizationId_userId_workDate: {
-            organizationId: params.organizationId,
-            userId: row.userId,
-            workDate: row.workDate,
-          },
-        },
-        create: {
+      const notes = `Leave · ${row.leaveType}`;
+      if (current) {
+        const ids = updateByNotes.get(notes) ?? [];
+        ids.push(current.id);
+        updateByNotes.set(notes, ids);
+      } else {
+        toCreate.push({
           organizationId: params.organizationId,
           userId: row.userId,
           workDate: row.workDate,
           status: "ON_LEAVE",
           method: "WEB",
-          notes: `Leave · ${row.leaveType}`,
-        },
-        update: {
-          status: "ON_LEAVE",
-          notes: `Leave · ${row.leaveType}`,
-        },
-      });
+          notes,
+        });
+      }
       leaveRows += 1;
     }
+
+    if (toCreate.length > 0) {
+      await prisma.attendanceRecord.createMany({
+        data: toCreate,
+        skipDuplicates: true,
+      });
+    }
+    await Promise.all(
+      [...updateByNotes.entries()].map(([notes, ids]) =>
+        prisma.attendanceRecord.updateMany({
+          where: { id: { in: ids }, organizationId: params.organizationId },
+          data: { status: "ON_LEAVE", notes },
+        }),
+      ),
+    );
   }
 
   return { holidayRows, leaveRows };
@@ -811,6 +841,18 @@ export async function markAttendanceDay(params: {
   notes?: string;
   otHours?: number | null;
 }) {
+  const workDate = new Date(params.workDate);
+  workDate.setUTCHours(12, 0, 0, 0);
+  const now = new Date();
+  const punchStatuses: AttendanceDayStatus[] = ["PRESENT", "HALF_DAY", "SHORT_LEAVE"];
+  const setsCheckIn = punchStatuses.includes(params.status);
+  const otHours =
+    params.otHours != null && Number.isFinite(params.otHours)
+      ? Math.max(0, params.otHours)
+      : 0;
+
+  // Membership check + upsert in parallel-friendly order: one round-trip for membership,
+  // then a single upsert (avoid double upserts / extra revalidate work upstream).
   const membership = await prisma.membership.findUnique({
     where: {
       userId_organizationId: {
@@ -823,16 +865,6 @@ export async function markAttendanceDay(params: {
   if (!membership || membership.deactivatedAt) {
     throw new Error("Employee not found in this workspace.");
   }
-
-  const workDate = new Date(params.workDate);
-  workDate.setUTCHours(12, 0, 0, 0);
-  const now = new Date();
-  const punchStatuses: AttendanceDayStatus[] = ["PRESENT", "HALF_DAY", "SHORT_LEAVE"];
-  const setsCheckIn = punchStatuses.includes(params.status);
-  const otHours =
-    params.otHours != null && Number.isFinite(params.otHours)
-      ? Math.max(0, params.otHours)
-      : 0;
 
   return prisma.attendanceRecord.upsert({
     where: {

@@ -40,12 +40,23 @@ function revalidateHr() {
   }
 }
 
+/** Prefer this on hot save paths — full HR_PATHS revalidate is slow on mobile. */
+function revalidateHrPaths(...paths: string[]) {
+  for (const path of paths) {
+    revalidatePath(path);
+  }
+}
+
 async function assertHrSubModuleEnabled(
   user: { id: string; organizationId: string },
   id: HrSubModuleId,
 ): Promise<boolean> {
+  // findUnique (not upsert) — hot save paths must not write settings on every click.
   const [settings, membership] = await Promise.all([
-    getOrCreateHrSettings(user.organizationId),
+    prisma.workspaceHrSettings.findUnique({
+      where: { organizationId: user.organizationId },
+      select: { enabledHrSubModules: true },
+    }),
     prisma.membership.findUnique({
       where: {
         userId_organizationId: {
@@ -58,7 +69,7 @@ async function assertHrSubModuleEnabled(
   ]);
   const { isMemberHrSubModuleEnabled } = await import("@/lib/hr/hr-sub-modules");
   return isMemberHrSubModuleEnabled(
-    settings.enabledHrSubModules,
+    settings?.enabledHrSubModules ?? null,
     membership?.enabledHrSubModules,
     id,
   );
@@ -111,7 +122,7 @@ export async function recordCheckInAction(
       accuracyM: Number.isFinite(accuracyM) ? accuracyM : null,
       method: geoLat !== undefined ? "GEO" : "WEB",
     });
-    revalidateHr();
+    revalidateHrPaths("/app/hr/attendance", "/app/hr");
     return { ok: true };
   } catch (error) {
     return mapCheckInError(error);
@@ -132,7 +143,7 @@ export async function recordCheckOutAction(): Promise<HrActionResult> {
 
   try {
     await checkOutAttendance(user);
-    revalidateHr();
+    revalidateHrPaths("/app/hr/attendance", "/app/hr", "/app/field");
     return { ok: true };
   } catch (error) {
     const message =
@@ -378,7 +389,7 @@ export async function recordFieldCheckInAction(
       geoLng,
     });
 
-    revalidateHr();
+    revalidateHrPaths("/app/field", "/app/hr/attendance", "/app/hr");
     return { ok: true };
   } catch (error) {
     return mapCheckInError(error);
@@ -668,7 +679,7 @@ export async function createPayrollRunAction(
       periodStart,
       periodEnd,
     });
-    revalidateHr();
+    revalidateHrPaths("/app/hr/payroll", "/app/hr/attendance", "/app/hr");
     return { ok: true };
   } catch (error) {
     const message =
@@ -721,7 +732,7 @@ export async function recalculatePayrollRunAction(
       periodEnd: run.periodEnd,
       replaceRunId: run.id,
     });
-    revalidateHr();
+    revalidateHrPaths("/app/hr/payroll", "/app/hr/attendance", "/app/hr");
     return { ok: true };
   } catch (error) {
     const message =
@@ -759,7 +770,7 @@ export async function recalculateAttendanceAction(
       periodStart,
       periodEnd,
     });
-    revalidateHr();
+    revalidateHrPaths("/app/hr/attendance", "/app/hr/payroll", "/app/hr");
     return { ok: true };
   } catch (error) {
     const message =
@@ -813,7 +824,7 @@ export async function markAttendanceDayAction(
       notes: notes || undefined,
       otHours: Number.isFinite(otHoursRaw) ? otHoursRaw : undefined,
     });
-    revalidateHr();
+    revalidateHrPaths("/app/hr/attendance", "/app/hr/payroll");
     return { ok: true };
   } catch (error) {
     const message =
@@ -852,7 +863,7 @@ export async function verifyAttendanceAction(
       otHours: Number.isFinite(otHoursRaw) ? otHoursRaw : undefined,
       notes: notes || undefined,
     });
-    revalidateHr();
+    revalidateHrPaths("/app/hr/attendance", "/app/hr/payroll");
     return { ok: true };
   } catch (error) {
     const message =
