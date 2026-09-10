@@ -691,6 +691,119 @@ button.ms-shop-card {
   }
 }
 
+.ms-shop-license {
+  display: grid;
+  gap: 1rem;
+}
+
+.ms-shop-license-card {
+  border: 1px solid var(--ms-line);
+  border-radius: 1.35rem;
+  background: #fff;
+  padding: 1.15rem 1.15rem 1.25rem;
+}
+
+.ms-shop-license-eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ms-muted);
+}
+
+.ms-shop-license-head h2 {
+  margin: 0;
+  font-size: 1.55rem;
+  letter-spacing: -0.035em;
+}
+
+.ms-shop-license-head p {
+  margin: 0.35rem 0 0;
+  color: var(--ms-muted);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.ms-shop-license-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 1rem 0 0.85rem;
+}
+
+.ms-shop-license-price {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.ms-shop-license-price small {
+  margin-left: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ms-muted);
+}
+
+.ms-shop-chip--ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.ms-shop-chip--idle {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.ms-shop-license-taps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0 0 1.1rem;
+  padding: 0;
+}
+
+.ms-shop-license-taps li {
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: var(--ms-bg);
+  color: var(--ms-ink);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.ms-shop-license-actions {
+  display: grid;
+  gap: 0.65rem;
+}
+
+button.ms-shop-btn {
+  width: 100%;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+button.ms-shop-btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.ms-shop-btn--ghost {
+  background: #fff;
+  color: var(--ms-ink);
+  border: 1px solid var(--ms-line);
+}
+
+.ms-shop-btn--ghost small {
+  color: var(--ms-muted);
+  opacity: 1;
+}
+
 .workspace-app .saas-content:has(.ms-shop) {
   overflow-x: hidden;
   overflow-y: auto;

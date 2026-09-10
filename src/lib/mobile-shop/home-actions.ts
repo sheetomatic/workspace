@@ -39,6 +39,7 @@ export const MOBILE_SHOP_NAV_MORE = [
   { href: "/app/mobile-shop/stock", label: "Stock", hi: "स्टॉक", exact: true as const },
   { href: "/app/mobile-shop/accessories", label: "Accessories", hi: "एक्सेसरी" },
   { href: "/app/mobile-shop/used-in", label: "Used phone in", hi: "पुराना इन" },
+  { href: "/app/mobile-shop/license", label: "License", hi: "लाइसेंस" },
 ] as const;
 
 export const MOBILE_SHOP_NAV_LINKS = [

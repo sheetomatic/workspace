@@ -18,7 +18,7 @@ export default async function MobileShopLayout({
         <p className="ms-shop-license-banner">
           Owner preview.
           {" "}
-          <Link href="/app/fms/kits">Get license</Link>
+          <Link href="/app/mobile-shop/license">Get license</Link>
         </p>
       ) : null}
       {children}

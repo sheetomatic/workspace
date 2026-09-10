@@ -19,6 +19,7 @@ export type KitActionResult = { ok: boolean; message: string };
 
 function revalidateKits(organizationId?: string) {
   revalidatePath("/app/fms/kits");
+  revalidatePath("/app/mobile-shop/license");
   revalidatePath("/app/fms/setup");
   revalidatePath("/app/billing");
   revalidatePath("/app/clients");

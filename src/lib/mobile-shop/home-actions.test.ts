@@ -43,6 +43,7 @@ describe("mobile shop home actions", () => {
       "Stock",
       "Accessories",
       "Used phone in",
+      "License",
     ]);
     const barLabels: string[] = MOBILE_SHOP_NAV_BAR.map((link) => link.label);
     expect(barLabels).not.toContain("Used");

@@ -61,12 +61,13 @@ export async function provisionBusinessProcesses(input: {
     revalidatePath("/app/fms/fulfillment");
     revalidatePath("/app/fms/lines");
     revalidatePath("/app/fms/kits");
+    revalidatePath("/app/mobile-shop/license");
 
     if (provisioned.length === 0 && licenseRequired.length > 0) {
       return {
         ok: false,
         message:
-          "A licensed kit is required first. Open Licensed kits, request the Mobile Shop app license, then continue.",
+          "A shop license is required first. Open Mobile shop → License, request it, then continue.",
         provisioned: [],
         licenseRequired,
       };
@@ -74,7 +75,7 @@ export async function provisionBusinessProcesses(input: {
 
     const licenseNote =
       licenseRequired.length > 0
-        ? " A licensed kit was skipped — request the Mobile Shop app under Licensed kits."
+        ? " A shop license was skipped — request it under Mobile shop → License."
         : "";
 
     return {

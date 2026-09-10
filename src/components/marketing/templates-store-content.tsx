@@ -451,7 +451,7 @@ export function TemplatesStoreContent({
               ) : null}
               <ol className="tpl-steps">
                 <li>Have (or buy) a Sheetomatic workspace</li>
-                <li>Admin: Licensed kits → Request license</li>
+                <li>Admin: Mobile shop → License → Request</li>
                 <li>Pay the UPI invoice. We confirm the UTR</li>
                 <li>Open Mobile shop. Counter starts</li>
               </ol>

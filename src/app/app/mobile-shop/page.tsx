@@ -60,9 +60,9 @@ export default async function MobileShopHomePage() {
           License is not active. Request it, pay the invoice, then the counter
           opens.
         </p>
-        <Link className="ms-shop-btn" href="/app/fms/kits">
-          Licensed kits
-          <small>Request / pay</small>
+        <Link className="ms-shop-btn" href="/app/mobile-shop/license">
+          Get license
+          <small>Request, then pay the invoice</small>
         </Link>
       </section>
     );
