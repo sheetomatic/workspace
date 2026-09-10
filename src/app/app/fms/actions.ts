@@ -13,9 +13,17 @@ import {
   getOrganizationPlanContext,
   isAtFmsTemplateLimit,
 } from "@/lib/org-plan-context";
-import { canManageFms, canSubmitFmsForm, canCompleteFmsStep } from "@/lib/fms/access";
+import {
+  canControlFmsPipeline,
+  canManageFms,
+  canSubmitFmsForm,
+  canCompleteFmsStep,
+} from "@/lib/fms/access";
 import { getFmsActor } from "@/lib/fms/session";
-import { clearOrganizationFmsJobs } from "@/lib/fms/clear-jobs";
+import {
+  clearOrganizationFmsJobs,
+  clearTemplateFmsJobs,
+} from "@/lib/fms/clear-jobs";
 import { recordFmsAudit } from "@/lib/fms/audit";
 import {
   buildStubFormAiPrompt,
@@ -1053,24 +1061,78 @@ export async function saveFmsStepNotesAction(
   }
 }
 
+function revalidateFmsJobPaths() {
+  revalidatePath("/app/fms");
+  revalidatePath("/app/fms/lines");
+  revalidatePath("/app/fms/ops");
+  revalidatePath("/app/fms/fulfillment");
+  revalidatePath("/app/fms/my-stops");
+  revalidatePath("/app/leads");
+}
+
+async function requireFmsPipelineControl() {
+  const actor = await getFmsActor();
+  if (!actor.ok) {
+    return { ok: false as const, message: actor.message };
+  }
+  if (!canControlFmsPipeline(actor.user.role)) {
+    return { ok: false as const, message: "You cannot delete FMS jobs." };
+  }
+  return { ok: true as const, user: actor.user };
+}
+
 export async function clearOrganizationFmsJobsAction() {
   try {
-    const user = await requireFmsAdmin();
-    const result = await clearOrganizationFmsJobs(user.organizationId);
-    revalidatePath("/app/fms");
-    revalidatePath("/app/fms/lines");
-    revalidatePath("/app/fms/ops");
-    revalidatePath("/app/leads");
+    const gate = await requireFmsPipelineControl();
+    if (!gate.ok) {
+      return { ok: false as const, message: gate.message };
+    }
+    const result = await clearOrganizationFmsJobs(gate.user.organizationId);
+    revalidateFmsJobPaths();
     return {
       ok: true as const,
       message:
         result.jobs === 0
           ? "No FMS jobs to clear."
-          : `Cleared ${result.jobs} FMS job${result.jobs === 1 ? "" : "s"}.`,
+          : `Deleted ${result.jobs} FMS job${result.jobs === 1 ? "" : "s"}.`,
     };
   } catch (error) {
     console.error("clearOrganizationFmsJobsAction", error);
     return { ok: false as const, message: "Could not clear FMS jobs." };
+  }
+}
+
+export async function clearTemplateFmsJobsAction(templateId: string) {
+  try {
+    const gate = await requireFmsPipelineControl();
+    if (!gate.ok) {
+      return { ok: false as const, message: gate.message };
+    }
+    if (!templateId) {
+      return { ok: false as const, message: "Workflow not found." };
+    }
+    const template = await prisma.fmsTemplate.findFirst({
+      where: { id: templateId, organizationId: gate.user.organizationId },
+      select: { id: true },
+    });
+    if (!template) {
+      return { ok: false as const, message: "Workflow not found." };
+    }
+    const result = await clearTemplateFmsJobs(
+      gate.user.organizationId,
+      templateId,
+    );
+    revalidateFmsJobPaths();
+    return {
+      ok: true as const,
+      message:
+        result.jobs === 0
+          ? "No jobs on this workflow."
+          : `Deleted ${result.jobs} job${result.jobs === 1 ? "" : "s"} from this workflow.`,
+    };
+  } catch (error) {
+    console.error("clearTemplateFmsJobsAction", error);
+    return { ok: false as const, message: "Could not delete FMS jobs." };
   }
 }
 

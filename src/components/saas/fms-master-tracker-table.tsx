@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FileInput } from "lucide-react";
 import type { FmsFormFieldType, FmsStepStatus } from "@prisma/client";
 import { formatFmsFieldValueText } from "@/lib/fms/display-values";
+import { FmsDeleteJobButton } from "@/components/saas/fms-delete-job-button";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
 import { FmsStepManagePopover } from "@/components/saas/fms-step-manage-popover";
 import { FmsTrainRouteSnapshot } from "@/components/saas/fms-train-route-snapshot";
@@ -132,12 +133,14 @@ export function FmsMasterTrackerTable({
   block,
   viewerUserId,
   showEditLink = true,
+  canDeleteJobs = false,
   returnContext = "lines",
   returnTemplateId,
 }: {
   block: TrackerTableBlock;
   viewerUserId?: string;
   showEditLink?: boolean;
+  canDeleteJobs?: boolean;
   returnContext?: FmsFromContext;
   returnTemplateId?: string;
 }) {
@@ -201,6 +204,11 @@ export function FmsMasterTrackerTable({
                 </p>
               </th>
             ))}
+            {canDeleteJobs ? (
+              <th rowSpan={2} className="ws-fms-tracker-remove-col">
+                Remove
+              </th>
+            ) : null}
           </tr>
           <tr className="ws-fms-tracker-row-sub">
             {block.steps.map((step) => (
@@ -335,6 +343,11 @@ export function FmsMasterTrackerTable({
                     </Fragment>
                   );
                 })}
+                {canDeleteJobs ? (
+                  <td className="ws-fms-tracker-remove-col">
+                    <FmsDeleteJobButton instanceId={instance.id} />
+                  </td>
+                ) : null}
               </tr>
             );
           })}

@@ -9,6 +9,7 @@ import {
   skipFmsStepAction,
   updateFmsStepPlannedAtAction,
 } from "@/app/app/fms/workflow-actions";
+import { FmsDeleteJobButton } from "@/components/saas/fms-delete-job-button";
 import { fmsInitialState } from "@/lib/fms-action-state";
 
 type MemberOption = {
@@ -229,6 +230,16 @@ export function FmsInstanceControlPanel({
           </p>
         ) : null}
       </form>
+      <div className="ws-fms-control-form is-danger">
+        <p className="ws-fms-muted">
+          Remove deletes this job from the tracker. The workflow stays.
+        </p>
+        <FmsDeleteJobButton
+          instanceId={instanceId}
+          redirectTo="/app/fms/lines"
+          label="Remove job"
+        />
+      </div>
     </section>
       ) : null}
     </div>

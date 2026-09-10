@@ -7,6 +7,7 @@ import {
 } from "@/components/saas/fms-my-stops-queue";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { requireSession } from "@/lib/require-session";
+import { canControlFmsPipeline } from "@/lib/fms/access";
 import { getFmsTrackerBlockByTemplate } from "@/lib/fms/queries";
 import {
   formatDelayLabel,
@@ -155,6 +156,7 @@ export default async function FmsMyStopsTemplatePage({ params }: PageProps) {
         returnContext="my-stops"
         returnTemplateId={templateId}
         showNewLead={false}
+        canDeleteJobs={canControlFmsPipeline(user.role)}
         summary={
           <div className="ws-sf-metrics ws-fms-metrics ws-fms-tracker-metrics">
             <div className="ws-sf-metric-tile">

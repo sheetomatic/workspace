@@ -6,7 +6,7 @@ import { FmsMasterTrackerBlock } from "@/components/saas/fms-master-tracker-bloc
 import { FmsPagination } from "@/components/saas/fms-pagination";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
-import { canSubmitFmsForm } from "@/lib/fms/access";
+import { canControlFmsPipeline, canSubmitFmsForm } from "@/lib/fms/access";
 import { countCompletedFmsInstances, listFmsTrackerBlocks } from "@/lib/fms/queries";
 import { isStepOverdue } from "@/lib/fms/step-display";
 import {
@@ -112,6 +112,7 @@ export default async function FmsFulfillmentPage({ searchParams }: PageProps) {
       ).length,
     0,
   );
+  const canDeleteJobs = canControlFmsPipeline(user.role);
 
   const flowQuery = flow === "sales-order" ? "" : `flow=${flow}`;
   const searchSuffix = [flowQuery, referenceQuery ? `q=${encodeURIComponent(referenceQuery)}` : ""]
@@ -229,6 +230,7 @@ export default async function FmsFulfillmentPage({ searchParams }: PageProps) {
                 block={mapTrackerBlock(block)}
                 viewerUserId={user.id}
                 showNewLead={canSubmitFmsForm(user)}
+                canDeleteJobs={canDeleteJobs}
               />
             ))}
           </div>
@@ -252,6 +254,7 @@ export default async function FmsFulfillmentPage({ searchParams }: PageProps) {
                 key={block.id}
                 block={mapTrackerBlock(block)}
                 viewerUserId={user.id}
+                canDeleteJobs={canDeleteJobs}
               />
             ))}
           </div>

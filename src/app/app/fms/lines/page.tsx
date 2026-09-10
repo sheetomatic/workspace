@@ -7,7 +7,7 @@ import { WorkspaceGuideButton } from "@/components/saas/workspace-guide-button";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import { canAccessEmReady } from "@/lib/em/em-access";
-import { canSubmitFmsForm } from "@/lib/fms/access";
+import { canControlFmsPipeline, canSubmitFmsForm } from "@/lib/fms/access";
 import {
   countCompletedFmsInstances,
   getFmsPipelineCounts,
@@ -94,6 +94,7 @@ export default async function FmsLinesPage({ searchParams }: PageProps) {
     Math.ceil(completedTotal / COMPLETED_PAGE_SIZE),
   );
   const showEmReady = canAccessEmReady(user);
+  const canDeleteJobs = canControlFmsPipeline(user.role);
 
   const activeLeadCount = activeBlocks.reduce(
     (sum, block) => sum + block.instances.length,
@@ -116,9 +117,7 @@ export default async function FmsLinesPage({ searchParams }: PageProps) {
             <Link href="/app/fms/ops" className="btn-secondary btn-sm">
               Ops monitor
             </Link>
-            {hasMinimumRole(user.role, "ADMIN") ? (
-              <FmsClearSampleJobsButton />
-            ) : null}
+            {canDeleteJobs ? <FmsClearSampleJobsButton /> : null}
           </>
         }
       />
@@ -168,6 +167,16 @@ export default async function FmsLinesPage({ searchParams }: PageProps) {
         </div>
       </div>
 
+      {canDeleteJobs && activeLeadCount > 0 ? (
+        <div className="ws-fms-jobs-banner">
+          <p>
+            Remove a single tracker row, or delete every job in this workspace.
+            Workflows stay.
+          </p>
+          <FmsClearSampleJobsButton />
+        </div>
+      ) : null}
+
       {activeBlocks.length === 0 ? (
         <div className="ws-empty-state ws-fms-empty-state">
           <p>No active lines yet. Submit a live form to start a journey.</p>
@@ -183,6 +192,7 @@ export default async function FmsLinesPage({ searchParams }: PageProps) {
               block={mapTrackerBlock(block)}
               viewerUserId={user.id}
               showNewLead={canSubmitFmsForm(user)}
+              canDeleteJobs={canDeleteJobs}
             />
           ))}
         </div>
@@ -206,6 +216,7 @@ export default async function FmsLinesPage({ searchParams }: PageProps) {
                 key={block.id}
                 block={mapTrackerBlock(block)}
                 viewerUserId={user.id}
+                canDeleteJobs={canDeleteJobs}
               />
             ))}
           </div>

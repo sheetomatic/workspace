@@ -10,6 +10,7 @@ import {
 import { canControlFmsPipeline, canManageFms, canClaimFmsStep } from "@/lib/fms/access";
 import { getFmsActor } from "@/lib/fms/session";
 import { recordFmsAudit } from "@/lib/fms/audit";
+import { deleteFmsInstanceJob } from "@/lib/fms/clear-jobs";
 import { prisma } from "@/lib/db";
 import type { FmsActionState } from "@/lib/fms-action-state";
 
@@ -122,6 +123,44 @@ export async function cancelFmsInstanceAction(
     return {
       ok: false,
       message: error instanceof Error ? error.message : "Could not cancel job.",
+    };
+  }
+}
+
+export async function deleteFmsInstanceAction(instanceId: string): Promise<{
+  ok: boolean;
+  message: string;
+}> {
+  try {
+    const actor = await getFmsActor();
+    if (!actor.ok) {
+      return { ok: false, message: actor.message };
+    }
+    const { user } = actor;
+
+    if (!canControlFmsPipeline(user.role)) {
+      return { ok: false, message: "You cannot remove pipeline jobs." };
+    }
+
+    if (!instanceId) {
+      return { ok: false, message: "FMS job not found." };
+    }
+
+    await deleteFmsInstanceJob(user.organizationId, instanceId);
+
+    revalidatePath("/app/fms");
+    revalidatePath("/app/fms/lines");
+    revalidatePath("/app/fms/ops");
+    revalidatePath("/app/fms/fulfillment");
+    revalidatePath("/app/fms/my-stops");
+    revalidatePath("/app/leads");
+    revalidatePath(`/app/fms/instances/${instanceId}`);
+    return { ok: true, message: "Job removed." };
+  } catch (error) {
+    console.error("deleteFmsInstanceAction", error);
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "Could not remove job.",
     };
   }
 }

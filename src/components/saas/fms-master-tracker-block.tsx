@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Settings2 } from "lucide-react";
+import { FmsClearSampleJobsButton } from "@/components/saas/fms-clear-sample-jobs";
 import { FmsMasterTrackerTable } from "@/components/saas/fms-master-tracker-table";
 import type { TrackerTableBlock } from "@/components/saas/fms-master-tracker-table";
 import { fmsFormHref, type FmsFromContext } from "@/lib/fms/navigation";
@@ -76,6 +77,7 @@ export function FmsMasterTrackerBlock({
   viewerUserId,
   showEditLink = true,
   showNewLead = true,
+  canDeleteJobs = false,
   summary,
   returnContext = "lines",
   returnTemplateId,
@@ -84,6 +86,7 @@ export function FmsMasterTrackerBlock({
   viewerUserId?: string;
   showEditLink?: boolean;
   showNewLead?: boolean;
+  canDeleteJobs?: boolean;
   summary?: React.ReactNode;
   returnContext?: FmsFromContext;
   returnTemplateId?: string;
@@ -111,6 +114,9 @@ export function FmsMasterTrackerBlock({
               New lead
             </Link>
           ) : null}
+          {canDeleteJobs && block.instances.length > 0 ? (
+            <FmsClearSampleJobsButton templateId={block.id} />
+          ) : null}
           {showEditLink ? (
             <Link
               href={fmsFormHref(block.form.id, formFromContext)}
@@ -130,6 +136,7 @@ export function FmsMasterTrackerBlock({
         block={serializeBlock(block)}
         viewerUserId={viewerUserId}
         showEditLink={showEditLink}
+        canDeleteJobs={canDeleteJobs}
         returnContext={returnContext}
         returnTemplateId={returnTemplateId}
       />

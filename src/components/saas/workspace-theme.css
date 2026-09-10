@@ -23192,6 +23192,57 @@ body.ws-more-sheet-open .sheetomatic-ai-launcher {
   text-decoration: underline;
 }
 
+.workspace-app .ws-fms-tracker-remove-col {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  width: 92px;
+  min-width: 92px;
+  text-align: center;
+  vertical-align: middle;
+  background: #fff;
+  box-shadow: -6px 0 10px rgba(15, 23, 42, 0.06);
+}
+
+.workspace-app .ws-fms-tracker-table thead .ws-fms-tracker-remove-col {
+  background: #fafafa;
+  z-index: 4;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.workspace-app .ws-fms-tracker-data-row:hover .ws-fms-tracker-remove-col {
+  background: #fff;
+}
+
+.workspace-app .ws-fms-delete-job {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.workspace-app .ws-fms-jobs-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid #f9cfc9;
+  border-radius: 8px;
+  background: #fef7f6;
+}
+
+.workspace-app .ws-fms-jobs-banner p {
+  margin: 0;
+  flex: 1 1 240px;
+  font-size: 0.8125rem;
+  color: #5c1f1b;
+}
+
 .workspace-app .ws-fms-tracker-data-row:hover td {
   background-image: linear-gradient(rgba(1, 118, 211, 0.04), rgba(1, 118, 211, 0.04));
 }
