@@ -15,6 +15,7 @@ import {
 } from "@/lib/org-plan-context";
 import { canManageFms, canSubmitFmsForm, canCompleteFmsStep } from "@/lib/fms/access";
 import { getFmsActor } from "@/lib/fms/session";
+import { clearOrganizationFmsJobs } from "@/lib/fms/clear-jobs";
 import { recordFmsAudit } from "@/lib/fms/audit";
 import {
   buildStubFormAiPrompt,
@@ -1049,6 +1050,27 @@ export async function saveFmsStepNotesAction(
   } catch (error) {
     console.error("saveFmsStepNotesAction", error);
     return { ok: false, message: "Could not save notes." };
+  }
+}
+
+export async function clearOrganizationFmsJobsAction() {
+  try {
+    const user = await requireFmsAdmin();
+    const result = await clearOrganizationFmsJobs(user.organizationId);
+    revalidatePath("/app/fms");
+    revalidatePath("/app/fms/lines");
+    revalidatePath("/app/fms/ops");
+    revalidatePath("/app/leads");
+    return {
+      ok: true as const,
+      message:
+        result.jobs === 0
+          ? "No FMS jobs to clear."
+          : `Cleared ${result.jobs} FMS job${result.jobs === 1 ? "" : "s"}.`,
+    };
+  } catch (error) {
+    console.error("clearOrganizationFmsJobsAction", error);
+    return { ok: false as const, message: "Could not clear FMS jobs." };
   }
 }
 

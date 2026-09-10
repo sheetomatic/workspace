@@ -1052,7 +1052,10 @@ export async function completeInboundLeadFollowUp(followUpId: string) {
   return { ok: true };
 }
 
-export async function bridgeLeadToFmsAction(leadId: string) {
+export async function bridgeLeadToFmsAction(
+  leadId: string,
+  templateId?: string,
+) {
   const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
@@ -1070,6 +1073,7 @@ export async function bridgeLeadToFmsAction(leadId: string) {
     organizationId: user.organizationId,
     lead,
     actorUserId: user.id,
+    templateId,
   });
 
   if (!result.ok) {
@@ -1077,13 +1081,18 @@ export async function bridgeLeadToFmsAction(leadId: string) {
       ok: false,
       message:
         result.reason === "no_lead_fms_template"
-          ? "Activate a Lead to Closure FMS workflow first."
+          ? "Activate an FMS workflow first, then add this lead."
           : "Could not create FMS job.",
     };
   }
 
   revalidatePath("/app/leads");
-  return { ok: true, instanceId: result.instanceId };
+  revalidatePath("/app/fms");
+  return {
+    ok: true,
+    instanceId: result.instanceId,
+    templateName: result.templateName,
+  };
 }
 
 export type LeadSyncActionResult =

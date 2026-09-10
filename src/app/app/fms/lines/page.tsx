@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { FmsMasterTrackerBlock } from "@/components/saas/fms-master-tracker-block";
 import { FmsPagination } from "@/components/saas/fms-pagination";
+import { FmsClearSampleJobsButton } from "@/components/saas/fms-clear-sample-jobs";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { WorkspaceGuideButton } from "@/components/saas/workspace-guide-button";
 import { requireSession } from "@/lib/require-session";
@@ -115,6 +116,9 @@ export default async function FmsLinesPage({ searchParams }: PageProps) {
             <Link href="/app/fms/ops" className="btn-secondary btn-sm">
               Ops monitor
             </Link>
+            {hasMinimumRole(user.role, "ADMIN") ? (
+              <FmsClearSampleJobsButton />
+            ) : null}
           </>
         }
       />

@@ -41,6 +41,11 @@ import {
   updateLeadProjectStatus,
 } from "@/app/app/leads/actions";
 import { QuotationBuilderPanel } from "@/components/saas/quotation-builder-panel";
+import {
+  LeadAddToFmsControl,
+  type LeadFmsLink,
+  type LeadFmsTemplateOption,
+} from "@/components/saas/lead-add-to-fms";
 import { LeadTemperatureBadge } from "@/components/saas/lead-temperature-badge";
 import type { LeadDeliveryInput } from "@/lib/leads/delivery-journey";
 import { deliveryJourneySummary, buildDeliveryJourney } from "@/lib/leads/delivery-journey";
@@ -265,6 +270,7 @@ export type LeadDrawerData = {
   salesOrders?: LeadSalesOrderData[];
   /** Latest SO — kept for list badges / journey default. */
   salesOrder?: LeadSalesOrderData | null;
+  fmsInstance?: LeadFmsLink;
 };
 
 function defaultFollowUpLocal() {
@@ -290,6 +296,8 @@ export function LeadDrawerPanel({
   onLeadPatched,
   listParams = {},
   initialTab = null,
+  canUseFms = false,
+  fmsTemplates = [],
 }: {
   lead: LeadDrawerData;
   canManage: boolean;
@@ -306,6 +314,8 @@ export function LeadDrawerPanel({
   onLeadPatched?: (id: string, patch: Partial<LeadDrawerData>) => void;
   listParams?: LeadsListSearchParams;
   initialTab?: DrawerTab | string | null;
+  canUseFms?: boolean;
+  fmsTemplates?: LeadFmsTemplateOption[];
 }) {
   void _onDeleted;
   // Staff can work (call, note, follow up, meet) leads assigned to them,
@@ -803,6 +813,17 @@ export function LeadDrawerPanel({
         </div>
         </div>
         <div className="leads-drawer-head-actions">
+          {canUseFms ? (
+            <LeadAddToFmsControl
+              canManage={canManage}
+              leadId={lead.id}
+              fmsInstance={lead.fmsInstance ?? null}
+              templates={fmsTemplates}
+              onLinked={(instance) =>
+                onLeadPatched?.(lead.id, { fmsInstance: instance })
+              }
+            />
+          ) : null}
           {canWork ? (
             <button
               type="button"

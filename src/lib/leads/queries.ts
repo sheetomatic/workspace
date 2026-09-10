@@ -161,6 +161,14 @@ const inboundLeadCrmDrawerInclude = {
   offeredServices: {
     orderBy: { createdAt: "desc" as const },
   },
+  fmsInstance: {
+    select: {
+      id: true,
+      status: true,
+      referenceLabel: true,
+      template: { select: { name: true } },
+    },
+  },
 } as const;
 
 /**

@@ -18,6 +18,19 @@ async function resolveSubmitterUserId(organizationId: string) {
   return membership?.userId ?? null;
 }
 
+const leadFmsTemplateInclude = {
+  form: { include: { fields: { orderBy: { sortOrder: "asc" as const } } } },
+  steps: { orderBy: { sortOrder: "asc" as const } },
+} as const;
+
+export async function listActiveFmsTemplatesForLead(organizationId: string) {
+  return prisma.fmsTemplate.findMany({
+    where: { organizationId, status: "ACTIVE" },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+}
+
 export async function findLeadToClosureTemplate(organizationId: string) {
   return prisma.fmsTemplate.findFirst({
     where: {
@@ -28,10 +41,34 @@ export async function findLeadToClosureTemplate(organizationId: string) {
         { name: { contains: "Lead to Sales", mode: "insensitive" } },
       ],
     },
-    include: {
-      form: { include: { fields: { orderBy: { sortOrder: "asc" } } } },
-      steps: { orderBy: { sortOrder: "asc" } },
-    },
+    include: leadFmsTemplateInclude,
+  });
+}
+
+async function loadLeadFmsTemplate(
+  organizationId: string,
+  templateId?: string,
+) {
+  if (templateId?.trim()) {
+    return prisma.fmsTemplate.findFirst({
+      where: {
+        id: templateId.trim(),
+        organizationId,
+        status: "ACTIVE",
+      },
+      include: leadFmsTemplateInclude,
+    });
+  }
+
+  const named = await findLeadToClosureTemplate(organizationId);
+  if (named) {
+    return named;
+  }
+
+  return prisma.fmsTemplate.findFirst({
+    where: { organizationId, status: "ACTIVE" },
+    orderBy: { name: "asc" },
+    include: leadFmsTemplateInclude,
   });
 }
 
@@ -50,12 +87,21 @@ export async function bridgeInboundLeadToFms(params: {
     | "fmsInstanceId"
   >;
   actorUserId?: string;
+  templateId?: string;
 }) {
   if (params.lead.fmsInstanceId) {
-    return { ok: true as const, instanceId: params.lead.fmsInstanceId, skipped: true };
+    return {
+      ok: true as const,
+      instanceId: params.lead.fmsInstanceId,
+      skipped: true,
+      templateName: null,
+    };
   }
 
-  const template = await findLeadToClosureTemplate(params.organizationId);
+  const template = await loadLeadFmsTemplate(
+    params.organizationId,
+    params.templateId,
+  );
   if (!template?.form) {
     return { ok: false as const, reason: "no_lead_fms_template" as const };
   }
@@ -105,7 +151,12 @@ export async function bridgeInboundLeadToFms(params: {
     data: { fmsInstanceId: instance.id },
   });
 
-  return { ok: true as const, instanceId: instance.id, skipped: false };
+  return {
+    ok: true as const,
+    instanceId: instance.id,
+    skipped: false,
+    templateName: template.name,
+  };
 }
 
 export async function getFmsStepSummaryForLead(fmsInstanceId: string | null) {

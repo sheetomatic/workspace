@@ -12,6 +12,10 @@ import {
 } from "@/app/app/leads/actions";
 import { LeadsCsvImportButton } from "@/components/saas/leads-csv-import";
 import { LeadDrawerPanel, type LeadDrawerData } from "@/components/saas/leads-drawer-panel";
+import {
+  LeadAddToFmsControl,
+  type LeadFmsTemplateOption,
+} from "@/components/saas/lead-add-to-fms";
 import { LeadCategorySelect } from "@/components/saas/lead-category-select";
 import { LeadStatusSelect } from "@/components/saas/lead-status-select";
 import { LeadTemperatureBadge } from "@/components/saas/lead-temperature-badge";
@@ -149,6 +153,8 @@ export function LeadsCrmWorkspace({
   initialSelectedLeadId = null,
   initialTab = null,
   focusMode = false,
+  canUseFms = false,
+  fmsTemplates = [],
 }: {
   leads: LeadRow[];
   total: number;
@@ -177,6 +183,8 @@ export function LeadsCrmWorkspace({
   initialTab?: CrmDrawerTab | string | null;
   /** Deep-link: show only the focused lead drawer (from Payments / Meetings / etc.). */
   focusMode?: boolean;
+  canUseFms?: boolean;
+  fmsTemplates?: LeadFmsTemplateOption[];
 }) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedLeadId);
@@ -750,6 +758,18 @@ export function LeadsCrmWorkspace({
                         onClick={(event) => event.stopPropagation()}
                         onKeyDown={(event) => event.stopPropagation()}
                       >
+                        {canUseFms ? (
+                          <LeadAddToFmsControl
+                            canManage={canManage}
+                            compact
+                            leadId={lead.id}
+                            fmsInstance={lead.fmsInstance ?? null}
+                            templates={fmsTemplates}
+                            onLinked={(instance) =>
+                              patchLead(lead.id, { fmsInstance: instance })
+                            }
+                          />
+                        ) : null}
                         {telHref ? (
                           <a
                             className="leads-icon-btn"
@@ -866,6 +886,8 @@ export function LeadsCrmWorkspace({
             serviceCatalog={serviceCatalog}
             startTransition={startTransition}
             teamMembers={teamMembers}
+            canUseFms={canUseFms}
+            fmsTemplates={fmsTemplates}
           />
         </div>
       ) : null}

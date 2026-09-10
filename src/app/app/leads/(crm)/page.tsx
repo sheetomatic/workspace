@@ -35,10 +35,9 @@ import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
 import { NEXT_TIME_LEAD_STATUSES } from "@/lib/leads/status-labels";
-import {
-  listLeadServiceCatalog,
-  serializeServiceCatalogItem,
-} from "@/lib/leads/service-catalog";
+import { listLeadServiceCatalog, serializeServiceCatalogItem } from "@/lib/leads/service-catalog";
+import { listActiveFmsTemplatesForLead } from "@/lib/leads/fms-bridge";
+import { hasWorkspaceModule } from "@/lib/workspace-modules";
 import { getAllSalesOrdersByLeadIds } from "@/lib/leads/sales-orders";
 import { listWorkspaceMembers } from "@/lib/workspace";
 import { withDbRetry } from "@/lib/db";
@@ -168,6 +167,14 @@ function serializeLead(lead: CrmDrawerLead) {
       createdAt: item.createdAt.toISOString(),
       createdBy: item.createdBy,
     })),
+    fmsInstance: lead.fmsInstance
+      ? {
+          id: lead.fmsInstance.id,
+          referenceLabel: lead.fmsInstance.referenceLabel,
+          status: lead.fmsInstance.status,
+          template: { name: lead.fmsInstance.template.name },
+        }
+      : null,
   };
 }
 
@@ -219,8 +226,9 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
   });
 
   if (focusMode && focusLeadId) {
-    const [lead, teamMembers, serviceCatalog, organization] = await withDbRetry(
-      (db) =>
+    const fmsEnabled = hasWorkspaceModule(user, "FMS");
+    const [lead, teamMembers, serviceCatalog, organization, fmsTemplates] =
+      await withDbRetry((db) =>
         Promise.all([
           getInboundLeadForCrmDrawer(user.organizationId, focusLeadId, leadScope),
           listWorkspaceMembers(user.organizationId),
@@ -229,8 +237,11 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
             where: { id: user.organizationId },
             select: { name: true, logoUrl: true },
           }),
+          fmsEnabled
+            ? listActiveFmsTemplatesForLead(user.organizationId)
+            : Promise.resolve([]),
         ]),
-    );
+      );
 
     const salesOrdersByLead = lead
       ? await getAllSalesOrdersByLeadIds(user.organizationId, [lead.id])
@@ -287,6 +298,8 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
           totalPages={1}
           workspaceTotal={leadsWithSalesOrders.length}
           serviceCatalog={serviceCatalog.map(serializeServiceCatalogItem)}
+          canUseFms={fmsEnabled}
+          fmsTemplates={fmsTemplates}
         />
       </div>
     );
@@ -307,7 +320,8 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
 
   // Critical path first (list + members + org). Heavy dashboards / sync
   // metadata load second and soft-fail so Neon cold-start does not blank CRM.
-  const [leadPage, teamMembers, serviceCatalog, organization, workspaceTotal] =
+  const fmsEnabled = hasWorkspaceModule(user, "FMS");
+  const [leadPage, teamMembers, serviceCatalog, organization, workspaceTotal, fmsTemplates] =
     await withDbRetry((db) =>
       Promise.all([
         listInboundLeadsForPeriodPaginated(user.organizationId, period, {
@@ -331,6 +345,9 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
           select: { name: true, logoUrl: true },
         }),
         getInboundLeadWorkspaceTotal(user.organizationId, leadScope),
+        fmsEnabled
+          ? listActiveFmsTemplatesForLead(user.organizationId)
+          : Promise.resolve([]),
       ]),
     );
 
@@ -505,6 +522,8 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
         totalPages={leadPage.totalPages}
         workspaceTotal={workspaceTotal}
         serviceCatalog={serviceCatalog.map(serializeServiceCatalogItem)}
+        canUseFms={fmsEnabled}
+        fmsTemplates={fmsTemplates}
       />
     </div>
   );

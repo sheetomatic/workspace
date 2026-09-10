@@ -1559,8 +1559,32 @@
   flex-shrink: 0;
 }
 
-.leads-drawer-so-link {
-  white-space: nowrap;
+.leads-fms-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.leads-fms-add select {
+  max-width: 10.5rem;
+  height: 2rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.8rem;
+  color: #0f172a;
+}
+
+.leads-fms-add-error {
+  color: #b91c1c;
+  font-size: 0.75rem;
+}
+
+.ws-fms-clear-jobs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .leads-icon-actions {
