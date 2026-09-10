@@ -335,6 +335,76 @@ export async function checkOutAttendance(user: SessionUser) {
   });
 }
 
+/** First field visit of the day clocks In — no office fence, no manager approve. */
+export async function ensureAttendanceFromFieldCheckIn(params: {
+  user: SessionUser;
+  geoLat: number;
+  geoLng: number;
+}) {
+  const workDate = startOfToday();
+  const existing = await prisma.attendanceRecord.findUnique({
+    where: {
+      organizationId_userId_workDate: {
+        organizationId: params.user.organizationId,
+        userId: params.user.id,
+        workDate,
+      },
+    },
+  });
+  if (existing?.checkInAt) {
+    return existing;
+  }
+
+  const { resolveEmployeeTiming } = await import("@/lib/hr/shifts");
+  const timing = await resolveEmployeeTiming(
+    params.user.organizationId,
+    params.user.id,
+  );
+  const checkInAt = new Date();
+  const isLate = isCheckInLate({
+    checkInAt,
+    workStartTime: timing.workStartTime,
+    lateGraceMinutes: timing.lateGraceMinutes,
+  });
+
+  return prisma.attendanceRecord.upsert({
+    where: {
+      organizationId_userId_workDate: {
+        organizationId: params.user.organizationId,
+        userId: params.user.id,
+        workDate,
+      },
+    },
+    create: {
+      organizationId: params.user.organizationId,
+      userId: params.user.id,
+      workDate,
+      checkInAt,
+      status: "PRESENT",
+      verifyStatus: "VERIFIED",
+      verifiedAt: checkInAt,
+      isLate,
+      method: "GEO",
+      geoLat: params.geoLat,
+      geoLng: params.geoLng,
+      geoFenceOk: true,
+    },
+    update: existing
+      ? {}
+      : {
+          checkInAt,
+          status: "PRESENT",
+          verifyStatus: "VERIFIED",
+          verifiedAt: checkInAt,
+          isLate,
+          method: "GEO",
+          geoLat: params.geoLat,
+          geoLng: params.geoLng,
+          geoFenceOk: true,
+        },
+  });
+}
+
 export async function listPendingAttendanceVerifications(organizationId: string) {
   return prisma.attendanceRecord.findMany({
     where: {
