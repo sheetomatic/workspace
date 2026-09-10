@@ -5,7 +5,7 @@ import { AttendanceAdminTable } from "@/components/hr/attendance-admin-table";
 import { AttendanceSiteToolbar } from "@/components/hr/attendance-site-toolbar";
 import { AttendanceMonthCalendar } from "@/components/hr/attendance-month-calendar";
 import { MarkAttendanceDayForm } from "@/components/hr/mark-attendance-day-form";
-import { AttendanceVerifyQueue } from "@/components/hr/attendance-verify-queue";
+import { AttendanceRecalculateButton } from "@/components/hr/attendance-recalculate-button";
 import { HrSubNav } from "@/components/hr/hr-sub-nav";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
@@ -20,7 +20,6 @@ import { prisma, withDbRetry } from "@/lib/db";
 import { attendanceLeaveModule } from "@/app/hr-module-content";
 import { redirect } from "next/navigation";
 import {
-  listPendingAttendanceVerifications,
   listTodayAttendance,
 } from "@/lib/hr/hr-store";
 
@@ -70,7 +69,7 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
   // This page fans out ~9 queries in parallel; on serverless Postgres a single
   // idle-connection drop / pool timeout would otherwise bubble to the app error
   // boundary and look like a forced sign-out. withDbRetry reconnects + retries.
-  const [records, membership, hrAccess, sites, stats, monthRecords, members, yearHolidays, pendingVerify] =
+  const [records, membership, hrAccess, sites, stats, monthRecords, members, yearHolidays] =
     await withDbRetry(() => Promise.all([
       listTodayAttendance(
         user.organizationId,
@@ -110,9 +109,6 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
         orderBy: { user: { name: "asc" } },
       }),
       listHolidays(user.organizationId, year),
-      canMark
-        ? listPendingAttendanceVerifications(user.organizationId)
-        : Promise.resolve([]),
     ]));
 
   if (!hrAccess.allowed("attendance")) {
@@ -217,24 +213,16 @@ export default async function HrAttendancePage({ searchParams }: PageProps) {
       />
 
       {canMark ? (
-        <AttendanceVerifyQueue
-          rows={pendingVerify.map((row) => ({
-            id: row.id,
-            employeeName: row.user.name ?? row.user.email ?? "Unknown",
-            workDate: new Date(row.workDate).toISOString().slice(0, 10),
-            checkInAt: row.checkInAt?.toISOString() ?? null,
-            isLate: row.isLate,
-            otHours: row.otHours ?? 0,
-            siteName: row.site?.name ?? null,
-            status: row.status,
-          }))}
+        <MarkAttendanceDayForm
+          defaultDate={todayIso}
+          employees={employees}
         />
       ) : null}
 
       {canMark ? (
-        <MarkAttendanceDayForm
-          defaultDate={todayIso}
-          employees={employees}
+        <AttendanceRecalculateButton
+          periodStart={periodStart.toISOString().slice(0, 10)}
+          periodEnd={periodEnd.toISOString().slice(0, 10)}
         />
       ) : null}
 

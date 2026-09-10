@@ -281,7 +281,7 @@ function payableFromStatus(
   shortLeaveFraction: number,
   verified: boolean,
 ): number {
-  // Unverified self-punches do not count as payable Present.
+  // Rejected punches do not count as payable Present.
   if (!verified && (status === "PRESENT" || status === "HALF_DAY" || status === "SHORT_LEAVE")) {
     return 0;
   }
@@ -318,6 +318,7 @@ export async function generatePayrollFromAttendance(params: {
   organizationId: string;
   periodStart: Date;
   periodEnd: Date;
+  replaceRunId?: string;
 }) {
   // workingDays = weekdays from periodStart through min(periodEnd, today IST); future unmarked days are ignored.
   const todayIst = istNoonDate(istCalendarYmd());
@@ -467,7 +468,6 @@ export async function generatePayrollFromAttendance(params: {
     let payableDays = 0;
     let unmarked = 0;
     let unpaidLeaveDays = 0;
-    let pendingUnverified = 0;
     let otHoursTotal = 0;
     let lateDays = 0;
 
@@ -480,10 +480,7 @@ export async function generatePayrollFromAttendance(params: {
         continue;
       }
       const { status, notes, verifyStatus, otHours } = row;
-      const verified = verifyStatus === "VERIFIED";
-      if (!verified && (status === "PRESENT" || status === "HALF_DAY" || status === "SHORT_LEAVE")) {
-        pendingUnverified += 1;
-      }
+      const verified = verifyStatus !== "REJECTED";
       if (status === "PRESENT" && verified) presentDays += 1;
       if (status === "PRESENT" && verified && row.isLate) lateDays += 1;
       if (status === "ON_LEAVE") leaveDays += 1;
@@ -561,9 +558,6 @@ export async function generatePayrollFromAttendance(params: {
       );
     }
     if (unpaidLeaveDays > 0) noteParts.push(`${unpaidLeaveDays} unpaid leave day(s) not payable`);
-    if (pendingUnverified > 0) {
-      noteParts.push(`${pendingUnverified} unverified punch(es) not payable`);
-    }
     if (otHoursTotal > 0) {
       noteParts.push(`OT ${otHoursTotal}h × ₹${hourly.toFixed(2)} = ₹${otPay.toFixed(2)}`);
     }
@@ -598,6 +592,68 @@ export async function generatePayrollFromAttendance(params: {
 
   const totalGross = lines.reduce((sum, line) => sum + line.earnedSalary, 0);
   const totalNet = lines.reduce((sum, line) => sum + line.netPay, 0);
+  const runNotes = `Attendance-based payroll · ${workingDays} working days through ${dateYmdUtc(payThrough)} · paid leave payable, unpaid leave not · unverified punches excluded`;
+  const lineCreates = lines.map((line) => ({
+    organizationId: params.organizationId,
+    userId: line.userId,
+    presentDays: line.presentDays,
+    leaveDays: line.leaveDays,
+    absentDays: line.absentDays,
+    halfDays: line.halfDays,
+    shortLeaveDays: line.shortLeaveDays,
+    payableDays: line.payableDays,
+    workingDays: line.workingDays,
+    otHours: line.otHours,
+    otPay: dec(line.otPay),
+    monthlySalary: dec(line.monthlySalary),
+    earnedSalary: dec(line.earnedSalary),
+    deductions: dec(line.deductions),
+    netPay: dec(line.netPay),
+    notes: line.notes,
+  }));
+  const includeLines = {
+    lines: {
+      include: { user: { select: { name: true, email: true } } },
+      orderBy: { user: { name: "asc" as const } },
+    },
+  };
+
+  const existing = params.replaceRunId
+    ? await prisma.payrollRun.findFirst({
+        where: { id: params.replaceRunId, organizationId: params.organizationId },
+        select: { id: true },
+      })
+    : await prisma.payrollRun.findFirst({
+        where: {
+          organizationId: params.organizationId,
+          periodStart: params.periodStart,
+          periodEnd: params.periodEnd,
+        },
+        orderBy: { createdAt: "desc" },
+        select: { id: true },
+      });
+
+  if (existing) {
+    return prisma.$transaction(async (tx) => {
+      await tx.payrollLine.deleteMany({
+        where: {
+          payrollRunId: existing.id,
+          organizationId: params.organizationId,
+        },
+      });
+      return tx.payrollRun.update({
+        where: { id: existing.id },
+        data: {
+          employeeCount: lines.length,
+          totalGross: dec(totalGross),
+          totalNet: dec(totalNet),
+          notes: runNotes,
+          lines: { create: lineCreates },
+        },
+        include: includeLines,
+      });
+    });
+  }
 
   return prisma.payrollRun.create({
     data: {
@@ -608,35 +664,121 @@ export async function generatePayrollFromAttendance(params: {
       totalGross: dec(totalGross),
       totalNet: dec(totalNet),
       status: "DRAFT",
-      notes: `Attendance-based payroll · ${workingDays} working days through ${dateYmdUtc(payThrough)} · paid leave payable, unpaid leave not · unverified punches excluded`,
-      lines: {
-        create: lines.map((line) => ({
-          organizationId: params.organizationId,
-          userId: line.userId,
-          presentDays: line.presentDays,
-          leaveDays: line.leaveDays,
-          absentDays: line.absentDays,
-          halfDays: line.halfDays,
-          shortLeaveDays: line.shortLeaveDays,
-          payableDays: line.payableDays,
-          workingDays: line.workingDays,
-          otHours: line.otHours,
-          otPay: dec(line.otPay),
-          monthlySalary: dec(line.monthlySalary),
-          earnedSalary: dec(line.earnedSalary),
-          deductions: dec(line.deductions),
-          netPay: dec(line.netPay),
-          notes: line.notes,
-        })),
-      },
+      notes: runNotes,
+      lines: { create: lineCreates },
     },
-    include: {
-      lines: {
-        include: { user: { select: { name: true, email: true } } },
-        orderBy: { user: { name: "asc" } },
-      },
+    include: includeLines,
+  });
+}
+
+/** Re-apply holiday calendar and approved leave for a period. Does not overwrite Present / Half / Short leave. */
+export async function recalculateAttendanceForPeriod(params: {
+  organizationId: string;
+  periodStart: Date;
+  periodEnd: Date;
+}) {
+  const { listHolidays, syncHolidayAttendance } = await import("@/lib/hr/holidays");
+  const startYear = params.periodStart.getUTCFullYear();
+  const endYear = params.periodEnd.getUTCFullYear();
+  let holidayRows = 0;
+
+  for (let year = startYear; year <= endYear; year += 1) {
+    const holidays = await listHolidays(params.organizationId, year);
+    for (const holiday of holidays) {
+      const time = holiday.date.getTime();
+      if (time < params.periodStart.getTime() || time > params.periodEnd.getTime()) {
+        continue;
+      }
+      const result = await syncHolidayAttendance({
+        organizationId: params.organizationId,
+        date: holiday.date,
+        name: holiday.name,
+        isOptional: holiday.isOptional,
+      });
+      holidayRows += result.synced;
+    }
+  }
+
+  const leaves = await prisma.leaveRequest.findMany({
+    where: {
+      organizationId: params.organizationId,
+      status: "APPROVED",
+      startDate: { lte: params.periodEnd },
+      endDate: { gte: params.periodStart },
+    },
+    select: {
+      userId: true,
+      leaveType: true,
+      startDate: true,
+      endDate: true,
     },
   });
+
+  const needed: Array<{ userId: string; workDate: Date; leaveType: string }> = [];
+  for (const leave of leaves) {
+    const from =
+      leave.startDate.getTime() > params.periodStart.getTime()
+        ? leave.startDate
+        : params.periodStart;
+    const to =
+      leave.endDate.getTime() < params.periodEnd.getTime()
+        ? leave.endDate
+        : params.periodEnd;
+    for (const workDate of eachDateInclusive(from, to).filter(isWeekday)) {
+      needed.push({
+        userId: leave.userId,
+        workDate,
+        leaveType: leave.leaveType,
+      });
+    }
+  }
+
+  let leaveRows = 0;
+  if (needed.length > 0) {
+    const existing = await prisma.attendanceRecord.findMany({
+      where: {
+        organizationId: params.organizationId,
+        workDate: { gte: params.periodStart, lte: params.periodEnd },
+        userId: { in: [...new Set(needed.map((row) => row.userId))] },
+      },
+      select: { userId: true, workDate: true, status: true },
+    });
+    const statusByKey = new Map(
+      existing.map((row) => [`${row.userId}:${dateYmdUtc(row.workDate)}`, row.status]),
+    );
+    const keepWorked = new Set(["PRESENT", "HALF_DAY", "SHORT_LEAVE"]);
+
+    for (const row of needed) {
+      const current = statusByKey.get(`${row.userId}:${dateYmdUtc(row.workDate)}`);
+      if (current && keepWorked.has(current)) {
+        continue;
+      }
+      await prisma.attendanceRecord.upsert({
+        where: {
+          organizationId_userId_workDate: {
+            organizationId: params.organizationId,
+            userId: row.userId,
+            workDate: row.workDate,
+          },
+        },
+        create: {
+          organizationId: params.organizationId,
+          userId: row.userId,
+          workDate: row.workDate,
+          status: "ON_LEAVE",
+          method: "WEB",
+          notes: `Leave · ${row.leaveType}`,
+        },
+        update: {
+          status: "ON_LEAVE",
+          notes: `Leave · ${row.leaveType}`,
+        },
+      });
+      leaveRows += 1;
+    }
+  }
+
+  return { holidayRows, leaveRows };
 }
 
 export async function listAttendanceForPeriod(

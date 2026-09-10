@@ -10817,6 +10817,13 @@ body.ws-more-sheet-open .sheetomatic-ai-launcher {
   color: #0f172a;
 }
 
+.workspace-app .ws-hr-recalc {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
 .workspace-app .ws-hr-form {
   display: flex;
   flex-direction: column;

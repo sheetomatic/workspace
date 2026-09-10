@@ -28,8 +28,10 @@ const HR_PATHS = [
   "/app/hr/payroll",
   "/app/hr/employees",
   "/app/hr/holidays",
-  "/app/hr/field",
   "/app/hr/hiring",
+  "/app/field",
+  "/app/field/plans",
+  "/app/field/history",
 ];
 
 function revalidateHr() {
@@ -121,7 +123,10 @@ export async function recordCheckOutAction(): Promise<HrActionResult> {
   if (!user) {
     return hrActionFailure("UNAUTHORIZED", "Sign in required.");
   }
-  if (!(await assertHrSubModuleEnabled(user, "attendance"))) {
+  if (
+    !(await assertHrSubModuleEnabled(user, "attendance")) &&
+    !(await assertHrSubModuleEnabled(user, "field"))
+  ) {
     return hrActionFailure("FORBIDDEN", "Attendance is not enabled for this workspace.");
   }
 
@@ -364,6 +369,13 @@ export async function recordFieldCheckInAction(
         activityNote: activityNote || null,
         geoFenceOk,
       },
+    });
+
+    const { ensureAttendanceFromFieldCheckIn } = await import("@/lib/hr/hr-store");
+    await ensureAttendanceFromFieldCheckIn({
+      user,
+      geoLat,
+      geoLng,
     });
 
     revalidateHr();
@@ -662,6 +674,97 @@ export async function createPayrollRunAction(
     const message =
       error instanceof Error ? error.message : "Could not generate payroll.";
     return hrActionFailure("PAYROLL_FAILED", message);
+  }
+}
+
+export async function recalculatePayrollRunAction(
+  formData: FormData,
+): Promise<HrActionResult> {
+  const user = await getSessionUser();
+  if (
+    !user ||
+    !hasWorkspaceModule(user, "HR") ||
+    !hasMinimumRole(user.role, "ADMIN")
+  ) {
+    return hrActionFailure("FORBIDDEN", "Admin access required to recalculate payroll.");
+  }
+  if (!(await assertHrSubModuleEnabled(user, "payroll"))) {
+    return hrActionFailure("FORBIDDEN", "Payroll is not enabled for this workspace.");
+  }
+
+  const runId = String(formData.get("runId") ?? "").trim();
+  if (!runId) {
+    return hrActionFailure("INVALID_INPUT", "Payroll run not found.");
+  }
+
+  const run = await prisma.payrollRun.findFirst({
+    where: { id: runId, organizationId: user.organizationId },
+    select: { id: true, periodStart: true, periodEnd: true },
+  });
+  if (!run) {
+    return hrActionFailure("NOT_FOUND", "Payroll run not found.");
+  }
+
+  try {
+    const { generatePayrollFromAttendance, recalculateAttendanceForPeriod } =
+      await import("@/lib/hr/payroll");
+    if (formData.get("refreshAttendance") === "1") {
+      await recalculateAttendanceForPeriod({
+        organizationId: user.organizationId,
+        periodStart: run.periodStart,
+        periodEnd: run.periodEnd,
+      });
+    }
+    await generatePayrollFromAttendance({
+      organizationId: user.organizationId,
+      periodStart: run.periodStart,
+      periodEnd: run.periodEnd,
+      replaceRunId: run.id,
+    });
+    revalidateHr();
+    return { ok: true };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not recalculate payroll.";
+    return hrActionFailure("PAYROLL_FAILED", message);
+  }
+}
+
+export async function recalculateAttendanceAction(
+  formData: FormData,
+): Promise<HrActionResult> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "MANAGER")) {
+    return hrActionFailure("FORBIDDEN", "Manager access required to recalculate attendance.");
+  }
+  if (!(await assertHrSubModuleEnabled(user, "attendance"))) {
+    return hrActionFailure("FORBIDDEN", "Attendance is not enabled for this workspace.");
+  }
+
+  const periodStart = new Date(String(formData.get("periodStart")));
+  const periodEnd = new Date(String(formData.get("periodEnd")));
+  if (Number.isNaN(periodStart.getTime()) || Number.isNaN(periodEnd.getTime())) {
+    return hrActionFailure("INVALID_PERIOD", "Enter a valid period start and end.");
+  }
+  if (periodEnd < periodStart) {
+    return hrActionFailure("INVALID_PERIOD", "Period end must be on or after period start.");
+  }
+  periodStart.setUTCHours(12, 0, 0, 0);
+  periodEnd.setUTCHours(12, 0, 0, 0);
+
+  try {
+    const { recalculateAttendanceForPeriod } = await import("@/lib/hr/payroll");
+    await recalculateAttendanceForPeriod({
+      organizationId: user.organizationId,
+      periodStart,
+      periodEnd,
+    });
+    revalidateHr();
+    return { ok: true };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not recalculate attendance.";
+    return hrActionFailure("ATTENDANCE_FAILED", message);
   }
 }
 

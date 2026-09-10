@@ -3,9 +3,10 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/saas/page-header";
 import { HrSubNav } from "@/components/hr/hr-sub-nav";
 import { PayrollGenerateForm } from "@/components/hr/payroll-generate-form";
+import { PayrollRecalculateButton } from "@/components/hr/payroll-recalculate-button";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
-import { prisma } from "@/lib/db";
+import { prisma, withDbRetry } from "@/lib/db";
 import { formatInr } from "@/lib/leads/categories";
 import { istCalendarYmd } from "@/lib/hr/payroll";
 import { getEffectiveHrSubModulesForUser } from "@/lib/hr/hr-access";
@@ -19,29 +20,31 @@ export default async function HrPayrollPage() {
   }
   const isAdmin = hasMinimumRole(user.role, "ADMIN");
 
-  const [runs, salaryReadyCount] = await Promise.all([
-    prisma.payrollRun.findMany({
-      where: { organizationId: user.organizationId },
-      orderBy: { periodStart: "desc" },
-      take: 12,
-      include: {
-        lines: {
-          where: isAdmin ? undefined : { userId: user.id },
-          include: { user: { select: { name: true, email: true } } },
-          orderBy: { user: { name: "asc" } },
-        },
-      },
-    }),
-    isAdmin
-      ? prisma.membership.count({
-          where: {
-            organizationId: user.organizationId,
-            deactivatedAt: null,
-            monthlySalary: { gt: 0 },
+  const [runs, salaryReadyCount] = await withDbRetry(() =>
+    Promise.all([
+      prisma.payrollRun.findMany({
+        where: { organizationId: user.organizationId },
+        orderBy: { periodStart: "desc" },
+        take: 12,
+        include: {
+          lines: {
+            where: isAdmin ? undefined : { userId: user.id },
+            include: { user: { select: { name: true, email: true } } },
+            orderBy: { user: { name: "asc" } },
           },
-        })
-      : Promise.resolve(0),
-  ]);
+        },
+      }),
+      isAdmin
+        ? prisma.membership.count({
+            where: {
+              organizationId: user.organizationId,
+              deactivatedAt: null,
+              monthlySalary: { gt: 0 },
+            },
+          })
+        : Promise.resolve(0),
+    ]),
+  );
 
   const todayYmd = istCalendarYmd();
   const [y, m] = todayYmd.split("-").map(Number);
@@ -109,6 +112,13 @@ export default async function HrPayrollPage() {
                   "No line for you in this run"
                 )}
               </span>
+              {isAdmin ? (
+                <PayrollRecalculateButton
+                  runId={run.id}
+                  periodStart={run.periodStart.toISOString().slice(0, 10)}
+                  periodEnd={run.periodEnd.toISOString().slice(0, 10)}
+                />
+              ) : null}
             </div>
             {isAdmin && run.notes ? <p className="ws-hr-note">{run.notes}</p> : null}
             <div className="ws-hr-table-wrap">

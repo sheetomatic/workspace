@@ -35,6 +35,10 @@ export function PayrollGenerateForm({
   return (
     <section className="ws-hr-panel">
       <h2>Generate payroll from attendance</h2>
+      <p className="ws-hr-help">
+        Same dates update the existing run. After you change Present / Absent /
+        Holiday / Leave, use Recalculate on that run.
+      </p>
       <HrFeedbackBanner message={message} isError={isError} />
       <form action={onSubmit} className="ws-hr-form ws-hr-form-inline">
         <label>

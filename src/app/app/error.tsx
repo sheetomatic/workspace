@@ -15,7 +15,9 @@ function isTransientDbError(message: string | undefined) {
     m.includes("econnreset") ||
     m.includes("socket") ||
     m.includes("engine is not yet connected") ||
-    m.includes("response from the engine was empty")
+    m.includes("response from the engine was empty") ||
+    m.includes("load failed") ||
+    m.includes("failed to fetch")
   );
 }
 
@@ -56,12 +58,14 @@ export default function AppError({
             Sign in again
           </Link>
         </div>
-        <p className="ws-api-hint">
-          Local fix: run <code>npm run db:seed</code>, restart the dev server (
-          <code>npm run dev</code>), then sign in again. Demo password:{" "}
-          <code>demo1234</code> (super admin:{" "}
-          <code>founder@sheetomatic.com</code>).
-        </p>
+        {process.env.NODE_ENV !== "production" ? (
+          <p className="ws-api-hint">
+            Local fix: run <code>npm run db:seed</code>, restart the dev server (
+            <code>npm run dev</code>), then sign in again. Demo password:{" "}
+            <code>demo1234</code> (super admin:{" "}
+            <code>founder@sheetomatic.com</code>).
+          </p>
+        ) : null}
       </article>
     </div>
   );
