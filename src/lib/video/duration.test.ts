@@ -8,6 +8,7 @@ import {
   parseDurationSecInput,
 } from "@/lib/video/duration";
 import { isT2vConfigured, resolveTextToVideoProvider } from "@/lib/video/provider";
+import { snapVeoDurationSeconds } from "@/lib/video/veo-client";
 import { splitIntoClips } from "@/lib/video/split";
 import { stitchClips } from "@/lib/video/stitch";
 import {
@@ -57,25 +58,57 @@ describe("video clip split", () => {
 });
 
 describe("pluggable T2V", () => {
-  const originalOpenAi = process.env.OPENAI_API_KEY;
+  const original = {
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    VEO_API_KEY: process.env.VEO_API_KEY,
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
+    RUNWAY_API_KEY: process.env.RUNWAY_API_KEY,
+  };
+
+  function restore(name: keyof typeof original) {
+    const value = original[name];
+    if (value == null) {
+      delete process.env[name];
+    } else {
+      process.env[name] = value;
+    }
+  }
 
   afterEach(() => {
-    if (originalOpenAi == null) {
-      delete process.env.OPENAI_API_KEY;
-    } else {
-      process.env.OPENAI_API_KEY = originalOpenAi;
-    }
+    restore("OPENAI_API_KEY");
+    restore("VEO_API_KEY");
+    restore("GEMINI_API_KEY");
+    restore("GOOGLE_API_KEY");
+    restore("RUNWAY_API_KEY");
   });
 
   it("is unconfigured without a T2V key, even if OpenAI is set", () => {
+    delete process.env.VEO_API_KEY;
+    delete process.env.GEMINI_API_KEY;
+    delete process.env.GOOGLE_API_KEY;
     process.env.OPENAI_API_KEY = "sk-test";
     expect(isT2vConfigured()).toBe(false);
     expect(resolveTextToVideoProvider().id).toBe("unconfigured");
   });
 
-  it("does not invent Veo or Runway clients", () => {
+  it("selects Veo when a Gemini/Veo key is present, not DALL-E or Runway", () => {
+    delete process.env.VEO_API_KEY;
+    delete process.env.GOOGLE_API_KEY;
+    delete process.env.RUNWAY_API_KEY;
+    process.env.OPENAI_API_KEY = "sk-test";
+    process.env.GEMINI_API_KEY = "test-gemini-key";
     const provider = resolveTextToVideoProvider();
-    expect(provider.id).not.toMatch(/veo|runway/i);
+    expect(isT2vConfigured()).toBe(true);
+    expect(provider.id).toBe("veo");
+    expect(provider.id).not.toMatch(/runway|dall-?e|openai|youtube/i);
+  });
+
+  it("snaps Veo clip length to 4, 6, or 8 seconds", () => {
+    expect(snapVeoDurationSeconds(1)).toBe(4);
+    expect(snapVeoDurationSeconds(6)).toBe(6);
+    expect(snapVeoDurationSeconds(8)).toBe(8);
+    expect(snapVeoDurationSeconds(30)).toBe(8);
   });
 });
 

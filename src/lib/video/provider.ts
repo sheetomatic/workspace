@@ -1,4 +1,5 @@
 import { NATIVE_CLIP_SECONDS } from "@/lib/video/duration";
+import { generateVeoClip, veoApiKey } from "@/lib/video/veo-client";
 
 export const T2V_NOT_CONFIGURED = "T2V_NOT_CONFIGURED";
 export const T2V_ERROR_PREFIX = "T2V_ERROR:";
@@ -57,15 +58,36 @@ class UnconfiguredT2vProvider implements TextToVideoProvider {
 
 const unconfigured = new UnconfiguredT2vProvider();
 
+class VeoAdapter implements TextToVideoProvider {
+  id = "veo";
+
+  isConfigured() {
+    return Boolean(veoApiKey());
+  }
+
+  maxClipSeconds() {
+    return NATIVE_CLIP_SECONDS;
+  }
+
+  generateClip(input: GenerateClipInput): Promise<GeneratedClip> {
+    if (!this.isConfigured()) {
+      throw new Error(T2V_NOT_CONFIGURED);
+    }
+    return generateVeoClip({
+      prompt: input.prompt,
+      durationSec: input.durationSec,
+    });
+  }
+}
+
 /**
- * Live adapter only if an env var already present in this environment selects one.
- * Today none do: .env.example has no RUNWAY_* / VEO_* / video-vendor key.
- * Do not add those keys as required.
+ * Live adapter only if a Veo / Gemini / Google generative-video key is already present.
+ * OPENAI_API_KEY is not a T2V key. Do not add VEO_* / GEMINI_* as required in .env.example.
  */
 export function resolveTextToVideoProvider(): TextToVideoProvider {
-  // Example-class (not committed; do not require these keys):
-  // if (process.env.VEO_API_KEY?.trim()) return new VeoAdapter()
-  // if (process.env.RUNWAY_API_KEY?.trim()) return new RunwayAdapter()
+  if (veoApiKey()) {
+    return new VeoAdapter();
+  }
   return unconfigured;
 }
 
