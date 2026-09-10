@@ -1,14 +1,20 @@
 import "./auth-types";
 import { headers } from "next/headers";
 import { cache } from "react";
-import type { Organization, Role, WorkspaceModule } from "@prisma/client";
+import type {
+  Organization,
+  OrganizationStatus,
+  Role,
+  WorkspaceModule,
+} from "@prisma/client";
 import bcrypt from "bcryptjs";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { prisma, withDbRetry } from "@/lib/db";
 import { PRIMARY_ORG_SLUG } from "@/lib/platform";
 import { resolveSessionModules } from "@/lib/dedicated-client-portals";
-import { getRequestTenantSlug } from "@/lib/tenant-host";
+import { canUseSuspendedWorkspaceApi } from "@/lib/org-access";
+import { getRequestPathname, getRequestTenantSlug } from "@/lib/tenant-host";
 
 export type SessionUser = {
   id: string;
@@ -22,12 +28,13 @@ export type SessionUser = {
   isDepartmentHead: boolean;
   modules: WorkspaceModule[];
   staffCode: string | null;
+  organizationStatus: OrganizationStatus;
 };
 
 type ResolvedMembership = {
   role: Role;
   organizationId: string;
-  organization: Pick<Organization, "id" | "name" | "slug">;
+  organization: Pick<Organization, "id" | "name" | "slug" | "status">;
 };
 
 async function resolveSuperAdminMembership(
@@ -72,7 +79,7 @@ async function resolveMembership(
     }
 
     const memberships = await db.membership.findMany({
-      where: { userId },
+      where: { userId, deactivatedAt: null },
       include: { organization: true },
       orderBy: { createdAt: "asc" },
     });
@@ -297,10 +304,15 @@ export const getSessionUser = cache(async function getSessionUser() {
     if (isSuperAdmin) {
       const organization = await db.organization.findUnique({
         where: { id: membership.organizationId },
-        select: { allowedModules: true, isPrimary: true, slug: true },
+        select: {
+          allowedModules: true,
+          isPrimary: true,
+          slug: true,
+          status: true,
+        },
       });
 
-      return {
+      const sessionUser: SessionUser = {
         id: tokenUser.id,
         email: tokenUser.email,
         name: tokenUser.name,
@@ -318,7 +330,10 @@ export const getSessionUser = cache(async function getSessionUser() {
           isPrimary: organization?.isPrimary,
         }),
         staffCode: null,
+        organizationStatus: organization?.status ?? membership.organization.status,
       };
+
+      return sessionAllowsApi(sessionUser);
     }
 
     const membershipRecord = await db.membership.findUnique({
@@ -333,8 +348,13 @@ export const getSessionUser = cache(async function getSessionUser() {
         role: true,
         isDepartmentHead: true,
         staffCode: true,
+        deactivatedAt: true,
       },
     });
+
+    if (membershipRecord?.deactivatedAt) {
+      return null;
+    }
 
     const organization = await db.organization.findUnique({
       where: { id: membership.organizationId },
@@ -342,6 +362,7 @@ export const getSessionUser = cache(async function getSessionUser() {
         allowedModules: true,
         isPrimary: true,
         slug: true,
+        status: true,
       },
     });
 
@@ -356,7 +377,7 @@ export const getSessionUser = cache(async function getSessionUser() {
       isPrimary: organization?.isPrimary,
     });
 
-    return {
+    const sessionUser: SessionUser = {
       id: tokenUser.id,
       email: tokenUser.email,
       name: tokenUser.name,
@@ -368,6 +389,24 @@ export const getSessionUser = cache(async function getSessionUser() {
       isDepartmentHead: membershipRecord?.isDepartmentHead ?? false,
       modules,
       staffCode: membershipRecord?.staffCode?.trim() || null,
+      organizationStatus: organization?.status ?? membership.organization.status,
     };
+
+    return sessionAllowsApi(sessionUser);
   });
 });
+
+async function sessionAllowsApi(user: SessionUser) {
+  const pathname = await getRequestPathname();
+  if (
+    !canUseSuspendedWorkspaceApi({
+      status: user.organizationStatus,
+      role: user.role,
+      isSuperAdmin: user.isSuperAdmin,
+      pathname,
+    })
+  ) {
+    return null;
+  }
+  return user;
+}

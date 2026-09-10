@@ -3,7 +3,9 @@ import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { AI_APP_MIN_ROLE } from "@/lib/ai-auth-links";
 import { isLegalCasesOrganization } from "@/lib/dedicated-client-portals";
+import { canUseSuspendedWorkspace } from "@/lib/org-access";
 import { hasMinimumRole } from "@/lib/permissions";
+import { getRequestPathname } from "@/lib/tenant-host";
 import {
   hasWorkspaceModule,
   resolveWorkspaceHomeHref,
@@ -29,6 +31,18 @@ export async function requireSession(
     !hasWorkspaceModule(user, options.module)
   ) {
     redirect(options?.redirectTo ?? "/app");
+  }
+
+  const pathname = await getRequestPathname();
+  if (
+    !canUseSuspendedWorkspace({
+      status: user.organizationStatus,
+      role: user.role,
+      isSuperAdmin: user.isSuperAdmin,
+      pathname,
+    })
+  ) {
+    redirect("/app");
   }
 
   return user;

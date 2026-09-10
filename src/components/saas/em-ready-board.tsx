@@ -8,13 +8,14 @@ import {
   Clock,
   GitBranch,
   ListTodo,
+  Package,
   Sparkles,
   UserRound,
   Users,
 } from "lucide-react";
 import type { EmReadyPayload } from "@/lib/em/em-ready-data";
 import { formatDeficitPct } from "@/lib/mis/reports-data";
-import { KRA_KPI_SURFACE_HIDDEN } from "@/lib/pms-surface";
+import { EM_KRA_SURFACE_HIDDEN } from "@/lib/pms-surface";
 
 function DeficitBadge({
   value,
@@ -182,9 +183,9 @@ export function EmReadyBoard({ payload }: { payload: EmReadyPayload }) {
           <p>
             {payload.period.periodLabel}. Live data refreshed {when}. Discuss
             exceptions only: overdue FMS stops and delayed tasks
-            {KRA_KPI_SURFACE_HIDDEN
+            {EM_KRA_SURFACE_HIDDEN
               ? "."
-              : " — and person-wise KRA deficit — live accountability across tasks, FMS, and PC without compiling tabs first."}
+              : " — and person-wise KRA deficit — live accountability across tasks, FMS, IMS, and PC without compiling tabs first."}
           </p>
         </div>
         <div className="ws-em-hero-stat">
@@ -230,6 +231,15 @@ export function EmReadyBoard({ payload }: { payload: EmReadyPayload }) {
               icon={Clock}
             />
           </>
+        ) : null}
+        {payload.imsEnabled ? (
+          <MetricTile
+            label="IMS exceptions"
+            value={payload.tiles.imsExceptions}
+            hint="Below min or reorder"
+            alert
+            icon={Package}
+          />
         ) : null}
       </div>
 
@@ -320,7 +330,11 @@ export function EmReadyBoard({ payload }: { payload: EmReadyPayload }) {
                         ? "FMS"
                         : item.kind === "checklist"
                           ? "PC"
-                          : "Task"}
+                          : item.kind === "sales_order"
+                            ? "SO"
+                            : item.kind === "ims"
+                              ? "IMS"
+                              : "Task"}
                     </span>
                     <div className="ws-em-exception-body">
                       <strong>{item.title}</strong>
@@ -340,7 +354,7 @@ export function EmReadyBoard({ payload }: { payload: EmReadyPayload }) {
           )}
         </section>
 
-        {KRA_KPI_SURFACE_HIDDEN ? null : payload.personKra.length > 0 ? (
+        {EM_KRA_SURFACE_HIDDEN ? null : payload.personKra.length > 0 ? (
           <section
             className="ws-sf-list-view ws-em-section"
             aria-label="Person-wise KRA"
@@ -356,7 +370,7 @@ export function EmReadyBoard({ payload }: { payload: EmReadyPayload }) {
                 </span>
               </div>
               <p className="ws-em-section-lead">
-                Tasks + FMS combined deficit per team member
+                Tasks + FMS + IMS combined deficit per team member
                 {doerName ? ` - ${doerName}` : ""}.
               </p>
             </header>
@@ -368,13 +382,16 @@ export function EmReadyBoard({ payload }: { payload: EmReadyPayload }) {
                     <th className="ws-mis-col-num">Tasks</th>
                     <th className="ws-mis-col-num">FMS</th>
                     <th className="ws-mis-col-num">PC</th>
+                    {payload.imsEnabled ? (
+                      <th className="ws-mis-col-num">IMS</th>
+                    ) : null}
                     <th className="ws-mis-col-num">Total</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredPersonKra.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="ws-fms-muted">
+                      <td colSpan={payload.imsEnabled ? 6 : 5} className="ws-fms-muted">
                         No KRA rows for this doer.
                       </td>
                     </tr>
@@ -418,6 +435,20 @@ export function EmReadyBoard({ payload }: { payload: EmReadyPayload }) {
                             <span className="ws-fms-muted">-</span>
                           )}
                         </td>
+                        {payload.imsEnabled ? (
+                          <td className="ws-mis-col-num">
+                            {row.imsTotal > 0 ? (
+                              <div className="ws-em-kra-cell">
+                                <DeficitBadge value={row.imsDeficitPct} size="sm" />
+                                <span className="ws-em-sub">
+                                  {row.imsDelayed}/{row.imsTotal} delayed
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="ws-fms-muted">-</span>
+                            )}
+                          </td>
+                        ) : null}
                         <td className="ws-mis-col-num">
                           <DeficitBadge value={row.totalDeficitPct} size="sm" />
                         </td>
@@ -444,6 +475,11 @@ export function EmReadyBoard({ payload }: { payload: EmReadyPayload }) {
           {payload.fmsEnabled ? (
             <Link href="/app/fms/lines" className="btn-primary btn-sm ws-sf-btn-primary">
               Live pipelines
+            </Link>
+          ) : null}
+          {payload.imsEnabled ? (
+            <Link href="/app/ims/stock" className="btn-secondary btn-sm">
+              IMS stock
             </Link>
           ) : null}
           {payload.tasksEnabled ? (

@@ -20,7 +20,7 @@ import {
   isStepOverdue,
   liveDelayMinutes,
 } from "@/lib/fms/step-display";
-import { KRA_KPI_SURFACE_HIDDEN } from "@/lib/pms-surface";
+import { EM_KRA_SURFACE_HIDDEN } from "@/lib/pms-surface";
 
 type PipelineCounts = Awaited<ReturnType<typeof getFmsPipelineCounts>>;
 type OpsPage = Awaited<ReturnType<typeof getFmsOpsPage>>;
@@ -382,7 +382,7 @@ export function FmsOpsBoard({
 
       <footer className="ws-fms-ops-footer">
         <p className="ws-fms-ops-footer-note">
-          {KRA_KPI_SURFACE_HIDDEN
+          {EM_KRA_SURFACE_HIDDEN
             ? "Tip: open EM Ready for overdue exceptions, then return here to chase stops."
             : "Tip: open EM Ready for person-wise KRA deficit, then return here to chase stops."}
         </p>

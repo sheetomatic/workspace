@@ -28,7 +28,18 @@ function checkRateLimitMemory(
   return { allowed: true, retryAfterSec: 0 };
 }
 
-/** Serverless-safe rate limit backed by Postgres (falls back to memory in dev). */
+export function rateLimitKeyFromHeaders(
+  prefix: string,
+  headerStore: Headers,
+  extra?: string,
+) {
+  const forwarded = headerStore.get("x-forwarded-for");
+  const ip =
+    forwarded?.split(",")[0]?.trim() ||
+    headerStore.get("x-real-ip")?.trim() ||
+    "unknown";
+  return extra ? `${prefix}:${ip}:${extra}` : `${prefix}:${ip}`;
+}
 export async function checkRateLimit(
   key: string,
   limit: number,

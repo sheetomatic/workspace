@@ -80,6 +80,7 @@ export async function resolveOrganizationsForCredentials(
         passwordHash: true,
         isSuperAdmin: true,
         memberships: {
+          where: { deactivatedAt: null },
           orderBy: { createdAt: "asc" },
           select: {
             role: true,
@@ -135,7 +136,7 @@ export async function listOrganizationsForUser(userId: string) {
 
   const memberships = await withDbRetry((db) =>
     db.membership.findMany({
-      where: { userId },
+      where: { userId, deactivatedAt: null },
       orderBy: { createdAt: "asc" },
       select: {
         role: true,

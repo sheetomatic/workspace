@@ -1,4 +1,4 @@
-import { randomBytes } from "crypto";
+import { createHash, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { tenantPortalOrigin } from "@/lib/workspace-auth-links";
@@ -13,6 +13,10 @@ function normalizeEmail(email: string) {
 
 function tokenIdentifier(email: string) {
   return `${TOKEN_PREFIX}${normalizeEmail(email)}`;
+}
+
+export function hashPasswordResetToken(token: string) {
+  return createHash("sha256").update(token).digest("hex");
 }
 
 export function buildPasswordResetUrl(token: string, orgSlug?: string | null) {
@@ -39,6 +43,7 @@ export async function createPasswordResetToken(email: string) {
   }
 
   const token = randomBytes(32).toString("hex");
+  const tokenHash = hashPasswordResetToken(token);
   const expires = new Date(Date.now() + TOKEN_TTL_MS);
   const identifier = tokenIdentifier(normalized);
 
@@ -47,15 +52,16 @@ export async function createPasswordResetToken(email: string) {
   });
 
   await prisma.verificationToken.create({
-    data: { identifier, token, expires },
+    data: { identifier, token: tokenHash, expires },
   });
 
   return { token, email: user.email };
 }
 
 export async function consumePasswordResetToken(token: string) {
+  const tokenHash = hashPasswordResetToken(token);
   const record = await prisma.verificationToken.findUnique({
-    where: { token },
+    where: { token: tokenHash },
   });
 
   if (!record || !record.identifier.startsWith(TOKEN_PREFIX)) {
@@ -63,7 +69,7 @@ export async function consumePasswordResetToken(token: string) {
   }
 
   if (record.expires.getTime() < Date.now()) {
-    await prisma.verificationToken.delete({ where: { token } });
+    await prisma.verificationToken.delete({ where: { token: tokenHash } });
     return null;
   }
 
@@ -74,11 +80,11 @@ export async function consumePasswordResetToken(token: string) {
   });
 
   if (!user) {
-    await prisma.verificationToken.delete({ where: { token } });
+    await prisma.verificationToken.delete({ where: { token: tokenHash } });
     return null;
   }
 
-  await prisma.verificationToken.delete({ where: { token } });
+  await prisma.verificationToken.delete({ where: { token: tokenHash } });
   return user;
 }
 

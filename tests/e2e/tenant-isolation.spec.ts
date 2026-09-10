@@ -7,6 +7,7 @@ import {
 } from "../helpers/demo";
 import {
   apiContextWithPageCookies,
+  attemptSignInWithCredentials,
   fetchSessionUser,
   isDemoDatabaseSeeded,
   loginToWorkspace,
@@ -14,6 +15,7 @@ import {
   signInAndFetchSessionUser,
   signInWithCredentials,
 } from "../helpers/workspace-auth";
+import { findForeignFmsInstanceId } from "../helpers/fms-idor";
 
 test.describe.configure({ mode: "serial" });
 
@@ -401,6 +403,60 @@ test.describe("tenant isolation - authenticated (requires db:seed)", () => {
 
     const session = await fetchSessionUser(request);
     expect(session).toBeNull();
+  });
+
+  test("HR-exited member cannot sign in or call protected APIs", async ({
+    request,
+  }) => {
+    const lookup = await request.post("/api/auth/organizations", {
+      data: { email: DEMO_USERS.acmeExited, password: DEMO_PASSWORD },
+    });
+    test.skip(
+      lookup.status() === 401,
+      "Run npm run db:seed to include exited@acme.demo",
+    );
+    expect(lookup.status()).toBe(200);
+    const lookupBody = (await lookup.json()) as {
+      organizations: { slug: string }[];
+    };
+    expect(lookupBody.organizations).toHaveLength(0);
+
+    await attemptSignInWithCredentials(request, {
+      email: DEMO_USERS.acmeExited,
+      organizationSlug: DEMO_ORGS.acme,
+    });
+    const session = await fetchSessionUser(request);
+    expect(session).toBeNull();
+
+    const exportResponse = await request.get("/api/tasks/export");
+    expect(exportResponse.status()).toBe(401);
+  });
+
+  test("tenant A cannot open a missing FMS instance", async ({ page }) => {
+    await loginToWorkspace(page, {
+      email: DEMO_USERS.acmeOwner,
+      organizationSlug: DEMO_ORGS.acme,
+    });
+
+    const response = await page.goto(
+      "/app/fms/instances/clxxxxxxxxxxxxxxxxxxxxxxxxx",
+    );
+    expect(response?.status()).toBe(404);
+  });
+
+  test("tenant A cannot open another tenant's FMS instance", async ({
+    page,
+  }) => {
+    const foreignId = await findForeignFmsInstanceId(DEMO_ORGS.acme);
+    test.skip(!foreignId, "No FMS instance in another tenant on this database.");
+
+    await loginToWorkspace(page, {
+      email: DEMO_USERS.acmeOwner,
+      organizationSlug: DEMO_ORGS.acme,
+    });
+
+    const response = await page.goto(`/app/fms/instances/${foreignId}`);
+    expect(response?.status()).toBe(404);
   });
 
   test("acme owner cannot load consultant hingorani-only task export markers", async ({

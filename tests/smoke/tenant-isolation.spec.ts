@@ -50,6 +50,11 @@ test.describe("tenant isolation smoke", () => {
     expect([401, 403, 404]).toContain(response.status());
   });
 
+  test("unauthenticated FMS instance redirects to login", async ({ page }) => {
+    await page.goto("/app/fms/instances/clxxxxxxxxxxxxxxxxxxxxxxxxx");
+    await expect(page).toHaveURL(/\/login/);
+  });
+
   test("marketing home exposes core conversion sections", async ({ page }) => {
     await page.goto("/");
     await expect(

@@ -12,7 +12,12 @@ import { listChecklistOccurrencesForMis } from "@/lib/checklists/queries";
 import { buildChecklistMisRows } from "@/lib/checklists/mis";
 import { buildPcMisDetailRows } from "@/lib/checklists/pc-mis";
 import { listDelegatedTasks } from "@/lib/tasks";
-import { listDelayedDispatchSalesOrders } from "@/lib/sales-orders/queries";
+import { getStockRows } from "@/lib/ims/ims-store";
+import {
+  formatImsQty,
+  IMS_STOCK_STATUS_LABELS,
+  type ImsStockStatus,
+} from "@/lib/ims/stock-status";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
 import {
   fmsJobFallsInEmPeriod,
@@ -25,7 +30,7 @@ import {
 
 export type EmExceptionRow = {
   id: string;
-  kind: "task" | "fms" | "checklist" | "sales_order";
+  kind: "task" | "fms" | "checklist" | "sales_order" | "ims";
   title: string;
   owner: string;
   detail: string;
@@ -43,6 +48,9 @@ export type EmPersonKraRow = {
   checklistTotal: number;
   checklistDelayed: number;
   checklistDeficitPct: number;
+  imsTotal: number;
+  imsDelayed: number;
+  imsDeficitPct: number;
   totalDeficitPct: number;
 };
 
@@ -52,6 +60,7 @@ export type EmReadyPayload = {
   tasksEnabled: boolean;
   fmsEnabled: boolean;
   checklistsEnabled: boolean;
+  imsEnabled: boolean;
   tiles: {
     overdueTasks: number;
     openTasks: number;
@@ -59,6 +68,7 @@ export type EmReadyPayload = {
     unassignedFmsStops: number;
     activePipelines: number;
     delayedPipelines: number;
+    imsExceptions: number;
   };
   taskSummary: ReturnType<typeof categorySummary> | null;
   fmsSummary: ReturnType<typeof categorySummary> | null;
@@ -76,15 +86,37 @@ function deficitFromRows(rows: MisDetailRow[]) {
   return Math.round(Math.max(0, 100 - avg));
 }
 
+export function isImsEmException(status: ImsStockStatus) {
+  return status === "red" || status === "orange";
+}
+
+export function buildImsMisRows(
+  stockRows: Awaited<ReturnType<typeof getStockRows>>,
+): MisDetailRow[] {
+  return stockRows.filter((row) => isImsEmException(row.status)).map((row) => ({
+    id: row.item.id,
+    category: "FMS",
+    title: `${row.item.code} ${row.item.name}`,
+    owner: "Stores",
+    ownerId: null,
+    status: IMS_STOCK_STATUS_LABELS[row.status],
+    score: 0,
+    delayed: true,
+    href: "/app/ims/stock",
+  }));
+}
+
 function buildPersonKra(
   taskRows: MisDetailRow[],
   fmsRows: MisDetailRow[],
   checklistRows: ReturnType<typeof buildChecklistMisRows>,
+  imsRows: MisDetailRow[],
 ) {
   const owners = new Set([
     ...taskRows.map((row) => row.owner),
     ...fmsRows.map((row) => row.owner),
     ...checklistRows.map((row) => row.owner),
+    ...imsRows.map((row) => row.owner),
   ]);
 
   const rows: EmPersonKraRow[] = [];
@@ -96,8 +128,10 @@ function buildPersonKra(
     const tasks = taskRows.filter((row) => row.owner === owner);
     const fms = fmsRows.filter((row) => row.owner === owner);
     const checklists = checklistRows.filter((row) => row.owner === owner);
+    const ims = imsRows.filter((row) => row.owner === owner);
     const taskDeficitPct = deficitFromRows(tasks);
     const fmsDeficitPct = deficitFromRows(fms);
+    const imsDeficitPct = deficitFromRows(ims);
     const checklistDeficitPct =
       checklists.length > 0
         ? Math.round(
@@ -112,6 +146,7 @@ function buildPersonKra(
     const combined = [
       ...tasks,
       ...fms,
+      ...ims,
       ...checklists.map((row) => ({
         id: row.id,
         category: "Task" as const,
@@ -137,6 +172,9 @@ function buildPersonKra(
       checklistTotal: checklists.length,
       checklistDelayed: checklists.filter((row) => row.delayed).length,
       checklistDeficitPct,
+      imsTotal: ims.length,
+      imsDelayed: ims.filter((row) => row.delayed).length,
+      imsDeficitPct,
       totalDeficitPct,
     });
   }
@@ -149,6 +187,7 @@ function buildExceptions(
   fmsOverdue: Awaited<ReturnType<typeof getFmsOpsPage>>["overdue"],
   checklistRows: ReturnType<typeof buildChecklistMisRows>,
   delayedSalesOrders: Awaited<ReturnType<typeof listDelayedDispatchSalesOrders>>,
+  imsRows: Awaited<ReturnType<typeof getStockRows>>,
 ) {
   const taskExceptions: EmExceptionRow[] = taskRows
     .filter((row) => row.delayed)
@@ -201,8 +240,21 @@ function buildExceptions(
       href: `/app/leads?leadId=${order.leadId}`,
     }));
 
+  const imsExceptions: EmExceptionRow[] = imsRows
+    .filter((row) => isImsEmException(row.status))
+    .slice(0, 8)
+    .map((row) => ({
+      id: row.item.id,
+      kind: "ims" as const,
+      title: `${row.item.code} ${row.item.name}`,
+      owner: "Stores",
+      detail: `${IMS_STOCK_STATUS_LABELS[row.status]} — ${formatImsQty(row.usableQty, row.item.uom)} on hand`,
+      href: "/app/ims/stock",
+    }));
+
   return [
     ...fmsExceptions,
+    ...imsExceptions,
     ...salesOrderExceptions,
     ...checklistExceptions,
     ...taskExceptions,
@@ -220,8 +272,9 @@ export async function getEmReadyPayload(
   const tasksEnabled = hasWorkspaceModule(user, "TASKS");
   const fmsEnabled = hasWorkspaceModule(user, "FMS");
   const checklistsEnabled = tasksEnabled;
+  const imsEnabled = hasWorkspaceModule(user, "IMS");
 
-  const [taskPage, fmsPage, fmsOps, pipelineCounts, checklistOccurrences, delayedSalesOrders] =
+  const [taskPage, fmsPage, fmsOps, pipelineCounts, checklistOccurrences, delayedSalesOrders, stockRows] =
     await Promise.all([
     tasksEnabled
       ? listDelegatedTasks(user, { includeCompleted: false }, { page: 1, pageSize: 200 })
@@ -259,6 +312,9 @@ export async function getEmReadyPayload(
     fmsEnabled
       ? listDelayedDispatchSalesOrders(user.organizationId)
       : Promise.resolve([]),
+    imsEnabled
+      ? getStockRows(user.organizationId, { includeInactiveWithBalance: false })
+      : Promise.resolve([]),
   ]);
 
   const taskRows = buildTaskMisRows(
@@ -274,6 +330,7 @@ export async function getEmReadyPayload(
     fmsStepFallsInEmPeriod(step, period),
   );
   const checklistRows = buildChecklistMisRows(checklistOccurrences);
+  const imsMisRows = buildImsMisRows(stockRows);
   const overdueTasks = taskRows.filter((row) => row.delayed).length;
   const overdueChecklists = checklistRows.filter((row) => row.delayed).length;
 
@@ -283,6 +340,7 @@ export async function getEmReadyPayload(
     tasksEnabled,
     fmsEnabled,
     checklistsEnabled,
+    imsEnabled,
     tiles: {
       overdueTasks,
       openTasks: taskRows.length,
@@ -290,18 +348,20 @@ export async function getEmReadyPayload(
       unassignedFmsStops: filteredUnassigned.length,
       activePipelines: pipelineCounts.active,
       delayedPipelines: pipelineCounts.delayed,
+      imsExceptions: imsMisRows.length,
     },
     taskSummary: tasksEnabled ? categorySummary("Task", taskRows) : null,
     fmsSummary: fmsEnabled ? categorySummary("FMS", fmsRows) : null,
     checklistSummary: checklistsEnabled
       ? categorySummary("PC", buildPcMisDetailRows(checklistOccurrences))
       : null,
-    personKra: buildPersonKra(taskRows, fmsRows, checklistRows),
+    personKra: buildPersonKra(taskRows, fmsRows, checklistRows, imsMisRows),
     exceptions: buildExceptions(
       taskRows,
       filteredOverdue,
       checklistRows,
       delayedSalesOrders,
+      stockRows,
     ),
   };
 }

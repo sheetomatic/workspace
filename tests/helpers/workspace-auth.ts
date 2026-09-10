@@ -39,6 +39,31 @@ export async function signInWithCredentials(
   expect([200, 302, 303]).toContain(response.status());
 }
 
+/** Credentials sign-in that does not require a successful session (EXITED / wrong org). */
+export async function attemptSignInWithCredentials(
+  request: APIRequestContext,
+  options: WorkspaceLoginOptions,
+) {
+  const password = options.password ?? DEMO_PASSWORD;
+  const callbackUrl = options.callbackUrl ?? "/app/tasks";
+
+  const csrfResponse = await request.get("/api/auth/csrf");
+  expect(csrfResponse.ok()).toBeTruthy();
+  const { csrfToken } = (await csrfResponse.json()) as { csrfToken: string };
+
+  return request.post("/api/auth/callback/credentials", {
+    form: {
+      csrfToken,
+      email: options.email,
+      password,
+      organization: options.organizationSlug ?? "",
+      callbackUrl,
+      json: "true",
+    },
+    maxRedirects: 0,
+  });
+}
+
 /** Sign in and open the workspace (API auth + navigation). */
 export async function loginToWorkspace(
   page: Page,

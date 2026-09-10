@@ -10,8 +10,11 @@
 /** Hide PMS nav and MIS scores until the module is ready for customers. */
 export const PMS_SURFACE_HIDDEN = true;
 
-/** Hide person-wise KRA tables and on-time KPI tiles until PMS ships. */
+/** Hide Today "on-time score" (completion %) until PMS ships. */
 export const KRA_KPI_SURFACE_HIDDEN = true;
+
+/** Person-wise deficit on EM Ready — north-star board, always on. */
+export const EM_KRA_SURFACE_HIDDEN = false;
 
 export const PMS_REFERENCE_VIDEOS = {
   referenceDrive:

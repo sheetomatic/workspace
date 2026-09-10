@@ -392,6 +392,7 @@ export async function reassignFmsStepOwner(params: {
     where: {
       organizationId: params.organizationId,
       userId: params.newOwnerUserId,
+      deactivatedAt: null,
     },
   });
 

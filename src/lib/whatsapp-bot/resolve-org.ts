@@ -99,10 +99,10 @@ export async function resolveTeamMemberByPhone(
   fromPhone: string,
 ): Promise<ResolvedWhatsAppTeamMember | null> {
   const memberships = await prisma.membership.findMany({
-    where: { organizationId },
+    where: { organizationId, deactivatedAt: null },
     include: {
       user: { select: { id: true, name: true, email: true, phone: true } },
-      organization: { select: { name: true, slug: true } },
+      organization: { select: { name: true, slug: true, status: true } },
     },
   });
 
@@ -113,6 +113,9 @@ export async function resolveTeamMemberByPhone(
 
     const normalized = normalizeWhatsAppPhone(fromPhone);
     if (!normalized) {
+      return null;
+    }
+    if (membership.organization.status !== "ACTIVE") {
       return null;
     }
 
@@ -131,13 +134,13 @@ export async function resolveTeamMemberByPhone(
   if (testPhone && phonesMatch(testPhone, fromPhone)) {
     for (const role of ["OWNER", "ADMIN", "MANAGER"] as const) {
       const membership = await prisma.membership.findFirst({
-        where: { organizationId, role },
+        where: { organizationId, role, deactivatedAt: null },
         include: {
           user: { select: { id: true, name: true, email: true, phone: true } },
-          organization: { select: { name: true, slug: true } },
+          organization: { select: { name: true, slug: true, status: true } },
         },
       });
-      if (membership) {
+      if (membership?.organization.status === "ACTIVE") {
         return {
           organizationId,
           organizationName: membership.organization.name,
@@ -157,7 +160,7 @@ export async function resolveTeamMemberByPhone(
 
 export async function listMemberHints(organizationId: string) {
   const memberships = await prisma.membership.findMany({
-    where: { organizationId },
+    where: { organizationId, deactivatedAt: null },
     include: {
       user: { select: { id: true, name: true, email: true } },
     },

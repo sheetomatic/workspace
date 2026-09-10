@@ -44,6 +44,7 @@ function toSessionUser(member: WhatsAppTeamMember): SessionUser {
     isDepartmentHead: false,
     modules: [],
     staffCode: null,
+    organizationStatus: "ACTIVE",
   };
 }
 

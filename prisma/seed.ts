@@ -42,6 +42,7 @@ type SeedUser = {
   orgSlug: string;
   staffCode?: string;
   modules?: WorkspaceModule[];
+  deactivated?: boolean;
 };
 
 const demoPhones: Record<string, string> = {
@@ -116,6 +117,13 @@ const seedUsers: SeedUser[] = [
     name: "Neha Viewer",
     role: Role.VIEWER,
     orgSlug: "acme-manufacturing",
+  },
+  {
+    email: "exited@acme.demo",
+    name: "Exited Staff",
+    role: Role.STAFF,
+    orgSlug: "acme-manufacturing",
+    deactivated: true,
   },
   {
     email: "owner@bakery.demo",
@@ -1004,6 +1012,9 @@ async function main() {
         role: entry.role,
         staffCode: entry.staffCode ?? null,
         modules: entry.modules ?? [],
+        deactivatedAt: entry.deactivated
+          ? new Date("2026-01-15T00:00:00.000Z")
+          : null,
         ...(profile
           ? { department: profile.department, designation: profile.designation }
           : {}),
@@ -1016,6 +1027,9 @@ async function main() {
         modules: entry.modules ?? [],
         department: profile?.department ?? TaskDepartment.GENERAL,
         designation: profile?.designation ?? entry.role,
+        deactivatedAt: entry.deactivated
+          ? new Date("2026-01-15T00:00:00.000Z")
+          : null,
       },
     });
   }

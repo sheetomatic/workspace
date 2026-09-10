@@ -103,6 +103,31 @@ describe("resolveOrganizationsForCredentials", () => {
     );
   });
 
+  it("loads only active memberships for a normal user", async () => {
+    findUnique.mockResolvedValue({
+      passwordHash: "hash",
+      isSuperAdmin: false,
+      memberships: [
+        {
+          role: "STAFF",
+          organization: { slug: "acme", name: "Acme", status: "ACTIVE" },
+        },
+      ],
+    });
+
+    await resolveOrganizationsForCredentials("staff@acme.demo", "ok");
+
+    expect(findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          memberships: expect.objectContaining({
+            where: { deactivatedAt: null },
+          }),
+        }),
+      }),
+    );
+  });
+
   it("falls back to memberships when the super-admin org list throws", async () => {
     findUnique.mockResolvedValue({
       passwordHash: "hash",

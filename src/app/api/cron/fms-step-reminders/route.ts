@@ -6,14 +6,42 @@ import {
   dispatchFmsStepReminder,
   isSameLocalDay,
   startOfLocalDay,
+  type FmsReminderKind,
 } from "@/lib/fms-reminders";
 import { SCALE } from "@/lib/scale";
+import {
+  claimFmsReminder,
+  FMS_REMINDER_CLAIM_FIELD,
+  releaseFmsReminder,
+} from "@/lib/fms/reminder-claim";
 
-type ReminderUpdate = {
-  whatsappDueSoonSentAt?: Date;
-  whatsappSameDaySentAt?: Date;
-  whatsappOverdueSentAt?: Date;
-};
+type ReminderKind = Exclude<FmsReminderKind, "assign">;
+
+async function dispatchClaimedReminder(params: {
+  kind: ReminderKind;
+  stepStateId: string;
+  baseParams: Omit<
+    Parameters<typeof dispatchFmsStepReminder>[0],
+    "kind"
+  >;
+}) {
+  const field = FMS_REMINDER_CLAIM_FIELD[params.kind];
+  const claimed = await claimFmsReminder(params.stepStateId, field);
+  if (!claimed) {
+    return false;
+  }
+
+  const result = await dispatchFmsStepReminder({
+    ...params.baseParams,
+    kind: params.kind,
+  });
+  if (result.whatsappSent || result.emailSent) {
+    return true;
+  }
+
+  await releaseFmsReminder(params.stepStateId, field);
+  return false;
+}
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -28,7 +56,6 @@ export async function GET(request: Request) {
   }
 
   const now = new Date();
-  const todayStart = startOfLocalDay(now);
   let processed = 0;
   let sent = 0;
   let batches = 0;
@@ -79,7 +106,6 @@ export async function GET(request: Request) {
 
       const plannedAt = stepState.plannedAt;
       const plannedDayStart = startOfLocalDay(plannedAt);
-      const update: ReminderUpdate = {};
       let anySent = false;
 
       const referenceLabel =
@@ -108,13 +134,15 @@ export async function GET(request: Request) {
           -config.dueComingDaysBefore,
         );
         if (now >= dueSoonStart && now < plannedDayStart) {
-          const result = await dispatchFmsStepReminder({
-            ...baseParams,
+          const didSend = await dispatchClaimedReminder({
             kind: "due_coming",
-            dueComingDaysBefore: config.dueComingDaysBefore,
+            stepStateId: stepState.id,
+            baseParams: {
+              ...baseParams,
+              dueComingDaysBefore: config.dueComingDaysBefore,
+            },
           });
-          if (result.whatsappSent || result.emailSent) {
-            update.whatsappDueSoonSentAt = new Date();
+          if (didSend) {
             anySent = true;
           }
         }
@@ -126,12 +154,12 @@ export async function GET(request: Request) {
         isSameLocalDay(now, plannedAt) &&
         now < plannedAt
       ) {
-        const result = await dispatchFmsStepReminder({
-          ...baseParams,
+        const didSend = await dispatchClaimedReminder({
           kind: "same_day",
+          stepStateId: stepState.id,
+          baseParams,
         });
-        if (result.whatsappSent || result.emailSent) {
-          update.whatsappSameDaySentAt = new Date();
+        if (didSend) {
           anySent = true;
         }
       }
@@ -141,24 +169,18 @@ export async function GET(request: Request) {
         !stepState.whatsappOverdueSentAt &&
         now > plannedAt
       ) {
-        const result = await dispatchFmsStepReminder({
-          ...baseParams,
+        const didSend = await dispatchClaimedReminder({
           kind: "overdue",
+          stepStateId: stepState.id,
+          baseParams,
         });
-        if (result.whatsappSent || result.emailSent) {
-          update.whatsappOverdueSentAt = new Date();
+        if (didSend) {
           anySent = true;
         }
       }
 
-      if (Object.keys(update).length > 0) {
-        await prisma.fmsStepState.update({
-          where: { id: stepState.id },
-          data: update,
-        });
-        if (anySent) {
-          sent += 1;
-        }
+      if (anySent) {
+        sent += 1;
       }
     }
   }

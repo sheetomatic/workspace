@@ -11,6 +11,7 @@ export const DEMO_ORGS = {
 export const DEMO_USERS = {
   acmeOwner: "owner@acme.demo",
   acmeViewer: "viewer@acme.demo",
+  acmeExited: "exited@acme.demo",
   bakeryOwner: "owner@bakery.demo",
   multiOrgConsultant: "consultant@demo.sheetomatic.com",
   founder: "founder@sheetomatic.com",

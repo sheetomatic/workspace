@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import {
   buildPasswordResetUrl,
   consumePasswordResetToken,
@@ -11,12 +12,15 @@ import {
   isEmailConfigured,
   sendPasswordResetLinkEmail,
 } from "@/lib/integrations/email";
+import { checkRateLimit, rateLimitKeyFromHeaders } from "@/lib/rate-limit";
 import type { PasswordActionState } from "@/app/login/password-action-state";
 
 export type { PasswordActionState } from "@/app/login/password-action-state";
 
 const GENERIC_RESET_MESSAGE =
   "If an account exists for that email, we sent a password reset link. Check your inbox.";
+const RATE_LIMIT_MESSAGE =
+  "Too many attempts. Please wait a few minutes and try again.";
 
 export async function requestPasswordReset(
   _prev: PasswordActionState,
@@ -25,6 +29,17 @@ export async function requestPasswordReset(
   try {
     const email = formData.get("email")?.toString() ?? "";
     const orgSlug = formData.get("org")?.toString().trim() || null;
+    const headerStore = await headers();
+    const ipKey = rateLimitKeyFromHeaders("password-reset", headerStore);
+    const emailKey = `password-reset-email:${email.trim().toLowerCase()}`;
+
+    const [ipRate, emailRate] = await Promise.all([
+      checkRateLimit(ipKey, 10, 15 * 60_000),
+      checkRateLimit(emailKey, 5, 15 * 60_000),
+    ]);
+    if (!ipRate.allowed || !emailRate.allowed) {
+      return { ok: false, message: RATE_LIMIT_MESSAGE };
+    }
 
     if (!email.includes("@")) {
       return { ok: false, message: "Enter a valid email address." };
@@ -55,6 +70,16 @@ export async function completePasswordReset(
   formData: FormData,
 ): Promise<PasswordActionState> {
   try {
+    const headerStore = await headers();
+    const completeRate = await checkRateLimit(
+      rateLimitKeyFromHeaders("password-reset-complete", headerStore),
+      10,
+      15 * 60_000,
+    );
+    if (!completeRate.allowed) {
+      return { ok: false, message: RATE_LIMIT_MESSAGE };
+    }
+
     const token = formData.get("token")?.toString().trim() ?? "";
     const password = formData.get("password")?.toString() ?? "";
     const confirmPassword = formData.get("confirmPassword")?.toString() ?? "";

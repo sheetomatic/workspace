@@ -32,6 +32,49 @@ export function addWorkingDays(
   return result;
 }
 
+function nextWorkingDaySameClock(from: Date, config: FmsWorkingDaysConfig) {
+  const next = new Date(from.getTime());
+  next.setUTCDate(next.getUTCDate() + 1);
+  while (!isWorkingDay(next, config)) {
+    next.setUTCDate(next.getUTCDate() + 1);
+  }
+  return next;
+}
+
+/** Advance by wall-clock hours, but skip Sundays, optional Saturdays, and holidays. */
+export function addWorkingHours(
+  from: Date,
+  hours: number,
+  config: FmsWorkingDaysConfig = {},
+) {
+  const result = new Date(from.getTime());
+  let remainingMs = Math.max(0, hours) * 60 * 60 * 1000;
+  const stepMs = 60 * 60 * 1000;
+
+  while (remainingMs > 0) {
+    if (!isWorkingDay(result, config)) {
+      result.setTime(nextWorkingDaySameClock(result, config).getTime());
+      continue;
+    }
+
+    const chunk = Math.min(remainingMs, stepMs);
+    const next = new Date(result.getTime() + chunk);
+    if (
+      !isWorkingDay(next, config) &&
+      next.toISOString().slice(0, 10) !== result.toISOString().slice(0, 10)
+    ) {
+      result.setTime(nextWorkingDaySameClock(next, config).getTime());
+      remainingMs -= chunk;
+      continue;
+    }
+
+    result.setTime(next.getTime());
+    remainingMs -= chunk;
+  }
+
+  return result;
+}
+
 export function computePlannedAt(
   slaType: FmsSlaType,
   slaConfig: FmsSlaConfig,
@@ -51,7 +94,7 @@ export function computePlannedAt(
 
   if (slaType === "TAT_WORKING_HOURS") {
     const hours = slaConfig.hours ?? 24;
-    return new Date(anchor.getTime() + hours * 60 * 60 * 1000);
+    return addWorkingHours(anchor, hours, workingDays);
   }
 
   if (slaType === "SPECIFIC_TIME") {
