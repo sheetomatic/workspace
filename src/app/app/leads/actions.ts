@@ -1055,7 +1055,10 @@ export async function completeInboundLeadFollowUp(followUpId: string) {
 export async function bridgeLeadToFmsAction(
   leadId: string,
   templateId?: string,
-) {
+): Promise<
+  | { ok: false; message: string }
+  | { ok: true; instanceId: string; templateName: string | null }
+> {
   const user = await requireSession(undefined, { module: "CRM" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };

@@ -78,8 +78,8 @@ export function LeadAddToFmsControl({
         onClick={() =>
           startTransition(async () => {
             const result = await bridgeLeadToFmsAction(leadId, templateId || undefined);
-            if (!result.ok) {
-              window.alert(result.message);
+            if (!result.ok || !result.instanceId) {
+              window.alert(result.ok ? "Could not create FMS job." : result.message);
               return;
             }
             onLinked?.({
@@ -121,8 +121,8 @@ export function LeadAddToFmsControl({
           startTransition(async () => {
             setError(null);
             const result = await bridgeLeadToFmsAction(leadId, templateId || undefined);
-            if (!result.ok) {
-              setError(result.message);
+            if (!result.ok || !result.instanceId) {
+              setError(result.ok ? "Could not create FMS job." : result.message);
               return;
             }
             onLinked?.({
