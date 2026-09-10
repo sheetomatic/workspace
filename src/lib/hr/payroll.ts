@@ -750,11 +750,14 @@ export async function recalculateAttendanceForPeriod(params: {
       },
       select: { id: true, userId: true, workDate: true, status: true },
     });
-    const existingByKey = new Map(
+    const existingByKey = new Map<
+      string,
+      { id: string; userId: string; workDate: Date; status: string }
+    >(
       existing.map((row) => [
         `${row.userId}:${dateYmdUtc(row.workDate)}`,
         row,
-      ] as const),
+      ]),
     );
     const keepWorked = new Set(["PRESENT", "HALF_DAY", "SHORT_LEAVE"]);
 
