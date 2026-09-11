@@ -122,7 +122,7 @@ export async function GET() {
         "Content-Type": "application/json",
       },
       body: {
-        channel: "FACEBOOK | INSTAGRAM | WHATSAPP | TELEGRAM | INDIAMART | TRADEINDIA | SHOPIFY | WOOCOMMERCE | JUSTDIAL | API",
+        channel: "FACEBOOK | INSTAGRAM | WHATSAPP | TELEGRAM | INDIAMART | TRADEINDIA | SHOPIFY | WOOCOMMERCE | JUSTDIAL | VOICE | API",
         externalId: "unique-id-from-source",
         name: "Lead name",
         phone: "919876543210",

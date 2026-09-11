@@ -13,6 +13,8 @@
  * - Shopify: POST `/api/webhooks/shopify/leads/{webhookSecret}`
  * - WooCommerce: POST `/api/webhooks/woocommerce/leads/{webhookSecret}`
  * - Justdial: GET/POST `/api/webhooks/justdial/leads/{webhookSecret}`
+ * - Voice / AI receptionist: POST `/api/webhooks/voice/leads/{webhookSecret}`
+ *   (Twilio TwiML: `/api/webhooks/voice/leads/{webhookSecret}/twiml`)
  *
  * WhatsApp Official: inbound Meta Cloud → `/api/webhooks/whatsapp` →
  * `queueLeadSyncFromWhatsApp` when WHATSAPP connector is enabled.
@@ -35,6 +37,8 @@ export {
   shopifyLeadWebhookUrl,
   wooCommerceLeadWebhookUrl,
   justdialLeadWebhookUrl,
+  voiceLeadWebhookUrl,
+  voiceLeadTwimlUrl,
   type MetaLeadAdsConfig,
   type TelegramLeadConfig,
   type IndiaMartLeadConfig,
@@ -42,6 +46,7 @@ export {
   type ShopifyLeadConfig,
   type WooCommerceLeadConfig,
   type JustdialLeadConfig,
+  type VoiceLeadConfig,
   type LeadSourceStatus,
 } from "@/lib/leads/connection-config";
 
@@ -101,5 +106,17 @@ export const LEAD_SOURCE_CONNECTOR_FIELDS = {
     generated: ["webhookSecret"] as const,
     actions: ["saveJustdialLeadConnection"] as const,
     webhookPath: "/api/webhooks/justdial/leads/{webhookSecret}",
+  },
+  VOICE: {
+    required: ["provider"] as const,
+    optional: ["openaiApiKey", "clinicName"] as const,
+    generated: ["webhookSecret"] as const,
+    actions: [
+      "saveVoiceLeadConnection",
+      "verifyVoiceLeadConnectionAction",
+      "startReceptionistCall",
+    ] as const,
+    webhookPath: "/api/webhooks/voice/leads/{webhookSecret}",
+    note: "Exotel: apiKey, apiToken, sid, callerId. Twilio: accountSid, authToken, fromNumber. Knowlarity: apiKey, kNumber.",
   },
 } as const;
