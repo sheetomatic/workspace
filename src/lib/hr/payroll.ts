@@ -7,6 +7,7 @@ import {
   shortLeavePayableFraction,
 } from "@/lib/hr/working-hours";
 import { computeLateDeduction, lateToDayRatio } from "@/lib/hr/late-deduction";
+import { resolveWeeklyOffDay } from "@/lib/hr/swap-requests";
 
 export const HR_TZ = "Asia/Kolkata";
 
@@ -320,79 +321,108 @@ export async function generatePayrollFromAttendance(params: {
   periodEnd: Date;
   replaceRunId?: string;
 }) {
-  // workingDays = weekdays from periodStart through min(periodEnd, today IST); future unmarked days are ignored.
+  // Calendar-day salary: monthly ÷ days in period (e.g. 31 for August).
+  // Week off (default Sunday) + org holidays are payable; absences deduct.
+  // Future unmarked days (after today IST) are ignored.
   const todayIst = istNoonDate(istCalendarYmd());
   const payThrough = minDate(params.periodEnd, todayIst);
-  const weekdayDates = eachDateInclusive(params.periodStart, payThrough).filter(isWeekday);
-  const workingDays = weekdayDates.length;
-  if (workingDays <= 0) {
-    throw new Error("Period has no working days through today.");
+  const calendarDates = eachDateInclusive(params.periodStart, payThrough);
+  const calendarDays = calendarDates.length;
+  if (calendarDays <= 0) {
+    throw new Error("Period has no calendar days through today.");
+  }
+  // Stored on PayrollLine.workingDays — denominator for per-day rate & slip.
+  const workingDays = calendarDays;
+
+  const startYear = params.periodStart.getUTCFullYear();
+  const endYear = payThrough.getUTCFullYear();
+  const holidayYears: number[] = [];
+  for (let year = startYear; year <= endYear; year += 1) {
+    holidayYears.push(year);
   }
 
-  const [members, attendance, unpaidLeaves, hrSettings] = await Promise.all([
-    prisma.membership.findMany({
-      where: {
-        organizationId: params.organizationId,
-        deactivatedAt: null,
-        role: { not: "VIEWER" },
-      },
-      select: {
-        userId: true,
-        monthlySalary: true,
-        user: { select: { id: true, name: true, email: true } },
-        shift: {
-          select: {
-            startTime: true,
-            endTime: true,
-            isActive: true,
-            name: true,
+  const { listHolidays } = await import("@/lib/hr/holidays");
+
+  const [members, attendance, unpaidLeaves, hrSettings, ...holidayLists] =
+    await Promise.all([
+      prisma.membership.findMany({
+        where: {
+          organizationId: params.organizationId,
+          deactivatedAt: null,
+          role: { not: "VIEWER" },
+        },
+        select: {
+          userId: true,
+          monthlySalary: true,
+          weeklyOffDay: true,
+          user: { select: { id: true, name: true, email: true } },
+          shift: {
+            select: {
+              startTime: true,
+              endTime: true,
+              isActive: true,
+              name: true,
+            },
+          },
+          employeeProfile: {
+            select: {
+              basic: true,
+              hra: true,
+              specialAllowance: true,
+              pfApplicable: true,
+              esiApplicable: true,
+              tdsMonthly: true,
+              collarCategory: true,
+              hourlyRate: true,
+            },
           },
         },
-        employeeProfile: {
-          select: {
-            basic: true,
-            hra: true,
-            specialAllowance: true,
-            pfApplicable: true,
-            esiApplicable: true,
-            tdsMonthly: true,
-            collarCategory: true,
-            hourlyRate: true,
-          },
+      }),
+      prisma.attendanceRecord.findMany({
+        where: {
+          organizationId: params.organizationId,
+          workDate: { gte: params.periodStart, lte: payThrough },
         },
-      },
-    }),
-    prisma.attendanceRecord.findMany({
-      where: {
-        organizationId: params.organizationId,
-        workDate: { gte: params.periodStart, lte: payThrough },
-      },
-      select: {
-        userId: true,
-        status: true,
-        workDate: true,
-        notes: true,
-        verifyStatus: true,
-        otHours: true,
-        isLate: true,
-      },
-    }),
-    prisma.leaveRequest.findMany({
-      where: {
-        organizationId: params.organizationId,
-        status: "APPROVED",
-        leaveType: "UNPAID",
-        startDate: { lte: payThrough },
-        endDate: { gte: params.periodStart },
-      },
-      select: { userId: true, startDate: true, endDate: true },
-    }),
-    prisma.workspaceHrSettings.upsert({
-      where: { organizationId: params.organizationId },
-      create: { organizationId: params.organizationId },
-      update: {},
-    }),
-  ]);
+        select: {
+          userId: true,
+          status: true,
+          workDate: true,
+          notes: true,
+          verifyStatus: true,
+          otHours: true,
+          isLate: true,
+        },
+      }),
+      prisma.leaveRequest.findMany({
+        where: {
+          organizationId: params.organizationId,
+          status: "APPROVED",
+          leaveType: "UNPAID",
+          startDate: { lte: payThrough },
+          endDate: { gte: params.periodStart },
+        },
+        select: { userId: true, startDate: true, endDate: true },
+      }),
+      prisma.workspaceHrSettings.upsert({
+        where: { organizationId: params.organizationId },
+        create: { organizationId: params.organizationId },
+        update: {},
+      }),
+      ...holidayYears.map((year) => listHolidays(params.organizationId, year)),
+    ]);
+
+  const holidayYmds = new Set(
+    holidayLists
+      .flat()
+      .filter((holiday) => !holiday.isOptional)
+      .filter((holiday) => {
+        const time = holiday.date.getTime();
+        return (
+          time >= params.periodStart.getTime() && time <= payThrough.getTime()
+        );
+      })
+      .map((holiday) => dateYmdUtc(holiday.date)),
+  );
 
   const unpaidKeys = buildUnpaidLeaveKeys(unpaidLeaves);
 
@@ -460,6 +490,7 @@ export async function generatePayrollFromAttendance(params: {
       ...shiftTimes,
     });
     const userMap = byUserDate.get(member.userId) ?? new Map();
+    const weeklyOff = resolveWeeklyOffDay(member.weeklyOffDay);
     let presentDays = 0;
     let leaveDays = 0;
     let absentDays = 0;
@@ -468,12 +499,30 @@ export async function generatePayrollFromAttendance(params: {
     let payableDays = 0;
     let unmarked = 0;
     let unpaidLeaveDays = 0;
+    let weekOffDays = 0;
+    let holidayDays = 0;
     let otHoursTotal = 0;
     let lateDays = 0;
 
-    for (const workDate of weekdayDates) {
+    for (const workDate of calendarDates) {
       const ymd = dateYmdUtc(workDate);
       const row = userMap.get(ymd);
+      const isOff = workDate.getUTCDay() === weeklyOff;
+      const isHoliday =
+        holidayYmds.has(ymd) || row?.status === "HOLIDAY";
+
+      // Week off (e.g. Sunday) and org holidays are payable — no salary deduction.
+      if (isOff) {
+        weekOffDays += 1;
+        payableDays += 1;
+        continue;
+      }
+      if (isHoliday) {
+        holidayDays += 1;
+        payableDays += 1;
+        continue;
+      }
+
       if (!row) {
         unmarked += 1;
         absentDays += 1;
@@ -493,7 +542,12 @@ export async function generatePayrollFromAttendance(params: {
         (unpaidKeys.has(`${member.userId}:${ymd}`) ||
           (notes?.toUpperCase().includes("UNPAID") ?? false));
       if (unpaidLeave) unpaidLeaveDays += 1;
-      payableDays += payableFromStatus(status, unpaidLeave, shortLeaveFraction, verified);
+      payableDays += payableFromStatus(
+        status,
+        unpaidLeave,
+        shortLeaveFraction,
+        verified,
+      );
 
       if (
         member.employeeProfile?.collarCategory === "BLUE" &&
@@ -549,7 +603,11 @@ export async function generatePayrollFromAttendance(params: {
     const netPay = Math.round((pay.netPay - lateInfo.amount) * 100) / 100;
 
     const noteParts: string[] = [];
-    if (unmarked > 0) noteParts.push(`${unmarked} unmarked weekday(s) treated as absent`);
+    if (weekOffDays > 0) noteParts.push(`${weekOffDays} week-off day(s) payable`);
+    if (holidayDays > 0) noteParts.push(`${holidayDays} holiday(s) payable`);
+    if (unmarked > 0) {
+      noteParts.push(`${unmarked} unmarked work day(s) treated as absent`);
+    }
     if (lateDays > 0) {
       noteParts.push(
         lateInfo.deductionDays > 0
@@ -592,7 +650,7 @@ export async function generatePayrollFromAttendance(params: {
 
   const totalGross = lines.reduce((sum, line) => sum + line.earnedSalary, 0);
   const totalNet = lines.reduce((sum, line) => sum + line.netPay, 0);
-  const runNotes = `Attendance-based payroll · ${workingDays} working days through ${dateYmdUtc(payThrough)} · paid leave payable, unpaid leave not · unverified punches excluded`;
+  const runNotes = `Attendance-based payroll · ${workingDays} calendar days through ${dateYmdUtc(payThrough)} · salary ÷ calendar days · week off & holidays payable · unpaid leave / absent deduct · unverified punches excluded`;
   const lineCreates = lines.map((line) => ({
     organizationId: params.organizationId,
     userId: line.userId,

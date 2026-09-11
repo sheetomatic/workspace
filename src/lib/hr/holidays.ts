@@ -6,11 +6,6 @@ import {
   type HolidayRegion,
 } from "@/lib/hr/holiday-catalog";
 
-function isWeekday(date: Date) {
-  const day = date.getUTCDay();
-  return day !== 0 && day !== 6;
-}
-
 function noonDate(date: Date): Date {
   const d = new Date(date);
   d.setUTCHours(12, 0, 0, 0);
@@ -60,7 +55,8 @@ export async function clearSyncedHolidayAttendance(params: {
 }
 
 /**
- * Upsert HOLIDAY attendance for all active non-VIEWER members on a weekday holiday.
+ * Upsert HOLIDAY attendance for all active non-VIEWER members on a holiday
+ * (including Saturday — week off is Sunday by default; payroll still pays week-off separately).
  *
  * Optional holidays (`isOptional`): employees may work or take leave —
  * do NOT force HOLIDAY attendance. If they punch PRESENT they stay present;
@@ -74,9 +70,6 @@ export async function syncHolidayAttendance(params: {
   isOptional?: boolean;
 }) {
   const workDate = noonDate(params.date);
-  if (!isWeekday(workDate)) {
-    return { synced: 0 };
-  }
   // Optional holidays do not auto-mark attendance — clear any prior synced HOLIDAY rows.
   if (params.isOptional) {
     await clearSyncedHolidayAttendance({

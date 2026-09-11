@@ -93,7 +93,7 @@ export function SalarySlipView({
             <h3>Attendance</h3>
             <p>
               Payable {slip.attendance.payableDays} / {slip.attendance.workingDays}{" "}
-              working days
+              calendar days
             </p>
             <p>Present: {slip.attendance.presentDays}</p>
             <p>Leave: {slip.attendance.leaveDays}</p>

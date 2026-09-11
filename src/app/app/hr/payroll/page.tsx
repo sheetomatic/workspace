@@ -56,7 +56,7 @@ export default async function HrPayrollPage() {
         title="Payroll"
         description={
           isAdmin
-            ? "Salary from attendance — payable days × (monthly salary ÷ working days). Paid leave counts as payable; unpaid leave does not."
+            ? "Salary from attendance — payable days × (monthly salary ÷ calendar days in the month). Week off & holidays are payable; unpaid leave and absences deduct."
             : "Your attendance-based payslip lines for this workspace."
         }
       />
