@@ -30,6 +30,7 @@ const REQUIRED_DELEGATES = [
   "imsPhysicalStockCount",
   "imsGatePass",
   "orgExpenseEntry",
+  "videoJob",
 ] as const;
 
 function createPrismaClient() {
