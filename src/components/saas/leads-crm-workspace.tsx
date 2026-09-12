@@ -23,6 +23,7 @@ import { LeadsKanbanBoard } from "@/components/saas/leads-kanban-board";
 import { formatInr } from "@/lib/leads/categories";
 import { LEAD_CHANNEL_LABELS } from "@/lib/leads/channels";
 import type { LeadSourceChannel } from "@prisma/client";
+import { leadWhatsAppPrefillMessage } from "@/lib/leads/ai-reengage-message";
 import { leadTelHref, leadWhatsAppHref } from "@/lib/leads/contact-links";
 import {
   LEADS_PAGE_SIZE,
@@ -652,7 +653,23 @@ export function LeadsCrmWorkspace({
               visibleLeads.map((lead) => {
                 const quoted = quotationAmount(lead);
                 const telHref = leadTelHref(lead.phone);
-                const waHref = leadWhatsAppHref(lead.phone, lead.name);
+                const waHref = leadWhatsAppHref(
+                  lead.phone,
+                  lead.name,
+                  leadWhatsAppPrefillMessage({
+                    name: lead.name,
+                    requirement: lead.requirement,
+                    category: lead.category,
+                    company: lead.company,
+                    campaign: lead.campaign,
+                    utmCampaign: lead.utmCampaign,
+                    utmContent: lead.utmContent,
+                    landingPage: lead.landingPage,
+                    channel: lead.channel,
+                    status: lead.status,
+                    archivedAt: lead.archivedAt,
+                  }),
+                );
                 const primary = leadPrimaryLabel(lead);
                 const secondary = leadSecondaryLabel(lead);
                 const isArchived = Boolean(lead.archivedAt);

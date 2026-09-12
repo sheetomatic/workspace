@@ -38,6 +38,8 @@ export type CrmClientGroup = {
   rows: CrmClientGroupRow[];
   /** Per-group nurture event override (e.g. projects due vs follow-up). */
   waEvent?: LeadNurtureEventId;
+  /** Prefill for wa.me WhatsApp button (e.g. Next Time AI reopen). */
+  waMessage?: string;
 };
 
 function renderCell(cell: CrmClientGroupCell) {
@@ -183,7 +185,11 @@ export function CrmClientGroups({
         <ul className="crm-meet-rows">
           {visible.map((group) => {
             const open = openIds.has(group.id);
-            const waHref = leadWhatsAppHref(group.phone, group.name);
+            const waHref = leadWhatsAppHref(
+              group.phone,
+              group.name,
+              group.waMessage,
+            );
             const groupFeedback =
               feedback?.leadId === group.inboundLeadId ? feedback : null;
             return (

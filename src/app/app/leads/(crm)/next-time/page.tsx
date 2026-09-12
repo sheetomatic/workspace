@@ -3,6 +3,7 @@ import { CrmSubmoduleShell } from "@/components/saas/crm-submodule-shell";
 import "@/components/saas/leads-machine.css";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
 import { formatInr, leadCategoryLabel } from "@/lib/leads/categories";
+import { buildLeadAiReengageMessage } from "@/lib/leads/ai-reengage-message";
 import { listCrmNextTimeLeads } from "@/lib/leads/crm-module-stats";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
@@ -53,6 +54,18 @@ export default async function CrmNextTimePage() {
       phone: lead.phone || "",
       email: lead.email,
       inboundLeadId: lead.id,
+      waMessage: buildLeadAiReengageMessage({
+        name: lead.name,
+        requirement: lead.requirement,
+        category: lead.category,
+        company: lead.company,
+        campaign: lead.campaign,
+        utmCampaign: lead.utmCampaign,
+        utmContent: lead.utmContent,
+        landingPage: lead.landingPage,
+        channel: lead.channel,
+        status: lead.status,
+      }),
       summary: [
         leadCategoryLabel(lead.category),
         amount > 0 ? formatInr(amount) : null,
