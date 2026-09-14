@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  bucketLeadCategoryCounts,
   categorizeLeadRequirement,
+  categoryValuesForFilter,
   leadCategoryLabel,
   leadCategoryShortLabel,
   migrateLegacyLeadCategory,
@@ -40,6 +42,37 @@ describe("categorizeLeadRequirement", () => {
   it("migrates legacy category ids", () => {
     expect(migrateLegacyLeadCategory("CRM_AUTOMATION")).toBe("CUSTOM_SOFTWARE");
     expect(resolveLeadCategoryId("FMS_ERP")).toBe("FMS_BCI");
+  });
+});
+
+describe("categoryValuesForFilter", () => {
+  it("includes current and legacy ids for a known category", () => {
+    expect(categoryValuesForFilter("FMS_BCI").sort()).toEqual(["FMS_BCI", "FMS_ERP"]);
+    expect(categoryValuesForFilter("CUSTOM_SOFTWARE").sort()).toEqual([
+      "CRM_AUTOMATION",
+      "CUSTOM_SOFTWARE",
+    ]);
+  });
+
+  it("keeps custom CRM category strings exact — does not fold them into GENERAL", () => {
+    expect(categoryValuesForFilter("Mobile shop")).toEqual(["Mobile shop"]);
+    expect(categoryValuesForFilter("APPROACHED_NOT_CONVERTED")).toEqual([
+      "APPROACHED_NOT_CONVERTED",
+    ]);
+  });
+
+  it("buckets org counts onto the CRM category picker", () => {
+    expect(
+      bucketLeadCategoryCounts([
+        { category: "FMS_ERP", count: 3 },
+        { category: "FMS_BCI", count: 10 },
+        { category: "Mobile shop", count: 4 },
+        { category: null, count: 8 },
+      ]),
+    ).toEqual([
+      { id: "FMS_BCI", label: "FMS / BCI (Operations)", count: 13 },
+      { id: "Mobile shop", label: "Mobile shop", count: 4 },
+    ]);
   });
 });
 

@@ -17,6 +17,16 @@ import {
   buildTemplateVariables,
   parseVariableMap,
 } from "@/lib/crm/wa-campaign-variables";
+import {
+  CAMPAIGN_APPROACHED_STATUSES,
+  CAMPAIGN_AUDIENCE_APPROACHED,
+  campaignAudienceLabel,
+  isApproachedNotConvertedAudience,
+} from "@/lib/crm/wa-campaign-audiences";
+import {
+  bucketLeadCategoryCounts,
+  categoryValuesForFilter,
+} from "@/lib/leads/categories";
 
 export const WA_CAMPAIGN_BATCH_SIZE = 20;
 const MAX_SEND_ATTEMPTS = 3;
@@ -328,6 +338,163 @@ export async function addLeadsToWaCampaign(params: {
     });
   }
   return { ok: true as const, added, skipped, campaignId: campaign.id };
+}
+
+export async function listCampaignLeadCategories(organizationId: string) {
+  const baseWhere = {
+    organizationId,
+    archivedAt: null,
+    mergedIntoId: null,
+  };
+  const [approachedCount, rows] = await Promise.all([
+    prisma.inboundLead.count({
+      where: {
+        ...baseWhere,
+        status: { in: [...CAMPAIGN_APPROACHED_STATUSES] },
+      },
+    }),
+    prisma.inboundLead.groupBy({
+      by: ["category"],
+      where: {
+        ...baseWhere,
+        category: { not: null },
+      },
+      _count: { _all: true },
+    }),
+  ]);
+  const fromOrg = bucketLeadCategoryCounts(
+    rows.map((row) => ({ category: row.category, count: row._count._all })),
+  );
+  return [
+    {
+      id: CAMPAIGN_AUDIENCE_APPROACHED,
+      label: campaignAudienceLabel(CAMPAIGN_AUDIENCE_APPROACHED),
+      count: approachedCount,
+    },
+    ...fromOrg,
+  ];
+}
+
+async function matchingCategoryLeadIds(params: {
+  organizationId: string;
+  category: string;
+  excludeLeadIds: string[];
+}) {
+  const exclude =
+    params.excludeLeadIds.length > 0
+      ? { id: { notIn: params.excludeLeadIds } }
+      : {};
+  const baseWhere = {
+    organizationId: params.organizationId,
+    archivedAt: null,
+    mergedIntoId: null,
+    ...exclude,
+  };
+
+  if (isApproachedNotConvertedAudience(params.category)) {
+    const leads = await prisma.inboundLead.findMany({
+      where: {
+        ...baseWhere,
+        status: { in: [...CAMPAIGN_APPROACHED_STATUSES] },
+      },
+      select: { id: true },
+    });
+    return leads.map((row) => row.id);
+  }
+
+  const categories = categoryValuesForFilter(params.category);
+  if (categories.length === 0) {
+    return [];
+  }
+  const leads = await prisma.inboundLead.findMany({
+    where: {
+      ...baseWhere,
+      category: { in: categories },
+    },
+    select: { id: true },
+  });
+  return leads.map((row) => row.id);
+}
+
+export async function previewLeadsByCategoryForCampaign(params: {
+  organizationId: string;
+  campaignId: string;
+  category: string;
+}) {
+  const category = params.category.trim();
+  if (!category) {
+    return {
+      ok: false as const,
+      error: "Pick a category.",
+      count: 0,
+      label: "",
+    };
+  }
+  const campaign = await prisma.waCampaign.findFirst({
+    where: { id: params.campaignId, organizationId: params.organizationId },
+    select: { id: true },
+  });
+  if (!campaign) {
+    return { ok: false as const, error: "Campaign not found.", count: 0, label: "" };
+  }
+  const existing = await prisma.waCampaignRecipient.findMany({
+    where: { campaignId: campaign.id, organizationId: params.organizationId },
+    select: { leadId: true },
+  });
+  const excludeLeadIds = existing.map((row) => row.leadId).filter(Boolean) as string[];
+  const leadIds = await matchingCategoryLeadIds({
+    organizationId: params.organizationId,
+    category,
+    excludeLeadIds,
+  });
+  return {
+    ok: true as const,
+    count: leadIds.length,
+    label: campaignAudienceLabel(category),
+  };
+}
+
+export async function addLeadsByCategoryToWaCampaign(params: {
+  organizationId: string;
+  campaignId: string;
+  category: string;
+  userId: string;
+}) {
+  const category = params.category.trim();
+  if (!category) {
+    return { ok: false as const, error: "Pick a category.", added: 0, skipped: 0 };
+  }
+  const campaign = await prisma.waCampaign.findFirst({
+    where: { id: params.campaignId, organizationId: params.organizationId },
+    select: { id: true },
+  });
+  if (!campaign) {
+    return { ok: false as const, error: "Campaign not found.", added: 0, skipped: 0 };
+  }
+  const existing = await prisma.waCampaignRecipient.findMany({
+    where: { campaignId: campaign.id, organizationId: params.organizationId },
+    select: { leadId: true },
+  });
+  const excludeLeadIds = existing.map((row) => row.leadId).filter(Boolean) as string[];
+  const leadIds = await matchingCategoryLeadIds({
+    organizationId: params.organizationId,
+    category,
+    excludeLeadIds,
+  });
+  if (leadIds.length === 0) {
+    return {
+      ok: false as const,
+      error: `No new contacts in ${campaignAudienceLabel(category)}.`,
+      added: 0,
+      skipped: 0,
+    };
+  }
+  return addLeadsToWaCampaign({
+    organizationId: params.organizationId,
+    campaignId: params.campaignId,
+    leadIds,
+    userId: params.userId,
+  });
 }
 
 export async function removeWaCampaignRecipient(params: {

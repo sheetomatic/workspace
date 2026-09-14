@@ -69,7 +69,7 @@ export function CrmCampaignsList({
 
       {campaigns.length === 0 ? (
         <p className="crm-campaign-empty">
-          No campaigns yet. Create one, add CRM contacts, pick an approved
+          No campaigns yet. Create one, add a category of contacts, pick an approved
           template, then send.
         </p>
       ) : (

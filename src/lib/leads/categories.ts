@@ -274,6 +274,57 @@ export function listLeadCategoryOptions(): Array<{ id: LeadCategoryId; label: st
   }));
 }
 
+function isKnownLeadCategory(value: string) {
+  return isLeadCategoryId(value) || value in LEGACY_LEAD_CATEGORY_MAP;
+}
+
+/** Stable key for CRM category filters — known taxonomy ids collapse with their aliases. */
+export function canonicalLeadCategoryKey(category: string | null | undefined) {
+  const trimmed = category?.trim() ?? "";
+  if (!trimmed) {
+    return "";
+  }
+  if (isKnownLeadCategory(trimmed)) {
+    return resolveLeadCategoryId(trimmed);
+  }
+  return trimmed;
+}
+
+/** Stored `InboundLead.category` values that belong to one picker option. */
+export function categoryValuesForFilter(category: string) {
+  const trimmed = category.trim();
+  if (!trimmed) {
+    return [];
+  }
+  if (!isKnownLeadCategory(trimmed)) {
+    return [trimmed];
+  }
+  const resolved = resolveLeadCategoryId(trimmed);
+  const values = new Set<string>([trimmed, resolved]);
+  for (const [legacy, current] of Object.entries(LEGACY_LEAD_CATEGORY_MAP)) {
+    if (current === resolved) {
+      values.add(legacy);
+    }
+  }
+  return [...values];
+}
+
+export function bucketLeadCategoryCounts(
+  rows: Array<{ category: string | null; count: number }>,
+): Array<{ id: string; label: string; count: number }> {
+  const buckets = new Map<string, number>();
+  for (const row of rows) {
+    const id = canonicalLeadCategoryKey(row.category);
+    if (!id) {
+      continue;
+    }
+    buckets.set(id, (buckets.get(id) ?? 0) + row.count);
+  }
+  return [...buckets.entries()]
+    .map(([id, count]) => ({ id, label: leadCategoryLabel(id), count }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+}
+
 export function resolveLeadCategoryId(categoryId: string | null | undefined): LeadCategoryId {
   if (!categoryId) {
     return "GENERAL";

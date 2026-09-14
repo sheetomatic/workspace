@@ -6,6 +6,7 @@ import { requireCrmSubModule } from "@/lib/crm/crm-access";
 import {
   getWaCampaign,
   listApprovedCampaignTemplates,
+  listCampaignLeadCategories,
 } from "@/lib/crm/wa-campaigns";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
@@ -24,12 +25,13 @@ export default async function CrmCampaignDetailPage({
   }
 
   const templatesResult = await listApprovedCampaignTemplates(user.organizationId);
+  const categories = await listCampaignLeadCategories(user.organizationId);
   const canSend = hasMinimumRole(user.role, "MANAGER");
 
   return (
     <CrmSubmoduleShell
       title={campaign.name}
-      description="Map {{1}} {{2}} {{3}} to contact fields, then send. Meta errors such as 131049 show on the person row."
+      description="Pick Approached — not converted (or another CRM category), map {{1}} {{2}} {{3}}, then send."
       leadsHref="/app/leads/campaigns"
       kpis={[
         { label: "Pending", value: String(campaign.counts.pending) },
@@ -43,6 +45,7 @@ export default async function CrmCampaignDetailPage({
     >
       <CrmCampaignDetail
         canSend={canSend}
+        categories={categories}
         campaign={{
           id: campaign.id,
           name: campaign.name,

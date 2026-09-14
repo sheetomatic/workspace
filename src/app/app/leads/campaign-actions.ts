@@ -7,10 +7,12 @@ import { hasMinimumRole } from "@/lib/permissions";
 import { isMemberCrmSubModuleEnabled } from "@/lib/crm/crm-sub-modules";
 import { prisma } from "@/lib/db";
 import {
+  addLeadsByCategoryToWaCampaign,
   addLeadsToWaCampaign,
   createWaCampaign,
   listApprovedCampaignTemplates,
   pauseWaCampaign,
+  previewLeadsByCategoryForCampaign,
   processWaCampaignBatch,
   removeWaCampaignRecipient,
   resumeWaCampaign,
@@ -100,6 +102,41 @@ export async function addLeadsToWaCampaignAction(input: {
     organizationId: user.organizationId,
     campaignId: input.campaignId,
     leadIds: input.leadIds,
+    userId: user.id,
+  });
+  if (result.ok) {
+    revalidateCampaigns(input.campaignId);
+  }
+  return result;
+}
+
+export async function previewCategoryLeadsForCampaignAction(input: {
+  campaignId: string;
+  category: string;
+}) {
+  const user = await requireCampaignUser("STAFF");
+  if (!user) {
+    return { ok: false as const, error: "You cannot add contacts.", count: 0, label: "" };
+  }
+  return previewLeadsByCategoryForCampaign({
+    organizationId: user.organizationId,
+    campaignId: input.campaignId,
+    category: input.category,
+  });
+}
+
+export async function addLeadsByCategoryToWaCampaignAction(input: {
+  campaignId: string;
+  category: string;
+}) {
+  const user = await requireCampaignUser("STAFF");
+  if (!user) {
+    return { ok: false as const, error: "You cannot add contacts.", added: 0, skipped: 0 };
+  }
+  const result = await addLeadsByCategoryToWaCampaign({
+    organizationId: user.organizationId,
+    campaignId: input.campaignId,
+    category: input.category,
     userId: user.id,
   });
   if (result.ok) {

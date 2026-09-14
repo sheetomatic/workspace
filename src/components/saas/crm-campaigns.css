@@ -125,6 +125,31 @@
   gap: 0.55rem;
 }
 
+.crm-campaign-category {
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.crm-campaign-category-row {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.crm-campaign-category-row span {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.crm-campaign-category-row .btn-primary {
+  min-height: 44px;
+  padding: 0.55rem 1rem;
+  border-radius: 12px;
+}
+
 .crm-campaign-hits {
   display: grid;
   gap: 0.35rem;
@@ -207,7 +232,8 @@
   }
 
   .crm-campaign-actions button,
-  .crm-campaign-create button {
+  .crm-campaign-create button,
+  .crm-campaign-category-row .btn-primary {
     width: 100%;
   }
 }

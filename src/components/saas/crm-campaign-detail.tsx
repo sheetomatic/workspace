@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
+  addLeadsByCategoryToWaCampaignAction,
   addLeadsToWaCampaignAction,
   loadApprovedCampaignTemplatesAction,
   pauseWaCampaignAction,
+  previewCategoryLeadsForCampaignAction,
   processWaCampaignBatchAction,
   removeWaCampaignRecipientAction,
   resumeWaCampaignAction,
@@ -13,6 +15,7 @@ import {
   searchCampaignLeadsAction,
   startWaCampaignSendAction,
 } from "@/app/app/leads/campaign-actions";
+import { CAMPAIGN_AUDIENCE_APPROACHED } from "@/lib/crm/wa-campaign-audiences";
 import {
   CAMPAIGN_CONTACT_FIELDS,
   campaignStatusLabel,
@@ -53,11 +56,13 @@ export function CrmCampaignDetail({
   initialTemplates,
   templatesError,
   canSend,
+  categories,
 }: {
   campaign: CampaignDetailData;
   initialTemplates: OfficialWaTemplate[];
   templatesError: string | null;
   canSend: boolean;
+  categories: Array<{ id: string; label: string; count: number }>;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -79,6 +84,13 @@ export function CrmCampaignDetail({
       company: string | null;
     }>
   >([]);
+  const [categoryId, setCategoryId] = useState(
+    () => categories[0]?.id || CAMPAIGN_AUDIENCE_APPROACHED,
+  );
+  const [categoryPreview, setCategoryPreview] = useState<{
+    count: number;
+    label: string;
+  } | null>(null);
 
   const selected = useMemo(
     () =>
@@ -100,6 +112,29 @@ export function CrmCampaignDetail({
     }, 4000);
     return () => window.clearInterval(timer);
   }, [campaign.id, campaign.status, router]);
+
+  useEffect(() => {
+    if (!categoryId) {
+      setCategoryPreview(null);
+      return;
+    }
+    let cancelled = false;
+    startTransition(async () => {
+      const result = await previewCategoryLeadsForCampaignAction({
+        campaignId: campaign.id,
+        category: categoryId,
+      });
+      if (cancelled) return;
+      if (!result.ok) {
+        setCategoryPreview(null);
+        return;
+      }
+      setCategoryPreview({ count: result.count, label: result.label });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [campaign.id, categoryId]);
 
   function applyTemplate(next: OfficialWaTemplate | null) {
     if (!next) return;
@@ -324,6 +359,74 @@ export function CrmCampaignDetail({
 
       <section className="crm-campaign-panel">
         <h2 style={{ margin: "0 0 0.75rem", fontSize: "1.05rem" }}>Add contacts</h2>
+        <div className="crm-campaign-category">
+          <label className="crm-campaign-category-row">
+            <span>Category</span>
+            <select
+              aria-label="Campaign audience category"
+              value={categoryId}
+              onChange={(event) => {
+                setCategoryId(event.target.value);
+                setCategoryPreview(null);
+              }}
+            >
+              {categories.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                  {option.count ? ` (${option.count})` : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="crm-campaign-category-row">
+            <p className="crm-campaign-meta">
+              {categoryPreview
+                ? `${categoryPreview.count} contact${categoryPreview.count === 1 ? "" : "s"} in ${categoryPreview.label}`
+                : "Pick a category to see how many people you’ll add."}
+            </p>
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={pending || !categoryId || (categoryPreview?.count ?? 0) === 0}
+              onClick={() => {
+                const count = categoryPreview?.count ?? 0;
+                const label = categoryPreview?.label || "this category";
+                if (count === 0) {
+                  setError(`No new contacts in ${label}.`);
+                  return;
+                }
+                const ok = window.confirm(
+                  `Add ${count} contacts from ${label}?`,
+                );
+                if (!ok) return;
+                setError(null);
+                startTransition(async () => {
+                  const result = await addLeadsByCategoryToWaCampaignAction({
+                    campaignId: campaign.id,
+                    category: categoryId,
+                  });
+                  if (!result.ok) {
+                    setError(result.error);
+                    return;
+                  }
+                  setMessage(
+                    `Added ${result.added}${result.skipped ? ` · ${result.skipped} skipped` : ""}. Pick a template and send.`,
+                  );
+                  const next = await previewCategoryLeadsForCampaignAction({
+                    campaignId: campaign.id,
+                    category: categoryId,
+                  });
+                  if (next.ok) {
+                    setCategoryPreview({ count: next.count, label: next.label });
+                  }
+                  router.refresh();
+                });
+              }}
+            >
+              Add all
+            </button>
+          </div>
+        </div>
         <div className="crm-campaign-search">
           <input
             value={query}
@@ -400,7 +503,7 @@ export function CrmCampaignDetail({
           </div>
         ) : (
           <p className="crm-campaign-meta">
-            Or open Leads, select people, and choose Add to campaign.
+            Or search one person. You can also add from Leads with Select.
           </p>
         )}
       </section>

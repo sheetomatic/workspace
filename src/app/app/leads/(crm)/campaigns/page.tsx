@@ -16,7 +16,7 @@ export default async function CrmCampaignsPage() {
   return (
     <CrmSubmoduleShell
       title="Campaigns"
-      description="Add CRM contacts, pick an approved Official API template, and keep sending in batches. No Google Sheet required."
+      description="Add a CRM category as the audience — default is Approached — not converted. Pick an approved Official API template and send in batches."
       leadsHref="/app/leads"
       kpis={[
         { label: "Campaigns", value: String(campaigns.length), accent: "blue" },
