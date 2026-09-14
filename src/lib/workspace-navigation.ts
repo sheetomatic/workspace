@@ -5,6 +5,7 @@ import {
   Briefcase,
   CalendarCheck2,
   CalendarDays,
+  Clapperboard,
   ClipboardCheck,
   ClipboardList,
   CreditCard,
@@ -621,12 +622,22 @@ const MOBILE_SHOP_NAV_ITEM: WorkspaceNavItem = {
   matchPrefix: "/app/mobile-shop",
 };
 
+const VIDEO_NAV_ITEM: WorkspaceNavItem = {
+  id: "video",
+  href: "/app/video",
+  label: "Video",
+  icon: Clapperboard,
+  minRole: "STAFF",
+  matchPrefix: "/app/video",
+};
+
 const SELLABLE_MODULE_ITEMS: WorkspaceNavItem[] = [
   MOBILE_SHOP_NAV_ITEM,
   CRM_NAV_ITEM,
   HRMS_NAV_ITEM,
   IMS_STOCK_NAV_ITEM,
   SOCIAL_NAV_ITEM,
+  VIDEO_NAV_ITEM,
 ];
 
 export function canAccessWorkspaceNav(

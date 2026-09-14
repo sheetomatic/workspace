@@ -79,6 +79,10 @@
     {
       "path": "/api/cron/subscription-billing",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/video-jobs",
+      "schedule": "* * * * *"
     }
   ],
   "functions": {
@@ -122,6 +126,9 @@
       "maxDuration": 300
     },
     "src/app/api/cron/subscription-billing/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/cron/video-jobs/route.ts": {
       "maxDuration": 60
     }
   }

@@ -342,6 +342,7 @@ model Organization {
   subscriptionInvoices SubscriptionInvoice[]
   subscriptionPayments SubscriptionPayment[]
   onboardingTasks      ClientOnboardingTask[]
+  videoJobs            VideoJob[]
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
 }
@@ -924,6 +925,61 @@ model AiReplyUsageEvent {
   @@index([organizationId, createdAt])
 }
 
+enum VideoJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  NOT_CONFIGURED
+}
+
+enum VideoClipStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+}
+
+/// Prompt-to-video job. Tenant is session organizationId only — never from the client body.
+model VideoJob {
+  id                   String         @id @default(cuid())
+  organizationId       String
+  organization         Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId               String
+  user                 User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt               String
+  requestedDurationSec Int?
+  effectiveDurationSec Int
+  status               VideoJobStatus
+  error                String?
+  finalUrl             String?
+  finalStorageKey      String?
+  finalDurationSec     Int?
+  claimedAt            DateTime?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  clips                VideoClip[]
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, status])
+}
+
+model VideoClip {
+  id             String          @id @default(cuid())
+  jobId          String
+  job            VideoJob        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  order          Int
+  durationSec    Int
+  providerClipId String?
+  providerUrl    String?
+  status         VideoClipStatus @default(PENDING)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@unique([jobId, order])
+  @@index([jobId, order])
+}
+
 model WhatsAppInboundEvent {
   id             String        @id @default(cuid())
   organizationId String?
@@ -1355,6 +1411,7 @@ model User {
   createdInboundLeadFollowUps  InboundLeadFollowUp[] @relation("InboundLeadFollowUpCreator")
   inboundLeadActivities        InboundLeadActivity[] @relation("InboundLeadActivityCreator")
   createdInboundLeadQuotations InboundLeadQuotation[] @relation("InboundLeadQuotationCreator")
+  videoJobs                    VideoJob[]
   createdAt            DateTime                 @default(now())
   updatedAt            DateTime                 @updatedAt
 }
