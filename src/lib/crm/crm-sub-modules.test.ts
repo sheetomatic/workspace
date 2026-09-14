@@ -12,12 +12,13 @@ describe("CRM sub-modules", () => {
     expect(crmSubModuleIdFromPath("/app/leads")).toBe("leads");
     expect(crmSubModuleIdFromPath("/app/leads/next-time")).toBe("nextTime");
     expect(crmSubModuleIdFromPath("/app/leads/meetings")).toBe("meetings");
+    expect(crmSubModuleIdFromPath("/app/leads/campaigns")).toBe("campaigns");
     expect(crmSubModuleIdFromPath("/app/leads/services")).toBe("services");
   });
 
   it("includes Next Time when a member already has Leads", () => {
     expect(resolveMemberCrmSubModules(["leads", "meetings"])).toEqual(
-      expect.arrayContaining(["leads", "nextTime", "meetings"]),
+      expect.arrayContaining(["leads", "nextTime", "campaigns", "meetings"]),
     );
     expect(resolveMemberCrmSubModules(null)).toEqual(
       expect.arrayContaining(["leads", "nextTime", "services"]),

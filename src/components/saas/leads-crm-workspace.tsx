@@ -10,6 +10,7 @@ import {
   deleteInboundLead,
   logLeadContactAction,
 } from "@/app/app/leads/actions";
+import { addLeadsToWaCampaignAction } from "@/app/app/leads/campaign-actions";
 import { LeadsCsvImportButton } from "@/components/saas/leads-csv-import";
 import { LeadDrawerPanel, type LeadDrawerData } from "@/components/saas/leads-drawer-panel";
 import {
@@ -32,6 +33,14 @@ import {
   type LeadsViewMode,
 } from "@/lib/leads/list-params";
 import { parseCrmDrawerTab, type CrmDrawerTab } from "@/lib/leads/crm-open";
+
+type CampaignOption = {
+  id: string;
+  name: string;
+  status: string;
+  templateName: string | null;
+  recipientCount: number;
+};
 
 type TeamMember = {
   user: { id: string; name: string | null; email: string };
@@ -156,6 +165,7 @@ export function LeadsCrmWorkspace({
   focusMode = false,
   canUseFms = false,
   fmsTemplates = [],
+  campaignOptions = [],
 }: {
   leads: LeadRow[];
   total: number;
@@ -186,6 +196,7 @@ export function LeadsCrmWorkspace({
   focusMode?: boolean;
   canUseFms?: boolean;
   fmsTemplates?: LeadFmsTemplateOption[];
+  campaignOptions?: CampaignOption[];
 }) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedLeadId);
@@ -202,6 +213,7 @@ export function LeadsCrmWorkspace({
   const [bulkMode, setBulkMode] = useState(false);
   const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
   const [bulkAssigneeId, setBulkAssigneeId] = useState("");
+  const [bulkCampaignId, setBulkCampaignId] = useState("");
   const [bulkMsg, setBulkMsg] = useState<string | null>(null);
   const [bulkErr, setBulkErr] = useState<string | null>(null);
 
@@ -364,10 +376,23 @@ export function LeadsCrmWorkspace({
                     setBulkErr(null);
                   }}
                 >
-                  {bulkMode ? "Done selecting" : "Bulk assign"}
+                  {bulkMode ? "Done selecting" : "Select"}
                 </button>
               ) : null}
             </>
+          ) : !isBoard ? (
+            <button
+              type="button"
+              className={`btn-secondary btn-sm${bulkMode ? " is-active" : ""}`}
+              onClick={() => {
+                setBulkMode((open) => !open);
+                setBulkSelected(new Set());
+                setBulkMsg(null);
+                setBulkErr(null);
+              }}
+            >
+              {bulkMode ? "Done selecting" : "Select"}
+            </button>
           ) : null}
           <button
             type="button"
@@ -507,51 +532,97 @@ export function LeadsCrmWorkspace({
         </form>
       ) : null}
 
-      {bulkMode && canManage && !isBoard ? (
-        <div className="leads-bulk-bar" role="toolbar" aria-label="Bulk assign leads">
+      {bulkMode && !isBoard ? (
+        <div className="leads-bulk-bar" role="toolbar" aria-label="Selected leads">
           <span className="leads-bulk-count">
             {bulkSelected.size} selected
           </span>
+          {canManage ? (
+            <>
+              <select
+                value={bulkAssigneeId}
+                onChange={(event) => setBulkAssigneeId(event.target.value)}
+                aria-label="Assign selected leads to"
+              >
+                <option value="">Assign to…</option>
+                {teamMembers.map((member) => (
+                  <option key={member.user.id} value={member.user.id}>
+                    {member.user.name || member.user.email}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="btn-primary btn-sm"
+                disabled={pending || bulkSelected.size === 0 || !bulkAssigneeId}
+                onClick={() => {
+                  setBulkMsg(null);
+                  setBulkErr(null);
+                  startTransition(async () => {
+                    const result = await bulkAssignInboundLeads(
+                      [...bulkSelected],
+                      bulkAssigneeId,
+                    );
+                    if (!result.ok) {
+                      setBulkErr(result.message ?? "Could not assign leads.");
+                      return;
+                    }
+                    setBulkMsg(
+                      `${result.count} lead${result.count === 1 ? "" : "s"} assigned to ${result.assigneeName}. Summary sent to them.`,
+                    );
+                    setBulkSelected(new Set());
+                    router.refresh();
+                  });
+                }}
+              >
+                {pending
+                  ? "Assigning…"
+                  : `Assign ${bulkSelected.size || ""}`.trim()}
+              </button>
+            </>
+          ) : null}
           <select
-            value={bulkAssigneeId}
-            onChange={(event) => setBulkAssigneeId(event.target.value)}
-            aria-label="Assign selected leads to"
+            value={bulkCampaignId}
+            onChange={(event) => setBulkCampaignId(event.target.value)}
+            aria-label="Add selected leads to campaign"
           >
-            <option value="">Assign to…</option>
-            {teamMembers.map((member) => (
-              <option key={member.user.id} value={member.user.id}>
-                {member.user.name || member.user.email}
+            <option value="">Add to campaign…</option>
+            {campaignOptions.map((campaign) => (
+              <option key={campaign.id} value={campaign.id}>
+                {campaign.name}
+                {campaign.templateName ? ` · ${campaign.templateName}` : ""}
               </option>
             ))}
           </select>
           <button
             type="button"
-            className="btn-primary btn-sm"
-            disabled={pending || bulkSelected.size === 0 || !bulkAssigneeId}
+            className="btn-secondary btn-sm"
+            disabled={pending || bulkSelected.size === 0 || !bulkCampaignId}
             onClick={() => {
               setBulkMsg(null);
               setBulkErr(null);
               startTransition(async () => {
-                const result = await bulkAssignInboundLeads(
-                  [...bulkSelected],
-                  bulkAssigneeId,
-                );
+                const result = await addLeadsToWaCampaignAction({
+                  campaignId: bulkCampaignId,
+                  leadIds: [...bulkSelected],
+                });
                 if (!result.ok) {
-                  setBulkErr(result.message ?? "Could not assign leads.");
+                  setBulkErr(result.error ?? "Could not add to campaign.");
                   return;
                 }
                 setBulkMsg(
-                  `${result.count} lead${result.count === 1 ? "" : "s"} assigned to ${result.assigneeName}. Summary sent to them.`,
+                  `Added ${result.added} to campaign${result.skipped ? ` · ${result.skipped} skipped` : ""}.`,
                 );
                 setBulkSelected(new Set());
                 router.refresh();
               });
             }}
           >
-            {pending
-              ? "Assigning…"
-              : `Assign ${bulkSelected.size || ""}`.trim()}
+            Add to campaign
           </button>
+          <Link className="btn-secondary btn-sm" href="/app/leads/campaigns">
+            Campaigns
+          </Link>
           {bulkMsg ? <span className="leads-bulk-msg">{bulkMsg}</span> : null}
           {bulkErr ? (
             <span className="leads-bulk-err" role="alert">
@@ -592,7 +663,7 @@ export function LeadsCrmWorkspace({
         <table className="leads-crm-table leads-crm-table-pro">
           <thead>
             <tr>
-              {bulkMode && canManage ? (
+              {bulkMode ? (
                 <th className="leads-col-select">
                   <input
                     type="checkbox"
@@ -626,7 +697,7 @@ export function LeadsCrmWorkspace({
           <tbody>
             {visibleLeads.length === 0 ? (
               <tr>
-                <td colSpan={bulkMode && canManage ? 9 : 8}>
+                <td colSpan={bulkMode ? 9 : 8}>
                   <div className="leads-empty-state">
                     <p className="leads-machine-muted">
                       {committedSearch
@@ -684,14 +755,14 @@ export function LeadsCrmWorkspace({
                       .filter(Boolean)
                       .join(" ")}
                     onClick={() => {
-                      if (bulkMode && canManage) {
+                      if (bulkMode) {
                         toggleBulkLead(lead.id);
                         return;
                       }
                       setSelectedId(lead.id);
                     }}
                   >
-                    {bulkMode && canManage ? (
+                    {bulkMode ? (
                       <td
                         className="leads-col-select"
                         onClick={(event) => event.stopPropagation()}

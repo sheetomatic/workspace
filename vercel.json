@@ -73,6 +73,10 @@
       "schedule": "30 3-15/2 * * *"
     },
     {
+      "path": "/api/cron/wa-campaigns",
+      "schedule": "* * * * *"
+    },
+    {
       "path": "/api/cron/leads-daily-digest",
       "schedule": "45 3 * * *"
     },
@@ -116,6 +120,9 @@
       "maxDuration": 60
     },
     "src/app/api/cron/leads-nurture/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/cron/wa-campaigns/route.ts": {
       "maxDuration": 60
     },
     "src/app/api/cron/leads-daily-digest/route.ts": {

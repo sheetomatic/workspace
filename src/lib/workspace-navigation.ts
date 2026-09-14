@@ -24,6 +24,7 @@ import {
   PenTool,
   PlusCircle,
   Presentation,
+  Radio,
   Settings,
   ShoppingCart,
   Smartphone,
@@ -115,6 +116,14 @@ const CRM_NAV_ITEM: WorkspaceNavItem = {
       module: "CRM",
       crmSubModule: "leads",
       matchPrefix: "/app/leads",
+    },
+    {
+      href: "/app/leads/campaigns",
+      label: "Campaigns",
+      icon: Radio,
+      module: "CRM",
+      crmSubModule: "campaigns",
+      matchPrefix: "/app/leads/campaigns",
     },
     {
       href: "/app/leads/next-time",

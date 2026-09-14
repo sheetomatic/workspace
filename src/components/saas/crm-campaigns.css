@@ -1,0 +1,213 @@
+.crm-campaigns-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.crm-campaign-create,
+.crm-campaign-card,
+.crm-campaign-panel {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 1rem 1.1rem;
+}
+
+.crm-campaign-create {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.crm-campaign-create input,
+.crm-campaign-panel input,
+.crm-campaign-panel select,
+.crm-campaign-row-error {
+  min-height: 44px;
+}
+
+.crm-campaign-create input,
+.crm-campaign-panel input,
+.crm-campaign-panel select {
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  padding: 0.55rem 0.8rem;
+  font-size: 1rem;
+  background: #fff;
+}
+
+.crm-campaign-create input {
+  flex: 1 1 220px;
+}
+
+.crm-campaign-card {
+  display: grid;
+  gap: 0.45rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.crm-campaign-card:hover {
+  border-color: #94a3b8;
+}
+
+.crm-campaign-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+
+.crm-campaign-card h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.crm-campaign-status {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.crm-campaign-status.is-running {
+  color: #0369a1;
+}
+
+.crm-campaign-status.is-paused {
+  color: #b45309;
+}
+
+.crm-campaign-status.is-completed {
+  color: #166534;
+}
+
+.crm-campaign-meta {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.crm-campaign-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.crm-campaign-actions button,
+.crm-campaign-create button {
+  min-height: 44px;
+  padding: 0.55rem 1rem;
+  border-radius: 12px;
+}
+
+.crm-campaign-map {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.crm-campaign-map-row {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.crm-campaign-map-row span {
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.crm-campaign-search {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.crm-campaign-hits {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.crm-campaign-hit {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.55rem 0.2rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.crm-campaign-table-wrap {
+  overflow-x: auto;
+}
+
+.crm-campaign-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.crm-campaign-table th,
+.crm-campaign-table td {
+  text-align: left;
+  padding: 0.7rem 0.45rem;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.92rem;
+  vertical-align: top;
+}
+
+.crm-campaign-table th {
+  color: #64748b;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.crm-campaign-row-error {
+  display: block;
+  margin-top: 0.25rem;
+  color: #b91c1c;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.crm-campaign-empty {
+  margin: 0;
+  color: #64748b;
+}
+
+.crm-campaign-banner {
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 0.92rem;
+}
+
+.crm-campaign-banner.error {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+@media (max-width: 720px) {
+  .crm-campaign-map-row {
+    grid-template-columns: 1fr;
+  }
+
+  .crm-campaign-card-top,
+  .crm-campaign-hit {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .crm-campaign-actions,
+  .crm-campaign-create {
+    display: grid;
+  }
+
+  .crm-campaign-actions button,
+  .crm-campaign-create button {
+    width: 100%;
+  }
+}

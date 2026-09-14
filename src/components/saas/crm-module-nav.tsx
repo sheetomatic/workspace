@@ -13,6 +13,7 @@ import {
   History,
   ListTree,
   Megaphone,
+  Radio,
   Users,
 } from "lucide-react";
 import { saveCrmModuleOrder } from "@/app/app/settings/nav-prefs-actions";
@@ -70,6 +71,13 @@ export function CrmModuleNav({
       icon: Users,
       count: counts.leads,
       matchExact: true,
+    },
+    {
+      id: "campaigns",
+      href: "/app/leads/campaigns",
+      label: "Campaigns",
+      icon: Radio,
+      count: counts.campaigns,
     },
     {
       id: "nextTime",

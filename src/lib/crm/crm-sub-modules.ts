@@ -2,6 +2,7 @@
 
 export type CrmSubModuleId =
   | "leads"
+  | "campaigns"
   | "nextTime"
   | "meetings"
   | "quotations"
@@ -25,6 +26,12 @@ export const CRM_SUB_MODULES = [
     label: "Leads",
     href: "/app/leads",
     description: "Lead pipeline, calling, and follow-ups.",
+  },
+  {
+    id: "campaigns",
+    label: "Campaigns",
+    href: "/app/leads/campaigns",
+    description: "WhatsApp campaigns from CRM contacts — Official API only.",
   },
   {
     id: "nextTime",
@@ -119,6 +126,9 @@ export function resolveMemberCrmSubModules(
   // Next Time is a parked slice of Leads — keep it with anyone who can see Leads.
   if (next.includes("leads") && !next.includes("nextTime")) {
     next.push("nextTime");
+  }
+  if (next.includes("leads") && !next.includes("campaigns")) {
+    next.push("campaigns");
   }
   if (
     (next.includes("quotations") || next.includes("leads")) &&

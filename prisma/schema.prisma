@@ -318,6 +318,8 @@ model Organization {
   inboundLeads         InboundLead[]
   inboundLeadFollowUps InboundLeadFollowUp[]
   inboundLeadActivities InboundLeadActivity[]
+  waCampaigns           WaCampaign[]
+  waCampaignRecipients  WaCampaignRecipient[]
   inboundLeadPayments InboundLeadPayment[]
   inboundLeadQuotations InboundLeadQuotation[]
   salesOrders          SalesOrder[]
@@ -1355,6 +1357,7 @@ model User {
   createdInboundLeadFollowUps  InboundLeadFollowUp[] @relation("InboundLeadFollowUpCreator")
   inboundLeadActivities        InboundLeadActivity[] @relation("InboundLeadActivityCreator")
   createdInboundLeadQuotations InboundLeadQuotation[] @relation("InboundLeadQuotationCreator")
+  createdWaCampaigns           WaCampaign[]            @relation("WaCampaignCreator")
   createdAt            DateTime                 @default(now())
   updatedAt            DateTime                 @updatedAt
 }
@@ -3158,6 +3161,7 @@ model InboundLead {
   quotations     InboundLeadQuotation[]
   salesOrders    SalesOrder[]
   offeredServices InboundLeadOfferedService[]
+  campaignRecipients WaCampaignRecipient[]
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
 
@@ -3213,6 +3217,74 @@ model InboundLeadFollowUp {
 
   @@index([organizationId, scheduledAt])
   @@index([organizationId, type, scheduledAt])
+  @@index([leadId])
+}
+
+enum WaCampaignStatus {
+  DRAFT
+  QUEUED
+  RUNNING
+  PAUSED
+  COMPLETED
+}
+
+enum WaCampaignRecipientStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+/// CRM WhatsApp campaign (Official API). Recipients are InboundLead contacts.
+model WaCampaign {
+  id                String              @id @default(cuid())
+  organizationId    String
+  organization      Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name              String
+  status            WaCampaignStatus    @default(DRAFT)
+  templateName      String?
+  templateLanguage  String             @default("en")
+  templateCategory  String?
+  variableMap       Json                @default("{}")
+  pauseReason       String?
+  createdByUserId   String?
+  createdBy         User?              @relation("WaCampaignCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  startedAt         DateTime?
+  pausedAt          DateTime?
+  completedAt       DateTime?
+  recipients        WaCampaignRecipient[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+}
+
+model WaCampaignRecipient {
+  id              String                     @id @default(cuid())
+  organizationId  String
+  organization    Organization                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaignId      String
+  campaign        WaCampaign                @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  leadId          String?
+  lead            InboundLead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  phone           String
+  name            String?
+  status          WaCampaignRecipientStatus  @default(PENDING)
+  attempts        Int                       @default(0)
+  error           String?
+  errorCode       String?
+  userMessageId   String?
+  waMessageId     String?
+  sentAt          DateTime?
+  lastAttemptAt   DateTime?
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+
+  @@unique([campaignId, phone])
+  @@index([campaignId, status])
+  @@index([organizationId, status])
   @@index([leadId])
 }
 
