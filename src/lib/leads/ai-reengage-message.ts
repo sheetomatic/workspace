@@ -38,38 +38,79 @@ function firstName(name: string | null | undefined): string {
   return trimmed.split(/\s+/)[0] ?? "there";
 }
 
+const BOLD_A = 0x1d5d4;
+const BOLD_a = 0x1d5ee;
+
+/** wa.me does not honour *markdown*. Map A–Z/a–z to mathematical sans-serif bold. */
+export function toWhatsAppSansSerifBold(text: string): string {
+  let out = "";
+  for (const ch of text) {
+    if (ch >= "A" && ch <= "Z") {
+      out += String.fromCodePoint(BOLD_A + (ch.charCodeAt(0) - 65));
+    } else if (ch >= "a" && ch <= "z") {
+      out += String.fromCodePoint(BOLD_a + (ch.charCodeAt(0) - 97));
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+
+const TOPIC_MAX = 32;
+
+function topicForPrefill(raw: string): string {
+  const cleaned = raw.replace(/\s+/g, " ").trim() || "your earlier enquiry";
+  if (cleaned.length <= TOPIC_MAX) {
+    return cleaned;
+  }
+  return `${cleaned.slice(0, TOPIC_MAX - 3)}...`;
+}
+
 /**
  * wa.me click-to-chat prefill for Next Time / archived leads.
- * Manual send only — the human taps Send in WhatsApp. Not Official API, not MAS.
+ * Manual send only. No ASCII asterisks — Unicode bold only.
  */
 export function buildLeadAiReengageMessage(lead: LeadAiReengageInput): string {
-  const requirement = resolveInquiryRequirementPhrase({
-    requirement: lead.requirement,
-    category: (lead.category as LeadCategoryId | null) ?? null,
-    company: lead.company,
-    campaign: lead.campaign,
-    utmCampaign: lead.utmCampaign,
-    utmContent: lead.utmContent,
-    landingPage: lead.landingPage,
-    channel: lead.channel ?? null,
-  });
+  const requirement = topicForPrefill(
+    resolveInquiryRequirementPhrase({
+      requirement: lead.requirement,
+      category: (lead.category as LeadCategoryId | null) ?? null,
+      company: lead.company,
+      campaign: lead.campaign,
+      utmCampaign: lead.utmCampaign,
+      utmContent: lead.utmContent,
+      landingPage: lead.landingPage,
+      channel: lead.channel ?? null,
+    }),
+  );
+  const topic = toWhatsAppSansSerifBold(requirement);
+  const remoteDme = toWhatsAppSansSerifBold("Remote DME");
+  const tasks = toWhatsAppSansSerifBold("AI Enabled Tasks System");
+  const crm = toWhatsAppSansSerifBold("CRM");
+  const hrms = toWhatsAppSansSerifBold("HRMS");
+  const bci = toWhatsAppSansSerifBold("Zero Effort BCI Suite");
+  const custom = toWhatsAppSansSerifBold(
+    "custom software on AppSheet, Google Sheets, and Apps Script",
+  );
+  const yes = toWhatsAppSansSerifBold("Yes");
+  const no = toWhatsAppSansSerifBold("No");
 
   return `Hi ${firstName(lead.name)},
 
-You had asked about *${requirement}*. I wanted to check whether that requirement is still open.
+You had asked about ${topic}. Is that requirement still open?
 
 Sheetomatic has expanded what we can put live for your team:
 
-← *Remote DME*
-← *AI Enabled Tasks System* — owned tasks, due dates, and follow-ups without chasing group chats
-← *CRM* — ready to use, and tailored to how you already sell
-← *HRMS* — attendance, leave, payroll, and geo-fencing
-← *Zero Effort BCI Suite* — FMS, IMS, Checklist, and EM Ready dashboards, so the weekly review starts with numbers, not spreadsheet prep
+← ${remoteDme}
+← ${tasks} — tasks, due dates, follow-ups
+← ${crm} — ready to use, tailored to how you sell
+← ${hrms} — attendance, leave, payroll, geo-fencing
+← ${bci} — FMS, IMS, Checklist, EM Ready dashboards
 
-For work that does not fit a standard product, we still build *custom software on AppSheet, Google Sheets, and Apps Script*.
+We also build ${custom}.
 
-If you would like a short walkthrough, reply *Yes*.
-If this is not relevant, reply *No* and I will close the follow-up.
+Reply ${yes} for a short walkthrough.
+Reply ${no} and I will close this follow-up.
 
 Regards,
 Automation Team
