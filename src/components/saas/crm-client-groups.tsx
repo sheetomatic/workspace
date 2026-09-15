@@ -3,10 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { ChevronDown, ExternalLink, MessageCircle } from "lucide-react";
-import {
-  sendLeadNurtureWhatsAppAction,
-  sendNextTimeLeadWhatsAppAction,
-} from "@/app/app/leads/actions";
+import { sendLeadNurtureWhatsAppAction } from "@/app/app/leads/actions";
 import {
   crmLeadOpenHref,
   type CrmLeadOpenTab,
@@ -71,8 +68,6 @@ export function CrmClientGroups({
   openTab,
   waEvent,
   canManage,
-  showRemind = canManage,
-  waOfficialSend = false,
   emptyMessage,
   filterPlaceholder = "Filter clients…",
   noun = "client",
@@ -82,10 +77,6 @@ export function CrmClientGroups({
   openTab: CrmLeadOpenTab;
   waEvent: LeadNurtureEventId;
   canManage: boolean;
-  /** MAS nurture Remind — hide on Next Time (Official API WhatsApp instead). */
-  showRemind?: boolean;
-  /** CRM → Leads → Next Time WhatsApp sends Official API, not wa.me. */
-  waOfficialSend?: boolean;
   emptyMessage: string;
   filterPlaceholder?: string;
   noun?: string;
@@ -148,25 +139,6 @@ export function CrmClientGroups({
     });
   }
 
-  function sendOfficialWhatsApp(group: CrmClientGroup) {
-    setPendingLeadId(group.inboundLeadId);
-    setFeedback(null);
-    setOpenIds((prev) => {
-      const next = new Set(prev);
-      next.add(group.id);
-      return next;
-    });
-    startTransition(async () => {
-      const result = await sendNextTimeLeadWhatsAppAction(group.inboundLeadId);
-      setPendingLeadId(null);
-      setFeedback({
-        leadId: group.inboundLeadId,
-        ok: result.ok,
-        message: result.message,
-      });
-    });
-  }
-
   if (groups.length === 0) {
     return <p className="ws-apple-record-empty">{emptyMessage}</p>;
   }
@@ -213,13 +185,11 @@ export function CrmClientGroups({
         <ul className="crm-meet-rows">
           {visible.map((group) => {
             const open = openIds.has(group.id);
-            const waHref = waOfficialSend
-              ? null
-              : leadWhatsAppHref(
-                  group.phone,
-                  group.name,
-                  group.waMessage,
-                );
+            const waHref = leadWhatsAppHref(
+              group.phone,
+              group.name,
+              group.waMessage,
+            );
             const groupFeedback =
               feedback?.leadId === group.inboundLeadId ? feedback : null;
             return (
@@ -245,7 +215,7 @@ export function CrmClientGroups({
                     {group.meta ? <em>{group.meta}</em> : null}
                   </button>
                   <div className="crm-meet-row-actions">
-                    {showRemind ? (
+                    {canManage ? (
                       <button
                         type="button"
                         className="btn-primary btn-sm"
@@ -257,21 +227,7 @@ export function CrmClientGroups({
                           : "Remind"}
                       </button>
                     ) : null}
-                    {waOfficialSend ? (
-                      group.phone ? (
-                        <button
-                          type="button"
-                          className="btn-secondary btn-sm"
-                          disabled={pendingLeadId === group.inboundLeadId}
-                          onClick={() => sendOfficialWhatsApp(group)}
-                        >
-                          <MessageCircle size={14} aria-hidden />
-                          {pendingLeadId === group.inboundLeadId
-                            ? "Sending…"
-                            : "WhatsApp"}
-                        </button>
-                      ) : null
-                    ) : waHref ? (
+                    {waHref ? (
                       <a
                         className="btn-secondary btn-sm"
                         href={waHref}

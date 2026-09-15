@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { leadWhatsAppHref } from "@/lib/leads/contact-links";
 import {
   buildLeadAiReengageMessage,
   leadWhatsAppPrefillMessage,
-  NEXT_TIME_WA_TEMPLATE_NAME,
-  nextTimeWhatsAppTemplateVariables,
   shouldUseAiReengageWhatsAppMessage,
 } from "@/lib/leads/ai-reengage-message";
 
@@ -56,15 +55,17 @@ describe("ai-reengage-message", () => {
     expect(text).not.toMatch(/स्टॉप|रोकें/);
   });
 
-  it("maps Official API template variables {{1}} name and {{2}} topic", () => {
-    expect(NEXT_TIME_WA_TEMPLATE_NAME).toBe("sm_mkt_next_time_upgrade");
-    expect(
-      nextTimeWhatsAppTemplateVariables({
-        name: "Rahul Jain",
-        requirement: "WhatsApp API",
-        status: "LOST",
-      }),
-    ).toEqual(["Rahul", "WhatsApp API"]);
+  it("opens wa.me click-to-chat with the prefill, not an API send", () => {
+    const text = buildLeadAiReengageMessage({
+      name: "Rahul Jain",
+      requirement: "WhatsApp API",
+      status: "LOST",
+    });
+    const href = leadWhatsAppHref("9876543210", "Rahul Jain", text);
+    expect(href).toMatch(/^https:\/\/wa\.me\/919876543210\?text=/);
+    expect(decodeURIComponent(href!.split("text=")[1] ?? "")).toContain(
+      "You earlier asked about WhatsApp API",
+    );
   });
 
   it("returns prefill only for reengage statuses", () => {

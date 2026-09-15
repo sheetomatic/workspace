@@ -17,7 +17,7 @@ export type LeadAiReengageInput = {
   archivedAt?: string | Date | null;
 };
 
-/** Next Time (LOST) + archived “old” leads get the upgrade WhatsApp follow-up. */
+/** Next Time (LOST) + archived “old” leads get the upgrade WhatsApp prefill. */
 export function shouldUseAiReengageWhatsAppMessage(
   lead: Pick<LeadAiReengageInput, "status" | "archivedAt">,
 ): boolean {
@@ -30,11 +30,7 @@ export function shouldUseAiReengageWhatsAppMessage(
   return false;
 }
 
-/** Meta MARKETING template for CRM → Leads → Next Time WhatsApp. Must be Approved. */
-export const NEXT_TIME_WA_TEMPLATE_NAME = "sm_mkt_next_time_upgrade";
-export const NEXT_TIME_WA_TEMPLATE_LANGUAGE = "en";
-
-export function nextTimeLeadFirstName(name: string | null | undefined): string {
+function firstName(name: string | null | undefined): string {
   const trimmed = name?.trim();
   if (!trimmed) {
     return "there";
@@ -42,8 +38,12 @@ export function nextTimeLeadFirstName(name: string | null | undefined): string {
   return trimmed.split(/\s+/)[0] ?? "there";
 }
 
-export function nextTimeInquiryTopic(lead: LeadAiReengageInput): string {
-  return resolveInquiryRequirementPhrase({
+/**
+ * wa.me click-to-chat prefill for Next Time / archived leads.
+ * Manual send only — the human taps Send in WhatsApp. Not Official API, not MAS.
+ */
+export function buildLeadAiReengageMessage(lead: LeadAiReengageInput): string {
+  const requirement = resolveInquiryRequirementPhrase({
     requirement: lead.requirement,
     category: (lead.category as LeadCategoryId | null) ?? null,
     company: lead.company,
@@ -53,37 +53,8 @@ export function nextTimeInquiryTopic(lead: LeadAiReengageInput): string {
     landingPage: lead.landingPage,
     channel: lead.channel ?? null,
   });
-}
 
-function templateParam(value: string, fallback: string, max = 60): string {
-  const cleaned = value.replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim();
-  if (!cleaned) {
-    return fallback;
-  }
-  if (cleaned.length <= max) {
-    return cleaned;
-  }
-  return `${cleaned.slice(0, max - 3)}...`;
-}
-
-/** {{1}} first name · {{2}} what they asked — for sm_mkt_next_time_upgrade. */
-export function nextTimeWhatsAppTemplateVariables(
-  lead: LeadAiReengageInput,
-): string[] {
-  return [
-    templateParam(nextTimeLeadFirstName(lead.name), "there", 40),
-    templateParam(nextTimeInquiryTopic(lead), "your earlier enquiry", 60),
-  ];
-}
-
-/**
- * Official API session body (24h) and Next Time WhatsApp copy.
- * Template name if outside the window: sm_mkt_next_time_upgrade (MARKETING, en).
- */
-export function buildLeadAiReengageMessage(lead: LeadAiReengageInput): string {
-  const requirement = nextTimeInquiryTopic(lead);
-
-  return `Hi ${nextTimeLeadFirstName(lead.name)},
+  return `Hi ${firstName(lead.name)},
 
 You earlier asked about ${requirement} — checking if that is still open.
 
@@ -106,7 +77,7 @@ Sheetomatic Technologies
 www.sheetomatic.com | youtube.com/@sheetomatic`;
 }
 
-/** wa.me prefill: Next Time / archived upgrade copy, else undefined (default greeting). */
+/** wa.me message: upgrade follow-up for Next Time / archived, else undefined. */
 export function leadWhatsAppPrefillMessage(
   lead: LeadAiReengageInput,
 ): string | undefined {

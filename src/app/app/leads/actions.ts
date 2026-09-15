@@ -907,28 +907,6 @@ export async function sendLeadNurtureWhatsAppAction(
   return { ok: true, message: "Nurture message sent on WhatsApp." };
 }
 
-export async function sendNextTimeLeadWhatsAppAction(leadId: string) {
-  const user = await requireSession(undefined, { module: "CRM" });
-  if (!(await canWorkLead(user, leadId))) {
-    return { ok: false, message: LEAD_WORK_DENIED };
-  }
-
-  const { sendNextTimeLeadWhatsApp } = await import(
-    "@/lib/leads/next-time-whatsapp"
-  );
-  const result = await sendNextTimeLeadWhatsApp({
-    organizationId: user.organizationId,
-    leadId,
-    actorUserId: user.id,
-  });
-
-  if (result.ok) {
-    revalidatePath("/app/leads");
-    revalidatePath("/app/leads/next-time");
-  }
-  return { ok: result.ok, message: result.message };
-}
-
 export async function scheduleInboundLeadFollowUp(params: {
   leadId: string;
   scheduledAt: string;

@@ -3,6 +3,7 @@ import { CrmSubmoduleShell } from "@/components/saas/crm-submodule-shell";
 import "@/components/saas/leads-machine.css";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
 import { formatInr, leadCategoryLabel } from "@/lib/leads/categories";
+import { buildLeadAiReengageMessage } from "@/lib/leads/ai-reengage-message";
 import { listCrmNextTimeLeads } from "@/lib/leads/crm-module-stats";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
@@ -34,6 +35,7 @@ function formatLeadDate(value: Date | null) {
 export default async function CrmNextTimePage() {
   const user = await requireSession(undefined, { module: "CRM" });
   await requireCrmSubModule(user, "nextTime");
+  const canManage = hasMinimumRole(user.role, "MANAGER");
   const canSeeAllLeads =
     user.isSuperAdmin || hasMinimumRole(user.role, "ADMIN");
   const rows = await listCrmNextTimeLeads(user.organizationId, {
@@ -52,6 +54,18 @@ export default async function CrmNextTimePage() {
       phone: lead.phone || "",
       email: lead.email,
       inboundLeadId: lead.id,
+      waMessage: buildLeadAiReengageMessage({
+        name: lead.name,
+        requirement: lead.requirement,
+        category: lead.category,
+        company: lead.company,
+        campaign: lead.campaign,
+        utmCampaign: lead.utmCampaign,
+        utmContent: lead.utmContent,
+        landingPage: lead.landingPage,
+        channel: lead.channel,
+        status: lead.status,
+      }),
       summary: [
         leadCategoryLabel(lead.category),
         amount > 0 ? formatInr(amount) : null,
@@ -97,9 +111,7 @@ export default async function CrmNextTimePage() {
         columns={["Company", "Category", "Requirement", "Last updated", "Value"]}
         openTab="details"
         waEvent="stage_follow_up"
-        canManage={false}
-        showRemind={false}
-        waOfficialSend
+        canManage={canManage}
         emptyMessage="No Next Time leads yet. Mark a lead as Next Time from the CRM drawer."
         filterPlaceholder="Filter Next Time leads…"
         noun="lead"
