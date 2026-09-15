@@ -56,15 +56,15 @@ export function buildLeadAiReengageMessage(lead: LeadAiReengageInput): string {
 
   return `Hi ${firstName(lead.name)},
 
-You earlier asked about ${requirement} — checking if that is still open.
+You earlier asked about ${requirement} — is that still open?
 
-We have upgraded our skills and services. Sheetomatic now has:
+We have upgraded our skills and services. Sheetomatic now runs:
 
-• Remote DME
-• AI Enabled Tasks System
-• CRM
-• HRMS
-• Zero Effort BCI Suite — FMS, IMS, Checklist, EM Ready dashboards
+*Remote DME*
+*AI Enabled Tasks System*
+*CRM*
+*HRMS*
+*Zero Effort BCI Suite* — FMS, IMS, Checklist, EM Ready dashboards
 
 We also build custom software on AppSheet, Google Sheets, and Apps Script.
 

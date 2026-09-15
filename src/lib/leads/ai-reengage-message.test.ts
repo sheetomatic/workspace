@@ -26,15 +26,16 @@ describe("ai-reengage-message", () => {
     });
     expect(text).toContain("Hi Rahul");
     expect(text).toContain(
-      "You earlier asked about WhatsApp API — checking if that is still open.",
+      "You earlier asked about WhatsApp API — is that still open?",
     );
-    expect(text).toContain("Remote DME");
-    expect(text).toContain("AI Enabled Tasks System");
-    expect(text).toContain("CRM");
-    expect(text).toContain("HRMS");
+    expect(text).toContain("*Remote DME*");
+    expect(text).toContain("*AI Enabled Tasks System*");
+    expect(text).toContain("*CRM*");
+    expect(text).toContain("*HRMS*");
     expect(text).toContain(
-      "Zero Effort BCI Suite — FMS, IMS, Checklist, EM Ready dashboards",
+      "*Zero Effort BCI Suite* — FMS, IMS, Checklist, EM Ready dashboards",
     );
+    expect(text).toContain("Sheetomatic now runs:");
     expect(text).toContain("AppSheet, Google Sheets, and Apps Script");
     expect(text).toContain("reply DEMO");
     expect(text).toMatch(/reply STOP/);
