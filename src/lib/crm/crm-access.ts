@@ -1,28 +1,23 @@
 import "server-only";
 
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/db";
 import {
   firstAllowedCrmHref,
   resolveMemberCrmSubModules,
   type CrmSubModuleId,
 } from "@/lib/crm/crm-sub-modules";
 import { parseWorkspaceNavPrefs } from "@/lib/workspace-nav-prefs";
+import { getWorkspaceMembershipPrefs } from "@/lib/workspace-shell-data";
 
 /** Effective CRM sub-modules for the signed-in user. */
 export async function getEffectiveCrmSubModulesForUser(user: {
   id: string;
   organizationId: string;
 }) {
-  const membership = await prisma.membership.findUnique({
-    where: {
-      userId_organizationId: {
-        userId: user.id,
-        organizationId: user.organizationId,
-      },
-    },
-    select: { enabledCrmSubModules: true, workspacePrefs: true },
-  });
+  const membership = await getWorkspaceMembershipPrefs(
+    user.id,
+    user.organizationId,
+  );
   const effective = resolveMemberCrmSubModules(
     membership?.enabledCrmSubModules,
   );

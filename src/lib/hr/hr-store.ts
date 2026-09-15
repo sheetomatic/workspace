@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/db";
 import type { SessionUser } from "@/lib/auth";
 import {
@@ -30,11 +31,22 @@ function haversineMeters(
   return 2 * r * Math.asin(Math.sqrt(a));
 }
 
-export async function getOrCreateHrSettings(organizationId: string) {
-  return prisma.workspaceHrSettings.upsert({
+/** Read-only. Navigation must not upsert HR settings on every module switch. */
+export const getHrSettings = cache(async function getHrSettings(
+  organizationId: string,
+) {
+  return prisma.workspaceHrSettings.findUnique({
     where: { organizationId },
-    create: { organizationId },
-    update: {},
+  });
+});
+
+export async function getOrCreateHrSettings(organizationId: string) {
+  const existing = await getHrSettings(organizationId);
+  if (existing) {
+    return existing;
+  }
+  return prisma.workspaceHrSettings.create({
+    data: { organizationId },
   });
 }
 
