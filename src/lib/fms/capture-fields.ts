@@ -1,16 +1,43 @@
 import type { FmsCaptureField } from "@/lib/fms/constants";
 
+const CAPTURE_TYPES: FmsCaptureField["type"][] = [
+  "TEXT",
+  "NUMBER",
+  "DATE",
+  "DATETIME",
+  "ENUM",
+];
+
 export function parseCaptureFields(raw: unknown): FmsCaptureField[] {
   if (!Array.isArray(raw)) {
     return [];
   }
-  return raw.filter(
-    (field): field is FmsCaptureField =>
-      Boolean(field) &&
-      typeof field === "object" &&
-      typeof (field as FmsCaptureField).key === "string" &&
-      typeof (field as FmsCaptureField).label === "string",
-  );
+  return raw.flatMap((item) => {
+    if (!item || typeof item !== "object") {
+      return [];
+    }
+    const field = item as Record<string, unknown>;
+    const key = typeof field.key === "string" ? field.key.trim() : "";
+    const label = typeof field.label === "string" ? field.label.trim() : "";
+    const type = CAPTURE_TYPES.includes(field.type as FmsCaptureField["type"])
+      ? (field.type as FmsCaptureField["type"])
+      : "TEXT";
+    if (!key || !label) {
+      return [];
+    }
+    const choices = Array.isArray(field.choices)
+      ? field.choices.map((choice) => String(choice).trim()).filter(Boolean)
+      : [];
+    return [
+      {
+        key,
+        label,
+        type,
+        required: Boolean(field.required),
+        ...(type === "ENUM" && choices.length > 0 ? { choices } : {}),
+      } satisfies FmsCaptureField,
+    ];
+  });
 }
 
 function isEmptyValue(value: unknown) {

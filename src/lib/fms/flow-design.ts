@@ -1,5 +1,9 @@
 import type { FmsSlaType } from "@prisma/client";
-import type { FmsSlaConfig } from "@/lib/fms/constants";
+import type { FmsCaptureField, FmsSlaConfig } from "@/lib/fms/constants";
+import {
+  parseRouteRules,
+  type FmsRouteRule,
+} from "@/lib/fms/route-rules";
 import {
   resolveFlowOwnersBatch,
   type FmsAssignableMember,
@@ -13,6 +17,8 @@ export type FmsFlowchartStep = {
   howInstructions: string;
   tatValue: string;
   tatUnit: "hours" | "days";
+  captureFields?: FmsCaptureField[];
+  routeRules?: FmsRouteRule[];
 };
 
 export function newFlowchartStep(stepName = "New step"): FmsFlowchartStep {
@@ -23,6 +29,8 @@ export function newFlowchartStep(stepName = "New step"): FmsFlowchartStep {
     howInstructions: "",
     tatValue: "1",
     tatUnit: "days",
+    captureFields: [],
+    routeRules: [],
   };
 }
 
@@ -88,6 +96,10 @@ export function parseFlowchartSteps(raw: unknown): FmsFlowchartStep[] {
         howInstructions: String(record.howInstructions ?? "").trim(),
         tatValue: String(record.tatValue ?? "1").trim() || "1",
         tatUnit,
+        captureFields: Array.isArray(record.captureFields)
+          ? (record.captureFields as FmsCaptureField[])
+          : [],
+        routeRules: parseRouteRules(record.routeRules),
       } satisfies FmsFlowchartStep,
     ];
   });
@@ -156,6 +168,8 @@ export function mapAiFlowToSteps(
     howInstructions: step.howInstructions,
     tatValue: String(step.tatValue),
     tatUnit: step.tatUnit,
+    captureFields: [],
+    routeRules: [],
   }));
 }
 
@@ -173,6 +187,7 @@ export function flowStepToTemplateStep(step: FmsFlowchartStep) {
   }
 
   return {
+    id: step.id,
     stepName: step.stepName.trim(),
     defaultOwnerUserId: step.ownerUserId.trim(),
     instructions: step.howInstructions.trim(),
@@ -182,7 +197,8 @@ export function flowStepToTemplateStep(step: FmsFlowchartStep) {
     allowMarkDone: true,
     allowUpload: true,
     allowNotes: true,
-    captureFields: [],
+    captureFields: step.captureFields ?? [],
+    routeRules: parseRouteRules(step.routeRules),
   };
 }
 

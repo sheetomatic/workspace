@@ -56,6 +56,7 @@ import {
   parseCaptureFields,
   validateCaptureFields,
 } from "@/lib/fms/capture-fields";
+import { parseRouteRules } from "@/lib/fms/route-rules";
 import { validateFmsAttachmentFile } from "@/lib/fms/attachment-limits";
 import { persistFmsIntakeFiles } from "@/lib/fms/intake-attachments";
 import {
@@ -336,6 +337,7 @@ function parseFieldsJson(raw: string) {
 
 function parseStepsJson(raw: string) {
   return JSON.parse(raw) as {
+    id?: string;
     stepName: string;
     roleLabel?: string;
     instructions?: string;
@@ -346,7 +348,30 @@ function parseStepsJson(raw: string) {
     allowUpload?: boolean;
     allowNotes?: boolean;
     captureFields?: FmsCaptureField[];
+    routeRules?: unknown;
   }[];
+}
+
+function templateStepCreateData(
+  step: ReturnType<typeof parseStepsJson>[number],
+  index: number,
+) {
+  const id = typeof step.id === "string" && step.id.trim() ? step.id.trim() : undefined;
+  return {
+    ...(id ? { id } : {}),
+    sortOrder: index,
+    stepName: step.stepName.trim(),
+    roleLabel: step.roleLabel?.trim() || null,
+    instructions: step.instructions?.trim() || null,
+    defaultOwnerUserId: step.defaultOwnerUserId || null,
+    slaType: step.slaType,
+    slaConfig: step.slaConfig ?? {},
+    allowMarkDone: step.allowMarkDone ?? true,
+    allowUpload: step.allowUpload ?? true,
+    allowNotes: step.allowNotes ?? true,
+    captureFields: parseCaptureFields(step.captureFields) as Prisma.InputJsonValue,
+    routeRules: parseRouteRules(step.routeRules) as Prisma.InputJsonValue,
+  };
 }
 
 function parsePcUserIdsJson(raw: string): string[] {
@@ -522,19 +547,7 @@ export async function createFmsTemplate(
         eaUserId,
         createdById: user.id,
         steps: {
-          create: steps.map((step, index) => ({
-            sortOrder: index,
-            stepName: step.stepName.trim(),
-            roleLabel: step.roleLabel?.trim() || null,
-            instructions: step.instructions?.trim() || null,
-            defaultOwnerUserId: step.defaultOwnerUserId || null,
-            slaType: step.slaType,
-            slaConfig: step.slaConfig ?? {},
-            allowMarkDone: step.allowMarkDone ?? true,
-            allowUpload: step.allowUpload ?? true,
-            allowNotes: step.allowNotes ?? true,
-            captureFields: step.captureFields ?? [],
-          })),
+          create: steps.map((step, index) => templateStepCreateData(step, index)),
         },
       },
     });
@@ -610,24 +623,40 @@ export async function updateFmsTemplate(
         };
       }
 
-      await prisma.fmsTemplate.update({
-        where: { id: templateId },
-        data: {
-          name,
-          status: activate ? "ACTIVE" : template.status,
-          holidayDates,
-          alertConfig,
-          pcUserIds,
-          eaUserId,
-        },
-      });
+      await prisma.$transaction([
+        prisma.fmsTemplate.update({
+          where: { id: templateId },
+          data: {
+            name,
+            status: activate ? "ACTIVE" : template.status,
+            holidayDates,
+            alertConfig,
+            pcUserIds,
+            eaUserId,
+          },
+        }),
+        ...template.steps.map((existing) => {
+          const next =
+            steps.find((step) => step.id === existing.id) ??
+            steps[template.steps.findIndex((row) => row.id === existing.id)];
+          return prisma.fmsTemplateStep.update({
+            where: { id: existing.id },
+            data: {
+              captureFields: parseCaptureFields(
+                next?.captureFields,
+              ) as Prisma.InputJsonValue,
+              routeRules: parseRouteRules(next?.routeRules) as Prisma.InputJsonValue,
+            },
+          });
+        }),
+      ]);
 
       revalidatePath("/app/fms");
       revalidatePath(`/app/fms/forms/${template.formId}`);
       return {
         ok: true,
         message:
-          "Workflow name and notification settings saved. Stop structure is locked while jobs are active.",
+          "Routing, name, and notification settings saved. Stop structure is locked while jobs exist.",
       };
     }
 
@@ -643,19 +672,7 @@ export async function updateFmsTemplate(
           pcUserIds,
           eaUserId,
           steps: {
-            create: steps.map((step, index) => ({
-              sortOrder: index,
-              stepName: step.stepName.trim(),
-              roleLabel: step.roleLabel?.trim() || null,
-              instructions: step.instructions?.trim() || null,
-              defaultOwnerUserId: step.defaultOwnerUserId || null,
-              slaType: step.slaType,
-              slaConfig: step.slaConfig ?? {},
-              allowMarkDone: step.allowMarkDone ?? true,
-              allowUpload: step.allowUpload ?? true,
-              allowNotes: step.allowNotes ?? true,
-              captureFields: step.captureFields ?? [],
-            })),
+            create: steps.map((step, index) => templateStepCreateData(step, index)),
           },
         },
       }),

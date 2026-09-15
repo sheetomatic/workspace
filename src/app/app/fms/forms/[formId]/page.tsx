@@ -6,6 +6,7 @@ import { FmsFormEditorTabs } from "@/components/saas/fms-form-editor-tabs";
 import { FmsPipelineStatusBadge } from "@/components/saas/fms-pipeline-status-badge";
 import { FmsStatusBadge } from "@/components/saas/fms-status-badge";
 import { FmsTemplateBuilder } from "@/components/saas/fms-template-builder";
+import { intakeFieldsFromFormFields } from "@/lib/fms/route-rules";
 import { requireSession } from "@/lib/require-session";
 import { hasMinimumRole } from "@/lib/permissions";
 import { canManageFms, canSubmitFmsForm } from "@/lib/fms/access";
@@ -102,6 +103,7 @@ export default async function FmsFormDetailPage({ params, searchParams }: PagePr
               members={members}
               mode={hasWorkflow ? "edit" : "create"}
               templateStatus={form.template?.status}
+              intakeFields={intakeFieldsFromFormFields(form.fields)}
             />
           }
           dangerSection={

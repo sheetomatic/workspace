@@ -7,6 +7,8 @@ import {
   FMS_SLA_TYPE_LABELS,
 } from "@/lib/fms/constants";
 import type { FmsStepDraft } from "@/components/saas/fms-template-builder";
+import { FmsRouteRulesEditor } from "@/components/saas/fms-route-rules-editor";
+import type { FmsRouteFieldOption } from "@/lib/fms/route-rules";
 import {
   FmsStepOwnerField,
   type FmsStepOwnerMember,
@@ -20,6 +22,8 @@ export function FmsStepSettingsPanel({
   onRemove,
   onClose,
   canRemove,
+  allSteps = [],
+  intakeFields = [],
 }: {
   step: FmsStepDraft;
   members: FmsStepOwnerMember[];
@@ -28,6 +32,8 @@ export function FmsStepSettingsPanel({
   onRemove: () => void;
   onClose: () => void;
   canRemove: boolean;
+  allSteps?: FmsStepDraft[];
+  intakeFields?: FmsRouteFieldOption[];
 }) {
   return (
     <aside className="ws-fms-jf-props-panel" aria-label="Step settings">
@@ -184,6 +190,18 @@ export function FmsStepSettingsPanel({
             Allow notes
           </label>
         </div>
+
+        <FmsRouteRulesEditor
+          steps={allSteps.map((item) => ({
+            id: item.id,
+            stepName: item.stepName,
+          }))}
+          currentStepId={step.id}
+          routeRules={step.routeRules}
+          captureFields={step.captureFields}
+          intakeFields={intakeFields}
+          onChange={(patch) => onUpdate(patch)}
+        />
 
         <button
           type="button"

@@ -20475,6 +20475,72 @@ body.ws-more-sheet-open .sheetomatic-ai-launcher {
   min-width: 88px;
 }
 
+.workspace-app .ws-fms-route-editor {
+  margin: 0 14px 14px;
+  padding-top: 4px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.workspace-app .ws-fms-route-editor-kicker {
+  margin: 12px 0 4px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.workspace-app .ws-fms-route-editor-default {
+  margin: 0 0 10px;
+  font-size: 0.8125rem;
+  color: #475569;
+}
+
+.workspace-app .ws-fms-route-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.workspace-app .ws-fms-route-card {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.workspace-app .ws-fms-route-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .workspace-app .ws-fms-route-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.workspace-app .ws-fms-n8n-route {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0;
+  font-size: 0.75rem;
+  color: #0f766e;
+}
+
+.workspace-app .ws-fms-jf-props-panel .ws-fms-route-editor {
+  margin: 16px 0 0;
+  padding-top: 12px;
+}
+
 .workspace-app .ws-fms-flow-add {
   margin-top: 8px;
 }

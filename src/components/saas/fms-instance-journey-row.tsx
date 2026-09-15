@@ -26,6 +26,7 @@ export type JourneyFormField = {
 export type JourneyStep = {
   id: string;
   status: FmsStepStatus;
+  visitIndex?: number;
   plannedAt: Date | null;
   actualAt: Date | null;
   delayMinutes: number | null;
@@ -38,6 +39,13 @@ export type JourneyStep = {
   completedBy: { name: string | null } | null;
   attachments: { id: string; fileName: string; fileSize: number }[];
 };
+
+function visitLabel(stepName: string, visitIndex?: number) {
+  if (!visitIndex || visitIndex < 1) {
+    return stepName;
+  }
+  return `${stepName} · visit ${visitIndex + 1}`;
+}
 
 function formatDate(value: Date | null) {
   if (!value) {
@@ -137,7 +145,7 @@ export function FmsInstanceJourneyRow({
   const focusStop = Boolean(completePanel?.canComplete);
   const trainStops = steps.map((step) => ({
     id: step.id,
-    name: step.step.stepName,
+    name: visitLabel(step.step.stepName, step.visitIndex),
     status: step.status,
     plannedAt: step.plannedAt,
     actualAt: step.actualAt,
@@ -313,7 +321,7 @@ export function FmsInstanceJourneyRow({
                 <header className="ws-fms-journey-row-card-head">
                   <div>
                     <p className="ws-fms-journey-row-eyebrow">Step {index + 1}</p>
-                    <h3>{step.step.stepName}</h3>
+                    <h3>{visitLabel(step.step.stepName, step.visitIndex)}</h3>
                     {step.step.roleLabel ? (
                       <p className="ws-fms-muted">{step.step.roleLabel}</p>
                     ) : null}

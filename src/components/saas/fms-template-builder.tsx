@@ -15,6 +15,7 @@ import {
   type FmsCaptureField,
   type FmsSlaConfig,
 } from "@/lib/fms/constants";
+import { parseRouteRules, type FmsRouteFieldOption, type FmsRouteRule } from "@/lib/fms/route-rules";
 import { slaSummary } from "@/lib/fms/step-display";
 import { FmsStepSettingsPanel } from "@/components/saas/fms-step-settings-panel";
 import { TaskMemberPicker } from "@/components/saas/task-member-picker";
@@ -38,6 +39,7 @@ export type FmsStepDraft = {
   allowUpload: boolean;
   allowNotes: boolean;
   captureFields: FmsCaptureField[];
+  routeRules: FmsRouteRule[];
 };
 
 const EXAMPLE_STEPS = ["Filing", "Examination", "Registration"];
@@ -59,11 +61,13 @@ function newStep(): FmsStepDraft {
     allowUpload: true,
     allowNotes: true,
     captureFields: [],
+    routeRules: [],
   };
 }
 
 function stepToDraft(
   step: {
+    id?: string;
     stepName: string;
     roleLabel: string | null;
     instructions: string | null;
@@ -74,11 +78,12 @@ function stepToDraft(
     allowUpload: boolean;
     allowNotes: boolean;
     captureFields: unknown;
+    routeRules?: unknown;
   },
 ): FmsStepDraft {
   const cfg = (step.slaConfig ?? {}) as FmsSlaConfig;
   return {
-    id: crypto.randomUUID(),
+    id: step.id ?? crypto.randomUUID(),
     stepName: step.stepName,
     roleLabel: step.roleLabel ?? "",
     instructions: step.instructions ?? "",
@@ -95,6 +100,7 @@ function stepToDraft(
     captureFields: Array.isArray(step.captureFields)
       ? (step.captureFields as FmsCaptureField[])
       : [],
+    routeRules: parseRouteRules(step.routeRules),
   };
 }
 
@@ -245,6 +251,7 @@ export function FmsTemplateBuilder({
   members: initialMembers,
   mode = "create",
   templateStatus,
+  intakeFields = [],
 }: {
   formId: string;
   templateId?: string;
@@ -257,6 +264,7 @@ export function FmsTemplateBuilder({
   members: Member[];
   mode?: "create" | "edit";
   templateStatus?: "DRAFT" | "ACTIVE" | "ARCHIVED";
+  intakeFields?: FmsRouteFieldOption[];
 }) {
   const action = mode === "create" ? createFmsTemplate : updateFmsTemplate;
   const [state, formAction, pending] = useActionState(action, fmsInitialState);
@@ -319,6 +327,7 @@ export function FmsTemplateBuilder({
 
   const stepsJson = JSON.stringify(
     validSteps.map((s) => ({
+      id: s.id,
       stepName: s.stepName.trim(),
       roleLabel: s.roleLabel.trim() || undefined,
       instructions: s.instructions.trim() || undefined,
@@ -329,6 +338,7 @@ export function FmsTemplateBuilder({
       allowUpload: s.allowUpload,
       allowNotes: s.allowNotes,
       captureFields: s.captureFields,
+      routeRules: s.routeRules,
     })),
   );
 
@@ -659,6 +669,8 @@ export function FmsTemplateBuilder({
               members={members}
               onMembersChange={setMembers}
               onUpdate={(patch) => updateStep(selectedStep.id, patch)}
+              allSteps={steps}
+              intakeFields={intakeFields}
               onRemove={() => {
                 setSteps((prev) => {
                   const next =

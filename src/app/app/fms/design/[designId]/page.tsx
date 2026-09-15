@@ -7,6 +7,7 @@ import { canApproveFmsFlow, canSubmitFmsFlow } from "@/lib/fms/access";
 import { parseFlowchartSteps } from "@/lib/fms/flow-design";
 import { getFmsFlowDesign } from "@/lib/fms/queries";
 import { listAssignableMembers } from "@/lib/tasks";
+import { intakeFieldsFromFormFields } from "@/lib/fms/route-rules";
 
 type PageProps = {
   params: Promise<{ designId: string }>;
@@ -61,6 +62,11 @@ export default async function FmsFlowDesignPage({ params, searchParams }: PagePr
         linkedFormName={design.form?.name}
         formNeedsSetup={(design.form?._count.fields ?? 0) < 3}
         justApproved={approved === "1"}
+        intakeFields={
+          design.form?.fields
+            ? intakeFieldsFromFormFields(design.form.fields)
+            : []
+        }
       />
     </div>
   );

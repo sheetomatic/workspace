@@ -344,6 +344,7 @@ async function provisionFmsFromDesign(
         createdById: approverId,
         steps: {
           create: templateSteps.map((step, index) => ({
+            id: step.id,
             sortOrder: index,
             stepName: step.stepName,
             roleLabel: step.roleLabel,
@@ -355,6 +356,7 @@ async function provisionFmsFromDesign(
             allowUpload: step.allowUpload,
             allowNotes: step.allowNotes,
             captureFields: step.captureFields,
+            routeRules: step.routeRules,
           })),
         },
       },

@@ -84,7 +84,7 @@ export async function listFmsInstancesPage(
             step: true,
             owner: { select: { id: true, name: true, email: true } },
           },
-          orderBy: { step: { sortOrder: "asc" } },
+          orderBy: [{ visitIndex: "asc" }, { step: { sortOrder: "asc" } }],
         },
       },
       orderBy: { createdAt: "desc" },
@@ -314,7 +314,7 @@ export async function getFmsInstance(instanceId: string, organizationId: string)
             },
           },
         },
-        orderBy: { step: { sortOrder: "asc" } },
+        orderBy: [{ createdAt: "asc" }, { step: { sortOrder: "asc" } }],
       },
     },
   });
@@ -358,6 +358,15 @@ export async function getFmsFlowDesign(designId: string, organizationId: string)
           name: true,
           status: true,
           _count: { select: { fields: true } },
+          fields: {
+            orderBy: { sortOrder: "asc" },
+            select: {
+              fieldKey: true,
+              label: true,
+              fieldType: true,
+              options: true,
+            },
+          },
           template: { select: { id: true, status: true } },
         },
       },
@@ -443,6 +452,7 @@ const trackerFormFieldSelect = {
 const trackerStepStateSelect = {
   id: true,
   stepId: true,
+  visitIndex: true,
   status: true,
   plannedAt: true,
   actualAt: true,
@@ -532,7 +542,7 @@ export async function listFmsTrackerBlocks(
       referenceLabel: true,
       submission: { select: { values: true } },
       stepStates: {
-        orderBy: { step: { sortOrder: "asc" as const } },
+        orderBy: [{ visitIndex: "asc" as const }, { step: { sortOrder: "asc" as const } }],
         select: trackerStepStateSelect,
       },
     },
@@ -671,7 +681,7 @@ export async function getFmsTrackerBlockByTemplate(
         include: {
           submission: true,
           stepStates: {
-            orderBy: { step: { sortOrder: "asc" } },
+            orderBy: [{ visitIndex: "asc" }, { step: { sortOrder: "asc" } }],
             include: {
               owner: { select: { id: true, name: true, email: true } },
             },

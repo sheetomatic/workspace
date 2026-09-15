@@ -19,6 +19,7 @@ import {
 export type TimelineStep = {
   id: string;
   status: FmsStepStatus;
+  visitIndex?: number;
   plannedAt: Date | null;
   actualAt: Date | null;
   delayMinutes: number | null;
@@ -137,7 +138,11 @@ export function FmsInstanceTimeline({
               ) : null}
               <header>
                 <div className="ws-fms-timeline-title">
-                  <h4>{step.step.stepName}</h4>
+                  <h4>
+                    {step.visitIndex && step.visitIndex > 0
+                      ? `${step.step.stepName} · visit ${step.visitIndex + 1}`
+                      : step.step.stepName}
+                  </h4>
                   {step.step.roleLabel ? (
                     <span className="ws-fms-muted">{step.step.roleLabel}</span>
                   ) : null}

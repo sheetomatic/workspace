@@ -2,6 +2,7 @@ import type { FmsSlaType } from "@prisma/client";
 import type { FmsCaptureField, FmsSlaConfig } from "@/lib/fms/constants";
 
 export type FmsTemplateStepDraft = {
+  id?: string;
   stepName: string;
   roleLabel?: string;
   defaultOwnerUserId?: string;
@@ -11,6 +12,7 @@ export type FmsTemplateStepDraft = {
   allowUpload?: boolean;
   allowNotes?: boolean;
   captureFields?: FmsCaptureField[];
+  routeRules?: unknown;
 };
 
 function normalizeStep(step: FmsTemplateStepDraft) {
@@ -23,7 +25,6 @@ function normalizeStep(step: FmsTemplateStepDraft) {
     allowMarkDone: step.allowMarkDone ?? true,
     allowUpload: step.allowUpload ?? true,
     allowNotes: step.allowNotes ?? true,
-    captureFields: step.captureFields ?? [],
   };
 }
 
@@ -37,5 +38,5 @@ export function fmsTemplateStepsLockedMessage(jobCount: number) {
     jobCount === 1
       ? "that job finishes or is cancelled"
       : "those jobs finish or are cancelled";
-  return `This workflow has ${jobLabel}. Stop structure cannot change until ${finishLabel}. You can still update the workflow name and notification settings.`;
+  return `This workflow has ${jobLabel}. Stop structure cannot change until ${finishLabel}. You can still update routing (if / send-back), the workflow name, and notification settings.`;
 }
