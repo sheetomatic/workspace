@@ -1,9 +1,10 @@
+import { cache } from "react";
 import { prisma } from "@/lib/db";
 import type { SessionUser } from "@/lib/auth";
 import type { FmsInstanceStatus, FmsStepStatus } from "@prisma/client";
 import { SCALE } from "@/lib/scale";
 import { isStepOverdue } from "@/lib/fms/step-display";
-import { computeFmsPipelineCounts } from "@/lib/fms/pipeline-counts";
+import { pipelineCountsFromInProgressSteps } from "@/lib/fms/pipeline-counts";
 import { fmsJobMisScore } from "@/lib/mis/score";
 
 export async function listFmsForms(organizationId: string) {
@@ -241,21 +242,30 @@ export async function getFmsMisSummary(organizationId: string) {
 }
 
 export async function getFmsPipelineCounts(organizationId: string) {
-  const active = await prisma.fmsInstance.findMany({
-    where: { organizationId, status: "ACTIVE" },
-    select: {
-      stepStates: {
-        select: {
-          status: true,
-          plannedAt: true,
-          actualAt: true,
-          delayMinutes: true,
-        },
+  const [activeInstanceCount, inProgressSteps] = await Promise.all([
+    prisma.fmsInstance.count({
+      where: { organizationId, status: "ACTIVE" },
+    }),
+    prisma.fmsStepState.findMany({
+      where: {
+        status: "IN_PROGRESS",
+        instance: { organizationId, status: "ACTIVE" },
       },
-    },
-  });
+      select: {
+        instanceId: true,
+        status: true,
+        plannedAt: true,
+        actualAt: true,
+        delayMinutes: true,
+      },
+      orderBy: { step: { sortOrder: "asc" } },
+    }),
+  ]);
 
-  return computeFmsPipelineCounts(active);
+  return pipelineCountsFromInProgressSteps({
+    activeInstanceCount,
+    inProgressSteps,
+  });
 }
 
 export async function listMyFmsSteps(organizationId: string, userId: string) {
@@ -422,6 +432,25 @@ export async function countCompletedFmsInstances(
   });
 }
 
+const trackerFormFieldSelect = {
+  id: true,
+  fieldKey: true,
+  label: true,
+  fieldType: true,
+  options: true,
+} as const;
+
+const trackerStepStateSelect = {
+  id: true,
+  stepId: true,
+  status: true,
+  plannedAt: true,
+  actualAt: true,
+  delayMinutes: true,
+  ownerUserId: true,
+  owner: { select: { id: true, name: true, email: true } },
+} as const;
+
 export async function listFmsTrackerBlocks(
   organizationId: string,
   filter: {
@@ -435,6 +464,7 @@ export async function listFmsTrackerBlocks(
   const limit = filter.limit ?? 50;
   const skip = filter.skip ?? 0;
   const instanceWhere = {
+    organizationId,
     status: filter.instanceStatus,
     ...(filter.referenceQuery
       ? {
@@ -446,103 +476,158 @@ export async function listFmsTrackerBlocks(
       : {}),
   };
 
-  return prisma.fmsTemplate.findMany({
+  const templates = await prisma.fmsTemplate.findMany({
     where: {
       organizationId,
       status: "ACTIVE",
       ...templateKeywordWhere(filter.templateKeywords),
       instances: { some: instanceWhere },
     },
-    include: {
+    select: {
+      id: true,
+      name: true,
       form: {
         select: {
           id: true,
           name: true,
-          fields: { orderBy: { sortOrder: "asc" } },
+          fields: {
+            orderBy: { sortOrder: "asc" as const },
+            select: trackerFormFieldSelect,
+          },
         },
       },
       steps: {
-        orderBy: { sortOrder: "asc" },
-        include: {
+        orderBy: { sortOrder: "asc" as const },
+        select: {
+          id: true,
+          stepName: true,
+          roleLabel: true,
+          instructions: true,
+          slaType: true,
+          slaConfig: true,
+          allowMarkDone: true,
+          allowUpload: true,
+          allowNotes: true,
+          captureFields: true,
           defaultOwner: { select: { name: true, email: true } },
         },
       },
-      instances: {
-        where: instanceWhere,
-        include: {
-          submission: true,
-          stepStates: {
-            orderBy: { step: { sortOrder: "asc" } },
-            include: {
-              owner: { select: { id: true, name: true, email: true } },
-            },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: limit,
-      },
     },
     orderBy: { name: "asc" },
   });
-}
 
-export async function listFmsQueueTemplatesForUser(
-  organizationId: string,
-  userId: string,
-) {
-  const templates = await prisma.fmsTemplate.findMany({
+  if (templates.length === 0) {
+    return [];
+  }
+
+  const templateIds = templates.map((template) => template.id);
+  const instances = await prisma.fmsInstance.findMany({
     where: {
-      organizationId,
-      status: "ACTIVE",
-      instances: {
-        some: {
-          status: "ACTIVE",
-          stepStates: { some: { ownerUserId: userId } },
-        },
-      },
+      ...instanceWhere,
+      templateId: { in: templateIds },
     },
     select: {
       id: true,
-      name: true,
-      form: { select: { id: true } },
+      templateId: true,
+      referenceLabel: true,
+      submission: { select: { values: true } },
+      stepStates: {
+        orderBy: { step: { sortOrder: "asc" as const } },
+        select: trackerStepStateSelect,
+      },
     },
-    orderBy: { name: "asc" },
+    orderBy: { createdAt: "desc" },
+    skip,
+    take: limit,
   });
 
-  return Promise.all(
-    templates.map(async (template) => {
-      const [assignedLeads, activeStops] = await Promise.all([
-        prisma.fmsInstance.count({
-          where: {
-            organizationId,
-            templateId: template.id,
+  const instancesByTemplate = new Map<string, typeof instances>();
+  for (const instance of instances) {
+    const list = instancesByTemplate.get(instance.templateId) ?? [];
+    list.push(instance);
+    instancesByTemplate.set(instance.templateId, list);
+  }
+
+  return templates
+    .map((template) => ({
+      ...template,
+      instances: instancesByTemplate.get(template.id) ?? [],
+    }))
+    .filter((block) => block.instances.length > 0);
+}
+
+export const listFmsQueueTemplatesForUser = cache(
+  async function listFmsQueueTemplatesForUser(
+    organizationId: string,
+    userId: string,
+  ) {
+    const templates = await prisma.fmsTemplate.findMany({
+      where: {
+        organizationId,
+        status: "ACTIVE",
+        instances: {
+          some: {
             status: "ACTIVE",
             stepStates: { some: { ownerUserId: userId } },
           },
-        }),
-        prisma.fmsStepState.count({
-          where: {
-            ownerUserId: userId,
-            status: "IN_PROGRESS",
-            instance: {
-              organizationId,
-              status: "ACTIVE",
-              templateId: template.id,
-            },
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        form: { select: { id: true } },
+      },
+      orderBy: { name: "asc" },
+    });
+
+    if (templates.length === 0) {
+      return [];
+    }
+
+    const templateIds = templates.map((template) => template.id);
+    const [assignedRows, stopRows] = await Promise.all([
+      prisma.fmsInstance.groupBy({
+        by: ["templateId"],
+        where: {
+          organizationId,
+          templateId: { in: templateIds },
+          status: "ACTIVE",
+          stepStates: { some: { ownerUserId: userId } },
+        },
+        _count: { _all: true },
+      }),
+      prisma.fmsStepState.findMany({
+        where: {
+          ownerUserId: userId,
+          status: "IN_PROGRESS",
+          instance: {
+            organizationId,
+            status: "ACTIVE",
+            templateId: { in: templateIds },
           },
-        }),
-      ]);
-      return {
-        id: template.id,
-        name: template.name,
-        formId: template.form.id,
-        assignedLeads,
-        activeStops,
-      };
-    }),
-  );
-}
+        },
+        select: { instance: { select: { templateId: true } } },
+      }),
+    ]);
+
+    const assignedByTemplate = new Map(
+      assignedRows.map((row) => [row.templateId, row._count._all]),
+    );
+    const stopsByTemplate = new Map<string, number>();
+    for (const row of stopRows) {
+      const templateId = row.instance.templateId;
+      stopsByTemplate.set(templateId, (stopsByTemplate.get(templateId) ?? 0) + 1);
+    }
+
+    return templates.map((template) => ({
+      id: template.id,
+      name: template.name,
+      formId: template.form.id,
+      assignedLeads: assignedByTemplate.get(template.id) ?? 0,
+      activeStops: stopsByTemplate.get(template.id) ?? 0,
+    }));
+  },
+);
 
 export async function getFmsTrackerBlockByTemplate(
   organizationId: string,

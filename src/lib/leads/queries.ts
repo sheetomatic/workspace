@@ -131,7 +131,7 @@ export async function getLeadsMachineStatsForPeriod(
   };
 }
 
-/** Shared include for CRM list rows and single-lead drawer focus fetch. */
+/** Shared include for single-lead drawer focus fetch. */
 const inboundLeadCrmDrawerInclude = {
   assignedTo: { select: { id: true, name: true, email: true } },
   followUps: {
@@ -171,9 +171,58 @@ const inboundLeadCrmDrawerInclude = {
   },
 } as const;
 
+/** Table/board columns only — drawer collections load on open. */
+const inboundLeadCrmListSelect = {
+  id: true,
+  channel: true,
+  name: true,
+  phone: true,
+  email: true,
+  company: true,
+  city: true,
+  address: true,
+  zipCode: true,
+  requirement: true,
+  category: true,
+  status: true,
+  aiSuggestedStatus: true,
+  callingStatus: true,
+  projectStatus: true,
+  trainingRequired: true,
+  score: true,
+  temperature: true,
+  utmSource: true,
+  utmMedium: true,
+  utmCampaign: true,
+  utmContent: true,
+  utmTerm: true,
+  campaign: true,
+  landingPage: true,
+  expectedCloseAt: true,
+  winProbability: true,
+  archivedAt: true,
+  discussionNotes: true,
+  meetingNotes: true,
+  quotationValue: true,
+  pipeValue: true,
+  nextFollowUpAt: true,
+  capturedAt: true,
+  modifiedAt: true,
+  createdAt: true,
+  assignedTo: { select: { id: true, name: true, email: true } },
+  fmsInstance: {
+    select: {
+      id: true,
+      status: true,
+      referenceLabel: true,
+      template: { select: { name: true } },
+    },
+  },
+} as const;
+
 /**
  * Fetch one lead for CRM deep-link / focus mode (Open from Payments, Meetings, etc.).
- * Same includes as listInboundLeadsForPeriodPaginated. Returns null if missing or wrong org.
+ * Same includes as the drawer payload. Returns null if missing or wrong org.
  * Includes archived leads so submodule Open still works after archive.
  */
 export async function getInboundLeadForCrmDrawer(
@@ -249,7 +298,7 @@ export async function listInboundLeadsForPeriodPaginated(
       orderBy,
       skip,
       take: options.pageSize,
-      include: inboundLeadCrmDrawerInclude,
+      select: inboundLeadCrmListSelect,
     }),
   ]);
 
