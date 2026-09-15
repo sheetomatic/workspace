@@ -253,6 +253,7 @@ export function QuotationPrintView({
               </p>
               <p>Account holder: {account.accountHolder}</p>
               <p>Bank: {account.bankName}</p>
+              <p>Branch: {account.branch}</p>
               <p>Account number: {account.accountNumber}</p>
               <p>IFSC: {account.ifsc}</p>
               <p>UPI ID: {account.upiId}</p>
@@ -264,10 +265,10 @@ export function QuotationPrintView({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={account.qrImageSrc}
-                alt={`PhonePe QR — pay ${account.accountHolder}`}
+                alt={`Paytm UPI QR — pay ${account.accountHolder}`}
                 className="quotation-print-qr-img"
               />
-              <p>Scan to pay · PhonePe / UPI</p>
+              <p>Scan to pay · Paytm / UPI</p>
               <p>{account.upiId}</p>
             </aside>
           </section>

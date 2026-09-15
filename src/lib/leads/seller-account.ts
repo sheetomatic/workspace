@@ -8,6 +8,7 @@ export type QuotationAccountDetails = {
   accountType: string;
   accountHolder: string;
   bankName: string;
+  branch: string;
   accountNumber: string;
   ifsc: string;
   upiId: string;
@@ -24,12 +25,13 @@ export const SHEETOMATIC_QUOTATION_ACCOUNT: QuotationAccountDetails = {
   pan: "BPFPK7002F",
   udyamNumber: "UDYAM-CG-06-0009880",
   accountType: "Current Account",
-  accountHolder: "Shyam Kumar Banjare",
-  bankName: "State Bank Of India",
-  accountNumber: "44113317196",
-  ifsc: "SBIN0064531",
-  upiId: "sheetomatic@sbi",
-  qrImageSrc: "/images/payments/phonepe-qr-invoice-shyam-kumar-banjare.png",
+  accountHolder: "M/S SHEETOMATIC TECHNOLOGIES",
+  bankName: "Bandhan Bank",
+  branch: "Malkharoda",
+  accountNumber: "2010007774842",
+  ifsc: "BDBL0001551",
+  upiId: "8076967912@ptyes",
+  qrImageSrc: "/images/payments/paytm-qr-sheetomatic-technologies.jpg",
 };
 
 export const UDYAM_CERTIFICATE_HREF =
