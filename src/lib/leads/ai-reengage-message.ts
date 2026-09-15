@@ -17,7 +17,7 @@ export type LeadAiReengageInput = {
   archivedAt?: string | Date | null;
 };
 
-/** Next Time (LOST) + archived “old” leads get the AI reopen WA text. */
+/** Next Time (LOST) + archived “old” leads get the upgrade WhatsApp follow-up. */
 export function shouldUseAiReengageWhatsAppMessage(
   lead: Pick<LeadAiReengageInput, "status" | "archivedAt">,
 ): boolean {
@@ -30,7 +30,11 @@ export function shouldUseAiReengageWhatsAppMessage(
   return false;
 }
 
-function firstName(name: string | null | undefined): string {
+/** Meta MARKETING template for CRM → Leads → Next Time WhatsApp. Must be Approved. */
+export const NEXT_TIME_WA_TEMPLATE_NAME = "sm_mkt_next_time_upgrade";
+export const NEXT_TIME_WA_TEMPLATE_LANGUAGE = "en";
+
+export function nextTimeLeadFirstName(name: string | null | undefined): string {
   const trimmed = name?.trim();
   if (!trimmed) {
     return "there";
@@ -38,12 +42,8 @@ function firstName(name: string | null | undefined): string {
   return trimmed.split(/\s+/)[0] ?? "there";
 }
 
-/**
- * Prefill for wa.me on Next Time / old (archived) leads —
- * recalls last requirement and leads with current Sheetomatic AI.
- */
-export function buildLeadAiReengageMessage(lead: LeadAiReengageInput): string {
-  const requirement = resolveInquiryRequirementPhrase({
+export function nextTimeInquiryTopic(lead: LeadAiReengageInput): string {
+  return resolveInquiryRequirementPhrase({
     requirement: lead.requirement,
     category: (lead.category as LeadCategoryId | null) ?? null,
     company: lead.company,
@@ -53,22 +53,60 @@ export function buildLeadAiReengageMessage(lead: LeadAiReengageInput): string {
     landingPage: lead.landingPage,
     channel: lead.channel ?? null,
   });
-
-  return `Hi ${firstName(lead.name)},
-
-You earlier asked about *${requirement}* — checking if that is still open.
-
-Quick update: *Sheetomatic AI* is live now —
-• WhatsApp AI that replies from *your* business knowledge (not generic chat)
-• AI inside the workspace for FMS, IMS, tasks & weekly EM Ready
-• Faster follow-ups so the owner spends less time chasing
-
-If *${requirement}* is still needed, reply *DEMO* and I will show how AI fits your flow in 5 minutes.
-
-— Team Sheetomatic`;
 }
 
-/** wa.me message: AI reopen for Next Time / archived, else undefined (default greeting). */
+function templateParam(value: string, fallback: string, max = 60): string {
+  const cleaned = value.replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim();
+  if (!cleaned) {
+    return fallback;
+  }
+  if (cleaned.length <= max) {
+    return cleaned;
+  }
+  return `${cleaned.slice(0, max - 3)}...`;
+}
+
+/** {{1}} first name · {{2}} what they asked — for sm_mkt_next_time_upgrade. */
+export function nextTimeWhatsAppTemplateVariables(
+  lead: LeadAiReengageInput,
+): string[] {
+  return [
+    templateParam(nextTimeLeadFirstName(lead.name), "there", 40),
+    templateParam(nextTimeInquiryTopic(lead), "your earlier enquiry", 60),
+  ];
+}
+
+/**
+ * Official API session body (24h) and Next Time WhatsApp copy.
+ * Template name if outside the window: sm_mkt_next_time_upgrade (MARKETING, en).
+ */
+export function buildLeadAiReengageMessage(lead: LeadAiReengageInput): string {
+  const requirement = nextTimeInquiryTopic(lead);
+
+  return `Hi ${nextTimeLeadFirstName(lead.name)},
+
+You earlier asked about ${requirement} — checking if that is still open.
+
+We have upgraded our skills and services. Sheetomatic now has:
+
+• Remote DME
+• AI Enabled Tasks System
+• CRM
+• HRMS
+• Zero Effort BCI Suite — FMS, IMS, Checklist, EM Ready dashboards
+
+We also build custom software on AppSheet, Google Sheets, and Apps Script.
+
+If you want a 5-minute look, reply DEMO.
+If you are not interested, reply STOP.
+
+Regards,
+Automation Team
+Sheetomatic Technologies
+www.sheetomatic.com | youtube.com/@sheetomatic`;
+}
+
+/** wa.me prefill: Next Time / archived upgrade copy, else undefined (default greeting). */
 export function leadWhatsAppPrefillMessage(
   lead: LeadAiReengageInput,
 ): string | undefined {
