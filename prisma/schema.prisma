@@ -1521,7 +1521,7 @@ enum EmployeeCollarCategory {
   BLUE
 }
 
-/** Self punch starts PENDING; manager mark or approve → VERIFIED. */
+/** Punch/mark Present is VERIFIED immediately. REJECTED remains for explicit manager reject. */
 enum AttendanceVerifyStatus {
   PENDING
   VERIFIED
