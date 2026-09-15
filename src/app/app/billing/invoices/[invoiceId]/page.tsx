@@ -104,8 +104,8 @@ export default async function InvoicePrintPage({
           <strong>Pay</strong>
           <div>UPI {account.upiId}</div>
           <div>
-            {account.bankName} · {account.accountType} · {account.accountNumber} /{" "}
-            {account.ifsc}
+            {account.bankName} · {account.branch} · {account.accountType} ·{" "}
+            {account.accountNumber} / {account.ifsc}
           </div>
           <div>Account holder {account.accountHolder}</div>
           <p>
