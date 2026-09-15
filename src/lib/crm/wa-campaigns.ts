@@ -1,5 +1,6 @@
 import "server-only";
 
+import { revalidateTag, unstable_cache } from "next/cache";
 import {
   WaCampaignRecipientStatus,
   WaCampaignStatus,
@@ -58,10 +59,11 @@ export async function getOfficialCampaignCredentials(organizationId: string) {
   };
 }
 
-export async function listApprovedCampaignTemplates(
-  organizationId: string,
-  options?: { skipCache?: boolean },
-): Promise<{
+export function officialCampaignTemplatesTag(organizationId: string) {
+  return `crm-official-wa-templates-${organizationId}`;
+}
+
+async function fetchApprovedCampaignTemplates(organizationId: string): Promise<{
   ok: boolean;
   templates: OfficialWaTemplate[];
   error?: string;
@@ -70,7 +72,30 @@ export async function listApprovedCampaignTemplates(
   if (!access.ok) {
     return { ok: false, templates: [], error: access.error };
   }
-  return listOfficialApprovedTemplates(access.credentials, options);
+  return listOfficialApprovedTemplates(access.credentials, { skipCache: true });
+}
+
+export async function listApprovedCampaignTemplates(
+  organizationId: string,
+  options?: { skipCache?: boolean },
+): Promise<{
+  ok: boolean;
+  templates: OfficialWaTemplate[];
+  error?: string;
+}> {
+  if (options?.skipCache) {
+    const fresh = await fetchApprovedCampaignTemplates(organizationId);
+    revalidateTag(officialCampaignTemplatesTag(organizationId), { expire: 0 });
+    return fresh;
+  }
+  return unstable_cache(
+    () => fetchApprovedCampaignTemplates(organizationId),
+    ["crm-official-wa-templates", organizationId],
+    {
+      revalidate: 300,
+      tags: [officialCampaignTemplatesTag(organizationId)],
+    },
+  )();
 }
 
 export function countRecipientRows(
@@ -601,10 +626,14 @@ export async function deleteWaCampaign(params: {
     campaign.status === WaCampaignStatus.RUNNING ||
     campaign.status === WaCampaignStatus.QUEUED
   ) {
-    return {
-      ok: false as const,
-      error: "Pause sending before deleting. Nothing will send after you pause.",
-    };
+    await prisma.waCampaign.update({
+      where: { id: campaign.id },
+      data: {
+        status: WaCampaignStatus.PAUSED,
+        pausedAt: new Date(),
+        pauseReason: "Paused before delete.",
+      },
+    });
   }
   await prisma.waCampaign.delete({
     where: { id: campaign.id },
