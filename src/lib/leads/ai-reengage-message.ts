@@ -60,11 +60,11 @@ You had asked about *${requirement}*. Checking if that is still on your mind.
 
 We have upgraded what we deliver. Same team, more of the stack is actually live now:
 
--> *Remote DME*
--> *AI Enabled Tasks System* — assign work, due dates, follow-ups without chasing chats
--> *CRM* — ready to use, and we customise it to how you already sell
--> *HRMS* — attendance, leave, payroll, geo fencing
--> *Zero Effort BCI Suite* — FMS, IMS, Checklist, EM Ready dashboards so the weekly review starts with data, not Excel prep
+← *Remote DME*
+← *AI Enabled Tasks System* — assign work, due dates, follow-ups without chasing chats
+← *CRM* — ready to use, and we customise it to how you already sell
+← *HRMS* — attendance, leave, payroll, geo fencing
+← *Zero Effort BCI Suite* — FMS, IMS, Checklist, EM Ready dashboards so the weekly review starts with data, not Excel prep
 
 If you need something that is not a product box, we still build *custom software on AppSheet, Google Sheets, and Apps Script*.
 

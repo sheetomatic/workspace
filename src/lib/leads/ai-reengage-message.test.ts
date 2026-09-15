@@ -28,17 +28,18 @@ describe("ai-reengage-message", () => {
     expect(text).toContain(
       "You had asked about *WhatsApp API*. Checking if that is still on your mind.",
     );
-    expect(text).toContain("-> *Remote DME*");
+    expect(text).toContain("← *Remote DME*");
     expect(text).toContain(
-      "-> *AI Enabled Tasks System* — assign work, due dates, follow-ups without chasing chats",
+      "← *AI Enabled Tasks System* — assign work, due dates, follow-ups without chasing chats",
     );
     expect(text).toContain(
-      "-> *CRM* — ready to use, and we customise it to how you already sell",
+      "← *CRM* — ready to use, and we customise it to how you already sell",
     );
-    expect(text).toContain("-> *HRMS* — attendance, leave, payroll, geo fencing");
+    expect(text).toContain("← *HRMS* — attendance, leave, payroll, geo fencing");
     expect(text).toContain(
-      "-> *Zero Effort BCI Suite* — FMS, IMS, Checklist, EM Ready dashboards so the weekly review starts with data, not Excel prep",
+      "← *Zero Effort BCI Suite* — FMS, IMS, Checklist, EM Ready dashboards so the weekly review starts with data, not Excel prep",
     );
+    expect(text).not.toContain("->");
     expect(text).toContain(
       "*custom software on AppSheet, Google Sheets, and Apps Script*",
     );
