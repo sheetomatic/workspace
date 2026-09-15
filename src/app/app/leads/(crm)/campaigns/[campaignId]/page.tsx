@@ -2,12 +2,9 @@ import { notFound } from "next/navigation";
 import { CrmCampaignDetail } from "@/components/saas/crm-campaign-detail";
 import { CrmSubmoduleShell } from "@/components/saas/crm-submodule-shell";
 import "@/components/saas/leads-machine.css";
+import { listCampaignAudienceOptions } from "@/lib/crm/wa-campaign-audiences";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
-import {
-  getWaCampaign,
-  listApprovedCampaignTemplates,
-  listCampaignLeadCategories,
-} from "@/lib/crm/wa-campaigns";
+import { getWaCampaign } from "@/lib/crm/wa-campaigns";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 
@@ -24,8 +21,7 @@ export default async function CrmCampaignDetailPage({
     notFound();
   }
 
-  const templatesResult = await listApprovedCampaignTemplates(user.organizationId);
-  const categories = await listCampaignLeadCategories(user.organizationId);
+  const categories = listCampaignAudienceOptions();
   const canSend = hasMinimumRole(user.role, "MANAGER");
 
   return (
@@ -65,8 +61,8 @@ export default async function CrmCampaignDetailPage({
             errorCode: row.errorCode,
           })),
         }}
-        initialTemplates={templatesResult.templates}
-        templatesError={templatesResult.ok ? null : templatesResult.error ?? null}
+        initialTemplates={[]}
+        templatesError={null}
       />
     </CrmSubmoduleShell>
   );

@@ -10,6 +10,7 @@ import {
   addLeadsByCategoryToWaCampaign,
   addLeadsToWaCampaign,
   createWaCampaign,
+  deleteWaCampaign,
   listApprovedCampaignTemplates,
   pauseWaCampaign,
   previewLeadsByCategoryForCampaign,
@@ -84,9 +85,6 @@ export async function saveWaCampaignTemplateAction(input: {
     templateCategory: input.templateCategory,
     variableMap: parseVariableMap(input.variableMap),
   });
-  if (result.ok) {
-    revalidateCampaigns(input.campaignId);
-  }
   return result;
 }
 
@@ -179,12 +177,31 @@ export async function searchCampaignLeadsAction(input: {
   });
 }
 
-export async function loadApprovedCampaignTemplatesAction() {
+export async function loadApprovedCampaignTemplatesAction(input?: {
+  skipCache?: boolean;
+}) {
   const user = await requireCampaignUser("STAFF");
   if (!user) {
     return { ok: false as const, templates: [], error: "Not allowed." };
   }
-  return listApprovedCampaignTemplates(user.organizationId);
+  return listApprovedCampaignTemplates(user.organizationId, {
+    skipCache: input?.skipCache,
+  });
+}
+
+export async function deleteWaCampaignAction(input: { campaignId: string }) {
+  const user = await requireCampaignUser("STAFF");
+  if (!user) {
+    return { ok: false as const, error: "You cannot delete this campaign." };
+  }
+  const result = await deleteWaCampaign({
+    organizationId: user.organizationId,
+    campaignId: input.campaignId,
+  });
+  if (result.ok) {
+    revalidateCampaigns();
+  }
+  return result;
 }
 
 export async function startWaCampaignSendAction(input: { campaignId: string }) {

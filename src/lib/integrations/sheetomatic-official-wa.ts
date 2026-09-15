@@ -307,8 +307,23 @@ export function buildOfficialTemplatePayload(params: {
   return payload;
 }
 
+export const TEMPLATE_CACHE_TTL_MS = 5 * 60 * 1000;
+
+type TemplateCacheEntry = {
+  at: number;
+  templates: OfficialWaTemplate[];
+};
+
+const officialTemplateCache = new Map<string, TemplateCacheEntry>();
+
+function officialTemplateCacheKey(credentials?: RedlavaCredentials | null) {
+  const resolved = resolveRedlavaCredentials(credentials);
+  return `${resolved?.apiKey ?? ""}|${resolved?.phoneId ?? ""}`;
+}
+
 export async function listOfficialApprovedTemplates(
   credentials?: RedlavaCredentials | null,
+  options?: { skipCache?: boolean },
 ): Promise<{
   ok: boolean;
   templates: OfficialWaTemplate[];
@@ -323,6 +338,16 @@ export async function listOfficialApprovedTemplates(
       error:
         "Official API key is not set. Add this workspace’s key in WhatsApp Settings — never another client’s key.",
     };
+  }
+
+  const key = officialTemplateCacheKey(credentials);
+  const cached = officialTemplateCache.get(key);
+  if (
+    !options?.skipCache &&
+    cached &&
+    Date.now() - cached.at < TEMPLATE_CACHE_TTL_MS
+  ) {
+    return { ok: true, templates: cached.templates };
   }
 
   const result = await redlavaRequest(
@@ -346,9 +371,13 @@ export async function listOfficialApprovedTemplates(
     };
   }
 
+  const templates = parseOfficialTemplateList(result.body).filter(
+    isApprovedOfficialTemplate,
+  );
+  officialTemplateCache.set(key, { at: Date.now(), templates });
   return {
     ok: true,
-    templates: parseOfficialTemplateList(result.body).filter(isApprovedOfficialTemplate),
+    templates,
   };
 }
 

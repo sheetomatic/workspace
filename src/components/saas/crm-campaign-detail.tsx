@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   addLeadsByCategoryToWaCampaignAction,
   addLeadsToWaCampaignAction,
+  deleteWaCampaignAction,
   loadApprovedCampaignTemplatesAction,
   pauseWaCampaignAction,
   previewCategoryLeadsForCampaignAction,
@@ -62,7 +63,7 @@ export function CrmCampaignDetail({
   initialTemplates: OfficialWaTemplate[];
   templatesError: string | null;
   canSend: boolean;
-  categories: Array<{ id: string; label: string; count: number }>;
+  categories: Array<{ id: string; label: string; count?: number }>;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -114,6 +115,22 @@ export function CrmCampaignDetail({
   }, [campaign.id, campaign.status, router]);
 
   useEffect(() => {
+    let cancelled = false;
+    startTransition(async () => {
+      const result = await loadApprovedCampaignTemplatesAction();
+      if (cancelled) return;
+      if (!result.ok) {
+        setError(result.error ?? "Could not load templates.");
+        return;
+      }
+      setTemplates(result.templates);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!categoryId) {
       setCategoryPreview(null);
       return;
@@ -158,7 +175,6 @@ export function CrmCampaignDetail({
         return;
       }
       setMessage("Template saved.");
-      router.refresh();
     });
   }
 
@@ -262,6 +278,32 @@ export function CrmCampaignDetail({
               Resume
             </button>
           ) : null}
+          {campaign.status !== "RUNNING" && campaign.status !== "QUEUED" ? (
+            <button
+              type="button"
+              className="btn-secondary"
+              disabled={pending}
+              onClick={() => {
+                const ok = window.confirm(
+                  `Delete “${campaign.name}”? This cannot be undone. Nothing more will send.`,
+                );
+                if (!ok) return;
+                setError(null);
+                startTransition(async () => {
+                  const result = await deleteWaCampaignAction({
+                    campaignId: campaign.id,
+                  });
+                  if (!result.ok) {
+                    setError(result.error);
+                    return;
+                  }
+                  router.push("/app/leads/campaigns");
+                });
+              }}
+            >
+              Delete
+            </button>
+          ) : null}
         </div>
       </section>
 
@@ -280,7 +322,19 @@ export function CrmCampaignDetail({
               applyTemplate(next);
             }}
           >
-            <option value="">Choose an approved template</option>
+            <option value="">
+              {templates.length ? "Choose an approved template" : "Loading templates…"}
+            </option>
+            {campaign.templateName &&
+            !templates.some(
+              (template) =>
+                `${template.name}::${template.language}` ===
+                `${campaign.templateName}::${campaign.templateLanguage}`,
+            ) ? (
+              <option value={`${campaign.templateName}::${campaign.templateLanguage}`}>
+                {campaign.templateName} · {campaign.templateLanguage}
+              </option>
+            ) : null}
             {templates.map((template) => (
               <option
                 key={`${template.name}::${template.language}`}
@@ -297,7 +351,9 @@ export function CrmCampaignDetail({
             disabled={pending}
             onClick={() => {
               startTransition(async () => {
-                const result = await loadApprovedCampaignTemplatesAction();
+                const result = await loadApprovedCampaignTemplatesAction({
+                  skipCache: true,
+                });
                 if (!result.ok) {
                   setError(result.error ?? "Could not load templates.");
                   return;
@@ -510,6 +566,12 @@ export function CrmCampaignDetail({
 
       <section className="crm-campaign-panel">
         <h2 style={{ margin: "0 0 0.75rem", fontSize: "1.05rem" }}>People</h2>
+        {campaign.counts.total > campaign.recipients.length ? (
+          <p className="crm-campaign-meta" style={{ marginBottom: "0.75rem" }}>
+            Showing {campaign.recipients.length} of {campaign.counts.total}. Send still
+            includes everyone on the campaign.
+          </p>
+        ) : null}
         {campaign.recipients.length === 0 ? (
           <p className="crm-campaign-empty">No contacts on this campaign yet.</p>
         ) : (
