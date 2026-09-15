@@ -18,7 +18,7 @@ describe("ai-reengage-message", () => {
     expect(shouldUseAiReengageWhatsAppMessage({ status: "NEW" })).toBe(false);
   });
 
-  it("includes the upgrade copy, last requirement, Yes, and No", () => {
+  it("includes the improvised upgrade copy, last requirement, Yes, and No", () => {
     const text = buildLeadAiReengageMessage({
       name: "Rahul Jain",
       requirement: "WhatsApp API",
@@ -26,30 +26,32 @@ describe("ai-reengage-message", () => {
     });
     expect(text).toContain("Hi Rahul");
     expect(text).toContain(
-      "You earlier asked about *WhatsApp API* — is that still open?",
+      "You had asked about *WhatsApp API*. Checking if that is still on your mind.",
     );
     expect(text).toContain("-> *Remote DME*");
-    expect(text).toContain("-> *AI Enabled Tasks System*");
-    expect(text).toContain("-> *CRM* — Customized and ready to use");
     expect(text).toContain(
-      "-> *HRMS* — Attendance & Leave Management System with Payroll (geo fencing)",
+      "-> *AI Enabled Tasks System* — assign work, due dates, follow-ups without chasing chats",
     );
     expect(text).toContain(
-      "-> *Zero Effort BCI Suite* — FMS, IMS, Checklist, EM Ready dashboards",
+      "-> *CRM* — ready to use, and we customise it to how you already sell",
     );
-    expect(text).toContain("Sheetomatic now runs:");
+    expect(text).toContain("-> *HRMS* — attendance, leave, payroll, geo fencing");
+    expect(text).toContain(
+      "-> *Zero Effort BCI Suite* — FMS, IMS, Checklist, EM Ready dashboards so the weekly review starts with data, not Excel prep",
+    );
     expect(text).toContain(
       "*custom software on AppSheet, Google Sheets, and Apps Script*",
     );
-    expect(text).toContain("reply Yes");
-    expect(text).toContain("reply No");
+    expect(text).toContain("reply *Yes*");
+    expect(text).toContain("reply *No*");
     expect(text).not.toContain("DEMO");
     expect(text).not.toContain("STOP");
+    expect(text).not.toContain("You earlier asked about");
+    expect(text).not.toContain("Customized and ready to use");
     expect(text).toContain("Automation Team");
     expect(text).toContain("Sheetomatic Technologies");
     expect(text).toContain("www.sheetomatic.com");
     expect(text).toContain("youtube.com/@sheetomatic");
-    expect(text).not.toContain("Sheetomatic AI is live now");
   });
 
   it("opens wa.me click-to-chat with the prefill, not an API send", () => {
@@ -61,7 +63,7 @@ describe("ai-reengage-message", () => {
     const href = leadWhatsAppHref("9876543210", "Rahul Jain", text);
     expect(href).toMatch(/^https:\/\/wa\.me\/919876543210\?text=/);
     expect(decodeURIComponent(href!.split("text=")[1] ?? "")).toContain(
-      "You earlier asked about *WhatsApp API*",
+      "You had asked about *WhatsApp API*",
     );
   });
 

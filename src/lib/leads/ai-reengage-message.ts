@@ -56,20 +56,20 @@ export function buildLeadAiReengageMessage(lead: LeadAiReengageInput): string {
 
   return `Hi ${firstName(lead.name)},
 
-You earlier asked about *${requirement}* — is that still open?
+You had asked about *${requirement}*. Checking if that is still on your mind.
 
-We have upgraded our skills and services. Sheetomatic now runs:
+We have upgraded what we deliver. Same team, more of the stack is actually live now:
 
 -> *Remote DME*
--> *AI Enabled Tasks System*
--> *CRM* — Customized and ready to use
--> *HRMS* — Attendance & Leave Management System with Payroll (geo fencing)
--> *Zero Effort BCI Suite* — FMS, IMS, Checklist, EM Ready dashboards
+-> *AI Enabled Tasks System* — assign work, due dates, follow-ups without chasing chats
+-> *CRM* — ready to use, and we customise it to how you already sell
+-> *HRMS* — attendance, leave, payroll, geo fencing
+-> *Zero Effort BCI Suite* — FMS, IMS, Checklist, EM Ready dashboards so the weekly review starts with data, not Excel prep
 
-We also build *custom software on AppSheet, Google Sheets, and Apps Script*.
+If you need something that is not a product box, we still build *custom software on AppSheet, Google Sheets, and Apps Script*.
 
-If you are interested, reply Yes.
-If you are not interested, reply No.
+If this is useful, reply *Yes*.
+If not, reply *No* and I will not follow up.
 
 Regards,
 Automation Team
