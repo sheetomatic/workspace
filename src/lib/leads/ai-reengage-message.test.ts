@@ -18,7 +18,7 @@ describe("ai-reengage-message", () => {
     expect(shouldUseAiReengageWhatsAppMessage({ status: "NEW" })).toBe(false);
   });
 
-  it("includes the improvised upgrade copy, last requirement, Yes, and No", () => {
+  it("includes the commercial upgrade copy, last requirement, Yes, and No", () => {
     const text = buildLeadAiReengageMessage({
       name: "Rahul Jain",
       requirement: "WhatsApp API",
@@ -26,18 +26,20 @@ describe("ai-reengage-message", () => {
     });
     expect(text).toContain("Hi Rahul");
     expect(text).toContain(
-      "You had asked about *WhatsApp API*. Checking if that is still on your mind.",
+      "You had asked about *WhatsApp API*. I wanted to check whether that requirement is still open.",
     );
     expect(text).toContain("← *Remote DME*");
     expect(text).toContain(
-      "← *AI Enabled Tasks System* — assign work, due dates, follow-ups without chasing chats",
+      "← *AI Enabled Tasks System* — owned tasks, due dates, and follow-ups without chasing group chats",
     );
     expect(text).toContain(
-      "← *CRM* — ready to use, and we customise it to how you already sell",
+      "← *CRM* — ready to use, and tailored to how you already sell",
     );
-    expect(text).toContain("← *HRMS* — attendance, leave, payroll, geo fencing");
     expect(text).toContain(
-      "← *Zero Effort BCI Suite* — FMS, IMS, Checklist, EM Ready dashboards so the weekly review starts with data, not Excel prep",
+      "← *HRMS* — attendance, leave, payroll, and geo-fencing",
+    );
+    expect(text).toContain(
+      "← *Zero Effort BCI Suite* — FMS, IMS, Checklist, and EM Ready dashboards, so the weekly review starts with numbers, not spreadsheet prep",
     );
     expect(text).not.toContain("->");
     expect(text).toContain(
@@ -45,10 +47,11 @@ describe("ai-reengage-message", () => {
     );
     expect(text).toContain("reply *Yes*");
     expect(text).toContain("reply *No*");
+    expect(text).toContain("I will close the follow-up");
     expect(text).not.toContain("DEMO");
     expect(text).not.toContain("STOP");
-    expect(text).not.toContain("You earlier asked about");
-    expect(text).not.toContain("Customized and ready to use");
+    expect(text).not.toContain("still on your mind");
+    expect(text).not.toContain("product box");
     expect(text).toContain("Automation Team");
     expect(text).toContain("Sheetomatic Technologies");
     expect(text).toContain("www.sheetomatic.com");
