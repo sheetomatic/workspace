@@ -202,6 +202,11 @@
   color: #64748b;
 }
 
+.crm-campaign-actions .crm-campaign-delete {
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
 .crm-campaign-banner {
   padding: 0.75rem 0.9rem;
   border-radius: 12px;

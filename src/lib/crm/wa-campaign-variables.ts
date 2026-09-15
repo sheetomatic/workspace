@@ -106,3 +106,14 @@ export function campaignStatusLabel(status: string): string {
       return status;
   }
 }
+
+export function waCampaignNeedsPauseBeforeDelete(status: string): boolean {
+  return status === "RUNNING" || status === "QUEUED";
+}
+
+export function waCampaignDeleteConfirm(name: string, status: string): string {
+  if (waCampaignNeedsPauseBeforeDelete(status)) {
+    return `Pause sending and delete “${name}”? Nothing more will send.`;
+  }
+  return `Delete “${name}”? This cannot be undone. Nothing more will send.`;
+}
