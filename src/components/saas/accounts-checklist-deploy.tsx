@@ -1,10 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import {
-  checklistInitialState,
-  deployAccountsChecklistAction,
-} from "@/app/app/checklists/actions";
+import { deployAccountsChecklistAction } from "@/app/app/checklists/actions";
+import { fmsInitialState as checklistInitialState } from "@/lib/fms-action-state";
 
 type MemberOption = { id: string; label: string };
 

@@ -2,10 +2,8 @@
 
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  checklistInitialState,
-  completeChecklistOccurrenceAction,
-} from "@/app/app/checklists/actions";
+import { completeChecklistOccurrenceAction } from "@/app/app/checklists/actions";
+import { fmsInitialState as checklistInitialState } from "@/lib/fms-action-state";
 import { CHECKLIST_FREQUENCY_LABELS, CHECKLIST_TEAM_LABELS } from "@/lib/checklists/constants";
 import { AiVoiceTextarea } from "@/components/saas/ai-voice-textarea";
 

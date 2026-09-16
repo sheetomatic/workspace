@@ -2,10 +2,8 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  checklistInitialState,
-  createChecklistTemplateAction,
-} from "@/app/app/checklists/actions";
+import { createChecklistTemplateAction } from "@/app/app/checklists/actions";
+import { fmsInitialState as checklistInitialState } from "@/lib/fms-action-state";
 import {
   CHECKLIST_FREQUENCY_LABELS,
   CHECKLIST_TEAM_LABELS,
