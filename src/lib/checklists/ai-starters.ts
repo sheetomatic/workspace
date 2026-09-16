@@ -6,6 +6,13 @@ export type PcAiStarter = {
   prompt: string;
 };
 
+export function getPcAiStarter(id: string | null | undefined): PcAiStarter | null {
+  if (!id) {
+    return null;
+  }
+  return PC_AI_STARTERS.find((starter) => starter.id === id) ?? null;
+}
+
 export const PC_AI_STARTERS: PcAiStarter[] = [
   {
     id: "gst-monthly",

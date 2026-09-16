@@ -1,5 +1,6 @@
 import { requireSession } from "@/lib/require-session";
 import { ChecklistsModuleNav } from "@/components/saas/checklists-module-nav";
+import { canCreateTasks } from "@/lib/tasks";
 
 export default async function ChecklistsLayout({
   children,
@@ -10,7 +11,7 @@ export default async function ChecklistsLayout({
 
   return (
     <div className="ws-module-layout ws-checklists-module-layout">
-      <ChecklistsModuleNav user={user} />
+      <ChecklistsModuleNav isManager={canCreateTasks(user.role)} />
       <div className="ws-module-layout-main">{children}</div>
     </div>
   );

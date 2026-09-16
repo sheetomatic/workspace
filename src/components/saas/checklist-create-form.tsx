@@ -1,7 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   checklistInitialState,
@@ -11,7 +10,7 @@ import {
   CHECKLIST_FREQUENCY_LABELS,
   CHECKLIST_TEAM_LABELS,
 } from "@/lib/checklists/constants";
-import { PC_AI_STARTERS } from "@/lib/checklists/ai-starters";
+import { getPcAiStarter } from "@/lib/checklists/ai-starters";
 import { applyChecklistDraftToForm, PcAiPanel } from "@/components/saas/pc-ai-panel";
 import type { ChecklistFrequency, ChecklistTeam } from "@prisma/client";
 
@@ -56,15 +55,13 @@ function teamFromStarter(team: string): ChecklistTeam {
 
 export function ChecklistCreateForm({
   members,
+  starterId = null,
 }: {
   members: Array<{ id: string; name: string | null; email: string }>;
+  starterId?: string | null;
 }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const starter = useMemo(
-    () => PC_AI_STARTERS.find((row) => row.id === searchParams.get("starter")),
-    [searchParams],
-  );
+  const starter = getPcAiStarter(starterId);
 
   const [state, formAction, pending] = useActionState(
     createChecklistTemplateAction,

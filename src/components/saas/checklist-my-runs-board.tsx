@@ -11,7 +11,7 @@ import { AiVoiceTextarea } from "@/components/saas/ai-voice-textarea";
 
 type Occurrence = {
   id: string;
-  plannedAt: Date;
+  plannedAt: string;
   status: string;
   notes: string | null;
   template: {
@@ -22,7 +22,7 @@ type Occurrence = {
   };
 };
 
-function formatDue(value: Date) {
+function formatDue(value: string | Date) {
   return new Intl.DateTimeFormat("en-IN", {
     dateStyle: "medium",
     timeStyle: "short",

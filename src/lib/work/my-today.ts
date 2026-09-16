@@ -73,12 +73,22 @@ export async function getMyTodayPayload(
     ]);
 
     const checklistItems = work.checklists.map((row) => {
-      const item = checklistToTodayItem(row);
-      item.dueLabel = row.plannedAt.toLocaleString("en-IN", {
+      const plannedAt = new Date(row.plannedAt);
+      const item = checklistToTodayItem({
+        id: row.id,
+        plannedAt,
+        status: row.status,
+        template: {
+          title: row.template.title,
+          team: row.template.team,
+        },
+        assignee: row.assignee,
+      });
+      item.dueLabel = plannedAt.toLocaleString("en-IN", {
         dateStyle: "medium",
         timeStyle: "short",
       });
-      item.sortAt = row.plannedAt.getTime();
+      item.sortAt = plannedAt.getTime();
       return item;
     });
 
