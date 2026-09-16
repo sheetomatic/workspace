@@ -2,10 +2,8 @@
 
 import { useRef, useState } from "react";
 import { useActionState } from "react";
-import {
-  checklistInitialState,
-  importChecklistTemplatesAction,
-} from "@/app/app/checklists/actions";
+import { importChecklistTemplatesAction } from "@/app/app/checklists/actions";
+import { fmsInitialState as checklistInitialState } from "@/lib/fms-action-state";
 import {
   TEMPLATE_IMPORT_TEMPLATE_HEADERS,
   TEMPLATE_IMPORT_TEMPLATE_SAMPLE,

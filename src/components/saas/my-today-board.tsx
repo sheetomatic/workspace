@@ -4,10 +4,8 @@ import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, ChevronDown, ChevronUp, Plus, Sparkles } from "lucide-react";
-import {
-  checklistInitialState,
-  completeChecklistOccurrenceAction,
-} from "@/app/app/checklists/actions";
+import { completeChecklistOccurrenceAction } from "@/app/app/checklists/actions";
+import { fmsInitialState as checklistInitialState } from "@/lib/fms-action-state";
 import { PcWorkKindBadge } from "@/components/saas/pc-work-badges";
 import { AiVoiceTextarea } from "@/components/saas/ai-voice-textarea";
 import type { MyTodayPayload } from "@/lib/work/my-today";

@@ -17,8 +17,10 @@ export default async function NewChecklistPage({ searchParams }: PageProps) {
     redirect("/app/checklists");
   }
 
-  const { starter: starterId } = await searchParams;
-  const starter = getPcAiStarter(starterId);
+  const params = (await searchParams) ?? {};
+  const starter = getPcAiStarter(
+    typeof params.starter === "string" ? params.starter : undefined,
+  );
   let members: Array<{ id: string; name: string | null; email: string }> = [];
   try {
     const assignable = await listAssignableMembers(user.organizationId);
