@@ -4,12 +4,23 @@ import {
   type HrFocusId,
 } from "@/lib/checklists/hr-checklist-catalog";
 import { listChecklistTemplatesByTeam } from "@/lib/checklists/queries";
-import { listMyChecklistPcWork, listOrgPcMonitor } from "@/lib/checklists/pc-work";
+import {
+  checklistPcDoerOptions,
+  filterChecklistPcRows,
+  listChecklistPcRows,
+  resolveChecklistListFilters,
+} from "@/lib/checklists/pc-rows";
 import { canCreateTasks, listAssignableMembers } from "@/lib/tasks";
 import { requireSession } from "@/lib/require-session";
 
 type PageProps = {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{
+    tab?: string;
+    due?: string;
+    date?: string;
+    doer?: string;
+    dept?: string;
+  }>;
 };
 
 function parseHrTab(raw: string | undefined): HrFocusId | null {
@@ -22,18 +33,17 @@ export default async function HrChecklistPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const activeTab = parseHrTab(params.tab?.trim());
   const canConfigure = canCreateTasks(user.role);
+  const filters = resolveChecklistListFilters(params, "HR");
 
-  const [templates, monitor, myRuns, assignable] = await Promise.all([
+  const [allRows, templates, assignable] = await Promise.all([
+    listChecklistPcRows(user.organizationId, user.id),
     listChecklistTemplatesByTeam(user.organizationId, "HR"),
-    listOrgPcMonitor(user.organizationId),
-    listMyChecklistPcWork(user.organizationId, user.id),
     canConfigure
       ? listAssignableMembers(user.organizationId)
       : Promise.resolve([]),
   ]);
 
-  const openRuns = monitor.checklists.filter((row) => row.subtitle === "HR");
-  const myTeamRuns = myRuns.filter((row) => row.template.team === "HR");
+  const rows = filterChecklistPcRows(allRows, filters);
   const members = assignable.map((member) => ({
     id: member.id,
     label: member.name,
@@ -43,10 +53,11 @@ export default async function HrChecklistPage({ searchParams }: PageProps) {
     <HrChecklistBoard
       activeTab={activeTab}
       canConfigure={canConfigure}
+      doers={checklistPcDoerOptions(allRows)}
+      filters={filters}
+      installedTitles={templates.map((template) => template.title)}
       members={members}
-      myRuns={myTeamRuns}
-      openRuns={openRuns}
-      templates={templates}
+      rows={rows}
     />
   );
 }
