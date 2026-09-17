@@ -86,6 +86,8 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
   // everyone else only sees leads assigned to them.
   const canSeeAllLeads =
     user.isSuperAdmin || hasMinimumRole(user.role, "ADMIN");
+  const canAssignLeads =
+    user.isSuperAdmin || hasMinimumRole(user.role, "ADMIN");
   const leadScope = canSeeAllLeads ? undefined : { assignedToId: user.id };
   const focusLeadId = params.leadId?.trim() || null;
   const initialTab = parseCrmDrawerTab(params.tab);
@@ -167,6 +169,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
 
         <LeadsCrmWorkspace
           canManage={canManage}
+          canAssignLeads={canAssignLeads}
           currentUserId={user.id}
           focusMode
           initialSelectedLeadId={lead?.id ?? focusLeadId}
@@ -324,6 +327,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
 
       <LeadsCrmWorkspace
         canManage={canManage}
+        canAssignLeads={canAssignLeads}
         currentUserId={user.id}
         focusMode={false}
         initialSelectedLeadId={params.leadId ?? null}

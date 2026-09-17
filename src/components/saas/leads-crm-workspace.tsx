@@ -156,6 +156,7 @@ export function LeadsCrmWorkspace({
   workspaceTotal,
   teamMembers,
   canManage,
+  canAssignLeads = false,
   currentUserId = null,
   sort,
   view = "list",
@@ -179,6 +180,8 @@ export function LeadsCrmWorkspace({
   workspaceTotal: number;
   teamMembers: TeamMember[];
   canManage: boolean;
+  /** ADMIN+ only — bulk Assign and drawer Owner change. */
+  canAssignLeads?: boolean;
   /** Lets STAFF work leads assigned to them in the drawer. */
   currentUserId?: string | null;
   sort: "newest" | "oldest";
@@ -568,7 +571,7 @@ export function LeadsCrmWorkspace({
           <span className="leads-bulk-count">
             {bulkSelected.size} selected
           </span>
-          {canManage ? (
+          {canAssignLeads ? (
             <>
               <select
                 value={bulkAssigneeId}
@@ -993,6 +996,7 @@ export function LeadsCrmWorkspace({
           <LeadDrawerPanel
             key={drawerLead.id}
             canManage={canManage}
+            canAssignLeads={canAssignLeads}
             currentUserId={currentUserId}
             initialTab={parseCrmDrawerTab(initialTab) ?? initialTab}
             lead={drawerLead}

@@ -285,6 +285,7 @@ export function LeadDrawerPanel({
   lead,
   canManage,
   currentUserId = null,
+  canAssignLeads = false,
   serviceCatalog,
   teamMembers,
   organizationName,
@@ -303,6 +304,8 @@ export function LeadDrawerPanel({
   canManage: boolean;
   /** Enables "work my assigned lead" controls for STAFF users. */
   currentUserId?: string | null;
+  /** ADMIN+ only — change Lead Owner / assignee. */
+  canAssignLeads?: boolean;
   serviceCatalog: CatalogItem[];
   teamMembers: Array<{ user: { id: string; name: string | null; email: string } }>;
   organizationName: string;
@@ -1030,8 +1033,14 @@ export function LeadDrawerPanel({
                 Owner
                 <select
                   value={assignedToId}
-                  disabled={fieldPending}
+                  disabled={fieldPending || !canAssignLeads}
+                  title={
+                    canAssignLeads
+                      ? undefined
+                      : "Only admins can assign leads"
+                  }
                   onChange={(event) => {
+                    if (!canAssignLeads) return;
                     const next = event.target.value;
                     const previous = assignedToId;
                     setAssignedToId(next);

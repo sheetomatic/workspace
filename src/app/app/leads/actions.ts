@@ -229,6 +229,9 @@ async function canWorkQuotation(
 
 export async function assignInboundLead(leadId: string, assigneeUserId: string | null) {
   const user = await requireSession(undefined, { module: "CRM" });
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Only admins can assign leads." };
+  }
   if (!(await canWorkLead(user, leadId))) {
     return { ok: false, message: LEAD_WORK_DENIED };
   }
@@ -292,8 +295,8 @@ export async function bulkAssignInboundLeads(
   assigneeUserId: string,
 ) {
   const user = await requireSession(undefined, { module: "CRM" });
-  if (!hasMinimumRole(user.role, "MANAGER")) {
-    return { ok: false as const, message: "Not allowed." };
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false as const, message: "Only admins can assign leads." };
   }
 
   const ids = [...new Set(leadIds)].filter(Boolean).slice(0, 200);
