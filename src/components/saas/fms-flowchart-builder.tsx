@@ -57,6 +57,7 @@ export function FmsFlowchartBuilder({
   autoBuildAi = false,
   canvasRef,
   onFlowStarted,
+  intakeFields = [],
 }: {
   designId?: string;
   initialName?: string;
@@ -77,6 +78,7 @@ export function FmsFlowchartBuilder({
   autoBuildAi?: boolean;
   canvasRef?: RefObject<HTMLDivElement | null>;
   onFlowStarted?: () => void;
+  intakeFields?: import("@/lib/fms/route-rules").FmsRouteFieldOption[];
 }) {
   const saveAction = mode === "create" ? createFmsFlowDesign : updateFmsFlowDesign;
   const [saveState, saveFormAction, savePending] = useActionState(
@@ -353,6 +355,7 @@ export function FmsFlowchartBuilder({
                 onMembersChange={setMemberList}
                 readOnly={readOnly}
                 allSteps={steps}
+                intakeFields={intakeFields}
                 onConnectAfter={(afterStepId) =>
                   moveStepAfter(selectedStep.id, afterStepId)
                 }

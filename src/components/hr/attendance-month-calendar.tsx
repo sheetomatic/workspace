@@ -123,12 +123,11 @@ export function AttendanceMonthCalendar({
     HALF_DAY: 0,
     SHORT_LEAVE: 0,
     ON_LEAVE: 0,
-    PENDING: 0,
     OT: 0,
   };
   for (const cell of cells) {
-    if (cell.verifyStatus === "PENDING") {
-      totals.PENDING += 1;
+    if (cell.verifyStatus === "REJECTED") {
+      totals.ABSENT += 1;
     } else if (cell.status in totals) {
       totals[cell.status as keyof typeof totals] += 1;
     }
@@ -184,9 +183,6 @@ export function AttendanceMonthCalendar({
           <em className="ws-att-cell status-HOLIDAY">O</em> Holiday
         </span>
         <span>
-          <em className="ws-att-cell status-PENDING">?</em> Pending verify
-        </span>
-        <span>
           <em className="ws-att-cell status-OT">OT</em> Overtime (Blue)
         </span>
         <span>
@@ -200,8 +196,8 @@ export function AttendanceMonthCalendar({
         </span>
         <span className="ws-apple-cell-secondary">
           Month totals · P {totals.PRESENT} · A {totals.ABSENT} · H{" "}
-          {totals.HALF_DAY} · S {totals.SHORT_LEAVE} · L {totals.ON_LEAVE} · ?{" "}
-          {totals.PENDING} · OT {totals.OT}
+          {totals.HALF_DAY} · S {totals.SHORT_LEAVE} · L {totals.ON_LEAVE} · OT{" "}
+          {totals.OT}
         </span>
       </div>
 
@@ -247,27 +243,24 @@ export function AttendanceMonthCalendar({
                       );
                     }
                     const badge = exceptionBadge(cell.notes);
-                    const isPending = cell.verifyStatus === "PENDING";
-                    const hasOt = cell.otHours > 0 && !isPending;
-                    const label = isPending
-                      ? "?"
-                      : hasOt
-                        ? "OT"
-                        : (badge ?? STATUS_SHORT[cell.status] ?? "?");
-                    const title = isPending
-                      ? "Pending manager verify"
+                    const isRejected = cell.verifyStatus === "REJECTED";
+                    const hasOt = cell.otHours > 0 && !isRejected;
+                    const displayStatus = isRejected ? "ABSENT" : cell.status;
+                    const label = hasOt
+                      ? "OT"
+                      : (badge ?? STATUS_SHORT[displayStatus] ?? "?");
+                    const title = isRejected
+                      ? "Check-in rejected"
                       : hasOt
                         ? `Overtime ${cell.otHours}h (${STATUS_TITLE[cell.status] ?? cell.status})`
                         : badge
                           ? `${badge === "OD" ? "On duty" : "Work from home"} (present)`
-                          : `${STATUS_TITLE[cell.status] ?? cell.status}${cell.isLate ? " · Late" : ""}`;
-                    const className = isPending
-                      ? "ws-att-cell status-PENDING"
-                      : hasOt
-                        ? "ws-att-cell status-OT"
-                        : badge
-                          ? `ws-att-cell status-${badge}`
-                          : `ws-att-cell status-${cell.status}`;
+                          : `${STATUS_TITLE[displayStatus] ?? displayStatus}${cell.isLate ? " · Late" : ""}`;
+                    const className = hasOt
+                      ? "ws-att-cell status-OT"
+                      : badge
+                        ? `ws-att-cell status-${badge}`
+                        : `ws-att-cell status-${displayStatus}`;
                     return (
                       <td key={day} className="ws-attendance-month-day">
                         <span className={className} title={title}>

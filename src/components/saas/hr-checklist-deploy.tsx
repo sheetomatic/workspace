@@ -1,10 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import {
-  checklistInitialState,
-  deployHrChecklistAction,
-} from "@/app/app/checklists/actions";
+import { deployHrChecklistAction } from "@/app/app/checklists/actions";
+import { fmsInitialState as checklistInitialState } from "@/lib/fms-action-state";
 import type { HrFocusId } from "@/lib/checklists/hr-checklist-catalog";
 
 type MemberOption = { id: string; label: string };

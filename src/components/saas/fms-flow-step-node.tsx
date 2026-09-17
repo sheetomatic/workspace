@@ -2,6 +2,8 @@
 
 import { Trash2 } from "lucide-react";
 import type { FmsFlowchartStep } from "@/lib/fms/flow-design";
+import type { FmsRouteFieldOption } from "@/lib/fms/route-rules";
+import { FmsRouteRulesEditor } from "@/components/saas/fms-route-rules-editor";
 import {
   FmsStepOwnerField,
   type FmsStepOwnerMember,
@@ -25,6 +27,7 @@ export function FlowStepNode({
   canRemove,
   allSteps,
   onConnectAfter,
+  intakeFields = [],
 }: {
   step: FmsFlowchartStep;
   index: number;
@@ -36,6 +39,7 @@ export function FlowStepNode({
   canRemove: boolean;
   allSteps?: FmsFlowchartStep[];
   onConnectAfter?: (afterStepId: string | null) => void;
+  intakeFields?: FmsRouteFieldOption[];
 }) {
   const stepNumber = index + 1;
   const otherSteps = (allSteps ?? []).filter((s) => s.id !== step.id);
@@ -155,6 +159,19 @@ export function FlowStepNode({
           </div>
         </label>
       </div>
+
+      <FmsRouteRulesEditor
+        steps={(allSteps ?? []).map((item) => ({
+          id: item.id,
+          stepName: item.stepName,
+        }))}
+        currentStepId={step.id}
+        routeRules={step.routeRules}
+        captureFields={step.captureFields ?? []}
+        intakeFields={intakeFields}
+        readOnly={readOnly}
+        onChange={(patch) => onUpdate(patch)}
+      />
     </div>
   );
 }

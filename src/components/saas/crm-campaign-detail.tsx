@@ -20,6 +20,7 @@ import { CAMPAIGN_AUDIENCE_APPROACHED } from "@/lib/crm/wa-campaign-audiences";
 import {
   CAMPAIGN_CONTACT_FIELDS,
   campaignStatusLabel,
+  waCampaignDeleteConfirm,
 } from "@/lib/crm/wa-campaign-variables";
 import type { OfficialWaTemplate } from "@/lib/integrations/sheetomatic-official-wa";
 import "./crm-campaigns.css";
@@ -92,6 +93,7 @@ export function CrmCampaignDetail({
     count: number;
     label: string;
   } | null>(null);
+  const [categoryCounting, setCategoryCounting] = useState(false);
 
   const selected = useMemo(
     () =>
@@ -106,17 +108,17 @@ export function CrmCampaignDetail({
       return;
     }
     const timer = window.setInterval(() => {
-      startTransition(async () => {
+      void (async () => {
         await processWaCampaignBatchAction({ campaignId: campaign.id });
         router.refresh();
-      });
+      })();
     }, 4000);
     return () => window.clearInterval(timer);
   }, [campaign.id, campaign.status, router]);
 
   useEffect(() => {
     let cancelled = false;
-    startTransition(async () => {
+    void (async () => {
       const result = await loadApprovedCampaignTemplatesAction();
       if (cancelled) return;
       if (!result.ok) {
@@ -124,34 +126,33 @@ export function CrmCampaignDetail({
         return;
       }
       setTemplates(result.templates);
-    });
+    })();
     return () => {
       cancelled = true;
     };
   }, []);
 
-  useEffect(() => {
-    if (!categoryId) {
+  async function loadCategoryCount(nextCategory: string) {
+    if (!nextCategory) {
       setCategoryPreview(null);
-      return;
+      setCategoryCounting(false);
+      return null;
     }
-    let cancelled = false;
-    startTransition(async () => {
-      const result = await previewCategoryLeadsForCampaignAction({
-        campaignId: campaign.id,
-        category: categoryId,
-      });
-      if (cancelled) return;
-      if (!result.ok) {
-        setCategoryPreview(null);
-        return;
-      }
-      setCategoryPreview({ count: result.count, label: result.label });
+    setCategoryCounting(true);
+    setCategoryPreview(null);
+    const result = await previewCategoryLeadsForCampaignAction({
+      campaignId: campaign.id,
+      category: nextCategory,
     });
-    return () => {
-      cancelled = true;
-    };
-  }, [campaign.id, categoryId]);
+    setCategoryCounting(false);
+    if (!result.ok) {
+      setCategoryPreview(null);
+      return null;
+    }
+    const preview = { count: result.count, label: result.label };
+    setCategoryPreview(preview);
+    return preview;
+  }
 
   function applyTemplate(next: OfficialWaTemplate | null) {
     if (!next) return;
@@ -278,32 +279,30 @@ export function CrmCampaignDetail({
               Resume
             </button>
           ) : null}
-          {campaign.status !== "RUNNING" && campaign.status !== "QUEUED" ? (
-            <button
-              type="button"
-              className="btn-secondary"
-              disabled={pending}
-              onClick={() => {
-                const ok = window.confirm(
-                  `Delete “${campaign.name}”? This cannot be undone. Nothing more will send.`,
-                );
-                if (!ok) return;
-                setError(null);
-                startTransition(async () => {
-                  const result = await deleteWaCampaignAction({
-                    campaignId: campaign.id,
-                  });
-                  if (!result.ok) {
-                    setError(result.error);
-                    return;
-                  }
-                  router.push("/app/leads/campaigns");
+          <button
+            type="button"
+            className="btn-secondary crm-campaign-delete"
+            disabled={pending}
+            onClick={() => {
+              const ok = window.confirm(
+                waCampaignDeleteConfirm(campaign.name, campaign.status),
+              );
+              if (!ok) return;
+              setError(null);
+              startTransition(async () => {
+                const result = await deleteWaCampaignAction({
+                  campaignId: campaign.id,
                 });
-              }}
-            >
-              Delete
-            </button>
-          ) : null}
+                if (!result.ok) {
+                  setError(result.error);
+                  return;
+                }
+                router.push("/app/leads/campaigns");
+              });
+            }}
+          >
+            Delete
+          </button>
         </div>
       </section>
 
@@ -422,8 +421,9 @@ export function CrmCampaignDetail({
               aria-label="Campaign audience category"
               value={categoryId}
               onChange={(event) => {
-                setCategoryId(event.target.value);
-                setCategoryPreview(null);
+                const next = event.target.value;
+                setCategoryId(next);
+                void loadCategoryCount(next);
               }}
             >
               {categories.map((option) => (
@@ -436,47 +436,47 @@ export function CrmCampaignDetail({
           </label>
           <div className="crm-campaign-category-row">
             <p className="crm-campaign-meta">
-              {categoryPreview
-                ? `${categoryPreview.count} contact${categoryPreview.count === 1 ? "" : "s"} in ${categoryPreview.label}`
-                : "Pick a category to see how many people you’ll add."}
+              {categoryCounting
+                ? "Counting contacts…"
+                : categoryPreview
+                  ? `${categoryPreview.count} contact${categoryPreview.count === 1 ? "" : "s"} in ${categoryPreview.label}`
+                  : "Add all counts first — we don’t load the whole org on open."}
             </p>
             <button
               type="button"
               className="btn-primary"
-              disabled={pending || !categoryId || (categoryPreview?.count ?? 0) === 0}
+              disabled={pending || categoryCounting || !categoryId}
               onClick={() => {
-                const count = categoryPreview?.count ?? 0;
-                const label = categoryPreview?.label || "this category";
-                if (count === 0) {
-                  setError(`No new contacts in ${label}.`);
-                  return;
-                }
-                const ok = window.confirm(
-                  `Add ${count} contacts from ${label}?`,
-                );
-                if (!ok) return;
-                setError(null);
-                startTransition(async () => {
-                  const result = await addLeadsByCategoryToWaCampaignAction({
-                    campaignId: campaign.id,
-                    category: categoryId,
-                  });
-                  if (!result.ok) {
-                    setError(result.error);
+                void (async () => {
+                  const preview =
+                    categoryPreview ?? (await loadCategoryCount(categoryId));
+                  const count = preview?.count ?? 0;
+                  const label = preview?.label || "this category";
+                  if (count === 0) {
+                    setError(`No new contacts in ${label}.`);
                     return;
                   }
-                  setMessage(
-                    `Added ${result.added}${result.skipped ? ` · ${result.skipped} skipped` : ""}. Pick a template and send.`,
+                  const ok = window.confirm(
+                    `Add ${count} contacts from ${label}?`,
                   );
-                  const next = await previewCategoryLeadsForCampaignAction({
-                    campaignId: campaign.id,
-                    category: categoryId,
+                  if (!ok) return;
+                  setError(null);
+                  startTransition(async () => {
+                    const result = await addLeadsByCategoryToWaCampaignAction({
+                      campaignId: campaign.id,
+                      category: categoryId,
+                    });
+                    if (!result.ok) {
+                      setError(result.error);
+                      return;
+                    }
+                    setMessage(
+                      `Added ${result.added}${result.skipped ? ` · ${result.skipped} skipped` : ""}. Pick a template and send.`,
+                    );
+                    await loadCategoryCount(categoryId);
+                    router.refresh();
                   });
-                  if (next.ok) {
-                    setCategoryPreview({ count: next.count, label: next.label });
-                  }
-                  router.refresh();
-                });
+                })();
               }}
             >
               Add all

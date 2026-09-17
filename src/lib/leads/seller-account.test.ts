@@ -10,10 +10,15 @@ describe("quotation seller account", () => {
     expect(SHEETOMATIC_QUOTATION_ACCOUNT.udyamNumber).toBe(
       "UDYAM-CG-06-0009880",
     );
-    expect(SHEETOMATIC_QUOTATION_ACCOUNT.accountNumber).toBe("44113317196");
-    expect(SHEETOMATIC_QUOTATION_ACCOUNT.ifsc).toBe("SBIN0064531");
-    expect(SHEETOMATIC_QUOTATION_ACCOUNT.upiId).toBe("sheetomatic@sbi");
-    expect(SHEETOMATIC_QUOTATION_ACCOUNT.qrImageSrc).toContain("phonepe-qr");
+    expect(SHEETOMATIC_QUOTATION_ACCOUNT.accountHolder).toBe(
+      "M/S SHEETOMATIC TECHNOLOGIES",
+    );
+    expect(SHEETOMATIC_QUOTATION_ACCOUNT.bankName).toBe("Bandhan Bank");
+    expect(SHEETOMATIC_QUOTATION_ACCOUNT.branch).toBe("Malkharoda");
+    expect(SHEETOMATIC_QUOTATION_ACCOUNT.accountNumber).toBe("2010007774842");
+    expect(SHEETOMATIC_QUOTATION_ACCOUNT.ifsc).toBe("BDBL0001551");
+    expect(SHEETOMATIC_QUOTATION_ACCOUNT.upiId).toBe("8076967912@ptyes");
+    expect(SHEETOMATIC_QUOTATION_ACCOUNT.qrImageSrc).toContain("paytm-qr");
   });
 
   it("uses Sheetomatic details for the primary org or Sheetomatic name", () => {

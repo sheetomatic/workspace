@@ -80,7 +80,10 @@ export default async function FmsInstancePage({ params, searchParams }: PageProp
     | Record<string, unknown>
     | undefined;
 
-  const completedCount = instance.stepStates.filter((s) => s.status === "DONE").length;
+  const completedStops = new Set(
+    instance.stepStates.filter((s) => s.status === "DONE").map((s) => s.stepId),
+  ).size;
+  const totalStops = instance.template.steps.length;
 
   const attachmentRows = instance.stepStates.flatMap((stepState) =>
     stepState.attachments.map((file) => ({
@@ -95,7 +98,7 @@ export default async function FmsInstancePage({ params, searchParams }: PageProp
     <div className="saas-page ws-fms-page ws-fms-sf">
       <TaskPageToolbar
         title={instance.referenceLabel ?? instance.template.name}
-        description={`${instance.template.name} | ${completedCount}/${instance.stepStates.length} stops passed`}
+        description={`${instance.template.name} | ${completedStops}/${totalStops} stops passed`}
         actions={
           <Link href={backLink.href} className="btn-secondary btn-sm">
             {backLink.label}
@@ -128,7 +131,7 @@ export default async function FmsInstancePage({ params, searchParams }: PageProp
               <p className="ws-fms-journey-eyebrow">Current stop</p>
               <h2>{activeStep.step.stepName}</h2>
               <p className="ws-fms-journey-work-meta">
-                {completedCount} of {instance.stepStates.length} stops passed ·{" "}
+                {completedStops} of {totalStops} stops passed ·{" "}
                 {instance.template.name}
               </p>
             </div>

@@ -61,6 +61,10 @@ export function QuotationAccountSettingsPanel({
           <dd>{account.bankName}</dd>
         </div>
         <div>
+          <dt>Branch</dt>
+          <dd>{account.branch}</dd>
+        </div>
+        <div>
           <dt>Account number</dt>
           <dd>{account.accountNumber}</dd>
         </div>
@@ -78,7 +82,7 @@ export function QuotationAccountSettingsPanel({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={account.qrImageSrc}
-              alt={`PhonePe QR — pay ${account.accountHolder}`}
+              alt={`Paytm UPI QR — pay ${account.accountHolder}`}
               style={{
                 width: 148,
                 height: "auto",

@@ -1,7 +1,8 @@
 "use client";
 
-import { Clock, Plus, Settings2, User } from "lucide-react";
+import { Clock, GitBranch, Plus, Settings2, User } from "lucide-react";
 import type { FmsFlowchartStep } from "@/lib/fms/flow-design";
+import { summarizeRouteRule } from "@/lib/fms/route-rules";
 
 type Member = { id: string; name: string; email: string };
 
@@ -153,6 +154,12 @@ export function FmsN8nFlowView({
                 {step.howInstructions ? (
                   <p className="ws-fms-n8n-how" title={step.howInstructions}>
                     {step.howInstructions}
+                  </p>
+                ) : null}
+                {step.routeRules?.[0] ? (
+                  <p className="ws-fms-n8n-route">
+                    <GitBranch size={11} aria-hidden />
+                    {summarizeRouteRule(step.routeRules[0], steps)}
                   </p>
                 ) : null}
               </div>

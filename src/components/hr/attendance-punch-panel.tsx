@@ -90,13 +90,9 @@ export function AttendancePunchPanel({
   const verifyLabel =
     punchState === "not_started"
       ? null
-      : verifyStatus === "PENDING"
-        ? "Pending manager verify — not payable until approved"
-        : verifyStatus === "REJECTED"
-          ? "Check-in rejected"
-          : verifyStatus === "VERIFIED"
-            ? "Verified"
-            : null;
+      : verifyStatus === "REJECTED"
+        ? "Check-in rejected"
+        : null;
 
   return (
     <section className="ws-attendance-punch-panel">

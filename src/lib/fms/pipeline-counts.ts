@@ -57,25 +57,28 @@ export function computeStopCounts(stepStates: StepStateSlice[]): FmsPipelineCoun
   };
 }
 
-export function computeFmsPipelineCounts(
-  instances: InstanceSlice[],
-): FmsPipelineCounts {
-  let onTrack = 0;
-  let delayed = 0;
-  let pending = 0;
+type InProgressStepSlice = StepStateSlice & { instanceId: string };
 
-  for (const job of instances) {
-    const current = job.stepStates.find((step) => step.status === "IN_PROGRESS");
-    if (!current) {
-      pending += 1;
+/** Tile counts from ACTIVE job count + current IN_PROGRESS stops only. */
+export function pipelineCountsFromInProgressSteps(params: {
+  activeInstanceCount: number;
+  inProgressSteps: InProgressStepSlice[];
+}): FmsPipelineCounts {
+  const seen = new Set<string>();
+  let delayed = 0;
+  let onTrack = 0;
+
+  for (const step of params.inProgressSteps) {
+    if (seen.has(step.instanceId)) {
       continue;
     }
+    seen.add(step.instanceId);
     if (
       isStepOverdue(
-        current.status,
-        current.plannedAt,
-        current.actualAt,
-        current.delayMinutes,
+        step.status,
+        step.plannedAt,
+        step.actualAt,
+        step.delayMinutes,
       )
     ) {
       delayed += 1;
@@ -85,9 +88,26 @@ export function computeFmsPipelineCounts(
   }
 
   return {
-    active: instances.length,
+    active: params.activeInstanceCount,
     onTrack,
     delayed,
-    pending,
+    pending: Math.max(0, params.activeInstanceCount - seen.size),
   };
+}
+
+export function computeFmsPipelineCounts(
+  instances: InstanceSlice[],
+): FmsPipelineCounts {
+  const inProgressSteps: InProgressStepSlice[] = [];
+  for (const [index, job] of instances.entries()) {
+    const current = job.stepStates.find((step) => step.status === "IN_PROGRESS");
+    if (!current) {
+      continue;
+    }
+    inProgressSteps.push({ ...current, instanceId: String(index) });
+  }
+  return pipelineCountsFromInProgressSteps({
+    activeInstanceCount: instances.length,
+    inProgressSteps,
+  });
 }

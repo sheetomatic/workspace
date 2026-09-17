@@ -9,16 +9,13 @@ import {
   Users,
   Wrench,
 } from "lucide-react";
-import type { SessionUser } from "@/lib/auth";
-import { canCreateTasks } from "@/lib/tasks";
 
 function navIsActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function ChecklistsModuleNav({ user }: { user: SessionUser }) {
+export function ChecklistsModuleNav({ isManager }: { isManager: boolean }) {
   const pathname = usePathname();
-  const isManager = canCreateTasks(user.role);
 
   const items = [
     {

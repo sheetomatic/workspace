@@ -13,6 +13,7 @@ import {
   formatTatClock,
   liveDelayMinutes,
 } from "@/lib/fms/step-display";
+import { latestFmsVisitByStepId } from "@/lib/fms/route-rules";
 import type { FmsSlaConfig } from "@/lib/fms/constants";
 import type { FmsStepManageMeta } from "@/components/saas/fms-step-info-modal";
 
@@ -36,6 +37,7 @@ type StepDef = {
 type StepState = {
   id: string;
   stepId: string;
+  visitIndex?: number;
   status: FmsStepStatus;
   plannedAt: string | null;
   actualAt: string | null;
@@ -94,7 +96,9 @@ export function FmsTrackerRowDetail({
   returnTemplateId?: string;
   onCompleteStep?: (stepStateId: string) => void;
 }) {
-  const stepByStepId = new Map(stepStates.map((state) => [state.stepId, state]));
+  const stepByStepId = latestFmsVisitByStepId(
+    stepStates.map((state) => ({ ...state, visitIndex: state.visitIndex ?? 0 })),
+  );
   const activeState = stepStates.find((state) => state.status === "IN_PROGRESS");
   const activeStepIndex = activeState
     ? steps.findIndex((step) => step.id === activeState.stepId)

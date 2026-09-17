@@ -12,19 +12,32 @@ import {
   type FmsSlaConfig,
   type FmsWorkingDaysConfig,
 } from "@/lib/fms/constants";
+import {
+  MAX_FMS_STEP_VISITS,
+  firstMatchingRouteRule,
+  nextVisitIndexForStep,
+  parseRouteRules,
+  planFmsAdvance,
+  visitCountForStep,
+  type FmsAdvancePlan,
+} from "@/lib/fms/route-rules";
 
 type StepWithConfig = FmsTemplateStep;
+
+type PipelineStepState = {
+  id: string;
+  stepId: string;
+  visitIndex: number;
+  ownerUserId: string | null;
+  status: string;
+};
 
 type InstanceWithPipeline = {
   id: string;
   status: string;
+  submission: { values: Prisma.JsonValue } | null;
   template: FmsTemplate & { steps: StepWithConfig[] };
-  stepStates: Array<{
-    id: string;
-    stepId: string;
-    ownerUserId: string | null;
-    status: string;
-  }>;
+  stepStates: PipelineStepState[];
 };
 
 function workingDaysFromTemplate(template: FmsTemplate): FmsWorkingDaysConfig {
@@ -47,6 +60,13 @@ export function buildReferenceLabel(
   return `Job ${new Date().toLocaleString("en-IN")}`;
 }
 
+function jsonRecord(raw: unknown): Record<string, unknown> {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return {};
+  }
+  return raw as Record<string, unknown>;
+}
+
 async function planAllStepsFromAnchor(
   instance: InstanceWithPipeline,
   startIndex: number,
@@ -59,8 +79,10 @@ async function planAllStepsFromAnchor(
 
   for (let index = startIndex; index < steps.length; index += 1) {
     const step = steps[index]!;
-    const state = instance.stepStates.find((item) => item.stepId === step.id);
-    if (!state || state.status !== "PENDING") {
+    const state = instance.stepStates.find(
+      (item) => item.stepId === step.id && item.status === "PENDING",
+    );
+    if (!state) {
       continue;
     }
     const plannedAt = computePlannedAt(
@@ -82,92 +104,270 @@ async function planAllStepsFromAnchor(
   return plannedByStateId;
 }
 
-async function advancePipelineAfterStep(params: {
+function plannedAtForStep(params: {
+  instance: InstanceWithPipeline;
+  step: StepWithConfig;
+  completedAt: Date;
+  currentIndex: number;
+  plannedByStateId: Map<string, Date | null>;
+  existingStateId?: string;
+}) {
+  const workingDays = workingDaysFromTemplate(params.instance.template);
+  const planMode = parseAlertConfig(params.instance.template.alertConfig).planMode;
+  if (planMode === "ON_PREV_ACTUAL") {
+    return computePlannedAt(
+      params.step.slaType,
+      params.step.slaConfig as FmsSlaConfig,
+      params.completedAt,
+      workingDays,
+    );
+  }
+  if (params.existingStateId) {
+    return (
+      params.plannedByStateId.get(params.existingStateId) ??
+      computePlannedAt(
+        params.step.slaType,
+        params.step.slaConfig as FmsSlaConfig,
+        params.completedAt,
+        workingDays,
+      )
+    );
+  }
+  return computePlannedAt(
+    params.step.slaType,
+    params.step.slaConfig as FmsSlaConfig,
+    params.completedAt,
+    workingDays,
+  );
+}
+
+async function skipPendingSteps(params: {
+  instance: InstanceWithPipeline;
+  stepIds: string[];
+  userId: string;
+  at: Date;
+  note: string;
+}) {
+  for (const stepId of params.stepIds) {
+    const pending = params.instance.stepStates.find(
+      (state) => state.stepId === stepId && state.status === "PENDING",
+    );
+    if (!pending) {
+      continue;
+    }
+    await prisma.fmsStepState.update({
+      where: { id: pending.id },
+      data: {
+        status: "SKIPPED",
+        actualAt: params.at,
+        delayMinutes: null,
+        completedByUserId: params.userId,
+        notes: params.note,
+      },
+    });
+    pending.status = "SKIPPED";
+  }
+}
+
+async function activateStep(params: {
+  instance: InstanceWithPipeline;
+  step: StepWithConfig;
+  completedAt: Date;
+  currentIndex: number;
+  plannedByStateId: Map<string, Date | null>;
+}) {
+  const existingPending = params.instance.stepStates.find(
+    (state) => state.stepId === params.step.id && state.status === "PENDING",
+  );
+  const visitCount = visitCountForStep(
+    params.instance.stepStates,
+    params.step.id,
+  );
+
+  if (!existingPending && visitCount >= MAX_FMS_STEP_VISITS) {
+    throw new Error(
+      `"${params.step.stepName}" already ran ${MAX_FMS_STEP_VISITS} times on this job. Ask a manager to skip or cancel.`,
+    );
+  }
+
+  const computedPlanned = plannedAtForStep({
+    instance: params.instance,
+    step: params.step,
+    completedAt: params.completedAt,
+    currentIndex: params.currentIndex,
+    plannedByStateId: params.plannedByStateId,
+    existingStateId: existingPending?.id,
+  });
+  const planMode = parseAlertConfig(params.instance.template.alertConfig).planMode;
+
+  if (existingPending) {
+    const persisted = await prisma.fmsStepState.findUnique({
+      where: { id: existingPending.id },
+      select: { plannedAt: true },
+    });
+    const plannedAt =
+      planMode === "ON_PREV_ACTUAL"
+        ? computedPlanned
+        : (params.plannedByStateId.get(existingPending.id) ??
+          persisted?.plannedAt ??
+          computedPlanned);
+    await prisma.fmsStepState.update({
+      where: { id: existingPending.id },
+      data: {
+        status: "IN_PROGRESS",
+        plannedAt,
+        ownerUserId: existingPending.ownerUserId ?? params.step.defaultOwnerUserId,
+        whatsappAssignSentAt: null,
+        whatsappDueSoonSentAt: null,
+        whatsappSameDaySentAt: null,
+        whatsappOverdueSentAt: null,
+      },
+    });
+    void notifyFmsStepAssigned(existingPending.id);
+    return;
+  }
+
+  const created = await prisma.fmsStepState.create({
+    data: {
+      instanceId: params.instance.id,
+      stepId: params.step.id,
+      visitIndex: nextVisitIndexForStep(
+        params.instance.stepStates,
+        params.step.id,
+      ),
+      status: "IN_PROGRESS",
+      ownerUserId: params.step.defaultOwnerUserId,
+      plannedAt: computedPlanned,
+      whatsappAssignSentAt: null,
+      whatsappDueSoonSentAt: null,
+      whatsappSameDaySentAt: null,
+      whatsappOverdueSentAt: null,
+    },
+  });
+  void notifyFmsStepAssigned(created.id);
+}
+
+async function completeJob(params: {
+  instance: InstanceWithPipeline;
+  organizationId: string;
+  completedByUserId: string;
+}) {
+  await prisma.fmsInstance.update({
+    where: { id: params.instance.id },
+    data: { status: "COMPLETED" },
+  });
+  await handleFmsInstanceCompleted(
+    params.instance.id,
+    params.organizationId,
+    params.completedByUserId,
+  );
+}
+
+async function applyAdvancePlan(params: {
   instance: InstanceWithPipeline;
   currentStepId: string;
   completedAt: Date;
   organizationId: string;
   completedByUserId: string;
+  plan: FmsAdvancePlan;
 }): Promise<boolean> {
   const { instance, currentStepId, completedAt } = params;
-  const planMode = parseAlertConfig(instance.template.alertConfig).planMode;
   const currentIndex = instance.template.steps.findIndex(
-    (s) => s.id === currentStepId,
+    (step) => step.id === currentStepId,
   );
-  const nextStep = instance.template.steps[currentIndex + 1];
+  const planMode = parseAlertConfig(instance.template.alertConfig).planMode;
+  let plannedByStateId = new Map<string, Date | null>();
 
-  if (nextStep) {
-    const workingDays = workingDaysFromTemplate(instance.template);
-    const nextState = instance.stepStates.find((s) => s.stepId === nextStep.id);
-    let plannedByStateId = new Map<string, Date | null>();
-
-    if (planMode === "AUTO_TAT_ALL" && currentIndex === 0) {
-      plannedByStateId = await planAllStepsFromAnchor(
-        instance,
-        currentIndex + 1,
-        completedAt,
-      );
-    }
-
-    let plannedAt: Date | null;
-    if (planMode === "ON_PREV_ACTUAL") {
-      plannedAt = computePlannedAt(
-        nextStep.slaType,
-        nextStep.slaConfig as FmsSlaConfig,
-        completedAt,
-        workingDays,
-      );
-    } else if (nextState) {
-      const persisted = await prisma.fmsStepState.findUnique({
-        where: { id: nextState.id },
-        select: { plannedAt: true },
-      });
-      plannedAt =
-        plannedByStateId.get(nextState.id) ??
-        persisted?.plannedAt ??
-        computePlannedAt(
-          nextStep.slaType,
-          nextStep.slaConfig as FmsSlaConfig,
-          completedAt,
-          workingDays,
-        );
-    } else {
-      plannedAt = computePlannedAt(
-        nextStep.slaType,
-        nextStep.slaConfig as FmsSlaConfig,
-        completedAt,
-        workingDays,
-      );
-    }
-
-    if (nextState) {
-      await prisma.fmsStepState.update({
-        where: { id: nextState.id },
-        data: {
-          status: "IN_PROGRESS",
-          plannedAt,
-          ownerUserId: nextState.ownerUserId ?? nextStep.defaultOwnerUserId,
-          whatsappAssignSentAt: null,
-          whatsappDueSoonSentAt: null,
-          whatsappSameDaySentAt: null,
-          whatsappOverdueSentAt: null,
-        },
-      });
-      void notifyFmsStepAssigned(nextState.id);
-    }
-    return false;
+  if (planMode === "AUTO_TAT_ALL" && currentIndex === 0) {
+    plannedByStateId = await planAllStepsFromAnchor(
+      instance,
+      currentIndex + 1,
+      completedAt,
+    );
   }
 
-  await prisma.fmsInstance.update({
-    where: { id: instance.id },
-    data: { status: "COMPLETED" },
+  await skipPendingSteps({
+    instance,
+    stepIds: params.plan.skipStepIds,
+    userId: params.completedByUserId,
+    at: completedAt,
+    note: "Skipped by workflow condition",
   });
-  await handleFmsInstanceCompleted(
-    instance.id,
-    params.organizationId,
-    params.completedByUserId,
+
+  if (params.plan.kind === "complete_job") {
+    await completeJob({
+      instance,
+      organizationId: params.organizationId,
+      completedByUserId: params.completedByUserId,
+    });
+    return true;
+  }
+
+  const nextStepId = params.plan.stepId;
+  const nextStep = instance.template.steps.find((step) => step.id === nextStepId);
+  if (!nextStep) {
+    await completeJob({
+      instance,
+      organizationId: params.organizationId,
+      completedByUserId: params.completedByUserId,
+    });
+    return true;
+  }
+
+  await activateStep({
+    instance,
+    step: nextStep,
+    completedAt,
+    currentIndex,
+    plannedByStateId,
+  });
+  return false;
+}
+
+function planForCompletedStep(params: {
+  instance: InstanceWithPipeline;
+  currentStepId: string;
+  completionValues: Record<string, unknown>;
+  useRouteRules: boolean;
+}): FmsAdvancePlan {
+  const current = params.instance.template.steps.find(
+    (step) => step.id === params.currentStepId,
   );
-  return true;
+  const rule = params.useRouteRules
+    ? firstMatchingRouteRule(parseRouteRules(current?.routeRules), {
+        completion: params.completionValues,
+        intake: jsonRecord(params.instance.submission?.values),
+      })
+    : null;
+  return planFmsAdvance({
+    steps: params.instance.template.steps,
+    currentStepId: params.currentStepId,
+    rule,
+  });
+}
+
+function assertCycleAllowed(
+  instance: InstanceWithPipeline,
+  plan: FmsAdvancePlan,
+) {
+  if (plan.kind !== "activate") {
+    return;
+  }
+  const target = instance.template.steps.find((step) => step.id === plan.stepId);
+  if (!target) {
+    return;
+  }
+  const hasPending = instance.stepStates.some(
+    (state) => state.stepId === target.id && state.status === "PENDING",
+  );
+  if (hasPending) {
+    return;
+  }
+  if (visitCountForStep(instance.stepStates, target.id) >= MAX_FMS_STEP_VISITS) {
+    throw new Error(
+      `"${target.stepName}" already ran ${MAX_FMS_STEP_VISITS} times on this job. Ask a manager to skip or cancel.`,
+    );
+  }
 }
 
 export async function handleFmsStepHandoffAfterComplete(params: {
@@ -190,10 +390,11 @@ async function loadInstancePipeline(stepStateId: string, organizationId: string)
       step: true,
       instance: {
         include: {
+          submission: { select: { values: true } },
           template: {
             include: { steps: { orderBy: { sortOrder: "asc" } } },
           },
-          stepStates: { include: { step: true } },
+          stepStates: { orderBy: { visitIndex: "asc" } },
         },
       },
     },
@@ -220,19 +421,19 @@ export async function createFmsInstanceFromSubmission(params: {
       status: "ACTIVE",
       stepStates: {
         create: sortedSteps.map((step, index) => {
-          const anchor = index === 0 ? startedAt : startedAt;
           const plannedAt =
             index === 0
               ? computePlannedAt(
                   step.slaType,
                   step.slaConfig as FmsSlaConfig,
-                  anchor,
+                  startedAt,
                   workingDays,
                 )
               : null;
 
           return {
             stepId: step.id,
+            visitIndex: 0,
             ownerUserId: step.defaultOwnerUserId,
             plannedAt,
             status: index === 0 ? "IN_PROGRESS" : "PENDING",
@@ -275,6 +476,15 @@ export async function completeFmsStep(params: {
     throw new Error("Only the active step can be completed.");
   }
 
+  const completionValues = params.completionValues ?? {};
+  const plan = planForCompletedStep({
+    instance: stepState.instance,
+    currentStepId: stepState.stepId,
+    completionValues,
+    useRouteRules: true,
+  });
+  assertCycleAllowed(stepState.instance, plan);
+
   const now = new Date();
   const delayMinutes = computeDelayMinutes(stepState.plannedAt, now, now);
 
@@ -286,16 +496,17 @@ export async function completeFmsStep(params: {
       delayMinutes,
       completedByUserId: params.userId,
       notes: params.notes?.trim() || null,
-      completionValues: (params.completionValues ?? {}) as Prisma.InputJsonValue,
+      completionValues: completionValues as Prisma.InputJsonValue,
     },
   });
 
-  await advancePipelineAfterStep({
+  await applyAdvancePlan({
     instance: stepState.instance,
     currentStepId: stepState.stepId,
     completedAt: now,
     organizationId: params.organizationId,
     completedByUserId: params.userId,
+    plan,
   });
 
   await handleFmsStepHandoffAfterComplete({
@@ -303,7 +514,7 @@ export async function completeFmsStep(params: {
     organizationId: params.organizationId,
     completedByUserId: params.userId,
     stepName: stepState.step.stepName,
-    completionValues: params.completionValues ?? {},
+    completionValues,
   });
 }
 
@@ -327,6 +538,13 @@ export async function skipFmsStep(params: {
   }
 
   const now = new Date();
+  const plan = planForCompletedStep({
+    instance: stepState.instance,
+    currentStepId: stepState.stepId,
+    completionValues: {},
+    useRouteRules: false,
+  });
+  assertCycleAllowed(stepState.instance, plan);
 
   await prisma.fmsStepState.update({
     where: { id: stepState.id },
@@ -339,12 +557,13 @@ export async function skipFmsStep(params: {
     },
   });
 
-  await advancePipelineAfterStep({
+  await applyAdvancePlan({
     instance: stepState.instance,
     currentStepId: stepState.stepId,
     completedAt: now,
     organizationId: params.organizationId,
     completedByUserId: params.userId,
+    plan,
   });
 }
 

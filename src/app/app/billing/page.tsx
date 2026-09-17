@@ -114,6 +114,7 @@ export default async function WorkspaceBillingPage() {
           <p>
             UPI: <code>{SHEETOMATIC_QUOTATION_ACCOUNT.upiId}</code> ·{" "}
             {SHEETOMATIC_QUOTATION_ACCOUNT.bankName}{" "}
+            {SHEETOMATIC_QUOTATION_ACCOUNT.branch}{" "}
             {SHEETOMATIC_QUOTATION_ACCOUNT.accountNumber} /{" "}
             {SHEETOMATIC_QUOTATION_ACCOUNT.ifsc}
           </p>

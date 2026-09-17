@@ -38,7 +38,7 @@ export type CrmClientGroup = {
   rows: CrmClientGroupRow[];
   /** Per-group nurture event override (e.g. projects due vs follow-up). */
   waEvent?: LeadNurtureEventId;
-  /** Prefill for wa.me WhatsApp button (e.g. Next Time AI reopen). */
+  /** Prefill for wa.me WhatsApp button (e.g. Next Time follow-up). */
   waMessage?: string;
 };
 

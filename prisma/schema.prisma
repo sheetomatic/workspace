@@ -1521,7 +1521,7 @@ enum EmployeeCollarCategory {
   BLUE
 }
 
-/** Self punch starts PENDING; manager mark or approve → VERIFIED. */
+/** Punch/mark Present is VERIFIED immediately. REJECTED remains for explicit manager reject. */
 enum AttendanceVerifyStatus {
   PENDING
   VERIFIED
@@ -2176,6 +2176,7 @@ model FmsTemplateStep {
   allowUpload        Boolean       @default(true)
   allowNotes         Boolean       @default(true)
   captureFields      Json          @default("[]")
+  routeRules         Json          @default("[]")
   stepStates         FmsStepState[]
 
   @@index([templateId, sortOrder])
@@ -2226,6 +2227,7 @@ model FmsStepState {
   instance          FmsInstance       @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   stepId            String
   step              FmsTemplateStep   @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  visitIndex        Int               @default(0)
   ownerUserId       String?
   owner             User?             @relation("FmsStepOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
   plannedAt         DateTime?
@@ -2241,8 +2243,9 @@ model FmsStepState {
   whatsappSameDaySentAt   DateTime?
   whatsappOverdueSentAt   DateTime?
   attachments       FmsStepAttachment[]
+  createdAt         DateTime          @default(now())
 
-  @@unique([instanceId, stepId])
+  @@unique([instanceId, stepId, visitIndex])
   @@index([instanceId, status])
   @@index([ownerUserId, status])
 }

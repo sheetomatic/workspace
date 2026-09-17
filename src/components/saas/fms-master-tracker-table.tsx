@@ -12,6 +12,7 @@ import { FmsTrainRouteSnapshot } from "@/components/saas/fms-train-route-snapsho
 import type { FmsStepManageMeta } from "@/components/saas/fms-step-info-modal";
 import type { FmsSlaConfig } from "@/lib/fms/constants";
 import { fmsFormHref, fmsInstanceHref, type FmsFromContext } from "@/lib/fms/navigation";
+import { latestFmsVisitByStepId } from "@/lib/fms/route-rules";
 import {
   formatDelayLabel,
   isStepOverdue,
@@ -51,6 +52,7 @@ export type TrackerTableBlock = {
     stepStates: {
       id: string;
       stepId: string;
+      visitIndex?: number;
       status: FmsStepStatus;
       plannedAt: string | null;
       actualAt: string | null;
@@ -227,8 +229,11 @@ export function FmsMasterTrackerTable({
               string,
               unknown
             >;
-            const stepByStepId = new Map(
-              instance.stepStates.map((state) => [state.stepId, state]),
+            const stepByStepId = latestFmsVisitByStepId(
+              instance.stepStates.map((state) => ({
+                ...state,
+                visitIndex: state.visitIndex ?? 0,
+              })),
             );
             const snapshotStops = block.steps.map((step) => {
               const state = stepByStepId.get(step.id);

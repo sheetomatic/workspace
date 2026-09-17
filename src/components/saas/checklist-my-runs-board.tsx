@@ -2,16 +2,14 @@
 
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  checklistInitialState,
-  completeChecklistOccurrenceAction,
-} from "@/app/app/checklists/actions";
+import { completeChecklistOccurrenceAction } from "@/app/app/checklists/actions";
+import { fmsInitialState as checklistInitialState } from "@/lib/fms-action-state";
 import { CHECKLIST_FREQUENCY_LABELS, CHECKLIST_TEAM_LABELS } from "@/lib/checklists/constants";
 import { AiVoiceTextarea } from "@/components/saas/ai-voice-textarea";
 
 type Occurrence = {
   id: string;
-  plannedAt: Date;
+  plannedAt: string;
   status: string;
   notes: string | null;
   template: {
@@ -22,7 +20,7 @@ type Occurrence = {
   };
 };
 
-function formatDue(value: Date) {
+function formatDue(value: string | Date) {
   return new Intl.DateTimeFormat("en-IN", {
     dateStyle: "medium",
     timeStyle: "short",

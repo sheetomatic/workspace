@@ -610,11 +610,19 @@ export function slugifyFieldKey(label: string) {
     .slice(0, 48) || "field";
 }
 
+export type FmsCaptureFieldType =
+  | "TEXT"
+  | "NUMBER"
+  | "DATE"
+  | "DATETIME"
+  | "ENUM";
+
 export type FmsCaptureField = {
   key: string;
   label: string;
-  type: "TEXT" | "NUMBER" | "DATE" | "DATETIME";
+  type: FmsCaptureFieldType;
   required?: boolean;
+  choices?: string[];
 };
 
 export type FmsSlaConfig = {

@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/db";
-import { getFmsOpsPage } from "@/lib/fms/queries";
 import { isTaskDueToday } from "@/lib/task-due-urgency";
 import { ACTIVE_TASK_STATUSES } from "@/lib/tasks";
 
@@ -47,19 +46,96 @@ function parsePcUserIds(value: unknown): string[] {
   return value.filter((id): id is string => typeof id === "string" && id.length > 0);
 }
 
+const fmsPcStepSelect = {
+  id: true,
+  instanceId: true,
+  ownerUserId: true,
+  plannedAt: true,
+  status: true,
+  step: { select: { stepName: true } },
+  owner: { select: { name: true, email: true } },
+  instance: {
+    select: {
+      referenceLabel: true,
+      template: { select: { name: true, pcUserIds: true, eaUserId: true } },
+    },
+  },
+} as const;
+
+function toFmsPcWorkItem(
+  step: {
+    id: string;
+    instanceId: string;
+    ownerUserId: string | null;
+    plannedAt: Date | null;
+    status: string;
+    step: { stepName: string };
+    owner: { name: string | null; email: string } | null;
+    instance: {
+      referenceLabel: string | null;
+      template: { name: string; pcUserIds: unknown; eaUserId: string | null };
+    };
+  },
+  ownerFallback: string,
+): PcWorkItem {
+  const now = Date.now();
+  return {
+    id: step.id,
+    kind: "FMS_STEP",
+    title: step.instance.referenceLabel ?? step.instance.template.name,
+    subtitle: step.step.stepName,
+    owner: ownerLabel(step.owner?.name ?? null, step.owner?.email ?? ownerFallback),
+    ownerId: step.ownerUserId,
+    pcUserIds: parsePcUserIds(step.instance.template.pcUserIds),
+    eaUserId: step.instance.template.eaUserId,
+    dueLabel: step.plannedAt ? formatDue(step.plannedAt) : "No SLA",
+    dueAt: step.plannedAt,
+    status: step.status.replaceAll("_", " "),
+    overdue: step.plannedAt ? step.plannedAt.getTime() < now : false,
+    href: `/app/fms/instances/${step.instanceId}?from=ops&action=complete`,
+    completable: false,
+  };
+}
+
+export type ChecklistRunCard = {
+  id: string;
+  plannedAt: string;
+  status: string;
+  notes: string | null;
+  template: {
+    title: string;
+    instructions: string | null;
+    team: string;
+    frequency: string;
+  };
+  assignee: {
+    name: string | null;
+    email: string;
+  };
+};
+
 export async function listMyChecklistPcWork(
   organizationId: string,
   assigneeUserId: string,
-) {
+): Promise<ChecklistRunCard[]> {
   const rows = await prisma.checklistOccurrence.findMany({
     where: {
       organizationId,
       assigneeUserId,
       status: { in: ["PENDING", "OVERDUE"] },
     },
-    include: {
+    select: {
+      id: true,
+      plannedAt: true,
+      status: true,
+      notes: true,
       template: {
-        include: { references: { orderBy: { sortOrder: "asc" } } },
+        select: {
+          title: true,
+          instructions: true,
+          team: true,
+          frequency: true,
+        },
       },
       assignee: { select: { name: true, email: true } },
     },
@@ -67,7 +143,14 @@ export async function listMyChecklistPcWork(
     take: 100,
   });
 
-  return rows;
+  return rows.map((row) => ({
+    id: row.id,
+    plannedAt: row.plannedAt.toISOString(),
+    status: row.status,
+    notes: row.notes,
+    template: row.template,
+    assignee: row.assignee,
+  }));
 }
 
 export async function listMyEaPcWork(organizationId: string, assigneeUserId: string) {
@@ -110,36 +193,12 @@ export async function listMyFmsPcWork(organizationId: string, assigneeUserId: st
       status: "IN_PROGRESS",
       instance: { organizationId, status: "ACTIVE" },
     },
-    include: {
-      step: true,
-      owner: { select: { name: true, email: true } },
-      instance: {
-        include: {
-          template: { select: { name: true, pcUserIds: true, eaUserId: true } },
-        },
-      },
-    },
+    select: fmsPcStepSelect,
     orderBy: { plannedAt: "asc" },
     take: 50,
   });
 
-  const now = Date.now();
-  return steps.map((step) => ({
-    id: step.id,
-    kind: "FMS_STEP" as const,
-    title: step.instance.referenceLabel ?? step.instance.template.name,
-    subtitle: step.step.stepName,
-    owner: ownerLabel(step.owner?.name ?? null, step.owner?.email ?? ""),
-    ownerId: step.ownerUserId,
-    pcUserIds: parsePcUserIds(step.instance.template.pcUserIds),
-    eaUserId: step.instance.template.eaUserId,
-    dueLabel: step.plannedAt ? formatDue(step.plannedAt) : "No SLA",
-    dueAt: step.plannedAt,
-    status: step.status.replaceAll("_", " "),
-    overdue: step.plannedAt ? step.plannedAt.getTime() < now : false,
-    href: `/app/fms/instances/${step.instanceId}?from=ops&action=complete`,
-    completable: false,
-  }));
+  return steps.map((step) => toFmsPcWorkItem(step, ""));
 }
 
 export async function listMyPcWork(organizationId: string, assigneeUserId: string) {
@@ -253,55 +312,17 @@ export async function listOrgEaPcMonitor(organizationId: string) {
 }
 
 export async function listOrgFmsPcMonitor(organizationId: string) {
-  const ops = await getFmsOpsPage(organizationId, { overduePage: 1, unassignedPage: 1 });
-  const now = Date.now();
-
   const inProgress = await prisma.fmsStepState.findMany({
     where: {
       status: "IN_PROGRESS",
-      ownerUserId: { not: null },
       instance: { organizationId, status: "ACTIVE" },
     },
-    include: {
-      step: true,
-      owner: { select: { name: true, email: true } },
-      instance: {
-        include: {
-          template: { select: { name: true, pcUserIds: true, eaUserId: true } },
-        },
-      },
-    },
+    select: fmsPcStepSelect,
     orderBy: { plannedAt: "asc" },
     take: 100,
   });
 
-  const seen = new Set<string>();
-  const items: PcWorkItem[] = [];
-
-  for (const step of [...ops.overdue, ...inProgress]) {
-    if (seen.has(step.id)) {
-      continue;
-    }
-    seen.add(step.id);
-    items.push({
-      id: step.id,
-      kind: "FMS_STEP",
-      title: step.instance.referenceLabel ?? step.instance.template.name,
-      subtitle: step.step.stepName,
-      owner: ownerLabel(step.owner?.name ?? null, step.owner?.email ?? "Unassigned"),
-      ownerId: step.ownerUserId,
-      pcUserIds: parsePcUserIds(step.instance.template.pcUserIds),
-      eaUserId: step.instance.template.eaUserId,
-      dueLabel: step.plannedAt ? formatDue(step.plannedAt) : "No SLA",
-      dueAt: step.plannedAt,
-      status: step.status.replaceAll("_", " "),
-      overdue: step.plannedAt ? step.plannedAt.getTime() < now : false,
-      href: `/app/fms/instances/${step.instanceId}?from=ops&action=complete`,
-      completable: false,
-    });
-  }
-
-  return items;
+  return inProgress.map((step) => toFmsPcWorkItem(step, "Unassigned"));
 }
 
 export async function listOrgPcMonitor(organizationId: string) {
@@ -318,8 +339,14 @@ export async function listOrgPcMonitor(organizationId: string) {
       orderBy: [{ status: "desc" }, { plannedAt: "asc" }],
       take: 100,
     }),
-    listOrgEaPcMonitor(organizationId),
-    listOrgFmsPcMonitor(organizationId),
+    listOrgEaPcMonitor(organizationId).catch((error) => {
+      console.error("[pc-work] org EA monitor failed", error);
+      return [];
+    }),
+    listOrgFmsPcMonitor(organizationId).catch((error) => {
+      console.error("[pc-work] org FMS monitor failed", error);
+      return [];
+    }),
   ]);
 
   const checklistItems: PcWorkItem[] = checklistRuns.map((run) => ({

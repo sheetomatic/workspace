@@ -34,7 +34,7 @@ import {
   Wallet,
 } from "lucide-react";
 import type { SessionUser } from "@/lib/auth";
-import { hasWorkspaceModule } from "@/lib/workspace-modules";
+import { hasWorkspaceModule, resolveFmsHomeHref } from "@/lib/workspace-modules";
 import { getDedicatedClientPortal, isDedicatedClientPortal } from "@/lib/dedicated-client-portals";
 import { PRIMARY_ORG_SLUG } from "@/lib/platform";
 import {
@@ -72,33 +72,34 @@ export type WorkspaceNavSection = {
 const ROLE_ORDER = ["VIEWER", "STAFF", "MANAGER", "ADMIN", "OWNER"] as const;
 
 /** Checklist / EA / PC stay routable but are hidden from the sidebar (not needed for most orgs). */
-const BCI_CHILD_ITEMS: WorkspaceNavItem[] = [
-  {
-    id: "fms",
-    href: "/app/fms",
-    label: "FMS",
-    icon: GitBranch,
-    module: "FMS",
-    matchPrefix: "/app/fms",
-  },
-  {
-    id: "em",
-    href: "/app/em",
-    label: "EM",
-    icon: Presentation,
-    module: "REPORTS",
-    minRole: "MANAGER",
-    matchPrefix: "/app/em",
-  },
-];
-
-/** Collapsible BCI suite — children keep focus-pref ids (fms, checklists, ea, …). CRM is a separate SKU. */
-const BCI_GROUP: WorkspaceNavItem = {
-  href: "/app/fms",
-  label: "BCI",
-  icon: Briefcase,
-  children: BCI_CHILD_ITEMS,
+const BCI_EM_ITEM: WorkspaceNavItem = {
+  id: "em",
+  href: "/app/em",
+  label: "EM",
+  icon: Presentation,
+  module: "REPORTS",
+  minRole: "MANAGER",
+  matchPrefix: "/app/em",
 };
+
+function bciNavGroup(fmsHref: string): WorkspaceNavItem {
+  return {
+    href: fmsHref,
+    label: "BCI",
+    icon: Briefcase,
+    children: [
+      {
+        id: "fms",
+        href: fmsHref,
+        label: "FMS",
+        icon: GitBranch,
+        module: "FMS",
+        matchPrefix: "/app/fms",
+      },
+      BCI_EM_ITEM,
+    ],
+  };
+}
 
 /** Sellable CRM — top-level sibling of BCI, with pipeline sub-modules. */
 const CRM_NAV_ITEM: WorkspaceNavItem = {
@@ -953,7 +954,7 @@ export function getWorkspaceNavSections(params: {
     {
       id: "bci",
       label: "",
-      items: [BCI_GROUP],
+      items: [bciNavGroup(resolveFmsHomeHref(user))],
     },
     {
       id: "sellable",

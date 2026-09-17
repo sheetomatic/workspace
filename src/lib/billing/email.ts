@@ -2,6 +2,7 @@ import { formatBillingDate } from "@/lib/billing/dates";
 import { formatInrPaise } from "@/lib/billing/money";
 import { sendPlainEmail } from "@/lib/integrations/email";
 import { getLoginBaseUrl } from "@/lib/integrations/email-base-url";
+import { SHEETOMATIC_QUOTATION_ACCOUNT } from "@/lib/leads/seller-account";
 
 export async function sendSubscriptionInvoiceEmail(input: {
   toEmail: string;
@@ -48,7 +49,7 @@ export async function sendSubscriptionInvoiceEmail(input: {
     `View and download: ${billingUrl}`,
     `Invoice: ${printUrl}`,
     ``,
-    `Pay by UPI (sheetomatic@sbi) or bank transfer. Reply with the UTR so we can confirm.`,
+    `Pay by UPI (${SHEETOMATIC_QUOTATION_ACCOUNT.upiId}) or bank transfer. Reply with the UTR so we can confirm.`,
     `If payment is not received by the due date, the workspace stops the next day.`,
   ].join("\n");
 
@@ -56,6 +57,6 @@ export async function sendSubscriptionInvoiceEmail(input: {
     toEmail: input.toEmail,
     subject,
     text,
-    html: `<p>${lead}</p><p><strong>${input.organizationName}</strong><br/>Amount: ${amount} (incl. GST)<br/>Due: ${due}</p><p><a href="${billingUrl}">Open billing</a> · <a href="${printUrl}">Download invoice</a></p><p>Pay by UPI <code>sheetomatic@sbi</code> or bank transfer. If payment is not received by the due date, the workspace stops the next day.</p>`,
+    html: `<p>${lead}</p><p><strong>${input.organizationName}</strong><br/>Amount: ${amount} (incl. GST)<br/>Due: ${due}</p><p><a href="${billingUrl}">Open billing</a> · <a href="${printUrl}">Download invoice</a></p><p>Pay by UPI <code>${SHEETOMATIC_QUOTATION_ACCOUNT.upiId}</code> or bank transfer. If payment is not received by the due date, the workspace stops the next day.</p>`,
   });
 }

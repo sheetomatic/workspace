@@ -46,6 +46,13 @@ export const WORKSPACE_MODULE_HREFS: Partial<Record<WorkspaceModule, string>> = 
   SOCIAL: "/app/social",
 };
 
+/** Sidebar/home destination — skip the /app/fms index redirect. */
+export function resolveFmsHomeHref(user: Pick<SessionUser, "role">) {
+  return hasMinimumRole(user.role, "MANAGER")
+    ? "/app/fms/lines"
+    : "/app/fms/my-stops";
+}
+
 /** Defaults when admin leaves modules empty (legacy rows use migration backfill).
  * HR is included for managers/staff so invites inherit HRMS when the org allows it
  * (clamped by org `allowedModules` / invite form). */

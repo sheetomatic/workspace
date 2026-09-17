@@ -1,10 +1,8 @@
 import { after } from "next/server";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { LeadsCrmWorkspace } from "@/components/saas/leads-crm-workspace";
-import { LeadsTeamPerformance } from "@/components/saas/leads-team-performance";
-import { currentMonthKeyIst, getTeamPerformance } from "@/lib/leads/team-performance";
 import { LeadsPeriodToolbar } from "@/components/saas/leads-period-toolbar";
-import { LeadsPipelineCards } from "@/components/saas/leads-pipeline-cards";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import "@/components/saas/leads-machine.css";
 import { runLeadsBackgroundMaintenance } from "@/lib/leads/backfill";
@@ -22,14 +20,16 @@ import { parseCrmDrawerTab } from "@/lib/leads/crm-open";
 import { parseLeadsListParams } from "@/lib/leads/list-params";
 import { parseLeadsPeriodParams } from "@/lib/leads/period";
 import {
-  getCrmNumbersMetricsForPeriod,
   getGoogleSheetsLeadConnection,
   getInboundLeadForCrmDrawer,
   getInboundLeadWorkspaceTotal,
-  getLeadsMachineStatsForPeriod,
-  getLeadsPipeMetricsForPeriod,
   listInboundLeadsForPeriodPaginated,
 } from "@/lib/leads/queries";
+import {
+  serializeCrmDrawerLead,
+  serializeCrmListLead,
+  withCrmDrawerExtras,
+} from "@/lib/leads/crm-lead-payload";
 import { importSheetLeadsMatchingSearch } from "@/lib/leads/search-sheet";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
@@ -43,6 +43,8 @@ import { getAllSalesOrdersByLeadIds } from "@/lib/leads/sales-orders";
 import { listWorkspaceMembers } from "@/lib/workspace";
 import { withDbRetry } from "@/lib/db";
 import { mapPendingTemplateOrdersByLeadIds } from "@/lib/templates/store";
+import { getWorkspaceOrganization } from "@/lib/workspace-shell-data";
+import { LeadsCrmSecondary } from "@/app/app/leads/(crm)/leads-crm-secondary";
 import Link from "next/link";
 
 type PageProps = {
@@ -65,119 +67,6 @@ type LeadsListSearchParams = {
   tab?: string;
   view?: string;
 };
-
-type CrmDrawerLead = NonNullable<
-  Awaited<ReturnType<typeof getInboundLeadForCrmDrawer>>
->;
-
-function serializeLead(lead: CrmDrawerLead) {
-  return {
-    id: lead.id,
-    channel: lead.channel,
-    name: lead.name,
-    phone: lead.phone,
-    email: lead.email,
-    company: lead.company,
-    city: lead.city,
-    address: lead.address,
-    zipCode: lead.zipCode,
-    requirement: lead.requirement,
-    category: lead.category,
-    status: lead.status,
-    aiSuggestedStatus: lead.aiSuggestedStatus,
-    callingStatus: lead.callingStatus,
-    projectStatus: lead.projectStatus,
-    trainingRequired: lead.trainingRequired,
-    score: lead.score ?? null,
-    temperature: lead.temperature ?? null,
-    utmSource: lead.utmSource ?? null,
-    utmMedium: lead.utmMedium ?? null,
-    utmCampaign: lead.utmCampaign ?? null,
-    utmContent: lead.utmContent ?? null,
-    utmTerm: lead.utmTerm ?? null,
-    campaign: lead.campaign ?? null,
-    landingPage: lead.landingPage ?? null,
-    expectedCloseAt: lead.expectedCloseAt?.toISOString() ?? null,
-    winProbability: lead.winProbability ?? null,
-    archivedAt: lead.archivedAt?.toISOString() ?? null,
-    discussionNotes: lead.discussionNotes,
-    meetingNotes: lead.meetingNotes,
-    quotationValue: lead.quotationValue?.toString() ?? null,
-    pipeValue: lead.pipeValue?.toString() ?? null,
-    nextFollowUpAt: lead.nextFollowUpAt?.toISOString() ?? null,
-    capturedAt: lead.capturedAt?.toISOString() ?? null,
-    modifiedAt: lead.modifiedAt?.toISOString() ?? null,
-    createdAt: lead.createdAt.toISOString(),
-    assignedTo: lead.assignedTo,
-    followUps: lead.followUps.map((item) => ({
-      id: item.id,
-      scheduledAt: item.scheduledAt.toISOString(),
-      notes: item.notes,
-      type: item.type,
-    })),
-    payments: (lead.payments ?? []).map((item) => ({
-      id: item.id,
-      paymentType: item.paymentType,
-      receivedAmount: item.receivedAmount.toString(),
-      receivedDate: item.receivedDate.toISOString(),
-      paymentMethod: item.paymentMethod,
-      notes: item.notes,
-    })),
-    quotations: (lead.quotations ?? []).map((item) => ({
-      id: item.id,
-      quotationNumber: item.quotationNumber,
-      requestType: item.requestType,
-      status: item.status,
-      revisionNumber: item.revisionNumber,
-      totalAmount: item.totalAmount.toString(),
-      subtotal: item.subtotal.toString(),
-      quotationDate: item.quotationDate.toISOString(),
-      projectStartDate: item.projectStartDate?.toISOString() ?? null,
-      endDate: item.endDate?.toISOString() ?? null,
-      durationDays: item.durationDays,
-      company: item.company,
-      address: item.address,
-      zipCode: item.zipCode,
-      scopeNotes: item.scopeNotes,
-      paymentTerms: item.paymentTerms,
-      advanceRequired: item.advanceRequired?.toString() ?? null,
-      notes: item.notes,
-      sentAt: item.sentAt?.toISOString() ?? null,
-      lockedAt: item.lockedAt?.toISOString() ?? null,
-      shareToken: item.shareToken,
-      lines: (item.lines ?? []).map((line) => ({
-        id: line.id,
-        serviceCategory: line.serviceCategory,
-        subCategory: line.subCategory,
-        quantity: line.quantity,
-        unitPrice: line.unitPrice.toString(),
-        lineTotal: line.lineTotal.toString(),
-      })),
-    })),
-    offeredServices: (lead.offeredServices ?? []).map((item) => ({
-      id: item.id,
-      catalogId: item.catalogId,
-      serviceCategory: item.serviceCategory,
-      subCategory: item.subCategory,
-      unitPrice: item.unitPrice?.toString() ?? null,
-    })),
-    activities: (lead.activities ?? []).map((item) => ({
-      id: item.id,
-      type: item.type,
-      body: item.body,
-      createdAt: item.createdAt.toISOString(),
-      createdBy: item.createdBy,
-    })),
-    fmsInstance: lead.fmsInstance
-      ? {
-          id: lead.fmsInstance.id,
-          referenceLabel: lead.fmsInstance.referenceLabel,
-          status: lead.fmsInstance.status,
-          template: { name: lead.fmsInstance.template.name },
-        }
-      : null,
-  };
-}
 
 export default async function LeadsMachinePage({ searchParams }: PageProps) {
   const user = await requireSession(undefined, { module: "CRM" });
@@ -229,15 +118,12 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
   if (focusMode && focusLeadId) {
     const fmsEnabled = hasWorkspaceModule(user, "FMS");
     const [lead, teamMembers, serviceCatalog, organization, fmsTemplates, campaignOptions] =
-      await withDbRetry((db) =>
+      await withDbRetry(() =>
         Promise.all([
           getInboundLeadForCrmDrawer(user.organizationId, focusLeadId, leadScope),
           listWorkspaceMembers(user.organizationId),
           listLeadServiceCatalog(user.organizationId),
-          db.organization.findUnique({
-            where: { id: user.organizationId },
-            select: { name: true, logoUrl: true },
-          }),
+          getWorkspaceOrganization(user.organizationId),
           fmsEnabled
             ? listActiveFmsTemplatesForLead(user.organizationId)
             : Promise.resolve([]),
@@ -253,12 +139,11 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
       : new Map();
     const leadsWithSalesOrders = lead
       ? [
-          {
-            ...serializeLead(lead),
-            salesOrders: salesOrdersByLead.get(lead.id) ?? [],
-            salesOrder: (salesOrdersByLead.get(lead.id) ?? [])[0] ?? null,
-            pendingTemplateOrders: pendingTemplateByLead.get(lead.id) ?? [],
-          },
+          withCrmDrawerExtras(
+            serializeCrmDrawerLead(lead),
+            salesOrdersByLead.get(lead.id) ?? [],
+            pendingTemplateByLead.get(lead.id) ?? [],
+          ),
         ]
       : [];
 
@@ -321,84 +206,43 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
     }
   }
 
-  // Critical path first (list + members + org). Heavy dashboards / sync
-  // metadata load second and soft-fail so Neon cold-start does not blank CRM.
   const fmsEnabled = hasWorkspaceModule(user, "FMS");
-  const [leadPage, teamMembers, serviceCatalog, organization, workspaceTotal, fmsTemplates, campaignOptions] =
-    await withDbRetry((db) =>
-      Promise.all([
-        listInboundLeadsForPeriodPaginated(user.organizationId, period, {
-          page: listParams.page,
-          pageSize: listParams.pageSize,
-          sort: listParams.sort,
-          status: listParams.status,
-          category: listParams.category,
-          q: listParams.q,
-          includeArchived: listParams.includeArchived || Boolean(listParams.q),
-          assignedToId: leadScope?.assignedToId,
-          excludeStatuses:
-            listParams.q || listParams.status
-              ? undefined
-              : NEXT_TIME_LEAD_STATUSES,
-        }),
-        listWorkspaceMembers(user.organizationId),
-        listLeadServiceCatalog(user.organizationId),
-        db.organization.findUnique({
-          where: { id: user.organizationId },
-          select: { name: true, logoUrl: true },
-        }),
-        getInboundLeadWorkspaceTotal(user.organizationId, leadScope),
-        fmsEnabled
-          ? listActiveFmsTemplatesForLead(user.organizationId)
-          : Promise.resolve([]),
-        listWaCampaignOptions(user.organizationId),
-      ]),
-    );
-
-  const emptyPeriodStats = {
-    total: 0,
-    withFms: 0,
-    openPipeline: 0,
-    won: 0,
-    lost: 0,
-    conversionRate: 0,
-    byChannel: {} as Record<string, number>,
-    byStatus: {} as Record<string, number>,
-    periodLabel: period.periodLabel,
-  };
-
-  let periodStats = emptyPeriodStats;
-  let pipeMetrics: Awaited<ReturnType<typeof getLeadsPipeMetricsForPeriod>> | null =
-    null;
-  let numbersMetrics: Awaited<
-    ReturnType<typeof getCrmNumbersMetricsForPeriod>
-  > | null = null;
-  let sheetsConnection: Awaited<
-    ReturnType<typeof getGoogleSheetsLeadConnection>
-  > | null = null;
-  let teamPerformance: Awaited<ReturnType<typeof getTeamPerformance>> | null =
-    null;
-
-  try {
-    const secondary = await withDbRetry(() =>
-      Promise.all([
-        getLeadsMachineStatsForPeriod(user.organizationId, period, leadScope),
-        getLeadsPipeMetricsForPeriod(user.organizationId, period, leadScope),
-        getCrmNumbersMetricsForPeriod(user.organizationId, period, leadScope),
-        getGoogleSheetsLeadConnection(user.organizationId),
-        canSeeAllLeads
-          ? getTeamPerformance(user.organizationId, currentMonthKeyIst())
-          : Promise.resolve(null),
-      ]),
-    );
-    periodStats = secondary[0];
-    pipeMetrics = secondary[1];
-    numbersMetrics = secondary[2];
-    sheetsConnection = secondary[3];
-    teamPerformance = secondary[4];
-  } catch (error) {
-    console.error("leads secondary metrics unavailable", error);
-  }
+  const [
+    leadPage,
+    teamMembers,
+    serviceCatalog,
+    organization,
+    workspaceTotal,
+    fmsTemplates,
+    campaignOptions,
+    sheetsConnection,
+  ] = await withDbRetry(() =>
+    Promise.all([
+      listInboundLeadsForPeriodPaginated(user.organizationId, period, {
+        page: listParams.page,
+        pageSize: listParams.pageSize,
+        sort: listParams.sort,
+        status: listParams.status,
+        category: listParams.category,
+        q: listParams.q,
+        includeArchived: listParams.includeArchived || Boolean(listParams.q),
+        assignedToId: leadScope?.assignedToId,
+        excludeStatuses:
+          listParams.q || listParams.status
+            ? undefined
+            : NEXT_TIME_LEAD_STATUSES,
+      }),
+      listWorkspaceMembers(user.organizationId),
+      listLeadServiceCatalog(user.organizationId),
+      getWorkspaceOrganization(user.organizationId),
+      getInboundLeadWorkspaceTotal(user.organizationId, leadScope),
+      fmsEnabled
+        ? listActiveFmsTemplatesForLead(user.organizationId)
+        : Promise.resolve([]),
+      listWaCampaignOptions(user.organizationId),
+      getGoogleSheetsLeadConnection(user.organizationId),
+    ]),
+  );
 
   const lastSyncLabel = sheetsConnection?.lastSyncAt
     ? new Date(sheetsConnection.lastSyncAt).toLocaleString("en-IN", {
@@ -418,34 +262,9 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
       ? "Not synced"
       : lastSyncLabel;
 
-  const leadIds = leadPage.leads.map((lead) => lead.id);
-  let salesOrdersByLead: Awaited<
-    ReturnType<typeof getAllSalesOrdersByLeadIds>
-  > = new Map();
-  let pendingTemplateByLead: Awaited<
-    ReturnType<typeof mapPendingTemplateOrdersByLeadIds>
-  > = new Map();
-  try {
-    const extras = await withDbRetry(() =>
-      Promise.all([
-        getAllSalesOrdersByLeadIds(user.organizationId, leadIds),
-        mapPendingTemplateOrdersByLeadIds(leadIds),
-      ]),
-    );
-    salesOrdersByLead = extras[0];
-    pendingTemplateByLead = extras[1];
-  } catch (error) {
-    console.error("leads sales-order extras unavailable", error);
-  }
-  const leadsWithSalesOrders = leadPage.leads.map((lead) => {
-    const salesOrders = salesOrdersByLead.get(lead.id) ?? [];
-    return {
-      ...serializeLead(lead),
-      salesOrders,
-      salesOrder: salesOrders[0] ?? null,
-      pendingTemplateOrders: pendingTemplateByLead.get(lead.id) ?? [],
-    };
-  });
+  const leadsWithSalesOrders = leadPage.leads.map((lead) =>
+    serializeCrmListLead(lead),
+  );
 
   return (
     <div className="saas-page leads-machine-page">
@@ -491,20 +310,17 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
 
       <LeadsPeriodToolbar period={period} />
 
-      {canSeeAllLeads && teamPerformance ? (
-        <LeadsTeamPerformance initial={teamPerformance} />
-      ) : null}
-
-      {pipeMetrics && numbersMetrics ? (
-        <LeadsPipelineCards
+      <Suspense fallback={null}>
+        <LeadsCrmSecondary
+          organizationId={user.organizationId}
+          period={period}
+          leadScope={leadScope}
+          canSeeAllLeads={canSeeAllLeads}
           activeCategory={listParams.category}
           activeStatus={listParams.status}
           baseParams={params}
-          byStatus={periodStats.byStatus}
-          numbersMetrics={numbersMetrics}
-          pipeMetrics={pipeMetrics}
         />
-      ) : null}
+      </Suspense>
 
       <LeadsCrmWorkspace
         canManage={canManage}

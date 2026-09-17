@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { MessageCircle, Phone, Trash2 } from "lucide-react";
 import {
   bulkAssignInboundLeads,
@@ -11,6 +11,7 @@ import {
   logLeadContactAction,
 } from "@/app/app/leads/actions";
 import { addLeadsToWaCampaignAction } from "@/app/app/leads/campaign-actions";
+import { getInboundLeadDrawerPayloadAction } from "@/app/app/leads/drawer-actions";
 import { LeadsCsvImportButton } from "@/components/saas/leads-csv-import";
 import { LeadDrawerPanel, type LeadDrawerData } from "@/components/saas/leads-drawer-panel";
 import {
@@ -57,6 +58,7 @@ type LeadRow = LeadDrawerData & {
     scheduledAt: string;
     notes: string | null;
   }>;
+  drawerLoaded?: boolean;
 };
 
 type DuplicateMatch = {
@@ -216,6 +218,9 @@ export function LeadsCrmWorkspace({
   const [bulkCampaignId, setBulkCampaignId] = useState("");
   const [bulkMsg, setBulkMsg] = useState<string | null>(null);
   const [bulkErr, setBulkErr] = useState<string | null>(null);
+  const [drawerLead, setDrawerLead] = useState<LeadRow | null>(null);
+  const leadsRef = useRef(localLeads);
+  leadsRef.current = localLeads;
 
   useEffect(() => {
     setSelectedId(initialSelectedLeadId);
@@ -224,6 +229,33 @@ export function LeadsCrmWorkspace({
   useEffect(() => {
     setLocalLeads(leads);
   }, [leads]);
+
+  useEffect(() => {
+    if (!selectedId) {
+      setDrawerLead(null);
+      return;
+    }
+    const existing = leadsRef.current.find((lead) => lead.id === selectedId);
+    if (existing?.drawerLoaded) {
+      setDrawerLead(existing);
+      return;
+    }
+    let cancelled = false;
+    setDrawerLead(null);
+    void getInboundLeadDrawerPayloadAction(selectedId).then((payload) => {
+      if (cancelled || !payload) {
+        return;
+      }
+      const next = payload as LeadRow;
+      setDrawerLead(next);
+      setLocalLeads((prev) =>
+        prev.map((lead) => (lead.id === next.id ? { ...lead, ...next } : lead)),
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedId]);
 
   useEffect(() => {
     setSearchDraft(listParams.q ?? "");
@@ -258,6 +290,7 @@ export function LeadsCrmWorkspace({
   function closeDrawer() {
     // Hide the drawer immediately — never make the user wait on navigation.
     setSelectedId(null);
+    setDrawerLead(null);
     if (focusMode) {
       startTransition(() => {
         router.push("/app/leads?period=all");
@@ -268,6 +301,9 @@ export function LeadsCrmWorkspace({
   function patchLead(id: string, patch: Partial<LeadRow>) {
     setLocalLeads((prev) =>
       prev.map((lead) => (lead.id === id ? { ...lead, ...patch } : lead)),
+    );
+    setDrawerLead((current) =>
+      current?.id === id ? { ...current, ...patch } : current,
     );
   }
 
@@ -287,11 +323,6 @@ export function LeadsCrmWorkspace({
   const isBoard = view === "board";
   const listViewHref = `/app/leads?${buildLeadsListQuery(listParams, { view: "", page: "1" })}`;
   const boardViewHref = `/app/leads?${buildLeadsListQuery(listParams, { view: "board", page: "1" })}`;
-
-  const selected = useMemo(
-    () => localLeads.find((lead) => lead.id === selectedId) ?? null,
-    [localLeads, selectedId],
-  );
 
   const committedSearch = (listParams.q ?? "").trim();
   const visibleLeads = localLeads;
@@ -952,18 +983,19 @@ export function LeadsCrmWorkspace({
         </>
       ) : null}
 
-      {selected ? (
+      {selectedId ? (
         <div
           className="leads-drawer-backdrop"
           role="presentation"
           onClick={closeDrawer}
         >
+          {drawerLead?.drawerLoaded ? (
           <LeadDrawerPanel
-            key={selected.id}
+            key={drawerLead.id}
             canManage={canManage}
             currentUserId={currentUserId}
             initialTab={parseCrmDrawerTab(initialTab) ?? initialTab}
-            lead={selected}
+            lead={drawerLead}
             listParams={listParams}
             onClose={closeDrawer}
             onDeleted={closeDrawer}
@@ -977,6 +1009,15 @@ export function LeadsCrmWorkspace({
             canUseFms={canUseFms}
             fmsTemplates={fmsTemplates}
           />
+          ) : (
+            <aside
+              className="leads-drawer leads-drawer-wide leads-drawer-glide"
+              aria-busy="true"
+              aria-label="Loading lead"
+            >
+              <p className="leads-machine-muted">Loading lead…</p>
+            </aside>
+          )}
         </div>
       ) : null}
     </div>

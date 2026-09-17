@@ -192,6 +192,20 @@ function StepCompleteForm({
                       onChange={(e) => setCaptureValue(field.key, e.target.value)}
                     />
                   ) : null}
+                  {field.type === "ENUM" ? (
+                    <select
+                      required={field.required}
+                      value={completionValues[field.key] ?? ""}
+                      onChange={(e) => setCaptureValue(field.key, e.target.value)}
+                    >
+                      <option value="">Select</option>
+                      {(field.choices ?? []).map((choice) => (
+                        <option key={choice} value={choice}>
+                          {choice}
+                        </option>
+                      ))}
+                    </select>
+                  ) : null}
                 </label>
               ))}
             </div>

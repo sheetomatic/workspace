@@ -19,8 +19,6 @@ import { deployAccountsChecklistPack } from "@/lib/checklists/accounts-deploy";
 import { deployHrChecklistPack } from "@/lib/checklists/hr-deploy";
 import { canCreateTasks } from "@/lib/tasks";
 
-const fmsInitialState: FmsActionState = { ok: false };
-
 function parseTeam(value: string): ChecklistTeam {
   const teams: ChecklistTeam[] = [
     "ACCOUNTS",
@@ -390,5 +388,3 @@ export async function deployHrChecklistAction(
     };
   }
 }
-
-export { fmsInitialState as checklistInitialState };
