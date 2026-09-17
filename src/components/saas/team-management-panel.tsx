@@ -324,10 +324,23 @@ function MemberEditForm({
           Email
           <input
             defaultValue={member.user.email}
-            disabled
-            name="emailDisplay"
+            name="email"
+            required
             type="email"
+            autoComplete="off"
           />
+        </label>
+        <label className="form-field-full ws-attendance-check">
+          <input
+            defaultChecked
+            name="mapCrmLeadsOnEmailChange"
+            type="checkbox"
+          />
+          <span>
+            Map CRM Lead Assigned from previous email → new email (keeps leads on
+            this login; if the new email is already a teammate, moves leads to
+            them)
+          </span>
         </label>
         <label>
           WhatsApp

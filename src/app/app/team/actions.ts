@@ -537,6 +537,7 @@ export async function updateTeamMemberDetails(
   const membershipId = formData.get("membershipId")?.toString() ?? "";
   const role = (formData.get("role")?.toString() ?? "") as Role;
   const name = formData.get("name")?.toString().trim() ?? "";
+  const email = formData.get("email")?.toString().trim().toLowerCase() ?? "";
   const designation = formData.get("designation")?.toString().trim() ?? "";
   const department = parseDepartment(formData.get("department")?.toString());
   const attendanceWorkMode = parseWorkMode(
@@ -569,6 +570,10 @@ export async function updateTeamMemberDetails(
 
   if (!name || !designation || !department) {
     return { ok: false, message: "Name, department, and designation are required." };
+  }
+
+  if (!email.includes("@")) {
+    return { ok: false, message: "Enter a valid email." };
   }
 
   if (whatsappRaw.trim() && !phone) {
@@ -650,6 +655,193 @@ export async function updateTeamMemberDetails(
     modules.includes("CRM"),
   );
 
+  const previousEmail = membership.user.email.trim().toLowerCase();
+  const emailChanged = email !== previousEmail;
+  const mapCrmLeads = formData.get("mapCrmLeadsOnEmailChange") === "on";
+
+  const membershipPatch = {
+    role,
+    department,
+    designation,
+    reportingManagerId: role === "OWNER" ? null : reportingManagerId,
+    isDepartmentHead,
+    attendanceWorkMode,
+    locationMode,
+    primarySiteId,
+    geoFenceRequired,
+    faceRequired,
+    monthlySalary,
+    modules,
+    enabledHrSubModules,
+    enabledCrmSubModules,
+  };
+
+  const organizationId = user.organizationId;
+
+  async function remapCrmAssignee(fromUserId: string, toUserId: string) {
+    if (fromUserId === toUserId) {
+      return { leadCount: 0, waCount: 0 };
+    }
+    const [leads, waContacts] = await Promise.all([
+      prisma.inboundLead.updateMany({
+        where: {
+          organizationId,
+          assignedToId: fromUserId,
+        },
+        data: { assignedToId: toUserId, modifiedAt: new Date() },
+      }),
+      prisma.waContact.updateMany({
+        where: {
+          organizationId,
+          assignedToId: fromUserId,
+        },
+        data: { assignedToId: toUserId },
+      }),
+    ]);
+    return { leadCount: leads.count, waCount: waContacts.count };
+  }
+
+  if (emailChanged) {
+    const emailTaken = await prisma.user.findFirst({
+      where: {
+        email,
+        NOT: { id: membership.userId },
+      },
+      select: { id: true, name: true, email: true, phone: true },
+    });
+
+    if (emailTaken) {
+      const targetMembership = await prisma.membership.findFirst({
+        where: {
+          organizationId: user.organizationId,
+          userId: emailTaken.id,
+          deactivatedAt: null,
+        },
+        select: { id: true, userId: true },
+      });
+
+      if (!targetMembership) {
+        return {
+          ok: false,
+          message:
+            "That email is already used by another account outside this workspace. Pick a different email.",
+        };
+      }
+
+      if (!mapCrmLeads) {
+        return {
+          ok: false,
+          message:
+            "That email belongs to another teammate. Enable “Map CRM Lead Assigned…” to move their assigned leads to the new email, or pick a different address.",
+        };
+      }
+
+      const remapped = await remapCrmAssignee(
+        membership.userId,
+        emailTaken.id,
+      );
+
+      await prisma.user.update({
+        where: { id: emailTaken.id },
+        data: {
+          name,
+          phone: phone ?? emailTaken.phone,
+        },
+      });
+
+      await prisma.membership.updateMany({
+        where: {
+          id: targetMembership.id,
+          organizationId: user.organizationId,
+        },
+        data: membershipPatch,
+      });
+
+      await prisma.membership.updateMany({
+        where: {
+          id: membershipId,
+          organizationId: user.organizationId,
+        },
+        data: { deactivatedAt: new Date() },
+      });
+
+      await prisma.invitation.updateMany({
+        where: {
+          organizationId: user.organizationId,
+          email: previousEmail,
+        },
+        data: { email },
+      });
+
+      revalidatePath("/app/team");
+      revalidatePath("/app/hr");
+      revalidatePath("/app/leads");
+      revalidatePath("/app/hr/attendance");
+      revalidatePath("/app/hr/payroll");
+      revalidatePath("/app/hr/hiring");
+      return {
+        ok: true,
+        message: `Mapped ${remapped.leadCount} CRM lead${remapped.leadCount === 1 ? "" : "s"} from ${previousEmail} → ${email}. Duplicate Team login deactivated — use ${email} going forward.`,
+      };
+    }
+
+    try {
+      await prisma.user.update({
+        where: { id: membership.userId },
+        data: {
+          name,
+          email,
+          phone: phone ?? membership.user.phone,
+        },
+      });
+    } catch (error) {
+      const code = (error as { code?: string })?.code;
+      if (code === "P2002") {
+        return {
+          ok: false,
+          message:
+            "That email is already used by another account. Pick a different email.",
+        };
+      }
+      throw error;
+    }
+
+    await prisma.invitation.updateMany({
+      where: {
+        organizationId: user.organizationId,
+        email: previousEmail,
+      },
+      data: { email },
+    });
+
+    await prisma.membership.updateMany({
+      where: { id: membershipId, organizationId: user.organizationId },
+      data: membershipPatch,
+    });
+
+    const leadCount = mapCrmLeads
+      ? await prisma.inboundLead.count({
+          where: {
+            organizationId: user.organizationId,
+            assignedToId: membership.userId,
+          },
+        })
+      : 0;
+
+    revalidatePath("/app/team");
+    revalidatePath("/app/hr");
+    revalidatePath("/app/leads");
+    revalidatePath("/app/hr/attendance");
+    revalidatePath("/app/hr/payroll");
+    revalidatePath("/app/hr/hiring");
+    return {
+      ok: true,
+      message: mapCrmLeads
+        ? `Member updated. Login email is now ${email}. ${leadCount} CRM lead${leadCount === 1 ? "" : "s"} stay assigned under the new email.`
+        : `Member updated. Login email is now ${email}.`,
+    };
+  }
+
   await prisma.user.update({
     where: { id: membership.userId },
     data: {
@@ -660,22 +852,7 @@ export async function updateTeamMemberDetails(
 
   await prisma.membership.updateMany({
     where: { id: membershipId, organizationId: user.organizationId },
-    data: {
-      role,
-      department,
-      designation,
-      reportingManagerId: role === "OWNER" ? null : reportingManagerId,
-      isDepartmentHead,
-      attendanceWorkMode,
-      locationMode,
-      primarySiteId,
-      geoFenceRequired,
-      faceRequired,
-      monthlySalary,
-      modules,
-      enabledHrSubModules,
-      enabledCrmSubModules,
-    },
+    data: membershipPatch,
   });
 
   revalidatePath("/app/team");
