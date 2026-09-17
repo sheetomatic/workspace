@@ -1,9 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FileText, MessageCircle, Phone, Plus, Trash2 } from "lucide-react";
-import type { QuotationRequestType, QuotationStatus } from "@prisma/client";
+import type {
+  InboundLeadStatus,
+  QuotationRequestType,
+  QuotationStatus,
+} from "@prisma/client";
 import {
   createLeadQuotation,
   createLeadServiceCatalogItem,
@@ -276,6 +280,8 @@ export function QuotationBuilderPanel({
   canDelete = canManage,
   pending,
   startTransition,
+  onQuotationsChange,
+  onLeadPatched,
 }: {
   leadId: string;
   leadName: string | null;
@@ -295,8 +301,36 @@ export function QuotationBuilderPanel({
   canDelete?: boolean;
   pending: boolean;
   startTransition: (callback: () => Promise<void>) => void;
+  onQuotationsChange?: (quotations: QuotationRow[]) => void;
+  onLeadPatched?: (patch: {
+    status?: InboundLeadStatus;
+    quotationValue?: number | null;
+  }) => void;
 }) {
   const [addedCatalogItems, setAddedCatalogItems] = useState<CatalogItem[]>([]);
+  const [localQuotations, setLocalQuotations] = useState<QuotationRow[]>(quotations);
+
+  useEffect(() => {
+    setLocalQuotations(quotations);
+  }, [quotations]);
+
+  function upsertLocalQuotation(next: QuotationRow) {
+    setLocalQuotations((current) => {
+      const without = current.filter((item) => item.id !== next.id);
+      const merged = [next, ...without];
+      onQuotationsChange?.(merged);
+      return merged;
+    });
+  }
+
+  function removeLocalQuotation(quotationId: string) {
+    setLocalQuotations((current) => {
+      const merged = current.filter((item) => item.id !== quotationId);
+      onQuotationsChange?.(merged);
+      return merged;
+    });
+  }
+
   const catalogItems = useMemo(() => {
     const byId = new Map(serviceCatalog.map((item) => [item.id, item]));
     for (const item of addedCatalogItems) {
@@ -384,7 +418,7 @@ export function QuotationBuilderPanel({
     return computeQuotationEndDate(start, durationDays);
   }, [quoteDuration, quoteStartDate]);
 
-  const previewQuote = quotations.find((item) => item.id === previewId) ?? null;
+  const previewQuote = localQuotations.find((item) => item.id === previewId) ?? null;
   const isLocked = (quote: QuotationRow) =>
     quote.status === "LOCKED" || Boolean(quote.lockedAt);
 
@@ -859,7 +893,10 @@ export function QuotationBuilderPanel({
                     setupCost,
                     saveAsDraft: true,
                   });
-                  if (result.ok && result.quotationId) {
+                  if (result.ok && result.quotation) {
+                    upsertLocalQuotation(result.quotation);
+                    setPreviewId(result.quotation.id);
+                  } else if (result.ok && result.quotationId) {
                     setPreviewId(result.quotationId);
                   }
                   return result;
@@ -895,8 +932,17 @@ export function QuotationBuilderPanel({
                     })),
                     setupCost,
                   });
-                  if (result.ok && result.quotationId) {
+                  if (result.ok && result.quotation) {
+                    upsertLocalQuotation(result.quotation);
+                    setPreviewId(result.quotation.id);
+                  } else if (result.ok && result.quotationId) {
                     setPreviewId(result.quotationId);
+                  }
+                  if (result.ok && result.lead) {
+                    onLeadPatched?.({
+                      status: result.lead.status,
+                      quotationValue: result.lead.quotationValue,
+                    });
                   }
                   return result;
                 })
@@ -911,10 +957,10 @@ export function QuotationBuilderPanel({
       {actionMessage ? <p className="leads-quote-action-msg">{actionMessage}</p> : null}
 
       <ul className="leads-quote-list">
-        {quotations.length === 0 ? (
+        {localQuotations.length === 0 ? (
           <li className="leads-machine-muted">No quotations yet.</li>
         ) : (
-          quotations.map((quote) => (
+          localQuotations.map((quote) => (
             <li
               key={quote.id}
               className={previewId === quote.id ? "is-active" : undefined}
@@ -1010,10 +1056,14 @@ export function QuotationBuilderPanel({
                         if (window.confirm(`Delete ${quote.quotationNumber}?`)) {
                           runAction("Delete", async () => {
                             const result = await deleteLeadQuotation(quote.id);
-                            if (result.ok && previewId === quote.id) {
-                              setPreviewId(
-                                quotations.find((item) => item.id !== quote.id)?.id ?? null,
-                              );
+                            if (result.ok) {
+                              const nextPreview =
+                                localQuotations.find((item) => item.id !== quote.id)?.id ??
+                                null;
+                              removeLocalQuotation(quote.id);
+                              if (previewId === quote.id) {
+                                setPreviewId(nextPreview);
+                              }
                             }
                             return result;
                           });

@@ -2837,6 +2837,10 @@ export function LeadDrawerPanel({
           canDelete={canManage}
           pending={pending}
           startTransition={startTransition}
+          onQuotationsChange={(next) =>
+            onLeadPatched?.(lead.id, { quotations: next })
+          }
+          onLeadPatched={(patch) => onLeadPatched?.(lead.id, patch)}
         />
       ) : null}
 

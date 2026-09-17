@@ -3446,24 +3446,74 @@ export async function createLeadQuotation(params: {
     metadata: { quotationId: quotation.id, draft: Boolean(params.saveAsDraft) },
   });
 
+  const saved = await prisma.inboundLeadQuotation.findFirst({
+    where: { id: quotation.id, organizationId: user.organizationId },
+    include: {
+      lines: {
+        orderBy: { id: "asc" },
+        select: {
+          id: true,
+          serviceCategory: true,
+          subCategory: true,
+          quantity: true,
+          unitPrice: true,
+          lineTotal: true,
+        },
+      },
+    },
+  });
+  if (!saved) {
+    return {
+      ok: false,
+      message: "Quotation saved but could not reload for preview. Refresh the page.",
+    };
+  }
+
+  const money = (value: { toNumber?: () => number } | number | null | undefined) => {
+    if (value == null) return null;
+    if (typeof value === "number") return value;
+    return typeof value.toNumber === "function" ? value.toNumber() : Number(value);
+  };
+
   revalidatePath("/app/leads");
+  revalidatePath(`/app/leads/quotations/${saved.id}/print`);
   return {
     ok: true,
-    quotationId: quotation.id,
-    quotationNumber,
+    quotationId: saved.id,
+    quotationNumber: saved.quotationNumber,
     message: params.saveAsDraft
-      ? `Draft saved as ${quotationNumber}. Generate the ${params.requestType === "INVOICE" ? "invoice" : "proposal"} when ready.`
-      : undefined,
+      ? `Draft saved as ${saved.quotationNumber}. Generate the ${params.requestType === "INVOICE" ? "invoice" : "proposal"} when ready.`
+      : `${saved.quotationNumber} ready — preview below. Open PDF or share when you want.`,
     quotation: {
-      id: quotation.id,
-      quotationNumber,
-      requestType: params.requestType,
-      status: "DRAFT" as const,
-      totalAmount: totals.totalAmount,
-      advanceRequired: Number.isFinite(advanceRequired) ? advanceRequired : null,
-      projectStartDate: projectStartDate?.toISOString() ?? null,
-      endDate: endDate?.toISOString() ?? null,
-      createdAt: quotation.createdAt.toISOString(),
+      id: saved.id,
+      quotationNumber: saved.quotationNumber,
+      requestType: saved.requestType,
+      status: saved.status,
+      revisionNumber: saved.revisionNumber,
+      totalAmount: money(saved.totalAmount) ?? totals.totalAmount,
+      subtotal: money(saved.subtotal) ?? totals.subtotal,
+      quotationDate: saved.quotationDate.toISOString(),
+      projectStartDate: saved.projectStartDate?.toISOString() ?? null,
+      endDate: saved.endDate?.toISOString() ?? null,
+      durationDays: saved.durationDays,
+      company: saved.company,
+      address: saved.address,
+      zipCode: saved.zipCode,
+      scopeNotes: saved.scopeNotes,
+      paymentTerms: saved.paymentTerms,
+      advanceRequired: money(saved.advanceRequired),
+      notes: saved.notes,
+      sentAt: saved.sentAt?.toISOString() ?? null,
+      lockedAt: saved.lockedAt?.toISOString() ?? null,
+      shareToken: saved.shareToken,
+      lines: saved.lines.map((line) => ({
+        id: line.id,
+        serviceCategory: line.serviceCategory,
+        subCategory: line.subCategory,
+        quantity: line.quantity,
+        unitPrice: money(line.unitPrice) ?? 0,
+        lineTotal: money(line.lineTotal) ?? 0,
+      })),
     },
     lead: params.saveAsDraft
       ? undefined
