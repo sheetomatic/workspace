@@ -1,0 +1,136 @@
+.hr-offer-public {
+  min-height: 100vh;
+  padding: 2rem 1rem 3rem;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(16, 185, 129, 0.12), transparent),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  color: #0f172a;
+}
+
+.hr-offer-sheet {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 2rem 1.75rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.06);
+}
+
+.hr-offer-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.hr-offer-logo {
+  max-height: 48px;
+  max-width: 160px;
+  object-fit: contain;
+  margin-bottom: 0.75rem;
+}
+
+.hr-offer-kicker {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.hr-offer-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 650;
+}
+
+.hr-offer-meta {
+  font-size: 0.9rem;
+  color: #334155;
+}
+
+.hr-offer-meta p {
+  margin: 0.2rem 0;
+}
+
+.hr-offer-body {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: #1e293b;
+}
+
+.hr-offer-body p {
+  margin: 0 0 1rem;
+}
+
+.hr-offer-body ol {
+  margin: 0 0 1.25rem;
+  padding-left: 1.25rem;
+}
+
+.hr-offer-body li {
+  margin: 0.4rem 0;
+}
+
+.hr-offer-footer {
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.hr-offer-respond {
+  display: grid;
+  gap: 1rem;
+}
+
+.hr-offer-decline {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.hr-offer-decline label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  color: #475569;
+}
+
+.hr-offer-decline textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  font: inherit;
+}
+
+.hr-offer-msg {
+  margin: 0.75rem 0 0;
+  font-size: 0.925rem;
+}
+
+.hr-offer-msg.is-ok {
+  color: #047857;
+}
+
+.hr-offer-msg.is-error {
+  color: #b91c1c;
+}
+
+.ws-offer-form {
+  margin-top: 0.75rem;
+}
+
+.ws-offer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+@media (max-width: 640px) {
+  .hr-offer-sheet {
+    padding: 1.25rem 1rem;
+  }
+}

@@ -2015,3 +2015,351 @@ export async function completeOnboardingAction(
   }
 }
 
+function parseMoneyForm(raw: FormDataEntryValue | null) {
+  const text = String(raw ?? "").trim().replace(/,/g, "");
+  if (!text) return null;
+  const value = Number(text);
+  return Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+function parseDateForm(raw: FormDataEntryValue | null) {
+  const text = String(raw ?? "").trim();
+  if (!text) return null;
+  const date = new Date(`${text}T12:00:00.000Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export async function createOfferLetterAction(
+  formData: FormData,
+): Promise<HrActionResult> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "ADMIN")) {
+    return hrActionFailure("FORBIDDEN", "Admin access required to create offers.");
+  }
+  if (!(await assertHrSubModuleEnabled(user, "hiring"))) {
+    return hrActionFailure("FORBIDDEN", "Hiring is not enabled for this workspace.");
+  }
+
+  const candidateId = String(formData.get("candidateId") ?? "").trim();
+  const roleTitle = String(formData.get("roleTitle") ?? "").trim();
+  const department = String(formData.get("department") ?? "").trim();
+  const employmentTypeRaw = String(formData.get("employmentType") ?? "FULL_TIME");
+  const employmentType =
+    employmentTypeRaw === "PART_TIME" || employmentTypeRaw === "CONTRACT"
+      ? employmentTypeRaw
+      : "FULL_TIME";
+  const ctcAnnual = parseMoneyForm(formData.get("ctcAnnual"));
+  const ctcMonthly = parseMoneyForm(formData.get("ctcMonthly"));
+  const joiningDate = parseDateForm(formData.get("joiningDate"));
+  const offerValidUntil = parseDateForm(formData.get("offerValidUntil"));
+  const probationMonthsRaw = Number.parseInt(
+    String(formData.get("probationMonths") ?? "6"),
+    10,
+  );
+  const probationMonths =
+    Number.isFinite(probationMonthsRaw) && probationMonthsRaw > 0
+      ? Math.min(probationMonthsRaw, 24)
+      : 6;
+  const workLocation = String(formData.get("workLocation") ?? "").trim();
+  const reportingTo = String(formData.get("reportingTo") ?? "").trim();
+  const benefitsNotes = String(formData.get("benefitsNotes") ?? "").trim();
+
+  if (!candidateId || !roleTitle) {
+    return hrActionFailure(
+      "INVALID_INPUT",
+      "Candidate and role title are required.",
+    );
+  }
+  if (ctcAnnual == null && ctcMonthly == null) {
+    return hrActionFailure(
+      "INVALID_INPUT",
+      "Enter annual CTC and/or monthly CTC.",
+    );
+  }
+
+  const candidate = await prisma.candidate.findFirst({
+    where: { id: candidateId, organizationId: user.organizationId },
+    include: { jobOpening: { select: { id: true, title: true } } },
+  });
+  if (!candidate) {
+    return hrActionFailure("NOT_FOUND", "Candidate not found.");
+  }
+  if (candidate.stage === "REJECTED") {
+    return hrActionFailure(
+      "INVALID_INPUT",
+      "Cannot offer a rejected candidate. Move them back in the pipeline first.",
+    );
+  }
+
+  const organization = await prisma.organization.findFirst({
+    where: { id: user.organizationId },
+    select: { name: true },
+  });
+  if (!organization) {
+    return hrActionFailure("NOT_FOUND", "Workspace not found.");
+  }
+
+  const {
+    renderOfferLetterHtml,
+    createOfferShareToken,
+  } = await import("@/lib/hr/offer-letter");
+
+  const bodyHtml = renderOfferLetterHtml({
+    organizationName: organization.name,
+    candidateName: candidate.fullName,
+    roleTitle,
+    department: department || null,
+    employmentType,
+    ctcAnnual,
+    ctcMonthly,
+    joiningDate,
+    probationMonths,
+    offerValidUntil,
+    workLocation: workLocation || null,
+    reportingTo: reportingTo || null,
+    benefitsNotes: benefitsNotes || null,
+  });
+
+  try {
+    const offer = await prisma.offerLetter.create({
+      data: {
+        organizationId: user.organizationId,
+        candidateId: candidate.id,
+        jobOpeningId: candidate.jobOpeningId,
+        roleTitle,
+        department: department || null,
+        employmentType,
+        ctcAnnual,
+        ctcMonthly,
+        joiningDate,
+        probationMonths,
+        offerValidUntil,
+        workLocation: workLocation || null,
+        reportingTo: reportingTo || null,
+        benefitsNotes: benefitsNotes || null,
+        bodyHtml,
+        status: "DRAFT",
+        shareToken: createOfferShareToken(),
+        createdByUserId: user.id,
+      },
+    });
+
+    await prisma.candidate.update({
+      where: { id: candidate.id },
+      data: { stage: "OFFER" },
+    });
+
+    revalidateHrPaths("/app/hr/hiring", "/app/hr");
+    return {
+      ok: true,
+      message: "Offer letter drafted. Send it to the candidate when ready.",
+      offerId: offer.id,
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not create offer letter.";
+    return hrActionFailure("OFFER_FAILED", message);
+  }
+}
+
+export async function sendOfferLetterAction(
+  offerId: string,
+  channel: "EMAIL" | "LINK" = "EMAIL",
+): Promise<HrActionResult> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "ADMIN")) {
+    return hrActionFailure("FORBIDDEN", "Admin access required to send offers.");
+  }
+  if (!(await assertHrSubModuleEnabled(user, "hiring"))) {
+    return hrActionFailure("FORBIDDEN", "Hiring is not enabled for this workspace.");
+  }
+
+  const {
+    getOfferLetterForOrg,
+    buildOfferPublicUrl,
+    createOfferShareToken,
+    sendOfferLetterEmail,
+    offerWhatsAppHref,
+  } = await import("@/lib/hr/offer-letter");
+
+  const offer = await getOfferLetterForOrg(user.organizationId, offerId);
+  if (!offer) {
+    return hrActionFailure("NOT_FOUND", "Offer letter not found.");
+  }
+  if (offer.status === "ACCEPTED" || offer.status === "WITHDRAWN") {
+    return hrActionFailure(
+      "INVALID_INPUT",
+      `This offer is ${offer.status.toLowerCase()} and cannot be sent again.`,
+    );
+  }
+  if (
+    offer.offerValidUntil &&
+    offer.offerValidUntil.getTime() < Date.now() &&
+    offer.status !== "DRAFT"
+  ) {
+    return hrActionFailure("INVALID_INPUT", "This offer has expired. Create a new draft.");
+  }
+
+  const token = offer.shareToken || createOfferShareToken();
+  const url = buildOfferPublicUrl(token);
+
+  if (channel === "EMAIL") {
+    const email = offer.candidate.email?.trim();
+    if (!email) {
+      return hrActionFailure(
+        "INVALID_INPUT",
+        "Candidate has no email. Add an email or use WhatsApp / copy link.",
+      );
+    }
+    const emailResult = await sendOfferLetterEmail({
+      toEmail: email,
+      candidateName: offer.candidate.fullName,
+      organizationName: offer.organization.name,
+      roleTitle: offer.roleTitle,
+      url,
+      validUntil: offer.offerValidUntil,
+    });
+    if (!emailResult.sent) {
+      const detail =
+        emailResult.reason === "not_configured"
+          ? "Email is not configured (Resend). Use Copy link or WhatsApp instead."
+          : emailResult.detail ?? "Could not send email.";
+      return hrActionFailure("EMAIL_FAILED", detail);
+    }
+  }
+
+  await prisma.offerLetter.update({
+    where: { id: offer.id },
+    data: {
+      shareToken: token,
+      status: "SENT",
+      sentAt: new Date(),
+      sentVia: channel,
+    },
+  });
+  await prisma.candidate.update({
+    where: { id: offer.candidateId },
+    data: { stage: "OFFER" },
+  });
+
+  const waHref = offerWhatsAppHref({
+    phone: offer.candidate.phone,
+    candidateName: offer.candidate.fullName,
+    organizationName: offer.organization.name,
+    roleTitle: offer.roleTitle,
+    url,
+  });
+
+  revalidateHrPaths("/app/hr/hiring", "/app/hr");
+  return {
+    ok: true,
+    message:
+      channel === "EMAIL"
+        ? `Offer emailed to ${offer.candidate.email}.`
+        : "Offer link ready — share with the candidate.",
+    publicUrl: url,
+    waHref,
+    offerId: offer.id,
+  };
+}
+
+export async function withdrawOfferLetterAction(
+  offerId: string,
+): Promise<HrActionResult> {
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "ADMIN")) {
+    return hrActionFailure("FORBIDDEN", "Admin access required.");
+  }
+  if (!(await assertHrSubModuleEnabled(user, "hiring"))) {
+    return hrActionFailure("FORBIDDEN", "Hiring is not enabled for this workspace.");
+  }
+
+  const offer = await prisma.offerLetter.findFirst({
+    where: { id: offerId, organizationId: user.organizationId },
+    select: { id: true, status: true },
+  });
+  if (!offer) {
+    return hrActionFailure("NOT_FOUND", "Offer letter not found.");
+  }
+  if (offer.status === "ACCEPTED") {
+    return hrActionFailure(
+      "INVALID_INPUT",
+      "Accepted offers cannot be withdrawn. Handle exit separately.",
+    );
+  }
+
+  await prisma.offerLetter.update({
+    where: { id: offer.id },
+    data: { status: "WITHDRAWN" },
+  });
+  revalidateHrPaths("/app/hr/hiring", "/app/hr");
+  return { ok: true, message: "Offer withdrawn." };
+}
+
+export async function respondToOfferLetterAction(params: {
+  token: string;
+  decision: "ACCEPT" | "DECLINE";
+  declineReason?: string;
+}): Promise<HrActionResult> {
+  const { getOfferLetterByToken } = await import("@/lib/hr/offer-letter");
+  const offer = await getOfferLetterByToken(params.token);
+  if (!offer) {
+    return hrActionFailure("NOT_FOUND", "Offer link is invalid or expired.");
+  }
+  if (offer.status === "ACCEPTED") {
+    return { ok: true, message: "You have already accepted this offer." };
+  }
+  if (offer.status === "DECLINED") {
+    return { ok: true, message: "You have already declined this offer." };
+  }
+  if (offer.status === "WITHDRAWN") {
+    return hrActionFailure("INVALID_INPUT", "This offer was withdrawn by the employer.");
+  }
+  if (offer.status === "EXPIRED" || offer.status === "DRAFT") {
+    return hrActionFailure("INVALID_INPUT", "This offer is no longer available.");
+  }
+  if (offer.offerValidUntil && offer.offerValidUntil.getTime() < Date.now()) {
+    await prisma.offerLetter.update({
+      where: { id: offer.id },
+      data: { status: "EXPIRED" },
+    });
+    return hrActionFailure("INVALID_INPUT", "This offer has expired.");
+  }
+
+  if (params.decision === "ACCEPT") {
+    await prisma.$transaction([
+      prisma.offerLetter.update({
+        where: { id: offer.id },
+        data: {
+          status: "ACCEPTED",
+          acceptedAt: new Date(),
+          declinedAt: null,
+          declineReason: null,
+        },
+      }),
+      prisma.candidate.update({
+        where: { id: offer.candidateId },
+        data: { stage: "HIRED" },
+      }),
+    ]);
+    return {
+      ok: true,
+      message:
+        "Thank you — your acceptance is recorded. HR will contact you with joining steps.",
+    };
+  }
+
+  await prisma.offerLetter.update({
+    where: { id: offer.id },
+    data: {
+      status: "DECLINED",
+      declinedAt: new Date(),
+      declineReason: params.declineReason?.trim() || null,
+    },
+  });
+  return {
+    ok: true,
+    message: "Your response is recorded. Thank you for letting us know.",
+  };
+}
+

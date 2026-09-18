@@ -1,5 +1,5 @@
 export type HrActionResult =
-  | { ok: true }
+  | { ok: true; message?: string; [key: string]: unknown }
   | { ok: false; code: string; message: string };
 
 export const HR_OUT_OF_LOCATION_MESSAGE =

@@ -275,6 +275,7 @@ model Organization {
   fieldLocationPings FieldLocationPing[]
   jobOpenings       JobOpening[]
   candidates        Candidate[]
+  offerLetters      OfferLetter[]
   legalCases        LegalCase[]
   legalCaseDocuments LegalCaseDocument[]
   legalCaseImportBackup LegalCaseImportBackup?
@@ -1317,6 +1318,7 @@ model User {
   fieldVisitsAssigned  FieldVisit[]             @relation("FieldVisitAssignee")
   fieldLocationPings   FieldLocationPing[]
   candidatesOwned      Candidate[]              @relation("CandidateOwner")
+  offerLettersCreated  OfferLetter[]            @relation("OfferLetterCreator")
   legalCaseDocuments   LegalCaseDocument[]      @relation("LegalCaseDocumentUploader")
   notificationSettings UserNotificationSettings[]
   taskAiUsageEvents    TaskAiUsageEvent[]
@@ -1584,6 +1586,15 @@ enum CandidateStage {
   OFFER
   HIRED
   REJECTED
+}
+
+enum OfferLetterStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  WITHDRAWN
 }
 
 enum EmploymentType {
@@ -2039,6 +2050,7 @@ model JobOpening {
   updatedAt      DateTime     @updatedAt
 
   candidates     Candidate[]
+  offerLetters   OfferLetter[]
 
   @@index([organizationId, isOpen])
 }
@@ -2061,6 +2073,7 @@ model Candidate {
   updatedAt      DateTime       @updatedAt
 
   documents      CandidateDocument[]
+  offerLetters   OfferLetter[]
 
   @@index([organizationId, stage])
 }
@@ -2074,6 +2087,44 @@ model CandidateDocument {
   uploadedAt  DateTime  @default(now())
 
   @@index([candidateId])
+}
+
+/** Formal employment offer — draft, send via link/email, candidate accept/decline. */
+model OfferLetter {
+  id              String            @id @default(cuid())
+  organizationId  String
+  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  candidateId     String
+  candidate       Candidate         @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  jobOpeningId    String?
+  jobOpening      JobOpening?       @relation(fields: [jobOpeningId], references: [id], onDelete: SetNull)
+  roleTitle       String
+  department      String?
+  employmentType  EmploymentType    @default(FULL_TIME)
+  ctcAnnual       Decimal?          @db.Decimal(14, 2)
+  ctcMonthly      Decimal?          @db.Decimal(14, 2)
+  joiningDate     DateTime?
+  probationMonths Int               @default(6)
+  offerValidUntil DateTime?
+  workLocation    String?
+  reportingTo     String?
+  benefitsNotes   String?
+  bodyHtml        String
+  status          OfferLetterStatus @default(DRAFT)
+  shareToken      String?           @unique
+  sentAt          DateTime?
+  sentVia         String?
+  acceptedAt      DateTime?
+  declinedAt      DateTime?
+  declineReason   String?
+  createdByUserId String?
+  createdBy       User?             @relation("OfferLetterCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([organizationId, status])
+  @@index([candidateId])
+  @@index([organizationId, createdAt])
 }
 
 model FmsForm {
