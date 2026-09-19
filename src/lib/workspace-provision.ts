@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
-import type { OrganizationStatus } from "@prisma/client";
+import type { OrganizationStatus, PlanSubscriptionStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { PRIMARY_ORG_SLUG } from "@/lib/platform";
 import {
@@ -23,6 +23,7 @@ import {
   isActivationBundleKey,
 } from "@/lib/workspace-activation-bundles";
 import { workspaceLoginHref } from "@/lib/workspace-auth-links";
+import { DEMO_TRIAL_DAYS, demoTrialEndsAt } from "@/lib/demo-workspace";
 
 export type ProvisionClientWorkspaceInput = {
   businessName: string;
@@ -31,6 +32,8 @@ export type ProvisionClientWorkspaceInput = {
   ownerPhone?: string | null;
   bundle: string;
   invitedByName: string;
+  /** 3-day trial workspace — auto-expires, then convert to paying client. */
+  demoTrial?: boolean;
 };
 
 export type ProvisionClientWorkspaceResult =
@@ -45,6 +48,8 @@ export type ProvisionClientWorkspaceResult =
       emailSent: boolean;
       existingUser: boolean;
       bundleLabel: string;
+      demoTrial?: boolean;
+      trialEndsAt?: string;
     }
   | { ok: false; message: string };
 
@@ -98,11 +103,15 @@ export async function provisionClientWorkspace(
 
   const { businessName, ownerName, ownerEmail, ownerPhone, bundle } =
     parsed.value;
+  const demoTrial = input.demoTrial === true;
   const preset = resolveActivationPreset(bundle);
   const entitlements = organizationEntitlementsData(preset);
-  const slug = await createUniqueOrganizationSlug(businessName);
+  const slug = await createUniqueOrganizationSlug(
+    demoTrial ? `${businessName} Demo` : businessName,
+  );
   const loginUrl = workspaceLoginHref({ org: slug });
   const bundleLabel = activationSummaryMessage(preset);
+  const trialEndsAt = demoTrial ? demoTrialEndsAt(new Date()) : null;
 
   const existingUser = await prisma.user.findUnique({
     where: { email: ownerEmail },
@@ -116,6 +125,7 @@ export async function provisionClientWorkspace(
       status: "ACTIVE",
       plan: entitlements.plan,
       product: entitlements.product,
+      planStatus: demoTrial ? "TRIAL" : "ACTIVE",
       allowedModules: entitlements.allowedModules,
       maxMembers: entitlements.maxMembers,
       maxFmsTemplates: entitlements.maxFmsTemplates,
@@ -126,15 +136,18 @@ export async function provisionClientWorkspace(
 
   await applyOrganizationEntitlements(organization.id, {
     ...entitlements,
-    status: "ACTIVE",
+    status: demoTrial ? "TRIAL" : "ACTIVE",
     activatedAt: new Date(),
-    renewalAt: monthlyPeriodFrom(new Date()).dueAt,
+    trialEndsAt,
+    renewalAt: demoTrial ? null : monthlyPeriodFrom(new Date()).dueAt,
   });
-  await ensureOrganizationBilling({
-    id: organization.id,
-    plan: entitlements.plan,
-    allowedModules: entitlements.allowedModules,
-  });
+  if (!demoTrial) {
+    await ensureOrganizationBilling({
+      id: organization.id,
+      plan: entitlements.plan,
+      allowedModules: entitlements.allowedModules,
+    });
+  }
   await ensureOnboardingTasks(organization.id);
   await markOnboardingTask(organization.id, "workspace_created", true);
   await markOnboardingTask(organization.id, "modules_enabled", true);
@@ -205,10 +218,13 @@ export async function provisionClientWorkspace(
   const fallback = existingUser
     ? `${organization.name} is ready. Owner already has a Sheetomatic login.`
     : `${organization.name} is ready. Share the login below once.`;
+  const trialNote = demoTrial
+    ? ` Demo trial — access until ${trialEndsAt!.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })} (${DEMO_TRIAL_DAYS} days), then auto-expires.`
+    : "";
 
   return {
     ok: true,
-    message: `${emailStatusMessage(ownerEmail, emailResult, fallback)} ${bundleLabel}.`,
+    message: `${emailStatusMessage(ownerEmail, emailResult, fallback)} ${bundleLabel}.${trialNote}`,
     workspaceName: organization.name,
     slug: organization.slug,
     loginUrl,
@@ -217,6 +233,8 @@ export async function provisionClientWorkspace(
     emailSent: emailResult.sent,
     existingUser: Boolean(existingUser),
     bundleLabel,
+    demoTrial,
+    trialEndsAt: trialEndsAt?.toISOString(),
   };
 }
 
@@ -224,10 +242,11 @@ export type ManageClientWorkspaceIntent =
   | "activate"
   | "hold"
   | "deactivate"
-  | "remove";
+  | "remove"
+  | "convert_demo";
 
 const INTENT_STATUS: Record<
-  Exclude<ManageClientWorkspaceIntent, "remove">,
+  Exclude<ManageClientWorkspaceIntent, "remove" | "convert_demo">,
   OrganizationStatus
 > = {
   activate: "ACTIVE",
@@ -246,7 +265,22 @@ export async function manageClientWorkspace(input: {
 
   const organization = await prisma.organization.findUnique({
     where: { id: workspaceId },
-    select: { id: true, name: true, slug: true, isPrimary: true, status: true },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      isPrimary: true,
+      status: true,
+      plan: true,
+      product: true,
+      allowedModules: true,
+      maxMembers: true,
+      maxFmsTemplates: true,
+      planStatus: true,
+      organizationPlan: {
+        select: { status: true, trialEndsAt: true },
+      },
+    },
   });
 
   if (!organization) {
@@ -259,6 +293,10 @@ export async function manageClientWorkspace(input: {
 
   if (input.intent === "remove") {
     return removeClientWorkspace(organization.id, organization.name);
+  }
+
+  if (input.intent === "convert_demo") {
+    return convertDemoWorkspaceToClient(organization);
   }
 
   const status = INTENT_STATUS[input.intent];
@@ -278,6 +316,58 @@ export async function manageClientWorkspace(input: {
     return { ok: true, message: `${organization.name} is on hold. Staff see a hold screen.` };
   }
   return { ok: true, message: `${organization.name} is deactivated. Staff cannot use it.` };
+}
+
+async function convertDemoWorkspaceToClient(organization: {
+  id: string;
+  name: string;
+  plan: Parameters<typeof ensureOrganizationBilling>[0]["plan"];
+  product: import("@prisma/client").WorkspaceProduct;
+  allowedModules: import("@prisma/client").WorkspaceModule[];
+  maxMembers: number;
+  maxFmsTemplates: number;
+  planStatus: PlanSubscriptionStatus;
+  organizationPlan: { status: PlanSubscriptionStatus; trialEndsAt: Date | null } | null;
+}) {
+  const planStatus =
+    organization.organizationPlan?.status ?? organization.planStatus;
+  const wasTrial =
+    planStatus === "TRIAL" ||
+    planStatus === "CANCELLED" ||
+    Boolean(organization.organizationPlan?.trialEndsAt);
+
+  if (!wasTrial && planStatus === "ACTIVE") {
+    return {
+      ok: true as const,
+      message: `${organization.name} is already a paying client workspace.`,
+    };
+  }
+
+  await applyOrganizationEntitlements(organization.id, {
+    plan: organization.plan,
+    product: organization.product,
+    allowedModules: organization.allowedModules,
+    maxMembers: organization.maxMembers,
+    maxFmsTemplates: organization.maxFmsTemplates,
+    status: "ACTIVE",
+    trialEndsAt: null,
+    activatedAt: new Date(),
+    renewalAt: monthlyPeriodFrom(new Date()).dueAt,
+  });
+  await prisma.organization.update({
+    where: { id: organization.id },
+    data: { status: "ACTIVE", planStatus: "ACTIVE" },
+  });
+  await ensureOrganizationBilling({
+    id: organization.id,
+    plan: organization.plan,
+    allowedModules: organization.allowedModules,
+  });
+
+  return {
+    ok: true as const,
+    message: `${organization.name} is now a real client — trial cleared, billing started, access active.`,
+  };
 }
 
 function statusLabel(status: OrganizationStatus) {
@@ -338,8 +428,12 @@ export async function listClientWorkspaces(take = 80) {
       slug: true,
       status: true,
       plan: true,
+      planStatus: true,
       allowedModules: true,
       createdAt: true,
+      organizationPlan: {
+        select: { trialEndsAt: true, status: true },
+      },
       memberships: {
         where: { role: "OWNER" },
         take: 1,

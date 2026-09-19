@@ -302,60 +302,6 @@ export const getSessionUser = cache(async function getSessionUser() {
     const isSuperAdmin = dbUser?.isSuperAdmin ?? false;
 
     if (isSuperAdmin) {
-      const organization = await db.organization.findUnique({
-        where: { id: membership.organizationId },
-        select: {
-          allowedModules: true,
-          isPrimary: true,
-          slug: true,
-          status: true,
-        },
-      });
-
-      const sessionUser: SessionUser = {
-        id: tokenUser.id,
-        email: tokenUser.email,
-        name: tokenUser.name,
-        role: membership.role,
-        organizationId: membership.organizationId,
-        organizationName: membership.organization.name,
-        organizationSlug: membership.organization.slug,
-        isSuperAdmin: true,
-        isDepartmentHead: false,
-        modules: resolveSessionModules({
-          isSuperAdmin: true,
-          role: membership.role,
-          organizationSlug: membership.organization.slug,
-          orgAllowedModules: organization?.allowedModules,
-          isPrimary: organization?.isPrimary,
-        }),
-        staffCode: null,
-        organizationStatus: organization?.status ?? membership.organization.status,
-      };
-
-      return sessionAllowsApi(sessionUser);
-    }
-
-    const membershipRecord = await db.membership.findUnique({
-      where: {
-        userId_organizationId: {
-          userId: tokenUser.id,
-          organizationId: membership.organizationId,
-        },
-      },
-      select: {
-        modules: true,
-        role: true,
-        isDepartmentHead: true,
-        staffCode: true,
-        deactivatedAt: true,
-      },
-    });
-
-    if (membershipRecord?.deactivatedAt) {
-      return null;
-    }
-
     const organization = await db.organization.findUnique({
       where: { id: membership.organizationId },
       select: {
@@ -366,6 +312,83 @@ export const getSessionUser = cache(async function getSessionUser() {
       },
     });
 
+    let organizationStatus =
+      organization?.status ?? membership.organization.status;
+    if (!organization?.isPrimary) {
+      const { expireDemoTrialIfNeeded } = await import("@/lib/demo-workspace");
+      const expiredStatus = await expireDemoTrialIfNeeded(
+        membership.organizationId,
+      );
+      if (expiredStatus) {
+        organizationStatus = expiredStatus;
+      }
+    }
+
+    const sessionUser: SessionUser = {
+      id: tokenUser.id,
+      email: tokenUser.email,
+      name: tokenUser.name,
+      role: membership.role,
+      organizationId: membership.organizationId,
+      organizationName: membership.organization.name,
+      organizationSlug: membership.organization.slug,
+      isSuperAdmin: true,
+      isDepartmentHead: false,
+      modules: resolveSessionModules({
+        isSuperAdmin: true,
+        role: membership.role,
+        organizationSlug: membership.organization.slug,
+        orgAllowedModules: organization?.allowedModules,
+        isPrimary: organization?.isPrimary,
+      }),
+      staffCode: null,
+      organizationStatus,
+    };
+
+    return sessionAllowsApi(sessionUser);
+  }
+
+  const membershipRecord = await db.membership.findUnique({
+    where: {
+      userId_organizationId: {
+        userId: tokenUser.id,
+        organizationId: membership.organizationId,
+      },
+    },
+    select: {
+      modules: true,
+      role: true,
+      isDepartmentHead: true,
+      staffCode: true,
+      deactivatedAt: true,
+    },
+  });
+
+  if (membershipRecord?.deactivatedAt) {
+    return null;
+  }
+
+  const organization = await db.organization.findUnique({
+    where: { id: membership.organizationId },
+    select: {
+      allowedModules: true,
+      isPrimary: true,
+      slug: true,
+      status: true,
+    },
+  });
+
+  let organizationStatus =
+    organization?.status ?? membership.organization.status;
+  if (!organization?.isPrimary) {
+    const { expireDemoTrialIfNeeded } = await import("@/lib/demo-workspace");
+    const expiredStatus = await expireDemoTrialIfNeeded(
+      membership.organizationId,
+    );
+    if (expiredStatus) {
+      organizationStatus = expiredStatus;
+    }
+  }
     const memberRole = membershipRecord?.role ?? membership.role;
 
     const modules = resolveSessionModules({
@@ -389,7 +412,7 @@ export const getSessionUser = cache(async function getSessionUser() {
       isDepartmentHead: membershipRecord?.isDepartmentHead ?? false,
       modules,
       staffCode: membershipRecord?.staffCode?.trim() || null,
-      organizationStatus: organization?.status ?? membership.organization.status,
+      organizationStatus,
     };
 
     return sessionAllowsApi(sessionUser);

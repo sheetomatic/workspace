@@ -152,6 +152,7 @@ export async function createClientWorkspaceAction(
     ownerPhone: String(formData.get("ownerPhone") ?? ""),
     bundle: String(formData.get("activationBundle") ?? ""),
     invitedByName: user.name ?? user.email,
+    demoTrial: formData.get("demoTrial") === "on",
   });
 
   if (result.ok) {
@@ -167,6 +168,7 @@ const MANAGE_INTENTS = new Set<ManageClientWorkspaceIntent>([
   "hold",
   "deactivate",
   "remove",
+  "convert_demo",
 ]);
 
 export async function manageClientWorkspaceAction(
@@ -183,7 +185,10 @@ export async function manageClientWorkspaceAction(
 
   const intent = formData.get("intent")?.toString().trim() ?? "";
   if (!MANAGE_INTENTS.has(intent as ManageClientWorkspaceIntent)) {
-    return { ok: false, message: "Choose activate, hold, deactivate, or remove." };
+    return {
+      ok: false,
+      message: "Choose activate, hold, deactivate, convert, or remove.",
+    };
   }
 
   const result = await manageClientWorkspace({

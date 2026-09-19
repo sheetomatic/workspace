@@ -201,6 +201,9 @@ export default async function TeamPage({
                 slug: row.slug,
                 status: row.status,
                 plan: row.plan,
+                planStatus: row.organizationPlan?.status ?? row.planStatus,
+                trialEndsAt:
+                  row.organizationPlan?.trialEndsAt?.toISOString() ?? null,
                 allowedModules: row.allowedModules,
                 createdAt: row.createdAt.toISOString(),
                 ownerName: row.memberships[0]?.user.name ?? null,

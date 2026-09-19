@@ -20,11 +20,20 @@ export type ClientWorkspaceRow = {
   slug: string;
   status: string;
   plan: keyof typeof ORG_PLAN_LABELS | string;
+  planStatus: string;
+  trialEndsAt: string | null;
   allowedModules: string[];
   createdAt: string;
   ownerName: string | null;
   ownerEmail: string | null;
 };
+
+function isDemoWorkspace(row: ClientWorkspaceRow) {
+  return (
+    row.planStatus === "TRIAL" ||
+    (Boolean(row.trialEndsAt) && row.planStatus !== "ACTIVE")
+  );
+}
 
 export function CreateClientWorkspacePanel({
   workspaces,
@@ -50,9 +59,9 @@ export function CreateClientWorkspacePanel({
           </h3>
           <p>
             Each client gets their own workspace for one product — BCI, Tasks,
-            HRMS, or CRM — with its own users and monthly bill.
-            Use a combined workspace only when they bought more than one SKU
-            on the same login.
+            HRMS, or CRM — with its own users and monthly bill. Tick{" "}
+            <strong>Demo account (3 days)</strong> for a trial; it auto-expires,
+            then convert to a real client when they continue.
           </p>
         </div>
       </div>
@@ -98,6 +107,12 @@ export function CreateClientWorkspacePanel({
           />
         </label>
         <WorkspaceBundleSelect defaultValue="tasks_addon" disabled={pending} />
+        <label className="ws-attendance-check">
+          <input name="demoTrial" type="checkbox" />
+          <span>
+            Demo account — 3 days access, then auto-expire (any module bundle)
+          </span>
+        </label>
         <div className="saas-create-workspace-actions">
           <button className="btn-cta btn-primary" disabled={pending} type="submit">
             {pending ? "Creating…" : "Create separate account"}
@@ -115,6 +130,9 @@ export function CreateClientWorkspacePanel({
                 <dd>
                   {state.workspaceName}{" "}
                   <code>{state.slug}</code>
+                  {state.demoTrial ? (
+                    <span className="saas-role-pill status-hold"> Demo 3d</span>
+                  ) : null}
                 </dd>
               </div>
               <div>
@@ -138,6 +156,16 @@ export function CreateClientWorkspacePanel({
                   </dd>
                 </div>
               ) : null}
+              {state.trialEndsAt ? (
+                <div>
+                  <dt>Trial ends</dt>
+                  <dd>
+                    {new Date(state.trialEndsAt).toLocaleString("en-IN", {
+                      timeZone: "Asia/Kolkata",
+                    })}
+                  </dd>
+                </div>
+              ) : null}
             </dl>
           ) : null}
         </div>
@@ -153,7 +181,14 @@ export function CreateClientWorkspacePanel({
         <div className="saas-create-workspace-list">
           <h4>Recent client workspaces</h4>
           <ul>
-            {workspaces.map((row) => (
+            {workspaces.map((row) => {
+              const demo = isDemoWorkspace(row);
+              const canConvert =
+                demo &&
+                (row.planStatus === "TRIAL" ||
+                  row.planStatus === "CANCELLED" ||
+                  row.status === "HOLD");
+              return (
               <li key={row.id}>
                 <div>
                   <strong>{row.name}</strong>
@@ -161,6 +196,9 @@ export function CreateClientWorkspacePanel({
                     {row.ownerEmail ?? "No owner"} · {row.slug} ·{" "}
                     {ORG_PLAN_LABELS[row.plan as keyof typeof ORG_PLAN_LABELS] ??
                       row.plan}
+                    {demo && row.trialEndsAt
+                      ? ` · trial until ${new Date(row.trialEndsAt).toLocaleDateString("en-IN")}`
+                      : ""}
                   </span>
                 </div>
                 <form
@@ -181,8 +219,20 @@ export function CreateClientWorkspacePanel({
                 >
                   <input name="workspaceId" type="hidden" value={row.id} />
                   <span className={`saas-role-pill status-${row.status.toLowerCase()}`}>
-                    {workspaceStatusLabel(row.status)}
+                    {workspaceStatusLabel(row.status, row.planStatus)}
                   </span>
+                  {canConvert ? (
+                    <button
+                      className="saas-ws-action"
+                      disabled={managing}
+                      name="intent"
+                      type="submit"
+                      value="convert_demo"
+                      title="Clear trial and start billing as a real client"
+                    >
+                      Convert to client
+                    </button>
+                  ) : null}
                   {row.status !== "ACTIVE" ? (
                     <button
                       className="saas-ws-action"
@@ -227,7 +277,8 @@ export function CreateClientWorkspacePanel({
                   </button>
                 </form>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </div>
       ) : null}
@@ -235,7 +286,9 @@ export function CreateClientWorkspacePanel({
   );
 }
 
-function workspaceStatusLabel(status: string) {
+function workspaceStatusLabel(status: string, planStatus?: string) {
+  if (planStatus === "TRIAL" && status === "ACTIVE") return "Demo trial";
+  if (planStatus === "CANCELLED" && status === "HOLD") return "Trial ended";
   if (status === "ACTIVE") return "Active";
   if (status === "HOLD") return "On hold";
   if (status === "INACTIVE") return "Inactive";

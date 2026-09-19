@@ -5,11 +5,14 @@ import { runWhatsAppApiRechargeReminders } from "@/lib/billing/whatsapp-api-remi
 import { generateSubscriptionInvoice } from "@/lib/billing/invoices";
 import { sendSubscriptionInvoiceEmail } from "@/lib/billing/email";
 import { syncOrganizationPlanRecord } from "@/lib/organization-plan";
+import { expireDueDemoTrials } from "@/lib/demo-workspace";
 
 export async function runSubscriptionBillingCron(now = new Date()) {
   const remindersSent: string[] = [];
   const held: string[] = [];
   const generated: string[] = [];
+
+  const demoExpiry = await expireDueDemoTrials(now);
 
   const openInvoices = await prisma.subscriptionInvoice.findMany({
     where: { status: { in: ["DRAFT", "SENT", "OVERDUE"] } },
@@ -129,6 +132,7 @@ export async function runSubscriptionBillingCron(now = new Date()) {
     remindersSent: remindersSent.length,
     held: held.length,
     generated: generated.length,
+    demoExpired: demoExpiry.expired,
     reminderNumbers: remindersSent,
     heldNumbers: held,
     generatedNumbers: generated,

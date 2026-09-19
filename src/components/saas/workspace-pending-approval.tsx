@@ -18,12 +18,12 @@ export function WorkspacePendingApproval({
           title: "This workspace is on hold",
           body: (
             <>
-              <strong>{organizationName}</strong> is paused. Staff cannot use
-              it until the open invoice is paid or Sheetomatic takes it off
-              hold.
+              <strong>{organizationName}</strong> is paused. The demo trial may
+              have ended, or an invoice is unpaid. Staff cannot use it until
+              Sheetomatic resumes access or converts the trial to a paid client.
             </>
           ),
-          wa: `Hi, the workspace "${organizationName}" is on hold. Please resume it.`,
+          wa: `Hi, the workspace "${organizationName}" is on hold (trial ended or invoice). Please resume or convert to a paid client.`,
         }
       : status === "INACTIVE"
         ? {
