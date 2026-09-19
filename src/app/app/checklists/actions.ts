@@ -45,6 +45,20 @@ function parseFrequency(value: string): ChecklistFrequency {
     : "MONTHLY";
 }
 
+function revalidateChecklistPaths() {
+  [
+    "/app/checklists",
+    "/app/checklists/accounts",
+    "/app/checklists/hr",
+    "/app/checklists/maintenance",
+    "/app/checklists/setup",
+    "/app/checklists/my-tasks",
+    "/app/checklists/scores",
+    "/app/today",
+    "/app/em",
+  ].forEach((path) => revalidatePath(path));
+}
+
 export async function createChecklistTemplateAction(
   _prev: FmsActionState,
   formData: FormData,
@@ -114,8 +128,7 @@ export async function createChecklistTemplateAction(
 
     await ensureChecklistOccurrence(template);
 
-    revalidatePath("/app/checklists");
-    revalidatePath("/app/checklists/my-tasks");
+    revalidateChecklistPaths();
     return { ok: true, message: "Checklist created." };
   } catch (error) {
     console.error("createChecklistTemplateAction", error);
@@ -183,10 +196,7 @@ export async function completeChecklistOccurrenceAction(
 
     await ensureNextChecklistOccurrence(occurrence.template, occurrence.plannedAt);
 
-    revalidatePath("/app/checklists");
-    revalidatePath("/app/checklists/my-tasks");
-    revalidatePath("/app/today");
-    revalidatePath("/app/em");
+    revalidateChecklistPaths();
     return { ok: true, message: "Checklist marked done." };
   } catch (error) {
     console.error("completeChecklistOccurrenceAction", error);
@@ -228,9 +238,7 @@ export async function importChecklistTemplatesAction(
       rows,
     );
 
-    revalidatePath("/app/checklists");
-    revalidatePath("/app/checklists/setup");
-    revalidatePath("/app/checklists/my-tasks");
+    revalidateChecklistPaths();
     return {
       ok: true,
       message: `Imported ${result.total} checklist template${
@@ -308,12 +316,7 @@ export async function deployAccountsChecklistAction(
       complianceAssigneeUserId: complianceUserId,
     });
 
-    [
-      "/app/checklists",
-      "/app/checklists/accounts",
-      "/app/checklists/setup",
-      "/app/checklists/my-tasks",
-    ].forEach((path) => revalidatePath(path));
+    revalidateChecklistPaths();
 
     return {
       ok: true,
@@ -369,12 +372,7 @@ export async function deployHrChecklistAction(
       focusId,
     });
 
-    [
-      "/app/checklists",
-      "/app/checklists/hr",
-      "/app/checklists/setup",
-      "/app/checklists/my-tasks",
-    ].forEach((path) => revalidatePath(path));
+    revalidateChecklistPaths();
 
     return {
       ok: true,
@@ -386,5 +384,127 @@ export async function deployHrChecklistAction(
       ok: false,
       message: error instanceof Error ? error.message : "Could not deploy HR checklist.",
     };
+  }
+}
+
+export async function updateChecklistTemplateAction(
+  _prev: FmsActionState,
+  formData: FormData,
+): Promise<FmsActionState> {
+  try {
+    const actor = await getChecklistActor();
+    if (!actor.ok) {
+      return { ok: false, message: actor.message };
+    }
+    const user = actor.user;
+    if (!canCreateTasks(user.role) && !canConfigureChecklists(user)) {
+      return { ok: false, message: "Only managers can edit checklists." };
+    }
+
+    const templateId = formData.get("templateId")?.toString().trim() ?? "";
+    const title = formData.get("title")?.toString().trim() ?? "";
+    const assigneeUserIdRaw = formData.get("assigneeUserId")?.toString() ?? "";
+    if (!templateId || !title) {
+      return { ok: false, message: "Title and doer are required." };
+    }
+
+    const existing = await prisma.checklistTemplate.findFirst({
+      where: { id: templateId, organizationId: user.organizationId },
+      select: { id: true },
+    });
+    if (!existing) {
+      return { ok: false, message: "Checklist not found." };
+    }
+
+    const assigneeResult = await resolveChecklistAssigneeForOrg(
+      user.organizationId,
+      assigneeUserIdRaw,
+      (args) =>
+        prisma.membership.findFirst({
+          where: {
+            organizationId: args.organizationId,
+            userId: args.userId,
+            ...activeAssigneeMembershipWhere,
+          },
+          select: { id: true, deactivatedAt: true },
+        }),
+    );
+    if (!assigneeResult.ok) {
+      return { ok: false, message: assigneeResult.message };
+    }
+
+    const frequency = parseFrequency(formData.get("frequency")?.toString() ?? "MONTHLY");
+    const dueMonthDay = Number.parseInt(formData.get("dueMonthDay")?.toString() ?? "1", 10);
+    const dueWeekday = Number.parseInt(formData.get("dueWeekday")?.toString() ?? "1", 10);
+    const dueMonth = Number.parseInt(formData.get("dueMonth")?.toString() ?? "4", 10);
+
+    await prisma.checklistTemplate.update({
+      where: { id: templateId },
+      data: {
+        title,
+        instructions: formData.get("instructions")?.toString().trim() || null,
+        team: parseTeam(formData.get("team")?.toString() ?? "GENERAL"),
+        frequency,
+        dueMonthDay: Number.isFinite(dueMonthDay) ? dueMonthDay : 1,
+        dueWeekday: Number.isFinite(dueWeekday) ? dueWeekday : 1,
+        dueMonth: Number.isFinite(dueMonth) ? dueMonth : 4,
+        assigneeUserId: assigneeResult.assigneeUserId,
+      },
+    });
+
+    await prisma.checklistOccurrence.updateMany({
+      where: {
+        templateId,
+        organizationId: user.organizationId,
+        status: { in: ["PENDING", "OVERDUE"] },
+      },
+      data: { assigneeUserId: assigneeResult.assigneeUserId },
+    });
+
+    revalidateChecklistPaths();
+    return { ok: true, message: "Checklist updated." };
+  } catch (error) {
+    console.error("updateChecklistTemplateAction", error);
+    return { ok: false, message: "Could not update checklist." };
+  }
+}
+
+export async function deleteChecklistTemplateAction(
+  _prev: FmsActionState,
+  formData: FormData,
+): Promise<FmsActionState> {
+  try {
+    const actor = await getChecklistActor();
+    if (!actor.ok) {
+      return { ok: false, message: actor.message };
+    }
+    const user = actor.user;
+    if (!canCreateTasks(user.role) && !canConfigureChecklists(user)) {
+      return { ok: false, message: "Only managers can delete checklists." };
+    }
+
+    const templateId = formData.get("templateId")?.toString().trim() ?? "";
+    if (!templateId) {
+      return { ok: false, message: "Checklist not found." };
+    }
+
+    const existing = await prisma.checklistTemplate.findFirst({
+      where: { id: templateId, organizationId: user.organizationId },
+      select: { id: true },
+    });
+    if (!existing) {
+      return { ok: false, message: "Checklist not found." };
+    }
+
+    await prisma.checklistTemplate.update({
+      where: { id: templateId },
+      data: { isActive: false },
+    });
+
+    revalidateChecklistPaths();
+    return { ok: true, message: "Checklist deleted." };
+  } catch (error) {
+    console.error("deleteChecklistTemplateAction", error);
+    return { ok: false, message: "Could not delete checklist." };
   }
 }

@@ -123,6 +123,7 @@ export async function listMyChecklistPcWork(
       organizationId,
       assigneeUserId,
       status: { in: ["PENDING", "OVERDUE"] },
+      template: { isActive: true },
     },
     select: {
       id: true,
@@ -331,6 +332,7 @@ export async function listOrgPcMonitor(organizationId: string) {
       where: {
         organizationId,
         status: { in: ["PENDING", "OVERDUE"] },
+        template: { isActive: true },
       },
       include: {
         template: { select: { title: true, team: true } },

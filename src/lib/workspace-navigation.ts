@@ -1204,7 +1204,6 @@ export function navIsActive(
   }
   if (hrefPath === "/app/checklists" && base === "/app/checklists") {
     if (
-      pathname.startsWith("/app/checklists/scores") ||
       pathname.startsWith("/app/checklists/my-tasks") ||
       pathname.startsWith("/app/checklists/hr")
     ) {
@@ -1216,12 +1215,6 @@ export function navIsActive(
   }
   if (hrefPath === "/app/my-space" && base === "/app/my-space") {
     return pathname === "/app/my-space";
-  }
-  if (
-    base === "/app/checklists" &&
-    pathname.startsWith("/app/checklists/scores")
-  ) {
-    return false;
   }
   if (
     base === "/app/checklists" &&

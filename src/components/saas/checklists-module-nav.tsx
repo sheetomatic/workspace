@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BarChart3,
   CheckSquare,
   ClipboardCheck,
   Settings2,
@@ -38,6 +39,13 @@ export function ChecklistsModuleNav({ isManager }: { isManager: boolean }) {
       icon: Wrench,
       visible: true,
       description: "Plant & PM rounds",
+    },
+    {
+      href: "/app/checklists/scores",
+      label: "Performance",
+      icon: BarChart3,
+      visible: isManager,
+      description: "Person-wise deficit",
     },
     {
       href: "/app/checklists/setup",
