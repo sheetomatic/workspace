@@ -1,39 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 64" fill="none" role="img" aria-label="Sheetomatic">
-  <defs>
-    <linearGradient id="smLogoLight" x1="140" y1="140" x2="372" y2="372" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#34D399"/>
-      <stop offset="0.5" stop-color="#2DD4BF"/>
-      <stop offset="1" stop-color="#60A5FA"/>
-    </linearGradient>
-  </defs>
-  <g transform="translate(-16,-16) scale(0.18)">
-    <path
-      d="M 372 140 C 300 116 212 116 140 140 C 140 258 372 254 372 372 C 300 396 212 396 140 372"
-      stroke="url(#smLogoLight)"
-      stroke-width="14"
-      stroke-linecap="round"
-    />
-    <circle cx="140" cy="140" r="22" fill="url(#smLogoLight)"/>
-    <circle cx="372" cy="140" r="22" fill="url(#smLogoLight)"/>
-    <circle cx="140" cy="372" r="22" fill="url(#smLogoLight)"/>
-    <circle cx="372" cy="372" r="22" fill="url(#smLogoLight)"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 72" fill="none" role="img" aria-label="Sheetomatic">
+  <g transform="scale(0.3)">
+    <rect x="7.5" y="7.5" width="225" height="225" rx="30.5" stroke="#FFFFFF" stroke-width="15"/>
+    <circle cx="67" cy="67" r="17.5" fill="#FFFFFF"/>
+    <circle cx="172" cy="67" r="17.5" fill="#FFFFFF"/>
+    <circle cx="67" cy="172" r="17.5" fill="#FFFFFF"/>
+    <circle cx="172" cy="172" r="17.5" fill="#FFFFFF"/>
   </g>
-  <text
-    x="62"
-    y="36"
-    font-family="Poppins, Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-    font-size="26"
-    font-weight="700"
-    letter-spacing="-0.02em"
-    fill="#FFFFFF"
-  >sheetomatic</text>
-  <text
-    x="62"
-    y="54"
-    font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-    font-size="10"
-    font-weight="500"
-    letter-spacing="0.02em"
-    fill="#CBD5E1"
-  >AI-Powered Business Automation</text>
+  <text x="88" y="48" fill="#FFFFFF" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="28" font-weight="500" letter-spacing="1.4">SHEETOMATIC</text>
 </svg>

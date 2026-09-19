@@ -1,12 +1,14 @@
 ---
-description: Sheetomatic primary logo — S-through-4-nodes mark
+description: Sheetomatic primary logo — four-dot squircle
 alwaysApply: true
 ---
 
 # Brand logo (canonical)
 
-- Primary mark: green→teal→blue **S through 4 nodes**
-- File: `public/brand/sheetomatic-logo-s-mark.png` (transparent: `sheetomatic-logo-s-mark-transparent.png`)
-- Wordmark SVG: `public/images/sheetomatic-logo.svg`
-- Kit icon: `public/brand/kit/icons/symbol.svg` / `symbol.png`
-- Do **not** use the old bars + green arrow mark or Technologies grid/glow logos on new UI, marketing, or social creatives unless the user explicitly asks for a legacy asset.
+- Primary mark: black **rounded square + four dots** (dice-4)
+- Ink: `#1D1D1F` on light, `#FFFFFF` on dark
+- Wordmark: **SHEETOMATIC** — uppercase, upright, Helvetica Neue Medium
+- Symbol: `public/images/sheetomatic-icon.svg` (on dark: `sheetomatic-icon-light.svg`)
+- Lockup: `public/images/sheetomatic-logo.svg` (on dark: `sheetomatic-logo-light.svg`)
+- Kit: `public/brand/kit/icons/symbol.svg`
+- Do **not** use the old S-through-nodes mark, bars + arrow, or gradient logos unless the user explicitly asks for a legacy asset.

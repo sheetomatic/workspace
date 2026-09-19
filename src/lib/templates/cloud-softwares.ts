@@ -34,7 +34,7 @@ function featuresForKit(key: string): readonly string[] {
 
 function thumbnailForKit(key: string): string {
   if (key === MOBILE_SHOP_KIT_KEY) return MOBILE_SHOP_COUNTER_THUMB;
-  return "/brand/sheetomatic-logo-s-mark.png";
+  return "/brand/sheetomatic-logo-symbol.png";
 }
 
 /** Native Sheetomatic apps shown on /templates under Cloud Softwares — not Sheet copies. */
