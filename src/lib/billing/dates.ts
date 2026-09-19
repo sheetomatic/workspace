@@ -46,11 +46,44 @@ export function isPastDueDate(dueAt: Date, now = new Date()) {
   return utcYmd(now) > utcYmd(dueAt);
 }
 
+/**
+ * Calendar days of unpaid grace after the renewal/due date before the workspace
+ * is put on hold. Clients keep working through due day + this many days.
+ */
+export const SUBSCRIPTION_GRACE_DAYS = 1;
+
+/** True after dueAt + grace days — workspace should stop. */
+export function isPastGracePeriod(
+  dueAt: Date,
+  now = new Date(),
+  graceDays = SUBSCRIPTION_GRACE_DAYS,
+) {
+  return utcYmd(now) > utcYmd(addUtcDays(dueAt, graceDays));
+}
+
+/** Unpaid after due date but still within the grace calendar day(s). */
+export function isInGracePeriod(
+  dueAt: Date,
+  now = new Date(),
+  graceDays = SUBSCRIPTION_GRACE_DAYS,
+) {
+  return isPastDueDate(dueAt, now) && !isPastGracePeriod(dueAt, now, graceDays);
+}
+
 export function daysUntilDue(dueAt: Date, now = new Date()) {
   return daysBetweenUtc(startOfUtcDay(now), dueAt);
 }
 
-const REMINDER_DAYS = [7, 3, 1, 0] as const;
+/** Advance reminders before the due date (due day uses Payment Pending). */
+const REMINDER_DAYS = [7, 3, 1] as const;
+
+/** Due today (0), grace day (-1), and first hold day (-2). */
+const PAYMENT_PENDING_ALERT_DAYS = [0, -1, -2] as const;
+
+function alreadyRemindedToday(alreadyOn: Date | null, now: Date) {
+  if (!alreadyOn) return false;
+  return alreadyOn.toISOString().slice(0, 10) === now.toISOString().slice(0, 10);
+}
 
 export function shouldSendReminder(
   daysLeft: number,
@@ -60,8 +93,19 @@ export function shouldSendReminder(
   if (!REMINDER_DAYS.includes(daysLeft as (typeof REMINDER_DAYS)[number])) {
     return false;
   }
-  if (!alreadyOn) return true;
-  return alreadyOn.toISOString().slice(0, 10) !== now.toISOString().slice(0, 10);
+  return !alreadyRemindedToday(alreadyOn, now);
+}
+
+/** Payment Pending alerts on due day, grace day, and the day access stops. */
+export function shouldSendPaymentPendingAlert(
+  daysLeft: number,
+  alreadyOn: Date | null,
+  now: Date,
+) {
+  if (!(PAYMENT_PENDING_ALERT_DAYS as readonly number[]).includes(daysLeft)) {
+    return false;
+  }
+  return !alreadyRemindedToday(alreadyOn, now);
 }
 
 export function formatBillingDate(date: Date) {

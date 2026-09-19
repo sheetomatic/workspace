@@ -1,8 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { addUtcMonths, daysBetweenUtc, isPastDueDate, monthlyPeriodFrom } from "@/lib/billing/dates";
+import {
+  addUtcMonths,
+  daysBetweenUtc,
+  isInGracePeriod,
+  isPastDueDate,
+  isPastGracePeriod,
+  monthlyPeriodFrom,
+  shouldSendPaymentPendingAlert,
+  shouldSendReminder,
+} from "@/lib/billing/dates";
 import { applyGst, rupeesToPaise } from "@/lib/billing/money";
 import { extraUsers, buildInvoiceQuote, prorataFraction } from "@/lib/billing/prorata";
-import { shouldSendReminder } from "@/lib/billing/dates";
 
 describe("subscription prorata", () => {
   it("counts extra users beyond included seats", () => {
@@ -64,10 +72,19 @@ describe("subscription prorata", () => {
     expect(quote.extraPaise).toBe(rupeesToPaise(2499 + 2999));
   });
 
-  it("keeps access through the due date and holds the next day", () => {
+  it("keeps access through due + 1 grace day, then holds", () => {
     const due = new Date("2026-08-31T00:00:00.000Z");
     expect(isPastDueDate(due, new Date("2026-08-31T18:00:00.000Z"))).toBe(false);
+    expect(isPastGracePeriod(due, new Date("2026-08-31T18:00:00.000Z"))).toBe(false);
+
+    // Day after due = still in grace, overdue but workspace keeps working
     expect(isPastDueDate(due, new Date("2026-09-01T00:00:00.000Z"))).toBe(true);
+    expect(isInGracePeriod(due, new Date("2026-09-01T12:00:00.000Z"))).toBe(true);
+    expect(isPastGracePeriod(due, new Date("2026-09-01T12:00:00.000Z"))).toBe(false);
+
+    // Second day after due = past grace → hold
+    expect(isPastGracePeriod(due, new Date("2026-09-02T00:00:00.000Z"))).toBe(true);
+    expect(isInGracePeriod(due, new Date("2026-09-02T00:00:00.000Z"))).toBe(false);
   });
 
   it("builds a one-month period ending the day before the next anniversary", () => {
@@ -79,10 +96,20 @@ describe("subscription prorata", () => {
     expect(daysBetweenUtc(period.periodStart, period.periodEnd)).toBe(27);
   });
 
-  it("sends reminders on 7/3/1/0 once per day", () => {
+  it("sends advance reminders on 7/3/1 once per day", () => {
     const now = new Date("2026-08-24T04:00:00.000Z");
     expect(shouldSendReminder(7, null, now)).toBe(true);
     expect(shouldSendReminder(2, null, now)).toBe(false);
+    expect(shouldSendReminder(0, null, now)).toBe(false);
     expect(shouldSendReminder(7, now, now)).toBe(false);
+  });
+
+  it("sends Payment Pending on due, grace, and hold days once per day", () => {
+    const now = new Date("2026-09-01T04:00:00.000Z");
+    expect(shouldSendPaymentPendingAlert(0, null, now)).toBe(true);
+    expect(shouldSendPaymentPendingAlert(-1, null, now)).toBe(true);
+    expect(shouldSendPaymentPendingAlert(-2, null, now)).toBe(true);
+    expect(shouldSendPaymentPendingAlert(1, null, now)).toBe(false);
+    expect(shouldSendPaymentPendingAlert(-1, now, now)).toBe(false);
   });
 });
