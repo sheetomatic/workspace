@@ -5,6 +5,7 @@ import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import { canConfigureChecklists } from "@/lib/checklists/access";
 import { getPcAiStarter } from "@/lib/checklists/ai-starters";
 import { requireSession } from "@/lib/require-session";
+import { BCI_OPS_MODULES } from "@/lib/workspace-modules";
 import { listAssignableMembers } from "@/lib/tasks";
 
 type PageProps = {
@@ -12,7 +13,7 @@ type PageProps = {
 };
 
 export default async function NewChecklistPage({ searchParams }: PageProps) {
-  const user = await requireSession(undefined, { module: "TASKS" });
+  const user = await requireSession(undefined, { anyModules: BCI_OPS_MODULES });
   if (!canConfigureChecklists(user)) {
     redirect("/app/checklists");
   }

@@ -6,9 +6,10 @@ import {
 import { listMyChecklistPcWork, listOrgPcMonitor } from "@/lib/checklists/pc-work";
 import { canCreateTasks } from "@/lib/tasks";
 import { requireSession } from "@/lib/require-session";
+import { BCI_OPS_MODULES } from "@/lib/workspace-modules";
 
 export default async function AccountsChecklistPage() {
-  const user = await requireSession(undefined, { module: "TASKS" });
+  const user = await requireSession(undefined, { anyModules: BCI_OPS_MODULES });
   const profile = getTeamChecklistProfile("ACCOUNTS")!;
 
   const [templates, monitor, myRuns] = await Promise.all([

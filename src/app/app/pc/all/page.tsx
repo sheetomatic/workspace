@@ -7,10 +7,10 @@ import {
 } from "@/lib/checklists/pc-work";
 import { canCreateTasks, listAssignableMembers } from "@/lib/tasks";
 import { requireSession } from "@/lib/require-session";
-import { hasWorkspaceModule } from "@/lib/workspace-modules";
+import { BCI_OPS_MODULES, hasWorkspaceModule } from "@/lib/workspace-modules";
 
 export default async function PcAllPage() {
-  const user = await requireSession(undefined, { module: "TASKS" });
+  const user = await requireSession(undefined, { anyModules: BCI_OPS_MODULES });
 
   if (!canCreateTasks(user.role)) {
     redirect("/app/pc/today");

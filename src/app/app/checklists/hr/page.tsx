@@ -7,6 +7,7 @@ import { listChecklistTemplatesByTeam } from "@/lib/checklists/queries";
 import { listMyChecklistPcWork, listOrgPcMonitor } from "@/lib/checklists/pc-work";
 import { canCreateTasks, listAssignableMembers } from "@/lib/tasks";
 import { requireSession } from "@/lib/require-session";
+import { BCI_OPS_MODULES } from "@/lib/workspace-modules";
 
 type PageProps = {
   searchParams: Promise<{ tab?: string }>;
@@ -18,7 +19,7 @@ function parseHrTab(raw: string | undefined): HrFocusId | null {
 }
 
 export default async function HrChecklistPage({ searchParams }: PageProps) {
-  const user = await requireSession(undefined, { module: "TASKS" });
+  const user = await requireSession(undefined, { anyModules: BCI_OPS_MODULES });
   const params = await searchParams;
   const activeTab = parseHrTab(params.tab?.trim());
   const canConfigure = canCreateTasks(user.role);

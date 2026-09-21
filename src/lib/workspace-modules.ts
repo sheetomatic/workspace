@@ -97,6 +97,15 @@ export function hasWorkspaceModule(
   return Boolean(user.isSuperAdmin);
 }
 
+/** Check Lists / PC sit in the BCI suite even when Tasks is not on the plan. */
+export const BCI_OPS_MODULES: WorkspaceModule[] = ["FMS", "TASKS"];
+
+export function hasBciOpsModule(
+  user: Pick<SessionUser, "modules" | "isSuperAdmin">,
+) {
+  return BCI_OPS_MODULES.some((module) => hasWorkspaceModule(user, module));
+}
+
 export function parseModulesFromForm(formData: FormData): WorkspaceModule[] {
   const raw = formData.getAll("modules").map((value) => value.toString());
   return WORKSPACE_MODULES.filter((module) => raw.includes(module));

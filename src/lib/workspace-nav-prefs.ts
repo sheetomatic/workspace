@@ -31,6 +31,16 @@ export const DEFAULT_FOCUSED_NAV_IDS = [
   "dept-hr",
 ] as const;
 
+/** BCI suite — always listed when the member has the module (prefs cannot hide). */
+export const BCI_SUITE_NAV_IDS = [
+  "fms",
+  "checklists",
+  "tasks",
+  "em",
+  "mis-scores",
+  "pc",
+] as const;
+
 /** Never hidden by focus/custom prefs (still role/module gated). */
 export const ALWAYS_VISIBLE_NAV_IDS = new Set([
   "settings",
@@ -38,6 +48,7 @@ export const ALWAYS_VISIBLE_NAV_IDS = new Set([
   "clients",
   "cases-home",
   "cases-import",
+  ...BCI_SUITE_NAV_IDS,
 ]);
 
 /**

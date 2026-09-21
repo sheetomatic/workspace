@@ -20,9 +20,9 @@ describe("workspace-nav-prefs", () => {
     expect(isNavIdVisible(prefs, "app-builder")).toBe(false);
     expect(isNavIdVisible(prefs, "dept-store")).toBe(false);
     expect(isNavIdVisible(prefs, "settings")).toBe(true);
-    expect(isNavIdVisible(prefs, "checklists")).toBe(false);
+    expect(isNavIdVisible(prefs, "checklists")).toBe(true);
+    expect(isNavIdVisible(prefs, "pc")).toBe(true);
     expect(isNavIdVisible(prefs, "ea")).toBe(false);
-    expect(isNavIdVisible(prefs, "pc")).toBe(false);
     expect(isNavIdVisible(prefs, "team")).toBe(false);
   });
 
@@ -30,9 +30,9 @@ describe("workspace-nav-prefs", () => {
     const prefs = parseWorkspaceNavPrefs({ mode: "all", visibleIds: [] });
     expect(resolveVisibleNavIdSet(prefs)).toBeNull();
     expect(isNavIdVisible(prefs, "dept-store")).toBe(true);
-    expect(isNavIdVisible(prefs, "checklists")).toBe(false);
+    expect(isNavIdVisible(prefs, "checklists")).toBe(true);
+    expect(isNavIdVisible(prefs, "pc")).toBe(true);
     expect(isNavIdVisible(prefs, "ea")).toBe(false);
-    expect(isNavIdVisible(prefs, "pc")).toBe(false);
     expect(isNavIdVisible(prefs, "team")).toBe(false);
   });
 
@@ -43,7 +43,9 @@ describe("workspace-nav-prefs", () => {
     });
     expect(isNavIdVisible(prefs, "fms")).toBe(true);
     expect(isNavIdVisible(prefs, "em")).toBe(true);
-    expect(isNavIdVisible(prefs, "tasks")).toBe(false);
+    expect(isNavIdVisible(prefs, "checklists")).toBe(true);
+    expect(isNavIdVisible(prefs, "pc")).toBe(true);
+    expect(isNavIdVisible(prefs, "tasks")).toBe(true);
     expect(isNavIdVisible(prefs, "settings")).toBe(true);
     expect(isNavIdVisible(prefs, "team")).toBe(false);
   });

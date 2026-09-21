@@ -11,6 +11,7 @@ import { listChecklistOccurrencesForMis } from "@/lib/checklists/queries";
 import { canAccessEmReady } from "@/lib/em/em-access";
 import { categorySummary, filterMisRows, misDoerOptions } from "@/lib/mis/reports-data";
 import { requireSession } from "@/lib/require-session";
+import { BCI_OPS_MODULES } from "@/lib/workspace-modules";
 import { canCreateTasks } from "@/lib/tasks";
 import { PMS_SURFACE_HIDDEN } from "@/lib/pms-surface";
 import { redirect } from "next/navigation";
@@ -20,7 +21,7 @@ type PageProps = {
 };
 
 export default async function ChecklistScoresPage({ searchParams }: PageProps) {
-  const user = await requireSession(undefined, { module: "TASKS" });
+  const user = await requireSession(undefined, { anyModules: BCI_OPS_MODULES });
   if (PMS_SURFACE_HIDDEN) {
     redirect("/app/checklists/my-tasks");
   }

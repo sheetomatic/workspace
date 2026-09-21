@@ -14,7 +14,11 @@ import { logoutHref } from "@/lib/auth-logout";
 
 export async function requireSession(
   minRole?: Role,
-  options?: { redirectTo?: string; module?: WorkspaceModule },
+  options?: {
+    redirectTo?: string;
+    module?: WorkspaceModule;
+    anyModules?: WorkspaceModule[];
+  },
 ) {
   const user = await getSessionUser();
 
@@ -26,10 +30,11 @@ export async function requireSession(
     redirect(options?.redirectTo ?? "/app");
   }
 
-  if (
-    options?.module &&
-    !hasWorkspaceModule(user, options.module)
-  ) {
+  if (options?.anyModules?.length) {
+    if (!options.anyModules.some((module) => hasWorkspaceModule(user, module))) {
+      redirect(options?.redirectTo ?? "/app");
+    }
+  } else if (options?.module && !hasWorkspaceModule(user, options.module)) {
     redirect(options?.redirectTo ?? "/app");
   }
 

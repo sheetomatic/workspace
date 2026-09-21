@@ -9,7 +9,7 @@ import {
 import type { PcPeriod } from "@/lib/checklists/pc-period";
 import { canCreateTasks, listAssignableMembers } from "@/lib/tasks";
 import { requireSession } from "@/lib/require-session";
-import { hasWorkspaceModule } from "@/lib/workspace-modules";
+import { BCI_OPS_MODULES, hasWorkspaceModule } from "@/lib/workspace-modules";
 
 const COPY: Record<
   Exclude<PcPeriod, "all">,
@@ -36,7 +36,7 @@ const COPY: Record<
 };
 
 export async function PcPeriodJobsPage({ period }: { period: Exclude<PcPeriod, "all"> }) {
-  const user = await requireSession(undefined, { module: "TASKS" });
+  const user = await requireSession(undefined, { anyModules: BCI_OPS_MODULES });
   const manager = canCreateTasks(user.role);
   const fmsEnabled = hasWorkspaceModule(user, "FMS");
   const copy = COPY[period];

@@ -12,6 +12,7 @@ import {
 import { canConfigureChecklists } from "@/lib/checklists/access";
 import { listChecklistTemplates } from "@/lib/checklists/queries";
 import { requireSession } from "@/lib/require-session";
+import { BCI_OPS_MODULES } from "@/lib/workspace-modules";
 import { canCreateTasks } from "@/lib/tasks";
 import { redirect } from "next/navigation";
 
@@ -35,7 +36,7 @@ function formatDueRule(template: {
 }
 
 export default async function PcSetupPage() {
-  const user = await requireSession(undefined, { module: "TASKS" });
+  const user = await requireSession(undefined, { anyModules: BCI_OPS_MODULES });
   const isManager = canCreateTasks(user.role);
   if (!isManager) {
     redirect("/app/checklists/my-tasks");

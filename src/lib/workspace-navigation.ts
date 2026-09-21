@@ -54,6 +54,8 @@ export type WorkspaceNavItem = {
   /** Sheetomatic Technologies super admins only. */
   platformOnly?: boolean;
   module?: WorkspaceModule;
+  /** Visible if the member has any of these modules (used for BCI Check Lists / PC). */
+  anyModules?: WorkspaceModule[];
   /** When set, item is hidden unless this HR sub-module is enabled for the member. */
   hrSubModule?: string;
   /** When set, item is hidden unless this CRM sub-module is enabled for the member. */
@@ -91,7 +93,7 @@ function bciNavGroup(fmsHref: string): WorkspaceNavItem {
         href: "/app/checklists",
         label: "Check Lists",
         icon: ClipboardCheck,
-        module: "TASKS",
+        anyModules: ["FMS", "TASKS"],
         matchPrefix: "/app/checklists",
       },
       {
@@ -125,8 +127,7 @@ function bciNavGroup(fmsHref: string): WorkspaceNavItem {
         href: "/app/pc/today",
         label: "PC jobs",
         icon: Radar,
-        module: "TASKS",
-        matchPrefix: "/app/pc",
+        anyModules: ["FMS", "TASKS"],
       },
     ],
   };
@@ -251,7 +252,7 @@ const HRMS_NAV_ITEM: WorkspaceNavItem = {
       href: "/app/checklists/hr",
       label: "HR Check List",
       icon: ClipboardCheck,
-      module: "TASKS",
+      anyModules: ["FMS", "TASKS"],
       matchPrefix: "/app/checklists/hr",
     },
     {
@@ -701,6 +702,9 @@ export function canAccessWorkspaceNav(
     ) {
       return false;
     }
+  }
+  if (item.anyModules?.length) {
+    return item.anyModules.some((module) => hasWorkspaceModule(user, module));
   }
   if (!item.module) {
     return true;
