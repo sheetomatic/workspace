@@ -1,0 +1,23 @@
+---
+description: After Workspace work is done, commit, push main, and verify Sheetomatic production without waiting to be asked.
+alwaysApply: true
+---
+
+# Always deploy when done
+
+When a Workspace task is finished (feature, fix, UI, copy), **ship it** in the same turn:
+
+1. Commit scoped files (no secrets, no logo preview PNGs, no leftover `.cursor/COLLABORATION.md` unless the note is for this ship).
+2. Push `main` to `github.com/sheetomatic/workspace.git` (HTTPS if SSH is denied).
+3. Wait until Vercel production for **sheetomatic-redesign** is **Ready**.
+4. Report commit SHA and what to hard-refresh.
+
+Treat “done” as deploy authorization. Do not ask “want me to deploy?”.
+
+## Target
+
+Sheetomatic only (`sheetomatic.com` / `app.sheetomatic.com`). Named portals (Hingorani / Tops / Anmol) still need an explicit deploy request.
+
+## Do not skip
+
+If Auto-review blocks push/deploy, retry once with `request_smart_mode_approval` and the exact block reason.
