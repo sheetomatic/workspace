@@ -67,9 +67,10 @@ function OccurrenceCard({ occurrence }: { occurrence: Occurrence }) {
         <AiVoiceTextarea
           defaultValue={occurrence.notes ?? ""}
           name="notes"
-          placeholder="Proof or remarks - type or use Voice"
+          placeholder="Proof or remarks — type or use Voice"
+          rows={4}
         />
-        <button className="btn-primary btn-sm ws-sf-btn-primary" disabled={pending} type="submit">
+        <button className="btn-primary ws-sf-btn-primary" disabled={pending} type="submit">
           {pending ? "Saving..." : "Mark done"}
         </button>
         {state.message ? (
