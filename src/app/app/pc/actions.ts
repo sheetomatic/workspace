@@ -186,3 +186,42 @@ export async function markPcJobDone(
     return { ok: false, message: "Could not mark PC job done." };
   }
 }
+
+export async function completePcDoerWorkAction(
+  _prev: PcJobActionState,
+  formData: FormData,
+): Promise<PcJobActionState> {
+  try {
+    const user = await requireSession(undefined, { anyModules: BCI_OPS_MODULES });
+    const kind = parseKind(formData.get("kind"));
+    const workId = formData.get("workId")?.toString() ?? "";
+    if (!kind || !workId) {
+      return { ok: false, message: "Missing work item." };
+    }
+
+    if (kind === "CHECKLIST") {
+      const { completeChecklistOccurrenceAction } = await import(
+        "@/app/app/checklists/actions"
+      );
+      const next = new FormData();
+      next.set("occurrenceId", workId);
+      const result = await completeChecklistOccurrenceAction({ ok: false }, next);
+      return { ok: result.ok, message: result.message ?? "" };
+    }
+
+    if (kind === "EA_TASK") {
+      const { updateTaskStatus } = await import("@/app/app/tasks/actions");
+      const result = await updateTaskStatus(workId, "COMPLETED");
+      revalidatePath("/app/pc");
+      return { ok: result.ok, message: result.message ?? "" };
+    }
+
+    return {
+      ok: false,
+      message: "Open the FMS stop to close Planned/Actual. Tick here is for Check Lists and Task Delegations.",
+    };
+  } catch (error) {
+    console.error("completePcDoerWorkAction", error);
+    return { ok: false, message: "Could not complete this job." };
+  }
+}

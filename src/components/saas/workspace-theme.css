@@ -30226,10 +30226,119 @@ a.workspace-app .ws-stat-card,
   padding: 20px 22px 18px;
 }
 
-.workspace-app .ws-checklist-complete-form {
+.workspace-app .ws-cl-task-wrap {
+  padding: 0 0 8px;
+}
+
+.workspace-app .ws-cl-task-table .ws-cl-tick-col {
+  width: 52px;
+}
+
+.workspace-app .ws-cl-tick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.workspace-app .ws-cl-tick input {
+  width: 18px;
+  height: 18px;
+  accent-color: #1d1d1f;
+}
+
+.workspace-app .ws-cl-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.workspace-app .ws-cl-danger {
+  color: #b91c1c;
+}
+
+.workspace-app .ws-cl-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
   display: grid;
-  gap: 10px;
-  margin-top: 12px;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.4);
+}
+
+.workspace-app .ws-cl-dialog {
+  width: min(520px, 100%);
+  max-height: min(86vh, 720px);
+  overflow: auto;
+  padding: 20px 22px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+}
+
+.workspace-app .ws-cl-dialog header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.workspace-app .ws-cl-dialog header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.workspace-app .ws-cl-dialog-form {
+  display: grid;
+  gap: 12px;
+}
+
+.workspace-app .ws-cl-dialog-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.workspace-app .ws-cl-file {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px dashed var(--apple-border, #d2d2d7);
+  border-radius: 10px;
+}
+
+.workspace-app .ws-cl-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.workspace-app .ws-pc-job-table .ws-cl-row-actions {
+  min-width: 12rem;
+}
+
+@media (max-width: 720px) {
+  .workspace-app .ws-cl-task-table thead {
+    display: none;
+  }
+
+  .workspace-app .ws-cl-task-table tbody tr {
+    display: grid;
+    gap: 8px;
+    padding: 14px 14px;
+    border-bottom: 1px solid var(--apple-border-light, #e8e8ed);
+  }
+
+  .workspace-app .ws-cl-task-table tbody td {
+    display: flex;
+    gap: 8px;
+  }
 }
 
 @media (max-width: 720px) {

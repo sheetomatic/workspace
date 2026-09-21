@@ -3,6 +3,7 @@ import { buildChecklistMisRows, type ChecklistMisRow } from "@/lib/checklists/mi
 
 export type PcPersonMisRow = {
   owner: string;
+  role: "Doer" | "PC";
   total: number;
   delayed: number;
   avgScore: number;
@@ -43,8 +44,48 @@ export function buildPcPersonMisRows(rows: ChecklistMisRow[]): PcPersonMisRow[] 
           : 100;
       return {
         owner,
+        role: "Doer" as const,
         total: items.length,
         delayed,
+        avgScore,
+        deficitPct: Math.max(0, 100 - avgScore),
+      };
+    })
+    .sort((a, b) => b.deficitPct - a.deficitPct);
+}
+
+export function buildPcChasePersonRows(
+  items: Array<{
+    pcUserIds: string[];
+    overdue: boolean;
+    pcJobDoneAt?: Date | null;
+  }>,
+  pcNames: Record<string, string>,
+): PcPersonMisRow[] {
+  const byPc = new Map<string, { delayed: number; total: number }>();
+
+  for (const item of items) {
+    for (const pcId of item.pcUserIds) {
+      const row = byPc.get(pcId) ?? { delayed: 0, total: 0 };
+      row.total += 1;
+      if (item.overdue && !item.pcJobDoneAt) {
+        row.delayed += 1;
+      }
+      byPc.set(pcId, row);
+    }
+  }
+
+  return Array.from(byPc.entries())
+    .map(([pcId, stats]) => {
+      const avgScore =
+        stats.total > 0
+          ? Math.round(((stats.total - stats.delayed) / stats.total) * 100)
+          : 100;
+      return {
+        owner: pcNames[pcId] ?? "PC",
+        role: "PC" as const,
+        total: stats.total,
+        delayed: stats.delayed,
         avgScore,
         deficitPct: Math.max(0, 100 - avgScore),
       };

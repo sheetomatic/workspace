@@ -3,8 +3,12 @@ import {
   getHrFocusGroup,
   type HrFocusId,
 } from "@/lib/checklists/hr-checklist-catalog";
-import { listChecklistTemplatesByTeam } from "@/lib/checklists/queries";
-import { listMyChecklistPcWork, listOrgPcMonitor } from "@/lib/checklists/pc-work";
+import {
+  listChecklistTemplatesByTeam,
+  listTeamChecklistTasks,
+} from "@/lib/checklists/queries";
+import { listOrgPcMonitor } from "@/lib/checklists/pc-work";
+import { canAdminChecklists } from "@/lib/checklists/access";
 import { canCreateTasks, listAssignableMembers } from "@/lib/tasks";
 import { requireSession } from "@/lib/require-session";
 import { BCI_OPS_MODULES } from "@/lib/workspace-modules";
@@ -23,19 +27,22 @@ export default async function HrChecklistPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const activeTab = parseHrTab(params.tab?.trim());
   const canConfigure = canCreateTasks(user.role);
+  const isAdmin = canAdminChecklists(user);
 
-  const [templates, monitor, myRuns, assignable] = await Promise.all([
+  const [templates, monitor, tasks, assignable] = await Promise.all([
     listChecklistTemplatesByTeam(user.organizationId, "HR"),
     listOrgPcMonitor(user.organizationId),
-    listMyChecklistPcWork(user.organizationId, user.id),
-    canConfigure
-      ? listAssignableMembers(user.organizationId)
-      : Promise.resolve([]),
+    listTeamChecklistTasks(user.organizationId, "HR"),
+    listAssignableMembers(user.organizationId),
   ]);
 
   const openRuns = monitor.checklists.filter((row) => row.subtitle === "HR");
-  const myTeamRuns = myRuns.filter((row) => row.template.team === "HR");
   const members = assignable.map((member) => ({
+    id: member.id,
+    name: member.name,
+    email: member.email,
+  }));
+  const deployMembers = assignable.map((member) => ({
     id: member.id,
     label: member.name,
   }));
@@ -44,9 +51,12 @@ export default async function HrChecklistPage({ searchParams }: PageProps) {
     <HrChecklistBoard
       activeTab={activeTab}
       canConfigure={canConfigure}
+      currentUserId={user.id}
+      deployMembers={deployMembers}
+      isAdmin={isAdmin}
       members={members}
-      myRuns={myTeamRuns}
       openRuns={openRuns}
+      tasks={tasks}
       templates={templates}
     />
   );

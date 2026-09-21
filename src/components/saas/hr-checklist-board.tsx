@@ -8,8 +8,9 @@ import {
   matchesHrFocus,
   type HrFocusId,
 } from "@/lib/checklists/hr-checklist-catalog";
+import type { ChecklistTaskRow } from "@/lib/checklists/queries";
 import type { PcWorkItem } from "@/lib/checklists/pc-work";
-import { ChecklistMyRunsBoard } from "@/components/saas/checklist-my-runs-board";
+import { ChecklistTaskRows } from "@/components/saas/checklist-task-rows";
 import { HrChecklistDeployPanel } from "@/components/saas/hr-checklist-deploy";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 
@@ -36,14 +37,15 @@ function focusHref(focusId: HrFocusId | null) {
   return focusId ? `/app/checklists/hr?tab=${focusId}` : "/app/checklists/hr";
 }
 
-type MyRun = Parameters<typeof ChecklistMyRunsBoard>[0]["occurrences"][number];
-
 export function HrChecklistBoard({
   templates,
   openRuns,
-  myRuns,
+  tasks,
   canConfigure,
+  isAdmin,
+  currentUserId,
   members,
+  deployMembers,
   activeTab,
 }: {
   templates: Array<{
@@ -57,9 +59,12 @@ export function HrChecklistBoard({
     _count: { occurrences: number };
   }>;
   openRuns: PcWorkItem[];
-  myRuns: MyRun[];
+  tasks: ChecklistTaskRow[];
   canConfigure: boolean;
-  members: Array<{ id: string; label: string }>;
+  isAdmin: boolean;
+  currentUserId: string;
+  members: Array<{ id: string; name: string | null; email: string }>;
+  deployMembers: Array<{ id: string; label: string }>;
   activeTab: HrFocusId | null;
 }) {
   const focusGroup = getHrFocusGroup(activeTab);
@@ -73,6 +78,10 @@ export function HrChecklistBoard({
       `${template.title} ${template.instructions ?? ""}`,
       activeTab,
     ),
+  );
+
+  const filteredTasks = tasks.filter((row) =>
+    matchesHrFocus(`${row.template.title} ${row.template.instructions ?? ""}`, activeTab),
   );
 
   const suggestedGroups = activeTab
@@ -166,17 +175,23 @@ export function HrChecklistBoard({
         <p className="ws-hr-checklist-tab-lead">{focusGroup.description}</p>
       ) : null}
 
-      {myRuns.length > 0 ? (
-        <section className="ws-sf-list-view" aria-label="Your HR items">
-          <header className="ws-sf-list-view-header">
-            <div className="ws-sf-list-view-title">
-              <h2>Your HR items due</h2>
-              <span className="ws-sf-list-view-count">{myRuns.length}</span>
-            </div>
-          </header>
-          <ChecklistMyRunsBoard occurrences={myRuns} />
-        </section>
-      ) : null}
+      <section className="ws-sf-list-view" aria-label="HR Check List tasks">
+        <header className="ws-sf-list-view-header">
+          <div className="ws-sf-list-view-title">
+            <h2>HR Check List tasks</h2>
+            <span className="ws-sf-list-view-count">{filteredTasks.length}</span>
+          </div>
+          <p className="ws-em-section-lead">
+            Tick to complete. Update to add notes or upload proof. Admins can edit or delete.
+          </p>
+        </header>
+        <ChecklistTaskRows
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
+          members={members}
+          tasks={filteredTasks}
+        />
+      </section>
 
       <section className="ws-sf-list-view" aria-label="Open HR runs">
         <header className="ws-sf-list-view-header">
@@ -368,7 +383,7 @@ export function HrChecklistBoard({
           </div>
 
           <HrChecklistDeployPanel
-            members={members}
+            members={deployMembers}
             focusId={activeTab}
             focusLabel={focusGroup?.label ?? null}
           />

@@ -10,8 +10,14 @@ import {
 } from "@/lib/mis/reports-data";
 import { listChecklistOccurrencesForMis } from "@/lib/checklists/queries";
 import { buildChecklistMisRows } from "@/lib/checklists/mis";
-import { buildPcMisDetailRows } from "@/lib/checklists/pc-mis";
+import { buildPcChasePersonRows, buildPcMisDetailRows } from "@/lib/checklists/pc-mis";
+import {
+  enrichPcChaseStatus,
+  listOrgPcFollowupsMonitor,
+} from "@/lib/checklists/pc-work";
+import { prisma } from "@/lib/db";
 import { listDelegatedTasks } from "@/lib/tasks";
+import type { PcPeriod } from "@/lib/checklists/pc-period";
 import { getStockRows } from "@/lib/ims/ims-store";
 import {
   formatImsQty,
@@ -55,6 +61,13 @@ export type EmPersonKraRow = {
   totalDeficitPct: number;
 };
 
+export type EmPcKraRow = {
+  owner: string;
+  chaseTotal: number;
+  chaseDelayed: number;
+  deficitPct: number;
+};
+
 export type EmReadyPayload = {
   generatedAt: string;
   period: EmPeriodRange;
@@ -75,6 +88,7 @@ export type EmReadyPayload = {
   fmsSummary: ReturnType<typeof categorySummary> | null;
   checklistSummary: ReturnType<typeof categorySummary> | null;
   personKra: EmPersonKraRow[];
+  pcKra: EmPcKraRow[];
   exceptions: EmExceptionRow[];
 };
 
@@ -272,10 +286,14 @@ export async function getEmReadyPayload(
       : parseEmPeriodParams(periodInput ?? {});
   const tasksEnabled = hasWorkspaceModule(user, "TASKS");
   const fmsEnabled = hasWorkspaceModule(user, "FMS");
-  const checklistsEnabled = tasksEnabled;
+  const checklistsEnabled =
+    hasWorkspaceModule(user, "TASKS") || hasWorkspaceModule(user, "FMS");
   const imsEnabled = hasWorkspaceModule(user, "IMS");
 
-  const [taskPage, fmsPage, fmsOps, pipelineCounts, checklistOccurrences, delayedSalesOrders, stockRows] =
+  const pcScope: PcPeriod =
+    period.type === "weekly" ? "week" : period.type === "monthly" ? "month" : "all";
+
+  const [taskPage, fmsPage, fmsOps, pipelineCounts, checklistOccurrences, delayedSalesOrders, stockRows, pcMonitor] =
     await Promise.all([
     tasksEnabled
       ? listDelegatedTasks(user, { includeCompleted: false }, { page: 1, pageSize: 200 })
@@ -316,6 +334,12 @@ export async function getEmReadyPayload(
     imsEnabled
       ? getStockRows(user.organizationId, { includeInactiveWithBalance: false })
       : Promise.resolve([]),
+    listOrgPcFollowupsMonitor(user.organizationId, pcScope).catch(() => ({
+      checklists: [],
+      eaTasks: [],
+      fmsSteps: [],
+      total: 0,
+    })),
   ]);
 
   const taskRows = buildTaskMisRows(
@@ -334,6 +358,30 @@ export async function getEmReadyPayload(
   const imsMisRows = buildImsMisRows(stockRows);
   const overdueTasks = taskRows.filter((row) => row.delayed).length;
   const overdueChecklists = checklistRows.filter((row) => row.delayed).length;
+
+  const pcItems = await enrichPcChaseStatus(user.organizationId, [
+    ...pcMonitor.checklists,
+    ...pcMonitor.eaTasks,
+    ...(fmsEnabled ? pcMonitor.fmsSteps : []),
+  ]);
+  const pcIds = [...new Set(pcItems.flatMap((item) => item.pcUserIds))];
+  const pcUsers =
+    pcIds.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: pcIds } },
+          select: { id: true, name: true, email: true },
+        })
+      : [];
+  const pcNames = Object.fromEntries(
+    pcUsers.map((row) => [row.id, row.name ?? row.email.split("@")[0]]),
+  );
+  const pcPersonRows = buildPcChasePersonRows(pcItems, pcNames);
+  const pcKra: EmPcKraRow[] = pcPersonRows.map((row) => ({
+    owner: row.owner,
+    chaseTotal: row.total,
+    chaseDelayed: row.delayed,
+    deficitPct: row.deficitPct,
+  }));
 
   return {
     generatedAt: new Date().toISOString(),
@@ -357,6 +405,7 @@ export async function getEmReadyPayload(
       ? categorySummary("PC", buildPcMisDetailRows(checklistOccurrences))
       : null,
     personKra: buildPersonKra(taskRows, fmsRows, checklistRows, imsMisRows),
+    pcKra,
     exceptions: buildExceptions(
       taskRows,
       filteredOverdue,

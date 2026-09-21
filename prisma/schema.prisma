@@ -3001,6 +3001,10 @@ model ChecklistOccurrence {
   delayMinutes        Int?
   status              ChecklistOccurrenceStatus @default(PENDING)
   notes               String?
+  proofFileName       String?
+  proofMimeType       String?
+  proofFileSize       Int?
+  proofData           Bytes?
   completedById       String?
   completedBy         User?                     @relation("ChecklistOccurrenceCompleter", fields: [completedById], references: [id], onDelete: SetNull)
   emailReminderSentAt DateTime?

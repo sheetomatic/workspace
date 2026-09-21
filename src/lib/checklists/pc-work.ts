@@ -24,6 +24,9 @@ export type PcWorkItem = {
   completable: boolean;
   lastFollowedAt?: Date | null;
   pcJobDoneAt?: Date | null;
+  templateId?: string | null;
+  notes?: string | null;
+  proofFileName?: string | null;
 };
 
 function ownerLabel(name: string | null, email: string) {
@@ -229,8 +232,10 @@ function toChecklistPcWorkItem(run: {
   id: string;
   plannedAt: Date;
   status: string;
+  notes?: string | null;
+  proofFileName?: string | null;
   assigneeUserId: string;
-  template: { title: string; team: string };
+  template: { id?: string; title: string; team: string };
   assignee: { name: string | null; email: string };
 }): PcWorkItem {
   return {
@@ -240,7 +245,7 @@ function toChecklistPcWorkItem(run: {
     subtitle: run.template.team,
     owner: ownerLabel(run.assignee.name, run.assignee.email),
     ownerId: run.assigneeUserId,
-    pcUserIds: [run.assigneeUserId],
+    pcUserIds: [],
     eaUserId: null,
     dueLabel: formatDue(run.plannedAt),
     dueAt: run.plannedAt,
@@ -248,6 +253,9 @@ function toChecklistPcWorkItem(run: {
     overdue: run.status === "OVERDUE" || run.plannedAt.getTime() < Date.now(),
     href: checklistTeamHref(run.template.team),
     completable: true,
+    templateId: run.template.id ?? null,
+    notes: run.notes ?? null,
+    proofFileName: run.proofFileName ?? null,
   };
 }
 
@@ -300,7 +308,7 @@ export async function listOrgPcFollowupsMonitor(
           status: { in: ["PENDING", "OVERDUE"] },
         },
         include: {
-          template: { select: { title: true, team: true } },
+          template: { select: { id: true, title: true, team: true } },
           assignee: { select: { name: true, email: true } },
         },
         orderBy: [{ status: "desc" }, { plannedAt: "asc" }],

@@ -7,6 +7,7 @@ import {
   listOrgPcFollowupsMonitor,
 } from "@/lib/checklists/pc-work";
 import type { PcPeriod } from "@/lib/checklists/pc-period";
+import { canAdminChecklists } from "@/lib/checklists/access";
 import { canCreateTasks, listAssignableMembers } from "@/lib/tasks";
 import { requireSession } from "@/lib/require-session";
 import { BCI_OPS_MODULES, hasWorkspaceModule } from "@/lib/workspace-modules";
@@ -38,6 +39,7 @@ const COPY: Record<
 export async function PcPeriodJobsPage({ period }: { period: Exclude<PcPeriod, "all"> }) {
   const user = await requireSession(undefined, { anyModules: BCI_OPS_MODULES });
   const manager = canCreateTasks(user.role);
+  const isAdmin = canAdminChecklists(user);
   const fmsEnabled = hasWorkspaceModule(user, "FMS");
   const copy = COPY[period];
 
@@ -67,6 +69,8 @@ export async function PcPeriodJobsPage({ period }: { period: Exclude<PcPeriod, "
         overdueCount={overdueCount}
       />
       <PcDoerJobsBoard
+        currentUserId={user.id}
+        isAdmin={isAdmin}
         items={items}
         members={members}
         scopeLabel={copy.scope}

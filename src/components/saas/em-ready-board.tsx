@@ -370,7 +370,7 @@ export function EmReadyBoard({ payload }: { payload: EmReadyPayload }) {
                 </span>
               </div>
               <p className="ws-em-section-lead">
-                Tasks + FMS + IMS combined deficit per team member
+                Doer deficit across Tasks, FMS, Check Lists, and IMS
                 {doerName ? ` - ${doerName}` : ""}.
               </p>
             </header>
@@ -378,10 +378,10 @@ export function EmReadyBoard({ payload }: { payload: EmReadyPayload }) {
               <table className="ws-fms-data-table ws-sf-data-table ws-em-kra-table">
                 <thead>
                   <tr>
-                    <th>Person</th>
+                    <th>Doer</th>
                     <th className="ws-mis-col-num">Tasks</th>
                     <th className="ws-mis-col-num">FMS</th>
-                    <th className="ws-mis-col-num">PC</th>
+                    <th className="ws-mis-col-num">Check Lists</th>
                     {payload.imsEnabled ? (
                       <th className="ws-mis-col-num">IMS</th>
                     ) : null}
@@ -455,6 +455,47 @@ export function EmReadyBoard({ payload }: { payload: EmReadyPayload }) {
                       </tr>
                     ))
                   )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ) : null}
+
+        {EM_KRA_SURFACE_HIDDEN ? null : payload.pcKra.length > 0 ? (
+          <section className="ws-sf-list-view ws-em-section" aria-label="PC scores">
+            <header className="ws-sf-list-view-header">
+              <div className="ws-sf-list-view-title">
+                <h2>
+                  <Users size={18} aria-hidden />
+                  PC scores
+                </h2>
+                <span className="ws-sf-list-view-count">{payload.pcKra.length} PCs</span>
+              </div>
+              <p className="ws-em-section-lead">
+                Process Coordinator chase deficit: overdue jobs still open vs PC done.
+              </p>
+            </header>
+            <div className="ws-sf-table-wrap ws-em-table-wrap">
+              <table className="ws-fms-data-table ws-sf-data-table ws-em-kra-table">
+                <thead>
+                  <tr>
+                    <th>PC</th>
+                    <th className="ws-mis-col-num">Jobs</th>
+                    <th className="ws-mis-col-num">Still chasing</th>
+                    <th className="ws-mis-col-num">Deficit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payload.pcKra.map((row) => (
+                    <tr key={row.owner}>
+                      <td className="ws-em-person-cell">{row.owner}</td>
+                      <td className="ws-mis-col-num">{row.chaseTotal}</td>
+                      <td className="ws-mis-col-num">{row.chaseDelayed}</td>
+                      <td className="ws-mis-col-num">
+                        <DeficitBadge value={row.deficitPct} size="sm" />
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

@@ -2,18 +2,17 @@ import Link from "next/link";
 import type { ChecklistTeam } from "@prisma/client";
 import {
   CalendarClock,
-  CheckCircle2,
   ClipboardList,
   ListChecks,
   Settings2,
 } from "lucide-react";
-import { ChecklistMyRunsBoard } from "@/components/saas/checklist-my-runs-board";
+import { ChecklistTaskRows } from "@/components/saas/checklist-task-rows";
 import {
   CHECKLIST_FREQUENCY_LABELS,
   CHECKLIST_TEAM_LABELS,
 } from "@/lib/checklists/constants";
 import type { TeamChecklistProfile } from "@/lib/checklists/team-checklist-profiles";
-import type { PcWorkItem } from "@/lib/checklists/pc-work";
+import type { ChecklistTaskRow } from "@/lib/checklists/queries";
 
 function formatDueRule(template: {
   frequency: string;
@@ -34,15 +33,17 @@ function formatDueRule(template: {
   return freq;
 }
 
-type MyRun = Parameters<typeof ChecklistMyRunsBoard>[0]["occurrences"][number];
+type Member = { id: string; name: string | null; email: string };
 
 export function TeamChecklistBoard({
   team,
   profile,
   templates,
-  openRuns,
-  myRuns,
+  tasks,
   canConfigure,
+  isAdmin,
+  currentUserId,
+  members,
 }: {
   team: ChecklistTeam;
   profile: TeamChecklistProfile;
@@ -56,9 +57,11 @@ export function TeamChecklistBoard({
     assignee: { name: string | null; email: string };
     _count: { occurrences: number };
   }>;
-  openRuns: PcWorkItem[];
-  myRuns: MyRun[];
+  tasks: ChecklistTaskRow[];
   canConfigure: boolean;
+  isAdmin: boolean;
+  currentUserId: string;
+  members: Member[];
 }) {
   const teamLabel = CHECKLIST_TEAM_LABELS[team] ?? team;
 
@@ -91,17 +94,24 @@ export function TeamChecklistBoard({
         ) : null}
       </header>
 
-      {myRuns.length > 0 ? (
-        <section className="ws-sf-list-view ws-team-checklist-panel ws-team-checklist-mine">
-          <header className="ws-sf-list-view-header">
-            <div className="ws-sf-list-view-title">
-              <h2>Your {teamLabel} items due</h2>
-              <span className="ws-sf-list-view-count">{myRuns.length}</span>
-            </div>
-          </header>
-          <ChecklistMyRunsBoard occurrences={myRuns} />
-        </section>
-      ) : null}
+      <section className="ws-sf-list-view ws-team-checklist-panel ws-team-checklist-mine">
+        <header className="ws-sf-list-view-header">
+          <div className="ws-sf-list-view-title">
+            <h2>{teamLabel} Check List tasks</h2>
+            <span className="ws-sf-list-view-count">{tasks.length}</span>
+          </div>
+          <p className="ws-team-checklist-section-lead">
+            Tick to complete. Update to add notes or upload proof. Admins can edit or delete
+            the schedule.
+          </p>
+        </header>
+        <ChecklistTaskRows
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
+          members={members}
+          tasks={tasks}
+        />
+      </section>
 
       <section className="ws-sf-list-view ws-team-checklist-panel ws-team-checklist-examples">
         <header className="ws-sf-list-view-header">
@@ -132,51 +142,7 @@ export function TeamChecklistBoard({
         </ul>
       </section>
 
-      <div className="ws-team-checklist-split">
-        <section className="ws-sf-list-view ws-team-checklist-panel ws-team-checklist-open">
-          <header className="ws-sf-list-view-header">
-            <div className="ws-sf-list-view-title">
-              <h2>Open {teamLabel} runs</h2>
-              <span className="ws-sf-list-view-count">{openRuns.length}</span>
-            </div>
-          </header>
-          {openRuns.length === 0 ? (
-            <div className="ws-team-checklist-empty is-clear">
-              <div className="ws-team-checklist-empty-icon" aria-hidden>
-                <CheckCircle2 size={22} strokeWidth={1.75} />
-              </div>
-              <strong>All clear</strong>
-              <p>
-                No open {teamLabel.toLowerCase()} checklist runs right now.
-                Scheduled runs will appear here when due.
-              </p>
-            </div>
-          ) : (
-            <ul className="ws-team-checklist-run-list">
-              {openRuns.map((run) => (
-                <li
-                  key={run.id}
-                  className={`ws-team-checklist-run-row${run.overdue ? " is-overdue" : ""}`}
-                >
-                  <div className="ws-team-checklist-run-main">
-                    <strong>{run.title}</strong>
-                    <span className="ws-team-checklist-run-owner">{run.owner}</span>
-                  </div>
-                  <div className="ws-team-checklist-run-side">
-                    <span className="ws-team-checklist-run-due">{run.dueLabel}</span>
-                    <span
-                      className={`ws-team-checklist-status${run.overdue ? " is-overdue" : ""}`}
-                    >
-                      {run.status}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section className="ws-sf-list-view ws-team-checklist-panel ws-team-checklist-schedules">
+      <section className="ws-sf-list-view ws-team-checklist-panel ws-team-checklist-schedules">
           <header className="ws-sf-list-view-header">
             <div className="ws-sf-list-view-title">
               <h2>Live {teamLabel} schedules</h2>
@@ -229,7 +195,6 @@ export function TeamChecklistBoard({
             </ul>
           )}
         </section>
-      </div>
     </div>
   );
 }

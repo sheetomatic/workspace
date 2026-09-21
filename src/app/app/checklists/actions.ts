@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import type { ChecklistFrequency, ChecklistTeam } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { getChecklistActor } from "@/lib/checklists/session";
-import { canConfigureChecklists } from "@/lib/checklists/access";
+import { canAdminChecklists, canConfigureChecklists } from "@/lib/checklists/access";
+import { validateFmsAttachmentFile } from "@/lib/fms/attachment-limits";
 import {
   ensureChecklistOccurrence,
   ensureNextChecklistOccurrence,
@@ -43,6 +44,37 @@ function parseFrequency(value: string): ChecklistFrequency {
   return frequencies.includes(value as ChecklistFrequency)
     ? (value as ChecklistFrequency)
     : "MONTHLY";
+}
+
+function revalidateChecklistPaths() {
+  [
+    "/app/checklists",
+    "/app/checklists/accounts",
+    "/app/checklists/hr",
+    "/app/checklists/maintenance",
+    "/app/checklists/setup",
+    "/app/checklists/my-tasks",
+    "/app/pc",
+    "/app/today",
+    "/app/em",
+  ].forEach((path) => revalidatePath(path));
+}
+
+async function readChecklistProof(formData: FormData) {
+  const file = formData.get("proof");
+  if (!(file instanceof File) || file.size === 0) {
+    return null;
+  }
+  const check = validateFmsAttachmentFile(file);
+  if (!check.ok) {
+    return { error: check.message };
+  }
+  return {
+    proofFileName: file.name.slice(0, 180),
+    proofMimeType: file.type || "application/octet-stream",
+    proofFileSize: file.size,
+    proofData: Buffer.from(await file.arrayBuffer()),
+  };
 }
 
 export async function createChecklistTemplateAction(
@@ -135,7 +167,6 @@ export async function completeChecklistOccurrenceAction(
     const user = actor.user;
 
     const occurrenceId = formData.get("occurrenceId")?.toString() ?? "";
-    const notes = formData.get("notes")?.toString().trim() || null;
 
     const occurrence = await prisma.checklistOccurrence.findFirst({
       where: {
@@ -156,12 +187,20 @@ export async function completeChecklistOccurrenceAction(
       return { ok: false, message: "Checklist not found." };
     }
 
-    if (occurrence.assigneeUserId !== user.id) {
+    if (occurrence.assigneeUserId !== user.id && !canAdminChecklists(user)) {
       return { ok: false, message: "Only the assigned doer can mark this checklist done." };
     }
 
     if (occurrence.status === "DONE") {
       return { ok: false, message: "Already marked done." };
+    }
+
+    const notesRaw = formData.get("notes");
+    const nextNotes =
+      notesRaw === null ? occurrence.notes : notesRaw.toString().trim() || null;
+    const proof = await readChecklistProof(formData);
+    if (proof && "error" in proof) {
+      return { ok: false, message: proof.error };
     }
 
     const actualAt = new Date();
@@ -176,21 +215,194 @@ export async function completeChecklistOccurrenceAction(
         status: "DONE",
         actualAt,
         delayMinutes: actualAt.getTime() > occurrence.plannedAt.getTime() ? delayMinutes : 0,
-        notes,
+        notes: nextNotes,
         completedById: user.id,
+        ...(proof && !("error" in proof) ? proof : {}),
       },
     });
 
     await ensureNextChecklistOccurrence(occurrence.template, occurrence.plannedAt);
 
-    revalidatePath("/app/checklists");
-    revalidatePath("/app/checklists/my-tasks");
-    revalidatePath("/app/today");
-    revalidatePath("/app/em");
+    revalidateChecklistPaths();
     return { ok: true, message: "Checklist marked done." };
   } catch (error) {
     console.error("completeChecklistOccurrenceAction", error);
     return { ok: false, message: "Could not complete checklist." };
+  }
+}
+
+export async function updateChecklistOccurrenceAction(
+  _prev: FmsActionState,
+  formData: FormData,
+): Promise<FmsActionState> {
+  try {
+    const actor = await getChecklistActor();
+    if (!actor.ok) {
+      return { ok: false, message: actor.message };
+    }
+    const user = actor.user;
+    const occurrenceId = formData.get("occurrenceId")?.toString() ?? "";
+    const occurrence = await prisma.checklistOccurrence.findFirst({
+      where: { id: occurrenceId, organizationId: user.organizationId },
+    });
+    if (!occurrence) {
+      return { ok: false, message: "Checklist not found." };
+    }
+    if (occurrence.assigneeUserId !== user.id && !canAdminChecklists(user)) {
+      return { ok: false, message: "Only the assigned doer can update this checklist." };
+    }
+    if (occurrence.status === "DONE") {
+      return { ok: false, message: "Already marked done." };
+    }
+
+    const notes = formData.get("notes")?.toString().trim() || null;
+    const proof = await readChecklistProof(formData);
+    if (proof && "error" in proof) {
+      return { ok: false, message: proof.error };
+    }
+
+    const markDone = formData.get("intent") === "done";
+    const actualAt = new Date();
+    const delayMinutes = Math.max(
+      0,
+      Math.round((actualAt.getTime() - occurrence.plannedAt.getTime()) / 60000),
+    );
+
+    await prisma.checklistOccurrence.update({
+      where: { id: occurrence.id },
+      data: {
+        notes,
+        ...(proof && !("error" in proof) ? proof : {}),
+        ...(markDone
+          ? {
+              status: "DONE" as const,
+              actualAt,
+              delayMinutes:
+                actualAt.getTime() > occurrence.plannedAt.getTime() ? delayMinutes : 0,
+              completedById: user.id,
+            }
+          : {}),
+      },
+    });
+
+    if (markDone) {
+      const template = await prisma.checklistTemplate.findFirst({
+        where: { id: occurrence.templateId, organizationId: user.organizationId },
+        include: {
+          assignee: { select: { name: true, email: true } },
+          references: true,
+        },
+      });
+      if (template) {
+        await ensureNextChecklistOccurrence(template, occurrence.plannedAt);
+      }
+    }
+
+    revalidateChecklistPaths();
+    return {
+      ok: true,
+      message: markDone ? "Checklist marked done." : "Update saved.",
+    };
+  } catch (error) {
+    console.error("updateChecklistOccurrenceAction", error);
+    return { ok: false, message: "Could not update checklist." };
+  }
+}
+
+export async function updateChecklistTemplateAction(
+  _prev: FmsActionState,
+  formData: FormData,
+): Promise<FmsActionState> {
+  try {
+    const actor = await getChecklistActor();
+    if (!actor.ok) {
+      return { ok: false, message: actor.message };
+    }
+    const user = actor.user;
+    if (!canAdminChecklists(user)) {
+      return { ok: false, message: "Only admins can edit checklists." };
+    }
+
+    const templateId = formData.get("templateId")?.toString() ?? "";
+    const title = formData.get("title")?.toString().trim() ?? "";
+    if (!title) {
+      return { ok: false, message: "Title is required." };
+    }
+
+    const existing = await prisma.checklistTemplate.findFirst({
+      where: { id: templateId, organizationId: user.organizationId },
+    });
+    if (!existing) {
+      return { ok: false, message: "Checklist not found." };
+    }
+
+    const assigneeUserIdRaw = formData.get("assigneeUserId")?.toString() ?? "";
+    const assigneeResult = await resolveChecklistAssigneeForOrg(
+      user.organizationId,
+      assigneeUserIdRaw || existing.assigneeUserId,
+      (args) =>
+        prisma.membership.findFirst({
+          where: {
+            organizationId: args.organizationId,
+            userId: args.userId,
+            ...activeAssigneeMembershipWhere,
+          },
+          select: { id: true, deactivatedAt: true },
+        }),
+    );
+    if (!assigneeResult.ok) {
+      return { ok: false, message: assigneeResult.message };
+    }
+
+    await prisma.checklistTemplate.update({
+      where: { id: existing.id },
+      data: {
+        title,
+        instructions: formData.get("instructions")?.toString().trim() || null,
+        assigneeUserId: assigneeResult.assigneeUserId,
+      },
+    });
+
+    revalidateChecklistPaths();
+    return { ok: true, message: "Checklist updated." };
+  } catch (error) {
+    console.error("updateChecklistTemplateAction", error);
+    return { ok: false, message: "Could not edit checklist." };
+  }
+}
+
+export async function deleteChecklistTemplateAction(
+  _prev: FmsActionState,
+  formData: FormData,
+): Promise<FmsActionState> {
+  try {
+    const actor = await getChecklistActor();
+    if (!actor.ok) {
+      return { ok: false, message: actor.message };
+    }
+    const user = actor.user;
+    if (!canAdminChecklists(user)) {
+      return { ok: false, message: "Only admins can delete checklists." };
+    }
+
+    const templateId = formData.get("templateId")?.toString() ?? "";
+    const existing = await prisma.checklistTemplate.findFirst({
+      where: { id: templateId, organizationId: user.organizationId },
+    });
+    if (!existing) {
+      return { ok: false, message: "Checklist not found." };
+    }
+
+    await prisma.checklistTemplate.update({
+      where: { id: existing.id },
+      data: { isActive: false },
+    });
+
+    revalidateChecklistPaths();
+    return { ok: true, message: "Checklist deleted." };
+  } catch (error) {
+    console.error("deleteChecklistTemplateAction", error);
+    return { ok: false, message: "Could not delete checklist." };
   }
 }
 

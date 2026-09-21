@@ -76,6 +76,73 @@ export async function listChecklistTemplatesByTeam(
   });
 }
 
+export type ChecklistTaskRow = {
+  id: string;
+  plannedAt: string;
+  status: string;
+  notes: string | null;
+  proofFileName: string | null;
+  assigneeUserId: string;
+  assignee: { name: string | null; email: string };
+  template: {
+    id: string;
+    title: string;
+    instructions: string | null;
+    team: string;
+    frequency: string;
+    dueMonthDay: number | null;
+    dueWeekday: number | null;
+    dueMonth: number | null;
+  };
+};
+
+export async function listTeamChecklistTasks(
+  organizationId: string,
+  team: ChecklistTeam,
+): Promise<ChecklistTaskRow[]> {
+  const rows = await prisma.checklistOccurrence.findMany({
+    where: {
+      organizationId,
+      status: { in: ["PENDING", "OVERDUE"] },
+      template: { team, isActive: true },
+    },
+    select: {
+      id: true,
+      plannedAt: true,
+      status: true,
+      notes: true,
+      proofFileName: true,
+      assigneeUserId: true,
+      assignee: { select: { name: true, email: true } },
+      template: {
+        select: {
+          id: true,
+          title: true,
+          instructions: true,
+          team: true,
+          frequency: true,
+          dueMonthDay: true,
+          dueWeekday: true,
+          dueMonth: true,
+        },
+      },
+    },
+    orderBy: [{ status: "desc" }, { plannedAt: "asc" }],
+    take: 200,
+  });
+
+  return rows.map((row) => ({
+    id: row.id,
+    plannedAt: row.plannedAt.toISOString(),
+    status: row.status,
+    notes: row.notes,
+    proofFileName: row.proofFileName,
+    assigneeUserId: row.assigneeUserId,
+    assignee: row.assignee,
+    template: row.template,
+  }));
+}
+
 export async function listMyChecklistOccurrences(
   organizationId: string,
   assigneeUserId: string,

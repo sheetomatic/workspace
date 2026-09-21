@@ -9,6 +9,7 @@ import { buildChecklistMisRows } from "@/lib/checklists/mis";
 import { buildPcMisDetailRows, buildPcPersonMisRows } from "@/lib/checklists/pc-mis";
 import { listChecklistOccurrencesForMis } from "@/lib/checklists/queries";
 import { canAccessEmReady } from "@/lib/em/em-access";
+import { getEmReadyPayload } from "@/lib/em/em-ready-data";
 import { categorySummary, filterMisRows, misDoerOptions } from "@/lib/mis/reports-data";
 import { requireSession } from "@/lib/require-session";
 import { BCI_OPS_MODULES } from "@/lib/workspace-modules";
@@ -31,6 +32,7 @@ export default async function ChecklistScoresPage({ searchParams }: PageProps) {
 
   const params = await searchParams;
   const occurrences = await listChecklistOccurrencesForMis(user.organizationId);
+  const em = await getEmReadyPayload(user);
   const checklistRows = buildChecklistMisRows(occurrences);
   const detailRows = buildPcMisDetailRows(occurrences);
   const summary = categorySummary("PC", detailRows);
@@ -83,6 +85,30 @@ export default async function ChecklistScoresPage({ searchParams }: PageProps) {
         </header>
         <PcPersonMisTable rows={personRows} />
       </section>
+
+      {em.pcKra.length > 0 ? (
+        <section className="ws-sf-list-view" aria-label="PC chase scores">
+          <header className="ws-sf-list-view-header">
+            <div className="ws-sf-list-view-title">
+              <h2>PC chase scores</h2>
+              <span className="ws-sf-list-view-count">{em.pcKra.length}</span>
+            </div>
+            <p className="ws-em-section-lead">
+              Process Coordinators scored on overdue jobs still open vs PC done.
+            </p>
+          </header>
+          <PcPersonMisTable
+            rows={em.pcKra.map((row) => ({
+              owner: row.owner,
+              role: "PC" as const,
+              total: row.chaseTotal,
+              delayed: row.chaseDelayed,
+              avgScore: Math.max(0, 100 - row.deficitPct),
+              deficitPct: row.deficitPct,
+            }))}
+          />
+        </section>
+      ) : null}
 
       <MisDataViewSection
         basePath="/app/checklists/scores"

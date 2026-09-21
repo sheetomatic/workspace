@@ -66,6 +66,7 @@ export function PcWorkQueueTable({
 
 export function PcPersonMisTable({ rows }: { rows: Array<{
   owner: string;
+  role?: "Doer" | "PC";
   total: number;
   delayed: number;
   avgScore: number;
@@ -79,13 +80,16 @@ export function PcPersonMisTable({ rows }: { rows: Array<{
     );
   }
 
+  const showRole = rows.some((row) => row.role);
+
   return (
     <div className="ws-sf-table-wrap ws-mis-table-scroll">
       <table className="ws-fms-data-table ws-sf-data-table ws-mis-score-table">
         <thead>
           <tr>
-            <th>Doer</th>
-            <th>PC runs</th>
+            <th>{showRole ? "Person" : "Doer"}</th>
+            {showRole ? <th>Role</th> : null}
+            <th>Jobs</th>
             <th>Delayed</th>
             <th>MIS score</th>
             <th>Deficit %</th>
@@ -93,8 +97,9 @@ export function PcPersonMisTable({ rows }: { rows: Array<{
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.owner}>
+            <tr key={`${row.role ?? "doer"}-${row.owner}`}>
               <td>{row.owner}</td>
+              {showRole ? <td>{row.role}</td> : null}
               <td>{row.total}</td>
               <td>{row.delayed}</td>
               <td>{row.avgScore}</td>
