@@ -1,5 +1,6 @@
 import { requireSession } from "@/lib/require-session";
 import { PcModuleNav } from "@/components/saas/pc-module-nav";
+import "@/components/saas/pc-jobs.css";
 
 export default async function PcLayout({ children }: { children: React.ReactNode }) {
   const user = await requireSession(undefined, { module: "TASKS" });

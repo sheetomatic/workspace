@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/db";
-import { isTaskDueToday } from "@/lib/task-due-urgency";
 import { ACTIVE_TASK_STATUSES } from "@/lib/tasks";
+import {
+  isPcWorkInPeriod,
+  type PcPeriod,
+} from "@/lib/checklists/pc-period";
 
 export type PcWorkKind = "CHECKLIST" | "EA_TASK" | "FMS_STEP";
 
@@ -19,6 +22,8 @@ export type PcWorkItem = {
   overdue: boolean;
   href: string;
   completable: boolean;
+  lastFollowedAt?: Date | null;
+  pcJobDoneAt?: Date | null;
 };
 
 function ownerLabel(name: string | null, email: string) {
@@ -220,23 +225,56 @@ export async function listMyPcWork(organizationId: string, assigneeUserId: strin
   return { checklists, eaTasks, fmsSteps };
 }
 
-function isPcFollowupDueToday(item: PcWorkItem) {
-  if (item.overdue) {
-    return true;
-  }
-  if (!item.dueAt) {
-    return false;
-  }
-  return isTaskDueToday(item.dueAt);
+function toChecklistPcWorkItem(run: {
+  id: string;
+  plannedAt: Date;
+  status: string;
+  assigneeUserId: string;
+  template: { title: string; team: string };
+  assignee: { name: string | null; email: string };
+}): PcWorkItem {
+  return {
+    id: run.id,
+    kind: "CHECKLIST",
+    title: run.template.title,
+    subtitle: run.template.team,
+    owner: ownerLabel(run.assignee.name, run.assignee.email),
+    ownerId: run.assigneeUserId,
+    pcUserIds: [run.assigneeUserId],
+    eaUserId: null,
+    dueLabel: formatDue(run.plannedAt),
+    dueAt: run.plannedAt,
+    status: run.status,
+    overdue: run.status === "OVERDUE" || run.plannedAt.getTime() < Date.now(),
+    href: checklistTeamHref(run.template.team),
+    completable: true,
+  };
 }
 
-/** PC portal — EA tasks and FMS stops only (checklists live under Check List module). */
+/** PC portal — checklists, EA/delegation, and FMS stops the PC must chase. */
 export async function listMyPcFollowups(
   organizationId: string,
   assigneeUserId: string,
-  scope: "today" | "all" = "all",
+  scope: PcPeriod = "all",
 ) {
-  const [eaTasks, fmsSteps] = await Promise.all([
+  const [checklists, eaTasks, fmsSteps] = await Promise.all([
+    listMyChecklistPcWork(organizationId, assigneeUserId)
+      .then((rows) =>
+        rows.map((row) =>
+          toChecklistPcWorkItem({
+            id: row.id,
+            plannedAt: new Date(row.plannedAt),
+            status: row.status,
+            assigneeUserId,
+            template: { title: row.template.title, team: row.template.team },
+            assignee: row.assignee,
+          }),
+        ),
+      )
+      .catch((error) => {
+        console.error("[pc-work] checklist load failed", error);
+        return [] as PcWorkItem[];
+      }),
     listMyEaPcWork(organizationId, assigneeUserId).catch((error) => {
       console.error("[pc-work] EA load failed", error);
       return [];
@@ -247,35 +285,55 @@ export async function listMyPcFollowups(
     }),
   ]);
 
-  if (scope === "all") {
-    return { eaTasks, fmsSteps };
-  }
-
-  return {
-    eaTasks: eaTasks.filter(isPcFollowupDueToday),
-    fmsSteps: fmsSteps.filter(isPcFollowupDueToday),
-  };
+  return filterPcFollowupsByScope({ checklists, eaTasks, fmsSteps }, scope);
 }
 
-export async function listOrgPcFollowupsMonitor(organizationId: string) {
-  const [eaTasks, fmsSteps] = await Promise.all([
+export async function listOrgPcFollowupsMonitor(
+  organizationId: string,
+  scope: PcPeriod = "all",
+) {
+  const [checklists, eaTasks, fmsSteps] = await Promise.all([
+    prisma.checklistOccurrence
+      .findMany({
+        where: {
+          organizationId,
+          status: { in: ["PENDING", "OVERDUE"] },
+        },
+        include: {
+          template: { select: { title: true, team: true } },
+          assignee: { select: { name: true, email: true } },
+        },
+        orderBy: [{ status: "desc" }, { plannedAt: "asc" }],
+        take: 200,
+      })
+      .then((rows) => rows.map(toChecklistPcWorkItem))
+      .catch((error) => {
+        console.error("[pc-work] org checklist monitor failed", error);
+        return [] as PcWorkItem[];
+      }),
     listOrgEaPcMonitor(organizationId),
     listOrgFmsPcMonitor(organizationId),
   ]);
 
-  return { eaTasks, fmsSteps, total: eaTasks.length + fmsSteps.length };
+  const filtered = filterPcFollowupsByScope({ checklists, eaTasks, fmsSteps }, scope);
+  return {
+    ...filtered,
+    total:
+      filtered.checklists.length + filtered.eaTasks.length + filtered.fmsSteps.length,
+  };
 }
 
 export function filterPcFollowupsByScope(
-  items: { eaTasks: PcWorkItem[]; fmsSteps: PcWorkItem[] },
-  scope: "today" | "all",
+  items: { checklists: PcWorkItem[]; eaTasks: PcWorkItem[]; fmsSteps: PcWorkItem[] },
+  scope: PcPeriod,
 ) {
   if (scope === "all") {
     return items;
   }
   return {
-    eaTasks: items.eaTasks.filter(isPcFollowupDueToday),
-    fmsSteps: items.fmsSteps.filter(isPcFollowupDueToday),
+    checklists: items.checklists.filter((row) => isPcWorkInPeriod(row, scope)),
+    eaTasks: items.eaTasks.filter((row) => isPcWorkInPeriod(row, scope)),
+    fmsSteps: items.fmsSteps.filter((row) => isPcWorkInPeriod(row, scope)),
   };
 }
 
@@ -359,6 +417,7 @@ export async function listOrgPcMonitor(organizationId: string) {
     pcUserIds: [run.assigneeUserId],
     eaUserId: null,
     dueLabel: formatDue(run.plannedAt),
+    dueAt: run.plannedAt,
     status: run.status,
     overdue: run.status === "OVERDUE",
     href: checklistTeamHref(run.template.team),
@@ -371,4 +430,46 @@ export async function listOrgPcMonitor(organizationId: string) {
     fmsSteps,
     total: checklistItems.length + eaTasks.length + fmsSteps.length,
   };
+}
+
+export function pcWorkHrefKey(item: Pick<PcWorkItem, "kind" | "id">) {
+  return `/app/pc/job/${item.kind}/${item.id}`;
+}
+
+export async function enrichPcChaseStatus(
+  organizationId: string,
+  items: PcWorkItem[],
+): Promise<PcWorkItem[]> {
+  if (items.length === 0) {
+    return items;
+  }
+  const hrefs = items.map(pcWorkHrefKey);
+  const logs = await prisma.userAppNotification.findMany({
+    where: {
+      organizationId,
+      kind: { in: ["PC_FOLLOW_UP", "PC_JOB_DONE"] },
+      href: { in: hrefs },
+    },
+    select: { kind: true, href: true, createdAt: true },
+    orderBy: { createdAt: "desc" },
+  });
+  const followed = new Map<string, Date>();
+  const done = new Map<string, Date>();
+  for (const log of logs) {
+    if (!log.href) continue;
+    if (log.kind === "PC_FOLLOW_UP" && !followed.has(log.href)) {
+      followed.set(log.href, log.createdAt);
+    }
+    if (log.kind === "PC_JOB_DONE" && !done.has(log.href)) {
+      done.set(log.href, log.createdAt);
+    }
+  }
+  return items.map((item) => {
+    const key = pcWorkHrefKey(item);
+    return {
+      ...item,
+      lastFollowedAt: followed.get(key) ?? null,
+      pcJobDoneAt: done.get(key) ?? null,
+    };
+  });
 }

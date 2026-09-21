@@ -21,11 +21,14 @@ export type WorkspaceNavPrefs = {
  */
 export const DEFAULT_FOCUSED_NAV_IDS = [
   "fms",
+  "checklists",
+  "tasks",
+  "em",
+  "mis-scores",
+  "pc",
   "mobile-shop",
   "leads",
   "dept-hr",
-  "em",
-  "tasks",
 ] as const;
 
 /** Never hidden by focus/custom prefs (still role/module gated). */
@@ -42,9 +45,7 @@ export const ALWAYS_VISIBLE_NAV_IDS = new Set([
  * for admins who need them. Team stays available under Settings for managers.
  */
 export const HIDDEN_NAV_IDS = new Set([
-  "checklists",
   "ea",
-  "pc",
   "team",
 ]);
 

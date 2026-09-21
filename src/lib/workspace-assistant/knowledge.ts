@@ -34,7 +34,7 @@ MODULE MAP (use these hrefs in links):
 - My work: /app/tasks/my-work
 - Checklists hub: /app/checklists
 - My checklist tasks / runs: /app/checklists/my-tasks, /app/checklists/my-runs
-- PC today: /app/pc/today
+- PC jobs (Today / This week / This month): /app/pc/today, /app/pc/week, /app/pc/month
 - HR hub: /app/hr
 - Employees: /app/hr/employees
 - Attendance / leave / payroll: /app/hr/attendance, /app/hr/leave, /app/hr/payroll

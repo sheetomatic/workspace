@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import type { PcWorkItem } from "@/lib/checklists/pc-work";
 import { PcStatusPill, PcWorkKindBadge } from "@/components/saas/pc-work-badges";
 
-type Filter = "ALL" | "EA_TASK" | "FMS_STEP";
+type Filter = "ALL" | "CHECKLIST" | "EA_TASK" | "FMS_STEP";
 
 type MemberOption = {
   id: string;
@@ -15,7 +15,8 @@ type MemberOption = {
 
 function filterLabel(filter: Filter) {
   if (filter === "ALL") return "All";
-  if (filter === "EA_TASK") return "EA";
+  if (filter === "CHECKLIST") return "Check List";
+  if (filter === "EA_TASK") return "Tasks";
   return "FMS";
 }
 
@@ -32,11 +33,13 @@ function resolveMemberLabel(members: MemberOption[], id: string | null) {
 }
 
 export function PcMonitorBoard({
+  checklists = [],
   eaTasks,
   fmsSteps,
   fmsEnabled,
   members,
 }: {
+  checklists?: PcWorkItem[];
   eaTasks: PcWorkItem[];
   fmsSteps: PcWorkItem[];
   fmsEnabled: boolean;
@@ -48,8 +51,8 @@ export function PcMonitorBoard({
   const [eaFilterId, setEaFilterId] = useState("");
 
   const allItems = useMemo(
-    () => [...eaTasks, ...(fmsEnabled ? fmsSteps : [])],
-    [eaTasks, fmsSteps, fmsEnabled],
+    () => [...checklists, ...eaTasks, ...(fmsEnabled ? fmsSteps : [])],
+    [checklists, eaTasks, fmsSteps, fmsEnabled],
   );
 
   const doerOptions = useMemo(() => {
@@ -121,11 +124,12 @@ export function PcMonitorBoard({
   }, [allItems, filter, doerId, pcFilterIds, eaFilterId]);
 
   const filters: Filter[] = fmsEnabled
-    ? ["ALL", "EA_TASK", "FMS_STEP"]
-    : ["ALL", "EA_TASK"];
+    ? ["ALL", "CHECKLIST", "EA_TASK", "FMS_STEP"]
+    : ["ALL", "CHECKLIST", "EA_TASK"];
 
   const counts = {
     ALL: allItems.length,
+    CHECKLIST: checklists.length,
     EA_TASK: eaTasks.length,
     FMS_STEP: fmsSteps.length,
   };
@@ -220,7 +224,7 @@ export function PcMonitorBoard({
           ) : null}
         </div>
         <p className="ws-pc-queue-lead">
-          Chase EA tasks and FMS stops until done. Checklist SOPs are under Check List.
+          Chase Check Lists, Task Delegations, and FMS stops until the doer closes them.
         </p>
       </header>
 
@@ -280,11 +284,13 @@ export function PcMonitorBoard({
 
 export function PcMonitorMetrics({
   overdueCount,
+  checklistCount = 0,
   eaCount,
   fmsCount,
   fmsEnabled,
 }: {
   overdueCount: number;
+  checklistCount?: number;
   eaCount: number;
   fmsCount: number;
   fmsEnabled: boolean;
@@ -297,7 +303,12 @@ export function PcMonitorMetrics({
         <span className="ws-stat-card-hint">Chase first</span>
       </div>
       <div className="ws-sf-metric-tile">
-        <span>EA tasks</span>
+        <span>Check Lists</span>
+        <strong>{checklistCount}</strong>
+        <span className="ws-stat-card-hint">PC discipline</span>
+      </div>
+      <div className="ws-sf-metric-tile">
+        <span>Delegations</span>
         <strong>{eaCount}</strong>
         <span className="ws-stat-card-hint">Delegated work</span>
       </div>

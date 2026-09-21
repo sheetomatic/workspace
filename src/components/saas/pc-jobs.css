@@ -1,0 +1,65 @@
+.workspace-app .ws-pc-doer-board {
+  display: grid;
+  gap: 1rem;
+}
+
+.workspace-app .ws-pc-doer-card {
+  border: 1px solid var(--ws-border, #e5e7eb);
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.workspace-app .ws-pc-doer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--ws-border, #e5e7eb);
+}
+
+.workspace-app .ws-pc-doer-head h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.workspace-app .ws-pc-doer-head p {
+  margin: 0.15rem 0 0;
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.workspace-app .ws-pc-doer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.workspace-app .ws-pc-doer-list li {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.workspace-app .ws-pc-doer-list li.is-overdue {
+  background: #fff7f7;
+}
+
+.workspace-app .ws-pc-chase-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.workspace-app .ws-pc-chase-ok {
+  color: #047857;
+  font-size: 0.75rem;
+}
+
+.workspace-app .ws-pc-chase-err {
+  color: #b91c1c;
+  font-size: 0.75rem;
+}

@@ -2,18 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardCheck, ListChecks, Radar } from "lucide-react";
+import { CalendarDays, CalendarRange, ClipboardCheck, ListChecks, Radar } from "lucide-react";
 import type { SessionUser } from "@/lib/auth";
 import { canCreateTasks } from "@/lib/tasks";
 
 function navIsActive(pathname: string, href: string) {
-  if (href === "/app/pc/today") {
-    return pathname === "/app/pc/today";
-  }
-  if (href === "/app/pc/all") {
-    return pathname === "/app/pc/all";
-  }
-  return pathname === href || pathname.startsWith(`${href}/`);
+  return pathname === href;
 }
 
 export function PcModuleNav({ user }: { user: SessionUser }) {
@@ -26,24 +20,38 @@ export function PcModuleNav({ user }: { user: SessionUser }) {
       label: "Today",
       icon: ClipboardCheck,
       visible: true,
-      description: "Due now — EA & FMS",
+      description: "Due now + overdue",
+    },
+    {
+      href: "/app/pc/week",
+      label: "This week",
+      icon: CalendarRange,
+      visible: true,
+      description: "Monday–Sunday chase",
+    },
+    {
+      href: "/app/pc/month",
+      label: "This month",
+      icon: CalendarDays,
+      visible: true,
+      description: "Month-wise doer jobs",
     },
     {
       href: "/app/pc/all",
       label: "All",
       icon: Radar,
       visible: isManager,
-      description: "Full team follow-up queue",
+      description: "Full team queue",
     },
   ].filter((item) => item.visible);
 
   return (
-    <nav className="ws-module-subnav ws-pc-subnav" aria-label="PC navigation">
+    <nav className="ws-module-subnav ws-pc-subnav" aria-label="PC jobs">
       <div className="ws-module-subnav-brand">
         <ListChecks size={18} aria-hidden />
         <div>
-          <strong>PC</strong>
-          <span>Tasks & follow-ups</span>
+          <strong>PC jobs</strong>
+          <span>Process Coordinator</span>
         </div>
       </div>
       <ul className="ws-module-subnav-list">

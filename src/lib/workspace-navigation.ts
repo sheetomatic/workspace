@@ -17,6 +17,7 @@ import {
   History,
   LayoutDashboard,
   ListChecks,
+  Radar,
   ListTree,
   MapPin,
   Megaphone,
@@ -71,17 +72,6 @@ export type WorkspaceNavSection = {
 
 const ROLE_ORDER = ["VIEWER", "STAFF", "MANAGER", "ADMIN", "OWNER"] as const;
 
-/** Checklist / EA / PC stay routable but are hidden from the sidebar (not needed for most orgs). */
-const BCI_EM_ITEM: WorkspaceNavItem = {
-  id: "em",
-  href: "/app/em",
-  label: "EM",
-  icon: Presentation,
-  module: "REPORTS",
-  minRole: "MANAGER",
-  matchPrefix: "/app/em",
-};
-
 function bciNavGroup(fmsHref: string): WorkspaceNavItem {
   return {
     href: fmsHref,
@@ -96,7 +86,48 @@ function bciNavGroup(fmsHref: string): WorkspaceNavItem {
         module: "FMS",
         matchPrefix: "/app/fms",
       },
-      BCI_EM_ITEM,
+      {
+        id: "checklists",
+        href: "/app/checklists",
+        label: "Check Lists",
+        icon: ClipboardCheck,
+        module: "TASKS",
+        matchPrefix: "/app/checklists",
+      },
+      {
+        id: "tasks",
+        href: "/app/tasks",
+        label: "Tasks Delegations",
+        icon: ClipboardList,
+        module: "TASKS",
+        matchPrefix: "/app/tasks",
+      },
+      {
+        id: "em",
+        href: "/app/em",
+        label: "EM",
+        icon: Presentation,
+        module: "REPORTS",
+        minRole: "MANAGER",
+        matchPrefix: "/app/em",
+      },
+      {
+        id: "mis-scores",
+        href: "/app/fms/scores",
+        label: "MIS Score",
+        icon: BarChart3,
+        module: "FMS",
+        minRole: "MANAGER",
+        matchPrefix: "/app/fms/scores",
+      },
+      {
+        id: "pc",
+        href: "/app/pc/today",
+        label: "PC jobs",
+        icon: Radar,
+        module: "TASKS",
+        matchPrefix: "/app/pc",
+      },
     ],
   };
 }
@@ -1199,8 +1230,8 @@ export function navIsActive(
   ) {
     return false;
   }
-  if (hrefPath === "/app/pc/today" && (matchPrefix ?? hrefPath) === "/app/pc") {
-    return pathname === "/app/pc/today";
+  if ((matchPrefix ?? hrefPath) === "/app/pc" || hrefPath.startsWith("/app/pc")) {
+    return pathname === "/app/pc" || pathname.startsWith("/app/pc/");
   }
   if (hrefPath === "/app/checklists" && base === "/app/checklists") {
     if (
@@ -1230,6 +1261,13 @@ export function navIsActive(
     return false;
   }
   if (base === "/app/fms" && pathname.startsWith("/app/fms/setup")) {
+    return false;
+  }
+  if (
+    hrefPath !== "/app/fms/scores" &&
+    base === "/app/fms" &&
+    pathname.startsWith("/app/fms/scores")
+  ) {
     return false;
   }
 

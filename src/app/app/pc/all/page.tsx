@@ -20,14 +20,15 @@ export default async function PcAllPage() {
   const monitor = await listOrgPcFollowupsMonitor(user.organizationId);
   const members = await listAssignableMembers(user.organizationId);
   const overdueCount =
+    monitor.checklists.filter((row) => row.overdue).length +
     monitor.eaTasks.filter((row) => row.overdue).length +
     (fmsEnabled ? monitor.fmsSteps.filter((row) => row.overdue).length : 0);
 
   return (
     <div className="saas-page ws-pc-page ws-tasks-sf ws-pc-monitor-page">
       <TaskPageToolbar
-        title="PC — All"
-        description="Chase EA tasks and FMS stops across the team. Checklist discipline is under Check List."
+        title="PC jobs — All"
+        description="Full doer queue: Check Lists, Task Delegations, and FMS. Follow up until the doer closes Planned/Actual."
         actions={
           <Link href="/app/tasks/create" className="btn-primary btn-sm ws-sf-btn-primary">
             Assign task
@@ -36,6 +37,7 @@ export default async function PcAllPage() {
       />
 
       <PcMonitorMetrics
+        checklistCount={monitor.checklists.length}
         eaCount={monitor.eaTasks.length}
         fmsCount={fmsEnabled ? monitor.fmsSteps.length : 0}
         fmsEnabled={fmsEnabled}
@@ -43,6 +45,7 @@ export default async function PcAllPage() {
       />
 
       <PcMonitorBoard
+        checklists={monitor.checklists}
         eaTasks={monitor.eaTasks}
         fmsEnabled={fmsEnabled}
         fmsSteps={fmsEnabled ? monitor.fmsSteps : []}
