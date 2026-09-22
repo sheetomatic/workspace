@@ -172,7 +172,7 @@ export const emReadyWorkspaceBuild = {
   oneTimeInr: 10_000,
   label: "Implementation",
   note:
-    "Plan prices below are subscription only. Implementation is an additional cost, quoted business to business from how many FMS templates, Check Lists, task flows, IMS, HR, and other modules we map. Ask us for a number before you buy.",
+    "Plan prices above are subscription only. Implementation is an additional cost, quoted business to business from how many FMS templates, Check Lists, task flows, IMS, HR, and other modules we map. Ask us for a number before you buy.",
   points: [
     "Quoted after we understand your business: FMS count, Check Lists, and who does the work",
     "More split FMS, process checklists, or locations usually means a larger implementation",
