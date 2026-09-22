@@ -95,54 +95,46 @@ function PlanCard({
 
   return (
     <article
-      className={`em-plan-card${isStarter ? " is-starter" : ""}${isScale ? " is-scale" : ""}`}
+      className={`em-plan-card em-suite-card${isStarter ? " is-starter" : ""}${isScale ? " is-scale" : ""}`}
     >
-      {plan.badge ? <span className="em-plan-badge">{plan.badge}</span> : null}
-      <p className="em-plan-path-label">BCI Suite</p>
-      <h2 className="em-plan-name">{plan.shortName}</h2>
-      <p className="em-plan-tagline">{plan.tagline}</p>
+      <header className="em-suite-head">
+        {plan.badge ? <span className="em-plan-badge">{plan.badge}</span> : null}
+        <p className="em-plan-path-label">BCI Suite</p>
+        <h2 className="em-plan-name">{plan.shortName}</h2>
+        <p className="em-plan-tagline">{plan.tagline}</p>
+      </header>
 
       <PriceBlock {...price} />
+      {plan.extraUserMonthlyInr != null ? (
+        <p className="em-suite-seat">
+          Extra seat {formatInr(plan.extraUserMonthlyInr)}/mo
+        </p>
+      ) : null}
 
-      <ul className="em-plan-meta">
-        <li>
-          <span>Users included</span>
-          <span>{plan.includedUsers}</span>
-        </li>
-        <li>
-          <span>Extra seat</span>
-          <span>
-            {plan.extraUserMonthlyInr != null
-              ? `${formatInr(plan.extraUserMonthlyInr)}/mo`
-              : "—"}
-          </span>
-        </li>
-        <li>
-          <span>FMS templates</span>
-          <span>Up to {plan.maxFmsTemplates}</span>
-        </li>
-        <li>
-          <span>Storage</span>
-          <span>{plan.storageGb} GB</span>
-        </li>
-      </ul>
-
-      <div className="em-plan-modules" aria-label="Included modules">
+      <p className="em-suite-includes-label">Includes</p>
+      <ul className="em-suite-includes">
         {plan.modules.map((mod) => (
-          <span className="em-plan-module" key={mod}>
+          <li key={mod}>
+            <CheckCircle2 size={15} aria-hidden />
             {mod}
-          </span>
-        ))}
-      </div>
-
-      <ul className="em-plan-highlights">
-        {plan.highlights.map((item) => (
-          <li key={item}>
-            <CheckCircle2 size={16} aria-hidden />
-            {item}
           </li>
         ))}
       </ul>
+
+      <dl className="em-suite-specs">
+        <div>
+          <dt>Users</dt>
+          <dd>{plan.includedUsers}</dd>
+        </div>
+        <div>
+          <dt>FMS</dt>
+          <dd>Up to {plan.maxFmsTemplates}</dd>
+        </div>
+        <div>
+          <dt>Storage</dt>
+          <dd>{plan.storageGb} GB</dd>
+        </div>
+      </dl>
 
       <div className="em-plan-actions">
         <a
@@ -154,7 +146,7 @@ function PlanCard({
           <span className="btn-cta-icon-wrap" aria-hidden>
             <WhatsAppIcon className="btn-cta-icon" size={18} strokeWidth={1.7} />
           </span>
-          <span>Chat on WhatsApp</span>
+          <span>Enquire</span>
         </a>
         <Link
           className={marketingButtonClass("primary", "em-plan-contact")}
@@ -162,15 +154,6 @@ function PlanCard({
         >
           Contact us
         </Link>
-        <div className="em-plan-existing">
-          <span className="em-plan-existing-label">Existing users</span>
-          <Link
-            className={marketingButtonClass("secondary", "em-plan-login-btn")}
-            href={WORKSPACE_LOGIN_HREF}
-          >
-            Workspace login
-          </Link>
-        </div>
       </div>
     </article>
   );
@@ -572,12 +555,6 @@ export function EmReadyPricing() {
               {compareOpen ? "Hide compare" : "Compare"}
             </button>
           </div>
-
-          <p className="em-pricing-toggle-hint">
-            {path === "suite"
-              ? "₹4,999 FMS + EM + PC + MIS · ₹9,999 + Check Lists + Tasks · ₹24,999 + HRMS + IMS."
-              : "Buy one module. CRM is ₹2,499 for 8 users."}
-          </p>
 
           {path === "suite" ? (
             <div className="em-pricing-grid">

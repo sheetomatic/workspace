@@ -499,9 +499,180 @@
   box-shadow: var(--em-shadow-lift);
 }
 
-.em-plan-card.is-scale::before {
-  height: 6px;
-  background: linear-gradient(90deg, #1e3a8a, #1d4ed8, var(--em-blue), var(--em-cyan));
+.em-suite-card {
+  padding: 1.75rem 1.5rem 1.45rem;
+  border: 1px solid color-mix(in srgb, var(--em-navy) 8%, var(--em-border));
+  box-shadow:
+    0 1px 2px rgba(10, 27, 46, 0.04),
+    0 18px 40px -28px rgba(10, 27, 46, 0.45);
+}
+
+.em-suite-card::before {
+  height: 2px;
+  background: var(--em-navy);
+  opacity: 0.85;
+}
+
+.em-suite-card.is-starter,
+.em-suite-card.is-scale {
+  border-width: 1px;
+}
+
+.em-suite-card.is-starter {
+  background: #ffffff;
+  box-shadow:
+    0 1px 2px rgba(10, 27, 46, 0.04),
+    0 18px 40px -28px rgba(10, 27, 46, 0.35);
+}
+
+.em-suite-card.is-starter::before {
+  background: var(--em-navy);
+}
+
+.em-suite-card.is-scale {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(37, 99, 235, 0.28), transparent 42%),
+    linear-gradient(165deg, #0a1b2e 0%, #12263f 58%, #0c1f36 100%);
+  border-color: transparent;
+  color: #e2e8f0;
+  box-shadow:
+    0 2px 4px rgba(10, 27, 46, 0.16),
+    0 28px 50px -22px rgba(10, 27, 46, 0.55);
+}
+
+.em-suite-card.is-scale::before {
+  height: 2px;
+  background: linear-gradient(90deg, #93c5fd, #ffffff);
+}
+
+.em-suite-head {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.em-suite-card .em-plan-badge {
+  margin-bottom: 0.7rem;
+  background: var(--em-navy);
+  box-shadow: none;
+}
+
+.em-suite-card.is-scale .em-plan-badge {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.em-suite-card .em-plan-name {
+  font-size: 1.65rem;
+  letter-spacing: -0.03em;
+}
+
+.em-suite-card.is-scale .em-plan-path-label,
+.em-suite-card.is-scale .em-plan-name,
+.em-suite-card.is-scale .em-plan-price,
+.em-suite-card.is-scale .em-suite-includes-label,
+.em-suite-card.is-scale .em-suite-specs dd {
+  color: #ffffff;
+}
+
+.em-suite-card.is-scale .em-plan-tagline,
+.em-suite-card.is-scale .em-plan-price-note,
+.em-suite-card.is-scale .em-suite-seat,
+.em-suite-card.is-scale .em-plan-price-period,
+.em-suite-card.is-scale .em-plan-currency,
+.em-suite-card.is-scale .em-suite-includes li,
+.em-suite-card.is-scale .em-suite-specs dt {
+  color: #cbd5e1;
+}
+
+.em-suite-card.is-scale .em-plan-price-block,
+.em-suite-card.is-scale .em-suite-specs div {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.em-suite-card.is-scale .em-suite-includes svg {
+  color: #93c5fd;
+}
+
+.em-suite-seat {
+  margin: 0.35rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--em-muted);
+}
+
+.em-suite-includes-label {
+  margin: 1.15rem 0 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--em-muted);
+}
+
+.em-suite-includes {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  flex: 1;
+}
+
+.em-suite-includes li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.95rem;
+  font-weight: 650;
+  color: var(--em-navy);
+}
+
+.em-suite-includes svg {
+  color: var(--em-blue);
+}
+
+.em-suite-specs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.35rem;
+  margin: 1.15rem 0 0;
+}
+
+.em-suite-specs div {
+  padding-top: 0.7rem;
+  border-top: 1px solid color-mix(in srgb, var(--em-navy) 10%, var(--em-border));
+}
+
+.em-suite-specs dt {
+  margin: 0;
+  font-size: 0.65rem;
+  font-weight: 750;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--em-muted);
+}
+
+.em-suite-specs dd {
+  margin: 0.2rem 0 0;
+  font-size: 0.92rem;
+  font-weight: 750;
+  color: var(--em-navy);
+}
+
+.em-suite-card .em-plan-actions {
+  margin-top: 1.35rem;
+}
+
+.em-pricing-page .em-suite-card.is-scale a.btn-cta.btn-primary.em-plan-contact {
+  background: transparent !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.72) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.em-pricing-page .em-suite-card.is-scale a.btn-cta.btn-primary.em-plan-contact:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
 }
 
 .em-plan-badge {
