@@ -170,7 +170,7 @@ const ADDON_MODULE_RATES: Partial<Record<WorkspaceModule, number>> = {
     emReadyModulePlans.find((row) => row.id === "module_tasks")?.priceMonthlyInr ?? 2499,
   ),
   CRM: rupeesToPaise(
-    emReadyModulePlans.find((row) => row.id === "module_crm")?.priceMonthlyInr ?? 2999,
+    emReadyModulePlans.find((row) => row.id === "module_crm")?.priceMonthlyInr ?? 2499,
   ),
   IMS: rupeesToPaise(
     emReadyModulePlans.find((row) => row.id === "module_ims")?.priceMonthlyInr ?? 2999,

@@ -39,7 +39,7 @@ describe("billing catalog", () => {
         product: "CRM",
         allowedModules: ["CRM"],
       }).monthlyRatePaise,
-    ).toBe(rupeesToPaise(2999));
+    ).toBe(rupeesToPaise(2499));
   });
 
   it("bills extra services as add-ons on top of the sold SKU", () => {
@@ -55,7 +55,7 @@ describe("billing catalog", () => {
     );
     expect(charges.map((row) => row.module)).toEqual(["TASKS", "CRM"]);
     expect(extraAddonMonthlyPaise([...legal.allowedModules], legal.plan, legal.product)).toBe(
-      rupeesToPaise(2499 + 2999),
+      rupeesToPaise(2499 + 2499),
     );
     expect(
       availableWorkspaceAddons(["CASES", "REPORTS"], legal.plan, legal.product).some(

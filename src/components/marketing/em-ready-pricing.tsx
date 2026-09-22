@@ -6,6 +6,7 @@ import { CheckCircle2, Columns2, Minus } from "lucide-react";
 import {
   emReadyCompareRows,
   emReadyContactOffer,
+  emReadyCustomApps,
   emReadyModulePlans,
   emReadyPricingFootnotes,
   emReadyPublicPlans,
@@ -45,6 +46,9 @@ const CONTACT_50_PLUS_MESSAGE =
 
 const IMPLEMENTATION_ASK_MESSAGE =
   "Hi Sheetomatic, I want to understand the additional implementation cost for our business — FMS, Check Lists, and related modules. Please share a quote.";
+
+const CUSTOM_APPS_ASK_MESSAGE =
+  "Hi Sheetomatic, we need Google Workspace Apps or AppSheet built for our process. Please share next steps.";
 
 function PriceBlock({
   amountLabel,
@@ -314,6 +318,45 @@ function ImplementationBand({ askHref }: { askHref: string }) {
   );
 }
 
+function CustomAppsBand({ askHref }: { askHref: string }) {
+  return (
+    <aside className="em-build-band is-apps" aria-labelledby="em-apps-title">
+      <div>
+        <p className="em-build-badge">{emReadyCustomApps.badge}</p>
+        <h2 id="em-apps-title">{emReadyCustomApps.label}</h2>
+        <p>{emReadyCustomApps.note}</p>
+        <div className="em-build-actions">
+          <a
+            className={marketingButtonClass("whatsapp", "em-build-wa")}
+            href={askHref}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <span className="btn-cta-icon-wrap" aria-hidden>
+              <WhatsAppIcon className="btn-cta-icon" size={18} strokeWidth={1.7} />
+            </span>
+            <span>Ask about a custom build</span>
+          </a>
+          <Link
+            className={marketingButtonClass("primary", "em-build-contact")}
+            href="/contact"
+          >
+            Send a message
+          </Link>
+        </div>
+      </div>
+      <ul className="em-build-points">
+        {emReadyCustomApps.points.map((item) => (
+          <li key={item}>
+            <CheckCircle2 size={16} aria-hidden />
+            {item}
+          </li>
+        ))}
+      </ul>
+    </aside>
+  );
+}
+
 function CompareSection({
   open,
   selectedModules,
@@ -340,8 +383,8 @@ function CompareSection({
         <div>
           <h2 id="em-compare-title">Compare Suite vs modules</h2>
           <p>
-            Suite is the complete package. Modules are sold individually — stack
-            what you need, or switch to Suite when two or more add up higher.
+            ₹4,999 = FMS, EM, PC, MIS. ₹9,999 adds Check Lists + Tasks. ₹24,999
+            adds HRMS + IMS. Buy one module if you only need that piece.
           </p>
         </div>
         {selectedModules.length > 0 ? (
@@ -414,6 +457,7 @@ export function EmReadyPricing() {
   const pathGroupId = useId();
   const contactHref = buildWhatsAppUrl(CONTACT_50_PLUS_MESSAGE);
   const implementationAskHref = buildWhatsAppUrl(IMPLEMENTATION_ASK_MESSAGE);
+  const customAppsAskHref = buildWhatsAppUrl(CUSTOM_APPS_ASK_MESSAGE);
 
   useEffect(() => {
     if (!compareOpen || scrollCompareToken === 0) return;
@@ -443,28 +487,30 @@ export function EmReadyPricing() {
       <section className="em-pricing-hero">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
           <div className="em-pricing-hero-inner">
-            <p className="em-pricing-kicker">EM Ready Workspace</p>
-            <h1>Suite or individual modules — pick how you buy</h1>
+            <p className="em-pricing-kicker">BCI Suite</p>
+            <h1>What is in each plan</h1>
             <p className="em-pricing-lead">
-              <strong>BCI Suite</strong> is the complete package (FMS, Tasks/EA,
-              EM Ready, and more by tier). <strong>Modules</strong> let you buy
-              only what you need — WhatsApp Official API, HRMS, CRM, FMS, IMS, or
-              Tasks — and stack later. Monthly billing; annual where listed.
+              <strong>₹4,999</strong> — FMS, EM, PC, MIS.{" "}
+              <strong>₹9,999</strong> — that plus Check Lists and Tasks.{" "}
+              <strong>₹24,999</strong> — that plus HRMS and IMS. CRM is a
+              module at {formatInr(2499)} for 8 users. Monthly billing; annual
+              where listed.
             </p>
             <div className="em-pricing-path-cards" aria-label="How pricing works">
               <div className="em-pricing-path-card">
                 <h2>BCI Suite</h2>
                 <p>
-                  Full EM Ready package for owners who want ops running one day a
-                  week. From {formatInr(4999)}/mo (8 users).
+                  {formatInr(4999)} FMS + EM + PC + MIS · {formatInr(9999)} +
+                  Check Lists + Tasks · {formatInr(24999)} + HRMS + IMS.
                 </p>
               </div>
               <div className="em-pricing-path-card">
                 <h2>Modules</h2>
                 <p>
-                  WhatsApp Official API &amp; HRMS: {formatInr(10000)}/mo +{" "}
-                  {formatInr(300)}/user. Other modules from {formatInr(2499)}
-                  /mo.
+                  CRM {formatInr(2499)} / 8 users. FMS {formatInr(2999)}. Check
+                  Lists + Tasks {formatInr(2499)}. IMS {formatInr(2999)}. HRMS
+                  &amp; WhatsApp API {formatInr(10000)} + {formatInr(300)}
+                  /user.
                 </p>
               </div>
             </div>
@@ -475,6 +521,7 @@ export function EmReadyPricing() {
       <section className="em-pricing-section" aria-label="EM Ready pricing">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
           <ImplementationBand askHref={implementationAskHref} />
+          <CustomAppsBand askHref={customAppsAskHref} />
 
           <div className="em-pricing-toolbar">
             <div
@@ -542,8 +589,8 @@ export function EmReadyPricing() {
 
           <p className="em-pricing-toggle-hint">
             {path === "suite"
-              ? "Suite = complete package by seat band. Compare anytime against buying modules."
-              : "Modules = buy individually. Add to Compare to total a stack vs Suite."}
+              ? "₹4,999 FMS + EM + PC + MIS · ₹9,999 + Check Lists + Tasks · ₹24,999 + HRMS + IMS."
+              : "Buy one module. CRM is ₹2,499 for 8 users."}
           </p>
 
           {path === "suite" ? (

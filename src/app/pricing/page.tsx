@@ -6,7 +6,7 @@ import { marketingMetadata } from "@/lib/marketing-metadata";
 export const metadata: Metadata = marketingMetadata({
   title: "Pricing | BCI Suite & Modules",
   description:
-    "Buy BCI Suite (complete EM Ready package from ₹4,999/mo) or individual modules — FMS, Tasks/EA, CRM, IMS, HR from ₹2,499/mo. Compare Suite vs modules.",
+    "Buy BCI Suite: ₹4,999 FMS + EM + PC + MIS; ₹9,999 adds Check Lists + Tasks; ₹24,999 adds HRMS + IMS. CRM ₹2,499 for 8 users.",
   path: "/pricing",
 });
 

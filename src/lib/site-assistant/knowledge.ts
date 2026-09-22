@@ -49,8 +49,9 @@ SHEETOMATIC AI (separate product):
 
 PRICING (Workspace — /pricing):
 - Two paths: BCI Suite (complete package) OR individual Modules.
-- Suite: Starter ₹4,999/mo (8 users), Growth ₹9,999/mo (20), Scale ₹24,999/mo (50). 50+ = contact sales.
-- Modules (à la carte, 8 users each): FMS Bundle ₹2,999; Tasks/EA ₹2,499; CRM ₹2,999; IMS ₹2,999; HR ₹2,999. Stack modules or switch to Suite when cheaper.
+- Suite: Starter ₹4,999/mo (FMS, EM, PC, MIS; 8 users). Growth ₹9,999/mo (adds Check Lists + Tasks; 20 users). Scale ₹24,999/mo (adds HRMS + IMS; 50 users). 50+ = contact sales.
+- Modules (8 users unless noted): FMS ₹2,999; Check Lists + Tasks ₹2,499; CRM ₹2,499; IMS ₹2,999; HRMS ₹10,000 + ₹300/user; WhatsApp Official API ₹10,000 + 2k msgs + ₹300/user.
+- Implementation is extra and quoted per business. Google Workspace Apps and AppSheet custom builds are also available, quoted separately.
 - Compare button on /pricing shows Suite vs modules matrix. Prices excl. GST; Meta WA fees separate.
 - Sheetomatic AI (WhatsApp chatbot) pricing is separate at /ai/pricing — do not mix with Workspace Suite.
 

@@ -58,7 +58,7 @@ describe("subscription prorata", () => {
       activeUsers: 3,
       extraAddonLines: [
         { label: "Tasks Management", amountPaise: rupeesToPaise(2499) },
-        { label: "CRM", amountPaise: rupeesToPaise(2999) },
+        { label: "CRM", amountPaise: rupeesToPaise(2499) },
       ],
       gstPercent: 18,
       periodStart: new Date("2026-08-01T00:00:00.000Z"),
@@ -69,7 +69,7 @@ describe("subscription prorata", () => {
       "Tasks Management",
       "CRM",
     ]);
-    expect(quote.extraPaise).toBe(rupeesToPaise(2499 + 2999));
+    expect(quote.extraPaise).toBe(rupeesToPaise(2499 + 2499));
   });
 
   it("keeps access through due + 1 grace day, then holds", () => {
