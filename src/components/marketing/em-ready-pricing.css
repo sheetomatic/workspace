@@ -551,6 +551,7 @@
 }
 
 .em-suite-card .em-plan-badge {
+  justify-self: start;
   margin-bottom: 0.7rem;
   background: var(--em-navy);
   box-shadow: none;
