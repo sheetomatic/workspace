@@ -14,6 +14,7 @@ import {
   CRM_SUB_MODULES,
   type CrmSubModuleId,
 } from "@/lib/crm/crm-sub-modules";
+import { MOBILE_SHOP_KIT_KEY } from "@/lib/addons/licensed-kits";
 import { useEffect, useState } from "react";
 
 export function WorkspaceModuleFields({
@@ -21,6 +22,7 @@ export function WorkspaceModuleFields({
   defaultModules,
   defaultHrSubModules,
   defaultCrmSubModules,
+  defaultKitKeys,
   lockSelection = false,
   orgAllowedModules,
   orgEnabledHrSubModules,
@@ -31,6 +33,8 @@ export function WorkspaceModuleFields({
   defaultHrSubModules?: string[];
   /** Empty = inherit all CRM sub-modules. */
   defaultCrmSubModules?: string[];
+  /** Add-on kits ticked for this person. Empty = not granted. */
+  defaultKitKeys?: string[];
   /** When true (edit form), role changes do not reset saved module picks. */
   lockSelection?: boolean;
   /** Org tier cap; omit or empty = all modules selectable (legacy). */
@@ -112,6 +116,10 @@ export function WorkspaceModuleFields({
     );
   }
 
+  const [mobileShopOn, setMobileShopOn] = useState(
+    (defaultKitKeys ?? []).includes(MOBILE_SHOP_KIT_KEY),
+  );
+
   const showHrSubs = selected.includes("HR") && orgHrSet.size > 0;
   const showCrmSubs = selected.includes("CRM");
 
@@ -149,6 +157,22 @@ export function WorkspaceModuleFields({
       {selected.length === 0 ? (
         <p className="ws-member-module-warning">Select at least one module.</p>
       ) : null}
+
+      <div className="ws-member-module-grid" role="group" aria-label="Add-on kits" style={{ marginTop: "0.75rem" }}>
+        <label className={`ws-module-option${mobileShopOn ? " is-selected" : ""}`}>
+          <input
+            checked={mobileShopOn}
+            name="kitKeys"
+            type="checkbox"
+            value={MOBILE_SHOP_KIT_KEY}
+            onChange={(event) => setMobileShopOn(event.target.checked)}
+          />
+          <span className="ws-module-option-label">Mobile Shop</span>
+        </label>
+      </div>
+      <p className="ws-member-module-lead">
+        Mobile Shop stays hidden until you tick it for this person, or add the kit on the client.
+      </p>
 
       {showCrmSubs ? (
         <div className="ws-member-hr-submodules" style={{ marginTop: "1rem" }}>

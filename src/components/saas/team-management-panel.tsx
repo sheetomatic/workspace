@@ -80,6 +80,7 @@ export type TeamMemberRow = {
   modules: WorkspaceModule[];
   enabledHrSubModules: string[];
   enabledCrmSubModules: string[];
+  enabledKitKeys: string[];
   joinedAt: Date;
   user: {
     id: string;
@@ -422,6 +423,7 @@ function MemberEditForm({
       <WorkspaceModuleFields
         defaultCrmSubModules={member.enabledCrmSubModules}
         defaultHrSubModules={member.enabledHrSubModules}
+        defaultKitKeys={member.enabledKitKeys}
         defaultModules={member.modules}
         lockSelection
         orgAllowedModules={orgAllowedModules}

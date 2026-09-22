@@ -1,14 +1,12 @@
 import type { Role } from "@prisma/client";
-import { hasMinimumRole } from "@/lib/permissions";
 
 /**
- * TEMP preview bypass (PR 41): OWNER/ADMIN may open the shop without an
- * ACTIVE billed license so the lead can see the app. Product billing is
- * unchanged — STAFF still hit the license wall.
+ * Closed. Mobile Shop is not a preview for owners or the Sheetomatic team.
+ * Open it by licensing the client kit, or ticking Mobile Shop on that person.
  */
 export function canPreviewMobileShopWithoutLicense(
-  role: Role,
-  isSuperAdmin = false,
+  _role: Role,
+  _isSuperAdmin = false,
 ) {
-  return isSuperAdmin || hasMinimumRole(role, "ADMIN");
+  return false;
 }

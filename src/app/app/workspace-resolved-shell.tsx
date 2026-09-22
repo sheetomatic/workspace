@@ -16,6 +16,9 @@ import { getHrSettings } from "@/lib/hr/hr-store";
 import { resolveMemberHrSubModules } from "@/lib/hr/hr-sub-modules";
 import { resolveMemberCrmSubModules } from "@/lib/crm/crm-sub-modules";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
+import { orgHasActiveKitLicense } from "@/lib/addons/kit-license";
+import { MOBILE_SHOP_KIT_KEY } from "@/lib/addons/licensed-kits";
+import { licensedKitKeysForNav } from "@/lib/mobile-shop/kit-access";
 import {
   getWorkspaceMembershipPrefs,
   getWorkspaceOrganization,
@@ -33,9 +36,10 @@ export async function WorkspaceResolvedShell({
   let navPrefs = parseWorkspaceNavPrefs(null);
   let enabledHrSubModules: string[] | null = null;
   let enabledCrmSubModules: string[] | null = null;
+  let licensedKitKeys: string[] = [];
 
   try {
-    const [orgResult, orgsResult, membershipPrefs, hrSettings] =
+    const [orgResult, orgsResult, membershipPrefs, hrSettings, orgMobileShop] =
       await Promise.all([
         getWorkspaceOrganization(sessionUser.organizationId),
         listOrganizationsForUser(sessionUser.id),
@@ -43,6 +47,7 @@ export async function WorkspaceResolvedShell({
         hasWorkspaceModule(sessionUser, "HR")
           ? getHrSettings(sessionUser.organizationId)
           : Promise.resolve(null),
+        orgHasActiveKitLicense(sessionUser.organizationId, MOBILE_SHOP_KIT_KEY),
       ]);
     organization = orgResult;
     organizations = orgsResult;
@@ -58,6 +63,10 @@ export async function WorkspaceResolvedShell({
         membershipPrefs?.enabledCrmSubModules,
       );
     }
+    licensedKitKeys = licensedKitKeysForNav({
+      orgLicensed: orgMobileShop,
+      memberKitKeys: membershipPrefs?.enabledKitKeys,
+    });
   } catch (error) {
     console.error("[app-layout] workspace bootstrap failed", error);
     redirect(logoutHref("/login?error=workspace"));
@@ -95,6 +104,7 @@ export async function WorkspaceResolvedShell({
         enabledHrSubModules={enabledHrSubModules}
         hidePlanBadge={Boolean(dedicatedPortal)}
         isDedicatedPortal={Boolean(dedicatedPortal)}
+        licensedKitKeys={licensedKitKeys}
         navPrefs={navPrefs}
         organizationPlan={organization.plan}
         organizationPlanLabel={ORG_PLAN_LABELS[organization.plan]}

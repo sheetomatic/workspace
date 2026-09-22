@@ -60,6 +60,8 @@ export type WorkspaceNavItem = {
   hrSubModule?: string;
   /** When set, item is hidden unless this CRM sub-module is enabled for the member. */
   crmSubModule?: string;
+  /** Licensed add-on. Hidden until the client kit is active or this person is ticked. */
+  kitKey?: string;
   allowDepartmentHead?: boolean;
   matchPrefix?: string;
   addon?: boolean;
@@ -660,6 +662,7 @@ const MOBILE_SHOP_NAV_ITEM: WorkspaceNavItem = {
   href: "/app/mobile-shop",
   label: "Mobile shop",
   icon: Smartphone,
+  kitKey: "mobile-shop-ops",
   matchPrefix: "/app/mobile-shop",
 };
 
@@ -676,6 +679,7 @@ export function canAccessWorkspaceNav(
   item: WorkspaceNavItem,
   enabledHrSubModules?: string[] | null,
   enabledCrmSubModules?: string[] | null,
+  licensedKitKeys?: string[] | null,
 ) {
   if (
     item.platformOnly &&
@@ -703,6 +707,9 @@ export function canAccessWorkspaceNav(
       return false;
     }
   }
+  if (item.kitKey && !(licensedKitKeys ?? []).includes(item.kitKey)) {
+    return false;
+  }
   if (item.anyModules?.length) {
     return item.anyModules.some((module) => hasWorkspaceModule(user, module));
   }
@@ -717,6 +724,7 @@ function filterNavItem(
   item: WorkspaceNavItem,
   enabledHrSubModules?: string[] | null,
   enabledCrmSubModules?: string[] | null,
+  licensedKitKeys?: string[] | null,
 ): WorkspaceNavItem | null {
   if (
     !canAccessWorkspaceNav(
@@ -724,6 +732,7 @@ function filterNavItem(
       item,
       enabledHrSubModules,
       enabledCrmSubModules,
+      licensedKitKeys,
     )
   ) {
     return null;
@@ -737,6 +746,7 @@ function filterNavItem(
           child,
           enabledHrSubModules,
           enabledCrmSubModules,
+          licensedKitKeys,
         ),
       )
       .filter((child): child is WorkspaceNavItem => child !== null);
@@ -758,10 +768,17 @@ export function visibleWorkspaceNavItems(
   items: WorkspaceNavItem[],
   enabledHrSubModules?: string[] | null,
   enabledCrmSubModules?: string[] | null,
+  licensedKitKeys?: string[] | null,
 ) {
   return items
     .map((item) =>
-      filterNavItem(user, item, enabledHrSubModules, enabledCrmSubModules),
+      filterNavItem(
+        user,
+        item,
+        enabledHrSubModules,
+        enabledCrmSubModules,
+        licensedKitKeys,
+      ),
     )
     .filter((item): item is WorkspaceNavItem => item !== null);
 }

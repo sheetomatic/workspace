@@ -147,6 +147,7 @@ export async function listWorkspaceMembers(organizationId: string) {
     modules: resolveMemberModules(membership.role, membership.modules),
     enabledHrSubModules: membership.enabledHrSubModules ?? [],
     enabledCrmSubModules: membership.enabledCrmSubModules ?? [],
+    enabledKitKeys: membership.enabledKitKeys ?? [],
     joinedAt: membership.createdAt,
     user: membership.user,
   }));

@@ -358,6 +358,7 @@ export function SaasShell({
   navPrefs = DEFAULT_WORKSPACE_NAV_PREFS,
   enabledHrSubModules = null,
   enabledCrmSubModules = null,
+  licensedKitKeys = null,
   children,
 }: {
   user: SessionUser;
@@ -376,6 +377,8 @@ export function SaasShell({
   enabledHrSubModules?: string[] | null;
   /** Resolved CRM sub-module ids; when set, CRM children are filtered. */
   enabledCrmSubModules?: string[] | null;
+  /** Active add-on kits this person may see (client license or a personal tick). */
+  licensedKitKeys?: string[] | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -424,6 +427,7 @@ export function SaasShell({
         settingsSection.items,
         enabledHrSubModules,
         enabledCrmSubModules,
+        licensedKitKeys,
       )
     : [];
 
@@ -433,6 +437,7 @@ export function SaasShell({
       sectionItemsRaw,
       enabledHrSubModules,
       enabledCrmSubModules,
+      licensedKitKeys,
     );
     return isDedicatedPortal ? allowed : filterNavItemsByPrefs(allowed, navPrefs);
   }

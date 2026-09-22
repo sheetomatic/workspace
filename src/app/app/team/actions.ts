@@ -36,6 +36,7 @@ import {
   parseModulesFromForm,
   resolveMemberModules,
 } from "@/lib/workspace-modules";
+import { parseEnabledKitKeys } from "@/lib/mobile-shop/kit-access";
 import { persistEnabledHrSubModules } from "@/lib/hr/hr-sub-modules";
 import { persistEnabledCrmSubModules } from "@/lib/crm/crm-sub-modules";
 
@@ -309,6 +310,7 @@ export async function inviteTeamMember(
     formData,
     modules.includes("CRM"),
   );
+  const enabledKitKeys = parseEnabledKitKeys(formData);
 
   await assertOrganizationAccess(user.organizationId, user.id);
 
@@ -350,6 +352,7 @@ export async function inviteTeamMember(
         modules,
         enabledHrSubModules,
         enabledCrmSubModules,
+        enabledKitKeys,
         staffCode,
         locationMode,
         primarySiteId,
@@ -439,6 +442,7 @@ export async function inviteTeamMember(
           modules,
           enabledHrSubModules,
           enabledCrmSubModules,
+          enabledKitKeys,
           staffCode,
           locationMode,
           primarySiteId,
@@ -654,6 +658,7 @@ export async function updateTeamMemberDetails(
     formData,
     modules.includes("CRM"),
   );
+  const enabledKitKeys = parseEnabledKitKeys(formData);
 
   const previousEmail = membership.user.email.trim().toLowerCase();
   const emailChanged = email !== previousEmail;
@@ -674,6 +679,7 @@ export async function updateTeamMemberDetails(
     modules,
     enabledHrSubModules,
     enabledCrmSubModules,
+    enabledKitKeys,
   };
 
   const organizationId = user.organizationId;

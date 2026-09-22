@@ -1446,6 +1446,8 @@ model Membership {
    * Use "__none__" sentinel when explicitly granting zero CRM sub-modules.
    */
   enabledCrmSubModules String[]           @default([])
+  /** Add-on kits this person may open. Empty = none. Org kit license still opens it for the client. */
+  enabledKitKeys     String[]             @default([])
   /** Per-user sidebar/home visibility: { mode, visibleIds }. */
   workspacePrefs     Json?
   userId             String
