@@ -507,6 +507,16 @@ export function EmReadyPricing() {
             ))}
           </ul>
 
+          <div className="em-wa-plans-cta">
+            <p>WhatsApp API plans are separate from the Suite.</p>
+            <Link
+              className={marketingButtonClass("primary", "em-wa-plans-btn")}
+              href="/whatsapp-plans"
+            >
+              See WhatsApp API pricing
+            </Link>
+          </div>
+
           <p className="em-pricing-workspace-note">
             Existing users:{" "}
             <Link href={WORKSPACE_LOGIN_HREF}>Sign in to Workspace</Link>

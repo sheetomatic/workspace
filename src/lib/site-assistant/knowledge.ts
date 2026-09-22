@@ -48,7 +48,7 @@ SHEETOMATIC AI (separate product):
 - Internal WhatsApp role in Workspace is staff alerts (SLA/overdue) — not a JoyzAI-style customer FAQ bot. Do not claim JoyzAI parity.
 
 PRICING (Workspace — /pricing):
-- Two paths: BCI Suite (complete package) OR individual Modules (no WhatsApp API card on /pricing — that is /whatsapp-plans).
+- Two paths: BCI Suite (complete package) OR individual Modules. WhatsApp API is not a Suite card; a button at the bottom of /pricing opens /whatsapp-plans.
 - Suite: Starter ₹4,999/mo (FMS, EM, PC, MIS; 8 users). Growth ₹9,999/mo (adds Check Lists + Tasks; 20 users). Scale ₹24,999/mo (adds HRMS + IMS; 50 users). 50+ = contact sales.
 - Modules on /pricing (8 users unless noted): FMS ₹2,999; Check Lists + Tasks ₹2,499; CRM ₹2,499; IMS ₹2,999; HRMS ₹10,000 + ₹300/user. WhatsApp Official API is on /whatsapp-plans, not the Workspace module grid.
 - Implementation is extra and quoted per business.
