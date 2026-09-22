@@ -51,7 +51,7 @@ PRICING (Workspace — /pricing):
 - Two paths: BCI Suite (complete package) OR individual Modules (no WhatsApp API card on /pricing — that is /whatsapp-plans).
 - Suite: Starter ₹4,999/mo (FMS, EM, PC, MIS; 8 users). Growth ₹9,999/mo (adds Check Lists + Tasks; 20 users). Scale ₹24,999/mo (adds HRMS + IMS; 50 users). 50+ = contact sales.
 - Modules on /pricing (8 users unless noted): FMS ₹2,999; Check Lists + Tasks ₹2,499; CRM ₹2,499; IMS ₹2,999; HRMS ₹10,000 + ₹300/user. WhatsApp Official API is on /whatsapp-plans, not the Workspace module grid.
-- Implementation is extra and quoted per business. Google Workspace Apps and AppSheet custom builds are also available, quoted separately.
+- Implementation is extra and quoted per business.
 - Compare button on /pricing shows Suite vs modules matrix. Prices excl. GST; Meta WA fees separate.
 - Sheetomatic AI (WhatsApp chatbot) pricing is separate at /ai/pricing — do not mix with Workspace Suite.
 

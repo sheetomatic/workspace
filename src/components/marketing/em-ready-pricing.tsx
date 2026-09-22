@@ -6,7 +6,6 @@ import { CheckCircle2, Columns2, Minus } from "lucide-react";
 import {
   emReadyCompareRows,
   emReadyContactOffer,
-  emReadyCustomApps,
   emReadyModulePlans,
   emReadyPricingFootnotes,
   emReadyPublicModulePlans,
@@ -49,9 +48,6 @@ const CONTACT_50_PLUS_MESSAGE =
 const IMPLEMENTATION_ASK_MESSAGE =
   "Hi Sheetomatic, I want to understand the additional implementation cost for our business — FMS, Check Lists, and related modules. Please share a quote.";
 
-const CUSTOM_APPS_ASK_MESSAGE =
-  "Hi Sheetomatic, we need Google Workspace Apps or AppSheet built for our process. Please share next steps.";
-
 function PriceBlock({
   amountLabel,
   periodLabel,
@@ -81,14 +77,10 @@ function PriceBlock({
   );
 }
 
-function suiteAdds(plan: EmReadyPlan) {
-  if (plan.id === "em_ready_growth") {
-    return { label: "All of Starter, and", items: ["Check Lists", "Tasks"] };
-  }
-  if (plan.id === "em_ready_scale") {
-    return { label: "All of Growth, and", items: ["HRMS", "IMS"] };
-  }
-  return { label: "Starter includes", items: [...plan.modules] };
+function suiteIncludes(plan: EmReadyPlan) {
+  if (plan.id === "em_ready_growth") return "Growth includes";
+  if (plan.id === "em_ready_scale") return "Scale includes";
+  return "Starter includes";
 }
 
 function PlanCard({
@@ -102,7 +94,7 @@ function PlanCard({
   const whatsappHref = buildWhatsAppUrl(enquireSuiteMessage(plan));
   const isStarter = plan.id === "em_ready_starter";
   const isScale = plan.id === "em_ready_scale";
-  const adds = suiteAdds(plan);
+  const addsLabel = suiteIncludes(plan);
 
   return (
     <article
@@ -127,9 +119,9 @@ function PlanCard({
         </a>
       </div>
 
-      <p className="em-suite-includes-label">{adds.label}</p>
+      <p className="em-suite-includes-label">{addsLabel}</p>
       <ul className="em-suite-includes">
-        {adds.items.map((item) => (
+        {plan.modules.map((item) => (
           <li key={item}>
             <CheckCircle2 size={15} aria-hidden />
             {item}
@@ -245,45 +237,6 @@ function ImplementationBand({ askHref }: { askHref: string }) {
   );
 }
 
-function CustomAppsBand({ askHref }: { askHref: string }) {
-  return (
-    <aside className="em-build-band is-apps" aria-labelledby="em-apps-title">
-      <div>
-        <p className="em-build-badge">{emReadyCustomApps.badge}</p>
-        <h2 id="em-apps-title">{emReadyCustomApps.label}</h2>
-        <p>{emReadyCustomApps.note}</p>
-        <div className="em-build-actions">
-          <a
-            className={marketingButtonClass("whatsapp", "em-build-wa")}
-            href={askHref}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <span className="btn-cta-icon-wrap" aria-hidden>
-              <WhatsAppIcon className="btn-cta-icon" size={18} strokeWidth={1.7} />
-            </span>
-            <span>Ask about a custom build</span>
-          </a>
-          <Link
-            className={marketingButtonClass("primary", "em-build-contact")}
-            href="/contact"
-          >
-            Send a message
-          </Link>
-        </div>
-      </div>
-      <ul className="em-build-points">
-        {emReadyCustomApps.points.map((item) => (
-          <li key={item}>
-            <CheckCircle2 size={16} aria-hidden />
-            {item}
-          </li>
-        ))}
-      </ul>
-    </aside>
-  );
-}
-
 function CompareSection({
   open,
   selectedModules,
@@ -384,7 +337,6 @@ export function EmReadyPricing() {
   const pathGroupId = useId();
   const contactHref = buildWhatsAppUrl(CONTACT_50_PLUS_MESSAGE);
   const implementationAskHref = buildWhatsAppUrl(IMPLEMENTATION_ASK_MESSAGE);
-  const customAppsAskHref = buildWhatsAppUrl(CUSTOM_APPS_ASK_MESSAGE);
 
   useEffect(() => {
     if (!compareOpen || scrollCompareToken === 0) return;
@@ -514,7 +466,6 @@ export function EmReadyPricing() {
           />
 
           <ImplementationBand askHref={implementationAskHref} />
-          <CustomAppsBand askHref={customAppsAskHref} />
 
           <aside className="em-contact-band" aria-labelledby="em-contact-50-title">
             <div>

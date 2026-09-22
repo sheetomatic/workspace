@@ -180,18 +180,6 @@ export const emReadyWorkspaceBuild = {
   ],
 } as const;
 
-export const emReadyCustomApps = {
-  label: "Google Workspace Apps & AppSheet",
-  badge: "Build as you need",
-  note:
-    "Need a workflow the Suite does not cover? We also build on Google Workspace Apps and AppSheet — forms, Sheets, and custom apps for your business.",
-  points: [
-    "Google Workspace Apps for day-to-day ops on Gmail, Drive, Sheets, and Chat",
-    "AppSheet apps when you need a tool built around your process",
-    "Quoted to the build — ask us what you want made",
-  ],
-} as const;
-
 /** Standard list pricing for WhatsApp Official API and HRMS. */
 export const STANDARD_MODULE_LIST = {
   baseMonthlyInr: 10_000,
@@ -209,7 +197,6 @@ export const emReadyPricingFootnotes = [
   "Implementation is quoted per business from FMS, Check Lists, and related scope.",
   "Suite: ₹4,999 FMS + EM + PC + MIS. ₹9,999 adds Check Lists + Tasks. ₹24,999 adds HRMS + IMS.",
   "CRM is ₹2,499/mo for 8 users. HRMS: ₹10,000/mo base + ₹300 per user/mo.",
-  "Google Workspace Apps and AppSheet builds are quoted separately.",
 ] as const;
 
 /**
