@@ -9,7 +9,9 @@ import {
   emReadyCustomApps,
   emReadyModulePlans,
   emReadyPricingFootnotes,
+  emReadyPublicModulePlans,
   emReadyPublicPlans,
+  emReadySheetsPitch,
   emReadyWorkspaceBuild,
   formatInr,
   getEmReadyDisplayPrice,
@@ -487,32 +489,16 @@ export function EmReadyPricing() {
       <section className="em-pricing-hero">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
           <div className="em-pricing-hero-inner">
-            <p className="em-pricing-kicker">BCI Suite</p>
-            <h1>What is in each plan</h1>
-            <p className="em-pricing-lead">
-              <strong>₹4,999</strong> — FMS, EM, PC, MIS.{" "}
-              <strong>₹9,999</strong> — that plus Check Lists and Tasks.{" "}
-              <strong>₹24,999</strong> — that plus HRMS and IMS. CRM is a
-              module at {formatInr(2499)} for 8 users. Monthly billing; annual
-              where listed.
-            </p>
-            <div className="em-pricing-path-cards" aria-label="How pricing works">
-              <div className="em-pricing-path-card">
-                <h2>BCI Suite</h2>
-                <p>
-                  {formatInr(4999)} FMS + EM + PC + MIS · {formatInr(9999)} +
-                  Check Lists + Tasks · {formatInr(24999)} + HRMS + IMS.
-                </p>
-              </div>
-              <div className="em-pricing-path-card">
-                <h2>Modules</h2>
-                <p>
-                  CRM {formatInr(2499)} / 8 users. FMS {formatInr(2999)}. Check
-                  Lists + Tasks {formatInr(2499)}. IMS {formatInr(2999)}. HRMS
-                  &amp; WhatsApp API {formatInr(10000)} + {formatInr(300)}
-                  /user.
-                </p>
-              </div>
+            <p className="em-pricing-kicker">{emReadySheetsPitch.kicker}</p>
+            <h1>{emReadySheetsPitch.title}</h1>
+            <p className="em-pricing-lead">{emReadySheetsPitch.lead}</p>
+            <div className="em-pricing-pain-cards" aria-label="Sheets vs Sheetomatic">
+              {emReadySheetsPitch.points.map((point) => (
+                <div className="em-pricing-pain-card" key={point.title}>
+                  <h2>{point.title}</h2>
+                  <p>{point.text}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -601,7 +587,7 @@ export function EmReadyPricing() {
             </div>
           ) : (
             <div className="em-pricing-grid em-pricing-grid-modules">
-              {emReadyModulePlans.map((plan) => (
+              {emReadyPublicModulePlans.map((plan) => (
                 <ModuleCard
                   key={plan.id}
                   plan={plan}

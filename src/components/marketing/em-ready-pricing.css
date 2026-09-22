@@ -47,7 +47,7 @@
 }
 
 .em-pricing-hero-inner {
-  max-width: 46rem;
+  max-width: 58rem;
   margin-inline: auto;
 }
 
@@ -82,29 +82,28 @@
   font-weight: 750;
 }
 
-.em-pricing-path-cards {
+.em-pricing-pain-cards {
   display: grid;
   gap: 0.85rem;
   margin: 1.75rem auto 0;
-  max-width: 40rem;
   text-align: left;
 }
 
-@media (min-width: 640px) {
-  .em-pricing-path-cards {
-    grid-template-columns: 1fr 1fr;
+@media (min-width: 768px) {
+  .em-pricing-pain-cards {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
-.em-pricing-path-card {
-  padding: 1rem 1.1rem;
+.em-pricing-pain-card {
+  padding: 1.1rem 1.15rem;
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--em-blue) 16%, var(--em-border));
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 8px 20px -14px rgba(10, 27, 46, 0.2);
 }
 
-.em-pricing-path-card h2 {
+.em-pricing-pain-card h2 {
   margin: 0;
   font-size: 0.95rem;
   font-weight: 800;
@@ -112,11 +111,16 @@
   color: var(--em-navy);
 }
 
-.em-pricing-path-card p {
-  margin: 0.4rem 0 0;
-  font-size: 0.8125rem;
-  line-height: 1.45;
+.em-pricing-pain-card p {
+  margin: 0.45rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
   color: var(--em-muted);
+}
+
+.em-pricing-pain-card:last-child {
+  border-color: color-mix(in srgb, var(--em-blue) 32%, var(--em-border));
+  background: color-mix(in srgb, var(--em-blue) 6%, #ffffff);
 }
 
 .em-pricing-section {

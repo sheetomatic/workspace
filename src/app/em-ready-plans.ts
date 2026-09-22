@@ -208,7 +208,7 @@ export const emReadyPricingFootnotes = [
   "Billing is monthly recurring; annual invoices available where listed.",
   "Implementation is quoted per business from FMS, Check Lists, and related scope.",
   "Suite: ₹4,999 FMS + EM + PC + MIS. ₹9,999 adds Check Lists + Tasks. ₹24,999 adds HRMS + IMS.",
-  "CRM is ₹2,499/mo for 8 users. WhatsApp Official API and HRMS: ₹10,000/mo base + ₹300 per user/mo.",
+  "CRM is ₹2,499/mo for 8 users. HRMS: ₹10,000/mo base + ₹300 per user/mo.",
   "Google Workspace Apps and AppSheet builds are quoted separately.",
 ] as const;
 
@@ -356,6 +356,32 @@ export const emReadyModulePlans: EmReadyModulePlan[] = [
   },
 ];
 
+/** Modules shown on /pricing. WhatsApp Official API lives on /whatsapp-plans. */
+export const emReadyPublicModulePlans = emReadyModulePlans.filter(
+  (plan) => plan.id !== "module_whatsapp",
+);
+
+export const emReadySheetsPitch = {
+  kicker: "When Google Sheets can't keep up",
+  title: "Your FMS should not crash the file",
+  lead:
+    "Split FMS, Check Lists, and MIS in Sheets get slow, then they hang. Sheetomatic runs the same BCI work as an app — live EM, no waiting on a tab to load.",
+  points: [
+    {
+      title: "Sheets lag",
+      text: "Too many FMS tabs, QUERY, IMPORTRANGE — the file takes a minute to open, or never finishes.",
+    },
+    {
+      title: "Crash / try again",
+      text: "Heavy checklists and proof photos push Sheets past what a spreadsheet can hold.",
+    },
+    {
+      title: "Sheetomatic",
+      text: "FMS, EM, PC, and MIS run in product. Owner opens EM and starts the review — no MIS hire compiling the week.",
+    },
+  ],
+} as const;
+
 /** Compare matrix — Suite tiers vs buying modules. */
 export type EmReadyCompareRow = {
   feature: string;
@@ -371,7 +397,7 @@ export const emReadyCompareRows: EmReadyCompareRow[] = [
     starter: "₹4,999/mo",
     growth: "₹9,999/mo",
     scale: "₹24,999/mo",
-    modules: "From ₹2,499/mo · WA/HR ₹10,000",
+    modules: "From ₹2,499/mo · HRMS ₹10,000",
   },
   {
     feature: "FMS, EM, PC, MIS",
@@ -409,18 +435,11 @@ export const emReadyCompareRows: EmReadyCompareRow[] = [
     modules: "₹2,499 / 8 users",
   },
   {
-    feature: "WhatsApp Official API",
-    starter: "Add-on",
-    growth: "Add-on",
-    scale: "Add-on",
-    modules: "₹10,000 + 2k msgs + ₹300/user",
-  },
-  {
     feature: "Users",
     starter: "8 included",
     growth: "20 included",
     scale: "50 included",
-    modules: "8 users · WA/HR per user",
+    modules: "8 users · HRMS per user",
   },
   {
     feature: "FMS templates",
