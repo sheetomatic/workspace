@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { requireSession } from "@/lib/require-session";
 import { ChecklistsModuleNav } from "@/components/saas/checklists-module-nav";
 import { canCreateTasks } from "@/lib/tasks";
@@ -12,7 +13,9 @@ export default async function ChecklistsLayout({
 
   return (
     <div className="ws-module-layout ws-checklists-module-layout">
-      <ChecklistsModuleNav isManager={canCreateTasks(user.role)} />
+      <Suspense fallback={null}>
+        <ChecklistsModuleNav isManager={canCreateTasks(user.role)} />
+      </Suspense>
       <div className="ws-module-layout-main">{children}</div>
     </div>
   );

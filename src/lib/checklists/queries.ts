@@ -100,11 +100,18 @@ export async function listTeamChecklistTasks(
   organizationId: string,
   team: ChecklistTeam,
 ): Promise<ChecklistTaskRow[]> {
+  return listOpenChecklistTasks(organizationId, team);
+}
+
+export async function listOpenChecklistTasks(
+  organizationId: string,
+  team?: ChecklistTeam,
+): Promise<ChecklistTaskRow[]> {
   const rows = await prisma.checklistOccurrence.findMany({
     where: {
       organizationId,
       status: { in: ["PENDING", "OVERDUE"] },
-      template: { team, isActive: true },
+      template: { isActive: true, ...(team ? { team } : {}) },
     },
     select: {
       id: true,

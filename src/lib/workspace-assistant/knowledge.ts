@@ -32,7 +32,7 @@ MODULE MAP (use these hrefs in links):
 - Tasks (EA) today: /app/tasks/today
 - Create task: /app/tasks/create
 - My work: /app/tasks/my-work
-- Checklists hub: /app/checklists
+- Checklists hub: /app/checklists lists every department (General, Accounts, HR, Maintenance, Quality, Store). A General checklist is not hidden on the Accounts page. Filter with ?team=GENERAL. Accounts / HR / Maintenance boards are examples, not the only lists.
 - My checklist tasks / runs: /app/checklists/my-tasks, /app/checklists/my-runs
 - PC jobs (Today / This week / This month): /app/pc/today, /app/pc/week, /app/pc/month
 - HR hub: /app/hr

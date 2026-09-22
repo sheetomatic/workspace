@@ -1,23 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   CheckSquare,
   ClipboardCheck,
+  LayoutList,
   Settings2,
   Users,
   Wrench,
 } from "lucide-react";
 
-function navIsActive(pathname: string, href: string) {
+function navIsActive(pathname: string, href: string, team: string | null) {
+  if (href === "/app/checklists") {
+    return pathname === "/app/checklists" && !team;
+  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 export function ChecklistsModuleNav({ isManager }: { isManager: boolean }) {
   const pathname = usePathname();
+  const team = useSearchParams().get("team");
 
   const items = [
+    {
+      href: "/app/checklists",
+      label: "All checklists",
+      icon: LayoutList,
+      visible: true,
+      description: "Every department",
+    },
     {
       href: "/app/checklists/accounts",
       label: "Accounts Check List",
@@ -59,13 +71,13 @@ export function ChecklistsModuleNav({ isManager }: { isManager: boolean }) {
         </span>
         <div>
           <strong>Check List</strong>
-          <span>Department SOP checklists</span>
+          <span>Any department</span>
         </div>
       </div>
       <ul className="ws-module-subnav-list">
         {items.map((item) => {
           const Icon = item.icon;
-          const active = navIsActive(pathname, item.href);
+          const active = navIsActive(pathname, item.href, team);
           return (
             <li key={item.href}>
               <Link

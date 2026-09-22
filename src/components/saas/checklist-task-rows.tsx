@@ -10,7 +10,10 @@ import {
   updateChecklistTemplateAction,
 } from "@/app/app/checklists/actions";
 import { fmsInitialState as checklistInitialState } from "@/lib/fms-action-state";
-import { CHECKLIST_FREQUENCY_LABELS } from "@/lib/checklists/constants";
+import {
+  CHECKLIST_FREQUENCY_LABELS,
+  CHECKLIST_TEAM_LABELS,
+} from "@/lib/checklists/constants";
 import { AiVoiceTextarea } from "@/components/saas/ai-voice-textarea";
 import type { ChecklistTaskRow } from "@/lib/checklists/queries";
 
@@ -267,11 +270,13 @@ export function ChecklistTaskRows({
   currentUserId,
   isAdmin,
   members,
+  showDepartment = false,
 }: {
   tasks: ChecklistTaskRow[];
   currentUserId: string;
   isAdmin: boolean;
   members: Member[];
+  showDepartment?: boolean;
 }) {
   const [updateId, setUpdateId] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
@@ -312,6 +317,9 @@ export function ChecklistTaskRows({
                   <td data-label="Task">
                     <strong>{task.template.title}</strong>
                     <p className="ws-fms-muted">
+                      {showDepartment
+                        ? `${CHECKLIST_TEAM_LABELS[task.template.team] ?? task.template.team} · `
+                        : ""}
                       {CHECKLIST_FREQUENCY_LABELS[
                         task.template.frequency as keyof typeof CHECKLIST_FREQUENCY_LABELS
                       ] ?? task.template.frequency}

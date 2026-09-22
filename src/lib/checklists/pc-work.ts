@@ -1,3 +1,4 @@
+import { checklistBoardPath } from "@/lib/checklists/constants";
 import { prisma } from "@/lib/db";
 import { ACTIVE_TASK_STATUSES } from "@/lib/tasks";
 import {
@@ -34,10 +35,7 @@ function ownerLabel(name: string | null, email: string) {
 }
 
 function checklistTeamHref(team: string) {
-  if (team === "ACCOUNTS") return "/app/checklists/accounts";
-  if (team === "HR") return "/app/checklists/hr";
-  if (team === "MAINTENANCE") return "/app/checklists/maintenance";
-  return "/app/checklists/accounts";
+  return checklistBoardPath(team);
 }
 
 function formatDue(value: Date) {

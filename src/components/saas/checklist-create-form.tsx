@@ -12,7 +12,14 @@ import { getPcAiStarter } from "@/lib/checklists/ai-starters";
 import { applyChecklistDraftToForm, PcAiPanel } from "@/components/saas/pc-ai-panel";
 import type { ChecklistFrequency, ChecklistTeam } from "@prisma/client";
 
-const teams = Object.keys(CHECKLIST_TEAM_LABELS) as ChecklistTeam[];
+const teams = [
+  "GENERAL",
+  "ACCOUNTS",
+  "HR",
+  "MAINTENANCE",
+  "QUALITY",
+  "STORE",
+] as ChecklistTeam[];
 const frequencies = Object.keys(CHECKLIST_FREQUENCY_LABELS) as ChecklistFrequency[];
 
 const WEEKDAYS = [
@@ -70,7 +77,7 @@ export function ChecklistCreateForm({
   const [title, setTitle] = useState(starter?.label ?? "");
   const [instructions, setInstructions] = useState(starter?.prompt ?? "");
   const [team, setTeam] = useState<ChecklistTeam>(
-    starter ? teamFromStarter(starter.team) : "ACCOUNTS",
+    starter ? teamFromStarter(starter.team) : "GENERAL",
   );
   const [assigneeUserId, setAssigneeUserId] = useState("");
   const [remindViaEmail, setRemindViaEmail] = useState(true);
@@ -112,10 +119,10 @@ export function ChecklistCreateForm({
 
   useEffect(() => {
     if (state.ok) {
-      router.push("/app/checklists/setup");
+      router.push(`/app/checklists?team=${team}`);
       router.refresh();
     }
-  }, [state.ok, router]);
+  }, [state.ok, router, team]);
 
   const showWeekday =
     frequency === "WEEKLY" || frequency === "FORTNIGHTLY";
@@ -168,7 +175,7 @@ export function ChecklistCreateForm({
           </label>
 
           <label className="ws-pc-config-field">
-            <span>Team</span>
+            <span>Department</span>
             <select
               name="team"
               value={team}

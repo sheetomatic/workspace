@@ -8,6 +8,7 @@ import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import {
   CHECKLIST_FREQUENCY_LABELS,
   CHECKLIST_TEAM_LABELS,
+  checklistBoardPath,
 } from "@/lib/checklists/constants";
 import { canConfigureChecklists } from "@/lib/checklists/access";
 import { listChecklistTemplates } from "@/lib/checklists/queries";
@@ -113,7 +114,7 @@ export default async function PcSetupPage() {
             {templates.map((template) => (
               <FmsSetupItemCard
                 key={template.id}
-                href="/app/checklists"
+                href={checklistBoardPath(template.team)}
                 title={template.title}
                 subtitle={
                   <>
