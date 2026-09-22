@@ -81,6 +81,16 @@ function PriceBlock({
   );
 }
 
+function suiteAdds(plan: EmReadyPlan) {
+  if (plan.id === "em_ready_growth") {
+    return { label: "All of Starter, and", items: ["Check Lists", "Tasks"] };
+  }
+  if (plan.id === "em_ready_scale") {
+    return { label: "All of Growth, and", items: ["HRMS", "IMS"] };
+  }
+  return { label: "Starter includes", items: [...plan.modules] };
+}
+
 function PlanCard({
   plan,
   period,
@@ -92,6 +102,7 @@ function PlanCard({
   const whatsappHref = buildWhatsAppUrl(enquireSuiteMessage(plan));
   const isStarter = plan.id === "em_ready_starter";
   const isScale = plan.id === "em_ready_scale";
+  const adds = suiteAdds(plan);
 
   return (
     <article
@@ -99,62 +110,35 @@ function PlanCard({
     >
       <header className="em-suite-head">
         {plan.badge ? <span className="em-plan-badge">{plan.badge}</span> : null}
-        <p className="em-plan-path-label">BCI Suite</p>
         <h2 className="em-plan-name">{plan.shortName}</h2>
         <p className="em-plan-tagline">{plan.tagline}</p>
       </header>
 
       <PriceBlock {...price} />
-      {plan.extraUserMonthlyInr != null ? (
-        <p className="em-suite-seat">
-          Extra seat {formatInr(plan.extraUserMonthlyInr)}/mo
-        </p>
-      ) : null}
-
-      <p className="em-suite-includes-label">Includes</p>
-      <ul className="em-suite-includes">
-        {plan.modules.map((mod) => (
-          <li key={mod}>
-            <CheckCircle2 size={15} aria-hidden />
-            {mod}
-          </li>
-        ))}
-      </ul>
-
-      <dl className="em-suite-specs">
-        <div>
-          <dt>Users</dt>
-          <dd>{plan.includedUsers}</dd>
-        </div>
-        <div>
-          <dt>FMS</dt>
-          <dd>Up to {plan.maxFmsTemplates}</dd>
-        </div>
-        <div>
-          <dt>Storage</dt>
-          <dd>{plan.storageGb} GB</dd>
-        </div>
-      </dl>
 
       <div className="em-plan-actions">
         <a
-          className={marketingButtonClass("whatsapp", "em-plan-wa")}
+          className={marketingButtonClass("primary", "em-suite-cta")}
           href={whatsappHref}
           rel="noopener noreferrer"
           target="_blank"
         >
-          <span className="btn-cta-icon-wrap" aria-hidden>
-            <WhatsAppIcon className="btn-cta-icon" size={18} strokeWidth={1.7} />
-          </span>
-          <span>Enquire</span>
+          Enquire
         </a>
-        <Link
-          className={marketingButtonClass("primary", "em-plan-contact")}
-          href="/contact"
-        >
-          Contact us
-        </Link>
       </div>
+
+      <p className="em-suite-includes-label">{adds.label}</p>
+      <ul className="em-suite-includes">
+        {adds.items.map((item) => (
+          <li key={item}>
+            <CheckCircle2 size={15} aria-hidden />
+            {item}
+          </li>
+        ))}
+      </ul>
+      <p className="em-suite-seat">
+        {plan.includedUsers} users · {plan.maxFmsTemplates} FMS · {plan.storageGb} GB
+      </p>
     </article>
   );
 }
@@ -182,81 +166,39 @@ function ModuleCard({
 
       <PriceBlock {...price} />
 
-      <ul className="em-plan-meta">
-        {plan.messagesIncluded != null ? (
-          <li>
-            <span>Messages included</span>
-            <span>{plan.messagesIncluded.toLocaleString("en-IN")}</span>
-          </li>
-        ) : null}
-        <li>
-          <span>
-            {plan.id === "module_whatsapp" || plan.id === "module_hr"
-              ? "Per user"
-              : "Users included"}
-          </span>
-          <span>
-            {plan.id === "module_whatsapp" || plan.id === "module_hr"
-              ? `${formatInr(plan.extraUserMonthlyInr)}/mo`
-              : plan.includedUsers}
-          </span>
-        </li>
-        {plan.id === "module_whatsapp" || plan.id === "module_hr" ? null : (
-          <li>
-            <span>Extra seat</span>
-            <span>{formatInr(plan.extraUserMonthlyInr)}/mo</span>
-          </li>
-        )}
-      </ul>
-
-      <div className="em-plan-modules" aria-label="Includes">
-        {plan.includes.map((mod) => (
-          <span className="em-plan-module" key={mod}>
-            {mod}
-          </span>
-        ))}
-      </div>
-
-      <ul className="em-plan-highlights">
-        {plan.highlights.map((item) => (
-          <li key={item}>
-            <CheckCircle2 size={16} aria-hidden />
-            {item}
-          </li>
-        ))}
-      </ul>
-
       <div className="em-plan-actions">
-        <button
-          type="button"
-          className={`em-compare-chip${selected ? " is-on" : ""}`}
-          aria-pressed={selected}
-          onClick={onToggleCompare}
-        >
-          <Columns2 size={15} aria-hidden />
-          {selected ? "In compare" : "Add to compare"}
-        </button>
         <a
-          className={marketingButtonClass("whatsapp", "em-plan-wa")}
+          className={marketingButtonClass("primary", "em-suite-cta")}
           href={whatsappHref}
           rel="noopener noreferrer"
           target="_blank"
         >
-          <span className="btn-cta-icon-wrap" aria-hidden>
-            <WhatsAppIcon className="btn-cta-icon" size={18} strokeWidth={1.7} />
-          </span>
-          <span>Chat on WhatsApp</span>
+          Enquire
         </a>
-        <Link
-          className={marketingButtonClass("primary", "em-plan-contact")}
-          href="/contact"
-        >
-          Contact us
-        </Link>
-        <Link className="em-module-learn" href={plan.href}>
-          Learn more
-        </Link>
       </div>
+
+      <p className="em-suite-includes-label">Includes</p>
+      <ul className="em-suite-includes">
+        {plan.includes.map((item) => (
+          <li key={item}>
+            <CheckCircle2 size={15} aria-hidden />
+            {item}
+          </li>
+        ))}
+      </ul>
+      <p className="em-suite-seat">
+        {plan.id === "module_hr"
+          ? `${formatInr(plan.extraUserMonthlyInr)} per user`
+          : `${plan.includedUsers} users`}
+      </p>
+      <button
+        type="button"
+        className={`em-compare-chip${selected ? " is-on" : ""}`}
+        aria-pressed={selected}
+        onClick={onToggleCompare}
+      >
+        {selected ? "In compare" : "Add to compare"}
+      </button>
     </article>
   );
 }
@@ -475,23 +417,12 @@ export function EmReadyPricing() {
             <p className="em-pricing-kicker">{emReadySheetsPitch.kicker}</p>
             <h1>{emReadySheetsPitch.title}</h1>
             <p className="em-pricing-lead">{emReadySheetsPitch.lead}</p>
-            <div className="em-pricing-pain-cards" aria-label="Sheets vs Sheetomatic">
-              {emReadySheetsPitch.points.map((point) => (
-                <div className="em-pricing-pain-card" key={point.title}>
-                  <h2>{point.title}</h2>
-                  <p>{point.text}</p>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </section>
 
       <section className="em-pricing-section" aria-label="EM Ready pricing">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
-          <ImplementationBand askHref={implementationAskHref} />
-          <CustomAppsBand askHref={customAppsAskHref} />
-
           <div className="em-pricing-toolbar">
             <div
               className="em-pricing-toggle"
@@ -581,6 +512,9 @@ export function EmReadyPricing() {
             selectedModules={selectedModules}
             onClearModules={() => setSelectedModules([])}
           />
+
+          <ImplementationBand askHref={implementationAskHref} />
+          <CustomAppsBand askHref={customAppsAskHref} />
 
           <aside className="em-contact-band" aria-labelledby="em-contact-50-title">
             <div>

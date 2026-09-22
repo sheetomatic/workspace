@@ -49,7 +49,7 @@ export const emReadyPlans: EmReadyPlan[] = [
     id: "em_ready_starter",
     name: "EM Ready Starter",
     shortName: "Starter",
-    tagline: "BCI Suite — FMS, EM, PC, MIS",
+    tagline: "FMS, EM, PC, MIS",
     publicListing: true,
     badge: "Starts here",
     cta: "enquire",
@@ -73,7 +73,7 @@ export const emReadyPlans: EmReadyPlan[] = [
     id: "em_ready_growth",
     name: "EM Ready Growth",
     shortName: "Growth",
-    tagline: "Starter + Check Lists + Tasks",
+    tagline: "Check Lists and Tasks",
     publicListing: true,
     badge: null,
     cta: "enquire",
@@ -98,7 +98,7 @@ export const emReadyPlans: EmReadyPlan[] = [
     id: "em_ready_scale",
     name: "EM Ready Scale",
     shortName: "Scale",
-    tagline: "Starter + Growth + HRMS + IMS",
+    tagline: "HRMS and IMS",
     publicListing: true,
     badge: "Recommended",
     cta: "enquire",
@@ -362,10 +362,10 @@ export const emReadyPublicModulePlans = emReadyModulePlans.filter(
 );
 
 export const emReadySheetsPitch = {
-  kicker: "When Google Sheets can't keep up",
-  title: "Your FMS should not crash the file",
+  kicker: "BCI Suite",
+  title: "Simple plans for every team",
   lead:
-    "Split FMS, Check Lists, and MIS in Sheets get slow, then they hang. Sheetomatic runs the same BCI work as an app — live EM, no waiting on a tab to load.",
+    "FMS, EM, and Check Lists that stay fast — without Google Sheets lag or a file that crashes.",
   points: [
     {
       title: "Sheets lag",
