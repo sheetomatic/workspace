@@ -215,12 +215,6 @@ function ModuleCard({
             <span>{formatInr(plan.extraUserMonthlyInr)}/mo</span>
           </li>
         )}
-        {plan.buildCostInr != null ? (
-          <li>
-            <span>Build (one-time)</span>
-            <span>{formatInr(plan.buildCostInr)}</span>
-          </li>
-        ) : null}
       </ul>
 
       <div className="em-plan-modules" aria-label="Includes">
@@ -536,28 +530,15 @@ export function EmReadyPricing() {
           >
             <div>
               <h2 id="em-build-title">{emReadyWorkspaceBuild.label}</h2>
-              <p className="em-build-price">
-                {formatInr(emReadyWorkspaceBuild.oneTimeInr)}
-                <span> one-time</span>
-              </p>
               <p>{emReadyWorkspaceBuild.note}</p>
             </div>
             <ul className="em-build-points">
-              <li>
-                <CheckCircle2 size={16} aria-hidden />
-                WhatsApp Official API &amp; HRMS: {formatInr(10000)}/mo +{" "}
-                {formatInr(300)}/user · product build {formatInr(5000)} if
-                bought alone
-              </li>
-              <li>
-                <CheckCircle2 size={16} aria-hidden />
-                Already paid workspace build? Extra modules — no build fee
-                until customization is required
-              </li>
-              <li>
-                <CheckCircle2 size={16} aria-hidden />
-                Customization (extra flows, integrations, UI) quoted separately
-              </li>
+              {emReadyWorkspaceBuild.points.map((item) => (
+                <li key={item}>
+                  <CheckCircle2 size={16} aria-hidden />
+                  {item}
+                </li>
+              ))}
             </ul>
           </aside>
 

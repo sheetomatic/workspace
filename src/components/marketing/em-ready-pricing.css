@@ -789,7 +789,7 @@
 }
 
 .em-build-band > div > p:not(.em-build-price) {
-  margin: 0;
+  margin: 0.55rem 0 0;
   color: #475569;
   font-size: 0.92rem;
   line-height: 1.5;

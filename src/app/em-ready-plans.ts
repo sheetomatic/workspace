@@ -169,15 +169,19 @@ export const emReadyContactOffer = {
 };
 
 /**
- * One-time build / setup for the workspace.
- * Covers all products at onboarding. Adding more modules later does not
- * require another build fee unless customization is needed.
+ * Implementation is not a public list price — scope varies by business.
+ * `oneTimeInr` is only a sales-catalog placeholder, not shown on /pricing.
  */
 export const emReadyWorkspaceBuild = {
   oneTimeInr: 10_000,
-  label: "One-time build (all products)",
+  label: "Implementation",
   note:
-    "₹10,000 one-time covers setup for all products. Adding more modules later does not require another build fee unless customization is needed.",
+    "There is no fixed setup cost on this page. Implementation is quoted business to business — it depends on how many FMS templates, Check Lists, task flows, IMS, HR, and other modules we map for your team.",
+  points: [
+    "Quoted after we understand your business: FMS count, Check Lists, and who does the work",
+    "More split FMS, process checklists, or locations usually means a larger implementation",
+    "Customization, integrations, and extra flows are scoped separately — not a one-size fee",
+  ],
 } as const;
 
 /** Standard list pricing for WhatsApp Official API and HRMS. */
@@ -194,8 +198,8 @@ export const emReadyPricingFootnotes = [
   "Prices in INR, exclusive of GST.",
   "Meta WhatsApp conversation charges beyond included message credits are billed separately.",
   "Billing is monthly recurring; annual invoices available where listed.",
-  "One-time build ₹10,000 covers all products at start. Adding modules later needs no extra build fee unless customization is required.",
-  "WhatsApp Official API and HRMS: ₹10,000/mo base + ₹300 per user/mo. Product setup ₹5,000 when bought alone (waived if workspace build already paid).",
+  "Implementation is quoted per business. It is not a fixed setup fee — it depends on FMS templates, Check Lists, and related scope.",
+  "WhatsApp Official API and HRMS: ₹10,000/mo base + ₹300 per user/mo.",
   "Suite plans include the modules listed on each card. Individual modules can be bought alone or stacked — Suite is usually cheaper when you need two or more.",
 ] as const;
 
@@ -248,7 +252,7 @@ export const emReadyModulePlans: EmReadyModulePlan[] = [
     highlights: [
       "₹10,000/mo base includes 2,000 messages",
       "₹300 per user / month",
-      "Build ₹5,000 one-time (waived if workspace build paid)",
+      "Implementation quoted to your WhatsApp templates and team",
       "Meta conversation fees beyond credits billed separately",
     ],
     href: "/whatsapp-plans",
@@ -268,7 +272,7 @@ export const emReadyModulePlans: EmReadyModulePlan[] = [
     highlights: [
       "₹10,000/mo base plan",
       "₹300 per user / month",
-      "Build ₹5,000 one-time (waived if workspace build paid)",
+      "Implementation quoted to your HR processes",
       "Workforce attendance and salary workflows",
     ],
     href: "/services",
@@ -425,11 +429,11 @@ export const emReadyCompareRows: EmReadyCompareRow[] = [
     modules: "WA/HR: ₹300/user · others 8",
   },
   {
-    feature: "One-time build",
-    starter: "₹10,000 (all products)",
-    growth: "₹10,000 (all products)",
-    scale: "₹10,000 (all products)",
-    modules: "₹10,000 once · add-ons free of build",
+    feature: "Implementation",
+    starter: "Quoted to your FMS & Check Lists",
+    growth: "Quoted to your FMS & Check Lists",
+    scale: "Quoted to your FMS & Check Lists",
+    modules: "Quoted to the modules you buy",
   },
   {
     feature: "FMS templates",
