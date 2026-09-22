@@ -43,6 +43,9 @@ function enquireModuleMessage(plan: EmReadyModulePlan): string {
 const CONTACT_50_PLUS_MESSAGE =
   "Hi Sheetomatic, we need EM Ready Workspace for more than 50 users. Please share a custom quote.";
 
+const IMPLEMENTATION_ASK_MESSAGE =
+  "Hi Sheetomatic, I want to understand the additional implementation cost for our business — FMS, Check Lists, and related modules. Please share a quote.";
+
 function PriceBlock({
   amountLabel,
   periodLabel,
@@ -269,6 +272,48 @@ function ModuleCard({
   );
 }
 
+function ImplementationBand({ askHref }: { askHref: string }) {
+  return (
+    <aside
+      className="em-build-band is-top"
+      aria-labelledby="em-build-title"
+    >
+      <div>
+        <p className="em-build-badge">Additional cost</p>
+        <h2 id="em-build-title">{emReadyWorkspaceBuild.label}</h2>
+        <p>{emReadyWorkspaceBuild.note}</p>
+        <div className="em-build-actions">
+          <a
+            className={marketingButtonClass("whatsapp", "em-build-wa")}
+            href={askHref}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <span className="btn-cta-icon-wrap" aria-hidden>
+              <WhatsAppIcon className="btn-cta-icon" size={18} strokeWidth={1.7} />
+            </span>
+            <span>Ask about implementation</span>
+          </a>
+          <Link
+            className={marketingButtonClass("primary", "em-build-contact")}
+            href="/contact"
+          >
+            Send a message
+          </Link>
+        </div>
+      </div>
+      <ul className="em-build-points">
+        {emReadyWorkspaceBuild.points.map((item) => (
+          <li key={item}>
+            <CheckCircle2 size={16} aria-hidden />
+            {item}
+          </li>
+        ))}
+      </ul>
+    </aside>
+  );
+}
+
 function CompareSection({
   open,
   selectedModules,
@@ -368,6 +413,7 @@ export function EmReadyPricing() {
   const [scrollCompareToken, setScrollCompareToken] = useState(0);
   const pathGroupId = useId();
   const contactHref = buildWhatsAppUrl(CONTACT_50_PLUS_MESSAGE);
+  const implementationAskHref = buildWhatsAppUrl(IMPLEMENTATION_ASK_MESSAGE);
 
   useEffect(() => {
     if (!compareOpen || scrollCompareToken === 0) return;
@@ -428,6 +474,8 @@ export function EmReadyPricing() {
 
       <section className="em-pricing-section" aria-label="EM Ready pricing">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
+          <ImplementationBand askHref={implementationAskHref} />
+
           <div className="em-pricing-toolbar">
             <div
               className="em-pricing-toggle"
@@ -523,24 +571,6 @@ export function EmReadyPricing() {
             selectedModules={selectedModules}
             onClearModules={() => setSelectedModules([])}
           />
-
-          <aside
-            className="em-build-band"
-            aria-labelledby="em-build-title"
-          >
-            <div>
-              <h2 id="em-build-title">{emReadyWorkspaceBuild.label}</h2>
-              <p>{emReadyWorkspaceBuild.note}</p>
-            </div>
-            <ul className="em-build-points">
-              {emReadyWorkspaceBuild.points.map((item) => (
-                <li key={item}>
-                  <CheckCircle2 size={16} aria-hidden />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </aside>
 
           <aside className="em-contact-band" aria-labelledby="em-contact-50-title">
             <div>
