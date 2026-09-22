@@ -60,9 +60,16 @@ export type WorkspaceNavItem = {
   hrSubModule?: string;
   /** When set, item is hidden unless this CRM sub-module is enabled for the member. */
   crmSubModule?: string;
+  /**
+   * BCI suite part. Hidden from everyone except admin/founder unless this id
+   * is granted on the person. Null list means no extra filter (admin/founder).
+   */
+  bciSubModule?: string;
   /** Licensed add-on. Hidden until the client kit is active or this person is ticked. */
   kitKey?: string;
   allowDepartmentHead?: boolean;
+  /** Manager sees this only when they have a team. Admin and founder always do. */
+  requiresOwnTeam?: boolean;
   matchPrefix?: string;
   addon?: boolean;
   children?: WorkspaceNavItem[];
@@ -88,6 +95,7 @@ function bciNavGroup(fmsHref: string): WorkspaceNavItem {
         label: "FMS",
         icon: GitBranch,
         module: "FMS",
+        bciSubModule: "fms",
         matchPrefix: "/app/fms",
       },
       {
@@ -95,15 +103,15 @@ function bciNavGroup(fmsHref: string): WorkspaceNavItem {
         href: "/app/checklists",
         label: "Check Lists",
         icon: ClipboardCheck,
-        anyModules: ["FMS", "TASKS"],
+        bciSubModule: "checklists",
         matchPrefix: "/app/checklists",
       },
       {
-        id: "tasks",
+        id: "task-delegation",
         href: "/app/tasks",
-        label: "Tasks Delegations",
+        label: "Task Delegation",
         icon: ClipboardList,
-        module: "TASKS",
+        bciSubModule: "taskDelegation",
         matchPrefix: "/app/tasks",
       },
       {
@@ -112,6 +120,7 @@ function bciNavGroup(fmsHref: string): WorkspaceNavItem {
         label: "EM",
         icon: Presentation,
         module: "REPORTS",
+        bciSubModule: "em",
         minRole: "MANAGER",
         matchPrefix: "/app/em",
       },
@@ -121,6 +130,7 @@ function bciNavGroup(fmsHref: string): WorkspaceNavItem {
         label: "MIS Score",
         icon: BarChart3,
         module: "FMS",
+        bciSubModule: "mis",
         minRole: "MANAGER",
         matchPrefix: "/app/fms/scores",
       },
@@ -129,7 +139,7 @@ function bciNavGroup(fmsHref: string): WorkspaceNavItem {
         href: "/app/pc/today",
         label: "PC jobs",
         icon: Radar,
-        anyModules: ["FMS", "TASKS"],
+        bciSubModule: "pc",
       },
     ],
   };
@@ -254,7 +264,7 @@ const HRMS_NAV_ITEM: WorkspaceNavItem = {
       href: "/app/checklists/hr",
       label: "HR Check List",
       icon: ClipboardCheck,
-      anyModules: ["FMS", "TASKS"],
+      bciSubModule: "checklists",
       matchPrefix: "/app/checklists/hr",
     },
     {
@@ -293,8 +303,8 @@ const HRMS_NAV_ITEM: WorkspaceNavItem = {
       href: "/app/team",
       label: "Team",
       icon: Users,
-      minRole: "ADMIN",
-      allowDepartmentHead: true,
+      minRole: "MANAGER",
+      requiresOwnTeam: true,
       matchPrefix: "/app/team",
     },
   ],
@@ -680,6 +690,8 @@ export function canAccessWorkspaceNav(
   enabledHrSubModules?: string[] | null,
   enabledCrmSubModules?: string[] | null,
   licensedKitKeys?: string[] | null,
+  canSeeTeam = false,
+  enabledBciSubModules?: string[] | null,
 ) {
   if (
     item.platformOnly &&
@@ -707,6 +719,17 @@ export function canAccessWorkspaceNav(
       return false;
     }
   }
+  if (item.bciSubModule) {
+    if (
+      enabledBciSubModules != null &&
+      !enabledBciSubModules.includes(item.bciSubModule)
+    ) {
+      return false;
+    }
+  }
+  if (item.requiresOwnTeam && !canSeeTeam) {
+    return false;
+  }
   if (item.kitKey && !(licensedKitKeys ?? []).includes(item.kitKey)) {
     return false;
   }
@@ -725,6 +748,8 @@ function filterNavItem(
   enabledHrSubModules?: string[] | null,
   enabledCrmSubModules?: string[] | null,
   licensedKitKeys?: string[] | null,
+  canSeeTeam = false,
+  enabledBciSubModules?: string[] | null,
 ): WorkspaceNavItem | null {
   if (
     !canAccessWorkspaceNav(
@@ -733,6 +758,8 @@ function filterNavItem(
       enabledHrSubModules,
       enabledCrmSubModules,
       licensedKitKeys,
+      canSeeTeam,
+      enabledBciSubModules,
     )
   ) {
     return null;
@@ -747,6 +774,8 @@ function filterNavItem(
           enabledHrSubModules,
           enabledCrmSubModules,
           licensedKitKeys,
+          canSeeTeam,
+          enabledBciSubModules,
         ),
       )
       .filter((child): child is WorkspaceNavItem => child !== null);
@@ -769,6 +798,8 @@ export function visibleWorkspaceNavItems(
   enabledHrSubModules?: string[] | null,
   enabledCrmSubModules?: string[] | null,
   licensedKitKeys?: string[] | null,
+  canSeeTeam = false,
+  enabledBciSubModules?: string[] | null,
 ) {
   return items
     .map((item) =>
@@ -778,6 +809,8 @@ export function visibleWorkspaceNavItems(
         enabledHrSubModules,
         enabledCrmSubModules,
         licensedKitKeys,
+        canSeeTeam,
+        enabledBciSubModules,
       ),
     )
     .filter((item): item is WorkspaceNavItem => item !== null);
@@ -920,8 +953,8 @@ export function getWorkspaceNavSections(params: {
               href: "/app/team",
               label: "Team",
               icon: Users,
-              minRole: "ADMIN",
-              allowDepartmentHead: true,
+              minRole: "MANAGER",
+              requiresOwnTeam: true,
             },
             {
               id: "billing",
@@ -986,8 +1019,8 @@ export function getWorkspaceNavSections(params: {
             href: "/app/team",
             label: "Team",
             icon: Users,
-            minRole: "ADMIN",
-            allowDepartmentHead: true,
+            minRole: "MANAGER",
+            requiresOwnTeam: true,
           },
           {
             id: "billing",
@@ -1097,8 +1130,8 @@ export function getWorkspaceNavSections(params: {
           href: "/app/team",
           label: "Team",
           icon: Users,
-          minRole: "ADMIN",
-          allowDepartmentHead: true,
+          minRole: "MANAGER",
+          requiresOwnTeam: true,
         },
         {
           id: "billing",

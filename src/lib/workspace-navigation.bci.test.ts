@@ -39,6 +39,52 @@ function bciChildLabels(user: SessionUser) {
 }
 
 describe("BCI suite nav", () => {
+  it("keeps Tasks out of BCI and hides the suite until it is granted", () => {
+    const user = bciStarterUser();
+    user.role = "STAFF";
+    user.modules = ["FMS", "TASKS", "REPORTS"];
+    const sections = getWorkspaceNavSections({
+      user,
+      organizationSlug: user.organizationSlug,
+    });
+    const hidden = visibleWorkspaceNavItems(
+      user,
+      sections.flatMap((section) => section.items),
+      null,
+      null,
+      null,
+      false,
+      [],
+    );
+    const hiddenLabels = hidden.flatMap((item) => [
+      item.label,
+      ...(item.children ?? []).map((child) => child.label),
+    ]);
+    expect(hiddenLabels).toContain("Tasks Management");
+    expect(hiddenLabels).not.toContain("Task Delegation");
+    expect(hiddenLabels).not.toContain("FMS");
+    expect(hiddenLabels).not.toContain("Check Lists");
+    expect(hiddenLabels).not.toContain("PC jobs");
+
+    const granted = visibleWorkspaceNavItems(
+      user,
+      sections.flatMap((section) => section.items),
+      null,
+      null,
+      null,
+      false,
+      ["taskDelegation", "checklists"],
+    );
+    const grantedLabels = granted.flatMap((item) => [
+      item.label,
+      ...(item.children ?? []).map((child) => child.label),
+    ]);
+    expect(grantedLabels).toContain("Task Delegation");
+    expect(grantedLabels).toContain("Check Lists");
+    expect(grantedLabels).not.toContain("FMS");
+    expect(grantedLabels).toContain("Tasks Management");
+  });
+
   it("lists Check Lists for BCI starter orgs without TASKS", () => {
     const labels = bciChildLabels(bciStarterUser());
     expect(labels).toContain("FMS");

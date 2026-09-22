@@ -359,6 +359,8 @@ export function SaasShell({
   enabledHrSubModules = null,
   enabledCrmSubModules = null,
   licensedKitKeys = null,
+  canSeeTeam = false,
+  enabledBciSubModules = [],
   children,
 }: {
   user: SessionUser;
@@ -379,6 +381,13 @@ export function SaasShell({
   enabledCrmSubModules?: string[] | null;
   /** Active add-on kits this person may see (client license or a personal tick). */
   licensedKitKeys?: string[] | null;
+  /** Admin, founder, or a manager who has people on their team. */
+  canSeeTeam?: boolean;
+  /**
+   * BCI parts this person may see. Null skips the filter (admin and founder).
+   * An empty list hides the suite.
+   */
+  enabledBciSubModules?: string[] | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -428,6 +437,8 @@ export function SaasShell({
         enabledHrSubModules,
         enabledCrmSubModules,
         licensedKitKeys,
+        canSeeTeam,
+        enabledBciSubModules,
       )
     : [];
 
@@ -438,6 +449,8 @@ export function SaasShell({
       enabledHrSubModules,
       enabledCrmSubModules,
       licensedKitKeys,
+      canSeeTeam,
+      enabledBciSubModules,
     );
     return isDedicatedPortal ? allowed : filterNavItemsByPrefs(allowed, navPrefs);
   }

@@ -39,6 +39,7 @@ import {
 import { parseEnabledKitKeys } from "@/lib/mobile-shop/kit-access";
 import { persistEnabledHrSubModules } from "@/lib/hr/hr-sub-modules";
 import { persistEnabledCrmSubModules } from "@/lib/crm/crm-sub-modules";
+import { persistEnabledBciSubModules } from "@/lib/bci/bci-sub-modules";
 
 export type TeamActionState = {
   ok: boolean;
@@ -56,6 +57,12 @@ function parseHrSubModulesFromForm(formData: FormData, hasHrModule: boolean) {
   }
   return persistEnabledHrSubModules(
     formData.getAll("hrSubModules").map((v) => String(v).trim()),
+  );
+}
+
+function parseBciSubModulesFromForm(formData: FormData) {
+  return persistEnabledBciSubModules(
+    formData.getAll("bciSubModules").map((value) => String(value).trim()),
   );
 }
 
@@ -311,6 +318,7 @@ export async function inviteTeamMember(
     modules.includes("CRM"),
   );
   const enabledKitKeys = parseEnabledKitKeys(formData);
+  const enabledBciSubModules = parseBciSubModulesFromForm(formData);
 
   await assertOrganizationAccess(user.organizationId, user.id);
 
@@ -353,6 +361,7 @@ export async function inviteTeamMember(
         enabledHrSubModules,
         enabledCrmSubModules,
         enabledKitKeys,
+        enabledBciSubModules,
         staffCode,
         locationMode,
         primarySiteId,
@@ -443,6 +452,7 @@ export async function inviteTeamMember(
           enabledHrSubModules,
           enabledCrmSubModules,
           enabledKitKeys,
+          enabledBciSubModules,
           staffCode,
           locationMode,
           primarySiteId,
@@ -659,6 +669,7 @@ export async function updateTeamMemberDetails(
     modules.includes("CRM"),
   );
   const enabledKitKeys = parseEnabledKitKeys(formData);
+  const enabledBciSubModules = parseBciSubModulesFromForm(formData);
 
   const previousEmail = membership.user.email.trim().toLowerCase();
   const emailChanged = email !== previousEmail;
@@ -680,6 +691,7 @@ export async function updateTeamMemberDetails(
     enabledHrSubModules,
     enabledCrmSubModules,
     enabledKitKeys,
+    enabledBciSubModules,
   };
 
   const organizationId = user.organizationId;

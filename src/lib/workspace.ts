@@ -148,9 +148,23 @@ export async function listWorkspaceMembers(organizationId: string) {
     enabledHrSubModules: membership.enabledHrSubModules ?? [],
     enabledCrmSubModules: membership.enabledCrmSubModules ?? [],
     enabledKitKeys: membership.enabledKitKeys ?? [],
+    enabledBciSubModules: membership.enabledBciSubModules ?? [],
     joinedAt: membership.createdAt,
     user: membership.user,
   }));
+}
+
+export async function memberHasDirectReports(
+  userId: string,
+  organizationId: string,
+) {
+  const count = await prisma.membership.count({
+    where: {
+      deactivatedAt: null,
+      reportingManager: { userId, organizationId },
+    },
+  });
+  return count > 0;
 }
 
 export async function getViewerMembership(userId: string, organizationId: string) {

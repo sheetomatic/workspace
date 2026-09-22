@@ -38,6 +38,7 @@ export const getWorkspaceMembershipPrefs = cache(async function getWorkspaceMemb
       enabledHrSubModules: true,
       enabledCrmSubModules: true,
       enabledKitKeys: true,
+      enabledBciSubModules: true,
     },
   });
 });

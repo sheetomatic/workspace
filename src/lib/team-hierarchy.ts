@@ -49,8 +49,13 @@ export function canManageTeam(user: SessionUser) {
   return user.isSuperAdmin || hasMinimumRole(user.role, "ADMIN");
 }
 
-export function canViewTeamPage(user: SessionUser, isDepartmentHead: boolean) {
-  return canManageTeam(user) || isDepartmentHead;
+/** Admin and founder always. A manager only when they have people on their team. */
+export function canViewTeamPage(
+  user: Pick<SessionUser, "role" | "isSuperAdmin">,
+  hasTeam: boolean,
+) {
+  if (user.isSuperAdmin || hasMinimumRole(user.role, "ADMIN")) return true;
+  return user.role === "MANAGER" && hasTeam;
 }
 
 export function filterMembersForViewer(

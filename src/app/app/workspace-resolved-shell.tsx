@@ -19,6 +19,10 @@ import { hasWorkspaceModule } from "@/lib/workspace-modules";
 import { orgHasActiveKitLicense } from "@/lib/addons/kit-license";
 import { MOBILE_SHOP_KIT_KEY } from "@/lib/addons/licensed-kits";
 import { licensedKitKeysForNav } from "@/lib/mobile-shop/kit-access";
+import { resolveMemberBciSubModules } from "@/lib/bci/bci-sub-modules";
+import { hasMinimumRole } from "@/lib/permissions";
+import { canViewTeamPage } from "@/lib/team-hierarchy";
+import { memberHasDirectReports } from "@/lib/workspace";
 import {
   getWorkspaceMembershipPrefs,
   getWorkspaceOrganization,
@@ -37,9 +41,11 @@ export async function WorkspaceResolvedShell({
   let enabledHrSubModules: string[] | null = null;
   let enabledCrmSubModules: string[] | null = null;
   let licensedKitKeys: string[] = [];
+  let canSeeTeam = false;
+  let enabledBciSubModules: string[] | null = null;
 
   try {
-    const [orgResult, orgsResult, membershipPrefs, hrSettings, orgMobileShop] =
+    const [orgResult, orgsResult, membershipPrefs, hrSettings, orgMobileShop, hasReports] =
       await Promise.all([
         getWorkspaceOrganization(sessionUser.organizationId),
         listOrganizationsForUser(sessionUser.id),
@@ -48,6 +54,9 @@ export async function WorkspaceResolvedShell({
           ? getHrSettings(sessionUser.organizationId)
           : Promise.resolve(null),
         orgHasActiveKitLicense(sessionUser.organizationId, MOBILE_SHOP_KIT_KEY),
+        sessionUser.role === "MANAGER"
+          ? memberHasDirectReports(sessionUser.id, sessionUser.organizationId)
+          : Promise.resolve(false),
       ]);
     organization = orgResult;
     organizations = orgsResult;
@@ -67,6 +76,14 @@ export async function WorkspaceResolvedShell({
       orgLicensed: orgMobileShop,
       memberKitKeys: membershipPrefs?.enabledKitKeys,
     });
+    canSeeTeam = canViewTeamPage(
+      sessionUser,
+      sessionUser.isDepartmentHead || hasReports,
+    );
+    enabledBciSubModules =
+      sessionUser.isSuperAdmin || hasMinimumRole(sessionUser.role, "ADMIN")
+        ? null
+        : resolveMemberBciSubModules(membershipPrefs?.enabledBciSubModules);
   } catch (error) {
     console.error("[app-layout] workspace bootstrap failed", error);
     redirect(logoutHref("/login?error=workspace"));
@@ -104,6 +121,8 @@ export async function WorkspaceResolvedShell({
         enabledHrSubModules={enabledHrSubModules}
         hidePlanBadge={Boolean(dedicatedPortal)}
         isDedicatedPortal={Boolean(dedicatedPortal)}
+        canSeeTeam={canSeeTeam}
+        enabledBciSubModules={enabledBciSubModules}
         licensedKitKeys={licensedKitKeys}
         navPrefs={navPrefs}
         organizationPlan={organization.plan}

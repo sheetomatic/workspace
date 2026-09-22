@@ -26,7 +26,11 @@ import {
   canViewTeamPage,
 } from "@/lib/team-hierarchy";
 import { getLegalDashboardStats } from "@/lib/legal-cases/queries";
-import { getViewerMembership, listWorkspaceMembers } from "@/lib/workspace";
+import {
+  getViewerMembership,
+  listWorkspaceMembers,
+  memberHasDirectReports,
+} from "@/lib/workspace";
 import { prisma } from "@/lib/db";
 import {
   hasWorkspaceModule,
@@ -75,10 +79,13 @@ export default async function TeamPage({
     user.id,
     user.organizationId,
   );
+  const hasTeam =
+    Boolean(viewerMembership?.isDepartmentHead) ||
+    (user.role === "MANAGER"
+      ? await memberHasDirectReports(user.id, user.organizationId)
+      : false);
 
-  if (
-    !canViewTeamPage(user, viewerMembership?.isDepartmentHead ?? false)
-  ) {
+  if (!canViewTeamPage(user, hasTeam)) {
     redirect("/app");
   }
 

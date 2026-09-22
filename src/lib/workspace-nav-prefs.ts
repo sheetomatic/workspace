@@ -35,7 +35,7 @@ export const DEFAULT_FOCUSED_NAV_IDS = [
 export const BCI_SUITE_NAV_IDS = [
   "fms",
   "checklists",
-  "tasks",
+  "task-delegation",
   "em",
   "mis-scores",
   "pc",

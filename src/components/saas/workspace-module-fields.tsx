@@ -15,6 +15,10 @@ import {
   type CrmSubModuleId,
 } from "@/lib/crm/crm-sub-modules";
 import { MOBILE_SHOP_KIT_KEY } from "@/lib/addons/licensed-kits";
+import {
+  BCI_SUB_MODULES,
+  type BciSubModuleId,
+} from "@/lib/bci/bci-sub-modules";
 import { useEffect, useState } from "react";
 
 export function WorkspaceModuleFields({
@@ -23,6 +27,7 @@ export function WorkspaceModuleFields({
   defaultHrSubModules,
   defaultCrmSubModules,
   defaultKitKeys,
+  defaultBciSubModules,
   lockSelection = false,
   orgAllowedModules,
   orgEnabledHrSubModules,
@@ -35,6 +40,8 @@ export function WorkspaceModuleFields({
   defaultCrmSubModules?: string[];
   /** Add-on kits ticked for this person. Empty = not granted. */
   defaultKitKeys?: string[];
+  /** BCI suite parts ticked for this person. Empty = none. */
+  defaultBciSubModules?: string[];
   /** When true (edit form), role changes do not reset saved module picks. */
   lockSelection?: boolean;
   /** Org tier cap; omit or empty = all modules selectable (legacy). */
@@ -119,6 +126,17 @@ export function WorkspaceModuleFields({
   const [mobileShopOn, setMobileShopOn] = useState(
     (defaultKitKeys ?? []).includes(MOBILE_SHOP_KIT_KEY),
   );
+  const [bciSelected, setBciSelected] = useState<BciSubModuleId[]>(() =>
+    (defaultBciSubModules ?? []).filter((id): id is BciSubModuleId =>
+      BCI_SUB_MODULES.some((mod) => mod.id === id),
+    ),
+  );
+
+  function toggleBci(id: BciSubModuleId) {
+    setBciSelected((current) =>
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+    );
+  }
 
   const showHrSubs = selected.includes("HR") && orgHrSet.size > 0;
   const showCrmSubs = selected.includes("CRM");
@@ -173,6 +191,34 @@ export function WorkspaceModuleFields({
       <p className="ws-member-module-lead">
         Mobile Shop stays hidden until you tick it for this person, or add the kit on the client.
       </p>
+
+      <div className="ws-member-hr-submodules" style={{ marginTop: "1rem" }}>
+        <h4 className="ws-member-module-title">BCI suite</h4>
+        <p className="ws-member-module-lead">
+          Tasks is its own module above. BCI stays hidden until you tick the parts
+          this person should open.
+        </p>
+        <div className="ws-member-module-grid" role="group" aria-label="BCI suite">
+          {BCI_SUB_MODULES.map((mod) => {
+            const checked = bciSelected.includes(mod.id);
+            return (
+              <label
+                className={`ws-module-option${checked ? " is-selected" : ""}`}
+                key={mod.id}
+              >
+                <input
+                  checked={checked}
+                  name="bciSubModules"
+                  type="checkbox"
+                  value={mod.id}
+                  onChange={() => toggleBci(mod.id)}
+                />
+                <span className="ws-module-option-label">{mod.label}</span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
 
       {showCrmSubs ? (
         <div className="ws-member-hr-submodules" style={{ marginTop: "1rem" }}>

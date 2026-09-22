@@ -1,0 +1,1 @@
+ALTER TABLE "Membership" ADD COLUMN IF NOT EXISTS "enabledBciSubModules" TEXT[] DEFAULT ARRAY[]::TEXT[];

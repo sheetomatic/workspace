@@ -146,6 +146,14 @@ export default async function AppLayout({
       <Suspense
         fallback={
           <SaasShell
+            canSeeTeam={
+              sessionUser.isSuperAdmin || hasMinimumRole(sessionUser.role, "ADMIN")
+            }
+            enabledBciSubModules={
+              sessionUser.isSuperAdmin || hasMinimumRole(sessionUser.role, "ADMIN")
+                ? null
+                : []
+            }
             hidePlanBadge={Boolean(dedicatedPortal)}
             isDedicatedPortal={Boolean(dedicatedPortal)}
             organizations={[currentOrgOption]}

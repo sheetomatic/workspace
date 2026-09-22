@@ -1448,6 +1448,11 @@ model Membership {
   enabledCrmSubModules String[]           @default([])
   /** Add-on kits this person may open. Empty = none. Org kit license still opens it for the client. */
   enabledKitKeys     String[]             @default([])
+  /**
+   * BCI suite parts this person may open (FMS, Check Lists, Task Delegation, EM, MIS, PC).
+   * Empty = none. Tasks is a separate module and is not included here.
+   */
+  enabledBciSubModules String[]           @default([])
   /** Per-user sidebar/home visibility: { mode, visibleIds }. */
   workspacePrefs     Json?
   userId             String
