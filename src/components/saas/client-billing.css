@@ -963,6 +963,11 @@
   font-size: 0.85rem;
 }
 
+.ws-invoice-print a {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
 @media print {
   .saas-sidebar,
   .saas-mobile-nav,

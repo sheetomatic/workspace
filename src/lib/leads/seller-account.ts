@@ -2,8 +2,10 @@
 
 export type QuotationAccountDetails = {
   legalName: string;
+  tradeName: string;
   addressLines: string[];
   pan: string;
+  gstin: string;
   udyamNumber: string;
   accountType: string;
   accountHolder: string;
@@ -17,12 +19,14 @@ export type QuotationAccountDetails = {
 
 export const SHEETOMATIC_QUOTATION_ACCOUNT: QuotationAccountDetails = {
   legalName: "Shyam Kumar Banjare",
+  tradeName: "SHEETOMATIC TECHNOLOGIES",
   addressLines: [
-    "BHOTHIYA, Ward Number 5",
-    "Jaijaipur, Janjgir",
-    "Janjgir-Champa, Chhattisgarh 495690",
+    "Shop No 2 & 3, SH 16",
+    "Near Dinesh Cycle Store, Kalmi, Sakti",
+    "Chhattisgarh 495691",
   ],
   pan: "BPFPK7002F",
+  gstin: "22BPFPK7002F1ZG",
   udyamNumber: "UDYAM-CG-06-0009880",
   accountType: "Current Account",
   accountHolder: "M/S SHEETOMATIC TECHNOLOGIES",
@@ -36,6 +40,10 @@ export const SHEETOMATIC_QUOTATION_ACCOUNT: QuotationAccountDetails = {
 
 export const UDYAM_CERTIFICATE_HREF =
   "/legal/udyam-registration-certificate.pdf";
+
+/** Public GST REG-06. Absolute so a saved invoice PDF keeps a working link. */
+export const GST_CERTIFICATE_HREF =
+  "https://sheetomatic.com/legal/gst-registration-certificate.pdf";
 
 export function isSheetomaticSellerOrg(org: {
   name?: string | null;

@@ -1,6 +1,9 @@
 import Link from "next/link";
 import type { QuotationAccountDetails } from "@/lib/leads/seller-account";
-import { UDYAM_CERTIFICATE_HREF } from "@/lib/leads/seller-account";
+import {
+  GST_CERTIFICATE_HREF,
+  UDYAM_CERTIFICATE_HREF,
+} from "@/lib/leads/seller-account";
 
 export function QuotationAccountSettingsPanel({
   account,
@@ -31,7 +34,15 @@ export function QuotationAccountSettingsPanel({
           <dd>{account.legalName}</dd>
         </div>
         <div>
-          <dt>Udyam address</dt>
+          <dt>Trade name</dt>
+          <dd>{account.tradeName}</dd>
+        </div>
+        <div>
+          <dt>GSTIN</dt>
+          <dd>{account.gstin}</dd>
+        </div>
+        <div>
+          <dt>Registered address</dt>
           <dd>
             {account.addressLines.map((line) => (
               <span key={line} style={{ display: "block" }}>
@@ -97,6 +108,10 @@ export function QuotationAccountSettingsPanel({
         </div>
       </dl>
       <p className="saas-panel-lead" style={{ marginTop: "0.85rem" }}>
+        <Link href={GST_CERTIFICATE_HREF} download>
+          Download GST certificate
+        </Link>
+        {" · "}
         <Link href={UDYAM_CERTIFICATE_HREF} target="_blank">
           View Udyam Registration Certificate
         </Link>

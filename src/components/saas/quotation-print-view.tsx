@@ -11,7 +11,10 @@ import {
 } from "@/lib/leads/quotation-content";
 import { siteBrand } from "@/app/site-content";
 import type { QuotationAccountDetails } from "@/lib/leads/seller-account";
-import { UDYAM_CERTIFICATE_HREF } from "@/lib/leads/seller-account";
+import {
+  GST_CERTIFICATE_HREF,
+  UDYAM_CERTIFICATE_HREF,
+} from "@/lib/leads/seller-account";
 
 type QuotationLine = {
   serviceCategory: string;
@@ -134,10 +137,21 @@ export function QuotationPrintView({
             </p>
             {account ? (
               <>
+                <p>{account.tradeName}</p>
                 <p>{account.legalName}</p>
                 {account.addressLines.map((line) => (
                   <p key={line}>{line}</p>
                 ))}
+                <p>
+                  GSTIN: {account.gstin}{" "}
+                  <a
+                    className="quotation-print-udyam-link"
+                    href={GST_CERTIFICATE_HREF}
+                    download
+                  >
+                    Download GST certificate
+                  </a>
+                </p>
                 <p>PAN: {account.pan}</p>
                 <p>
                   Udyam Aadhaar: {account.udyamNumber}{" "}
@@ -258,7 +272,11 @@ export function QuotationPrintView({
               <p>IFSC: {account.ifsc}</p>
               <p>UPI ID: {account.upiId}</p>
               <p>
-                PAN: {account.pan} · Udyam Aadhaar: {account.udyamNumber}
+                GSTIN: {account.gstin} · PAN: {account.pan} · Udyam Aadhaar:{" "}
+                {account.udyamNumber}{" "}
+                <a className="quotation-print-udyam-link" href={GST_CERTIFICATE_HREF} download>
+                  Download GST certificate
+                </a>
               </p>
             </div>
             <aside className="quotation-print-qr">
@@ -449,6 +467,7 @@ export function QuotationPrintView({
         .quotation-print-udyam-link {
           font-size: 0.78rem;
           color: #0369a1;
+          text-decoration: underline;
         }
         .quotation-print-account {
           display: grid;

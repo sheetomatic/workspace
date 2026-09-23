@@ -5,7 +5,10 @@ import "@/components/saas/client-billing.css";
 import { formatBillingDate } from "@/lib/billing/dates";
 import { invoiceLineItems } from "@/lib/billing/invoices";
 import { formatInrPaise } from "@/lib/billing/money";
-import { SHEETOMATIC_QUOTATION_ACCOUNT } from "@/lib/leads/seller-account";
+import {
+  GST_CERTIFICATE_HREF,
+  SHEETOMATIC_QUOTATION_ACCOUNT,
+} from "@/lib/leads/seller-account";
 
 export default async function InvoicePrintPage({
   params,
@@ -28,10 +31,17 @@ export default async function InvoicePrintPage({
         <header>
           <div>
             <h1>Tax invoice</h1>
+            <div>{account.tradeName}</div>
             <div>{account.legalName}</div>
             {account.addressLines.map((line) => (
               <div key={line}>{line}</div>
             ))}
+            <div>
+              GSTIN {account.gstin}{" "}
+              <a href={GST_CERTIFICATE_HREF} download>
+                Download GST certificate
+              </a>
+            </div>
             <div>PAN {account.pan}</div>
             <div>Udyam {account.udyamNumber}</div>
           </div>

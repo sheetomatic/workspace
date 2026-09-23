@@ -6,6 +6,10 @@ import {
 
 describe("quotation seller account", () => {
   it("prints Sheetomatic PAN, Udyam, bank, and UPI", () => {
+    expect(SHEETOMATIC_QUOTATION_ACCOUNT.tradeName).toBe(
+      "SHEETOMATIC TECHNOLOGIES",
+    );
+    expect(SHEETOMATIC_QUOTATION_ACCOUNT.gstin).toBe("22BPFPK7002F1ZG");
     expect(SHEETOMATIC_QUOTATION_ACCOUNT.pan).toBe("BPFPK7002F");
     expect(SHEETOMATIC_QUOTATION_ACCOUNT.udyamNumber).toBe(
       "UDYAM-CG-06-0009880",
@@ -31,7 +35,7 @@ describe("quotation seller account", () => {
     expect(
       quotationAccountForOrganization({ name: "Sheetomatic Technologies" }),
     ).toEqual(SHEETOMATIC_QUOTATION_ACCOUNT);
-    expect(SHEETOMATIC_QUOTATION_ACCOUNT.addressLines[2]).toContain("495690");
+    expect(SHEETOMATIC_QUOTATION_ACCOUNT.addressLines[2]).toContain("495691");
     expect(quotationAccountForOrganization({ name: "Hingorani" })).toBeNull();
   });
 });
