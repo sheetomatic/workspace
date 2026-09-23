@@ -1,5 +1,6 @@
 import type { QuotationStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { roundInr, splitGstLine } from "@/lib/leads/gst-invoice";
 
 export async function nextQuotationNumber(organizationId: string) {
   const rows = await prisma.inboundLeadQuotation.findMany({
@@ -32,18 +33,29 @@ export function revisionQuotationNumber(baseNumber: string, revisionNumber: numb
 }
 
 export function computeQuotationTotals(
-  lines: Array<{ quantity: number; unitPrice: number }>,
-  taxRate = 0,
+  lines: Array<{ quantity: number; unitPrice: number; gstRate?: number | null }>,
+  options?: { placeOfSupplyCode?: string | null; taxRate?: number },
 ) {
-  const subtotal = lines.reduce(
-    (sum, line) => sum + line.quantity * line.unitPrice,
-    0,
+  const subtotal = roundInr(
+    lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0),
   );
-  const taxAmount = taxRate > 0 ? Math.round(subtotal * taxRate) / 100 : 0;
+  const taxAmount = roundInr(
+    lines.reduce((sum, line) => {
+      const rate = line.gstRate ?? options?.taxRate ?? 0;
+      return (
+        sum +
+        splitGstLine({
+          taxable: line.quantity * line.unitPrice,
+          gstRate: rate,
+          placeOfSupplyCode: options?.placeOfSupplyCode,
+        }).gstAmount
+      );
+    }, 0),
+  );
   return {
     subtotal,
     taxAmount,
-    totalAmount: subtotal + taxAmount,
+    totalAmount: roundInr(subtotal + taxAmount),
   };
 }
 

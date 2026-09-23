@@ -42,6 +42,10 @@ export function QuotationAccountSettingsPanel({
           <dd>{account.gstin}</dd>
         </div>
         <div>
+          <dt>Authorised signatory</dt>
+          <dd>{account.authorisedSignatory}</dd>
+        </div>
+        <div>
           <dt>Registered address</dt>
           <dd>
             {account.addressLines.map((line) => (

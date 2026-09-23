@@ -143,6 +143,8 @@ export function serializeCrmDrawerLead(lead: CrmDrawerLead) {
       company: item.company,
       address: item.address,
       zipCode: item.zipCode,
+      placeOfSupplyCode: item.placeOfSupplyCode,
+      clientGstin: item.clientGstin,
       scopeNotes: item.scopeNotes,
       paymentTerms: item.paymentTerms,
       advanceRequired: item.advanceRequired?.toString() ?? null,
@@ -157,6 +159,8 @@ export function serializeCrmDrawerLead(lead: CrmDrawerLead) {
         quantity: line.quantity,
         unitPrice: line.unitPrice.toString(),
         lineTotal: line.lineTotal.toString(),
+        hsnSac: line.hsnSac,
+        gstRate: line.gstRate,
       })),
     })),
     offeredServices: (lead.offeredServices ?? []).map((item) => ({

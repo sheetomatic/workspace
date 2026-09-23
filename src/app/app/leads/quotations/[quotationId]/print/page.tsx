@@ -25,6 +25,8 @@ function mapQuotationForView(quotation: NonNullable<Awaited<ReturnType<typeof ge
     company: quotation.company,
     address: quotation.address,
     zipCode: quotation.zipCode,
+    placeOfSupplyCode: quotation.placeOfSupplyCode,
+    clientGstin: quotation.clientGstin,
     scopeNotes: quotation.scopeNotes,
     paymentTerms: quotation.paymentTerms,
     advanceRequired: quotation.advanceRequired
@@ -40,6 +42,8 @@ function mapQuotationForView(quotation: NonNullable<Awaited<ReturnType<typeof ge
       quantity: line.quantity,
       unitPrice: Number(line.unitPrice),
       lineTotal: Number(line.lineTotal),
+      hsnSac: line.hsnSac,
+      gstRate: line.gstRate,
     })),
     lead: quotation.lead,
   };

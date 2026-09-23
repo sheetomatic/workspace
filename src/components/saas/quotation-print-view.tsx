@@ -15,6 +15,13 @@ import {
   GST_CERTIFICATE_HREF,
   UDYAM_CERTIFICATE_HREF,
 } from "@/lib/leads/seller-account";
+import {
+  DEFAULT_GST_RATE,
+  DEFAULT_HSN_SAC,
+  placeOfSupplyLabel,
+  roundInr,
+  splitGstLine,
+} from "@/lib/leads/gst-invoice";
 
 type QuotationLine = {
   serviceCategory: string;
@@ -22,6 +29,8 @@ type QuotationLine = {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
+  hsnSac?: string | null;
+  gstRate?: number | null;
 };
 
 export function QuotationPrintView({
@@ -47,6 +56,8 @@ export function QuotationPrintView({
     company: string | null;
     address: string | null;
     zipCode: string | null;
+    placeOfSupplyCode?: string | null;
+    clientGstin?: string | null;
     scopeNotes: string | null;
     paymentTerms: string | null;
     advanceRequired: number | null;
@@ -81,6 +92,30 @@ export function QuotationPrintView({
       ? ` · Revision ${quotation.revisionNumber}`
       : "";
   const brandLogoSrc = logoUrl ?? siteBrand.logoSrc;
+  const placeOfSupply = placeOfSupplyLabel(quotation.placeOfSupplyCode);
+  const gstRows = quotation.lines.map((line) => {
+    const taxable = line.lineTotal;
+    const split = splitGstLine({
+      taxable,
+      gstRate: line.gstRate ?? DEFAULT_GST_RATE,
+      placeOfSupplyCode: quotation.placeOfSupplyCode,
+    });
+    return {
+      line,
+      hsn: line.hsnSac?.trim() || DEFAULT_HSN_SAC,
+      price: line.quantity > 0 ? roundInr(taxable / line.quantity) : line.unitPrice,
+      split,
+    };
+  });
+  const taxableTotal = roundInr(gstRows.reduce((sum, row) => sum + row.split.taxable, 0));
+  const cgstTotal = roundInr(gstRows.reduce((sum, row) => sum + row.split.cgstAmount, 0));
+  const sgstTotal = roundInr(gstRows.reduce((sum, row) => sum + row.split.sgstAmount, 0));
+  const igstTotal = roundInr(gstRows.reduce((sum, row) => sum + row.split.igstAmount, 0));
+  const gstTotal = roundInr(gstRows.reduce((sum, row) => sum + row.split.gstAmount, 0));
+  const grandTotal = roundInr(taxableTotal + gstTotal);
+  const money = (value: number) =>
+    value.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const percent = (value: number) => (value > 0 ? `${value}%` : "0%");
 
   return (
     <div className={`quotation-print-page${embed ? " quotation-print-embed" : ""}`}>
@@ -126,6 +161,7 @@ export function QuotationPrintView({
                 timeZone: "Asia/Kolkata",
               })}
             </p>
+            <p>Place of supply: {placeOfSupply}</p>
           </div>
         </header>
 
@@ -175,6 +211,7 @@ export function QuotationPrintView({
             <p>{clientCompany}</p>
             <p>{clientAddress}</p>
             <p>ZIP: {clientZip}</p>
+            {quotation.clientGstin ? <p>GSTIN: {quotation.clientGstin}</p> : null}
             {quotation.lead.phone ? <p>Phone: {quotation.lead.phone}</p> : null}
             {quotation.lead.email ? <p>Email: {quotation.lead.email}</p> : null}
           </div>
@@ -188,47 +225,61 @@ export function QuotationPrintView({
         ) : null}
 
         <div className="quotation-print-table-wrap">
-        <table className="quotation-print-table">
+        <table className="quotation-print-table quotation-print-gst-table">
           <thead>
             <tr>
               <th>#</th>
-              <th>Service category</th>
               <th>Description</th>
-              <th>Qty</th>
-              <th>Rate (₹)</th>
-              <th>Amount (₹)</th>
+              <th>HSN/SAC</th>
+              <th>Quantity</th>
+              <th>GST Rate</th>
+              <th>Price</th>
+              <th>Taxable Amount</th>
+              <th>CGST %</th>
+              <th>SGST %</th>
+              <th>IGST %</th>
+              <th>GST Amount</th>
+              <th>Total Amount</th>
             </tr>
           </thead>
           <tbody>
-            {quotation.lines.map((line, index) => (
-              <tr key={`${line.serviceCategory}-${line.subCategory}-${index}`}>
+            {gstRows.map((row, index) => (
+              <tr key={`${row.line.serviceCategory}-${row.line.subCategory}-${index}`}>
                 <td>{index + 1}</td>
-                <td>{line.serviceCategory}</td>
-                <td>{line.subCategory}</td>
-                <td>{line.quantity}</td>
-                <td>{line.unitPrice.toLocaleString("en-IN")}</td>
-                <td>{line.lineTotal.toLocaleString("en-IN")}</td>
+                <td>
+                  {row.line.serviceCategory}
+                  {row.line.subCategory ? ` — ${row.line.subCategory}` : ""}
+                </td>
+                <td>{row.hsn}</td>
+                <td>{row.line.quantity}</td>
+                <td>{row.split.gstRate}%</td>
+                <td>{money(row.price)}</td>
+                <td>{money(row.split.taxable)}</td>
+                <td>{percent(row.split.cgstPercent)}</td>
+                <td>{percent(row.split.sgstPercent)}</td>
+                <td>{percent(row.split.igstPercent)}</td>
+                <td>{money(row.split.gstAmount)}</td>
+                <td>{money(row.split.totalAmount)}</td>
               </tr>
             ))}
           </tbody>
           <tfoot>
-            {quotation.subtotal !== quotation.totalAmount ? (
-              <tr>
-                <td colSpan={5}>Subtotal</td>
-                <td>{formatInr(quotation.subtotal)}</td>
-              </tr>
-            ) : null}
             <tr>
-              <td colSpan={5}>
+              <td colSpan={6}>
                 <strong>Total</strong>
               </td>
+              <td>{money(taxableTotal)}</td>
+              <td>{cgstTotal > 0 ? money(cgstTotal) : "—"}</td>
+              <td>{sgstTotal > 0 ? money(sgstTotal) : "—"}</td>
+              <td>{igstTotal > 0 ? money(igstTotal) : "—"}</td>
+              <td>{money(gstTotal)}</td>
               <td>
-                <strong>{formatInr(quotation.totalAmount)}</strong>
+                <strong>{money(grandTotal)}</strong>
               </td>
             </tr>
             <tr className="quotation-print-total-words">
-              <td colSpan={6}>
-                <strong>Amount in words:</strong> {formatInrInWords(quotation.totalAmount)}
+              <td colSpan={12}>
+                <strong>Amount in words:</strong> {formatInrInWords(grandTotal)}
               </td>
             </tr>
           </tfoot>
@@ -312,6 +363,13 @@ export function QuotationPrintView({
             </p>
           ) : null}
         </section>
+
+        {account?.authorisedSignatory ? (
+          <section className="quotation-print-signatory">
+            <p>Authorised Signatory</p>
+            <strong>{account.authorisedSignatory}</strong>
+          </section>
+        ) : null}
 
         <footer className="quotation-print-footer">
           <p>Thank you for choosing {organizationName}.</p>
@@ -468,6 +526,33 @@ export function QuotationPrintView({
           font-size: 0.78rem;
           color: #0369a1;
           text-decoration: underline;
+        }
+        .quotation-print-gst-table {
+          font-size: 0.72rem;
+        }
+        .quotation-print-gst-table th,
+        .quotation-print-gst-table td {
+          padding: 0.35rem 0.3rem;
+          white-space: nowrap;
+        }
+        .quotation-print-gst-table td:nth-child(2) {
+          white-space: normal;
+          min-width: 8rem;
+        }
+        .quotation-print-table-wrap {
+          overflow-x: auto;
+        }
+        .quotation-print-signatory {
+          margin: 1.5rem 0 0.5rem;
+          text-align: right;
+        }
+        .quotation-print-signatory p {
+          margin: 0;
+          font-size: 0.8rem;
+        }
+        .quotation-print-signatory strong {
+          display: block;
+          margin-top: 1.75rem;
         }
         .quotation-print-account {
           display: grid;

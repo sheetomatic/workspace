@@ -38,6 +38,8 @@ export default async function PublicQuotationPage({ params }: PageProps) {
         company: quotation.company,
         address: quotation.address,
         zipCode: quotation.zipCode,
+        placeOfSupplyCode: quotation.placeOfSupplyCode,
+        clientGstin: quotation.clientGstin,
         scopeNotes: quotation.scopeNotes,
         paymentTerms: quotation.paymentTerms,
         advanceRequired: quotation.advanceRequired
@@ -53,6 +55,8 @@ export default async function PublicQuotationPage({ params }: PageProps) {
           quantity: line.quantity,
           unitPrice: Number(line.unitPrice),
           lineTotal: Number(line.lineTotal),
+          hsnSac: line.hsnSac,
+          gstRate: line.gstRate,
         })),
         lead: quotation.lead,
       }}

@@ -32,6 +32,17 @@ import {
 import { QuotationPrintView } from "@/components/saas/quotation-print-view";
 import { quotationAccountForOrganization } from "@/lib/leads/seller-account";
 import {
+  DEFAULT_GST_RATE,
+  DEFAULT_HSN_SAC,
+  GST_RATES,
+  GST_STATE_OPTIONS,
+  HSN_SAC_OPTIONS,
+  SELLER_GST_STATE_CODE,
+  parseGstRate,
+  parseHsnSac,
+  splitGstLine,
+} from "@/lib/leads/gst-invoice";
+import {
   computeWebsitePricingLineTotal,
   parseMoneyInput,
   parseWebsitePricingLineDescription,
@@ -52,6 +63,8 @@ type QuotationLine = {
   quantity: number;
   unitPrice: string | number;
   lineTotal: string | number;
+  hsnSac?: string | null;
+  gstRate?: number | null;
 };
 
 type QuotationRow = {
@@ -69,6 +82,8 @@ type QuotationRow = {
   company: string | null;
   address: string | null;
   zipCode: string | null;
+  placeOfSupplyCode?: string | null;
+  clientGstin?: string | null;
   scopeNotes: string | null;
   paymentTerms: string | null;
   advanceRequired: string | number | null;
@@ -92,7 +107,22 @@ type LineDraft = {
   amount: string;
   perUserCost: string;
   users: string;
+  hsnSac: string;
+  gstRate: string;
 };
+
+function blankLineDraft(patch: Partial<LineDraft> = {}): LineDraft {
+  return {
+    id: createLineId(),
+    catalogId: "",
+    amount: "",
+    perUserCost: "",
+    users: "",
+    hsnSac: DEFAULT_HSN_SAC,
+    gstRate: String(DEFAULT_GST_RATE),
+    ...patch,
+  };
+}
 
 function createLineId() {
   return `line-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -160,13 +190,15 @@ function buildLineDrafts(
           ? Math.max(0, lineTotal - perUserCost * users)
           : 0;
       return [
-        {
-          id: createLineId(),
+        blankLineDraft({
           catalogId,
           amount: amount > 0 ? String(amount) : "",
           perUserCost: perUserCost > 0 ? String(perUserCost) : "",
           users: users > 0 ? String(users) : "",
-        },
+          hsnSac: line.hsnSac?.trim() || DEFAULT_HSN_SAC,
+          gstRate:
+            line.gstRate != null ? String(line.gstRate) : String(DEFAULT_GST_RATE),
+        }),
       ];
     });
     if (rows.length > 0) {
@@ -180,18 +212,14 @@ function buildLineDrafts(
       if (!catalogId) {
         return [];
       }
-      return [{ id: createLineId(), catalogId, amount: "", perUserCost: "", users: "" }];
+      return [blankLineDraft({ catalogId })];
     });
     if (rows.length > 0) {
       return rows;
     }
   }
 
-  if (serviceCatalog.length === 0) {
-    return [{ id: createLineId(), catalogId: "", amount: "", perUserCost: "", users: "" }];
-  }
-
-  return [{ id: createLineId(), catalogId: "", amount: "", perUserCost: "", users: "" }];
+  return [blankLineDraft()];
 }
 
 function usedCatalogIdsElsewhere(lineDrafts: LineDraft[], currentLineId: string) {
@@ -357,6 +385,18 @@ export function QuotationBuilderPanel({
   const [billCompany, setBillCompany] = useState(leadCompany ?? "");
   const [billAddress, setBillAddress] = useState(leadAddress ?? "");
   const [billZip, setBillZip] = useState(leadZipCode ?? "");
+  const [placeOfSupplyCode, setPlaceOfSupplyCode] = useState(
+    () =>
+      quotations.find((item) => item.status === "DRAFT" && !item.lockedAt)
+        ?.placeOfSupplyCode || SELLER_GST_STATE_CODE,
+  );
+  const [clientGstin, setClientGstin] = useState(
+    () =>
+      quotations.find((item) => item.status === "DRAFT" && !item.lockedAt)
+        ?.clientGstin || "",
+  );
+  const [setupHsnSac, setSetupHsnSac] = useState(DEFAULT_HSN_SAC);
+  const [setupGstRate, setSetupGstRate] = useState(String(DEFAULT_GST_RATE));
   const [lineDrafts, setLineDrafts] = useState<LineDraft[]>(() =>
     buildLineDrafts(offeredServices, serviceCatalog, quotations),
   );
@@ -394,20 +434,28 @@ export function QuotationBuilderPanel({
 
   const setupCostAmount = parseMoneyInput(setupCost);
 
-  const manualTotal = useMemo(
-    () =>
-      validLines.reduce(
-        (sum, line) =>
-          sum +
-          computeWebsitePricingLineTotal({
-            amount: line.amount,
-            perUserCost: line.perUserCost,
-            users: line.users,
-          }),
-        setupCostAmount,
-      ),
-    [setupCostAmount, validLines],
-  );
+  const manualTotal = useMemo(() => {
+    const lineTotals = validLines.map((line) =>
+      splitGstLine({
+        taxable: computeWebsitePricingLineTotal({
+          amount: line.amount,
+          perUserCost: line.perUserCost,
+          users: line.users,
+        }),
+        gstRate: parseGstRate(line.gstRate),
+        placeOfSupplyCode,
+      }).totalAmount,
+    );
+    const setup =
+      setupCostAmount > 0
+        ? splitGstLine({
+            taxable: setupCostAmount,
+            gstRate: parseGstRate(setupGstRate),
+            placeOfSupplyCode,
+          }).totalAmount
+        : 0;
+    return lineTotals.reduce((sum, amount) => sum + amount, setup);
+  }, [placeOfSupplyCode, setupCostAmount, setupGstRate, validLines]);
 
   const projectEndDate = useMemo(() => {
     const durationDays = Number.parseInt(quoteDuration, 10);
@@ -462,12 +510,7 @@ export function QuotationBuilderPanel({
       if (targetLineId) {
         updateLineDraft(targetLineId, nextDraft);
       } else {
-        setLineDrafts([
-          {
-            id: createLineId(),
-            ...nextDraft,
-          },
-        ]);
+        setLineDrafts([blankLineDraft(nextDraft)]);
       }
 
       setNewServiceCategory("");
@@ -481,16 +524,7 @@ export function QuotationBuilderPanel({
   }
 
   function addLineDraft() {
-    setLineDrafts((current) => [
-      ...current,
-      {
-        id: createLineId(),
-        catalogId: "",
-        amount: "",
-        perUserCost: "",
-        users: "",
-      },
-    ]);
+    setLineDrafts((current) => [...current, blankLineDraft()]);
   }
 
   function removeLineDraft(lineId: string) {
@@ -595,6 +629,27 @@ export function QuotationBuilderPanel({
             <input value={billZip} onChange={(e) => setBillZip(e.target.value)} />
           </label>
           <label>
+            Client GSTIN
+            <input
+              value={clientGstin}
+              onChange={(e) => setClientGstin(e.target.value.toUpperCase())}
+              placeholder="Optional"
+            />
+          </label>
+          <label>
+            Place of supply
+            <select
+              value={placeOfSupplyCode}
+              onChange={(e) => setPlaceOfSupplyCode(e.target.value)}
+            >
+              {GST_STATE_OPTIONS.map((state) => (
+                <option key={state.code} value={state.code}>
+                  {state.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
             Advance required (₹)
             <input
               type="number"
@@ -612,6 +667,26 @@ export function QuotationBuilderPanel({
               onChange={(e) => setSetupCost(e.target.value)}
               placeholder="e.g. 10000"
             />
+          </label>
+          <label>
+            Setup HSN/SAC
+            <select value={setupHsnSac} onChange={(e) => setSetupHsnSac(e.target.value)}>
+              {HSN_SAC_OPTIONS.map((option) => (
+                <option key={option.code} value={option.code}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Setup GST rate
+            <select value={setupGstRate} onChange={(e) => setSetupGstRate(e.target.value)}>
+              {GST_RATES.map((rate) => (
+                <option key={rate} value={rate}>
+                  {rate}%
+                </option>
+              ))}
+            </select>
           </label>
           <label className="leads-form-span-2">
             Scope / requirement
@@ -641,7 +716,7 @@ export function QuotationBuilderPanel({
           <div className="leads-form-span-2">
             <p className="leads-quote-lines-label">Line items</p>
             <p className="leads-machine-muted leads-quote-line-hint">
-              Pick from Service Master. Line total = amount + (per user × users).
+              Pick from Service Master. Amount is taxable. GST is added from the rate you select.
             </p>
                 <div className="leads-quote-cards">
                       {lineDrafts.map((line) => {
@@ -757,9 +832,47 @@ export function QuotationBuilderPanel({
                                   }
                                 />
                               </label>
+                              <label>
+                                HSN/SAC
+                                <select
+                                  value={parseHsnSac(line.hsnSac)}
+                                  onChange={(e) =>
+                                    updateLineDraft(line.id, { hsnSac: e.target.value })
+                                  }
+                                >
+                                  {HSN_SAC_OPTIONS.map((option) => (
+                                    <option key={option.code} value={option.code}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label>
+                                GST rate
+                                <select
+                                  value={String(parseGstRate(line.gstRate))}
+                                  onChange={(e) =>
+                                    updateLineDraft(line.id, { gstRate: e.target.value })
+                                  }
+                                >
+                                  {GST_RATES.map((rate) => (
+                                    <option key={rate} value={rate}>
+                                      {rate}%
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
                               <div className="leads-quote-card-total">
-                                <span>Line total</span>
-                                <strong>{formatInr(lineTotal)}</strong>
+                                <span>Line total incl. GST</span>
+                                <strong>
+                                  {formatInr(
+                                    splitGstLine({
+                                      taxable: lineTotal,
+                                      gstRate: parseGstRate(line.gstRate),
+                                      placeOfSupplyCode,
+                                    }).totalAmount,
+                                  )}
+                                </strong>
                               </div>
                             </div>
                           </article>
@@ -889,8 +1002,14 @@ export function QuotationBuilderPanel({
                       unitPrice: line.amount,
                       perUserCost: line.perUserCost,
                       users: line.users,
+                      hsnSac: line.hsnSac,
+                      gstRate: line.gstRate,
                     })),
                     setupCost,
+                    setupHsnSac,
+                    setupGstRate,
+                    placeOfSupplyCode,
+                    clientGstin,
                     saveAsDraft: true,
                   });
                   if (result.ok && result.quotation) {
@@ -929,8 +1048,14 @@ export function QuotationBuilderPanel({
                       unitPrice: line.amount,
                       perUserCost: line.perUserCost,
                       users: line.users,
+                      hsnSac: line.hsnSac,
+                      gstRate: line.gstRate,
                     })),
                     setupCost,
+                    setupHsnSac,
+                    setupGstRate,
+                    placeOfSupplyCode,
+                    clientGstin,
                   });
                   if (result.ok && result.quotation) {
                     upsertLocalQuotation(result.quotation);
@@ -1166,6 +1291,8 @@ export function QuotationBuilderPanel({
                 company: previewQuote.company ?? billCompany,
                 address: previewQuote.address ?? billAddress,
                 zipCode: previewQuote.zipCode ?? billZip,
+                placeOfSupplyCode: previewQuote.placeOfSupplyCode,
+                clientGstin: previewQuote.clientGstin,
                 scopeNotes: previewQuote.scopeNotes ?? scopeNotes,
                 paymentTerms: previewQuote.paymentTerms ?? paymentTerms,
                 advanceRequired: previewQuote.advanceRequired
@@ -1181,6 +1308,8 @@ export function QuotationBuilderPanel({
                   quantity: line.quantity,
                   unitPrice: Number(line.unitPrice),
                   lineTotal: Number(line.lineTotal),
+                  hsnSac: line.hsnSac,
+                  gstRate: line.gstRate,
                 })),
                 lead: {
                   name: leadName,

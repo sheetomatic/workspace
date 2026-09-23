@@ -64,6 +64,11 @@ import {
   revisionQuotationNumber,
 } from "@/lib/leads/quotations";
 import {
+  parseGstRate,
+  parseHsnSac,
+  parsePlaceOfSupply,
+} from "@/lib/leads/gst-invoice";
+import {
   computeWebsitePricingLineTotal,
   findWebsitePricingProduct,
   isWebsitePricingCatalogId,
@@ -3205,6 +3210,8 @@ export async function createLeadQuotation(params: {
   company?: string;
   address?: string;
   zipCode?: string;
+  placeOfSupplyCode?: string;
+  clientGstin?: string;
   lineCatalogIds: string[];
   lineItems?: Array<{
     catalogId: string;
@@ -3212,7 +3219,11 @@ export async function createLeadQuotation(params: {
     quantity?: string;
     perUserCost?: string;
     users?: string;
+    hsnSac?: string;
+    gstRate?: string;
   }>;
+  setupHsnSac?: string;
+  setupGstRate?: string;
   setupCost?: string;
   /** Persist lines without moving the lead to Proposal / Invoice. */
   saveAsDraft?: boolean;
@@ -3250,6 +3261,8 @@ export async function createLeadQuotation(params: {
     unitPrice: string;
     perUserCost?: string;
     users?: string;
+    hsnSac?: string;
+    gstRate?: string;
   }> = hasExplicitLines
     ? explicitLineItems
     : catalogIds.map((catalogId) => ({ catalogId, unitPrice: "0" }));
@@ -3278,6 +3291,8 @@ export async function createLeadQuotation(params: {
         quantity: 1,
         unitPrice: lineTotal,
         lineTotal,
+        hsnSac: parseHsnSac(input.hsnSac),
+        gstRate: parseGstRate(input.gstRate),
       },
     ];
   });
@@ -3290,6 +3305,8 @@ export async function createLeadQuotation(params: {
       quantity: 1,
       unitPrice: setupCost,
       lineTotal: setupCost,
+      hsnSac: parseHsnSac(params.setupHsnSac),
+      gstRate: parseGstRate(params.setupGstRate),
     });
   }
 
@@ -3302,7 +3319,8 @@ export async function createLeadQuotation(params: {
     return { ok: false, message: "Enter an amount for at least one line item." };
   }
 
-  const totals = computeQuotationTotals(lines);
+  const placeOfSupplyCode = parsePlaceOfSupply(params.placeOfSupplyCode);
+  const totals = computeQuotationTotals(lines, { placeOfSupplyCode });
   const durationDays = Number.parseInt(params.durationDays ?? "", 10);
   const quotationDate = new Date();
   const projectStartDate = parseQuotationStartDate(params.projectStartDate, quotationDate);
@@ -3315,11 +3333,14 @@ export async function createLeadQuotation(params: {
     company: params.company?.trim() || lead.company,
     address: params.address?.trim() || lead.address,
     zipCode: params.zipCode?.trim() || lead.zipCode,
+    placeOfSupplyCode,
+    clientGstin: params.clientGstin?.trim().toUpperCase() || null,
     quotationDate,
     projectStartDate,
     durationDays: Number.isFinite(durationDays) ? durationDays : null,
     endDate,
     subtotal: totals.subtotal,
+    taxAmount: totals.taxAmount,
     totalAmount: totals.totalAmount,
     advanceRequired: Number.isFinite(advanceRequired) ? advanceRequired : null,
     scopeNotes: params.scopeNotes?.trim() || lead.requirement || null,
@@ -3461,6 +3482,8 @@ export async function createLeadQuotation(params: {
           quantity: true,
           unitPrice: true,
           lineTotal: true,
+          hsnSac: true,
+          gstRate: true,
         },
       },
     },
@@ -3502,6 +3525,8 @@ export async function createLeadQuotation(params: {
       company: saved.company,
       address: saved.address,
       zipCode: saved.zipCode,
+      placeOfSupplyCode: saved.placeOfSupplyCode,
+      clientGstin: saved.clientGstin,
       scopeNotes: saved.scopeNotes,
       paymentTerms: saved.paymentTerms,
       advanceRequired: money(saved.advanceRequired),
@@ -3516,6 +3541,8 @@ export async function createLeadQuotation(params: {
         quantity: line.quantity,
         unitPrice: money(line.unitPrice) ?? 0,
         lineTotal: money(line.lineTotal) ?? 0,
+        hsnSac: line.hsnSac,
+        gstRate: line.gstRate,
       })),
     },
     lead: params.saveAsDraft
@@ -3606,6 +3633,8 @@ export async function reviseLeadQuotation(quotationId: string) {
         company: source.company,
         address: source.address,
         zipCode: source.zipCode,
+        placeOfSupplyCode: source.placeOfSupplyCode,
+        clientGstin: source.clientGstin,
         quotationDate: new Date(),
         projectStartDate: source.projectStartDate,
         durationDays: source.durationDays,
@@ -3625,6 +3654,8 @@ export async function reviseLeadQuotation(quotationId: string) {
             quantity: line.quantity,
             unitPrice: line.unitPrice,
             lineTotal: line.lineTotal,
+            hsnSac: line.hsnSac,
+            gstRate: line.gstRate,
           })),
         },
       },

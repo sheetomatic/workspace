@@ -3423,6 +3423,9 @@ model InboundLeadQuotation {
   company                 String?
   address                 String?
   zipCode                 String?
+  /** GST place of supply state code. 22 = Chhattisgarh (seller). */
+  placeOfSupplyCode       String?
+  clientGstin             String?
   quotationDate           DateTime
   projectStartDate        DateTime?
   durationDays            Int?
@@ -3458,6 +3461,10 @@ model InboundLeadQuotationLine {
   quantity        Int                  @default(1)
   unitPrice       Decimal              @db.Decimal(14, 2)
   lineTotal       Decimal              @db.Decimal(14, 2)
+  /** SAC / HSN selected for this line. Empty on older rows. */
+  hsnSac          String?
+  /** GST percent. Null on rows saved before GST billing. */
+  gstRate         Int?
 
   @@index([quotationId])
 }

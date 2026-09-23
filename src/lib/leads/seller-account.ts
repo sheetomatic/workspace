@@ -15,6 +15,7 @@ export type QuotationAccountDetails = {
   ifsc: string;
   upiId: string;
   qrImageSrc: string;
+  authorisedSignatory: string;
 };
 
 export const SHEETOMATIC_QUOTATION_ACCOUNT: QuotationAccountDetails = {
@@ -36,6 +37,7 @@ export const SHEETOMATIC_QUOTATION_ACCOUNT: QuotationAccountDetails = {
   ifsc: "BDBL0001551",
   upiId: "8076967912@ptyes",
   qrImageSrc: "/images/payments/paytm-qr-sheetomatic-technologies.jpg",
+  authorisedSignatory: "Shyam Kumar Banjare",
 };
 
 export const UDYAM_CERTIFICATE_HREF =
