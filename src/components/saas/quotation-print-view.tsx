@@ -142,7 +142,13 @@ export function QuotationPrintView({
             />
           </div>
           <div className="quotation-print-meta">
-            <h2>{quotation.requestType === "INVOICE" ? "Tax Invoice" : "Quotation / Proposal"}</h2>
+            <h2>
+              {quotation.requestType === "INVOICE"
+                ? gstRows.every((row) => row.split.gstRate === 0)
+                  ? "Invoice"
+                  : "Tax Invoice"
+                : "Quotation / Proposal"}
+            </h2>
             <p>
               <strong>
                 {quotation.quotationNumber}
@@ -285,6 +291,9 @@ export function QuotationPrintView({
           </tfoot>
         </table>
         </div>
+        {gstRows.length > 0 && gstRows.every((row) => row.split.gstRate === 0) ? (
+          <p className="quotation-print-no-gst">GST not charged.</p>
+        ) : null}
 
         <section className="quotation-print-timeline">
           <p>
@@ -541,6 +550,10 @@ export function QuotationPrintView({
         }
         .quotation-print-table-wrap {
           overflow-x: auto;
+        }
+        .quotation-print-no-gst {
+          margin: 0.35rem 0 0;
+          font-size: 0.85rem;
         }
         .quotation-print-signatory {
           margin: 1.5rem 0 0.5rem;

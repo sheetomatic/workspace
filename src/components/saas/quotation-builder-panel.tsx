@@ -374,6 +374,12 @@ export function QuotationBuilderPanel({
   const [newServiceTargetLineId, setNewServiceTargetLineId] = useState<string | null>(null);
   const [newServiceMessage, setNewServiceMessage] = useState<string | null>(null);
   const [quoteType, setQuoteType] = useState<QuotationRequestType>("PROPOSAL");
+  const [chargeGst, setChargeGst] = useState(() => {
+    const draft = quotations.find((item) => item.status === "DRAFT" && !item.lockedAt);
+    const lines = draft?.lines ?? [];
+    if (lines.length === 0) return true;
+    return lines.some((line) => line.gstRate == null || line.gstRate > 0);
+  });
   const [quoteStartDate, setQuoteStartDate] = useState(() => isoDateInputValue());
   const [quoteDuration, setQuoteDuration] = useState("30");
   const [quoteNotes, setQuoteNotes] = useState("");
@@ -524,7 +530,17 @@ export function QuotationBuilderPanel({
   }
 
   function addLineDraft() {
-    setLineDrafts((current) => [...current, blankLineDraft()]);
+    setLineDrafts((current) => [
+      ...current,
+      blankLineDraft({ gstRate: chargeGst ? String(DEFAULT_GST_RATE) : "0" }),
+    ]);
+  }
+
+  function setGstBilling(next: boolean) {
+    setChargeGst(next);
+    const rate = next ? String(DEFAULT_GST_RATE) : "0";
+    setSetupGstRate(rate);
+    setLineDrafts((current) => current.map((line) => ({ ...line, gstRate: rate })));
   }
 
   function removeLineDraft(lineId: string) {
@@ -588,6 +604,16 @@ export function QuotationBuilderPanel({
             >
               <option value="PROPOSAL">Proposal</option>
               <option value="INVOICE">Invoice</option>
+            </select>
+          </label>
+          <label>
+            GST
+            <select
+              value={chargeGst ? "gst" : "none"}
+              onChange={(e) => setGstBilling(e.target.value === "gst")}
+            >
+              <option value="gst">With GST</option>
+              <option value="none">Without GST</option>
             </select>
           </label>
           <label>
@@ -680,7 +706,11 @@ export function QuotationBuilderPanel({
           </label>
           <label>
             Setup GST rate
-            <select value={setupGstRate} onChange={(e) => setSetupGstRate(e.target.value)}>
+            <select
+              value={chargeGst ? setupGstRate : "0"}
+              disabled={!chargeGst}
+              onChange={(e) => setSetupGstRate(e.target.value)}
+            >
               {GST_RATES.map((rate) => (
                 <option key={rate} value={rate}>
                   {rate}%
@@ -850,7 +880,8 @@ export function QuotationBuilderPanel({
                               <label>
                                 GST rate
                                 <select
-                                  value={String(parseGstRate(line.gstRate))}
+                                  value={chargeGst ? String(parseGstRate(line.gstRate)) : "0"}
+                                  disabled={!chargeGst}
                                   onChange={(e) =>
                                     updateLineDraft(line.id, { gstRate: e.target.value })
                                   }
