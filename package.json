@@ -28,7 +28,8 @@
     "test:e2e:tenant": "playwright test tests/e2e/tenant-isolation.spec.ts",
     "test:e2e:ui": "playwright test --ui",
     "test:unit": "vitest run",
-    "test:unit:watch": "vitest"
+    "test:unit:watch": "vitest",
+    "test:broadcast-master": "node apps-script/whatsapp-broadcast-master/tests/run-tests.js"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

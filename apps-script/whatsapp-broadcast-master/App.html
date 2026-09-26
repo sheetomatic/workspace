@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>WhatsApp Broadcast Master</title>
+    <?!= include('Styles'); ?>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="nav">
+        <div class="brand">
+          <div class="mark">S</div>
+          <div>
+            <b>Broadcast Master</b>
+            <span>Sheetomatic WhatsApp</span>
+          </div>
+        </div>
+        <button data-page="home" class="active">Home</button>
+        <button data-page="onboard">Onboarding</button>
+        <button data-page="campaign">Create campaign</button>
+        <button data-page="dashboard">Dashboard</button>
+        <button data-page="logs">Logs</button>
+        <button data-page="settings">Settings</button>
+        <button data-page="help">Help</button>
+        <div id="modePill" class="mode-pill mock">DEMO / MOCK MODE</div>
+      </aside>
+      <main class="main" id="main"></main>
+    </div>
+    <script>window.INITIAL_PAGE = "<?!= initialPage || 'home' ?>";</script>
+    <?!= include('Scripts'); ?>
+  </body>
+</html>

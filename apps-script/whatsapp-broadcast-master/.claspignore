@@ -1,0 +1,4 @@
+tests/**
+preview-server.js
+README.md
+.clasp.json.example
