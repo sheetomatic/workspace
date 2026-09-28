@@ -72,6 +72,14 @@ export async function listClientBillingRows() {
     const pendingInvoices = invoices.filter(
       (row) => row.status === "DRAFT" || row.status === "SENT" || row.status === "OVERDUE",
     ).length;
+    const unpaid =
+      org.status === "HOLD" ||
+      (org.organizationPlan?.status ?? org.planStatus) === "PAST_DUE" ||
+      invoices.some(
+        (row) =>
+          (row.status === "SENT" || row.status === "OVERDUE") &&
+          row.totalPaise > row.paidPaise,
+      );
     const owner = org.memberships.find((row) => row.role === "OWNER") ?? org.memberships[0];
     const progress = onboardingProgress(org.onboardingTasks);
     const monthly = billing?.monthlyRatePaise ?? catalog.monthlyRatePaise;
@@ -104,6 +112,7 @@ export async function listClientBillingRows() {
       name: org.name,
       slug: org.slug,
       status: org.status,
+      unpaid,
       plan: org.plan,
       product,
       productLabel: SOLD_PRODUCT_LABELS[product],

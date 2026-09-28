@@ -197,9 +197,14 @@ export async function manageClientWorkspaceAction(
   });
 
   if (result.ok) {
+    const workspaceId = String(formData.get("workspaceId") ?? "").trim();
     revalidatePath("/app/team");
     revalidatePath("/app/settings");
     revalidatePath("/app");
+    revalidatePath("/app/clients");
+    if (workspaceId) {
+      revalidatePath(`/app/clients/${workspaceId}`);
+    }
   }
 
   return result;

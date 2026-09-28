@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import type { WorkspaceProduct } from "@prisma/client";
 import { ClientPlanActions } from "@/components/saas/client-plan-actions";
+import { DeactivateUnpaidClient } from "@/components/saas/deactivate-unpaid-client";
 import { SOLD_PRODUCT_ORDER } from "@/lib/billing/catalog";
 import type { ClientBillingRow } from "@/lib/billing/queries";
 import "@/components/saas/crm-client-groups.css";
@@ -240,6 +241,12 @@ function WorkspaceClientCard({ row }: { row: ClientBillingRow[][number] }) {
               </span>
             </div>
           ) : null}
+          <DeactivateUnpaidClient
+            clientName={row.name}
+            status={row.status}
+            unpaid={row.unpaid}
+            workspaceId={row.id}
+          />
           <ClientPlanActions
             addonLines={row.addonLines}
             availableAddons={row.availableAddons}

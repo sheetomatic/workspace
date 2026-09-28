@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { DeactivateUnpaidClient } from "@/components/saas/deactivate-unpaid-client";
 import {
   ClientBillingRatesForm,
   GenerateInvoiceForm,
@@ -116,6 +117,22 @@ export default async function ClientBillingDetailPage({
           <strong>{renewal ? formatBillingDate(renewal) : "Not set"}</strong>
         </div>
       </div>
+
+      <DeactivateUnpaidClient
+        clientName={detail.name}
+        status={detail.status}
+        unpaid={
+          detail.status === "HOLD" ||
+          detail.planStatus === "PAST_DUE" ||
+          detail.organizationPlan?.status === "PAST_DUE" ||
+          detail.subscriptionInvoices.some(
+            (invoice) =>
+              (invoice.status === "SENT" || invoice.status === "OVERDUE") &&
+              invoice.totalPaise > invoice.paidPaise,
+          )
+        }
+        workspaceId={detail.id}
+      />
 
       <article className="saas-panel">
         <h3>Onboarding checklist</h3>
