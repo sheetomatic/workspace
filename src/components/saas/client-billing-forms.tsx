@@ -5,6 +5,7 @@ import {
   generateClientInvoiceAction,
   recordClientPaymentAction,
   sendClientInvoiceAction,
+  startPaymentFollowUpAction,
   toggleOnboardingTaskAction,
   updateClientBillingAction,
   voidClientInvoiceAction,
@@ -130,6 +131,19 @@ export function GenerateInvoiceForm({ organizationId }: { organizationId: string
   );
 }
 
+export function StartPaymentFollowUpButton({ invoiceId }: { invoiceId: string }) {
+  const [state, action, pending] = useActionState(startPaymentFollowUpAction, initial);
+  return (
+    <form action={action} className="ws-billing-actions">
+      <input name="invoiceId" type="hidden" value={invoiceId} />
+      <button className="btn-cta btn-primary" disabled={pending} type="submit">
+        {pending ? "Starting…" : "Start follow-up"}
+      </button>
+      <Result state={state} />
+    </form>
+  );
+}
+
 export function InvoiceOpsForm({
   organizationId,
   invoiceId,
@@ -145,10 +159,11 @@ export function InvoiceOpsForm({
 
   return (
     <div className="ws-billing-actions" style={{ flexDirection: "column", alignItems: "stretch" }}>
+      <StartPaymentFollowUpButton invoiceId={invoiceId} />
       <form action={sendAction} className="ws-billing-actions">
         <input name="invoiceId" type="hidden" value={invoiceId} />
         <button className="btn-cta" disabled={sending} type="submit">
-          {sending ? "Sending…" : "Send invoice / reminder"}
+          {sending ? "Sending…" : "Email invoice only"}
         </button>
         <Result state={sendState} />
       </form>

@@ -4,8 +4,6 @@ import {
   daysUntilDue,
   isPastDueDate,
   isPastGracePeriod,
-  shouldSendPaymentPendingAlert,
-  shouldSendReminder,
 } from "@/lib/billing/dates";
 import { runWhatsAppApiRechargeReminders } from "@/lib/billing/whatsapp-api-reminders";
 import { generateSubscriptionInvoice } from "@/lib/billing/invoices";
@@ -58,6 +56,94 @@ async function sendSubscriptionPaymentPendingWhatsApp(input: {
     message: { type: "text", text: { body } },
   });
   return official.sent;
+}
+
+/** Email and WhatsApp for one invoice. Called only from the Billing follow-up button. */
+export async function startPaymentFollowUp(invoiceId: string) {
+  const invoice = await prisma.subscriptionInvoice.findUnique({
+    where: { id: invoiceId },
+    include: {
+      organization: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          isPrimary: true,
+          billing: { select: { billingEmail: true } },
+          memberships: {
+            where: { role: "OWNER" },
+            take: 1,
+            select: { user: { select: { email: true, phone: true } } },
+          },
+        },
+      },
+    },
+  });
+
+  if (!invoice || invoice.status === "VOID" || invoice.status === "PAID") {
+    return { ok: false as const, message: "That invoice is not open for follow-up." };
+  }
+  if (invoice.organization.isPrimary || invoice.organization.slug === PRIMARY_ORG_SLUG) {
+    return { ok: false as const, message: "The primary workspace is not a client follow-up." };
+  }
+
+  const now = new Date();
+  const daysLeft = daysUntilDue(invoice.dueAt, now);
+  const toEmail =
+    invoice.organization.billing?.billingEmail ??
+    invoice.organization.memberships[0]?.user.email ??
+    null;
+  const ownerPhone = invoice.organization.memberships[0]?.user.phone ?? null;
+  const kind = daysLeft <= 0 ? "payment_pending" : "reminder";
+
+  let emailed = false;
+  let whatsapped = false;
+  if (toEmail) {
+    const sent = await sendSubscriptionInvoiceEmail({
+      toEmail,
+      organizationName: invoice.organization.name,
+      invoiceNumber: invoice.number,
+      kind,
+      daysLeft,
+      totalPaise: invoice.totalPaise,
+      dueAt: invoice.dueAt,
+      invoiceId: invoice.id,
+    });
+    emailed = sent.sent;
+  }
+  whatsapped = await sendSubscriptionPaymentPendingWhatsApp({
+    phone: ownerPhone,
+    organizationName: invoice.organization.name,
+    invoiceNumber: invoice.number,
+    totalPaise: invoice.totalPaise,
+    dueAt: invoice.dueAt,
+    daysLeft,
+  });
+
+  if (!emailed && !whatsapped) {
+    return {
+      ok: false as const,
+      message: `No message went out for ${invoice.number}. Add a billing email or the owner's phone, then start follow-up again.`,
+    };
+  }
+
+  await prisma.subscriptionInvoice.update({
+    where: { id: invoice.id },
+    data: {
+      lastReminderAt: now,
+      reminderCount: { increment: 1 },
+      status: invoice.status === "DRAFT" ? "SENT" : invoice.status,
+      sentAt: invoice.sentAt ?? now,
+    },
+  });
+
+  const channels = [emailed ? `email ${toEmail}` : null, whatsapped ? "WhatsApp" : null]
+    .filter(Boolean)
+    .join(" and ");
+  return {
+    ok: true as const,
+    message: `Follow-up started for ${invoice.organization.name} (${invoice.number}) by ${channels}.`,
+  };
 }
 
 export async function runSubscriptionBillingCron(now = new Date()) {
@@ -118,76 +204,6 @@ export async function runSubscriptionBillingCron(now = new Date()) {
       }
     }
 
-    const daysLeft = daysUntilDue(invoice.dueAt, now);
-    if (invoice.status === "VOID") continue;
-
-    const toEmail =
-      invoice.organization.billing?.billingEmail ??
-      invoice.organization.memberships[0]?.user.email ??
-      null;
-    const ownerPhone = invoice.organization.memberships[0]?.user.phone ?? null;
-
-    const paymentPending = shouldSendPaymentPendingAlert(
-      daysLeft,
-      invoice.lastReminderAt,
-      now,
-    );
-    const reminder =
-      !paymentPending &&
-      shouldSendReminder(daysLeft, invoice.lastReminderAt, now);
-
-    if (!paymentPending && !reminder) continue;
-    if (!toEmail && !(paymentPending && ownerPhone)) continue;
-
-    if (paymentPending) {
-      if (toEmail) {
-        await sendSubscriptionInvoiceEmail({
-          toEmail,
-          organizationName: invoice.organization.name,
-          invoiceNumber: invoice.number,
-          kind: "payment_pending",
-          daysLeft,
-          totalPaise: invoice.totalPaise,
-          dueAt: invoice.dueAt,
-          invoiceId: invoice.id,
-        });
-      }
-      await sendSubscriptionPaymentPendingWhatsApp({
-        phone: ownerPhone,
-        organizationName: invoice.organization.name,
-        invoiceNumber: invoice.number,
-        totalPaise: invoice.totalPaise,
-        dueAt: invoice.dueAt,
-        daysLeft,
-      });
-      paymentPendingSent.push(invoice.number);
-    } else if (toEmail) {
-      await sendSubscriptionInvoiceEmail({
-        toEmail,
-        organizationName: invoice.organization.name,
-        invoiceNumber: invoice.number,
-        kind: "reminder",
-        daysLeft,
-        totalPaise: invoice.totalPaise,
-        dueAt: invoice.dueAt,
-        invoiceId: invoice.id,
-      });
-      remindersSent.push(invoice.number);
-    }
-
-    await prisma.subscriptionInvoice.update({
-      where: { id: invoice.id },
-      data: {
-        lastReminderAt: now,
-        reminderCount: { increment: 1 },
-        status: pastDue
-          ? "OVERDUE"
-          : invoice.status === "DRAFT"
-            ? "SENT"
-            : invoice.status,
-        sentAt: invoice.sentAt ?? now,
-      },
-    });
   }
 
   const soon = await prisma.organizationPlan.findMany({

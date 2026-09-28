@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ExternalLink, FileDown } from "lucide-react";
+import { StartPaymentFollowUpButton } from "@/components/saas/client-billing-forms";
 import { PageHeader } from "@/components/saas/page-header";
 import { formatInrPaise } from "@/lib/billing/money";
 import type { PlatformInvoiceRow } from "@/lib/billing/queries";
@@ -29,7 +30,7 @@ export function PlatformBillingDashboard({
     <div className="saas-page ws-billing-page">
       <PageHeader
         title="Billing"
-        description="Invoices and collections across client workspaces. Plans, add-ons, and WhatsApp API clients live on Clients."
+        description="Unpaid invoices stay on this list. Email and WhatsApp go out only after you start follow-up."
         actions={
           <Link className="saas-ws-action" href="/app/clients">
             View clients
@@ -271,6 +272,9 @@ function InvoiceCard({ row }: { row: PlatformInvoiceRow }) {
               <ExternalLink size={16} aria-hidden />
             </Link>
           </div>
+          {row.group !== "PAID" ? (
+            <StartPaymentFollowUpButton invoiceId={row.id} />
+          ) : null}
         </div>
       ) : null}
     </li>

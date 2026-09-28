@@ -4,7 +4,7 @@ import { listCrmAlertCenterItems } from "@/lib/leads/alerts/evaluate";
 
 const ALERT_SEND_BATCH = 8;
 
-/** Auto-send due CRM commercial alerts (payment / quotation / negotiation). */
+/** Auto-send quotation and negotiation alerts. Payment follow-up is started by hand. */
 export async function runLeadAlertQueue(organizationId: string) {
   const config = await getLeadNurtureConfig(organizationId);
   if (!config.enabled) {
@@ -15,7 +15,9 @@ export async function runLeadAlertQueue(organizationId: string) {
     limit: 40,
     config,
   });
-  const due = items.filter((item) => !item.alreadyMessaged).slice(0, ALERT_SEND_BATCH);
+  const due = items
+    .filter((item) => item.event !== "alert_payment_pending" && !item.alreadyMessaged)
+    .slice(0, ALERT_SEND_BATCH);
 
   let sent = 0;
   for (const item of due) {

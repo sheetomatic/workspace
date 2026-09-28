@@ -9,6 +9,7 @@ import { revalidatePath } from "next/cache";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { sendSubscriptionInvoiceEmail } from "@/lib/billing/email";
+import { startPaymentFollowUp } from "@/lib/billing/lifecycle";
 import {
   applyWhatsAppApiClientCustomPlan,
   cancelWhatsAppApiClient,
@@ -448,6 +449,26 @@ export async function sendClientInvoiceAction(
     };
   }
   return { ok: true, message: `Invoice ${invoice.number} emailed to ${toEmail}.` };
+}
+
+export async function startPaymentFollowUpAction(
+  _prev: BillingActionState,
+  formData: FormData,
+): Promise<BillingActionState> {
+  const user = await requirePlatformAdmin();
+  if (!user) {
+    return { ok: false, message: "Only you can start a payment follow-up." };
+  }
+  const invoiceId = String(formData.get("invoiceId") ?? "").trim();
+  const result = await startPaymentFollowUp(invoiceId);
+  if (result.ok) {
+    const invoice = await prisma.subscriptionInvoice.findUnique({
+      where: { id: invoiceId },
+      select: { organizationId: true },
+    });
+    revalidateBilling(invoice?.organizationId);
+  }
+  return result;
 }
 
 export async function recordClientPaymentAction(
