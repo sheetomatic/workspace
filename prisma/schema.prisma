@@ -3175,6 +3175,14 @@ model InboundLead {
   company        String?
   address        String?
   zipCode        String?
+  /** Legal name printed on the tax invoice. */
+  billedTo        String?
+  /** Recipient GSTIN. First two digits are the registered state. */
+  gstin           String?
+  billedAddress   String?
+  billedCity      String?
+  billedStateCode String?
+  billedPin       String?
   category       String?
   pipeValue      Decimal?             @db.Decimal(14, 2)
   quotationValue Decimal?             @db.Decimal(14, 2)
@@ -3426,6 +3434,10 @@ model InboundLeadQuotation {
   /** GST place of supply state code. 22 = Chhattisgarh (seller). */
   placeOfSupplyCode       String?
   clientGstin             String?
+  /** Snapshot of the GST bill-to party at the time the bill was saved. */
+  billedTo                String?
+  billedCity              String?
+  billedStateCode         String?
   quotationDate           DateTime
   projectStartDate        DateTime?
   durationDays            Int?

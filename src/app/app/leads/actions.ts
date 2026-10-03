@@ -64,6 +64,7 @@ import {
   revisionQuotationNumber,
 } from "@/lib/leads/quotations";
 import {
+  normalizeGstBillParty,
   parseGstRate,
   parseHsnSac,
   parsePlaceOfSupply,
@@ -484,6 +485,12 @@ export async function updateInboundLeadDetails(params: {
   industry?: string;
   address: string;
   zipCode: string;
+  billedTo?: string;
+  gstin?: string;
+  billedAddress?: string;
+  billedCity?: string;
+  billedStateCode?: string;
+  billedPin?: string;
   requirement: string;
   /** When omitted, existing discussion notes are left unchanged. */
   discussionNotes?: string;
@@ -626,6 +633,17 @@ export async function updateInboundLeadDetails(params: {
   const company = params.company.trim() || null;
   const address = params.address.trim() || null;
   const zipCode = params.zipCode.trim() || null;
+  const billParty = normalizeGstBillParty({
+    billedTo: params.billedTo,
+    gstin: params.gstin,
+    address: params.billedAddress,
+    city: params.billedCity,
+    stateCode: params.billedStateCode,
+    pin: params.billedPin,
+  });
+  if (!billParty.ok) {
+    return { ok: false as const, message: billParty.message };
+  }
   const discussionNotes =
     params.discussionNotes !== undefined
       ? params.discussionNotes.trim() || null
@@ -644,6 +662,12 @@ export async function updateInboundLeadDetails(params: {
         city: params.city !== undefined ? params.city.trim() || null : undefined,
         address,
         zipCode,
+        billedTo: billParty.party.billedTo,
+        gstin: billParty.party.gstin,
+        billedAddress: billParty.party.address,
+        billedCity: billParty.party.city,
+        billedStateCode: billParty.party.stateCode,
+        billedPin: billParty.party.pin,
         requirement: requirementTrimmed,
         ...(discussionNotes !== undefined ? { discussionNotes } : {}),
         category,
@@ -679,6 +703,12 @@ export async function updateInboundLeadDetails(params: {
       company,
       address,
       zipCode,
+      billedTo: billParty.party.billedTo,
+      gstin: billParty.party.gstin,
+      billedAddress: billParty.party.address,
+      billedCity: billParty.party.city,
+      billedStateCode: billParty.party.stateCode,
+      billedPin: billParty.party.pin,
       requirement: requirementTrimmed,
       ...(discussionNotes !== undefined ? { discussionNotes } : {}),
       category,
@@ -3210,6 +3240,9 @@ export async function createLeadQuotation(params: {
   company?: string;
   address?: string;
   zipCode?: string;
+  billedTo?: string;
+  billedCity?: string;
+  billedStateCode?: string;
   placeOfSupplyCode?: string;
   clientGstin?: string;
   lineCatalogIds: string[];
@@ -3319,7 +3352,20 @@ export async function createLeadQuotation(params: {
     return { ok: false, message: "Enter an amount for at least one line item." };
   }
 
-  const placeOfSupplyCode = parsePlaceOfSupply(params.placeOfSupplyCode);
+  const billParty = normalizeGstBillParty({
+    billedTo: params.billedTo || params.company,
+    gstin: params.clientGstin,
+    address: params.address,
+    city: params.billedCity,
+    stateCode: params.billedStateCode,
+    pin: params.zipCode,
+  });
+  if (!billParty.ok) {
+    return { ok: false, message: billParty.message };
+  }
+  const placeOfSupplyCode = parsePlaceOfSupply(
+    params.placeOfSupplyCode || billParty.party.stateCode,
+  );
   const totals = computeQuotationTotals(lines, { placeOfSupplyCode });
   const durationDays = Number.parseInt(params.durationDays ?? "", 10);
   const quotationDate = new Date();
@@ -3330,11 +3376,14 @@ export async function createLeadQuotation(params: {
   const quotationData = {
     requestType: params.requestType,
     status: "DRAFT" as const,
-    company: params.company?.trim() || lead.company,
-    address: params.address?.trim() || lead.address,
-    zipCode: params.zipCode?.trim() || lead.zipCode,
+    company: billParty.party.billedTo || lead.company,
+    address: billParty.party.address,
+    zipCode: billParty.party.pin,
+    billedTo: billParty.party.billedTo,
+    billedCity: billParty.party.city,
+    billedStateCode: billParty.party.stateCode,
     placeOfSupplyCode,
-    clientGstin: params.clientGstin?.trim().toUpperCase() || null,
+    clientGstin: billParty.party.gstin,
     quotationDate,
     projectStartDate,
     durationDays: Number.isFinite(durationDays) ? durationDays : null,
@@ -3501,6 +3550,19 @@ export async function createLeadQuotation(params: {
     return typeof value.toNumber === "function" ? value.toNumber() : Number(value);
   };
 
+  await prisma.inboundLead.updateMany({
+    where: { id: lead.id, organizationId: user.organizationId },
+    data: {
+      billedTo: billParty.party.billedTo,
+      gstin: billParty.party.gstin,
+      billedAddress: billParty.party.address,
+      billedCity: billParty.party.city,
+      billedStateCode: billParty.party.stateCode,
+      billedPin: billParty.party.pin,
+      modifiedAt: new Date(),
+    },
+  });
+
   revalidatePath("/app/leads");
   revalidatePath(`/app/leads/quotations/${saved.id}/print`);
   return {
@@ -3525,6 +3587,9 @@ export async function createLeadQuotation(params: {
       company: saved.company,
       address: saved.address,
       zipCode: saved.zipCode,
+      billedTo: saved.billedTo,
+      billedCity: saved.billedCity,
+      billedStateCode: saved.billedStateCode,
       placeOfSupplyCode: saved.placeOfSupplyCode,
       clientGstin: saved.clientGstin,
       scopeNotes: saved.scopeNotes,
@@ -3633,6 +3698,9 @@ export async function reviseLeadQuotation(quotationId: string) {
         company: source.company,
         address: source.address,
         zipCode: source.zipCode,
+        billedTo: source.billedTo,
+        billedCity: source.billedCity,
+        billedStateCode: source.billedStateCode,
         placeOfSupplyCode: source.placeOfSupplyCode,
         clientGstin: source.clientGstin,
         quotationDate: new Date(),

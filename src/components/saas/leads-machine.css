@@ -1644,6 +1644,24 @@
   border-top: 1px solid #e2e8f0;
 }
 
+.leads-drawer-form .leads-gst-bill {
+  grid-column: 1 / -1;
+}
+
+.leads-drawer-glide .leads-drawer-form .leads-gst-bill {
+  background: #f7f7f8;
+  box-shadow: none;
+}
+
+.leads-gst-bill h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.leads-gst-bill .leads-machine-muted {
+  margin: 0;
+}
+
 .leads-drawer-form label,
 .leads-drawer-section label {
   display: grid;

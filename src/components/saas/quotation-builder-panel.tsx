@@ -38,6 +38,7 @@ import {
   GST_STATE_OPTIONS,
   HSN_SAC_OPTIONS,
   SELLER_GST_STATE_CODE,
+  gstinStateCode,
   parseGstRate,
   parseHsnSac,
   splitGstLine,
@@ -82,6 +83,9 @@ type QuotationRow = {
   company: string | null;
   address: string | null;
   zipCode: string | null;
+  billedTo?: string | null;
+  billedCity?: string | null;
+  billedStateCode?: string | null;
   placeOfSupplyCode?: string | null;
   clientGstin?: string | null;
   scopeNotes: string | null;
@@ -298,6 +302,12 @@ export function QuotationBuilderPanel({
   leadCompany,
   leadAddress,
   leadZipCode,
+  leadBilledTo,
+  leadGstin,
+  leadBilledAddress,
+  leadBilledCity,
+  leadBilledStateCode,
+  leadBilledPin,
   leadRequirement,
   offeredServices,
   serviceCatalog,
@@ -318,6 +328,12 @@ export function QuotationBuilderPanel({
   leadCompany: string | null;
   leadAddress: string | null;
   leadZipCode: string | null;
+  leadBilledTo?: string | null;
+  leadGstin?: string | null;
+  leadBilledAddress?: string | null;
+  leadBilledCity?: string | null;
+  leadBilledStateCode?: string | null;
+  leadBilledPin?: string | null;
   leadRequirement: string | null;
   offeredServices: OfferedServiceRow[];
   serviceCatalog: CatalogItem[];
@@ -333,6 +349,12 @@ export function QuotationBuilderPanel({
   onLeadPatched?: (patch: {
     status?: InboundLeadStatus;
     quotationValue?: number | null;
+    billedTo?: string | null;
+    gstin?: string | null;
+    billedAddress?: string | null;
+    billedCity?: string | null;
+    billedStateCode?: string | null;
+    billedPin?: string | null;
   }) => void;
 }) {
   const [addedCatalogItems, setAddedCatalogItems] = useState<CatalogItem[]>([]);
@@ -388,19 +410,25 @@ export function QuotationBuilderPanel({
     paymentTermsForRequestType("PROPOSAL"),
   );
   const [advanceRequired, setAdvanceRequired] = useState("");
-  const [billCompany, setBillCompany] = useState(leadCompany ?? "");
-  const [billAddress, setBillAddress] = useState(leadAddress ?? "");
-  const [billZip, setBillZip] = useState(leadZipCode ?? "");
+  const openingDraft = quotations.find((item) => item.status === "DRAFT" && !item.lockedAt);
+  const openingGstin = (openingDraft?.clientGstin || leadGstin || "").toUpperCase();
+  const openingState =
+    openingDraft?.billedStateCode || leadBilledStateCode || gstinStateCode(openingGstin) || "";
+  const [billedTo, setBilledTo] = useState(
+    openingDraft?.billedTo || leadBilledTo || leadCompany || leadName || "",
+  );
+  const [billAddress, setBillAddress] = useState(
+    openingDraft?.address || leadBilledAddress || leadAddress || "",
+  );
+  const [billCity, setBillCity] = useState(openingDraft?.billedCity || leadBilledCity || "");
+  const [billState, setBillState] = useState(openingState);
+  const [billZip, setBillZip] = useState(
+    openingDraft?.zipCode || leadBilledPin || leadZipCode || "",
+  );
   const [placeOfSupplyCode, setPlaceOfSupplyCode] = useState(
-    () =>
-      quotations.find((item) => item.status === "DRAFT" && !item.lockedAt)
-        ?.placeOfSupplyCode || SELLER_GST_STATE_CODE,
+    openingDraft?.placeOfSupplyCode || openingState || SELLER_GST_STATE_CODE,
   );
-  const [clientGstin, setClientGstin] = useState(
-    () =>
-      quotations.find((item) => item.status === "DRAFT" && !item.lockedAt)
-        ?.clientGstin || "",
-  );
+  const [clientGstin, setClientGstin] = useState(openingGstin);
   const [setupHsnSac, setSetupHsnSac] = useState(DEFAULT_HSN_SAC);
   const [setupGstRate, setSetupGstRate] = useState(String(DEFAULT_GST_RATE));
   const [lineDrafts, setLineDrafts] = useState<LineDraft[]>(() =>
@@ -552,6 +580,17 @@ export function QuotationBuilderPanel({
     });
   }
 
+  function savedBillParty() {
+    return {
+      billedTo: billedTo.trim() || null,
+      gstin: clientGstin.trim() || null,
+      billedAddress: billAddress.trim() || null,
+      billedCity: billCity.trim() || null,
+      billedStateCode: billState || null,
+      billedPin: billZip.trim() || null,
+    };
+  }
+
   function runAction(label: string, action: () => Promise<{ ok: boolean; message?: string }>) {
     setActionMessage(null);
     startTransition(async () => {
@@ -643,23 +682,62 @@ export function QuotationBuilderPanel({
             />
           </label>
           <label>
-            Bill to company
-            <input value={billCompany} onChange={(e) => setBillCompany(e.target.value)} />
+            Billed to
+            <input
+              value={billedTo}
+              onChange={(e) => setBilledTo(e.target.value)}
+              placeholder="Legal name on the GST registration"
+            />
           </label>
           <label>
-            Address
-            <input value={billAddress} onChange={(e) => setBillAddress(e.target.value)} />
-          </label>
-          <label>
-            ZIP
-            <input value={billZip} onChange={(e) => setBillZip(e.target.value)} />
-          </label>
-          <label>
-            Client GSTIN
+            GSTIN
             <input
               value={clientGstin}
-              onChange={(e) => setClientGstin(e.target.value.toUpperCase())}
-              placeholder="Optional"
+              maxLength={15}
+              onChange={(e) => {
+                const next = e.target.value.toUpperCase();
+                setClientGstin(next);
+                const state = gstinStateCode(next);
+                if (state) {
+                  setBillState(state);
+                  setPlaceOfSupplyCode(state);
+                }
+              }}
+              placeholder="15 characters, optional if unregistered"
+            />
+          </label>
+          <label className="leads-form-span-2">
+            Billed address
+            <textarea
+              rows={2}
+              value={billAddress}
+              onChange={(e) => setBillAddress(e.target.value)}
+              placeholder="Building, street, area"
+            />
+          </label>
+          <label>
+            City
+            <input value={billCity} onChange={(e) => setBillCity(e.target.value)} />
+          </label>
+          <label>
+            State
+            <select value={billState} onChange={(e) => setBillState(e.target.value)}>
+              <option value="">Select state</option>
+              {GST_STATE_OPTIONS.map((state) => (
+                <option key={state.code} value={state.code}>
+                  {state.label} ({state.code})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            PIN
+            <input
+              inputMode="numeric"
+              maxLength={6}
+              value={billZip}
+              onChange={(e) => setBillZip(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="6 digits"
             />
           </label>
           <label>
@@ -670,7 +748,7 @@ export function QuotationBuilderPanel({
             >
               {GST_STATE_OPTIONS.map((state) => (
                 <option key={state.code} value={state.code}>
-                  {state.label}
+                  {state.label} ({state.code})
                 </option>
               ))}
             </select>
@@ -1024,7 +1102,10 @@ export function QuotationBuilderPanel({
                     scopeNotes,
                     paymentTerms,
                     advanceRequired,
-                    company: billCompany,
+                    company: billedTo,
+                    billedTo,
+                    billedCity: billCity,
+                    billedStateCode: billState,
                     address: billAddress,
                     zipCode: billZip,
                     lineCatalogIds: [],
@@ -1049,6 +1130,7 @@ export function QuotationBuilderPanel({
                   } else if (result.ok && result.quotationId) {
                     setPreviewId(result.quotationId);
                   }
+                  if (result.ok) onLeadPatched?.(savedBillParty());
                   return result;
                 })
               }
@@ -1070,7 +1152,10 @@ export function QuotationBuilderPanel({
                     scopeNotes,
                     paymentTerms,
                     advanceRequired,
-                    company: billCompany,
+                    company: billedTo,
+                    billedTo,
+                    billedCity: billCity,
+                    billedStateCode: billState,
                     address: billAddress,
                     zipCode: billZip,
                     lineCatalogIds: [],
@@ -1094,10 +1179,15 @@ export function QuotationBuilderPanel({
                   } else if (result.ok && result.quotationId) {
                     setPreviewId(result.quotationId);
                   }
-                  if (result.ok && result.lead) {
+                  if (result.ok) {
                     onLeadPatched?.({
-                      status: result.lead.status,
-                      quotationValue: result.lead.quotationValue,
+                      ...savedBillParty(),
+                      ...(result.lead
+                        ? {
+                            status: result.lead.status,
+                            quotationValue: result.lead.quotationValue,
+                          }
+                        : {}),
                     });
                   }
                   return result;
@@ -1319,11 +1409,14 @@ export function QuotationBuilderPanel({
                 projectStartDate: previewQuote.projectStartDate,
                 endDate: previewQuote.endDate,
                 durationDays: previewQuote.durationDays,
-                company: previewQuote.company ?? billCompany,
+                company: previewQuote.company ?? billedTo,
+                billedTo: previewQuote.billedTo ?? billedTo,
+                billedCity: previewQuote.billedCity ?? billCity,
+                billedStateCode: previewQuote.billedStateCode ?? billState,
                 address: previewQuote.address ?? billAddress,
                 zipCode: previewQuote.zipCode ?? billZip,
-                placeOfSupplyCode: previewQuote.placeOfSupplyCode,
-                clientGstin: previewQuote.clientGstin,
+                placeOfSupplyCode: previewQuote.placeOfSupplyCode ?? placeOfSupplyCode,
+                clientGstin: previewQuote.clientGstin ?? clientGstin,
                 scopeNotes: previewQuote.scopeNotes ?? scopeNotes,
                 paymentTerms: previewQuote.paymentTerms ?? paymentTerms,
                 advanceRequired: previewQuote.advanceRequired

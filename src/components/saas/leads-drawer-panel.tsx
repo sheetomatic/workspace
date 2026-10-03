@@ -41,6 +41,7 @@ import {
   updateLeadProjectStatus,
 } from "@/app/app/leads/actions";
 import { QuotationBuilderPanel } from "@/components/saas/quotation-builder-panel";
+import { GST_STATE_OPTIONS, gstinStateCode } from "@/lib/leads/gst-invoice";
 import {
   LeadAddToFmsControl,
   type LeadFmsLink,
@@ -166,6 +167,11 @@ type QuotationRow = {
   company: string | null;
   address: string | null;
   zipCode: string | null;
+  billedTo?: string | null;
+  billedCity?: string | null;
+  billedStateCode?: string | null;
+  placeOfSupplyCode?: string | null;
+  clientGstin?: string | null;
   scopeNotes: string | null;
   paymentTerms: string | null;
   advanceRequired: string | number | null;
@@ -219,6 +225,12 @@ export type LeadDrawerData = {
   company: string | null;
   address: string | null;
   zipCode: string | null;
+  billedTo: string | null;
+  gstin: string | null;
+  billedAddress: string | null;
+  billedCity: string | null;
+  billedStateCode: string | null;
+  billedPin: string | null;
   requirement: string | null;
   category: string | null;
   status: InboundLeadStatus;
@@ -346,6 +358,12 @@ export function LeadDrawerPanel({
   const [company, setCompany] = useState(lead.company ?? "");
   const [address, setAddress] = useState(lead.address ?? "");
   const [zipCode, setZipCode] = useState(lead.zipCode ?? "");
+  const [billedTo, setBilledTo] = useState(lead.billedTo ?? "");
+  const [gstin, setGstin] = useState(lead.gstin ?? "");
+  const [billedAddress, setBilledAddress] = useState(lead.billedAddress ?? "");
+  const [billedCity, setBilledCity] = useState(lead.billedCity ?? "");
+  const [billedStateCode, setBilledStateCode] = useState(lead.billedStateCode ?? "");
+  const [billedPin, setBilledPin] = useState(lead.billedPin ?? "");
   const [requirement, setRequirement] = useState(lead.requirement ?? "");
   const [category, setCategory] = useState<LeadCategoryId>(resolveLeadCategoryId(lead.category));
   const [meetingNotes, setMeetingNotes] = useState(lead.meetingNotes ?? "");
@@ -515,6 +533,12 @@ export function LeadDrawerPanel({
       company,
       address,
       zipCode,
+      billedTo,
+      gstin,
+      billedAddress,
+      billedCity,
+      billedStateCode,
+      billedPin,
       requirement,
       category,
       quotationValue,
@@ -553,6 +577,12 @@ export function LeadDrawerPanel({
       company: company || null,
       address: address || null,
       zipCode: zipCode || null,
+      billedTo: billedTo || null,
+      gstin: gstin || null,
+      billedAddress: billedAddress || null,
+      billedCity: billedCity || null,
+      billedStateCode: billedStateCode || null,
+      billedPin: billedPin || null,
       requirement: requirement || null,
       category,
       quotationValue: quotationValue || null,
@@ -689,6 +719,12 @@ export function LeadDrawerPanel({
     company,
     address,
     zipCode,
+    billedTo,
+    gstin,
+    billedAddress,
+    billedCity,
+    billedStateCode,
+    billedPin,
     requirement,
     category,
     quotationValue,
@@ -1143,6 +1179,96 @@ export function LeadDrawerPanel({
                   onBlur={() => void persistDetails()}
                 />
               </label>
+              <div className="leads-drawer-section leads-drawer-section-nested leads-gst-bill">
+                <h3>GST bill</h3>
+                <p className="leads-machine-muted">
+                  Legal name, GSTIN, and registered address. These print on the tax invoice.
+                </p>
+                <label>
+                  Billed to
+                  <input
+                    value={billedTo}
+                    onChange={(e) => {
+                      setBilledTo(e.target.value);
+                      markDetailsDirty();
+                    }}
+                    onBlur={() => void persistDetails()}
+                    placeholder="Legal name on the GST registration"
+                  />
+                </label>
+                <label>
+                  GSTIN
+                  <input
+                    value={gstin}
+                    maxLength={15}
+                    onChange={(e) => {
+                      const next = e.target.value.toUpperCase();
+                      setGstin(next);
+                      const state = gstinStateCode(next);
+                      if (state) setBilledStateCode(state);
+                      markDetailsDirty();
+                    }}
+                    onBlur={() => void persistDetails()}
+                    placeholder="15 characters, optional if unregistered"
+                  />
+                </label>
+                <label>
+                  Billed address
+                  <textarea
+                    rows={3}
+                    value={billedAddress}
+                    onChange={(e) => {
+                      setBilledAddress(e.target.value);
+                      markDetailsDirty();
+                    }}
+                    onBlur={() => void persistDetails()}
+                    placeholder="Building, street, area"
+                  />
+                </label>
+                <label>
+                  City
+                  <input
+                    value={billedCity}
+                    onChange={(e) => {
+                      setBilledCity(e.target.value);
+                      markDetailsDirty();
+                    }}
+                    onBlur={() => void persistDetails()}
+                  />
+                </label>
+                <label>
+                  State
+                  <select
+                    value={billedStateCode}
+                    onChange={(e) => {
+                      setBilledStateCode(e.target.value);
+                      markDetailsDirty();
+                    }}
+                    onBlur={() => void persistDetails()}
+                  >
+                    <option value="">Select state</option>
+                    {GST_STATE_OPTIONS.map((state) => (
+                      <option key={state.code} value={state.code}>
+                        {state.label} ({state.code})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  PIN
+                  <input
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={billedPin}
+                    onChange={(e) => {
+                      setBilledPin(e.target.value.replace(/\D/g, "").slice(0, 6));
+                      markDetailsDirty();
+                    }}
+                    onBlur={() => void persistDetails()}
+                    placeholder="6 digits"
+                  />
+                </label>
+              </div>
               <label>
                 Category
                 <select
@@ -2836,6 +2962,12 @@ export function LeadDrawerPanel({
           leadCompany={lead.company}
           leadAddress={lead.address}
           leadZipCode={lead.zipCode}
+          leadBilledTo={billedTo}
+          leadGstin={gstin}
+          leadBilledAddress={billedAddress}
+          leadBilledCity={billedCity}
+          leadBilledStateCode={billedStateCode}
+          leadBilledPin={billedPin}
           leadRequirement={lead.requirement}
           offeredServices={lead.offeredServices}
           serviceCatalog={serviceCatalog}
@@ -2849,7 +2981,17 @@ export function LeadDrawerPanel({
           onQuotationsChange={(next) =>
             onLeadPatched?.(lead.id, { quotations: next })
           }
-          onLeadPatched={(patch) => onLeadPatched?.(lead.id, patch)}
+          onLeadPatched={(patch) => {
+            if (patch.billedTo !== undefined) setBilledTo(patch.billedTo ?? "");
+            if (patch.gstin !== undefined) setGstin(patch.gstin ?? "");
+            if (patch.billedAddress !== undefined) setBilledAddress(patch.billedAddress ?? "");
+            if (patch.billedCity !== undefined) setBilledCity(patch.billedCity ?? "");
+            if (patch.billedStateCode !== undefined) {
+              setBilledStateCode(patch.billedStateCode ?? "");
+            }
+            if (patch.billedPin !== undefined) setBilledPin(patch.billedPin ?? "");
+            onLeadPatched?.(lead.id, patch);
+          }}
         />
       ) : null}
 

@@ -56,6 +56,9 @@ export function QuotationPrintView({
     company: string | null;
     address: string | null;
     zipCode: string | null;
+    billedTo?: string | null;
+    billedCity?: string | null;
+    billedStateCode?: string | null;
     placeOfSupplyCode?: string | null;
     clientGstin?: string | null;
     scopeNotes: string | null;
@@ -80,9 +83,15 @@ export function QuotationPrintView({
   embed?: boolean;
 }) {
   const clientName = quotation.lead.name || "Client";
-  const clientCompany = quotation.company || quotation.lead.company || "—";
-  const clientAddress = quotation.address || quotation.lead.address || "—";
-  const clientZip = quotation.zipCode || quotation.lead.zipCode || "—";
+  const billedToName =
+    quotation.billedTo || quotation.company || quotation.lead.company || clientName;
+  const clientAddress = quotation.address || quotation.lead.address || "";
+  const billedCity = quotation.billedCity?.trim() || "";
+  const billedState = quotation.billedStateCode
+    ? placeOfSupplyLabel(quotation.billedStateCode)
+    : "";
+  const clientZip = quotation.zipCode || quotation.lead.zipCode || "";
+  const locality = [billedCity, billedState].filter(Boolean).join(", ");
   const scopeText =
     quotation.scopeNotes || quotation.lead.requirement || null;
   const isLocked = quotation.status === "LOCKED" || Boolean(quotation.lockedAt);
@@ -210,14 +219,14 @@ export function QuotationPrintView({
             ) : null}
           </div>
           <div className="quotation-print-client">
-            <h3>Bill To</h3>
+            <h3>Billed To</h3>
             <p>
-              <strong>{clientName}</strong>
+              <strong>{billedToName}</strong>
             </p>
-            <p>{clientCompany}</p>
-            <p>{clientAddress}</p>
-            <p>ZIP: {clientZip}</p>
-            {quotation.clientGstin ? <p>GSTIN: {quotation.clientGstin}</p> : null}
+            {clientAddress ? <p>{clientAddress}</p> : null}
+            {locality ? <p>{locality}</p> : null}
+            {clientZip ? <p>PIN: {clientZip}</p> : null}
+            <p>GSTIN: {quotation.clientGstin || "Unregistered"}</p>
             {quotation.lead.phone ? <p>Phone: {quotation.lead.phone}</p> : null}
             {quotation.lead.email ? <p>Email: {quotation.lead.email}</p> : null}
           </div>

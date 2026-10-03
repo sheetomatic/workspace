@@ -15,6 +15,12 @@ type CrmListLead = {
   city: string | null;
   address: string | null;
   zipCode: string | null;
+  billedTo: string | null;
+  gstin: string | null;
+  billedAddress: string | null;
+  billedCity: string | null;
+  billedStateCode: string | null;
+  billedPin: string | null;
   requirement: string | null;
   category: string | null;
   status: CrmDrawerLead["status"];
@@ -57,6 +63,12 @@ function serializeCrmLeadBase(lead: CrmListLead) {
     city: lead.city,
     address: lead.address,
     zipCode: lead.zipCode,
+    billedTo: lead.billedTo,
+    gstin: lead.gstin,
+    billedAddress: lead.billedAddress,
+    billedCity: lead.billedCity,
+    billedStateCode: lead.billedStateCode,
+    billedPin: lead.billedPin,
     requirement: lead.requirement,
     category: lead.category,
     status: lead.status,
@@ -143,6 +155,9 @@ export function serializeCrmDrawerLead(lead: CrmDrawerLead) {
       company: item.company,
       address: item.address,
       zipCode: item.zipCode,
+      billedTo: item.billedTo,
+      billedCity: item.billedCity,
+      billedStateCode: item.billedStateCode,
       placeOfSupplyCode: item.placeOfSupplyCode,
       clientGstin: item.clientGstin,
       scopeNotes: item.scopeNotes,

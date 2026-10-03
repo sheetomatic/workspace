@@ -84,6 +84,98 @@ export function placeOfSupplyLabel(code: string | null | undefined) {
   return state ? `${state.label} - ${state.code}` : parsed;
 }
 
+const GSTIN_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const GSTIN_PATTERN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+const PIN_PATTERN = /^[1-9][0-9]{5}$/;
+
+/** First two characters, when they are a GST state code. */
+export function gstinStateCode(value: string | null | undefined) {
+  const code = value?.trim().toUpperCase().slice(0, 2) ?? "";
+  return STATE_CODES.has(code) ? code : null;
+}
+
+export function gstinChecksum(first14: string) {
+  let factor = 2;
+  let sum = 0;
+  for (let index = first14.length - 1; index >= 0; index -= 1) {
+    const code = GSTIN_CHARS.indexOf(first14[index] ?? "");
+    if (code < 0) return "";
+    let digit = factor * code;
+    factor = factor === 2 ? 1 : 2;
+    digit = Math.floor(digit / 36) + (digit % 36);
+    sum += digit;
+  }
+  return GSTIN_CHARS[(36 - (sum % 36)) % 36] ?? "";
+}
+
+export function parseGstin(value: string | null | undefined) {
+  const gstin = value?.trim().toUpperCase() ?? "";
+  if (!gstin) return { ok: true as const, gstin: null };
+  if (!GSTIN_PATTERN.test(gstin) || gstinChecksum(gstin.slice(0, 14)) !== gstin[14]) {
+    return {
+      ok: false as const,
+      message: "GSTIN must be 15 characters. The first two digits are the state code.",
+    };
+  }
+  return { ok: true as const, gstin };
+}
+
+export type GstBillParty = {
+  billedTo: string | null;
+  gstin: string | null;
+  address: string | null;
+  city: string | null;
+  stateCode: string | null;
+  pin: string | null;
+};
+
+/** Billed-to party for a tax invoice: legal name, GSTIN, and registered address. */
+export function normalizeGstBillParty(input: {
+  billedTo?: string | null;
+  gstin?: string | null;
+  address?: string | null;
+  city?: string | null;
+  stateCode?: string | null;
+  pin?: string | null;
+}) {
+  const parsed = parseGstin(input.gstin);
+  if (!parsed.ok) return parsed;
+
+  const fromGstin = parsed.gstin ? gstinStateCode(parsed.gstin) : null;
+  const requested = input.stateCode?.trim() ?? "";
+  const stateCode = requested || fromGstin;
+  if (stateCode && !STATE_CODES.has(stateCode)) {
+    return { ok: false as const, message: "Choose the state on the GST registration." };
+  }
+  if (fromGstin && stateCode && fromGstin !== stateCode) {
+    const label = GST_STATE_OPTIONS.find((item) => item.code === fromGstin)?.label ?? fromGstin;
+    return {
+      ok: false as const,
+      message: `This GSTIN is registered in ${label}. The billed state has to match.`,
+    };
+  }
+
+  const pin = input.pin?.trim() ?? "";
+  if (pin && !PIN_PATTERN.test(pin)) {
+    return { ok: false as const, message: "PIN code must be 6 digits." };
+  }
+
+  const clip = (value: string | null | undefined, max: number) => {
+    const text = value?.trim() ?? "";
+    return text ? text.slice(0, max) : null;
+  };
+
+  const party: GstBillParty = {
+    billedTo: clip(input.billedTo, 200),
+    gstin: parsed.gstin,
+    address: clip(input.address, 500),
+    city: clip(input.city, 80),
+    stateCode: stateCode || null,
+    pin: pin || null,
+  };
+  return { ok: true as const, party };
+}
+
 export type GstLineSplit = {
   taxable: number;
   gstRate: number;
