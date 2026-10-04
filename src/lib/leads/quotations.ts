@@ -34,7 +34,7 @@ export function revisionQuotationNumber(baseNumber: string, revisionNumber: numb
 
 export function computeQuotationTotals(
   lines: Array<{ quantity: number; unitPrice: number; gstRate?: number | null }>,
-  options?: { placeOfSupplyCode?: string | null; taxRate?: number },
+  options?: { placeOfSupplyCode?: string | null; taxRate?: number; sellerStateCode?: string | null },
 ) {
   const subtotal = roundInr(
     lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0),
@@ -48,6 +48,7 @@ export function computeQuotationTotals(
           taxable: line.quantity * line.unitPrice,
           gstRate: rate,
           placeOfSupplyCode: options?.placeOfSupplyCode,
+          sellerStateCode: options?.sellerStateCode ?? undefined,
         }).gstAmount
       );
     }, 0),
@@ -73,7 +74,7 @@ const quotationPrintInclude = {
     },
   },
   lines: { orderBy: { serviceCategory: "asc" as const } },
-  organization: { select: { name: true, logoUrl: true, isPrimary: true } },
+  organization: { select: { name: true, logoUrl: true, isPrimary: true, quotationAccount: true } },
   createdBy: { select: { name: true, email: true } },
 };
 

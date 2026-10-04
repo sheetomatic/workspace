@@ -42,6 +42,7 @@ import {
 } from "@/app/app/leads/actions";
 import { QuotationBuilderPanel } from "@/components/saas/quotation-builder-panel";
 import { GST_STATE_OPTIONS, gstinStateCode } from "@/lib/leads/gst-invoice";
+import type { QuotationAccountDetails } from "@/lib/leads/seller-account";
 import {
   LeadAddToFmsControl,
   type LeadFmsLink,
@@ -302,6 +303,7 @@ export function LeadDrawerPanel({
   teamMembers,
   organizationName,
   organizationLogoUrl,
+  quotationAccount = null,
   pending,
   startTransition,
   onClose,
@@ -322,6 +324,7 @@ export function LeadDrawerPanel({
   teamMembers: Array<{ user: { id: string; name: string | null; email: string } }>;
   organizationName: string;
   organizationLogoUrl: string | null;
+  quotationAccount?: QuotationAccountDetails | null;
   pending: boolean;
   startTransition: (callback: () => Promise<void>) => void;
   onClose: () => void;
@@ -2974,6 +2977,7 @@ export function LeadDrawerPanel({
           quotations={lead.quotations}
           organizationName={organizationName}
           organizationLogoUrl={organizationLogoUrl}
+          quotationAccount={quotationAccount}
           canManage={canWork}
           canDelete={canManage}
           pending={pending}

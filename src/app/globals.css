@@ -2698,7 +2698,8 @@ strong {
   color: #64748b;
 }
 
-.saas-settings-form input {
+.saas-settings-form input,
+.saas-settings-form textarea {
   padding: 12px 14px;
   border-radius: 12px;
   border: 1px solid #cbd5e1;

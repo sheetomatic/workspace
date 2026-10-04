@@ -331,6 +331,8 @@ model Organization {
   leadNurtureConfig     Json?
   /** LinkedIn / social content calendar (My Space → Social schedule). */
   socialSchedule        Json?
+  /** Seller GST identity printed on quotations and tax invoices. */
+  quotationAccount      Json?
   logoUrl               String?
   workspaceAppearance   Json?
   organizationPlan     OrganizationPlan?

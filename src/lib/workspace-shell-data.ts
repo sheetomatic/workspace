@@ -15,6 +15,8 @@ export const getWorkspaceOrganization = cache(async function getWorkspaceOrganiz
       plan: true,
       product: true,
       logoUrl: true,
+      isPrimary: true,
+      quotationAccount: true,
       workspaceAppearance: true,
       updatedAt: true,
     },

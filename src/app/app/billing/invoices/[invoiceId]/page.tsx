@@ -5,9 +5,11 @@ import "@/components/saas/client-billing.css";
 import { formatBillingDate } from "@/lib/billing/dates";
 import { invoiceLineItems } from "@/lib/billing/invoices";
 import { formatInrPaise } from "@/lib/billing/money";
+import { prisma } from "@/lib/db";
 import {
   GST_CERTIFICATE_HREF,
   SHEETOMATIC_QUOTATION_ACCOUNT,
+  resolveQuotationAccount,
 } from "@/lib/leads/seller-account";
 
 export default async function InvoicePrintPage({
@@ -20,7 +22,11 @@ export default async function InvoicePrintPage({
   if (!invoice) notFound();
 
   const lines = invoiceLineItems(invoice.lineItems);
-  const account = SHEETOMATIC_QUOTATION_ACCOUNT;
+  const seller = await prisma.organization.findFirst({
+    where: { isPrimary: true },
+    select: { name: true, isPrimary: true, quotationAccount: true },
+  });
+  const account = (seller && resolveQuotationAccount(seller)) || SHEETOMATIC_QUOTATION_ACCOUNT;
   const billTo =
     invoice.organization.billing?.billingName ?? invoice.organization.name;
 

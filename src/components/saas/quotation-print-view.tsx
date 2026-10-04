@@ -18,8 +18,10 @@ import {
 import {
   DEFAULT_GST_RATE,
   DEFAULT_HSN_SAC,
+  gstinStateCode,
   placeOfSupplyLabel,
   roundInr,
+  SELLER_GST_STATE_CODE,
   splitGstLine,
 } from "@/lib/leads/gst-invoice";
 
@@ -102,12 +104,14 @@ export function QuotationPrintView({
       : "";
   const brandLogoSrc = logoUrl ?? siteBrand.logoSrc;
   const placeOfSupply = placeOfSupplyLabel(quotation.placeOfSupplyCode);
+  const sellerStateCode = gstinStateCode(account?.gstin) || SELLER_GST_STATE_CODE;
   const gstRows = quotation.lines.map((line) => {
     const taxable = line.lineTotal;
     const split = splitGstLine({
       taxable,
       gstRate: line.gstRate ?? DEFAULT_GST_RATE,
       placeOfSupplyCode: quotation.placeOfSupplyCode,
+      sellerStateCode,
     });
     return {
       line,
@@ -327,7 +331,7 @@ export function QuotationPrintView({
           </section>
         ) : null}
 
-        {account ? (
+        {account && (account.bankName || account.upiId || account.accountNumber) ? (
           <section className="quotation-print-account">
             <div className="quotation-print-account-copy">
               <h3>Account details</h3>

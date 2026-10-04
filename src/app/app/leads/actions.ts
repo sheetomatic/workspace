@@ -64,11 +64,14 @@ import {
   revisionQuotationNumber,
 } from "@/lib/leads/quotations";
 import {
+  gstinStateCode,
   normalizeGstBillParty,
   parseGstRate,
   parseHsnSac,
   parsePlaceOfSupply,
+  SELLER_GST_STATE_CODE,
 } from "@/lib/leads/gst-invoice";
+import { resolveQuotationAccount } from "@/lib/leads/seller-account";
 import {
   computeWebsitePricingLineTotal,
   findWebsitePricingProduct,
@@ -3366,7 +3369,13 @@ export async function createLeadQuotation(params: {
   const placeOfSupplyCode = parsePlaceOfSupply(
     params.placeOfSupplyCode || billParty.party.stateCode,
   );
-  const totals = computeQuotationTotals(lines, { placeOfSupplyCode });
+  const sellerOrg = await prisma.organization.findFirst({
+    where: { id: user.organizationId },
+    select: { name: true, isPrimary: true, quotationAccount: true },
+  });
+  const sellerAccount = sellerOrg ? resolveQuotationAccount(sellerOrg) : null;
+  const sellerStateCode = gstinStateCode(sellerAccount?.gstin) || SELLER_GST_STATE_CODE;
+  const totals = computeQuotationTotals(lines, { placeOfSupplyCode, sellerStateCode });
   const durationDays = Number.parseInt(params.durationDays ?? "", 10);
   const quotationDate = new Date();
   const projectStartDate = parseQuotationStartDate(params.projectStartDate, quotationDate);

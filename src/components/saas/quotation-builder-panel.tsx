@@ -30,7 +30,7 @@ import {
   quotationStatusLabel,
 } from "@/lib/leads/quotation-content";
 import { QuotationPrintView } from "@/components/saas/quotation-print-view";
-import { quotationAccountForOrganization } from "@/lib/leads/seller-account";
+import type { QuotationAccountDetails } from "@/lib/leads/seller-account";
 import {
   DEFAULT_GST_RATE,
   DEFAULT_HSN_SAC,
@@ -314,6 +314,7 @@ export function QuotationBuilderPanel({
   quotations,
   organizationName,
   organizationLogoUrl,
+  quotationAccount = null,
   canManage,
   canDelete = canManage,
   pending,
@@ -340,6 +341,7 @@ export function QuotationBuilderPanel({
   quotations: QuotationRow[];
   organizationName: string;
   organizationLogoUrl: string | null;
+  quotationAccount?: QuotationAccountDetails | null;
   canManage: boolean;
   /** Deleting quotations stays MANAGER+ even when staff can work the lead. */
   canDelete?: boolean;
@@ -467,6 +469,7 @@ export function QuotationBuilderPanel({
   );
 
   const setupCostAmount = parseMoneyInput(setupCost);
+  const sellerStateCode = gstinStateCode(quotationAccount?.gstin) || SELLER_GST_STATE_CODE;
 
   const manualTotal = useMemo(() => {
     const lineTotals = validLines.map((line) =>
@@ -478,6 +481,7 @@ export function QuotationBuilderPanel({
         }),
         gstRate: parseGstRate(line.gstRate),
         placeOfSupplyCode,
+        sellerStateCode,
       }).totalAmount,
     );
     const setup =
@@ -486,10 +490,11 @@ export function QuotationBuilderPanel({
             taxable: setupCostAmount,
             gstRate: parseGstRate(setupGstRate),
             placeOfSupplyCode,
+            sellerStateCode,
           }).totalAmount
         : 0;
     return lineTotals.reduce((sum, amount) => sum + amount, setup);
-  }, [placeOfSupplyCode, setupCostAmount, setupGstRate, validLines]);
+  }, [placeOfSupplyCode, sellerStateCode, setupCostAmount, setupGstRate, validLines]);
 
   const projectEndDate = useMemo(() => {
     const durationDays = Number.parseInt(quoteDuration, 10);
@@ -979,6 +984,7 @@ export function QuotationBuilderPanel({
                                       taxable: lineTotal,
                                       gstRate: parseGstRate(line.gstRate),
                                       placeOfSupplyCode,
+                                      sellerStateCode,
                                     }).totalAmount,
                                   )}
                                 </strong>
@@ -1398,7 +1404,7 @@ export function QuotationBuilderPanel({
             <QuotationPrintView
               organizationName={organizationName}
               logoUrl={organizationLogoUrl}
-              account={quotationAccountForOrganization({ name: organizationName })}
+              account={quotationAccount}
               embed
               quotation={{
                 quotationNumber: previewQuote.quotationNumber,

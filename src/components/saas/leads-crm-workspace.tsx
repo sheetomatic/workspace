@@ -14,6 +14,7 @@ import { addLeadsToWaCampaignAction } from "@/app/app/leads/campaign-actions";
 import { getInboundLeadDrawerPayloadAction } from "@/app/app/leads/drawer-actions";
 import { LeadsCsvImportButton } from "@/components/saas/leads-csv-import";
 import { LeadDrawerPanel, type LeadDrawerData } from "@/components/saas/leads-drawer-panel";
+import type { QuotationAccountDetails } from "@/lib/leads/seller-account";
 import {
   LeadAddToFmsControl,
   type LeadFmsTemplateOption,
@@ -163,6 +164,7 @@ export function LeadsCrmWorkspace({
   serviceCatalog,
   organizationName,
   organizationLogoUrl,
+  quotationAccount = null,
   initialSelectedLeadId = null,
   initialTab = null,
   focusMode = false,
@@ -195,6 +197,7 @@ export function LeadsCrmWorkspace({
   }>;
   organizationName: string;
   organizationLogoUrl: string | null;
+  quotationAccount?: QuotationAccountDetails | null;
   initialSelectedLeadId?: string | null;
   initialTab?: CrmDrawerTab | string | null;
   /** Deep-link: show only the focused lead drawer (from Payments / Meetings / etc.). */
@@ -1006,6 +1009,7 @@ export function LeadsCrmWorkspace({
             onLeadPatched={patchLead}
             organizationLogoUrl={organizationLogoUrl}
             organizationName={organizationName}
+            quotationAccount={quotationAccount}
             pending={pending}
             serviceCatalog={serviceCatalog}
             startTransition={startTransition}

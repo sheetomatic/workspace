@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   SHEETOMATIC_QUOTATION_ACCOUNT,
   quotationAccountForOrganization,
+  resolveQuotationAccount,
 } from "@/lib/leads/seller-account";
 
 describe("quotation seller account", () => {
@@ -37,5 +38,28 @@ describe("quotation seller account", () => {
     ).toEqual(SHEETOMATIC_QUOTATION_ACCOUNT);
     expect(SHEETOMATIC_QUOTATION_ACCOUNT.addressLines[2]).toContain("495691");
     expect(quotationAccountForOrganization({ name: "Hingorani" })).toBeNull();
+  });
+
+  it("lets a workspace replace the printed GST identity", () => {
+    const account = resolveQuotationAccount({
+      isPrimary: true,
+      quotationAccount: {
+        legalName: "New Legal Name",
+        tradeName: "NEW TRADE",
+        gstin: "22BPFPK7002F1ZG",
+        addressLines: ["12 Ring Road", "Ahmedabad, Gujarat 380001"],
+        authorisedSignatory: "New Signatory",
+      },
+    });
+    expect(account?.legalName).toBe("New Legal Name");
+    expect(account?.tradeName).toBe("NEW TRADE");
+    expect(account?.gstin).toBe("22BPFPK7002F1ZG");
+    expect(account?.pan).toBe("BPFPK7002F");
+    expect(account?.addressLines).toEqual([
+      "12 Ring Road",
+      "Ahmedabad, Gujarat 380001",
+    ]);
+    expect(account?.authorisedSignatory).toBe("New Signatory");
+    expect(account?.bankName).toBe("Bandhan Bank");
   });
 });

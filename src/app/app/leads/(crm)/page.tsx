@@ -44,6 +44,7 @@ import { listWorkspaceMembers } from "@/lib/workspace";
 import { withDbRetry } from "@/lib/db";
 import { mapPendingTemplateOrdersByLeadIds } from "@/lib/templates/store";
 import { getWorkspaceOrganization } from "@/lib/workspace-shell-data";
+import { resolveQuotationAccount } from "@/lib/leads/seller-account";
 import { LeadsCrmSecondary } from "@/app/app/leads/(crm)/leads-crm-secondary";
 import Link from "next/link";
 
@@ -178,6 +179,11 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
           listParams={params}
           organizationLogoUrl={organization?.logoUrl ?? null}
           organizationName={organization?.name ?? "Sheetomatic"}
+          quotationAccount={resolveQuotationAccount({
+            name: organization?.name,
+            isPrimary: organization?.isPrimary,
+            quotationAccount: organization?.quotationAccount,
+          })}
           page={1}
           period={period.type}
           periodLabel={period.periodLabel}
@@ -336,6 +342,11 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
         listParams={params}
         organizationLogoUrl={organization?.logoUrl ?? null}
         organizationName={organization?.name ?? "Sheetomatic"}
+        quotationAccount={resolveQuotationAccount({
+          name: organization?.name,
+          isPrimary: organization?.isPrimary,
+          quotationAccount: organization?.quotationAccount,
+        })}
         page={leadPage.page}
         period={period.type}
         periodLabel={period.periodLabel}

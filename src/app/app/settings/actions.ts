@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { getSessionUser } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { normalizeQuotationGstInput } from "@/lib/leads/seller-account";
 import { syncWorkspaceDashboardFromGoogleSheets } from "@/lib/integrations/sync-sheets-to-db";
 import { hasMinimumRole } from "@/lib/permissions";
 import { updateTaskAiSettings } from "@/lib/integrations/task-ai-settings";
@@ -125,4 +127,42 @@ export async function saveTaskAiSettings(
       error instanceof Error ? error.message : "Could not save Task AI settings.";
     return { ok: false, message };
   }
+}
+
+export async function saveQuotationGstProfile(
+  _prev: WorkspaceSettingsState,
+  formData: FormData,
+): Promise<WorkspaceSettingsState> {
+  const user = await getSessionUser();
+  if (!user) {
+    return { ok: false, message: "You must be signed in." };
+  }
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Only an admin can edit GST information." };
+  }
+
+  const parsed = normalizeQuotationGstInput({
+    legalName: formData.get("legalName")?.toString(),
+    tradeName: formData.get("tradeName")?.toString(),
+    gstin: formData.get("gstin")?.toString(),
+    pan: formData.get("pan")?.toString(),
+    authorisedSignatory: formData.get("authorisedSignatory")?.toString(),
+    address: formData.get("address")?.toString(),
+  });
+  if (!parsed.ok) {
+    return { ok: false, message: parsed.message };
+  }
+
+  await prisma.organization.updateMany({
+    where: { id: user.organizationId },
+    data: { quotationAccount: parsed.profile },
+  });
+
+  revalidatePath("/app/settings");
+  revalidatePath("/app/leads");
+  revalidatePath("/app/billing");
+  return {
+    ok: true,
+    message: "GST information saved. Quotations and tax invoices use it from now.",
+  };
 }
