@@ -1,23 +1,17 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { buildWhatsAppUrl } from "@/app/site-content";
+import { RazorpayPayFrame } from "@/components/marketing/razorpay-pay-frame";
 import {
   COURSE_ENROLLMENT_PRICE_INR,
   COURSE_GOOGLE_CALENDAR_BOOKING_URL,
   buildCourseEnrollmentWhatsAppMessage,
-  buildCoursePaymentNote,
   courseCohorts,
   courseEnrollmentPriceLabel,
   courseEnrollmentSchedule,
   type CourseCohortId,
 } from "@/lib/content/courses-enrollment";
-import {
-  SHEETOMATIC_UPI_PAYMENT,
-  isMobileDevice,
-  openPhonePePayment,
-} from "@/lib/payments/upi-phonepe";
 import "./courses-enroll-pay.css";
 
 type Step = "details" | "pay" | "done";
@@ -37,7 +31,6 @@ export function CoursesEnrollPay({
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [cohort, setCohort] = useState<CourseCohortId>("MON_FRI");
-  const [copied, setCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [enrollmentId, setEnrollmentId] = useState<string | null>(null);
@@ -46,7 +39,6 @@ export function CoursesEnrollPay({
   const close = useCallback(() => {
     setOpen(false);
     setError(null);
-    setCopied(false);
     if (step === "done") {
       setStep("details");
       setName("");
@@ -96,33 +88,6 @@ export function CoursesEnrollPay({
       return;
     }
     setStep("pay");
-    if (isMobileDevice()) {
-      openPhonePePayment({
-        upiId: SHEETOMATIC_UPI_PAYMENT.upiId,
-        payeeName: SHEETOMATIC_UPI_PAYMENT.payeeName,
-        amount: COURSE_ENROLLMENT_PRICE_INR,
-        note: buildCoursePaymentNote(cohort),
-      });
-    }
-  }
-
-  function handlePhonePeClick() {
-    openPhonePePayment({
-      upiId: SHEETOMATIC_UPI_PAYMENT.upiId,
-      payeeName: SHEETOMATIC_UPI_PAYMENT.payeeName,
-      amount: COURSE_ENROLLMENT_PRICE_INR,
-      note: buildCoursePaymentNote(cohort),
-    });
-  }
-
-  async function copyUpiId() {
-    try {
-      await navigator.clipboard.writeText(SHEETOMATIC_UPI_PAYMENT.upiId);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
-    }
   }
 
   async function markPaidAndNotify() {
@@ -178,7 +143,7 @@ export function CoursesEnrollPay({
           onClick={close}
         >
           <div
-            className="course-pay-modal"
+            className={`course-pay-modal${step === "pay" ? " is-pay" : ""}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="course-pay-modal-title"
@@ -295,33 +260,9 @@ export function CoursesEnrollPay({
                   · {courseEnrollmentSchedule.sessionTimeLabel}
                 </p>
 
-                <div className="course-pay-qr">
-                  <Image
-                    src={SHEETOMATIC_UPI_PAYMENT.qrImageSrc}
-                    alt="PhonePe QR code for Shyam Kumar Banjare"
-                    width={280}
-                    height={380}
-                    className="course-pay-qr-image"
-                  />
-                  <p className="course-pay-qr-hint">Scan with PhonePe or any UPI app</p>
-                </div>
-
-                <div className="course-pay-upi">
-                  <span>UPI ID</span>
-                  <code>{SHEETOMATIC_UPI_PAYMENT.upiId}</code>
-                  <button type="button" className="btn-secondary btn-sm" onClick={copyUpiId}>
-                    {copied ? "Copied" : "Copy"}
-                  </button>
-                </div>
+                <RazorpayPayFrame amountLabel={priceLabel} />
 
                 <div className="course-pay-actions">
-                  <button
-                    type="button"
-                    className="btn-primary btn-block"
-                    onClick={handlePhonePeClick}
-                  >
-                    Open PhonePe · {priceLabel}
-                  </button>
                   <button
                     type="button"
                     className="btn-secondary btn-block"
@@ -338,9 +279,9 @@ export function CoursesEnrollPay({
                     ← Change cohort or details
                   </button>
                   <p className="course-pay-note">
-                    Same flow as WhatsApp API plans: pay on UPI, then owner confirms
-                    payment and books your slots. Share the payment screenshot on
-                    WhatsApp after you tap the button above.
+                    Pay on Razorpay, then send this for confirmation. We book your
+                    slots after the payment is verified. Share the payment screenshot
+                    on WhatsApp after you tap the button above.
                   </p>
                 </div>
 

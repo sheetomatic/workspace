@@ -302,7 +302,7 @@ export const courseFormatBullets = [
   "24 live 1:1 sessions with Shyam — not a recorded binge course",
   "1.5 hours each (36 hours) · weekly 2 sessions at 8:30–10:00 AM IST",
   "Choose your cohort: Monday + Friday, or Tuesday + Saturday",
-  "Pay ₹35,000 on this page (UPI / PhonePe) — owner confirms payment, then slots are booked",
+  "Pay ₹35,000 on this page (Razorpay) — owner confirms payment, then slots are booked",
   "Stack: Google Sheets + AppSheet + Looker Studio — applied to your business use cases",
   "After training: optionally run ops in Sheetomatic Workspace if you want software, not only Sheets",
 ] as const;

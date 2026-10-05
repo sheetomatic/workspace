@@ -12,12 +12,7 @@ import {
   templateTypeToCategory,
 } from "@/lib/templates/categories";
 import type { CloudSoftwareProduct } from "@/lib/templates/cloud-softwares";
-import {
-  SHEETOMATIC_UPI_PAYMENT,
-  buildUpiPayUrl,
-  isMobileDevice,
-  openPhonePePayment,
-} from "@/lib/payments/upi-phonepe";
+import { RazorpayPayFrame } from "@/components/marketing/razorpay-pay-frame";
 import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
 import "./templates-store.css";
 
@@ -88,7 +83,6 @@ export function TemplatesStoreContent({
   const [proofBusy, setProofBusy] = useState(false);
   const [proofError, setProofError] = useState<string | null>(null);
   const [proofDone, setProofDone] = useState<string | null>(null);
-  const [upiCopied, setUpiCopied] = useState(false);
 
   useEffect(() => {
     const hash = window.location.hash.replace("#", "");
@@ -203,36 +197,6 @@ export function TemplatesStoreContent({
     }
   }
 
-  function payNow() {
-    if (!selectedTemplate) return;
-    const note = `Template ${selectedTemplate.slug}`.slice(0, 80);
-    if (isMobileDevice()) {
-      openPhonePePayment({
-        upiId: SHEETOMATIC_UPI_PAYMENT.upiId,
-        payeeName: SHEETOMATIC_UPI_PAYMENT.payeeName,
-        amount: selectedTemplate.priceInr,
-        note,
-      });
-      return;
-    }
-    window.location.href = buildUpiPayUrl({
-      upiId: SHEETOMATIC_UPI_PAYMENT.upiId,
-      payeeName: SHEETOMATIC_UPI_PAYMENT.payeeName,
-      amount: selectedTemplate.priceInr,
-      note,
-    });
-  }
-
-  async function copyUpiId() {
-    try {
-      await navigator.clipboard.writeText(SHEETOMATIC_UPI_PAYMENT.upiId);
-      setUpiCopied(true);
-      window.setTimeout(() => setUpiCopied(false), 2000);
-    } catch {
-      // Clipboard unavailable — UPI ID stays visible for manual copy.
-    }
-  }
-
   async function submitProof() {
     if (!orderId) return;
     if (!utr.trim() && !proofFile) {
@@ -309,7 +273,7 @@ export function TemplatesStoreContent({
         ))}
       </nav>
 
-      <div className="tpl-layout">
+      <div className={`tpl-layout${step === "pay" ? " is-paying" : ""}`}>
         <section className="tpl-catalog" aria-label="Catalog">
           {visibleCategories.length === 0 ? (
             <p>No templates listed yet.</p>
@@ -480,7 +444,7 @@ export function TemplatesStoreContent({
               <h2>Pay ₹{selectedTemplate.priceInr.toLocaleString("en-IN")}</h2>
               <ol className="tpl-steps">
                 <li className={proofDone ? "is-done" : "is-active"}>
-                  Pay on UPI — scan the QR or tap the button
+                  Pay on Razorpay — enter the amount on the page
                 </li>
                 <li className={proofDone ? "is-done" : ""}>
                   Upload the payment confirmation below
@@ -490,33 +454,9 @@ export function TemplatesStoreContent({
                 </li>
               </ol>
 
-              <div className="tpl-pay-card">
-                <div className="tpl-pay-amount">
-                  <span>Amount</span>
-                  <strong>₹{selectedTemplate.priceInr.toLocaleString("en-IN")}</strong>
-                </div>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  className="tpl-pay-qr"
-                  src={SHEETOMATIC_UPI_PAYMENT.qrImageSrc}
-                  alt="PhonePe UPI QR"
-                  width={168}
-                  height={168}
-                />
-                <p className="tpl-pay-scan">Scan with any UPI app</p>
-                <button
-                  type="button"
-                  className="tpl-upi-id"
-                  onClick={() => void copyUpiId()}
-                  title="Copy UPI ID"
-                >
-                  <code>{SHEETOMATIC_UPI_PAYMENT.upiId}</code>
-                  <span>{upiCopied ? "Copied ✓" : "Copy"}</span>
-                </button>
-                <button type="button" className="tpl-btn primary" onClick={payNow}>
-                  Open UPI / PhonePe
-                </button>
-              </div>
+              <RazorpayPayFrame
+                amountLabel={`₹${selectedTemplate.priceInr.toLocaleString("en-IN")}`}
+              />
 
               {proofDone ? (
                 <div className="tpl-proof-done">
@@ -541,7 +481,7 @@ export function TemplatesStoreContent({
                     <input
                       value={utr}
                       onChange={(e) => setUtr(e.target.value)}
-                      placeholder="12-digit UTR from your UPI app"
+                      placeholder="UTR or Razorpay payment ID"
                       inputMode="numeric"
                     />
                   </label>

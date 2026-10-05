@@ -67,6 +67,15 @@
     grid-template-columns: 1.4fr 0.9fr;
     align-items: start;
   }
+
+  .tpl-layout.is-paying {
+    grid-template-columns: minmax(0, 42rem);
+    justify-content: center;
+  }
+
+  .tpl-layout.is-paying .tpl-catalog {
+    display: none;
+  }
 }
 
 .tpl-group h2 {

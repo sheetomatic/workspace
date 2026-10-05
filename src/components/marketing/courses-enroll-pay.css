@@ -38,6 +38,10 @@
     max-height: calc(100dvh - 2rem);
     padding: 1.1rem 1.15rem 1.25rem;
   }
+
+  .course-pay-modal.is-pay {
+    width: min(100%, 520px);
+  }
 }
 
 .course-pay-modal-head {
