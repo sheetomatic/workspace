@@ -5,7 +5,7 @@ export const coursesPage = {
   eyebrow: "Live 1:1 with Shyam",
   title: "Two programs. Your business, or your skill.",
   lead:
-    "Business owners leave with one live flow on their own data. Working professionals leave able to build an FMS, an IMS, a person-wise deficit, and a checklist — and to check AI before it touches a live file.",
+    "Business owners get a ready system for Sales, Operations, Inventory, and Dispatch — after a requirement meeting. Working professionals learn to build an FMS, an IMS, a person-wise deficit, and a checklist.",
   ctaLabel: "Enroll & pay",
   ctaSecondaryLabel: "Open Workspace",
   ctaQuestionsLabel: "Questions on WhatsApp",
@@ -16,9 +16,9 @@ export const coursesPage = {
   libraryTitle: "Learn from the channel",
   libraryLead:
     "Browse the free library. The paid seat is the live work with Shyam.",
-  funnelTitle: "Pick a program, pay half, then book the slots",
+  funnelTitle: "Owners book a meeting first. Professionals can enroll now.",
   funnelLead:
-    "50% confirms the seat. GST is extra. The balance is due before class 1. Monday + Friday, or Tuesday + Saturday.",
+    "Business Owners: see the system, book a requirement slot, and enroll once you are sure. Working Professionals: pay half to confirm the seat. GST is extra. Balance before class 1.",
   instructorNote: "Instructor: Shyam Kumar Banjare",
 } as const;
 
@@ -30,7 +30,7 @@ export const coursePhases: CoursePhase[] = coursePrograms.flatMap(
 );
 
 export const courseFormatBullets = [
-  "Business Owners — ₹1,10,000 · 30 classes × 2 hours · 8:30–10:30 AM IST",
+  "Business Owners — ready system for Sales, Operations, Inventory, and Dispatch. Book a requirement meeting, then enroll. ₹1,10,000 · 30 classes × 2 hours.",
   "Working Professionals — ₹25,000 · 20 classes × 1.5 hours · 8:30–10:00 AM IST",
   "Monday + Friday, or Tuesday + Saturday",
   "50% on Razorpay to confirm the seat. Balance before class 1. GST extra.",

@@ -17,7 +17,7 @@ import {
   youtubeThumbUrl,
   youtubeWatchUrl,
 } from "@/app/video-content";
-import { youtubeChannelName, youtubeChannelUrl } from "@/app/site-content";
+import { youtubeChannelName, youtubeChannelUrl, consultationUrl } from "@/app/site-content";
 import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
 import { CoursesEnrollPay } from "@/components/marketing/courses-enroll-pay";
 import { VideoEmbed } from "@/components/marketing/video-embed";
@@ -80,14 +80,33 @@ export function CoursesPageContent() {
                 </p>
                 <p>{program.promise}</p>
                 <p className="courses-offer-pay">
-                  Pay {courseEnrollmentPriceLabel(program.advanceInr)} now. Balance
-                  before class 1.
+                  {program.bookFirst
+                    ? `Book the requirement meeting first. After you are sure, pay ${courseEnrollmentPriceLabel(program.advanceInr)} to confirm the seat.`
+                    : `Pay ${courseEnrollmentPriceLabel(program.advanceInr)} now. Balance before class 1.`}
                 </p>
-                <CoursesEnrollPay
-                  programId={program.id}
-                  triggerLabel={coursesPage.ctaLabel}
-                  triggerClassName="btn-cta btn-primary btn-block"
-                />
+                <div className="courses-offer-actions">
+                  {program.bookFirst ? (
+                    <a
+                      className="btn-cta btn-primary btn-block"
+                      href={consultationUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Book a requirement meeting
+                    </a>
+                  ) : null}
+                  <CoursesEnrollPay
+                    programId={program.id}
+                    triggerLabel={
+                      program.bookFirst ? "Enroll once you are sure" : coursesPage.ctaLabel
+                    }
+                    triggerClassName={
+                      program.bookFirst
+                        ? "btn-cta btn-secondary btn-block"
+                        : "btn-cta btn-primary btn-block"
+                    }
+                  />
+                </div>
               </article>
             ))}
           </aside>
@@ -104,7 +123,9 @@ export function CoursesPageContent() {
             <div className="courses-section-head">
               <p className="type-kicker text-sky-700">{program.name}</p>
               <h2 className="minimal-section-title mt-2">
-                {program.totalClasses} classes · {program.totalHours} hours
+                {program.areas
+                  ? "What the system covers"
+                  : `${program.totalClasses} classes · ${program.totalHours} hours`}
               </h2>
               <p className="minimal-section-lead">{program.classRhythm}</p>
               <p className="minimal-section-lead">{program.tools}</p>
@@ -114,46 +135,84 @@ export function CoursesPageContent() {
                 <li key={item}>{item}</li>
               ))}
             </ul>
-            <div className="courses-phase-stack">
-              {program.phases.map((phase) => (
-                <section className="courses-phase" key={phase.id}>
-                  <header className="courses-phase-head">
-                    <p className="courses-phase-range">{phase.range}</p>
-                    <h3>{phase.label}</h3>
-                    <p>{phase.summary}</p>
-                  </header>
-                  <div className="courses-class-grid">
-                    {phase.classes.map((item) => (
-                      <article className="courses-class-card" key={item.number}>
-                        <p className="courses-class-num">
-                          Class {String(item.number).padStart(2, "0")}
-                        </p>
-                        <h4>{item.title}</h4>
-                        <ul>
-                          <li>{item.outcome}</li>
-                        </ul>
-                      </article>
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
+            {program.areas ? (
+              <div className="courses-area-grid">
+                {program.areas.map((area) => (
+                  <article className="courses-area" key={area.id}>
+                    <h3>{area.title}</h3>
+                    <p>{area.summary}</p>
+                    <ul>
+                      {area.pointers.map((pointer) => (
+                        <li key={pointer}>{pointer}</li>
+                      ))}
+                    </ul>
+                  </article>
+                ))}
+              </div>
+            ) : null}
+            {program.phases.length > 0 ? (
+              <div className="courses-phase-stack">
+                {program.phases.map((phase) => (
+                  <section className="courses-phase" key={phase.id}>
+                    <header className="courses-phase-head">
+                      <p className="courses-phase-range">{phase.range}</p>
+                      <h3>{phase.label}</h3>
+                      <p>{phase.summary}</p>
+                    </header>
+                    <div className="courses-class-grid">
+                      {phase.classes.map((item) => (
+                        <article className="courses-class-card" key={item.number}>
+                          <p className="courses-class-num">
+                            Class {String(item.number).padStart(2, "0")}
+                          </p>
+                          <h4>{item.title}</h4>
+                          <ul>
+                            <li>{item.outcome}</li>
+                          </ul>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            ) : null}
             <div className="courses-enroll-band">
               <div>
-                <p className="type-kicker text-sky-700">Enroll</p>
+                <p className="type-kicker text-sky-700">
+                  {program.bookFirst ? "First, the meeting" : "Enroll"}
+                </p>
                 <h3>
-                  {courseEnrollmentPriceLabel(program.priceInr)} · {program.totalHours}{" "}
-                  hours live 1:1
+                  {program.bookFirst
+                    ? "Requirement meeting, then the seat"
+                    : `${courseEnrollmentPriceLabel(program.priceInr)} · ${program.totalHours} hours live 1:1`}
                 </h3>
                 <p>
-                  Pay {courseEnrollmentPriceLabel(program.advanceInr)} now. GST extra.
-                  Balance before class 1. {program.sessionTimeLabel}.
+                  {program.bookFirst
+                    ? `We go through Sales, Operations, Inventory, and Dispatch on your work. When you are sure, pay ${courseEnrollmentPriceLabel(program.advanceInr)}. GST extra. Balance before class 1. ${program.totalClasses} classes × ${program.sessionDurationLabel}, ${program.sessionTimeLabel}.`
+                    : `Pay ${courseEnrollmentPriceLabel(program.advanceInr)} now. GST extra. Balance before class 1. ${program.sessionTimeLabel}.`}
                 </p>
               </div>
-              <CoursesEnrollPay
-                programId={program.id}
-                triggerLabel={coursesPage.ctaLabel}
-              />
+              <div className="courses-offer-actions">
+                {program.bookFirst ? (
+                  <a
+                    className="btn-cta btn-primary"
+                    href={consultationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Book a requirement meeting
+                  </a>
+                ) : null}
+                <CoursesEnrollPay
+                  programId={program.id}
+                  triggerLabel={
+                    program.bookFirst ? "Enroll once you are sure" : coursesPage.ctaLabel
+                  }
+                  triggerClassName={
+                    program.bookFirst ? "btn-cta btn-secondary" : "btn-cta btn-primary"
+                  }
+                />
+              </div>
             </div>
           </div>
         </section>

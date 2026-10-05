@@ -14,6 +14,13 @@ export type CoursePhase = {
   classes: CourseClass[];
 };
 
+export type CourseArea = {
+  id: string;
+  title: string;
+  summary: string;
+  pointers: string[];
+};
+
 export type CourseProgram = {
   id: CourseProgramId;
   name: string;
@@ -33,6 +40,10 @@ export type CourseProgram = {
   classRhythm: string;
   terms: string[];
   phases: CoursePhase[];
+  /** Pointer-wise coverage. When set, the page shows these instead of class cards. */
+  areas?: CourseArea[];
+  /** Requirement meeting before payment. */
+  bookFirst?: boolean;
 };
 
 function phase(
@@ -62,9 +73,9 @@ export const coursePrograms: CourseProgram[] = [
   {
     id: "BUSINESS_OWNER",
     name: "Business Owners",
-    eyebrow: "Your business, built in class",
+    eyebrow: "A ready system, on your data",
     promise:
-      "Shyam builds one live flow on your data — sheet, phone app, and a weekly view you can open without someone compiling a report. The last part of each class teaches the method only if you want to build the next piece yourself.",
+      "You leave with a system your people can use: Sales, Operations, Inventory, and Dispatch. Built for how your shop actually runs, on Google Sheets, AppSheet, Apps Script, and a Google Site you open for the week.",
     priceInr: 110_000,
     advanceInr: 55_000,
     totalClasses: 30,
@@ -74,86 +85,68 @@ export const coursePrograms: CourseProgram[] = [
     sessionTimeLabel: "8:30–10:30 AM IST",
     totalHours: 60,
     weeksLabel: "about 15 weeks",
-    tools: "Google Sheets, AppSheet, and Looker Studio. Workspace is optional after the program.",
+    tools:
+      "Google Sheets, AppSheet, Apps Script, and Google Sites. The Site is the page you open. The sheet stays the record.",
     classRhythm:
-      "About 20 minutes on what broke since last class, about 70 minutes building on your file, and about 30 minutes on the method — only if you want to repeat it yourself.",
+      "First a requirement meeting, on your work. Then 30 classes. Most of the hour is building on your files. The last part teaches the method only if you want to change it yourself later.",
+    bookFirst: true,
     terms: [
+      "Book a requirement meeting first. Enroll after you are sure this is the system you want.",
       ...sharedTerms,
-      "Scope is these 30 classes and the one flow locked in class 6. A second company or a large extra build is a new quote.",
-      "You bring access, data, and one person who does the work. If that is late, the dates move.",
+      "Scope is Sales, Operations or production, Inventory, and Dispatch for one company. A second company is a new quote.",
+      "You bring access, a person who does the work, and real orders. If that is late, the dates move.",
     ],
-    phases: [
-      phase(
-        "bo-see",
-        "See the business",
-        "Classes 1–6",
-        "These six classes do not change with the industry. They decide what the other twenty-four will build.",
-        [
-          cls(1, "The meeting you will run", "The weekly meeting, written in your words."),
-          cls(2, "The flow that is costing you", "One flow chosen. The rest parked."),
-          cls(3, "Who owns the step", "A single name on every step."),
-          cls(4, "Planned, actual, delay", "Ten real jobs that already show the gap."),
-          cls(5, "The deficit", "A person-wise minus for one week, not a completion percent."),
-          cls(6, "The system we will finish", "A one-page scope. Classes 7–30 follow it."),
+    areas: [
+      {
+        id: "sales",
+        title: "Sales",
+        summary: "From the enquiry to the money, with one name on each open item.",
+        pointers: [
+          "Every enquiry has one owner and a next date.",
+          "The quote, the rate, and what was promised sit on the same row as the order.",
+          "A follow-up that is late shows as a gap, not a green percent.",
+          "Collection pending is a name, an amount, and how many days.",
+          "Before the weekly meeting you see which orders are stuck, and with whom.",
         ],
-      ),
-      phase(
-        "bo-sheet",
-        "The sheet, on your flow",
-        "Classes 7–14",
-        "The subject is the flow from class 6. The method is the same for the next flow you may build alone.",
-        [
-          cls(7, "One source of truth", "One named file. Everything else is a copy."),
-          cls(8, "Masters and daily work", "Real customers and items, and an empty daily tab."),
-          cls(9, "Formulas the owner can read", "Each formula explained in a sentence before it stays."),
-          cls(10, "The live tracker", "Your recent jobs, with owner, plan, actual, and delay."),
-          cls(11, "Status, owner, due time", "Statuses your staff will recognise on Monday."),
-          cls(12, "Entry a non-technical person can do", "Dropdowns and a path a new joiner can use."),
-          cls(13, "Lock what must not break", "Staff can add rows. They cannot wipe the structure."),
-          cls(14, "Sheet review on real numbers", "Five live jobs until the sheet matches the shop."),
+      },
+      {
+        id: "operations",
+        title: "Operations, production, manufacturing",
+        summary: "The job on the floor: plan, actual, and the delay.",
+        pointers: [
+          "A job or batch has a plan, an actual, and the delay in hours or days.",
+          "Each step has one person, not a department.",
+          "Waiting on material, a machine, or a decision is visible.",
+          "Staff update from the phone. The sheet stays the record.",
+          "A late step alerts that person. The customer is not messaged.",
         ],
-      ),
-      phase(
-        "bo-app",
-        "The phone app, on the same flow",
-        "Classes 15–22",
-        "Staff will not keep the sheet alive if updating it means opening a laptop.",
-        [
-          cls(15, "First screen from their sheet", "Today’s open steps, on your phone."),
-          cls(16, "The one form people will fill", "Step, person, and time. Extra fields wait."),
-          cls(17, "Proof", "Photo or note only where the business actually argues."),
-          cls(18, "Who sees what", "You see the flow. Each person sees their own steps."),
-          cls(19, "A nudge when it is late", "One alert to the staff member. Nothing to the customer."),
-          cls(20, "The main flow on the phone", "One job type that runs without the sheet open."),
-          cls(21, "The second flow, only if class 6 allowed it", "A thin second flow, or a stronger first one."),
-          cls(22, "A staff member uses it", "Someone other than you has entered a real step."),
+      },
+      {
+        id: "inventory",
+        title: "Inventory",
+        summary: "What you have, what a job still needs, and what is about to run out.",
+        pointers: [
+          "In, out, and balance for the items this business actually fights over.",
+          "What is short before a job or a dispatch can start.",
+          "A reorder line, and who is told when stock crosses it.",
+          "Paper stock and floor stock can be checked against each other.",
+          "The meeting shows the breaches, not every SKU.",
         ],
-      ),
-      phase(
-        "bo-week",
-        "The weekly view",
-        "Classes 23–28",
-        "The sheet and the app can be busy and still leave you blind. These classes make the meeting possible.",
-        [
-          cls(23, "Five numbers", "Five figures, and the decision each one supports."),
-          cls(24, "Looker on a stable range", "A page that opens on your numbers."),
-          cls(25, "Exceptions first", "Overdue, pending, and short — not every row."),
-          cls(26, "Person-wise", "The gap by person. On time stays quiet."),
-          cls(27, "A mock meeting", "You run one short review on live rows."),
-          cls(28, "When the page and the sheet disagree", "The sheet stays the truth until they match."),
+      },
+      {
+        id: "dispatch",
+        title: "Dispatch",
+        summary: "What is ready to leave, what went, and what the customer is still waiting for.",
+        pointers: [
+          "What is ready to leave, and what is still on the floor.",
+          "Challan, vehicle, and what actually went out.",
+          "What the customer is still waiting for, with a name on it.",
+          "A late dispatch is a miss, including one that was completed late.",
+          "You open one Site and see dispatch gaps next to sales, production, and stock.",
         ],
-      ),
-      phase(
-        "bo-leave",
-        "Leave it running",
-        "Classes 29–30",
-        "The system has to survive the week after the last class.",
-        [
-          cls(29, "You build the next small piece", "You add one real thing while Shyam watches."),
-          cls(30, "The next 30 days", "The weekly slot, the five numbers, and the one flow you will not start yet."),
-        ],
-      ),
+      },
     ],
+    phases: [],
   },
   {
     id: "WORKING_PROFESSIONAL",
