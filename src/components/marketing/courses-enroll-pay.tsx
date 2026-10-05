@@ -260,7 +260,12 @@ export function CoursesEnrollPay({
                   · {courseEnrollmentSchedule.sessionTimeLabel}
                 </p>
 
-                <RazorpayPayFrame amountLabel={priceLabel} />
+                <RazorpayPayFrame
+                  amountInr={COURSE_ENROLLMENT_PRICE_INR}
+                  description="1:1 coaching seat"
+                  email={email}
+                  phone={phone}
+                />
 
                 <div className="course-pay-actions">
                   <button

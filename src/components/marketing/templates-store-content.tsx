@@ -444,7 +444,7 @@ export function TemplatesStoreContent({
               <h2>Pay ₹{selectedTemplate.priceInr.toLocaleString("en-IN")}</h2>
               <ol className="tpl-steps">
                 <li className={proofDone ? "is-done" : "is-active"}>
-                  Pay on Razorpay — enter the amount on the page
+                  Pay on Razorpay — the amount is already filled in
                 </li>
                 <li className={proofDone ? "is-done" : ""}>
                   Upload the payment confirmation below
@@ -455,7 +455,10 @@ export function TemplatesStoreContent({
               </ol>
 
               <RazorpayPayFrame
-                amountLabel={`₹${selectedTemplate.priceInr.toLocaleString("en-IN")}`}
+                amountInr={selectedTemplate.priceInr}
+                description={selectedTemplate.name}
+                email={email}
+                phone={phone}
               />
 
               {proofDone ? (
