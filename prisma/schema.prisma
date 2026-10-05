@@ -3595,6 +3595,13 @@ enum CourseEnrollmentStatus {
   CANCELLED
 }
 
+enum CourseProgram {
+  BUSINESS_OWNER
+  WORKING_PROFESSIONAL
+  /** Enrollments from the earlier single ₹35,000 program. */
+  LEGACY
+}
+
 enum TrainingSlotStatus {
   SCHEDULED
   COMPLETED
@@ -3612,6 +3619,7 @@ model CourseEnrollment {
   phone            String
   email            String
   amountInr        Int                    @default(35000)
+  program          CourseProgram         @default(LEGACY)
   cohort           CourseCohort
   status           CourseEnrollmentStatus @default(PAYMENT_PENDING)
   slotNotes        String?

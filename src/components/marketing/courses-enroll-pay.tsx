@@ -4,12 +4,14 @@ import { useCallback, useEffect, useState } from "react";
 import { buildWhatsAppUrl } from "@/app/site-content";
 import { RazorpayPayFrame } from "@/components/marketing/razorpay-pay-frame";
 import {
-  COURSE_ENROLLMENT_PRICE_INR,
+  getCourseProgram,
+  type CourseProgramId,
+} from "@/lib/content/course-programs";
+import {
   COURSE_GOOGLE_CALENDAR_BOOKING_URL,
   buildCourseEnrollmentWhatsAppMessage,
   courseCohorts,
   courseEnrollmentPriceLabel,
-  courseEnrollmentSchedule,
   type CourseCohortId,
 } from "@/lib/content/courses-enrollment";
 import "./courses-enroll-pay.css";
@@ -17,14 +19,17 @@ import "./courses-enroll-pay.css";
 type Step = "details" | "pay" | "done";
 
 type Props = {
+  programId: CourseProgramId;
   triggerLabel?: string;
   triggerClassName?: string;
 };
 
 export function CoursesEnrollPay({
+  programId,
   triggerLabel = "Enroll & pay",
   triggerClassName = "btn-cta btn-primary",
 }: Props) {
+  const program = getCourseProgram(programId);
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>("details");
   const [name, setName] = useState("");
@@ -97,7 +102,7 @@ export function CoursesEnrollPay({
       const response = await fetch("/api/courses/enroll", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone, email, cohort }),
+        body: JSON.stringify({ name, phone, email, cohort, program: programId }),
       });
       const data = (await response.json()) as {
         ok?: boolean;
@@ -117,7 +122,7 @@ export function CoursesEnrollPay({
         phone: phone.trim(),
         email: email.trim(),
         cohort,
-        amountInr: COURSE_ENROLLMENT_PRICE_INR,
+        programId,
         enrollmentId: data.enrollmentId,
       });
       window.open(buildWhatsAppUrl(message), "_blank", "noopener,noreferrer");
@@ -128,7 +133,9 @@ export function CoursesEnrollPay({
     }
   }
 
-  const priceLabel = courseEnrollmentPriceLabel();
+  if (!program) return null;
+  const feeLabel = courseEnrollmentPriceLabel(program.priceInr);
+  const advanceLabel = courseEnrollmentPriceLabel(program.advanceInr);
 
   return (
     <>
@@ -152,7 +159,7 @@ export function CoursesEnrollPay({
             <header className="course-pay-modal-head">
               <div>
                 <p className="course-pay-modal-eyebrow">
-                  {step === "done" ? "Submitted" : "Sheets · AppSheet · Looker"}
+                  {step === "done" ? "Submitted" : program.name}
                 </p>
                 <h2 id="course-pay-modal-title">
                   {step === "details"
@@ -175,11 +182,11 @@ export function CoursesEnrollPay({
             {step === "details" ? (
               <div className="course-pay-body">
                 <p className="course-pay-lead">
-                  {courseEnrollmentSchedule.totalClasses} live classes ×{" "}
-                  {courseEnrollmentSchedule.sessionDurationLabel} (
-                  {courseEnrollmentSchedule.totalHours} hours). Weekly{" "}
-                  {courseEnrollmentSchedule.sessionsPerWeek} sessions at{" "}
-                  <strong>{courseEnrollmentSchedule.sessionTimeLabel}</strong>.
+                  {program.totalClasses} live classes × {program.sessionDurationLabel} (
+                  {program.totalHours} hours, {program.weeksLabel}). Two sessions a
+                  week at <strong>{program.sessionTimeLabel}</strong>. Fee{" "}
+                  {feeLabel}, GST extra. Pay {advanceLabel} now to confirm the seat.
+                  Balance before class 1.
                 </p>
 
                 <fieldset className="course-pay-cohorts">
@@ -201,7 +208,7 @@ export function CoursesEnrollPay({
                       <span>
                         <strong>{option.label}</strong>
                         <small>
-                          {option.daysLabel} · {courseEnrollmentSchedule.sessionTimeLabel}
+                          {option.daysLabel} · {program.sessionTimeLabel}
                         </small>
                       </span>
                     </label>
@@ -242,7 +249,7 @@ export function CoursesEnrollPay({
                 {error ? <p className="course-pay-error">{error}</p> : null}
 
                 <button type="button" className="btn-primary btn-block" onClick={goToPay}>
-                  Continue to pay · {priceLabel}
+                  Continue to pay · {advanceLabel} now
                 </button>
               </div>
             ) : null}
@@ -250,19 +257,21 @@ export function CoursesEnrollPay({
             {step === "pay" ? (
               <div className="course-pay-body">
                 <p className="course-pay-amount">
-                  Amount: <strong>{priceLabel}</strong>
+                  Pay now: <strong>{advanceLabel}</strong>
                 </p>
                 <p className="course-pay-meta">
-                  Cohort:{" "}
+                  {program.name} · fee {feeLabel}, GST extra. Balance{" "}
+                  {courseEnrollmentPriceLabel(program.priceInr - program.advanceInr)}{" "}
+                  before class 1. Cohort:{" "}
                   <strong>
                     {courseCohorts.find((item) => item.id === cohort)?.label}
                   </strong>{" "}
-                  · {courseEnrollmentSchedule.sessionTimeLabel}
+                  · {program.sessionTimeLabel}
                 </p>
 
                 <RazorpayPayFrame
-                  amountInr={COURSE_ENROLLMENT_PRICE_INR}
-                  description="1:1 coaching seat"
+                  amountInr={program.advanceInr}
+                  description={`${program.name} seat advance`}
                   email={email}
                   phone={phone}
                 />
@@ -284,9 +293,9 @@ export function CoursesEnrollPay({
                     ← Change cohort or details
                   </button>
                   <p className="course-pay-note">
-                    Pay on Razorpay, then send this for confirmation. We book your
-                    slots after the payment is verified. Share the payment screenshot
-                    on WhatsApp after you tap the button above.
+                    Razorpay is filled with {advanceLabel} (half the fee). GST is extra.
+                    After we confirm this receipt, book your slots. The balance is
+                    due before class 1. Share the receipt on WhatsApp.
                   </p>
                 </div>
 
@@ -299,11 +308,11 @@ export function CoursesEnrollPay({
                 <p className="course-pay-success">
                   Payment pending confirmation. After payment is verified, open
                   your booking link to pick the first session date — we generate
-                  all {courseEnrollmentSchedule.totalClasses}{" "}
+                  all {program.totalClasses}{" "}
                   <strong>
                     {courseCohorts.find((item) => item.id === cohort)?.label}
                   </strong>{" "}
-                  slots ({courseEnrollmentSchedule.sessionTimeLabel}).
+                  slots ({program.sessionTimeLabel}).
                 </p>
                 {enrollmentId ? (
                   <p className="course-pay-meta">Enrollment ID: {enrollmentId}</p>
@@ -316,7 +325,7 @@ export function CoursesEnrollPay({
                       phone: phone.trim(),
                       email: email.trim(),
                       cohort,
-                      amountInr: COURSE_ENROLLMENT_PRICE_INR,
+                      programId,
                       enrollmentId: enrollmentId ?? undefined,
                     }),
                   )}

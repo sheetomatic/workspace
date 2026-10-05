@@ -1,5 +1,9 @@
 import { formatInr } from "@/lib/leads/categories";
 import {
+  getCourseProgram,
+  type CourseProgramId,
+} from "@/lib/content/course-programs";
+import {
   TRAINING_BOOKING_WINDOW,
   weekdaysLabel,
   weekdaysFromCohort,
@@ -73,25 +77,33 @@ export function buildCourseEnrollmentWhatsAppMessage(params: {
   phone: string;
   email: string;
   cohort: CourseCohortId;
-  amountInr?: number;
+  programId: CourseProgramId;
   enrollmentId?: string;
 }) {
-  const amount = courseEnrollmentPriceLabel(params.amountInr);
+  const program = getCourseProgram(params.programId);
   const cohort = courseCohortLabel(params.cohort);
   const lines = [
-    "Hi Sheetomatic — I paid for the Google Sheets | AppSheet | Looker Studio 1:1 coaching program.",
+    `Hi Sheetomatic — I paid the seat advance for ${program?.name ?? "a course"}.`,
     "",
     `Name: ${params.name}`,
     `Phone: ${params.phone}`,
     `Email: ${params.email}`,
-    `Amount: ${amount}`,
-    `Cohort: ${cohort} · ${courseEnrollmentSchedule.sessionTimeLabel}`,
-    `Program: ${courseEnrollmentSchedule.totalClasses} live classes × ${courseEnrollmentSchedule.sessionDurationLabel}`,
-    "Use cases: based on my business needs (Sheets, AppSheet, Looker).",
   ];
+  if (program) {
+    lines.push(
+      `Program: ${program.name}`,
+      `Fee: ${courseEnrollmentPriceLabel(program.priceInr)} · GST extra`,
+      `Paid now: ${courseEnrollmentPriceLabel(program.advanceInr)} (50% to confirm the seat)`,
+      `Balance before class 1: ${courseEnrollmentPriceLabel(program.priceInr - program.advanceInr)}`,
+      `Cohort: ${cohort} · ${program.sessionTimeLabel}`,
+      `Classes: ${program.totalClasses} × ${program.sessionDurationLabel}`,
+    );
+  } else {
+    lines.push(`Cohort: ${cohort}`);
+  }
   if (params.enrollmentId) {
     lines.push(`Enrollment ID: ${params.enrollmentId}`);
   }
-  lines.push("", "Sharing payment screenshot next — please confirm and book my slots.");
+  lines.push("", "Sharing the Razorpay receipt next — please confirm and book my slots.");
   return lines.join("\n");
 }

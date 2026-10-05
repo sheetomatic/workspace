@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isCourseProgramId } from "@/lib/content/course-programs";
 import {
   createCourseEnrollment,
   isValidCourseCohort,
@@ -30,6 +31,7 @@ export async function POST(request: Request) {
     phone?: string;
     email?: string;
     cohort?: string;
+    program?: string;
     slotNotes?: string;
   };
   try {
@@ -39,9 +41,16 @@ export async function POST(request: Request) {
   }
 
   const cohort = typeof body.cohort === "string" ? body.cohort : "";
+  const program = typeof body.program === "string" ? body.program : "";
   if (!isValidCourseCohort(cohort)) {
     return NextResponse.json(
       { error: "Please choose Monday + Friday or Tuesday + Saturday." },
+      { status: 400 },
+    );
+  }
+  if (!isCourseProgramId(program)) {
+    return NextResponse.json(
+      { error: "Please choose Business Owners or Working Professionals." },
       { status: 400 },
     );
   }
@@ -51,6 +60,7 @@ export async function POST(request: Request) {
     phone: typeof body.phone === "string" ? body.phone : "",
     email: typeof body.email === "string" ? body.email : "",
     cohort,
+    programId: program,
     slotNotes: typeof body.slotNotes === "string" ? body.slotNotes : undefined,
   });
 

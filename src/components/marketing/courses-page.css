@@ -65,6 +65,55 @@
   color: #475569;
 }
 
+.courses-offer-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.courses-offer {
+  display: grid;
+  gap: 0.55rem;
+  align-content: start;
+  padding: 1.25rem 1.3rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+}
+
+.courses-offer h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #0f172a;
+}
+
+.courses-offer p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: #475569;
+}
+
+.courses-offer-price {
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #0f172a;
+}
+
+.courses-offer-price span {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.courses-offer-pay {
+  font-weight: 650;
+  color: #0f172a;
+}
+
 .courses-hero-card {
   display: grid;
   gap: 1rem;

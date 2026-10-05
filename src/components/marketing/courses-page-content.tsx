@@ -1,17 +1,16 @@
-import { CalendarDays, Clock3, IndianRupee, Play, UserRound } from "lucide-react";
+import { Play } from "lucide-react";
 import {
   FinalCta,
   MarketingPage,
   SiteFooter,
   SiteHeader,
 } from "@/app/components";
+import { coursesPage } from "@/app/courses-content";
+import { coursePrograms } from "@/lib/content/course-programs";
 import {
-  courseFormatBullets,
-  coursePhases,
-  coursesPage,
-  coursesWhatsAppUrl,
-} from "@/app/courses-content";
-import { COURSE_GOOGLE_CALENDAR_BOOKING_URL } from "@/lib/content/courses-enrollment";
+  COURSE_GOOGLE_CALENDAR_BOOKING_URL,
+  courseEnrollmentPriceLabel,
+} from "@/lib/content/courses-enrollment";
 import {
   coursesFeaturedVideos,
   coursesLibraryVideos,
@@ -39,7 +38,9 @@ export function CoursesPageContent() {
             <h1 className="minimal-hero-title">{coursesPage.title}</h1>
             <p className="minimal-hero-lead">{coursesPage.lead}</p>
             <div className="courses-hero-actions">
-              <CoursesEnrollPay triggerLabel={coursesPage.ctaLabel} />
+              <a className="btn-cta btn-primary" href="#programs">
+                See the two programs
+              </a>
               <a
                 className="btn-cta btn-secondary"
                 href={COURSE_GOOGLE_CALENDAR_BOOKING_URL}
@@ -61,123 +62,102 @@ export function CoursesPageContent() {
             <p className="courses-instructor">{coursesPage.instructorNote}</p>
           </div>
 
-          <aside className="courses-hero-card" aria-label="Program snapshot">
-            <div className="courses-stat">
-              <Clock3 size={20} aria-hidden />
-              <div>
-                <strong>{coursesPage.durationLabel}</strong>
-                <span>{coursesPage.durationDetail}</span>
-              </div>
-            </div>
-            <div className="courses-stat">
-              <CalendarDays size={20} aria-hidden />
-              <div>
-                <strong>{coursesPage.scheduleLabel}</strong>
-                <span>{coursesPage.scheduleDetail}</span>
-              </div>
-            </div>
-            <div className="courses-stat">
-              <IndianRupee size={20} aria-hidden />
-              <div>
-                <strong>{coursesPage.priceLabel}</strong>
-                <span>{coursesPage.priceNote}</span>
-              </div>
-            </div>
-            <div className="courses-stat">
-              <UserRound size={20} aria-hidden />
-              <div>
-                <strong>Built around your use cases</strong>
-                <span>Sheets · AppSheet · Looker Studio</span>
-              </div>
-            </div>
-            <div className="courses-hero-card-cta">
-              <CoursesEnrollPay
-                triggerLabel={coursesPage.ctaLabel}
-                triggerClassName="btn-cta btn-primary btn-block"
-              />
-              <a
-                className="btn-cta btn-secondary btn-block"
-                href={COURSE_GOOGLE_CALENDAR_BOOKING_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Book slots on Google Calendar
-              </a>
-              <a
-                className="btn-cta btn-secondary btn-block"
-                href={coursesWhatsAppUrl}
-              >
-                {coursesPage.ctaQuestionsLabel}
-              </a>
-            </div>
+          <aside className="courses-offer-grid" id="programs" aria-label="Programs">
+            {coursePrograms.map((program) => (
+              <article className="courses-offer" key={program.id} id={program.id === "BUSINESS_OWNER" ? "business-owners" : "working-professionals"}>
+                <p className="courses-phase-range">{program.eyebrow}</p>
+                <h2>{program.name}</h2>
+                <p className="courses-offer-price">
+                  {courseEnrollmentPriceLabel(program.priceInr)}
+                  <span> GST extra</span>
+                </p>
+                <p>
+                  {program.totalClasses} classes × {program.sessionDurationLabel} ·{" "}
+                  {program.totalHours} hours · {program.weeksLabel}
+                </p>
+                <p>
+                  Mon + Fri or Tue + Sat · {program.sessionTimeLabel}
+                </p>
+                <p>{program.promise}</p>
+                <p className="courses-offer-pay">
+                  Pay {courseEnrollmentPriceLabel(program.advanceInr)} now. Balance
+                  before class 1.
+                </p>
+                <CoursesEnrollPay
+                  programId={program.id}
+                  triggerLabel={coursesPage.ctaLabel}
+                  triggerClassName="btn-cta btn-primary btn-block"
+                />
+              </article>
+            ))}
           </aside>
         </div>
       </section>
 
-      <section className="minimal-strip bg-white pb-14">
-        <div className="mx-auto max-w-7xl px-5 sm:px-8">
-          <div className="courses-section-head">
-            <p className="type-kicker text-sky-700">Format</p>
-            <h2 className="minimal-section-title mt-2">{coursesPage.formatTitle}</h2>
-            <p className="minimal-section-lead">{coursesPage.formatLead}</p>
-          </div>
-          <ul className="courses-format-list">
-            {courseFormatBullets.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      <section className="minimal-strip soft-section pb-16" id="curriculum">
-        <div className="mx-auto max-w-7xl px-5 sm:px-8">
-          <div className="courses-section-head">
-            <p className="type-kicker text-sky-700">Curriculum</p>
-            <h2 className="minimal-section-title mt-2">
-              {coursesPage.curriculumTitle}
-            </h2>
-            <p className="minimal-section-lead">{coursesPage.curriculumLead}</p>
-          </div>
-
-          <div className="courses-phase-stack">
-            {coursePhases.map((phase) => (
-              <section className="courses-phase" key={phase.id} id={phase.id}>
-                <header className="courses-phase-head">
-                  <p className="courses-phase-range">{phase.range}</p>
-                  <h3>{phase.label}</h3>
-                  <p>{phase.summary}</p>
-                </header>
-                <div className="courses-class-grid">
-                  {phase.classes.map((cls) => (
-                    <article className="courses-class-card" key={cls.number}>
-                      <p className="courses-class-num">
-                        Class {String(cls.number).padStart(2, "0")}
-                      </p>
-                      <h4>{cls.title}</h4>
-                      <ul>
-                        {cls.outcomes.map((outcome) => (
-                          <li key={outcome}>{outcome}</li>
-                        ))}
-                      </ul>
-                    </article>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-
-          <div className="courses-enroll-band">
-            <div>
-              <p className="type-kicker text-sky-700">Enroll</p>
-              <h3>{coursesPage.priceLabel} · 36 hours live 1:1</h3>
-              <p>
-                {coursesPage.scheduleDetail}. {coursesPage.priceNote}
-              </p>
+      {coursePrograms.map((program) => (
+        <section
+          className="minimal-strip soft-section pb-16"
+          id={program.id === "BUSINESS_OWNER" ? "curriculum-owners" : "curriculum-professionals"}
+          key={program.id}
+        >
+          <div className="mx-auto max-w-7xl px-5 sm:px-8">
+            <div className="courses-section-head">
+              <p className="type-kicker text-sky-700">{program.name}</p>
+              <h2 className="minimal-section-title mt-2">
+                {program.totalClasses} classes · {program.totalHours} hours
+              </h2>
+              <p className="minimal-section-lead">{program.classRhythm}</p>
+              <p className="minimal-section-lead">{program.tools}</p>
             </div>
-            <CoursesEnrollPay triggerLabel={coursesPage.ctaLabel} />
+            <ul className="courses-format-list">
+              {program.terms.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+            <div className="courses-phase-stack">
+              {program.phases.map((phase) => (
+                <section className="courses-phase" key={phase.id}>
+                  <header className="courses-phase-head">
+                    <p className="courses-phase-range">{phase.range}</p>
+                    <h3>{phase.label}</h3>
+                    <p>{phase.summary}</p>
+                  </header>
+                  <div className="courses-class-grid">
+                    {phase.classes.map((item) => (
+                      <article className="courses-class-card" key={item.number}>
+                        <p className="courses-class-num">
+                          Class {String(item.number).padStart(2, "0")}
+                        </p>
+                        <h4>{item.title}</h4>
+                        <ul>
+                          <li>{item.outcome}</li>
+                        </ul>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+            <div className="courses-enroll-band">
+              <div>
+                <p className="type-kicker text-sky-700">Enroll</p>
+                <h3>
+                  {courseEnrollmentPriceLabel(program.priceInr)} · {program.totalHours}{" "}
+                  hours live 1:1
+                </h3>
+                <p>
+                  Pay {courseEnrollmentPriceLabel(program.advanceInr)} now. GST extra.
+                  Balance before class 1. {program.sessionTimeLabel}.
+                </p>
+              </div>
+              <CoursesEnrollPay
+                programId={program.id}
+                triggerLabel={coursesPage.ctaLabel}
+              />
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ))}
 
       <section className="minimal-strip bg-white pb-16" id="watch">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
@@ -262,7 +242,9 @@ export function CoursesPageContent() {
             <h2 className="minimal-section-title mt-2">{coursesPage.funnelTitle}</h2>
             <p className="minimal-section-lead">{coursesPage.funnelLead}</p>
             <div className="courses-hero-actions">
-              <CoursesEnrollPay triggerLabel={coursesPage.ctaLabel} />
+              <a className="btn-cta btn-primary" href="#programs">
+                See the two programs
+              </a>
               <a
                 className="btn-cta btn-secondary"
                 href={COURSE_GOOGLE_CALENDAR_BOOKING_URL}

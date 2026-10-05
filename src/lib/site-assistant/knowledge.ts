@@ -37,10 +37,10 @@ WORKSPACE vs MARKETING:
 - Do not invent app URLs. Prefer Workspace login link above.
 
 COURSES:
-- Google Sheets | AppSheet | Looker Studio 1:1 coaching: 24 live classes × 1.5 hours (36 hours), Hindi/English. Price: ₹35,000. Instructor: Shyam Kumar Banjare.
-- Use cases follow the client's business needs — not a fixed BCI/FMS curriculum.
-- Schedule: weekly 2 sessions at 8:30 AM – 10:00 AM IST. Buyer chooses Monday + Friday OR Tuesday + Saturday.
-- Enroll and pay on /courses (Razorpay) — no Graphy redirect. Owner confirms payment, then slots are booked.
+- Two live 1:1 programs with Shyam Kumar Banjare. Hindi or English. Enroll and pay on /courses (Razorpay). GST extra. 50% confirms the seat; balance before class 1. Cohorts: Monday + Friday, or Tuesday + Saturday.
+- Business Owners: ₹1,10,000. 30 classes × 2 hours (8:30–10:30 AM IST, about 15 weeks). Shyam builds one live flow on the client's data in Sheets, AppSheet, and Looker. The last part of each class teaches the method only if they want to self-build.
+- Working Professionals: ₹25,000. 20 classes × 1.5 hours (8:30–10:00 AM IST, about 10 weeks). The student builds FMS, IMS, a person-wise deficit (not percent complete), and a checklist in Sheets, AppSheet, and Apps Script, and checks AI before it touches a live file.
+- Owner confirms the Razorpay receipt, then slots are booked. One seat, one person.
 - Page: /courses
 
 SHEETOMATIC AI (separate product):

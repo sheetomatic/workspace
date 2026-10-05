@@ -2,11 +2,14 @@ import type { CourseCohort, CourseEnrollmentStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { sendPlainEmail } from "@/lib/integrations/email";
 import {
-  COURSE_ENROLLMENT_PRICE_INR,
   courseCohortLabel,
-  courseEnrollmentSchedule,
   type CourseCohortId,
 } from "@/lib/content/courses-enrollment";
+import {
+  getCourseProgram,
+  isCourseProgramId,
+  type CourseProgramId,
+} from "@/lib/content/course-programs";
 import { getLoginBaseUrl } from "@/lib/integrations/email-base-url";
 
 const OWNER_NOTIFY_EMAIL =
@@ -17,6 +20,7 @@ export type CreateCourseEnrollmentInput = {
   phone: string;
   email: string;
   cohort: CourseCohortId;
+  programId: CourseProgramId;
   slotNotes?: string;
 };
 
@@ -46,6 +50,13 @@ export async function createCourseEnrollment(input: CreateCourseEnrollmentInput)
   if (!isValidCourseCohort(input.cohort)) {
     return { ok: false as const, error: "Please choose a cohort schedule." };
   }
+  if (!isCourseProgramId(input.programId)) {
+    return { ok: false as const, error: "Please choose a course." };
+  }
+  const program = getCourseProgram(input.programId);
+  if (!program) {
+    return { ok: false as const, error: "Please choose a course." };
+  }
 
   const { newBookingToken } = await import("@/lib/courses/slots");
   const enrollment = await prisma.courseEnrollment.create({
@@ -54,7 +65,11 @@ export async function createCourseEnrollment(input: CreateCourseEnrollmentInput)
       email,
       phone,
       cohort: input.cohort as CourseCohort,
-      amountInr: COURSE_ENROLLMENT_PRICE_INR,
+      program: program.id,
+      amountInr: program.priceInr,
+      sessionDurationMin: program.sessionDurationMin,
+      totalSessions: program.totalClasses,
+      sessionTimeIst: program.sessionTimeIst,
       status: "PAYMENT_PENDING",
       slotNotes,
       bookingToken: newBookingToken(),
@@ -78,23 +93,24 @@ async function notifyOwnerOfCourseEnrollment(enrollmentId: string) {
 
   const base = getLoginBaseUrl();
   const text = [
-    "New Sheets | AppSheet | Looker 1:1 enrollment (payment pending confirmation)",
+    `New course enrollment (payment pending confirmation): ${enrollment.program}`,
     "",
     `Name: ${enrollment.name}`,
     `Phone: ${enrollment.phone}`,
     `Email: ${enrollment.email}`,
-    `Amount: ₹${enrollment.amountInr.toLocaleString("en-IN")}`,
-    `Cohort: ${courseCohortLabel(enrollment.cohort)}`,
-    `Time: ${courseEnrollmentSchedule.sessionTimeLabel}`,
+    `Program: ${enrollment.program}`,
+    `Fee: ₹${enrollment.amountInr.toLocaleString("en-IN")} · GST extra`,
+    `Classes: ${enrollment.totalSessions} × ${enrollment.sessionDurationMin} min`,
+    `Cohort: ${courseCohortLabel(enrollment.cohort)} · ${enrollment.sessionTimeIst} IST`,
     `ID: ${enrollment.id}`,
     "",
     `Confirm in Workspace Approvals: ${base}/app/approvals`,
-    "Buyer will also share UPI payment screenshot on WhatsApp.",
+    "Buyer will also share the Razorpay receipt on WhatsApp. Seat advance is 50%. Balance is due before class 1.",
   ].join("\n");
 
   await sendPlainEmail({
     toEmail: OWNER_NOTIFY_EMAIL,
-    subject: `Sheets/AppSheet/Looker enrollment pending — ${enrollment.name}`,
+    subject: `Course enrollment pending — ${enrollment.name}`,
     text,
   });
 }

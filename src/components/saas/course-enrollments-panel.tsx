@@ -23,12 +23,27 @@ export type CourseEnrollmentRow = {
   phone: string;
   email: string;
   amountInr: number;
+  program: "BUSINESS_OWNER" | "WORKING_PROFESSIONAL" | "LEGACY";
+  sessionDurationMin: number;
+  totalSessions: number;
+  sessionTimeIst: string;
   cohort: "MON_FRI" | "TUE_SAT" | "CUSTOM";
   status: "PAYMENT_PENDING" | "CONFIRMED" | "CANCELLED";
   createdAt: string;
   bookingToken?: string | null;
   slotsBooked?: number;
 };
+
+function programLabel(program: CourseEnrollmentRow["program"]) {
+  if (program === "BUSINESS_OWNER") return "Business Owners";
+  if (program === "WORKING_PROFESSIONAL") return "Working Professionals";
+  return "Earlier program";
+}
+
+function advanceInr(row: CourseEnrollmentRow) {
+  if (row.program === "LEGACY") return row.amountInr;
+  return Math.round(row.amountInr / 2);
+}
 
 const initialState: CourseEnrollmentActionState = { ok: false, message: "" };
 
@@ -49,13 +64,13 @@ export function CourseEnrollmentsPanel({
       <header className="ws-sf-list-view-header">
         <div className="ws-sf-list-view-title">
           <CalendarCheck2 size={18} aria-hidden />
-          <h2>Sheets / AppSheet / Looker enrollments</h2>
+          <h2>Course enrollments</h2>
           <span className="ws-sf-list-view-count">{pendingRows.length}</span>
         </div>
         <p className="ws-em-section-lead">
-          Confirm UPI payment, optionally set the first session date to generate
-          all 24 training slots, and alert the client + you on email/WhatsApp.
-          Clients book live slots on{" "}
+          Confirm the Razorpay receipt. The class count and length come from the
+          program. Set the first date to book those slots, then alert the client
+          and you on email and WhatsApp. Clients book on{" "}
           <a
             href={COURSE_GOOGLE_CALENDAR_BOOKING_URL}
             target="_blank"
@@ -85,9 +100,11 @@ export function CourseEnrollmentsPanel({
               <div className="saas-list-body">
                 <h3>{row.name}</h3>
                 <p>
-                  {row.phone} · {row.email} · ₹{row.amountInr.toLocaleString("en-IN")} ·{" "}
-                  {courseCohortLabel(row.cohort)} · submitted{" "}
-                  {formatPendingAge(new Date(row.createdAt))}
+                  {programLabel(row.program)} · {row.phone} · {row.email} · fee ₹
+                  {row.amountInr.toLocaleString("en-IN")} · advance ₹
+                  {advanceInr(row).toLocaleString("en-IN")} · {row.totalSessions} ×{" "}
+                  {row.sessionDurationMin} min · {courseCohortLabel(row.cohort)} ·
+                  submitted {formatPendingAge(new Date(row.createdAt))}
                 </p>
               </div>
               <form action={formAction} className="saas-list-actions" style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
@@ -124,7 +141,7 @@ export function CourseEnrollmentsPanel({
                     type="time"
                     min={TRAINING_BOOKING_WINDOW.startIst}
                     max={TRAINING_BOOKING_WINDOW.endIst}
-                    defaultValue="08:30"
+                    defaultValue={row.sessionTimeIst || "08:30"}
                   />
                 </label>
                 <label style={{ fontSize: 12 }}>
@@ -136,7 +153,7 @@ export function CourseEnrollmentsPanel({
                 </label>
                 <label style={{ fontSize: 12 }}>
                   Session length
-                  <select name="sessionDurationMin" defaultValue="90">
+                  <select name="sessionDurationMin" defaultValue={String(row.sessionDurationMin)}>
                     {TRAINING_SESSION_DURATION_OPTIONS.map((minutes) => (
                       <option key={minutes} value={minutes}>
                         {minutes === 180 ? "3 hours (180 min)" : `${minutes} min`}
@@ -146,7 +163,13 @@ export function CourseEnrollmentsPanel({
                 </label>
                 <label style={{ fontSize: 12 }}>
                   Total sessions needed
-                  <input name="totalSessions" type="number" min={1} max={48} defaultValue={24} />
+                  <input
+                    name="totalSessions"
+                    type="number"
+                    min={1}
+                    max={48}
+                    defaultValue={row.totalSessions}
+                  />
                 </label>
                 <label style={{ fontSize: 12 }}>
                   Standard Google Meet link
