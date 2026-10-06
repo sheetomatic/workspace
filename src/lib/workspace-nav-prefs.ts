@@ -29,6 +29,7 @@ export const DEFAULT_FOCUSED_NAV_IDS = [
   "mobile-shop",
   "leads",
   "dept-hr",
+  "fleet",
 ] as const;
 
 /** BCI suite — always listed when the member has the module (prefs cannot hide). */
@@ -48,6 +49,7 @@ export const ALWAYS_VISIBLE_NAV_IDS = new Set([
   "clients",
   "cases-home",
   "cases-import",
+  "fleet",
   ...BCI_SUITE_NAV_IDS,
 ]);
 

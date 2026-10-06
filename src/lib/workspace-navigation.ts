@@ -1060,6 +1060,20 @@ export function getWorkspaceNavSections(params: {
 
   sections.push(
     {
+      id: "fleet",
+      label: "Plant",
+      items: [
+        {
+          id: "fleet",
+          href: "/app/fleet",
+          label: "Ash fleet",
+          icon: Truck,
+          minRole: "MANAGER",
+          matchPrefix: "/app/fleet",
+        },
+      ],
+    },
+    {
       id: "reports",
       label: "Reports",
       items: [

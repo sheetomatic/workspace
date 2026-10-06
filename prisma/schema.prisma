@@ -347,6 +347,13 @@ model Organization {
   subscriptionInvoices SubscriptionInvoice[]
   subscriptionPayments SubscriptionPayment[]
   onboardingTasks      ClientOnboardingTask[]
+  fleetVehicles        FleetVehicle[]
+  fleetDrivers         FleetDriver[]
+  fleetGeofences       FleetGeofence[]
+  fleetTelemetry       FleetTelemetryLog[]
+  fleetTrips           FleetTrip[]
+  fleetAlerts          FleetAlert[]
+  fleetFuelSlips       FleetFuelSlip[]
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
 }
@@ -3907,5 +3914,254 @@ model BusinessIndustry {
   userAdded Boolean  @default(false)
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
+}
+
+// --- Ash / dust dumper fleet (power plant + ash dyke) ---
+
+enum FleetVehicleType {
+  ASH_DUMPER
+  DUST_DUMPER
+  WATER_TANKER
+  SUPPORT
+}
+
+enum FleetVehicleStatus {
+  ACTIVE
+  MAINTENANCE
+  BREAKDOWN
+  OFFLINE
+  RETIRED
+}
+
+enum FleetDriverStatus {
+  ON_DUTY
+  OFF_DUTY
+  SUSPENDED
+}
+
+enum FleetGeofenceType {
+  SILO
+  WEIGHBRIDGE
+  ASH_DYKE
+  UNAUTHORIZED
+  ROUTE
+}
+
+enum FleetEngineState {
+  OFF
+  IDLING
+  MOVING
+}
+
+enum FleetNetworkStatus {
+  ONLINE
+  OFFLINE
+}
+
+enum FleetTripStatus {
+  SILO_QUEUE
+  GROSS_WEIGHED
+  EN_ROUTE
+  DUMPING
+  TARE_WEIGHED
+  COMPLETED
+  GHOST
+  CANCELLED
+}
+
+enum FleetAlertType {
+  FUEL_THEFT
+  UNAUTHORIZED_DUMP
+  BREAKDOWN
+  EXCESS_IDLING
+  SILO_QUEUE_DELAY
+  OFFLINE_TOO_LONG
+  GHOST_TRIP
+  PAYLOAD_ANOMALY
+  FUEL_SLIP_VARIANCE
+  ROUTE_EXIT
+  SENSOR_FAULT
+  SHIFT_START
+  SHIFT_END
+  MAINTENANCE_DUE
+}
+
+enum FleetAlertPriority {
+  CRITICAL
+  WARNING
+  INFO
+}
+
+/// Ash or dust dumper. Tenant-scoped; registration is unique inside the org.
+model FleetVehicle {
+  id                 String              @id @default(cuid())
+  organizationId     String
+  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  registrationNumber String
+  vehicleType        FleetVehicleType    @default(ASH_DUMPER)
+  /// Tank size in litres. Used to ignore sensor cliffs that exceed a real siphon.
+  fuelCapacityLiters Float
+  payloadMinKg       Float               @default(12000)
+  payloadMaxKg       Float               @default(32000)
+  status             FleetVehicleStatus  @default(ACTIVE)
+  drivers            FleetDriver[]
+  telemetry          FleetTelemetryLog[]
+  trips              FleetTrip[]
+  alerts             FleetAlert[]
+  fuelSlips          FleetFuelSlip[]
+  state              FleetVehicleState?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@unique([organizationId, registrationNumber])
+  @@index([organizationId, status])
+}
+
+model FleetDriver {
+  id               String            @id @default(cuid())
+  organizationId   String
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name             String
+  licenseNumber    String
+  status           FleetDriverStatus @default(OFF_DUTY)
+  currentVehicleId String?
+  currentVehicle   FleetVehicle?     @relation(fields: [currentVehicleId], references: [id], onDelete: SetNull)
+  trips            FleetTrip[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@unique([organizationId, licenseNumber])
+  @@index([organizationId, status])
+}
+
+/// Live snapshot so the yard board stays O(trucks), not O(pings).
+model FleetVehicleState {
+  vehicleId        String              @id
+  vehicle          FleetVehicle        @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  organizationId   String
+  latitude         Float?
+  longitude        Float?
+  speedKmh         Float?
+  fuelLevelLiters  Float?
+  rpm              Int?
+  engineState      FleetEngineState?
+  networkStatus    FleetNetworkStatus?
+  lastRecordedAt   DateTime?
+  /// Set while the newest fix is stationary inside the silo fence.
+  siloEnteredAt    DateTime?
+  dykeEnteredAt    DateTime?
+  /// Idling outside silo and dyke.
+  idleSince        DateTime?
+  /// Stationary outside silo and dyke (idling or engine off).
+  stoppedSince     DateTime?
+  offlineSince     DateTime?
+  updatedAt        DateTime            @updatedAt
+
+  @@index([organizationId])
+}
+
+/// Circle or polygon. `polygonCoordinates` is GeoJSON-ish:
+/// `{ "kind": "circle", "center": [lng, lat], "radiusM": 120 }`
+/// `{ "kind": "polygon", "ring": [[lng, lat], ...] }`
+model FleetGeofence {
+  id                  String            @id @default(cuid())
+  organizationId      String
+  organization        Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name                String
+  type                FleetGeofenceType
+  polygonCoordinates  Json
+  active              Boolean           @default(true)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@unique([organizationId, name])
+  @@index([organizationId, type])
+}
+
+model FleetTelemetryLog {
+  id             String             @id @default(cuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vehicleId      String
+  vehicle        FleetVehicle       @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  /// Device-generated id. Retries of the same ping are ignored.
+  clientEventId  String
+  latitude       Float
+  longitude      Float
+  speedKmh       Float
+  fuelLevelLiters Float
+  rpm            Int?
+  engineState    FleetEngineState
+  networkStatus  FleetNetworkStatus
+  /// Clock on the truck when the fix was taken (may be hours before sync).
+  recordedAt     DateTime
+  syncedAt       DateTime           @default(now())
+
+  @@unique([organizationId, clientEventId])
+  @@index([organizationId, vehicleId, recordedAt])
+}
+
+model FleetTrip {
+  id               String          @id @default(cuid())
+  organizationId   String
+  organization     Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vehicleId        String
+  vehicle          FleetVehicle    @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  driverId         String?
+  driver           FleetDriver?    @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  startTime        DateTime
+  endTime          DateTime?
+  grossWeightKg    Float?
+  tareWeightKg     Float?
+  /// Net ash mass in tonnes. Null until both weights exist.
+  ashTonnes        Float?
+  /// Net volume at 0.85 t/m³. Null until ash tonnes exist.
+  ashVolumeM3      Float?
+  /// GPS fixes inside the ash dyke between gross and tare.
+  dykeFixCount     Int             @default(0)
+  status           FleetTripStatus @default(SILO_QUEUE)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([organizationId, status])
+  @@index([organizationId, vehicleId, startTime])
+}
+
+model FleetAlert {
+  id             String             @id @default(cuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vehicleId      String
+  vehicle        FleetVehicle       @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  alertType      FleetAlertType
+  priority       FleetAlertPriority
+  payload        Json
+  /// Same key on a delayed retry does not open a second alert.
+  dedupeKey      String
+  escalatedAt    DateTime?
+  resolvedAt     DateTime?
+  createdAt      DateTime           @default(now())
+
+  @@unique([organizationId, dedupeKey])
+  @@index([organizationId, priority, resolvedAt])
+}
+
+model FleetFuelSlip {
+  id              String       @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vehicleId       String
+  vehicle         FleetVehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  externalSlipId  String
+  liters          Float
+  sensorBefore    Float?
+  sensorAfter     Float?
+  variancePct     Float?
+  flagged         Boolean      @default(false)
+  recordedAt      DateTime
+  createdAt       DateTime     @default(now())
+
+  @@unique([organizationId, externalSlipId])
+  @@index([organizationId, vehicleId, recordedAt])
 }
 
