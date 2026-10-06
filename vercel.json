@@ -73,6 +73,10 @@
       "schedule": "30 3-15/2 * * *"
     },
     {
+      "path": "/api/cron/lead-meeting-reminders",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/wa-campaigns",
       "schedule": "* * * * *"
     },
@@ -120,6 +124,9 @@
       "maxDuration": 60
     },
     "src/app/api/cron/leads-nurture/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/cron/lead-meeting-reminders/route.ts": {
       "maxDuration": 60
     },
     "src/app/api/cron/wa-campaigns/route.ts": {

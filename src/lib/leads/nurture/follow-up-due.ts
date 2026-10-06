@@ -30,6 +30,8 @@ export async function runDueFollowUpNurture(organizationId: string) {
         completedAt: null,
         waNotifiedAt: null,
         scheduledAt: { lte: now },
+        // Meeting reminders are sent on a clock (4h, 1h, 30m, 10m, start).
+        type: { not: "MEETING" },
       },
       orderBy: { scheduledAt: "asc" },
       take: DUE_FOLLOW_UP_BATCH,

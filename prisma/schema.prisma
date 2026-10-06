@@ -3292,6 +3292,8 @@ model InboundLeadFollowUp {
   meetUrl         String?
   notes           String?
   waNotifiedAt    DateTime?
+  /// Comma-separated minutes-before marks already sent: 240,60,30,10,0
+  reminderMarks   String?
   createdByUserId String?
   createdBy       User?                    @relation("InboundLeadFollowUpCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdAt       DateTime                 @default(now())

@@ -112,7 +112,9 @@ import {
   queueLeadNurtureAfterCall,
   queueLeadNurtureAfterStatusChange,
 } from "@/lib/leads/nurture/triggers";
+import { DEFAULT_CLIENT_MEET_URL } from "@/lib/leads/meeting-defaults";
 import { buildClientMeetingInviteEmail } from "@/lib/leads/meeting-invite";
+import { MEETING_REMINDER_SCHEDULE_LINE } from "@/lib/leads/meeting-reminders";
 import { parseDatetimeLocalAsIst } from "@/lib/leads/ist-datetime";
 import { buildCallNoteAckWhatsApp } from "@/lib/leads/call-note-ack";
 import { CALLING_STATUS_LABELS } from "@/lib/leads/status-labels";
@@ -2047,7 +2049,7 @@ export async function scheduleLeadClientMeeting(params: {
     };
   }
 
-  const meetUrl = params.meetUrl?.trim() || null;
+  const meetUrl = params.meetUrl?.trim() || DEFAULT_CLIENT_MEET_URL;
   const scheduleNote = params.notes?.trim() || null;
   const mergedNotes = [lead.meetingNotes?.trim(), scheduleNote]
     .filter(Boolean)
@@ -2067,6 +2069,17 @@ export async function scheduleLeadClientMeeting(params: {
       ...(toEmail && !lead.email?.trim() ? { email: toEmail } : {}),
       modifiedAt: new Date(),
     },
+  });
+
+  // Close earlier open meetings so only this one gets interval reminders.
+  await prisma.inboundLeadFollowUp.updateMany({
+    where: {
+      organizationId: user.organizationId,
+      leadId: lead.id,
+      type: "MEETING",
+      completedAt: null,
+    },
+    data: { completedAt: new Date() },
   });
 
   // Optional follow-up row for history — keep status DEMO_SCHEDULED (do not use scheduleInboundLeadFollowUp).
@@ -2117,179 +2130,221 @@ export async function scheduleLeadClientMeeting(params: {
     contentType: "text/calendar; method=REQUEST; charset=UTF-8",
   };
 
-  // Defer Resend + activity — keep drawer save on the critical path.
-  after(() => {
-    void (async () => {
-      let emailSent = false;
-      let emailMessage: string | null = null;
-      if (shouldEmail) {
-        const result = await sendPlainEmail({
-          toEmail,
-          subject: invite.subject,
-          text: invite.text,
-          html: invite.html,
-          attachments: [icsAttachment],
-        });
-        if (!result.sent) {
-          emailMessage =
-            result.reason === "not_configured"
-              ? "Email is not configured (RESEND_API_KEY / TASK_EMAIL_FROM)."
-              : `Email failed: ${result.detail ?? result.reason}`;
-        } else {
-          emailSent = true;
-        }
-      }
-
-      // Send the meeting host their copy so the meeting is on their radar
-      // (host = scheduler unless "Meeting with" picked someone else).
-      let organizerEmailSent = false;
-      const hostCopyRecipients = [
-        host.email?.trim().toLowerCase(),
-        hostIsScheduler ? null : user.email?.trim().toLowerCase(),
-      ].filter(
-        (email): email is string => Boolean(email) && email !== toEmail,
-      );
-      for (const recipientEmail of [...new Set(hostCopyRecipients)]) {
-        const hostInvite = buildClientMeetingInviteEmail({
-          clientName: clientLabel,
-          organizationName,
-          startsAt,
-          durationMinutes,
-          meetUrl,
-          notes: scheduleNote,
-          counsellorName,
-          attendeeEmail: recipientEmail,
-          organizerEmail,
-          organizerName: counsellorName ?? organizationName,
-          eventUid,
-          title: `Meeting with ${clientLabel}`,
-        });
-        const hostHtml = [
-          `<p>Your meeting with <strong>${clientLabel.replace(/</g, "")}</strong> is confirmed${hostIsScheduler ? "" : ` (host: ${hostLabel}, booked by ${user.name ?? "team"})`}.</p>`,
-          `<p><strong>When:</strong> ${invite.whenLabel}</p>`,
-          meetUrl
-            ? `<p><strong>Join link:</strong> <a href="${meetUrl}">${meetUrl}</a></p>`
-            : "",
-          scheduleNote ? `<p><strong>Notes:</strong> ${scheduleNote.replace(/</g, "")}</p>` : "",
-          `<p><a href="${invite.calendarUrl}">Add to your calendar</a></p>`,
-          `<p style="color:#555;font-size:14px">Calendar invite attached — use <strong>Yes / No / Maybe</strong> to RSVP.</p>`,
-        ]
-          .filter(Boolean)
-          .join("\n");
-        const copy = await sendPlainEmail({
-          toEmail: recipientEmail,
-          subject: `Meeting with ${clientLabel} — ${invite.whenLabel}`,
-          text: [
-            `Your meeting with ${clientLabel} is confirmed${hostIsScheduler ? "" : ` (host: ${hostLabel}, booked by ${user.name ?? "team"})`}.`,
-            "",
-            `When: ${invite.whenLabel}`,
-            meetUrl ? `Join link: ${meetUrl}` : null,
-            scheduleNote ? `Notes: ${scheduleNote}` : null,
-            "",
-            "Add to your calendar:",
-            invite.calendarUrl,
-            "",
-            "Calendar invite attached — Yes / No / Maybe to RSVP.",
-          ]
-            .filter((line) => line !== null)
-            .join("\n"),
-          html: hostHtml,
-          attachments: [
-            {
-              filename: hostInvite.icsFilename,
-              content: hostInvite.icsContent,
-              contentType: "text/calendar; method=REQUEST; charset=UTF-8",
-            },
-          ],
-        });
-        organizerEmailSent = organizerEmailSent || copy.sent;
-      }
-
-      // In-app bell for the host when someone books a meeting on their behalf.
-      if (!hostIsScheduler) {
-        await prisma.userAppNotification
-          .create({
-            data: {
-              userId: host.id,
-              organizationId: user.organizationId,
-              kind: "LEAD_MEETING",
-              title: `Meeting booked with you — ${invite.whenLabel}`,
-              body: `${clientLabel} · booked by ${user.name ?? "team"}`,
-              href: `/app/leads?period=all&leadId=${lead.id}`,
-            },
-          })
-          .catch((error) =>
-            console.error("[lead-meeting] host notify", error),
-          );
-      }
-
-      // WhatsApp the client the meeting details when we have their number.
-      let whatsappSent = false;
-      const clientPhone = lead.phone?.trim();
-      if (!meOnly && clientPhone) {
-        const { sendWhatsAppText } = await import("@/lib/whatsapp-bot/send");
-        const wa = await sendWhatsAppText({
-          organizationId: user.organizationId,
-          toPhone: clientPhone,
-          body: [
-            `Hi ${lead.name?.trim().split(/\s+/)[0] || "there"},`,
-            "",
-            `Your meeting with ${organizationName} is confirmed.`,
-            "",
-            `When: ${invite.whenLabel}`,
-            meetUrl ? `Join: ${meetUrl}` : null,
-            scheduleNote ? `Notes: ${scheduleNote}` : null,
-            "",
-            "We will send a reminder at the scheduled time. Reply here if you need to reschedule.",
-            "",
-            `— ${organizationName}`,
-          ]
-            .filter((line) => line !== null)
-            .join("\n"),
-        }).catch(() => ({ sent: false as const }));
-        whatsappSent = wa.sent;
-      }
-
-      await logInboundLeadActivity({
-        organizationId: user.organizationId,
-        leadId: lead.id,
-        type: "MEETING",
-        body: [
-          `Meeting scheduled for ${invite.whenLabel}${hostIsScheduler ? "" : ` · with ${hostLabel}`}${meOnly ? " (internal — no client invite)" : ""}`,
-          meetUrl ? `Join: ${meetUrl}` : null,
-          emailSent ? `Invite emailed to ${toEmail}` : null,
-          !emailSent && shouldEmail ? emailMessage : null,
-          whatsappSent ? "WhatsApp sent to client" : null,
-          organizerEmailSent ? `Copy emailed to ${host.email ?? user.email}` : null,
-          scheduleNote,
-        ]
-          .filter(Boolean)
-          .join(" · "),
-        createdByUserId: user.id,
-        metadata: {
-          meetingScheduled: true,
-          startsAt: startsAt.toISOString(),
-          durationMinutes,
-          calendarUrl: invite.calendarUrl,
-          emailSent,
-          organizerEmailSent,
-          whatsappSent,
-          audience: meOnly ? "me_only" : "client_and_me",
-        },
-      }).catch((error) => {
-        console.error("[leads-activity]", error);
-      });
-    })().catch((error) => {
-      console.error("[leads-meeting-invite]", error);
-    });
+  let emailSent = false;
+  let emailMessage: string | null = null;
+  let organizerEmailSent = false;
+  let whatsappSent = false;
+  let teamWhatsappSent = false;
+  const teamIds = [...new Set([host.id, user.id])];
+  const teamUsers = await prisma.user.findMany({
+    where: { id: { in: teamIds } },
+    select: { id: true, email: true, phone: true },
   });
+
+  try {
+    if (shouldEmail) {
+      const result = await sendPlainEmail({
+        toEmail,
+        subject: invite.subject,
+        text: invite.text,
+        html: invite.html,
+        attachments: [icsAttachment],
+      });
+      if (!result.sent) {
+        emailMessage =
+          result.reason === "not_configured"
+            ? "Email is not configured (RESEND_API_KEY / TASK_EMAIL_FROM)."
+            : `Email failed: ${result.detail ?? result.reason}`;
+      } else {
+        emailSent = true;
+      }
+    }
+
+    const clientInbox = shouldEmail ? toEmail : "";
+    const hostCopyRecipients = [
+      host.email?.trim().toLowerCase(),
+      hostIsScheduler ? null : user.email?.trim().toLowerCase(),
+    ].filter((email): email is string => Boolean(email) && email !== clientInbox);
+    for (const recipientEmail of [...new Set(hostCopyRecipients)]) {
+      const hostInvite = buildClientMeetingInviteEmail({
+        clientName: clientLabel,
+        organizationName,
+        startsAt,
+        durationMinutes,
+        meetUrl,
+        notes: scheduleNote,
+        counsellorName,
+        attendeeEmail: recipientEmail,
+        organizerEmail,
+        organizerName: counsellorName ?? organizationName,
+        eventUid,
+        title: `Meeting with ${clientLabel}`,
+      });
+      const hostHtml = [
+        `<p>Your meeting with <strong>${clientLabel.replace(/</g, "")}</strong> is confirmed${hostIsScheduler ? "" : ` (host: ${hostLabel}, booked by ${user.name ?? "team"})`}.</p>`,
+        `<p><strong>When:</strong> ${invite.whenLabel}</p>`,
+        `<p><strong>Join link:</strong> <a href="${meetUrl}">${meetUrl}</a></p>`,
+        scheduleNote ? `<p><strong>Notes:</strong> ${scheduleNote.replace(/</g, "")}</p>` : "",
+        `<p><a href="${invite.calendarUrl}">Add to your calendar</a></p>`,
+        `<p style="color:#555;font-size:14px">Calendar invite attached — use <strong>Yes / No / Maybe</strong> to RSVP.</p>`,
+        `<p style="color:#555;font-size:14px">${MEETING_REMINDER_SCHEDULE_LINE}</p>`,
+      ]
+        .filter(Boolean)
+        .join("\n");
+      const copy = await sendPlainEmail({
+        toEmail: recipientEmail,
+        subject: `Meeting with ${clientLabel} — ${invite.whenLabel}`,
+        text: [
+          `Your meeting with ${clientLabel} is confirmed${hostIsScheduler ? "" : ` (host: ${hostLabel}, booked by ${user.name ?? "team"})`}.`,
+          "",
+          `When: ${invite.whenLabel}`,
+          `Join link: ${meetUrl}`,
+          scheduleNote ? `Notes: ${scheduleNote}` : null,
+          "",
+          MEETING_REMINDER_SCHEDULE_LINE,
+          "",
+          "Add to your calendar:",
+          invite.calendarUrl,
+          "",
+          "Calendar invite attached — Yes / No / Maybe to RSVP.",
+        ]
+          .filter((line) => line !== null)
+          .join("\n"),
+        html: hostHtml,
+        attachments: [
+          {
+            filename: hostInvite.icsFilename,
+            content: hostInvite.icsContent,
+            contentType: "text/calendar; method=REQUEST; charset=UTF-8",
+          },
+        ],
+      });
+      organizerEmailSent = organizerEmailSent || copy.sent;
+    }
+
+    if (!hostIsScheduler) {
+      await prisma.userAppNotification
+        .create({
+          data: {
+            userId: host.id,
+            organizationId: user.organizationId,
+            kind: "LEAD_MEETING",
+            title: `Meeting booked with you — ${invite.whenLabel}`,
+            body: `${clientLabel} · booked by ${user.name ?? "team"}`,
+            href: `/app/leads?period=all&leadId=${lead.id}`,
+          },
+        })
+        .catch((error) => console.error("[lead-meeting] host notify", error));
+    }
+
+    const { sendWhatsAppText } = await import("@/lib/whatsapp-bot/send");
+    const { whatsAppPhoneDigits } = await import("@/lib/leads/contact-links");
+    const clientPhone = lead.phone?.trim() || "";
+    const clientPhoneOk = whatsAppPhoneDigits(clientPhone).length >= 10;
+    if (!meOnly && clientPhoneOk) {
+      const wa = await sendWhatsAppText({
+        organizationId: user.organizationId,
+        toPhone: clientPhone,
+        body: [
+          `Hi ${lead.name?.trim().split(/\s+/)[0] || "there"},`,
+          "",
+          `Your meeting with ${organizationName} is confirmed.`,
+          "",
+          `When: ${invite.whenLabel}`,
+          `Join: ${meetUrl}`,
+          scheduleNote ? `Notes: ${scheduleNote}` : null,
+          "",
+          MEETING_REMINDER_SCHEDULE_LINE,
+          "Reply here if you need to reschedule.",
+          "",
+          `— ${organizationName}`,
+        ]
+          .filter((line) => line !== null)
+          .join("\n"),
+      }).catch(() => ({ sent: false as const }));
+      whatsappSent = wa.sent;
+    }
+
+    const clientDigits = whatsAppPhoneDigits(clientPhone);
+    const teamPhones = [
+      ...new Set(
+        teamUsers
+          .map((member) => member.phone?.trim() || "")
+          .filter((phone) => {
+            const digits = whatsAppPhoneDigits(phone);
+            if (digits.length < 10) return false;
+            if (!meOnly && clientPhoneOk && digits === clientDigits) return false;
+            return true;
+          }),
+      ),
+    ];
+    const teamBody = [
+      `Meeting with ${clientLabel} is confirmed.`,
+      "",
+      `When: ${invite.whenLabel}`,
+      `Join: ${meetUrl}`,
+      scheduleNote ? `Notes: ${scheduleNote}` : null,
+      "",
+      MEETING_REMINDER_SCHEDULE_LINE,
+    ]
+      .filter((line) => line !== null)
+      .join("\n");
+    for (const phone of teamPhones) {
+      const wa = await sendWhatsAppText({
+        organizationId: user.organizationId,
+        toPhone: phone,
+        body: teamBody,
+      }).catch(() => ({ sent: false as const }));
+      teamWhatsappSent = teamWhatsappSent || wa.sent;
+    }
+
+    await logInboundLeadActivity({
+      organizationId: user.organizationId,
+      leadId: lead.id,
+      type: "MEETING",
+      body: [
+        `Meeting scheduled for ${invite.whenLabel}${hostIsScheduler ? "" : ` · with ${hostLabel}`}${meOnly ? " (internal — no client invite)" : ""}`,
+        `Join: ${meetUrl}`,
+        emailSent ? `Invite emailed to ${toEmail}` : null,
+        !emailSent && shouldEmail ? emailMessage : null,
+        whatsappSent ? "WhatsApp sent to client" : null,
+        !whatsappSent && !meOnly && !clientPhoneOk ? "WhatsApp skipped — client has no phone" : null,
+        organizerEmailSent ? `Copy emailed to the team` : null,
+        teamWhatsappSent ? "WhatsApp sent to the team" : null,
+        !teamWhatsappSent && teamPhones.length === 0
+          ? "Team WhatsApp skipped — host has no phone on their user"
+          : null,
+        scheduleNote,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      createdByUserId: user.id,
+      metadata: {
+        meetingScheduled: true,
+        startsAt: startsAt.toISOString(),
+        durationMinutes,
+        calendarUrl: invite.calendarUrl,
+        meetUrl,
+        emailSent,
+        organizerEmailSent,
+        whatsappSent,
+        teamWhatsappSent,
+        audience: meOnly ? "me_only" : "client_and_me",
+      },
+    }).catch((error) => {
+      console.error("[leads-activity]", error);
+    });
+  } catch (error) {
+    console.error("[leads-meeting-invite]", error);
+    emailMessage = emailMessage ?? "Meeting saved, but sending the link failed.";
+  }
 
   exportLeadToGoogleSheetAfterSave(user.organizationId, lead.id);
 
   return {
     ok: true as const,
-    emailQueued: shouldEmail,
-    emailSent: false,
+    emailQueued: false,
+    emailSent,
     calendarUrl: invite.calendarUrl,
     whenLabel: invite.whenLabel,
     lead: {
@@ -2299,13 +2354,18 @@ export async function scheduleLeadClientMeeting(params: {
       meetingNotes: mergedNotes || lead.meetingNotes,
       email: toEmail || lead.email,
     },
-    message: shouldEmail
-      ? `Meeting scheduled with ${hostIsScheduler ? "you" : hostLabel}. Invite will be sent to ${toEmail} (plus a copy to ${hostIsScheduler ? "you" : hostLabel}${lead.phone?.trim() ? ", and WhatsApp to the client if connected" : ""}).`
-      : meOnly
-        ? hostIsScheduler
-          ? "Meeting scheduled for you. Calendar invite sent to your email."
-          : `Meeting scheduled with ${hostLabel}. Calendar invite sent to their email.`
-        : "Meeting scheduled.",
+    message: [
+      `Meeting scheduled with ${hostIsScheduler ? "you" : hostLabel}.`,
+      `Join link: ${meetUrl}.`,
+      emailSent ? `Emailed to ${toEmail}.` : null,
+      !emailSent && shouldEmail ? emailMessage : null,
+      organizerEmailSent ? "Emailed to the team." : null,
+      whatsappSent ? "WhatsApp sent to the client." : null,
+      teamWhatsappSent ? "WhatsApp sent to the team." : null,
+      MEETING_REMINDER_SCHEDULE_LINE,
+    ]
+      .filter(Boolean)
+      .join(" "),
   };
 }
 

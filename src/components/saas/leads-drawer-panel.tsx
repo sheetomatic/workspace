@@ -1783,8 +1783,8 @@ export function LeadDrawerPanel({
             <div className="leads-schedule-meeting">
               <p className="leads-machine-muted">
                 {meetingAudience === "client_and_me"
-                  ? `Emails the client the meeting time with the Meet link (WhatsApp too when connected), plus a copy to ${meetingHostId ? "the meeting host" : "you"}.`
-                  : `No client email needed — the calendar invite goes to ${meetingHostId ? "the meeting host" : "your email"} only.`}
+                  ? `Sends the Meet link to the client and ${meetingHostId ? "the meeting host" : "you"} on email and WhatsApp. Reminders go 4 hours, 1 hour, 30 minutes, and 10 minutes before, and when the meeting starts.`
+                  : `No client message — the Meet link goes to ${meetingHostId ? "the meeting host" : "you"} on email and WhatsApp. Reminders go 4 hours, 1 hour, 30 minutes, and 10 minutes before, and when the meeting starts.`}
               </p>
               <div className="leads-drawer-grid">
                 <label>
