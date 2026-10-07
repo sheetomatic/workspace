@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { TaskStatus } from "@prisma/client";
+import { DeleteAllTasksButton } from "@/components/saas/delete-all-tasks-button";
 import { TaskExportBar } from "@/components/saas/task-export-bar";
 import { TaskFeedbackToast } from "@/components/saas/task-feedback-toast";
 import { TaskIntegrationBanner } from "@/components/saas/task-integration-banner";
@@ -122,6 +123,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
     };
   });
   const showCreate = canCreateTasks(user.role);
+  const canDeleteAll = user.isSuperAdmin || hasMinimumRole(user.role, "ADMIN");
   const showEmReady = canAccessEmReady(user);
   const showAssigneeFilter =
     hasMinimumRole(user.role, "MANAGER") || user.role === "VIEWER";
@@ -158,6 +160,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
                 EM Ready
               </Link>
             ) : null}
+            {canDeleteAll ? <DeleteAllTasksButton /> : null}
             <TaskExportBar
               compact
               sheetsReady={false}

@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import type { TaskDepartment, TaskPriority } from "@prisma/client";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { hasMinimumRole } from "@/lib/permissions";
 import {
   alignDueAtForRecurrence,
   computeNextDueAt,
@@ -652,6 +653,29 @@ export async function deleteDelegatedTask(
   revalidatePath("/app");
   revalidatePath("/app/tasks");
   return { ok: true, message: "Task deleted." };
+}
+
+export async function deleteAllDelegatedTasks(): Promise<TaskActionState> {
+  const user = await getSessionUser();
+  if (!user || (!user.isSuperAdmin && !hasMinimumRole(user.role, "ADMIN"))) {
+    return { ok: false, message: "Only an admin can delete all tasks." };
+  }
+
+  const deleted = await prisma.delegatedTask.deleteMany({
+    where: { organizationId: user.organizationId },
+  });
+
+  revalidatePath("/app");
+  revalidatePath("/app/tasks");
+
+  if (deleted.count === 0) {
+    return { ok: true, message: "No tasks to delete." };
+  }
+
+  return {
+    ok: true,
+    message: `Deleted ${deleted.count} task${deleted.count === 1 ? "" : "s"}.`,
+  };
 }
 
 export async function resendTaskAssignmentReminders(

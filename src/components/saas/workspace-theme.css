@@ -12886,6 +12886,23 @@ body.ws-more-sheet-open .sheetomatic-ai-launcher {
   flex-shrink: 0;
 }
 
+.workspace-app .ws-delete-all-tasks {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.workspace-app .ws-delete-all-tasks .ws-btn-danger {
+  gap: 6px;
+  height: 32px;
+  border-radius: 4px;
+}
+
+.workspace-app .ws-delete-all-tasks__note {
+  font-size: 0.75rem;
+  color: #6e6e73;
+}
+
 .workspace-app .ws-tasks-sf .ws-sf-btn-primary,
 .workspace-app .ws-tasks-sf .ws-new-task-trigger.ws-sf-btn-primary {
   background: var(--sf-brand);
