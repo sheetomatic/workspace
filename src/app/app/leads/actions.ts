@@ -262,16 +262,38 @@ export async function assignInboundLead(leadId: string, assigneeUserId: string |
     data: { assignedToId: assigneeUserId || null, modifiedAt: new Date() },
   });
 
+  let whatsappSent: boolean | undefined;
+  let assignMessage: string | undefined;
   if (assigneeUserId) {
     const assignee = await prisma.user.findFirst({
       where: { id: assigneeUserId },
       select: { name: true },
     });
+    const notice = await notifyLeadAssigned({
+      organizationId: user.organizationId,
+      leadId,
+      assigneeUserId,
+      actorUserId: user.id,
+      actorName: user.name,
+    }).catch((error) => {
+      console.error("[lead-assign-notify]", error);
+      return { whatsappSent: false as const, whatsappReason: "failed" as const };
+    });
+    const whatsappNote =
+      notice.whatsappReason === "self"
+        ? null
+        : notice.whatsappSent
+          ? "WhatsApp sent to the assignee"
+          : notice.whatsappReason === "no_phone"
+            ? "WhatsApp skipped — assignee has no phone on their profile"
+            : "WhatsApp to the assignee did not go out";
     await logInboundLeadActivity({
       organizationId: user.organizationId,
       leadId,
       type: "EDIT",
-      body: `Assigned to ${assignee?.name ?? "team member"}`,
+      body: [`Assigned to ${assignee?.name ?? "team member"}`, whatsappNote]
+        .filter(Boolean)
+        .join(" · "),
       createdByUserId: user.id,
     });
     queueLeadNurtureAfterAssign({
@@ -281,20 +303,12 @@ export async function assignInboundLead(leadId: string, assigneeUserId: string |
       assigneeName: assignee?.name,
       actorUserId: user.id,
     });
-    // Notify the assignee (in-app + email + WhatsApp) off the critical path.
-    after(() => {
-      void notifyLeadAssigned({
-        organizationId: user.organizationId,
-        leadId,
-        assigneeUserId,
-        actorUserId: user.id,
-        actorName: user.name,
-      }).catch((error) => console.error("[lead-assign-notify]", error));
-    });
+    whatsappSent = notice.whatsappSent;
+    assignMessage = whatsappNote ?? undefined;
   }
 
   revalidatePath("/app/leads");
-  return { ok: true };
+  return { ok: true as const, whatsappSent, message: assignMessage };
 }
 
 /**
@@ -335,7 +349,22 @@ export async function bulkAssignInboundLeads(
   });
   const assigneeLabel = assignee?.name ?? assignee?.email ?? "team member";
 
-  // Activity log + one summary notification, off the critical path.
+  const notice = await notifyLeadsBulkAssigned({
+    organizationId: user.organizationId,
+    leadIds: ids,
+    assigneeUserId,
+    actorUserId: user.id,
+    actorName: user.name,
+  }).catch((error) => {
+    console.error("[leads-bulk-notify]", error);
+    return { whatsappSent: false as const, whatsappReason: "failed" as const };
+  });
+  const whatsappNote = notice?.whatsappSent
+    ? "WhatsApp sent"
+    : notice?.whatsappReason === "no_phone"
+      ? "WhatsApp skipped — no phone on their profile"
+      : "WhatsApp did not go out";
+
   after(async () => {
     await Promise.all(
       ids.map((leadId) =>
@@ -343,18 +372,11 @@ export async function bulkAssignInboundLeads(
           organizationId: user.organizationId,
           leadId,
           type: "EDIT",
-          body: `Assigned to ${assigneeLabel} (bulk)`,
+          body: `Assigned to ${assigneeLabel} (bulk) · ${whatsappNote}`,
           createdByUserId: user.id,
         }).catch((error) => console.error("[leads-bulk-activity]", error)),
       ),
     );
-    await notifyLeadsBulkAssigned({
-      organizationId: user.organizationId,
-      leadIds: ids,
-      assigneeUserId,
-      actorUserId: user.id,
-      actorName: user.name,
-    }).catch((error) => console.error("[leads-bulk-notify]", error));
   });
 
   revalidatePath("/app/leads");
@@ -362,6 +384,7 @@ export async function bulkAssignInboundLeads(
     ok: true as const,
     count: updated.count,
     assigneeName: assigneeLabel,
+    whatsappSent: Boolean(notice?.whatsappSent),
   };
 }
 

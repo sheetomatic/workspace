@@ -1,7 +1,15 @@
 import { prisma } from "@/lib/db";
 import { sendPlainEmail } from "@/lib/integrations/email";
+import { sendCrmLeadAssignmentTemplate } from "@/lib/integrations/whatsapp-crm-lead-template";
 import { sendWhatsAppText } from "@/lib/whatsapp-bot/send";
 import { getLoginBaseUrl } from "@/lib/integrations/email-base-url";
+import { normalizeWhatsAppPhone } from "@/lib/phone";
+
+export type LeadAssignNotice = {
+  whatsappSent: boolean;
+  /** Why WhatsApp did not go out, when it did not. */
+  whatsappReason?: "self" | "no_phone" | "failed";
+};
 
 function leadCrmHref(leadId: string) {
   return `/app/leads?period=all&leadId=${leadId}`;
@@ -16,6 +24,54 @@ function leadLabel(lead: { name?: string | null; phone?: string | null; company?
   );
 }
 
+/** Login phone first, then the HR employee phone for this workspace. */
+async function resolveMemberWhatsAppPhone(
+  organizationId: string,
+  userId: string,
+  userPhone: string | null | undefined,
+) {
+  if (normalizeWhatsAppPhone(userPhone ?? "")) {
+    return userPhone!.trim();
+  }
+  const profiles = await prisma.employeeProfile.findMany({
+    where: { organizationId, userId },
+    select: { phone: true },
+    take: 5,
+  });
+  for (const profile of profiles) {
+    if (normalizeWhatsAppPhone(profile.phone ?? "")) {
+      return profile.phone!.trim();
+    }
+  }
+  return null;
+}
+
+async function sendAssigneeWhatsApp(params: {
+  organizationId: string;
+  toPhone: string;
+  assigneeName: string;
+  leadName: string;
+  leadContact: string;
+  textBody: string;
+}) {
+  const template = await sendCrmLeadAssignmentTemplate({
+    organizationId: params.organizationId,
+    toPhone: params.toPhone,
+    assigneeName: params.assigneeName,
+    leadName: params.leadName,
+    leadContact: params.leadContact,
+  }).catch(() => ({ sent: false as const }));
+  if (template.sent) {
+    return { sent: true as const };
+  }
+  const text = await sendWhatsAppText({
+    organizationId: params.organizationId,
+    toPhone: params.toPhone,
+    body: params.textBody,
+  }).catch(() => ({ sent: false as const }));
+  return { sent: text.sent };
+}
+
 /**
  * Notify a team member that a lead was assigned to them:
  * in-app bell + email + WhatsApp (each best-effort, never throws).
@@ -26,9 +82,9 @@ export async function notifyLeadAssigned(params: {
   assigneeUserId: string;
   actorUserId?: string | null;
   actorName?: string | null;
-}) {
+}): Promise<LeadAssignNotice> {
   if (params.assigneeUserId === params.actorUserId) {
-    return;
+    return { whatsappSent: false, whatsappReason: "self" };
   }
 
   const [assignee, lead, organization] = await Promise.all([
@@ -49,7 +105,7 @@ export async function notifyLeadAssigned(params: {
     }),
   ]);
   if (!assignee || !lead) {
-    return;
+    return { whatsappSent: false, whatsappReason: "failed" };
   }
 
   const label = leadLabel(lead);
@@ -94,18 +150,34 @@ export async function notifyLeadAssigned(params: {
     }).catch((error) => console.error("[lead-notify] email", error));
   }
 
-  const assigneePhone = assignee.phone?.trim();
-  if (assigneePhone) {
-    await sendWhatsAppText({
-      organizationId: params.organizationId,
-      toPhone: assigneePhone,
-      body: [
-        `*Lead assigned to you*`,
-        `Hi ${assignee.name?.trim() || "there"}, a lead was assigned to you${byLine}.`,
-        ...detailLines.filter(Boolean),
-      ].join("\n\n"),
-    }).catch((error) => console.error("[lead-notify] whatsapp", error));
+  const assigneeName = assignee.name?.trim() || "there";
+  const assigneePhone = await resolveMemberWhatsAppPhone(
+    params.organizationId,
+    assignee.id,
+    assignee.phone,
+  );
+  if (!assigneePhone) {
+    return { whatsappSent: false, whatsappReason: "no_phone" };
   }
+
+  const textBody = [
+    `*Lead assigned to you*`,
+    `Hi ${assigneeName}, a lead was assigned to you${byLine}.`,
+    ...detailLines.filter(Boolean),
+  ].join("\n\n");
+  const whatsapp = await sendAssigneeWhatsApp({
+    organizationId: params.organizationId,
+    toPhone: assigneePhone,
+    assigneeName,
+    leadName: label,
+    leadContact: lead.phone?.trim() || lead.company?.trim() || "-",
+    textBody,
+  });
+  if (!whatsapp.sent) {
+    console.error("[lead-notify] whatsapp not delivered");
+    return { whatsappSent: false, whatsappReason: "failed" };
+  }
+  return { whatsappSent: true };
 }
 
 /**
@@ -152,7 +224,7 @@ export async function notifyLeadsBulkAssigned(params: {
     }),
   ]);
   if (!assignee || leads.length === 0) {
-    return;
+    return { whatsappSent: false, whatsappReason: "failed" as const };
   }
 
   const count = leads.length;
@@ -211,19 +283,38 @@ export async function notifyLeadsBulkAssigned(params: {
     }).catch((error) => console.error("[lead-bulk-notify] email", error));
   }
 
-  const assigneePhone = assignee.phone?.trim();
-  if (assigneePhone) {
-    await sendWhatsAppText({
-      organizationId: params.organizationId,
-      toPhone: assigneePhone,
-      body: [
-        `*${count} lead${count === 1 ? "" : "s"} assigned to you*`,
-        `Hi ${assignee.name?.trim() || "there"}, ${summaryText[0]}`,
-        reportLines.join("\n"),
-        `Open your leads: ${getLoginBaseUrl()}${listHref}`,
-      ].join("\n\n"),
-    }).catch((error) => console.error("[lead-bulk-notify] whatsapp", error));
+  const assigneeName = assignee.name?.trim() || "there";
+  const assigneePhone = await resolveMemberWhatsAppPhone(
+    params.organizationId,
+    assignee.id,
+    assignee.phone,
+  );
+  if (!assigneePhone) {
+    return { whatsappSent: false, whatsappReason: "no_phone" as const };
   }
+
+  const textBody = [
+    `*${count} lead${count === 1 ? "" : "s"} assigned to you*`,
+    `Hi ${assigneeName}, ${summaryText[0]}`,
+    reportLines.join("\n"),
+    `Open your leads: ${getLoginBaseUrl()}${listHref}`,
+  ].join("\n\n");
+  const whatsapp = await sendAssigneeWhatsApp({
+    organizationId: params.organizationId,
+    toPhone: assigneePhone,
+    assigneeName,
+    leadName: count === 1 ? leadLabel(leads[0]) : `${count} leads`,
+    leadContact:
+      count === 1
+        ? leads[0].phone?.trim() || leads[0].company?.trim() || "-"
+        : reportLines.slice(0, 8).join("; ").replace(/\s+/g, " "),
+    textBody,
+  });
+  if (!whatsapp.sent) {
+    console.error("[lead-bulk-notify] whatsapp not delivered");
+    return { whatsappSent: false, whatsappReason: "failed" as const };
+  }
+  return { whatsappSent: true };
 }
 
 /**

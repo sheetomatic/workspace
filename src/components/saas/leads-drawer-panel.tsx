@@ -1094,7 +1094,11 @@ export function LeadDrawerPanel({
                         setSaveError(result.message ?? "Could not update owner.");
                         return;
                       }
-                      setSaveError(null);
+                      setSaveError(
+                        result.whatsappSent === false && result.message
+                          ? result.message
+                          : null,
+                      );
                       const member = teamMembers.find((m) => m.user.id === next);
                       onLeadPatched?.(lead.id, {
                         assignedTo: member

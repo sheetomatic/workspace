@@ -605,7 +605,7 @@ export function LeadsCrmWorkspace({
                       return;
                     }
                     setBulkMsg(
-                      `${result.count} lead${result.count === 1 ? "" : "s"} assigned to ${result.assigneeName}. Summary sent to them.`,
+                      `${result.count} lead${result.count === 1 ? "" : "s"} assigned to ${result.assigneeName}. ${result.whatsappSent ? "WhatsApp sent to them." : "WhatsApp did not go out — add their phone on the team profile."}`,
                     );
                     setBulkSelected(new Set());
                     router.refresh();
