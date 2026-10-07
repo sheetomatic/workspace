@@ -655,6 +655,36 @@ export async function deleteDelegatedTask(
   return { ok: true, message: "Task deleted." };
 }
 
+export async function deleteDelegatedTasks(
+  taskIds: string[],
+): Promise<TaskActionState> {
+  const user = await getSessionUser();
+  if (!user || (!user.isSuperAdmin && !hasMinimumRole(user.role, "ADMIN"))) {
+    return { ok: false, message: "Only an admin can delete selected tasks." };
+  }
+
+  const ids = [...new Set(taskIds.map((id) => id.trim()).filter(Boolean))].slice(0, 200);
+  if (ids.length === 0) {
+    return { ok: false, message: "Select at least one task." };
+  }
+
+  const deleted = await prisma.delegatedTask.deleteMany({
+    where: { id: { in: ids }, organizationId: user.organizationId },
+  });
+
+  revalidatePath("/app");
+  revalidatePath("/app/tasks");
+
+  if (deleted.count === 0) {
+    return { ok: false, message: "Those tasks were not found." };
+  }
+
+  return {
+    ok: true,
+    message: `Deleted ${deleted.count} task${deleted.count === 1 ? "" : "s"}.`,
+  };
+}
+
 export async function deleteAllDelegatedTasks(): Promise<TaskActionState> {
   const user = await getSessionUser();
   if (!user || (!user.isSuperAdmin && !hasMinimumRole(user.role, "ADMIN"))) {

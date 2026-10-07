@@ -1,8 +1,9 @@
 "use client";
 
-import { Fragment, useState, useTransition } from "react";
+import { Fragment, useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { CalendarClock, ChevronRight, FolderKanban, Trash2 } from "lucide-react";
-import { deleteDelegatedTask } from "@/app/app/tasks/actions";
+import { deleteDelegatedTask, deleteDelegatedTasks } from "@/app/app/tasks/actions";
 import { TaskEditButton, TaskEditPanel } from "@/components/saas/task-edit-panel";
 import { TaskManagerRequestPanel } from "@/components/saas/task-manager-request-panel";
 import { TaskVerificationPanel } from "@/components/saas/task-verification-panel";
@@ -44,14 +45,27 @@ export function TaskTable({
   tasks,
   members = [],
   whatsappConfigured = true,
+  canBulkDelete = false,
 }: {
   tasks: TaskRow[];
   members?: MemberOption[];
   whatsappConfigured?: boolean;
+  canBulkDelete?: boolean;
 }) {
+  const router = useRouter();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<TaskRow | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const [bulkMessage, setBulkMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const visibleIds = tasks.map((task) => task.id);
+  const visibleKey = visibleIds.join(",");
+  const selectedCount = visibleIds.filter((id) => selected.has(id)).length;
+  const allVisibleSelected = visibleIds.length > 0 && selectedCount === visibleIds.length;
+
+  useEffect(() => {
+    setSelected(new Set());
+  }, [visibleKey]);
 
   function removeTask(taskId: string) {
     if (!window.confirm("Delete this task?")) {
@@ -59,6 +73,38 @@ export function TaskTable({
     }
     startTransition(() => {
       void deleteDelegatedTask(taskId);
+    });
+  }
+
+  function toggleSelected(taskId: string) {
+    setBulkMessage(null);
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
+  }
+
+  function toggleAllVisible() {
+    setSelected(allVisibleSelected ? new Set() : new Set(visibleIds));
+  }
+
+  function removeSelected() {
+    const ids = visibleIds.filter((id) => selected.has(id));
+    if (ids.length === 0) return;
+    const confirmed = window.confirm(
+      `Delete ${ids.length} selected task${ids.length === 1 ? "" : "s"}? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+    setBulkMessage(null);
+    startTransition(async () => {
+      const result = await deleteDelegatedTasks(ids);
+      setBulkMessage(result.message);
+      if (result.ok) {
+        setSelected(new Set());
+        router.refresh();
+      }
     });
   }
 
@@ -84,15 +130,66 @@ export function TaskTable({
     );
   }
 
+  const columnCount = canBulkDelete ? 7 : 6;
+
   return (
     <>
+    {canBulkDelete ? (
+      <div className="ws-task-select-bar">
+        <label className="ws-task-select-bar__all">
+          <input
+            ref={(node) => {
+              if (node) {
+                node.indeterminate = selectedCount > 0 && !allVisibleSelected;
+              }
+            }}
+            type="checkbox"
+            aria-label="Select all tasks on this page"
+            checked={allVisibleSelected}
+            onChange={toggleAllVisible}
+          />
+          {selectedCount > 0 ? `${selectedCount} selected` : "Select page"}
+        </label>
+        {selectedCount > 0 ? (
+          <button
+            type="button"
+            className="ws-btn-danger ws-btn-small"
+            disabled={pending}
+            onClick={removeSelected}
+          >
+            <Trash2 aria-hidden size={14} strokeWidth={1.75} />
+            {pending ? "Deleting…" : "Delete selected"}
+          </button>
+        ) : null}
+        {bulkMessage ? (
+          <span className="ws-task-select-bar__note" role="status">
+            {bulkMessage}
+          </span>
+        ) : null}
+      </div>
+    ) : null}
     <article
-      className={`hs-table-card ws-task-table-card ws-sf-table-wrap${pending ? " is-updating" : ""}`}
+      className={`hs-table-card ws-task-table-card ws-sf-table-wrap${canBulkDelete ? " is-selectable" : ""}${pending ? " is-updating" : ""}`}
     >
       <div className="hs-table-scroll ws-task-table-scroll">
         <table className="hs-data-table ws-task-table ws-task-table-v2 ws-sf-data-table">
           <thead>
             <tr>
+              {canBulkDelete ? (
+                <th className="ws-task-select-col">
+                  <input
+                    ref={(node) => {
+                      if (node) {
+                        node.indeterminate = selectedCount > 0 && !allVisibleSelected;
+                      }
+                    }}
+                    type="checkbox"
+                    aria-label="Select all tasks on this page"
+                    checked={allVisibleSelected}
+                    onChange={toggleAllVisible}
+                  />
+                </th>
+              ) : null}
               <th className="ws-task-table-expand-col" aria-hidden />
               <th className="ws-task-col-task">Task Name</th>
               <th className="ws-task-col-due">Due Date</th>
@@ -136,6 +233,20 @@ export function TaskTable({
                       }
                     }}
                   >
+                    {canBulkDelete ? (
+                      <td
+                        className="ws-task-select-col"
+                        onClick={(event) => event.stopPropagation()}
+                        onKeyDown={(event) => event.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          aria-label={`Select ${task.title}`}
+                          checked={selected.has(task.id)}
+                          onChange={() => toggleSelected(task.id)}
+                        />
+                      </td>
+                    ) : null}
                     <td
                       className="ws-task-table-expand-col"
                       onClick={(event) => {
@@ -224,7 +335,7 @@ export function TaskTable({
                   </tr>
                   {expanded ? (
                     <tr className="ws-task-table-detail-row">
-                      <td colSpan={6}>
+                      <td colSpan={columnCount}>
                         <div className="ws-task-table-detail">
                           <div className="ws-task-detail-meta">
                             <span>

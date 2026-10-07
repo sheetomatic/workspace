@@ -222,6 +222,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
         </header>
 
         <TaskTable
+          canBulkDelete={canDeleteAll}
           members={members}
           tasks={tasks}
           whatsappConfigured={integrationStatus.whatsappConfigured}

@@ -3160,6 +3160,44 @@ body:has(.workspace-app.saas-app) {
   cursor: pointer;
 }
 
+.workspace-app .ws-task-select-col {
+  width: 44px;
+  text-align: center;
+  padding-left: 12px !important;
+  padding-right: 4px !important;
+}
+
+.workspace-app .ws-task-select-col input {
+  width: 18px;
+  height: 18px;
+  accent-color: #1d1d1f;
+}
+
+.workspace-app .ws-task-select-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 0.8125rem;
+}
+
+.workspace-app .ws-task-select-bar__all {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+
+.workspace-app .ws-task-select-bar .ws-btn-danger {
+  gap: 6px;
+  height: 32px;
+}
+
+.workspace-app .ws-task-select-bar__note {
+  color: #6e6e73;
+}
+
 .workspace-app .ws-task-table-chevron {
   color: #94a3b8;
   transition: transform 0.15s ease;
@@ -14858,6 +14896,18 @@ body.ws-more-sheet-open .sheetomatic-ai-launcher {
     width: 28px;
     justify-content: center;
     padding: 2px;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-table-wrap.is-selectable .ws-sf-data-table tbody tr.ws-task-table-row {
+    padding-left: 40px;
+  }
+
+  .workspace-app .ws-tasks-sf .ws-sf-table-wrap.is-selectable .ws-sf-data-table tbody tr.ws-task-table-row .ws-task-select-col {
+    position: absolute;
+    top: 12px;
+    left: 10px;
+    width: 28px;
+    justify-content: center;
   }
 
   .workspace-app .ws-tasks-sf .ws-sf-data-table tbody tr.ws-task-table-row .ws-task-col-task {
