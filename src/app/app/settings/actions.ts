@@ -1,9 +1,14 @@
 "use server";
 
+import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { normalizeQuotationGstInput } from "@/lib/leads/seller-account";
+import {
+  mergeQuotationAccountStore,
+  normalizeQuotationBankInput,
+  normalizeQuotationGstInput,
+} from "@/lib/leads/seller-account";
 import { syncWorkspaceDashboardFromGoogleSheets } from "@/lib/integrations/sync-sheets-to-db";
 import { hasMinimumRole } from "@/lib/permissions";
 import { updateTaskAiSettings } from "@/lib/integrations/task-ai-settings";
@@ -153,10 +158,7 @@ export async function saveQuotationGstProfile(
     return { ok: false, message: parsed.message };
   }
 
-  await prisma.organization.updateMany({
-    where: { id: user.organizationId },
-    data: { quotationAccount: parsed.profile },
-  });
+  await saveQuotationAccountPatch(user.organizationId, parsed.profile);
 
   revalidatePath("/app/settings");
   revalidatePath("/app/leads");
@@ -165,4 +167,59 @@ export async function saveQuotationGstProfile(
     ok: true,
     message: "GST information saved. Quotations and tax invoices use it from now.",
   };
+}
+
+export async function saveQuotationBankProfile(
+  _prev: WorkspaceSettingsState,
+  formData: FormData,
+): Promise<WorkspaceSettingsState> {
+  const user = await getSessionUser();
+  if (!user) {
+    return { ok: false, message: "You must be signed in." };
+  }
+  if (!hasMinimumRole(user.role, "ADMIN")) {
+    return { ok: false, message: "Only an admin can edit account details." };
+  }
+
+  const parsed = normalizeQuotationBankInput({
+    accountType: formData.get("accountType")?.toString(),
+    accountHolder: formData.get("accountHolder")?.toString(),
+    bankName: formData.get("bankName")?.toString(),
+    branch: formData.get("branch")?.toString(),
+    accountNumber: formData.get("accountNumber")?.toString(),
+    ifsc: formData.get("ifsc")?.toString(),
+    upiId: formData.get("upiId")?.toString(),
+  });
+  if (!parsed.ok) {
+    return { ok: false, message: parsed.message };
+  }
+
+  await saveQuotationAccountPatch(user.organizationId, parsed.bank);
+
+  revalidatePath("/app/settings");
+  revalidatePath("/app/leads");
+  revalidatePath("/app/billing");
+  return {
+    ok: true,
+    message: "Account details saved. Quotations and tax invoices use this bank from now.",
+  };
+}
+
+async function saveQuotationAccountPatch(
+  organizationId: string,
+  patch: Record<string, unknown>,
+) {
+  const current = await prisma.organization.findFirst({
+    where: { id: organizationId },
+    select: { quotationAccount: true },
+  });
+  await prisma.organization.updateMany({
+    where: { id: organizationId },
+    data: {
+      quotationAccount: mergeQuotationAccountStore(
+        current?.quotationAccount,
+        patch,
+      ) as Prisma.InputJsonValue,
+    },
+  });
 }

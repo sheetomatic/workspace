@@ -62,4 +62,27 @@ describe("quotation seller account", () => {
     expect(account?.authorisedSignatory).toBe("New Signatory");
     expect(account?.bankName).toBe("Bandhan Bank");
   });
+
+  it("lets a workspace replace the printed bank and UPI", () => {
+    const account = resolveQuotationAccount({
+      isPrimary: true,
+      quotationAccount: {
+        legalName: "Shyam Kumar Banjare",
+        bankName: "HDFC Bank",
+        branch: "Raipur",
+        accountNumber: "123456789012",
+        ifsc: "HDFC0001234",
+        upiId: "sheetomatic@okhdfcbank",
+        accountHolder: "SHEETOMATIC TECHNOLOGIES",
+        accountType: "Current Account",
+      },
+    });
+    expect(account?.bankName).toBe("HDFC Bank");
+    expect(account?.branch).toBe("Raipur");
+    expect(account?.accountNumber).toBe("123456789012");
+    expect(account?.ifsc).toBe("HDFC0001234");
+    expect(account?.upiId).toBe("sheetomatic@okhdfcbank");
+    expect(account?.qrImageSrc).toBe("");
+    expect(account?.gstin).toBe("22BPFPK7002F1ZG");
+  });
 });

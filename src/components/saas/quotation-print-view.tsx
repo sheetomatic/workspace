@@ -352,16 +352,18 @@ export function QuotationPrintView({
                 </a>
               </p>
             </div>
+            {account.qrImageSrc ? (
             <aside className="quotation-print-qr">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={account.qrImageSrc}
-                alt={`Paytm UPI QR — pay ${account.accountHolder}`}
+                alt={`UPI QR — pay ${account.accountHolder}`}
                 className="quotation-print-qr-img"
               />
-              <p>Scan to pay · Paytm / UPI</p>
+              <p>Scan to pay · UPI</p>
               <p>{account.upiId}</p>
             </aside>
+            ) : null}
           </section>
         ) : null}
 
