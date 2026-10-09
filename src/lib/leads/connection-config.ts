@@ -46,6 +46,29 @@ export type JustdialLeadConfig = {
   webhookSecret: string;
 };
 
+export const VOICE_PROVIDERS = ["EXOTEL", "TWILIO", "KNOWLARITY"] as const;
+export type VoiceProvider = (typeof VOICE_PROVIDERS)[number];
+
+export type VoiceLeadConfig = {
+  provider: VoiceProvider;
+  clinicName: string;
+  webhookSecret: string;
+  openaiApiKey?: string;
+  exotelSid?: string;
+  exotelApiKey?: string;
+  exotelApiToken?: string;
+  exotelSubdomain?: string;
+  exotelCallerId?: string;
+  exotelAppId?: string;
+  twilioAccountSid?: string;
+  twilioAuthToken?: string;
+  twilioFromNumber?: string;
+  knowlarityApiKey?: string;
+  knowlarityAuth?: string;
+  knowlarityKNumber?: string;
+  knowlarityAgentNumber?: string;
+};
+
 export type LeadSourceStatus = "connected" | "needs_setup" | "error" | "disabled";
 
 export function asConfigRecord(
@@ -251,6 +274,101 @@ export function parseJustdialLeadConfig(config: unknown): JustdialLeadConfig | n
   return { webhookSecret };
 }
 
+export function parseVoiceProvider(
+  value: string | null | undefined,
+): VoiceProvider | null {
+  const normalized = value?.trim().toUpperCase();
+  if (
+    normalized === "EXOTEL" ||
+    normalized === "TWILIO" ||
+    normalized === "KNOWLARITY"
+  ) {
+    return normalized;
+  }
+  return null;
+}
+
+function optionalVoiceField(
+  record: Record<string, unknown>,
+  key: string,
+): string | undefined {
+  return readString(record, key) || undefined;
+}
+
+export function isVoiceProviderReady(config: {
+  provider: VoiceProvider;
+  exotelSid?: string;
+  exotelApiKey?: string;
+  exotelApiToken?: string;
+  exotelCallerId?: string;
+  twilioAccountSid?: string;
+  twilioAuthToken?: string;
+  twilioFromNumber?: string;
+  knowlarityApiKey?: string;
+  knowlarityKNumber?: string;
+}): boolean {
+  if (config.provider === "EXOTEL") {
+    return Boolean(
+      config.exotelSid &&
+        config.exotelApiKey &&
+        config.exotelApiToken &&
+        config.exotelCallerId,
+    );
+  }
+  if (config.provider === "TWILIO") {
+    return Boolean(
+      config.twilioAccountSid &&
+        config.twilioAuthToken &&
+        config.twilioFromNumber,
+    );
+  }
+  return Boolean(config.knowlarityApiKey && config.knowlarityKNumber);
+}
+
+export function parseVoiceProviderConfig(
+  config: unknown,
+): Omit<VoiceLeadConfig, "webhookSecret"> | null {
+  const record = asConfigRecord(config);
+  const provider = parseVoiceProvider(
+    readString(record, "provider") || readString(record, "voiceProvider"),
+  );
+  if (!provider) {
+    return null;
+  }
+  const parsed = {
+    provider,
+    clinicName: readString(record, "clinicName") || "the clinic",
+    openaiApiKey: optionalVoiceField(record, "openaiApiKey"),
+    exotelSid: optionalVoiceField(record, "exotelSid"),
+    exotelApiKey: optionalVoiceField(record, "exotelApiKey"),
+    exotelApiToken: optionalVoiceField(record, "exotelApiToken"),
+    exotelSubdomain:
+      optionalVoiceField(record, "exotelSubdomain") || "api.exotel.com",
+    exotelCallerId: optionalVoiceField(record, "exotelCallerId"),
+    exotelAppId: optionalVoiceField(record, "exotelAppId"),
+    twilioAccountSid: optionalVoiceField(record, "twilioAccountSid"),
+    twilioAuthToken: optionalVoiceField(record, "twilioAuthToken"),
+    twilioFromNumber: optionalVoiceField(record, "twilioFromNumber"),
+    knowlarityApiKey: optionalVoiceField(record, "knowlarityApiKey"),
+    knowlarityAuth: optionalVoiceField(record, "knowlarityAuth"),
+    knowlarityKNumber: optionalVoiceField(record, "knowlarityKNumber"),
+    knowlarityAgentNumber: optionalVoiceField(record, "knowlarityAgentNumber"),
+  };
+  if (!isVoiceProviderReady(parsed)) {
+    return null;
+  }
+  return parsed;
+}
+
+export function parseVoiceLeadConfig(config: unknown): VoiceLeadConfig | null {
+  const providerConfig = parseVoiceProviderConfig(config);
+  const webhookSecret = readString(asConfigRecord(config), "webhookSecret");
+  if (!providerConfig || !webhookSecret) {
+    return null;
+  }
+  return { ...providerConfig, webhookSecret };
+}
+
 export function hashLeadWebhookSecret(secret: string) {
   return createHash("sha256").update(secret.trim()).digest("hex");
 }
@@ -311,6 +429,14 @@ export function wooCommerceLeadWebhookUrl(webhookSecret: string) {
 
 export function justdialLeadWebhookUrl(webhookSecret: string) {
   return `${publicSiteUrl()}/api/webhooks/justdial/leads/${encodeURIComponent(webhookSecret)}`;
+}
+
+export function voiceLeadWebhookUrl(webhookSecret: string) {
+  return `${publicSiteUrl()}/api/webhooks/voice/leads/${encodeURIComponent(webhookSecret)}`;
+}
+
+export function voiceLeadTwimlUrl(webhookSecret: string) {
+  return `${voiceLeadWebhookUrl(webhookSecret)}/twiml`;
 }
 
 export function shopifyApiVersion() {

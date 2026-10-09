@@ -13,6 +13,7 @@ export const LEAD_CHANNEL_LABELS: Record<LeadSourceChannel, string> = {
   SHOPIFY: "Shopify",
   WOOCOMMERCE: "WooCommerce",
   JUSTDIAL: "Justdial",
+  VOICE: "AI receptionist",
 };
 
 export const LEAD_CHANNEL_DEFAULTS: Array<{
@@ -29,6 +30,7 @@ export const LEAD_CHANNEL_DEFAULTS: Array<{
   { channel: "SHOPIFY", label: "Shopify orders" },
   { channel: "WOOCOMMERCE", label: "WooCommerce orders" },
   { channel: "JUSTDIAL", label: "Justdial enquiries" },
+  { channel: "VOICE", label: "AI receptionist (voice)" },
 ];
 
 export const LEAD_DASHBOARD_SOURCE_FILTERS = [
@@ -43,6 +45,7 @@ export const LEAD_DASHBOARD_SOURCE_FILTERS = [
   "SHOPIFY",
   "WOOCOMMERCE",
   "JUSTDIAL",
+  "VOICE",
   "MANUAL",
 ] as const;
 
@@ -81,6 +84,8 @@ export function fmsSourceLabelForChannel(channel: LeadSourceChannel): string {
       return "WooCommerce";
     case "JUSTDIAL":
       return "Justdial";
+    case "VOICE":
+      return "AI receptionist";
     case "MANUAL":
       return "Walk-in";
     default:
@@ -108,6 +113,7 @@ export function parseLeadSourceChannel(
     "SHOPIFY",
     "WOOCOMMERCE",
     "JUSTDIAL",
+    "VOICE",
   ];
   return allowed.includes(normalized as LeadSourceChannel)
     ? (normalized as LeadSourceChannel)
