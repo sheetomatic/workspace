@@ -17,14 +17,15 @@ When the user asks to build features, audit, or work on the multi-tenant website
 
 ## Parallel execution
 
-For large tasks (e.g. "make a website", "improve FMS", "multi-tenant work"):
+For **large** tasks only (e.g. "make a website", "improve FMS", "multi-tenant work").  
+Do **not** spawn parallel specialists for small fixes — that burns Cursor Pro+ usage fast. See `.cursor/rules/cursor-cost.mdc` and `docs/CURSOR-COST-PLAYBOOK.md`.
 
 1. Launch **Frontend + Backend in parallel** on non-overlapping files
 2. Launch **Quality Team** (readonly) after or in parallel for audit
 3. Launch **SaaS Architect** for provisioning/tier/UX architecture
 4. Launch **Release Ops** after implementations pass tests to commit, push, and verify production deploy
 
-Use `/multitask` or background subagents for parallel workstreams.
+Use `/multitask` or background subagents for parallel workstreams when the task justifies the cost.
 
 ## Project context
 
