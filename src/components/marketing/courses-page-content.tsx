@@ -26,6 +26,43 @@ import "./minimal-premium.css";
 import "./courses-page.css";
 import "./videos.css";
 
+const recordedCourseUrl =
+  "https://sheetomatic.graphy.com/courses/Google-Sheets-Essentials-to-Pro-Unlocking-Advanced-Skills-for-Productivity-65b389d8e4b0a394eb2a306c";
+
+const upcomingRecordedCourses = [
+  {
+    category: "Google Sheets",
+    title: "Query from Basics to Advanced",
+    description: "Turn long data tables into filtered, grouped, and useful answers.",
+  },
+  {
+    category: "Google Sheets",
+    title: "IF Statements",
+    description: "Make Sheets respond clearly to conditions, exceptions, and next actions.",
+  },
+  {
+    category: "No-code apps",
+    title: "AppSheet Guide",
+    description: "Take the same business data onto a practical mobile workflow.",
+  },
+  {
+    category: "Data collection",
+    title: "Google Forms",
+    description: "Collect clean updates from your team without chasing messages.",
+  },
+  {
+    category: "Dashboards",
+    title: "Data Studio",
+    description: "Turn live operational data into clear owner and management reports.",
+  },
+  {
+    category: "AI & productivity",
+    title: "AI in Google Workspace: Smarter Everyday Workflows",
+    description:
+      "Use AI to draft, organize, and analyze work across Gmail, Docs, Sheets, and Drive—with your review in control.",
+  },
+] as const;
+
 export function CoursesPageContent() {
   return (
     <MarketingPage>
@@ -39,7 +76,10 @@ export function CoursesPageContent() {
             <p className="minimal-hero-lead">{coursesPage.lead}</p>
             <div className="courses-hero-actions">
               <a className="btn-cta btn-primary" href="#programs">
-                See the two programs
+                Explore live 1:1 programs
+              </a>
+              <a className="btn-cta btn-secondary" href="#recorded-courses">
+                Browse recorded courses
               </a>
               <a
                 className="btn-cta btn-secondary"
@@ -62,10 +102,10 @@ export function CoursesPageContent() {
             <p className="courses-instructor">{coursesPage.instructorNote}</p>
           </div>
 
-          <aside className="courses-offer-grid" id="programs" aria-label="Programs">
+          <aside className="courses-offer-grid" id="programs" aria-label="Live 1:1 programs">
             {coursePrograms.map((program) => (
               <article className="courses-offer" key={program.id} id={program.id === "BUSINESS_OWNER" ? "business-owners" : "working-professionals"}>
-                <p className="courses-phase-range">{program.eyebrow}</p>
+                <p className="courses-phase-range">Live 1:1 · {program.eyebrow}</p>
                 <h2>{program.name}</h2>
                 <p className="courses-offer-price">
                   {courseEnrollmentPriceLabel(program.priceInr)}
@@ -110,6 +150,56 @@ export function CoursesPageContent() {
               </article>
             ))}
           </aside>
+        </div>
+      </section>
+
+      <section className="minimal-strip bg-white pb-16" id="recorded-courses">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8">
+          <div className="courses-section-head">
+            <p className="type-kicker text-sky-700">Recorded courses · learn at your pace</p>
+            <h2 className="minimal-section-title mt-2">Recorded courses for practical work.</h2>
+            <p className="minimal-section-lead">
+              Learn the Sheets, apps, forms, and dashboards that turn daily work
+              into a system your team can follow.
+            </p>
+          </div>
+          <article className="courses-recorded-feature">
+            <div>
+              <p className="courses-phase-range">Available now · Google Sheets course</p>
+              <h3>Google Sheets: Essentials to Pro</h3>
+              <p>
+                The first recorded course is live now. Start with everyday Sheet
+                skills, then progress to practical tools that make work clearer
+                and faster.
+              </p>
+              <p>Purchase and course access are handled securely on Graphy.</p>
+            </div>
+            <div className="courses-recorded-purchase">
+              <p>Current offer</p>
+              <strong>{courseEnrollmentPriceLabel(2_999)}</strong>
+              <a className="btn-cta btn-primary" href={recordedCourseUrl} target="_blank" rel="noopener noreferrer">
+                Buy Google Sheets course
+              </a>
+            </div>
+          </article>
+          <div className="courses-section-head courses-recorded-upcoming" id="course-focus">
+            <p className="type-kicker text-sky-700">Recorded course collection</p>
+            <h3 className="minimal-section-title mt-2">Build the skill one practical course at a time.</h3>
+            <p className="minimal-section-lead">
+              These recorded courses are in production now. Each will be marked
+              available here as soon as it is ready.
+            </p>
+          </div>
+          <div className="courses-area-grid">
+            {upcomingRecordedCourses.map((course) => (
+              <article className="courses-area" key={course.title}>
+                <p className="courses-phase-range">{course.category}</p>
+                <h4>{course.title}</h4>
+                <p>{course.description}</p>
+                <span className="courses-coming-soon">Coming soon</span>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -302,7 +392,10 @@ export function CoursesPageContent() {
             <p className="minimal-section-lead">{coursesPage.funnelLead}</p>
             <div className="courses-hero-actions">
               <a className="btn-cta btn-primary" href="#programs">
-                See the two programs
+                Explore live 1:1 programs
+              </a>
+              <a className="btn-cta btn-secondary" href={recordedCourseUrl} target="_blank" rel="noopener noreferrer">
+                Buy recorded Google Sheets course
               </a>
               <a
                 className="btn-cta btn-secondary"
