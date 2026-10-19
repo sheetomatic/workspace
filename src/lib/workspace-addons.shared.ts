@@ -131,6 +131,13 @@ export function listPurchasableAddons() {
 
 export function parseAddonModulesFromForm(formData: FormData): WorkspaceModule[] {
   const selected = new Set<WorkspaceModule>();
+  if (formData.get("fleetAccess") === "on") selected.add("FLEET");
+  if (formData.get("workspaceModuleSelection") === "explicit") {
+    for (const value of formData.getAll("modules")) {
+      if (["FMS", "CRM", "HR", "IMS", "TASKS", "REPORTS", "APPROVALS", "SOCIAL", "APP_BUILDER"].includes(String(value))) selected.add(String(value) as WorkspaceModule);
+    }
+    return [...selected];
+  }
   const bciCore = formData.get("bciCore") === "on";
   if (bciCore) {
     BCI_CORE_MODULES.forEach((module) => selected.add(module));

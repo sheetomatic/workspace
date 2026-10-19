@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import type { SessionUser } from "@/lib/auth";
 import { canApproveFmsFlow, canSubmitFmsFlow } from "@/lib/fms/access";
+import { hasSuitePart } from "@/lib/workspace-access";
 import { canAccessEmReady } from "@/lib/em/em-access";
 import { hasMinimumRole } from "@/lib/permissions";
 import { FmsInAppNotificationsBell } from "@/components/saas/fms-in-app-notifications-bell";
@@ -224,7 +225,7 @@ export function FmsModuleNav({
           </li>
         ) : null}
 
-        {isManager ? (
+        {isManager && hasSuitePart(user, "mis") ? (
           <li>
             <Link
               href="/app/fms/scores"

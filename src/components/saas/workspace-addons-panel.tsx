@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Layers, Save } from "lucide-react";
 import type { OrgPlan, WorkspaceModule } from "@prisma/client";
 import { ORG_PLAN_LABELS } from "@/lib/org-plan-presets";
+import { businessWorkspacePlan } from "@/lib/business-workspace-plans";
+import { WORKSPACE_MODULE_LABELS } from "@/lib/workspace-modules";
 import {
   BCI_CORE_MODULES,
   isAddonEnabled,
@@ -27,6 +29,7 @@ export function WorkspaceAddonsPanel({
   const [pending, startTransition] = useTransition();
   const enabledOptional = listOptionalAddons(allowedModules);
   const hasBciCore = BCI_CORE_MODULES.every((module) => allowedModules.includes(module));
+  const businessPlan = businessWorkspacePlan(plan);
 
   return (
     <article className="saas-panel workspace-addons-panel">
@@ -35,8 +38,8 @@ export function WorkspaceAddonsPanel({
         Workspace add-ons
       </h3>
       <p className="type-body-sm text-slate-500">
-        BCI FMS is the core bundle. Every other module is an optional add-on - only
-        enabled add-ons appear in the sidebar.
+        Access depends on the modules enabled for this workspace and each member.
+        Apply a monthly business plan from Clients to set its included modules.
       </p>
 
       <p className="workspace-addons-plan">
@@ -59,7 +62,18 @@ export function WorkspaceAddonsPanel({
       >
         <fieldset className="workspace-addons-fieldset" disabled={!canEdit || pending}>
           <legend className="sr-only">Workspace modules</legend>
+          <label className="workspace-addon-row">
+            <input defaultChecked={allowedModules.includes("FLEET")} name="fleetAccess" type="checkbox" />
+            <span><strong>Fleet access</strong><small>Enable only when separately agreed for this client.</small></span>
+          </label>
 
+          {businessPlan ? <>
+            <input type="hidden" name="workspaceModuleSelection" value="explicit" />
+            {[...new Set<WorkspaceModule>([...businessPlan.modules, ...allowedModules])].filter((item) => item !== "FLEET").map((item) => <label className="workspace-addon-row" key={item}>
+              <input name="modules" value={item} type="checkbox" defaultChecked={allowedModules.includes(item)} />
+              <span><strong>{WORKSPACE_MODULE_LABELS[item]}</strong></span>
+            </label>)}
+          </> : <>
           <label className="workspace-addon-row core">
             <input
               defaultChecked={hasBciCore}
@@ -93,6 +107,7 @@ export function WorkspaceAddonsPanel({
               </label>
             );
           })}
+          </>}
         </fieldset>
 
         {canEdit ? (

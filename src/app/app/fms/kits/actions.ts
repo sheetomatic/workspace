@@ -32,7 +32,7 @@ function revalidateKits(organizationId?: string) {
 export async function requestKitLicenseAction(
   formData: FormData,
 ): Promise<KitActionResult> {
-  const user = await requireSession("ADMIN");
+  const user = await requireSession("ADMIN", { suitePart: "fms" });
   if (!hasMinimumRole(user.role, "ADMIN")) {
     return { ok: false, message: "Only admins can request a kit license." };
   }
@@ -55,7 +55,7 @@ export async function requestKitLicenseAction(
 }
 
 export async function installKitAction(formData: FormData): Promise<KitActionResult> {
-  const user = await requireSession("MANAGER");
+  const user = await requireSession("MANAGER", { suitePart: "fms" });
   if (!hasMinimumRole(user.role, "MANAGER")) {
     return { ok: false, message: "Not allowed." };
   }
@@ -84,7 +84,7 @@ export async function installKitAction(formData: FormData): Promise<KitActionRes
 export async function grantKitLicenseAction(
   formData: FormData,
 ): Promise<KitActionResult> {
-  const user = await requireSession("ADMIN");
+  const user = await requireSession("ADMIN", { suitePart: "fms" });
   if (!canManageSuperAdmins(user, user.organizationSlug)) {
     return { ok: false, message: "Only Sheetomatic super admins can grant a kit license." };
   }
@@ -111,7 +111,7 @@ export async function grantKitLicenseAction(
 export async function cancelKitLicenseAction(
   formData: FormData,
 ): Promise<KitActionResult> {
-  const user = await requireSession("ADMIN");
+  const user = await requireSession("ADMIN", { suitePart: "fms" });
   if (!canManageSuperAdmins(user, user.organizationSlug)) {
     return { ok: false, message: "Only Sheetomatic super admins can cancel a kit license." };
   }

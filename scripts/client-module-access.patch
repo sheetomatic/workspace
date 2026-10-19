@@ -1,0 +1,2325 @@
+diff --git a/prisma/migrations/20261019120000_explicit_client_access/migration.sql b/prisma/migrations/20261019120000_explicit_client_access/migration.sql
+new file mode 100644
+index 0000000..05d72fe
+--- /dev/null
++++ b/prisma/migrations/20261019120000_explicit_client_access/migration.sql
+@@ -0,0 +1,6 @@
++-- Additive only: legacy plans, client rows, and rates remain unchanged.
++ALTER TYPE "OrgPlan" ADD VALUE IF NOT EXISTS 'BUSINESS_STARTER';
++ALTER TYPE "OrgPlan" ADD VALUE IF NOT EXISTS 'BUSINESS_SCALE';
++ALTER TYPE "OrgPlan" ADD VALUE IF NOT EXISTS 'BUSINESS_ENTERPRISE';
++ALTER TYPE "WorkspaceModule" ADD VALUE IF NOT EXISTS 'FLEET';
++ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "allowedSuiteParts" JSONB;
+diff --git a/prisma/schema.prisma b/prisma/schema.prisma
+index 17aefb2..01381c3 100644
+--- a/prisma/schema.prisma
++++ b/prisma/schema.prisma
+@@ -17,6 +17,7 @@ enum Role {
+ }
+ 
+ enum WorkspaceModule {
++  FLEET
+   TASKS
+   HR
+   APPROVALS
+@@ -109,6 +110,9 @@ enum OrganizationStatus {
+ }
+ 
+ enum OrgPlan {
++  BUSINESS_STARTER
++  BUSINESS_SCALE
++  BUSINESS_ENTERPRISE
+   BCI_STARTER
+   BCI_GROWTH
+   ENTERPRISE
+@@ -234,6 +238,8 @@ model Organization {
+   planStatus      PlanSubscriptionStatus   @default(ACTIVE)
+   billingPeriod   PlanBillingPeriod        @default(MONTHLY)
+   allowedModules  WorkspaceModule[]        @default([])
++  /// Null for legacy workspaces; an array explicitly caps Suite parts for new clients/trials.
++  allowedSuiteParts Json?
+   maxMembers      Int                      @default(8)
+   maxFmsTemplates Int                      @default(3)
+   isPrimary       Boolean                  @default(false)
+diff --git a/src/app/api/checklists/import/templates/route.ts b/src/app/api/checklists/import/templates/route.ts
+index da9e878..550ea98 100644
+--- a/src/app/api/checklists/import/templates/route.ts
++++ b/src/app/api/checklists/import/templates/route.ts
+@@ -4,7 +4,7 @@ import { getSessionUser } from "@/lib/auth";
+ import { canConfigureChecklists } from "@/lib/checklists/access";
+ import { normalizeChecklistImportRow } from "@/lib/checklists/template-import";
+ import { hasMinimumRole } from "@/lib/permissions";
+-import { hasWorkspaceModule } from "@/lib/workspace-modules";
++import { hasSuitePart } from "@/lib/workspace-access";
+ 
+ const MAX_BYTES = 4 * 1024 * 1024;
+ 
+@@ -14,7 +14,7 @@ export async function POST(request: Request) {
+     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+   }
+   if (
+-    !hasWorkspaceModule(user, "TASKS") ||
++    !hasSuitePart(user, "checklists") ||
+     !hasMinimumRole(user.role, "MANAGER") ||
+     !canConfigureChecklists(user)
+   ) {
+diff --git a/src/app/api/fleet/alerts/escalate/route.ts b/src/app/api/fleet/alerts/escalate/route.ts
+index eaca779..12b2b6d 100644
+--- a/src/app/api/fleet/alerts/escalate/route.ts
++++ b/src/app/api/fleet/alerts/escalate/route.ts
+@@ -1,4 +1,5 @@
+ import { NextResponse } from "next/server";
++import { hasWorkspaceModule } from "@/lib/workspace-modules";
+ import { getSessionUser } from "@/lib/auth";
+ import { escalateFleetAlert } from "@/lib/fleet/board";
+ import { hasMinimumRole } from "@/lib/permissions";
+@@ -9,6 +10,9 @@ export async function POST(request: Request) {
+   if (!user) {
+     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+   }
++  if (!hasWorkspaceModule(user, "FLEET")) {
++    return NextResponse.json({ error: "Fleet access required" }, { status: 403 });
++  }
+   if (!hasMinimumRole(user.role, "MANAGER")) {
+     return NextResponse.json({ error: "Manager access required" }, { status: 403 });
+   }
+diff --git a/src/app/api/fleet/alerts/resolve/route.ts b/src/app/api/fleet/alerts/resolve/route.ts
+index 6adf61e..8b29210 100644
+--- a/src/app/api/fleet/alerts/resolve/route.ts
++++ b/src/app/api/fleet/alerts/resolve/route.ts
+@@ -1,4 +1,5 @@
+ import { NextResponse } from "next/server";
++import { hasWorkspaceModule } from "@/lib/workspace-modules";
+ import { getSessionUser } from "@/lib/auth";
+ import { resolveFleetAlert } from "@/lib/fleet/board";
+ import { hasMinimumRole } from "@/lib/permissions";
+@@ -8,6 +9,9 @@ export async function POST(request: Request) {
+   if (!user) {
+     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+   }
++  if (!hasWorkspaceModule(user, "FLEET")) {
++    return NextResponse.json({ error: "Fleet access required" }, { status: 403 });
++  }
+   if (!hasMinimumRole(user.role, "MANAGER")) {
+     return NextResponse.json({ error: "Manager access required" }, { status: 403 });
+   }
+diff --git a/src/app/api/fleet/board/route.ts b/src/app/api/fleet/board/route.ts
+index 03db600..d34d147 100644
+--- a/src/app/api/fleet/board/route.ts
++++ b/src/app/api/fleet/board/route.ts
+@@ -1,4 +1,5 @@
+ import { NextResponse } from "next/server";
++import { hasWorkspaceModule } from "@/lib/workspace-modules";
+ import { getSessionUser } from "@/lib/auth";
+ import { getFleetBoard } from "@/lib/fleet/board";
+ import { hasMinimumRole } from "@/lib/permissions";
+@@ -8,6 +9,9 @@ export async function GET() {
+   if (!user) {
+     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+   }
++  if (!hasWorkspaceModule(user, "FLEET")) {
++    return NextResponse.json({ error: "Fleet access required" }, { status: 403 });
++  }
+   if (!hasMinimumRole(user.role, "MANAGER")) {
+     return NextResponse.json({ error: "Manager access required" }, { status: 403 });
+   }
+diff --git a/src/app/api/fleet/demo/route.ts b/src/app/api/fleet/demo/route.ts
+index e609c2b..d27af53 100644
+--- a/src/app/api/fleet/demo/route.ts
++++ b/src/app/api/fleet/demo/route.ts
+@@ -1,4 +1,5 @@
+ import { NextResponse } from "next/server";
++import { hasWorkspaceModule } from "@/lib/workspace-modules";
+ import { getSessionUser } from "@/lib/auth";
+ import { seedFleetDemo } from "@/lib/fleet/demo-seed";
+ import { hasMinimumRole } from "@/lib/permissions";
+@@ -8,6 +9,9 @@ export async function POST() {
+   if (!user) {
+     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+   }
++  if (!hasWorkspaceModule(user, "FLEET")) {
++    return NextResponse.json({ error: "Fleet access required" }, { status: 403 });
++  }
+   if (!hasMinimumRole(user.role, "MANAGER")) {
+     return NextResponse.json({ error: "Manager access required" }, { status: 403 });
+   }
+diff --git a/src/app/api/fleet/vehicles/route.ts b/src/app/api/fleet/vehicles/route.ts
+index 9ba1e8f..b48fa08 100644
+--- a/src/app/api/fleet/vehicles/route.ts
++++ b/src/app/api/fleet/vehicles/route.ts
+@@ -1,4 +1,5 @@
+ import { NextResponse } from "next/server";
++import { hasWorkspaceModule } from "@/lib/workspace-modules";
+ import { getSessionUser } from "@/lib/auth";
+ import { prisma } from "@/lib/db";
+ import { hasMinimumRole } from "@/lib/permissions";
+@@ -9,6 +10,9 @@ export async function GET() {
+   if (!user) {
+     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+   }
++  if (!hasWorkspaceModule(user, "FLEET")) {
++    return NextResponse.json({ error: "Fleet access required" }, { status: 403 });
++  }
+   if (!hasMinimumRole(user.role, "STAFF")) {
+     return NextResponse.json({ error: "Staff access required" }, { status: 403 });
+   }
+diff --git a/src/app/api/fleet/weighbridge/route.ts b/src/app/api/fleet/weighbridge/route.ts
+index d451ea3..00bc60c 100644
+--- a/src/app/api/fleet/weighbridge/route.ts
++++ b/src/app/api/fleet/weighbridge/route.ts
+@@ -1,4 +1,5 @@
+ import { NextResponse } from "next/server";
++import { hasWorkspaceModule } from "@/lib/workspace-modules";
+ import { getSessionUser } from "@/lib/auth";
+ import { recordWeighbridge } from "@/lib/fleet/ingest";
+ import { hasMinimumRole } from "@/lib/permissions";
+@@ -8,6 +9,9 @@ export async function POST(request: Request) {
+   if (!user) {
+     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+   }
++  if (!hasWorkspaceModule(user, "FLEET")) {
++    return NextResponse.json({ error: "Fleet access required" }, { status: 403 });
++  }
+   if (!hasMinimumRole(user.role, "STAFF")) {
+     return NextResponse.json({ error: "Staff access required" }, { status: 403 });
+   }
+diff --git a/src/app/app/clients/actions.ts b/src/app/app/clients/actions.ts
+index dbaf964..9c1c385 100644
+--- a/src/app/app/clients/actions.ts
++++ b/src/app/app/clients/actions.ts
+@@ -41,9 +41,66 @@ import { clampModulesToOrg, mergeAllowedModules } from "@/lib/org-plan-presets";
+ import { syncOrganizationPlanRecord } from "@/lib/organization-plan";
+ import { canManageSuperAdmins } from "@/lib/platform";
+ import { resolveMemberModules } from "@/lib/workspace-modules";
++import { resolveProvisionAccess } from "@/lib/workspace-provision-access";
++import { businessWorkspacePlan } from "@/lib/business-workspace-plans";
++import { catalogRateForPlan } from "@/lib/billing/catalog";
+ 
+ export type BillingActionState = { ok: boolean; message: string };
+ 
++/** Explicit ops action: applies a published plan without changing trial lifecycle or invoices. */
++export async function applyClientBusinessPlanAction(
++  _prev: BillingActionState,
++  formData: FormData,
++): Promise<BillingActionState> {
++  const user = await requirePlatformAdmin();
++  if (!user) return { ok: false, message: "Only Sheetomatic super admins can change client plans." };
++  const organizationId = String(formData.get("organizationId") ?? "").trim();
++  const bundle = String(formData.get("activationBundle") ?? "");
++  if (!businessWorkspacePlan(bundle)) return { ok: false, message: "Choose a monthly business plan." };
++  let preset: ReturnType<typeof resolveProvisionAccess>;
++  try {
++    preset = resolveProvisionAccess({
++      bundle,
++      selectedModules: formData.get("moduleSelection") === "explicit" ? formData.getAll("selectedModules").map(String) : undefined,
++      selectedSuiteParts: formData.getAll("selectedSuiteParts").map(String),
++      maxMembers: Number(formData.get("maxMembers") || Number.NaN),
++      maxFmsTemplates: Number(formData.get("maxFmsTemplates") || Number.NaN),
++    });
++  } catch (error) {
++    return { ok: false, message: error instanceof Error ? error.message : "Review module access." };
++  }
++  const result = await prisma.$transaction(async (tx) => {
++    const org = await tx.organization.findUnique({ where: { id: organizationId } });
++    if (!org || org.isPrimary) return false;
++    await tx.organization.update({ where: { id: organizationId }, data: {
++      plan: preset.plan, product: preset.product, billingPeriod: "MONTHLY",
++      allowedModules: preset.allowedModules, allowedSuiteParts: preset.enabledBciSubModules,
++      maxMembers: preset.maxMembers, maxFmsTemplates: preset.maxFmsTemplates,
++    } });
++    await tx.organizationPlan.upsert({ where: { organizationId },
++      create: { organizationId, plan: preset.plan, status: org.planStatus, billingPeriod: "MONTHLY" },
++      update: { plan: preset.plan, billingPeriod: "MONTHLY" },
++    });
++    const members = await tx.membership.findMany({ where: { organizationId } });
++    for (const member of members) {
++      await tx.membership.update({ where: { id: member.id }, data: {
++        modules: member.role === "OWNER" ? preset.allowedModules : member.modules.filter((module) => preset.allowedModules.includes(module)),
++        enabledBciSubModules: member.role === "OWNER" ? preset.enabledBciSubModules : member.enabledBciSubModules.filter((part) => preset.enabledBciSubModules.some((allowed) => allowed === part)),
++      } });
++    }
++    const rate = catalogRateForPlan(preset.plan);
++    await tx.organizationBilling.upsert({ where: { organizationId },
++      create: { organizationId, monthlyRatePaise: rate.monthlyRatePaise, includedUsers: preset.maxMembers, extraUserMonthlyPaise: 0, gstPercent: rate.gstPercent },
++      update: { monthlyRatePaise: rate.monthlyRatePaise, includedUsers: preset.maxMembers, extraUserMonthlyPaise: 0 },
++    });
++    return true;
++  });
++  if (!result) return { ok: false, message: "Client workspace not found." };
++  revalidateBilling(organizationId);
++  revalidatePath("/app", "layout");
++  return { ok: true, message: "Monthly plan and selected module access saved. Trial dates and existing invoices are unchanged." };
++}
++
+ async function requirePlatformAdmin() {
+   const user = await getSessionUser();
+   if (!user || !canManageSuperAdmins(user, user.organizationSlug)) {
+@@ -293,8 +350,8 @@ export async function updateClientAddonBillingAction(
+   }
+ 
+   const organizationId = String(formData.get("organizationId") ?? "").trim();
+-  const module = String(formData.get("module") ?? "").trim() as WorkspaceModule;
+-  const addon = billableAddonByModule(module);
++  const moduleKey = String(formData.get("module") ?? "").trim() as WorkspaceModule;
++  const addon = billableAddonByModule(moduleKey);
+   const rate = parseRupeesInput(String(formData.get("rate") ?? ""));
+   const periodRaw = String(formData.get("billingPeriod") ?? "MONTHLY");
+ 
+diff --git a/src/app/app/em/page.tsx b/src/app/app/em/page.tsx
+index b402a9e..e761c41 100644
+--- a/src/app/app/em/page.tsx
++++ b/src/app/app/em/page.tsx
+@@ -7,8 +7,7 @@ import { WorkspaceGuideButton } from "@/components/saas/workspace-guide-button";
+ import { getEmReadyPayload } from "@/lib/em/em-ready-data";
+ import { parseEmPeriodParams } from "@/lib/em/em-period";
+ import { requireSession } from "@/lib/require-session";
+-import { hasMinimumRole } from "@/lib/permissions";
+-import { redirect } from "next/navigation";
++import { hasWorkspaceModule } from "@/lib/workspace-modules";
+ 
+ type PageProps = {
+   searchParams: Promise<{
+@@ -22,11 +21,7 @@ type PageProps = {
+ };
+ 
+ export default async function EmReadyPage({ searchParams }: PageProps) {
+-  const user = await requireSession(undefined, { module: "REPORTS" });
+-
+-  if (!hasMinimumRole(user.role, "MANAGER")) {
+-    redirect("/app/reports");
+-  }
++  const user = await requireSession("MANAGER", { suitePart: "em" });
+ 
+   const params = await searchParams;
+   const period = parseEmPeriodParams(params);
+@@ -50,9 +45,9 @@ export default async function EmReadyPage({ searchParams }: PageProps) {
+                 Task board
+               </Link>
+             ) : null}
+-            <Link href="/app/reports" className="btn-secondary btn-sm">
++            {hasWorkspaceModule(user, "REPORTS") ? <Link href="/app/reports" className="btn-secondary btn-sm">
+               MIS reports
+-            </Link>
++            </Link> : null}
+           </>
+         }
+       />
+diff --git a/src/app/app/fleet/driver/page.tsx b/src/app/app/fleet/driver/page.tsx
+index 6abaca0..e9f6c21 100644
+--- a/src/app/app/fleet/driver/page.tsx
++++ b/src/app/app/fleet/driver/page.tsx
+@@ -5,6 +5,6 @@ import "@/components/fleet/fleet-dashboard.css";
+ export const dynamic = "force-dynamic";
+ 
+ export default async function FleetDriverPage() {
+-  await requireSession("STAFF");
++  await requireSession("STAFF", { module: "FLEET" });
+   return <FleetDriverClient />;
+ }
+diff --git a/src/app/app/fleet/page.tsx b/src/app/app/fleet/page.tsx
+index 6336919..a113580 100644
+--- a/src/app/app/fleet/page.tsx
++++ b/src/app/app/fleet/page.tsx
+@@ -6,7 +6,7 @@ import "@/components/fleet/fleet-dashboard.css";
+ export const dynamic = "force-dynamic";
+ 
+ export default async function FleetPage() {
+-  const user = await requireSession("MANAGER");
++  const user = await requireSession("MANAGER", { module: "FLEET" });
+   const board = await getFleetBoard(user.organizationId);
+   return <FleetDashboard initial={board} />;
+ }
+diff --git a/src/app/app/fms/kits/actions.ts b/src/app/app/fms/kits/actions.ts
+index da014de..4c0b56c 100755
+--- a/src/app/app/fms/kits/actions.ts
++++ b/src/app/app/fms/kits/actions.ts
+@@ -32,7 +32,7 @@ function revalidateKits(organizationId?: string) {
+ export async function requestKitLicenseAction(
+   formData: FormData,
+ ): Promise<KitActionResult> {
+-  const user = await requireSession("ADMIN");
++  const user = await requireSession("ADMIN", { suitePart: "fms" });
+   if (!hasMinimumRole(user.role, "ADMIN")) {
+     return { ok: false, message: "Only admins can request a kit license." };
+   }
+@@ -55,7 +55,7 @@ export async function requestKitLicenseAction(
+ }
+ 
+ export async function installKitAction(formData: FormData): Promise<KitActionResult> {
+-  const user = await requireSession("MANAGER");
++  const user = await requireSession("MANAGER", { suitePart: "fms" });
+   if (!hasMinimumRole(user.role, "MANAGER")) {
+     return { ok: false, message: "Not allowed." };
+   }
+@@ -84,7 +84,7 @@ export async function installKitAction(formData: FormData): Promise<KitActionRes
+ export async function grantKitLicenseAction(
+   formData: FormData,
+ ): Promise<KitActionResult> {
+-  const user = await requireSession("ADMIN");
++  const user = await requireSession("ADMIN", { suitePart: "fms" });
+   if (!canManageSuperAdmins(user, user.organizationSlug)) {
+     return { ok: false, message: "Only Sheetomatic super admins can grant a kit license." };
+   }
+@@ -111,7 +111,7 @@ export async function grantKitLicenseAction(
+ export async function cancelKitLicenseAction(
+   formData: FormData,
+ ): Promise<KitActionResult> {
+-  const user = await requireSession("ADMIN");
++  const user = await requireSession("ADMIN", { suitePart: "fms" });
+   if (!canManageSuperAdmins(user, user.organizationSlug)) {
+     return { ok: false, message: "Only Sheetomatic super admins can cancel a kit license." };
+   }
+diff --git a/src/app/app/layout.tsx b/src/app/app/layout.tsx
+index 7aebf75..53b99db 100644
+--- a/src/app/app/layout.tsx
++++ b/src/app/app/layout.tsx
+@@ -150,9 +150,7 @@ export default async function AppLayout({
+               sessionUser.isSuperAdmin || hasMinimumRole(sessionUser.role, "ADMIN")
+             }
+             enabledBciSubModules={
+-              sessionUser.isSuperAdmin || hasMinimumRole(sessionUser.role, "ADMIN")
+-                ? null
+-                : []
++              sessionUser.enabledBciSubModules ?? []
+             }
+             hidePlanBadge={Boolean(dedicatedPortal)}
+             isDedicatedPortal={Boolean(dedicatedPortal)}
+diff --git a/src/app/app/page.tsx b/src/app/app/page.tsx
+index 43f2bd2..db7b48c 100644
+--- a/src/app/app/page.tsx
++++ b/src/app/app/page.tsx
+@@ -11,6 +11,7 @@ import { LEARN_ADMIN_HOME } from "@/lib/workspace-auth-links";
+ import { hasWorkspaceModule, resolveWorkspaceHomeHref } from "@/lib/workspace-modules";
+ import { getUserDashboard } from "@/lib/workspace-data";
+ import { parseWorkspaceNavPrefs } from "@/lib/workspace-nav-prefs";
++import { canUseTasks, grantedSuiteParts } from "@/lib/workspace-access";
+ 
+ function emptyDashboardForUser(role: import("@prisma/client").Role): DashboardPayload {
+   return {
+@@ -81,6 +82,9 @@ async function DashboardHome({
+   user: Awaited<ReturnType<typeof requireSession>>;
+ }) {
+   const displayName = user.name ?? user.email.split("@")[0];
++  if (user.modules.filter((module) => module !== "FMS").length === 0 && grantedSuiteParts(user).length === 0) {
++    return <div className="saas-page"><h1>Workspace</h1><p>No modules are enabled for your account. Contact your workspace administrator to update module access.</p></div>;
++  }
+ 
+   // BCI-style platform orgs get the widget grid; AI-CRM orgs keep the
+   // classic metric-cards dashboard.
+@@ -132,7 +136,8 @@ async function DashboardHome({
+           organizationName={organizationName}
+           pendingPayments={dashboard.pendingPayments}
+           taskStats={dashboard.taskStats}
+-          tasksEnabled={hasWorkspaceModule(user, "TASKS")}
++          tasksEnabled={canUseTasks(user)}
++          reportsEnabled={hasWorkspaceModule(user, "REPORTS")}
+           userName={displayName}
+         />
+       </div>
+diff --git a/src/app/app/pc/actions.ts b/src/app/app/pc/actions.ts
+index f0212cb..8725c7d 100644
+--- a/src/app/app/pc/actions.ts
++++ b/src/app/app/pc/actions.ts
+@@ -3,7 +3,6 @@
+ import { revalidatePath } from "next/cache";
+ import { prisma } from "@/lib/db";
+ import { requireSession } from "@/lib/require-session";
+-import { BCI_OPS_MODULES } from "@/lib/workspace-modules";
+ import { pcWorkHrefKey, type PcWorkKind } from "@/lib/checklists/pc-work";
+ import { deliverWhatsAppMessage } from "@/lib/integrations/whatsapp-provider";
+ import { PRIMARY_ORG_SLUG } from "@/lib/platform";
+@@ -100,7 +99,7 @@ export async function recordPcFollowUp(
+   formData: FormData,
+ ): Promise<PcJobActionState> {
+   try {
+-    const user = await requireSession(undefined, { anyModules: BCI_OPS_MODULES });
++    const user = await requireSession(undefined, { suitePart: "pc" });
+     const kind = parseKind(formData.get("kind"));
+     const workId = formData.get("workId")?.toString() ?? "";
+     if (!kind || !workId) {
+@@ -144,7 +143,7 @@ export async function markPcJobDone(
+   formData: FormData,
+ ): Promise<PcJobActionState> {
+   try {
+-    const user = await requireSession(undefined, { anyModules: BCI_OPS_MODULES });
++    const user = await requireSession(undefined, { suitePart: "pc" });
+     const kind = parseKind(formData.get("kind"));
+     const workId = formData.get("workId")?.toString() ?? "";
+     if (!kind || !workId) {
+@@ -192,7 +191,7 @@ export async function completePcDoerWorkAction(
+   formData: FormData,
+ ): Promise<PcJobActionState> {
+   try {
+-    const user = await requireSession(undefined, { anyModules: BCI_OPS_MODULES });
++    const user = await requireSession(undefined, { suitePart: "pc" });
+     const kind = parseKind(formData.get("kind"));
+     const workId = formData.get("workId")?.toString() ?? "";
+     if (!kind || !workId) {
+diff --git a/src/app/app/settings/addon-actions.ts b/src/app/app/settings/addon-actions.ts
+index 43e5a01..59eb87b 100644
+--- a/src/app/app/settings/addon-actions.ts
++++ b/src/app/app/settings/addon-actions.ts
+@@ -15,6 +15,7 @@ import {
+   parseAddonModulesFromForm,
+ } from "@/lib/workspace-addons.shared";
+ import { resolveMemberModules } from "@/lib/workspace-modules";
++import { businessWorkspacePlan } from "@/lib/business-workspace-plans";
+ 
+ function inferPlanFromModules(modules: WorkspaceModule[]): OrgPlan {
+   const set = new Set(modules);
+@@ -67,12 +68,10 @@ export async function saveWorkspaceAddons(formData: FormData) {
+     };
+   }
+ 
+-  let allowedModules = parseAddonModulesFromForm(formData);
+-  if (allowedModules.length === 0) {
+-    allowedModules = [...BCI_CORE_MODULES];
+-  }
++  const allowedModules = parseAddonModulesFromForm(formData);
+ 
+-  const plan = inferPlanFromModules(allowedModules);
++  const existing = await prisma.organization.findUnique({ where: { id: user.organizationId }, select: { plan: true } });
++  const plan = existing && businessWorkspacePlan(existing.plan) ? existing.plan : inferPlanFromModules(allowedModules);
+ 
+   await prisma.organization.update({
+     where: { id: user.organizationId },
+diff --git a/src/app/app/tasks/actions.ts b/src/app/app/tasks/actions.ts
+index 06fbc1a..7532220 100644
+--- a/src/app/app/tasks/actions.ts
++++ b/src/app/app/tasks/actions.ts
+@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
+ import { revalidatePath } from "next/cache";
+ import { redirect } from "next/navigation";
+ import type { TaskDepartment, TaskPriority } from "@prisma/client";
++import { canUseTasks } from "@/lib/workspace-access";
+ import { getSessionUser } from "@/lib/auth";
+ import { prisma } from "@/lib/db";
+ import { hasMinimumRole } from "@/lib/permissions";
+@@ -65,7 +66,7 @@ async function createDelegatedTaskInner(
+   formData: FormData,
+ ): Promise<TaskActionState> {
+   const user = await getSessionUser();
+-  if (!user || !canCreateTasks(user.role)) {
++  if (!user || !canUseTasks(user) || !canCreateTasks(user.role)) {
+     return { ok: false, message: "You cannot create tasks." };
+   }
+ 
+@@ -305,7 +306,7 @@ async function updateTaskStatusInner(
+   status: "PENDING" | "IN_PROGRESS" | "COMPLETED",
+ ): Promise<TaskActionState> {
+   const user = await getSessionUser();
+-  if (!user) {
++  if (!user || !canUseTasks(user)) {
+     return { ok: false, message: "Sign in required." };
+   }
+ 
+@@ -459,7 +460,7 @@ export async function updateDelegatedTask(
+   formData: FormData,
+ ): Promise<TaskActionState> {
+   const user = await getSessionUser();
+-  if (!user || !canCreateTasks(user.role)) {
++  if (!user || !canUseTasks(user) || !canCreateTasks(user.role)) {
+     return { ok: false, message: "You cannot edit tasks." };
+   }
+ 
+@@ -630,7 +631,7 @@ export async function deleteDelegatedTask(
+   taskId: string,
+ ): Promise<TaskActionState> {
+   const user = await getSessionUser();
+-  if (!user || !canCreateTasks(user.role)) {
++  if (!user || !canUseTasks(user) || !canCreateTasks(user.role)) {
+     return { ok: false, message: "You cannot delete tasks." };
+   }
+ 
+@@ -659,7 +660,7 @@ export async function deleteDelegatedTasks(
+   taskIds: string[],
+ ): Promise<TaskActionState> {
+   const user = await getSessionUser();
+-  if (!user || (!user.isSuperAdmin && !hasMinimumRole(user.role, "ADMIN"))) {
++  if (!user || !canUseTasks(user) || (!user.isSuperAdmin && !hasMinimumRole(user.role, "ADMIN"))) {
+     return { ok: false, message: "Only an admin can delete selected tasks." };
+   }
+ 
+@@ -687,7 +688,7 @@ export async function deleteDelegatedTasks(
+ 
+ export async function deleteAllDelegatedTasks(): Promise<TaskActionState> {
+   const user = await getSessionUser();
+-  if (!user || (!user.isSuperAdmin && !hasMinimumRole(user.role, "ADMIN"))) {
++  if (!user || !canUseTasks(user) || (!user.isSuperAdmin && !hasMinimumRole(user.role, "ADMIN"))) {
+     return { ok: false, message: "Only an admin can delete all tasks." };
+   }
+ 
+@@ -712,7 +713,7 @@ export async function resendTaskAssignmentReminders(
+   taskId: string,
+ ): Promise<TaskActionState> {
+   const user = await getSessionUser();
+-  if (!user || !canCreateTasks(user.role)) {
++  if (!user || !canUseTasks(user) || !canCreateTasks(user.role)) {
+     return { ok: false, message: "You cannot resend task notifications." };
+   }
+ 
+@@ -773,7 +774,7 @@ export async function resendTaskDueReminders(
+   taskId: string,
+ ): Promise<TaskActionState> {
+   const user = await getSessionUser();
+-  if (!user || !canCreateTasks(user.role)) {
++  if (!user || !canUseTasks(user) || !canCreateTasks(user.role)) {
+     return { ok: false, message: "You cannot resend due reminders." };
+   }
+ 
+diff --git a/src/app/app/tasks/page.tsx b/src/app/app/tasks/page.tsx
+index 17574ec..7544451 100644
+--- a/src/app/app/tasks/page.tsx
++++ b/src/app/app/tasks/page.tsx
+@@ -150,7 +150,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
+   return (
+     <div className="saas-page ws-tasks-page ws-tasks-sf">
+       <TaskPageToolbar
+-        title="Tasks Management"
++        title={user.modules.includes("TASKS") ? "Tasks Management" : "Task Delegation"}
+         description="Task distribution, performance, and team workload."
+         actions={
+           <>
+diff --git a/src/app/app/team/actions.ts b/src/app/app/team/actions.ts
+index 92b64c1..ea757e5 100644
+--- a/src/app/app/team/actions.ts
++++ b/src/app/app/team/actions.ts
+@@ -7,7 +7,6 @@ import type {
+   EmployeeLocationMode,
+   Role,
+   TaskDepartment,
+-  WorkspaceModule,
+ } from "@prisma/client";
+ import bcrypt from "bcryptjs";
+ import { getSessionUser } from "@/lib/auth";
+@@ -24,7 +23,6 @@ import {
+ import { assertOrganizationAccess } from "@/lib/workspace";
+ import {
+   clampModulesToOrg,
+-  modulesForTierRole,
+ } from "@/lib/org-plan-presets";
+ import {
+   getOrganizationPlanContext,
+@@ -32,9 +30,7 @@ import {
+   memberLimitMessage,
+ } from "@/lib/org-plan-context";
+ import {
+-  defaultModulesForRole,
+   parseModulesFromForm,
+-  resolveMemberModules,
+ } from "@/lib/workspace-modules";
+ import { parseEnabledKitKeys } from "@/lib/mobile-shop/kit-access";
+ import { persistEnabledHrSubModules } from "@/lib/hr/hr-sub-modules";
+@@ -167,17 +163,6 @@ async function validateReportingManager(input: {
+   return null;
+ }
+ 
+-function resolveModulesForOrg(input: {
+-  role: Role;
+-  formModules: WorkspaceModule[];
+-  fallbackModules: WorkspaceModule[];
+-  orgAllowedModules: WorkspaceModule[];
+-}) {
+-  const requested =
+-    input.formModules.length > 0 ? input.formModules : input.fallbackModules;
+-  return clampModulesToOrg(requested, input.orgAllowedModules);
+-}
+-
+ export async function inviteTeamMember(
+   _prev: TeamActionState,
+   formData: FormData,
+@@ -292,22 +277,7 @@ export async function inviteTeamMember(
+   }
+ 
+   const formModules = parseModulesFromForm(formData);
+-  const roleDefaultModules = clampModulesToOrg(
+-    defaultModulesForRole(role),
+-    orgPlan.orgAllowedModules,
+-  );
+-  let modules = resolveModulesForOrg({
+-    role,
+-    formModules,
+-    fallbackModules: roleDefaultModules,
+-    orgAllowedModules: orgPlan.orgAllowedModules,
+-  });
+-  if (modules.length === 0) {
+-    modules =
+-      roleDefaultModules.length > 0
+-        ? roleDefaultModules
+-        : modulesForTierRole(orgPlan.plan, role);
+-  }
++  const modules = clampModulesToOrg(formModules, orgPlan.orgAllowedModules);
+ 
+   const enabledHrSubModules = parseHrSubModulesFromForm(
+     formData,
+@@ -318,7 +288,7 @@ export async function inviteTeamMember(
+     modules.includes("CRM"),
+   );
+   const enabledKitKeys = parseEnabledKitKeys(formData);
+-  const enabledBciSubModules = parseBciSubModulesFromForm(formData);
++  const enabledBciSubModules = modules.includes("FMS") ? parseBciSubModulesFromForm(formData).filter((part) => !orgPlan.allowedSuiteParts || orgPlan.allowedSuiteParts.includes(part)) : [];
+ 
+   await assertOrganizationAccess(user.organizationId, user.id);
+ 
+@@ -643,22 +613,7 @@ export async function updateTeamMemberDetails(
+   }
+ 
+   const formModules = parseModulesFromForm(formData);
+-  const roleDefaultModules = clampModulesToOrg(
+-    defaultModulesForRole(role),
+-    orgPlan.orgAllowedModules,
+-  );
+-  let modules = resolveModulesForOrg({
+-    role,
+-    formModules,
+-    fallbackModules: resolveMemberModules(role, membership.modules),
+-    orgAllowedModules: orgPlan.orgAllowedModules,
+-  });
+-  if (modules.length === 0) {
+-    modules =
+-      roleDefaultModules.length > 0
+-        ? roleDefaultModules
+-        : modulesForTierRole(orgPlan.plan, role);
+-  }
++  const modules = clampModulesToOrg(formModules, orgPlan.orgAllowedModules);
+ 
+   const enabledHrSubModules = parseHrSubModulesFromForm(
+     formData,
+@@ -669,7 +624,7 @@ export async function updateTeamMemberDetails(
+     modules.includes("CRM"),
+   );
+   const enabledKitKeys = parseEnabledKitKeys(formData);
+-  const enabledBciSubModules = parseBciSubModulesFromForm(formData);
++  const enabledBciSubModules = modules.includes("FMS") ? parseBciSubModulesFromForm(formData).filter((part) => !orgPlan.allowedSuiteParts || orgPlan.allowedSuiteParts.includes(part)) : [];
+ 
+   const previousEmail = membership.user.email.trim().toLowerCase();
+   const emailChanged = email !== previousEmail;
+diff --git a/src/app/app/team/platform-actions.ts b/src/app/app/team/platform-actions.ts
+index b1837db..f323d26 100644
+--- a/src/app/app/team/platform-actions.ts
++++ b/src/app/app/team/platform-actions.ts
+@@ -151,6 +151,10 @@ export async function createClientWorkspaceAction(
+     ownerEmail: String(formData.get("ownerEmail") ?? ""),
+     ownerPhone: String(formData.get("ownerPhone") ?? ""),
+     bundle: String(formData.get("activationBundle") ?? ""),
++    selectedModules: formData.get("moduleSelection") === "explicit" ? formData.getAll("selectedModules").map(String) : undefined,
++    selectedSuiteParts: formData.getAll("selectedSuiteParts").map(String),
++    maxMembers: Number(formData.get("maxMembers") || Number.NaN),
++    maxFmsTemplates: Number(formData.get("maxFmsTemplates") || Number.NaN),
+     invitedByName: user.name ?? user.email,
+     demoTrial: formData.get("demoTrial") === "on",
+   });
+diff --git a/src/app/app/today/page.tsx b/src/app/app/today/page.tsx
+index de15052..7a0c371 100644
+--- a/src/app/app/today/page.tsx
++++ b/src/app/app/today/page.tsx
+@@ -2,12 +2,12 @@ import { MyTodayBoard } from "@/components/saas/my-today-board";
+ import { getMyTodayPayload, EMPTY_TODAY_PAYLOAD } from "@/lib/work/my-today";
+ import { canCreateTasks } from "@/lib/tasks";
+ import { requireSession } from "@/lib/require-session";
+-import { hasWorkspaceModule } from "@/lib/workspace-modules";
++import { canUseTasks, hasSuitePart } from "@/lib/workspace-access";
+ 
+ export default async function MyTodayPage() {
+   const user = await requireSession();
+-  const hasTasks = hasWorkspaceModule(user, "TASKS");
+-  const hasFms = hasWorkspaceModule(user, "FMS");
++  const hasTasks = canUseTasks(user);
++  const hasFms = hasSuitePart(user, "fms");
+ 
+   if (!hasTasks && !hasFms) {
+     return (
+@@ -17,7 +17,7 @@ export default async function MyTodayPage() {
+     );
+   }
+ 
+-  const payload = await getMyTodayPayload(user.organizationId, user.id).catch(
++  const payload = await getMyTodayPayload(user.organizationId, user.id, { tasks: hasTasks, fms: hasFms, checklists: hasSuitePart(user, "checklists") }).catch(
+     (error) => {
+       console.error("[today-page] load failed", error);
+       return EMPTY_TODAY_PAYLOAD;
+diff --git a/src/app/app/workspace-resolved-shell.tsx b/src/app/app/workspace-resolved-shell.tsx
+index 85bcfeb..0f14b6e 100644
+--- a/src/app/app/workspace-resolved-shell.tsx
++++ b/src/app/app/workspace-resolved-shell.tsx
+@@ -19,8 +19,6 @@ import { hasWorkspaceModule } from "@/lib/workspace-modules";
+ import { orgHasActiveKitLicense } from "@/lib/addons/kit-license";
+ import { MOBILE_SHOP_KIT_KEY } from "@/lib/addons/licensed-kits";
+ import { licensedKitKeysForNav } from "@/lib/mobile-shop/kit-access";
+-import { resolveMemberBciSubModules } from "@/lib/bci/bci-sub-modules";
+-import { hasMinimumRole } from "@/lib/permissions";
+ import { canViewTeamPage } from "@/lib/team-hierarchy";
+ import { memberHasDirectReports } from "@/lib/workspace";
+ import {
+@@ -80,10 +78,7 @@ export async function WorkspaceResolvedShell({
+       sessionUser,
+       sessionUser.isDepartmentHead || hasReports,
+     );
+-    enabledBciSubModules =
+-      sessionUser.isSuperAdmin || hasMinimumRole(sessionUser.role, "ADMIN")
+-        ? null
+-        : resolveMemberBciSubModules(membershipPrefs?.enabledBciSubModules);
++    enabledBciSubModules = sessionUser.enabledBciSubModules ?? [];
+   } catch (error) {
+     console.error("[app-layout] workspace bootstrap failed", error);
+     redirect(logoutHref("/login?error=workspace"));
+diff --git a/src/components/saas/client-plan-actions.tsx b/src/components/saas/client-plan-actions.tsx
+index 173b1f8..2c1f5c9 100644
+--- a/src/components/saas/client-plan-actions.tsx
++++ b/src/components/saas/client-plan-actions.tsx
+@@ -1,9 +1,11 @@
+ "use client";
+ 
+ import Link from "next/link";
++import { WorkspaceBundleSelect } from "@/components/saas/workspace-bundle-select";
+ import { useActionState, useState } from "react";
+ import {
+   addClientAddonsAction,
++  applyClientBusinessPlanAction,
+   deleteClientBillingPlanAction,
+   removeClientAddonAction,
+   updateClientAddonBillingAction,
+@@ -141,7 +143,8 @@ export function ClientPlanActions({
+   addonLines: WorkspaceAddonCharge[];
+   availableAddons: BillableAddon[];
+ }) {
+-  const [open, setOpen] = useState<"add" | "change" | "addon" | null>(null);
++  const [open, setOpen] = useState<"add" | "change" | "addon" | "published" | null>(null);
++  const [planState, planAction, applyingPlan] = useActionState(applyClientBusinessPlanAction, initial);
+   const [saveState, saveAction, saving] = useActionState(
+     updateClientBillingAction,
+     initial,
+@@ -178,6 +181,9 @@ export function ClientPlanActions({
+         </section>
+       ) : null}
+       <div className="ws-client-toolbar">
++        <button className="ws-client-action ws-client-action--primary" type="button" onClick={() => setOpen(open === "published" ? null : "published")}>
++          Apply monthly plan
++        </button>
+         <Link className="ws-client-action ws-client-action--link" href={clientUrl}>
+           Open client
+         </Link>
+@@ -231,6 +237,14 @@ export function ClientPlanActions({
+           </form>
+         ) : null}
+       </div>
++      {open === "published" ? <form action={planAction} className="ws-plan-form">
++        <input name="organizationId" type="hidden" value={organizationId} />
++        <WorkspaceBundleSelect moduleSelection plansOnly disabled={applyingPlan} />
++        <p>Save applies the selected monthly rate and module access to this client. Trial expiry and existing invoices stay unchanged.</p>
++        <button className="ws-client-action ws-client-action--primary" type="submit" disabled={applyingPlan}>{applyingPlan ? "Saving…" : "Save plan and module access"}</button>
++        <button className="ws-client-action" type="button" onClick={() => setOpen(null)}>Cancel</button>
++        {planState.message ? <p role="status" className={planState.ok ? "saas-form-success" : "saas-form-error"}>{planState.message}</p> : null}
++      </form> : null}
+       {deleteState.message ? (
+         <p className={deleteState.ok ? "saas-form-success" : "saas-form-error"}>
+           {deleteState.message}
+diff --git a/src/components/saas/create-client-workspace-panel.tsx b/src/components/saas/create-client-workspace-panel.tsx
+index d0fb94a..d498db5 100644
+--- a/src/components/saas/create-client-workspace-panel.tsx
++++ b/src/components/saas/create-client-workspace-panel.tsx
+@@ -58,8 +58,8 @@ export function CreateClientWorkspacePanel({
+             Create client workspace
+           </h3>
+           <p>
+-            Each client gets their own workspace for one product — BCI, Tasks,
+-            HRMS, or CRM — with its own users and monthly bill. Tick{" "}
++            Choose a monthly plan and tick the modules this client can access.
++            Setup is included and GST is extra. Tick{" "}
+             <strong>Demo account (3 days)</strong> for a trial; it auto-expires,
+             then convert to a real client when they continue.
+           </p>
+@@ -106,7 +106,7 @@ export function CreateClientWorkspacePanel({
+             autoComplete="tel"
+           />
+         </label>
+-        <WorkspaceBundleSelect defaultValue="tasks_addon" disabled={pending} />
++        <WorkspaceBundleSelect moduleSelection disabled={pending} />
+         <label className="ws-attendance-check">
+           <input name="demoTrial" type="checkbox" />
+           <span>
+diff --git a/src/components/saas/fms-module-nav.tsx b/src/components/saas/fms-module-nav.tsx
+index 6f7bfbb..7d707fc 100755
+--- a/src/components/saas/fms-module-nav.tsx
++++ b/src/components/saas/fms-module-nav.tsx
+@@ -19,6 +19,7 @@ import {
+ } from "lucide-react";
+ import type { SessionUser } from "@/lib/auth";
+ import { canApproveFmsFlow, canSubmitFmsFlow } from "@/lib/fms/access";
++import { hasSuitePart } from "@/lib/workspace-access";
+ import { canAccessEmReady } from "@/lib/em/em-access";
+ import { hasMinimumRole } from "@/lib/permissions";
+ import { FmsInAppNotificationsBell } from "@/components/saas/fms-in-app-notifications-bell";
+@@ -224,7 +225,7 @@ export function FmsModuleNav({
+           </li>
+         ) : null}
+ 
+-        {isManager ? (
++        {isManager && hasSuitePart(user, "mis") ? (
+           <li>
+             <Link
+               href="/app/fms/scores"
+diff --git a/src/components/saas/tasks-module-nav.tsx b/src/components/saas/tasks-module-nav.tsx
+index 8e821d5..c700b55 100644
+--- a/src/components/saas/tasks-module-nav.tsx
++++ b/src/components/saas/tasks-module-nav.tsx
+@@ -58,7 +58,7 @@ export function TasksModuleNav({ user }: { user: SessionUser }) {
+     },
+     {
+       href: "/app/tasks",
+-      label: "Tasks Management",
++      label: user.modules.includes("TASKS") ? "Tasks Management" : "Task Delegation",
+       icon: LayoutDashboard,
+       visible: isManager,
+       description: "Charts, scores & summary",
+@@ -101,7 +101,7 @@ export function TasksModuleNav({ user }: { user: SessionUser }) {
+         <ListTodo size={18} aria-hidden />
+         <div>
+           <strong>Task Delegation</strong>
+-          <span>Tasks Management</span>
++          <span>{user.modules.includes("TASKS") ? "Tasks Management" : "Task Delegation"}</span>
+         </div>
+       </div>
+       <ul className="ws-module-subnav-list">
+diff --git a/src/components/saas/workspace-addons-panel.tsx b/src/components/saas/workspace-addons-panel.tsx
+index bf7b7c2..7b9fca2 100644
+--- a/src/components/saas/workspace-addons-panel.tsx
++++ b/src/components/saas/workspace-addons-panel.tsx
+@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
+ import { Layers, Save } from "lucide-react";
+ import type { OrgPlan, WorkspaceModule } from "@prisma/client";
+ import { ORG_PLAN_LABELS } from "@/lib/org-plan-presets";
++import { businessWorkspacePlan } from "@/lib/business-workspace-plans";
++import { WORKSPACE_MODULE_LABELS } from "@/lib/workspace-modules";
+ import {
+   BCI_CORE_MODULES,
+   isAddonEnabled,
+@@ -27,6 +29,7 @@ export function WorkspaceAddonsPanel({
+   const [pending, startTransition] = useTransition();
+   const enabledOptional = listOptionalAddons(allowedModules);
+   const hasBciCore = BCI_CORE_MODULES.every((module) => allowedModules.includes(module));
++  const businessPlan = businessWorkspacePlan(plan);
+ 
+   return (
+     <article className="saas-panel workspace-addons-panel">
+@@ -35,8 +38,8 @@ export function WorkspaceAddonsPanel({
+         Workspace add-ons
+       </h3>
+       <p className="type-body-sm text-slate-500">
+-        BCI FMS is the core bundle. Every other module is an optional add-on - only
+-        enabled add-ons appear in the sidebar.
++        Access depends on the modules enabled for this workspace and each member.
++        Apply a monthly business plan from Clients to set its included modules.
+       </p>
+ 
+       <p className="workspace-addons-plan">
+@@ -59,7 +62,18 @@ export function WorkspaceAddonsPanel({
+       >
+         <fieldset className="workspace-addons-fieldset" disabled={!canEdit || pending}>
+           <legend className="sr-only">Workspace modules</legend>
++          <label className="workspace-addon-row">
++            <input defaultChecked={allowedModules.includes("FLEET")} name="fleetAccess" type="checkbox" />
++            <span><strong>Fleet access</strong><small>Enable only when separately agreed for this client.</small></span>
++          </label>
+ 
++          {businessPlan ? <>
++            <input type="hidden" name="workspaceModuleSelection" value="explicit" />
++            {[...new Set<WorkspaceModule>([...businessPlan.modules, ...allowedModules])].filter((item) => item !== "FLEET").map((item) => <label className="workspace-addon-row" key={item}>
++              <input name="modules" value={item} type="checkbox" defaultChecked={allowedModules.includes(item)} />
++              <span><strong>{WORKSPACE_MODULE_LABELS[item]}</strong></span>
++            </label>)}
++          </> : <>
+           <label className="workspace-addon-row core">
+             <input
+               defaultChecked={hasBciCore}
+@@ -93,6 +107,7 @@ export function WorkspaceAddonsPanel({
+               </label>
+             );
+           })}
++          </>}
+         </fieldset>
+ 
+         {canEdit ? (
+diff --git a/src/components/saas/workspace-bundle-select.tsx b/src/components/saas/workspace-bundle-select.tsx
+index 0705a20..dc887b5 100644
+--- a/src/components/saas/workspace-bundle-select.tsx
++++ b/src/components/saas/workspace-bundle-select.tsx
+@@ -1,72 +1,73 @@
+ "use client";
+ 
+-import { useMemo, useState } from "react";
+-import {
+-  ACTIVATION_BUNDLE_OPTIONS,
+-  DEFAULT_ACTIVATION_BUNDLE,
+-  formatAllowedModules,
+-  type ActivationBundleKey,
+-} from "@/lib/workspace-activation-bundles.shared";
++import { useId, useState } from "react";
++import type { WorkspaceModule } from "@prisma/client";
++import { ACTIVATION_BUNDLE_OPTIONS, DEFAULT_ACTIVATION_BUNDLE, type ActivationBundleKey } from "@/lib/workspace-activation-bundles.shared";
++import { WORKSPACE_MODULE_LABELS } from "@/lib/workspace-modules";
++import { BCI_SUB_MODULES } from "@/lib/bci/bci-sub-modules";
+ 
+-type WorkspaceBundleSelectProps = {
++type Props = {
+   name?: string;
+   defaultValue?: ActivationBundleKey;
+   disabled?: boolean;
++  moduleSelection?: boolean;
++  plansOnly?: boolean;
+ };
+ 
+-/** Super-admin: pick module bundle before activating a workspace. */
+-export function WorkspaceBundleSelect({
+-  name = "activationBundle",
+-  defaultValue = DEFAULT_ACTIVATION_BUNDLE,
+-  disabled = false,
+-}: WorkspaceBundleSelectProps) {
++export function WorkspaceBundleSelect({ name = "activationBundle", defaultValue = DEFAULT_ACTIVATION_BUNDLE, disabled = false, moduleSelection = false, plansOnly = false }: Props) {
++  const id = useId();
+   const [selected, setSelected] = useState<ActivationBundleKey>(defaultValue);
++  const option = ACTIVATION_BUNDLE_OPTIONS.find((item) => item.value === selected)!;
++  const [modules, setModules] = useState<WorkspaceModule[]>(() => [...option.modules]);
++  const [parts, setParts] = useState<string[]>(() => BCI_SUB_MODULES.map((part) => part.id));
++  const options = plansOnly ? ACTIVATION_BUNDLE_OPTIONS.filter((item) => item.group === "plan") : ACTIVATION_BUNDLE_OPTIONS;
+ 
+-  const option = useMemo(
+-    () => ACTIVATION_BUNDLE_OPTIONS.find((o) => o.value === selected),
+-    [selected],
+-  );
++  function changePlan(value: ActivationBundleKey) {
++    setSelected(value);
++    setModules([...(ACTIVATION_BUNDLE_OPTIONS.find((item) => item.value === value)?.modules ?? [])]);
++    setParts(BCI_SUB_MODULES.map((part) => part.id));
++  }
+ 
+   return (
+-    <div className="mt-3 space-y-2">
+-      <label className="block text-sm font-medium text-slate-700" htmlFor={name}>
+-        Product workspace
+-      </label>
+-      <select
+-        id={name}
+-        name={name}
+-        disabled={disabled}
+-        value={selected}
+-        onChange={(e) => setSelected(e.target.value as ActivationBundleKey)}
+-        className="w-full max-w-md rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200 disabled:opacity-60"
+-      >
+-        <optgroup label="One product per workspace">
+-          {ACTIVATION_BUNDLE_OPTIONS.filter((item) => item.group === "product").map(
+-            (item) => (
+-              <option key={item.value} value={item.value}>
+-                {item.label}
+-              </option>
+-            ),
+-          )}
+-        </optgroup>
+-        <optgroup label="Combined workspace">
+-          {ACTIVATION_BUNDLE_OPTIONS.filter((item) => item.group === "bundle").map(
+-            (item) => (
+-              <option key={item.value} value={item.value}>
+-                {item.label}
+-              </option>
+-            ),
+-          )}
+-        </optgroup>
++    <fieldset disabled={disabled} className="mt-3 min-w-0 space-y-2">
++      <label className="block text-sm font-medium text-slate-700" htmlFor={id}>Workspace plan</label>
++      <select id={id} name={name} value={selected} onChange={(event) => changePlan(event.target.value as ActivationBundleKey)} className="w-full max-w-md rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:ring-2 focus:ring-sky-500">
++        {(["plan", "product", "bundle"] as const).map((group) => (
++          <optgroup key={group} label={group === "plan" ? "Monthly business plans" : group === "product" ? "Existing standalone products" : "Legacy bundles"}>
++            {options.filter((item) => item.group === group).map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
++          </optgroup>
++        ))}
+       </select>
+-      {option ? (
+-        <p className="max-w-xl text-xs text-slate-500">
+-          {option.description}. Modules:{" "}
+-          <span className="font-medium text-slate-600">
+-            {formatAllowedModules(option.modules)}
+-          </span>
+-        </p>
+-      ) : null}
+-    </div>
++      <p className="max-w-xl text-sm text-slate-600">{option.description}</p>
++      {moduleSelection ? <>
++        <input type="hidden" name="moduleSelection" value="explicit" />
++        <fieldset className="min-w-0 space-y-2">
++          <legend className="font-semibold">Module access</legend>
++          <p className="text-sm text-slate-600">Only checked modules will be available, including during the 3-day trial.</p>
++          <div className="ws-member-module-grid">
++            {option.modules.map((module) => <label className="ws-module-option" key={module}>
++              <input name="selectedModules" type="checkbox" value={module} checked={modules.includes(module)} onChange={(event) => setModules((current) => event.target.checked ? [...current, module] : current.filter((item) => item !== module))} />
++              <span>{WORKSPACE_MODULE_LABELS[module]}</span>
++            </label>)}
++          </div>
++        </fieldset>
++        {modules.includes("FMS") ? <fieldset className="min-w-0 space-y-2">
++          <legend className="font-semibold">Business Systems Suite access</legend>
++          <div className="ws-member-module-grid">
++            {BCI_SUB_MODULES.map((part) => <label className="ws-module-option" key={part.id}>
++              <input name="selectedSuiteParts" type="checkbox" value={part.id} checked={parts.includes(part.id)} onChange={(event) => setParts((current) => event.target.checked ? [...current, part.id] : current.filter((item) => item !== part.id))} />
++              <span>{part.label}</span>
++            </label>)}
++          </div>
++        </fieldset> : null}
++        {option.group === "plan" ? <fieldset className="min-w-0 space-y-2">
++          <legend className="font-semibold">Agreed workspace limits</legend>
++          <p className="text-sm text-slate-600">Enter the limits agreed for this client.</p>
++          <label className="block text-sm">Member limit <input className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" name="maxMembers" type="number" min="1" step="1" required /></label>
++          <label className="block text-sm">FMS workflow limit <input className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" name="maxFmsTemplates" type="number" min="0" step="1" required /></label>
++        </fieldset> : null}
++        {modules.length === 0 ? <p>No modules selected. This workspace will have no module access.</p> : null}
++      </> : <p className="text-sm text-slate-600">{option.modules.map((module) => WORKSPACE_MODULE_LABELS[module]).join(", ")}</p>}
++    </fieldset>
+   );
+ }
+diff --git a/src/components/saas/workspace-module-fields.tsx b/src/components/saas/workspace-module-fields.tsx
+index 6c2725e..59065dc 100644
+--- a/src/components/saas/workspace-module-fields.tsx
++++ b/src/components/saas/workspace-module-fields.tsx
+@@ -4,7 +4,6 @@ import type { Role, WorkspaceModule } from "@prisma/client";
+ import {
+   WORKSPACE_MODULE_LABELS,
+   WORKSPACE_MODULES,
+-  modulesFromRoleDefault,
+ } from "@/lib/workspace-modules";
+ import {
+   HR_SUB_MODULES,
+@@ -19,16 +18,14 @@ import {
+   BCI_SUB_MODULES,
+   type BciSubModuleId,
+ } from "@/lib/bci/bci-sub-modules";
+-import { useEffect, useState } from "react";
++import { useState } from "react";
+ 
+ export function WorkspaceModuleFields({
+-  role,
+   defaultModules,
+   defaultHrSubModules,
+   defaultCrmSubModules,
+   defaultKitKeys,
+   defaultBciSubModules,
+-  lockSelection = false,
+   orgAllowedModules,
+   orgEnabledHrSubModules,
+ }: {
+@@ -49,9 +46,8 @@ export function WorkspaceModuleFields({
+   /** Org-enabled HR sub-modules available to grant. */
+   orgEnabledHrSubModules?: HrSubModuleId[];
+ }) {
+-  const isEditing = lockSelection || Boolean(defaultModules?.length);
+   const allowedSet = new Set(
+-    orgAllowedModules?.length ? orgAllowedModules : WORKSPACE_MODULES,
++    orgAllowedModules ?? WORKSPACE_MODULES,
+   );
+   const orgHrSet = new Set(
+     orgEnabledHrSubModules?.length
+@@ -60,9 +56,7 @@ export function WorkspaceModuleFields({
+   );
+ 
+   const [selected, setSelected] = useState<WorkspaceModule[]>(() => {
+-    const initial = defaultModules?.length
+-      ? defaultModules
+-      : modulesFromRoleDefault(role);
++    const initial = defaultModules ?? [];
+     return initial.filter((module) => allowedSet.has(module));
+   });
+ 
+@@ -88,14 +82,6 @@ export function WorkspaceModuleFields({
+     );
+   });
+ 
+-  useEffect(() => {
+-    if (!isEditing) {
+-      setSelected(
+-        modulesFromRoleDefault(role).filter((module) => allowedSet.has(module)),
+-      );
+-    }
+-  }, [role, isEditing, orgAllowedModules]);
+-
+   function toggle(module: WorkspaceModule) {
+     if (!allowedSet.has(module)) {
+       return;
+@@ -173,7 +159,7 @@ export function WorkspaceModuleFields({
+         })}
+       </div>
+       {selected.length === 0 ? (
+-        <p className="ws-member-module-warning">Select at least one module.</p>
++        <p className="ws-member-module-warning">No modules selected — this person has no module access.</p>
+       ) : null}
+ 
+       <div className="ws-member-module-grid" role="group" aria-label="Add-on kits" style={{ marginTop: "0.75rem" }}>
+@@ -192,13 +178,13 @@ export function WorkspaceModuleFields({
+         Mobile Shop stays hidden until you tick it for this person, or add the kit on the client.
+       </p>
+ 
+-      <div className="ws-member-hr-submodules" style={{ marginTop: "1rem" }}>
+-        <h4 className="ws-member-module-title">BCI suite</h4>
++      {selected.includes("FMS") ? <div className="ws-member-hr-submodules" style={{ marginTop: "1rem" }}>
++        <h4 className="ws-member-module-title">Business Systems Suite</h4>
+         <p className="ws-member-module-lead">
+-          Tasks is its own module above. BCI stays hidden until you tick the parts
++          Tasks is its own module above. The suite stays hidden until you tick the parts
+           this person should open.
+         </p>
+-        <div className="ws-member-module-grid" role="group" aria-label="BCI suite">
++        <div className="ws-member-module-grid" role="group" aria-label="Business Systems Suite">
+           {BCI_SUB_MODULES.map((mod) => {
+             const checked = bciSelected.includes(mod.id);
+             return (
+@@ -218,7 +204,7 @@ export function WorkspaceModuleFields({
+             );
+           })}
+         </div>
+-      </div>
++      </div> : null}
+ 
+       {showCrmSubs ? (
+         <div className="ws-member-hr-submodules" style={{ marginTop: "1rem" }}>
+diff --git a/src/components/saas/workspace-widget-dashboard.tsx b/src/components/saas/workspace-widget-dashboard.tsx
+index fe54577..3f2bff2 100644
+--- a/src/components/saas/workspace-widget-dashboard.tsx
++++ b/src/components/saas/workspace-widget-dashboard.tsx
+@@ -30,6 +30,7 @@ type WorkspaceWidgetDashboardProps = {
+   taskStats: DashboardTaskStats;
+   pendingPayments: DashboardPaymentRow[];
+   tasksEnabled: boolean;
++  reportsEnabled?: boolean;
+   navPrefs?: WorkspaceNavPrefs;
+ };
+ 
+@@ -134,6 +135,7 @@ export function WorkspaceWidgetDashboard({
+   taskStats,
+   pendingPayments,
+   tasksEnabled,
++  reportsEnabled = false,
+   navPrefs = DEFAULT_WORKSPACE_NAV_PREFS,
+ }: WorkspaceWidgetDashboardProps) {
+   const today = new Date().toLocaleDateString("en-IN", {
+@@ -210,7 +212,7 @@ export function WorkspaceWidgetDashboard({
+               </div>
+             </div>
+           ) : null}
+-          {show("collection") ? (
++          {reportsEnabled && show("collection") ? (
+             <div
+               className={`ws-widget-hero-stat${pendingPayments.length > 0 ? " is-danger" : ""}`}
+             >
+@@ -477,7 +479,7 @@ export function WorkspaceWidgetDashboard({
+           </Widget>
+         ) : null}
+ 
+-        {show("collection") ? (
++        {reportsEnabled && show("collection") ? (
+           <Widget
+             accent="collection"
+             alert={pendingPayments.length > 0}
+diff --git a/src/lib/auth.ts b/src/lib/auth.ts
+index fa9508d..fa86043 100755
+--- a/src/lib/auth.ts
++++ b/src/lib/auth.ts
+@@ -15,6 +15,8 @@ import { PRIMARY_ORG_SLUG } from "@/lib/platform";
+ import { resolveSessionModules } from "@/lib/dedicated-client-portals";
+ import { canUseSuspendedWorkspaceApi } from "@/lib/org-access";
+ import { getRequestPathname, getRequestTenantSlug } from "@/lib/tenant-host";
++import { getWorkspaceMembershipPrefs, getWorkspaceOrganization } from "@/lib/workspace-shell-data";
++import { canAccessWorkspacePath, grantedSuiteParts } from "@/lib/workspace-access";
+ 
+ export type SessionUser = {
+   id: string;
+@@ -27,6 +29,7 @@ export type SessionUser = {
+   isSuperAdmin: boolean;
+   isDepartmentHead: boolean;
+   modules: WorkspaceModule[];
++  enabledBciSubModules?: string[];
+   staffCode: string | null;
+   organizationStatus: OrganizationStatus;
+ };
+@@ -420,7 +423,13 @@ export const getSessionUser = cache(async function getSessionUser() {
+ });
+ 
+ async function sessionAllowsApi(user: SessionUser) {
++  const [prefs, organization] = await Promise.all([
++    getWorkspaceMembershipPrefs(user.id, user.organizationId),
++    getWorkspaceOrganization(user.organizationId),
++  ]);
++  user.enabledBciSubModules = grantedSuiteParts(user, prefs?.enabledBciSubModules, organization?.allowedSuiteParts);
+   const pathname = await getRequestPathname();
++  if (pathname.startsWith("/api/") && !canAccessWorkspacePath(user, pathname)) return null;
+   if (
+     !canUseSuspendedWorkspaceApi({
+       status: user.organizationStatus,
+diff --git a/src/lib/bci/bci-access.ts b/src/lib/bci/bci-access.ts
+index 9cf91ae..959fc9e 100644
+--- a/src/lib/bci/bci-access.ts
++++ b/src/lib/bci/bci-access.ts
+@@ -1,50 +1,25 @@
+ import type { SessionUser } from "@/lib/auth";
+-import { hasMinimumRole } from "@/lib/permissions";
+ import { getWorkspaceMembershipPrefs } from "@/lib/workspace-shell-data";
+-import { hasWorkspaceModule } from "@/lib/workspace-modules";
+-import {
+-  resolveMemberBciSubModules,
+-  type BciSubModuleId,
+-} from "@/lib/bci/bci-sub-modules";
++import { resolveMemberBciSubModules, type BciSubModuleId } from "@/lib/bci/bci-sub-modules";
++import { canUseTasks, hasSuitePart } from "@/lib/workspace-access";
+ 
+-export async function memberBciSubModules(
+-  user: Pick<SessionUser, "id" | "organizationId">,
+-) {
++export async function memberBciSubModules(user: Pick<SessionUser, "id" | "organizationId">) {
+   const prefs = await getWorkspaceMembershipPrefs(user.id, user.organizationId);
+   return resolveMemberBciSubModules(prefs?.enabledBciSubModules);
+ }
+ 
+-export async function memberHasBciSubModule(
+-  user: Pick<SessionUser, "id" | "organizationId">,
+-  id: BciSubModuleId,
+-) {
+-  const granted = await memberBciSubModules(user);
+-  return granted.includes(id);
++export async function memberHasBciSubModule(user: SessionUser, id: BciSubModuleId) {
++  return hasSuitePart(user, id);
+ }
+ 
+-/** Tasks product, a founder/admin, or a BCI Task Delegation grant. */
+-export async function canEnterTasksApp(
+-  user: Pick<SessionUser, "id" | "organizationId" | "role" | "isSuperAdmin" | "modules">,
+-) {
+-  if (hasWorkspaceModule(user, "TASKS")) return true;
+-  if (user.isSuperAdmin || hasMinimumRole(user.role, "ADMIN")) return true;
+-  return memberHasBciSubModule(user, "taskDelegation");
++export async function canEnterTasksApp(user: SessionUser) {
++  return canUseTasks(user);
+ }
+ 
+-/** Check Lists are BCI. The Tasks module does not open them. */
+-export async function canEnterChecklists(
+-  user: Pick<SessionUser, "id" | "organizationId" | "role" | "isSuperAdmin" | "modules">,
+-) {
+-  if (hasWorkspaceModule(user, "FMS")) return true;
+-  if (user.isSuperAdmin || hasMinimumRole(user.role, "ADMIN")) return true;
+-  return memberHasBciSubModule(user, "checklists");
++export async function canEnterChecklists(user: SessionUser) {
++  return hasSuitePart(user, "checklists");
+ }
+ 
+-/** PC jobs are BCI. The Tasks module does not open them. */
+-export async function canEnterPc(
+-  user: Pick<SessionUser, "id" | "organizationId" | "role" | "isSuperAdmin" | "modules">,
+-) {
+-  if (hasWorkspaceModule(user, "FMS")) return true;
+-  if (user.isSuperAdmin || hasMinimumRole(user.role, "ADMIN")) return true;
+-  return memberHasBciSubModule(user, "pc");
++export async function canEnterPc(user: SessionUser) {
++  return hasSuitePart(user, "pc");
+ }
+diff --git a/src/lib/billing/catalog.ts b/src/lib/billing/catalog.ts
+index 5d241aa..77aadf1 100644
+--- a/src/lib/billing/catalog.ts
++++ b/src/lib/billing/catalog.ts
+@@ -14,6 +14,7 @@ import {
+   type OrgAddonBillingRow,
+ } from "@/lib/billing/org-addon-billing";
+ import { rupeesToPaise } from "@/lib/billing/money";
++import { businessWorkspacePlan } from "@/lib/business-workspace-plans";
+ 
+ export type BillingRateCard = {
+   label: string;
+@@ -107,6 +108,7 @@ export function catalogRateForWorkspace(org: {
+   product?: WorkspaceProduct | null;
+   allowedModules?: WorkspaceModule[] | null;
+ }): BillingRateCard {
++  if (businessWorkspacePlan(org.plan)) return catalogRateForPlan(org.plan);
+   const sold = resolveSoldProduct(org);
+   switch (sold) {
+     case "APP_BUILDER":
+@@ -134,6 +136,14 @@ export function catalogRateForWorkspace(org: {
+ 
+ /** List rates from live /pricing. Ops can override per client. */
+ export function catalogRateForPlan(plan: OrgPlan): BillingRateCard {
++  const business = businessWorkspacePlan(plan);
++  if (business) return {
++    label: business.label,
++    monthlyRatePaise: rupeesToPaise(business.monthlyInr),
++    extraUserMonthlyPaise: 0,
++    includedUsers: 0,
++    gstPercent: DEFAULT_GST_PERCENT,
++  };
+   switch (plan) {
+     case "BCI_STARTER":
+       return suiteCard("em_ready_starter", "EM Ready Starter");
+@@ -276,6 +286,8 @@ function modulesIncludedInSoldSku(
+   sold: WorkspaceProduct,
+   plan: OrgPlan,
+ ): WorkspaceModule[] {
++  const business = businessWorkspacePlan(plan);
++  if (business) return [...business.modules];
+   switch (sold) {
+     case "APP_BUILDER":
+       return ["APP_BUILDER"];
+diff --git a/src/lib/business-workspace-plans.ts b/src/lib/business-workspace-plans.ts
+new file mode 100644
+index 0000000..5b02bba
+--- /dev/null
++++ b/src/lib/business-workspace-plans.ts
+@@ -0,0 +1,18 @@
++import type { OrgPlan, WorkspaceModule } from "@prisma/client";
++
++/** New onboarding SKUs, distinct from legacy plans and rates. */
++export const BUSINESS_WORKSPACE_PLANS = [
++  { id: "BUSINESS_STARTER", bundle: "business_starter", label: "Starter", monthlyInr: 4999, modules: ["FMS"] },
++  { id: "BUSINESS_SCALE", bundle: "business_scale", label: "Scale", monthlyInr: 6999, modules: ["FMS", "CRM"] },
++  { id: "BUSINESS_ENTERPRISE", bundle: "business_enterprise", label: "Enterprise", monthlyInr: 9999, modules: ["FMS", "CRM", "HR", "IMS", "TASKS", "REPORTS"] },
++] as const satisfies readonly {
++  id: OrgPlan;
++  bundle: string;
++  label: string;
++  monthlyInr: number;
++  modules: readonly WorkspaceModule[];
++}[];
++
++export function businessWorkspacePlan(value: string) {
++  return BUSINESS_WORKSPACE_PLANS.find((plan) => plan.id === value || plan.bundle === value);
++}
+diff --git a/src/lib/checklists/pc-work.ts b/src/lib/checklists/pc-work.ts
+index 6e634cd..044c64d 100644
+--- a/src/lib/checklists/pc-work.ts
++++ b/src/lib/checklists/pc-work.ts
+@@ -207,20 +207,20 @@ export async function listMyFmsPcWork(organizationId: string, assigneeUserId: st
+   return steps.map((step) => toFmsPcWorkItem(step, ""));
+ }
+ 
+-export async function listMyPcWork(organizationId: string, assigneeUserId: string) {
++export async function listMyPcWork(organizationId: string, assigneeUserId: string, access = { checklists: true, tasks: true, fms: true }) {
+   const [checklists, eaTasks, fmsSteps] = await Promise.all([
+-    listMyChecklistPcWork(organizationId, assigneeUserId).catch((error) => {
++    access.checklists ? listMyChecklistPcWork(organizationId, assigneeUserId).catch((error) => {
+       console.error("[pc-work] checklist load failed", error);
+       return [];
+-    }),
+-    listMyEaPcWork(organizationId, assigneeUserId).catch((error) => {
++    }) : [],
++    access.tasks ? listMyEaPcWork(organizationId, assigneeUserId).catch((error) => {
+       console.error("[pc-work] EA load failed", error);
+       return [];
+-    }),
+-    listMyFmsPcWork(organizationId, assigneeUserId).catch((error) => {
++    }) : [],
++    access.fms ? listMyFmsPcWork(organizationId, assigneeUserId).catch((error) => {
+       console.error("[pc-work] FMS load failed", error);
+       return [];
+-    }),
++    }) : [],
+   ]);
+ 
+   return { checklists, eaTasks, fmsSteps };
+diff --git a/src/lib/checklists/session.ts b/src/lib/checklists/session.ts
+index 43c1628..58271cc 100644
+--- a/src/lib/checklists/session.ts
++++ b/src/lib/checklists/session.ts
+@@ -1,12 +1,12 @@
+ import { getSessionUser } from "@/lib/auth";
+-import { hasBciOpsModule } from "@/lib/workspace-modules";
++import { hasSuitePart } from "@/lib/workspace-access";
+ 
+ export async function getChecklistActor() {
+   const user = await getSessionUser();
+   if (!user) {
+     return { ok: false as const, message: "Sign in required." };
+   }
+-  if (!hasBciOpsModule(user)) {
++  if (!hasSuitePart(user, "checklists")) {
+     return {
+       ok: false as const,
+       message: "Check Lists are not enabled for your account.",
+diff --git a/src/lib/dashboard-source.ts b/src/lib/dashboard-source.ts
+index 92f1752..c391b10 100644
+--- a/src/lib/dashboard-source.ts
++++ b/src/lib/dashboard-source.ts
+@@ -14,6 +14,7 @@ import { hasMinimumRole, roleRank, ROLE_LABELS } from "@/lib/permissions";
+ import { ACTIVE_TASK_STATUSES } from "@/lib/tasks";
+ import { buildTaskVisibilityWhere } from "@/lib/task-verification";
+ import { prisma } from "@/lib/db";
++import { canAccessWorkspacePath, canUseTasks } from "@/lib/workspace-access";
+ 
+ export type DashboardSourceRows = {
+   metricCards: Array<{
+@@ -153,11 +154,11 @@ export async function buildDashboardPayload(
+       : "personal";
+ 
+   const [tasks, approvalsPending] = await Promise.all([
+-    prisma.delegatedTask.findMany({
++    canUseTasks(user) ? prisma.delegatedTask.findMany({
+       where: taskWhere,
+       select: { status: true, dueAt: true, completedAt: true },
+-    }),
+-    hasMinimumRole(user.role, "MANAGER")
++    }) : [],
++    user.modules.includes("APPROVALS") && hasMinimumRole(user.role, "MANAGER")
+       ? prisma.workspaceApproval.count({
+           where: {
+             organizationId: user.organizationId,
+@@ -168,7 +169,7 @@ export async function buildDashboardPayload(
+   ]);
+ 
+   const metricCards = sourceRows.metricCards
+-    .filter((card) => canSeeByRole(user.role, card.minRole))
++    .filter((card) => canSeeByRole(user.role, card.minRole) && (!card.actionHref || canAccessWorkspacePath(user, card.actionHref)))
+     .map((card) => ({
+       id: card.id,
+       label: card.label,
+@@ -181,7 +182,7 @@ export async function buildDashboardPayload(
+     }));
+ 
+   const followUpsAll = sourceRows.followUps.filter((row) =>
+-    canSeeAttentionItem(user.role, user.id, row),
++    user.modules.includes("CRM") && canSeeAttentionItem(user.role, user.id, row),
+   );
+ 
+   const followUpsToday = followUpsAll.filter((row) =>
+@@ -202,7 +203,7 @@ export async function buildDashboardPayload(
+   }));
+ 
+   const pendingPayments = sourceRows.pendingPayments
+-    .filter((row) => canSeeByRole(user.role, row.minRole))
++    .filter((row) => (user.modules.includes("CRM") || user.modules.includes("REPORTS")) && canSeeByRole(user.role, row.minRole))
+     .map((row) => {
+       const urgency = paymentUrgency(row.dueAt);
+       return {
+@@ -314,7 +315,7 @@ export async function buildDashboardPayload(
+     taskStats: { pending, inProgress, completedToday, overdue },
+     charts,
+     approvalsPending,
+-    showApprovals: hasMinimumRole(user.role, "MANAGER"),
++    showApprovals: user.modules.includes("APPROVALS") && hasMinimumRole(user.role, "MANAGER"),
+     roleScope,
+     roleLabel: ROLE_LABELS[user.role],
+     dataSource: options.dataSource,
+diff --git a/src/lib/dashboard/widgets.ts b/src/lib/dashboard/widgets.ts
+index 81229b8..e13054e 100644
+--- a/src/lib/dashboard/widgets.ts
++++ b/src/lib/dashboard/widgets.ts
+@@ -13,6 +13,7 @@ import { getStockRows } from "@/lib/ims/ims-store";
+ import { mergeLeadContactWhere } from "@/lib/leads/contact-validation";
+ import { hasMinimumRole } from "@/lib/permissions";
+ import { getSalesOrderWidgetStats } from "@/lib/sales-orders/queries";
++import { hasSuitePart } from "@/lib/workspace-access";
+ import { hasWorkspaceModule } from "@/lib/workspace-modules";
+ import {
+   DEFAULT_WORKSPACE_NAV_PREFS,
+@@ -182,11 +183,10 @@ export async function getWidgetDashboardData(
+   const isManager = hasMinimumRole(user.role, "MANAGER");
+   const personalUserId = isManager ? undefined : user.id;
+ 
+-  const fmsEnabled = hasWorkspaceModule(user, "FMS");
++  const fmsEnabled = hasSuitePart(user, "fms");
+   const crmEnabled = hasWorkspaceModule(user, "CRM");
+   const imsEnabled = hasWorkspaceModule(user, "IMS") && isManager;
+-  const tasksEnabled = hasWorkspaceModule(user, "TASKS");
+-  const emEnabled = hasWorkspaceModule(user, "REPORTS") && isManager;
++  const emEnabled = hasSuitePart(user, "em") && isManager;
+   const hrEnabled = hasWorkspaceModule(user, "HR") && fmsEnabled && isManager;
+ 
+   const show = (id: Parameters<typeof isDashboardWidgetVisible>[1]) =>
+@@ -222,7 +222,7 @@ export async function getWidgetDashboardData(
+       imsEnabled && show("ims")
+         ? loadImsWidget(organizationId)
+         : Promise.resolve(null),
+-      tasksEnabled && show("checklists")
++      hasSuitePart(user, "checklists") && show("checklists")
+         ? loadChecklistsWidget(organizationId, personalUserId)
+         : Promise.resolve(null),
+       emPromise,
+diff --git a/src/lib/em/em-access.ts b/src/lib/em/em-access.ts
+index 2c9f532..dc7920b 100644
+--- a/src/lib/em/em-access.ts
++++ b/src/lib/em/em-access.ts
+@@ -1,7 +1,7 @@
+ import type { SessionUser } from "@/lib/auth";
+ import { hasMinimumRole } from "@/lib/permissions";
+-import { hasWorkspaceModule } from "@/lib/workspace-modules";
++import { hasSuitePart } from "@/lib/workspace-access";
+ 
+ export function canAccessEmReady(user: SessionUser) {
+-  return hasMinimumRole(user.role, "MANAGER") && hasWorkspaceModule(user, "REPORTS");
++  return hasMinimumRole(user.role, "MANAGER") && hasSuitePart(user, "em");
+ }
+diff --git a/src/lib/em/em-ready-data.ts b/src/lib/em/em-ready-data.ts
+index 8359c08..8f08aaf 100755
+--- a/src/lib/em/em-ready-data.ts
++++ b/src/lib/em/em-ready-data.ts
+@@ -25,6 +25,7 @@ import {
+   type ImsStockStatus,
+ } from "@/lib/ims/stock-status";
+ import { listDelayedDispatchSalesOrders } from "@/lib/sales-orders/queries";
++import { canUseTasks, hasSuitePart } from "@/lib/workspace-access";
+ import { hasWorkspaceModule } from "@/lib/workspace-modules";
+ import {
+   fmsJobFallsInEmPeriod,
+@@ -285,9 +286,9 @@ export async function getEmReadyPayload(
+       ? periodInput
+       : parseEmPeriodParams(periodInput ?? {});
+   const tasksEnabled = hasWorkspaceModule(user, "TASKS");
+-  const fmsEnabled = hasWorkspaceModule(user, "FMS");
++  const fmsEnabled = hasSuitePart(user, "fms");
+   const checklistsEnabled =
+-    hasWorkspaceModule(user, "TASKS") || hasWorkspaceModule(user, "FMS");
++    canUseTasks(user);
+   const imsEnabled = hasWorkspaceModule(user, "IMS");
+ 
+   const pcScope: PcPeriod =
+diff --git a/src/lib/fms/session.ts b/src/lib/fms/session.ts
+index 0495d26..2b2741c 100644
+--- a/src/lib/fms/session.ts
++++ b/src/lib/fms/session.ts
+@@ -1,5 +1,5 @@
+ import { getSessionUser, type SessionUser } from "@/lib/auth";
+-import { hasWorkspaceModule } from "@/lib/workspace-modules";
++import { hasSuitePart } from "@/lib/workspace-access";
+ 
+ export type FmsActorResult =
+   | { ok: true; user: SessionUser }
+@@ -10,7 +10,7 @@ export async function getFmsActor(): Promise<FmsActorResult> {
+   if (!user) {
+     return { ok: false, message: "Sign in required." };
+   }
+-  if (!hasWorkspaceModule(user, "FMS")) {
++  if (!hasSuitePart(user, "fms")) {
+     return { ok: false, message: "FMS is not enabled for your account." };
+   }
+   return { ok: true, user };
+diff --git a/src/lib/org-plan-context.ts b/src/lib/org-plan-context.ts
+index 2fd33b3..48e6f5e 100644
+--- a/src/lib/org-plan-context.ts
++++ b/src/lib/org-plan-context.ts
+@@ -13,6 +13,7 @@ export type OrganizationPlanContext = {
+   renewalAt: Date | null;
+   activatedAt: Date | null;
+   allowedModules: import("@prisma/client").WorkspaceModule[];
++  allowedSuiteParts: string[] | null;
+   maxMembers: number;
+   maxFmsTemplates: number;
+   tierEnforced: boolean;
+@@ -29,6 +30,7 @@ export async function getOrganizationPlanContext(
+       where: { id: organizationId },
+       select: {
+         allowedModules: true,
++        allowedSuiteParts: true,
+         maxMembers: true,
+         maxFmsTemplates: true,
+         isPrimary: true,
+@@ -55,6 +57,8 @@ export async function getOrganizationPlanContext(
+     renewalAt: planSnapshot.renewalAt,
+     activatedAt: planSnapshot.activatedAt,
+     allowedModules: organization.allowedModules,
++    allowedSuiteParts: Array.isArray(organization.allowedSuiteParts)
++      ? organization.allowedSuiteParts.filter((part): part is string => typeof part === "string") : null,
+     maxMembers: organization.maxMembers,
+     maxFmsTemplates: organization.maxFmsTemplates,
+     tierEnforced: isOrgTierEnforced(organization.allowedModules),
+diff --git a/src/lib/org-plan-presets.ts b/src/lib/org-plan-presets.ts
+index 94ec077..5c31e2c 100644
+--- a/src/lib/org-plan-presets.ts
++++ b/src/lib/org-plan-presets.ts
+@@ -1,4 +1,5 @@
+ import type { OrgPlan, Role, WorkspaceModule } from "@prisma/client";
++import { businessWorkspacePlan } from "@/lib/business-workspace-plans";
+ import {
+   defaultModulesForRole,
+   platformWorkspaceModules,
+@@ -40,7 +41,7 @@ export const TASKS_ADDON_LIMITS = {
+   maxFmsTemplates: 0,
+ } as const;
+ 
+-/** Legacy orgs keep empty allowedModules until migrated - no tier clamping. */
++/** Client access is explicit; an empty selection grants no modules. */
+ export function resolveOrgAllowedModules(
+   allowedModules: WorkspaceModule[] | null | undefined,
+   options?: { isPrimary?: boolean },
+@@ -49,7 +50,7 @@ export function resolveOrgAllowedModules(
+     return platformWorkspaceModules();
+   }
+   if (!allowedModules || allowedModules.length === 0) {
+-    return platformWorkspaceModules();
++    return [];
+   }
+   return [...allowedModules];
+ }
+@@ -61,6 +62,8 @@ export function isOrgTierEnforced(
+ }
+ 
+ export function allowedModulesForPlan(plan: OrgPlan): WorkspaceModule[] {
++  const businessPlan = businessWorkspacePlan(plan);
++  if (businessPlan) return [...businessPlan.modules];
+   switch (plan) {
+     case "BCI_STARTER":
+       return [...BCI_STARTER_ALLOWED];
+@@ -78,6 +81,8 @@ export function allowedModulesForPlan(plan: OrgPlan): WorkspaceModule[] {
+ }
+ 
+ export function limitsForPlan(plan: OrgPlan) {
++  // New plans require ops to enter agreed operational limits during onboarding.
++  if (businessWorkspacePlan(plan)) return { maxMembers: 0, maxFmsTemplates: 0 };
+   switch (plan) {
+     case "BCI_STARTER":
+       return { ...BCI_STARTER_LIMITS };
+@@ -123,14 +128,14 @@ export function effectiveMemberModules(
+   options?: { isPrimary?: boolean },
+ ): WorkspaceModule[] {
+   const orgAllowed = resolveOrgAllowedModules(orgAllowedModules, options);
+-  if (role === "OWNER") {
+-    return [...orgAllowed];
+-  }
+   const resolved = resolveMemberModules(role, membershipModules);
+   return clampModulesToOrg(resolved, orgAllowed);
+ }
+ 
+ export const ORG_PLAN_LABELS: Record<OrgPlan, string> = {
++  BUSINESS_STARTER: "Starter",
++  BUSINESS_SCALE: "Scale",
++  BUSINESS_ENTERPRISE: "Enterprise",
+   BCI_STARTER: "BCI FMS Starter",
+   BCI_GROWTH: "BCI FMS Growth",
+   ENTERPRISE: "Enterprise",
+diff --git a/src/lib/require-session.ts b/src/lib/require-session.ts
+index 438a6bb..d7a3d74 100755
+--- a/src/lib/require-session.ts
++++ b/src/lib/require-session.ts
+@@ -11,6 +11,8 @@ import {
+   resolveWorkspaceHomeHref,
+ } from "@/lib/workspace-modules";
+ import { logoutHref } from "@/lib/auth-logout";
++import { canAccessWorkspacePath, canUseTasks, hasSuitePart } from "@/lib/workspace-access";
++import type { BciSubModuleId } from "@/lib/bci/bci-sub-modules";
+ 
+ export async function requireSession(
+   minRole?: Role,
+@@ -18,6 +20,7 @@ export async function requireSession(
+     redirectTo?: string;
+     module?: WorkspaceModule;
+     anyModules?: WorkspaceModule[];
++    suitePart?: BciSubModuleId;
+   },
+ ) {
+   const user = await getSessionUser();
+@@ -30,15 +33,20 @@ export async function requireSession(
+     redirect(options?.redirectTo ?? "/app");
+   }
+ 
++  const pathname = await getRequestPathname();
++  if (options?.suitePart && !hasSuitePart(user, options.suitePart)) redirect(options?.redirectTo ?? "/app");
++  if (!canAccessWorkspacePath(user, pathname)) redirect(options?.redirectTo ?? "/app");
++  const suiteTaskAccess = options?.module === "TASKS" && canUseTasks(user);
++  const suiteEmAccess = options?.module === "REPORTS" && pathname.split("?")[0] === "/app/em" && hasSuitePart(user, "em");
++
+   if (options?.anyModules?.length) {
+     if (!options.anyModules.some((module) => hasWorkspaceModule(user, module))) {
+       redirect(options?.redirectTo ?? "/app");
+     }
+-  } else if (options?.module && !hasWorkspaceModule(user, options.module)) {
++  } else if (options?.module && !hasWorkspaceModule(user, options.module) && !suiteTaskAccess && !suiteEmAccess) {
+     redirect(options?.redirectTo ?? "/app");
+   }
+ 
+-  const pathname = await getRequestPathname();
+   if (
+     !canUseSuspendedWorkspace({
+       status: user.organizationStatus,
+diff --git a/src/lib/work/my-today.ts b/src/lib/work/my-today.ts
+index 913c0fa..7edf5e9 100644
+--- a/src/lib/work/my-today.ts
++++ b/src/lib/work/my-today.ts
+@@ -44,13 +44,14 @@ export const EMPTY_TODAY_PAYLOAD = EMPTY_PAYLOAD;
+ export async function getMyTodayPayload(
+   organizationId: string,
+   userId: string,
++  access: { checklists: boolean; tasks: boolean; fms: boolean },
+ ): Promise<MyTodayPayload> {
+   try {
+     const weekStart = startOfWeek(new Date());
+ 
+     const [work, completedChecklists, completedTasks] = await Promise.all([
+-      listMyPcWork(organizationId, userId),
+-      prisma.checklistOccurrence
++      listMyPcWork(organizationId, userId, access),
++      access.checklists ? prisma.checklistOccurrence
+         .count({
+           where: {
+             organizationId,
+@@ -59,8 +60,8 @@ export async function getMyTodayPayload(
+             actualAt: { gte: weekStart },
+           },
+         })
+-        .catch(() => 0),
+-      prisma.delegatedTask
++        .catch(() => 0) : 0,
++      access.tasks ? prisma.delegatedTask
+         .count({
+           where: {
+             organizationId,
+@@ -69,7 +70,7 @@ export async function getMyTodayPayload(
+             completedAt: { gte: weekStart },
+           },
+         })
+-        .catch(() => 0),
++        .catch(() => 0) : 0,
+     ]);
+ 
+     const checklistItems = work.checklists.map((row) => {
+@@ -106,7 +107,7 @@ export async function getMyTodayPayload(
+     const dueToday = items.filter((item) => item.urgency === "today").length;
+     const completedThisWeek = completedChecklists + completedTasks;
+ 
+-    const recentDone = await prisma.checklistOccurrence
++    const recentDone = access.checklists ? await prisma.checklistOccurrence
+       .findMany({
+         where: {
+           organizationId,
+@@ -117,7 +118,7 @@ export async function getMyTodayPayload(
+         select: { plannedAt: true, actualAt: true, status: true },
+         take: 50,
+       })
+-      .catch(() => []);
++      .catch(() => []) : [];
+ 
+     const scores = recentDone.map((row) =>
+       checklistOccurrenceMisScore({
+diff --git a/src/lib/workspace-access.ts b/src/lib/workspace-access.ts
+new file mode 100644
+index 0000000..cc00d0d
+--- /dev/null
++++ b/src/lib/workspace-access.ts
+@@ -0,0 +1,51 @@
++import type { SessionUser } from "@/lib/auth";
++import type { WorkspaceModule } from "@prisma/client";
++import { PRIMARY_ORG_SLUG } from "@/lib/platform";
++import { BCI_SUB_MODULES, type BciSubModuleId } from "@/lib/bci/bci-sub-modules";
++
++type AccessUser = Pick<SessionUser, "modules" | "isSuperAdmin" | "organizationSlug"> & {
++  enabledBciSubModules?: readonly string[];
++};
++
++export function isPlatformAccessAdmin(user: AccessUser) {
++  return user.isSuperAdmin && user.organizationSlug === PRIMARY_ORG_SLUG;
++}
++
++export function grantedSuiteParts(user: AccessUser, stored = user.enabledBciSubModules, orgAllowed?: unknown) {
++  if (!user.modules.includes("FMS")) return [];
++  if (isPlatformAccessAdmin(user)) return BCI_SUB_MODULES.map((part) => part.id);
++  return BCI_SUB_MODULES.filter((part) => stored?.includes(part.id) &&
++    (!Array.isArray(orgAllowed) || orgAllowed.includes(part.id))).map((part) => part.id);
++}
++
++export function hasSuitePart(user: AccessUser, id: BciSubModuleId) {
++  return grantedSuiteParts(user).includes(id);
++}
++
++export function canUseTasks(user: AccessUser) {
++  return user.modules.includes("TASKS") || hasSuitePart(user, "taskDelegation");
++}
++
++function within(path: string, prefix: string) {
++  return path === prefix || path.startsWith(`${prefix}/`);
++}
++
++/** Shared by navigation, server pages/actions, and authenticated API entrypoints. */
++export function canAccessWorkspacePath(user: AccessUser, pathname: string) {
++  const path = pathname.split(/[?#]/, 1)[0].replace(/^\/api\//, "/app/");
++  if (within(path, "/app/fleet")) return user.modules.includes("FLEET");
++  if (within(path, "/app/checklists")) return hasSuitePart(user, "checklists");
++  if (within(path, "/app/pc")) return hasSuitePart(user, "pc");
++  if (within(path, "/app/em")) return hasSuitePart(user, "em");
++  if (within(path, "/app/fms/scores")) return hasSuitePart(user, "mis");
++  if (within(path, "/app/fms")) return hasSuitePart(user, "fms");
++  if (within(path, "/app/tasks") || within(path, "/app/today")) return canUseTasks(user);
++  const routes: [string, WorkspaceModule][] = [
++    ["/app/leads", "CRM"], ["/app/hr", "HR"], ["/app/ims", "IMS"],
++    ["/app/reports", "REPORTS"], ["/app/approvals", "APPROVALS"],
++    ["/app/social", "SOCIAL"], ["/app/my-space/social", "SOCIAL"],
++    ["/app/app-builder", "APP_BUILDER"], ["/app/cases", "CASES"],
++  ];
++  const match = routes.find(([prefix]) => within(path, prefix));
++  return !match || user.modules.includes(match[1]);
++}
+diff --git a/src/lib/workspace-activation-bundles.shared.ts b/src/lib/workspace-activation-bundles.shared.ts
+index 79854e2..5f68d33 100644
+--- a/src/lib/workspace-activation-bundles.shared.ts
++++ b/src/lib/workspace-activation-bundles.shared.ts
+@@ -1,7 +1,11 @@
+ import type { WorkspaceModule } from "@prisma/client";
++import { BUSINESS_WORKSPACE_PLANS } from "@/lib/business-workspace-plans";
+ 
+ /** Super-admin activation bundle keys (form `activationBundle`). */
+ export const ACTIVATION_BUNDLE_KEYS = [
++  "business_starter",
++  "business_scale",
++  "business_enterprise",
+   "bci_starter",
+   "tasks_addon",
+   "hrms",
+@@ -18,10 +22,17 @@ export type ActivationBundleOption = {
+   label: string;
+   description: string;
+   modules: WorkspaceModule[];
+-  group: "product" | "bundle";
++  group: "plan" | "product" | "bundle";
+ };
+ 
+ export const ACTIVATION_BUNDLE_OPTIONS: ActivationBundleOption[] = [
++  ...BUSINESS_WORKSPACE_PLANS.map((plan) => ({
++    value: plan.bundle,
++    label: `${plan.label} — ₹${plan.monthlyInr.toLocaleString("en-IN")}/month`,
++    description: "Setup included. GST extra. Monthly plans, no yearly commitment.",
++    modules: [...plan.modules],
++    group: "plan" as const,
++  })),
+   {
+     value: "bci_starter",
+     label: "BCI",
+@@ -73,7 +84,7 @@ export const ACTIVATION_BUNDLE_OPTIONS: ActivationBundleOption[] = [
+   },
+ ];
+ 
+-export const DEFAULT_ACTIVATION_BUNDLE: ActivationBundleKey = "bci_starter";
++export const DEFAULT_ACTIVATION_BUNDLE: ActivationBundleKey = "business_starter";
+ 
+ export function isActivationBundleKey(value: string): value is ActivationBundleKey {
+   return (ACTIVATION_BUNDLE_KEYS as readonly string[]).includes(value);
+diff --git a/src/lib/workspace-activation-bundles.ts b/src/lib/workspace-activation-bundles.ts
+index 726c596..3dd5436 100644
+--- a/src/lib/workspace-activation-bundles.ts
++++ b/src/lib/workspace-activation-bundles.ts
+@@ -9,6 +9,7 @@ import {
+   type ClientOnboardingPreset,
+ } from "@/lib/org-onboarding";
+ import { ORG_PLAN_LABELS } from "@/lib/org-plan-presets";
++import { businessWorkspacePlan } from "@/lib/business-workspace-plans";
+ import {
+   isActivationBundleKey,
+   formatAllowedModules,
+@@ -26,8 +27,10 @@ export {
+ } from "@/lib/workspace-activation-bundles.shared";
+ 
+ export function resolveActivationPreset(bundle: string): ClientOnboardingPreset {
++  const businessPlan = businessWorkspacePlan(bundle);
++  if (businessPlan) return planOnboardingPreset(businessPlan.id);
+   if (!isActivationBundleKey(bundle)) {
+-    return bciStarterOnboardingPreset();
++    throw new Error("Choose a valid workspace plan.");
+   }
+ 
+   switch (bundle) {
+diff --git a/src/lib/workspace-addons.shared.ts b/src/lib/workspace-addons.shared.ts
+index 8b320ec..878059b 100644
+--- a/src/lib/workspace-addons.shared.ts
++++ b/src/lib/workspace-addons.shared.ts
+@@ -131,6 +131,13 @@ export function listPurchasableAddons() {
+ 
+ export function parseAddonModulesFromForm(formData: FormData): WorkspaceModule[] {
+   const selected = new Set<WorkspaceModule>();
++  if (formData.get("fleetAccess") === "on") selected.add("FLEET");
++  if (formData.get("workspaceModuleSelection") === "explicit") {
++    for (const value of formData.getAll("modules")) {
++      if (["FMS", "CRM", "HR", "IMS", "TASKS", "REPORTS", "APPROVALS", "SOCIAL", "APP_BUILDER"].includes(String(value))) selected.add(String(value) as WorkspaceModule);
++    }
++    return [...selected];
++  }
+   const bciCore = formData.get("bciCore") === "on";
+   if (bciCore) {
+     BCI_CORE_MODULES.forEach((module) => selected.add(module));
+diff --git a/src/lib/workspace-modules.ts b/src/lib/workspace-modules.ts
+index 070c9d8..7813308 100644
+--- a/src/lib/workspace-modules.ts
++++ b/src/lib/workspace-modules.ts
+@@ -2,6 +2,7 @@ import type { Role, WorkspaceModule } from "@prisma/client";
+ import type { SessionUser } from "@/lib/auth";
+ import { dedicatedPortalHomePath } from "@/lib/dedicated-client-portals";
+ import { hasMinimumRole } from "@/lib/permissions";
++import { canAccessWorkspacePath, canUseTasks, grantedSuiteParts } from "@/lib/workspace-access";
+ 
+ export const WORKSPACE_MODULES: WorkspaceModule[] = [
+   "CASES",
+@@ -13,6 +14,7 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
+   "APPROVALS",
+   "REPORTS",
+   "SOCIAL",
++  "FLEET",
+ ];
+ 
+ /** BCI / platform modules — legal Cases is a dedicated-portal product only (Hingorani). */
+@@ -23,7 +25,8 @@ export const PLATFORM_WORKSPACE_MODULES: WorkspaceModule[] = WORKSPACE_MODULES.f
+ export const WORKSPACE_MODULE_LABELS: Record<WorkspaceModule, string> = {
+   CASES: "Cases",
+   TASKS: "Tasks Management",
+-  FMS: "FMS",
++  FMS: "Business Systems Suite",
++  FLEET: "Fleet",
+   CRM: "CRM",
+   HR: "HRMS",
+   IMS: "IMS / Stock",
+@@ -44,6 +47,7 @@ export const WORKSPACE_MODULE_HREFS: Partial<Record<WorkspaceModule, string>> =
+   REPORTS: "/app/reports",
+   APP_BUILDER: "/app/app-builder",
+   SOCIAL: "/app/social",
++  FLEET: "/app/fleet",
+ };
+ 
+ /** Sidebar/home destination — skip the /app/fms index redirect. */
+@@ -70,13 +74,13 @@ export function defaultModulesForRole(role: Role): WorkspaceModule[] {
+ }
+ 
+ export function resolveMemberModules(
+-  role: Role,
++  _role: Role,
+   assigned: WorkspaceModule[] | null | undefined,
+ ): WorkspaceModule[] {
+-  if (assigned && assigned.length > 0) {
++  if (assigned) {
+     return [...new Set(assigned)];
+   }
+-  return defaultModulesForRole(role);
++  return [];
+ }
+ 
+ export function allWorkspaceModules(): WorkspaceModule[] {
+@@ -91,10 +95,7 @@ export function hasWorkspaceModule(
+   user: Pick<SessionUser, "modules" | "isSuperAdmin">,
+   module: WorkspaceModule,
+ ) {
+-  if (user.modules.length > 0) {
+-    return user.modules.includes(module);
+-  }
+-  return Boolean(user.isSuperAdmin);
++  return user.modules.includes(module);
+ }
+ 
+ /** Check Lists / PC sit in the BCI suite even when Tasks is not on the plan. */
+@@ -121,20 +122,23 @@ export function formatModuleList(modules: WorkspaceModule[]) {
+ 
+ /** Default landing: staff → my work, managers → team board / lines. */
+ export function resolveWorkspaceHomeHref(
+-  user: Pick<SessionUser, "modules" | "isSuperAdmin" | "role" | "organizationSlug">,
++  user: Pick<SessionUser, "modules" | "isSuperAdmin" | "role" | "organizationSlug" | "enabledBciSubModules">,
+ ) {
+   const dedicatedHome = dedicatedPortalHomePath(user.organizationSlug);
+   if (dedicatedHome) {
+     return dedicatedHome;
+   }
+ 
++  if (grantedSuiteParts(user).length > 0 && hasMinimumRole(user.role, "MANAGER")) return "/app";
++  if (canUseTasks(user)) return "/app/today";
++
+   // Platform orgs never land on /app/cases. CASES is dedicated-portal only
+   // (Hingorani). Super-admins have every module via hasWorkspaceModule, so
+   // iterating WORKSPACE_MODULES would send them to /app/cases and bounce
+   // forever with requireLegalCasesSession → /app.
+-  for (const module of PLATFORM_WORKSPACE_MODULES) {
+-    if (hasWorkspaceModule(user, module)) {
+-      if (module === "TASKS") {
++  for (const workspaceModule of PLATFORM_WORKSPACE_MODULES) {
++    if (hasWorkspaceModule(user, workspaceModule)) {
++      if (workspaceModule === "TASKS") {
+         // FMS managers stay on the widget home; task-only users go to Today.
+         if (
+           hasWorkspaceModule(user, "FMS") &&
+@@ -144,23 +148,25 @@ export function resolveWorkspaceHomeHref(
+         }
+         return "/app/today";
+       }
+-      if (module === "FMS") {
++      if (workspaceModule === "FMS") {
+         // Managers land on the widget dashboard (business at a glance);
+         // staff go straight to their 2-tap step queue.
+-        return hasMinimumRole(user.role, "MANAGER")
+-          ? "/app"
+-          : "/app/fms/my-stops";
++        if (canAccessWorkspacePath(user, "/app/fms/my-stops")) return "/app/fms/my-stops";
++        const part = grantedSuiteParts(user)[0];
++        if (part === "checklists") return "/app/checklists";
++        if (part === "pc") return "/app/pc/today";
++        continue;
+       }
+-      if (module === "CRM") {
++      if (workspaceModule === "CRM") {
+         return "/app/leads";
+       }
+-      const href = WORKSPACE_MODULE_HREFS[module];
+-      if (href) {
++      const href = WORKSPACE_MODULE_HREFS[workspaceModule];
++      if (href && canAccessWorkspacePath(user, href)) {
+         return href;
+       }
+     }
+   }
+-  return "/app/today";
++  return "/app";
+ }
+ 
+ export function isCasesOnlyWorkspace(
+diff --git a/src/lib/workspace-navigation.ts b/src/lib/workspace-navigation.ts
+index 0ba3edc..5df8099 100644
+--- a/src/lib/workspace-navigation.ts
++++ b/src/lib/workspace-navigation.ts
+@@ -38,6 +38,7 @@ import type { SessionUser } from "@/lib/auth";
+ import { hasWorkspaceModule, resolveFmsHomeHref } from "@/lib/workspace-modules";
+ import { getDedicatedClientPortal, isDedicatedClientPortal } from "@/lib/dedicated-client-portals";
+ import { PRIMARY_ORG_SLUG } from "@/lib/platform";
++import { canAccessWorkspacePath, grantedSuiteParts } from "@/lib/workspace-access";
+ import {
+   isNavIdVisible,
+   type NavPreferenceOption,
+@@ -86,7 +87,7 @@ const ROLE_ORDER = ["VIEWER", "STAFF", "MANAGER", "ADMIN", "OWNER"] as const;
+ function bciNavGroup(fmsHref: string): WorkspaceNavItem {
+   return {
+     href: fmsHref,
+-    label: "BCI",
++    label: "Business Systems Suite",
+     icon: Briefcase,
+     children: [
+       {
+@@ -119,7 +120,6 @@ function bciNavGroup(fmsHref: string): WorkspaceNavItem {
+         href: "/app/em",
+         label: "EM",
+         icon: Presentation,
+-        module: "REPORTS",
+         bciSubModule: "em",
+         minRole: "MANAGER",
+         matchPrefix: "/app/em",
+@@ -693,6 +693,11 @@ export function canAccessWorkspaceNav(
+   canSeeTeam = false,
+   enabledBciSubModules?: string[] | null,
+ ) {
++  const accessUser = {
++    ...user,
++    enabledBciSubModules: grantedSuiteParts(user, enabledBciSubModules ?? user.enabledBciSubModules),
++  };
++  if (!item.children?.length && !canAccessWorkspacePath(accessUser, item.href)) return false;
+   if (
+     item.platformOnly &&
+     !(user.isSuperAdmin && user.organizationSlug === PRIMARY_ORG_SLUG)
+@@ -720,10 +725,7 @@ export function canAccessWorkspaceNav(
+     }
+   }
+   if (item.bciSubModule) {
+-    if (
+-      enabledBciSubModules != null &&
+-      !enabledBciSubModules.includes(item.bciSubModule)
+-    ) {
++    if (!accessUser.enabledBciSubModules.some((id) => id === item.bciSubModule)) {
+       return false;
+     }
+   }
+@@ -1067,6 +1069,7 @@ export function getWorkspaceNavSections(params: {
+           id: "fleet",
+           href: "/app/fleet",
+           label: "Ash fleet",
++          module: "FLEET",
+           icon: Truck,
+           minRole: "MANAGER",
+           matchPrefix: "/app/fleet",
+@@ -1092,6 +1095,7 @@ export function getWorkspaceNavSections(params: {
+       items: [
+         {
+           id: "my-space",
++          platformOnly: true,
+           href: "/app/my-space",
+           label: "My Space",
+           icon: Wallet,
+diff --git a/src/lib/workspace-provision-access.ts b/src/lib/workspace-provision-access.ts
+new file mode 100644
+index 0000000..ed4571c
+--- /dev/null
++++ b/src/lib/workspace-provision-access.ts
+@@ -0,0 +1,35 @@
++import type { WorkspaceModule } from "@prisma/client";
++import { BCI_SUB_MODULES } from "@/lib/bci/bci-sub-modules";
++import { resolveActivationPreset } from "@/lib/workspace-activation-bundles";
++import { businessWorkspacePlan } from "@/lib/business-workspace-plans";
++
++export function resolveProvisionAccess(input: {
++  bundle: string;
++  selectedModules?: string[];
++  selectedSuiteParts?: string[];
++  maxMembers?: number;
++  maxFmsTemplates?: number;
++}) {
++  const preset = resolveActivationPreset(input.bundle);
++  const business = businessWorkspacePlan(input.bundle);
++  if (business && !input.selectedModules) throw new Error("Review and tick the modules for this workspace.");
++  const requested = input.selectedModules ?? preset.allowedModules;
++  if (requested.some((module) => !preset.allowedModules.includes(module as WorkspaceModule))) {
++    throw new Error("Selected modules must belong to the chosen plan.");
++  }
++  const allowedModules = [...new Set(requested)] as WorkspaceModule[];
++  const enabledBciSubModules = allowedModules.includes("FMS")
++    ? BCI_SUB_MODULES.filter((part) => (input.selectedSuiteParts ?? []).includes(part.id)).map((part) => part.id)
++    : [];
++  if (business && (!Number.isInteger(input.maxMembers) || input.maxMembers! < 1 || input.maxMembers! > 2_147_483_647 ||
++      !Number.isInteger(input.maxFmsTemplates) || input.maxFmsTemplates! < 0 || input.maxFmsTemplates! > 2_147_483_647)) {
++    throw new Error("Enter the agreed member and FMS workflow limits.");
++  }
++  return {
++    ...preset,
++    allowedModules,
++    enabledBciSubModules,
++    maxMembers: business ? input.maxMembers! : preset.maxMembers,
++    maxFmsTemplates: business ? input.maxFmsTemplates! : preset.maxFmsTemplates,
++  };
++}
+diff --git a/src/lib/workspace-provision.ts b/src/lib/workspace-provision.ts
+index e6ee4cd..a37b1c9 100644
+--- a/src/lib/workspace-provision.ts
++++ b/src/lib/workspace-provision.ts
+@@ -18,11 +18,11 @@ import {
+ } from "@/lib/billing/invoices";
+ import { monthlyPeriodFrom } from "@/lib/billing/dates";
+ import {
+-  resolveActivationPreset,
+   activationSummaryMessage,
+   isActivationBundleKey,
+ } from "@/lib/workspace-activation-bundles";
+ import { workspaceLoginHref } from "@/lib/workspace-auth-links";
++import { resolveProvisionAccess } from "@/lib/workspace-provision-access";
+ import { DEMO_TRIAL_DAYS, demoTrialEndsAt } from "@/lib/demo-workspace";
+ 
+ export type ProvisionClientWorkspaceInput = {
+@@ -31,6 +31,10 @@ export type ProvisionClientWorkspaceInput = {
+   ownerEmail: string;
+   ownerPhone?: string | null;
+   bundle: string;
++  selectedModules?: string[];
++  selectedSuiteParts?: string[];
++  maxMembers?: number;
++  maxFmsTemplates?: number;
+   invitedByName: string;
+   /** 3-day trial workspace — auto-expires, then convert to paying client. */
+   demoTrial?: boolean;
+@@ -104,7 +108,12 @@ export async function provisionClientWorkspace(
+   const { businessName, ownerName, ownerEmail, ownerPhone, bundle } =
+     parsed.value;
+   const demoTrial = input.demoTrial === true;
+-  const preset = resolveActivationPreset(bundle);
++  let preset: ReturnType<typeof resolveProvisionAccess>;
++  try {
++    preset = resolveProvisionAccess({ ...input, bundle });
++  } catch (error) {
++    return { ok: false, message: error instanceof Error ? error.message : "Review module access." };
++  }
+   const entitlements = organizationEntitlementsData(preset);
+   const slug = await createUniqueOrganizationSlug(
+     demoTrial ? `${businessName} Demo` : businessName,
+@@ -127,6 +136,7 @@ export async function provisionClientWorkspace(
+       product: entitlements.product,
+       planStatus: demoTrial ? "TRIAL" : "ACTIVE",
+       allowedModules: entitlements.allowedModules,
++      allowedSuiteParts: preset.enabledBciSubModules,
+       maxMembers: entitlements.maxMembers,
+       maxFmsTemplates: entitlements.maxFmsTemplates,
+       isPrimary: false,
+@@ -172,6 +182,7 @@ export async function provisionClientWorkspace(
+           organizationId: organization.id,
+           role: "OWNER",
+           modules: [...entitlements.allowedModules],
++          enabledBciSubModules: preset.enabledBciSubModules,
+         },
+       });
+     }
+@@ -188,6 +199,7 @@ export async function provisionClientWorkspace(
+             organizationId: organization.id,
+             role: "OWNER",
+             modules: [...entitlements.allowedModules],
++            enabledBciSubModules: preset.enabledBciSubModules,
+           },
+         },
+       },
+diff --git a/src/lib/workspace-shell-data.ts b/src/lib/workspace-shell-data.ts
+index 88e2b59..bf2588c 100644
+--- a/src/lib/workspace-shell-data.ts
++++ b/src/lib/workspace-shell-data.ts
+@@ -14,6 +14,7 @@ export const getWorkspaceOrganization = cache(async function getWorkspaceOrganiz
+       status: true,
+       plan: true,
+       product: true,
++      allowedSuiteParts: true,
+       logoUrl: true,
+       isPrimary: true,
+       quotationAccount: true,
+diff --git a/src/middleware.ts b/src/middleware.ts
+index 440bc0c..6ca8484 100644
+--- a/src/middleware.ts
++++ b/src/middleware.ts
+@@ -25,8 +25,11 @@ function hasSessionCookie(request: NextRequest) {
+   );
+ }
+ 
+-function nextWithPathname(request: NextRequest) {
++function nextWithPathname(request: NextRequest, tenantSlug?: string) {
+   const requestHeaders = new Headers(request.headers);
++  if (tenantSlug) requestHeaders.set(TENANT_SLUG_HEADER, tenantSlug);
++  else requestHeaders.delete(TENANT_SLUG_HEADER);
++  requestHeaders.delete(LEARN_PORTAL_HEADER);
+   requestHeaders.set(
+     REQUEST_PATHNAME_HEADER,
+     request.nextUrl.pathname + request.nextUrl.search,
+@@ -139,7 +142,7 @@ function handleProtectedAppRoutes(request: NextRequest, isLoggedIn: boolean) {
+ 
+   if (isLoginRoute && isLoggedIn) {
+     if (request.nextUrl.searchParams.has("error")) {
+-      return NextResponse.next();
++      return nextWithPathname(request);
+     }
+ 
+     const product = request.nextUrl.searchParams.get("product");
+@@ -248,7 +251,7 @@ function handleWorkspacePortalHost(request: NextRequest, isLoggedIn: boolean) {
+   const { pathname } = request.nextUrl;
+ 
+   if (isApiPath(pathname) || isStaticAssetPath(pathname)) {
+-    return NextResponse.next();
++    return nextWithPathname(request);
+   }
+ 
+   if (pathname === "/") {
+@@ -286,6 +289,8 @@ function learnLoginUrl(request: NextRequest) {
+ 
+ function withLearnRequest(request: NextRequest) {
+   const headers = new Headers(request.headers);
++  headers.delete(TENANT_SLUG_HEADER);
++  headers.set(REQUEST_PATHNAME_HEADER, request.nextUrl.pathname + request.nextUrl.search);
+   headers.set(LEARN_PORTAL_HEADER, "1");
+   return NextResponse.next({
+     request: { headers },
+@@ -352,7 +357,7 @@ function handleAiPortalHost(request: NextRequest, isLoggedIn: boolean) {
+   const { pathname } = request.nextUrl;
+ 
+   if (isApiPath(pathname) || isStaticAssetPath(pathname)) {
+-    return NextResponse.next();
++    return nextWithPathname(request);
+   }
+ 
+   if (pathname === "/") {
+@@ -388,7 +393,7 @@ function handleTenantHost(
+   const { pathname } = request.nextUrl;
+ 
+   if (isApiPath(pathname) || isStaticAssetPath(pathname)) {
+-    return withTenantHeader(NextResponse.next(), tenantSlug, request);
++    return nextWithPathname(request, tenantSlug);
+   }
+ 
+   if (pathname === "/") {
+@@ -435,7 +440,11 @@ function handleTenantHost(
+   }
+ 
+   const rewriteUrl = request.nextUrl.clone();
+-  const response = NextResponse.rewrite(rewriteUrl);
++  const requestHeaders = new Headers(request.headers);
++  requestHeaders.set(TENANT_SLUG_HEADER, tenantSlug);
++  requestHeaders.delete(LEARN_PORTAL_HEADER);
++  requestHeaders.set(REQUEST_PATHNAME_HEADER, request.nextUrl.pathname + request.nextUrl.search);
++  const response = NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } });
+   return withTenantHeader(response, tenantSlug, request);
+ }
+ 

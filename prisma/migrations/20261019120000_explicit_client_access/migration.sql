@@ -1,0 +1,6 @@
+-- Additive only: legacy plans, client rows, and rates remain unchanged.
+ALTER TYPE "OrgPlan" ADD VALUE IF NOT EXISTS 'BUSINESS_STARTER';
+ALTER TYPE "OrgPlan" ADD VALUE IF NOT EXISTS 'BUSINESS_SCALE';
+ALTER TYPE "OrgPlan" ADD VALUE IF NOT EXISTS 'BUSINESS_ENTERPRISE';
+ALTER TYPE "WorkspaceModule" ADD VALUE IF NOT EXISTS 'FLEET';
+ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "allowedSuiteParts" JSONB;

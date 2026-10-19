@@ -25,8 +25,11 @@ function hasSessionCookie(request: NextRequest) {
   );
 }
 
-function nextWithPathname(request: NextRequest) {
+function nextWithPathname(request: NextRequest, tenantSlug?: string) {
   const requestHeaders = new Headers(request.headers);
+  if (tenantSlug) requestHeaders.set(TENANT_SLUG_HEADER, tenantSlug);
+  else requestHeaders.delete(TENANT_SLUG_HEADER);
+  requestHeaders.delete(LEARN_PORTAL_HEADER);
   requestHeaders.set(
     REQUEST_PATHNAME_HEADER,
     request.nextUrl.pathname + request.nextUrl.search,
@@ -139,7 +142,7 @@ function handleProtectedAppRoutes(request: NextRequest, isLoggedIn: boolean) {
 
   if (isLoginRoute && isLoggedIn) {
     if (request.nextUrl.searchParams.has("error")) {
-      return NextResponse.next();
+      return nextWithPathname(request);
     }
 
     const product = request.nextUrl.searchParams.get("product");
@@ -248,7 +251,7 @@ function handleWorkspacePortalHost(request: NextRequest, isLoggedIn: boolean) {
   const { pathname } = request.nextUrl;
 
   if (isApiPath(pathname) || isStaticAssetPath(pathname)) {
-    return NextResponse.next();
+    return nextWithPathname(request);
   }
 
   if (pathname === "/") {
@@ -286,6 +289,8 @@ function learnLoginUrl(request: NextRequest) {
 
 function withLearnRequest(request: NextRequest) {
   const headers = new Headers(request.headers);
+  headers.delete(TENANT_SLUG_HEADER);
+  headers.set(REQUEST_PATHNAME_HEADER, request.nextUrl.pathname + request.nextUrl.search);
   headers.set(LEARN_PORTAL_HEADER, "1");
   return NextResponse.next({
     request: { headers },
@@ -352,7 +357,7 @@ function handleAiPortalHost(request: NextRequest, isLoggedIn: boolean) {
   const { pathname } = request.nextUrl;
 
   if (isApiPath(pathname) || isStaticAssetPath(pathname)) {
-    return NextResponse.next();
+    return nextWithPathname(request);
   }
 
   if (pathname === "/") {
@@ -388,7 +393,7 @@ function handleTenantHost(
   const { pathname } = request.nextUrl;
 
   if (isApiPath(pathname) || isStaticAssetPath(pathname)) {
-    return withTenantHeader(NextResponse.next(), tenantSlug, request);
+    return nextWithPathname(request, tenantSlug);
   }
 
   if (pathname === "/") {
@@ -435,7 +440,11 @@ function handleTenantHost(
   }
 
   const rewriteUrl = request.nextUrl.clone();
-  const response = NextResponse.rewrite(rewriteUrl);
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(TENANT_SLUG_HEADER, tenantSlug);
+  requestHeaders.delete(LEARN_PORTAL_HEADER);
+  requestHeaders.set(REQUEST_PATHNAME_HEADER, request.nextUrl.pathname + request.nextUrl.search);
+  const response = NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } });
   return withTenantHeader(response, tenantSlug, request);
 }
 

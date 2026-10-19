@@ -11,6 +11,8 @@ import {
   resolveWorkspaceHomeHref,
 } from "@/lib/workspace-modules";
 import { logoutHref } from "@/lib/auth-logout";
+import { canAccessWorkspacePath, canUseTasks, hasSuitePart } from "@/lib/workspace-access";
+import type { BciSubModuleId } from "@/lib/bci/bci-sub-modules";
 
 export async function requireSession(
   minRole?: Role,
@@ -18,6 +20,7 @@ export async function requireSession(
     redirectTo?: string;
     module?: WorkspaceModule;
     anyModules?: WorkspaceModule[];
+    suitePart?: BciSubModuleId;
   },
 ) {
   const user = await getSessionUser();
@@ -30,15 +33,20 @@ export async function requireSession(
     redirect(options?.redirectTo ?? "/app");
   }
 
+  const pathname = await getRequestPathname();
+  if (options?.suitePart && !hasSuitePart(user, options.suitePart)) redirect(options?.redirectTo ?? "/app");
+  if (!canAccessWorkspacePath(user, pathname)) redirect(options?.redirectTo ?? "/app");
+  const suiteTaskAccess = options?.module === "TASKS" && canUseTasks(user);
+  const suiteEmAccess = options?.module === "REPORTS" && pathname.split("?")[0] === "/app/em" && hasSuitePart(user, "em");
+
   if (options?.anyModules?.length) {
     if (!options.anyModules.some((module) => hasWorkspaceModule(user, module))) {
       redirect(options?.redirectTo ?? "/app");
     }
-  } else if (options?.module && !hasWorkspaceModule(user, options.module)) {
+  } else if (options?.module && !hasWorkspaceModule(user, options.module) && !suiteTaskAccess && !suiteEmAccess) {
     redirect(options?.redirectTo ?? "/app");
   }
 
-  const pathname = await getRequestPathname();
   if (
     !canUseSuspendedWorkspace({
       status: user.organizationStatus,

@@ -44,13 +44,14 @@ export const EMPTY_TODAY_PAYLOAD = EMPTY_PAYLOAD;
 export async function getMyTodayPayload(
   organizationId: string,
   userId: string,
+  access: { checklists: boolean; tasks: boolean; fms: boolean },
 ): Promise<MyTodayPayload> {
   try {
     const weekStart = startOfWeek(new Date());
 
     const [work, completedChecklists, completedTasks] = await Promise.all([
-      listMyPcWork(organizationId, userId),
-      prisma.checklistOccurrence
+      listMyPcWork(organizationId, userId, access),
+      access.checklists ? prisma.checklistOccurrence
         .count({
           where: {
             organizationId,
@@ -59,8 +60,8 @@ export async function getMyTodayPayload(
             actualAt: { gte: weekStart },
           },
         })
-        .catch(() => 0),
-      prisma.delegatedTask
+        .catch(() => 0) : 0,
+      access.tasks ? prisma.delegatedTask
         .count({
           where: {
             organizationId,
@@ -69,7 +70,7 @@ export async function getMyTodayPayload(
             completedAt: { gte: weekStart },
           },
         })
-        .catch(() => 0),
+        .catch(() => 0) : 0,
     ]);
 
     const checklistItems = work.checklists.map((row) => {
@@ -106,7 +107,7 @@ export async function getMyTodayPayload(
     const dueToday = items.filter((item) => item.urgency === "today").length;
     const completedThisWeek = completedChecklists + completedTasks;
 
-    const recentDone = await prisma.checklistOccurrence
+    const recentDone = access.checklists ? await prisma.checklistOccurrence
       .findMany({
         where: {
           organizationId,
@@ -117,7 +118,7 @@ export async function getMyTodayPayload(
         select: { plannedAt: true, actualAt: true, status: true },
         take: 50,
       })
-      .catch(() => []);
+      .catch(() => []) : [];
 
     const scores = recentDone.map((row) =>
       checklistOccurrenceMisScore({

@@ -17,6 +17,7 @@ enum Role {
 }
 
 enum WorkspaceModule {
+  FLEET
   TASKS
   HR
   APPROVALS
@@ -109,6 +110,9 @@ enum OrganizationStatus {
 }
 
 enum OrgPlan {
+  BUSINESS_STARTER
+  BUSINESS_SCALE
+  BUSINESS_ENTERPRISE
   BCI_STARTER
   BCI_GROWTH
   ENTERPRISE
@@ -234,6 +238,8 @@ model Organization {
   planStatus      PlanSubscriptionStatus   @default(ACTIVE)
   billingPeriod   PlanBillingPeriod        @default(MONTHLY)
   allowedModules  WorkspaceModule[]        @default([])
+  /// Null for legacy workspaces; an array explicitly caps Suite parts for new clients/trials.
+  allowedSuiteParts Json?
   maxMembers      Int                      @default(8)
   maxFmsTemplates Int                      @default(3)
   isPrimary       Boolean                  @default(false)

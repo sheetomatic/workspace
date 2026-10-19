@@ -150,9 +150,7 @@ export default async function AppLayout({
               sessionUser.isSuperAdmin || hasMinimumRole(sessionUser.role, "ADMIN")
             }
             enabledBciSubModules={
-              sessionUser.isSuperAdmin || hasMinimumRole(sessionUser.role, "ADMIN")
-                ? null
-                : []
+              sessionUser.enabledBciSubModules ?? []
             }
             hidePlanBadge={Boolean(dedicatedPortal)}
             isDedicatedPortal={Boolean(dedicatedPortal)}
