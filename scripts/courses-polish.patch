@@ -566,10 +566,10 @@ index fb4fbd1..a461474 100644
              <a
                className="btn-cta btn-youtube"
 diff --git a/src/components/marketing/courses-page.css b/src/components/marketing/courses-page.css
-index a847d6d..59d4d63 100644
+index a847d6d..61c1584 100644
 --- a/src/components/marketing/courses-page.css
 +++ b/src/components/marketing/courses-page.css
-@@ -1,363 +1,494 @@
+@@ -1,363 +1,495 @@
  .courses-section-head {
 -  max-width: 42rem;
 +  max-width: 44rem;
@@ -1145,7 +1145,7 @@ index a847d6d..59d4d63 100644
 +
 +.courses-disclosure-body p { margin: 0 0 1rem; }
 +.courses-disclosure-body h4 { margin: 1.25rem 0 0.45rem; font-size: 0.95rem; font-weight: 700; line-height: 1.5; color: #0f172a; }
-+.courses-disclosure-body ul { padding-left: 1.2rem; }
++.courses-disclosure-body ul { padding-left: 1.2rem; list-style: disc; }
 +.courses-disclosure-body li + li { margin-top: 0.55rem; }
 +
 +.courses-build-steps {
@@ -1154,6 +1154,7 @@ index a847d6d..59d4d63 100644
 +  gap: 1rem;
 +  margin: 1.25rem 0 0;
 +  padding-left: 1.3rem;
++  list-style: decimal;
 +}
 +
 +.courses-build-steps li { padding-left: 0.25rem; }
@@ -1174,7 +1175,7 @@ index a847d6d..59d4d63 100644
 +.courses-curriculum-phase + .courses-curriculum-phase { padding-top: 1.5rem; border-top: 1px solid #e2e8f0; }
 +.courses-curriculum-phase .courses-phase-range { margin: 0; }
 +.courses-curriculum-phase h4 { margin-top: 0.35rem; }
-+.courses-lesson-list { display: grid; gap: 0.75rem; padding-left: 1.5rem; margin: 1rem 0 0; }
++.courses-lesson-list { display: grid; gap: 0.75rem; padding-left: 1.5rem; margin: 1rem 0 0; list-style: decimal; }
 +.courses-lesson-list li { padding-left: 0.35rem; }
 +.courses-lesson-list li::marker { color: #1d4ed8; font-weight: 700; font-size: 0.8rem; }
 +.courses-lesson-list span { font-size: 0.85rem; }
