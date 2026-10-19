@@ -38,7 +38,7 @@ node scripts/check-pricing-clarity.mjs
 
 This cloud session used the existing matching dependencies from `/workspace/workspace/node_modules` and the installed Chromium with `PRICING_TEST_CHROMIUM_PATH=/usr/bin/chromium`. No dependency or lockfile changes were necessary. The test's optional `PRICING_TEST_URL` supports a different local port and refuses a non-local hostname.
 
-## Deployment gate
+## Initial deployment gate (resolved)
 
 The configured Vercel credential was rejected by `/v2/user`, `/v2/teams` and `/v9/projects` with HTTP 403, `invalidToken: true`. Replace it through secure environment settings, not chat, then verify the account and the project owning `sheetomatic.com`.
 
@@ -50,4 +50,23 @@ The existing `scripts/apply-business-pricing.mjs` warns that production has sour
 
 Run the tests against the resulting source and create/verify a preview before promoting. Inspect the actual deployment build command: this repository's `npm run build` includes `prisma migrate deploy`. A marketing-copy update does not authorise running unrelated migrations; use a verified build path without migration side effects.
 
-After promotion, check `https://sheetomatic.com/pricing` for the new Enterprise bundle note, the complete feature table and request-labelled CTAs; verify desktop/mobile rendering. Confirm other existing production pages are preserved. Until then this update is not live.
+## Verified production release — 19 October 2026
+
+The replacement credential was verified against `sheetomatic-redesign`, project `prj_E2G99Y1UGVVQ7SXqmJQfVKjzy2yt`, owning `sheetomatic.com` in team `team_3GV54WqCCioFnx8Bk9We6lKi`.
+
+- Previous production: `dpl_5PbWswbFoBUcnigEPsfKxob8DeNp`.
+- New production: `dpl_5ukjgeFNa3VPwmzkNCZXdCdcvbzn`.
+- Pricing change commit: `ba5e4d7bae6fea1528ca27f43cd6a23736d43faf`.
+- Reviewed build script commit: `f32cf95222345f3568f3bebf920f5c12864e1eb2` (`scripts/pricing.mjs`).
+- Deployment URL: `https://sheetomatic-redesign-1bgfye5je-sheetomatic.vercel.app`.
+- Public page: `https://sheetomatic.com/pricing`.
+
+Redeployed the previous production snapshot, retaining its exact Courses/client-access/marketing preparation chain in prepare-only mode. Checksum guards verified all three pricing targets before replacement. The build ran the 13 pricing tests, Prisma client generation and Next production build; no migration/seed/database-execute command was run. Production TypeScript passed, all 238 static pages generated, and Vercel reported READY.
+
+The deployment was initially staged with `autoAssignCustomDomains: false`. Existing automation access was used for verification without changing deployment protection. Checks passed at 390px and 1440px before promotion and again on the public domain after promotion: all prices, explicit IMS inclusions/exclusions, six WhatsApp request URLs, full comparison, anchor navigation, FAQ keyboard operation, no page overflow and no uncaught browser errors. No enquiries were submitted.
+
+Homepage, Courses, Contact and FMS page headings matched the saved prior-production baseline both before and after promotion. This is a public-page smoke test, not a claim to have exhaustively retested every authenticated module.
+
+Vercel's project production target was confirmed to be the new deployment. The Enterprise bundle note, complete comparison and request-labelled CTAs were also confirmed by an independent HTTPS request to the public pricing page.
+
+The previous production deployment remains available as the rollback target; it was not deleted. Future deployments must retain the build-time preparation chain or reconcile the complete production source into Git first. Deploying the old main checkout directly would lose unrelated live changes.
