@@ -5,6 +5,16 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+# Sheet lead timestamps and unit tests assume India Standard Time.
+export TZ=Asia/Kolkata
+
+use_india_timezone() {
+  if [ -f /usr/share/zoneinfo/Asia/Kolkata ]; then
+    sudo ln -sfn /usr/share/zoneinfo/Asia/Kolkata /etc/localtime
+    echo 'Asia/Kolkata' | sudo tee /etc/timezone >/dev/null
+  fi
+}
+
 postgres_version() {
   ls /usr/lib/postgresql 2>/dev/null | sort -V | tail -n1 || true
 }

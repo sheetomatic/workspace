@@ -8,6 +8,7 @@ cd "$ROOT"
 . "$ROOT/scripts/cloud-agent-lib.sh"
 
 export DEBIAN_FRONTEND=noninteractive
+use_india_timezone
 if ! command -v psql >/dev/null 2>&1 || ! command -v pg_isready >/dev/null 2>&1; then
   sudo apt-get update
   sudo apt-get install -y postgresql postgresql-contrib

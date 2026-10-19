@@ -22,6 +22,7 @@ Next.js, Prisma, Neon, Resend, Vercel
 - Install: `bash scripts/cloud-agent-install.sh` (npm ci, migrate, seed). Safe to rerun.
 - Start: `bash scripts/cloud-agent-start.sh` (Postgres + dev server).
 - Generated `.env` is gitignored. Local database URL matches `docker-compose.yml` (`sheetomatic` / `sheetomatic` on `127.0.0.1:5432/sheetomatic`).
+- The VM timezone is set to `Asia/Kolkata`. Lead sheet timestamps and several unit tests expect IST.
 - After seed, sign in at http://localhost:3000/login as `owner@acme.demo` / `demo1234` (Acme Manufacturing). Workspace home is `/app`.
 - OpenAI, WhatsApp, Resend, and Google keys are optional. Core login, tasks, and marketing pages run without them.
 
