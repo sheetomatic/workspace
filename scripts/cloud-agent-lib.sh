@@ -98,6 +98,23 @@ load_env() {
   set +a
 }
 
+# prisma/seed.ts imports app code marked `server-only`. Next aliases that
+# module during its build; tsx does not, and the published package throws.
+# An empty stub lets `prisma db seed` finish outside the Next compiler.
+install_server_only_stub() {
+  local dir="node_modules/server-only"
+  mkdir -p "$dir"
+  cat > "$dir/package.json" <<'EOF'
+{
+  "name": "server-only",
+  "version": "0.0.0",
+  "private": true,
+  "main": "index.js"
+}
+EOF
+  printf '%s\n' 'module.exports = {};' > "$dir/index.js"
+}
+
 demo_user_present() {
   local found
   found="$(psql "$DATABASE_URL" -tAc "SELECT 1 FROM \"User\" WHERE email = 'owner@acme.demo' LIMIT 1" 2>/dev/null || true)"

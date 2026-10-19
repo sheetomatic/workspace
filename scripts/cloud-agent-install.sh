@@ -14,6 +14,7 @@ if ! command -v psql >/dev/null 2>&1 || ! command -v pg_isready >/dev/null 2>&1;
 fi
 
 npm ci
+install_server_only_stub
 
 start_postgres
 ensure_local_database

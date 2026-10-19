@@ -18,6 +18,7 @@ ensure_env_file
 load_env
 
 npx prisma migrate deploy
+install_server_only_stub
 if ! demo_user_present; then
   npx prisma db seed
 fi
