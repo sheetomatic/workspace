@@ -673,3 +673,18 @@
     gap: 3rem;
   }
 }
+
+/* The live mobile header includes a third row of navigation links. */
+@media (max-width: 1023px) {
+  #programs,
+  #business-owners,
+  #working-professionals,
+  #curriculum-owners,
+  #curriculum-professionals,
+  #recorded-courses,
+  #course-focus,
+  #topic-whatsapp,
+  .courses-featured-videos > div {
+    scroll-margin-top: 13rem;
+  }
+}

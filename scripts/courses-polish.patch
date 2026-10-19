@@ -566,7 +566,7 @@ index fb4fbd1..a461474 100644
              <a
                className="btn-cta btn-youtube"
 diff --git a/src/components/marketing/courses-page.css b/src/components/marketing/courses-page.css
-index a847d6d..61c1584 100644
+index a847d6d..dc920c5 100644
 --- a/src/components/marketing/courses-page.css
 +++ b/src/components/marketing/courses-page.css
 @@ -1,363 +1,495 @@
@@ -1307,6 +1307,25 @@ index a847d6d..61c1584 100644
  .courses-featured-videos {
    display: grid;
    gap: 1.25rem;
+@@ -541,3 +673,18 @@
+     gap: 3rem;
+   }
+ }
++
++/* The live mobile header includes a third row of navigation links. */
++@media (max-width: 1023px) {
++  #programs,
++  #business-owners,
++  #working-professionals,
++  #curriculum-owners,
++  #curriculum-professionals,
++  #recorded-courses,
++  #course-focus,
++  #topic-whatsapp,
++  .courses-featured-videos > div {
++    scroll-margin-top: 13rem;
++  }
++}
 diff --git a/src/lib/content/course-programs.ts b/src/lib/content/course-programs.ts
 index 55c93f6..4ec9475 100644
 --- a/src/lib/content/course-programs.ts
