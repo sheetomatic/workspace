@@ -37,7 +37,7 @@ export const siteBrand = {
   name: "Sheetomatic",
   tagline: "AI-Powered Business Automation",
   headerTagline: "AI-Powered Business Automation",
-  descriptor: "Business Control & Intelligence",
+  descriptor: "Business Systems Suite",
   /** Icon-only mark for headers, sidebars, and app tiles */
   iconSrc: "/images/sheetomatic-icon.svg",
   /** White icon for dark backgrounds (login, footer) */
@@ -60,7 +60,7 @@ export const siteBrand = {
 export const finalCtaContent = {
   kicker: "Start on WhatsApp",
   title: "Build a business that scales without you.",
-  text: "BCI Suite brings FMS, IMS, Full Kitting, Process Coordinator, Executive Assistant, and Review Rhythm into one operating system. One conversation to replace spreadsheet firefighting with owner clarity.",
+  text: "Business Systems Suite brings FMS, IMS, Full Kitting, Process Coordinator, Executive Assistant, and Review Rhythm into one operating system. One conversation to replace spreadsheet firefighting with owner clarity.",
   buttonLabel: "WhatsApp",
 };
 

@@ -28,7 +28,7 @@ export const footerCompanyLinks = [
 ];
 
 export const footerProductLinks = [
-  { href: "/products", label: "BCI Suite" },
+  { href: "/products", label: "Business Systems Suite" },
   { href: "/services/flow", label: "FMS" },
   { href: "/services/inventory", label: "IMS" },
   { href: "/services/checklist", label: "Checklists" },
@@ -578,7 +578,7 @@ export const productsPage = {
   eyebrow: "Operating systems, not apps",
   title: "Modules that protect margin while your team runs without you.",
   lead:
-    "For owner-led MSMEs with revenue and payroll — buy the full BCI Suite or individual modules (FMS, IMS, Checklist/Tasks, CRM, HR). Process Coordinator and Executive Assistant roles run on their portals; Monday EM lands without a MIS hire. See Suite vs module pricing on /pricing.",
+    "For owner-led MSMEs with revenue and payroll — buy the full Business Systems Suite or individual modules (FMS, IMS, Checklist/Tasks, CRM, HR). Process Coordinator and Executive Assistant roles run on their portals; Monday EM lands without a MIS hire. See monthly plan pricing on /pricing.",
 };
 
 export const contactPage = {
