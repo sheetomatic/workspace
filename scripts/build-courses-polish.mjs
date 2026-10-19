@@ -26,8 +26,8 @@ function run(command, args) {
 
 await reviewedFile("a967bd7bf1a42d66ee60d5d95326457130a17071", "scripts/build-client-module-access.mjs",
   "e38f343b08824d2d5c6b5da782f8b03fa581320cac7d217dadfd7ed4cef81668", "/tmp/preserve-client-access.mjs");
-await reviewedFile("d493829589940614ad56655c8275aab14d62d8f2", "scripts/courses-polish.patch",
-  "2cc244976ca2b34fda9f890ed498de4e91ac219f957aa9fe637d54aa85e252ad", "/tmp/courses-polish.patch");
+await reviewedFile("a7a838f865fcf9ca07c5efa340dfe58631d86d58", "scripts/courses-polish.patch",
+  "62be26323e20a97d07909801a5d6fd2cb3cb583c8ac4ee7325d25359387f08fb", "/tmp/courses-polish.patch");
 
 // Earlier releases patched source during the build. Retain those changes first.
 // --prepare-only does not execute the already-applied client access migration.
