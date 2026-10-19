@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   businessAddonsEnquiryHref,
   businessPlanEnquiryHref,
+  businessPricingFaqs,
   businessSystemAddons,
   businessSystemBenefits,
   businessSystemComparison,
@@ -26,13 +27,34 @@ describe("Business Systems Suite marketing pricing", () => {
     expect(businessSystemPlans[2].features).toEqual(["HRMS", "IMS / Stock", "Task Management", "Reports"]);
   });
 
-  it("keeps the concise comparison consistent with the cards", () => {
-    const matrix = businessSystemComparison.map((row) => [...row.included]);
-    expect(matrix).toEqual([
-      [true, true, true], [false, true, true],
-      [false, false, true], [false, false, true], [false, false, true], [false, false, true],
-    ]);
-    expect(businessSystemComparison.slice(2).map((r) => r.feature)).toEqual(businessSystemPlans[2].features);
+  it("compares every card feature with its inherited plan inclusions", () => {
+    const features = businessSystemPlans.flatMap((plan) => [...plan.features]);
+    expect(businessSystemComparison.map((row) => row.feature)).toEqual(features);
+    expect(new Set(features).size).toBe(features.length);
+    for (const [index] of businessSystemPlans.entries()) {
+      const inherited = businessSystemPlans.slice(0, index + 1).flatMap((plan) => [...plan.features]);
+      expect(businessSystemComparison.filter((row) => row.included[index]).map((row) => row.feature)).toEqual(inherited);
+    }
+    expect(businessSystemComparison.find((row) => row.feature === "IMS / Stock")?.included).toEqual([false, false, true]);
+    expect(businessSystemComparison.find((row) => row.feature === "FMS")?.included).toEqual([true, true, true]);
+    expect(businessSystemComparison.find((row) => row.feature === "Checklists")?.included).toEqual([true, true, true]);
+  });
+
+  it("makes stock exclusions and the full bundle explicit on the cards", () => {
+    for (const plan of businessSystemPlans.slice(0, 2)) {
+      expect(plan.fit).toContain("IMS / Stock is not included");
+    }
+    expect(businessSystemPlans[2].fit).toContain("FMS, IMS / Stock and Checklists together");
+  });
+
+  it("explains trial requests, scope and limits without inventing commercial promises", () => {
+    const copy = businessPricingFaqs.map(({ answer }) => answer).join(" ");
+    expect(copy).toContain("does not activate a trial or confirm a demo booking");
+    expect(copy).toContain("start and end dates");
+    expect(copy).toContain("scoped and quoted separately");
+    expect(copy).toContain("GST is extra");
+    expect(copy).toContain("included users, storage, usage limits");
+    expect(copy).not.toMatch(/free trial|no credit card|unlimited|cancel anytime/i);
   });
 
   for (const plan of businessSystemPlans) {
@@ -42,8 +64,9 @@ describe("Business Systems Suite marketing pricing", () => {
         expect(url.origin).toBe("https://wa.me");
         expect(url.pathname).toBe(`/${whatsappPhone}`);
         const message = url.searchParams.get("text");
-        expect(message).toContain(`${plan.name} plan (${formatBusinessPlanPrice(plan.monthlyPriceInr)}/month)`);
-        expect(message).toContain(intent === "trial" ? "start a 3-day trial" : "book a demo");
+        expect(message).toContain(`${plan.name} plan (${formatBusinessPlanPrice(plan.monthlyPriceInr)}/month, GST extra)`);
+        expect(message).toContain(intent === "trial" ? "request a 3-day trial" : "request a demo");
+        expect(message).toContain("setup scope, access limits, applicable terms and any additional charges");
         expect(message).toContain("Business Systems Suite");
         expect(message).not.toMatch(/free|credit card|annual|yearly|unlimited/i);
       });

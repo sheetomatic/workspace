@@ -8,6 +8,7 @@ export const businessSystemPlans = [
     monthlyPriceInr: 4_999,
     recommended: false,
     includesLabel: "Business Systems Suite",
+    fit: "FMS and Checklists for daily work. IMS / Stock is not included.",
     features: ["FMS", "Checklists", "Task Delegation", "EM", "MIS Score", "PC Jobs"],
   },
   {
@@ -16,6 +17,7 @@ export const businessSystemPlans = [
     monthlyPriceInr: 6_999,
     recommended: true,
     includesLabel: "Everything in Starter, plus",
+    fit: "FMS, Checklists and CRM. IMS / Stock is not included.",
     features: ["CRM"],
   },
   {
@@ -24,19 +26,42 @@ export const businessSystemPlans = [
     monthlyPriceInr: 9_999,
     recommended: false,
     includesLabel: "Everything in Scale, plus",
+    fit: "FMS, IMS / Stock and Checklists together, with all modules listed below.",
     features: ["HRMS", "IMS / Stock", "Task Management", "Reports"],
   },
 ] as const;
 
 export type BusinessSystemPlan = (typeof businessSystemPlans)[number];
 
-export const businessSystemComparison = [
-  { feature: "Business Systems Suite", included: [true, true, true] },
-  { feature: "CRM", included: [false, true, true] },
-  { feature: "HRMS", included: [false, false, true] },
-  { feature: "IMS / Stock", included: [false, false, true] },
-  { feature: "Task Management", included: [false, false, true] },
-  { feature: "Reports", included: [false, false, true] },
+/** Derive the comparison from the cards, including inherited features. */
+export const businessSystemComparison = businessSystemPlans.flatMap((plan, planIndex) =>
+  plan.features.map((feature) => ({
+    feature,
+    included: businessSystemPlans.map((_, index) => index >= planIndex),
+  })),
+);
+
+export const businessPricingFaqs = [
+  {
+    question: "Which plan includes FMS, IMS and Checklists together?",
+    answer: "Enterprise includes all three. FMS (Flow Monitoring System) and Checklists are included in every plan. IMS (Inventory Management System) / Stock is included in Enterprise, not Starter or Scale. Scale adds CRM to Starter; Enterprise includes CRM too.",
+  },
+  {
+    question: "What does setup included mean?",
+    answer: "Sheetomatic handles setup for the modules included in your selected plan. Confirm the setup scope with our team before subscribing. Customization, integrations and additional professional services are scoped and quoted separately; they are not automatically included in the monthly subscription.",
+  },
+  {
+    question: "How do I request the 3-day trial or a demo?",
+    answer: "The buttons open WhatsApp with your selected plan. This sends an enquiry; it does not activate a trial or confirm a demo booking. Our team will confirm access, the trial start and end dates, applicable terms and any charges before you proceed. Demo timing is confirmed with you separately.",
+  },
+  {
+    question: "Is a yearly commitment required?",
+    answer: "No. These are monthly plans with no yearly commitment. Prices are in INR and GST is extra. Confirm billing, renewal and cancellation terms with our team before subscribing.",
+  },
+  {
+    question: "Are add-ons and extra capacity included?",
+    answer: "WhatsApp API and additional storage are optional, separately quoted add-ons. Confirm included users, storage, usage limits and any additional capacity charges for your selected plan before subscribing. Custom requirements are assessed separately.",
+  },
 ] as const;
 
 export const businessSystemBenefits = [
@@ -50,9 +75,9 @@ export function formatBusinessPlanPrice(amount: number): string {
 }
 
 export function businessPlanEnquiryHref(plan: BusinessSystemPlan, intent: "trial" | "demo"): string {
-  const request = intent === "trial" ? "start a 3-day trial" : "book a demo";
+  const request = intent === "trial" ? "request a 3-day trial" : "request a demo";
   return buildWhatsAppUrl(
-    `Hi Sheetomatic, I would like to ${request} for the ${plan.name} plan (${formatBusinessPlanPrice(plan.monthlyPriceInr)}/month) in the Business Systems Suite. Please share the details and next steps.`,
+    `Hi Sheetomatic, I would like to ${request} for the ${plan.name} plan (${formatBusinessPlanPrice(plan.monthlyPriceInr)}/month, GST extra) in the Business Systems Suite. Please confirm the included modules, setup scope, access limits, applicable terms and any additional charges before we proceed.`,
   );
 }
 

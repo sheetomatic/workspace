@@ -3,6 +3,7 @@ import { Check, CheckCircle2, Minus } from "lucide-react";
 import {
   businessAddonsEnquiryHref,
   businessPlanEnquiryHref,
+  businessPricingFaqs,
   businessSystemAddons,
   businessSystemBenefits,
   businessSystemComparison,
@@ -31,6 +32,7 @@ function PlanCard({ plan }: { plan: BusinessSystemPlan }) {
         <span>/month</span>
       </p>
       <p className="business-plan-billing">Monthly plans. No yearly commitment.</p>
+      <p className="business-plan-fit">{plan.fit}</p>
       <p className="business-plan-includes">{plan.includesLabel}</p>
       <ul className="business-plan-features">
         {plan.features.map((feature) => (
@@ -41,20 +43,22 @@ function PlanCard({ plan }: { plan: BusinessSystemPlan }) {
         <a
           className={marketingButtonClass("primary", "business-plan-trial")}
           href={businessPlanEnquiryHref(plan, "trial")}
-          aria-label={`Start Your 3-Day Trial — ${plan.name}`}
+          aria-label={`Request a 3-Day Trial — ${plan.name} (opens WhatsApp)`}
+          aria-describedby="business-enquiry-note"
           target="_blank"
           rel="noopener noreferrer"
         >
-          Start Your 3-Day Trial
+          Request a 3-Day Trial
         </a>
         <a
           className={marketingButtonClass("secondary", "business-plan-demo")}
           href={businessPlanEnquiryHref(plan, "demo")}
-          aria-label={`Book a Demo — ${plan.name}`}
+          aria-label={`Request a Demo — ${plan.name} (opens WhatsApp)`}
+          aria-describedby="business-enquiry-note"
           target="_blank"
           rel="noopener noreferrer"
         >
-          Book a Demo
+          Request a Demo
         </a>
       </div>
     </article>
@@ -86,17 +90,26 @@ export function EmReadyPricing() {
             <h2 id="business-plans-title">Choose your monthly plan</h2>
             <p>All prices are in INR. GST is extra. Setup is included.</p>
           </div>
+          <aside className="business-bundle-note" aria-labelledby="business-bundle-title">
+            <h3 id="business-bundle-title">Looking for FMS, IMS and Checklists together?</h3>
+            <p>
+              Choose <a href="#plan-enterprise">Enterprise</a> for all three.
+              FMS and Checklists are included in every plan; IMS / Stock is included only in Enterprise.
+            </p>
+            <a href="#business-comparison-title">Compare every included module</a>
+          </aside>
           <div className="business-pricing-grid">
             {businessSystemPlans.map((plan) => <PlanCard key={plan.id} plan={plan} />)}
           </div>
-          <p className="business-enquiry-note">
-            Trial and demo buttons open WhatsApp with your selected plan. Our team will confirm the trial details and next steps with you.
+          <p className="business-enquiry-note" id="business-enquiry-note">
+            Requests open WhatsApp with your selected plan. A request does not activate a trial or confirm a booking.
+            Our team will confirm access, timing, applicable terms and any charges before you proceed.
           </p>
 
           <section className="business-comparison" aria-labelledby="business-comparison-title">
             <div className="business-section-heading">
               <h2 id="business-comparison-title">Compare what’s included</h2>
-              <p>Each plan builds on the one before it.</p>
+              <p>Each plan builds on the one before it. FMS means Flow Monitoring System; IMS means Inventory Management System.</p>
             </div>
             <div className="business-comparison-scroll" role="region" aria-label="Plan feature comparison" tabIndex={0}>
               <table className="business-comparison-table">
@@ -142,9 +155,21 @@ export function EmReadyPricing() {
 
           <aside className="business-pricing-terms" aria-labelledby="business-terms-title">
             <h2 id="business-terms-title">Before you start</h2>
-            <p>Setup is included and handled by Sheetomatic. Optional customization and integrations are scoped and quoted separately.</p>
+            <p>Setup for your selected plan is included and handled by Sheetomatic. Confirm the setup scope before subscribing. Customization, integrations and additional professional services are scoped and quoted separately.</p>
             <p>Additional professional services: <Link href="/terms/services">T&amp;C apply</Link>.</p>
           </aside>
+
+          <section className="business-pricing-faq" aria-labelledby="business-faq-title">
+            <div className="business-section-heading">
+              <h2 id="business-faq-title">Plans, setup and trial questions</h2>
+            </div>
+            {businessPricingFaqs.map(({ question, answer }) => (
+              <details key={question}>
+                <summary>{question}</summary>
+                <p>{answer}</p>
+              </details>
+            ))}
+          </section>
 
           <div className="business-pricing-links">
             <p>Existing users: <Link href={WORKSPACE_LOGIN_HREF}>Sign in to Workspace</Link></p>

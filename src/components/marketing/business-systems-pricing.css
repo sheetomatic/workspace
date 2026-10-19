@@ -92,6 +92,18 @@
 .business-plan-price strong { font-size: clamp(2.3rem, 3.5vw, 3rem); line-height: 1.15; font-weight: 800; letter-spacing: -0.045em; font-variant-numeric: tabular-nums; }
 .business-plan-price span { font-size: 1rem; color: var(--em-muted); }
 .business-plan-billing { margin: 0.65rem 0 0; color: var(--em-muted); font-size: 0.85rem; line-height: 1.5; }
+.business-plan-fit { margin: 1rem 0 0; color: var(--em-ink); font-size: 0.9rem; line-height: 1.6; }
+.business-plan-card.is-recommended .business-plan-fit { color: #ffffff; }
+.business-bundle-note { margin-bottom: 1.5rem; padding: 1.25rem; border: 1px solid #bfdbfe; border-radius: var(--em-radius); background: #eff6ff; color: #0a1b2e; }
+.business-bundle-note h3 { margin: 0; font-size: 1.1rem; font-weight: 750; }
+.business-bundle-note p { margin: 0.6rem 0; line-height: 1.65; }
+.business-bundle-note a { color: #1d4ed8; text-decoration: underline; text-underline-offset: 3px; font-weight: 650; }
+.business-pricing-faq { margin-top: 2.5rem; }
+.business-pricing-faq details { border-bottom: 1px solid var(--em-border); padding-block: 1rem; }
+.business-pricing-faq summary { cursor: pointer; color: var(--em-ink); font-weight: 650; line-height: 1.6; }
+.business-pricing-faq p { margin: 0.75rem 0 0; color: var(--em-muted); line-height: 1.7; }
+.business-pricing-faq summary:focus-visible { outline: 3px solid #2563eb; outline-offset: 4px; }
+#business-comparison-title { scroll-margin-top: 7rem; }
 .business-plan-includes { margin: 1.5rem 0 0.75rem; padding-top: 1.25rem; border-top: 1px solid var(--em-border); color: var(--em-ink); font-size: 0.95rem; font-weight: 700; }
 .business-plan-features { display: grid; align-content: start; gap: 0.6rem; flex: 1; margin: 0; padding: 0; list-style: none; color: var(--em-ink); }
 .business-plan-actions { display: grid; gap: 0.65rem; margin-top: 1.75rem; }
