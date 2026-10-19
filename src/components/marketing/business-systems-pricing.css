@@ -1,0 +1,126 @@
+/* Extends the existing marketing pricing cards, typography, and button system. */
+.business-pricing-page { --em-muted: #475569; }
+.business-pricing-page .em-pricing-hero { padding-block: clamp(2.5rem, 6vw, 4rem) 2rem; }
+.business-pricing-page .em-pricing-hero h1 {
+  max-width: 48rem;
+  margin-inline: auto;
+  font-size: clamp(2rem, 4.4vw, 3.3rem);
+  line-height: 1.15;
+  text-wrap: balance;
+}
+.business-monthly-promise {
+  display: inline-block;
+  margin: 1.5rem 0 0;
+  padding: 0.7rem 1.1rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: clamp(1rem, 2vw, 1.15rem);
+  font-weight: 750;
+}
+.business-common-benefits {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem 2rem;
+  list-style: none;
+  margin: 1.75rem 0 0;
+  padding: 0;
+  color: var(--em-ink);
+  font-size: 0.9rem;
+}
+.business-common-benefits li,
+.business-plan-features li { display: flex; align-items: flex-start; gap: 0.6rem; line-height: 1.55; text-align: left; }
+.business-common-benefits svg,
+.business-plan-features svg { flex-shrink: 0; margin-top: 0.15rem; color: #1d4ed8; }
+.business-section-heading { margin-bottom: 1.5rem; }
+.business-section-heading h2,
+.business-addons h2,
+.business-pricing-terms h2 {
+  margin: 0;
+  color: var(--em-ink);
+  font-family: var(--font-heading);
+  font-size: clamp(1.35rem, 2.8vw, 1.75rem);
+  line-height: 1.3;
+  font-weight: 750;
+  letter-spacing: -0.025em;
+}
+.business-section-heading p,
+.business-addons p,
+.business-pricing-terms p { margin: 0.65rem 0 0; color: var(--em-muted); line-height: 1.65; }
+.business-pricing-grid { display: grid; gap: 1.25rem; }
+.business-plan-card { padding: 1.5rem; scroll-margin-top: 7rem; min-width: 0; }
+.business-plan-badge-slot { min-height: 2.4rem; }
+.business-plan-badge {
+  display: inline-block;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1e3a8a;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  font-weight: 750;
+}
+.business-plan-title { margin: 0; font-size: 1.55rem; font-weight: 750; color: var(--em-ink); }
+.business-plan-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.35rem; margin: 0.75rem 0 0; color: var(--em-ink); }
+.business-plan-price strong { font-size: clamp(2.3rem, 3.5vw, 3rem); line-height: 1.15; font-weight: 800; letter-spacing: -0.045em; font-variant-numeric: tabular-nums; }
+.business-plan-price span { font-size: 1rem; color: var(--em-muted); }
+.business-plan-billing { margin: 0.65rem 0 0; color: var(--em-muted); font-size: 0.85rem; line-height: 1.5; }
+.business-plan-includes { margin: 1.5rem 0 0.75rem; padding-top: 1.25rem; border-top: 1px solid var(--em-border); color: var(--em-ink); font-size: 0.95rem; font-weight: 700; }
+.business-plan-features { display: grid; align-content: start; gap: 0.6rem; flex: 1; margin: 0; padding: 0; list-style: none; color: var(--em-ink); }
+.business-plan-actions { display: grid; gap: 0.65rem; margin-top: 1.75rem; }
+.business-plan-actions .btn-cta { width: 100%; min-height: 48px; padding-inline: 0.7rem; justify-content: center; text-align: center; white-space: normal; font-size: 0.9rem; }
+.business-plan-card.is-recommended { background: var(--em-navy); border-color: var(--em-navy); box-shadow: var(--em-shadow-lift); }
+.business-plan-card.is-recommended .business-plan-title,
+.business-plan-card.is-recommended .business-plan-price,
+.business-plan-card.is-recommended .business-plan-includes,
+.business-plan-card.is-recommended .business-plan-features { color: #ffffff; }
+.business-plan-card.is-recommended .business-plan-price span,
+.business-plan-card.is-recommended .business-plan-billing { color: #cbd5e1; }
+.business-plan-card.is-recommended .business-plan-includes { border-color: #475569; }
+.business-plan-card.is-recommended .business-plan-features svg { color: #93c5fd; }
+.business-pricing-page .is-recommended a.business-plan-trial { background: #ffffff; border-color: #ffffff; color: #0a1b2e; }
+.business-pricing-page .is-recommended a.business-plan-demo { background: transparent; border-color: #94a3b8; color: #ffffff; }
+.business-pricing-page .is-recommended a.business-plan-trial:hover { background: #dbeafe; }
+.business-pricing-page .is-recommended a.business-plan-demo:hover { background: #1e3a5f; }
+.business-enquiry-note { margin: 1.25rem 0 0; color: var(--em-muted); line-height: 1.6; font-size: 0.9rem; text-align: center; }
+.business-comparison { margin-top: 3rem; scroll-margin-top: 7rem; }
+.business-comparison-scroll { overflow-x: auto; border: 1px solid var(--em-border); border-radius: var(--em-radius); background: #ffffff; }
+.business-comparison-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; table-layout: fixed; }
+.business-comparison-table th,
+.business-comparison-table td { padding: 1rem; border-bottom: 1px solid var(--em-border); color: #334155; line-height: 1.45; text-align: center; overflow-wrap: anywhere; }
+.business-comparison-table th:first-child { width: 40%; text-align: left; }
+.business-comparison-table thead th { background: #eff6ff; color: #0a1b2e; font-weight: 750; }
+.business-comparison-table tbody th { font-weight: 600; }
+.business-comparison-table td svg { display: block; margin: auto; color: #1e40af; }
+.business-comparison-table tr:last-child > * { border-bottom: 0; }
+.business-addons { display: grid; align-items: center; gap: 1.5rem; margin-top: 3rem; padding: clamp(1.25rem, 3vw, 2rem); border: 1px solid var(--em-border); border-radius: var(--em-radius); background: #ffffff; }
+.business-addons .em-pricing-kicker { margin: 0 0 0.65rem; color: #1d4ed8; }
+.business-addon-list { display: flex; flex-wrap: wrap; gap: 0.6rem; list-style: none; margin: 1rem 0; padding: 0; }
+.business-addon-list li { padding: 0.4rem 0.65rem; border-radius: 8px; background: #f1f5f9; color: #334155; font-size: 0.9rem; }
+.business-addons .business-addon-note { font-size: 0.9rem; }
+.business-addons > .btn-cta { min-height: 48px; text-align: center; white-space: normal; }
+.business-pricing-page .business-text-link,
+.business-pricing-terms a,
+.business-pricing-links a { color: #1d4ed8; text-decoration: underline; text-underline-offset: 3px; font-weight: 650; }
+.business-text-link { display: inline-block; margin-top: 0.75rem; padding-block: 0.4rem; }
+.business-pricing-terms { margin-top: 2rem; }
+.business-pricing-terms h2 { font-size: 1.15rem; }
+.business-pricing-terms p { font-size: 0.9rem; }
+.business-pricing-links { display: grid; gap: 0.6rem; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--em-border); color: var(--em-muted); font-size: 0.9rem; line-height: 1.6; }
+.business-pricing-links p { margin: 0; }
+.business-pricing-page :is(a, [tabindex]):focus-visible { outline: 3px solid #2563eb; outline-offset: 4px; }
+.business-pricing-page .is-recommended a:focus-visible { outline-color: #93c5fd; }
+@media (min-width: 960px) {
+  .business-pricing-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
+  .business-addons { grid-template-columns: minmax(0, 1fr) auto; }
+}
+@media (max-width: 599px) {
+  .business-common-benefits { display: grid; justify-content: start; }
+  .business-plan-badge-slot:empty { display: none; }
+  .business-comparison-table { font-size: 0.75rem; }
+  .business-comparison-table th,
+  .business-comparison-table td { padding: 0.8rem 0.35rem; }
+  .business-comparison-table th:first-child { width: 34%; }
+}

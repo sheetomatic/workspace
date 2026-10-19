@@ -40,7 +40,7 @@ export const channelVideos: ChannelVideo[] = [
   {
     youtubeId: "acTJOocmuZM",
     title:
-      "AI Enabled Flow Monitoring System (FMS) for MSMEs | AI FMS: Dashboard for PC & EA | BCI",
+      "AI Enabled Flow Monitoring System (FMS) for MSMEs | AI FMS: Dashboard for PC & EA",
     category: "FMS",
   },
   {
@@ -304,7 +304,7 @@ export const founderVideo: MarketingVideo = {
   label: "Founder",
   title: "Message from Shyam Kumar Banjare",
   description:
-    "How Sheetomatic applies the BCI Suite so MSMEs scale without the owner — systems, role clarity, and review discipline instead of founder firefighting.",
+    "How Sheetomatic applies the Business Systems Suite so MSMEs scale without the owner — systems, role clarity, and review discipline instead of founder firefighting.",
   youtubeId: "",
 };
 

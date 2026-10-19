@@ -333,7 +333,6 @@ function PricingPlanPrice({ plan }: { plan: PricingPlan }) {
       {plan.annualInr ? (
         <p className="wa-pricing-annual">
           or {formatInr(plan.annualInr)}/year
-          <span> · 2 months free</span>
         </p>
       ) : null}
     </>

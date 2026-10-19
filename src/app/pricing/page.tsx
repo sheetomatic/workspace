@@ -4,9 +4,9 @@ import { EmReadyPricing } from "@/components/marketing/em-ready-pricing";
 import { marketingMetadata } from "@/lib/marketing-metadata";
 
 export const metadata: Metadata = marketingMetadata({
-  title: "Pricing | BCI Suite & Modules",
+  title: "Pricing | Business Systems Suite",
   description:
-    "Run FMS, EM, and Check Lists without Google Sheets lag or crash. BCI Suite from ₹4,999. CRM ₹2,499 for 8 users.",
+    "Ready-to-use business systems with setup handled by Sheetomatic. Starter ₹4,999/month, Scale ₹6,999/month, Enterprise ₹9,999/month. 3-day trial available. No yearly commitment.",
   path: "/pricing",
 });
 
