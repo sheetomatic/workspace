@@ -8,7 +8,7 @@ import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-const revision = "a42bf9002766ca739621a6d963bfdf5f93656692";
+const revision = "82c92f1ab76777ec8439aabd38eec876f95eea14";
 const files = [
   {
     "path": "src/app/pricing/page.tsx",
@@ -17,12 +17,12 @@ const files = [
   },
   {
     "path": "src/components/marketing/em-ready-pricing.tsx",
-    "sha256": "404f0de15dc917643060558c271bdcf75b189e1e48fa15a78721534c8dd9cf3f",
+    "sha256": "97e3edb9fb6bb4e02eebb9d4b1f615e094e6ad01da72383fe20804a821df5860",
     "newFile": false
   },
   {
     "path": "src/components/marketing/business-systems-pricing.css",
-    "sha256": "25d29000c5f092c183c56abb0effccf77c1f877c90acf05b97121b5d97dc1729",
+    "sha256": "a846fabfb2a29b7c7399d6cf2b49c4711cf7dcf24ed3693dd75c460c9412b5c5",
     "newFile": true
   },
   {
