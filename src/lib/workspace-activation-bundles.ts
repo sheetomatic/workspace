@@ -9,6 +9,7 @@ import {
   type ClientOnboardingPreset,
 } from "@/lib/org-onboarding";
 import { ORG_PLAN_LABELS } from "@/lib/org-plan-presets";
+import { businessWorkspacePlan } from "@/lib/business-workspace-plans";
 import {
   isActivationBundleKey,
   formatAllowedModules,
@@ -26,8 +27,10 @@ export {
 } from "@/lib/workspace-activation-bundles.shared";
 
 export function resolveActivationPreset(bundle: string): ClientOnboardingPreset {
+  const businessPlan = businessWorkspacePlan(bundle);
+  if (businessPlan) return planOnboardingPreset(businessPlan.id);
   if (!isActivationBundleKey(bundle)) {
-    return bciStarterOnboardingPreset();
+    throw new Error("Choose a valid workspace plan.");
   }
 
   switch (bundle) {

@@ -4,7 +4,7 @@ import { getSessionUser } from "@/lib/auth";
 import { canConfigureChecklists } from "@/lib/checklists/access";
 import { normalizeChecklistImportRow } from "@/lib/checklists/template-import";
 import { hasMinimumRole } from "@/lib/permissions";
-import { hasWorkspaceModule } from "@/lib/workspace-modules";
+import { hasSuitePart } from "@/lib/workspace-access";
 
 const MAX_BYTES = 4 * 1024 * 1024;
 
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   if (
-    !hasWorkspaceModule(user, "TASKS") ||
+    !hasSuitePart(user, "checklists") ||
     !hasMinimumRole(user.role, "MANAGER") ||
     !canConfigureChecklists(user)
   ) {

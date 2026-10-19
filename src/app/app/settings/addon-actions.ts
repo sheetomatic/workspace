@@ -15,6 +15,7 @@ import {
   parseAddonModulesFromForm,
 } from "@/lib/workspace-addons.shared";
 import { resolveMemberModules } from "@/lib/workspace-modules";
+import { businessWorkspacePlan } from "@/lib/business-workspace-plans";
 
 function inferPlanFromModules(modules: WorkspaceModule[]): OrgPlan {
   const set = new Set(modules);
@@ -67,12 +68,10 @@ export async function saveWorkspaceAddons(formData: FormData) {
     };
   }
 
-  let allowedModules = parseAddonModulesFromForm(formData);
-  if (allowedModules.length === 0) {
-    allowedModules = [...BCI_CORE_MODULES];
-  }
+  const allowedModules = parseAddonModulesFromForm(formData);
 
-  const plan = inferPlanFromModules(allowedModules);
+  const existing = await prisma.organization.findUnique({ where: { id: user.organizationId }, select: { plan: true } });
+  const plan = existing && businessWorkspacePlan(existing.plan) ? existing.plan : inferPlanFromModules(allowedModules);
 
   await prisma.organization.update({
     where: { id: user.organizationId },

@@ -7,8 +7,7 @@ import { WorkspaceGuideButton } from "@/components/saas/workspace-guide-button";
 import { getEmReadyPayload } from "@/lib/em/em-ready-data";
 import { parseEmPeriodParams } from "@/lib/em/em-period";
 import { requireSession } from "@/lib/require-session";
-import { hasMinimumRole } from "@/lib/permissions";
-import { redirect } from "next/navigation";
+import { hasWorkspaceModule } from "@/lib/workspace-modules";
 
 type PageProps = {
   searchParams: Promise<{
@@ -22,11 +21,7 @@ type PageProps = {
 };
 
 export default async function EmReadyPage({ searchParams }: PageProps) {
-  const user = await requireSession(undefined, { module: "REPORTS" });
-
-  if (!hasMinimumRole(user.role, "MANAGER")) {
-    redirect("/app/reports");
-  }
+  const user = await requireSession("MANAGER", { suitePart: "em" });
 
   const params = await searchParams;
   const period = parseEmPeriodParams(params);
@@ -50,9 +45,9 @@ export default async function EmReadyPage({ searchParams }: PageProps) {
                 Task board
               </Link>
             ) : null}
-            <Link href="/app/reports" className="btn-secondary btn-sm">
+            {hasWorkspaceModule(user, "REPORTS") ? <Link href="/app/reports" className="btn-secondary btn-sm">
               MIS reports
-            </Link>
+            </Link> : null}
           </>
         }
       />

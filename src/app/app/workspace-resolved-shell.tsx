@@ -19,8 +19,6 @@ import { hasWorkspaceModule } from "@/lib/workspace-modules";
 import { orgHasActiveKitLicense } from "@/lib/addons/kit-license";
 import { MOBILE_SHOP_KIT_KEY } from "@/lib/addons/licensed-kits";
 import { licensedKitKeysForNav } from "@/lib/mobile-shop/kit-access";
-import { resolveMemberBciSubModules } from "@/lib/bci/bci-sub-modules";
-import { hasMinimumRole } from "@/lib/permissions";
 import { canViewTeamPage } from "@/lib/team-hierarchy";
 import { memberHasDirectReports } from "@/lib/workspace";
 import {
@@ -80,10 +78,7 @@ export async function WorkspaceResolvedShell({
       sessionUser,
       sessionUser.isDepartmentHead || hasReports,
     );
-    enabledBciSubModules =
-      sessionUser.isSuperAdmin || hasMinimumRole(sessionUser.role, "ADMIN")
-        ? null
-        : resolveMemberBciSubModules(membershipPrefs?.enabledBciSubModules);
+    enabledBciSubModules = sessionUser.enabledBciSubModules ?? [];
   } catch (error) {
     console.error("[app-layout] workspace bootstrap failed", error);
     redirect(logoutHref("/login?error=workspace"));

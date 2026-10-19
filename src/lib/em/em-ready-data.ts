@@ -25,6 +25,7 @@ import {
   type ImsStockStatus,
 } from "@/lib/ims/stock-status";
 import { listDelayedDispatchSalesOrders } from "@/lib/sales-orders/queries";
+import { canUseTasks, hasSuitePart } from "@/lib/workspace-access";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
 import {
   fmsJobFallsInEmPeriod,
@@ -285,9 +286,9 @@ export async function getEmReadyPayload(
       ? periodInput
       : parseEmPeriodParams(periodInput ?? {});
   const tasksEnabled = hasWorkspaceModule(user, "TASKS");
-  const fmsEnabled = hasWorkspaceModule(user, "FMS");
+  const fmsEnabled = hasSuitePart(user, "fms");
   const checklistsEnabled =
-    hasWorkspaceModule(user, "TASKS") || hasWorkspaceModule(user, "FMS");
+    canUseTasks(user);
   const imsEnabled = hasWorkspaceModule(user, "IMS");
 
   const pcScope: PcPeriod =

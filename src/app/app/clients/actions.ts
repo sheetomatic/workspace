@@ -41,8 +41,65 @@ import { clampModulesToOrg, mergeAllowedModules } from "@/lib/org-plan-presets";
 import { syncOrganizationPlanRecord } from "@/lib/organization-plan";
 import { canManageSuperAdmins } from "@/lib/platform";
 import { resolveMemberModules } from "@/lib/workspace-modules";
+import { resolveProvisionAccess } from "@/lib/workspace-provision-access";
+import { businessWorkspacePlan } from "@/lib/business-workspace-plans";
+import { catalogRateForPlan } from "@/lib/billing/catalog";
 
 export type BillingActionState = { ok: boolean; message: string };
+
+/** Explicit ops action: applies a published plan without changing trial lifecycle or invoices. */
+export async function applyClientBusinessPlanAction(
+  _prev: BillingActionState,
+  formData: FormData,
+): Promise<BillingActionState> {
+  const user = await requirePlatformAdmin();
+  if (!user) return { ok: false, message: "Only Sheetomatic super admins can change client plans." };
+  const organizationId = String(formData.get("organizationId") ?? "").trim();
+  const bundle = String(formData.get("activationBundle") ?? "");
+  if (!businessWorkspacePlan(bundle)) return { ok: false, message: "Choose a monthly business plan." };
+  let preset: ReturnType<typeof resolveProvisionAccess>;
+  try {
+    preset = resolveProvisionAccess({
+      bundle,
+      selectedModules: formData.get("moduleSelection") === "explicit" ? formData.getAll("selectedModules").map(String) : undefined,
+      selectedSuiteParts: formData.getAll("selectedSuiteParts").map(String),
+      maxMembers: Number(formData.get("maxMembers") || Number.NaN),
+      maxFmsTemplates: Number(formData.get("maxFmsTemplates") || Number.NaN),
+    });
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : "Review module access." };
+  }
+  const result = await prisma.$transaction(async (tx) => {
+    const org = await tx.organization.findUnique({ where: { id: organizationId } });
+    if (!org || org.isPrimary) return false;
+    await tx.organization.update({ where: { id: organizationId }, data: {
+      plan: preset.plan, product: preset.product, billingPeriod: "MONTHLY",
+      allowedModules: preset.allowedModules, allowedSuiteParts: preset.enabledBciSubModules,
+      maxMembers: preset.maxMembers, maxFmsTemplates: preset.maxFmsTemplates,
+    } });
+    await tx.organizationPlan.upsert({ where: { organizationId },
+      create: { organizationId, plan: preset.plan, status: org.planStatus, billingPeriod: "MONTHLY" },
+      update: { plan: preset.plan, billingPeriod: "MONTHLY" },
+    });
+    const members = await tx.membership.findMany({ where: { organizationId } });
+    for (const member of members) {
+      await tx.membership.update({ where: { id: member.id }, data: {
+        modules: member.role === "OWNER" ? preset.allowedModules : member.modules.filter((module) => preset.allowedModules.includes(module)),
+        enabledBciSubModules: member.role === "OWNER" ? preset.enabledBciSubModules : member.enabledBciSubModules.filter((part) => preset.enabledBciSubModules.some((allowed) => allowed === part)),
+      } });
+    }
+    const rate = catalogRateForPlan(preset.plan);
+    await tx.organizationBilling.upsert({ where: { organizationId },
+      create: { organizationId, monthlyRatePaise: rate.monthlyRatePaise, includedUsers: preset.maxMembers, extraUserMonthlyPaise: 0, gstPercent: rate.gstPercent },
+      update: { monthlyRatePaise: rate.monthlyRatePaise, includedUsers: preset.maxMembers, extraUserMonthlyPaise: 0 },
+    });
+    return true;
+  });
+  if (!result) return { ok: false, message: "Client workspace not found." };
+  revalidateBilling(organizationId);
+  revalidatePath("/app", "layout");
+  return { ok: true, message: "Monthly plan and selected module access saved. Trial dates and existing invoices are unchanged." };
+}
 
 async function requirePlatformAdmin() {
   const user = await getSessionUser();
@@ -293,8 +350,8 @@ export async function updateClientAddonBillingAction(
   }
 
   const organizationId = String(formData.get("organizationId") ?? "").trim();
-  const module = String(formData.get("module") ?? "").trim() as WorkspaceModule;
-  const addon = billableAddonByModule(module);
+  const moduleKey = String(formData.get("module") ?? "").trim() as WorkspaceModule;
+  const addon = billableAddonByModule(moduleKey);
   const rate = parseRupeesInput(String(formData.get("rate") ?? ""));
   const periodRaw = String(formData.get("billingPeriod") ?? "MONTHLY");
 

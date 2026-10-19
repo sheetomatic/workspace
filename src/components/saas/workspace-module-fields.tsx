@@ -4,7 +4,6 @@ import type { Role, WorkspaceModule } from "@prisma/client";
 import {
   WORKSPACE_MODULE_LABELS,
   WORKSPACE_MODULES,
-  modulesFromRoleDefault,
 } from "@/lib/workspace-modules";
 import {
   HR_SUB_MODULES,
@@ -19,16 +18,14 @@ import {
   BCI_SUB_MODULES,
   type BciSubModuleId,
 } from "@/lib/bci/bci-sub-modules";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export function WorkspaceModuleFields({
-  role,
   defaultModules,
   defaultHrSubModules,
   defaultCrmSubModules,
   defaultKitKeys,
   defaultBciSubModules,
-  lockSelection = false,
   orgAllowedModules,
   orgEnabledHrSubModules,
 }: {
@@ -49,9 +46,8 @@ export function WorkspaceModuleFields({
   /** Org-enabled HR sub-modules available to grant. */
   orgEnabledHrSubModules?: HrSubModuleId[];
 }) {
-  const isEditing = lockSelection || Boolean(defaultModules?.length);
   const allowedSet = new Set(
-    orgAllowedModules?.length ? orgAllowedModules : WORKSPACE_MODULES,
+    orgAllowedModules ?? WORKSPACE_MODULES,
   );
   const orgHrSet = new Set(
     orgEnabledHrSubModules?.length
@@ -60,9 +56,7 @@ export function WorkspaceModuleFields({
   );
 
   const [selected, setSelected] = useState<WorkspaceModule[]>(() => {
-    const initial = defaultModules?.length
-      ? defaultModules
-      : modulesFromRoleDefault(role);
+    const initial = defaultModules ?? [];
     return initial.filter((module) => allowedSet.has(module));
   });
 
@@ -87,14 +81,6 @@ export function WorkspaceModuleFields({
       CRM_SUB_MODULES.some((m) => m.id === id),
     );
   });
-
-  useEffect(() => {
-    if (!isEditing) {
-      setSelected(
-        modulesFromRoleDefault(role).filter((module) => allowedSet.has(module)),
-      );
-    }
-  }, [role, isEditing, orgAllowedModules]);
 
   function toggle(module: WorkspaceModule) {
     if (!allowedSet.has(module)) {
@@ -173,7 +159,7 @@ export function WorkspaceModuleFields({
         })}
       </div>
       {selected.length === 0 ? (
-        <p className="ws-member-module-warning">Select at least one module.</p>
+        <p className="ws-member-module-warning">No modules selected — this person has no module access.</p>
       ) : null}
 
       <div className="ws-member-module-grid" role="group" aria-label="Add-on kits" style={{ marginTop: "0.75rem" }}>
@@ -192,13 +178,13 @@ export function WorkspaceModuleFields({
         Mobile Shop stays hidden until you tick it for this person, or add the kit on the client.
       </p>
 
-      <div className="ws-member-hr-submodules" style={{ marginTop: "1rem" }}>
-        <h4 className="ws-member-module-title">BCI suite</h4>
+      {selected.includes("FMS") ? <div className="ws-member-hr-submodules" style={{ marginTop: "1rem" }}>
+        <h4 className="ws-member-module-title">Business Systems Suite</h4>
         <p className="ws-member-module-lead">
-          Tasks is its own module above. BCI stays hidden until you tick the parts
+          Tasks is its own module above. The suite stays hidden until you tick the parts
           this person should open.
         </p>
-        <div className="ws-member-module-grid" role="group" aria-label="BCI suite">
+        <div className="ws-member-module-grid" role="group" aria-label="Business Systems Suite">
           {BCI_SUB_MODULES.map((mod) => {
             const checked = bciSelected.includes(mod.id);
             return (
@@ -218,7 +204,7 @@ export function WorkspaceModuleFields({
             );
           })}
         </div>
-      </div>
+      </div> : null}
 
       {showCrmSubs ? (
         <div className="ws-member-hr-submodules" style={{ marginTop: "1rem" }}>

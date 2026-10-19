@@ -18,11 +18,11 @@ import {
 } from "@/lib/billing/invoices";
 import { monthlyPeriodFrom } from "@/lib/billing/dates";
 import {
-  resolveActivationPreset,
   activationSummaryMessage,
   isActivationBundleKey,
 } from "@/lib/workspace-activation-bundles";
 import { workspaceLoginHref } from "@/lib/workspace-auth-links";
+import { resolveProvisionAccess } from "@/lib/workspace-provision-access";
 import { DEMO_TRIAL_DAYS, demoTrialEndsAt } from "@/lib/demo-workspace";
 
 export type ProvisionClientWorkspaceInput = {
@@ -31,6 +31,10 @@ export type ProvisionClientWorkspaceInput = {
   ownerEmail: string;
   ownerPhone?: string | null;
   bundle: string;
+  selectedModules?: string[];
+  selectedSuiteParts?: string[];
+  maxMembers?: number;
+  maxFmsTemplates?: number;
   invitedByName: string;
   /** 3-day trial workspace — auto-expires, then convert to paying client. */
   demoTrial?: boolean;
@@ -104,7 +108,12 @@ export async function provisionClientWorkspace(
   const { businessName, ownerName, ownerEmail, ownerPhone, bundle } =
     parsed.value;
   const demoTrial = input.demoTrial === true;
-  const preset = resolveActivationPreset(bundle);
+  let preset: ReturnType<typeof resolveProvisionAccess>;
+  try {
+    preset = resolveProvisionAccess({ ...input, bundle });
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : "Review module access." };
+  }
   const entitlements = organizationEntitlementsData(preset);
   const slug = await createUniqueOrganizationSlug(
     demoTrial ? `${businessName} Demo` : businessName,
@@ -127,6 +136,7 @@ export async function provisionClientWorkspace(
       product: entitlements.product,
       planStatus: demoTrial ? "TRIAL" : "ACTIVE",
       allowedModules: entitlements.allowedModules,
+      allowedSuiteParts: preset.enabledBciSubModules,
       maxMembers: entitlements.maxMembers,
       maxFmsTemplates: entitlements.maxFmsTemplates,
       isPrimary: false,
@@ -172,6 +182,7 @@ export async function provisionClientWorkspace(
           organizationId: organization.id,
           role: "OWNER",
           modules: [...entitlements.allowedModules],
+          enabledBciSubModules: preset.enabledBciSubModules,
         },
       });
     }
@@ -188,6 +199,7 @@ export async function provisionClientWorkspace(
             organizationId: organization.id,
             role: "OWNER",
             modules: [...entitlements.allowedModules],
+            enabledBciSubModules: preset.enabledBciSubModules,
           },
         },
       },

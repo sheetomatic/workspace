@@ -207,20 +207,20 @@ export async function listMyFmsPcWork(organizationId: string, assigneeUserId: st
   return steps.map((step) => toFmsPcWorkItem(step, ""));
 }
 
-export async function listMyPcWork(organizationId: string, assigneeUserId: string) {
+export async function listMyPcWork(organizationId: string, assigneeUserId: string, access = { checklists: true, tasks: true, fms: true }) {
   const [checklists, eaTasks, fmsSteps] = await Promise.all([
-    listMyChecklistPcWork(organizationId, assigneeUserId).catch((error) => {
+    access.checklists ? listMyChecklistPcWork(organizationId, assigneeUserId).catch((error) => {
       console.error("[pc-work] checklist load failed", error);
       return [];
-    }),
-    listMyEaPcWork(organizationId, assigneeUserId).catch((error) => {
+    }) : [],
+    access.tasks ? listMyEaPcWork(organizationId, assigneeUserId).catch((error) => {
       console.error("[pc-work] EA load failed", error);
       return [];
-    }),
-    listMyFmsPcWork(organizationId, assigneeUserId).catch((error) => {
+    }) : [],
+    access.fms ? listMyFmsPcWork(organizationId, assigneeUserId).catch((error) => {
       console.error("[pc-work] FMS load failed", error);
       return [];
-    }),
+    }) : [],
   ]);
 
   return { checklists, eaTasks, fmsSteps };
