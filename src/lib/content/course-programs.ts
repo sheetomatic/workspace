@@ -64,7 +64,7 @@ const sharedTerms = [
   "GST is extra.",
   "50% confirms the seat and books the slots. The balance is due before class 1.",
   "Cohorts: Monday + Friday, or Tuesday + Saturday.",
-  "One seat, one person. Hindi or English.",
+  "Sessions are available in Hindi or English.",
   "A missed class with a day’s notice can be made up once. A no-show is a used class.",
   "Recordings stay in that learner’s login.",
 ] as const;
@@ -73,9 +73,9 @@ export const coursePrograms: CourseProgram[] = [
   {
     id: "BUSINESS_OWNER",
     name: "Business Owners",
-    eyebrow: "A ready system, on your data",
+    eyebrow: "Practical system building + team training",
     promise:
-      "You leave with a system your people can use: Sales, Operations, Inventory, and Dispatch. Built for how your shop actually runs, on Google Sheets, AppSheet, Apps Script, and a Google Site you open for the week.",
+      "You choose the technology. We build your business systems and train your team to use them. Practical development on your real workflows, with the scope agreed before you enrol.",
     priceInr: 110_000,
     advanceInr: 55_000,
     totalClasses: 30,
@@ -86,17 +86,29 @@ export const coursePrograms: CourseProgram[] = [
     totalHours: 60,
     weeksLabel: "about 15 weeks",
     tools:
-      "Google Sheets, AppSheet, Apps Script, and Google Sites. The Site is the page you open. The sheet stays the record.",
+      "Choose the technology for your business. We confirm the platform and what can be built in the requirement meeting. Google Sheets, AppSheet, Apps Script, and Google Sites are options where they fit your workflow.",
     classRhythm:
-      "First a requirement meeting, on your work. Then 30 classes. Most of the hour is building on your files. The last part teaches the method only if you want to change it yourself later.",
+      "Start with your organization chart and the way work moves through your business. Across 30 practical sessions, we build the agreed systems on your data and train your team to operate them, follow the process, and understand how the system works.",
     bookFirst: true,
     terms: [
       "Book a requirement meeting first. Enroll after you are sure this is the system you want.",
+      "₹1,10,000 includes customised system development and team training within the agreed scope.",
+      "Need a customised system? We start with your organization chart and map the agreed workflows through employee exit.",
+      "The technology, deliverables, and team training requirements are agreed at the requirement meeting before enrolment.",
       ...sharedTerms,
-      "Scope is Sales, Operations or production, Inventory, and Dispatch for one company. A second company is a new quote.",
+      "The agreed scope is for one company. A second company is a new quote.",
       "You bring access, a person who does the work, and real orders. If that is late, the dates move.",
     ],
     areas: [
+      {
+        id: "organization",
+        title: "Organization chart & responsibilities",
+        summary: "Start with the people, roles, and reporting structure behind the work.",
+        pointers: [
+          "Map who owns each process and who makes the decisions.",
+          "Use the organization chart to define the workflows in your agreed scope.",
+        ],
+      },
       {
         id: "sales",
         title: "Sales",
@@ -117,7 +129,7 @@ export const coursePrograms: CourseProgram[] = [
           "A job or batch has a plan, an actual, and the delay in hours or days.",
           "Each step has one person, not a department.",
           "Waiting on material, a machine, or a decision is visible.",
-          "Staff update from the phone. The sheet stays the record.",
+          "Staff update the work in the agreed system, keeping a shared record.",
           "A late step alerts that person. The customer is not messaged.",
         ],
       },
@@ -142,7 +154,17 @@ export const coursePrograms: CourseProgram[] = [
           "Challan, vehicle, and what actually went out.",
           "What the customer is still waiting for, with a name on it.",
           "A late dispatch is a miss, including one that was completed late.",
-          "You open one Site and see dispatch gaps next to sales, production, and stock.",
+          "See dispatch gaps alongside sales, production, and stock in the agreed system.",
+        ],
+      },
+      {
+        id: "people-exit",
+        title: "Team onboarding, handover & exit",
+        summary: "Carry the process through the employee lifecycle, within the agreed scope.",
+        pointers: [
+          "Define the joining and role handover steps your team needs.",
+          "Map exit responsibilities, work handover, and access changes.",
+          "Train the team to follow the agreed process in the system we build.",
         ],
       },
     ],
@@ -168,6 +190,7 @@ export const coursePrograms: CourseProgram[] = [
       "About 15 minutes on the skill, about 60 minutes making it yourself, and about 15 minutes on how to do the same job faster next time.",
     terms: [
       ...sharedTerms,
+      "One seat, one person.",
       "Scope is these 20 classes and the four builds: FMS, IMS, PMS, and checklist. A full company system for your employer is the Business Owners course, or a separate project.",
       "You bring a Google account you can put a practice file in. AI drafts. You test on a copy before anything goes live.",
     ],

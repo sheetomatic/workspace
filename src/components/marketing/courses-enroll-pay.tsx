@@ -189,6 +189,14 @@ export function CoursesEnrollPay({
                   Balance before class 1.
                 </p>
 
+                {program.bookFirst ? (
+                  <p className="course-pay-note">
+                    The fee includes system development and team training within
+                    your agreed scope. Complete your requirement meeting and agree
+                    on the technology and deliverables before paying the advance.
+                  </p>
+                ) : null}
+
                 <fieldset className="course-pay-cohorts">
                   <legend>Pick your cohort</legend>
                   {courseCohorts.map((option) => (
