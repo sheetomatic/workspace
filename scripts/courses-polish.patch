@@ -1,0 +1,1418 @@
+diff --git a/src/app/courses-content.ts b/src/app/courses-content.ts
+index df00644..90569a3 100644
+--- a/src/app/courses-content.ts
++++ b/src/app/courses-content.ts
+@@ -2,10 +2,10 @@ import { buildWhatsAppUrl } from "./site-content";
+ import { coursePrograms, type CoursePhase } from "@/lib/content/course-programs";
+ 
+ export const coursesPage = {
+-  eyebrow: "Live 1:1 with Shyam · Recorded courses",
+-  title: "Learn at your pace. Build with a mentor.",
++  eyebrow: "Practical learning · Real business systems",
++  title: "Build real systems. Learn to run them.",
+   lead:
+-    "Choose live 1:1 training for Working Professionals or Business Owners, or start with a recorded course. Build practical skills in Google Sheets, AppSheet, and business automation.",
++    "Get a customised system built for your business, with training for your team. Or build your own skills through live 1:1 mentoring and recorded courses.",
+   ctaLabel: "Enroll & pay",
+   ctaSecondaryLabel: "Open Workspace",
+   ctaQuestionsLabel: "Questions on WhatsApp",
+@@ -18,7 +18,7 @@ export const coursesPage = {
+     "Practical walkthroughs for formulas, dashboards, automation, and business systems.",
+   funnelTitle: "Owners book a meeting first. Professionals can enroll now.",
+   funnelLead:
+-    "Business Owners: see the system, book a requirement slot, and enroll once you are sure. Working Professionals: pay half to confirm the seat. GST is extra. Balance before class 1.",
++    "Business Owners: discuss your organization chart, chosen technology, and system requirements before enrolling. Working Professionals: pay half to confirm your seat. GST is extra. Balance before class 1.",
+   instructorNote: "Instructor: Shyam Kumar Banjare",
+ } as const;
+ 
+@@ -30,7 +30,7 @@ export const coursePhases: CoursePhase[] = coursePrograms.flatMap(
+ );
+ 
+ export const courseFormatBullets = [
+-  "Business Owners — ready system for Sales, Operations, Inventory, and Dispatch. Book a requirement meeting, then enroll. ₹1,10,000 · 30 classes × 2 hours.",
++  "Business Owners — practical system development + team training within the agreed scope. ₹1,10,000 · 30 classes × 2 hours · 60 hours · about 15 weeks. Book a requirement meeting first.",
+   "Working Professionals — ₹25,000 · 20 classes × 1.5 hours · 8:30–10:00 AM IST",
+   "Monday + Friday, or Tuesday + Saturday",
+   "50% on Razorpay to confirm the seat. Balance before class 1. GST extra.",
+diff --git a/src/app/courses/page.tsx b/src/app/courses/page.tsx
+index 12bd6e6..b422a3a 100644
+--- a/src/app/courses/page.tsx
++++ b/src/app/courses/page.tsx
+@@ -5,7 +5,7 @@ import { marketingMetadata } from "@/lib/marketing-metadata";
+ export const metadata: Metadata = marketingMetadata({
+   title: "Live 1:1 & Recorded Courses",
+   description:
+-    "Live 1:1 programs for Working Professionals (₹25,000, 20 classes) and Business Owners (₹1,10,000, 30 classes), plus the recorded Google Sheets: Essentials to Pro course on Graphy.",
++    "Business Owners: ₹1,10,000 + GST for system development and team training within the agreed scope. 30 classes, 60 hours. Explore live 1:1 and recorded courses.",
+   path: "/courses",
+ });
+ 
+diff --git a/src/components/marketing/courses-enroll-pay.tsx b/src/components/marketing/courses-enroll-pay.tsx
+index 1decaf0..67ea2c4 100644
+--- a/src/components/marketing/courses-enroll-pay.tsx
++++ b/src/components/marketing/courses-enroll-pay.tsx
+@@ -189,6 +189,14 @@ export function CoursesEnrollPay({
+                   Balance before class 1.
+                 </p>
+ 
++                {program.bookFirst ? (
++                  <p className="course-pay-note">
++                    The fee includes system development and team training within
++                    your agreed scope. Complete your requirement meeting and agree
++                    on the technology and deliverables before paying the advance.
++                  </p>
++                ) : null}
++
+                 <fieldset className="course-pay-cohorts">
+                   <legend>Pick your cohort</legend>
+                   {courseCohorts.map((option) => (
+diff --git a/src/components/marketing/courses-page-content.tsx b/src/components/marketing/courses-page-content.tsx
+index fb4fbd1..a461474 100644
+--- a/src/components/marketing/courses-page-content.tsx
++++ b/src/components/marketing/courses-page-content.tsx
+@@ -1,4 +1,5 @@
+-import { Play } from "lucide-react";
++import { ArrowDown, ArrowRight, Check, ChevronDown, Play } from "lucide-react";
++import type { ReactNode } from "react";
+ import {
+   FinalCta,
+   MarketingPage,
+@@ -6,7 +7,7 @@ import {
+   SiteHeader,
+ } from "@/app/components";
+ import { coursesPage } from "@/app/courses-content";
+-import { coursePrograms } from "@/lib/content/course-programs";
++import { coursePrograms, type CourseProgram } from "@/lib/content/course-programs";
+ import {
+   COURSE_GOOGLE_CALENDAR_BOOKING_URL,
+   courseEnrollmentPriceLabel,
+@@ -63,96 +64,201 @@ const upcomingRecordedCourses = [
+   },
+ ] as const;
+ 
++function CourseDisclosure({
++  title,
++  description,
++  children,
++}: {
++  title: string;
++  description?: string;
++  children: ReactNode;
++}) {
++  return (
++    <details className="courses-disclosure">
++      <summary>
++        <span className="courses-disclosure-copy">
++          <span className="courses-disclosure-title">{title}</span>
++          {description ? <span className="courses-disclosure-description">{description}</span> : null}
++        </span>
++        <span className="courses-disclosure-control" aria-hidden="true">
++          <span className="courses-disclosure-show">View</span>
++          <span className="courses-disclosure-hide">Hide</span>
++          <ChevronDown size={18} />
++        </span>
++      </summary>
++      <div className="courses-disclosure-body">{children}</div>
++    </details>
++  );
++}
++
++function CourseProgramCard({ program }: { program: CourseProgram }) {
++  const isOwner = program.id === "BUSINESS_OWNER";
++  return (
++    <article
++      className={`courses-program-card${isOwner ? " courses-program-card--owner" : ""}`}
++      id={isOwner ? "business-owners" : "working-professionals"}
++      aria-labelledby={`program-${program.id}`}
++    >
++      <div className="courses-program-intro">
++        <p className="courses-program-type">{isOwner ? "For your business & team" : "For your professional growth"}</p>
++        <h3 id={`program-${program.id}`}>{program.name}</h3>
++        <p className="courses-program-tagline">{program.eyebrow}</p>
++        <p className="courses-program-price">
++          {courseEnrollmentPriceLabel(program.priceInr)} <span>+ GST</span>
++        </p>
++        <p className="courses-program-included">
++          <Check size={16} aria-hidden="true" />
++          {isOwner ? "Development cost + team training included" : "Live 1:1 training with Shyam"}
++        </p>
++        {isOwner ? <p className="courses-program-scope-note">Within the scope agreed at your requirement meeting.</p> : null}
++        <p className="courses-program-duration">
++          {program.totalClasses} classes × {program.sessionDurationLabel} · {program.totalHours} hours · {program.weeksLabel}
++        </p>
++        <p className="courses-program-promise">{program.promise}</p>
++        <div className="courses-offer-actions">
++          {program.bookFirst ? (
++            <a className="btn-cta btn-primary btn-block" href={consultationUrl} target="_blank" rel="noopener noreferrer">
++              Book a requirement meeting <ArrowRight size={16} aria-hidden="true" />
++            </a>
++          ) : null}
++          <CoursesEnrollPay
++            programId={program.id}
++            triggerLabel={program.bookFirst ? "Enrol after your requirement meeting" : coursesPage.ctaLabel}
++            triggerClassName={program.bookFirst ? "btn-cta btn-secondary btn-block" : "btn-cta btn-primary btn-block"}
++          />
++        </div>
++        <p className="courses-program-payment">
++          {program.bookFirst ? "After the meeting: " : "To confirm your seat: "}
++          {courseEnrollmentPriceLabel(program.advanceInr)} advance. Balance before class 1. GST extra.
++        </p>
++      </div>
++
++      <div className="courses-program-details" id={isOwner ? "curriculum-owners" : "curriculum-professionals"}>
++        <CourseDisclosure
++          title={isOwner ? "How we build & train" : "How you’ll learn"}
++          description={isOwner ? "Your workflow. Your chosen technology." : "Practical builds, with a mentor alongside."}
++        >
++          <p>{program.classRhythm}</p>
++          <h4>{isOwner ? "You choose the technology. We build the system." : "Tools you’ll use"}</h4>
++          <p>{program.tools}</p>
++          {isOwner ? (
++            <ol className="courses-build-steps">
++              <li><strong>Map the work</strong><span>Discuss your organization chart, processes, and agreed deliverables.</span></li>
++              <li><strong>Build the system</strong><span>Turn the agreed workflows into working systems on your business data.</span></li>
++              <li><strong>Train your team</strong><span>Show your team how to use the system, follow the workflow, and understand how it works.</span></li>
++            </ol>
++          ) : null}
++        </CourseDisclosure>
++
++        {program.areas ? (
++          <CourseDisclosure title="From organization chart to exit" description="Explore the areas we can scope for your business.">
++            <p>Need a customised system? We start with your organization chart and map the workflows through employee exit. The areas and deliverables for your company are agreed before enrolment.</p>
++            <div className="courses-scope-list">
++              {program.areas.map((area, index) => (
++                <section className="courses-scope-item" key={area.id}>
++                  <span className="courses-scope-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
++                  <div>
++                    <h4>{area.title}</h4>
++                    <p>{area.summary}</p>
++                    <ul>{area.pointers.map((pointer) => <li key={pointer}>{pointer}</li>)}</ul>
++                  </div>
++                </section>
++              ))}
++            </div>
++          </CourseDisclosure>
++        ) : null}
++
++        {program.phases.length > 0 ? (
++          <CourseDisclosure title={`Explore the ${program.totalClasses}-class curriculum`} description="FMS, inventory, checklists, apps & dashboards.">
++            <div className="courses-curriculum-stack">
++              {program.phases.map((phase) => (
++                <section className="courses-curriculum-phase" key={phase.id}>
++                  <p className="courses-phase-range">{phase.range}</p>
++                  <h4>{phase.label}</h4>
++                  <p>{phase.summary}</p>
++                  <ol className="courses-lesson-list" start={phase.classes[0]?.number}>
++                    {phase.classes.map((lesson) => (
++                      <li key={lesson.number}>
++                        <strong>{lesson.title}</strong>
++                        <span>{lesson.outcome}</span>
++                      </li>
++                    ))}
++                  </ol>
++                </section>
++              ))}
++            </div>
++          </CourseDisclosure>
++        ) : null}
++
++        <CourseDisclosure title="Schedule, payment & terms" description="Session timings, advance payment and agreed scope.">
++          <div className="courses-schedule-note">
++            <strong>{program.totalClasses} classes × {program.sessionDurationLabel} · {program.totalHours} hours · {program.weeksLabel}</strong>
++            <span>Monday + Friday, or Tuesday + Saturday</span>
++            <span>{program.sessionTimeLabel}</span>
++          </div>
++          <ul className="courses-terms-list">{program.terms.map((term) => <li key={term}>{term}</li>)}</ul>
++        </CourseDisclosure>
++      </div>
++    </article>
++  );
++}
++
+ export function CoursesPageContent() {
+   return (
+     <MarketingPage>
+       <SiteHeader />
+ 
+-      <section className="courses-hero">
+-        <div className="courses-hero-inner mx-auto max-w-7xl px-5 sm:px-8">
+-          <div className="courses-hero-copy">
++      <section className="courses-catalog-hero">
++        <div className="courses-catalog-hero-inner mx-auto max-w-7xl px-5 sm:px-8">
++          <div className="courses-catalog-hero-copy">
+             <p className="type-kicker text-sky-700">{coursesPage.eyebrow}</p>
+-            <h1 className="minimal-hero-title">{coursesPage.title}</h1>
+-            <p className="minimal-hero-lead">{coursesPage.lead}</p>
++            <h1>{coursesPage.title}</h1>
++            <p className="courses-catalog-lead">{coursesPage.lead}</p>
+             <div className="courses-hero-actions">
+               <a className="btn-cta btn-primary" href="#programs">
+-                Explore live 1:1 programs
++                Explore live programmes <ArrowDown size={16} aria-hidden="true" />
+               </a>
+-              <a className="btn-cta btn-secondary" href="#recorded-courses">
+-                Browse recorded courses
+-              </a>
+-              <a
+-                className="btn-cta btn-secondary"
+-                href={COURSE_GOOGLE_CALENDAR_BOOKING_URL}
+-                target="_blank"
+-                rel="noopener noreferrer"
+-              >
+-                Book slots
+-              </a>
+-              <Link className="btn-cta btn-secondary" href="/courses/book-slots">
+-                Booking page
+-              </Link>
+-              <Link className="btn-cta btn-secondary" href="/learn/login">
+-                Student login
+-              </Link>
+-              <Link className="btn-cta btn-secondary" href={WORKSPACE_LOGIN_HREF}>
+-                {coursesPage.ctaSecondaryLabel}
+-              </Link>
++              <a className="btn-cta btn-secondary" href="#recorded-courses">Browse recorded courses</a>
+             </div>
+-            <p className="courses-instructor">{coursesPage.instructorNote}</p>
++            <p className="courses-instructor">{coursesPage.instructorNote} · Hindi or English</p>
+           </div>
+-
+-          <aside className="courses-offer-grid" id="programs" aria-label="Live 1:1 programs">
+-            {coursePrograms.map((program) => (
+-              <article className="courses-offer" key={program.id} id={program.id === "BUSINESS_OWNER" ? "business-owners" : "working-professionals"}>
+-                <p className="courses-phase-range">Live 1:1 · {program.eyebrow}</p>
+-                <h2>{program.name}</h2>
+-                <p className="courses-offer-price">
+-                  {courseEnrollmentPriceLabel(program.priceInr)}
+-                  <span> GST extra</span>
+-                </p>
+-                <p>
+-                  {program.totalClasses} classes × {program.sessionDurationLabel} ·{" "}
+-                  {program.totalHours} hours · {program.weeksLabel}
+-                </p>
+-                <p>
+-                  Mon + Fri or Tue + Sat · {program.sessionTimeLabel}
+-                </p>
+-                <p>{program.promise}</p>
+-                <p className="courses-offer-pay">
+-                  {program.bookFirst
+-                    ? `Book the requirement meeting first. After you are sure, pay ${courseEnrollmentPriceLabel(program.advanceInr)} to confirm the seat.`
+-                    : `Pay ${courseEnrollmentPriceLabel(program.advanceInr)} now. Balance before class 1.`}
+-                </p>
+-                <div className="courses-offer-actions">
+-                  {program.bookFirst ? (
+-                    <a
+-                      className="btn-cta btn-primary btn-block"
+-                      href={consultationUrl}
+-                      target="_blank"
+-                      rel="noopener noreferrer"
+-                    >
+-                      Book a requirement meeting
+-                    </a>
+-                  ) : null}
+-                  <CoursesEnrollPay
+-                    programId={program.id}
+-                    triggerLabel={
+-                      program.bookFirst ? "Enroll once you are sure" : coursesPage.ctaLabel
+-                    }
+-                    triggerClassName={
+-                      program.bookFirst
+-                        ? "btn-cta btn-secondary btn-block"
+-                        : "btn-cta btn-primary btn-block"
+-                    }
+-                  />
+-                </div>
+-              </article>
+-            ))}
++          <aside className="courses-build-preview" aria-label="Business Owners programme approach">
++            <p className="courses-preview-eyebrow">The Business Owners programme</p>
++            <h2>Your business.<br />A system built around it.</h2>
++            <p className="courses-preview-lead">Practical system building, with training for your team.</p>
++            <ol className="courses-preview-path">
++              <li><span aria-hidden="true">01</span><div><strong>Your organization chart</strong><p>Start with people, roles and workflows.</p></div></li>
++              <li><span aria-hidden="true">02</span><div><strong>Your chosen technology</strong><p>We build the systems in your agreed scope.</p></div></li>
++              <li><span aria-hidden="true">03</span><div><strong>Your team, ready to use it</strong><p>Practical training on the systems we build.</p></div></li>
++            </ol>
++            <a href="#business-owners" className="courses-preview-link">Explore the programme <ArrowRight size={16} aria-hidden="true" /></a>
+           </aside>
+         </div>
+       </section>
+ 
++      <nav className="courses-resource-nav" aria-label="Course booking and student access">
++        <div className="mx-auto max-w-7xl px-5 sm:px-8">
++          <span>Already learning with us?</span>
++          <a href={COURSE_GOOGLE_CALENDAR_BOOKING_URL} target="_blank" rel="noopener noreferrer">Book slots <ArrowRight size={14} aria-hidden="true" /></a>
++          <Link href="/courses/book-slots">Booking page</Link>
++          <Link href="/learn/login">Student login</Link>
++          <Link href={WORKSPACE_LOGIN_HREF}>{coursesPage.ctaSecondaryLabel}</Link>
++        </div>
++      </nav>
++
++      <section className="courses-program-section" id="programs" aria-labelledby="courses-programs-title">
++        <div className="mx-auto max-w-7xl px-5 sm:px-8">
++          <div className="courses-section-head">
++            <p className="type-kicker text-sky-700">Live programmes with Shyam</p>
++            <h2 className="minimal-section-title mt-2" id="courses-programs-title">Choose what you want to build.</h2>
++            <p className="minimal-section-lead">A system for your business, or the skills to build one yourself. Open any section below to explore the details, then close it when you’re done.</p>
++          </div>
++          <div className="courses-program-grid">
++            {coursePrograms.map((program) => <CourseProgramCard key={program.id} program={program} />)}
++          </div>
++        </div>
++      </section>
++
+       <section className="minimal-strip bg-white pb-16" id="recorded-courses">
+         <div className="mx-auto max-w-7xl px-5 sm:px-8">
+           <div className="courses-section-head">
+@@ -182,131 +288,23 @@ export function CoursesPageContent() {
+               </a>
+             </div>
+           </article>
+-          <div className="courses-section-head courses-recorded-upcoming" id="course-focus">
+-            <p className="type-kicker text-sky-700">Recorded course collection</p>
+-            <h3 className="minimal-section-title mt-2">Build the skill one practical course at a time.</h3>
+-            <p className="minimal-section-lead">
+-              These recorded courses are in production now. Each will be marked
+-              available here as soon as it is ready.
+-            </p>
+-          </div>
+-          <div className="courses-area-grid">
+-            {upcomingRecordedCourses.map((course) => (
+-              <article className="courses-area" key={course.title}>
+-                <p className="courses-phase-range">{course.category}</p>
+-                <h4>{course.title}</h4>
+-                <p>{course.description}</p>
+-                <span className="courses-coming-soon">Coming soon</span>
+-              </article>
+-            ))}
+-          </div>
+-        </div>
+-      </section>
+-
+-      {coursePrograms.map((program) => (
+-        <section
+-          className="minimal-strip soft-section pb-16"
+-          id={program.id === "BUSINESS_OWNER" ? "curriculum-owners" : "curriculum-professionals"}
+-          key={program.id}
+-        >
+-          <div className="mx-auto max-w-7xl px-5 sm:px-8">
+-            <div className="courses-section-head">
+-              <p className="type-kicker text-sky-700">{program.name}</p>
+-              <h2 className="minimal-section-title mt-2">
+-                {program.areas
+-                  ? "What the system covers"
+-                  : `${program.totalClasses} classes · ${program.totalHours} hours`}
+-              </h2>
+-              <p className="minimal-section-lead">{program.classRhythm}</p>
+-              <p className="minimal-section-lead">{program.tools}</p>
+-            </div>
+-            <ul className="courses-format-list">
+-              {program.terms.map((item) => (
+-                <li key={item}>{item}</li>
+-              ))}
+-            </ul>
+-            {program.areas ? (
++          <div className="courses-recorded-upcoming" id="course-focus">
++            <CourseDisclosure title={`Coming next: ${upcomingRecordedCourses.length} recorded courses`} description="Explore the courses currently in production.">
++              <p>Each course will be marked available here as soon as it is ready.</p>
+               <div className="courses-area-grid">
+-                {program.areas.map((area) => (
+-                  <article className="courses-area" key={area.id}>
+-                    <h3>{area.title}</h3>
+-                    <p>{area.summary}</p>
+-                    <ul>
+-                      {area.pointers.map((pointer) => (
+-                        <li key={pointer}>{pointer}</li>
+-                      ))}
+-                    </ul>
++                {upcomingRecordedCourses.map((course) => (
++                  <article className="courses-area" key={course.title}>
++                    <p className="courses-phase-range">{course.category}</p>
++                    <h4>{course.title}</h4>
++                    <p>{course.description}</p>
++                    <span className="courses-coming-soon">Coming soon</span>
+                   </article>
+                 ))}
+               </div>
+-            ) : null}
+-            {program.phases.length > 0 ? (
+-              <div className="courses-phase-stack">
+-                {program.phases.map((phase) => (
+-                  <section className="courses-phase" key={phase.id}>
+-                    <header className="courses-phase-head">
+-                      <p className="courses-phase-range">{phase.range}</p>
+-                      <h3>{phase.label}</h3>
+-                      <p>{phase.summary}</p>
+-                    </header>
+-                    <div className="courses-class-grid">
+-                      {phase.classes.map((item) => (
+-                        <article className="courses-class-card" key={item.number}>
+-                          <p className="courses-class-num">
+-                            Class {String(item.number).padStart(2, "0")}
+-                          </p>
+-                          <h4>{item.title}</h4>
+-                          <ul>
+-                            <li>{item.outcome}</li>
+-                          </ul>
+-                        </article>
+-                      ))}
+-                    </div>
+-                  </section>
+-                ))}
+-              </div>
+-            ) : null}
+-            <div className="courses-enroll-band">
+-              <div>
+-                <p className="type-kicker text-sky-700">
+-                  {program.bookFirst ? "First, the meeting" : "Enroll"}
+-                </p>
+-                <h3>
+-                  {program.bookFirst
+-                    ? "Requirement meeting, then the seat"
+-                    : `${courseEnrollmentPriceLabel(program.priceInr)} · ${program.totalHours} hours live 1:1`}
+-                </h3>
+-                <p>
+-                  {program.bookFirst
+-                    ? `We go through Sales, Operations, Inventory, and Dispatch on your work. When you are sure, pay ${courseEnrollmentPriceLabel(program.advanceInr)}. GST extra. Balance before class 1. ${program.totalClasses} classes × ${program.sessionDurationLabel}, ${program.sessionTimeLabel}.`
+-                    : `Pay ${courseEnrollmentPriceLabel(program.advanceInr)} now. GST extra. Balance before class 1. ${program.sessionTimeLabel}.`}
+-                </p>
+-              </div>
+-              <div className="courses-offer-actions">
+-                {program.bookFirst ? (
+-                  <a
+-                    className="btn-cta btn-primary"
+-                    href={consultationUrl}
+-                    target="_blank"
+-                    rel="noopener noreferrer"
+-                  >
+-                    Book a requirement meeting
+-                  </a>
+-                ) : null}
+-                <CoursesEnrollPay
+-                  programId={program.id}
+-                  triggerLabel={
+-                    program.bookFirst ? "Enroll once you are sure" : coursesPage.ctaLabel
+-                  }
+-                  triggerClassName={
+-                    program.bookFirst ? "btn-cta btn-secondary" : "btn-cta btn-primary"
+-                  }
+-                />
+-              </div>
+-            </div>
++            </CourseDisclosure>
+           </div>
+-        </section>
+-      ))}
++        </div>
++      </section>
+ 
+       <section className="minimal-strip bg-white pb-16" id="watch">
+         <div className="mx-auto max-w-7xl px-5 sm:px-8">
+@@ -343,31 +341,33 @@ export function CoursesPageContent() {
+             <h2 className="minimal-section-title mt-2">{coursesPage.libraryTitle}</h2>
+             <p className="minimal-section-lead">{coursesPage.libraryLead}</p>
+           </div>
+-          <div className="courses-thumb-grid">
+-            {coursesLibraryVideos.map((video) => (
+-              <a
+-                className="courses-thumb-card"
+-                href={youtubeWatchUrl(video.youtubeId)}
+-                key={video.youtubeId}
+-                rel="noopener noreferrer"
+-                target="_blank"
+-              >
+-                <span className="courses-thumb-media">
+-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+-                  <img
+-                    alt=""
+-                    loading="lazy"
+-                    src={youtubeThumbUrl(video.youtubeId)}
+-                  />
+-                  <span className="courses-thumb-play" aria-hidden>
+-                    <Play size={18} fill="currentColor" strokeWidth={0} />
++          <CourseDisclosure title="Browse the video library" description={`${coursesLibraryVideos.length} practical lessons from the Sheetomatic channel.`}>
++            <div className="courses-thumb-grid">
++              {coursesLibraryVideos.map((video) => (
++                <a
++                  className="courses-thumb-card"
++                  href={youtubeWatchUrl(video.youtubeId)}
++                  key={video.youtubeId}
++                  rel="noopener noreferrer"
++                  target="_blank"
++                >
++                  <span className="courses-thumb-media">
++                    {/* eslint-disable-next-line @next/next/no-img-element */}
++                    <img
++                      alt=""
++                      loading="lazy"
++                      src={youtubeThumbUrl(video.youtubeId)}
++                    />
++                    <span className="courses-thumb-play" aria-hidden>
++                      <Play size={18} fill="currentColor" strokeWidth={0} />
++                    </span>
+                   </span>
+-                </span>
+-                <span className="courses-thumb-tag">{video.category}</span>
+-                <strong>{video.title}</strong>
+-              </a>
+-            ))}
+-          </div>
++                  <span className="courses-thumb-tag">{video.category}</span>
++                  <strong>{video.title}</strong>
++                </a>
++              ))}
++            </div>
++          </CourseDisclosure>
+           <div className="courses-free-cta">
+             <a
+               className="btn-cta btn-youtube"
+diff --git a/src/components/marketing/courses-page.css b/src/components/marketing/courses-page.css
+index a847d6d..59d4d63 100644
+--- a/src/components/marketing/courses-page.css
++++ b/src/components/marketing/courses-page.css
+@@ -1,363 +1,494 @@
+ .courses-section-head {
+-  max-width: 42rem;
++  max-width: 44rem;
+   margin-bottom: 2rem;
+ }
+ 
+-.courses-hero {
++.courses-catalog-hero {
++  display: block;
++  color: #0f172a;
++  background: radial-gradient(ellipse at 10% 0%, #e0f2fe 0%, transparent 60%), #f8fafc;
+   border-bottom: 1px solid #e2e8f0;
+-  background:
+-    radial-gradient(1200px 420px at 12% -10%, rgba(56, 189, 248, 0.14), transparent 55%),
+-    radial-gradient(900px 380px at 88% 0%, rgba(37, 99, 235, 0.1), transparent 50%),
+-    #ffffff;
+ }
+ 
+-.courses-hero-inner {
++.courses-catalog-hero-inner {
+   display: grid;
+-  gap: 2rem;
+-  padding-block: 3rem 3.25rem;
+-  align-items: start;
++  align-items: center;
++  gap: 2.5rem;
++  padding-block: clamp(2.5rem, 6vw, 5rem);
+ }
+ 
+-@media (min-width: 960px) {
+-  .courses-hero-inner {
+-    grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.85fr);
+-    gap: 2.5rem;
+-    padding-block: 4rem 4.25rem;
+-  }
++.courses-catalog-hero-copy h1 {
++  max-width: 13ch;
++  margin: 1rem 0 1.25rem;
++  font-family: var(--font-heading);
++  font-size: clamp(2.5rem, 4.5vw, 4rem);
++  font-weight: 800;
++  line-height: 1.07;
++  letter-spacing: -0.045em;
++  color: #0f172a;
+ }
+ 
+-.courses-hero-copy .minimal-hero-title {
+-  max-width: 18ch;
++.courses-catalog-lead {
++  max-width: 38rem;
++  margin: 0;
++  font-size: 1.1rem;
++  line-height: 1.75;
++  color: #475569;
+ }
+ 
+ .courses-hero-actions {
+   display: flex;
+   flex-wrap: wrap;
+-  gap: 12px;
+-  margin-top: 1.5rem;
+-}
+-
+-@media (max-width: 640px) {
+-  .courses-hero-actions {
+-    flex-direction: column;
+-    align-items: stretch;
+-  }
+-
+-  .courses-hero-actions .btn-cta,
+-  .courses-hero-actions button {
+-    width: 100%;
+-    justify-content: center;
+-  }
+-
+-  .courses-hero-inner {
+-    padding-block: 2rem 2.25rem;
+-  }
+-
+-  .courses-hero-copy .minimal-hero-title {
+-    max-width: none;
+-  }
++  gap: 0.75rem;
++  margin-top: 1.75rem;
+ }
+ 
+ .courses-instructor {
+-  margin: 1rem 0 0;
+-  font-size: var(--text-sm);
+-  font-weight: 700;
++  margin: 1.25rem 0 0;
++  font-size: 0.85rem;
++  font-weight: 600;
++  line-height: 1.6;
+   color: #475569;
+ }
+ 
+-.courses-offer-grid {
+-  display: grid;
+-  gap: 12px;
++.courses-build-preview {
++  padding: clamp(1.5rem, 3vw, 2.5rem);
++  border: 1px solid #1e3a5f;
++  border-radius: 1.5rem;
++  background: radial-gradient(ellipse at top right, #164e63, transparent 75%), #0f172a;
++  box-shadow: 0 24px 56px -24px #0f172a66;
++  color: #fff;
+ }
+ 
+-.courses-offer {
+-  display: grid;
+-  gap: 0.55rem;
+-  align-content: start;
+-  padding: 1.25rem 1.3rem;
+-  border: 1px solid #e2e8f0;
+-  border-radius: 16px;
+-  background: #fff;
+-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
++.courses-build-preview .courses-preview-eyebrow {
++  margin: 0 0 1rem;
++  color: #7dd3fc;
++  font-size: 0.72rem;
++  font-weight: 750;
++  letter-spacing: 0.1em;
++  text-transform: uppercase;
+ }
+ 
+-.courses-offer h2 {
++.courses-build-preview h2 {
+   margin: 0;
+-  font-size: 1.35rem;
+-  font-weight: 700;
+-  letter-spacing: -0.03em;
+-  color: #0f172a;
++  font-size: clamp(1.6rem, 2.5vw, 2rem);
++  line-height: 1.2;
++  letter-spacing: -0.035em;
++  font-weight: 750;
++  color: #fff;
+ }
+ 
+-.courses-offer p {
+-  margin: 0;
+-  font-size: 0.92rem;
+-  line-height: 1.45;
+-  color: #475569;
++.courses-build-preview .courses-preview-lead {
++  margin: 0.9rem 0 1.75rem;
++  font-size: 0.95rem;
++  line-height: 1.6;
++  color: #cbd5e1;
+ }
+ 
+-.courses-offer-price {
+-  font-size: 1.65rem;
+-  font-weight: 700;
+-  letter-spacing: -0.03em;
+-  color: #0f172a;
++.courses-preview-path {
++  display: grid;
++  gap: 1.25rem;
++  margin: 0;
++  padding: 0;
++  list-style: none;
+ }
+ 
+-.courses-offer-price span {
+-  font-size: 0.85rem;
+-  font-weight: 600;
+-  color: #64748b;
++.courses-preview-path li {
++  display: flex;
++  gap: 1rem;
++  align-items: flex-start;
+ }
+ 
+-.courses-offer-actions {
++.courses-preview-path li > span {
+   display: grid;
+-  gap: 8px;
+-  margin-top: 0.25rem;
++  place-items: center;
++  flex: 0 0 2.25rem;
++  height: 2.25rem;
++  border: 1px solid #475569;
++  border-radius: 0.7rem;
++  color: #7dd3fc;
++  font-size: 0.75rem;
++  font-weight: 700;
+ }
+ 
+-.courses-area-grid {
+-  display: grid;
+-  gap: 14px;
+-  margin-top: 1.5rem;
++.courses-preview-path strong {
++  display: block;
++  margin: 0.1rem 0 0.25rem;
++  color: #f8fafc;
++  font-size: 0.95rem;
+ }
+ 
+-@media (min-width: 800px) {
+-  .courses-area-grid {
+-    grid-template-columns: repeat(2, minmax(0, 1fr));
+-  }
++.courses-preview-path p {
++  margin: 0;
++  color: #cbd5e1;
++  font-size: 0.85rem;
++  line-height: 1.5;
+ }
+ 
+-.courses-area {
+-  padding: 1.25rem 1.3rem 1.35rem;
+-  border: 1px solid #e2e8f0;
+-  border-radius: 16px;
++.courses-build-preview .courses-preview-link {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 1rem;
++  min-height: 44px;
++  margin-top: 1.5rem;
++  padding-top: 1rem;
++  border-top: 1px solid #475569;
++  color: #bae6fd;
++  font-size: 0.9rem;
++  font-weight: 650;
++  text-decoration: none;
++}
++
++.courses-resource-nav {
+   background: #fff;
+-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
++  border-bottom: 1px solid #e2e8f0;
+ }
+ 
+-.courses-area h3,
+-.courses-area h4 {
+-  margin: 0.15rem 0 0.35rem;
+-  font-size: 1.25rem;
+-  font-weight: 700;
+-  letter-spacing: -0.02em;
+-  color: #0f172a;
++.courses-resource-nav > div {
++  display: flex;
++  align-items: center;
++  flex-wrap: wrap;
++  column-gap: 1.75rem;
++  padding-block: 0.7rem;
+ }
+ 
+-.courses-area p {
+-  margin: 0 0 0.75rem;
++.courses-resource-nav span {
+   color: #475569;
+-  line-height: 1.45;
++  font-size: 0.82rem;
+ }
+ 
+-.courses-area ul {
+-  margin: 0;
+-  padding-left: 1.1rem;
+-  display: grid;
+-  gap: 0.45rem;
++.courses-resource-nav a {
++  display: inline-flex;
++  align-items: center;
++  gap: 0.4rem;
++  min-height: 44px;
++  color: #1d4ed8;
++  font-weight: 650;
++  font-size: 0.85rem;
++  text-decoration: none;
+ }
+ 
+-.courses-area li {
+-  color: #1e293b;
+-  font-size: 0.95rem;
+-  line-height: 1.45;
++.courses-resource-nav a:hover,
++.courses-preview-link:hover {
++  text-decoration: underline;
++  text-underline-offset: 4px;
+ }
+ 
+-.courses-offer-pay {
+-  font-weight: 650;
+-  color: #0f172a;
++.courses-program-section {
++  display: block;
++  padding-block: clamp(2.5rem, 6vw, 4.5rem);
++  background: #f8fafc;
+ }
+ 
+-.courses-hero-card {
++.courses-program-grid {
+   display: grid;
+-  gap: 1rem;
+-  padding: 1.35rem 1.4rem;
+-  border: 1px solid #e2e8f0;
+-  border-radius: 16px;
++  align-items: start;
++  gap: 1.5rem;
++}
++
++.courses-program-card {
++  min-width: 0;
++  border: 1px solid #cbd5e1;
++  border-radius: 1.25rem;
+   background: #fff;
+-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
++  box-shadow: 0 12px 36px -20px #0f172a33;
+ }
+ 
+-.courses-stat {
+-  display: grid;
+-  grid-template-columns: auto 1fr;
+-  gap: 12px;
+-  align-items: start;
+-  color: #2563eb;
++.courses-program-card--owner {
++  border-color: #60a5fa;
++  box-shadow: 0 12px 36px -20px #2563eb55;
+ }
+ 
+-.courses-stat strong {
+-  display: block;
+-  font-size: var(--text-sm);
+-  font-weight: 800;
+-  color: #0f172a;
++.courses-program-intro {
++  padding: clamp(1.25rem, 3vw, 2rem);
+ }
+ 
+-.courses-stat span {
+-  display: block;
+-  margin-top: 0.2rem;
+-  font-size: var(--text-sm);
+-  line-height: 1.45;
+-  color: #64748b;
++.courses-program-card--owner .courses-program-intro {
++  border-radius: 1.25rem 1.25rem 0 0;
++  background: linear-gradient(145deg, #eff6ff, #fff 70%);
+ }
+ 
+-.courses-hero-card-cta {
+-  display: grid;
+-  gap: 0.55rem;
+-  margin-top: 0.35rem;
++.courses-program-type {
++  margin: 0 0 0.75rem;
++  color: #1d4ed8;
++  font-size: 0.72rem;
++  font-weight: 750;
++  text-transform: uppercase;
++  letter-spacing: 0.08em;
+ }
+ 
+-.courses-format-list {
++.courses-program-intro h3 {
+   margin: 0;
+-  padding: 0;
+-  list-style: none;
+-  display: grid;
+-  gap: 12px;
++  color: #0f172a;
++  font-size: clamp(1.5rem, 2.5vw, 1.85rem);
++  font-weight: 750;
++  line-height: 1.2;
++  letter-spacing: -0.03em;
+ }
+ 
+-@media (min-width: 768px) {
+-  .courses-format-list {
+-    grid-template-columns: repeat(2, minmax(0, 1fr));
+-  }
++.courses-program-tagline {
++  margin: 0.6rem 0 0;
++  color: #475569;
++  font-size: 0.95rem;
++  line-height: 1.5;
+ }
+ 
+-.courses-format-list li {
+-  padding: 1.1rem 1.2rem;
+-  border: 1px solid #e2e8f0;
+-  border-radius: 14px;
+-  background: #fff;
+-  font-size: var(--text-sm);
+-  font-weight: 700;
+-  line-height: 1.55;
+-  color: #334155;
+-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
++.courses-program-price {
++  margin: 1.5rem 0 0.6rem;
++  color: #0f172a;
++  font-size: clamp(2.2rem, 3.5vw, 3rem);
++  font-weight: 800;
++  line-height: 1.15;
++  letter-spacing: -0.045em;
++  font-variant-numeric: tabular-nums;
+ }
+ 
+-.courses-phase-stack {
+-  display: grid;
+-  gap: 2.5rem;
++.courses-program-price span {
++  display: inline-block;
++  color: #475569;
++  font-size: 0.9rem;
++  font-weight: 600;
++  letter-spacing: 0;
+ }
+ 
+-.courses-phase-head {
+-  max-width: 40rem;
+-  margin-bottom: 1.1rem;
++.courses-program-included {
++  display: flex;
++  align-items: flex-start;
++  gap: 0.45rem;
++  margin: 0;
++  color: #166534;
++  font-size: 0.86rem;
++  font-weight: 700;
++  line-height: 1.5;
+ }
+ 
+-.courses-phase-range {
+-  margin: 0;
+-  font-size: 11px;
+-  font-weight: 900;
+-  letter-spacing: 0.1em;
+-  text-transform: uppercase;
+-  color: #2563eb;
++.courses-program-included svg {
++  flex-shrink: 0;
++  margin-top: 0.15rem;
+ }
+ 
+-.courses-phase-head h3 {
++.courses-program-scope-note {
+   margin: 0.35rem 0 0;
+-  font-size: var(--text-lg);
+-  font-weight: 800;
+-  color: #0f172a;
++  color: #475569;
++  font-size: 0.8rem;
++  line-height: 1.5;
+ }
+ 
+-.courses-phase-head p:last-child {
+-  margin: 0.45rem 0 0;
+-  font-size: var(--text-sm);
+-  line-height: 1.55;
+-  color: #64748b;
++.courses-program-duration {
++  margin: 1.25rem 0 0;
++  padding: 0.9rem 0;
++  border-block: 1px solid #e2e8f0;
++  color: #1e3a5f;
++  font-size: 0.9rem;
++  font-weight: 650;
++  line-height: 1.65;
+ }
+ 
+-.courses-class-grid {
+-  display: grid;
+-  gap: 14px;
++.courses-program-promise {
++  margin: 1.25rem 0;
++  color: #475569;
++  font-size: 0.95rem;
++  line-height: 1.7;
+ }
+ 
+-@media (min-width: 720px) {
+-  .courses-class-grid {
+-    grid-template-columns: repeat(2, minmax(0, 1fr));
+-  }
++.courses-offer-actions {
++  display: grid;
++  gap: 0.65rem;
+ }
+ 
+-.courses-class-card,
+-.courses-featured-videos > div,
+-#topic-whatsapp {
+-  scroll-margin-top: 6.5rem;
++.courses-program-card .btn-cta {
++  height: auto;
++  min-height: 48px;
++  white-space: normal;
++  text-align: center;
++  line-height: 1.5;
+ }
+ 
++.courses-program-payment {
++  margin: 1rem 0 0;
++  color: #475569;
++  font-size: 0.8rem;
++  line-height: 1.65;
++}
+ 
+-.courses-class-num {
+-  margin: 0;
+-  font-size: 11px;
+-  font-weight: 900;
+-  letter-spacing: 0.1em;
+-  text-transform: uppercase;
+-  color: #2563eb;
++.courses-program-details {
++  padding: 0 clamp(1.25rem, 3vw, 2rem) 1rem;
+ }
+ 
+-.courses-class-card h4 {
+-  margin: 0.4rem 0 0;
+-  font-size: var(--text-md);
+-  font-weight: 800;
+-  line-height: 1.35;
++.courses-disclosure {
++  min-width: 0;
++  border-top: 1px solid #e2e8f0;
+   color: #0f172a;
+ }
+ 
+-.courses-class-card ul {
+-  margin: 0.7rem 0 0;
+-  padding: 0;
++.courses-disclosure > summary {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 0.75rem;
++  min-height: 68px;
++  padding: 1rem 0;
++  border-radius: 0.25rem;
++  cursor: pointer;
+   list-style: none;
++  -webkit-tap-highlight-color: transparent;
++}
++
++.courses-disclosure > summary::-webkit-details-marker { display: none; }
++.courses-disclosure > summary::marker { content: ""; }
++.courses-disclosure > summary:hover .courses-disclosure-title { color: #1d4ed8; }
++
++.courses-disclosure > summary:focus-visible,
++.courses-resource-nav a:focus-visible,
++.courses-preview-link:focus-visible {
++  outline: 3px solid #0284c7;
++  outline-offset: 4px;
++}
++
++.courses-disclosure-copy { min-width: 0; }
++.courses-disclosure-title { display: block; font-weight: 700; font-size: 0.95rem; line-height: 1.45; }
++.courses-disclosure-description { display: block; margin-top: 0.3rem; font-size: 0.8rem; line-height: 1.55; color: #475569; }
++.courses-disclosure-control { display: flex; align-items: center; gap: 0.35rem; flex-shrink: 0; color: #1d4ed8; font-size: 0.75rem; font-weight: 650; }
++.courses-disclosure-control svg { transition: transform 180ms ease; }
++.courses-disclosure-hide { display: none; }
++.courses-disclosure[open] > summary .courses-disclosure-show { display: none; }
++.courses-disclosure[open] > summary .courses-disclosure-hide { display: inline; }
++.courses-disclosure[open] > summary .courses-disclosure-control svg { transform: rotate(180deg); }
++
++.courses-disclosure-body {
++  padding: 0.25rem 0 1.5rem;
++  overflow-wrap: anywhere;
++  font-size: 0.9rem;
++  line-height: 1.7;
++  color: #475569;
++}
++
++.courses-disclosure-body p { margin: 0 0 1rem; }
++.courses-disclosure-body h4 { margin: 1.25rem 0 0.45rem; font-size: 0.95rem; font-weight: 700; line-height: 1.5; color: #0f172a; }
++.courses-disclosure-body ul { padding-left: 1.2rem; }
++.courses-disclosure-body li + li { margin-top: 0.55rem; }
++
++.courses-build-steps {
+   display: grid;
+-  gap: 0.45rem;
++  gap: 1rem;
++  margin: 1.25rem 0 0;
++  padding-left: 1.3rem;
++}
++
++.courses-build-steps li { padding-left: 0.25rem; }
++.courses-build-steps li::marker { color: #1d4ed8; font-weight: 700; }
++.courses-build-steps strong,
++.courses-lesson-list strong { display: block; color: #0f172a; }
++.courses-build-steps span,
++.courses-lesson-list span { display: block; margin-top: 0.25rem; }
++
++.courses-scope-list { display: grid; gap: 1.25rem; margin-top: 1.5rem; }
++.courses-scope-item { display: grid; grid-template-columns: 1.75rem minmax(0, 1fr); gap: 0.65rem; padding-top: 1.25rem; border-top: 1px solid #e2e8f0; }
++.courses-scope-number { color: #1d4ed8; font-size: 0.8rem; font-weight: 700; }
++.courses-scope-item h4 { margin-top: 0; }
++.courses-scope-item p { margin-bottom: 0.5rem; }
++.courses-scope-item ul { margin: 0; }
++
++.courses-curriculum-stack { display: grid; gap: 1.75rem; }
++.courses-curriculum-phase + .courses-curriculum-phase { padding-top: 1.5rem; border-top: 1px solid #e2e8f0; }
++.courses-curriculum-phase .courses-phase-range { margin: 0; }
++.courses-curriculum-phase h4 { margin-top: 0.35rem; }
++.courses-lesson-list { display: grid; gap: 0.75rem; padding-left: 1.5rem; margin: 1rem 0 0; }
++.courses-lesson-list li { padding-left: 0.35rem; }
++.courses-lesson-list li::marker { color: #1d4ed8; font-weight: 700; font-size: 0.8rem; }
++.courses-lesson-list span { font-size: 0.85rem; }
++
++.courses-schedule-note { display: grid; gap: 0.35rem; padding: 1rem; border-radius: 0.75rem; background: #eff6ff; color: #1e3a5f; }
++.courses-terms-list { display: grid; gap: 0.5rem; margin: 1.25rem 0 0; }
++
++.courses-phase-range {
++  margin: 0;
++  font-size: 0.7rem;
++  font-weight: 800;
++  letter-spacing: 0.08em;
++  text-transform: uppercase;
++  color: #1d4ed8;
+ }
+ 
+-.courses-class-card li {
+-  position: relative;
+-  padding-left: 0.95rem;
+-  font-size: var(--text-sm);
+-  line-height: 1.5;
+-  color: #64748b;
++#programs,
++#business-owners,
++#working-professionals,
++#curriculum-owners,
++#curriculum-professionals,
++#recorded-courses,
++#course-focus,
++#topic-whatsapp,
++.courses-featured-videos > div { scroll-margin-top: 6.5rem; }
++
++@media (min-width: 960px) {
++  .courses-catalog-hero-inner { grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr); gap: 4rem; }
++  .courses-program-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem; }
+ }
+ 
+-.courses-class-card li::before {
+-  content: "";
+-  position: absolute;
+-  left: 0;
+-  top: 0.55em;
+-  width: 5px;
+-  height: 5px;
+-  border-radius: 999px;
+-  background: #38bdf8;
++@media (max-width: 640px) {
++  .courses-catalog-hero-copy h1 { max-width: 15ch; }
++  .courses-hero-actions { flex-direction: column; align-items: stretch; }
++  .courses-hero-actions .btn-cta { width: 100%; justify-content: center; }
++  .courses-resource-nav > div { column-gap: 1.25rem; }
++  .courses-resource-nav span { flex-basis: 100%; padding-top: 0.5rem; }
++  .courses-program-card .btn-cta { padding-inline: 0.8rem; font-size: 0.85rem; }
++  .courses-scope-item { grid-template-columns: minmax(0, 1fr); gap: 0.25rem; }
+ }
+ 
+-.courses-enroll-band {
++@media (prefers-reduced-motion: reduce) {
++  .courses-disclosure-control svg { transition: none; }
++}
++
++.courses-area-grid {
+   display: grid;
+-  gap: 1rem;
+-  align-items: center;
+-  margin-top: 2.5rem;
+-  padding: 1.35rem 1.4rem;
+-  border-radius: 16px;
+-  border: 1px solid #bfdbfe;
+-  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 70%);
++  gap: 14px;
++  margin-top: 1.5rem;
+ }
+ 
+-@media (min-width: 720px) {
+-  .courses-enroll-band {
+-    grid-template-columns: 1fr auto;
++@media (min-width: 800px) {
++  .courses-area-grid {
++    grid-template-columns: repeat(2, minmax(0, 1fr));
+   }
+ }
+ 
+-.courses-enroll-band h3 {
+-  margin: 0.3rem 0 0;
+-  font-size: var(--text-md);
+-  font-weight: 800;
++.courses-area {
++  padding: 1.25rem 1.3rem 1.35rem;
++  border: 1px solid #e2e8f0;
++  border-radius: 16px;
++  background: #fff;
++  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
++}
++
++.courses-area h3,
++.courses-area h4 {
++  margin: 0.15rem 0 0.35rem;
++  font-size: 1.25rem;
++  font-weight: 700;
++  letter-spacing: -0.02em;
+   color: #0f172a;
+ }
+ 
+-.courses-enroll-band p {
+-  margin: 0.35rem 0 0;
+-  font-size: var(--text-sm);
+-  color: #64748b;
++.courses-area p {
++  margin: 0 0 0.75rem;
++  color: #475569;
++  line-height: 1.45;
+ }
+ 
++.courses-area ul {
++  margin: 0;
++  padding-left: 1.1rem;
++  display: grid;
++  gap: 0.45rem;
++}
++
++.courses-area li {
++  color: #1e293b;
++  font-size: 0.95rem;
++  line-height: 1.45;
++}
++
++
+ .courses-featured-videos {
+   display: grid;
+   gap: 1.25rem;
+diff --git a/src/lib/content/course-programs.ts b/src/lib/content/course-programs.ts
+index 55c93f6..4ec9475 100644
+--- a/src/lib/content/course-programs.ts
++++ b/src/lib/content/course-programs.ts
+@@ -64,7 +64,7 @@ const sharedTerms = [
+   "GST is extra.",
+   "50% confirms the seat and books the slots. The balance is due before class 1.",
+   "Cohorts: Monday + Friday, or Tuesday + Saturday.",
+-  "One seat, one person. Hindi or English.",
++  "Sessions are available in Hindi or English.",
+   "A missed class with a day’s notice can be made up once. A no-show is a used class.",
+   "Recordings stay in that learner’s login.",
+ ] as const;
+@@ -73,9 +73,9 @@ export const coursePrograms: CourseProgram[] = [
+   {
+     id: "BUSINESS_OWNER",
+     name: "Business Owners",
+-    eyebrow: "A ready system, on your data",
++    eyebrow: "Practical system building + team training",
+     promise:
+-      "You leave with a system your people can use: Sales, Operations, Inventory, and Dispatch. Built for how your shop actually runs, on Google Sheets, AppSheet, Apps Script, and a Google Site you open for the week.",
++      "You choose the technology. We build your business systems and train your team to use them. Practical development on your real workflows, with the scope agreed before you enrol.",
+     priceInr: 110_000,
+     advanceInr: 55_000,
+     totalClasses: 30,
+@@ -86,17 +86,29 @@ export const coursePrograms: CourseProgram[] = [
+     totalHours: 60,
+     weeksLabel: "about 15 weeks",
+     tools:
+-      "Google Sheets, AppSheet, Apps Script, and Google Sites. The Site is the page you open. The sheet stays the record.",
++      "Choose the technology for your business. We confirm the platform and what can be built in the requirement meeting. Google Sheets, AppSheet, Apps Script, and Google Sites are options where they fit your workflow.",
+     classRhythm:
+-      "First a requirement meeting, on your work. Then 30 classes. Most of the hour is building on your files. The last part teaches the method only if you want to change it yourself later.",
++      "Start with your organization chart and the way work moves through your business. Across 30 practical sessions, we build the agreed systems on your data and train your team to operate them, follow the process, and understand how the system works.",
+     bookFirst: true,
+     terms: [
+       "Book a requirement meeting first. Enroll after you are sure this is the system you want.",
++      "₹1,10,000 includes customised system development and team training within the agreed scope.",
++      "Need a customised system? We start with your organization chart and map the agreed workflows through employee exit.",
++      "The technology, deliverables, and team training requirements are agreed at the requirement meeting before enrolment.",
+       ...sharedTerms,
+-      "Scope is Sales, Operations or production, Inventory, and Dispatch for one company. A second company is a new quote.",
++      "The agreed scope is for one company. A second company is a new quote.",
+       "You bring access, a person who does the work, and real orders. If that is late, the dates move.",
+     ],
+     areas: [
++      {
++        id: "organization",
++        title: "Organization chart & responsibilities",
++        summary: "Start with the people, roles, and reporting structure behind the work.",
++        pointers: [
++          "Map who owns each process and who makes the decisions.",
++          "Use the organization chart to define the workflows in your agreed scope.",
++        ],
++      },
+       {
+         id: "sales",
+         title: "Sales",
+@@ -117,7 +129,7 @@ export const coursePrograms: CourseProgram[] = [
+           "A job or batch has a plan, an actual, and the delay in hours or days.",
+           "Each step has one person, not a department.",
+           "Waiting on material, a machine, or a decision is visible.",
+-          "Staff update from the phone. The sheet stays the record.",
++          "Staff update the work in the agreed system, keeping a shared record.",
+           "A late step alerts that person. The customer is not messaged.",
+         ],
+       },
+@@ -142,7 +154,17 @@ export const coursePrograms: CourseProgram[] = [
+           "Challan, vehicle, and what actually went out.",
+           "What the customer is still waiting for, with a name on it.",
+           "A late dispatch is a miss, including one that was completed late.",
+-          "You open one Site and see dispatch gaps next to sales, production, and stock.",
++          "See dispatch gaps alongside sales, production, and stock in the agreed system.",
++        ],
++      },
++      {
++        id: "people-exit",
++        title: "Team onboarding, handover & exit",
++        summary: "Carry the process through the employee lifecycle, within the agreed scope.",
++        pointers: [
++          "Define the joining and role handover steps your team needs.",
++          "Map exit responsibilities, work handover, and access changes.",
++          "Train the team to follow the agreed process in the system we build.",
+         ],
+       },
+     ],
+@@ -168,6 +190,7 @@ export const coursePrograms: CourseProgram[] = [
+       "About 15 minutes on the skill, about 60 minutes making it yourself, and about 15 minutes on how to do the same job faster next time.",
+     terms: [
+       ...sharedTerms,
++      "One seat, one person.",
+       "Scope is these 20 classes and the four builds: FMS, IMS, PMS, and checklist. A full company system for your employer is the Business Owners course, or a separate project.",
+       "You bring a Google account you can put a practice file in. AI drafts. You test on a copy before anything goes live.",
+     ],
+diff --git a/src/lib/site-assistant/knowledge.ts b/src/lib/site-assistant/knowledge.ts
+index 8273a01..d5eed9d 100644
+--- a/src/lib/site-assistant/knowledge.ts
++++ b/src/lib/site-assistant/knowledge.ts
+@@ -38,9 +38,9 @@ WORKSPACE vs MARKETING:
+ 
+ COURSES:
+ - Two live 1:1 programs with Shyam Kumar Banjare. Hindi or English. Enroll and pay on /courses (Razorpay). GST extra. 50% confirms the seat; balance before class 1. Cohorts: Monday + Friday, or Tuesday + Saturday.
+-- Business Owners: ₹1,10,000. A ready-to-use system for that client's Sales, Operations or production or manufacturing, Inventory, and Dispatch. Tools: Google Sheets, AppSheet, Apps Script, and Google Sites. 30 classes × 2 hours (8:30–10:30 AM IST). They book a requirement-understanding meeting first. Enroll only after they are sure. Then 50% confirms the seat.
++- Business Owners: ₹1,10,000 includes practical customised system development and team training within the agreed scope. GST extra. 30 classes × 2 hours = 60 hours, about 15 weeks (8:30–10:30 AM IST). The client chooses the technology; platform, deliverables, and team training requirements are agreed at the requirement meeting before enrolment. Start with the organization chart and map agreed workflows through employee exit; scope may cover Sales, Operations, Inventory, Dispatch, onboarding and handover for one company. Do not promise every system or unlimited customisation. 50% (₹55,000) confirms the seat after the meeting; balance before class 1.
+ - Working Professionals: ₹25,000. 20 classes × 1.5 hours (8:30–10:00 AM IST, about 10 weeks). The student builds FMS, IMS, a person-wise deficit (not percent complete), and a checklist in Sheets, AppSheet, and Apps Script, and checks AI before it touches a live file.
+-- Owner confirms the Razorpay receipt, then slots are booked. One seat, one person.
++- Owner confirms the Razorpay receipt, then slots are booked. Working Professionals: one seat, one person. Business Owners includes team training within the agreed scope.
+ - Page: /courses
+ 
+ SHEETOMATIC AI (separate product):

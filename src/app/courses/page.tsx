@@ -5,7 +5,7 @@ import { marketingMetadata } from "@/lib/marketing-metadata";
 export const metadata: Metadata = marketingMetadata({
   title: "Live 1:1 & Recorded Courses",
   description:
-    "Live 1:1 programs for Working Professionals (₹25,000, 20 classes) and Business Owners (₹1,10,000, 30 classes), plus the recorded Google Sheets: Essentials to Pro course on Graphy.",
+    "Business Owners: ₹1,10,000 + GST for system development and team training within the agreed scope. 30 classes, 60 hours. Explore live 1:1 and recorded courses.",
   path: "/courses",
 });
 

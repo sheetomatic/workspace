@@ -1,4 +1,5 @@
-import { Play } from "lucide-react";
+import { ArrowDown, ArrowRight, Check, ChevronDown, Play } from "lucide-react";
+import type { ReactNode } from "react";
 import {
   FinalCta,
   MarketingPage,
@@ -6,7 +7,7 @@ import {
   SiteHeader,
 } from "@/app/components";
 import { coursesPage } from "@/app/courses-content";
-import { coursePrograms } from "@/lib/content/course-programs";
+import { coursePrograms, type CourseProgram } from "@/lib/content/course-programs";
 import {
   COURSE_GOOGLE_CALENDAR_BOOKING_URL,
   courseEnrollmentPriceLabel,
@@ -63,93 +64,198 @@ const upcomingRecordedCourses = [
   },
 ] as const;
 
+function CourseDisclosure({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <details className="courses-disclosure">
+      <summary>
+        <span className="courses-disclosure-copy">
+          <span className="courses-disclosure-title">{title}</span>
+          {description ? <span className="courses-disclosure-description">{description}</span> : null}
+        </span>
+        <span className="courses-disclosure-control" aria-hidden="true">
+          <span className="courses-disclosure-show">View</span>
+          <span className="courses-disclosure-hide">Hide</span>
+          <ChevronDown size={18} />
+        </span>
+      </summary>
+      <div className="courses-disclosure-body">{children}</div>
+    </details>
+  );
+}
+
+function CourseProgramCard({ program }: { program: CourseProgram }) {
+  const isOwner = program.id === "BUSINESS_OWNER";
+  return (
+    <article
+      className={`courses-program-card${isOwner ? " courses-program-card--owner" : ""}`}
+      id={isOwner ? "business-owners" : "working-professionals"}
+      aria-labelledby={`program-${program.id}`}
+    >
+      <div className="courses-program-intro">
+        <p className="courses-program-type">{isOwner ? "For your business & team" : "For your professional growth"}</p>
+        <h3 id={`program-${program.id}`}>{program.name}</h3>
+        <p className="courses-program-tagline">{program.eyebrow}</p>
+        <p className="courses-program-price">
+          {courseEnrollmentPriceLabel(program.priceInr)} <span>+ GST</span>
+        </p>
+        <p className="courses-program-included">
+          <Check size={16} aria-hidden="true" />
+          {isOwner ? "Development cost + team training included" : "Live 1:1 training with Shyam"}
+        </p>
+        {isOwner ? <p className="courses-program-scope-note">Within the scope agreed at your requirement meeting.</p> : null}
+        <p className="courses-program-duration">
+          {program.totalClasses} classes × {program.sessionDurationLabel} · {program.totalHours} hours · {program.weeksLabel}
+        </p>
+        <p className="courses-program-promise">{program.promise}</p>
+        <div className="courses-offer-actions">
+          {program.bookFirst ? (
+            <a className="btn-cta btn-primary btn-block" href={consultationUrl} target="_blank" rel="noopener noreferrer">
+              Book a requirement meeting <ArrowRight size={16} aria-hidden="true" />
+            </a>
+          ) : null}
+          <CoursesEnrollPay
+            programId={program.id}
+            triggerLabel={program.bookFirst ? "Enrol after your requirement meeting" : coursesPage.ctaLabel}
+            triggerClassName={program.bookFirst ? "btn-cta btn-secondary btn-block" : "btn-cta btn-primary btn-block"}
+          />
+        </div>
+        <p className="courses-program-payment">
+          {program.bookFirst ? "After the meeting: " : "To confirm your seat: "}
+          {courseEnrollmentPriceLabel(program.advanceInr)} advance. Balance before class 1. GST extra.
+        </p>
+      </div>
+
+      <div className="courses-program-details" id={isOwner ? "curriculum-owners" : "curriculum-professionals"}>
+        <CourseDisclosure
+          title={isOwner ? "How we build & train" : "How you’ll learn"}
+          description={isOwner ? "Your workflow. Your chosen technology." : "Practical builds, with a mentor alongside."}
+        >
+          <p>{program.classRhythm}</p>
+          <h4>{isOwner ? "You choose the technology. We build the system." : "Tools you’ll use"}</h4>
+          <p>{program.tools}</p>
+          {isOwner ? (
+            <ol className="courses-build-steps">
+              <li><strong>Map the work</strong><span>Discuss your organization chart, processes, and agreed deliverables.</span></li>
+              <li><strong>Build the system</strong><span>Turn the agreed workflows into working systems on your business data.</span></li>
+              <li><strong>Train your team</strong><span>Show your team how to use the system, follow the workflow, and understand how it works.</span></li>
+            </ol>
+          ) : null}
+        </CourseDisclosure>
+
+        {program.areas ? (
+          <CourseDisclosure title="From organization chart to exit" description="Explore the areas we can scope for your business.">
+            <p>Need a customised system? We start with your organization chart and map the workflows through employee exit. The areas and deliverables for your company are agreed before enrolment.</p>
+            <div className="courses-scope-list">
+              {program.areas.map((area, index) => (
+                <section className="courses-scope-item" key={area.id}>
+                  <span className="courses-scope-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+                  <div>
+                    <h4>{area.title}</h4>
+                    <p>{area.summary}</p>
+                    <ul>{area.pointers.map((pointer) => <li key={pointer}>{pointer}</li>)}</ul>
+                  </div>
+                </section>
+              ))}
+            </div>
+          </CourseDisclosure>
+        ) : null}
+
+        {program.phases.length > 0 ? (
+          <CourseDisclosure title={`Explore the ${program.totalClasses}-class curriculum`} description="FMS, inventory, checklists, apps & dashboards.">
+            <div className="courses-curriculum-stack">
+              {program.phases.map((phase) => (
+                <section className="courses-curriculum-phase" key={phase.id}>
+                  <p className="courses-phase-range">{phase.range}</p>
+                  <h4>{phase.label}</h4>
+                  <p>{phase.summary}</p>
+                  <ol className="courses-lesson-list" start={phase.classes[0]?.number}>
+                    {phase.classes.map((lesson) => (
+                      <li key={lesson.number}>
+                        <strong>{lesson.title}</strong>
+                        <span>{lesson.outcome}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+              ))}
+            </div>
+          </CourseDisclosure>
+        ) : null}
+
+        <CourseDisclosure title="Schedule, payment & terms" description="Session timings, advance payment and agreed scope.">
+          <div className="courses-schedule-note">
+            <strong>{program.totalClasses} classes × {program.sessionDurationLabel} · {program.totalHours} hours · {program.weeksLabel}</strong>
+            <span>Monday + Friday, or Tuesday + Saturday</span>
+            <span>{program.sessionTimeLabel}</span>
+          </div>
+          <ul className="courses-terms-list">{program.terms.map((term) => <li key={term}>{term}</li>)}</ul>
+        </CourseDisclosure>
+      </div>
+    </article>
+  );
+}
+
 export function CoursesPageContent() {
   return (
     <MarketingPage>
       <SiteHeader />
 
-      <section className="courses-hero">
-        <div className="courses-hero-inner mx-auto max-w-7xl px-5 sm:px-8">
-          <div className="courses-hero-copy">
+      <section className="courses-catalog-hero">
+        <div className="courses-catalog-hero-inner mx-auto max-w-7xl px-5 sm:px-8">
+          <div className="courses-catalog-hero-copy">
             <p className="type-kicker text-sky-700">{coursesPage.eyebrow}</p>
-            <h1 className="minimal-hero-title">{coursesPage.title}</h1>
-            <p className="minimal-hero-lead">{coursesPage.lead}</p>
+            <h1>{coursesPage.title}</h1>
+            <p className="courses-catalog-lead">{coursesPage.lead}</p>
             <div className="courses-hero-actions">
               <a className="btn-cta btn-primary" href="#programs">
-                Explore live 1:1 programs
+                Explore live programmes <ArrowDown size={16} aria-hidden="true" />
               </a>
-              <a className="btn-cta btn-secondary" href="#recorded-courses">
-                Browse recorded courses
-              </a>
-              <a
-                className="btn-cta btn-secondary"
-                href={COURSE_GOOGLE_CALENDAR_BOOKING_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Book slots
-              </a>
-              <Link className="btn-cta btn-secondary" href="/courses/book-slots">
-                Booking page
-              </Link>
-              <Link className="btn-cta btn-secondary" href="/learn/login">
-                Student login
-              </Link>
-              <Link className="btn-cta btn-secondary" href={WORKSPACE_LOGIN_HREF}>
-                {coursesPage.ctaSecondaryLabel}
-              </Link>
+              <a className="btn-cta btn-secondary" href="#recorded-courses">Browse recorded courses</a>
             </div>
-            <p className="courses-instructor">{coursesPage.instructorNote}</p>
+            <p className="courses-instructor">{coursesPage.instructorNote} · Hindi or English</p>
           </div>
-
-          <aside className="courses-offer-grid" id="programs" aria-label="Live 1:1 programs">
-            {coursePrograms.map((program) => (
-              <article className="courses-offer" key={program.id} id={program.id === "BUSINESS_OWNER" ? "business-owners" : "working-professionals"}>
-                <p className="courses-phase-range">Live 1:1 · {program.eyebrow}</p>
-                <h2>{program.name}</h2>
-                <p className="courses-offer-price">
-                  {courseEnrollmentPriceLabel(program.priceInr)}
-                  <span> GST extra</span>
-                </p>
-                <p>
-                  {program.totalClasses} classes × {program.sessionDurationLabel} ·{" "}
-                  {program.totalHours} hours · {program.weeksLabel}
-                </p>
-                <p>
-                  Mon + Fri or Tue + Sat · {program.sessionTimeLabel}
-                </p>
-                <p>{program.promise}</p>
-                <p className="courses-offer-pay">
-                  {program.bookFirst
-                    ? `Book the requirement meeting first. After you are sure, pay ${courseEnrollmentPriceLabel(program.advanceInr)} to confirm the seat.`
-                    : `Pay ${courseEnrollmentPriceLabel(program.advanceInr)} now. Balance before class 1.`}
-                </p>
-                <div className="courses-offer-actions">
-                  {program.bookFirst ? (
-                    <a
-                      className="btn-cta btn-primary btn-block"
-                      href={consultationUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Book a requirement meeting
-                    </a>
-                  ) : null}
-                  <CoursesEnrollPay
-                    programId={program.id}
-                    triggerLabel={
-                      program.bookFirst ? "Enroll once you are sure" : coursesPage.ctaLabel
-                    }
-                    triggerClassName={
-                      program.bookFirst
-                        ? "btn-cta btn-secondary btn-block"
-                        : "btn-cta btn-primary btn-block"
-                    }
-                  />
-                </div>
-              </article>
-            ))}
+          <aside className="courses-build-preview" aria-label="Business Owners programme approach">
+            <p className="courses-preview-eyebrow">The Business Owners programme</p>
+            <h2>Your business.<br />A system built around it.</h2>
+            <p className="courses-preview-lead">Practical system building, with training for your team.</p>
+            <ol className="courses-preview-path">
+              <li><span aria-hidden="true">01</span><div><strong>Your organization chart</strong><p>Start with people, roles and workflows.</p></div></li>
+              <li><span aria-hidden="true">02</span><div><strong>Your chosen technology</strong><p>We build the systems in your agreed scope.</p></div></li>
+              <li><span aria-hidden="true">03</span><div><strong>Your team, ready to use it</strong><p>Practical training on the systems we build.</p></div></li>
+            </ol>
+            <a href="#business-owners" className="courses-preview-link">Explore the programme <ArrowRight size={16} aria-hidden="true" /></a>
           </aside>
+        </div>
+      </section>
+
+      <nav className="courses-resource-nav" aria-label="Course booking and student access">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8">
+          <span>Already learning with us?</span>
+          <a href={COURSE_GOOGLE_CALENDAR_BOOKING_URL} target="_blank" rel="noopener noreferrer">Book slots <ArrowRight size={14} aria-hidden="true" /></a>
+          <Link href="/courses/book-slots">Booking page</Link>
+          <Link href="/learn/login">Student login</Link>
+          <Link href={WORKSPACE_LOGIN_HREF}>{coursesPage.ctaSecondaryLabel}</Link>
+        </div>
+      </nav>
+
+      <section className="courses-program-section" id="programs" aria-labelledby="courses-programs-title">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8">
+          <div className="courses-section-head">
+            <p className="type-kicker text-sky-700">Live programmes with Shyam</p>
+            <h2 className="minimal-section-title mt-2" id="courses-programs-title">Choose what you want to build.</h2>
+            <p className="minimal-section-lead">A system for your business, or the skills to build one yourself. Open any section below to explore the details, then close it when you’re done.</p>
+          </div>
+          <div className="courses-program-grid">
+            {coursePrograms.map((program) => <CourseProgramCard key={program.id} program={program} />)}
+          </div>
         </div>
       </section>
 
@@ -182,131 +288,23 @@ export function CoursesPageContent() {
               </a>
             </div>
           </article>
-          <div className="courses-section-head courses-recorded-upcoming" id="course-focus">
-            <p className="type-kicker text-sky-700">Recorded course collection</p>
-            <h3 className="minimal-section-title mt-2">Build the skill one practical course at a time.</h3>
-            <p className="minimal-section-lead">
-              These recorded courses are in production now. Each will be marked
-              available here as soon as it is ready.
-            </p>
-          </div>
-          <div className="courses-area-grid">
-            {upcomingRecordedCourses.map((course) => (
-              <article className="courses-area" key={course.title}>
-                <p className="courses-phase-range">{course.category}</p>
-                <h4>{course.title}</h4>
-                <p>{course.description}</p>
-                <span className="courses-coming-soon">Coming soon</span>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {coursePrograms.map((program) => (
-        <section
-          className="minimal-strip soft-section pb-16"
-          id={program.id === "BUSINESS_OWNER" ? "curriculum-owners" : "curriculum-professionals"}
-          key={program.id}
-        >
-          <div className="mx-auto max-w-7xl px-5 sm:px-8">
-            <div className="courses-section-head">
-              <p className="type-kicker text-sky-700">{program.name}</p>
-              <h2 className="minimal-section-title mt-2">
-                {program.areas
-                  ? "What the system covers"
-                  : `${program.totalClasses} classes · ${program.totalHours} hours`}
-              </h2>
-              <p className="minimal-section-lead">{program.classRhythm}</p>
-              <p className="minimal-section-lead">{program.tools}</p>
-            </div>
-            <ul className="courses-format-list">
-              {program.terms.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-            {program.areas ? (
+          <div className="courses-recorded-upcoming" id="course-focus">
+            <CourseDisclosure title={`Coming next: ${upcomingRecordedCourses.length} recorded courses`} description="Explore the courses currently in production.">
+              <p>Each course will be marked available here as soon as it is ready.</p>
               <div className="courses-area-grid">
-                {program.areas.map((area) => (
-                  <article className="courses-area" key={area.id}>
-                    <h3>{area.title}</h3>
-                    <p>{area.summary}</p>
-                    <ul>
-                      {area.pointers.map((pointer) => (
-                        <li key={pointer}>{pointer}</li>
-                      ))}
-                    </ul>
+                {upcomingRecordedCourses.map((course) => (
+                  <article className="courses-area" key={course.title}>
+                    <p className="courses-phase-range">{course.category}</p>
+                    <h4>{course.title}</h4>
+                    <p>{course.description}</p>
+                    <span className="courses-coming-soon">Coming soon</span>
                   </article>
                 ))}
               </div>
-            ) : null}
-            {program.phases.length > 0 ? (
-              <div className="courses-phase-stack">
-                {program.phases.map((phase) => (
-                  <section className="courses-phase" key={phase.id}>
-                    <header className="courses-phase-head">
-                      <p className="courses-phase-range">{phase.range}</p>
-                      <h3>{phase.label}</h3>
-                      <p>{phase.summary}</p>
-                    </header>
-                    <div className="courses-class-grid">
-                      {phase.classes.map((item) => (
-                        <article className="courses-class-card" key={item.number}>
-                          <p className="courses-class-num">
-                            Class {String(item.number).padStart(2, "0")}
-                          </p>
-                          <h4>{item.title}</h4>
-                          <ul>
-                            <li>{item.outcome}</li>
-                          </ul>
-                        </article>
-                      ))}
-                    </div>
-                  </section>
-                ))}
-              </div>
-            ) : null}
-            <div className="courses-enroll-band">
-              <div>
-                <p className="type-kicker text-sky-700">
-                  {program.bookFirst ? "First, the meeting" : "Enroll"}
-                </p>
-                <h3>
-                  {program.bookFirst
-                    ? "Requirement meeting, then the seat"
-                    : `${courseEnrollmentPriceLabel(program.priceInr)} · ${program.totalHours} hours live 1:1`}
-                </h3>
-                <p>
-                  {program.bookFirst
-                    ? `We go through Sales, Operations, Inventory, and Dispatch on your work. When you are sure, pay ${courseEnrollmentPriceLabel(program.advanceInr)}. GST extra. Balance before class 1. ${program.totalClasses} classes × ${program.sessionDurationLabel}, ${program.sessionTimeLabel}.`
-                    : `Pay ${courseEnrollmentPriceLabel(program.advanceInr)} now. GST extra. Balance before class 1. ${program.sessionTimeLabel}.`}
-                </p>
-              </div>
-              <div className="courses-offer-actions">
-                {program.bookFirst ? (
-                  <a
-                    className="btn-cta btn-primary"
-                    href={consultationUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Book a requirement meeting
-                  </a>
-                ) : null}
-                <CoursesEnrollPay
-                  programId={program.id}
-                  triggerLabel={
-                    program.bookFirst ? "Enroll once you are sure" : coursesPage.ctaLabel
-                  }
-                  triggerClassName={
-                    program.bookFirst ? "btn-cta btn-secondary" : "btn-cta btn-primary"
-                  }
-                />
-              </div>
-            </div>
+            </CourseDisclosure>
           </div>
-        </section>
-      ))}
+        </div>
+      </section>
 
       <section className="minimal-strip bg-white pb-16" id="watch">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
@@ -343,31 +341,33 @@ export function CoursesPageContent() {
             <h2 className="minimal-section-title mt-2">{coursesPage.libraryTitle}</h2>
             <p className="minimal-section-lead">{coursesPage.libraryLead}</p>
           </div>
-          <div className="courses-thumb-grid">
-            {coursesLibraryVideos.map((video) => (
-              <a
-                className="courses-thumb-card"
-                href={youtubeWatchUrl(video.youtubeId)}
-                key={video.youtubeId}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                <span className="courses-thumb-media">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    alt=""
-                    loading="lazy"
-                    src={youtubeThumbUrl(video.youtubeId)}
-                  />
-                  <span className="courses-thumb-play" aria-hidden>
-                    <Play size={18} fill="currentColor" strokeWidth={0} />
+          <CourseDisclosure title="Browse the video library" description={`${coursesLibraryVideos.length} practical lessons from the Sheetomatic channel.`}>
+            <div className="courses-thumb-grid">
+              {coursesLibraryVideos.map((video) => (
+                <a
+                  className="courses-thumb-card"
+                  href={youtubeWatchUrl(video.youtubeId)}
+                  key={video.youtubeId}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  <span className="courses-thumb-media">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      alt=""
+                      loading="lazy"
+                      src={youtubeThumbUrl(video.youtubeId)}
+                    />
+                    <span className="courses-thumb-play" aria-hidden>
+                      <Play size={18} fill="currentColor" strokeWidth={0} />
+                    </span>
                   </span>
-                </span>
-                <span className="courses-thumb-tag">{video.category}</span>
-                <strong>{video.title}</strong>
-              </a>
-            ))}
-          </div>
+                  <span className="courses-thumb-tag">{video.category}</span>
+                  <strong>{video.title}</strong>
+                </a>
+              ))}
+            </div>
+          </CourseDisclosure>
           <div className="courses-free-cta">
             <a
               className="btn-cta btn-youtube"

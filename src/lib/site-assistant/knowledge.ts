@@ -38,9 +38,9 @@ WORKSPACE vs MARKETING:
 
 COURSES:
 - Two live 1:1 programs with Shyam Kumar Banjare. Hindi or English. Enroll and pay on /courses (Razorpay). GST extra. 50% confirms the seat; balance before class 1. Cohorts: Monday + Friday, or Tuesday + Saturday.
-- Business Owners: ₹1,10,000. A ready-to-use system for that client's Sales, Operations or production or manufacturing, Inventory, and Dispatch. Tools: Google Sheets, AppSheet, Apps Script, and Google Sites. 30 classes × 2 hours (8:30–10:30 AM IST). They book a requirement-understanding meeting first. Enroll only after they are sure. Then 50% confirms the seat.
+- Business Owners: ₹1,10,000 includes practical customised system development and team training within the agreed scope. GST extra. 30 classes × 2 hours = 60 hours, about 15 weeks (8:30–10:30 AM IST). The client chooses the technology; platform, deliverables, and team training requirements are agreed at the requirement meeting before enrolment. Start with the organization chart and map agreed workflows through employee exit; scope may cover Sales, Operations, Inventory, Dispatch, onboarding and handover for one company. Do not promise every system or unlimited customisation. 50% (₹55,000) confirms the seat after the meeting; balance before class 1.
 - Working Professionals: ₹25,000. 20 classes × 1.5 hours (8:30–10:00 AM IST, about 10 weeks). The student builds FMS, IMS, a person-wise deficit (not percent complete), and a checklist in Sheets, AppSheet, and Apps Script, and checks AI before it touches a live file.
-- Owner confirms the Razorpay receipt, then slots are booked. One seat, one person.
+- Owner confirms the Razorpay receipt, then slots are booked. Working Professionals: one seat, one person. Business Owners includes team training within the agreed scope.
 - Page: /courses
 
 SHEETOMATIC AI (separate product):
