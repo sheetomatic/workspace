@@ -1,12 +1,37 @@
 /* Extends the existing marketing pricing cards, typography, and button system. */
 .business-pricing-page { --em-muted: #475569; }
-.business-pricing-page .em-pricing-hero { padding-block: clamp(2.5rem, 6vw, 4rem) 2rem; }
-.business-pricing-page .em-pricing-hero h1 {
+.business-pricing-page .em-pricing-hero.business-pricing-hero {
+  padding-block: clamp(2.5rem, 6vw, 4rem) 2rem;
+  background-color: var(--em-navy);
+  background-image: radial-gradient(circle at 12% 0%, rgba(37, 99, 235, 0.24), transparent 45%);
+  text-align: center;
+}
+.business-pricing-page .business-pricing-hero > div { display: block; }
+.business-pricing-page .business-pricing-hero .em-pricing-hero-inner {
+  display: block;
+  width: 100%;
+  max-width: 58rem;
+  margin-inline: auto;
+  text-align: center;
+}
+.business-pricing-page .business-pricing-hero .em-pricing-hero-inner h1 {
+  width: auto;
   max-width: 48rem;
   margin-inline: auto;
   font-size: clamp(2rem, 4.4vw, 3.3rem);
   line-height: 1.15;
   text-wrap: balance;
+  color: #ffffff;
+}
+.business-pricing-page .business-pricing-hero .em-pricing-kicker { color: #93c5fd; }
+.business-pricing-page .business-pricing-hero .em-pricing-lead {
+  max-width: 48rem;
+  margin: 1.25rem auto 0;
+  color: #cbd5e1;
+}
+.business-pricing-page .business-pricing-hero .business-common-benefits { color: #ffffff; }
+.business-pricing-page .business-pricing-hero .business-common-benefits svg {
+  color: #93c5fd;
 }
 .business-monthly-promise {
   display: inline-block;

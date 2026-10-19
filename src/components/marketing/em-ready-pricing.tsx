@@ -64,7 +64,7 @@ function PlanCard({ plan }: { plan: BusinessSystemPlan }) {
 export function EmReadyPricing() {
   return (
     <div className="em-pricing-page business-pricing-page">
-      <section className="em-pricing-hero">
+      <section className="em-pricing-hero business-pricing-hero">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
           <div className="em-pricing-hero-inner">
             <p className="em-pricing-kicker">Business Systems Suite</p>
