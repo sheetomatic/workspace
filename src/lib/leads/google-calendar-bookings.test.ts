@@ -49,6 +49,7 @@ describe("booking normalization and Calendar transport", () => {
     const [url, options] = request.mock.calls[0] as unknown as [URL, RequestInit];
     expect(url.origin).toBe("https://www.googleapis.com"); expect(url.searchParams.get("syncToken")).toBe("sync");
     expect(url.searchParams.get("showDeleted")).toBe("true"); expect(url.searchParams.has("timeMin")).toBe(false);
+    expect(url.searchParams.get("fields")).toContain("description");
     expect(options.method).toBe("GET"); expect(options.signal).toBeDefined(); expect(options.redirect).toBe("error");
   });
   it("reports expired sync tokens and permission failures without copying provider bodies", async () => {

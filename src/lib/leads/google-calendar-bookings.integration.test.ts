@@ -49,6 +49,20 @@ describe.skipIf(!local)("Calendar bookings → actual CRM records and counts (lo
     expect(rows[0].scheduledAt.toISOString()).toBe("2026-10-21T00:00:00.000Z");
     expect((await getCrmMeetingsStats(orgId)).today).toBe(0);
   });
+  it("persists phone-based named bookings and exposes customer details in CRM without creating leads", async () => {
+    const named = { ...base, summary: "Bhaskar | Business consultation", attendees: undefined,
+      description: "Customer name: Bhaskar\nCustomer phone: +91 98765 43210\nRequirement Notes: WhatsApp task assignment\nLocation: Video call" };
+    await syncCalendarBookings(config, page([named])); await syncCalendarBookings(config, page([named]));
+    const rows = await listCrmMeetings(orgId);
+    expect(rows).toHaveLength(1); expect(rows[0].lead.name).toBe("Bhaskar");
+    expect(rows[0].lead.phone).toBe("+919876543210"); expect(rows[0].notes).toContain("Requirement: WhatsApp task assignment");
+    expect((await getCrmModuleNavCounts(orgId)).meetings).toBe(1);
+    expect(await prisma.inboundLead.count({ where: { organizationId: orgId } })).toBe(0);
+    await syncCalendarBookings(config, page([{ ...named, updated: "2026-10-20T05:00:00Z", description: "Customer name: Bhaskar\nCustomer phone: +91 98765 43210" }]));
+    expect((await listCrmMeetings(orgId))[0].notes).not.toContain("task assignment");
+    await syncCalendarBookings(config, page([{ id: named.id, status: "cancelled" }]));
+    expect((await getCrmModuleNavCounts(orgId)).meetings).toBe(0);
+  });
   it("handles minimal cancellation tombstones, removes active counts, and ignores older updates", async () => {
     await syncCalendarBookings(config, page([base]));
     await syncCalendarBookings(config, page([{ id: base.id, status: "cancelled", updated: "2026-10-20T05:00:00Z" }]));

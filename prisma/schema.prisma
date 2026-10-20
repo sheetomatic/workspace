@@ -3331,6 +3331,8 @@ model GoogleCalendarBooking {
   summary           String
   attendeeName      String?
   attendeeEmail     String?
+  attendeePhone     String?
+  bookingNotes      String?
   startsAt          DateTime
   endsAt            DateTime
   sourceTimeZone    String?

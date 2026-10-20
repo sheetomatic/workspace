@@ -3,9 +3,10 @@ import { createHash, randomUUID } from "node:crypto";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { PRIMARY_ORG_SLUG } from "@/lib/platform";
+import { matchesBookingTitle, parseCalendarBookingDescription } from "./calendar-booking-description";
 
 export type CalendarEvent = {
-  id?: string; status?: string; summary?: string; updated?: string;
+  id?: string; status?: string; summary?: string; updated?: string; description?: string;
   start?: { dateTime?: string; timeZone?: string; date?: string };
   end?: { dateTime?: string; timeZone?: string; date?: string };
   attendees?: Array<{ email?: string; displayName?: string; organizer?: boolean; self?: boolean; resource?: boolean; responseStatus?: string }>;
@@ -42,19 +43,22 @@ function instant(value: string | undefined) {
 }
 
 export function normalizeBooking(event: CalendarEvent, titles: string[]) {
-  if (!event.id || !event.summary || !titles.includes(event.summary.trim()) || event.status === "cancelled") return null;
+  const details = parseCalendarBookingDescription(event.description);
+  if (!event.id || !event.summary || !matchesBookingTitle(event.summary, titles, details.customerName) || event.status === "cancelled") return null;
   const startsAt = instant(event.start?.dateTime), endsAt = instant(event.end?.dateTime);
   if (!startsAt || !endsAt || endsAt <= startsAt) return null;
   const attendees = event.attendees?.filter(a => a.email && !a.organizer && !a.self && !a.resource &&
     a.email.toLowerCase() !== event.organizer?.email?.toLowerCase()) ?? [];
-  if (!attendees.length) return null; // availability blocks and personal appointments are not bookings
+  if (!attendees.length && !(details.customerName && details.customerPhone)) return null;
   const attendee = attendees.find(a => a.responseStatus !== "declined") ?? attendees[0];
   return {
     eventId: event.id, summary: event.summary.trim().slice(0, 200), startsAt, endsAt,
-    attendeeName: attendee.displayName?.slice(0, 160) ?? null,
-    attendeeEmail: attendee.email!.trim().toLowerCase().slice(0, 254),
+    attendeeName: details.customerName ?? attendee?.displayName?.slice(0, 160) ?? null,
+    attendeeEmail: attendee?.email?.trim().toLowerCase().slice(0, 254) ?? null,
+    attendeePhone: details.customerPhone,
+    bookingNotes: details.notes,
     sourceTimeZone: event.start?.timeZone?.slice(0, 100) ?? null,
-    status: attendees.every(a => a.responseStatus === "declined") ? "CANCELLED" : "CONFIRMED",
+    status: attendees.length && attendees.every(a => a.responseStatus === "declined") ? "CANCELLED" : "CONFIRMED",
     providerUpdatedAt: instant(event.updated),
     calendarUrl: safeGoogleLink(event.htmlLink, "calendar.google.com"),
     meetUrl: safeGoogleLink(event.hangoutLink, "meet.google.com"),
@@ -70,7 +74,7 @@ export async function readCalendarPage(config: BookingSyncConfig, cursor: { sync
   // No timeMin/orderBy/q with incremental sync. The identical filter set is used on all pages.
   url.searchParams.set("showDeleted", "true"); url.searchParams.set("singleEvents", "true");
   url.searchParams.set("maxResults", "100");
-  url.searchParams.set("fields", "items(id,status,summary,updated,start,end,attendees(email,displayName,organizer,self,resource,responseStatus),organizer(email),htmlLink,hangoutLink),nextPageToken,nextSyncToken");
+  url.searchParams.set("fields", "items(id,status,summary,description,updated,start,end,attendees(email,displayName,organizer,self,resource,responseStatus),organizer(email),htmlLink,hangoutLink),nextPageToken,nextSyncToken");
   if (cursor.syncToken) url.searchParams.set("syncToken", cursor.syncToken);
   if (cursor.pageToken) url.searchParams.set("pageToken", cursor.pageToken);
   // Uses an already-authorized token only: no OAuth grants, new scopes, or Calendar writes.
@@ -115,7 +119,7 @@ export async function syncCalendarBookings(config = getBookingSyncConfig(), read
   const org = await prisma.organization.findUnique({ where: { id: config.organizationId }, select: { slug: true } });
   if (org?.slug !== PRIMARY_ORG_SLUG) throw new Error("calendar_workspace_not_allowed");
   const id = bookingId(config.organizationId, config.calendarId), leaseId = randomUUID();
-  const filterHash = bookingId(...config.titles);
+  const filterHash = bookingId("booking-description-v2", ...config.titles);
   await prisma.googleCalendarConnection.upsert({ where: { id },
     create: { id, organizationId: config.organizationId, calendarId: config.calendarId, filterHash, fullSyncId: randomUUID() }, update: {} });
   const lock = await prisma.googleCalendarConnection.updateMany({ where: { id,

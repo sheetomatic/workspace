@@ -131,9 +131,9 @@ export async function listCrmMeetings(organizationId: string, take?: number) {
     ...bookings.map(row => ({
       id: row.id, scheduledAt: row.startsAt, completedAt: null, type: "MEETING" as const,
       meetUrl: row.status === "CANCELLED" ? null : row.meetUrl,
-      notes: `${row.summary} · Google Calendar booking${row.sourceTimeZone ? ` · Source timezone: ${row.sourceTimeZone}` : ""}`,
+      notes: `${row.summary} · Google Calendar booking${row.sourceTimeZone ? ` · Source timezone: ${row.sourceTimeZone}` : ""}${row.bookingNotes ? `\n${row.bookingNotes}` : ""}`,
       assignee: null, source: "GOOGLE_CALENDAR" as const, cancelled: row.status === "CANCELLED", calendarUrl: row.calendarUrl,
-      lead: { id: null, name: row.attendeeName || row.attendeeEmail || row.summary, phone: null,
+      lead: { id: null, name: row.attendeeName || row.attendeeEmail || row.summary, phone: row.attendeePhone,
         company: null, status: "DEMO_SCHEDULED" as const, meetingNotes: null },
     })),
   ].sort((a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime());

@@ -55,7 +55,7 @@ Browser evidence for this run: `/tmp/sheetomatic-contact-audit-JKmb8q/results.js
    CRON_SECRET=<secure existing cron secret>
    ```
 
-4. Exact title allowlist plus an external attendee is the booking filter; unmatched/all-day/personal availability events are ignored. Review a real event before setting this filter. Do not configure a broad title shared with unrelated appointments.
+4. Booking matching accepts either an exact configured title or `Customer name | Configured title` when the name agrees with the labelled description. Require an external attendee or explicit customer-name/customer-phone fields. Unmatched/all-day/personal availability events are ignored. Review a real event before setting this filter. Do not configure a broad title shared with unrelated appointments.
 5. After separate deployment approval, regenerate Prisma and apply the reviewed **additive Calendar migration only** to the verified database. Preserve the prior unpublished Template/callback work and live patch chain; do not deploy this entire checkout blindly. Deploy the reviewed delta and five-minute cron `/api/cron/google-calendar-bookings` together. Every call requires the cron bearer secret. Disabled by default; no new-table reads until scoped configuration is enabled.
 6. Validate one authorized real booking, repeat sync, reschedule and cancellation in authenticated CRM. Check the last-complete-sync notice and count changes in IST. No reminders should be sent for imports. This final live check is still required.
 7. Separately materialize the exact icon, inspect it, derive favicon/Apple/PWA sizes, update references/cache versions, then verify head links, shortcut icons and manifest pixels on desktop/mobile. This branding step is not yet implemented.
@@ -71,3 +71,17 @@ git diff --check
 ```
 
 Integration tests are guarded to that exact local DB and clean up only their own fixtures. The browser audit requires a running local application and rejects non-loopback targets. To reproduce with another Chromium installation, adjust `CONTACT_AUDIT_BROWSER`, or omit it when Playwright's browser is installed.
+
+## Follow-on: actual booking format and deployment gate (20 October 2026)
+
+The user subsequently authorized wiring and deployment, but selected **an existing Calendar-authorized integration**, not a new Google consent flow. No OAuth scopes/grants have been added.
+
+- Verified Vercel access to project `sheetomatic-redesign` / `prj_E2G99Y1UGVVQ7SXqmJQfVKjzy2yt`, team `team_3GV54WqCCioFnx8Bk9We6lKi`. Production remains `dpl_9agEkCTH1dEXa52m1yuGVeN5UAvf`.
+- Project environment metadata includes Google sign-in credentials and a Sheets service-account binding, but no Calendar binding. Managed environment exposes Vercel and Meta credentials only; no callable Google Calendar connector is available. These checks do not establish Calendar authorization. No production secret values were printed or copied.
+- Added parsing for the screenshot's `Bhaskar | Requirement Understanding Session` format, including bookings with no attendee email. Imports labelled customer name/phone, requirement and location; excludes the business phone and business chat URL. HTML is reduced to text, never rendered raw. Existing manual CRM records remain untouched.
+- The configured title for that example is `Requirement Understanding Session`, not a hard-coded customer name. The name prefix must agree with the description. Booking parsing version is part of the sync filter hash so existing mirrors receive a complete reconciliation after this update.
+- Additive migration `20261020060000_google_calendar_booking_details` adds nullable `attendeePhone` and `bookingNotes`. Applied to the isolated local fixture DB only. Production deployment needs both Calendar migrations after target review.
+- New tests exercise phone-only named bookings, HTML descriptions, wrong/free-slot titles, missing/invalid customer phone, business/customer number separation, guest declines, persistence, duplicate counts, updated notes and cancellation. Targeted suite: **31 tests passed**; scoped TypeScript and ESLint passed.
+- Combined regression run after this update: **84 tests in 12 files passed**, including the unchanged Template/callback tests. Prisma schema validation passed with local fixture URLs; no production migration was run.
+- Deployment is held until the existing Calendar-authorized integration is identified and readable. Saying “Google Calendar” identifies the service, not a usable integration credential/connection. A connection settings link or accessible connection ID is still needed. The user requested wiring **before** deployment, so no disconnected/disabled release was published.
+- The existing live build reconstructs earlier Courses/pricing/template patches from pinned source. Any eventual deployment must preserve that chain and exclude unpublished Template/callback changes outside the approved scope. No current release scripts have been executed.
