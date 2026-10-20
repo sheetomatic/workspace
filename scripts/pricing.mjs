@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 
-const revision = "ba5e4d7bae6fea1528ca27f43cd6a23736d43faf";
+const revision = "66306d6ff0b29d00c414c8f35b0692ee9fdfb074";
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const files = [
   {
@@ -14,12 +14,12 @@ const files = [
   {
     path: "src/components/marketing/em-ready-pricing.tsx",
     before: "97e3edb9fb6bb4e02eebb9d4b1f615e094e6ad01da72383fe20804a821df5860",
-    after: "6a7a29c61e26f3e655bf8addacab24c2554a2a28db099e74a9ce6e5df148c7c3",
+    after: "b5ddf5f4a880184479829a0a1d6e67621002d70def0e0f1f77000b0e8692d091",
   },
   {
     path: "src/lib/content/business-systems-pricing.ts",
     before: "0ef6cf688133159862d85e9b196cf732f653cc5bd83e8cb4c3a7707014d31133",
-    after: "e2a0f9a2eb3ebb9d0dce463622e010747054d485c8e7c30ef436bae0193421fa",
+    after: "576e57c989acf04cd5b53560d06decf617be9157399d5dd2b1bcae9d302c69ca",
   },
 ];
 
@@ -60,8 +60,13 @@ const replacements = await Promise.all(files.map(async (file) => {
 for (const file of replacements) await writeFile(file.path, file.bytes);
 await writeFile("src/lib/content/business-systems-pricing.test.ts", await reviewedFile(
   revision, "src/lib/content/business-systems-pricing.test.ts",
-  "56b2b66586ea3aab1fb73b73fe449302be09546c78fa1a1ced90d5c0deb7dbae",
+  "daac8521cdb71859bf85b2920ec56136577666c704c782aea107bf379f040f18",
 ));
+await writeFile("/tmp/pricing-plan-copy.mjs", await reviewedFile(
+  revision, "scripts/pricing-plan-copy.mjs",
+  "eeb03d38e0820cfc9808c171a091f9459a2563449c152f962114ee395accf25c",
+));
+run(process.execPath, ["/tmp/pricing-plan-copy.mjs"]);
 console.log("Applied pricing-only fix; retained production Courses and client-access updates.");
 run("npx", ["vitest", "run", "src/lib/content/business-systems-pricing.test.ts"]);
 run("npm", ["run", "db:generate"]);
