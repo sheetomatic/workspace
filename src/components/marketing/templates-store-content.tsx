@@ -4,12 +4,10 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { buildWhatsAppUrl } from "@/app/site-content";
 import {
-  CLOUD_SOFTWARES_ANCHOR,
   TEMPLATE_STORE_CATEGORIES,
   templateTypeToCategory,
   type TemplateStoreCategoryId,
 } from "@/lib/templates/categories";
-import type { CloudSoftwareProduct } from "@/lib/templates/cloud-softwares";
 import { GST_STATE_OPTIONS } from "@/lib/leads/gst-invoice";
 import { cartTotals, inr, parseTemplateBuyer } from "@/lib/templates/commerce";
 import "./templates-store.css";
@@ -50,13 +48,11 @@ function freshToken() {
 }
 export function TemplatesStoreContent({
   products,
-  cloudProducts,
   initialCategory = "all",
   checkoutEnabled = false,
   sellerStateCode = "22",
 }: {
   products: PublicTemplateProduct[];
-  cloudProducts: CloudSoftwareProduct[];
   initialCategory?: TemplateStoreCategoryId | "all";
   checkoutEnabled?: boolean;
   sellerStateCode?: string;
@@ -350,7 +346,7 @@ export function TemplatesStoreContent({
         </p>
         <p className="tpl-fine">
           AppSheet / Google subscriptions, setup services and custom development
-          are not included. Hosted Cloud Software plans are sold separately.
+          are not included.
         </p>
       </header>
       <nav className="tpl-cats" aria-label="Template categories">
@@ -425,34 +421,6 @@ export function TemplatesStoreContent({
                 </div>
               </article>
             ))}
-          {(category === "all" || category === "cloud") &&
-            cloudProducts.length > 0 && (
-              <section id={CLOUD_SOFTWARES_ANCHOR}>
-                <h2>Hosted Cloud Software</h2>
-                <p className="tpl-fine">
-                  Separate recurring subscriptions, not part of the one-time
-                  template offer.
-                </p>
-                {cloudProducts.map((p) => (
-                  <article className="tpl-shop-card" id={p.key} key={p.id}>
-                    <div>
-                      <h3>{p.name}</h3>
-                      <p>{p.description}</p>
-                      <p>{inr(p.priceMonthlyInr * 100)} / month + GST</p>
-                      <a
-                        className="tpl-btn"
-                        href={buildWhatsAppUrl(
-                          `I would like details of ${p.name}, the hosted Cloud Software subscription.`,
-                        )}
-                      >
-                        Discuss this subscription
-                      </a>{" "}
-                      <Link href="/pricing">Workspace plans</Link>
-                    </div>
-                  </article>
-                ))}
-              </section>
-            )}
         </section>
         <aside
           className="tpl-checkout"

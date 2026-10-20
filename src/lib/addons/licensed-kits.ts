@@ -31,7 +31,7 @@ export const LICENSED_KIT_CATALOG: LicensedKitDefinition[] = [
     priceMonthlyInr: 999,
     priceAnnualInr: 9990,
     shippable: true,
-    href: "/templates?category=cloud#cloud-softwares",
+    href: "/pricing",
     appHref: "/app/mobile-shop",
   },
   {

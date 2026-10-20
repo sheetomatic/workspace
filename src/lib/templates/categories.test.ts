@@ -14,11 +14,10 @@ import {
 } from "@/lib/templates/cloud-softwares";
 
 describe("templates store categories", () => {
-  it("splits the catalog into Google Sheets Based, AppSheet Based, and Cloud Softwares", () => {
+  it("keeps the template catalog limited to Sheets and AppSheet copies", () => {
     expect(TEMPLATE_STORE_CATEGORIES.map((category) => category.label)).toEqual([
       "Google Sheets Based",
       "AppSheet Based",
-      "Cloud Softwares",
     ]);
     expect(CLOUD_SOFTWARES_CATEGORY_LABEL).toBe("Cloud Softwares");
     expect(templateTypeToCategory("SHEETS")).toBe("sheets");
@@ -26,10 +25,10 @@ describe("templates store categories", () => {
     expect(templateTypeToCategory("APPSHEET")).toBe("appsheet");
   });
 
-  it("maps /addons leftovers to the Cloud Softwares templates URL", () => {
-    expect(parseTemplateCategoryParam("cloud")).toBe("cloud");
+  it("routes legacy hosted-software links to Suite plans", () => {
+    expect(parseTemplateCategoryParam("cloud")).toBe("all");
     expect(parseTemplateCategoryParam("addons")).toBe("all");
-    expect(TEMPLATES_CLOUD_HREF).toBe("/templates?category=cloud#cloud-softwares");
+    expect(TEMPLATES_CLOUD_HREF).toBe("/pricing");
   });
 
   it("lists Mobile Shop Counter as Cloud Softwares, not a Sheet copy", () => {
