@@ -50,9 +50,10 @@ SHEETOMATIC AI (separate product):
 PRICING (Workspace — /pricing):
 - Ready-to-use business systems. We handle the setup. Business Systems Suite is Sheetomatic's public product name.
 - Monthly plans. No yearly commitment. Do not advertise annual offers or two months free for these plans.
-- Starter ₹4,999/month: FMS, Checklists, Task Delegation, EM, MIS Score, PC Jobs.
+- Starter ₹4,999/month: FMS, Checklists, Task Management & Delegation, EM, MIS Score, PC Jobs.
 - Scale ₹6,999/month: everything in Starter plus CRM. Recommended; do not call it Most Popular.
-- Enterprise ₹9,999/month: everything in Scale plus HRMS, IMS / Stock, Task Management, Reports.
+- Enterprise ₹9,999/month: everything in Scale plus HRMS, IMS / Stock, Field Executive Tracking, Conveyance Expenses and Payment Systems.
+- Task Management and Task Delegation are the same feature, included from Starter and inherited by higher plans. Reports are part of every included module, not an Enterprise-only upgrade. Conveyance means travel/conveyance expenses. Confirm field tracking, conveyance and payment setup requirements in the demo; do not invent technical capabilities or payment-processing charges.
 - A 3-day trial is available. Do not describe it as free or say no credit card is required. Trial details are confirmed on enquiry.
 - Setup is included and handled by Sheetomatic. GST is extra. Optional customization and integrations are scoped and quoted separately. /terms/services applies to additional professional services, not subscription or trial terms. Do not invent subscription cancellation or refund terms.
 - Trial and demo CTAs on /pricing open the existing WhatsApp enquiry with the selected plan and monthly price. Opening a link does not activate a trial or subscription.

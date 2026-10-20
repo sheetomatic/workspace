@@ -18,7 +18,16 @@ try {
     const response = await page.goto(`${baseUrl}/pricing`, { waitUntil: "networkidle" });
     assert.equal(response.status(), 200);
     assert.equal(await page.locator(".business-plan-card").count(), 3);
-    assert.equal(await page.locator(".business-comparison-table tbody tr").count(), 11);
+    assert.equal(await page.locator(".business-comparison-table tbody tr").count(), 13);
+    assert.equal(await page.locator(".business-module-reports").count(), 3);
+    for (const feature of ["Task Management & Delegation", "Reports for included modules"]) {
+      const row = page.locator(".business-comparison-table tbody tr").filter({ has: page.getByRole("rowheader", { name: feature, exact: true }) });
+      assert.deepEqual(await row.locator("td .sr-only").allTextContents(), ["Included", "Included", "Included"]);
+    }
+    for (const feature of ["Field Executive Tracking", "Conveyance Expenses", "Payment Systems"]) {
+      const row = page.locator(".business-comparison-table tbody tr").filter({ has: page.getByRole("rowheader", { name: feature, exact: true }) });
+      assert.deepEqual(await row.locator("td .sr-only").allTextContents(), ["Not included", "Not included", "Included"]);
+    }
     for (const [id, price] of [["starter", "₹4,999"], ["scale", "₹6,999"], ["enterprise", "₹9,999"]]) {
       const card = page.locator(`#plan-${id}`);
       assert.equal(await card.locator(".business-plan-price strong").textContent(), price);

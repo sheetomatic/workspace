@@ -9,7 +9,7 @@ export const businessSystemPlans = [
     recommended: false,
     includesLabel: "Business Systems Suite",
     fit: "FMS and Checklists for daily work. IMS / Stock is not included.",
-    features: ["FMS", "Checklists", "Task Delegation", "EM", "MIS Score", "PC Jobs"],
+    features: ["FMS", "Checklists", "Task Management & Delegation", "EM", "MIS Score", "PC Jobs"],
   },
   {
     id: "scale",
@@ -26,20 +26,22 @@ export const businessSystemPlans = [
     monthlyPriceInr: 9_999,
     recommended: false,
     includesLabel: "Everything in Scale, plus",
-    fit: "FMS, IMS / Stock and Checklists together, with all modules listed below.",
-    features: ["HRMS", "IMS / Stock", "Task Management", "Reports"],
+    fit: "FMS, IMS / Stock and Checklists together, plus field operations and payments.",
+    features: ["HRMS", "IMS / Stock", "Field Executive Tracking", "Conveyance Expenses", "Payment Systems"],
   },
 ] as const;
 
 export type BusinessSystemPlan = (typeof businessSystemPlans)[number];
 
 /** Derive the comparison from the cards, including inherited features. */
-export const businessSystemComparison = businessSystemPlans.flatMap((plan, planIndex) =>
+export const businessModuleReportsNote = "Reports are included with every module in your selected plan.";
+
+export const businessSystemComparison = [...businessSystemPlans.flatMap((plan, planIndex) =>
   plan.features.map((feature) => ({
     feature,
     included: businessSystemPlans.map((_, index) => index >= planIndex),
   })),
-);
+), { feature: "Reports for included modules", included: [true, true, true] }];
 
 export const businessPricingFaqs = [
   {
@@ -61,6 +63,14 @@ export const businessPricingFaqs = [
   {
     question: "Are add-ons and extra capacity included?",
     answer: "WhatsApp API and additional storage are optional, separately quoted add-ons. Confirm included users, storage, usage limits and any additional capacity charges for your selected plan before subscribing. Custom requirements are assessed separately.",
+  },
+  {
+    question: "Are Task Delegation, Task Management and Reports separate upgrades?",
+    answer: "Task Management and Task Delegation are the same feature, included from Starter and inherited by Scale and Enterprise. Reports are part of each included module, not a separate Enterprise-only upgrade.",
+  },
+  {
+    question: "What does Enterprise add for field teams?",
+    answer: "Alongside everything in Scale, Enterprise includes HRMS, IMS / Stock, Field Executive Tracking, Conveyance Expenses and Payment Systems. Discuss your field-team workflow, conveyance expense process and payment requirements during the demo to confirm the setup scope.",
   },
 ] as const;
 

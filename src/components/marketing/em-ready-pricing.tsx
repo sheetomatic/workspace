@@ -3,6 +3,7 @@ import { Check, CheckCircle2, Minus } from "lucide-react";
 import {
   businessAddonsEnquiryHref,
   businessPlanEnquiryHref,
+  businessModuleReportsNote,
   businessPricingFaqs,
   businessSystemAddons,
   businessSystemBenefits,
@@ -39,6 +40,7 @@ function PlanCard({ plan }: { plan: BusinessSystemPlan }) {
           <li key={feature}><CheckCircle2 size={18} aria-hidden="true" /><span>{feature}</span></li>
         ))}
       </ul>
+      <p className="business-plan-billing business-module-reports">{businessModuleReportsNote}</p>
       <div className="business-plan-actions">
         <a
           className={marketingButtonClass("primary", "business-plan-trial")}
@@ -109,7 +111,7 @@ export function EmReadyPricing() {
           <section className="business-comparison" aria-labelledby="business-comparison-title">
             <div className="business-section-heading">
               <h2 id="business-comparison-title">Compare what’s included</h2>
-              <p>Each plan builds on the one before it. FMS means Flow Monitoring System; IMS means Inventory Management System.</p>
+              <p>Each plan builds on the one before it. Task Management includes delegation, and reports are part of every included module. FMS means Flow Monitoring System; IMS means Inventory Management System.</p>
             </div>
             <div className="business-comparison-scroll" role="region" aria-label="Plan feature comparison" tabIndex={0}>
               <table className="business-comparison-table">

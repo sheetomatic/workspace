@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   businessAddonsEnquiryHref,
   businessPlanEnquiryHref,
+  businessModuleReportsNote,
   businessPricingFaqs,
   businessSystemAddons,
   businessSystemBenefits,
@@ -20,24 +21,38 @@ describe("Business Systems Suite marketing pricing", () => {
   });
 
   it("preserves the requested inclusions and plan inheritance", () => {
-    expect(businessSystemPlans[0].features).toEqual(["FMS", "Checklists", "Task Delegation", "EM", "MIS Score", "PC Jobs"]);
+    expect(businessSystemPlans[0].features).toEqual(["FMS", "Checklists", "Task Management & Delegation", "EM", "MIS Score", "PC Jobs"]);
     expect(businessSystemPlans[1].includesLabel).toBe("Everything in Starter, plus");
     expect(businessSystemPlans[1].features).toEqual(["CRM"]);
     expect(businessSystemPlans[2].includesLabel).toBe("Everything in Scale, plus");
-    expect(businessSystemPlans[2].features).toEqual(["HRMS", "IMS / Stock", "Task Management", "Reports"]);
+    expect(businessSystemPlans[2].features).toEqual(["HRMS", "IMS / Stock", "Field Executive Tracking", "Conveyance Expenses", "Payment Systems"]);
   });
 
   it("compares every card feature with its inherited plan inclusions", () => {
     const features = businessSystemPlans.flatMap((plan) => [...plan.features]);
-    expect(businessSystemComparison.map((row) => row.feature)).toEqual(features);
+    expect(businessSystemComparison.map((row) => row.feature)).toEqual([...features, "Reports for included modules"]);
     expect(new Set(features).size).toBe(features.length);
     for (const [index] of businessSystemPlans.entries()) {
       const inherited = businessSystemPlans.slice(0, index + 1).flatMap((plan) => [...plan.features]);
-      expect(businessSystemComparison.filter((row) => row.included[index]).map((row) => row.feature)).toEqual(inherited);
+      expect(businessSystemComparison.filter((row) => row.included[index]).map((row) => row.feature)).toEqual([...inherited, "Reports for included modules"]);
     }
     expect(businessSystemComparison.find((row) => row.feature === "IMS / Stock")?.included).toEqual([false, false, true]);
     expect(businessSystemComparison.find((row) => row.feature === "FMS")?.included).toEqual([true, true, true]);
     expect(businessSystemComparison.find((row) => row.feature === "Checklists")?.included).toEqual([true, true, true]);
+  });
+
+  it("includes one task feature and module reports in every plan", () => {
+    const taskRows = businessSystemComparison.filter((row) => /task/i.test(row.feature));
+    expect(taskRows).toEqual([{ feature: "Task Management & Delegation", included: [true, true, true] }]);
+    expect(businessSystemComparison.find((row) => row.feature === "Reports for included modules")?.included).toEqual([true, true, true]);
+    expect(businessModuleReportsNote).toBe("Reports are included with every module in your selected plan.");
+    expect(businessSystemPlans.flatMap((plan) => [...plan.features])).not.toContain("Reports");
+  });
+
+  it("reserves the new field-team and payment features for Enterprise", () => {
+    for (const feature of ["Field Executive Tracking", "Conveyance Expenses", "Payment Systems"]) {
+      expect(businessSystemComparison.find((row) => row.feature === feature)?.included).toEqual([false, false, true]);
+    }
   });
 
   it("makes stock exclusions and the full bundle explicit on the cards", () => {
