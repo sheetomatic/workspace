@@ -30,22 +30,18 @@ try {
         .count(),
       1,
     );
-    const crm = page
-      .locator(".tpl-shop-card")
-      .filter({
-        has: page.getByRole("heading", {
-          name: "CRM Lead Sheet Template",
-          exact: true,
-        }),
-      });
-    const app = page
-      .locator(".tpl-shop-card")
-      .filter({
-        has: page.getByRole("heading", {
-          name: "HRMS – Attendance & Leave (AppSheet)",
-          exact: true,
-        }),
-      });
+    const crm = page.locator(".tpl-shop-card").filter({
+      has: page.getByRole("heading", {
+        name: "CRM Lead Sheet Template",
+        exact: true,
+      }),
+    });
+    const app = page.locator(".tpl-shop-card").filter({
+      has: page.getByRole("heading", {
+        name: "HRMS – Attendance & Leave (AppSheet)",
+        exact: true,
+      }),
+    });
     await crm.getByRole("button", { name: "Add to cart", exact: true }).click();
     await app.getByRole("button", { name: "Add to cart", exact: true }).click();
     assert(
@@ -96,6 +92,17 @@ try {
     const result = {
       id: "fixture-order",
       paid: false,
+      paymentMode: "hosted_manual",
+      paymentClaimed: false,
+      claimedPaymentRef: null,
+      totals: {
+        subtotalPaise: 99800,
+        gstPaise: 17964,
+        cgstPaise: 8982,
+        sgstPaise: 8982,
+        igstPaise: 0,
+        totalPaise: 117764,
+      },
       invoiceNumber: null,
       totalPaise: 117764,
       keyId: "rzp_test_fixture",
@@ -107,19 +114,43 @@ try {
       posted = route.request().postDataJSON();
       await route.fulfill({ json: result });
     });
-    await page.route(`${base}/api/templates/checkout/fixture-order`, (route) =>
+    let confirmed = false;
+    await page.route(
+      `${base}/api/templates/checkout/fixture-order`,
+      async (route) => {
+        if (route.request().method() === "POST") {
+          assert.equal(
+            route.request().postDataJSON().paymentReference,
+            "pay_fixture123",
+          );
+          result.paymentClaimed = true;
+          result.claimedPaymentRef = "pay_fixture123";
+        }
+        await route.fulfill({
+          json: confirmed
+            ? {
+                ...result,
+                paid: true,
+                invoiceNumber: "ST2627/00000001",
+                lines: [
+                  {
+                    name: "HRMS",
+                    priceInr: 998,
+                    copyLink: "https://example.test/copy",
+                  },
+                ],
+              }
+            : result,
+        });
+      },
+    );
+    await page.route(`${base}/api/payments/razorpay-checkout`, (route) =>
       route.fulfill({
         json: {
-          ...result,
-          paid: true,
-          invoiceNumber: "ST2627/00000001",
-          lines: [
-            {
-              name: "HRMS",
-              priceInr: 998,
-              copyLink: "https://example.test/copy",
-            },
-          ],
+          keylessHeader: "fixture-public",
+          paymentLinkId: "plink_fixture",
+          merchantName: "Sheetomatic Technologies",
+          brandColor: "#064e3b",
         },
       }),
     );
@@ -132,14 +163,49 @@ try {
           window.__gateway = this.options;
           this.options.handler({
             razorpay_order_id: "order_fixture",
-            razorpay_payment_id: "pay_fixture",
+            razorpay_payment_id: "pay_fixture123",
             razorpay_signature: "fixture",
           });
         }
         on() {}
       };
     });
-    await page.getByRole("button", { name: /Pay .* securely/ }).click();
+    await page.getByRole("button", { name: /Continue to payment/ }).click();
+    await page
+      .getByRole("heading", { name: "Your order is ready to pay" })
+      .waitFor();
+    await page
+      .getByRole("button", { name: "Pay ₹1,177.64", exact: true })
+      .click();
+    await page.locator('input[name="paymentReference"]').waitFor();
+    await page.waitForFunction(() => document.querySelector('input[name="paymentReference"]')?.value === "pay_fixture123");
+    assert.equal(await page.evaluate(() => window.__gateway.amount), 117764);
+    assert.equal(
+      await page.getByRole("button", { name: "Download tax invoice" }).count(),
+      0,
+    );
+    await page
+      .getByRole("button", { name: "I've paid — submit receipt" })
+      .click();
+    await page
+      .getByRole("heading", { name: "Payment pending confirmation" })
+      .waitFor();
+    assert.equal(
+      await page.getByRole("link", { name: "Open HRMS" }).count(),
+      0,
+    );
+    await page.reload({ waitUntil: "networkidle" });
+    await page
+      .getByRole("heading", { name: "Payment pending confirmation" })
+      .waitFor();
+    assert.equal(
+      await page
+        .getByRole("button", { name: "Pay ₹1,177.64", exact: true })
+        .count(),
+      0,
+    );
+    confirmed = true;
+    await page.getByRole("button", { name: "Check payment status" }).click();
     await page
       .getByRole("heading", { name: "Payment verified", exact: true })
       .waitFor();
@@ -147,7 +213,6 @@ try {
     assert.equal(posted.acceptedTerms, true);
     assert.equal(posted.buyer.stateCode, "22");
     assert(!("totalPaise" in posted));
-    assert.equal(await page.evaluate(() => window.__gateway.amount), 117764);
     assert(
       await page
         .getByRole("button", { name: "Download tax invoice" })
@@ -163,7 +228,7 @@ try {
       fullPage: true,
     });
     console.log(
-      `PASS ${width}px: cart add/remove/persistence, duplicate prevention, state GST, exact paise checkout, mocked verified-payment UI, no overflow/errors`,
+      `PASS ${width}px: cart add/remove/persistence, state GST, hosted receipt stays unpaid, pending order restores, mock admin verification unlocks invoice, no overflow/errors`,
     );
     await context.close();
   }

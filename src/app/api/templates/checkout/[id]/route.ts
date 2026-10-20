@@ -12,6 +12,7 @@ import {
   privateHeaders,
 } from "@/lib/templates/http";
 import { verifyHmac } from "@/lib/templates/gateway";
+import { claimHostedPayment } from "@/lib/templates/hosted-checkout";
 export const runtime = "nodejs";
 type Context = { params: Promise<{ id: string }> };
 
@@ -37,6 +38,16 @@ export async function POST(request: Request, context: Context) {
     const { id } = await context.params;
     const order = await ownedCheckout(id, checkoutAccessHash(request));
     const body = (await checkoutJson(request)) as Record<string, unknown>;
+    if (order.paymentMode === "hosted_manual") {
+      const pending = await claimHostedPayment(
+        id,
+        checkoutAccessHash(request),
+        body?.paymentReference,
+      );
+      return NextResponse.json(publicCheckout(pending), {
+        headers: privateHeaders,
+      });
+    }
     if (
       !body ||
       typeof body.razorpay_payment_id !== "string" ||

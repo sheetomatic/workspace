@@ -20,6 +20,7 @@ import {
   assertCapturedPayment,
   razorpayRequest,
   templateGatewayReady,
+  templateCheckoutReady,
   type GatewayPayment,
 } from "./gateway";
 import { templateInvoiceHtml } from "./invoice";
@@ -65,7 +66,7 @@ export function deliverableLink(link: string | null) {
 }
 
 export async function createCartCheckout(body: unknown, accessHash: string) {
-  if (!templateGatewayReady())
+  if (!templateCheckoutReady())
     throw new Error(
       "Online checkout is being configured. No payment has been taken.",
     );
@@ -85,7 +86,7 @@ export async function createCartCheckout(body: unknown, accessHash: string) {
       throw new Error(
         "This checkout belongs to a different cart. Start a new checkout.",
       );
-    if (!prior.gatewayOrderId)
+    if (prior.paymentMode === "gateway" && !prior.gatewayOrderId)
       throw new Error(
         "Checkout creation is pending. Please contact support before trying a new checkout.",
       );
@@ -147,8 +148,10 @@ export async function createCartCheckout(body: unknown, accessHash: string) {
       organizationId: org.id,
       snapshot: snapshot as unknown as Prisma.InputJsonValue,
       totalPaise: snapshot.totals.totalPaise,
+      paymentMode: templateGatewayReady() ? "gateway" : "hosted_manual",
     },
   });
+  if (order.paymentMode === "hosted_manual") return order;
   // Persist first: even a timeout leaves a recoverable local record. Never charge a new amount on retry.
   const gateway = await razorpayRequest<{
     id: string;
@@ -274,6 +277,9 @@ export function publicCheckout(
   const s = order.snapshot as unknown as CheckoutSnapshot;
   return {
     id: order.id,
+    paymentMode: order.paymentMode,
+    claimedPaymentRef: order.claimedPaymentRef,
+    paymentClaimed: Boolean(order.paymentClaimedAt),
     paid: Boolean(order.paidAt),
     invoiceNumber: order.invoiceNumber,
     totalPaise: order.totalPaise,

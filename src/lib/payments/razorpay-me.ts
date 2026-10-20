@@ -13,7 +13,7 @@ export type RazorpayHandleConfig = {
 
 export function normalizeRazorpayAmountInr(amountInr: number): number | null {
   if (!Number.isFinite(amountInr)) return null;
-  const rupees = Math.round(amountInr);
+  const rupees = Math.round(amountInr * 100) / 100;
   if (rupees < 1 || rupees > MAX_AMOUNT_INR) return null;
   return rupees;
 }

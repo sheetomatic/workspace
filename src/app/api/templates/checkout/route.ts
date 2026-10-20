@@ -9,11 +9,11 @@ import {
   checkoutJson,
   privateHeaders,
 } from "@/lib/templates/http";
-import { templateGatewayReady } from "@/lib/templates/gateway";
+import { templateCheckoutReady } from "@/lib/templates/gateway";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  if (!templateGatewayReady())
+  if (!templateCheckoutReady())
     return NextResponse.json(
       {
         error:

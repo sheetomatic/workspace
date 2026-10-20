@@ -27,6 +27,14 @@ import {
 } from "@/app/api/templates/checkout/[id]/route";
 import { GET as invoiceRoute } from "@/app/api/templates/checkout/[id]/invoice/route";
 import { POST as webhookRoute } from "@/app/api/templates/webhook/route";
+import {
+  claimHostedPayment,
+  confirmHostedPayment,
+  listHostedTemplateOrders,
+} from "./hosted-checkout";
+import { getSessionUser } from "@/lib/auth";
+
+vi.mock("@/lib/auth", () => ({ getSessionUser: vi.fn(async () => null) }));
 
 vi.mock("@/lib/platform", () => ({
   getPrimaryOrganization: async () => ({
@@ -96,6 +104,8 @@ describe.skipIf(!local)("real local PostgreSQL checkout", () => {
     });
   });
   beforeEach(() => {
+    vi.stubEnv("RAZORPAY_KEY_ID", "rzp_test_fixture");
+    vi.mocked(getSessionUser).mockResolvedValue(null);
     vi.mocked(razorpayRequest).mockReset();
     vi.mocked(razorpayRequest).mockImplementation(async (path, payload) => {
       if (path === "orders")
@@ -296,5 +306,111 @@ describe.skipIf(!local)("real local PostgreSQL checkout", () => {
         })
       ).invoiceNumber,
     ).toBe(first.invoiceNumber);
+  });
+  it("hosted checkout reuses orders without API keys and keeps claimed payments locked", async () => {
+    vi.stubEnv("RAZORPAY_KEY_ID", "");
+    const token = randomBytes(32).toString("hex");
+    const order = await createCartCheckout(body, hash(token));
+    expect(order.paymentMode).toBe("hosted_manual");
+    expect(order.gatewayOrderId).toBeNull();
+    expect(razorpayRequest).not.toHaveBeenCalled();
+    expect((await createCartCheckout(body, hash(token))).id).toBe(order.id);
+    await expect(
+      claimHostedPayment(order.id, hash("other"), "pay_fixture123"),
+    ).rejects.toThrow();
+    await expect(
+      claimHostedPayment(order.id, hash(token), "fake"),
+    ).rejects.toThrow();
+    const ref = `pay_${run}manual`;
+    const response = await verifyRoute(
+      new Request(`http://localhost/api/templates/checkout/${order.id}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          paymentReference: ref,
+          paid: true,
+          totalPaise: 1,
+        }),
+      }),
+      { params: Promise.resolve({ id: order.id }) },
+    );
+    expect(response.status).toBe(200);
+    const pending = await response.json();
+    expect(pending.paymentClaimed).toBe(true);
+    expect(pending.paid).toBe(false);
+    expect(pending.lines[0].copyLink).toBeUndefined();
+    expect(pending.invoiceNumber).toBeNull();
+    const emails = vi.mocked(sendPlainEmail).mock.calls.length;
+    await claimHostedPayment(order.id, hash(token), ref);
+    expect(sendPlainEmail).toHaveBeenCalledTimes(emails);
+    await expect(
+      claimHostedPayment(order.id, hash(token), `pay_${run}changed`),
+    ).rejects.toThrow("already");
+    expect(
+      (
+        await invoiceRoute(
+          new Request(
+            `http://localhost/api/templates/checkout/${order.id}/invoice`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            },
+          ),
+          { params: Promise.resolve({ id: order.id }) },
+        )
+      ).status,
+    ).toBe(404);
+  });
+  it("requires super-admin verification, matching total/reference, then issues one invoice", async () => {
+    vi.stubEnv("RAZORPAY_KEY_ID", "");
+    const access = hash(randomBytes(32).toString("hex"));
+    const order = await createCartCheckout(body, access);
+    const reference = `pay_${run}admin`;
+    await claimHostedPayment(order.id, access, reference);
+    const input = {
+      id: order.id,
+      reference,
+      amountInr: (order.totalPaise / 100).toFixed(2),
+      verified: true,
+    };
+    await expect(confirmHostedPayment(input)).rejects.toThrow("super admins");
+    await expect(listHostedTemplateOrders()).rejects.toThrow("authorised");
+    vi.mocked(getSessionUser).mockResolvedValue({
+      id: "test-admin",
+      isSuperAdmin: true,
+    } as Awaited<ReturnType<typeof getSessionUser>>);
+    await expect(
+      confirmHostedPayment({ ...input, verified: false }),
+    ).rejects.toThrow("Verify");
+    await expect(
+      confirmHostedPayment({ ...input, amountInr: "0.01" }),
+    ).rejects.toThrow("Verify");
+    await expect(
+      confirmHostedPayment({ ...input, reference: `pay_${run}wrong` }),
+    ).rejects.toThrow("Verify");
+    const paid = await Promise.all([
+      confirmHostedPayment(input),
+      confirmHostedPayment(input),
+    ]);
+    expect(paid[0].invoiceNumber).toBe(paid[1].invoiceNumber);
+    expect(paid[0].confirmedById).toBe("test-admin");
+    expect(publicCheckout(paid[0]).lines[0].copyLink).toContain("paid-copy");
+    expect(templateInvoiceHtml(paid[0])).toContain(paid[0].invoiceNumber!);
+    const otherAccess = hash(randomBytes(32).toString("hex"));
+    const other = await createCartCheckout(body, otherAccess);
+    await claimHostedPayment(other.id, otherAccess, reference);
+    await expect(
+      confirmHostedPayment({ ...input, id: other.id }),
+    ).rejects.toThrow();
+    expect((await ownedCheckout(other.id, otherAccess)).paidAt).toBeNull();
+    await prisma.templateCheckout.update({
+      where: { id: other.id },
+      data: { organizationId: "different-workspace" },
+    });
+    await expect(
+      confirmHostedPayment({ ...input, id: other.id }),
+    ).rejects.toThrow();
   });
 });
