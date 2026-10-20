@@ -316,6 +316,7 @@ model Organization {
   checklistOccurrences ChecklistOccurrence[]
   orgExpenseEntries    OrgExpenseEntry[]
   leadIngestConnections LeadIngestConnection[]
+  linkedInAccounts     LinkedInAccount[]
   inboundLeads         InboundLead[]
   inboundLeadFollowUps InboundLeadFollowUp[]
   inboundLeadActivities InboundLeadActivity[]
@@ -1367,6 +1368,7 @@ model User {
   assignedInboundLeadFollowUps InboundLeadFollowUp[] @relation("InboundLeadFollowUpAssignee")
   createdInboundLeadFollowUps  InboundLeadFollowUp[] @relation("InboundLeadFollowUpCreator")
   inboundLeadActivities        InboundLeadActivity[] @relation("InboundLeadActivityCreator")
+  linkedInAccounts             LinkedInAccount[]
   createdInboundLeadQuotations InboundLeadQuotation[] @relation("InboundLeadQuotationCreator")
   createdWaCampaigns           WaCampaign[]            @relation("WaCampaignCreator")
   createdAt            DateTime                 @default(now())
@@ -3034,6 +3036,7 @@ model ChecklistOccurrence {
 }
 
 enum LeadSourceChannel {
+  LINKEDIN
   WHATSAPP
   INSTAGRAM
   FACEBOOK
@@ -3175,6 +3178,12 @@ model InboundLead {
   connection     LeadIngestConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
   channel        LeadSourceChannel
   externalId     String?
+  linkedInAppId        String?
+  linkedInMemberUrn    String?
+  linkedInProfileUrl   String?
+  linkedInHeadline     String?
+  linkedInDetectedAt   DateTime?
+  linkedInAcceptances  LinkedInAcceptance[]
   name           String?
   phone          String?
   email          String?
@@ -3248,6 +3257,7 @@ model InboundLead {
   updatedAt      DateTime             @updatedAt
 
   @@unique([organizationId, channel, externalId])
+  @@unique([organizationId, linkedInAppId, linkedInMemberUrn], map: "InboundLead_linkedin_identity_key")
   @@index([organizationId, status])
   @@index([organizationId, channel])
   @@index([organizationId, nextFollowUpAt])
@@ -3259,6 +3269,63 @@ model InboundLead {
   @@index([organizationId, email])
   @@index([organizationId, archivedAt])
   @@index([organizationId, mergedIntoId])
+}
+
+/// One member-authorised official LinkedIn account; no credentials reach the browser.
+model LinkedInAccount {
+  id                    String       @id @default(cuid())
+  organizationId        String
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ownerUserId           String
+  owner                 User         @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  appId                 String
+  subjectId             String
+  displayName           String
+  accessTokenEncrypted  String?
+  accessTokenExpiresAt  DateTime?
+  enabled               Boolean      @default(false)
+  baselineCompletedAt   DateTime?
+  scanStart             Int          @default(0)
+  lastSyncAt            DateTime?
+  nextSyncAt            DateTime     @default(now())
+  lastSyncError         String?
+  lockToken             String?
+  lockExpiresAt         DateTime?
+  acceptances           LinkedInAcceptance[]
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  @@unique([organizationId, appId, subjectId])
+  @@index([enabled, nextSyncAt])
+  @@index([organizationId, ownerUserId])
+}
+
+/// OAuth state is single-use, short-lived, and bound to the initiating browser.
+model LinkedInOAuthState {
+  stateHash       String   @id
+  organizationId  String
+  userId          String
+  returnUrl       String
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+/// Durable invitation receipts make overlapping scans and reconnects idempotent.
+model LinkedInAcceptance {
+  id              String          @id @default(cuid())
+  accountId       String
+  account         LinkedInAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  invitationUrn   String
+  memberUrn       String
+  baseline        Boolean         @default(false)
+  leadId          String?
+  lead            InboundLead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  detectedAt      DateTime        @default(now())
+
+  @@unique([accountId, invitationUrn])
+  @@index([leadId])
 }
 
 model InboundLeadActivity {

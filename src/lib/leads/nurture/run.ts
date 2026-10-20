@@ -467,6 +467,8 @@ export async function retryPendingWelcomeMessages(organizationId: string): Promi
         capturedAt: { gte: weekAgo },
         // Only NEW — CONTACTED+ already received (or should not get) welcome.
         status: "NEW",
+        // Connection acceptance is not an opt-in to a welcome message.
+        channel: { not: "LINKEDIN" },
       },
       select: { id: true, rawPayload: true, phone: true },
       orderBy: { capturedAt: "desc" },

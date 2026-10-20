@@ -1,6 +1,7 @@
 import type { LeadSourceChannel } from "@prisma/client";
 
 export const LEAD_CHANNEL_LABELS: Record<LeadSourceChannel, string> = {
+  LINKEDIN: "LinkedIn",
   WHATSAPP: "WhatsApp",
   INSTAGRAM: "Instagram",
   FACEBOOK: "Facebook",
@@ -34,6 +35,7 @@ export const LEAD_CHANNEL_DEFAULTS: Array<{
 export const LEAD_DASHBOARD_SOURCE_FILTERS = [
   "GOOGLE_SHEETS",
   "ALL",
+  "LINKEDIN",
   "WHATSAPP",
   "INSTAGRAM",
   "FACEBOOK",
@@ -61,6 +63,8 @@ export const LEAD_SOURCE_PRIORITY_CHANNEL: LeadDashboardSourceFilter = "GOOGLE_S
 /** Maps channel to FMS lead source field value */
 export function fmsSourceLabelForChannel(channel: LeadSourceChannel): string {
   switch (channel) {
+    case "LINKEDIN":
+      return "LinkedIn";
     case "WHATSAPP":
       return "WhatsApp";
     case "INSTAGRAM":

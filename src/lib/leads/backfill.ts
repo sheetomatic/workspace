@@ -6,7 +6,7 @@ import {
   migrateLegacyLeadCategory,
   type LeadCategoryId,
 } from "@/lib/leads/categories";
-import { leadHasRequiredContact } from "@/lib/leads/contact-validation";
+import { hasLinkedInLeadIdentity, linkedInLeadIdentityWhere, leadHasRequiredContact } from "@/lib/leads/contact-validation";
 import { migrateLegacyLeadStatus } from "@/lib/leads/status-labels";
 import { inferLeadStageFromRequirement } from "@/lib/leads/stage-ai";
 import { runLeadNurtureQueue } from "@/lib/leads/nurture/run";
@@ -143,7 +143,7 @@ export async function backfillLeadAiSuggestedStatus(organizationId: string) {
   }
 }
 
-/** Remove leads without a usable phone (10+ digits). Runs in small batches. */
+/** Preserve verified LinkedIn identities even when LinkedIn does not supply a phone. */
 export async function purgeLeadsWithoutContact(organizationId: string): Promise<number> {
   let total = 0;
 
@@ -152,6 +152,7 @@ export async function purgeLeadsWithoutContact(organizationId: string): Promise<
       where: {
         organizationId,
         OR: [{ phone: null }, { phone: "" }],
+        NOT: linkedInLeadIdentityWhere(),
       },
     }),
   );
@@ -162,7 +163,7 @@ export async function purgeLeadsWithoutContact(organizationId: string): Promise<
     const batch = await withDbRetry((client) =>
       client.inboundLead.findMany({
         where: { organizationId },
-        select: { id: true, phone: true },
+        select: { id: true, phone: true, linkedInAppId: true, linkedInMemberUrn: true },
         take: PURGE_BATCH,
         orderBy: { id: "asc" },
         ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
@@ -174,13 +175,13 @@ export async function purgeLeadsWithoutContact(organizationId: string): Promise<
     }
 
     const invalidIds = batch
-      .filter((lead) => !leadHasRequiredContact(lead.phone))
+      .filter((lead) => !leadHasRequiredContact(lead.phone) && !hasLinkedInLeadIdentity(lead))
       .map((lead) => lead.id);
 
     if (invalidIds.length > 0) {
       const deleted = await withDbRetry((client) =>
         client.inboundLead.deleteMany({
-          where: { id: { in: invalidIds }, organizationId },
+          where: { id: { in: invalidIds }, organizationId, NOT: linkedInLeadIdentityWhere() },
         }),
       );
       total += deleted.count;

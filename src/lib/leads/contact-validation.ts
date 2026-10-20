@@ -36,11 +36,33 @@ export function inboundLeadWithPhoneWhere(): Prisma.InboundLeadWhereInput {
   };
 }
 
+/** Only the verified LinkedIn sync writes these identifiers. Missing phone is expected. */
+export function linkedInLeadIdentityWhere(): Prisma.InboundLeadWhereInput {
+  return {
+    AND: [
+      { linkedInAppId: { not: null } },
+      { NOT: { linkedInAppId: "" } },
+      { linkedInMemberUrn: { startsWith: "urn:li:person:" } },
+      { NOT: { linkedInMemberUrn: "urn:li:person:" } },
+    ],
+  };
+}
+
+export function hasLinkedInLeadIdentity(lead: {
+  linkedInAppId: string | null;
+  linkedInMemberUrn: string | null;
+}) {
+  return Boolean(lead.linkedInAppId &&
+    /^urn:li:person:[A-Za-z0-9_-]+$/.test(lead.linkedInMemberUrn ?? ""));
+}
+
 export function mergeLeadContactWhere(
   where: Prisma.InboundLeadWhereInput,
   options?: { includeArchived?: boolean },
 ): Prisma.InboundLeadWhereInput {
-  const contact = inboundLeadWithPhoneWhere();
+  const contact: Prisma.InboundLeadWhereInput = {
+    AND: [{ OR: [inboundLeadWithPhoneWhere(), linkedInLeadIdentityWhere()] }],
+  };
   const archived: Prisma.InboundLeadWhereInput = options?.includeArchived
     ? {}
     : { archivedAt: null, mergedIntoId: null };

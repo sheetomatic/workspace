@@ -158,6 +158,7 @@ export function LeadsCrmWorkspace({
   teamMembers,
   canManage,
   canAssignLeads = false,
+  canConnectLinkedIn = false,
   currentUserId = null,
   sort,
   view = "list",
@@ -184,6 +185,7 @@ export function LeadsCrmWorkspace({
   canManage: boolean;
   /** ADMIN+ only — bulk Assign and drawer Owner change. */
   canAssignLeads?: boolean;
+  canConnectLinkedIn?: boolean;
   /** Lets STAFF work leads assigned to them in the drawer. */
   currentUserId?: string | null;
   sort: "newest" | "oldest";
@@ -399,6 +401,11 @@ export function LeadsCrmWorkspace({
           <Link className="btn-secondary btn-sm" href={sortHref}>
             {sort === "newest" ? "Newest" : "Oldest"}
           </Link>
+          {canConnectLinkedIn ? (
+            <Link className="btn-secondary btn-sm" href="/app/leads/linkedin">
+              LinkedIn sync
+            </Link>
+          ) : null}
           {canManage ? (
             <>
               <LeadsCsvImportButton />

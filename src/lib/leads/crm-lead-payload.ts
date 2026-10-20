@@ -12,6 +12,10 @@ type CrmListLead = {
   phone: string | null;
   email: string | null;
   company: string | null;
+  linkedInMemberUrn?: string | null;
+  linkedInProfileUrl?: string | null;
+  linkedInHeadline?: string | null;
+  linkedInDetectedAt?: Date | null;
   city: string | null;
   address: string | null;
   zipCode: string | null;
@@ -60,6 +64,10 @@ function serializeCrmLeadBase(lead: CrmListLead) {
     phone: lead.phone,
     email: lead.email,
     company: lead.company,
+    linkedInMemberUrn: lead.linkedInMemberUrn ?? null,
+    linkedInProfileUrl: lead.linkedInProfileUrl ?? null,
+    linkedInHeadline: lead.linkedInHeadline ?? null,
+    linkedInDetectedAt: lead.linkedInDetectedAt?.toISOString() ?? null,
     city: lead.city,
     address: lead.address,
     zipCode: lead.zipCode,
