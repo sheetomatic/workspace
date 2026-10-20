@@ -25,6 +25,8 @@ export async function sendPlainEmail(params: {
   /** Optional HTML body (hyperlinks, RSVP copy). */
   html?: string;
   attachments?: EmailAttachment[];
+  /** Stable key for transactional delivery retries (e.g. a paid template order). */
+  idempotencyKey?: string;
 }): Promise<EmailSendResult> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from = process.env.TASK_EMAIL_FROM?.trim();
@@ -46,7 +48,9 @@ export async function sendPlainEmail(params: {
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
+      ...(params.idempotencyKey ? { "Idempotency-Key": params.idempotencyKey } : {}),
     },
+    ...(params.idempotencyKey ? { signal: AbortSignal.timeout(15000) } : {}),
     body: JSON.stringify({
       from,
       to: [params.toEmail],

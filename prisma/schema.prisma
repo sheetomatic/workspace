@@ -3742,10 +3742,6 @@ enum TemplateProductType {
 /// Immutable checkout snapshot; no changes to legacy manually confirmed orders.
 model TemplateCheckout {
   id               String   @id @default(cuid())
-  paymentMode      String   @default("gateway")
-  claimedPaymentRef String?
-  paymentClaimedAt DateTime?
-  confirmedById    String?
   accessHash       String   @unique
   requestHash      String
   organizationId   String
@@ -3753,6 +3749,9 @@ model TemplateCheckout {
   totalPaise       Int
   gatewayOrderId   String?  @unique
   gatewayPaymentId String?  @unique
+  paymentState     String   @default("creating")
+  emailLeaseUntil  DateTime?
+  emailAttemptedAt DateTime?
   paidAt           DateTime?
   invoiceNumber    String?  @unique
   emailSentAt      DateTime?

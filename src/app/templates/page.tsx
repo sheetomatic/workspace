@@ -5,7 +5,7 @@ import { marketingMetadata } from "@/lib/marketing-metadata";
 import { parseTemplateCategoryParam } from "@/lib/templates/categories";
 import { listCloudSoftwareCatalog } from "@/lib/templates/cloud-softwares";
 import { listActiveTemplateProducts } from "@/lib/templates/store";
-import { templateCheckoutReady } from "@/lib/templates/gateway";
+import { templateGatewayReady } from "@/lib/templates/gateway";
 import { getPrimaryOrganization } from "@/lib/platform";
 import { resolveQuotationAccount } from "@/lib/leads/seller-account";
 import { gstinStateCode } from "@/lib/leads/gst-invoice";
@@ -79,7 +79,7 @@ export default async function TemplatesPage({
         }))}
         cloudProducts={cloudProducts}
         initialCategory={parseTemplateCategoryParam(category)}
-        checkoutEnabled={available && templateCheckoutReady()}
+        checkoutEnabled={available && templateGatewayReady()}
         sellerStateCode={seller ? (gstinStateCode(seller.gstin) ?? "22") : "22"}
       />
       <SiteFooter />

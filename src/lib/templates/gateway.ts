@@ -1,18 +1,13 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-/** Hosted checkout reuses Courses; an operator must verify the merchant receipt. */
-export function templateCheckoutReady() {
-  return process.env.TEMPLATE_CHECKOUT_ENABLED !== "false";
-}
-
 export function templateGatewayReady() {
   return (
     process.env.TEMPLATE_CHECKOUT_ENABLED === "true" &&
     Boolean(
       process.env.RAZORPAY_KEY_ID &&
-      process.env.RAZORPAY_KEY_SECRET &&
-      process.env.RAZORPAY_WEBHOOK_SECRET,
+        process.env.RAZORPAY_KEY_SECRET &&
+        process.env.RAZORPAY_WEBHOOK_SECRET,
     )
   );
 }

@@ -6,13 +6,13 @@ import {
   type RazorpayHandleConfig,
 } from "@/lib/payments/razorpay-me";
 import "./razorpay-pay-frame.css";
+import { loadRazorpayCheckoutScript } from "./razorpay-checkout-loader";
 
 type Props = {
   amountInr: number;
   description?: string;
   email?: string;
   phone?: string;
-  onPaymentReference?: (reference: string) => void;
 };
 
 type CheckoutSuccess = { razorpay_payment_id?: string };
@@ -28,36 +28,6 @@ declare global {
   }
 }
 
-function loadCheckoutScript(): Promise<void> {
-  if (window.Razorpay) return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    const src = "https://checkout.razorpay.com/v1/checkout.js";
-    const existing = document.querySelector<HTMLScriptElement>(
-      `script[src="${src}"]`,
-    );
-    const script = existing ?? document.createElement("script");
-    const done = () =>
-      window.Razorpay
-        ? resolve()
-        : reject(new Error("Razorpay failed to load"));
-    script.addEventListener("load", done, { once: true });
-    script.addEventListener(
-      "error",
-      () => reject(new Error("Razorpay failed to load")),
-      {
-        once: true,
-      },
-    );
-    if (!existing) {
-      script.src = src;
-      script.async = true;
-      document.body.appendChild(script);
-    } else if (window.Razorpay) {
-      resolve();
-    }
-  });
-}
-
 function contactFromPhone(phone?: string): string | undefined {
   const digits = phone?.replace(/\D/g, "") ?? "";
   if (digits.length < 10 || digits.length > 15) return undefined;
@@ -69,7 +39,6 @@ export function RazorpayPayFrame({
   description,
   email,
   phone,
-  onPaymentReference,
 }: Props) {
   const rupees = normalizeRazorpayAmountInr(amountInr);
   const amountLabel =
@@ -85,7 +54,7 @@ export function RazorpayPayFrame({
     try {
       const [configResponse] = await Promise.all([
         fetch("/api/payments/razorpay-checkout", { cache: "no-store" }),
-        loadCheckoutScript(),
+        loadRazorpayCheckoutScript(),
       ]);
       const config = (await configResponse.json()) as RazorpayHandleConfig & {
         error?: string;
@@ -109,7 +78,6 @@ export function RazorpayPayFrame({
         handler(response: CheckoutSuccess) {
           if (response.razorpay_payment_id) {
             setPaymentId(response.razorpay_payment_id);
-            onPaymentReference?.(response.razorpay_payment_id);
           }
         },
       });

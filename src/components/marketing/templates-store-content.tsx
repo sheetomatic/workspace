@@ -12,10 +12,10 @@ import {
 import type { CloudSoftwareProduct } from "@/lib/templates/cloud-softwares";
 import { GST_STATE_OPTIONS } from "@/lib/leads/gst-invoice";
 import { cartTotals, inr, parseTemplateBuyer } from "@/lib/templates/commerce";
-import { RazorpayPayFrame } from "./razorpay-pay-frame";
-import { TemplateArtwork } from "./template-artwork";
 import "./templates-store.css";
 import "./template-cart.css";
+import { TemplateArtwork } from "./template-artwork";
+import { loadRazorpayCheckoutScript } from "./razorpay-checkout-loader";
 
 export type PublicTemplateProduct = {
   id: string;
@@ -30,9 +30,8 @@ export type PublicTemplateProduct = {
 type Order = {
   id: string;
   paid: boolean;
-  paymentMode: string;
-  paymentClaimed: boolean;
-  claimedPaymentRef: string | null;
+  paymentState: "creating" | "ready" | "pending" | "failed" | "paid";
+  emailDelivered: boolean;
   totals: ReturnType<typeof cartTotals>;
   invoiceNumber: string | null;
   totalPaise: number;
@@ -49,20 +48,6 @@ function freshToken() {
     b.toString(16).padStart(2, "0"),
   ).join("");
 }
-async function loadGateway() {
-  if (window.Razorpay) return;
-  await new Promise<void>((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve();
-    script.onerror = () => {
-      script.remove();
-      reject(new Error("Could not load Razorpay. Please retry."));
-    };
-    document.body.appendChild(script);
-  });
-}
-
 export function TemplatesStoreContent({
   products,
   cloudProducts,
@@ -92,7 +77,6 @@ export function TemplatesStoreContent({
   const [accepted, setAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  const [paymentReference, setPaymentReference] = useState("");
   const [order, setOrder] = useState<Order | null>(null);
   const [access, setAccess] = useState<Access | null>(null);
   const token = useRef<string | null>(null);
@@ -103,7 +87,7 @@ export function TemplatesStoreContent({
     try {
       const saved = JSON.parse(localStorage.getItem(CART_KEY) ?? "[]");
       if (Array.isArray(saved)) {
-        // Browser storage is an external source; restore only after hydration.
+        // Restore browser storage after hydration.
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setCart(
           [
@@ -137,13 +121,10 @@ export function TemplatesStoreContent({
       cache: "no-store",
       headers: { Authorization: `Bearer ${access.token}` },
     })
-      .then(async (response) => {
-        if (!response.ok)
-          throw new Error(
-            "Saved order could not be loaded. Contact support before paying again.",
-          );
-        const saved = (await response.json()) as Order;
-        if (!cancelled) setOrder(saved);
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Order status unavailable.");
+        if (!cancelled) setOrder(data);
       })
       .catch((error) => {
         if (!cancelled) setMessage(error.message);
@@ -156,6 +137,9 @@ export function TemplatesStoreContent({
   const items = cart
     .map((id) => products.find((p) => p.id === id))
     .filter((p): p is PublicTemplateProduct => Boolean(p));
+  const displayItems = order
+    ? order.lines.map((line, index) => ({ ...line, id: `saved-${index}` }))
+    : items;
   const totals =
     order?.totals ??
     cartTotals(
@@ -228,10 +212,12 @@ export function TemplatesStoreContent({
     setMessage("");
     try {
       const validBuyer = access ? null : parseTemplateBuyer(buyer);
-      if (!accepted)
+      if (!access && !accepted)
         throw new Error(
           "Accept the standard-template terms before continuing.",
         );
+      await loadRazorpayCheckoutScript();
+      if (!window.Razorpay) throw new Error("Razorpay did not load.");
       token.current ??= freshToken();
       const auth = token.current;
       const current = access
@@ -258,14 +244,18 @@ export function TemplatesStoreContent({
         acceptOrder(current);
         return;
       }
-      if (current.paymentMode === "hosted_manual") {
+      if (!current.gatewayOrderId || current.paymentState === "creating") {
         setMessage(
-          "Order saved. Pay the exact GST-inclusive total below, then submit your Razorpay receipt for confirmation.",
+          "Order creation is pending. Do not start another checkout. Contact support with the saved order number.",
         );
         return;
       }
-      await loadGateway();
-      if (!window.Razorpay) throw new Error("Razorpay did not load.");
+      if (current.paymentState === "pending") {
+        setMessage(
+          "Razorpay is still processing this payment. Do not pay again. Use Check payment status shortly.",
+        );
+        return;
+      }
       const gateway = new window.Razorpay({
         key: current.keyId,
         order_id: current.gatewayOrderId,
@@ -282,6 +272,9 @@ export function TemplatesStoreContent({
           : {},
         handler: async (result: unknown) => {
           setBusy(true);
+          setMessage(
+            "Payment received by checkout; verifying with Razorpay. Downloads stay locked until verification completes.",
+          );
           try {
             acceptOrder(
               await request(
@@ -309,30 +302,14 @@ export function TemplatesStoreContent({
         },
         theme: { color: "#0369a1" },
       });
+      gateway.on("payment.failed", () =>
+        setMessage(
+          "Payment failed or could not be completed. Check payment status before retrying; any retry uses this same order. If debited, do not pay again.",
+        ),
+      );
       gateway.open();
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Could not start checkout.");
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function submitReceipt() {
-    if (!access) return;
-    setBusy(true);
-    try {
-      const result = await request(
-        `/api/templates/checkout/${access.id}`,
-        "POST",
-        { paymentReference },
-      );
-      acceptOrder(result);
-      setMessage(
-        "Receipt submitted. Payment pending manual confirmation. Do not pay again. Your GST invoice and copy links will be emailed after verification.",
-      );
-    } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Unable to submit receipt.",
-      );
     } finally {
       setBusy(false);
     }
@@ -482,13 +459,28 @@ export function TemplatesStoreContent({
           ref={cartSection}
           aria-label="Shopping cart"
         >
-          <h2>Your cart {items.length > 0 && `(${items.length})`}</h2>
+          <h2>
+            Your cart {displayItems.length > 0 && `(${displayItems.length})`}
+          </h2>
           <div role="status" aria-live="polite" className="tpl-cart-message">
             {message}
           </div>
           {access && (
             <div className="tpl-cart-notice">
               <p>Saved order: {access.id}</p>
+              {order && (
+                <p>
+                  {order.paymentState === "creating"
+                    ? "Order creation pending — contact support before trying again."
+                    : order.paymentState === "pending"
+                      ? "Payment processing — do not pay again."
+                      : order.paymentState === "failed"
+                        ? "Payment failed. You can retry the same order after checking your account."
+                        : order.paid
+                          ? "Payment verified."
+                          : "Awaiting payment. Closing checkout does not confirm or cancel a bank debit."}
+                </p>
+              )}
               <button
                 className="tpl-btn"
                 type="button"
@@ -497,76 +489,16 @@ export function TemplatesStoreContent({
               >
                 Check payment status
               </button>
-            </div>
-          )}
-          {order?.paymentMode === "hosted_manual" && !order.paid && (
-            <section className="tpl-receipt" aria-label="Payment and receipt">
-              <h3>
-                {order.paymentClaimed
-                  ? "Payment pending confirmation"
-                  : "Your order is ready to pay"}
-              </h3>
-              <p>{order.lines.map((l) => l.name).join(" · ")}</p>
               <p>
-                <strong>{inr(order.totalPaise)} including GST</strong>
+                <a
+                  href={buildWhatsAppUrl(
+                    `Please help with template order ${access.id}.`,
+                  )}
+                >
+                  Contact support about this order
+                </a>
               </p>
-              {order.paymentClaimed ? (
-                <p>
-                  Receipt: {order.claimedPaymentRef}. Our team will verify your
-                  payment and email your tax invoice and template links. Please
-                  do not pay again.
-                </p>
-              ) : (
-                <>
-                  <RazorpayPayFrame
-                    amountInr={order.totalPaise / 100}
-                    description={`Templates · ${order.id} · GST included`}
-                    email={buyer.email}
-                    phone={buyer.phone}
-                    onPaymentReference={setPaymentReference}
-                  />
-                  <form
-                    className="tpl-form"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      void submitReceipt();
-                    }}
-                  >
-                    <label>
-                      Razorpay payment ID from your receipt
-                      <input
-                        name="paymentReference"
-                        value={paymentReference}
-                        onChange={(e) => setPaymentReference(e.target.value)}
-                        required
-                        pattern="pay_[a-zA-Z0-9]{6,80}"
-                        maxLength={84}
-                        placeholder="pay_…"
-                      />
-                    </label>
-                    <button
-                      className="tpl-btn primary"
-                      disabled={busy}
-                      type="submit"
-                    >
-                      {busy ? "Submitting…" : "I've paid — submit receipt"}
-                    </button>
-                  </form>
-                  <p className="tpl-fine">
-                    A receipt submission does not confirm payment. We verify the
-                    payment in our merchant account before issuing your invoice
-                    or releasing downloads.
-                  </p>
-                </>
-              )}
-              <a
-                href={buildWhatsAppUrl(
-                  `Please help with template order ${order.id}.`,
-                )}
-              >
-                Need help with this order?
-              </a>
-            </section>
+            </div>
           )}
           {order?.paid ? (
             <>
@@ -598,6 +530,13 @@ export function TemplatesStoreContent({
               <p className="tpl-fine">
                 Open the downloaded invoice and choose Print → Save as PDF.
               </p>
+              {!order.emailDelivered && (
+                <p className="tpl-cart-notice">
+                  Your payment is verified and downloads are ready. Email
+                  delivery is pending; check payment status again to retry
+                  delivery safely.
+                </p>
+              )}
               <button
                 className="tpl-btn"
                 type="button"
@@ -613,12 +552,12 @@ export function TemplatesStoreContent({
             </>
           ) : (
             <>
-              {items.length === 0 ? (
+              {displayItems.length === 0 ? (
                 <p>Add a template to see your total.</p>
               ) : (
                 <>
                   <ul className="tpl-cart-lines">
-                    {items.map((p) => (
+                    {displayItems.map((p) => (
                       <li key={p.id}>
                         <span>
                           {p.name}
@@ -675,148 +614,146 @@ export function TemplatesStoreContent({
                       </dd>
                     </div>
                   </dl>
-                  {order?.paymentMode !== "hosted_manual" && (
-                    <form
-                      className="tpl-form"
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        void pay();
-                      }}
+                  <form
+                    className="tpl-form"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void pay();
+                    }}
+                  >
+                    <h3>Billing details</h3>
+                    <p className="tpl-fine">
+                      Your invoice uses these details. Indian billing addresses
+                      only.
+                    </p>
+                    <fieldset
+                      disabled={busy || Boolean(access)}
+                      className="tpl-cart-fields"
                     >
-                      <h3>Billing details</h3>
-                      <p className="tpl-fine">
-                        Your invoice uses these details. Indian billing
-                        addresses only.
-                      </p>
-                      <fieldset
-                        disabled={busy || Boolean(access)}
-                        className="tpl-cart-fields"
-                      >
-                        {(
-                          [
-                            {
-                              key: "name",
-                              label: "Full name",
-                              type: "text",
-                              max: 120,
-                            },
-                            {
-                              key: "email",
-                              label: "Email for delivery",
-                              type: "email",
-                              max: 254,
-                            },
-                            {
-                              key: "phone",
-                              label: "Phone",
-                              type: "tel",
-                              max: 25,
-                            },
-                            {
-                              key: "billedTo",
-                              label: "Company / billing name (optional)",
-                              type: "text",
-                              max: 200,
-                            },
-                            {
-                              key: "address",
-                              label: "Billing address",
-                              type: "text",
-                              max: 500,
-                            },
-                            {
-                              key: "city",
-                              label: "City",
-                              type: "text",
-                              max: 80,
-                            },
-                            {
-                              key: "pin",
-                              label: "PIN code",
-                              type: "text",
-                              max: 6,
-                            },
-                            {
-                              key: "gstin",
-                              label: "GSTIN (optional)",
-                              type: "text",
-                              max: 15,
-                            },
-                          ] as const
-                        ).map((f) => (
-                          <label key={f.key}>
-                            {f.label}
-                            <input
-                              name={f.key}
-                              value={buyer[f.key]}
-                              type={f.type}
-                              maxLength={f.max}
-                              required={
-                                f.key !== "billedTo" && f.key !== "gstin"
-                              }
-                              onChange={(e) =>
-                                setBuyer({ ...buyer, [f.key]: e.target.value })
-                              }
-                            />
-                          </label>
-                        ))}
-                        <label>
-                          Billing state
-                          <select
-                            name="stateCode"
-                            required
-                            value={buyer.stateCode}
+                      {(
+                        [
+                          {
+                            key: "name",
+                            label: "Full name",
+                            type: "text",
+                            max: 120,
+                          },
+                          {
+                            key: "email",
+                            label: "Email for delivery",
+                            type: "email",
+                            max: 254,
+                          },
+                          {
+                            key: "phone",
+                            label: "Phone",
+                            type: "tel",
+                            max: 25,
+                          },
+                          {
+                            key: "billedTo",
+                            label: "Company / billing name (optional)",
+                            type: "text",
+                            max: 200,
+                          },
+                          {
+                            key: "address",
+                            label: "Billing address",
+                            type: "text",
+                            max: 500,
+                          },
+                          { key: "city", label: "City", type: "text", max: 80 },
+                          {
+                            key: "pin",
+                            label: "PIN code",
+                            type: "text",
+                            max: 6,
+                          },
+                          {
+                            key: "gstin",
+                            label: "GSTIN (optional)",
+                            type: "text",
+                            max: 15,
+                          },
+                        ] as const
+                      ).map((f) => (
+                        <label key={f.key}>
+                          {f.label}
+                          <input
+                            name={f.key}
+                            value={buyer[f.key]}
+                            type={f.type}
+                            maxLength={f.max}
+                            required={f.key !== "billedTo" && f.key !== "gstin"}
                             onChange={(e) =>
-                              setBuyer({ ...buyer, stateCode: e.target.value })
+                              setBuyer({ ...buyer, [f.key]: e.target.value })
                             }
-                          >
-                            <option value="">Choose your state</option>
-                            {GST_STATE_OPTIONS.map((s) => (
-                              <option key={s.code} value={s.code}>
-                                {s.label}
-                              </option>
-                            ))}
-                          </select>
+                          />
                         </label>
-                      </fieldset>
-                      <label className="tpl-cart-consent">
-                        <input
-                          type="checkbox"
-                          checked={accepted}
-                          onChange={(e) => setAccepted(e.target.checked)}
+                      ))}
+                      <label>
+                        Billing state
+                        <select
+                          name="stateCode"
                           required
-                        />
-                        I am purchasing standard template copies for my own
-                        business, without customisation, setup services or
-                        third-party subscriptions. I agree to the{" "}
-                        <Link href="/terms">terms</Link>.
+                          value={buyer.stateCode}
+                          onChange={(e) =>
+                            setBuyer({ ...buyer, stateCode: e.target.value })
+                          }
+                        >
+                          <option value="">Choose your state</option>
+                          {GST_STATE_OPTIONS.map((s) => (
+                            <option key={s.code} value={s.code}>
+                              {s.label}
+                            </option>
+                          ))}
+                        </select>
                       </label>
-                      {!checkoutEnabled && (
-                        <p className="tpl-cart-notice">
-                          Online checkout is being configured. You can build
-                          your cart, but no payment will be collected yet.
-                        </p>
-                      )}
-                      <button
-                        className="tpl-btn primary"
-                        type="submit"
-                        disabled={
-                          !checkoutEnabled ||
-                          busy ||
-                          items.some((p) => !p.purchasable)
-                        }
-                      >
-                        {busy
-                          ? "Please wait…"
-                          : `Continue to payment · ${inr(order?.totalPaise ?? totals.totalPaise)}`}
-                      </button>
-                      <p className="tpl-fine">
-                        Pay through our existing Razorpay checkout. Our team
-                        verifies your receipt before emailing your GST invoice
-                        and copy links.
+                    </fieldset>
+                    <label className="tpl-cart-consent">
+                      <input
+                        type="checkbox"
+                        checked={accepted}
+                        onChange={(e) => setAccepted(e.target.checked)}
+                        required={!access}
+                      />
+                      I am purchasing standard template copies for my own
+                      business, without customisation, setup services or
+                      third-party subscriptions. I agree to the{" "}
+                      <Link href="/terms">terms</Link>.
+                    </label>
+                    {!checkoutEnabled && (
+                      <p className="tpl-cart-notice">
+                        Online checkout is being configured. You can build your
+                        cart, but no payment will be collected yet.
                       </p>
-                    </form>
-                  )}
+                    )}
+                    <button
+                      className="tpl-btn primary"
+                      type="submit"
+                      disabled={
+                        !checkoutEnabled ||
+                        busy ||
+                        order?.paymentState === "creating" ||
+                        order?.paymentState === "pending" ||
+                        (!access && items.some((p) => !p.purchasable))
+                      }
+                    >
+                      {busy
+                        ? "Please wait…"
+                        : order?.paymentState === "pending"
+                          ? "Payment processing — check status"
+                          : order?.paymentState === "creating"
+                            ? "Order creation pending"
+                            : order?.paymentState === "failed"
+                              ? `Retry payment · ${inr(order.totalPaise)}`
+                              : `Pay ${inr(order?.totalPaise ?? totals.totalPaise)} securely`}
+                    </button>
+                    <p className="tpl-fine">
+                      Payment is verified on our server. Your GST invoice and
+                      copy links unlock only after confirmation.
+                    </p>
+                  </form>
                 </>
               )}
             </>

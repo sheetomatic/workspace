@@ -46,9 +46,7 @@ for (const f of prepared.filter(f => f.path.startsWith("src/"))) {
   await writeFile(f.path, f.bytes);
 }
 await writeFile("prisma/schema.prisma", `${schema}\n\n${models.join("\n\n")}\n`);
-if (!process.argv.includes("--prepare-only")) {
-  run("npm", ["run", "db:generate"]);
-  run("npx", ["vitest", "run", "src/lib/templates/commerce.test.ts"]);
-  run("npx", ["next", "build"]);
-}
+run("npm", ["run", "db:generate"]);
+run("npx", ["vitest", "run", "src/lib/templates/commerce.test.ts"]);
+run("npx", ["next", "build"]);
 // No migrations, seeding, credential changes, gateway writes or customer messages.

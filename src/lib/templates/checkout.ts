@@ -20,7 +20,6 @@ import {
   assertCapturedPayment,
   razorpayRequest,
   templateGatewayReady,
-  templateCheckoutReady,
   type GatewayPayment,
 } from "./gateway";
 import { templateInvoiceHtml } from "./invoice";
@@ -66,7 +65,7 @@ export function deliverableLink(link: string | null) {
 }
 
 export async function createCartCheckout(body: unknown, accessHash: string) {
-  if (!templateCheckoutReady())
+  if (!templateGatewayReady())
     throw new Error(
       "Online checkout is being configured. No payment has been taken.",
     );
@@ -85,10 +84,6 @@ export async function createCartCheckout(body: unknown, accessHash: string) {
     if (prior.requestHash !== requestHash)
       throw new Error(
         "This checkout belongs to a different cart. Start a new checkout.",
-      );
-    if (prior.paymentMode === "gateway" && !prior.gatewayOrderId)
-      throw new Error(
-        "Checkout creation is pending. Please contact support before trying a new checkout.",
       );
     return prior;
   }
@@ -148,21 +143,25 @@ export async function createCartCheckout(body: unknown, accessHash: string) {
       organizationId: org.id,
       snapshot: snapshot as unknown as Prisma.InputJsonValue,
       totalPaise: snapshot.totals.totalPaise,
-      paymentMode: templateGatewayReady() ? "gateway" : "hosted_manual",
     },
   });
-  if (order.paymentMode === "hosted_manual") return order;
   // Persist first: even a timeout leaves a recoverable local record. Never charge a new amount on retry.
-  const gateway = await razorpayRequest<{
-    id: string;
-    amount: number;
-    currency: string;
-  }>("orders", {
-    amount: order.totalPaise,
-    currency: "INR",
-    receipt: order.id,
-    notes: { template_checkout_id: order.id },
-  });
+  let gateway: { id: string; amount: number; currency: string };
+  try {
+    gateway = await razorpayRequest<{
+      id: string;
+      amount: number;
+      currency: string;
+    }>("orders", {
+      amount: order.totalPaise,
+      currency: "INR",
+      receipt: order.id,
+      notes: { template_checkout_id: order.id },
+    });
+  } catch {
+    // The provider may have accepted the order before a network timeout. Never create another on retry.
+    return order;
+  }
   if (
     !/^order_[a-zA-Z0-9]+$/.test(gateway.id) ||
     gateway.amount !== order.totalPaise ||
@@ -171,7 +170,7 @@ export async function createCartCheckout(body: unknown, accessHash: string) {
     throw new Error("Gateway order did not match the cart.");
   return prisma.templateCheckout.update({
     where: { id: order.id },
-    data: { gatewayOrderId: gateway.id },
+    data: { gatewayOrderId: gateway.id, paymentState: "ready" },
   });
 }
 
@@ -211,7 +210,7 @@ export async function recordCapturedPayment(
     // Concurrent callbacks/webhooks contend on this row. Only one allocates an invoice number.
     const claimed = await tx.templateCheckout.updateMany({
       where: { id: order.id, paidAt: null },
-      data: { paidAt: now, gatewayPaymentId: payment.id },
+      data: { paidAt: now, gatewayPaymentId: payment.id, paymentState: "paid" },
     });
     if (claimed.count === 1) {
       const year = financialYear(now);
@@ -225,7 +224,12 @@ export async function recordCapturedPayment(
         data: { invoiceNumber: templateInvoiceNumber(year, counter.value) },
       });
     }
-    return tx.templateCheckout.findUniqueOrThrow({ where: { id: order.id } });
+    const result = await tx.templateCheckout.findUniqueOrThrow({
+      where: { id: order.id },
+    });
+    if (result.gatewayPaymentId !== paymentId)
+      throw new Error("Another payment already owns this invoice.");
+    return result;
   });
   return paid;
 }
@@ -235,40 +239,100 @@ export async function emailPaidCheckout(orderId: string) {
     where: { id: orderId },
   });
   if (!order.paidAt || !order.invoiceNumber || order.emailSentAt) return;
-  const s = order.snapshot as unknown as CheckoutSnapshot;
-  const result = await sendPlainEmail({
-    toEmail: s.buyer.email,
-    subject: `Your Sheetomatic templates · ${order.invoiceNumber}`,
-    attachments: [
-      {
-        filename: `${order.invoiceNumber.replaceAll("/", "-")}.html`,
-        content: templateInvoiceHtml(order),
-        contentType: "text/html",
-      },
-    ],
-    text: [
-      `Hello ${s.buyer.name},`,
-      "",
-      "Your payment is verified. Your template copy links:",
-      ...s.lines.map((l) => `${l.name}: ${l.copyLink}`),
-      "",
-      `Invoice: ${order.invoiceNumber}`,
-      `Paid: INR ${(order.totalPaise / 100).toFixed(2)} (including GST).`,
-      "Your GST tax invoice is attached. Open it and choose Print → Save as PDF, or download it from your checkout confirmation page.",
-      "Standard templates only. Customisation, setup services and third-party subscriptions are not included.",
-      "For your own business use only; not for resale or redistribution.",
-      `Support: founder@sheetomatic.com. Order: ${order.id}`,
-    ].join("\n"),
-  });
-  if (result.sent)
-    await prisma.templateCheckout.update({
-      where: { id: order.id },
-      data: { emailSentAt: new Date() },
-    });
-  else
+  const now = new Date();
+  // Resend retains idempotency keys for 24h. An uncertain older attempt needs operator reconciliation,
+  // not an automatic resend that might duplicate a previously accepted delivery.
+  if (
+    order.emailAttemptedAt &&
+    now.getTime() - order.emailAttemptedAt.getTime() >= 23 * 60 * 60 * 1000
+  )
     throw new Error(
-      "Delivery email pending; retry after email configuration is restored.",
+      "Email delivery needs reconciliation; verified downloads remain available.",
     );
+  const lease = new Date(now.getTime() + 90000);
+  const claimed = await prisma.templateCheckout.updateMany({
+    where: {
+      id: order.id,
+      emailSentAt: null,
+      OR: [{ emailLeaseUntil: null }, { emailLeaseUntil: { lt: now } }],
+    },
+    data: {
+      emailLeaseUntil: lease,
+      emailAttemptedAt: order.emailAttemptedAt ?? now,
+    },
+  });
+  if (!claimed.count)
+    throw new Error("Email delivery is already processing. Retry shortly.");
+  const s = order.snapshot as unknown as CheckoutSnapshot;
+  try {
+    const result = await sendPlainEmail({
+      idempotencyKey: `template-invoice/${order.id}`,
+      toEmail: s.buyer.email,
+      subject: `Your Sheetomatic templates · ${order.invoiceNumber}`,
+      attachments: [
+        {
+          filename: `${order.invoiceNumber.replaceAll("/", "-")}.html`,
+          content: templateInvoiceHtml(order),
+          contentType: "text/html",
+        },
+      ],
+      text: [
+        `Hello ${s.buyer.name},`,
+        "",
+        "Your payment is verified. Your template copy links:",
+        ...s.lines.map((l) => `${l.name}: ${l.copyLink}`),
+        "",
+        `Invoice: ${order.invoiceNumber}`,
+        `Paid: INR ${(order.totalPaise / 100).toFixed(2)} (including GST).`,
+        "Your GST tax invoice is attached. Open it and choose Print → Save as PDF, or download it from your checkout confirmation page.",
+        "Standard templates only. Customisation, setup services and third-party subscriptions are not included.",
+        "For your own business use only; not for resale or redistribution.",
+        `Support: founder@sheetomatic.com. Order: ${order.id}`,
+      ].join("\n"),
+    });
+    if (result.sent)
+      await prisma.templateCheckout.update({
+        where: { id: order.id },
+        data: { emailSentAt: new Date(), emailLeaseUntil: null },
+      });
+    else
+      throw new Error(
+        "Delivery email pending; retry after email configuration is restored.",
+      );
+  } catch (error) {
+    await prisma.templateCheckout.updateMany({
+      where: { id: order.id, emailLeaseUntil: lease },
+      data: { emailLeaseUntil: null },
+    });
+    throw error;
+  }
+}
+
+/** Reconcile directly with the provider. A caller's success/failure/cancel flag is never trusted. */
+export async function refreshCheckoutPayment(
+  order: Awaited<ReturnType<typeof ownedCheckout>>,
+) {
+  if (order.paidAt || !order.gatewayOrderId) return order;
+  const result = await razorpayRequest<{ items: GatewayPayment[] }>(
+    `orders/${order.gatewayOrderId}/payments`,
+  );
+  if (
+    !Array.isArray(result.items) ||
+    result.items.some((p) => p.order_id !== order.gatewayOrderId)
+  )
+    throw new Error("Invalid provider payment list.");
+  const captured = result.items.find(
+    (p) => p.status === "captured" && p.captured === true,
+  );
+  if (captured) return recordCapturedPayment(order.id, captured.id);
+  const pending = result.items.some((p) => p.status !== "failed");
+  const failed =
+    result.items.length > 0 && result.items.every((p) => p.status === "failed");
+  await prisma.templateCheckout.updateMany({
+    where: { id: order.id, paidAt: null },
+    data: { paymentState: pending ? "pending" : failed ? "failed" : "ready" },
+  });
+  return prisma.templateCheckout.findUniqueOrThrow({ where: { id: order.id } });
 }
 
 export function publicCheckout(
@@ -277,10 +341,9 @@ export function publicCheckout(
   const s = order.snapshot as unknown as CheckoutSnapshot;
   return {
     id: order.id,
-    paymentMode: order.paymentMode,
-    claimedPaymentRef: order.claimedPaymentRef,
-    paymentClaimed: Boolean(order.paymentClaimedAt),
     paid: Boolean(order.paidAt),
+    paymentState: order.paidAt ? "paid" : order.paymentState,
+    emailDelivered: Boolean(order.emailSentAt),
     invoiceNumber: order.invoiceNumber,
     totalPaise: order.totalPaise,
     totals: s.totals,
