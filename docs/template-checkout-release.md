@@ -51,3 +51,19 @@ The full local type check has seven pre-existing errors in unchanged billing, Fl
 ## Deployment constraint
 
 Production includes changes missing from main. Preserve its current preparation chain and recent pricing release; never deploy this entire old checkout directly. Publish with checkout disabled until the activation steps above pass. No production schema migration or credential change is performed by the storefront build.
+
+## Published gated storefront
+
+- Content commit: `4cdd1b6e4ffe51aefcb0c2b7cff9e1075cf36376`.
+- Reviewed build commit: `bb19995137b864dec06d8b45eabbb576c9a7c120` (`scripts/shop.mjs`).
+- Previous production / rollback: `dpl_EhnRGnY9J4TVN3PhXJTq9T2h3s89`.
+- Published deployment: `dpl_9agEkCTH1dEXa52m1yuGVeN5UAvf`.
+- URL: `https://sheetomatic.com/templates`.
+
+31 local tests passed: 9 commerce/security tests, 7 real-local-database checkout tests with mocked gateway/email and 15 pricing-regression tests. The additive SQL migration was separately executed successfully on an empty local test database. Three existing pricing-assistant patch tests passed. Changed-file ESLint and diff checks passed. The remote production build passed 24 tests, TypeScript and generation of 240 static pages. No production migrations were executed.
+
+Browser tests passed at 390px and 1440px locally (mocked payment success) and on both the staged and published site (real catalogue/cart, no payment submission). Checks cover prices below ₹999, cart persistence and removal, GST splits, disabled payment gate, no horizontal overflow/runtime errors, preservation of the 13-row pricing comparison and unchanged headings on the homepage, Courses, Contact and FMS pages.
+
+After promotion, the Vercel production target was verified. Public no-data probes returned the expected HTTP statuses: checkout 503 while disabled, retired legacy order creation 410, unauthorised invoice 404, unsigned webhook 401. No real payment, customer email or order was created by these checks.
+
+**Still pending:** securely configure and verify the merchant keys/webhook; apply the reviewed additive production migration; confirm the seller tax profile/classification; run Razorpay test-mode end-to-end checks; then explicitly enable live checkout. Automatic payments, fulfilment and tax invoices must not be described as live before those gates pass.
