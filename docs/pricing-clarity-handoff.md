@@ -70,3 +70,20 @@ Homepage, Courses, Contact and FMS page headings matched the saved prior-product
 Vercel's project production target was confirmed to be the new deployment. The Enterprise bundle note, complete comparison and request-labelled CTAs were also confirmed by an independent HTTPS request to the public pricing page.
 
 The previous production deployment remains available as the rollback target; it was not deleted. Future deployments must retain the build-time preparation chain or reconcile the complete production source into Git first. Deploying the old main checkout directly would lose unrelated live changes.
+
+## Verified plan-inclusion update — 20 October 2026
+
+- Unified Task Management and Task Delegation into one Starter feature, inherited by Scale and Enterprise.
+- Reports are included with every module in the selected plan, not an Enterprise-only upgrade.
+- Enterprise now lists Field Executive Tracking, Conveyance Expenses and Payment Systems, alongside HRMS and IMS / Stock.
+- Updated plan cards, derived comparison, FAQs and website-assistant pricing guidance. Prices remain ₹4,999 / ₹6,999 / ₹9,999 per month plus GST. This is a marketing update; no module implementation, customer entitlements, database or billing settings were changed.
+
+Content commit: `66306d6ff0b29d00c414c8f35b0692ee9fdfb074`. Reviewed build commit: `ab28ea6123bcc1d07b6ae5ebf47ea1ccf9f17a3f`.
+
+Redeployed the preserved production snapshot from `dpl_5ukjgeFNa3VPwmzkNCZXdCdcvbzn` using the same prepare-only chain and checksum guards. Assistant guidance was updated through narrowly matched replacements that fail closed on unexpected source. No migrations or seed commands were run.
+
+New production: `dpl_EhnRGnY9J4TVN3PhXJTq9T2h3s89`, `https://sheetomatic-redesign-8zm04x8o0-sheetomatic.vercel.app`. Public page: `https://sheetomatic.com/pricing`.
+
+Verification: 15 pricing tests and 3 guarded-copy tests passed locally; changed-file ESLint and diff checks passed. Vercel reran all 15 pricing tests, passed production TypeScript and generated all 238 static pages. Local, staged and public browser checks passed at 390px and 1440px, including 13 comparison rows, feature inheritance, three per-plan report notes, unchanged prices, request links, anchors, keyboard FAQs, no page overflow and no uncaught runtime errors. Homepage, Courses, Contact and FMS page headings matched the prior-production baseline both before and after promotion. No forms were submitted.
+
+The Vercel project production target was verified after promotion, and a separate public HTTPS request confirmed the revised labels. The previous deployment remains available for rollback. Future releases must preserve this production preparation chain.
