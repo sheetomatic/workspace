@@ -3739,6 +3739,31 @@ enum TemplateProductType {
   EXCEL
 }
 
+/// Immutable checkout snapshot; no changes to legacy manually confirmed orders.
+model TemplateCheckout {
+  id               String   @id @default(cuid())
+  accessHash       String   @unique
+  requestHash      String
+  organizationId   String
+  snapshot         Json
+  totalPaise       Int
+  gatewayOrderId   String?  @unique
+  gatewayPaymentId String?  @unique
+  paidAt           DateTime?
+  invoiceNumber    String?  @unique
+  emailSentAt      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([organizationId, createdAt])
+}
+
+/// Dedicated ST invoice series, allocated atomically only after captured payment.
+model TemplateInvoiceCounter {
+  year  String @id
+  value Int
+}
+
 enum TemplateOrderStatus {
   PENDING
   PAYMENT_RECEIVED

@@ -69,6 +69,8 @@ await writeFile("/tmp/pricing-plan-copy.mjs", await reviewedFile(
 run(process.execPath, ["/tmp/pricing-plan-copy.mjs"]);
 console.log("Applied pricing-only fix; retained production Courses and client-access updates.");
 run("npx", ["vitest", "run", "src/lib/content/business-systems-pricing.test.ts"]);
-run("npm", ["run", "db:generate"]);
-run("npx", ["next", "build"]);
+if (!process.argv.includes("--prepare-only")) {
+  run("npm", ["run", "db:generate"]);
+  run("npx", ["next", "build"]);
+}
 // Deliberately no migrate, seed, db execute, or npm run build.

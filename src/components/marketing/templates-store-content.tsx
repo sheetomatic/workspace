@@ -1,20 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { buildWhatsAppUrl, whatsappDisplayNumber } from "@/app/site-content";
-import { marketingButtonClass } from "@/components/marketing/marketing-button-class";
-import { WhatsAppIcon } from "@/components/marketing/marketing-icons";
+import { useEffect, useRef, useState } from "react";
+import { buildWhatsAppUrl } from "@/app/site-content";
 import {
   CLOUD_SOFTWARES_ANCHOR,
   TEMPLATE_STORE_CATEGORIES,
-  type TemplateStoreCategoryId,
   templateTypeToCategory,
+  type TemplateStoreCategoryId,
 } from "@/lib/templates/categories";
 import type { CloudSoftwareProduct } from "@/lib/templates/cloud-softwares";
-import { RazorpayPayFrame } from "@/components/marketing/razorpay-pay-frame";
-import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
+import { GST_STATE_OPTIONS } from "@/lib/leads/gst-invoice";
+import { cartTotals, inr, parseTemplateBuyer } from "@/lib/templates/commerce";
 import "./templates-store.css";
+import "./template-cart.css";
 
 export type PublicTemplateProduct = {
   id: string;
@@ -24,611 +23,672 @@ export type PublicTemplateProduct = {
   priceInr: number;
   description: string | null;
   thumbnailUrl: string | null;
+  purchasable: boolean;
 };
+type Order = {
+  id: string;
+  paid: boolean;
+  invoiceNumber: string | null;
+  totalPaise: number;
+  gatewayOrderId: string;
+  keyId: string;
+  lines: { name: string; priceInr: number; copyLink?: string }[];
+};
+type Access = { id: string; token: string };
+const CART_KEY = "sheetomatic-template-cart-v1";
+const ORDER_KEY = "sheetomatic-template-checkout-v1";
 
-type Step = "catalog" | "details" | "pay";
-type CategoryFilter = TemplateStoreCategoryId | "all";
-type Selection =
-  | { kind: "template"; id: string }
-  | { kind: "cloud"; id: string };
-
-function typeLabel(type: PublicTemplateProduct["type"]) {
-  if (type === "APPSHEET") return "AppSheet";
-  if (type === "SHEETS") return "Google Sheets";
-  return "Excel";
+function freshToken() {
+  return Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) =>
+    b.toString(16).padStart(2, "0"),
+  ).join("");
 }
-
-function selectionFromCategory(
-  category: CategoryFilter,
-  products: PublicTemplateProduct[],
-  cloudProducts: CloudSoftwareProduct[],
-): Selection | null {
-  if (category === "cloud" || (category === "all" && products.length === 0)) {
-    const first = cloudProducts[0];
-    return first ? { kind: "cloud", id: first.id } : null;
-  }
-  const match =
-    category === "all"
-      ? products[0]
-      : products.find((product) => templateTypeToCategory(product.type) === category);
-  return match ? { kind: "template", id: match.id } : null;
+async function loadGateway() {
+  if (window.Razorpay) return;
+  await new Promise<void>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve();
+    script.onerror = () => {
+      script.remove();
+      reject(new Error("Could not load Razorpay. Please retry."));
+    };
+    document.body.appendChild(script);
+  });
 }
 
 export function TemplatesStoreContent({
   products,
   cloudProducts,
   initialCategory = "all",
+  checkoutEnabled = false,
+  sellerStateCode = "22",
 }: {
   products: PublicTemplateProduct[];
   cloudProducts: CloudSoftwareProduct[];
-  initialCategory?: CategoryFilter;
+  initialCategory?: TemplateStoreCategoryId | "all";
+  checkoutEnabled?: boolean;
+  sellerStateCode?: string;
 }) {
-  const [category, setCategory] = useState<CategoryFilter>(initialCategory);
-  const [selected, setSelected] = useState<Selection | null>(() =>
-    selectionFromCategory(initialCategory, products, cloudProducts),
-  );
-  const [step, setStep] = useState<Step>("catalog");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [company, setCompany] = useState("");
-  const [city, setCity] = useState("");
-  const [requirement, setRequirement] = useState("");
-  const [paymentRef, setPaymentRef] = useState("");
-  const [orderId, setOrderId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [category, setCategory] = useState(initialCategory);
+  const [cart, setCart] = useState<string[]>([]);
+  const [buyer, setBuyer] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    billedTo: "",
+    address: "",
+    city: "",
+    stateCode: "",
+    pin: "",
+    gstin: "",
+  });
+  const [accepted, setAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [utr, setUtr] = useState("");
-  const [proofFile, setProofFile] = useState<File | null>(null);
-  const [proofBusy, setProofBusy] = useState(false);
-  const [proofError, setProofError] = useState<string | null>(null);
-  const [proofDone, setProofDone] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
+  const [order, setOrder] = useState<Order | null>(null);
+  const [access, setAccess] = useState<Access | null>(null);
+  const token = useRef<string | null>(null);
+  const cartSection = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const hash = window.location.hash.replace("#", "");
-    if (hash === CLOUD_SOFTWARES_ANCHOR || hash === "mobile-shop-ops") {
-      setCategory("cloud");
-      const first = cloudProducts[0];
-      if (first) {
-        setSelected({ kind: "cloud", id: first.id });
-        setStep("catalog");
+    // Restore browser-only state after hydration. No PII or payment details are persisted.
+    try {
+      const saved = JSON.parse(localStorage.getItem(CART_KEY) ?? "[]");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (Array.isArray(saved))
+        setCart(
+          [
+            ...new Set(
+              saved.filter(
+                (id): id is string =>
+                  typeof id === "string" && products.some((p) => p.id === id),
+              ),
+            ),
+          ].slice(0, 20),
+        );
+      const pending = JSON.parse(sessionStorage.getItem(ORDER_KEY) ?? "null");
+      if (
+        pending &&
+        /^[a-f0-9]{64}$/.test(pending.token) &&
+        typeof pending.id === "string"
+      ) {
+        setAccess(pending);
+        token.current = pending.token;
       }
+    } catch {
+      /* Cart remains usable without browser storage. */
     }
-  }, [cloudProducts]);
-
-  const selectedTemplate = useMemo(
-    () =>
-      selected?.kind === "template"
-        ? (products.find((product) => product.id === selected.id) ?? null)
-        : null,
-    [products, selected],
-  );
-  const selectedCloud = useMemo(
-    () =>
-      selected?.kind === "cloud"
-        ? (cloudProducts.find((product) => product.id === selected.id) ?? null)
-        : null,
-    [cloudProducts, selected],
-  );
-
-  const groupedTemplates = useMemo(() => {
-    const sheets = products.filter(
-      (product) => templateTypeToCategory(product.type) === "sheets",
-    );
-    const appsheet = products.filter(
-      (product) => templateTypeToCategory(product.type) === "appsheet",
-    );
-    return { sheets, appsheet };
   }, [products]);
 
-  const visibleCategories = TEMPLATE_STORE_CATEGORIES.filter((item) => {
-    if (category !== "all" && item.id !== category) return false;
-    if (item.id === "sheets") return groupedTemplates.sheets.length > 0;
-    if (item.id === "appsheet") return groupedTemplates.appsheet.length > 0;
-    return cloudProducts.length > 0;
-  });
-
-  function selectTemplate(product: PublicTemplateProduct) {
-    setSelected({ kind: "template", id: product.id });
-    setStep("catalog");
-    setOrderId(null);
-    setError(null);
-    setUtr("");
-    setProofFile(null);
-    setProofError(null);
-    setProofDone(null);
-  }
-
-  function selectCloud(product: CloudSoftwareProduct) {
-    setSelected({ kind: "cloud", id: product.id });
-    setStep("catalog");
-    setOrderId(null);
-    setError(null);
-  }
-
-  function changeCategory(next: CategoryFilter) {
-    setCategory(next);
-    const nextSelection = selectionFromCategory(next, products, cloudProducts);
-    if (nextSelection) {
-      if (nextSelection.kind === "template") {
-        const product = products.find((row) => row.id === nextSelection.id);
-        if (product) selectTemplate(product);
-      } else {
-        const product = cloudProducts.find((row) => row.id === nextSelection.id);
-        if (product) selectCloud(product);
-      }
+  const items = cart
+    .map((id) => products.find((p) => p.id === id))
+    .filter((p): p is PublicTemplateProduct => Boolean(p));
+  const totals = cartTotals(
+    items.map((p) => p.priceInr),
+    buyer.stateCode || sellerStateCode,
+    sellerStateCode,
+  );
+  function updateCart(ids: string[]) {
+    setCart(ids);
+    try {
+      localStorage.setItem(CART_KEY, JSON.stringify(ids));
+    } catch {
+      /* In-memory fallback. */
     }
   }
-
-  async function submitOrder() {
-    if (!selectedTemplate) return;
+  function add(p: PublicTemplateProduct) {
+    if (access || !p.purchasable || cart.includes(p.id)) return;
+    if (cart.length >= 20) {
+      setMessage("Up to 20 templates per order.");
+      return;
+    }
+    updateCart([...cart, p.id]);
+    setMessage(`${p.name} added to cart.`);
+  }
+  async function request(
+    path: string,
+    method = "GET",
+    body?: unknown,
+    auth = access?.token,
+  ) {
+    const response = await fetch(path, {
+      method,
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${auth}`,
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+    const data = await response.json();
+    if (!response.ok)
+      throw new Error(data.error ?? "Request failed. Please try again.");
+    return data as Order;
+  }
+  function acceptOrder(data: Order) {
+    setOrder(data);
+    if (data.paid) {
+      updateCart([]);
+      setMessage("Payment verified. Your templates and tax invoice are ready.");
+    }
+  }
+  async function checkPayment() {
+    if (!access) return;
     setBusy(true);
-    setError(null);
     try {
-      const response = await fetch("/api/templates/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productId: selectedTemplate.id,
-          customerName: name,
-          customerEmail: email,
-          customerPhone: phone,
-          company: company || undefined,
-          city: city || undefined,
-          requirement: requirement || undefined,
-          paymentRef: paymentRef || undefined,
-        }),
-      });
-      const data = (await response.json()) as {
-        ok?: boolean;
-        orderId?: string;
-        error?: string;
-      };
-      if (!response.ok || !data.ok || !data.orderId) {
-        setError(data.error ?? "Could not save order. Try WhatsApp us.");
+      const result = await request(`/api/templates/checkout/${access.id}`);
+      acceptOrder(result);
+      if (!result.paid)
+        setMessage(
+          "Payment is not yet confirmed. Do not pay again if your account was debited. Check again shortly or contact support.",
+        );
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Unable to check payment.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function pay() {
+    setBusy(true);
+    setMessage("");
+    try {
+      const validBuyer = access ? null : parseTemplateBuyer(buyer);
+      if (!accepted)
+        throw new Error(
+          "Accept the standard-template terms before continuing.",
+        );
+      await loadGateway();
+      if (!window.Razorpay) throw new Error("Razorpay did not load.");
+      token.current ??= freshToken();
+      const auth = token.current;
+      const current = access
+        ? await request(`/api/templates/checkout/${access.id}`)
+        : await request(
+            "/api/templates/checkout",
+            "POST",
+            {
+              productIds: cart,
+              buyer: { ...validBuyer, gstin: validBuyer?.gstin ?? "" },
+              acceptedTerms: true,
+            },
+            auth,
+          );
+      const saved = { id: current.id, token: auth };
+      setAccess(saved);
+      setOrder(current);
+      try {
+        sessionStorage.setItem(ORDER_KEY, JSON.stringify(saved));
+      } catch {
+        /* Retained in memory. */
+      }
+      if (current.paid) {
+        acceptOrder(current);
         return;
       }
-      setOrderId(data.orderId);
-      setStep("pay");
-    } catch {
-      setError("Network error. Try again.");
+      const gateway = new window.Razorpay({
+        key: current.keyId,
+        order_id: current.gatewayOrderId,
+        amount: current.totalPaise,
+        currency: "INR",
+        name: "Sheetomatic Technologies",
+        description: "Standard templates including GST",
+        prefill: validBuyer
+          ? {
+              name: validBuyer.name,
+              email: validBuyer.email,
+              contact: validBuyer.phone,
+            }
+          : {},
+        handler: async (result: unknown) => {
+          setBusy(true);
+          try {
+            acceptOrder(
+              await request(
+                `/api/templates/checkout/${current.id}`,
+                "POST",
+                result,
+                auth,
+              ),
+            );
+          } catch (e) {
+            setMessage(
+              e instanceof Error
+                ? e.message
+                : "Verification pending. Check payment status before retrying.",
+            );
+          } finally {
+            setBusy(false);
+          }
+        },
+        modal: {
+          ondismiss: () =>
+            setMessage(
+              "Checkout closed. Your order is saved. Check payment status before retrying if you were debited.",
+            ),
+        },
+        theme: { color: "#0369a1" },
+      });
+      gateway.open();
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Could not start checkout.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function invoice() {
+    if (!access || !order?.paid) return;
+    setBusy(true);
+    try {
+      const response = await fetch(
+        `/api/templates/checkout/${access.id}/invoice`,
+        {
+          headers: { Authorization: `Bearer ${access.token}` },
+          cache: "no-store",
+        },
+      );
+      if (!response.ok) throw new Error("Invoice is not available yet.");
+      const url = URL.createObjectURL(await response.blob());
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${order.invoiceNumber?.replaceAll("/", "-")}.html`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Invoice download failed.");
     } finally {
       setBusy(false);
     }
   }
 
-  async function submitProof() {
-    if (!orderId) return;
-    if (!utr.trim() && !proofFile) {
-      setProofError("Add the UPI reference (UTR) or upload a payment screenshot.");
-      return;
-    }
-    setProofBusy(true);
-    setProofError(null);
-    try {
-      const form = new FormData();
-      if (utr.trim()) form.set("utr", utr.trim());
-      if (proofFile) form.set("file", proofFile);
-      const response = await fetch(`/api/templates/order/${orderId}/proof`, {
-        method: "POST",
-        body: form,
-      });
-      const data = (await response.json()) as {
-        ok?: boolean;
-        message?: string;
-        error?: string;
-      };
-      if (!response.ok || !data.ok) {
-        setProofError(data.error ?? "Could not submit. Try again or WhatsApp us.");
-        return;
-      }
-      setProofDone(
-        data.message ??
-          "Confirmation received. We verify and email your copy link shortly.",
-      );
-    } catch {
-      setProofError("Network error. Try again.");
-    } finally {
-      setProofBusy(false);
-    }
-  }
-
-  const shopWa = selectedCloud
-    ? buildWhatsAppUrl(
-        `Hi Sheetomatic, I want the ${selectedCloud.name} license (₹${selectedCloud.priceMonthlyInr.toLocaleString("en-IN")}/mo) for my mobile shop — new/used phones, repairs, accessories.`,
-      )
-    : buildWhatsAppUrl(
-        "Hi Sheetomatic, I want a Cloud Software license for my shop.",
-      );
-
   return (
     <div className="tpl-page">
       <header className="tpl-hero">
-        <p className="tpl-eyebrow">Smart Office Templates</p>
-        <h1>Google Sheets, AppSheet &amp; Cloud Softwares</h1>
+        <p className="tpl-eyebrow">Ready-made. Priced for small businesses.</p>
+        <h1>Useful templates. Every copy under ₹999.</h1>
         <p className="tpl-lead">
-          Three shelves: Google Sheets Based copies, AppSheet Based apps, and
-          Cloud Softwares — native Sheetomatic apps you run in Workspace, not
-          another spreadsheet.
+          Google Sheets from ₹499. AppSheet copies up to ₹998. One-time template
+          purchase, without customisation. GST extra at checkout.
+        </p>
+        <p className="tpl-fine">
+          AppSheet / Google subscriptions, setup services and custom development
+          are not included. Hosted Cloud Software plans are sold separately.
         </p>
       </header>
-
       <nav className="tpl-cats" aria-label="Template categories">
-        <button
-          type="button"
-          className={category === "all" ? "tpl-cat is-active" : "tpl-cat"}
-          onClick={() => changeCategory("all")}
-        >
-          All
-        </button>
-        {TEMPLATE_STORE_CATEGORIES.map((item) => (
+        {[
+          { id: "all" as const, label: "All products" },
+          ...TEMPLATE_STORE_CATEGORIES,
+        ].map((c) => (
           <button
-            key={item.id}
+            key={c.id}
             type="button"
-            className={category === item.id ? "tpl-cat is-active" : "tpl-cat"}
-            onClick={() => changeCategory(item.id)}
+            className={`tpl-cat${category === c.id ? " is-active" : ""}`}
+            aria-pressed={category === c.id}
+            onClick={() => setCategory(c.id)}
           >
-            {item.label}
+            {c.label}
           </button>
         ))}
-      </nav>
-
-      <div className={`tpl-layout${step === "pay" ? " is-paying" : ""}`}>
-        <section className="tpl-catalog" aria-label="Catalog">
-          {visibleCategories.length === 0 ? (
-            <p>No templates listed yet.</p>
-          ) : (
-            visibleCategories.map((item) => {
-              const rows =
-                item.id === "sheets"
-                  ? groupedTemplates.sheets
-                  : item.id === "appsheet"
-                    ? groupedTemplates.appsheet
-                    : [];
-              return (
-                <div
-                  className="tpl-group"
-                  key={item.id}
-                  id={item.id === "cloud" ? CLOUD_SOFTWARES_ANCHOR : item.id}
-                >
-                  <h2>{item.label}</h2>
-                  {item.id === "cloud" ? (
-                    <ul className="tpl-product-list">
-                      {cloudProducts.map((product) => {
-                        const isSelected =
-                          selected?.kind === "cloud" && selected.id === product.id;
-                        return (
-                          <li key={product.id} id={product.key}>
-                            <button
-                              type="button"
-                              className={isSelected ? "tpl-card is-selected" : "tpl-card"}
-                              onClick={() => selectCloud(product)}
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                className="tpl-thumb"
-                                src={product.thumbnailUrl}
-                                alt=""
-                                width={120}
-                                height={120}
-                              />
-                              <span className="tpl-card-body">
-                                <span className="tpl-card-name">{product.name}</span>
-                                <span className="tpl-card-meta">
-                                  Cloud Softwares · ₹
-                                  {product.priceMonthlyInr.toLocaleString("en-IN")}
-                                  / month
-                                </span>
-                                {product.features.length > 0 ? (
-                                  <ul className="tpl-card-features">
-                                    {product.features.map((feature) => (
-                                      <li key={feature}>{feature}</li>
-                                    ))}
-                                  </ul>
-                                ) : (
-                                  <span className="tpl-card-desc">{product.icp}</span>
-                                )}
-                              </span>
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ) : (
-                    <ul className="tpl-product-list">
-                      {rows.map((product) => {
-                        const isSelected =
-                          selected?.kind === "template" &&
-                          selected.id === product.id;
-                        return (
-                          <li key={product.id}>
-                            <button
-                              type="button"
-                              className={isSelected ? "tpl-card is-selected" : "tpl-card"}
-                              onClick={() => selectTemplate(product)}
-                            >
-                              {product.thumbnailUrl ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                  className="tpl-thumb"
-                                  src={product.thumbnailUrl}
-                                  alt=""
-                                  width={120}
-                                  height={120}
-                                />
-                              ) : (
-                                <span className="tpl-thumb tpl-thumb-empty" aria-hidden />
-                              )}
-                              <span className="tpl-card-body">
-                                <span className="tpl-card-name">{product.name}</span>
-                                <span className="tpl-card-meta">
-                                  {typeLabel(product.type)} · ₹
-                                  {product.priceInr.toLocaleString("en-IN")}
-                                </span>
-                                {product.description ? (
-                                  <span className="tpl-card-desc">
-                                    {product.description}
-                                  </span>
-                                ) : null}
-                              </span>
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </div>
-              );
+        <button
+          type="button"
+          className="tpl-cat"
+          onClick={() =>
+            cartSection.current?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
             })
-          )}
-        </section>
-
-        <aside className="tpl-checkout" aria-label="Checkout">
-          {selectedCloud ? (
-            <div className="tpl-form">
-              <p className="tpl-eyebrow">Cloud Softwares</p>
-              <h2>{selectedCloud.name}</h2>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                className="tpl-checkout-thumb"
-                src={selectedCloud.thumbnailUrl}
-                alt=""
-                width={280}
-                height={280}
-              />
-              <p className="tpl-price">
-                ₹{selectedCloud.priceMonthlyInr.toLocaleString("en-IN")}
-                <span className="tpl-price-period"> / month per shop</span>
-              </p>
-              <p className="tpl-fine">
-                ₹{selectedCloud.priceAnnualInr.toLocaleString("en-IN")} / year ·
-                excl. GST. Native Sheetomatic app — not a Google Sheet or
-                AppSheet copy.
-              </p>
-              <p className="tpl-fine">{selectedCloud.description}</p>
-              {selectedCloud.features.length > 0 ? (
-                <ul className="tpl-card-features tpl-checkout-features">
-                  {selectedCloud.features.map((feature) => (
-                    <li key={feature}>{feature}</li>
-                  ))}
-                </ul>
-              ) : null}
-              <ol className="tpl-steps">
-                <li>Have (or buy) a Sheetomatic workspace</li>
-                <li>Admin: Mobile shop → License → Request</li>
-                <li>Pay the UPI invoice. We confirm the UTR</li>
-                <li>Open Mobile shop. Counter starts</li>
-              </ol>
-              <div className="tpl-cloud-actions">
-                <a className={marketingButtonClass("whatsapp")} href={shopWa}>
-                  <span className="btn-cta-icon-wrap" aria-hidden>
-                    <WhatsAppIcon className="btn-cta-icon" size={18} />
-                  </span>
-                  <span>WhatsApp {whatsappDisplayNumber}</span>
-                </a>
-                <Link
-                  className={marketingButtonClass("secondary")}
-                  href={WORKSPACE_LOGIN_HREF}
-                >
-                  Existing customer — sign in
-                </Link>
-                <Link className={marketingButtonClass("secondary")} href="/pricing">
-                  Workspace plans
-                </Link>
-              </div>
-            </div>
-          ) : !selectedTemplate ? (
-            <p>Select a template to continue.</p>
-          ) : step === "pay" && orderId ? (
-            <div className="tpl-done">
-              <h2>Pay ₹{selectedTemplate.priceInr.toLocaleString("en-IN")}</h2>
-              <ol className="tpl-steps">
-                <li className={proofDone ? "is-done" : "is-active"}>
-                  Pay on Razorpay — the amount is already filled in
-                </li>
-                <li className={proofDone ? "is-done" : ""}>
-                  Upload the payment confirmation below
-                </li>
-                <li>We verify &amp; email your Make a copy link to{" "}
-                  <strong>{email}</strong>
-                </li>
-              </ol>
-
-              <RazorpayPayFrame
-                amountInr={selectedTemplate.priceInr}
-                description={selectedTemplate.name}
-                email={email}
-                phone={phone}
-              />
-
-              {proofDone ? (
-                <div className="tpl-proof-done">
-                  <p>
-                    <strong>✓ {proofDone}</strong>
+          }
+        >
+          Cart ({cart.length})
+        </button>
+      </nav>
+      <div className="tpl-layout">
+        <section className="tpl-catalog" aria-label="Templates">
+          {products
+            .filter(
+              (p) =>
+                category === "all" ||
+                templateTypeToCategory(p.type) === category,
+            )
+            .map((p) => (
+              <article className="tpl-shop-card" key={p.id}>
+                {p.thumbnailUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    className="tpl-thumb"
+                    src={p.thumbnailUrl}
+                    alt=""
+                    width={120}
+                    height={120}
+                  />
+                )}
+                <div>
+                  <p className="tpl-eyebrow">
+                    {p.type === "APPSHEET"
+                      ? "AppSheet copy"
+                      : "Spreadsheet template"}
+                  </p>
+                  <h2>{p.name}</h2>
+                  <p className="tpl-fine">
+                    {p.description?.split(/Pay on UPI|Pay on Razorpay/i)[0]}
+                  </p>
+                  <p className="tpl-shop-price">
+                    {inr(p.priceInr * 100)} <small>+ 18% GST · one-time</small>
                   </p>
                   <p className="tpl-fine">
-                    Order ID: <code>{orderId}</code>
+                    Standard copy only · No customisation
                   </p>
-                </div>
-              ) : (
-                <form
-                  className="tpl-proof-form"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    void submitProof();
-                  }}
-                >
-                  <h3>Paid? Confirm it here</h3>
-                  <label>
-                    UPI reference (UTR)
-                    <input
-                      value={utr}
-                      onChange={(e) => setUtr(e.target.value)}
-                      placeholder="UTR or Razorpay payment ID"
-                      inputMode="numeric"
-                    />
-                  </label>
-                  <label>
-                    Payment screenshot
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp,image/heic,application/pdf"
-                      onChange={(e) => setProofFile(e.target.files?.[0] ?? null)}
-                    />
-                  </label>
-                  {proofError ? <p className="tpl-error">{proofError}</p> : null}
                   <button
-                    type="submit"
+                    type="button"
                     className="tpl-btn primary"
-                    disabled={proofBusy}
+                    disabled={
+                      !p.purchasable || cart.includes(p.id) || Boolean(access)
+                    }
+                    onClick={() => add(p)}
                   >
-                    {proofBusy ? "Submitting…" : "I've paid — submit confirmation"}
+                    {!p.purchasable
+                      ? "Coming soon"
+                      : cart.includes(p.id)
+                        ? "Added to cart"
+                        : "Add to cart"}
                   </button>
-                  <p className="tpl-fine">
-                    Order ID: <code>{orderId}</code> · UTR or screenshot, either
-                    works. We approve and the copy link lands in your inbox.
-                  </p>
-                </form>
-              )}
-            </div>
-          ) : step === "details" ? (
-            <form
-              className="tpl-form"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void submitOrder();
-              }}
-            >
-              <h2>Your details</h2>
-              <p className="tpl-price">
-                {selectedTemplate.name} · ₹
-                {selectedTemplate.priceInr.toLocaleString("en-IN")}
-              </p>
-              <label>
-                Full name *
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  autoComplete="name"
-                />
-              </label>
-              <label>
-                Email * (copy link arrives here)
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                />
-              </label>
-              <label>
-                WhatsApp / phone *
-                <input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
-                  autoComplete="tel"
-                />
-              </label>
-              <label>
-                Company
-                <input
-                  value={company}
-                  onChange={(e) => setCompany(e.target.value)}
-                  autoComplete="organization"
-                />
-              </label>
-              <label>
-                City
-                <input
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  autoComplete="address-level2"
-                />
-              </label>
-              <label>
-                Requirement / notes
-                <input
-                  value={requirement}
-                  onChange={(e) => setRequirement(e.target.value)}
-                  placeholder="How you plan to use this template"
-                />
-              </label>
-              <label>
-                UPI reference (optional)
-                <input
-                  value={paymentRef}
-                  onChange={(e) => setPaymentRef(e.target.value)}
-                  placeholder="UTR or last 4 digits after paying"
-                />
-              </label>
-              {error ? <p className="tpl-error">{error}</p> : null}
-              <div className="tpl-form-actions">
-                <button
-                  type="button"
-                  className="tpl-btn"
-                  onClick={() => setStep("catalog")}
-                >
-                  Back
-                </button>
-                <button
-                  type="submit"
-                  className="tpl-btn primary"
-                  disabled={busy}
-                >
-                  {busy ? "Saving…" : "Continue to payment"}
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div className="tpl-form">
-              <h2>{selectedTemplate.name}</h2>
-              {selectedTemplate.thumbnailUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  className="tpl-checkout-thumb"
-                  src={selectedTemplate.thumbnailUrl}
-                  alt=""
-                  width={280}
-                  height={280}
-                />
-              ) : null}
-              <p className="tpl-price">
-                ₹{selectedTemplate.priceInr.toLocaleString("en-IN")}
-              </p>
-              {selectedTemplate.description ? (
-                <p className="tpl-fine">{selectedTemplate.description}</p>
-              ) : null}
+                </div>
+              </article>
+            ))}
+          {(category === "all" || category === "cloud") &&
+            cloudProducts.length > 0 && (
+              <section id={CLOUD_SOFTWARES_ANCHOR}>
+                <h2>Hosted Cloud Software</h2>
+                <p className="tpl-fine">
+                  Separate recurring subscriptions, not part of the one-time
+                  template offer.
+                </p>
+                {cloudProducts.map((p) => (
+                  <article className="tpl-shop-card" id={p.key} key={p.id}>
+                    <div>
+                      <h3>{p.name}</h3>
+                      <p>{p.description}</p>
+                      <p>{inr(p.priceMonthlyInr * 100)} / month + GST</p>
+                      <a
+                        className="tpl-btn"
+                        href={buildWhatsAppUrl(
+                          `I would like details of ${p.name}, the hosted Cloud Software subscription.`,
+                        )}
+                      >
+                        Discuss this subscription
+                      </a>{" "}
+                      <Link href="/pricing">Workspace plans</Link>
+                    </div>
+                  </article>
+                ))}
+              </section>
+            )}
+        </section>
+        <aside
+          className="tpl-checkout"
+          ref={cartSection}
+          aria-label="Shopping cart"
+        >
+          <h2>Your cart {items.length > 0 && `(${items.length})`}</h2>
+          <div role="status" aria-live="polite" className="tpl-cart-message">
+            {message}
+          </div>
+          {access && (
+            <div className="tpl-cart-notice">
+              <p>Saved order: {access.id}</p>
               <button
+                className="tpl-btn"
                 type="button"
-                className="tpl-btn primary"
-                onClick={() => setStep("details")}
+                disabled={busy}
+                onClick={() => void checkPayment()}
               >
-                Add to cart
+                Check payment status
               </button>
             </div>
+          )}
+          {order?.paid ? (
+            <>
+              <h3>Payment verified</h3>
+              <p>
+                Invoice {order.invoiceNumber} · {inr(order.totalPaise)}
+              </p>
+              <ul>
+                {order.lines.map((l) => (
+                  <li key={l.name}>
+                    <a
+                      href={l.copyLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Open {l.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <button
+                className="tpl-btn primary"
+                type="button"
+                disabled={busy}
+                onClick={() => void invoice()}
+              >
+                Download tax invoice
+              </button>
+              <p className="tpl-fine">
+                Open the downloaded invoice and choose Print → Save as PDF.
+              </p>
+              <button
+                className="tpl-btn"
+                type="button"
+                onClick={() => {
+                  setAccess(null);
+                  setOrder(null);
+                  token.current = null;
+                  sessionStorage.removeItem(ORDER_KEY);
+                }}
+              >
+                Start another cart
+              </button>
+            </>
+          ) : (
+            <>
+              {items.length === 0 ? (
+                <p>Add a template to see your total.</p>
+              ) : (
+                <>
+                  <ul className="tpl-cart-lines">
+                    {items.map((p) => (
+                      <li key={p.id}>
+                        <span>
+                          {p.name}
+                          <br />
+                          <strong>{inr(p.priceInr * 100)}</strong>
+                        </span>
+                        <button
+                          type="button"
+                          className="tpl-cart-remove"
+                          aria-label={`Remove ${p.name}`}
+                          disabled={busy || Boolean(access)}
+                          onClick={() =>
+                            updateCart(cart.filter((id) => id !== p.id))
+                          }
+                        >
+                          Remove
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <dl className="tpl-cart-totals">
+                    <div>
+                      <dt>Subtotal</dt>
+                      <dd>{inr(totals.subtotalPaise)}</dd>
+                    </div>
+                    {!buyer.stateCode ? (
+                      <div>
+                        <dt>GST (18%) — estimate</dt>
+                        <dd>{inr(totals.gstPaise)}</dd>
+                      </div>
+                    ) : totals.igstPaise ? (
+                      <div>
+                        <dt>IGST (18%)</dt>
+                        <dd>{inr(totals.igstPaise)}</dd>
+                      </div>
+                    ) : (
+                      <>
+                        <div>
+                          <dt>CGST (9%)</dt>
+                          <dd>{inr(totals.cgstPaise)}</dd>
+                        </div>
+                        <div>
+                          <dt>SGST (9%)</dt>
+                          <dd>{inr(totals.sgstPaise)}</dd>
+                        </div>
+                      </>
+                    )}
+                    <div>
+                      <dt>Total including GST</dt>
+                      <dd>
+                        <strong>
+                          {inr(order?.totalPaise ?? totals.totalPaise)}
+                        </strong>
+                      </dd>
+                    </div>
+                  </dl>
+                  <form
+                    className="tpl-form"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void pay();
+                    }}
+                  >
+                    <h3>Billing details</h3>
+                    <p className="tpl-fine">
+                      Your invoice uses these details. Indian billing addresses
+                      only.
+                    </p>
+                    <fieldset
+                      disabled={busy || Boolean(access)}
+                      className="tpl-cart-fields"
+                    >
+                      {(
+                        [
+                          {
+                            key: "name",
+                            label: "Full name",
+                            type: "text",
+                            max: 120,
+                          },
+                          {
+                            key: "email",
+                            label: "Email for delivery",
+                            type: "email",
+                            max: 254,
+                          },
+                          {
+                            key: "phone",
+                            label: "Phone",
+                            type: "tel",
+                            max: 25,
+                          },
+                          {
+                            key: "billedTo",
+                            label: "Company / billing name (optional)",
+                            type: "text",
+                            max: 200,
+                          },
+                          {
+                            key: "address",
+                            label: "Billing address",
+                            type: "text",
+                            max: 500,
+                          },
+                          { key: "city", label: "City", type: "text", max: 80 },
+                          {
+                            key: "pin",
+                            label: "PIN code",
+                            type: "text",
+                            max: 6,
+                          },
+                          {
+                            key: "gstin",
+                            label: "GSTIN (optional)",
+                            type: "text",
+                            max: 15,
+                          },
+                        ] as const
+                      ).map((f) => (
+                        <label key={f.key}>
+                          {f.label}
+                          <input
+                            name={f.key}
+                            value={buyer[f.key]}
+                            type={f.type}
+                            maxLength={f.max}
+                            required={f.key !== "billedTo" && f.key !== "gstin"}
+                            onChange={(e) =>
+                              setBuyer({ ...buyer, [f.key]: e.target.value })
+                            }
+                          />
+                        </label>
+                      ))}
+                      <label>
+                        Billing state
+                        <select
+                          name="stateCode"
+                          required
+                          value={buyer.stateCode}
+                          onChange={(e) =>
+                            setBuyer({ ...buyer, stateCode: e.target.value })
+                          }
+                        >
+                          <option value="">Choose your state</option>
+                          {GST_STATE_OPTIONS.map((s) => (
+                            <option key={s.code} value={s.code}>
+                              {s.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </fieldset>
+                    <label className="tpl-cart-consent">
+                      <input
+                        type="checkbox"
+                        checked={accepted}
+                        onChange={(e) => setAccepted(e.target.checked)}
+                        required
+                      />
+                      I am purchasing standard template copies for my own
+                      business, without customisation, setup services or
+                      third-party subscriptions. I agree to the{" "}
+                      <Link href="/terms">terms</Link>.
+                    </label>
+                    {!checkoutEnabled && (
+                      <p className="tpl-cart-notice">
+                        Online checkout is being configured. You can build your
+                        cart, but no payment will be collected yet.
+                      </p>
+                    )}
+                    <button
+                      className="tpl-btn primary"
+                      type="submit"
+                      disabled={
+                        !checkoutEnabled ||
+                        busy ||
+                        items.some((p) => !p.purchasable)
+                      }
+                    >
+                      {busy
+                        ? "Please wait…"
+                        : `Pay ${inr(order?.totalPaise ?? totals.totalPaise)} securely`}
+                    </button>
+                    <p className="tpl-fine">
+                      Payment is verified on our server. Your GST invoice and
+                      copy links unlock only after confirmation.
+                    </p>
+                  </form>
+                </>
+              )}
+            </>
           )}
         </aside>
       </div>

@@ -1,0 +1,87 @@
+[
+  {
+    "path": "src/app/templates/page.tsx",
+    "sha256": "c960516276b049ad4716462163e2be7bd41af78066da1310288bc3a6ec6b5ff7",
+    "before": "bb226add8317a7bff18c8d8e1487b1e406a438932b81aef23f28befbed8942c1"
+  },
+  {
+    "path": "src/components/marketing/templates-store-content.tsx",
+    "sha256": "3fc3732d88e66cef041b343e87e18dd80dcb97f6dfe9d42ca016dd14502e271c",
+    "before": "dd529457eef7b5fa75e3ebcce35a825527f12233fc536639f905646969428984"
+  },
+  {
+    "path": "src/lib/templates/store.ts",
+    "sha256": "dcaa71042a606a333fa17b730219c18d155c9a4ac681483a090e5a2831ee2b35",
+    "before": "ad588ffcd49d6231633dfe13b0c631ea1872dbfd1e8cff1fa11aa50692d0913c"
+  },
+  {
+    "path": "src/app/api/templates/order/route.ts",
+    "sha256": "0ab99313d2653011b6043c9b04be19ed1f4da5086fbffdcd2c28e081d1dc2d29",
+    "before": "398499a67f368199dcee9a657d5911ed8d9c8312dcb768bd1662ac8912dc2bd4"
+  },
+  {
+    "path": "src/components/marketing/template-cart.css",
+    "sha256": "e590018fc6ae1ce75fff8486bb1e10d936edee329cd2c34556626b51d7731a04",
+    "before": null
+  },
+  {
+    "path": "src/lib/templates/commerce.ts",
+    "sha256": "62de193ad94379ce990fae17029aa93363205588dc1d6d8009beb8c5890cd4d7",
+    "before": null
+  },
+  {
+    "path": "src/lib/templates/commerce.test.ts",
+    "sha256": "c6ff298315f037f060c7220ef63cad578caa9519f631fed46c0a5294e3571509",
+    "before": null
+  },
+  {
+    "path": "src/lib/templates/gateway.ts",
+    "sha256": "fb44c63815e0167f558f41eb7667de1ea61888a1f18d1b84f8e9980964e811f7",
+    "before": null
+  },
+  {
+    "path": "src/lib/templates/checkout.ts",
+    "sha256": "1111a87f9c66eff693c4ac3f64822d66657257e47be7dca1297da5a73bf29584",
+    "before": null
+  },
+  {
+    "path": "src/lib/templates/http.ts",
+    "sha256": "d0ff64c3d4ef3bba2042346e739fdefe2c578cbc6c90d669e83de17eeb08274b",
+    "before": null
+  },
+  {
+    "path": "src/lib/templates/invoice.ts",
+    "sha256": "6cb162f7429b8c7d2f826f84a22c6f56396f815a14da6f4c2289290ed9444fda",
+    "before": null
+  },
+  {
+    "path": "src/app/api/templates/checkout/route.ts",
+    "sha256": "1a95db2d1544d3a898cf333ae8506119e199e34f45ee5ffc9b3d6a5341c233ea",
+    "before": null
+  },
+  {
+    "path": "src/app/api/templates/checkout/[id]/route.ts",
+    "sha256": "494a65aac148d9bb5a6f7fee81e5bbfb478d5b973e8c170566791ee552cbef9b",
+    "before": null
+  },
+  {
+    "path": "src/app/api/templates/checkout/[id]/invoice/route.ts",
+    "sha256": "bf073a935831528867199c41292ad01692df2c628a306ee07683e4f8f5644d83",
+    "before": null
+  },
+  {
+    "path": "src/app/api/templates/webhook/route.ts",
+    "sha256": "a833e0d879c389158647cc67464940073154459f327e096d22d558686a2c7228",
+    "before": null
+  },
+  {
+    "path": "prisma/schema.prisma",
+    "sha256": "46da602a39ddce3dfd9b319e2fe8f2dfb9e7b8c04ceb1d15aa5faf345a3ab40d",
+    "before": null
+  },
+  {
+    "path": "scripts/pricing.mjs",
+    "sha256": "f0d1befeced412a8396dae16369fa424c81c6bce65ab9c7dd96cf06eed30af57",
+    "before": null
+  }
+]
