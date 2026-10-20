@@ -238,6 +238,7 @@ model Organization {
   maxFmsTemplates Int                      @default(3)
   isPrimary       Boolean                  @default(false)
   memberships     Membership[]
+  googleCalendarConnections GoogleCalendarConnection[]
   links           WorkspaceLink[]
   kpis            WorkspaceKpi[]
   metricCards     WorkspaceMetricCard[]
@@ -3302,6 +3303,44 @@ model InboundLeadFollowUp {
   @@index([organizationId, scheduledAt])
   @@index([organizationId, type, scheduledAt])
   @@index([leadId])
+}
+
+/// Read-only booking mirror. Separate from follow-ups so imports never trigger messaging.
+model GoogleCalendarConnection {
+  id             String   @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  calendarId     String
+  filterHash     String
+  syncToken      String?
+  pageToken      String?
+  fullSyncId     String?
+  leaseId        String?
+  leaseUntil     DateTime?
+  lastSyncedAt   DateTime?
+  lastError      String?
+  bookings       GoogleCalendarBooking[]
+  @@unique([organizationId, calendarId])
+}
+
+model GoogleCalendarBooking {
+  id                String   @id
+  connectionId      String
+  connection        GoogleCalendarConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  eventId           String
+  summary           String
+  attendeeName      String?
+  attendeeEmail     String?
+  startsAt          DateTime
+  endsAt            DateTime
+  sourceTimeZone    String?
+  status            String
+  providerUpdatedAt DateTime?
+  seenFullSyncId    String?
+  calendarUrl       String?
+  meetUrl           String?
+  @@unique([connectionId, eventId])
+  @@index([connectionId, status, startsAt])
 }
 
 enum WaCampaignStatus {

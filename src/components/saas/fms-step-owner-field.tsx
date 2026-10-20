@@ -147,7 +147,7 @@ export function FmsStepOwnerField({
                 <input
                   inputMode="tel"
                   name="whatsapp"
-                  placeholder="9329103106"
+                  placeholder="9876543210"
                   type="tel"
                 />
               </label>

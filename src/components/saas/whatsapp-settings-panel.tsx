@@ -125,7 +125,7 @@ export function WhatsAppSettingsPanel({
           />
           <small className="ws-wa-field-hint">
             Cloud API / inbox number only (e.g. +91 96857 88980). Website
-            communication number (+91 93291 03106) stays separate — do not put it
+            communication number (+91 97557 33107) stays separate — do not put it
             here.
           </small>
         </label>

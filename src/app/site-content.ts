@@ -1,9 +1,9 @@
-/** Website enquiries go to the official CRM-connected WhatsApp inbox. */
-export const whatsappPhone = "919685788980";
+/** Public sales WhatsApp; independent of the official CRM API sender below. */
+export const whatsappPhone = "919755733107";
 
-export const whatsappDisplayNumber = "+91 96857 88980";
+export const whatsappDisplayNumber = "+91 97557 33107";
 
-export const whatsappTel = "+919685788980";
+export const whatsappTel = "+919755733107";
 
 /** Voice / calling line for website Call buttons (separate from WhatsApp). */
 export const callingPhone = "919755733107";
@@ -12,7 +12,7 @@ export const callingDisplayNumber = "+91 97557 33107";
 
 export const callingTel = "+919755733107";
 
-/** Official Cloud API business number (inbox / Go Live and website enquiries). */
+/** Official Cloud API business number (inbox / Go Live); not the public redirect. */
 export const officialApiWhatsAppPhone = "919685788980";
 export const officialApiWhatsAppDisplay = "+91 96857 88980";
 

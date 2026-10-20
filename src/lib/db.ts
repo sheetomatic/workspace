@@ -31,6 +31,8 @@ const REQUIRED_DELEGATES = [
   "imsGatePass",
   "orgExpenseEntry",
   "fleetVehicle",
+  "googleCalendarConnection",
+  "googleCalendarBooking",
 ] as const;
 
 function createPrismaClient() {

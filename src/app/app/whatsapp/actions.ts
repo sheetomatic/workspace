@@ -486,7 +486,7 @@ export async function updateMemberWhatsAppPhone(
   if (!phone) {
     return {
       ok: false,
-      message: "WhatsApp number must be at least 10 digits (e.g. 9329103106).",
+      message: "WhatsApp number must be at least 10 digits (e.g. 9876543210).",
     };
   }
 

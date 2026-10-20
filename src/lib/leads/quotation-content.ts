@@ -1,4 +1,5 @@
 import type { QuotationRequestType, QuotationStatus } from "@prisma/client";
+import { whatsappDisplayNumber } from "@/app/site-content";
 
 /** Default payment terms for proposals. */
 export const DEFAULT_QUOTATION_PAYMENT_TERMS =
@@ -61,7 +62,7 @@ export function quotationTermsForRequestType(
 }
 
 export const QUOTATION_FOOTER_CONTACT =
-  "For queries, reply on WhatsApp +91 93291 03106 or email sheetomatic@gmail.com";
+  `For queries, reply on WhatsApp ${whatsappDisplayNumber} or email sheetomatic@gmail.com`;
 
 /**
  * Footer contact line. Sheetomatic's own phone/email only appear when the

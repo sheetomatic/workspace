@@ -73,7 +73,7 @@ export function LeadsWebBasedApiSettingsPanel({
           <input
             defaultValue={businessPhone}
             name="businessPhone"
-            placeholder="9329103106"
+            placeholder="9876543210"
             type="text"
             autoComplete="tel"
           />

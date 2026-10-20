@@ -2,7 +2,7 @@
 
 ## Scope and behaviour
 
-- Website WhatsApp links/display now use **+91 96857 88980**. Voice calls and payment/UPI details are unchanged.
+- Public WhatsApp links/display and voice calls now use **+91 97557 33107** (superseding the earlier callback release's public number). The official API sender remains **+91 96857 88980**. Payment/UPI details are unchanged.
 - Only the explicitly configured Sheetomatic primary workspace is eligible. Other tenants are untouched.
 - New WhatsApp/API/Facebook/Instagram sales enquiries get Sumit Chandra as assignee, a HIGH priority Sales task, a CRM follow-up and an audit activity in one transaction.
 - Existing assignments, historical captures, passive imports, archived/merged leads, completed calls and closed sales are not reassigned. Rule-inferred sales stages (e.g. FMS → SCHEDULE_MEETING) still qualify for a first callback.

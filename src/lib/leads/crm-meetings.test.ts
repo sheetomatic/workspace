@@ -51,6 +51,7 @@ describe("CRM meeting calendar helpers", () => {
       month: 1,
       upcoming: 2,
       done: 1,
+      cancelled: 0,
     });
     expect(filterCrmMeetings(rows, "upcoming", { now })).toHaveLength(2);
     expect(filterCrmMeetings(rows, "today", { now })).toHaveLength(1);

@@ -350,7 +350,7 @@ function MemberEditForm({
             defaultValue={whatsappInputValue(member.user.phone)}
             inputMode="tel"
             name="whatsapp"
-                    placeholder="9329103106"
+                    placeholder="9876543210"
             type="tel"
           />
         </label>
@@ -815,7 +815,7 @@ export function TeamManagementPanel({
                   <input
                     inputMode="tel"
                     name="whatsapp"
-                    placeholder="9329103106"
+                    placeholder="9876543210"
                     type="tel"
                   />
                 </label>

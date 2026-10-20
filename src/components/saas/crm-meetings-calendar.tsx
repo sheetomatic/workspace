@@ -23,7 +23,7 @@ import "./crm-meetings-calendar.css";
 
 export type CrmCalendarMeeting = {
   id: string;
-  leadId: string;
+  leadId: string | null;
   name: string;
   phone: string;
   whenLabel: string;
@@ -34,6 +34,9 @@ export type CrmCalendarMeeting = {
   notes: string;
   isToday: boolean;
   completed: boolean;
+  cancelled?: boolean;
+  source?: "CRM" | "GOOGLE_CALENDAR";
+  calendarUrl?: string | null;
 };
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -93,6 +96,7 @@ export function CrmMeetingsCalendar({
   const byDay = useMemo(() => {
     const map = new Map<string, CrmCalendarMeeting[]>();
     for (const meeting of meetings) {
+      if (meeting.cancelled) continue;
       const list = map.get(meeting.ymd) ?? [];
       list.push(meeting);
       map.set(meeting.ymd, list);
@@ -278,7 +282,7 @@ function MeetingRow({
           ) : (
             <span className="crm-meet-missing">No Meet link</span>
           )}
-          {meeting.completed ? null : (
+          {meeting.completed || meeting.cancelled || meeting.source === "GOOGLE_CALENDAR" ? null : (
             <button
               type="button"
               className="btn-secondary btn-sm"
@@ -289,13 +293,17 @@ function MeetingRow({
               {reminding ? "Sending…" : "Remind"}
             </button>
           )}
-          <Link
+          {meeting.leadId ? <Link
             className="btn-secondary btn-sm"
             href={crmLeadOpenHref(meeting.leadId, { tab: "meeting" })}
           >
             Open
             <ExternalLink size={14} aria-hidden />
-          </Link>
+          </Link> : meeting.calendarUrl ? (
+            <a className="btn-secondary btn-sm" href={meeting.calendarUrl} target="_blank" rel="noopener noreferrer">
+              Google Calendar <ExternalLink size={14} aria-hidden />
+            </a>
+          ) : null}
         </div>
       </div>
 
@@ -304,7 +312,7 @@ function MeetingRow({
           {meeting.assignee ? (
             <p className="crm-meet-notes">Assigned · {meeting.assignee}</p>
           ) : null}
-          {canManage ? (
+          {canManage && meeting.source !== "GOOGLE_CALENDAR" ? (
             <form
               className="crm-meet-save"
               onSubmit={(event) => {

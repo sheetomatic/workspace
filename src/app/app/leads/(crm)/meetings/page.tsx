@@ -13,6 +13,7 @@ import { followUpTypeLabel } from "@/lib/leads/follow-up-types";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
+import { googleCalendarSyncNotice } from "@/lib/leads/google-calendar-bookings";
 
 export default async function CrmMeetingsPage({
   searchParams,
@@ -25,7 +26,9 @@ export default async function CrmMeetingsPage({
   const params = await searchParams;
   const view = parseCrmMeetingView(params.view);
   const selectedDate = params.date?.trim() || null;
-  const rows = await listCrmMeetings(user.organizationId);
+  const [rows, syncNotice] = await Promise.all([
+    listCrmMeetings(user.organizationId), googleCalendarSyncNotice(user.organizationId),
+  ]);
 
   const meetings = rows.map((row) => {
     const scheduledAt = new Date(row.scheduledAt);
@@ -44,12 +47,15 @@ export default async function CrmMeetingsPage({
         timeZone: "Asia/Kolkata",
       }),
       ymd: istYmd(scheduledAt),
-      typeLabel: completed ? "Done" : followUpTypeLabel(row.type),
+      typeLabel: row.cancelled ? "Cancelled" : row.source === "GOOGLE_CALENDAR" ? "Google booking" : completed ? "Done" : followUpTypeLabel(row.type),
       assignee: row.assignee?.name || row.assignee?.email || "",
       meetUrl: resolveFollowUpMeetUrl(row.meetUrl, row.notes),
       notes: row.notes?.trim() || row.lead.meetingNotes?.trim() || "",
       isToday: isIstToday(scheduledAt),
       completed,
+      cancelled: row.cancelled,
+      source: row.source,
+      calendarUrl: row.calendarUrl,
     };
   });
 
@@ -58,7 +64,7 @@ export default async function CrmMeetingsPage({
   return (
     <CrmSubmoduleShell
       title="Meetings"
-      description="Click a number to see that list. Calendar dates show the same meetings. Auto WhatsApp reminders still run; use Remind to send one now."
+      description="CRM meetings and synced Google bookings, shown in IST. Cancelled bookings are excluded from active counts. Google bookings are read-only here and do not send CRM reminders. Past bookings are not automatically marked as attended."
       kpis={[
         {
           label: "Today",
@@ -92,8 +98,15 @@ export default async function CrmMeetingsPage({
           href: "/app/leads/meetings?view=done",
           active: view === "done",
         },
+        {
+          label: "Cancelled",
+          value: String(stats.cancelled),
+          href: "/app/leads/meetings?view=cancelled",
+          active: view === "cancelled",
+        },
       ]}
     >
+      <p role="status" className="text-sm text-slate-600">{syncNotice}</p>
       <CrmMeetingsCalendar
         meetings={meetings}
         canManage={canManage}

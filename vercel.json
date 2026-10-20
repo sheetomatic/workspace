@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/google-calendar-bookings",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/crm-callbacks",
       "schedule": "* * * * *"
     },

@@ -62,7 +62,7 @@ function LegalTeamInviteForm({
         </label>
         <label>
           WhatsApp
-          <input inputMode="tel" name="whatsapp" placeholder="9329103106" type="tel" />
+          <input inputMode="tel" name="whatsapp" placeholder="9876543210" type="tel" />
         </label>
         <label>
           Initial password

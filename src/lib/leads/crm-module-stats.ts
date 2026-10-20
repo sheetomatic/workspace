@@ -10,6 +10,7 @@ import { mergeLeadContactWhere } from "@/lib/leads/contact-validation";
 import type { CrmModuleNavCounts } from "@/lib/leads/crm-module-stats-types";
 import { NEXT_TIME_LEAD_STATUSES } from "@/lib/leads/status-labels";
 import { getSalesOrderStats } from "@/lib/sales-orders/queries";
+import { countUpcomingGoogleCalendarBookings, listGoogleCalendarBookings } from "@/lib/leads/google-calendar-bookings";
 
 export type { CrmModuleNavCounts } from "@/lib/leads/crm-module-stats-types";
 
@@ -86,7 +87,7 @@ export async function getCrmModuleNavCounts(
     leads,
     campaigns,
     nextTime,
-    meetings,
+    meetings: meetings + await countUpcomingGoogleCalendarBookings(organizationId, startOfIstDay(now)),
     quotations: quotationAgg._count._all,
     quotationValue: Number(quotationAgg._sum.totalAmount ?? 0),
     payments: paymentAgg._count._all,
@@ -98,9 +99,9 @@ export async function getCrmModuleNavCounts(
   };
 }
 
-export async function listCrmMeetings(organizationId: string, take = 400) {
+export async function listCrmMeetings(organizationId: string, take?: number) {
   const from = new Date(startOfIstDay().getTime() - 90 * 86_400_000);
-  return prisma.inboundLeadFollowUp.findMany({
+  const [manual, bookings] = await Promise.all([prisma.inboundLeadFollowUp.findMany({
     where: {
       organizationId,
       type: "MEETING",
@@ -124,7 +125,18 @@ export async function listCrmMeetings(organizationId: string, take = 400) {
       },
       assignee: { select: { id: true, name: true, email: true } },
     },
-  });
+  }), listGoogleCalendarBookings(organizationId, from)]);
+  return [
+    ...manual.map(row => ({ ...row, source: "CRM" as const, cancelled: false, calendarUrl: null as string | null })),
+    ...bookings.map(row => ({
+      id: row.id, scheduledAt: row.startsAt, completedAt: null, type: "MEETING" as const,
+      meetUrl: row.status === "CANCELLED" ? null : row.meetUrl,
+      notes: `${row.summary} · Google Calendar booking${row.sourceTimeZone ? ` · Source timezone: ${row.sourceTimeZone}` : ""}`,
+      assignee: null, source: "GOOGLE_CALENDAR" as const, cancelled: row.status === "CANCELLED", calendarUrl: row.calendarUrl,
+      lead: { id: null, name: row.attendeeName || row.attendeeEmail || row.summary, phone: null,
+        company: null, status: "DEMO_SCHEDULED" as const, meetingNotes: null },
+    })),
+  ].sort((a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime());
 }
 
 export async function listCrmQuotations(organizationId: string, take = 100) {
@@ -207,6 +219,7 @@ export async function getCrmMeetingsStats(organizationId: string) {
     rows.map((row) => ({
       ymd: istYmd(new Date(row.scheduledAt)),
       completed: Boolean(row.completedAt),
+      cancelled: row.cancelled,
     })),
   );
   return { ...counts, total: counts.upcoming };

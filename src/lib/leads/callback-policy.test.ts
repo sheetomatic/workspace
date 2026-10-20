@@ -32,9 +32,9 @@ describe("IST callback policy", () => {
     expect(callbackAgentConfig({ CRM_CALLBACK_ENABLED: "true", CRM_CALLBACK_ORGANIZATION_ID: "o",
       CRM_CALLBACK_ASSIGNEE_ID: "s", CRM_CALLBACK_OWNER_ID: "a", CRM_CALLBACK_ENABLED_SINCE: "2026-10-20T00:00:00Z" })).not.toBeNull();
   });
-  it("routes website WhatsApp links to official inbox without changing voice calls", () => {
-    expect(whatsappPhone).toBe("919685788980");
-    expect(new URL(buildWhatsAppUrl("Demo please")).pathname).toBe("/919685788980");
+  it("routes public WhatsApp to the sales line without changing voice calls", () => {
+    expect(whatsappPhone).toBe("919755733107");
+    expect(new URL(buildWhatsAppUrl("Demo please")).pathname).toBe("/919755733107");
     expect(callingPhone).toBe("919755733107");
   });
 });
