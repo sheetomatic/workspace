@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/crm-callbacks",
+      "schedule": "* * * * *"
+    },
+    {
       "path": "/api/cron/task-reminders",
       "schedule": "0 9 * * *"
     },

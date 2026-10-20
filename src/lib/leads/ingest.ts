@@ -24,6 +24,8 @@ import {
 import { triggerLeadNurtureEvent } from "@/lib/leads/nurture/run";
 import { mergeLeadRawPayload } from "@/lib/leads/merge-raw-payload";
 import { computeLeadScore } from "@/lib/leads/scoring";
+import { callbackRecordId, ensureCallbackAssignment, sendCallbackAcknowledgement } from "@/lib/leads/callback-agent";
+import { callbackAgentConfig } from "@/lib/leads/callback-policy";
 import {
   defaultGoogleSheetsLeadConfig,
   resolveGoogleSheetsLeadConfig,
@@ -487,7 +489,27 @@ export async function ingestInboundLead(
     });
   }
 
-  if (created && phone) {
+  let callbackManaged = false;
+  if (created && (input.sheetPull || input.suppressOwnerNotify) && callbackAgentConfig()?.organizationId === input.organizationId) {
+    await prisma.inboundLeadActivity.create({ data: {
+      id: callbackRecordId(input.organizationId, lead.id, "excluded"), organizationId: input.organizationId,
+      leadId: lead.id, type: "NOTE", body: "Callback agent excluded: bulk import or passive sync.",
+    } });
+  }
+  if (!input.sheetPull && !input.suppressOwnerNotify) {
+    // Await assignment before acknowledging; the cron repairs interruptions after lead persistence.
+    try {
+      callbackManaged = await ensureCallbackAssignment(input.organizationId, lead.id);
+      if (callbackManaged) {
+        lead = await prisma.inboundLead.findUniqueOrThrow({ where: { id: lead.id } });
+        await sendCallbackAcknowledgement(input.organizationId, lead.id);
+      }
+    } catch {
+      console.error("Callback agent interrupted; cron will reconcile");
+    }
+  }
+
+  if (created && phone && !callbackManaged) {
     void triggerLeadNurtureEvent({
       organizationId: input.organizationId,
       leadId: lead.id,
@@ -497,7 +519,7 @@ export async function ingestInboundLead(
     });
   }
 
-  if (created && !input.suppressOwnerNotify && !input.sheetPull) {
+  if (created && !input.suppressOwnerNotify && !input.sheetPull && !callbackManaged) {
     // Owners/admins get pinged so the lead gets assigned quickly.
     const { notifyOwnersNewLead, notifyLeadAssigned } = await import(
       "@/lib/leads/notify"

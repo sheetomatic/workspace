@@ -829,6 +829,7 @@ export async function sendRedlavaWhatsAppMessage(
   params: {
     toPhone: string;
     message: Record<string, unknown>;
+    signal?: AbortSignal;
   },
   credentials?: RedlavaCredentials | null,
 ): Promise<WhatsAppSendResult> {
@@ -864,6 +865,7 @@ export async function sendRedlavaWhatsAppMessage(
   const response = await fetch(redlavaSendUrl(), {
     method: "POST",
     headers,
+    signal: params.signal,
     body: JSON.stringify({
       to,
       message,

@@ -124,6 +124,7 @@ async function sendViaMetaCloud(params: {
   accessToken: string;
   phoneNumberId: string;
   options?: ParseWhatsAppSendOptions;
+  signal?: AbortSignal;
 }): Promise<WhatsAppSendResult> {
   const to = normalizeWhatsAppPhone(params.toPhone);
   if (!to) {
@@ -135,6 +136,7 @@ async function sendViaMetaCloud(params: {
     `https://graph.facebook.com/${version}/${params.phoneNumberId}/messages`,
     {
       method: "POST",
+      signal: params.signal,
       headers: {
         Authorization: `Bearer ${params.accessToken}`,
         "Content-Type": "application/json",
@@ -165,6 +167,8 @@ export type DeliverWhatsAppMessageParams = {
   templateLanguageCode?: string;
   /** When true (default), Official Cloud wins over MAS for customer replies. */
   preferOfficial?: boolean;
+  /** Optional caller deadline; existing callers keep their current behaviour. */
+  signal?: AbortSignal;
 };
 
 export async function deliverWhatsAppMessage(
@@ -206,7 +210,7 @@ export async function deliverWhatsAppMessage(
 
   if (isRedlavaConfigured(redlavaCreds)) {
     const result = await sendRedlavaWhatsAppMessage(
-      { toPhone: params.toPhone, message: params.message },
+      { toPhone: params.toPhone, message: params.message, signal: params.signal },
       redlavaCreds,
     );
     if (result.sent || result.reason === "phone_id_required") {
@@ -215,6 +219,7 @@ export async function deliverWhatsAppMessage(
     if (result.reason !== "not_configured") {
       if (credentials.metaAccessToken && credentials.redlavaPhoneId) {
         return sendViaMetaCloud({
+          signal: params.signal,
           toPhone: params.toPhone,
           payload: params.message,
           accessToken: credentials.metaAccessToken,
@@ -231,6 +236,7 @@ export async function deliverWhatsAppMessage(
 
   if (credentials.metaAccessToken && credentials.redlavaPhoneId) {
     return sendViaMetaCloud({
+      signal: params.signal,
       toPhone: params.toPhone,
       payload: params.message,
       accessToken: credentials.metaAccessToken,
