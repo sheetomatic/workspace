@@ -229,6 +229,35 @@ const CRM_NAV_ITEM: WorkspaceNavItem = {
   ],
 };
 
+/** Peer of HRMS — field ops for sales/service (enablement still uses HR sub-module `field`). */
+const FIELD_NAV_ITEM: WorkspaceNavItem = {
+  id: "field-tracking",
+  href: "/app/field",
+  label: "Field Tracking",
+  icon: MapPin,
+  module: "HR",
+  hrSubModule: "field",
+  matchPrefix: "/app/field",
+  children: [
+    {
+      href: "/app/field",
+      label: "Field board",
+      icon: MapPin,
+      module: "HR",
+      hrSubModule: "field",
+      matchPrefix: "/app/field",
+    },
+    {
+      href: "/app/field/conveyance",
+      label: "Conveyance",
+      icon: Wallet,
+      module: "HR",
+      hrSubModule: "field",
+      matchPrefix: "/app/field/conveyance",
+    },
+  ],
+};
+
 const HRMS_NAV_ITEM: WorkspaceNavItem = {
   id: "dept-hr",
   href: "/app/hr",
@@ -679,6 +708,7 @@ const MOBILE_SHOP_NAV_ITEM: WorkspaceNavItem = {
 const SELLABLE_MODULE_ITEMS: WorkspaceNavItem[] = [
   MOBILE_SHOP_NAV_ITEM,
   CRM_NAV_ITEM,
+  FIELD_NAV_ITEM,
   HRMS_NAV_ITEM,
   IMS_STOCK_NAV_ITEM,
   SOCIAL_NAV_ITEM,

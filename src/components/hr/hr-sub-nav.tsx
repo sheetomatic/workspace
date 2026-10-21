@@ -42,12 +42,6 @@ const links: HrNavLink[] = [
     moduleId: "payroll",
   },
   {
-    href: "/app/hr/field",
-    label: "Field tracking",
-    adminOnly: false,
-    moduleId: "field",
-  },
-  {
     href: "/app/hr/hiring",
     label: "Hiring",
     adminOnly: false,

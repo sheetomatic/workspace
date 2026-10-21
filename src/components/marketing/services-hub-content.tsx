@@ -11,6 +11,7 @@ import {
   ClipboardList,
   GitBranch,
   ListChecks,
+  MapPin,
   Package,
   Stethoscope,
   Store,
@@ -66,6 +67,7 @@ const categoryIcons: Record<
   inventory: { icon: Package, tone: "tone-amber" },
   flow: { icon: GitBranch, tone: "tone-slate" },
   checklist: { icon: ClipboardCheck, tone: "tone-rose" },
+  "field-tracking": { icon: MapPin, tone: "tone-sky" },
   automation: { icon: Wrench, tone: "tone-slate" },
 };
 
@@ -78,7 +80,7 @@ const ownerGlanceIcons: Record<string, { icon: LucideIcon; tone: string }> = {
 
 const solutionHrefOverrides: Record<string, string> = {
   "Attendance & leave system": "/services/hr/attendance-leave",
-  "Field executive tracking": "/services/hr/field-tracking",
+  "Field executive tracking": "/services/field-tracking",
   "AI task delegation": "/services/tasks",
   "AI-powered CRM": "/services/crm",
   "WhatsApp AI chatbot": "/services/whatsapp-ai",
@@ -306,7 +308,7 @@ export function ServicesHubContent() {
             </div>
 
             <div className="services-hr-grid-v2">
-              {hrWorkspaceModules.map((mod) => (
+              {hrWorkspaceModules.filter((mod) => mod.id !== "field-tracking").map((mod) => (
                 <HrModuleCard key={mod.id} mod={mod} />
               ))}
             </div>

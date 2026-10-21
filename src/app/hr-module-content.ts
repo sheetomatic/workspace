@@ -85,9 +85,9 @@ export const fieldTrackingModule: HrServicesModule = {
   tagline: "Separate module for sales & service teams",
   heroLead:
     "Client geo check-ins, visit notes, and manager visibility for sales and service teams — separate from office punch, with field-only KPIs.",
-  href: "/app/hr/field",
-  marketingHref: "/services/hr/field-tracking",
-  workspacePath: "/app/hr/field",
+  href: "/app/field",
+  marketingHref: "/services/field-tracking",
+  workspacePath: "/app/field",
   processSteps: [
     {
       step: "01",
@@ -197,7 +197,7 @@ export const hrServicesSection = {
   eyebrow: "HR modules",
   title: "Workforce modules built for Indian MSMEs",
   subcopy:
-    "Attendance, field visits, and hiring sit in the same Sheetomatic workspace as tasks and MIS. Most owners start with WhatsApp AI and reporting - we enable HR modules once your team is ready.",
+    "Attendance, leave, and hiring sit alongside tasks and MIS in the Sheetomatic workspace. Most owners start with WhatsApp AI and reporting — we enable HR modules once your team is ready.",
   footnote:
     "HR modules are switched on per organization after a short scope call. Need MIS or AI talent on payroll? See our Careers bench.",
   careersHref: "/career",

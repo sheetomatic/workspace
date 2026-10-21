@@ -10842,6 +10842,48 @@ body.ws-more-sheet-open .sheetomatic-ai-launcher {
   gap: 16px;
 }
 
+.workspace-app .field-map-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px 16px;
+  margin: 0 0 14px;
+}
+
+.workspace-app .field-map-filters label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.workspace-app .field-map-filters input,
+.workspace-app .field-map-filters select {
+  min-width: 160px;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.55rem;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+}
+
+.workspace-app .field-map-filter-count {
+  margin: 0;
+  align-self: center;
+}
+
+.workspace-app .field-map-trail-title {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.workspace-app .field-map-trail-embed {
+  margin-top: 4px;
+}
+
 .workspace-app .ws-hr-panel {
   background: #fff;
   border: 1px solid #e2e8f0;
@@ -10979,6 +11021,132 @@ body.ws-more-sheet-open .sheetomatic-ai-launcher {
 
 .workspace-app .ws-hr-feedback-error {
   color: #b91c1c;
+}
+
+.workspace-app .field-conveyance-page {
+  display: grid;
+  gap: 14px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.workspace-app .field-conveyance-page .conveyance-claim-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.workspace-app .field-conveyance-page .conveyance-full-width {
+  grid-column: 1 / -1;
+}
+
+.workspace-app .field-conveyance-claims {
+  display: grid;
+  gap: 12px;
+}
+
+.workspace-app .field-conveyance-claim {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.workspace-app .field-conveyance-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px 16px;
+  margin: 0;
+}
+
+.workspace-app .field-conveyance-facts dt {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.workspace-app .field-conveyance-facts dd {
+  margin: 2px 0 0;
+  color: #0f172a;
+  overflow-wrap: anywhere;
+}
+
+.workspace-app .field-conveyance-documents,
+.workspace-app .field-conveyance-controls,
+.workspace-app .field-conveyance-entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.workspace-app .field-conveyance-entry {
+  margin: 12px 0;
+}
+
+.workspace-app .field-conveyance-controls label {
+  display: grid;
+  flex: 1 1 260px;
+  gap: 6px;
+}
+
+.workspace-app .field-conveyance-controls textarea,
+.workspace-app .field-conveyance-controls input {
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+}
+
+.workspace-app .field-conveyance-resubmit summary,
+.workspace-app .field-conveyance-audit summary {
+  cursor: pointer;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.workspace-app .field-conveyance-audit ol {
+  padding-left: 20px;
+}
+
+.workspace-app .field-conveyance-page .conveyance-status-pending { color: #92400e; }
+.workspace-app .field-conveyance-page .conveyance-status-approved { color: #1d4ed8; }
+.workspace-app .field-conveyance-page .conveyance-status-rejected { color: #b91c1c; }
+.workspace-app .field-conveyance-page .conveyance-status-paid { color: #047857; }
+
+.workspace-app .field-tour-map-links {
+  display: grid;
+  gap: 8px;
+}
+
+.workspace-app .field-tour-map-links > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.workspace-app .field-team-tour {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.workspace-app .field-team-tour > summary {
+  cursor: pointer;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .workspace-app .field-conveyance-page .conveyance-claim-form {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-app .field-conveyance-page .conveyance-full-width {
+    grid-column: auto;
+  }
 }
 
 .workspace-app .ws-hr-punch-row {

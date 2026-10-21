@@ -1,3 +1,8 @@
+import {
+  buildFieldTourEmbedMaps,
+  buildFieldTourMapLinks,
+} from "@/lib/hr/field-google-maps";
+
 export type FieldTrailPoint = {
   id: string;
   checkedInAt: Date | string;
@@ -6,6 +11,7 @@ export type FieldTrailPoint = {
   geoLat: number;
   geoLng: number;
   isLivePing?: boolean;
+  proofUrl?: string | null;
 };
 
 function formatStamp(value: Date | string) {
@@ -19,87 +25,75 @@ function formatStamp(value: Date | string) {
   });
 }
 
-function haversineKm(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number,
-) {
-  const toRad = (v: number) => (v * Math.PI) / 180;
-  const r = 6371;
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-  return 2 * r * Math.asin(Math.sqrt(a));
-}
-
-function formatKm(km: number) {
-  if (km < 1) {
-    return `${Math.round(km * 1000)} m`;
-  }
-  return `${km.toFixed(1)} km`;
-}
-
 export function FieldDayTrail({
   title,
   points,
+  googleMapsApiKey,
+  embedded = false,
 }: {
   title: string;
   points: FieldTrailPoint[];
+  googleMapsApiKey?: string | null;
+  /** When true, skip the outer panel chrome (for nesting inside another panel). */
+  embedded?: boolean;
 }) {
-  const legs = points.map((point, index) => {
-    if (index === 0) {
-      return 0;
-    }
-    const previous = points[index - 1]!;
-    return haversineKm(previous.geoLat, previous.geoLng, point.geoLat, point.geoLng);
-  });
-  const totalKm = legs.reduce((sum, leg) => sum + leg, 0);
+  const visitedStops = points
+    .filter((point) => !point.isLivePing)
+    .map((point) => ({ lat: point.geoLat, lng: point.geoLng }));
+  const mapLinks = buildFieldTourMapLinks(visitedStops);
+  const embeddedMaps = googleMapsApiKey
+    ? buildFieldTourEmbedMaps(visitedStops, googleMapsApiKey)
+    : [];
+  let visitedStopSequence = 0;
+  const trailPoints = points.map((point) => ({
+    ...point,
+    visitedStopNumber: point.isLivePing ? null : ++visitedStopSequence,
+  }));
 
-  return (
-    <section className="ws-hr-panel" aria-label="Field day trail">
-      <div className="ws-hr-panel-heading">
-        <div>
-          <h2>{title}</h2>
-          <p className="ws-hr-help">
-            {points.length > 1
-              ? `Total run today: ${formatKm(totalKm)} across ${points.length - 1} legs.`
-              : "Add at least two GPS points to calculate total KM."}
-          </p>
+  const body = (
+    <>
+      {!embedded ? (
+        <div className="ws-hr-panel-heading">
+          <div>
+            <h2>{title}</h2>
+            <p className="ws-hr-help">
+              Visit location stamps and timestamps. Travel distance is estimated separately from continuous live GPS pings.
+            </p>
+          </div>
         </div>
-        {points.length > 1 ? (
-          <span className="ws-hr-km-pill">{formatKm(totalKm)}</span>
-        ) : null}
-      </div>
+      ) : (
+        <h3 className="field-map-trail-title">{title}</h3>
+      )}
       {points.length === 0 ? (
-        <p className="ws-hr-note">No check-ins or live pings on this trail yet.</p>
+        <p className="ws-hr-note">No visit stamps or live GPS pings on this trail yet.</p>
       ) : (
         <ol className="ws-hr-field-trail">
-          {points.map((point, index) => (
+          {trailPoints.map((point) => (
             <li key={point.id} className="ws-hr-field-trail-item">
               <span className="ws-hr-field-trail-step" aria-hidden>
-                {index + 1}
+                {point.visitedStopNumber ?? "•"}
               </span>
               <div>
-                <strong>{formatStamp(point.checkedInAt)}</strong>
+                <strong>{formatStamp(point.checkedInAt)} IST</strong>
                 {point.isLivePing ? (
                   <span className="ws-hr-live-badge">Live while app open</span>
                 ) : null}
                 <div className="ws-apple-cell-secondary">
+                  <strong>Location stamp:</strong>{" "}
                   {point.isLivePing
                     ? "Live ping"
                     : (point.clientName ?? "Field check-in")}{" "}
                   · {point.geoLat.toFixed(4)}, {point.geoLng.toFixed(4)}
                 </div>
-                {index > 0 ? (
-                  <p className="ws-hr-meta">
-                    Point {index} → {index + 1}: {formatKm(legs[index] ?? 0)}
-                  </p>
-                ) : null}
                 {point.activityNote && !point.isLivePing ? (
                   <p>{point.activityNote}</p>
+                ) : null}
+                {!point.isLivePing && point.proofUrl ? (
+                  <a className="btn-secondary btn-sm" href={point.proofUrl} target="_blank" rel="noopener noreferrer">
+                    Open visit proof
+                  </a>
+                ) : !point.isLivePing ? (
+                  <span className="ws-hr-feedback-error">Proof missing for this older check-in</span>
                 ) : null}
                 <a
                   className="btn-secondary btn-sm"
@@ -114,19 +108,55 @@ export function FieldDayTrail({
           ))}
         </ol>
       )}
-      {points.length > 1 ? (
-        <p className="ws-hr-note">
-          <a
-            href={`https://www.google.com/maps/dir/${points
-              .map((p) => `${p.geoLat},${p.geoLng}`)
-              .join("/")}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Open full day route on Maps
-          </a>
-        </p>
+      {mapLinks.length ? (
+        <nav className="ws-hr-note field-tour-map-links" aria-label="Google Maps visited-stop tour">
+          <strong>Visited stops in order</strong>
+          <div>
+            {mapLinks.map((link) => (
+              <a
+                key={`${link.fromStop}-${link.toStop}`}
+                className="btn-secondary btn-sm"
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {link.fromStop === link.toStop
+                  ? "Open visited location in Google Maps"
+                  : `Open tour: stops ${link.fromStop}–${link.toStop}`}
+              </a>
+            ))}
+          </div>
+          {visitedStops.length > 1 ? (
+            <span>Routes follow the numbered visit stamps in order. Longer tours continue in linked segments with one shared stop between segments.</span>
+          ) : null}
+        </nav>
       ) : null}
+      {embeddedMaps.map((map) => (
+        <figure className="field-tour-embed" key={`${map.fromStop}-${map.toStop}`}>
+          <figcaption>
+            {map.fromStop === map.toStop
+              ? "Visited location"
+              : `Google Maps tour · stops ${map.fromStop}–${map.toStop}`}
+          </figcaption>
+          <iframe
+            title={`${title}: Google Maps tour stops ${map.fromStop} to ${map.toStop}`}
+            src={map.src}
+            loading="lazy"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen
+          />
+        </figure>
+      ))}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="field-map-trail-embed" aria-label="Field day trail">{body}</div>;
+  }
+
+  return (
+    <section className="ws-hr-panel" aria-label="Field day trail">
+      {body}
     </section>
   );
 }

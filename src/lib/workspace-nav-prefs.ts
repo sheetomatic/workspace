@@ -28,6 +28,7 @@ export const DEFAULT_FOCUSED_NAV_IDS = [
   "pc",
   "mobile-shop",
   "leads",
+  "field-tracking",
   "dept-hr",
   "fleet",
 ] as const;

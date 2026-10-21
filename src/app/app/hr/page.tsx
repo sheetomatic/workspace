@@ -137,11 +137,11 @@ export default async function HrOverviewPage() {
           </Link>
         ) : null}
         {enabled("field") ? (
-          <Link className="ws-hr-module-card" href="/app/hr/field">
-            <strong>Field executive tracking</strong>
+          <Link className="ws-hr-module-card" href="/app/field">
+            <strong>Field Tracking</strong>
             <p>
-              Separate module for sales and service teams - client geo check-ins and
-              visit plans.
+              Standalone field board — plan visits, check in, map trails. Opened from
+              the Field Tracking nav (not under HRMS).
             </p>
           </Link>
         ) : null}

@@ -8,6 +8,7 @@ import { hrWorkspaceModules } from "./hr-module-content";
 
 export type ServiceCategorySlug =
   | "hr"
+  | "field-tracking"
   | "tasks"
   | "whatsapp-ai"
   | "mis"
@@ -50,6 +51,10 @@ export const servicesBrowseCards: {
   { slug: "checklist", label: "Process Coordinator" },
   { slug: "whatsapp-ai", label: "WhatsApp AI" },
   { slug: "mis", label: "Executive Meeting (Weekly)" },
+  { slug: "tasks", label: "Executive Assistant & Tasks" },
+  { slug: "crm", label: "AI-powered CRM" },
+  { slug: "hr", label: "HR & Workforce" },
+  { slug: "field-tracking", label: "Field Executive Tracking" },
   { slug: "automation", label: "Custom Software" },
 ];
 
@@ -62,6 +67,7 @@ export const serviceDisplayLabels: Record<ServiceCategorySlug, string> = {
   mis: "Executive Meeting (Weekly)",
   tasks: "Executive Assistant",
   hr: "HR & workforce",
+  "field-tracking": "Field Executive Tracking",
   crm: "AI-powered CRM",
   automation: "Custom Software",
 };
@@ -168,7 +174,7 @@ export const serviceCategories: ServiceCategory[] = [
     whatsappMessage:
       "Hi Sheetomatic, I want to scope inventory management connected to our daily sales and purchase flow.",
     workspaceHref: "/products",
-    workspaceCta: "See products",
+    workspaceCta: "Read case studies",
     relatedSlugs: ["flow", "mis", "tasks"],
     featured: true,
   },
@@ -306,7 +312,7 @@ export const serviceCategories: ServiceCategory[] = [
     whatsappMessage:
       "Hi Sheetomatic, I want to scope Executive Meeting (Weekly) — Monday board without manual MIS prep.",
     workspaceHref: "/products",
-    workspaceCta: "See products",
+    workspaceCta: "Read case studies",
     featured: true,
     relatedSlugs: ["checklist", "tasks", "flow"],
   },
@@ -357,27 +363,22 @@ export const serviceCategories: ServiceCategory[] = [
   {
     slug: "hr",
     name: "HR & workforce",
-    shortDescription: "Attendance, field teams, leave, payroll-ready data, and hiring.",
-    relatedBenefit: "Payroll-ready attendance — field trail without end-of-day chats.",
-    hubBlurb: "Geo check-in, field visits, and hiring in one workspace — WhatsApp-ready ops.",
+    shortDescription: "Attendance, leave, payroll-ready data, and hiring.",
+    relatedBenefit: "Payroll-ready attendance and clear hiring handoffs.",
+    hubBlurb: "Attendance, leave, and hiring workflows for growing teams.",
     eyebrow: "Workforce operations",
     title: "HR modules for",
     titleAccent: "Indian MSME teams.",
     lead:
-      "Attendance & leave with payroll-ready summaries, field executive tracking as a separate module, and hiring pipelines — in the same Sheetomatic workspace as tasks and reports.",
+      "Attendance & leave with payroll-ready summaries, plus hiring pipelines and document workflows — in the same Sheetomatic workspace as tasks and reports.",
     problem: "No reliable attendance or leave visibility",
     problemDetail:
-      "Field and office attendance live in registers and chats — nobody trusts the numbers.",
+      "Office attendance and leave live in registers and chats — nobody trusts the numbers.",
     features: [
       {
         title: "Attendance & leave",
         detail:
           "Geo-fenced check-in, leave approvals, shift-friendly hours, payroll-ready summaries.",
-      },
-      {
-        title: "Field executive tracking",
-        detail:
-          "Client geo check-ins, visit notes, and manager visibility — separate from office punch.",
       },
       {
         title: "Hiring & documentation",
@@ -392,15 +393,46 @@ export const serviceCategories: ServiceCategory[] = [
     ],
     outcomes: [
       "Payroll inputs from attendance you can defend",
-      "Field team trail without end-of-day WhatsApp summaries",
       "Hiring handoffs documented — not lost in email",
     ],
     ctaLabel: "Scope HR modules on WhatsApp",
     whatsappMessage:
-      "Hi Sheetomatic, I want to scope HR modules — attendance, field tracking, and/or hiring for our team.",
+      "Hi Sheetomatic, I want to scope HR modules — attendance and/or hiring for our team.",
     workspaceHref: `${workspacePortalOrigin()}/login?callbackUrl=${encodeURIComponent("/app/hr")}`,
     workspaceCta: "Open HR workspace",
     relatedSlugs: ["tasks", "mis", "checklist"],
+  },
+  {
+    slug: "field-tracking",
+    name: "Field Executive Tracking",
+    shortDescription: "Client visit check-ins, notes, and manager visibility for field teams.",
+    relatedBenefit: "Client visit trail and manager visibility for distributed teams.",
+    hubBlurb: "Geo check-ins, visit notes, and field-only KPIs for sales and service teams.",
+    eyebrow: "Field operations",
+    title: "Field Executive Tracking for",
+    titleAccent: "sales & service teams.",
+    lead:
+      "Client geo check-ins, visit notes, and manager visibility for sales and service teams — separate from office attendance, with field-only KPIs.",
+    problem: "Field teams are invisible until end of day",
+    problemDetail:
+      "Client visits and outcomes are hard to verify when updates arrive later in chats or spreadsheets.",
+    features: [
+      { title: "Client geo check-ins", detail: "Record a location check-in at each client visit." },
+      { title: "Visit notes", detail: "Capture client name, visit purpose, and activity notes." },
+      { title: "Manager visibility", detail: "See today's field team and visit activity in one view." },
+      { title: "Field-only KPIs", detail: "Keep field visits separate from office attendance and punch data." },
+    ],
+    outcomes: [
+      "Managers see field activity without end-of-day chasing",
+      "Visit purpose and notes stay with each client check-in",
+      "Field reporting stays separate from office attendance",
+    ],
+    ctaLabel: "Ask about field tracking",
+    whatsappMessage:
+      "Hi Sheetomatic, I want to scope Field Executive Tracking for our sales or service team — client geo check-ins and manager visibility.",
+    workspaceHref: `${workspacePortalOrigin()}/login?callbackUrl=${encodeURIComponent("/app/field")}`,
+    workspaceCta: "Open field workspace",
+    relatedSlugs: ["hr", "crm", "mis"],
   },
   {
     slug: "crm",
@@ -509,9 +541,10 @@ export const servicesNavLinks = [
       label: category.name,
     })),
   ...hrWorkspaceModules.map((mod) => ({
+    // Field Executive Tracking is a peer service in the main category list.
     href: mod.marketingHref,
     label: mod.name,
-  })),
+  })).filter((link) => link.href !== "/services/field-tracking"),
 ];
 
 export const serviceCategoryBySlug = Object.fromEntries(

@@ -272,6 +272,9 @@ model Organization {
   fieldCheckIns     FieldCheckIn[]
   fieldCheckInAttachments FieldCheckInAttachment[]
   fieldVisits       FieldVisit[]
+  fieldConveyanceClaims       FieldConveyanceClaim[]
+  fieldConveyanceAttachments  FieldConveyanceAttachment[]
+  fieldConveyanceAuditEvents  FieldConveyanceAuditEvent[]
   fieldLocationPings FieldLocationPing[]
   jobOpenings       JobOpening[]
   candidates        Candidate[]
@@ -1324,6 +1327,11 @@ model User {
   employeeDocumentsUploaded EmployeeDocument[]  @relation("EmployeeDocumentUploader")
   fieldCheckIns        FieldCheckIn[]
   fieldCheckInAttachmentsUploaded FieldCheckInAttachment[] @relation("FieldCheckInAttachmentUploader")
+  fieldConveyanceClaimsSubmitted  FieldConveyanceClaim[]       @relation("FieldConveyanceClaimant")
+  fieldConveyanceClaimsReviewed   FieldConveyanceClaim[]       @relation("FieldConveyanceReviewer")
+  fieldConveyancePayments         FieldConveyanceClaim[]       @relation("FieldConveyancePayer")
+  fieldConveyanceUploads          FieldConveyanceAttachment[]  @relation("FieldConveyanceUploader")
+  fieldConveyanceAuditEvents      FieldConveyanceAuditEvent[]  @relation("FieldConveyanceAuditActor")
   fieldVisitsAssigned  FieldVisit[]             @relation("FieldVisitAssignee")
   fieldLocationPings   FieldLocationPing[]
   candidatesOwned      Candidate[]              @relation("CandidateOwner")
@@ -1590,6 +1598,29 @@ enum FieldVisitStatus {
   CANCELLED
 }
 
+
+
+
+enum FieldConveyanceAuditAction {
+  SUBMITTED
+  RESUBMITTED
+  APPROVED
+  REJECTED
+  PAID
+}
+
+enum FieldConveyanceAttachmentKind {
+  JOURNEY_PROOF
+  BILL
+}
+
+enum FieldConveyanceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+}
+
 enum HrSwapType {
   LEAVE_SWAP
   OFF_DAY_SWAP
@@ -1650,16 +1681,26 @@ model WorkspaceHrSettings {
   geoFenceRadiusM        Int          @default(200)
   workStartTime          String       @default("09:30")
   workEndTime            String       @default("18:30")
-  /** Minutes after workStartTime before check-in counts as late. */
+  /**
+   * Minutes after workStartTime before check-in counts as late.
+   */
   lateGraceMinutes       Int          @default(15)
   halfDayEnabled         Boolean      @default(true)
   shortLeaveEnabled      Boolean      @default(true)
-  /** Hours deducted from a full day when status is SHORT_LEAVE (payable fraction). */
+  /**
+   * Hours deducted from a full day when status is SHORT_LEAVE (payable fraction).
+   */
   shortLeaveHours        Float        @default(2)
   faceRecognitionEnabled Boolean      @default(false)
   fieldTrackingEnabled   Boolean      @default(true)
-  /** Org-enabled HR sub-modules (attendance, leave, …). Empty = all defaults for backward compat. */
+  /**
+   * Org-enabled HR sub-modules (attendance, leave, …). Empty = all defaults for backward compat.
+   */
   enabledHrSubModules    String[]     @default([])
+  /**
+   * Browser-restricted Maps Embed API key; intentionally public at runtime.
+   */
+  googleMapsEmbedApiKey  String?
   updatedAt              DateTime     @updatedAt
 }
 
@@ -1979,7 +2020,9 @@ model FieldVisit {
   assignee       User             @relation("FieldVisitAssignee", fields: [assigneeUserId], references: [id], onDelete: Cascade)
   clientName     String
   locationLabel  String?
-  /** Optional visit geofence centre + radius (metres). */
+  /**
+   * Optional visit geofence centre + radius (metres).
+   */
   geoLat         Float?
   geoLng         Float?
   radiusM        Int?
@@ -1990,6 +2033,7 @@ model FieldVisit {
   updatedAt      DateTime         @updatedAt
 
   checkIns       FieldCheckIn[]
+  conveyanceClaims FieldConveyanceClaim[]
 
   @@index([organizationId, assigneeUserId])
 }
@@ -2007,12 +2051,20 @@ model FieldCheckIn {
   geoLng         Float
   accuracyM      Float?
   clientName     String?
+  callingRemarks      String?
   activityNote   String?
-  /** External Drive/WhatsApp link when no in-app upload is used. */
+  nextVisitDate       DateTime?
+  orderDetails        String?
+  distributionDetails String?
+  /**
+   * External Drive/WhatsApp link when no in-app upload is used.
+   */
   photoUrl       String?
   photoAttachmentId String?   @unique
   photoAttachment   FieldCheckInAttachment? @relation(fields: [photoAttachmentId], references: [id], onDelete: SetNull)
-  /** Set when visit has a geofence; null if no fence configured. */
+  /**
+   * Set when visit has a geofence; null if no fence configured.
+   */
   geoFenceOk     Boolean?
 
   @@index([organizationId, userId, checkedInAt])
@@ -2051,6 +2103,79 @@ model FieldLocationPing {
 
   @@index([organizationId, recordedAt])
   @@index([organizationId, userId, recordedAt])
+}
+
+
+
+
+model FieldConveyanceAuditEvent {
+  id             String                     @id @default(cuid())
+  organizationId String
+  organization   Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  claimId        String
+  claim          FieldConveyanceClaim       @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  actorUserId    String
+  actor          User                       @relation("FieldConveyanceAuditActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+  action         FieldConveyanceAuditAction
+  fromStatus     FieldConveyanceStatus?
+  toStatus       FieldConveyanceStatus
+  note           String?
+  metadata       Json                       @default("{}")
+  createdAt      DateTime                   @default(now())
+
+  @@index([organizationId, claimId, createdAt])
+}
+
+model FieldConveyanceAttachment {
+  id              String                        @id @default(cuid())
+  organizationId  String
+  organization    Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  claimId         String
+  claim           FieldConveyanceClaim          @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  uploadedById    String?
+  uploadedBy      User?                         @relation("FieldConveyanceUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  kind            FieldConveyanceAttachmentKind
+  submissionRound Int                           @default(1)
+  fileName        String
+  mimeType        String
+  size            Int
+  data            Bytes
+  createdAt       DateTime                      @default(now())
+
+  @@index([organizationId, claimId, submissionRound, kind])
+}
+
+model FieldConveyanceClaim {
+  id                String                      @id @default(cuid())
+  organizationId    String
+  organization      Organization                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  claimantUserId    String
+  claimant          User                        @relation("FieldConveyanceClaimant", fields: [claimantUserId], references: [id], onDelete: Restrict)
+  visitId           String?
+  visit             FieldVisit?                 @relation(fields: [visitId], references: [id], onDelete: SetNull)
+  claimDate         DateTime                    @db.Date
+  claimedDistanceKm Decimal                     @db.Decimal(8, 2)
+  amount            Decimal                     @db.Decimal(12, 2)
+  journeyDetails    String
+  status            FieldConveyanceStatus       @default(PENDING)
+  revision          Int                         @default(1)
+  submittedAt       DateTime                    @default(now())
+  reviewedByUserId  String?
+  reviewedBy        User?                       @relation("FieldConveyanceReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  reviewedAt        DateTime?
+  rejectionReason   String?
+  paidByUserId      String?
+  paidBy            User?                       @relation("FieldConveyancePayer", fields: [paidByUserId], references: [id], onDelete: SetNull)
+  paidAt            DateTime?
+  paymentReference  String?
+  attachments       FieldConveyanceAttachment[]
+  auditEvents       FieldConveyanceAuditEvent[]
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
+
+  @@unique([organizationId, paymentReference])
+  @@index([organizationId, claimantUserId, claimDate])
+  @@index([organizationId, status, submittedAt])
 }
 
 model JobOpening {

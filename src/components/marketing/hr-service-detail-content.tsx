@@ -61,21 +61,30 @@ export function HrServiceDetailContent({ moduleSlug }: HrServiceDetailContentPro
   const meta = hrModuleIcons[mod.id] ?? hrModuleIcons["attendance-leave"];
   const Icon = meta.icon;
   const hrCategory = serviceCategoryBySlug.hr;
-  const otherModules = hrWorkspaceModules.filter((item) => item.id !== mod.id);
+  const isFieldTracking = mod.id === "field-tracking";
+  const otherModules = isFieldTracking
+    ? []
+    : hrWorkspaceModules.filter(
+        (item) => item.id !== mod.id && item.id !== "field-tracking",
+      );
 
   return (
     <MarketingPage>
       <div className="services-page">
         <SiteHeader />
-        <ServicesSubNav currentSlug="hr" />
+        <ServicesSubNav currentSlug={isFieldTracking ? "field-tracking" : "hr"} />
 
         <section className={`services-detail-hero services-hr-detail-hero ${meta.accent}`}>
           <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-14">
             <ServicesBreadcrumb
               items={[
                 { label: "Services", href: "/services" },
-                { label: "HR & workforce", href: "/services/hr" },
-                { label: mod.name },
+                ...(isFieldTracking
+                  ? [{ label: mod.name, href: "/services/field-tracking" }]
+                  : [
+                      { label: "HR & workforce", href: "/services/hr" },
+                      { label: mod.name },
+                    ]),
               ]}
             />
 
@@ -85,7 +94,7 @@ export function HrServiceDetailContent({ moduleSlug }: HrServiceDetailContentPro
               </span>
               <div>
                 <p className="services-hero-kicker type-kicker text-sky-700">
-                  HR module
+                  {isFieldTracking ? "Field operations" : "HR module"}
                 </p>
                 <h1 className="services-hero-title">{mod.name}</h1>
                 <p className="services-hr-detail-tagline">{mod.tagline}</p>
@@ -221,9 +230,12 @@ export function HrServiceDetailContent({ moduleSlug }: HrServiceDetailContentPro
 
         <div className="services-back-bar">
           <div className="mx-auto max-w-6xl px-5 sm:px-8">
-            <Link className="services-back-link" href="/services/hr">
+            <Link
+              className="services-back-link"
+              href={isFieldTracking ? "/services/field-tracking" : "/services/hr"}
+            >
               <ArrowLeft size={16} aria-hidden />
-              <span>Back to HR & workforce</span>
+              <span>{isFieldTracking ? "View independent field tracking service" : "Back to HR & workforce"}</span>
             </Link>
           </div>
         </div>
