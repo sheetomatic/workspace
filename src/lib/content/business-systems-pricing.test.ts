@@ -9,6 +9,8 @@ import {
   businessSystemComparison,
   businessSystemPlans,
   formatBusinessPlanPrice,
+  tasksManagementEnquiryHref,
+  tasksManagementPricing,
 } from "./business-systems-pricing";
 import { whatsappPhone } from "@/app/site-content";
 
@@ -100,5 +102,23 @@ describe("Business Systems Suite marketing pricing", () => {
     expect(businessSystemBenefits).toEqual([
       "3-day trial available", "Setup handled by Sheetomatic — included", "Monthly plans with no yearly commitment",
     ]);
+  });
+
+  it("publishes the confirmed standalone Tasks Management prices without changing suite plans", () => {
+    expect(tasksManagementPricing).toEqual({
+      name: "Tasks Management System",
+      monthlyPerUserInr: 300,
+      extraSeatMonthlyInr: 349,
+      yearlyPerUserInr: 2500,
+      whatsappApiYearlyInr: 10000,
+    });
+    const url = new URL(tasksManagementEnquiryHref);
+    expect(url.pathname).toBe(`/${whatsappPhone}`);
+    const message = url.searchParams.get("text");
+    expect(message).toContain("₹300 per user monthly");
+    expect(message).toContain("₹349 per month for an extra seat");
+    expect(message).toContain("₹2,500 per user yearly");
+    expect(message).toContain("₹10,000 per year");
+    expect(message).toContain("GST");
   });
 });

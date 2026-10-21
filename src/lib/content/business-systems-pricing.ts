@@ -80,6 +80,14 @@ export const businessSystemBenefits = [
   "Monthly plans with no yearly commitment",
 ] as const;
 
+export const tasksManagementPricing = {
+  name: "Tasks Management System",
+  monthlyPerUserInr: 300,
+  extraSeatMonthlyInr: 349,
+  yearlyPerUserInr: 2_500,
+  whatsappApiYearlyInr: 10_000,
+} as const;
+
 export function formatBusinessPlanPrice(amount: number): string {
   return `₹${new Intl.NumberFormat("en-IN").format(amount)}`;
 }
@@ -93,6 +101,10 @@ export function businessPlanEnquiryHref(plan: BusinessSystemPlan, intent: "trial
 
 export const businessAddonsEnquiryHref = buildWhatsAppUrl(
   "Hi Sheetomatic, I would like to discuss optional add-ons for the Business Systems Suite. Please share availability, scope and pricing.",
+);
+
+export const tasksManagementEnquiryHref = buildWhatsAppUrl(
+  "Hi Sheetomatic, I would like to discuss the Tasks Management System. Please confirm the ₹300 per user monthly plan, ₹349 per month for an extra seat, ₹2,500 per user yearly plan, optional WhatsApp API at ₹10,000 per year, GST, setup scope and terms before we proceed.",
 );
 
 /** Existing catalogue: module_whatsapp and emReadyStorageAddons in em-ready-plans.ts. */

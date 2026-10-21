@@ -10,6 +10,8 @@ import {
   businessSystemComparison,
   businessSystemPlans,
   formatBusinessPlanPrice,
+  tasksManagementEnquiryHref,
+  tasksManagementPricing,
   type BusinessSystemPlan,
 } from "@/lib/content/business-systems-pricing";
 import { marketingButtonClass } from "@/components/marketing/marketing-button-class";
@@ -107,6 +109,24 @@ export function EmReadyPricing() {
             Requests open WhatsApp with your selected plan. A request does not activate a trial or confirm a booking.
             Our team will confirm access, timing, applicable terms and any charges before you proceed.
           </p>
+
+          <section className="business-tasks-pricing" aria-labelledby="tasks-pricing-title">
+            <div>
+              <p className="em-pricing-kicker">Standalone system</p>
+              <h2 id="tasks-pricing-title">{tasksManagementPricing.name}</h2>
+              <p>Assign, track and follow through on team work without purchasing the complete suite.</p>
+            </div>
+            <dl className="business-tasks-rates">
+              <div><dt>Monthly</dt><dd>{formatBusinessPlanPrice(tasksManagementPricing.monthlyPerUserInr)}<span>/user/month</span></dd></div>
+              <div><dt>Extra seat</dt><dd>{formatBusinessPlanPrice(tasksManagementPricing.extraSeatMonthlyInr)}<span>/month</span></dd></div>
+              <div><dt>Yearly</dt><dd>{formatBusinessPlanPrice(tasksManagementPricing.yearlyPerUserInr)}<span>/user/year</span></dd></div>
+              <div><dt>WhatsApp API add-on</dt><dd>{formatBusinessPlanPrice(tasksManagementPricing.whatsappApiYearlyInr)}<span>/year</span></dd></div>
+            </dl>
+            <p className="business-addon-note">GST is extra. WhatsApp API is optional. Confirm setup scope, usage charges and terms before subscribing.</p>
+            <a className={marketingButtonClass("primary")} href={tasksManagementEnquiryHref} target="_blank" rel="noopener noreferrer">
+              Enquire About Tasks Management
+            </a>
+          </section>
 
           <section className="business-comparison" aria-labelledby="business-comparison-title">
             <div className="business-section-heading">

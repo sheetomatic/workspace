@@ -161,3 +161,54 @@
   .business-comparison-table td { padding: 0.8rem 0.35rem; }
   .business-comparison-table th:first-child { width: 34%; }
 }
+.business-tasks-pricing {
+  margin-top: 2rem;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid #cbd5e1;
+  border-radius: 24px;
+  background: #fff;
+}
+
+.business-tasks-pricing h2 {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.business-tasks-rates {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+}
+
+.business-tasks-rates div {
+  padding: 1rem;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.business-tasks-rates dt {
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.business-tasks-rates dd {
+  margin: 0.3rem 0 0;
+  color: #0f172a;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.business-tasks-rates dd span {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+@media (max-width: 800px) {
+  .business-tasks-rates { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 480px) {
+  .business-tasks-rates { grid-template-columns: 1fr; }
+}
