@@ -192,6 +192,16 @@ if (calendarRevision) {
 }
 run("npm", ["run", "db:generate"]);
 if (process.env.GOOGLE_CALENDAR_SYNC_ENABLED === "true") {
+  const cronSecret = process.env.CRON_SECRET?.trim();
+  if (!cronSecret) throw new Error("Production Calendar verification requires the existing CRON_SECRET");
+  const syncResponse = await fetch("https://sheetomatic.com/api/cron/google-calendar-bookings", {
+    headers: { Authorization: `Bearer ${cronSecret}` }, signal: AbortSignal.timeout(60_000),
+  });
+  const syncResult = await syncResponse.json();
+  if (!syncResponse.ok || !syncResult.enabled) {
+    throw new Error(`Production Calendar sync invocation failed: ${JSON.stringify({ status: syncResponse.status, result: syncResult })}`);
+  }
+  console.log(`Production Calendar sync invocation passed: ${JSON.stringify(syncResult)}`);
   const { PrismaClient } = await import(`${process.cwd()}/node_modules/@prisma/client/default.js`);
   const prisma = new PrismaClient();
   try {
