@@ -21,8 +21,10 @@ function tokenKey() {
 }
 
 export function linkedinRedirectUri() {
-  const origin = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://sheetomatic.com").replace(/\/$/, "");
-  return `${origin}/api/integrations/linkedin/callback`;
+  return (
+    process.env.LINKEDIN_REDIRECT_URI?.trim() ||
+    "https://workspace.sheetomatic.com/api/integrations/linkedin/callback"
+  );
 }
 
 export function createLinkedInState(input: { organizationId: string; userId: string }) {

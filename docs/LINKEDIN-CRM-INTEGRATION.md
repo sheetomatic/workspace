@@ -16,6 +16,7 @@ Sheetomatic uses LinkedIn's official OAuth and partner APIs only.
 LINKEDIN_CLIENT_ID=
 LINKEDIN_CLIENT_SECRET=
 LINKEDIN_STATE_SECRET=
+LINKEDIN_REDIRECT_URI=https://workspace.sheetomatic.com/api/integrations/linkedin/callback
 LINKEDIN_OAUTH_SCOPES=openid profile email
 LINKEDIN_PARTNER_SYNC_ENABLED=false
 ```
@@ -23,7 +24,7 @@ LINKEDIN_PARTNER_SYNC_ENABLED=false
 Register this exact callback URL in the LinkedIn developer app:
 
 ```text
-https://sheetomatic.com/api/integrations/linkedin/callback
+https://workspace.sheetomatic.com/api/integrations/linkedin/callback
 ```
 
 ## Partner approval required
