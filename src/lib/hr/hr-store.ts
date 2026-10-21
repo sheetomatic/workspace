@@ -595,6 +595,23 @@ export async function listJobOpenings(organizationId: string) {
     orderBy: { createdAt: "desc" },
     include: {
       _count: { select: { candidates: true } },
+      fmsInstance: {
+        select: {
+          id: true,
+          status: true,
+          createdAt: true,
+          stepStates: {
+            select: {
+              status: true,
+              plannedAt: true,
+              actualAt: true,
+              delayMinutes: true,
+              step: { select: { stepName: true, sortOrder: true } },
+            },
+            orderBy: { step: { sortOrder: "asc" } },
+          },
+        },
+      },
     },
   });
 }

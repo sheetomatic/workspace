@@ -70,7 +70,7 @@ export const RECRUITMENT_FMS_FLOW = {
   id: "recruitment" as const,
   presetId: "recruitment",
   label: "Recruitment",
-  description: "Track hiring from resume sourcing to department handover",
+  description: "Track hiring requirements from receipt to joining completion",
   matchKeywords: ["recruit", "hiring"],
 };
 

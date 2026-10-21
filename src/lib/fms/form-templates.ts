@@ -153,30 +153,28 @@ const INTAKE_FORM_TEMPLATES: Record<string, FmsIntakeFormFieldTemplate[]> = {
       required: true,
     },
     {
-      label: "Candidate name",
-      fieldType: "TEXT",
-      placeholder: "Fill once a candidate is identified",
-    },
-    {
-      label: "Candidate phone",
-      fieldType: "PHONE",
-    },
-    {
-      label: "Candidate email",
-      fieldType: "EMAIL",
-    },
-    {
-      label: "Source",
-      fieldType: "ENUM",
-      options: ["Job portal", "Referral", "Consultant", "Walk-in", "Other"],
-    },
-    {
-      label: "Expected CTC",
+      label: "Number of vacancies",
       fieldType: "NUMBER",
+      required: true,
     },
     {
-      label: "Target joining date",
+      label: "Required joining date",
       fieldType: "DATE",
+      required: true,
+    },
+    {
+      label: "Requested by",
+      fieldType: "TEXT",
+      required: true,
+    },
+    {
+      label: "Reason for hiring",
+      fieldType: "TEXTAREA",
+      required: true,
+    },
+    {
+      label: "Location",
+      fieldType: "TEXT",
     },
     {
       label: "Notes",
