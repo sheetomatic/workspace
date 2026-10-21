@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { getPrimaryOrganization } from "@/lib/platform";
-import { resolveQuotationAccount } from "@/lib/leads/seller-account";
+import { isSheetomaticSellerOrg, resolveQuotationAccount, SHEETOMATIC_QUOTATION_ACCOUNT } from "@/lib/leads/seller-account";
 import { parseGstin, gstinStateCode } from "@/lib/leads/gst-invoice";
 import { sendPlainEmail } from "@/lib/integrations/email";
 import {
@@ -49,14 +49,27 @@ export type CheckoutSnapshot = {
 };
 
 
+function verifiedSellerAccount(org: { name?: string | null; isPrimary?: boolean; quotationAccount?: unknown }) {
+  const candidates = [resolveQuotationAccount(org)];
+  if (isSheetomaticSellerOrg(org)) {
+    candidates.push({
+      ...SHEETOMATIC_QUOTATION_ACCOUNT,
+      addressLines: [...SHEETOMATIC_QUOTATION_ACCOUNT.addressLines],
+    });
+  }
+  for (const account of candidates) {
+    const stateCode = account ? gstinStateCode(account.gstin) : null;
+    if (account && account.legalName && account.addressLines.length && stateCode && parseGstin(account.gstin).ok) {
+      return { account, stateCode };
+    }
+  }
+  return null;
+}
+
 export async function verifiedTasksCheckoutSeller() {
   const org = await getPrimaryOrganization();
   if (!org) throw new Error("Seller workspace is not configured.");
-  const account = resolveQuotationAccount(org);
-  const stateCode = account ? gstinStateCode(account.gstin) : null;
-  if (!account || !account.legalName || !account.addressLines.length || !stateCode || !parseGstin(account.gstin).ok) {
-    throw new Error("Seller GST profile needs verification.");
-  }
+  if (!verifiedSellerAccount(org)) throw new Error("Seller GST profile needs verification.");
 }
 
 export async function createTasksCheckout(body: unknown, accessHash: string) {
@@ -81,11 +94,9 @@ export async function createTasksCheckout(body: unknown, accessHash: string) {
   }
   const org = await getPrimaryOrganization();
   if (!org) throw new Error("Seller workspace is not configured.");
-  const account = resolveQuotationAccount(org);
-  const sellerState = account ? gstinStateCode(account.gstin) : null;
-  if (!account || !account.legalName || !account.addressLines.length || !sellerState || !parseGstin(account.gstin).ok) {
-    throw new Error("Seller GST profile needs verification.");
-  }
+  const seller = verifiedSellerAccount(org);
+  if (!seller) throw new Error("Seller GST profile needs verification.");
+  const { account, stateCode: sellerState } = seller;
   const totals = tasksCheckoutTotals(lines.map((line) => line.priceInr), buyer.stateCode, sellerState);
   const snapshot: CheckoutSnapshot = {
     version: 1,
