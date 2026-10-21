@@ -194,14 +194,31 @@ run("npm", ["run", "db:generate"]);
 if (process.env.GOOGLE_CALENDAR_SYNC_ENABLED === "true") {
   const cronSecret = process.env.CRON_SECRET?.trim();
   if (!cronSecret) throw new Error("Production Calendar verification requires the existing CRON_SECRET");
-  const syncResponse = await fetch("https://sheetomatic.com/api/cron/google-calendar-bookings", {
-    headers: { Authorization: `Bearer ${cronSecret}` }, signal: AbortSignal.timeout(60_000),
-  });
-  const syncResult = await syncResponse.json();
-  if (!syncResponse.ok || !syncResult.enabled) {
-    throw new Error(`Production Calendar sync invocation failed: ${JSON.stringify({ status: syncResponse.status, result: syncResult })}`);
+  let syncResult;
+  for (let attempt = 1; attempt <= 20; attempt += 1) {
+    const syncResponse = await fetch("https://sheetomatic.com/api/cron/google-calendar-bookings", {
+      headers: { Authorization: `Bearer ${cronSecret}` }, signal: AbortSignal.timeout(60_000),
+    });
+    syncResult = await syncResponse.json();
+    if (!syncResponse.ok || !syncResult.enabled) {
+      throw new Error(`Production Calendar sync invocation failed: ${JSON.stringify({ status: syncResponse.status, result: syncResult })}`);
+    }
+    console.log(`Production Calendar sync page ${attempt} passed: ${JSON.stringify(syncResult)}`);
+    if (!syncResult.hasMore && !syncResult.busy) break;
+    if (attempt === 20) throw new Error("Production Calendar sync did not complete within 20 bounded invocations");
+    await new Promise(resolve => setTimeout(resolve, 1_000));
   }
-  console.log(`Production Calendar sync invocation passed: ${JSON.stringify(syncResult)}`);
+  let repeatResult;
+  for (let attempt = 1; attempt <= 5; attempt += 1) {
+    const repeatResponse = await fetch("https://sheetomatic.com/api/cron/google-calendar-bookings", {
+      headers: { Authorization: `Bearer ${cronSecret}` }, signal: AbortSignal.timeout(60_000),
+    });
+    repeatResult = await repeatResponse.json();
+    if (!repeatResponse.ok || !repeatResult.enabled) throw new Error("Repeat Calendar sync invocation failed");
+    if (!repeatResult.busy) break;
+    await new Promise(resolve => setTimeout(resolve, 1_000));
+  }
+  console.log(`Production Calendar repeat sync passed: ${JSON.stringify(repeatResult)}`);
   const { PrismaClient } = await import(`${process.cwd()}/node_modules/@prisma/client/default.js`);
   const prisma = new PrismaClient();
   try {
