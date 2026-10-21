@@ -11,6 +11,8 @@ import {
   formatBusinessPlanPrice,
   tasksManagementEnquiryHref,
   tasksManagementPricing,
+  whatsappApiDocumentationHref,
+  whatsappApiSignupHref,
 } from "./business-systems-pricing";
 import { whatsappPhone } from "@/app/site-content";
 
@@ -120,5 +122,10 @@ describe("Business Systems Suite marketing pricing", () => {
     expect(message).toContain("₹2,500 per user yearly");
     expect(message).toContain("₹10,000 per year");
     expect(message).toContain("GST");
+  });
+
+  it("publishes the approved WhatsApp API signup and documentation destinations", () => {
+    expect(whatsappApiSignupHref).toBe("https://wa.sheetomatic.com/Signup?accId=69ba66e24e68ba4764253829");
+    expect(whatsappApiDocumentationHref).toBe("https://wa.sheetomatic.com/ApiDocumentation");
   });
 });

@@ -224,6 +224,9 @@
 }
 
 .business-task-rate-card small { display: block; margin-top: 0.7rem; color: #547063; font-weight: 650; }
+.business-task-addon-actions { display: flex; flex-wrap: wrap; gap: 0.45rem 0.8rem; margin-top: 0.85rem; }
+.business-task-addon-actions a { color: #075e45; font-size: 0.82rem; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; }
+.business-task-addon-actions a:first-child { color: #fff; background: #075e45; border-radius: 999px; padding: 0.45rem 0.75rem; text-decoration: none; }
 .business-tasks-footer { display: flex; align-items: center; justify-content: space-between; gap: 1.25rem; padding-top: 1.15rem; border-top: 1px solid #d6e2d9; }
 .business-tasks-footer .business-addon-note { max-width: 670px; margin: 0; color: #52625c; line-height: 1.6; }
 .business-tasks-footer .btn-cta { flex: 0 0 auto; }

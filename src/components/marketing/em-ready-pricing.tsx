@@ -12,6 +12,8 @@ import {
   formatBusinessPlanPrice,
   tasksManagementEnquiryHref,
   tasksManagementPricing,
+  whatsappApiDocumentationHref,
+  whatsappApiSignupHref,
   type BusinessSystemPlan,
 } from "@/lib/content/business-systems-pricing";
 import { marketingButtonClass } from "@/components/marketing/marketing-button-class";
@@ -120,7 +122,15 @@ export function EmReadyPricing() {
               <div className="business-task-rate-card"><dt>Monthly access</dt><dd>{formatBusinessPlanPrice(tasksManagementPricing.monthlyPerUserInr)}<span>per user, billed monthly</span></dd></div>
               <div className="business-task-rate-card"><dt>Additional seat</dt><dd>{formatBusinessPlanPrice(tasksManagementPricing.extraSeatMonthlyInr)}<span>per extra seat, per month</span></dd></div>
               <div className="business-task-rate-card is-featured"><dt>Yearly access</dt><dd>{formatBusinessPlanPrice(tasksManagementPricing.yearlyPerUserInr)}<span>per user, billed yearly</span></dd><small>Best value for a full year</small></div>
-              <div className="business-task-rate-card is-addon"><dt>Optional WhatsApp API</dt><dd>{formatBusinessPlanPrice(tasksManagementPricing.whatsappApiYearlyInr)}<span>per year</span></dd><small>Provider usage charges may apply</small></div>
+              <div className="business-task-rate-card is-addon">
+                <dt>Optional WhatsApp API</dt>
+                <dd>{formatBusinessPlanPrice(tasksManagementPricing.whatsappApiYearlyInr)}<span>per year</span></dd>
+                <small>Provider usage charges may apply</small>
+                <div className="business-task-addon-actions">
+                  <a href={whatsappApiSignupHref} target="_blank" rel="noopener noreferrer">Start Today (Sign Up)</a>
+                  <a href={whatsappApiDocumentationHref} target="_blank" rel="noopener noreferrer">API Documentation</a>
+                </div>
+              </div>
             </dl>
             <div className="business-tasks-footer">
               <p className="business-addon-note"><strong>GST is extra.</strong> WhatsApp API is optional. Confirm users, setup scope, usage charges and renewal terms before subscribing.</p>

@@ -88,6 +88,11 @@ export const tasksManagementPricing = {
   whatsappApiYearlyInr: 10_000,
 } as const;
 
+export const whatsappApiSignupHref =
+  "https://wa.sheetomatic.com/Signup?accId=69ba66e24e68ba4764253829";
+export const whatsappApiDocumentationHref =
+  "https://wa.sheetomatic.com/ApiDocumentation";
+
 export function formatBusinessPlanPrice(amount: number): string {
   return `₹${new Intl.NumberFormat("en-IN").format(amount)}`;
 }
