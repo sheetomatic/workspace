@@ -186,6 +186,11 @@ if (calendarRevision) {
     throw new Error(`Calendar event preflight mismatch: ${JSON.stringify({ id: event.id, status: event.status,
       start: event.start?.dateTime, end: event.end?.dateTime, meetUrl })}`);
   }
+  console.log(`Calendar event visibility: ${JSON.stringify({ summary: event.summary,
+    hasCustomerNameLabel: /Customer name\s*:/i.test(event.description ?? ""),
+    hasCustomerPhoneLabel: /Customer phone\s*:/i.test(event.description ?? ""),
+    attendeeCount: event.attendees?.length ?? 0, organizer: event.organizer?.email,
+    configuredTitles: process.env.GOOGLE_APPOINTMENTS_TITLE_PREFIXES })}`);
   console.log(`Calendar permission and Bhaskar event preflight passed; service-account join URL ${meetUrl ? "available" : "not exposed"}`);
   run("npx", ["prisma", "db", "execute", "--file", "prisma/migrations/20261020050000_google_calendar_bookings/migration.sql", "--schema", "prisma/schema.prisma"]);
   run("npx", ["prisma", "db", "execute", "--file", "prisma/migrations/20261020060000_google_calendar_booking_details/migration.sql", "--schema", "prisma/schema.prisma"]);
