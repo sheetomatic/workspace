@@ -7,6 +7,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   GitBranch,
+  MapPin,
   Package,
   Wrench,
   Users,
@@ -44,6 +45,7 @@ const categoryIcons: Record<string, { icon: LucideIcon; tone: string }> = {
   "whatsapp-ai": { icon: Bot, tone: "tone-green" },
   mis: { icon: BarChart3, tone: "tone-sky" },
   hr: { icon: CalendarCheck, tone: "tone-emerald" },
+  "field-tracking": { icon: MapPin, tone: "tone-sky" },
   tasks: { icon: ClipboardList, tone: "tone-indigo" },
   crm: { icon: Users, tone: "tone-violet" },
   inventory: { icon: Package, tone: "tone-amber" },
@@ -136,7 +138,7 @@ export function ServicesCategoryContent({ slug }: ServicesCategoryContentProps) 
               </div>
 
               <div className="services-hr-grid-v2">
-                {hrWorkspaceModules.map((mod) => (
+                {hrWorkspaceModules.filter((mod) => mod.id !== "field-tracking").map((mod) => (
                   <HrModuleCard key={mod.id} mod={mod} variant="category" />
                 ))}
               </div>
