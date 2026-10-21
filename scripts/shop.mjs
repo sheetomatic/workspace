@@ -175,7 +175,8 @@ if (calendarRevision) {
       new Date(event.start?.dateTime ?? "").getTime() !== expectedStart ||
       new Date(event.end?.dateTime ?? "").getTime() !== expectedEnd ||
       event.hangoutLink !== "https://meet.google.com/mzm-cske-fpn") {
-    throw new Error("Calendar event preflight did not match the approved Bhaskar booking");
+    throw new Error(`Calendar event preflight mismatch: ${JSON.stringify({ id: event.id, status: event.status,
+      start: event.start?.dateTime, end: event.end?.dateTime, meetUrl: event.hangoutLink ?? null })}`);
   }
   console.log("Calendar permission and Bhaskar event preflight passed");
   run("npx", ["prisma", "migrate", "deploy"]);
