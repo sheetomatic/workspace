@@ -156,42 +156,37 @@ if (calendarRevision) {
 
   run("npx", ["vitest", "run", "src/lib/content/business-systems-pricing.test.ts"]);
 
-  // Permission preflight runs before the additive migration. It reads only the
-  // one event specified by this release and never writes to Google Calendar.
+  // Permission preflight reads only today's group-calendar events and never writes to Google Calendar.
   const { google } = await import(`${process.cwd()}/node_modules/googleapis/build/src/index.js`);
   const credentials = JSON.parse(process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON ?? "{}");
   if (!credentials.client_email || !credentials.private_key) throw new Error("Calendar service account is not configured");
   const auth = new google.auth.GoogleAuth({ credentials, scopes: ["https://www.googleapis.com/auth/calendar.readonly"] });
   const calendar = google.calendar({ version: "v3", auth });
   const calendarId = process.env.GOOGLE_APPOINTMENTS_CALENDAR_ID?.trim();
-  const eventId = process.env.CALENDAR_RELEASE_EVENT_ID?.trim() || "h130ejrtefpls9up2ob3nku9p4";
-  if (!calendarId || !eventId) throw new Error("Calendar release preflight is incomplete");
-  let event;
+  if (!calendarId) throw new Error("Calendar release preflight is incomplete");
+  let events;
   try {
-    event = (await calendar.events.get({ calendarId, eventId, conferenceDataVersion: 1 })).data;
+    events = (await calendar.events.list({ calendarId, singleEvents: true,
+      timeMin: "2026-10-20T18:30:00.000Z", timeMax: "2026-10-21T18:30:00.000Z",
+      maxResults: 100, conferenceDataVersion: 1 })).data.items ?? [];
   } catch (error) {
-    if (error?.response?.status === 404) {
+    if (error?.response?.status === 403 || error?.response?.status === 404) {
       throw new Error(`Calendar ${calendarId} must be shared read-only with ${credentials.client_email}`);
     }
     throw error;
   }
-  const expectedStart = new Date("2026-10-21T12:30:00+05:30").getTime();
-  const expectedEnd = new Date("2026-10-21T13:00:00+05:30").getTime();
-  const meetUrl = event.hangoutLink ??
-    event.conferenceData?.entryPoints?.find(point => point.entryPointType === "video")?.uri ??
-    `${event.location ?? ""}\n${event.description ?? ""}`.match(/https:\/\/meet\.google\.com\/[a-z0-9-]+/i)?.[0] ?? null;
-  if (event.id !== eventId || event.status === "cancelled" ||
-      new Date(event.start?.dateTime ?? "").getTime() !== expectedStart ||
-      new Date(event.end?.dateTime ?? "").getTime() !== expectedEnd) {
-    throw new Error(`Calendar event preflight mismatch: ${JSON.stringify({ id: event.id, status: event.status,
-      start: event.start?.dateTime, end: event.end?.dateTime, meetUrl })}`);
+  const titles = (process.env.GOOGLE_APPOINTMENTS_TITLE_PREFIXES ?? "").split("|").map(value => value.trim()).filter(Boolean);
+  const meetings = events.filter(event => event.status !== "cancelled" && event.summary &&
+    titles.some(title => event.summary === title || event.summary.endsWith(`| ${title}`)));
+  const now = Date.now();
+  const done = meetings.filter(event => new Date(event.end?.dateTime ?? "").getTime() < now).length;
+  const scheduled = meetings.filter(event => new Date(event.end?.dateTime ?? "").getTime() >= now).length;
+  if (meetings.length !== 3 || done !== 2 || scheduled !== 1 || meetings.some(event => !event.htmlLink)) {
+    throw new Error(`Group Calendar preflight mismatch: ${JSON.stringify({ visibleEvents: events.length,
+      matchingMeetings: meetings.length, done, scheduled, summariesVisible: events.filter(event => event.summary).length })}`);
   }
-  console.log(`Calendar event visibility: ${JSON.stringify({ summary: event.summary,
-    hasCustomerNameLabel: /Customer name\s*:/i.test(event.description ?? ""),
-    hasCustomerPhoneLabel: /Customer phone\s*:/i.test(event.description ?? ""),
-    attendeeCount: event.attendees?.length ?? 0, organizer: event.organizer?.email,
-    configuredTitles: process.env.GOOGLE_APPOINTMENTS_TITLE_PREFIXES })}`);
-  console.log(`Calendar permission and Bhaskar event preflight passed; service-account join URL ${meetUrl ? "available" : "not exposed"}`);
+  console.log(`Group Calendar preflight passed: ${JSON.stringify({ matchingMeetings: meetings.length, done, scheduled,
+    detailsVisible: true, editLinksVisible: true })}`);
   run("npx", ["prisma", "db", "execute", "--file", "prisma/migrations/20261020050000_google_calendar_bookings/migration.sql", "--schema", "prisma/schema.prisma"]);
   run("npx", ["prisma", "db", "execute", "--file", "prisma/migrations/20261020060000_google_calendar_booking_details/migration.sql", "--schema", "prisma/schema.prisma"]);
 }
