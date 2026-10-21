@@ -41,6 +41,7 @@ export type CheckoutSnapshot = {
     productId: string;
     name: string;
     priceInr: number;
+    quantity?: number;
     sac: string;
     copyLink?: string;
   }[];
@@ -54,6 +55,10 @@ async function verifiedSeller() {
   const stateCode = account ? gstinStateCode(account.gstin) : null;
   if (!account || !account.legalName || !account.addressLines.length || !stateCode || !parseGstin(account.gstin).ok) throw new Error("Seller GST profile needs verification.");
   return { org, seller: { legalName: account.legalName, tradeName: account.tradeName, gstin: account.gstin, addressLines: account.addressLines, stateCode } };
+}
+
+export async function verifiedTasksCheckoutSeller() {
+  await verifiedSeller();
 }
 
 async function createGatewayOrder(order: { id: string; totalPaise: number }) {

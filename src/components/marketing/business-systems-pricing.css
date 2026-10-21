@@ -178,6 +178,44 @@
 
 .business-tasks-heading { max-width: 720px; }
 .business-tasks-heading > p:last-child { margin: 0; color: #52625c; line-height: 1.65; }
+.business-tasks-pricing .business-tasks-rates { gap: 1rem; margin-top: 1.5rem; }
+.business-task-rate-card { min-width: 0; padding: 1.15rem; border-radius: 18px; }
+.business-task-rate-card dd { font-size: clamp(1.45rem, 3vw, 2rem); }
+.business-tasks-pricing .business-tasks-footer { display: grid; gap: 1rem; margin-top: 1.5rem; }
+.business-tasks-pricing .business-tasks-footer .btn-cta { width: 100%; min-height: 50px; justify-content: center; text-align: center; }
+.tasks-checkout { margin-top: 1.5rem; padding: clamp(1rem, 2.5vw, 1.5rem); border: 1px solid #cbd5e1; border-radius: 22px; background: #fff; color: #0f172a; box-shadow: 0 8px 28px rgba(15,23,42,.06); }
+.tasks-checkout-intro { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1.25rem; }
+.tasks-checkout-kicker { color: #1d4ed8; font-size: .75rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.tasks-checkout-intro h3 { margin: .2rem 0; font-size: 1.3rem; }
+.tasks-checkout-intro p { margin: 0; color: #475569; line-height: 1.55; font-size: .9rem; }
+.tasks-checkout-total { min-width: 150px; padding: .75rem; border-radius: 14px; background: #eff6ff; text-align: right; }
+.tasks-checkout-total span { display: block; color: #475569; font-size: .75rem; }
+.tasks-checkout-total strong { display: block; color: #123e2e; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+.tasks-checkout-controls { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+.tasks-checkout label { display: grid; gap: .35rem; color: #334155; font-size: .86rem; font-weight: 650; }
+.tasks-checkout select,.tasks-checkout input:not([type=checkbox]) { min-width: 0; width: 100%; min-height: 44px; padding: .6rem .7rem; border: 1px solid #cbd5e1; border-radius: 10px; background: white; color: #0f172a; font: inherit; }
+.tasks-checkout-minimum { margin: .6rem 0; padding: .7rem .8rem; border-radius: 10px; background: #fffbeb; color: #854d0e; font-size: .86rem; line-height: 1.5; }
+.tasks-checkout-addon { display: flex !important; align-items: flex-start; gap: .65rem !important; margin: 1rem 0; padding: .85rem; border: 1px solid #dbe5dd; border-radius: 12px; background: #f8fbf9; }
+.tasks-checkout-addon input,.tasks-checkout-consent input { margin-top: .25rem; accent-color: #166534; }
+.tasks-checkout-addon small { display: block; margin-top: .25rem; color: #64748b; font-weight: 400; line-height: 1.45; }
+.tasks-checkout-buyer { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin: 1rem 0; padding: .9rem; border: 1px solid #e2e8f0; border-radius: 14px; }
+.tasks-checkout-buyer legend { padding: 0 .35rem; font-weight: 750; }
+.tasks-checkout-summary { display: grid; gap: .5rem; margin: 1rem 0; padding: .9rem; border-radius: 12px; background: #f8fafc; }
+.tasks-checkout-summary div { display: flex; justify-content: space-between; gap: 1rem; color: #475569; font-size: .9rem; }
+.tasks-checkout-summary dd { margin: 0; font-variant-numeric: tabular-nums; color: #0f172a; }
+.tasks-checkout-summary .tasks-checkout-grand-total { padding-top: .6rem; border-top: 1px solid #cbd5e1; color: #0f172a; font-weight: 800; font-size: 1rem; }
+.tasks-checkout-consent { display: flex !important; grid-template-columns: auto 1fr; align-items: flex-start; gap: .6rem !important; font-weight: 450 !important; line-height: 1.55; }
+.tasks-checkout-consent a { color: #1d4ed8; text-decoration: underline; }
+.tasks-checkout-unavailable,.tasks-checkout-message { margin: .9rem 0; padding: .8rem; border-radius: 10px; background: #fff7ed; color: #9a3412; font-size: .88rem; line-height: 1.55; }
+.tasks-checkout-button { width: 100%; min-height: 50px; margin-top: 1rem; padding: .75rem; border: 0; border-radius: 999px; background: #1d4ed8; color: #fff; font: inherit; font-weight: 750; cursor: pointer; }
+.tasks-checkout-button:disabled { background: #94a3b8; cursor: not-allowed; }
+.tasks-checkout-footnote { margin: .65rem 0 0; color: #64748b; font-size: .78rem; line-height: 1.5; }
+@media (max-width: 600px) {
+  .tasks-checkout-intro { display: grid; }
+  .tasks-checkout-total { width: 100%; text-align: left; }
+  .tasks-checkout-controls,.tasks-checkout-buyer { grid-template-columns: 1fr; }
+  .business-task-rate-card { padding: .95rem; }
+}
 
 .business-tasks-rates {
   display: grid;

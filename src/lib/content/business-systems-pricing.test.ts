@@ -109,15 +109,16 @@ describe("Business Systems Suite marketing pricing", () => {
     expect(tasksManagementPricing).toEqual({
       name: "Tasks Management System",
       monthlyPerUserInr: 300,
-      extraSeatMonthlyInr: 349,
+      monthlyMinimumUsers: 8,
       yearlyPerUserInr: 2500,
       whatsappApiYearlyInr: 10000,
     });
     const url = new URL(tasksManagementEnquiryHref);
     expect(url.pathname).toBe(`/${whatsappPhone}`);
     const message = url.searchParams.get("text");
-    expect(message).toContain("₹300 per user monthly");
-    expect(message).toContain("₹349 per month for an extra seat");
+    expect(message).toContain("₹300 per user per month");
+    expect(message).toContain("8-user minimum");
+    expect(message).toContain("₹2,400/month before GST for 1–8 users");
     expect(message).toContain("₹2,500 per user yearly");
     expect(message).toContain("₹10,000 per year");
     expect(message).toContain("GST");

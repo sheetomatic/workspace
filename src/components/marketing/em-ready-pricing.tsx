@@ -17,6 +17,8 @@ import {
 } from "@/lib/content/business-systems-pricing";
 import { marketingButtonClass } from "@/components/marketing/marketing-button-class";
 import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
+import { tasksCheckoutReady } from "@/lib/tasks/checkout-readiness";
+import { TasksCheckout } from "./tasks-checkout";
 import "./em-ready-pricing.css";
 import "./business-systems-pricing.css";
 
@@ -70,7 +72,8 @@ function PlanCard({ plan }: { plan: BusinessSystemPlan }) {
   );
 }
 
-export function EmReadyPricing() {
+export async function EmReadyPricing() {
+  const tasksPaymentReady = await tasksCheckoutReady();
   return (
     <div className="em-pricing-page business-pricing-page">
       <section className="em-pricing-hero business-pricing-hero">
@@ -118,8 +121,8 @@ export function EmReadyPricing() {
               <p>Assign, track and follow through on team work without purchasing the complete suite.</p>
             </div>
             <dl className="business-tasks-rates">
-              <div className="business-task-rate-card"><dt>Monthly access</dt><dd>{formatBusinessPlanPrice(tasksManagementPricing.monthlyPerUserInr)}<span>per user, billed monthly</span></dd></div>
-              <div className="business-task-rate-card"><dt>Additional seat</dt><dd>{formatBusinessPlanPrice(tasksManagementPricing.extraSeatMonthlyInr)}<span>per extra seat, per month</span></dd></div>
+              <div className="business-task-rate-card is-featured"><dt>Monthly access</dt><dd>{formatBusinessPlanPrice(tasksManagementPricing.monthlyPerUserInr)}<span>per billed user, per month</span></dd><small>8-user minimum · ₹2,400/month before GST for 1–8 users</small></div>
+              <div className="business-task-rate-card"><dt>Additional users</dt><dd>{formatBusinessPlanPrice(tasksManagementPricing.monthlyPerUserInr)}<span>per user, per month</span></dd><small>From user 9: ₹2,700/month before GST</small></div>
               <div className="business-task-rate-card is-featured"><dt>Yearly access</dt><dd>{formatBusinessPlanPrice(tasksManagementPricing.yearlyPerUserInr)}<span>per user, billed yearly</span></dd><small>Best value for a full year</small></div>
               <div className="business-task-rate-card is-addon">
                 <dt>Optional WhatsApp API</dt>
@@ -131,7 +134,8 @@ export function EmReadyPricing() {
               </div>
             </dl>
             <div className="business-tasks-footer">
-              <p className="business-addon-note"><strong>GST is extra.</strong> WhatsApp API is optional. Confirm users, setup scope, usage charges and renewal terms before subscribing.</p>
+              <p className="business-addon-note"><strong>GST is extra.</strong> Monthly billing charges at least 8 users: ₹2,400/month before GST for 1–8 users, then ₹300 for each additional user. Yearly billing remains ₹2,500 per selected user. WhatsApp API is optional and billed yearly.</p>
+              <TasksCheckout enabled={tasksPaymentReady} />
               <a className={marketingButtonClass("primary")} href={tasksManagementEnquiryHref} target="_blank" rel="noopener noreferrer">
                 Enquire About Tasks Management
               </a>

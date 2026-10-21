@@ -327,7 +327,10 @@ describe.skipIf(!local)("real local PostgreSQL checkout", () => {
     vi.mocked(razorpayRequest).mockResolvedValue({
       items: [{ ...payment, status: "failed" }],
     });
-    expect((await refreshCheckoutPayment(pending)).paymentState).toBe("failed");
+    const failed = await refreshCheckoutPayment(pending);
+    expect(failed.paymentState).toBe("failed");
+    expect(failed.paidAt).toBeNull();
+    expect(failed.invoiceNumber).toBeNull();
     vi.mocked(razorpayRequest).mockImplementation(async (path) =>
       path.endsWith("/payments")
         ? { items: [{ ...payment, captured: true, status: "captured" }] }
