@@ -31,6 +31,11 @@ describe("booking normalization and Calendar transport", () => {
       htmlLink: "https://calendar.google.com.evil.test/a", hangoutLink: "javascript:alert(1)" }, [event.summary!]);
     expect(row?.status).toBe("CANCELLED"); expect(row?.calendarUrl).toBeNull(); expect(row?.meetUrl).toBeNull();
   });
+  it("uses a verified Meet URL from Calendar location when hangoutLink is absent", () => {
+    const row = normalizeBooking({ ...event, hangoutLink: undefined,
+      location: "Video call: https://meet.google.com/mzm-cske-fpn" }, [event.summary!]);
+    expect(row?.meetUrl).toBe("https://meet.google.com/mzm-cske-fpn");
+  });
   it("excludes cancellations from every active count, but shows cancelled separately", () => {
     const rows = [{ ymd: "2026-10-20", completed: false }, { ymd: "2026-10-20", completed: false, cancelled: true }];
     const now = new Date("2026-10-20T10:00:00Z");

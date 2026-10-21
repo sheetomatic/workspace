@@ -11,7 +11,8 @@ export type CalendarEvent = {
   start?: { dateTime?: string; timeZone?: string; date?: string };
   end?: { dateTime?: string; timeZone?: string; date?: string };
   attendees?: Array<{ email?: string; displayName?: string; organizer?: boolean; self?: boolean; resource?: boolean; responseStatus?: string }>;
-  organizer?: { email?: string }; htmlLink?: string; hangoutLink?: string;
+  organizer?: { email?: string }; htmlLink?: string; hangoutLink?: string; location?: string;
+  conferenceData?: { entryPoints?: Array<{ entryPointType?: string; uri?: string }> };
 };
 type EventPage = { items?: CalendarEvent[]; nextPageToken?: string; nextSyncToken?: string };
 export type BookingSyncConfig = { organizationId?: string; organizationSlug?: string; calendarId: string; titles: string[]; token?: string };
@@ -44,6 +45,19 @@ function safeGoogleLink(value: string | undefined, hosts: string | string[]) {
   catch { return null; }
 }
 
+function eventMeetUrl(event: CalendarEvent) {
+  const candidates = [
+    event.hangoutLink,
+    ...((event.conferenceData?.entryPoints ?? []).filter(point => point.entryPointType === "video").map(point => point.uri)),
+    ...(`${event.location ?? ""}\n${event.description ?? ""}`.match(/https:\/\/meet\.google\.com\/[a-z0-9-]+/gi) ?? []),
+  ];
+  for (const candidate of candidates) {
+    const safe = safeGoogleLink(candidate, "meet.google.com");
+    if (safe) return safe;
+  }
+  return null;
+}
+
 /** Require RFC3339 offset; never interpret a booking using the server's local timezone. */
 function instant(value: string | undefined) {
   if (!value || !/(?:Z|[+-]\d{2}:\d{2})$/.test(value)) return null;
@@ -69,7 +83,7 @@ export function normalizeBooking(event: CalendarEvent, titles: string[]) {
     status: attendees.length && attendees.every(a => a.responseStatus === "declined") ? "CANCELLED" : "CONFIRMED",
     providerUpdatedAt: instant(event.updated),
     calendarUrl: safeGoogleLink(event.htmlLink, ["calendar.google.com", "www.google.com"]),
-    meetUrl: safeGoogleLink(event.hangoutLink, "meet.google.com"),
+    meetUrl: eventMeetUrl(event),
   };
 }
 
@@ -82,7 +96,7 @@ export async function readCalendarPage(config: BookingSyncConfig, cursor: { sync
   // No timeMin/orderBy/q with incremental sync. The identical filter set is used on all pages.
   url.searchParams.set("showDeleted", "true"); url.searchParams.set("singleEvents", "true");
   url.searchParams.set("maxResults", "100");
-  url.searchParams.set("fields", "items(id,status,summary,description,updated,start,end,attendees(email,displayName,organizer,self,resource,responseStatus),organizer(email),htmlLink,hangoutLink),nextPageToken,nextSyncToken");
+  url.searchParams.set("fields", "items(id,status,summary,description,updated,start,end,attendees(email,displayName,organizer,self,resource,responseStatus),organizer(email),htmlLink,hangoutLink,location,conferenceData(entryPoints(entryPointType,uri))),nextPageToken,nextSyncToken");
   if (cursor.syncToken) url.searchParams.set("syncToken", cursor.syncToken);
   if (cursor.pageToken) url.searchParams.set("pageToken", cursor.pageToken);
   // Uses an already-authorized token only: no OAuth grants, new scopes, or Calendar writes.
