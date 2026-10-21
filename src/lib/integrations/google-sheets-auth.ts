@@ -47,6 +47,16 @@ export function createGoogleSheetsWriteClient() {
   ]);
 }
 
+export function createGoogleCalendarReadClient() {
+  const credentials = getGoogleSheetsCredentials();
+  if (!credentials) return null;
+  const auth = new google.auth.GoogleAuth({
+    credentials,
+    scopes: ["https://www.googleapis.com/auth/calendar.readonly"],
+  });
+  return google.calendar({ version: "v3", auth });
+}
+
 function createGoogleSheetsClientWithScope(scopes: string[]) {
   const credentials = getGoogleSheetsCredentials();
   if (!credentials) {

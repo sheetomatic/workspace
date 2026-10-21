@@ -3046,6 +3046,7 @@ enum LeadSourceChannel {
   SHOPIFY
   WOOCOMMERCE
   JUSTDIAL
+  GOOGLE_CALENDAR
 }
 
 enum InboundLeadActivityType {
@@ -3294,6 +3295,9 @@ model InboundLeadFollowUp {
   waNotifiedAt    DateTime?
   /// Comma-separated minutes-before marks already sent: 240,60,30,10,0
   reminderMarks   String?
+  externalSource  String?
+  externalId      String?
+  externalUrl     String?
   createdByUserId String?
   createdBy       User?                    @relation("InboundLeadFollowUpCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdAt       DateTime                 @default(now())
@@ -3302,6 +3306,7 @@ model InboundLeadFollowUp {
   @@index([organizationId, scheduledAt])
   @@index([organizationId, type, scheduledAt])
   @@index([leadId])
+  @@unique([organizationId, externalSource, externalId])
 }
 
 enum WaCampaignStatus {

@@ -13,6 +13,7 @@ import { followUpTypeLabel } from "@/lib/leads/follow-up-types";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
+import { syncGoogleCalendarAppointments } from "@/lib/leads/google-calendar-appointments";
 
 export default async function CrmMeetingsPage({
   searchParams,
@@ -25,6 +26,7 @@ export default async function CrmMeetingsPage({
   const params = await searchParams;
   const view = parseCrmMeetingView(params.view);
   const selectedDate = params.date?.trim() || null;
+  const calendarSync = await syncGoogleCalendarAppointments(user.organizationId).catch(() => null);
   const rows = await listCrmMeetings(user.organizationId);
 
   const meetings = rows.map((row) => {
@@ -50,6 +52,8 @@ export default async function CrmMeetingsPage({
       notes: row.notes?.trim() || row.lead.meetingNotes?.trim() || "",
       isToday: isIstToday(scheduledAt),
       completed,
+      externalSource: row.externalSource,
+      externalUrl: row.externalUrl,
     };
   });
 
@@ -58,7 +62,9 @@ export default async function CrmMeetingsPage({
   return (
     <CrmSubmoduleShell
       title="Meetings"
-      description="Click a number to see that list. Calendar dates show the same meetings. Auto WhatsApp reminders still run; use Remind to send one now."
+      description={calendarSync?.configured
+        ? "Google Calendar appointments sync here automatically. Open a meeting to view details; Join appears when Google provides a meeting link."
+        : "Click a number to see that list. Calendar appointments appear after the Google Calendar connection is configured."}
       kpis={[
         {
           label: "Today",

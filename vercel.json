@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/google-calendar-appointments",
+      "schedule": "*/15 * * * *"
+    },
+    {
       "path": "/api/cron/task-reminders",
       "schedule": "0 9 * * *"
     },
