@@ -96,8 +96,8 @@ if (calendarRevision) {
     { path: "src/lib/content/business-systems-pricing.test.ts", sha256: "5a4c3885a54ab4bb8401ab042561cd660c5a998353d21e1e0c9ec442b958462a", before: "daac8521cdb71859bf85b2920ec56136577666c704c782aea107bf379f040f18" },
     { path: "src/components/marketing/em-ready-pricing.tsx", sha256: "4b6dbfffd6e24bee0432739bec920b5ea591adf6476d0089673809562e9deddf", before: "b5ddf5f4a880184479829a0a1d6e67621002d70def0e0f1f77000b0e8692d091" },
     { path: "src/components/marketing/business-systems-pricing.css", sha256: "ac47d3ddfe52b52ebb94d6b70a2d0f46ae1c233c9c6b8190d92e8904ddf32604", before: "1744c4e99d011490bababc9e9df4b8b7eb435aab022412d59fa0508a7b1a094a" },
-    { path: "prisma/migrations/20261020050000_google_calendar_bookings/migration.sql", sha256: "fee07e0a0e15fb84e99e97af1327caaa2cc8ad2e9cb8b1fe6fae11bc11ed2ec5" },
-    { path: "prisma/migrations/20261020060000_google_calendar_booking_details/migration.sql", sha256: "bc65db0b5d34f1ec441f658a3526f834c3f6faa95ab34f7eceddf4830627189d" },
+    { path: "prisma/migrations/20261020050000_google_calendar_bookings/migration.sql", sha256: "36ce34fe66f24aeed83f257d6cf1f99927a3f271e34f0b8d9f0aca3da955ebc9" },
+    { path: "prisma/migrations/20261020060000_google_calendar_booking_details/migration.sql", sha256: "38bad6963e44859f5be2f51072f3f289d7dce7bb96406e486b7b80cfe612e6dc" },
   ];
   const calendarPrepared = await Promise.all(calendarFiles.map(async f => ({
     ...f, bytes: await reviewedAt(calendarRevision, f.path, f.sha256),
@@ -187,7 +187,8 @@ if (calendarRevision) {
       start: event.start?.dateTime, end: event.end?.dateTime, meetUrl })}`);
   }
   console.log(`Calendar permission and Bhaskar event preflight passed; service-account join URL ${meetUrl ? "available" : "not exposed"}`);
-  run("npx", ["prisma", "migrate", "deploy"]);
+  run("npx", ["prisma", "db", "execute", "--file", "prisma/migrations/20261020050000_google_calendar_bookings/migration.sql", "--schema", "prisma/schema.prisma"]);
+  run("npx", ["prisma", "db", "execute", "--file", "prisma/migrations/20261020060000_google_calendar_booking_details/migration.sql", "--schema", "prisma/schema.prisma"]);
 }
 run("npm", ["run", "db:generate"]);
 run("npx", ["vitest", "run", "src/lib/templates/commerce.test.ts"]);

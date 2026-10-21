@@ -1,4 +1,4 @@
-CREATE TABLE "GoogleCalendarConnection" (
+CREATE TABLE IF NOT EXISTS "GoogleCalendarConnection" (
   "id" TEXT NOT NULL PRIMARY KEY,
   "organizationId" TEXT NOT NULL,
   "calendarId" TEXT NOT NULL,
@@ -12,8 +12,8 @@ CREATE TABLE "GoogleCalendarConnection" (
   "lastError" TEXT,
   CONSTRAINT "GoogleCalendarConnection_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE UNIQUE INDEX "GoogleCalendarConnection_organizationId_calendarId_key" ON "GoogleCalendarConnection"("organizationId", "calendarId");
-CREATE TABLE "GoogleCalendarBooking" (
+CREATE UNIQUE INDEX IF NOT EXISTS "GoogleCalendarConnection_organizationId_calendarId_key" ON "GoogleCalendarConnection"("organizationId", "calendarId");
+CREATE TABLE IF NOT EXISTS "GoogleCalendarBooking" (
   "id" TEXT NOT NULL PRIMARY KEY,
   "connectionId" TEXT NOT NULL,
   "eventId" TEXT NOT NULL,
@@ -30,5 +30,5 @@ CREATE TABLE "GoogleCalendarBooking" (
   "meetUrl" TEXT,
   CONSTRAINT "GoogleCalendarBooking_connectionId_fkey" FOREIGN KEY ("connectionId") REFERENCES "GoogleCalendarConnection"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE UNIQUE INDEX "GoogleCalendarBooking_connectionId_eventId_key" ON "GoogleCalendarBooking"("connectionId", "eventId");
-CREATE INDEX "GoogleCalendarBooking_connectionId_status_startsAt_idx" ON "GoogleCalendarBooking"("connectionId", "status", "startsAt");
+CREATE UNIQUE INDEX IF NOT EXISTS "GoogleCalendarBooking_connectionId_eventId_key" ON "GoogleCalendarBooking"("connectionId", "eventId");
+CREATE INDEX IF NOT EXISTS "GoogleCalendarBooking_connectionId_status_startsAt_idx" ON "GoogleCalendarBooking"("connectionId", "status", "startsAt");
