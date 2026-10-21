@@ -26,6 +26,7 @@ import { HrModuleCard } from "@/components/marketing/hr-module-card";
 import { RelatedServicesSection } from "@/components/marketing/related-services-section";
 import { ServicesBreadcrumb } from "@/components/marketing/services-breadcrumb";
 import { ServicesSubNav } from "@/components/marketing/services-sub-nav";
+import { SolutionPreview } from "@/components/marketing/business-library-section";
 import {
   hrServicesSection,
   hrWorkspaceModules,
@@ -138,6 +139,10 @@ export function ServicesCategoryContent({ slug }: ServicesCategoryContentProps) 
                 <p className="services-detail-problem-label">Problem we fix</p>
                 <h2>{category.problem}</h2>
                 <p>{category.problemDetail}</p>
+                <div className="services-detail-preview">
+                  <p>Example workspace snapshot</p>
+                  <SolutionPreview slug={slug} />
+                </div>
               </aside>
             </div>
           </div>
