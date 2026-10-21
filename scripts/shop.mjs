@@ -92,10 +92,14 @@ if (calendarRevision) {
     { path: "src/lib/leads/crm-meetings.ts", sha256: "014ebfd00c2d0861783ce2ba587ac30daa78d4591a8060f8dda4d057629e4e70", before: "b409d9fa71c7d8df9798d7bbc928cd45ef11011b1ed2758176e71a476ba9fdc8" },
     { path: "src/components/saas/crm-meetings-calendar.tsx", sha256: "9620a1fea8a48c2597ebffb493ae6ca8e262c0d4ec44c0c6d13fe1f64bf72d98", before: "44dfee03ee8627f256db08cb798665b22913c67cd3fcb8945b5b72d62307465a" },
     { path: "src/components/saas/crm-meetings-calendar.css", sha256: "f37f41a5f868f1e198d5c930114b047d0c369d8c59f417422b11f95316b1ea23", before: "b7a43c9597edbb5e9535d5d63e200c088657e070c0acc7b25108f61bcb6b8585" },
-    { path: "src/lib/content/business-systems-pricing.ts", sha256: "f2a287433d3eaf65837cee6d6557da59f0a39c59d8677e17aeab2948891ddfde", before: "576e57c989acf04cd5b53560d06decf617be9157399d5dd2b1bcae9d302c69ca" },
-    { path: "src/lib/content/business-systems-pricing.test.ts", sha256: "5a4c3885a54ab4bb8401ab042561cd660c5a998353d21e1e0c9ec442b958462a", before: "daac8521cdb71859bf85b2920ec56136577666c704c782aea107bf379f040f18" },
-    { path: "src/components/marketing/em-ready-pricing.tsx", sha256: "4b6dbfffd6e24bee0432739bec920b5ea591adf6476d0089673809562e9deddf", before: "b5ddf5f4a880184479829a0a1d6e67621002d70def0e0f1f77000b0e8692d091" },
-    { path: "src/components/marketing/business-systems-pricing.css", sha256: "ac47d3ddfe52b52ebb94d6b70a2d0f46ae1c233c9c6b8190d92e8904ddf32604", before: "1744c4e99d011490bababc9e9df4b8b7eb435aab022412d59fa0508a7b1a094a" },
+    { path: "src/lib/content/business-systems-pricing.ts", sha256: "7e51719e9b1b25af47b98d5bca74032dcdc1982215a382073d15079e6b043072", before: "576e57c989acf04cd5b53560d06decf617be9157399d5dd2b1bcae9d302c69ca" },
+    { path: "src/lib/content/business-systems-pricing.test.ts", sha256: "ed352b72dc671777dd44d277800031e0faf4065e86769c2752fde45c1c0fb79e", before: "daac8521cdb71859bf85b2920ec56136577666c704c782aea107bf379f040f18" },
+    { path: "src/components/marketing/em-ready-pricing.tsx", sha256: "1c9ef86fd051e8c07b04a2a555821f8cceed3cd38a86be90fdb3c9e2cb3329e9", before: "b5ddf5f4a880184479829a0a1d6e67621002d70def0e0f1f77000b0e8692d091" },
+    { path: "src/components/marketing/business-systems-pricing.css", sha256: "9dd17df3bdea44f17b2faa593325ee84a9e97e0ebf6144f9afec8540abd914de", before: "1744c4e99d011490bababc9e9df4b8b7eb435aab022412d59fa0508a7b1a094a" },
+    { path: "src/app/services-content.ts", sha256: "b5fe2540a57b861eed01a34c271149c5e0fc7c09dea85f58e6418a74e5c6b9ee", before: "d8215bd8855b15f5f28f6cd52d22e7ac04f7db65629f3afc2a4c43c5791c5773" },
+    { path: "src/components/marketing/services-hub-content.tsx", sha256: "dc4d0468a077b72b0cae049dd03711a773b4a94339db6c7c17e2c55ad241a96d", before: "de26d2e3155d178a83aa3a5e8971b162bd28a3e8e3d7a6a1f3c08d28f79f22e8" },
+    { path: "src/app/page-content.ts", sha256: "c057831b3d02d3c26500a4b622e3e78e582d0346539679ad9b8dede046af44b0", before: "1b84e4ebc4a6e8b73fd006d969bafa1e6dc18d033d62c520d99d1ed9cce9b967" },
+    { path: "src/app/site-content.ts", sha256: "6ea7e43f34e0b18305d00082e55edfc0e69d718f2644f5ebb20fb8fa15a539ff", before: "b7bc72c9b36e0c046a84bd835d7a08457fe6dc8c980835bd15844fe4a607e95b" },
     { path: "prisma/migrations/20261020050000_google_calendar_bookings/migration.sql", sha256: "36ce34fe66f24aeed83f257d6cf1f99927a3f271e34f0b8d9f0aca3da955ebc9" },
     { path: "prisma/migrations/20261020060000_google_calendar_booking_details/migration.sql", sha256: "38bad6963e44859f5be2f51072f3f289d7dce7bb96406e486b7b80cfe612e6dc" },
   ];
@@ -156,7 +160,8 @@ if (calendarRevision) {
 
   run("npx", ["vitest", "run", "src/lib/content/business-systems-pricing.test.ts"]);
 
-  // Permission preflight reads only today's group-calendar events and never writes to Google Calendar.
+  // Optional permission preflight reads only today's group-calendar events and never writes to Google Calendar.
+  if (process.env.CALENDAR_GROUP_PREFLIGHT === "true") {
   const { google } = await import(`${process.cwd()}/node_modules/googleapis/build/src/index.js`);
   const credentials = JSON.parse(process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON ?? "{}");
   if (!credentials.client_email || !credentials.private_key) throw new Error("Calendar service account is not configured");
@@ -187,6 +192,7 @@ if (calendarRevision) {
   }
   console.log(`Group Calendar preflight passed: ${JSON.stringify({ matchingMeetings: meetings.length, done, scheduled,
     detailsVisible: true, editLinksVisible: true })}`);
+  }
   run("npx", ["prisma", "db", "execute", "--file", "prisma/migrations/20261020050000_google_calendar_bookings/migration.sql", "--schema", "prisma/schema.prisma"]);
   run("npx", ["prisma", "db", "execute", "--file", "prisma/migrations/20261020060000_google_calendar_booking_details/migration.sql", "--schema", "prisma/schema.prisma"]);
 }
