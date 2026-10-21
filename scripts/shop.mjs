@@ -151,7 +151,7 @@ if (calendarRevision) {
 
   // Permission preflight runs before the additive migration. It reads only the
   // one event specified by this release and never writes to Google Calendar.
-  const { google } = await import("googleapis");
+  const { google } = await import(`${process.cwd()}/node_modules/googleapis/build/src/index.js`);
   const credentials = JSON.parse(process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON ?? "{}");
   if (!credentials.client_email || !credentials.private_key) throw new Error("Calendar service account is not configured");
   const auth = new google.auth.GoogleAuth({ credentials, scopes: ["https://www.googleapis.com/auth/calendar.readonly"] });
