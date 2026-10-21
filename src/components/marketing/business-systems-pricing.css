@@ -210,6 +210,13 @@
 .tasks-checkout-button { width: 100%; min-height: 50px; margin-top: 1rem; padding: .75rem; border: 0; border-radius: 999px; background: #1d4ed8; color: #fff; font: inherit; font-weight: 750; cursor: pointer; }
 .tasks-checkout-button:disabled { background: #94a3b8; cursor: not-allowed; }
 .tasks-checkout-footnote { margin: .65rem 0 0; color: #64748b; font-size: .78rem; line-height: 1.5; }
+.tasks-setup-video { margin: 0 0 1.25rem; }
+.tasks-setup-video h3 { margin: 0 0 .35rem; font-size: 1.15rem; }
+.tasks-setup-video p { margin: .4rem 0; color: #475569; font-size: .9rem; line-height: 1.5; }
+.tasks-setup-video-frame { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 16px; overflow: hidden; background: #0f172a; }
+.tasks-setup-video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.tasks-panel-invite { margin-top: 1rem; padding: .9rem 1rem; border-radius: 14px; background: #effaf2; color: #14532d; }
+.tasks-panel-invite a { font-weight: 750; }
 @media (max-width: 600px) {
   .tasks-checkout-intro { display: grid; }
   .tasks-checkout-total { width: 100%; text-align: left; }

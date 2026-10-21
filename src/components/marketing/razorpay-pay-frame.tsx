@@ -13,6 +13,7 @@ type Props = {
   description?: string;
   email?: string;
   phone?: string;
+  onPaid?: (paymentId: string) => void;
 };
 
 type CheckoutSuccess = { razorpay_payment_id?: string };
@@ -39,6 +40,7 @@ export function RazorpayPayFrame({
   description,
   email,
   phone,
+  onPaid,
 }: Props) {
   const rupees = normalizeRazorpayAmountInr(amountInr);
   const amountLabel =
@@ -78,6 +80,7 @@ export function RazorpayPayFrame({
         handler(response: CheckoutSuccess) {
           if (response.razorpay_payment_id) {
             setPaymentId(response.razorpay_payment_id);
+            onPaid?.(response.razorpay_payment_id);
           }
         },
       });

@@ -12,6 +12,9 @@ type Props = { enabled: boolean };
 type Buyer = { name: string; email: string; phone: string; billedTo: string; address: string; city: string; stateCode: string; pin: string; gstin: string };
 type RzpOrder = { id: string; paid: boolean; paymentState: string; totalPaise: number; gatewayOrderId: string | null; keyId: string | null; invoiceNumber: string | null };
 
+const TASKS_PANEL_URL = "https://workspace.sheetomatic.com/app/tasks";
+const TASKS_SETUP_VIDEO_ID = "n-bHn6kFuaA";
+const TASKS_SETUP_VIDEO_URL = `https://youtu.be/${TASKS_SETUP_VIDEO_ID}`;
 const format = (amount: number) => `₹${amount.toLocaleString("en-IN")}`;
 function token() { return Array.from(crypto.getRandomValues(new Uint8Array(32)), (byte) => byte.toString(16).padStart(2, "0")).join(""); }
 
@@ -23,6 +26,8 @@ export function TasksCheckout({ enabled }: Props) {
   const [accepted, setAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [paidId, setPaidId] = useState<string | null>(null);
+  const [inviteNote, setInviteNote] = useState("");
   const accessToken = useRef<string | null>(null);
   const billedUsers = period === "monthly" ? Math.max(users, TASKS_MONTHLY_MINIMUM_USERS) : users;
   const tasksSubtotal = period === "monthly" ? billedUsers * 300 : users * 2500;
@@ -51,6 +56,7 @@ export function TasksCheckout({ enabled }: Props) {
           const data = await verified.json();
           if (!verified.ok) throw new Error(data.error || "Payment verification is pending.");
           setMessage(`Payment verified. Invoice ${data.invoiceNumber} will be emailed to ${buyer.email}.`);
+          if (result.razorpay_payment_id) void paymentReceived(result.razorpay_payment_id);
         } catch (error) { setMessage(error instanceof Error ? error.message : "Payment verification is pending. Check status before retrying."); }
       }, modal: { ondismiss: () => setMessage("Checkout closed. No paid invoice is created unless Razorpay confirms a captured payment.") } });
       gateway.open();
@@ -58,7 +64,38 @@ export function TasksCheckout({ enabled }: Props) {
     finally { setBusy(false); }
   }
 
+  async function paymentReceived(paymentId: string) {
+    setPaidId(paymentId);
+    setInviteNote("");
+    try {
+      const response = await fetch("/api/tasks/payment-received", {
+        method: "POST",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentId,
+          name: buyer.name,
+          email: buyer.email,
+          amountInr: subtotal + gst,
+        }),
+      });
+      const data = await response.json() as { emailed?: boolean; error?: string };
+      if (!response.ok) throw new Error(data.error || "The invite email could not be sent.");
+      setInviteNote(data.emailed ? `The Tasks panel invite was emailed to ${buyer.email}.` : "Payment received. Use the Tasks panel link below. The invite email will be sent when email delivery is available.");
+    } catch (error) {
+      setInviteNote(error instanceof Error ? error.message : "Payment received. Use the Tasks panel link below.");
+    }
+  }
+
   return <div className="tasks-checkout" id="tasks-checkout">
+    <section className="tasks-setup-video" aria-label="Tasks setup video">
+      <h3>AI runs my Tasks</h3>
+      <p>Watch the setup, then pay. After Razorpay confirms payment, the Tasks panel invite is sent to your email.</p>
+      <div className="tasks-setup-video-frame">
+        <iframe src={`https://www.youtube.com/embed/${TASKS_SETUP_VIDEO_ID}?rel=0&modestbranding=1`} title="Assign Tasks Automatically Using AI + WhatsApp" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" />
+      </div>
+      <p><a href={TASKS_SETUP_VIDEO_URL} target="_blank" rel="noopener noreferrer">Open the setup video on YouTube</a></p>
+    </section>
     <div className="tasks-checkout-intro"><div><span className="tasks-checkout-kicker">Secure card checkout</span><h3>Choose your Tasks plan</h3><p>Hosted payment through Razorpay. We do not collect or store card details.</p></div><div className="tasks-checkout-total"><span>Estimated total with 18% GST</span><strong>{format(subtotal + gst)}</strong></div></div>
     <form onSubmit={pay}>
       <div className="tasks-checkout-controls">
@@ -80,7 +117,8 @@ export function TasksCheckout({ enabled }: Props) {
       </fieldset>
       <dl className="tasks-checkout-summary"><div><dt>{period === "monthly" ? `Tasks · ${billedUsers} billed users × ₹300` : `Tasks · ${users} users × ₹2,500/year`}</dt><dd>{format(tasksSubtotal)}</dd></div>{whatsappApi && <div><dt>WhatsApp API · 1 year</dt><dd>{format(10000)}</dd></div>}<div><dt>Subtotal before GST</dt><dd>{format(subtotal)}</dd></div><div><dt>GST estimate · 18%</dt><dd>{format(gst)}</dd></div><div className="tasks-checkout-grand-total"><dt>Estimated total</dt><dd>{format(subtotal + gst)}</dd></div></dl>
       <label className="tasks-checkout-consent"><input type="checkbox" required checked={accepted} onChange={e => setAccepted(e.target.checked)} />I understand monthly pricing has an 8-user minimum; yearly pricing is per selected user; GST is added; and this is a fixed-term purchase with manual renewal, not an automatic recurring charge. I agree to the <Link href="/terms" target="_blank">terms</Link>.</label>
-      {!enabled && <div className="tasks-checkout-razorpay-me"><p>Pay Sheetomatic Technologies on Razorpay. This plan total is filled in on the payment page.</p><RazorpayPayFrame amountInr={subtotal + gst} description={period === "monthly" ? `Tasks Management monthly · ${billedUsers} users` : `Tasks Management yearly · ${users} users`} email={buyer.email} phone={buyer.phone} /><p><a href={SHEETOMATIC_RAZORPAY_ME_URL} target="_blank" rel="noopener noreferrer">razorpay.me/@sheetomatictechnologies</a></p></div>}
+      {!enabled && <div className="tasks-checkout-razorpay-me"><p>Pay Sheetomatic Technologies on Razorpay. This plan total is filled in on the payment page.</p><RazorpayPayFrame amountInr={subtotal + gst} description={period === "monthly" ? `Tasks Management monthly · ${billedUsers} users` : `Tasks Management yearly · ${users} users`} email={buyer.email} phone={buyer.phone} onPaid={paymentReceived} /><p><a href={SHEETOMATIC_RAZORPAY_ME_URL} target="_blank" rel="noopener noreferrer">razorpay.me/@sheetomatictechnologies</a></p></div>}
+      {paidId && <div className="tasks-panel-invite" role="status"><p>Payment received. Your Tasks module panel is ready.</p><p><a href={TASKS_PANEL_URL}>Open the Tasks panel</a></p>{inviteNote && <p>{inviteNote}</p>}<p>Payment reference {paidId}</p></div>}
       {message && <p className="tasks-checkout-message" role="status">{message}</p>}
       {enabled && <button className="tasks-checkout-button" type="submit" disabled={busy}>{busy ? "Preparing secure checkout…" : `Continue to secure payment · ${format(subtotal + gst)}`}</button>}
       <p className="tasks-checkout-footnote">GST on this page is an 18% estimate. Razorpay collects the payment. Keep the Razorpay receipt; a tax invoice follows after the payment is confirmed.</p>
