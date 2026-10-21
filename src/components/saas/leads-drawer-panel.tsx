@@ -224,6 +224,10 @@ export type LeadDrawerData = {
   phone: string | null;
   email: string | null;
   company: string | null;
+  linkedInMemberUrn?: string | null;
+  linkedInProfileUrl?: string | null;
+  linkedInHeadline?: string | null;
+  linkedInDetectedAt?: string | null;
   address: string | null;
   zipCode: string | null;
   billedTo: string | null;
@@ -1131,6 +1135,25 @@ export function LeadDrawerPanel({
                   onBlur={() => void persistDetails()}
                 />
               </label>
+              {lead.linkedInMemberUrn ? (
+                <div className="leads-settings-card">
+                  <strong>LinkedIn connection</strong>
+                  {lead.linkedInHeadline ? <p>{lead.linkedInHeadline}</p> : null}
+                  {lead.linkedInProfileUrl ? (
+                    <a href={lead.linkedInProfileUrl} target="_blank" rel="noopener noreferrer">
+                      Open LinkedIn profile ↗
+                    </a>
+                  ) : <p className="leads-machine-muted">Profile link was not supplied by LinkedIn.</p>}
+                  {lead.linkedInDetectedAt ? (
+                    <p className="leads-machine-muted">
+                      First detected: {new Date(lead.linkedInDetectedAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} IST
+                    </p>
+                  ) : null}
+                  {!lead.phone && !lead.email ? (
+                    <p className="leads-machine-muted">Contact details have not been shared. You can add them when available.</p>
+                  ) : null}
+                </div>
+              ) : null}
               <label>
                 Phone
                 <input

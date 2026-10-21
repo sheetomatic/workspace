@@ -57,6 +57,13 @@ export function LeadsSettingsPanel({
           sendingActive={nurtureSendingActive}
         />
         <LeadsSourceSettingsPanel sources={leadSources} />
+        <section className="leads-settings-card">
+          <h3>LinkedIn accepted connections</h3>
+          <p>Connect your own account to create leads after outbound requests are accepted. Official LinkedIn approval is required.</p>
+          <Link className="btn-secondary btn-sm" href="/app/leads/linkedin">
+            Manage my LinkedIn connection
+          </Link>
+        </section>
 
         <section className="saas-panel leads-settings-api">
           <details>

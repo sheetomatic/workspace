@@ -171,6 +171,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
         <LeadsCrmWorkspace
           canManage={canManage}
           canAssignLeads={canAssignLeads}
+          canConnectLinkedIn={hasMinimumRole(user.role, "STAFF")}
           currentUserId={user.id}
           focusMode
           initialSelectedLeadId={lead?.id ?? focusLeadId}
@@ -334,6 +335,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
       <LeadsCrmWorkspace
         canManage={canManage}
         canAssignLeads={canAssignLeads}
+        canConnectLinkedIn={hasMinimumRole(user.role, "STAFF")}
         currentUserId={user.id}
         focusMode={false}
         initialSelectedLeadId={params.leadId ?? null}

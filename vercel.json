@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/linkedin-sync",
+      "schedule": "17 * * * *"
+    },
+    {
       "path": "/api/cron/task-reminders",
       "schedule": "0 9 * * *"
     },
