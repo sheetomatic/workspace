@@ -231,13 +231,22 @@ if (process.env.GOOGLE_CALENDAR_SYNC_ENABLED === "true") {
       where: { id: rows[0].connectionId },
       select: { calendarId: true, lastSyncedAt: true, lastError: true },
     }) : null;
+    const similar = await prisma.googleCalendarBooking.findMany({
+      where: { summary: { contains: "Bhaskar", mode: "insensitive" } },
+      select: { eventId: true, summary: true, startsAt: true, status: true, connectionId: true },
+      take: 10,
+    });
+    const allConnections = await prisma.googleCalendarConnection.findMany({
+      select: { id: true, organizationId: true, calendarId: true, lastSyncedAt: true, lastError: true, pageToken: true },
+    });
     const expectedStart = new Date("2026-10-21T12:30:00+05:30").getTime();
     const expectedEnd = new Date("2026-10-21T13:00:00+05:30").getTime();
     if (rows.length !== 1 || rows[0].startsAt.getTime() !== expectedStart || rows[0].endsAt.getTime() !== expectedEnd ||
         rows[0].status === "CANCELLED" || !rows[0].calendarUrl || connection?.lastError) {
       throw new Error(`Production Calendar verification failed: ${JSON.stringify({ eventCount: rows.length,
         start: rows[0]?.startsAt, end: rows[0]?.endsAt, status: rows[0]?.status,
-        calendarUrl: Boolean(rows[0]?.calendarUrl), lastSyncedAt: connection?.lastSyncedAt, lastError: connection?.lastError })}`);
+        calendarUrl: Boolean(rows[0]?.calendarUrl), lastSyncedAt: connection?.lastSyncedAt, lastError: connection?.lastError,
+        similar, connections: allConnections })}`);
     }
     console.log(`Production Calendar verification passed: ${JSON.stringify({ eventId, eventCount: rows.length,
       start: rows[0].startsAt, end: rows[0].endsAt, status: rows[0].status, calendarUrl: true,
