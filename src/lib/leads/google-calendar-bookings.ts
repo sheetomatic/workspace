@@ -95,6 +95,7 @@ export async function readCalendarPage(config: BookingSyncConfig, cursor: { sync
   const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(config.calendarId)}/events`);
   // No timeMin/orderBy/q with incremental sync. The identical filter set is used on all pages.
   url.searchParams.set("showDeleted", "true"); url.searchParams.set("singleEvents", "true");
+  url.searchParams.set("conferenceDataVersion", "1");
   url.searchParams.set("maxResults", "100");
   url.searchParams.set("fields", "items(id,status,summary,description,updated,start,end,attendees(email,displayName,organizer,self,resource,responseStatus),organizer(email),htmlLink,hangoutLink,location,conferenceData(entryPoints(entryPointType,uri))),nextPageToken,nextSyncToken");
   if (cursor.syncToken) url.searchParams.set("syncToken", cursor.syncToken);

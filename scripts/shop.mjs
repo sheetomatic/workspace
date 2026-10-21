@@ -85,7 +85,7 @@ if (calendarRevision) {
   const calendarFiles = [
     { path: "src/lib/integrations/google-sheets-auth.ts", sha256: "4318b873ab9aed2ec85198fb13f3843930bdfbeb566f9be694013e8aafce9ce8", before: "7518b971b3007e0035adab5ebebee950a6ce0141f286f1921ba56cb781775a0d" },
     { path: "src/lib/leads/calendar-booking-description.ts", sha256: "cc1fb0bb877ad301016a868ec2de6c6b63ace1dcf43efe668b67e9c3bbc914e0" },
-    { path: "src/lib/leads/google-calendar-bookings.ts", sha256: "e4cd946df8a0f0efd3f503710040f857f5a00a5ba4b1776dea38002bfe1eec89" },
+    { path: "src/lib/leads/google-calendar-bookings.ts", sha256: "cf597f714171d4cc9139fa73af6078ee5be0043479c799adc8d4a08b9338ce87" },
     { path: "src/app/api/cron/google-calendar-bookings/route.ts", sha256: "6672d0197cd4df904bb59f4464969051eb9af5bb709a8819c7254451f6342c40" },
     { path: "src/app/app/leads/(crm)/meetings/page.tsx", sha256: "b6b6fa0ebecaaa33be826c072627cd2a77fbc48dc794f012b95f8786cffb4dbf", before: "d7bded59f5995c55933849d36038bb040c0f802902734dc2b7c9188866229c69" },
     { path: "src/lib/leads/crm-module-stats.ts", sha256: "2280e5d3c1eae00625b0cd202988848c1093f6c5234f670e1eecf0a7a9c42fff", before: "416e1b3eb23213bdde18ffa7e6f5e16639ce55513d1a14362d5b2ba067e91612" },
@@ -162,7 +162,7 @@ if (calendarRevision) {
   if (!calendarId || !eventId) throw new Error("Calendar release preflight is incomplete");
   let event;
   try {
-    event = (await calendar.events.get({ calendarId, eventId })).data;
+    event = (await calendar.events.get({ calendarId, eventId, conferenceDataVersion: 1 })).data;
   } catch (error) {
     if (error?.response?.status === 404) {
       throw new Error(`Calendar ${calendarId} must be shared read-only with ${credentials.client_email}`);
