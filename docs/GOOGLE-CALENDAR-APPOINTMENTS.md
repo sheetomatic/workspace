@@ -34,7 +34,7 @@ These non-secret Vercel production variables select the calendar and workspace:
 - `GOOGLE_APPOINTMENTS_ORG_SLUG=sheetomatic-technologies`
 - `GOOGLE_APPOINTMENTS_TITLE_PREFIXES=Book Your Free Consultation Call|Requirement Understanding Session`
 
-Apply migration `20261021120000_google_calendar_appointments` before deploying
+Apply migration `20261021200000_google_calendar_appointments` before deploying
 the application. It adds an internal lead source plus three nullable external
 event fields and one unique index. It does not modify existing lead records.
 
