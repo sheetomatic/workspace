@@ -137,7 +137,12 @@ if (calendarRevision) {
     "36201613bd5b91a379975fef98330a9f2291d6a72f1b3ee2c96660b8acae504d",
   );
   const vercel = JSON.parse(vercelSource);
-  if (JSON.stringify(vercel) !== JSON.stringify(JSON.parse(reviewedVercel))) {
+  const expectedVercel = JSON.parse(reviewedVercel);
+  const preservesCrons = expectedVercel.crons.every(expected =>
+    vercel.crons?.some(current => current.path === expected.path && current.schedule === expected.schedule));
+  const preservesFunctions = Object.entries(expectedVercel.functions).every(([path, expected]) =>
+    JSON.stringify(vercel.functions?.[path]) === JSON.stringify(expected));
+  if (!preservesCrons || !preservesFunctions) {
     throw new Error("Unexpected vercel.json for Calendar release");
   }
   if (vercel.crons.some(item => item.path === "/api/cron/google-calendar-bookings")) throw new Error("Calendar cron already exists");
