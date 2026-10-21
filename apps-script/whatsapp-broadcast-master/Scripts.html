@@ -1,0 +1,422 @@
+<script>
+(function () {
+  var state = {
+    page: window.INITIAL_PAGE || 'home',
+    app: null,
+    draft: {
+      campaignName: '',
+      templateName: '',
+      language: 'en',
+      phoneColumn: 'Phone',
+      mapping: {},
+      attachment: '',
+      notes: '',
+      testPhone: ''
+    },
+    step: 1,
+    previewIndex: 0,
+    validation: null,
+    busy: false
+  };
+
+  function call_(name, payload) {
+    return new Promise(function (resolve, reject) {
+      if (window.PREVIEW_API && window.PREVIEW_API[name]) {
+        Promise.resolve(window.PREVIEW_API[name](payload)).then(resolve, reject);
+        return;
+      }
+      var runner = google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(function (error) {
+          reject(new Error(friendlyClientError_(error)));
+        });
+      if (payload === undefined) runner[name]();
+      else runner[name](payload);
+    });
+  }
+
+  function friendlyClientError_(error) {
+    var message = String(error && error.message ? error.message : error || '');
+    if (/Cannot read|undefined|TypeError/i.test(message)) {
+      return 'Something went wrong while talking to Google Sheets. Close this window and open Broadcast Master again.';
+    }
+    return message || 'The request failed. Please try again.';
+  }
+
+  function $(sel, root) { return (root || document).querySelector(sel); }
+  function h(html) { return html; }
+  function escapeHtml(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function setBusy(on) {
+    state.busy = !!on;
+    document.querySelectorAll('.btn').forEach(function (btn) { btn.disabled = !!on && btn.dataset.keep !== '1'; });
+  }
+
+  function toast(message, kind) {
+    var box = document.createElement('div');
+    box.className = 'alert ' + (kind || 'ok');
+    box.textContent = message;
+    var main = $('#main');
+    main.insertBefore(box, main.firstChild);
+    setTimeout(function () { if (box.parentNode) box.parentNode.removeChild(box); }, 6000);
+  }
+
+  function load() {
+    call_('getAppState').then(function (app) {
+      state.app = app;
+      if (app && app.campaign && app.campaign.campaign && !state.draft.campaignName) {
+        state.draft.phoneColumn = app.columns.indexOf('Phone') >= 0 ? 'Phone' : (app.columns[0] || 'Phone');
+      }
+      render();
+    }).catch(function (error) {
+      $('#main').innerHTML = '<div class="alert bad">' + escapeHtml(error.message) + '</div>';
+    });
+  }
+
+  function go(page) {
+    state.page = page;
+    document.querySelectorAll('.nav button').forEach(function (btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-page') === page);
+    });
+    render();
+  }
+
+  function render() {
+    var app = state.app;
+    if (!app) {
+      $('#main').innerHTML = '<div class="card">Loading Broadcast Master…</div>';
+      return;
+    }
+    var pill = $('#modePill');
+    pill.textContent = app.mock ? 'DEMO / MOCK MODE' : 'PRODUCTION MODE';
+    pill.className = 'mode-pill ' + (app.mock ? 'mock' : 'live');
+    var page = state.page;
+    if (page === 'onboard') $('#main').innerHTML = viewOnboard(app);
+    else if (page === 'campaign') $('#main').innerHTML = viewCampaign(app);
+    else if (page === 'dashboard') $('#main').innerHTML = viewDashboard(app);
+    else if (page === 'settings') $('#main').innerHTML = viewSettings(app);
+    else if (page === 'logs') $('#main').innerHTML = viewLogs(app);
+    else if (page === 'help') $('#main').innerHTML = viewHelp(app);
+    else $('#main').innerHTML = viewHome(app);
+    bind(app);
+  }
+
+  function viewHome(app) {
+    var c = app.campaign && app.campaign.campaign;
+    return h('<div class="top"><div><h1>WhatsApp Broadcast Master</h1><div class="sub">Send WhatsApp campaigns directly from Google Sheets</div></div>' +
+      '<div class="row"><button class="btn accent" data-go="campaign">Create campaign</button><button class="btn" data-go="onboard">Onboarding</button></div></div>' +
+      (app.mock ? '<div class="alert warn">Mock Mode is on. You can rehearse a 10,000-recipient campaign without sending real WhatsApp messages.</div>' : '<div class="alert ok">Production Mode is on. Approved templates will be sent through wa.sheetomatic.com.</div>') +
+      '<div class="grid">' + kpi('Account', app.configured || app.mock ? 'Ready' : 'Setup needed') + kpi('Mode', app.mode) + kpi('Templates', (app.templates || []).length) + kpi('Wallet', app.settings.walletBalance || '—') + '</div>' +
+      '<div class="card" style="margin-top:12px"><h3 style="margin-top:0">Prerequisites</h3>' +
+      '<div class="check">✓ The WhatsApp template must already be approved in Meta / Sheetomatic.</div>' +
+      '<div class="check">✓ You need an active Sheetomatic WhatsApp account at wa.sheetomatic.com.</div>' +
+      '<div class="check">✓ Sufficient WhatsApp credits must be available.</div>' +
+      '<div class="check">✓ A WhatsApp-enabled Cloud phone must be connected.</div>' +
+      '<div class="check">✓ Attachment is optional, and only works with media-header templates.</div></div>' +
+      (c ? '<div class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between"><b>' + escapeHtml(c.name) + '</b><span class="badge info">' + escapeHtml(c.status) + '</span></div>' + progressBar(c.percent) + '<div class="sub">' + c.processed + ' / ' + c.total + ' processed · Sent ' + c.sent + ' · Failed ' + c.failed + ' · Pending ' + c.pending + '</div></div>' : '')
+    );
+  }
+
+  function viewOnboard(app) {
+    return '<div class="top"><div><h1>Get ready in six steps</h1><div class="sub">No programming required.</div></div></div>' +
+      stepCard('1', 'Connect Sheetomatic WhatsApp', 'Paste your API key and Phone ID from wa.sheetomatic.com.', 'Open Settings', 'settings') +
+      stepCard('2', 'Test Connection', 'Confirm the account is active and credits are visible.', 'Test connection', 'test') +
+      stepCard('3', 'Load approved templates', 'Only usable/approved templates can be selected for sending.', 'Refresh templates', 'refresh') +
+      stepCard('4', 'Prepare Contacts', 'Keep your own column names. Phone is the only mandatory field.', 'Load demo contacts', 'demo') +
+      stepCard('5', 'Create a test campaign', 'Map variables and send one test message first.', 'Open campaign builder', 'campaign') +
+      stepCard('6', 'Launch broadcast', 'Validate, confirm, and let the queue send in batches up to 10,000 recipients.', 'Go to dashboard', 'dashboard');
+  }
+
+  function stepCard(n, title, body, cta, action) {
+    return '<div class="card" style="margin-bottom:10px"><div class="row" style="justify-content:space-between;align-items:center"><div><span class="badge info">STEP ' + n + '</span><h3 style="margin:8px 0 4px">' + title + '</h3><p class="sub" style="margin:0">' + body + '</p></div><button class="btn primary" data-act="' + action + '">' + cta + '</button></div></div>';
+  }
+
+  function viewCampaign(app) {
+    var templates = (app.templates || []).filter(function (t) { return t.usable !== false; });
+    var selected = templates.filter(function (t) { return t.name === state.draft.templateName; })[0];
+    var vars = selected && selected.variables ? selected.variables : [];
+    var columns = app.columns || [];
+    var mappingHtml = vars.length ? vars.map(function (name) {
+      return '<div class="map-row"><b>{{' + escapeHtml(name) + '}}</b>' + selectHtml('map-' + name, columns, state.draft.mapping[name] || guessColumn_(name, columns)) + '</div>';
+    }).join('') : '<div class="sub">This template has no body variables.</div>';
+    var v = state.validation;
+    return '<div class="top"><div><h1>Create campaign</h1><div class="sub">Select contacts, map an approved template, then launch.</div></div></div>' +
+      '<div class="steps">' + [1,2,3,4].map(function (n) { return '<div class="' + (state.step === n ? 'on' : '') + '">Step ' + n + '</div>'; }).join('') + '</div>' +
+      (state.step === 1 ? '<div class="card"><div class="field"><span>Campaign name</span><input id="campaignName" value="' + escapeHtml(state.draft.campaignName) + '" placeholder="September quotation follow-up"></div>' +
+        '<div class="grid-2"><div class="field"><span>Recipient source</span><input value="Contacts sheet" disabled></div><div class="field"><span>Phone column</span>' + selectHtml('phoneColumn', columns, state.draft.phoneColumn) + '</div></div>' +
+        '<div class="field"><span>Campaign notes</span><textarea id="notes">' + escapeHtml(state.draft.notes) + '</textarea></div></div>' : '') +
+      (state.step === 2 ? '<div class="card"><div class="field"><span>Approved template</span><select id="templateName">' + templates.map(function (t) {
+        return '<option value="' + escapeHtml(t.name) + '" ' + (t.name === state.draft.templateName ? 'selected' : '') + '>' + escapeHtml(t.name) + ' · ' + escapeHtml(t.language || 'en') + ' · ' + escapeHtml(t.status || '') + '</option>';
+      }).join('') + '</select></div><div class="sub">Only templates that are usable for sending are listed. Approval happens in WhatsApp/Meta, not in this app.</div>' +
+        '<h3>Template variable mapping</h3>' + mappingHtml +
+        '<div class="field" style="margin-top:12px"><span>Attachment (optional)</span><input id="attachment" placeholder="https://… or Google Drive file ID" value="' + escapeHtml(state.draft.attachment) + '"></div></div>' : '') +
+      (state.step === 3 ? '<div class="grid-2"><div class="card"><div class="field"><span>Preview row</span><input id="previewIndex" type="number" min="0" value="' + state.previewIndex + '"></div><button class="btn" data-act="preview">Refresh preview</button><div class="sub" style="margin-top:8px">Uses an actual Contacts row so you can see how {{variables}} resolve.</div></div><div class="preview" id="previewBox">Click Refresh preview</div></div>' +
+        '<div class="card" style="margin-top:12px"><div class="grid-2"><div class="field"><span>Test recipient</span><input id="testPhone" placeholder="+91XXXXXXXXXX" value="' + escapeHtml(state.draft.testPhone) + '"></div><div style="align-self:end"><button class="btn primary" data-act="test-send">Send test message</button></div></div></div>' : '') +
+      (state.step === 4 ? (v ? renderValidation(v) : '<div class="card">Click Validate campaign to check credits, phones, template, and mapping.</div>') : '') +
+      '<div class="row" style="margin-top:14px"><button class="btn" data-act="prev" ' + (state.step === 1 ? 'disabled' : '') + '>Back</button>' +
+      (state.step < 4 ? '<button class="btn primary" data-act="next">Continue</button>' : '<button class="btn" data-act="validate">Validate campaign</button><button class="btn accent" data-act="start">Start campaign</button>') + '</div>';
+  }
+
+  function renderValidation(v) {
+    var cls = v.classified || { valid: [], invalid: [], missing: [], duplicates: [] };
+    return '<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">' + (v.ready ? 'Campaign Ready' : 'Fix these items first') + '</h2><span class="badge ' + (v.ready ? 'ok' : 'bad') + '">' + (v.mode || '') + '</span></div>' +
+      '<p>' + (cls.valid.length).toLocaleString() + ' valid recipients · ' + (cls.invalid.length + cls.missing.length) + ' invalid · ' + cls.duplicates.length + ' duplicates</p>' +
+      '<p>Template: <b>' + escapeHtml((v.template && v.template.name) || '—') + '</b> · Language: ' + escapeHtml((v.template && v.template.language) || 'en') + '</p>' +
+      '<p>Credits required: <b>' + v.requiredCredits + '</b> · Available: <b>' + (v.availableCredits == null ? '—' : v.availableCredits) + '</b></p>' +
+      '<p>Attachment: ' + escapeHtml((v.attachment && v.attachment.label) || 'None') + '</p>' +
+      (v.checks || []).map(function (c) {
+        return '<div class="check"><span class="badge ' + (c.ok ? 'ok' : 'bad') + '">' + (c.ok ? '✓' : '!') + '</span><div><b>' + escapeHtml(c.label) + '</b><div class="sub">' + escapeHtml(c.detail) + '</div></div></div>';
+      }).join('') + '</div>';
+  }
+
+  function viewDashboard(app) {
+    var c = app.campaign && app.campaign.campaign;
+    if (!c) {
+      return '<div class="top"><div><h1>Dashboard</h1><div class="sub">No campaign running yet.</div></div><button class="btn primary" data-go="campaign">Create campaign</button></div><div class="card">Launch a campaign to watch queue progress here. 10,000-recipient sends continue automatically in batches.</div>';
+    }
+    return '<div class="top"><div><h1>' + escapeHtml(c.name) + '</h1><div class="sub">' + escapeHtml(c.status) + (app.mock ? ' · Mock Mode' : ' · Production') + '</div></div><div class="row"><button class="btn" data-act="refresh-status">Refresh</button><button class="btn" data-act="pause">Pause</button><button class="btn primary" data-act="resume">Resume</button></div></div>' +
+      '<div class="card"><div class="row" style="justify-content:space-between"><b>Campaign progress</b><span>' + c.percent + '%</span></div>' + progressBar(c.percent) +
+      '<p>' + Number(c.processed).toLocaleString() + ' / ' + Number(c.total).toLocaleString() + ' processed</p>' +
+      '<div class="grid">' + kpi('Sent', c.sent) + kpi('Failed', c.failed) + kpi('Pending', c.pending) + kpi('Credits used', c.creditsUsed) + '</div></div>';
+  }
+
+  function viewSettings(app) {
+    var s = app.settings || {};
+    return '<div class="top"><div><h1>Settings</h1><div class="sub">API secrets are stored in Script Properties, not in the sheet.</div></div></div>' +
+      '<div class="card"><div class="grid-2"><div class="field"><span>API Base URL</span><input id="apiBaseUrl" value="' + escapeHtml(s.apiBaseUrl) + '"></div>' +
+      '<div class="field"><span>API Key</span><input id="apiKey" type="password" placeholder="' + escapeHtml(s.apiKeyMasked || 'Paste API key') + '"></div>' +
+      '<div class="field"><span>Phone ID</span><input id="phoneId" value="' + escapeHtml(s.phoneId) + '" placeholder="From Connected Accounts"></div>' +
+      '<div class="field"><span>Default country code</span><input id="defaultCountry" value="' + escapeHtml(s.defaultCountry) + '"></div>' +
+      '<div class="field"><span>Batch size</span><input id="batchSize" type="number" value="' + escapeHtml(s.batchSize) + '"></div>' +
+      '<div class="field"><span>Delay / rate limit (ms)</span><input id="delayMs" type="number" value="' + escapeHtml(s.delayMs) + '"></div>' +
+      '<div class="field"><span>Max retries</span><input id="maxRetries" type="number" value="' + escapeHtml(s.maxRetries) + '"></div>' +
+      '<div class="field"><span>Operation mode</span><select id="mode"><option value="MOCK"' + (s.mode === 'MOCK' ? ' selected' : '') + '>DEMO / MOCK MODE</option><option value="PRODUCTION"' + (s.mode === 'PRODUCTION' ? ' selected' : '') + '>PRODUCTION MODE</option></select></div></div>' +
+      '<div class="row"><button class="btn primary" data-act="save">Save settings</button><button class="btn" data-act="test">Test connection</button></div>' +
+      '<p class="sub">Get keys at <a href="' + escapeHtml(app.apiKeysUrl) + '" target="_blank">API Keys</a> · Phone ID at <a href="' + escapeHtml(app.connectedAccountsUrl) + '" target="_blank">Connected Accounts</a></p></div>';
+  }
+
+  function viewLogs(app) {
+    var logs = (app.logs || []).map(function (row) {
+      return '<tr><td>' + escapeHtml(row.Timestamp) + '</td><td>' + escapeHtml(row.Action) + '</td><td>' + escapeHtml(row.Recipient) + '</td><td>' + escapeHtml(row.Status) + '</td><td>' + escapeHtml(row.Error || row.Response) + '</td></tr>';
+    }).join('');
+    return '<div class="top"><div><h1>Logs</h1><div class="sub">Credentials are never written here.</div></div><button class="btn" data-act="refresh-logs">Refresh logs</button></div><div class="card"><table><thead><tr><th>Time</th><th>Action</th><th>Recipient</th><th>Status</th><th>Detail</th></tr></thead><tbody>' + (logs || '<tr><td colspan="5">No logs yet.</td></tr>') + '</tbody></table></div>';
+  }
+
+  function viewHelp(app) {
+    return '<div class="top"><div><h1>Help</h1><div class="sub">This app never bypasses WhatsApp template approval.</div></div></div>' +
+      (app.help || []).map(function (topic) {
+        return '<div class="card help" style="margin-bottom:10px"><h3>' + escapeHtml(topic.title) + '</h3><p>' + escapeHtml(topic.body) + '</p></div>';
+      }).join('');
+  }
+
+  function kpi(label, value) {
+    return '<div class="card kpi"><b>' + escapeHtml(value) + '</b><span>' + escapeHtml(label) + '</span></div>';
+  }
+  function progressBar(percent) {
+    percent = Math.max(0, Math.min(100, Number(percent) || 0));
+    return '<div class="progress" style="margin:10px 0"><div style="width:' + percent + '%"></div></div>';
+  }
+  function selectHtml(id, options, selected) {
+    return '<select id="' + id + '">' + (options || []).map(function (opt) {
+      return '<option value="' + escapeHtml(opt) + '"' + (opt === selected ? ' selected' : '') + '>' + escapeHtml(opt) + '</option>';
+    }).join('') + '</select>';
+  }
+  function guessColumn_(variable, columns) {
+    var index = Number(variable) - 1;
+    if (columns[index + 1]) return columns[index + 1];
+    return columns[1] || columns[0] || '';
+  }
+
+  function readDraft() {
+    var name = $('#campaignName'); if (name) state.draft.campaignName = name.value;
+    var notes = $('#notes'); if (notes) state.draft.notes = notes.value;
+    var phone = $('#phoneColumn'); if (phone) state.draft.phoneColumn = phone.value;
+    var template = $('#templateName'); if (template) state.draft.templateName = template.value;
+    var attach = $('#attachment'); if (attach) state.draft.attachment = attach.value;
+    var testPhone = $('#testPhone'); if (testPhone) state.draft.testPhone = testPhone.value;
+    var previewIndex = $('#previewIndex'); if (previewIndex) state.previewIndex = Number(previewIndex.value || 0);
+    var templates = (state.app.templates || []).filter(function (t) { return t.name === state.draft.templateName; })[0];
+    if (templates && templates.variables) {
+      state.draft.mapping = {};
+      templates.variables.forEach(function (v) {
+        var el = document.getElementById('map-' + v);
+        state.draft.mapping[v] = el ? el.value : guessColumn_(v, state.app.columns || []);
+      });
+      state.draft.language = templates.language || 'en';
+    }
+  }
+
+  function bind(app) {
+    document.querySelectorAll('[data-go]').forEach(function (btn) {
+      btn.onclick = function () { go(btn.getAttribute('data-go')); };
+    });
+    document.querySelectorAll('.nav button').forEach(function (btn) {
+      btn.onclick = function () { go(btn.getAttribute('data-page')); };
+    });
+    document.querySelectorAll('[data-act]').forEach(function (btn) {
+      btn.onclick = function () { handle(btn.getAttribute('data-act')); };
+    });
+  }
+
+  function handle(act) {
+    if (act === 'next') { readDraft(); if (state.step === 1 && !state.draft.templateName && state.app.templates[0]) state.draft.templateName = state.app.templates.filter(function (t) { return t.usable !== false; })[0].name; state.step++; render(); return; }
+    if (act === 'prev') { readDraft(); state.step = Math.max(1, state.step - 1); render(); return; }
+    if (act === 'settings') { go('settings'); return; }
+    if (act === 'campaign') { go('campaign'); return; }
+    if (act === 'dashboard') { go('dashboard'); return; }
+    if (act === 'save') return saveSettings();
+    if (act === 'test') return testConnection();
+    if (act === 'refresh') return refreshTemplates();
+    if (act === 'demo') return demoData();
+    if (act === 'preview') return preview();
+    if (act === 'test-send') return testSend();
+    if (act === 'validate') return validate();
+    if (act === 'start') return startCampaign();
+    if (act === 'pause') return pause();
+    if (act === 'resume') return resume();
+    if (act === 'refresh-status') return refreshStatus();
+    if (act === 'refresh-logs') return refreshLogs();
+  }
+
+  function saveSettings() {
+    setBusy(true);
+    call_('saveSettingsFromUi', {
+      apiBaseUrl: $('#apiBaseUrl').value,
+      apiKey: $('#apiKey').value,
+      phoneId: $('#phoneId').value,
+      defaultCountry: $('#defaultCountry').value,
+      batchSize: $('#batchSize').value,
+      delayMs: $('#delayMs').value,
+      maxRetries: $('#maxRetries').value,
+      mode: $('#mode').value
+    }).then(function (result) {
+      state.app.settings = result.settings;
+      state.app.mode = result.settings.mode;
+      state.app.mock = result.settings.mode !== 'PRODUCTION';
+      toast('Settings saved. The API key is stored securely and is not shown in the sheet.', 'ok');
+      render();
+    }).catch(err).then(unbusy);
+  }
+
+  function testConnection() {
+    setBusy(true);
+    call_('testConnectionFromUi').then(function (result) {
+      toast((result.title || '') + ' — ' + (result.message || ''), result.ok ? 'ok' : 'bad');
+      if (result.account && result.account.credits) {
+        state.app.settings.walletBalance = result.account.credits.balance;
+      }
+      render();
+    }).catch(err).then(unbusy);
+  }
+
+  function refreshTemplates() {
+    setBusy(true);
+    call_('refreshTemplatesFromUi').then(function (result) {
+      if (!result.ok) throw new Error(result.error);
+      state.app.templates = result.templates;
+      toast(result.usable + ' approved templates loaded.', 'ok');
+      render();
+    }).catch(err).then(unbusy);
+  }
+
+  function demoData() {
+    setBusy(true);
+    call_('setupDemoDataFromUi').then(function (result) {
+      toast('Demo contacts loaded. Mock Mode is on.', 'ok');
+      return call_('getAppState');
+    }).then(function (app) { state.app = app; render(); }).catch(err).then(unbusy);
+  }
+
+  function preview() {
+    readDraft();
+    setBusy(true);
+    call_('previewMessageFromUi', Object.assign({}, state.draft, { rowIndex: state.previewIndex })).then(function (result) {
+      if (!result.ok) throw new Error(result.error);
+      var box = $('#previewBox');
+      if (box) box.textContent = result.preview;
+    }).catch(err).then(unbusy);
+  }
+
+  function testSend() {
+    readDraft();
+    setBusy(true);
+    call_('sendTestMessageFromUi', Object.assign({}, state.draft, { rowIndex: state.previewIndex })).then(function (result) {
+      if (!result.ok) throw new Error(result.error);
+      toast('Test message sent to ' + result.phone + (result.mode === 'MOCK' ? ' (simulated).' : '.'), 'ok');
+    }).catch(err).then(unbusy);
+  }
+
+  function validate() {
+    readDraft();
+    setBusy(true);
+    call_('validateCampaignFromUi', state.draft).then(function (result) {
+      state.validation = result;
+      render();
+    }).catch(err).then(unbusy);
+  }
+
+  function startCampaign() {
+    readDraft();
+    var validCount = state.validation && state.validation.classified ? state.validation.classified.valid.length : 0;
+    if (!state.validation || !state.validation.ready) {
+      validate();
+      toast('Validate the campaign before sending.', 'warn');
+      return;
+    }
+    if (!window.confirm('You are about to send WhatsApp messages to ' + validCount + ' recipients.\n\nTemplate: ' + (state.draft.templateName || '') + '\nAttachment: ' + (state.draft.attachment || 'None') + '\nEstimated credits: ' + validCount + '\nMode: ' + state.app.mode)) {
+      return;
+    }
+    var productionConfirmed = true;
+    if (!state.app.mock) {
+      productionConfirmed = window.confirm('PRODUCTION MODE\n\nReal WhatsApp messages will be sent through wa.sheetomatic.com. Continue?');
+    }
+    if (!productionConfirmed) return;
+    setBusy(true);
+    call_('startCampaignFromUi', {
+      confirmed: true,
+      productionConfirmed: productionConfirmed,
+      mode: state.app.mode,
+      draft: state.draft
+    }).then(function (result) {
+      if (!result.ok) throw new Error(result.error || 'Could not start campaign.');
+      toast('Campaign queued. Batches will continue automatically.', 'ok');
+      go('dashboard');
+      refreshStatus();
+    }).catch(err).then(unbusy);
+  }
+
+  function pause() {
+    call_('pauseCampaignFromUi').then(function (result) {
+      if (!result.ok) throw new Error(result.error);
+      toast('Campaign paused. Already sent messages stay sent.', 'warn');
+      refreshStatus();
+    }).catch(err);
+  }
+  function resume() {
+    call_('resumeCampaignFromUi').then(function (result) {
+      if (!result.ok) throw new Error(result.error);
+      toast('Campaign resumed from pending recipients.', 'ok');
+      refreshStatus();
+    }).catch(err);
+  }
+  function refreshStatus() {
+    call_('getCampaignStatusFromUi').then(function (result) {
+      state.app.campaign = result;
+      render();
+    }).catch(err);
+  }
+  function refreshLogs() {
+    call_('getLogsFromUi', 50).then(function (result) {
+      state.app.logs = result.logs;
+      render();
+    }).catch(err);
+  }
+  function err(error) { toast(error.message || String(error), 'bad'); }
+  function unbusy() { setBusy(false); }
+
+  load();
+})();
+</script>
