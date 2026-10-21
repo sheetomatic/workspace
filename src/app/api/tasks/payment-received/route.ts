@@ -24,7 +24,6 @@ export async function POST(request: Request) {
       );
     }
     const result = await sendPlainEmail({
-      idempotencyKey: `tasks-panel/${paymentId}`,
       toEmail: email,
       subject: "Your Sheetomatic Tasks panel is ready",
       text: [
