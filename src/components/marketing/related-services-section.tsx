@@ -8,6 +8,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   GitBranch,
+  MapPinned,
   Package,
   Wrench,
   Users,
@@ -32,6 +33,7 @@ const categoryIcons: Record<
   inventory: { icon: Package, tone: "tone-amber" },
   flow: { icon: GitBranch, tone: "tone-slate" },
   checklist: { icon: ClipboardCheck, tone: "tone-rose" },
+  "field-tracking": { icon: MapPinned, tone: "tone-sky" },
   automation: { icon: Wrench, tone: "tone-slate" },
 };
 
