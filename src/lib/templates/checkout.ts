@@ -48,27 +48,15 @@ export type CheckoutSnapshot = {
   totals: ReturnType<typeof cartTotals>;
 };
 
-async function verifiedSeller() {
+
+export async function verifiedTasksCheckoutSeller() {
   const org = await getPrimaryOrganization();
   if (!org) throw new Error("Seller workspace is not configured.");
   const account = resolveQuotationAccount(org);
   const stateCode = account ? gstinStateCode(account.gstin) : null;
-  if (!account || !account.legalName || !account.addressLines.length || !stateCode || !parseGstin(account.gstin).ok) throw new Error("Seller GST profile needs verification.");
-  return { org, seller: { legalName: account.legalName, tradeName: account.tradeName, gstin: account.gstin, addressLines: account.addressLines, stateCode } };
-}
-
-export async function verifiedTasksCheckoutSeller() {
-  await verifiedSeller();
-}
-
-async function createGatewayOrder(order: { id: string; totalPaise: number }) {
-  try {
-    const gateway = await razorpayRequest<{ id: string; amount: number; currency: string }>("orders", {
-      amount: order.totalPaise, currency: "INR", receipt: order.id, notes: { template_checkout_id: order.id },
-    });
-    if (!/^order_[a-zA-Z0-9]+$/.test(gateway.id) || gateway.amount !== order.totalPaise || gateway.currency !== "INR") throw new Error("Gateway order did not match the checkout.");
-    return prisma.templateCheckout.update({ where: { id: order.id }, data: { gatewayOrderId: gateway.id, paymentState: "ready" } });
-  } catch { return prisma.templateCheckout.findUniqueOrThrow({ where: { id: order.id } }); }
+  if (!account || !account.legalName || !account.addressLines.length || !stateCode || !parseGstin(account.gstin).ok) {
+    throw new Error("Seller GST profile needs verification.");
+  }
 }
 
 export async function createTasksCheckout(body: unknown, accessHash: string) {
@@ -86,16 +74,56 @@ export async function createTasksCheckout(body: unknown, accessHash: string) {
   const prior = await prisma.templateCheckout.findUnique({ where: { accessHash } });
   if (prior) {
     if (prior.requestHash !== requestHash) throw new Error("This checkout belongs to different plan details. Start a new checkout.");
+    if (!prior.gatewayOrderId) {
+      throw new Error("Checkout creation is pending. Please contact support before trying a new checkout.");
+    }
     return prior;
   }
-  const { org, seller } = await verifiedSeller();
-  const totals = tasksCheckoutTotals(lines.map(line => line.priceInr), buyer.stateCode, seller.stateCode);
+  const org = await getPrimaryOrganization();
+  if (!org) throw new Error("Seller workspace is not configured.");
+  const account = resolveQuotationAccount(org);
+  const sellerState = account ? gstinStateCode(account.gstin) : null;
+  if (!account || !account.legalName || !account.addressLines.length || !sellerState || !parseGstin(account.gstin).ok) {
+    throw new Error("Seller GST profile needs verification.");
+  }
+  const totals = tasksCheckoutTotals(lines.map((line) => line.priceInr), buyer.stateCode, sellerState);
   const snapshot: CheckoutSnapshot = {
-    version: 1, kind: "tasks", subscription: { period, users, whatsappApi, autoRenew: false }, buyer, seller,
-    lines: lines.map((line, index) => ({ productId: `tasks-${index + 1}`, ...line, sac: TASKS_SAC })), totals,
+    version: 1,
+    kind: "tasks",
+    subscription: { period, users, whatsappApi, autoRenew: false },
+    buyer,
+    seller: {
+      legalName: account.legalName,
+      tradeName: account.tradeName,
+      gstin: account.gstin,
+      addressLines: account.addressLines,
+      stateCode: sellerState,
+    },
+    lines: lines.map((line, index) => ({ productId: `tasks-${index + 1}`, ...line, sac: TASKS_SAC })),
+    totals,
   };
-  const order = await prisma.templateCheckout.create({ data: { accessHash, requestHash, organizationId: org.id, snapshot: snapshot as unknown as Prisma.InputJsonValue, totalPaise: totals.totalPaise } });
-  return createGatewayOrder(order);
+  const order = await prisma.templateCheckout.create({
+    data: {
+      accessHash,
+      requestHash,
+      organizationId: org.id,
+      snapshot: snapshot as unknown as Prisma.InputJsonValue,
+      totalPaise: totals.totalPaise,
+    },
+  });
+  const gateway = await razorpayRequest<{ id: string; amount: number; currency: string }>("orders", {
+    amount: order.totalPaise,
+    currency: "INR",
+    receipt: order.id,
+    notes: { template_checkout_id: order.id },
+  });
+  if (!/^order_[a-zA-Z0-9]+$/.test(gateway.id) || gateway.amount !== order.totalPaise || gateway.currency !== "INR") {
+    throw new Error("Gateway order did not match the checkout.");
+  }
+  return prisma.templateCheckout.update({
+    where: { id: order.id },
+    data: { gatewayOrderId: gateway.id },
+  });
 }
 
 export const hash = (value: string) =>
@@ -138,6 +166,10 @@ export async function createCartCheckout(body: unknown, accessHash: string) {
     if (prior.requestHash !== requestHash)
       throw new Error(
         "This checkout belongs to a different cart. Start a new checkout.",
+      );
+    if (!prior.gatewayOrderId)
+      throw new Error(
+        "Checkout creation is pending. Please contact support before trying a new checkout.",
       );
     return prior;
   }
@@ -200,22 +232,16 @@ export async function createCartCheckout(body: unknown, accessHash: string) {
     },
   });
   // Persist first: even a timeout leaves a recoverable local record. Never charge a new amount on retry.
-  let gateway: { id: string; amount: number; currency: string };
-  try {
-    gateway = await razorpayRequest<{
-      id: string;
-      amount: number;
-      currency: string;
-    }>("orders", {
-      amount: order.totalPaise,
-      currency: "INR",
-      receipt: order.id,
-      notes: { template_checkout_id: order.id },
-    });
-  } catch {
-    // The provider may have accepted the order before a network timeout. Never create another on retry.
-    return order;
-  }
+  const gateway = await razorpayRequest<{
+    id: string;
+    amount: number;
+    currency: string;
+  }>("orders", {
+    amount: order.totalPaise,
+    currency: "INR",
+    receipt: order.id,
+    notes: { template_checkout_id: order.id },
+  });
   if (
     !/^order_[a-zA-Z0-9]+$/.test(gateway.id) ||
     gateway.amount !== order.totalPaise ||
@@ -224,7 +250,7 @@ export async function createCartCheckout(body: unknown, accessHash: string) {
     throw new Error("Gateway order did not match the cart.");
   return prisma.templateCheckout.update({
     where: { id: order.id },
-    data: { gatewayOrderId: gateway.id, paymentState: "ready" },
+    data: { gatewayOrderId: gateway.id },
   });
 }
 
@@ -264,7 +290,7 @@ export async function recordCapturedPayment(
     // Concurrent callbacks/webhooks contend on this row. Only one allocates an invoice number.
     const claimed = await tx.templateCheckout.updateMany({
       where: { id: order.id, paidAt: null },
-      data: { paidAt: now, gatewayPaymentId: payment.id, paymentState: "paid" },
+      data: { paidAt: now, gatewayPaymentId: payment.id },
     });
     if (claimed.count === 1) {
       const year = financialYear(now);
@@ -278,12 +304,7 @@ export async function recordCapturedPayment(
         data: { invoiceNumber: templateInvoiceNumber(year, counter.value) },
       });
     }
-    const result = await tx.templateCheckout.findUniqueOrThrow({
-      where: { id: order.id },
-    });
-    if (result.gatewayPaymentId !== paymentId)
-      throw new Error("Another payment already owns this invoice.");
-    return result;
+    return tx.templateCheckout.findUniqueOrThrow({ where: { id: order.id } });
   });
   return paid;
 }
@@ -293,108 +314,40 @@ export async function emailPaidCheckout(orderId: string) {
     where: { id: orderId },
   });
   if (!order.paidAt || !order.invoiceNumber || order.emailSentAt) return;
-  const now = new Date();
-  // Resend retains idempotency keys for 24h. An uncertain older attempt needs operator reconciliation,
-  // not an automatic resend that might duplicate a previously accepted delivery.
-  if (
-    order.emailAttemptedAt &&
-    now.getTime() - order.emailAttemptedAt.getTime() >= 23 * 60 * 60 * 1000
-  )
-    throw new Error(
-      "Email delivery needs reconciliation; verified downloads remain available.",
-    );
-  const lease = new Date(now.getTime() + 90000);
-  const claimed = await prisma.templateCheckout.updateMany({
-    where: {
-      id: order.id,
-      emailSentAt: null,
-      OR: [{ emailLeaseUntil: null }, { emailLeaseUntil: { lt: now } }],
-    },
-    data: {
-      emailLeaseUntil: lease,
-      emailAttemptedAt: order.emailAttemptedAt ?? now,
-    },
-  });
-  if (!claimed.count)
-    throw new Error("Email delivery is already processing. Retry shortly.");
   const s = order.snapshot as unknown as CheckoutSnapshot;
-  try {
-    const isTasks = s.kind === "tasks";
-    const result = await sendPlainEmail({
-      idempotencyKey: `${isTasks ? "tasks" : "template"}-invoice/${order.id}`,
-      toEmail: s.buyer.email,
-      subject: `${isTasks ? "Your Sheetomatic Tasks payment" : "Your Sheetomatic templates"} · ${order.invoiceNumber}`,
-      attachments: [
-        {
-          filename: `${order.invoiceNumber.replaceAll("/", "-")}.html`,
-          content: templateInvoiceHtml(order),
-          contentType: "text/html",
-        },
-      ],
-      text: isTasks ? [
-        `Hello ${s.buyer.name},`, "", "Your Tasks Management payment is verified.",
-        ...s.lines.map(line => `${line.name}: INR ${line.priceInr.toLocaleString("en-IN")} + GST`), "",
-        `Invoice: ${order.invoiceNumber}`, `Paid: INR ${(order.totalPaise / 100).toFixed(2)} (including GST).`,
-        "Your GST tax invoice is attached. Our team will complete account setup for the purchased users.",
-        "This is a fixed-term purchase with manual renewal; no automatic recurring charge was authorized.",
-        `Support: founder@sheetomatic.com. Order: ${order.id}`,
-      ].join("\n") : [
-        `Hello ${s.buyer.name},`,
-        "",
-        "Your payment is verified. Your template copy links:",
-        ...s.lines.map((l) => `${l.name}: ${l.copyLink}`),
-        "",
-        `Invoice: ${order.invoiceNumber}`,
-        `Paid: INR ${(order.totalPaise / 100).toFixed(2)} (including GST).`,
-        "Your GST tax invoice is attached. Open it and choose Print → Save as PDF, or download it from your checkout confirmation page.",
-        "Standard templates only. Customisation, setup services and third-party subscriptions are not included.",
-        "For your own business use only; not for resale or redistribution.",
-        `Support: founder@sheetomatic.com. Order: ${order.id}`,
-      ].join("\n"),
-    });
-    if (result.sent)
-      await prisma.templateCheckout.update({
-        where: { id: order.id },
-        data: { emailSentAt: new Date(), emailLeaseUntil: null },
-      });
-    else
-      throw new Error(
-        "Delivery email pending; retry after email configuration is restored.",
-      );
-  } catch (error) {
-    await prisma.templateCheckout.updateMany({
-      where: { id: order.id, emailLeaseUntil: lease },
-      data: { emailLeaseUntil: null },
-    });
-    throw error;
-  }
-}
-
-/** Reconcile directly with the provider. A caller's success/failure/cancel flag is never trusted. */
-export async function refreshCheckoutPayment(
-  order: Awaited<ReturnType<typeof ownedCheckout>>,
-) {
-  if (order.paidAt || !order.gatewayOrderId) return order;
-  const result = await razorpayRequest<{ items: GatewayPayment[] }>(
-    `orders/${order.gatewayOrderId}/payments`,
-  );
-  if (
-    !Array.isArray(result.items) ||
-    result.items.some((p) => p.order_id !== order.gatewayOrderId)
-  )
-    throw new Error("Invalid provider payment list.");
-  const captured = result.items.find(
-    (p) => p.status === "captured" && p.captured === true,
-  );
-  if (captured) return recordCapturedPayment(order.id, captured.id);
-  const pending = result.items.some((p) => p.status !== "failed");
-  const failed =
-    result.items.length > 0 && result.items.every((p) => p.status === "failed");
-  await prisma.templateCheckout.updateMany({
-    where: { id: order.id, paidAt: null },
-    data: { paymentState: pending ? "pending" : failed ? "failed" : "ready" },
+  const result = await sendPlainEmail({
+    toEmail: s.buyer.email,
+    subject: `Your Sheetomatic templates · ${order.invoiceNumber}`,
+    attachments: [
+      {
+        filename: `${order.invoiceNumber.replaceAll("/", "-")}.html`,
+        content: templateInvoiceHtml(order),
+        contentType: "text/html",
+      },
+    ],
+    text: [
+      `Hello ${s.buyer.name},`,
+      "",
+      "Your payment is verified. Your template copy links:",
+      ...s.lines.flatMap((l) => (l.copyLink ? [`${l.name}: ${l.copyLink}`] : [])),
+      "",
+      `Invoice: ${order.invoiceNumber}`,
+      `Paid: INR ${(order.totalPaise / 100).toFixed(2)} (including GST).`,
+      "Your GST tax invoice is attached. Open it and choose Print → Save as PDF, or download it from your checkout confirmation page.",
+      "Standard templates only. Customisation, setup services and third-party subscriptions are not included.",
+      "For your own business use only; not for resale or redistribution.",
+      `Support: founder@sheetomatic.com. Order: ${order.id}`,
+    ].join("\n"),
   });
-  return prisma.templateCheckout.findUniqueOrThrow({ where: { id: order.id } });
+  if (result.sent)
+    await prisma.templateCheckout.update({
+      where: { id: order.id },
+      data: { emailSentAt: new Date() },
+    });
+  else
+    throw new Error(
+      "Delivery email pending; retry after email configuration is restored.",
+    );
 }
 
 export function publicCheckout(
@@ -404,15 +357,14 @@ export function publicCheckout(
   return {
     id: order.id,
     paid: Boolean(order.paidAt),
-    paymentState: order.paidAt ? "paid" : order.paymentState,
-    emailDelivered: Boolean(order.emailSentAt),
+    paymentState: order.paidAt ? "paid" : order.gatewayOrderId ? "ready" : "creating",
     invoiceNumber: order.invoiceNumber,
     totalPaise: order.totalPaise,
     totals: s.totals,
     lines: s.lines.map((l) => ({
       name: l.name,
       priceInr: l.priceInr,
-      ...(order.paidAt && l.copyLink ? { copyLink: l.copyLink } : {}),
+      ...(order.paidAt ? { copyLink: l.copyLink } : {}),
     })),
     gatewayOrderId: order.gatewayOrderId,
     keyId: process.env.RAZORPAY_KEY_ID,

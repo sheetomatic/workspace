@@ -50,6 +50,9 @@ export const servicesBrowseCards: {
   { slug: "checklist", label: "Process Coordinator" },
   { slug: "whatsapp-ai", label: "WhatsApp AI" },
   { slug: "mis", label: "Executive Meeting (Weekly)" },
+  { slug: "tasks", label: "Executive Assistant & Tasks" },
+  { slug: "crm", label: "AI-powered CRM" },
+  { slug: "hr", label: "HR & Workforce" },
   { slug: "automation", label: "Custom Software" },
 ];
 
@@ -168,7 +171,7 @@ export const serviceCategories: ServiceCategory[] = [
     whatsappMessage:
       "Hi Sheetomatic, I want to scope inventory management connected to our daily sales and purchase flow.",
     workspaceHref: "/products",
-    workspaceCta: "See products",
+    workspaceCta: "Read case studies",
     relatedSlugs: ["flow", "mis", "tasks"],
     featured: true,
   },
@@ -306,7 +309,7 @@ export const serviceCategories: ServiceCategory[] = [
     whatsappMessage:
       "Hi Sheetomatic, I want to scope Executive Meeting (Weekly) — Monday board without manual MIS prep.",
     workspaceHref: "/products",
-    workspaceCta: "See products",
+    workspaceCta: "Read case studies",
     featured: true,
     relatedSlugs: ["checklist", "tasks", "flow"],
   },
