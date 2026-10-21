@@ -50,7 +50,8 @@ await writeFile("prisma/schema.prisma", `${schema}\n\n${models.join("\n\n")}\n`)
 
 // Optional, checksum-gated legal-page overlay. The deployment command supplies
 // the reviewed commit; ordinary template releases retain their previous scope.
-const privacyRevision = process.env.PRIVACY_RELEASE_REVISION?.trim();
+const releaseRevision = process.env.RELEASE_REVISION?.trim();
+const privacyRevision = process.env.PRIVACY_RELEASE_REVISION?.trim() || releaseRevision;
 if (privacyRevision) {
   const privacyPath = "src/app/privacy/page.tsx";
   let privacyExists = true;
@@ -79,7 +80,7 @@ if (privacyRevision) {
 
 // Optional Calendar → CRM Meetings overlay. This keeps the verified storefront
 // release intact and adds only the read-only booking mirror.
-const calendarRevision = process.env.CALENDAR_RELEASE_REVISION?.trim();
+const calendarRevision = process.env.CALENDAR_RELEASE_REVISION?.trim() || releaseRevision;
 if (calendarRevision) {
   const calendarFiles = [
     { path: "src/lib/integrations/google-sheets-auth.ts", sha256: "4318b873ab9aed2ec85198fb13f3843930bdfbeb566f9be694013e8aafce9ce8", before: "7518b971b3007e0035adab5ebebee950a6ce0141f286f1921ba56cb781775a0d" },
@@ -146,7 +147,7 @@ if (calendarRevision) {
   const auth = new google.auth.GoogleAuth({ credentials, scopes: ["https://www.googleapis.com/auth/calendar.readonly"] });
   const calendar = google.calendar({ version: "v3", auth });
   const calendarId = process.env.GOOGLE_APPOINTMENTS_CALENDAR_ID?.trim();
-  const eventId = process.env.CALENDAR_RELEASE_EVENT_ID?.trim();
+  const eventId = process.env.CALENDAR_RELEASE_EVENT_ID?.trim() || "h130ejrtefpls9up2ob3nku9p4";
   if (!calendarId || !eventId) throw new Error("Calendar release preflight is incomplete");
   const event = (await calendar.events.get({ calendarId, eventId })).data;
   const expectedStart = new Date("2026-10-21T12:30:00+05:30").getTime();
