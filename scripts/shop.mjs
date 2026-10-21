@@ -211,7 +211,7 @@ if (tasksRevision) {
     { path: "src/components/marketing/em-ready-pricing.tsx", sha256: "e759441f7ca16a76c7b3df981292c10a9ef1a619b27d08564d5967e4b0c3cc8e", before: "4b6dbfffd6e24bee0432739bec920b5ea591adf6476d0089673809562e9deddf" },
     { path: "src/components/marketing/business-systems-pricing.css", sha256: "4eae231ef5f1ad0f1680a2cca30f184c3f2d45804cfe63ff0ddc83efa4c622c8", before: "ac47d3ddfe52b52ebb94d6b70a2d0f46ae1c233c9c6b8190d92e8904ddf32604" },
     { path: "src/app/services-content.ts", sha256: "2365457393a94f5d4c07e5ddd622b4889ce306032209993317991e4b36cf0f99", before: "762600f85801d9eccce619eb5e962f6fa7e375dc8605b82ba5bd705ef48eaa4a" },
-    { path: "src/app/site-content.ts", sha256: "6ea7e43f34e0b18305d00082e55edfc0e69d718f2644f5ebb20fb8fa15a539ff", before: "b7bc72c9b36e0c046a84bd835d7a08457fe6dc8c980835bd15844fe4a607e95b" },
+    { path: "src/app/site-content.ts", sha256: "6ea7e43f34e0b18305d00082e55edfc0e69d718f2644f5ebb20fb8fa15a539ff", before: "8a66ed0fbc90106ae7565bbbaea36859bbd011d84e8c796af45cc0be28b4ad73" },
     { path: "src/lib/templates/checkout.ts", sha256: "cad613a3800c06142caec7d096effce0b9e8e037fd5d0655979a22547527d9b1", before: "1111a87f9c66eff693c4ac3f64822d66657257e47be7dca1297da5a73bf29584" },
     { path: "src/lib/templates/invoice.ts", sha256: "10d26adced569de76ef80e513940b39c16b5dd61b7ab30274030b0f581c93927", before: "6cb162f7429b8c7d2f826f84a22c6f56396f815a14da6f4c2289290ed9444fda" },
     { path: "src/app/api/tasks/checkout/route.ts", sha256: "6c6f632b6bd05a7f90220852792debfc24432ca640c8de1e90bc50c963d32404" },
