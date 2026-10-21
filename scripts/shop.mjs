@@ -92,6 +92,10 @@ if (calendarRevision) {
     { path: "src/lib/leads/crm-meetings.ts", sha256: "b0b7a2fe57d2980cf2d13d9ee3f1e8e680f7c8d153f65d48f7d735ea38eef265", before: "b409d9fa71c7d8df9798d7bbc928cd45ef11011b1ed2758176e71a476ba9fdc8" },
     { path: "src/components/saas/crm-meetings-calendar.tsx", sha256: "bd50b07fbbd74471d5780e149869edecce989509adce705e1ca6e2eec87f6451", before: "44dfee03ee8627f256db08cb798665b22913c67cd3fcb8945b5b72d62307465a" },
     { path: "src/components/saas/crm-meetings-calendar.css", sha256: "f37f41a5f868f1e198d5c930114b047d0c369d8c59f417422b11f95316b1ea23", before: "b7a43c9597edbb5e9535d5d63e200c088657e070c0acc7b25108f61bcb6b8585" },
+    { path: "src/lib/content/business-systems-pricing.ts", sha256: "f2a287433d3eaf65837cee6d6557da59f0a39c59d8677e17aeab2948891ddfde", before: "576e57c989acf04cd5b53560d06decf617be9157399d5dd2b1bcae9d302c69ca" },
+    { path: "src/lib/content/business-systems-pricing.test.ts", sha256: "5a4c3885a54ab4bb8401ab042561cd660c5a998353d21e1e0c9ec442b958462a", before: "daac8521cdb71859bf85b2920ec56136577666c704c782aea107bf379f040f18" },
+    { path: "src/components/marketing/em-ready-pricing.tsx", sha256: "4b6dbfffd6e24bee0432739bec920b5ea591adf6476d0089673809562e9deddf", before: "b5ddf5f4a880184479829a0a1d6e67621002d70def0e0f1f77000b0e8692d091" },
+    { path: "src/components/marketing/business-systems-pricing.css", sha256: "ac47d3ddfe52b52ebb94d6b70a2d0f46ae1c233c9c6b8190d92e8904ddf32604", before: "1744c4e99d011490bababc9e9df4b8b7eb435aab022412d59fa0508a7b1a094a" },
     { path: "prisma/migrations/20261020050000_google_calendar_bookings/migration.sql", sha256: "fee07e0a0e15fb84e99e97af1327caaa2cc8ad2e9cb8b1fe6fae11bc11ed2ec5" },
     { path: "prisma/migrations/20261020060000_google_calendar_booking_details/migration.sql", sha256: "bc65db0b5d34f1ec441f658a3526f834c3f6faa95ab34f7eceddf4830627189d" },
   ];
@@ -149,6 +153,8 @@ if (calendarRevision) {
   if (vercel.crons.some(item => item.path === "/api/cron/google-calendar-bookings")) throw new Error("Calendar cron already exists");
   vercel.crons.unshift({ path: "/api/cron/google-calendar-bookings", schedule: "*/5 * * * *" });
   await writeFile(vercelPath, `${JSON.stringify(vercel, null, 2)}\n`);
+
+  run("npx", ["vitest", "run", "src/lib/content/business-systems-pricing.test.ts"]);
 
   // Permission preflight runs before the additive migration. It reads only the
   // one event specified by this release and never writes to Google Calendar.
