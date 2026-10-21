@@ -29,7 +29,7 @@ import { ServicesBreadcrumb } from "@/components/marketing/services-breadcrumb";
 import { ServicesSubNav } from "@/components/marketing/services-sub-nav";
 import { whatsappDisplayNumber } from "@/app/site-content";
 import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
-import { serviceDetailVideos } from "@/app/video-content";
+import { serviceDetailVideos, type MarketingVideo } from "@/app/video-content";
 import { serviceSlugToVisualCard } from "@/app/page-content";
 import {
   serviceCategoryBySlug,
@@ -49,6 +49,27 @@ import { ProblemSolutionVisualSection } from "@/components/marketing/problem-sol
 import "@/components/marketing/minimal-premium.css";
 import "@/components/marketing/services-page.css";
 import { VideoEmbed } from "@/components/marketing/video-embed";
+
+const fmsSheetCompare: { oldSheet: MarketingVideo; aiFms: MarketingVideo } = {
+  oldSheet: {
+    id: "fms-old-sheets",
+    label: "Old FMS",
+    title: "FMS in Google Sheets and Forms",
+    description:
+      "Stages, owners, and delays lived in a sheet. Someone had to keep the form, the formulas, and the file ready before the weekly review.",
+    youtubeId: "PM8E3mCw67Q",
+    category: "FMS",
+  },
+  aiFms: {
+    id: "fms-ai-workspace",
+    label: "New FMS",
+    title: "AI FMS — the flow runs without a sheet",
+    description:
+      "The same who, when, and delay now sit in the workspace. Planned, actual, and late steps update the Monday board. No Google Form and no sheet formula.",
+    youtubeId: "acTJOocmuZM",
+    category: "FMS",
+  },
+};
 
 const categoryIcons: Record<
   ServiceCategorySlug,
@@ -185,7 +206,23 @@ function GenericServiceDetail({ category }: { category: ServiceCategory }) {
         </div>
       </section>
 
-      {serviceDetailVideos[category.slug] ? (
+      {category.slug === "flow" ? (
+        <section className="services-detail-video" aria-label="Old sheet FMS compared with AI FMS">
+          <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8">
+            <div className="services-section-head services-section-head-center">
+              <p className="services-section-eyebrow">Why the new FMS</p>
+              <h2 className="services-section-title">Old sheet FMS vs AI FMS</h2>
+              <p className="services-section-lead">
+                The first FMS was a Google Sheet and a Form. It held the flow until the sheet became the job. The new FMS keeps who, when, and delay in the workspace, so the Monday review opens without a sheet.
+              </p>
+            </div>
+            <div className="fms-video-compare">
+              <VideoEmbed video={fmsSheetCompare.oldSheet} variant="compact" />
+              <VideoEmbed video={fmsSheetCompare.aiFms} variant="compact" />
+            </div>
+          </div>
+        </section>
+      ) : serviceDetailVideos[category.slug] ? (
         <section
           className="services-detail-video"
           aria-label={`${category.name} demo video`}

@@ -221,6 +221,8 @@ if (tasksRevision) {
     { path: "src/lib/tasks/checkout-commerce.test.ts", sha256: "3a135b52f7ada576ad094c8bb23ea4b97cedf4c363fd26ddde9de782980d3148" },
     { path: "src/lib/tasks/checkout-commerce.ts", sha256: "c736d83e36ef5a115295f05e1a527955a96632fb1c581232101f5146d1fea00c" },
     { path: "src/lib/tasks/checkout-readiness.ts", sha256: "9a52f8b44c448e4dd82ab6807af82bf29e37afb731b655f7c658276420be6ede" },
+    { path: "src/components/marketing/service-detail-content.tsx", sha256: "63d72ff4473a74a6405d4224647bf6fb1083c0a51c304ebb2b7ab47cbb432220", before: "1f2dc5959a53da81e97c7efb36220649b0c3d2463e63c9154ad0461160ef0fc3" },
+    { path: "src/components/marketing/videos.css", sha256: "70d3d21bd734e21ca7be016fc9dcc9af200c6ae43e6946f1d84c9cc7fb3e5b93", before: "2df6dd5191845c3d38faad6c9c9970f676f9b5c61b82e941d27b11afcc8fd5e6" },
   ];
   const tasksPrepared = await Promise.all(tasksFiles.map(async f => ({
     ...f, bytes: await reviewedAt(tasksRevision, f.path, f.sha256),
