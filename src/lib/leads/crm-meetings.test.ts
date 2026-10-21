@@ -60,4 +60,12 @@ describe("CRM meeting calendar helpers", () => {
       rows[1],
     ]);
   });
+
+  it("keeps a passed booking in Today but removes it from Upcoming", () => {
+    const now = new Date("2026-10-21T08:00:00.000Z");
+    const row = { ymd: "2026-10-21", scheduledAt: "2026-10-21T07:00:00.000Z", completed: false };
+    expect(countCrmMeetings([row], now)).toMatchObject({ today: 1, upcoming: 0 });
+    expect(filterCrmMeetings([row], "today", { now })).toHaveLength(1);
+    expect(filterCrmMeetings([row], "upcoming", { now })).toHaveLength(0);
+  });
 });

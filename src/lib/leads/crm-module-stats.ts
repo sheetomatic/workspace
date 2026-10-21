@@ -87,7 +87,7 @@ export async function getCrmModuleNavCounts(
     leads,
     campaigns,
     nextTime,
-    meetings: meetings + await countUpcomingGoogleCalendarBookings(organizationId, startOfIstDay(now)),
+    meetings: meetings + await countUpcomingGoogleCalendarBookings(organizationId, now),
     quotations: quotationAgg._count._all,
     quotationValue: Number(quotationAgg._sum.totalAmount ?? 0),
     payments: paymentAgg._count._all,
@@ -223,6 +223,7 @@ export async function getCrmMeetingsStats(organizationId: string) {
   const counts = countCrmMeetings(
     rows.map((row) => ({
       ymd: istYmd(new Date(row.scheduledAt)),
+      scheduledAt: row.scheduledAt,
       completed: Boolean(row.completedAt),
       cancelled: row.cancelled,
     })),

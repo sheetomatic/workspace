@@ -92,6 +92,7 @@ export type CrmMeetingCountRow = {
   ymd: string;
   completed: boolean;
   cancelled?: boolean;
+  scheduledAt?: Date | string;
 };
 
 export function countCrmMeetings(rows: CrmMeetingCountRow[], now = new Date()) {
@@ -106,7 +107,10 @@ export function countCrmMeetings(rows: CrmMeetingCountRow[], now = new Date()) {
       counts.done += 1;
       continue;
     }
-    if (row.ymd >= today) {
+    const isFuture = row.scheduledAt
+      ? new Date(row.scheduledAt).getTime() >= now.getTime()
+      : row.ymd >= today;
+    if (isFuture) {
       counts.upcoming += 1;
     }
     if (row.ymd === today) {
@@ -127,7 +131,8 @@ export function filterCrmMeetings<T extends CrmMeetingCountRow>(
   view: CrmMeetingView,
   options?: { date?: string | null; now?: Date },
 ) {
-  const today = istYmd(options?.now ?? new Date());
+  const now = options?.now ?? new Date();
+  const today = istYmd(now);
   const month = today.slice(0, 7);
   const weekStart = startOfIstWeekYmd(today);
   const weekEnd = addIstDays(weekStart, 6);
@@ -142,7 +147,9 @@ export function filterCrmMeetings<T extends CrmMeetingCountRow>(
       case "done":
         return row.completed;
       case "upcoming":
-        return !row.completed && row.ymd >= today;
+        return !row.completed && (row.scheduledAt
+          ? new Date(row.scheduledAt).getTime() >= now.getTime()
+          : row.ymd >= today);
       case "week":
         return !row.completed && row.ymd >= weekStart && row.ymd <= weekEnd;
       case "month":

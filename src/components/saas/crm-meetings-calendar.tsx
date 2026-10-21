@@ -30,6 +30,7 @@ export type CrmCalendarMeeting = {
   title?: string;
   whenLabel: string;
   ymd: string;
+  scheduledAt?: string;
   typeLabel: string;
   assignee: string;
   meetUrl: string | null;

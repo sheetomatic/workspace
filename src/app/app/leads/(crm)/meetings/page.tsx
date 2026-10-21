@@ -50,6 +50,7 @@ export default async function CrmMeetingsPage({
         timeZone: "Asia/Kolkata",
       }),
       ymd: istYmd(scheduledAt),
+      scheduledAt: scheduledAt.toISOString(),
       typeLabel: row.cancelled ? "Cancelled" : row.source === "GOOGLE_CALENDAR" ? "Google booking" : completed ? "Done" : followUpTypeLabel(row.type),
       assignee: row.assignee?.name || row.assignee?.email || "",
       meetUrl: resolveFollowUpMeetUrl(row.meetUrl, row.notes),
