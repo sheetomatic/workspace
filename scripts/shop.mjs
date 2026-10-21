@@ -159,7 +159,15 @@ if (calendarRevision) {
   const calendarId = process.env.GOOGLE_APPOINTMENTS_CALENDAR_ID?.trim();
   const eventId = process.env.CALENDAR_RELEASE_EVENT_ID?.trim() || "h130ejrtefpls9up2ob3nku9p4";
   if (!calendarId || !eventId) throw new Error("Calendar release preflight is incomplete");
-  const event = (await calendar.events.get({ calendarId, eventId })).data;
+  let event;
+  try {
+    event = (await calendar.events.get({ calendarId, eventId })).data;
+  } catch (error) {
+    if (error?.response?.status === 404) {
+      throw new Error(`Calendar ${calendarId} must be shared read-only with ${credentials.client_email}`);
+    }
+    throw error;
+  }
   const expectedStart = new Date("2026-10-21T12:30:00+05:30").getTime();
   const expectedEnd = new Date("2026-10-21T13:00:00+05:30").getTime();
   if (event.id !== eventId || event.status === "cancelled" ||
