@@ -51,6 +51,9 @@ export const servicesBrowseCards: {
   { slug: "checklist", label: "Process Coordinator" },
   { slug: "whatsapp-ai", label: "WhatsApp AI" },
   { slug: "mis", label: "Executive Meeting (Weekly)" },
+  { slug: "tasks", label: "Executive Assistant & Tasks" },
+  { slug: "crm", label: "AI-powered CRM" },
+  { slug: "hr", label: "HR & Workforce" },
   { slug: "field-tracking", label: "Field Executive Tracking" },
   { slug: "automation", label: "Custom Software" },
 ];
@@ -171,7 +174,7 @@ export const serviceCategories: ServiceCategory[] = [
     whatsappMessage:
       "Hi Sheetomatic, I want to scope inventory management connected to our daily sales and purchase flow.",
     workspaceHref: "/products",
-    workspaceCta: "See products",
+    workspaceCta: "Read case studies",
     relatedSlugs: ["flow", "mis", "tasks"],
     featured: true,
   },
@@ -309,7 +312,7 @@ export const serviceCategories: ServiceCategory[] = [
     whatsappMessage:
       "Hi Sheetomatic, I want to scope Executive Meeting (Weekly) — Monday board without manual MIS prep.",
     workspaceHref: "/products",
-    workspaceCta: "See products",
+    workspaceCta: "Read case studies",
     featured: true,
     relatedSlugs: ["checklist", "tasks", "flow"],
   },
@@ -427,7 +430,7 @@ export const serviceCategories: ServiceCategory[] = [
     ctaLabel: "Ask about field tracking",
     whatsappMessage:
       "Hi Sheetomatic, I want to scope Field Executive Tracking for our sales or service team — client geo check-ins and manager visibility.",
-    workspaceHref: `${workspacePortalOrigin()}/login?callbackUrl=${encodeURIComponent("/app/hr/field")}`,
+    workspaceHref: `${workspacePortalOrigin()}/login?callbackUrl=${encodeURIComponent("/app/field")}`,
     workspaceCta: "Open field workspace",
     relatedSlugs: ["hr", "crm", "mis"],
   },
@@ -537,9 +540,11 @@ export const servicesNavLinks = [
       href: `/services/${category.slug}`,
       label: category.name,
     })),
-  ...hrWorkspaceModules
-    .filter((mod) => mod.id !== "field-tracking")
-    .map((mod) => ({ href: mod.marketingHref, label: mod.name })),
+  ...hrWorkspaceModules.map((mod) => ({
+    // Field Executive Tracking is a peer service in the main category list.
+    href: mod.marketingHref,
+    label: mod.name,
+  })).filter((link) => link.href !== "/services/field-tracking"),
 ];
 
 export const serviceCategoryBySlug = Object.fromEntries(

@@ -9,7 +9,7 @@ type UploadState =
   | { status: "error"; message: string };
 
 /**
- * Field visit proof: take photo (mobile camera), upload file, or paste a web link.
+ * Required field visit proof: take photo (mobile camera), upload file, or paste a web link.
  * Mirrors IMS receipt pre-upload → hidden attachmentId pattern.
  */
 export function FieldProofUpload() {
@@ -66,9 +66,9 @@ export function FieldProofUpload() {
 
   return (
     <div className="ws-hr-field-proof">
-      <span className="ws-hr-field-proof-label">Visit proof</span>
+      <span className="ws-hr-field-proof-label">Visit proof · required</span>
       <p className="ws-hr-help">
-        Take a photo, upload an image/PDF, or paste a Drive/WhatsApp link.
+        Each saved location needs a photo, proof file, or Drive/WhatsApp link. Take a photo or upload evidence before saving the GPS stamp.
       </p>
 
       <div className="ws-hr-field-proof-actions">

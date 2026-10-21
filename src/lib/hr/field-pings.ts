@@ -1,4 +1,10 @@
 import { prisma } from "@/lib/db";
+import {
+  haversineMeters,
+  recordedRouteDistance,
+  type RecordedRouteDistance,
+} from "@/lib/hr/field-distance";
+export { haversineMeters } from "@/lib/hr/field-distance";
 
 /** Minimum seconds between successive pings per user (light rate limit). */
 export const FIELD_PING_MIN_INTERVAL_SEC = 30;
@@ -9,22 +15,6 @@ export function istDayBounds(date = new Date()): { start: Date; end: Date } {
   const start = new Date(`${ymd}T00:00:00.000+05:30`);
   const end = new Date(`${ymd}T23:59:59.999+05:30`);
   return { start, end };
-}
-
-export function haversineMeters(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number,
-) {
-  const toRad = (v: number) => (v * Math.PI) / 180;
-  const r = 6371000;
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-  return 2 * r * Math.asin(Math.sqrt(a));
 }
 
 export async function postFieldLocationPing(params: {
@@ -116,6 +106,48 @@ export async function listTodayPings(organizationId: string) {
     orderBy: { recordedAt: "desc" },
     take: 500,
   });
+}
+
+/**
+ * Partial route estimates from pings captured while the Field page was open.
+ * Check-ins are intentionally excluded because they are too sparse to imply
+ * distance travelled between locations.
+ */
+export async function listTodayRecordedDistances(
+  organizationId: string,
+  userIds: string[],
+): Promise<Record<string, RecordedRouteDistance>> {
+  if (userIds.length === 0) return {};
+  const { start, end } = istDayBounds();
+  const rows = await prisma.fieldLocationPing.findMany({
+    where: {
+      organizationId,
+      userId: { in: userIds },
+      recordedAt: { gte: start, lte: end },
+    },
+    select: {
+      userId: true,
+      geoLat: true,
+      geoLng: true,
+      accuracyM: true,
+      isMockLocation: true,
+      recordedAt: true,
+    },
+    orderBy: [{ userId: "asc" }, { recordedAt: "asc" }],
+  });
+
+  const pointsByUser = new Map<string, typeof rows>();
+  for (const row of rows) {
+    const points = pointsByUser.get(row.userId) ?? [];
+    points.push(row);
+    pointsByUser.set(row.userId, points);
+  }
+  return Object.fromEntries(
+    userIds.map((userId) => [
+      userId,
+      recordedRouteDistance(pointsByUser.get(userId) ?? []),
+    ]),
+  );
 }
 
 /**

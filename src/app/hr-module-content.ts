@@ -85,9 +85,9 @@ export const fieldTrackingModule: HrServicesModule = {
   tagline: "Separate module for sales & service teams",
   heroLead:
     "Client geo check-ins, visit notes, and manager visibility for sales and service teams — separate from office punch, with field-only KPIs.",
-  href: "/app/hr/field",
+  href: "/app/field",
   marketingHref: "/services/field-tracking",
-  workspacePath: "/app/hr/field",
+  workspacePath: "/app/field",
   processSteps: [
     {
       step: "01",

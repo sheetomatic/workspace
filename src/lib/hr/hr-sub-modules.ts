@@ -52,8 +52,8 @@ export const HR_SUB_MODULES = [
   {
     id: "field",
     label: "Field tracking",
-    href: "/app/hr/field",
-    description: "Field visits, geo punches, and live trail.",
+    href: "/app/field",
+    description: "Field visits, geo punches, and live trail (standalone module).",
   },
   {
     id: "hiring",
@@ -147,6 +147,10 @@ export function hrSubModuleIdFromPath(pathname: string): HrSubModuleId | null {
   const normalized = pathname.replace(/\/+$/, "") || "/";
   if (normalized === "/app/hr") {
     return null;
+  }
+  // Field lives at /app/field (peer of HRMS); keep path → sub-module mapping.
+  if (normalized === "/app/field" || normalized.startsWith("/app/field/")) {
+    return "field";
   }
   for (const mod of HR_SUB_MODULES) {
     if (

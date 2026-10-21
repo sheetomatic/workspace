@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { hasMinimumRole } from "@/lib/permissions";
+import { hasFieldVisitProof } from "@/lib/hr/field-visit-rules";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
 import {
   checkInAttendance,
@@ -30,6 +31,7 @@ const HR_PATHS = [
   "/app/hr/holidays",
   "/app/hr/hiring",
   "/app/field",
+  "/app/field/conveyance",
   "/app/field/plans",
   "/app/field/history",
 ];
@@ -295,14 +297,83 @@ export async function recordFieldCheckInAction(
 
   const { lat: geoLat, lng: geoLng } = readCoordPair(formData);
   const clientName = String(formData.get("clientName") ?? "").trim();
+  const callingRemarks = String(formData.get("callingRemarks") ?? "").trim();
   const activityNote = String(formData.get("activityNote") ?? "").trim();
+  const nextVisitRaw = String(formData.get("nextVisitDate") ?? "").trim();
+  const orderDetails = String(formData.get("orderDetails") ?? "").trim();
+  const distributionDetails = String(
+    formData.get("distributionDetails") ?? "",
+  ).trim();
+  const photoAttachmentId = String(
+    formData.get("photoAttachmentId") ?? "",
+  ).trim();
+  const photoUrlRaw = String(formData.get("photoUrl") ?? "").trim();
   const visitId = String(formData.get("visitId") ?? "").trim() || null;
   const accuracyMRaw = Number(formData.get("accuracyM"));
   const accuracyM = Number.isFinite(accuracyMRaw) ? accuracyMRaw : null;
 
+  if (!hasFieldVisitProof(photoAttachmentId, photoUrlRaw)) {
+    return hrActionFailure(
+      "PROOF_REQUIRED",
+      "Attach a photo or visit proof link for this location before saving the check-in.",
+    );
+  }
+
+  if (
+    [callingRemarks, activityNote, orderDetails, distributionDetails].some(
+      (value) => value.length > 4000,
+    )
+  ) {
+    return hrActionFailure("INVALID_INPUT", "Field notes must be 4,000 characters or less.");
+  }
+  let nextVisitDate: Date | null = null;
+  if (nextVisitRaw) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(nextVisitRaw)) {
+      return hrActionFailure("INVALID_INPUT", "Enter a valid next-visit date.");
+    }
+    const [year, month, day] = nextVisitRaw.split("-").map(Number);
+    const calendarValue = new Date(Date.UTC(year, month - 1, day));
+    if (
+      calendarValue.getUTCFullYear() !== year ||
+      calendarValue.getUTCMonth() !== month - 1 ||
+      calendarValue.getUTCDate() !== day
+    ) {
+      return hrActionFailure("INVALID_INPUT", "Enter a valid next-visit date.");
+    }
+    nextVisitDate = new Date(`${nextVisitRaw}T00:00:00+05:30`);
+  }
+
+  let photoUrl: string | null = null;
+  if (photoUrlRaw) {
+    try {
+      const parsedUrl = new URL(photoUrlRaw);
+      if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
+        throw new Error("Use a web link beginning with http or https.");
+      }
+      photoUrl = parsedUrl.toString();
+    } catch {
+      return hrActionFailure("INVALID_INPUT", "Enter a valid http or https proof link.");
+    }
+  }
+
   try {
     if (geoLat === undefined || geoLng === undefined) {
       throw new Error("GPS location is required for field check-in.");
+    }
+
+    if (photoAttachmentId) {
+      const attachment = await prisma.fieldCheckInAttachment.findFirst({
+        where: {
+          id: photoAttachmentId,
+          organizationId: user.organizationId,
+          uploadedById: user.id,
+          checkIn: null,
+        },
+        select: { id: true },
+      });
+      if (!attachment) {
+        return hrActionFailure("INVALID_ATTACHMENT", "Upload the visit proof again before saving.");
+      }
     }
 
     let geoFenceOk: boolean | null = null;
@@ -377,10 +448,40 @@ export async function recordFieldCheckInAction(
         geoLng,
         accuracyM,
         clientName: clientName || null,
+        callingRemarks: callingRemarks || null,
         activityNote: activityNote || null,
+        nextVisitDate,
+        orderDetails: orderDetails || null,
+        distributionDetails: distributionDetails || null,
+        photoAttachmentId: photoAttachmentId || null,
+        photoUrl,
         geoFenceOk,
       },
     });
+
+    if (visitId) {
+      // Linked check-in advances the plan: Planned → In progress, then Completed with proof.
+      const linked = await prisma.fieldVisit.findFirst({
+        where: {
+          id: visitId,
+          organizationId: user.organizationId,
+          assigneeUserId: user.id,
+          status: { in: ["PLANNED", "IN_PROGRESS"] },
+        },
+        select: { id: true, status: true },
+      });
+      if (linked) {
+        const nextStatus = hasFieldVisitProof(photoAttachmentId || null, photoUrl)
+          ? "COMPLETED"
+          : "IN_PROGRESS";
+        if (nextStatus !== linked.status) {
+          await prisma.fieldVisit.update({
+            where: { id: linked.id },
+            data: { status: nextStatus },
+          });
+        }
+      }
+    }
 
     const { ensureAttendanceFromFieldCheckIn } = await import("@/lib/hr/hr-store");
     await ensureAttendanceFromFieldCheckIn({
@@ -389,7 +490,7 @@ export async function recordFieldCheckInAction(
       geoLng,
     });
 
-    revalidateHrPaths("/app/field", "/app/hr/attendance", "/app/hr");
+    revalidateHrPaths("/app/field", "/app/field/conveyance", "/app/hr/attendance", "/app/hr");
     return { ok: true };
   } catch (error) {
     return mapCheckInError(error);
@@ -459,6 +560,32 @@ export async function createFieldVisitAction(
   const clientName = String(formData.get("clientName") ?? "").trim();
   const purpose = String(formData.get("purpose") ?? "").trim();
   const locationLabel = String(formData.get("locationLabel") ?? "").trim();
+  const plannedAtRaw = String(formData.get("plannedAt") ?? "").trim();
+  let plannedAt: Date | null = null;
+  if (plannedAtRaw) {
+    // The field module serves Indian workspaces; datetime-local has no zone,
+    // so interpret manager-entered schedules as India Standard Time.
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(plannedAtRaw)) {
+      return hrActionFailure("INVALID_INPUT", "Enter a valid visit date and time.");
+    }
+    const [datePart, timePart] = plannedAtRaw.split("T");
+    const [year, month, day] = datePart.split("-").map(Number);
+    const [hour, minute] = timePart.split(":").map(Number);
+    const calendarValue = new Date(Date.UTC(year, month - 1, day, hour, minute));
+    if (
+      calendarValue.getUTCFullYear() !== year ||
+      calendarValue.getUTCMonth() !== month - 1 ||
+      calendarValue.getUTCDate() !== day ||
+      hour > 23 ||
+      minute > 59
+    ) {
+      return hrActionFailure("INVALID_INPUT", "Enter a valid visit date and time.");
+    }
+    plannedAt = new Date(`${plannedAtRaw}:00+05:30`);
+    if (!Number.isFinite(plannedAt.getTime())) {
+      return hrActionFailure("INVALID_INPUT", "Enter a valid visit date and time.");
+    }
+  }
   const { lat: geoLat, lng: geoLng } = readCoordPair(formData);
   const radiusRaw = Number(
     formData.get("radiusM") ?? formData.get("geoFenceRadiusM"),
@@ -495,6 +622,7 @@ export async function createFieldVisitAction(
         clientName,
         purpose: cleanPurpose,
         locationLabel: locationLabel || null,
+        plannedAt,
         geoLat: hasFence ? geoLat : null,
         geoLng: hasFence ? geoLng : null,
         radiusM: hasFence ? radiusM ?? 200 : null,
@@ -509,6 +637,84 @@ export async function createFieldVisitAction(
       error instanceof Error ? error.message : "Could not plan visit.";
     return hrActionFailure("VISIT_FAILED", message);
   }
+}
+
+export async function updateFieldVisitStatusAction(
+  formData: FormData,
+): Promise<HrActionResult> {
+  const user = await getSessionUser();
+  if (!user) {
+    return hrActionFailure("FORBIDDEN", "Sign in required.");
+  }
+  if (!(await assertHrSubModuleEnabled(user, "field"))) {
+    return hrActionFailure("FORBIDDEN", "Field tracking is not enabled for this workspace.");
+  }
+
+  const visitId = String(formData.get("visitId") ?? "").trim();
+  const nextStatus = String(formData.get("status") ?? "").trim();
+  if (!visitId || !["IN_PROGRESS", "COMPLETED", "CANCELLED"].includes(nextStatus)) {
+    return hrActionFailure("INVALID_INPUT", "Choose a valid visit status.");
+  }
+
+  const isManager = hasMinimumRole(user.role, "MANAGER");
+  const visit = await prisma.fieldVisit.findFirst({
+    where: { id: visitId, organizationId: user.organizationId },
+    select: { id: true, assigneeUserId: true, status: true },
+  });
+  if (!visit) {
+    return hrActionFailure("NOT_FOUND", "This visit is no longer available.");
+  }
+  if (!isManager && visit.assigneeUserId !== user.id) {
+    return hrActionFailure("FORBIDDEN", "You can only update visits assigned to you.");
+  }
+
+  const canStart = nextStatus === "IN_PROGRESS" && visit.status === "PLANNED";
+  const canComplete = nextStatus === "COMPLETED" && visit.status === "IN_PROGRESS";
+  const canCancel =
+    nextStatus === "CANCELLED" &&
+    isManager &&
+    (visit.status === "PLANNED" || visit.status === "IN_PROGRESS");
+  if (!canStart && !canComplete && !canCancel) {
+    return hrActionFailure("INVALID_TRANSITION", "This visit can no longer move to that status.");
+  }
+  if (canComplete) {
+    const checkIn = await prisma.fieldCheckIn.findFirst({
+      where: {
+        organizationId: user.organizationId,
+        userId: visit.assigneeUserId,
+        visitId: visit.id,
+      },
+      select: { id: true, photoAttachmentId: true, photoUrl: true },
+    });
+    if (!checkIn) {
+      return hrActionFailure(
+        "CHECK_IN_REQUIRED",
+        "Save a GPS check-in with its location proof/photo before completing this appointment.",
+      );
+    }
+    if (!hasFieldVisitProof(checkIn.photoAttachmentId, checkIn.photoUrl)) {
+      return hrActionFailure(
+        "PROOF_REQUIRED",
+        "Add a photo or visit proof link to the location stamp before completing this appointment.",
+      );
+    }
+  }
+
+  const result = await prisma.fieldVisit.updateMany({
+    where: {
+      id: visit.id,
+      organizationId: user.organizationId,
+      status: visit.status,
+      ...(isManager ? {} : { assigneeUserId: user.id }),
+    },
+    data: { status: nextStatus as "IN_PROGRESS" | "COMPLETED" | "CANCELLED" },
+  });
+  if (result.count !== 1) {
+    return hrActionFailure("VISIT_CHANGED", "This visit changed. Refresh and try again.");
+  }
+
+  revalidateHrPaths("/app/field", "/app/hr/field", "/app/hr");
+  return { ok: true };
 }
 
 export async function createJobOpeningAction(
@@ -642,6 +848,51 @@ export async function updateHrSettingsAction(
     const message =
       error instanceof Error ? error.message : "Could not save HR settings.";
     return hrActionFailure("SETTINGS_FAILED", message);
+  }
+}
+
+/** Saves a tenant-owned Maps Embed browser key for Field tour maps. */
+export async function saveFieldMapsApiKeyAction(
+  _previous: HrActionResult,
+  formData: FormData,
+): Promise<HrActionResult> {
+  void _previous;
+  const user = await getSessionUser();
+  if (!user || !hasMinimumRole(user.role, "ADMIN")) {
+    return hrActionFailure("FORBIDDEN", "Admin access required to update Field map settings.");
+  }
+  if (!(await assertHrSubModuleEnabled(user, "field"))) {
+    return hrActionFailure("FORBIDDEN", "Field Executive Management is not enabled for this workspace.");
+  }
+
+  if (formData.get("intent") === "clear") {
+    try {
+      await prisma.workspaceHrSettings.updateMany({
+        where: { organizationId: user.organizationId },
+        data: { googleMapsEmbedApiKey: null },
+      });
+      revalidatePath("/app/field");
+      return { ok: true, message: "Google Maps key removed from this workspace." };
+    } catch {
+      return hrActionFailure("SETTINGS_FAILED", "Could not remove the Field map setting.");
+    }
+  }
+
+  const apiKey = String(formData.get("googleMapsEmbedApiKey") ?? "").trim();
+  if (apiKey.length < 20 || apiKey.length > 256 || /\s/.test(apiKey)) {
+    return hrActionFailure("INVALID_INPUT", "Enter a valid Google Maps browser API key.");
+  }
+
+  try {
+    await getOrCreateHrSettings(user.organizationId);
+    await prisma.workspaceHrSettings.update({
+      where: { organizationId: user.organizationId },
+      data: { googleMapsEmbedApiKey: apiKey },
+    });
+    revalidatePath("/app/field");
+    return { ok: true, message: "Google Maps key saved for this workspace." };
+  } catch {
+    return hrActionFailure("SETTINGS_FAILED", "Could not save the Field map setting.");
   }
 }
 

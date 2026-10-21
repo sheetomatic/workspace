@@ -45,7 +45,7 @@ describe("workspace-nav-prefs", () => {
     expect(isNavIdVisible(prefs, "em")).toBe(true);
     expect(isNavIdVisible(prefs, "checklists")).toBe(true);
     expect(isNavIdVisible(prefs, "pc")).toBe(true);
-    expect(isNavIdVisible(prefs, "tasks")).toBe(true);
+    expect(isNavIdVisible(prefs, "tasks")).toBe(false);
     expect(isNavIdVisible(prefs, "settings")).toBe(true);
     expect(isNavIdVisible(prefs, "team")).toBe(false);
   });
