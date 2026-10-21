@@ -191,6 +191,34 @@ if (calendarRevision) {
   run("npx", ["prisma", "db", "execute", "--file", "prisma/migrations/20261020060000_google_calendar_booking_details/migration.sql", "--schema", "prisma/schema.prisma"]);
 }
 run("npm", ["run", "db:generate"]);
+if (process.env.GOOGLE_CALENDAR_SYNC_ENABLED === "true") {
+  const { PrismaClient } = await import(`${process.cwd()}/node_modules/@prisma/client/default.js`);
+  const prisma = new PrismaClient();
+  try {
+    const eventId = "h130ejrtefpls9up2ob3nku9p4";
+    const rows = await prisma.googleCalendarBooking.findMany({
+      where: { eventId },
+      select: { startsAt: true, endsAt: true, status: true, calendarUrl: true, meetUrl: true, connectionId: true },
+    });
+    const connection = rows[0] ? await prisma.googleCalendarConnection.findUnique({
+      where: { id: rows[0].connectionId },
+      select: { calendarId: true, lastSyncedAt: true, lastError: true },
+    }) : null;
+    const expectedStart = new Date("2026-10-21T12:30:00+05:30").getTime();
+    const expectedEnd = new Date("2026-10-21T13:00:00+05:30").getTime();
+    if (rows.length !== 1 || rows[0].startsAt.getTime() !== expectedStart || rows[0].endsAt.getTime() !== expectedEnd ||
+        rows[0].status === "CANCELLED" || !rows[0].calendarUrl || connection?.lastError) {
+      throw new Error(`Production Calendar verification failed: ${JSON.stringify({ eventCount: rows.length,
+        start: rows[0]?.startsAt, end: rows[0]?.endsAt, status: rows[0]?.status,
+        calendarUrl: Boolean(rows[0]?.calendarUrl), lastSyncedAt: connection?.lastSyncedAt, lastError: connection?.lastError })}`);
+    }
+    console.log(`Production Calendar verification passed: ${JSON.stringify({ eventId, eventCount: rows.length,
+      start: rows[0].startsAt, end: rows[0].endsAt, status: rows[0].status, calendarUrl: true,
+      meetUrl: Boolean(rows[0].meetUrl), calendarId: connection.calendarId, lastSyncedAt: connection.lastSyncedAt })}`);
+  } finally {
+    await prisma.$disconnect();
+  }
+}
 run("npx", ["vitest", "run", "src/lib/templates/commerce.test.ts"]);
 run("npx", ["next", "build"]);
 // No seeding, Calendar writes, credential changes, gateway writes or customer messages.
