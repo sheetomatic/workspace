@@ -90,6 +90,7 @@ const solutionHrefOverrides: Record<string, string> = {
   "IMS — Inventory Management": "/services/inventory",
   "Process Coordinator": "/services/checklist",
   "Executive Assistant": "/services/tasks",
+  "Tasks Management System": "/services/tasks",
   "Executive Meeting (Weekly)": "/services/mis",
   "WhatsApp AI + CRM": "/services/whatsapp-ai",
   "Custom automation": "/services/automation",

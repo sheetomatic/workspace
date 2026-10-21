@@ -163,15 +163,21 @@
 }
 .business-tasks-pricing {
   margin-top: 2rem;
-  padding: clamp(1.25rem, 3vw, 2rem);
-  border: 1px solid #cbd5e1;
-  border-radius: 24px;
-  background: #fff;
+  padding: clamp(1.4rem, 3vw, 2.4rem);
+  border: 1px solid #b9c8bc;
+  border-radius: 28px;
+  background: linear-gradient(145deg, #ffffff 0%, #f3faf5 100%);
+  box-shadow: 0 18px 55px rgba(15, 60, 42, 0.09);
 }
 
 .business-tasks-pricing h2 {
   margin: 0.25rem 0 0.5rem;
+  color: #0a3327;
+  font-size: clamp(1.65rem, 3vw, 2.3rem);
 }
+
+.business-tasks-heading { max-width: 720px; }
+.business-tasks-heading > p:last-child { margin: 0; color: #52625c; line-height: 1.65; }
 
 .business-tasks-rates {
   display: grid;
@@ -180,10 +186,22 @@
   margin: 1.25rem 0;
 }
 
-.business-tasks-rates div {
-  padding: 1rem;
-  border-radius: 16px;
-  background: #f8fafc;
+.business-task-rate-card {
+  min-height: 154px;
+  padding: 1.15rem;
+  border: 1px solid #d6e2d9;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 24px rgba(15, 60, 42, 0.06);
+}
+
+.business-task-rate-card.is-featured {
+  border-color: #73b78a;
+  background: #effaf2;
+}
+
+.business-task-rate-card.is-addon {
+  border-style: dashed;
 }
 
 .business-tasks-rates dt {
@@ -205,8 +223,15 @@
   font-weight: 600;
 }
 
+.business-task-rate-card small { display: block; margin-top: 0.7rem; color: #547063; font-weight: 650; }
+.business-tasks-footer { display: flex; align-items: center; justify-content: space-between; gap: 1.25rem; padding-top: 1.15rem; border-top: 1px solid #d6e2d9; }
+.business-tasks-footer .business-addon-note { max-width: 670px; margin: 0; color: #52625c; line-height: 1.6; }
+.business-tasks-footer .btn-cta { flex: 0 0 auto; }
+
 @media (max-width: 800px) {
   .business-tasks-rates { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .business-tasks-footer { align-items: stretch; flex-direction: column; }
+  .business-tasks-footer .btn-cta { width: 100%; text-align: center; }
 }
 
 @media (max-width: 480px) {

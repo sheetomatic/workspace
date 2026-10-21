@@ -111,21 +111,23 @@ export function EmReadyPricing() {
           </p>
 
           <section className="business-tasks-pricing" aria-labelledby="tasks-pricing-title">
-            <div>
+            <div className="business-tasks-heading">
               <p className="em-pricing-kicker">Standalone system</p>
               <h2 id="tasks-pricing-title">{tasksManagementPricing.name}</h2>
               <p>Assign, track and follow through on team work without purchasing the complete suite.</p>
             </div>
             <dl className="business-tasks-rates">
-              <div><dt>Monthly</dt><dd>{formatBusinessPlanPrice(tasksManagementPricing.monthlyPerUserInr)}<span>/user/month</span></dd></div>
-              <div><dt>Extra seat</dt><dd>{formatBusinessPlanPrice(tasksManagementPricing.extraSeatMonthlyInr)}<span>/month</span></dd></div>
-              <div><dt>Yearly</dt><dd>{formatBusinessPlanPrice(tasksManagementPricing.yearlyPerUserInr)}<span>/user/year</span></dd></div>
-              <div><dt>WhatsApp API add-on</dt><dd>{formatBusinessPlanPrice(tasksManagementPricing.whatsappApiYearlyInr)}<span>/year</span></dd></div>
+              <div className="business-task-rate-card"><dt>Monthly access</dt><dd>{formatBusinessPlanPrice(tasksManagementPricing.monthlyPerUserInr)}<span>per user, billed monthly</span></dd></div>
+              <div className="business-task-rate-card"><dt>Additional seat</dt><dd>{formatBusinessPlanPrice(tasksManagementPricing.extraSeatMonthlyInr)}<span>per extra seat, per month</span></dd></div>
+              <div className="business-task-rate-card is-featured"><dt>Yearly access</dt><dd>{formatBusinessPlanPrice(tasksManagementPricing.yearlyPerUserInr)}<span>per user, billed yearly</span></dd><small>Best value for a full year</small></div>
+              <div className="business-task-rate-card is-addon"><dt>Optional WhatsApp API</dt><dd>{formatBusinessPlanPrice(tasksManagementPricing.whatsappApiYearlyInr)}<span>per year</span></dd><small>Provider usage charges may apply</small></div>
             </dl>
-            <p className="business-addon-note">GST is extra. WhatsApp API is optional. Confirm setup scope, usage charges and terms before subscribing.</p>
-            <a className={marketingButtonClass("primary")} href={tasksManagementEnquiryHref} target="_blank" rel="noopener noreferrer">
-              Enquire About Tasks Management
-            </a>
+            <div className="business-tasks-footer">
+              <p className="business-addon-note"><strong>GST is extra.</strong> WhatsApp API is optional. Confirm users, setup scope, usage charges and renewal terms before subscribing.</p>
+              <a className={marketingButtonClass("primary")} href={tasksManagementEnquiryHref} target="_blank" rel="noopener noreferrer">
+                Enquire About Tasks Management
+              </a>
+            </div>
           </section>
 
           <section className="business-comparison" aria-labelledby="business-comparison-title">

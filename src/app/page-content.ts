@@ -148,7 +148,7 @@ export const problemSolutionVisual = {
       youtubeId: "Z8deRw4ywgU",
       youtubeLabel: "Watch on YouTube",
       exploreHref: "/services/tasks",
-      exploreLabel: "Explore Executive Assistant",
+      exploreLabel: "Explore Tasks Management",
       workspaceLabel: "Open Workspace",
     },
     {
@@ -508,7 +508,7 @@ export const serviceDeliverables = [
     outcome: "Daily ops run on schedule — scored, not remembered.",
   },
   {
-    title: "Executive Assistant",
+    title: "Tasks Management System",
     tag: "Follow-up",
     text: "Tasks module with due dates and proof of completion — Executive Assistant role scores via the EA portal and monitors follow-through.",
     outcome: "Follow-ups land on time — without chasing on WhatsApp.",
