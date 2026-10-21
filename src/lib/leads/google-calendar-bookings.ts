@@ -14,20 +14,25 @@ export type CalendarEvent = {
   organizer?: { email?: string }; htmlLink?: string; hangoutLink?: string;
 };
 type EventPage = { items?: CalendarEvent[]; nextPageToken?: string; nextSyncToken?: string };
-export type BookingSyncConfig = { organizationId: string; calendarId: string; titles: string[]; token?: string };
+export type BookingSyncConfig = { organizationId?: string; organizationSlug?: string; calendarId: string; titles: string[]; token?: string };
 
 export function getBookingSyncConfig(env: Record<string, string | undefined> = process.env): BookingSyncConfig | null {
   if (env.GOOGLE_CALENDAR_SYNC_ENABLED !== "true") return null;
   const organizationId = env.GOOGLE_CALENDAR_ORGANIZATION_ID?.trim();
-  const calendarId = env.GOOGLE_CALENDAR_ID?.trim();
+  const organizationSlug = env.GOOGLE_APPOINTMENTS_ORG_SLUG?.trim() || PRIMARY_ORG_SLUG;
+  const calendarId = env.GOOGLE_CALENDAR_ID?.trim() || env.GOOGLE_APPOINTMENTS_CALENDAR_ID?.trim();
   const token = env.GOOGLE_CALENDAR_ACCESS_TOKEN?.trim();
   let titles: unknown;
-  try { titles = JSON.parse(env.GOOGLE_CALENDAR_BOOKING_TITLES_JSON ?? "[]"); } catch { throw new Error("booking_titles_invalid"); }
+  try {
+    titles = env.GOOGLE_CALENDAR_BOOKING_TITLES_JSON
+      ? JSON.parse(env.GOOGLE_CALENDAR_BOOKING_TITLES_JSON)
+      : (env.GOOGLE_APPOINTMENTS_TITLE_PREFIXES ?? "").split("|").map(value => value.trim()).filter(Boolean);
+  } catch { throw new Error("booking_titles_invalid"); }
   const hasServiceAccount = Boolean(env.GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON?.trim() ||
     (env.GOOGLE_SHEETS_CLIENT_EMAIL?.trim() && env.GOOGLE_SHEETS_PRIVATE_KEY?.trim()));
-  if (!organizationId || !calendarId || (!token && !hasServiceAccount) || !Array.isArray(titles) || !titles.length ||
+  if ((!organizationId && !organizationSlug) || !calendarId || (!token && !hasServiceAccount) || !Array.isArray(titles) || !titles.length ||
       titles.length > 20 || titles.some(t => typeof t !== "string" || !t.trim() || t.length > 200)) throw new Error("calendar_configuration_incomplete");
-  return { organizationId, calendarId, token, titles: [...new Set((titles as string[]).map(t => t.trim()))].sort() };
+  return { organizationId, organizationSlug, calendarId, token, titles: [...new Set((titles as string[]).map(t => t.trim()))].sort() };
 }
 
 export function bookingId(...parts: string[]) {
@@ -121,12 +126,15 @@ async function applyEvent(tx: Prisma.TransactionClient, connectionId: string, ev
 export async function syncCalendarBookings(config = getBookingSyncConfig(), readPage = readCalendarPage) {
   const startedAt = Date.now();
   if (!config) return { enabled: false, processed: 0 };
-  const org = await prisma.organization.findUnique({ where: { id: config.organizationId }, select: { slug: true } });
+  const org = config.organizationId
+    ? await prisma.organization.findUnique({ where: { id: config.organizationId }, select: { id: true, slug: true } })
+    : await prisma.organization.findUnique({ where: { slug: config.organizationSlug }, select: { id: true, slug: true } });
   if (org?.slug !== PRIMARY_ORG_SLUG) throw new Error("calendar_workspace_not_allowed");
-  const id = bookingId(config.organizationId, config.calendarId), leaseId = randomUUID();
+  const organizationId = org.id;
+  const id = bookingId(organizationId, config.calendarId), leaseId = randomUUID();
   const filterHash = bookingId("booking-description-v2", ...config.titles);
   await prisma.googleCalendarConnection.upsert({ where: { id },
-    create: { id, organizationId: config.organizationId, calendarId: config.calendarId, filterHash, fullSyncId: randomUUID() }, update: {} });
+    create: { id, organizationId, calendarId: config.calendarId, filterHash, fullSyncId: randomUUID() }, update: {} });
   const lock = await prisma.googleCalendarConnection.updateMany({ where: { id,
     OR: [{ leaseUntil: null }, { leaseUntil: { lt: new Date() } }] },
     data: { leaseId, leaseUntil: new Date(Date.now() + 120_000) } });
@@ -175,8 +183,10 @@ export async function syncCalendarBookings(config = getBookingSyncConfig(), read
 
 function activeConnectionId(organizationId: string) {
   if (process.env.GOOGLE_CALENDAR_SYNC_ENABLED !== "true" ||
-      process.env.GOOGLE_CALENDAR_ORGANIZATION_ID?.trim() !== organizationId || !process.env.GOOGLE_CALENDAR_ID?.trim()) return null;
-  return bookingId(organizationId, process.env.GOOGLE_CALENDAR_ID.trim());
+      (process.env.GOOGLE_CALENDAR_ORGANIZATION_ID?.trim() && process.env.GOOGLE_CALENDAR_ORGANIZATION_ID.trim() !== organizationId)) return null;
+  const calendarId = process.env.GOOGLE_CALENDAR_ID?.trim() || process.env.GOOGLE_APPOINTMENTS_CALENDAR_ID?.trim();
+  if (!calendarId) return null;
+  return bookingId(organizationId, calendarId);
 }
 
 export async function googleCalendarSyncNotice(organizationId: string) {
