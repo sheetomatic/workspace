@@ -12,7 +12,6 @@ import {
   formatBusinessPlanPrice,
   tasksManagementEnquiryHref,
   tasksManagementPricing,
-  whatsappApiDocumentationHref,
   whatsappApiSignupHref,
   type BusinessSystemPlan,
 } from "@/lib/content/business-systems-pricing";
@@ -128,7 +127,6 @@ export function EmReadyPricing() {
                 <small>Provider usage charges may apply</small>
                 <div className="business-task-addon-actions">
                   <a href={whatsappApiSignupHref} target="_blank" rel="noopener noreferrer">Start Today (Sign Up)</a>
-                  <a href={whatsappApiDocumentationHref} target="_blank" rel="noopener noreferrer">API Documentation</a>
                 </div>
               </div>
             </dl>
