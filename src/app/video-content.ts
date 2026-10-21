@@ -5,6 +5,8 @@
  * Channel: @sheetomatic (UCVwyRDGxu0967mnYnGNNnLQ) — RSS + oEmbed Jul 2026.
  */
 
+import type { ServiceCategorySlug } from "@/app/services-content";
+
 export type VideoCategory =
   | "FMS"
   | "IMS"
@@ -412,18 +414,7 @@ export const coursesLibraryVideos: ChannelVideo[] = channelVideos.filter(
 
 /** Service detail page embeds by slug */
 export const serviceDetailVideos: Partial<
-  Record<
-    | "flow"
-    | "inventory"
-    | "checklist"
-    | "tasks"
-    | "mis"
-    | "whatsapp-ai"
-    | "crm"
-    | "hr"
-    | "automation",
-    MarketingVideo
-  >
+  Record<ServiceCategorySlug, MarketingVideo>
 > = {
   flow: toMarketingVideo("acTJOocmuZM", {
     id: "service-flow",
