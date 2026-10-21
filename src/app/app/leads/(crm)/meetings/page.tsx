@@ -32,12 +32,15 @@ export default async function CrmMeetingsPage({
 
   const meetings = rows.map((row) => {
     const scheduledAt = new Date(row.scheduledAt);
+    const endsAt = row.endsAt ? new Date(row.endsAt) : null;
     const completed = Boolean(row.completedAt);
     return {
       id: row.id,
       leadId: row.lead.id,
       name: row.lead.name || row.lead.company || "Lead",
       phone: row.lead.phone || "",
+      email: row.lead.email || "",
+      title: row.sourceTitle || row.notes?.trim() || "CRM meeting",
       whenLabel: scheduledAt.toLocaleString("en-IN", {
         weekday: "short",
         day: "numeric",
@@ -56,6 +59,12 @@ export default async function CrmMeetingsPage({
       cancelled: row.cancelled,
       source: row.source,
       calendarUrl: row.calendarUrl,
+      endsLabel: endsAt ? endsAt.toLocaleTimeString("en-IN", {
+        hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata",
+      }) : null,
+      sourceTimeZone: row.sourceTimeZone,
+      sourceStatus: row.sourceStatus,
+      requirements: row.requirements?.trim() || null,
     };
   });
 

@@ -11,6 +11,8 @@ const booking: CrmCalendarMeeting = {
   ymd: "2026-10-20", typeLabel: "Google booking", assignee: "", meetUrl: "https://meet.google.com/test",
   notes: "Google Calendar booking", isToday: true, completed: false, source: "GOOGLE_CALENDAR",
   calendarUrl: "https://calendar.google.com/calendar/event?eid=test",
+  email: "client@example.test", title: "Requirement Understanding Session", endsLabel: "10:30 am",
+  sourceTimeZone: "Asia/Kolkata", sourceStatus: "Confirmed", requirements: "Discuss task assignment",
 };
 afterEach(() => vi.useRealTimers());
 describe("Calendar booking rows render as read-only CRM meeting entries", () => {
@@ -20,6 +22,8 @@ describe("Calendar booking rows render as read-only CRM meeting entries", () => 
     expect(html).toContain("Test booking"); expect(html).toContain("Google booking");
     expect(html).toContain("https://calendar.google.com/calendar/event?eid=test");
     expect(html).toContain("https://meet.google.com/test");
+    expect(html).toContain("Edit in Google Calendar");
+    expect(html).toContain("Google booking · Details");
     expect(html).not.toContain("/app/leads?leadId="); expect(html).not.toContain("Remind");
   });
   it("keeps cancelled bookings out of the Today view but available in Cancelled", () => {

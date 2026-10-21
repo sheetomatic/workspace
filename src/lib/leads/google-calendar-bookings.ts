@@ -39,8 +39,8 @@ export function bookingId(...parts: string[]) {
   return "gcal_" + createHash("sha256").update(JSON.stringify(parts)).digest("hex").slice(0, 40);
 }
 
-function safeGoogleLink(value: string | undefined, host: string) {
-  try { const url = new URL(value ?? ""); return url.protocol === "https:" && url.hostname === host ? url.href : null; }
+function safeGoogleLink(value: string | undefined, hosts: string | string[]) {
+  try { const url = new URL(value ?? ""); return url.protocol === "https:" && (Array.isArray(hosts) ? hosts : [hosts]).includes(url.hostname) ? url.href : null; }
   catch { return null; }
 }
 
@@ -68,7 +68,7 @@ export function normalizeBooking(event: CalendarEvent, titles: string[]) {
     sourceTimeZone: event.start?.timeZone?.slice(0, 100) ?? null,
     status: attendees.length && attendees.every(a => a.responseStatus === "declined") ? "CANCELLED" : "CONFIRMED",
     providerUpdatedAt: instant(event.updated),
-    calendarUrl: safeGoogleLink(event.htmlLink, "calendar.google.com"),
+    calendarUrl: safeGoogleLink(event.htmlLink, ["calendar.google.com", "www.google.com"]),
     meetUrl: safeGoogleLink(event.hangoutLink, "meet.google.com"),
   };
 }

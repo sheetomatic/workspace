@@ -118,6 +118,7 @@ export async function listCrmMeetings(organizationId: string, take?: number) {
           id: true,
           name: true,
           phone: true,
+          email: true,
           company: true,
           status: true,
           meetingNotes: true,
@@ -127,14 +128,18 @@ export async function listCrmMeetings(organizationId: string, take?: number) {
     },
   }), listGoogleCalendarBookings(organizationId, from)]);
   return [
-    ...manual.map(row => ({ ...row, source: "CRM" as const, cancelled: false, calendarUrl: null as string | null })),
+    ...manual.map(row => ({ ...row, endsAt: null as Date | null, sourceTimeZone: "Asia/Kolkata",
+      source: "CRM" as const, cancelled: false, calendarUrl: null as string | null, sourceTitle: null as string | null,
+      sourceStatus: row.completedAt ? "Completed" : "Scheduled", requirements: row.notes })),
     ...bookings.map(row => ({
-      id: row.id, scheduledAt: row.startsAt, completedAt: null, type: "MEETING" as const,
+      id: row.id, scheduledAt: row.startsAt, endsAt: row.endsAt, completedAt: null, type: "MEETING" as const,
       meetUrl: row.status === "CANCELLED" ? null : row.meetUrl,
       notes: `${row.summary} · Google Calendar booking${row.sourceTimeZone ? ` · Source timezone: ${row.sourceTimeZone}` : ""}${row.bookingNotes ? `\n${row.bookingNotes}` : ""}`,
       assignee: null, source: "GOOGLE_CALENDAR" as const, cancelled: row.status === "CANCELLED", calendarUrl: row.calendarUrl,
+      sourceTimeZone: row.sourceTimeZone || "Asia/Kolkata", sourceTitle: row.summary,
+      sourceStatus: row.status === "CANCELLED" ? "Cancelled" : "Confirmed", requirements: row.bookingNotes,
       lead: { id: null, name: row.attendeeName || row.attendeeEmail || row.summary, phone: row.attendeePhone,
-        company: null, status: "DEMO_SCHEDULED" as const, meetingNotes: null },
+        email: row.attendeeEmail, company: null, status: "DEMO_SCHEDULED" as const, meetingNotes: null },
     })),
   ].sort((a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime());
 }
