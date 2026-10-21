@@ -2,6 +2,7 @@ import type { LeadSourceChannel } from "@prisma/client";
 
 export const LEAD_CHANNEL_LABELS: Record<LeadSourceChannel, string> = {
   GOOGLE_CALENDAR: "Google Calendar",
+  LINKEDIN: "LinkedIn",
   WHATSAPP: "WhatsApp",
   INSTAGRAM: "Instagram",
   FACEBOOK: "Facebook",
@@ -30,12 +31,14 @@ export const LEAD_CHANNEL_DEFAULTS: Array<{
   { channel: "SHOPIFY", label: "Shopify orders" },
   { channel: "WOOCOMMERCE", label: "WooCommerce orders" },
   { channel: "JUSTDIAL", label: "Justdial enquiries" },
+  { channel: "LINKEDIN", label: "LinkedIn connections" },
 ];
 
 export const LEAD_DASHBOARD_SOURCE_FILTERS = [
   "GOOGLE_SHEETS",
   "ALL",
   "GOOGLE_CALENDAR",
+  "LINKEDIN",
   "WHATSAPP",
   "INSTAGRAM",
   "FACEBOOK",
@@ -65,6 +68,8 @@ export function fmsSourceLabelForChannel(channel: LeadSourceChannel): string {
   switch (channel) {
     case "GOOGLE_CALENDAR":
       return "Google Calendar";
+    case "LINKEDIN":
+      return "LinkedIn";
     case "WHATSAPP":
       return "WhatsApp";
     case "INSTAGRAM":
@@ -112,6 +117,7 @@ export function parseLeadSourceChannel(
     "SHOPIFY",
     "WOOCOMMERCE",
     "JUSTDIAL",
+    "LINKEDIN",
   ];
   return allowed.includes(normalized as LeadSourceChannel)
     ? (normalized as LeadSourceChannel)

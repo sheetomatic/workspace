@@ -191,6 +191,38 @@ function WhatsAppSourceCard({ card }: { card: LeadSourceCardModel }) {
   );
 }
 
+function LinkedInSourceCard({ card }: { card: LeadSourceCardModel }) {
+  return (
+    <article className="leads-settings-card leads-source-card">
+      <div className="leads-settings-card-head">
+        <h4>{card.label}</h4>
+        <StatusPill card={card} />
+      </div>
+      <p className="leads-machine-muted">{card.description}</p>
+      {card.fields.accountName ? (
+        <p className="leads-settings-notice is-success">
+          Connected as {String(card.fields.accountName)}
+          {card.fields.accountEmail ? ` · ${String(card.fields.accountEmail)}` : ""}
+        </p>
+      ) : null}
+      {!card.fields.partnerAccessConfigured ? (
+        <p className="leads-settings-notice">
+          Identity connection is ready. Automatic accepted-connection sync remains inactive until LinkedIn approves the partner API scopes.
+        </p>
+      ) : null}
+      {card.fields.grantedScopes ? (
+        <p className="leads-machine-muted">Granted scopes: {String(card.fields.grantedScopes)}</p>
+      ) : null}
+      <div className="leads-source-actions">
+        <a className="btn-primary" href={card.setupHref ?? "/api/integrations/linkedin/connect"}>
+          {card.fields.accountName ? "Reconnect LinkedIn" : "Connect LinkedIn"}
+        </a>
+      </div>
+      <Feedback message={null} error={null} lastSyncError={card.lastSyncError} />
+    </article>
+  );
+}
+
 function MetaSourceCard({ card }: { card: LeadSourceCardModel }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -1054,6 +1086,7 @@ export function LeadsSourceSettingsPanel({
   const shopify = byChannel.get("SHOPIFY");
   const woocommerce = byChannel.get("WOOCOMMERCE");
   const justdial = byChannel.get("JUSTDIAL");
+  const linkedin = byChannel.get("LINKEDIN");
 
   return (
     <section className="saas-panel leads-settings-card" id="lead-sources">
@@ -1069,6 +1102,7 @@ export function LeadsSourceSettingsPanel({
       </div>
 
       <div className="leads-sources-grid">
+        {linkedin ? <LinkedInSourceCard card={linkedin} /> : null}
         {whatsapp ? <WhatsAppSourceCard card={whatsapp} /> : null}
         {facebook ? <MetaSourceCard card={facebook} /> : null}
         {instagram ? <MetaSourceCard card={instagram} /> : null}

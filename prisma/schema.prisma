@@ -3047,6 +3047,7 @@ enum LeadSourceChannel {
   WOOCOMMERCE
   JUSTDIAL
   GOOGLE_CALENDAR
+  LINKEDIN
 }
 
 enum InboundLeadActivityType {
