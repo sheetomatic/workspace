@@ -82,7 +82,10 @@ if (privacyRevision) {
 // release intact and adds only the read-only booking mirror.
 // Calendar is an explicit release dimension. A generic marketing/Tasks revision
 // must never opt into Calendar source, permission checks, or database work.
-const calendarRevision = process.env.CALENDAR_RELEASE_REVISION?.trim();
+// PRESERVE_LIVE_CALENDAR reapplies the already-shipped Calendar overlay.
+// It does not read Calendar source from the Tasks revision or run migrations.
+const calendarRevision = process.env.CALENDAR_RELEASE_REVISION?.trim()
+  || (process.env.PRESERVE_LIVE_CALENDAR === "1" ? "908304e81567ed6de223f4914770bdbca1dbfc72" : "");
 if (calendarRevision) {
   const calendarFiles = [
     { path: "src/lib/integrations/google-sheets-auth.ts", sha256: "4318b873ab9aed2ec85198fb13f3843930bdfbeb566f9be694013e8aafce9ce8", before: "7518b971b3007e0035adab5ebebee950a6ce0141f286f1921ba56cb781775a0d" },
