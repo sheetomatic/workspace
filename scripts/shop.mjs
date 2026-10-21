@@ -80,7 +80,9 @@ if (privacyRevision) {
 
 // Optional Calendar → CRM Meetings overlay. This keeps the verified storefront
 // release intact and adds only the read-only booking mirror.
-const calendarRevision = process.env.CALENDAR_RELEASE_REVISION?.trim() || releaseRevision;
+// Calendar is an explicit release dimension. A generic marketing/Tasks revision
+// must never opt into Calendar source, permission checks, or database work.
+const calendarRevision = process.env.CALENDAR_RELEASE_REVISION?.trim();
 if (calendarRevision) {
   const calendarFiles = [
     { path: "src/lib/integrations/google-sheets-auth.ts", sha256: "4318b873ab9aed2ec85198fb13f3843930bdfbeb566f9be694013e8aafce9ce8", before: "7518b971b3007e0035adab5ebebee950a6ce0141f286f1921ba56cb781775a0d" },
@@ -92,14 +94,22 @@ if (calendarRevision) {
     { path: "src/lib/leads/crm-meetings.ts", sha256: "014ebfd00c2d0861783ce2ba587ac30daa78d4591a8060f8dda4d057629e4e70", before: "b409d9fa71c7d8df9798d7bbc928cd45ef11011b1ed2758176e71a476ba9fdc8" },
     { path: "src/components/saas/crm-meetings-calendar.tsx", sha256: "9620a1fea8a48c2597ebffb493ae6ca8e262c0d4ec44c0c6d13fe1f64bf72d98", before: "44dfee03ee8627f256db08cb798665b22913c67cd3fcb8945b5b72d62307465a" },
     { path: "src/components/saas/crm-meetings-calendar.css", sha256: "f37f41a5f868f1e198d5c930114b047d0c369d8c59f417422b11f95316b1ea23", before: "b7a43c9597edbb5e9535d5d63e200c088657e070c0acc7b25108f61bcb6b8585" },
-    { path: "src/lib/content/business-systems-pricing.ts", sha256: "7e51719e9b1b25af47b98d5bca74032dcdc1982215a382073d15079e6b043072", before: "576e57c989acf04cd5b53560d06decf617be9157399d5dd2b1bcae9d302c69ca" },
-    { path: "src/lib/content/business-systems-pricing.test.ts", sha256: "ed352b72dc671777dd44d277800031e0faf4065e86769c2752fde45c1c0fb79e", before: "daac8521cdb71859bf85b2920ec56136577666c704c782aea107bf379f040f18" },
-    { path: "src/components/marketing/em-ready-pricing.tsx", sha256: "1c9ef86fd051e8c07b04a2a555821f8cceed3cd38a86be90fdb3c9e2cb3329e9", before: "b5ddf5f4a880184479829a0a1d6e67621002d70def0e0f1f77000b0e8692d091" },
-    { path: "src/components/marketing/business-systems-pricing.css", sha256: "9dd17df3bdea44f17b2faa593325ee84a9e97e0ebf6144f9afec8540abd914de", before: "1744c4e99d011490bababc9e9df4b8b7eb435aab022412d59fa0508a7b1a094a" },
+    { path: "src/lib/content/business-systems-pricing.ts", sha256: "7f836e97c74d2c97b45e2b60c803fb5873daa3a241889ad1fe2dc0dc5e5366c9", before: "576e57c989acf04cd5b53560d06decf617be9157399d5dd2b1bcae9d302c69ca" },
+    { path: "src/lib/content/business-systems-pricing.test.ts", sha256: "6c546b23d36dd890487876349348b26069275ff7584ff38a3ab2dbaabdea54f5", before: "daac8521cdb71859bf85b2920ec56136577666c704c782aea107bf379f040f18" },
+    { path: "src/components/marketing/em-ready-pricing.tsx", sha256: "e759441f7ca16a76c7b3df981292c10a9ef1a619b27d08564d5967e4b0c3cc8e", before: "b5ddf5f4a880184479829a0a1d6e67621002d70def0e0f1f77000b0e8692d091" },
+    { path: "src/components/marketing/business-systems-pricing.css", sha256: "4eae231ef5f1ad0f1680a2cca30f184c3f2d45804cfe63ff0ddc83efa4c622c8", before: "1744c4e99d011490bababc9e9df4b8b7eb435aab022412d59fa0508a7b1a094a" },
     { path: "src/app/services-content.ts", sha256: "b5fe2540a57b861eed01a34c271149c5e0fc7c09dea85f58e6418a74e5c6b9ee", before: "d8215bd8855b15f5f28f6cd52d22e7ac04f7db65629f3afc2a4c43c5791c5773" },
     { path: "src/components/marketing/services-hub-content.tsx", sha256: "dc4d0468a077b72b0cae049dd03711a773b4a94339db6c7c17e2c55ad241a96d", before: "de26d2e3155d178a83aa3a5e8971b162bd28a3e8e3d7a6a1f3c08d28f79f22e8" },
     { path: "src/app/page-content.ts", sha256: "c057831b3d02d3c26500a4b622e3e78e582d0346539679ad9b8dede046af44b0", before: "1b84e4ebc4a6e8b73fd006d969bafa1e6dc18d033d62c520d99d1ed9cce9b967" },
     { path: "src/app/site-content.ts", sha256: "6ea7e43f34e0b18305d00082e55edfc0e69d718f2644f5ebb20fb8fa15a539ff", before: "b7bc72c9b36e0c046a84bd835d7a08457fe6dc8c980835bd15844fe4a607e95b" },
+    { path: "src/app/api/tasks/checkout/route.ts", sha256: "6c6f632b6bd05a7f90220852792debfc24432ca640c8de1e90bc50c963d32404" },
+    { path: "src/components/marketing/tasks-checkout.tsx", sha256: "a9ab4d6d174c92372870182c0d9028a387b7ccae29d1a5d7c6837d5a609c2835" },
+    { path: "src/lib/tasks/checkout-commerce.test.ts", sha256: "3a135b52f7ada576ad094c8bb23ea4b97cedf4c363fd26ddde9de782980d3148" },
+    { path: "src/lib/tasks/checkout-commerce.ts", sha256: "c736d83e36ef5a115295f05e1a527955a96632fb1c581232101f5146d1fea00c" },
+    { path: "src/lib/tasks/checkout-readiness.ts", sha256: "b3e2d7893d52df1ef8839115c3ee55d59e4f8c20b7955dd079ce25918e13e32b" },
+    { path: "src/lib/templates/checkout.integration.test.ts", sha256: "759cc485115a5a896f62cd53364f03bdebf89979d71c087a923beae6a9563484", before: "a3923a1c0fb7af42cd377d2ade0d4ef6084a51da89355f33b0ec29db27c822c3" },
+    { path: "src/lib/templates/checkout.ts", sha256: "63cb961963f4cdaa3f324dd84725b3dc02d58ccea23a4e5c1c881a81bf5a221e", before: "088e20358b457da49a2ef1777f384431bccead5e6a503027906edc65ead97a08" },
+    { path: "src/lib/templates/invoice.ts", sha256: "10d26adced569de76ef80e513940b39c16b5dd61b7ab30274030b0f581c93927", before: "6cb162f7429b8c7d2f826f84a22c6f56396f815a14da6f4c2289290ed9444fda" },
     { path: "prisma/migrations/20261020050000_google_calendar_bookings/migration.sql", sha256: "36ce34fe66f24aeed83f257d6cf1f99927a3f271e34f0b8d9f0aca3da955ebc9" },
     { path: "prisma/migrations/20261020060000_google_calendar_booking_details/migration.sql", sha256: "38bad6963e44859f5be2f51072f3f289d7dce7bb96406e486b7b80cfe612e6dc" },
   ];
@@ -193,10 +203,13 @@ if (calendarRevision) {
   console.log(`Group Calendar preflight passed: ${JSON.stringify({ matchingMeetings: meetings.length, done, scheduled,
     detailsVisible: true, editLinksVisible: true })}`);
   }
-  run("npx", ["prisma", "db", "execute", "--file", "prisma/migrations/20261020050000_google_calendar_bookings/migration.sql", "--schema", "prisma/schema.prisma"]);
-  run("npx", ["prisma", "db", "execute", "--file", "prisma/migrations/20261020060000_google_calendar_booking_details/migration.sql", "--schema", "prisma/schema.prisma"]);
+  if (process.env.CALENDAR_MIGRATIONS_ENABLED === "true") {
+    run("npx", ["prisma", "db", "execute", "--file", "prisma/migrations/20261020050000_google_calendar_bookings/migration.sql", "--schema", "prisma/schema.prisma"]);
+    run("npx", ["prisma", "db", "execute", "--file", "prisma/migrations/20261020060000_google_calendar_booking_details/migration.sql", "--schema", "prisma/schema.prisma"]);
+  }
 }
 run("npm", ["run", "db:generate"]);
 run("npx", ["vitest", "run", "src/lib/templates/commerce.test.ts"]);
+run("npx", ["vitest", "run", "src/lib/content/business-systems-pricing.test.ts", "src/lib/tasks/checkout-commerce.test.ts"]);
 run("npx", ["next", "build"]);
 // No seeding, Calendar writes, credential changes, gateway writes or customer messages.
