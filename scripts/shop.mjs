@@ -131,10 +131,15 @@ if (calendarRevision) {
 
   const vercelPath = "vercel.json";
   const vercelSource = await readFile(vercelPath);
-  if (digest(vercelSource) !== "36201613bd5b91a379975fef98330a9f2291d6a72f1b3ee2c96660b8acae504d") {
+  const reviewedVercel = await reviewedAt(
+    "5aa4579a6c17b30a0dce8ed192d5234b19bf4f04",
+    vercelPath,
+    "36201613bd5b91a379975fef98330a9f2291d6a72f1b3ee2c96660b8acae504d",
+  );
+  const vercel = JSON.parse(vercelSource);
+  if (JSON.stringify(vercel) !== JSON.stringify(JSON.parse(reviewedVercel))) {
     throw new Error("Unexpected vercel.json for Calendar release");
   }
-  const vercel = JSON.parse(vercelSource);
   if (vercel.crons.some(item => item.path === "/api/cron/google-calendar-bookings")) throw new Error("Calendar cron already exists");
   vercel.crons.unshift({ path: "/api/cron/google-calendar-bookings", schedule: "*/5 * * * *" });
   await writeFile(vercelPath, `${JSON.stringify(vercel, null, 2)}\n`);
