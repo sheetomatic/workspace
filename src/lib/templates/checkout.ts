@@ -23,9 +23,12 @@ import {
   type GatewayPayment,
 } from "./gateway";
 import { templateInvoiceHtml } from "./invoice";
+import { tasksCheckoutLines, tasksCheckoutTotals, TASKS_SAC, type TasksBillingPeriod } from "@/lib/tasks/checkout-commerce";
 
 export type CheckoutSnapshot = {
   version: 1;
+  kind?: "templates" | "tasks";
+  subscription?: { period: TasksBillingPeriod; users: number; whatsappApi: boolean; autoRenew: false };
   buyer: TemplateBuyer;
   seller: {
     legalName: string;
@@ -39,10 +42,56 @@ export type CheckoutSnapshot = {
     name: string;
     priceInr: number;
     sac: string;
-    copyLink: string;
+    copyLink?: string;
   }[];
   totals: ReturnType<typeof cartTotals>;
 };
+
+async function verifiedSeller() {
+  const org = await getPrimaryOrganization();
+  if (!org) throw new Error("Seller workspace is not configured.");
+  const account = resolveQuotationAccount(org);
+  const stateCode = account ? gstinStateCode(account.gstin) : null;
+  if (!account || !account.legalName || !account.addressLines.length || !stateCode || !parseGstin(account.gstin).ok) throw new Error("Seller GST profile needs verification.");
+  return { org, seller: { legalName: account.legalName, tradeName: account.tradeName, gstin: account.gstin, addressLines: account.addressLines, stateCode } };
+}
+
+async function createGatewayOrder(order: { id: string; totalPaise: number }) {
+  try {
+    const gateway = await razorpayRequest<{ id: string; amount: number; currency: string }>("orders", {
+      amount: order.totalPaise, currency: "INR", receipt: order.id, notes: { template_checkout_id: order.id },
+    });
+    if (!/^order_[a-zA-Z0-9]+$/.test(gateway.id) || gateway.amount !== order.totalPaise || gateway.currency !== "INR") throw new Error("Gateway order did not match the checkout.");
+    return prisma.templateCheckout.update({ where: { id: order.id }, data: { gatewayOrderId: gateway.id, paymentState: "ready" } });
+  } catch { return prisma.templateCheckout.findUniqueOrThrow({ where: { id: order.id } }); }
+}
+
+export async function createTasksCheckout(body: unknown, accessHash: string) {
+  if (!templateGatewayReady()) throw new Error("Online checkout is being configured. No payment has been taken.");
+  if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("Invalid checkout request.");
+  const data = body as Record<string, unknown>;
+  if (data.acceptedTerms !== true) throw new Error("Confirm the plan, GST and manual-renewal terms.");
+  const period = data.period === "monthly" || data.period === "yearly" ? data.period : null;
+  if (!period) throw new Error("Choose monthly or yearly billing.");
+  const users = Number(data.users);
+  const whatsappApi = data.whatsappApi === true;
+  const buyer = parseTemplateBuyer(data.buyer);
+  const lines = tasksCheckoutLines({ period, users, whatsappApi });
+  const requestHash = hash(JSON.stringify({ kind: "tasks", period, users, whatsappApi, buyer }));
+  const prior = await prisma.templateCheckout.findUnique({ where: { accessHash } });
+  if (prior) {
+    if (prior.requestHash !== requestHash) throw new Error("This checkout belongs to different plan details. Start a new checkout.");
+    return prior;
+  }
+  const { org, seller } = await verifiedSeller();
+  const totals = tasksCheckoutTotals(lines.map(line => line.priceInr), buyer.stateCode, seller.stateCode);
+  const snapshot: CheckoutSnapshot = {
+    version: 1, kind: "tasks", subscription: { period, users, whatsappApi, autoRenew: false }, buyer, seller,
+    lines: lines.map((line, index) => ({ productId: `tasks-${index + 1}`, ...line, sac: TASKS_SAC })), totals,
+  };
+  const order = await prisma.templateCheckout.create({ data: { accessHash, requestHash, organizationId: org.id, snapshot: snapshot as unknown as Prisma.InputJsonValue, totalPaise: totals.totalPaise } });
+  return createGatewayOrder(order);
+}
 
 export const hash = (value: string) =>
   createHash("sha256").update(value).digest("hex");
@@ -265,10 +314,11 @@ export async function emailPaidCheckout(orderId: string) {
     throw new Error("Email delivery is already processing. Retry shortly.");
   const s = order.snapshot as unknown as CheckoutSnapshot;
   try {
+    const isTasks = s.kind === "tasks";
     const result = await sendPlainEmail({
-      idempotencyKey: `template-invoice/${order.id}`,
+      idempotencyKey: `${isTasks ? "tasks" : "template"}-invoice/${order.id}`,
       toEmail: s.buyer.email,
-      subject: `Your Sheetomatic templates · ${order.invoiceNumber}`,
+      subject: `${isTasks ? "Your Sheetomatic Tasks payment" : "Your Sheetomatic templates"} · ${order.invoiceNumber}`,
       attachments: [
         {
           filename: `${order.invoiceNumber.replaceAll("/", "-")}.html`,
@@ -276,7 +326,14 @@ export async function emailPaidCheckout(orderId: string) {
           contentType: "text/html",
         },
       ],
-      text: [
+      text: isTasks ? [
+        `Hello ${s.buyer.name},`, "", "Your Tasks Management payment is verified.",
+        ...s.lines.map(line => `${line.name}: INR ${line.priceInr.toLocaleString("en-IN")} + GST`), "",
+        `Invoice: ${order.invoiceNumber}`, `Paid: INR ${(order.totalPaise / 100).toFixed(2)} (including GST).`,
+        "Your GST tax invoice is attached. Our team will complete account setup for the purchased users.",
+        "This is a fixed-term purchase with manual renewal; no automatic recurring charge was authorized.",
+        `Support: founder@sheetomatic.com. Order: ${order.id}`,
+      ].join("\n") : [
         `Hello ${s.buyer.name},`,
         "",
         "Your payment is verified. Your template copy links:",
@@ -350,7 +407,7 @@ export function publicCheckout(
     lines: s.lines.map((l) => ({
       name: l.name,
       priceInr: l.priceInr,
-      ...(order.paidAt ? { copyLink: l.copyLink } : {}),
+      ...(order.paidAt && l.copyLink ? { copyLink: l.copyLink } : {}),
     })),
     gatewayOrderId: order.gatewayOrderId,
     keyId: process.env.RAZORPAY_KEY_ID,
