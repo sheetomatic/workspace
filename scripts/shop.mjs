@@ -6,13 +6,14 @@ import { spawnSync } from "node:child_process";
 
 const revision = "4cdd1b6e4ffe51aefcb0c2b7cff9e1075cf36376";
 const digest = bytes => createHash("sha256").update(bytes).digest("hex");
-async function reviewed(path, expected) {
-  const r = await fetch(`https://raw.githubusercontent.com/sheetomatic/workspace/${revision}/${path}`, { redirect: "error", signal: AbortSignal.timeout(30000) });
+async function reviewedAt(sourceRevision, path, expected) {
+  const r = await fetch(`https://raw.githubusercontent.com/sheetomatic/workspace/${sourceRevision}/${path}`, { redirect: "error", signal: AbortSignal.timeout(30000) });
   if (!r.ok) throw new Error(`Cannot fetch reviewed source: ${path}`);
   const bytes = Buffer.from(await r.arrayBuffer());
   if (digest(bytes) !== expected) throw new Error(`Source checksum mismatch: ${path}`);
   return bytes;
 }
+const reviewed = (path, expected) => reviewedAt(revision, path, expected);
 function run(command, args) {
   const r = spawnSync(command, args, { stdio: "inherit" });
   if (r.status !== 0) throw new Error(`Release step failed: ${command}`);
@@ -46,6 +47,35 @@ for (const f of prepared.filter(f => f.path.startsWith("src/"))) {
   await writeFile(f.path, f.bytes);
 }
 await writeFile("prisma/schema.prisma", `${schema}\n\n${models.join("\n\n")}\n`);
+
+// Optional, checksum-gated legal-page overlay. The deployment command supplies
+// the reviewed commit; ordinary template releases retain their previous scope.
+const privacyRevision = process.env.PRIVACY_RELEASE_REVISION?.trim();
+if (privacyRevision) {
+  const privacyPath = "src/app/privacy/page.tsx";
+  let privacyExists = true;
+  try { await access(privacyPath); } catch (e) { if (e.code === "ENOENT") privacyExists = false; else throw e; }
+  if (privacyExists) throw new Error(`Unexpected existing file: ${privacyPath}`);
+  const privacyPage = await reviewedAt(
+    privacyRevision,
+    privacyPath,
+    "d5cf3eb793bb4ef5b64d68e7f3e933a554d69349c75304ad3a1c5c4877d7d1a3",
+  );
+  await mkdir(dirname(privacyPath), { recursive: true });
+  await writeFile(privacyPath, privacyPage);
+
+  const legalNavBefore = `          <nav aria-label="Legal" className="site-footer-legal-links">\n            <Link href="/terms">Terms &amp; Conditions</Link>\n          </nav>`;
+  const legalNavAfter = `          <nav aria-label="Legal" className="site-footer-legal-links">\n            <Link href="/privacy">Privacy Policy</Link>\n            <Link href="/terms">Terms &amp; Conditions</Link>\n          </nav>`;
+  for (const path of [
+    "src/app/components.tsx",
+    "src/components/marketing/ai-site-chrome.tsx",
+  ]) {
+    const source = await readFile(path, "utf8");
+    const occurrences = source.split(legalNavBefore).length - 1;
+    if (occurrences !== 1) throw new Error(`Unexpected legal nav source: ${path}`);
+    await writeFile(path, source.replace(legalNavBefore, legalNavAfter));
+  }
+}
 run("npm", ["run", "db:generate"]);
 run("npx", ["vitest", "run", "src/lib/templates/commerce.test.ts"]);
 run("npx", ["next", "build"]);

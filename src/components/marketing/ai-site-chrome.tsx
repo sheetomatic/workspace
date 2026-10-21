@@ -137,6 +137,7 @@ export function AiSiteFooter() {
             </span>
           </div>
           <nav aria-label="Legal" className="site-footer-legal-links">
+            <Link href="/privacy">Privacy Policy</Link>
             <Link href="/terms">Terms &amp; Conditions</Link>
           </nav>
         </div>
