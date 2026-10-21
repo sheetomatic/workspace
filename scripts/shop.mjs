@@ -214,7 +214,7 @@ if (tasksRevision) {
     { path: "src/lib/templates/checkout.ts", sha256: "d01443a4068b706563e2615da6333955378d66303b8bcc45420408255066eac4", before: "1111a87f9c66eff693c4ac3f64822d66657257e47be7dca1297da5a73bf29584" },
     { path: "src/lib/templates/invoice.ts", sha256: "10d26adced569de76ef80e513940b39c16b5dd61b7ab30274030b0f581c93927", before: "6cb162f7429b8c7d2f826f84a22c6f56396f815a14da6f4c2289290ed9444fda" },
     { path: "src/app/api/tasks/checkout/route.ts", sha256: "6c6f632b6bd05a7f90220852792debfc24432ca640c8de1e90bc50c963d32404" },
-    { path: "src/components/marketing/tasks-checkout.tsx", sha256: "a9ab4d6d174c92372870182c0d9028a387b7ccae29d1a5d7c6837d5a609c2835" },
+    { path: "src/components/marketing/tasks-checkout.tsx", sha256: "0b1373cb0d48c4826c796d6c9c89e33a7e5de74a71f781117cbec770d3af85b7" },
     { path: "src/components/marketing/razorpay-checkout-loader.ts", sha256: "a027b2d19b9e7c8426d34698e42485e1d5df283c0743d71eb3a3b5f756311bd8" },
     { path: "src/lib/tasks/checkout-commerce.test.ts", sha256: "3a135b52f7ada576ad094c8bb23ea4b97cedf4c363fd26ddde9de782980d3148" },
     { path: "src/lib/tasks/checkout-commerce.ts", sha256: "c736d83e36ef5a115295f05e1a527955a96632fb1c581232101f5146d1fea00c" },

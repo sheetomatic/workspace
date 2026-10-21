@@ -3,8 +3,10 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { GST_STATE_OPTIONS } from "@/lib/leads/gst-invoice";
+import { SHEETOMATIC_RAZORPAY_ME_URL } from "@/lib/payments/razorpay-me";
 import { TASKS_MONTHLY_MINIMUM_USERS } from "@/lib/tasks/checkout-commerce";
 import { loadRazorpayCheckoutScript } from "./razorpay-checkout-loader";
+import { RazorpayPayFrame } from "./razorpay-pay-frame";
 
 type Props = { enabled: boolean };
 type Buyer = { name: string; email: string; phone: string; billedTo: string; address: string; city: string; stateCode: string; pin: string; gstin: string };
@@ -78,10 +80,10 @@ export function TasksCheckout({ enabled }: Props) {
       </fieldset>
       <dl className="tasks-checkout-summary"><div><dt>{period === "monthly" ? `Tasks · ${billedUsers} billed users × ₹300` : `Tasks · ${users} users × ₹2,500/year`}</dt><dd>{format(tasksSubtotal)}</dd></div>{whatsappApi && <div><dt>WhatsApp API · 1 year</dt><dd>{format(10000)}</dd></div>}<div><dt>Subtotal before GST</dt><dd>{format(subtotal)}</dd></div><div><dt>GST estimate · 18%</dt><dd>{format(gst)}</dd></div><div className="tasks-checkout-grand-total"><dt>Estimated total</dt><dd>{format(subtotal + gst)}</dd></div></dl>
       <label className="tasks-checkout-consent"><input type="checkbox" required checked={accepted} onChange={e => setAccepted(e.target.checked)} />I understand monthly pricing has an 8-user minimum; yearly pricing is per selected user; GST is added; and this is a fixed-term purchase with manual renewal, not an automatic recurring charge. I agree to the <Link href="/terms" target="_blank">terms</Link>.</label>
-      {!enabled && <p className="tasks-checkout-unavailable" role="status">Online payment is currently unavailable while payment configuration and seller GST verification are completed. No payment will be collected. Please enquire below.</p>}
+      {!enabled && <div className="tasks-checkout-razorpay-me"><p>Pay Sheetomatic Technologies on Razorpay. This plan total is filled in on the payment page.</p><RazorpayPayFrame amountInr={subtotal + gst} description={period === "monthly" ? `Tasks Management monthly · ${billedUsers} users` : `Tasks Management yearly · ${users} users`} email={buyer.email} phone={buyer.phone} /><p><a href={SHEETOMATIC_RAZORPAY_ME_URL} target="_blank" rel="noopener noreferrer">razorpay.me/@sheetomatictechnologies</a></p></div>}
       {message && <p className="tasks-checkout-message" role="status">{message}</p>}
-      <button className="tasks-checkout-button" type="submit" disabled={!enabled || busy}>{busy ? "Preparing secure checkout…" : `Continue to secure payment · ${format(subtotal + gst)}`}</button>
-      <p className="tasks-checkout-footnote">GST is estimated at 18%; the server calculates the tax split from your billing state. A paid GST invoice is generated only after Razorpay verifies successful capture.</p>
+      {enabled && <button className="tasks-checkout-button" type="submit" disabled={busy}>{busy ? "Preparing secure checkout…" : `Continue to secure payment · ${format(subtotal + gst)}`}</button>}
+      <p className="tasks-checkout-footnote">GST on this page is an 18% estimate. Razorpay collects the payment. Keep the Razorpay receipt; a tax invoice follows after the payment is confirmed.</p>
     </form>
   </div>;
 }
