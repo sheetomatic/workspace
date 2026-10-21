@@ -34,6 +34,8 @@ export type CrmCalendarMeeting = {
   notes: string;
   isToday: boolean;
   completed: boolean;
+  externalSource: string | null;
+  externalUrl: string | null;
 };
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -262,7 +264,7 @@ function MeetingRow({
               {meeting.phone ? ` · ${meeting.phone}` : ""}
             </span>
           </span>
-          <em>{meeting.typeLabel}</em>
+          <em>{meeting.externalSource === "GOOGLE_APPOINTMENT" ? "Google Calendar" : meeting.typeLabel}</em>
         </button>
         <div className="crm-meet-row-actions">
           {meeting.meetUrl ? (
@@ -276,7 +278,7 @@ function MeetingRow({
               Join
             </a>
           ) : (
-            <span className="crm-meet-missing">No Meet link</span>
+            <span className="crm-meet-missing">Join link pending</span>
           )}
           {meeting.completed ? null : (
             <button
@@ -296,6 +298,12 @@ function MeetingRow({
             Open
             <ExternalLink size={14} aria-hidden />
           </Link>
+          {meeting.externalUrl ? (
+            <a className="btn-secondary btn-sm" href={meeting.externalUrl} target="_blank" rel="noopener noreferrer">
+              Calendar
+              <ExternalLink size={14} aria-hidden />
+            </a>
+          ) : null}
         </div>
       </div>
 

@@ -1,11 +1,14 @@
 "use server";
 
+import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { hasMinimumRole } from "@/lib/permissions";
 import { hasFieldVisitProof } from "@/lib/hr/field-visit-rules";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
+import { ensureFmsPresetProvisioned } from "@/lib/fms/provision-preset";
+import { createFmsInstanceFromSubmission } from "@/lib/fms/instance-lifecycle";
 import {
   checkInAttendance,
   checkOutAttendance,
@@ -721,36 +724,130 @@ export async function createJobOpeningAction(
   formData: FormData,
 ): Promise<HrActionResult> {
   const user = await getSessionUser();
-  if (!user || !hasMinimumRole(user.role, "ADMIN")) {
-    return hrActionFailure("FORBIDDEN", "Admin access required to publish openings.");
+  if (!user || !hasMinimumRole(user.role, "MANAGER")) {
+    return hrActionFailure(
+      "FORBIDDEN",
+      "Manager access required to submit hiring requirements.",
+    );
   }
   if (!(await assertHrSubModuleEnabled(user, "hiring"))) {
     return hrActionFailure("FORBIDDEN", "Hiring is not enabled for this workspace.");
   }
 
   const title = String(formData.get("title") ?? "").trim();
+  const department = String(formData.get("department") ?? "").trim();
   const location = String(formData.get("location") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
+  const hiringReason = String(formData.get("hiringReason") ?? "").trim();
+  const vacancyCount = Number(formData.get("vacancyCount") ?? 1);
+  const requiredJoiningDateRaw = String(
+    formData.get("requiredJoiningDate") ?? "",
+  ).trim();
+  const requiredJoiningDate = requiredJoiningDateRaw
+    ? new Date(`${requiredJoiningDateRaw}T12:00:00.000+05:30`)
+    : null;
 
-  if (!title) {
-    return hrActionFailure("INVALID_INPUT", "Job title is required.");
+  if (
+    !title ||
+    !department ||
+    !hiringReason ||
+    !requiredJoiningDate ||
+    Number.isNaN(requiredJoiningDate.getTime())
+  ) {
+    return hrActionFailure(
+      "INVALID_INPUT",
+      "Position, department, reason, and required joining date are required.",
+    );
+  }
+  if (!Number.isInteger(vacancyCount) || vacancyCount < 1 || vacancyCount > 999) {
+    return hrActionFailure(
+      "INVALID_INPUT",
+      "Number of vacancies must be between 1 and 999.",
+    );
+  }
+  if (!hasWorkspaceModule(user, "FMS")) {
+    return hrActionFailure(
+      "FORBIDDEN",
+      "FMS access is required to track this hiring process.",
+    );
   }
 
+  let openingId: string | null = null;
+  let submissionId: string | null = null;
+  let instanceId: string | null = null;
   try {
-    await prisma.jobOpening.create({
+    const template = await ensureFmsPresetProvisioned(
+      user.organizationId,
+      "recruitment",
+      user.id,
+    );
+    const opening = await prisma.jobOpening.create({
       data: {
         organizationId: user.organizationId,
         title,
-        location: location || null,
+        departmentName: department,
         description: description || null,
+        location: location || null,
+        vacancyCount,
+        requiredJoiningDate,
+        hiringReason,
+        requestedBy: user.name ?? user.email,
       },
+    });
+    openingId = opening.id;
+
+    const values = {
+      position: title,
+      department,
+      number_of_vacancies: vacancyCount,
+      required_joining_date: requiredJoiningDateRaw,
+      requested_by: user.name ?? user.email,
+      reason_for_hiring: hiringReason,
+      location: location || "",
+      notes: description || "",
+    };
+    const submission = await prisma.fmsFormSubmission.create({
+      data: {
+        organizationId: user.organizationId,
+        formId: template.formId,
+        submittedById: user.id,
+        values: values as Prisma.InputJsonValue,
+      },
+    });
+    submissionId = submission.id;
+    const instance = await createFmsInstanceFromSubmission({
+      organizationId: user.organizationId,
+      template,
+      submissionId: submission.id,
+      referenceLabel: `${title} · ${department}`,
+    });
+    instanceId = instance.id;
+    await prisma.jobOpening.update({
+      where: { id: opening.id },
+      data: { fmsInstanceId: instance.id },
     });
 
     revalidateHr();
+    revalidatePath("/app/fms/fulfillment");
     return { ok: true };
   } catch (error) {
+    if (instanceId) {
+      await prisma.fmsInstance.deleteMany({
+        where: { id: instanceId, organizationId: user.organizationId },
+      });
+    }
+    if (openingId) {
+      await prisma.jobOpening.deleteMany({
+        where: { id: openingId, organizationId: user.organizationId },
+      });
+    }
+    if (submissionId) {
+      await prisma.fmsFormSubmission.deleteMany({
+        where: { id: submissionId, organizationId: user.organizationId },
+      });
+    }
     const message =
-      error instanceof Error ? error.message : "Could not publish job opening.";
+      error instanceof Error ? error.message : "Could not create the hiring process.";
     return hrActionFailure("HIRING_FAILED", message);
   }
 }

@@ -164,6 +164,8 @@ export async function runDueMeetingReminders(now = new Date()) {
   const rows = await prisma.inboundLeadFollowUp.findMany({
     where: {
       type: "MEETING",
+      // Imported bookings are display-only until a manager explicitly uses Remind.
+      externalSource: null,
       completedAt: null,
       scheduledAt: { gte: windowStart, lte: windowEnd },
       lead: { status: { notIn: ["WON", "LOST"] } },

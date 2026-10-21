@@ -16,8 +16,10 @@ export type HiringOpeningOption = {
 
 export function HiringAdminPanel({
   openings,
+  canManageCandidates,
 }: {
   openings: HiringOpeningOption[];
+  canManageCandidates: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -36,7 +38,7 @@ export function HiringAdminPanel({
         setIsError(true);
         return;
       }
-      setMessage("Job opening published.");
+      setMessage("Hiring requirement added to Recruitment FMS.");
       setIsError(false);
       setOpeningFormKey((key) => key + 1);
       router.refresh();
@@ -66,23 +68,46 @@ export function HiringAdminPanel({
     <>
       <HrFeedbackBanner message={message} isError={isError} />
       <div className="ws-hr-split">
-      <section className="ws-hr-panel">
-        <h2>New job opening</h2>
-        <form
-          key={`opening-${openingFormKey}`}
-          action={onPublish}
-          className="ws-hr-form"
-        >
+        <section className="ws-hr-panel">
+          <h2>New hiring requirement</h2>
+          <form
+            key={`opening-${openingFormKey}`}
+            action={onPublish}
+            className="ws-hr-form"
+          >
           <label>
-            Title
+            Position
             <input name="title" type="text" required />
+          </label>
+          <label>
+            Department
+            <input name="department" type="text" required />
+          </label>
+          <label>
+            Number of vacancies
+            <input
+              name="vacancyCount"
+              type="number"
+              min="1"
+              max="999"
+              defaultValue="1"
+              required
+            />
+          </label>
+          <label>
+            Required joining date
+            <input name="requiredJoiningDate" type="date" required />
+          </label>
+          <label>
+            Reason for hiring
+            <textarea name="hiringReason" rows={3} required />
           </label>
           <label>
             Location
             <input name="location" type="text" />
           </label>
           <label>
-            Description
+            Notes / job details
             <textarea name="description" rows={4} />
           </label>
           <button
@@ -90,18 +115,19 @@ export function HiringAdminPanel({
             className="btn-cta btn-primary"
             disabled={pending}
           >
-            {pending ? "Publishing…" : "Publish opening"}
+            {pending ? "Creating…" : "Add to Recruitment FMS"}
           </button>
-        </form>
-      </section>
+          </form>
+        </section>
 
-      <section className="ws-hr-panel">
-        <h2>Add candidate</h2>
-        <form
-          key={`candidate-${candidateFormKey}`}
-          action={onAddCandidate}
-          className="ws-hr-form"
-        >
+        {canManageCandidates ? (
+          <section className="ws-hr-panel">
+            <h2>Add candidate</h2>
+            <form
+              key={`candidate-${candidateFormKey}`}
+              action={onAddCandidate}
+              className="ws-hr-form"
+            >
           <label>
             Full name
             <input name="fullName" type="text" required />
@@ -132,8 +158,9 @@ export function HiringAdminPanel({
           >
             {pending ? "Adding…" : "Add to pipeline"}
           </button>
-        </form>
-      </section>
+            </form>
+          </section>
+        ) : null}
       </div>
     </>
   );

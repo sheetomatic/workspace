@@ -2183,9 +2183,16 @@ model JobOpening {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   title          String
+  departmentName String?
   department     TaskDepartment?
   location       String?
   description    String?
+  vacancyCount   Int          @default(1)
+  requiredJoiningDate DateTime?
+  hiringReason   String?
+  requestedBy    String?
+  fmsInstanceId  String?      @unique
+  fmsInstance    FmsInstance? @relation(fields: [fmsInstanceId], references: [id], onDelete: SetNull)
   isOpen         Boolean      @default(true)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -2402,6 +2409,7 @@ model FmsInstance {
   status         FmsInstanceStatus @default(ACTIVE)
   stepStates     FmsStepState[]
   inboundLead    InboundLead?
+  jobOpening     JobOpening?
   salesOrderId   String?
   salesOrder     SalesOrder?       @relation(fields: [salesOrderId], references: [id], onDelete: SetNull)
   salesOrderFmsLink SalesOrderFmsLink?
@@ -3171,6 +3179,8 @@ enum LeadSourceChannel {
   SHOPIFY
   WOOCOMMERCE
   JUSTDIAL
+  GOOGLE_CALENDAR
+  LINKEDIN
 }
 
 enum InboundLeadActivityType {
@@ -3419,6 +3429,9 @@ model InboundLeadFollowUp {
   waNotifiedAt    DateTime?
   /// Comma-separated minutes-before marks already sent: 240,60,30,10,0
   reminderMarks   String?
+  externalSource  String?
+  externalId      String?
+  externalUrl     String?
   createdByUserId String?
   createdBy       User?                    @relation("InboundLeadFollowUpCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdAt       DateTime                 @default(now())
@@ -3427,6 +3440,7 @@ model InboundLeadFollowUp {
   @@index([organizationId, scheduledAt])
   @@index([organizationId, type, scheduledAt])
   @@index([leadId])
+  @@unique([organizationId, externalSource, externalId])
 }
 
 enum WaCampaignStatus {

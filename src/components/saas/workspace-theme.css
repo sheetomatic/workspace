@@ -10897,6 +10897,24 @@ body.ws-more-sheet-open .sheetomatic-ai-launcher {
   color: #0f172a;
 }
 
+.workspace-app .ws-hr-process-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem 1.5rem;
+  margin: 0;
+  padding-left: 1.4rem;
+}
+
+.workspace-app .ws-hr-process-steps li {
+  padding: 0.25rem 0;
+}
+
+@media (max-width: 720px) {
+  .workspace-app .ws-hr-process-steps {
+    grid-template-columns: 1fr;
+  }
+}
+
 .workspace-app .ws-hr-recalc {
   display: inline-flex;
   flex-wrap: wrap;

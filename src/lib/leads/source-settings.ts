@@ -28,6 +28,7 @@ import {
   type LeadSourceStatus,
 } from "@/lib/leads/connection-config";
 import { resolveWorkspaceWhatsAppCredentials } from "@/lib/whatsapp-settings";
+import { linkedInConnectionFields } from "@/lib/leads/linkedin";
 
 export type LeadSourceCardModel = {
   channel: LeadSourceChannel;
@@ -86,6 +87,7 @@ export async function getLeadSourceCardModels(
             "SHOPIFY",
             "WOOCOMMERCE",
             "JUSTDIAL",
+            "LINKEDIN",
           ],
         },
       },
@@ -99,6 +101,36 @@ export async function getLeadSourceCardModels(
   const officialReady = isOfficialApiReady(waCredentials);
 
   const cards: LeadSourceCardModel[] = [];
+
+  {
+    const row = byChannel.get("LINKEDIN");
+    const fields = linkedInConnectionFields(row?.config);
+    const ready = fields.hasToken;
+    const { status, statusLabel } = statusFrom({
+      enabled: Boolean(row?.enabled),
+      ready,
+      error: row?.lastSyncError ?? null,
+    });
+    cards.push({
+      channel: "LINKEDIN",
+      label: "LinkedIn (Official API)",
+      description:
+        "Connect an approved LinkedIn app. Accepted connections can become CRM leads after LinkedIn grants the required partner scopes.",
+      enabled: Boolean(row?.enabled),
+      status: ready ? status : "needs_setup",
+      statusLabel: ready ? statusLabel : "Needs connection",
+      lastSyncAt: row?.lastSyncAt?.toISOString() ?? null,
+      lastSyncError: row?.lastSyncError ?? null,
+      webhookUrl: null,
+      setupHref: "/api/integrations/linkedin/connect",
+      fields: {
+        accountName: fields.accountName || null,
+        accountEmail: fields.accountEmail || null,
+        grantedScopes: fields.grantedScopes || null,
+        partnerAccessConfigured: Boolean(process.env.LINKEDIN_PARTNER_SYNC_ENABLED === "true"),
+      },
+    });
+  }
 
   const wa = byChannel.get("WHATSAPP");
   {
