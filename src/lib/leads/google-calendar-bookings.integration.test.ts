@@ -7,7 +7,8 @@ import { GET } from "@/app/api/cron/google-calendar-bookings/route";
 
 vi.mock("@/lib/platform", () => ({ PRIMARY_ORG_SLUG: "calendar-integration-only" }));
 const run = randomBytes(6).toString("hex"), orgId = `calendar-test-${run}`;
-const config: BookingSyncConfig = { organizationId: orgId, calendarId: "bookings@example.test", titles: ["Business consultation"], token: "fixture-not-live" };
+const config: BookingSyncConfig = { organizationId: orgId, calendarId: "bookings@example.test",
+  titles: ["Business consultation", "Requirement Understanding Session"], token: "fixture-not-live" };
 const connectionId = bookingId(orgId, config.calendarId);
 const base: CalendarEvent = { id: "event-one", summary: "Business consultation", status: "confirmed", updated: "2026-10-20T04:00:00Z",
   start: { dateTime: "2026-10-20T10:00:00+05:30", timeZone: "Asia/Kolkata" }, end: { dateTime: "2026-10-20T10:30:00+05:30" },
@@ -48,6 +49,26 @@ describe.skipIf(!local)("Calendar bookings → actual CRM records and counts (lo
     const rows = await listCrmMeetings(orgId); expect(rows).toHaveLength(1);
     expect(rows[0].scheduledAt.toISOString()).toBe("2026-10-21T00:00:00.000Z");
     expect((await getCrmMeetingsStats(orgId)).today).toBe(0);
+  });
+  it("updates Bhaskar's real event in place with the revised IST time and Meet link", async () => {
+    const original = { ...base, id: "h130ejrtefpls9up2ob3nku9p4", summary: "Bhaskar | Requirement Understanding Session",
+      description: "Customer name: Bhaskar\nCustomer phone: +91 73890 63094\nRequirement Notes: Whatsapp task assign\nLocation: Video call",
+      start: { dateTime: "2026-10-21T12:00:00+05:30", timeZone: "Asia/Kolkata" },
+      end: { dateTime: "2026-10-21T12:30:00+05:30", timeZone: "Asia/Kolkata" } };
+    const revised = { ...original, updated: "2026-10-21T06:30:00Z",
+      start: { dateTime: "2026-10-21T12:30:00+05:30", timeZone: "Asia/Kolkata" },
+      end: { dateTime: "2026-10-21T13:00:00+05:30", timeZone: "Asia/Kolkata" },
+      hangoutLink: "https://meet.google.com/mzm-cske-fpn" };
+    await syncCalendarBookings(config, page([original]));
+    await syncCalendarBookings(config, page([revised], "sync-revised"));
+    const rows = await listCrmMeetings(orgId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].scheduledAt.toISOString()).toBe("2026-10-21T07:00:00.000Z");
+    expect(rows[0].meetUrl).toBe("https://meet.google.com/mzm-cske-fpn");
+    expect(await prisma.googleCalendarBooking.count({ where: { connectionId, eventId: revised.id } })).toBe(1);
+    expect((await getCrmModuleNavCounts(orgId)).meetings).toBe(1);
+    expect(await prisma.inboundLeadFollowUp.count({ where: { organizationId: orgId } })).toBe(0);
+    expect(await prisma.waMessage.count({ where: { organizationId: orgId } })).toBe(0);
   });
   it("persists phone-based named bookings and exposes customer details in CRM without creating leads", async () => {
     const named = { ...base, summary: "Bhaskar | Business consultation", attendees: undefined,

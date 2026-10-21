@@ -2,6 +2,7 @@ import "server-only";
 import { createHash, randomUUID } from "node:crypto";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { getGoogleCalendarReadAccessToken } from "@/lib/integrations/google-sheets-auth";
 import { PRIMARY_ORG_SLUG } from "@/lib/platform";
 import { matchesBookingTitle, parseCalendarBookingDescription } from "./calendar-booking-description";
 
@@ -13,7 +14,7 @@ export type CalendarEvent = {
   organizer?: { email?: string }; htmlLink?: string; hangoutLink?: string;
 };
 type EventPage = { items?: CalendarEvent[]; nextPageToken?: string; nextSyncToken?: string };
-export type BookingSyncConfig = { organizationId: string; calendarId: string; titles: string[]; token: string };
+export type BookingSyncConfig = { organizationId: string; calendarId: string; titles: string[]; token?: string };
 
 export function getBookingSyncConfig(env: Record<string, string | undefined> = process.env): BookingSyncConfig | null {
   if (env.GOOGLE_CALENDAR_SYNC_ENABLED !== "true") return null;
@@ -22,7 +23,9 @@ export function getBookingSyncConfig(env: Record<string, string | undefined> = p
   const token = env.GOOGLE_CALENDAR_ACCESS_TOKEN?.trim();
   let titles: unknown;
   try { titles = JSON.parse(env.GOOGLE_CALENDAR_BOOKING_TITLES_JSON ?? "[]"); } catch { throw new Error("booking_titles_invalid"); }
-  if (!organizationId || !calendarId || !token || !Array.isArray(titles) || !titles.length ||
+  const hasServiceAccount = Boolean(env.GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON?.trim() ||
+    (env.GOOGLE_SHEETS_CLIENT_EMAIL?.trim() && env.GOOGLE_SHEETS_PRIVATE_KEY?.trim()));
+  if (!organizationId || !calendarId || (!token && !hasServiceAccount) || !Array.isArray(titles) || !titles.length ||
       titles.length > 20 || titles.some(t => typeof t !== "string" || !t.trim() || t.length > 200)) throw new Error("calendar_configuration_incomplete");
   return { organizationId, calendarId, token, titles: [...new Set((titles as string[]).map(t => t.trim()))].sort() };
 }
@@ -78,7 +81,9 @@ export async function readCalendarPage(config: BookingSyncConfig, cursor: { sync
   if (cursor.syncToken) url.searchParams.set("syncToken", cursor.syncToken);
   if (cursor.pageToken) url.searchParams.set("pageToken", cursor.pageToken);
   // Uses an already-authorized token only: no OAuth grants, new scopes, or Calendar writes.
-  const response = await fetch(url, { method: "GET", headers: { Authorization: `Bearer ${config.token}` },
+  const token = config.token ?? await getGoogleCalendarReadAccessToken();
+  if (!token) throw new Error("calendar_credentials_missing");
+  const response = await fetch(url, { method: "GET", headers: { Authorization: `Bearer ${token}` },
     cache: "no-store", signal: AbortSignal.timeout(15_000), redirect: "error" });
   if (!response.ok) throw new CalendarReadError(response.status);
   const data = await response.json() as EventPage;
