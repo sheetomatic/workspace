@@ -1,3 +1,9 @@
+# Active release handoff — 22 October 2026
+
+Services/Workspace fix verified on dpl_2C3TEUHc4fVjnaYwJKGMe8utX4Ls, source 3c586c03ebef773e07d7ecfd7e9d50621b844717 (codex/fms-fetms-release). See docs/PRODUCTION_FORWARD_BASELINE.md for exact scope and remaining authenticated HRMS check. Do not repoint to the prior BkX deployment or a plain main build. Automatic newest-READY pinning is disabled. No deployment is in flight from this handoff.
+
+---
+
 # Agent Collaboration Board
 
 ## Active release owner — 22 October 2026

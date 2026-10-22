@@ -18,6 +18,8 @@ alwaysApply: true
 - `sheetomatic.com` and `workspace.sheetomatic.com` must always point to the same
   verified release.
 - Known-good preserved deployment on 22 Oct 2026:
-  `dpl_BkXikNDc54f64ZJLBTqvU3SLFXXe`.
+  `dpl_2C3TEUHc4fVjnaYwJKGMe8utX4Ls`.
 - If another agent is releasing, do not compete. Hand off the tested commit and
   wait for the release owner.
+
+This ID is a checkpoint, not a permanent pin. Follow docs/PRODUCTION_FORWARD_BASELINE.md; never run automatic newest-READY alias pinning or overwrite a newer verified release.

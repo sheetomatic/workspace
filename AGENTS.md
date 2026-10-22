@@ -21,7 +21,7 @@ This workspace is **Sheetomatic only** — sheetomatic.com platform (Workspace, 
   production smoke suite, and only then atomically assign both
   `sheetomatic.com` and `workspace.sheetomatic.com`.
 - The known-good preserved deployment on 22 Oct 2026 is
-  `dpl_BkXikNDc54f64ZJLBTqvU3SLFXXe`. Never replace it with a plain Git build.
+  `dpl_2C3TEUHc4fVjnaYwJKGMe8utX4Ls`. Never replace it with a plain Git build.
 
 ## Stack
 Next.js, Prisma, Neon, Resend, Vercel
@@ -38,3 +38,5 @@ the others stop at tested commits/previews. A Git push is not production approva
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
+
+This ID is a checkpoint, not a permanent pin. Follow docs/PRODUCTION_FORWARD_BASELINE.md; never run automatic newest-READY alias pinning or overwrite a newer verified release.
