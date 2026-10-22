@@ -1,20 +1,22 @@
 ---
-description: After Workspace work is done, commit, push main, and verify Sheetomatic production without waiting to be asked.
+description: Build and verify Workspace changes, then hand them to the active release owner. Never race production.
 alwaysApply: true
 ---
 
-# Always deploy when done
+# Single-owner release handoff
 
-When a Workspace task is finished (feature, fix, UI, copy), **ship it** in the same turn:
+Codex currently owns the integrated Website + Workspace release. When a Cursor
+task is finished:
 
 1. Commit scoped files (no secrets, no logo preview PNGs, no leftover `.cursor/COLLABORATION.md` unless the note is for this ship).
-2. Push `main` to `github.com/sheetomatic/workspace.git` (HTTPS if SSH is denied).
-3. Wait until Vercel production for **sheetomatic-redesign** is **Ready**.
-4. Run **`npm run deploy:lock`** (`deploy:pin` + `deploy:verify`) — must exit 0. Pinning is required; verify alone is not enough (aliases have been silently moved back to old Production Ready deploys).
-5. **Never Instant Rollback** in Vercel UI behind `docs/PRODUCTION_FORWARD_BASELINE.md`.
-6. Report commit SHA, deploy id, `deploy:lock` PASS, and what to hard-refresh.
+2. Push only the named feature branch, never `main`.
+3. Create a preview if useful and run focused tests/build checks.
+4. Hand the commit SHA, changed files, migrations, environment requirements, and
+   verification evidence to Codex.
+5. Do not run a production deployment, promote, pin aliases, or change Vercel
+   project settings while Codex owns the release.
 
-Treat “done” as deploy authorization. Do not ask “want me to deploy?”.
+“Done” means ready for handoff; it is not independent production authorization.
 
 ## Target
 
