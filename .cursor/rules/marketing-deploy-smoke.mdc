@@ -1,0 +1,39 @@
+---
+description: Pre-deploy marketing smoke checks — effective 2026-10-22. Block Sheetomatic production ship if Services FMS videos or Field Executive Management are missing.
+alwaysApply: true
+---
+
+# Marketing deploy smoke (from 2026-10-22)
+
+**Baseline date:** 22 Oct 2026. New Sheetomatic production deploys must pass this smoke after Ready — do not call the ship done until HTTP checks pass on the **new** `dpl=` id.
+
+## Why this exists
+
+- FMS dual videos (`PM8E3mCw67Q` + `acTJOocmuZM`) lived on an unmerged branch and were never on `main`, so a “correct” main deploy showed **zero** videos on `/services/flow`.
+- Field Executive was moved to peer slug `/services/field-tracking` and renamed; looking under HR made it look “missing”.
+- Production aliases can stick on an older Ready deploy after a failed tip build — always verify live `dpl=`, not dashboard lore.
+
+## Must stay on main
+
+| Surface | Requirement |
+|---------|-------------|
+| `/services/flow` | Two-video compare: sheet FMS `PM8E3mCw67Q` + AI FMS `acTJOocmuZM` in `services-category-content.tsx` (`.fms-video-compare`) |
+| `/services/field-tracking` | **200** — Field Executive Management Systems peer page |
+| Services hub / browse | Card label **Field Executive Management Systems** → `/services/field-tracking` |
+
+Do **not** put FMS embeds only in unused `service-detail-content.tsx` — live route is `ServicesCategoryContent`.
+
+## Pre-ship checklist (release-ops)
+
+After production Ready on **sheetomatic-redesign**:
+
+1. `curl -sI https://workspace.sheetomatic.com/login` — `dpl=` equals the new deploy id (not a prior Instant Rollback).
+2. `curl -sI -o /dev/null -w '%{http_code}\n' https://sheetomatic.com/services/field-tracking` → **200**.
+3. `curl -sL https://sheetomatic.com/services/flow | rg -c 'PM8E3mCw67Q|acTJOocmuZM'` → both IDs present (count ≥ 1 each).
+4. If `dpl=` still old: re-alias / promote on **sheetomatic-redesign** only — never attach customer domains to `sheetomatic-redesign-deploy-v2`.
+
+## Do not
+
+- Merge marketing branches that skip the FMS compare block.
+- Filter Field Executive out of the **top-level** services browse list.
+- Treat a green GitHub check on deploy-v2 (no `DATABASE_URL`) as production proof.

@@ -54,7 +54,7 @@ export const servicesBrowseCards: {
   { slug: "tasks", label: "Executive Assistant & Tasks" },
   { slug: "crm", label: "AI-powered CRM" },
   { slug: "hr", label: "HR & Workforce" },
-  { slug: "field-tracking", label: "Field Executive Tracking" },
+  { slug: "field-tracking", label: "Field Executive Management Systems" },
   { slug: "automation", label: "Custom Software" },
 ];
 
@@ -67,7 +67,7 @@ export const serviceDisplayLabels: Record<ServiceCategorySlug, string> = {
   mis: "Executive Meeting (Weekly)",
   tasks: "Executive Assistant",
   hr: "HR & workforce",
-  "field-tracking": "Field Executive Tracking",
+  "field-tracking": "Field Executive Management Systems",
   crm: "AI-powered CRM",
   automation: "Custom Software",
 };
@@ -404,12 +404,12 @@ export const serviceCategories: ServiceCategory[] = [
   },
   {
     slug: "field-tracking",
-    name: "Field Executive Tracking",
+    name: "Field Executive Management Systems",
     shortDescription: "Client visit check-ins, notes, and manager visibility for field teams.",
     relatedBenefit: "Client visit trail and manager visibility for distributed teams.",
     hubBlurb: "Geo check-ins, visit notes, and field-only KPIs for sales and service teams.",
     eyebrow: "Field operations",
-    title: "Field Executive Tracking for",
+    title: "Field Executive Management for",
     titleAccent: "sales & service teams.",
     lead:
       "Client geo check-ins, visit notes, and manager visibility for sales and service teams — separate from office attendance, with field-only KPIs.",
@@ -427,9 +427,9 @@ export const serviceCategories: ServiceCategory[] = [
       "Visit purpose and notes stay with each client check-in",
       "Field reporting stays separate from office attendance",
     ],
-    ctaLabel: "Ask about field tracking",
+    ctaLabel: "Ask about field executive management",
     whatsappMessage:
-      "Hi Sheetomatic, I want to scope Field Executive Tracking for our sales or service team — client geo check-ins and manager visibility.",
+      "Hi Sheetomatic, I want to scope Field Executive Management Systems for our sales or service team — client geo check-ins and manager visibility.",
     workspaceHref: `${workspacePortalOrigin()}/login?callbackUrl=${encodeURIComponent("/app/field")}`,
     workspaceCta: "Open field workspace",
     relatedSlugs: ["hr", "crm", "mis"],

@@ -50,6 +50,7 @@ import {
 } from "@/app/page-content";
 import { servicesHubVideos } from "@/app/video-content";
 import { VideoEmbed } from "@/components/marketing/video-embed";
+import { SolutionPreview } from "@/components/marketing/business-library-section";
 import { ProblemSolutionVisualSection } from "@/components/marketing/problem-solution-visual";
 import "@/components/marketing/minimal-premium.css";
 import "@/components/marketing/videos.css";
@@ -81,6 +82,7 @@ const ownerGlanceIcons: Record<string, { icon: LucideIcon; tone: string }> = {
 const solutionHrefOverrides: Record<string, string> = {
   "Attendance & leave system": "/services/hr/attendance-leave",
   "Field executive tracking": "/services/field-tracking",
+  "Field Executive Management Systems": "/services/field-tracking",
   "AI task delegation": "/services/tasks",
   "AI-powered CRM": "/services/crm",
   "WhatsApp AI chatbot": "/services/whatsapp-ai",
@@ -108,6 +110,32 @@ const industryIcons: Record<string, LucideIcon> = {
   Healthcare: Stethoscope,
 };
 
+function ServiceFlowVisual() {
+  return (
+    <div className="services-flow-visual" aria-label="Illustrative view of business updates becoming organized work">
+      <div className="services-flow-visual-head">
+        <span>THE WORK, CONNECTED</span>
+        <span className="services-flow-live"><i aria-hidden /> Workspace view</span>
+      </div>
+      <div className="services-flow-visual-body">
+        <div className="services-flow-inputs" aria-label="Inputs">
+          <span><ClipboardList size={15} aria-hidden /> Orders</span>
+          <span><Package size={15} aria-hidden /> Stock</span>
+          <span><Bot size={15} aria-hidden /> Messages</span>
+        </div>
+        <div className="services-flow-arrow" aria-hidden><ArrowRight size={20} /></div>
+        <div className="services-flow-board">
+          <div className="services-flow-board-head"><GitBranch size={15} aria-hidden /><strong>Team workflow</strong><span>Live</span></div>
+          <div className="services-flow-board-row"><i className="is-done" /><span>Owner assigned</span><b>Ready</b></div>
+          <div className="services-flow-board-row"><i className="is-active" /><span>Next action visible</span><b>In progress</b></div>
+          <div className="services-flow-board-row"><i /><span>Progress collected</span><b>Tracked</b></div>
+        </div>
+      </div>
+      <p className="services-flow-visual-note">Illustrative view · configured around each team&apos;s process</p>
+    </div>
+  );
+}
+
 export function ServicesHubContent() {
   return (
     <MarketingPage>
@@ -117,7 +145,7 @@ export function ServicesHubContent() {
 
         <section className="services-hero" id="overview">
           <div className="services-hero-grid mx-auto max-w-6xl px-5 py-14 sm:px-8 sm:py-20">
-            <div className="services-hero-copy services-hero-centered text-center">
+            <div className="services-hero-copy">
               <p className="services-hero-kicker type-kicker text-sky-700">
                 {servicesHub.eyebrow}
               </p>
@@ -134,7 +162,7 @@ export function ServicesHubContent() {
                   callLabel="Call"
                 />
                 <MarketingLinkButton href="/products" variant="secondary">
-                  <span>See products</span>
+                  <span>Read case studies</span>
                   <ArrowRight size={18} aria-hidden />
                 </MarketingLinkButton>
               </div>
@@ -170,6 +198,7 @@ export function ServicesHubContent() {
             </div>
 
             <aside className="services-outcomes" aria-label="Owner outcomes">
+              <ServiceFlowVisual />
               <p className="services-outcomes-label">
                 {servicesPage.ownerGlance.eyebrow}
               </p>
@@ -210,12 +239,6 @@ export function ServicesHubContent() {
               <p className="services-section-lead">{servicesHub.browseLead}</p>
             </div>
 
-            <div className="video-hub-grid" style={{ marginBottom: "2rem" }}>
-              {servicesHubVideos.map((video) => (
-                <VideoEmbed key={video.id} video={video} variant="compact" />
-              ))}
-            </div>
-
             <div className="services-hub-grid">
               {servicesBrowseCards.map(({ slug, label }) => {
                 const category = serviceCategoryBySlug[slug];
@@ -240,6 +263,7 @@ export function ServicesHubContent() {
                         <span className="services-hub-badge">Popular</span>
                       ) : null}
                     </div>
+                    <SolutionPreview slug={category.slug} />
                     <h3 className="services-hub-card-title">{label}</h3>
                     <p className="services-hub-card-blurb">
                       {category.shortDescription}
@@ -252,6 +276,22 @@ export function ServicesHubContent() {
                   </Link>
                 );
               })}
+            </div>
+
+            <p className="services-snapshot-note">
+              Sample workspace snapshots · Final screens, owners, and alerts are configured around your team&apos;s actual process.
+            </p>
+
+            <div className="services-video-proof">
+              <div className="services-section-head">
+                <p className="services-section-eyebrow">See the systems in action</p>
+                <h3 className="services-video-proof-title">A closer look at practical business workflows.</h3>
+              </div>
+              <div className="video-hub-grid">
+                {servicesHubVideos.map((video) => (
+                  <VideoEmbed key={video.id} video={video} variant="compact" />
+                ))}
+              </div>
             </div>
 
             <p className="services-hub-footnote">{servicesHub.deliveryNote}</p>
@@ -308,9 +348,11 @@ export function ServicesHubContent() {
             </div>
 
             <div className="services-hr-grid-v2">
-              {hrWorkspaceModules.filter((mod) => mod.id !== "field-tracking").map((mod) => (
-                <HrModuleCard key={mod.id} mod={mod} />
-              ))}
+              {hrWorkspaceModules
+                .filter((mod) => mod.id !== "field-tracking")
+                .map((mod) => (
+                  <HrModuleCard key={mod.id} mod={mod} />
+                ))}
             </div>
 
             <div className="services-hr-footnote">

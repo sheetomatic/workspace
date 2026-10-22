@@ -22,7 +22,7 @@ export const hrModuleOverview = {
   eyebrow: "HR on Sheetomatic",
   title: "Attendance, field teams, payroll-ready data, and hiring - in your workspace",
   lead:
-    "Two focused modules for MSMEs: Attendance & Leave with payroll inputs, and Field Executive Tracking as a separate module. Plus hiring and document workflows for HR.",
+    "Two focused modules for MSMEs: Attendance & Leave with payroll inputs, and Field Executive Management Systems as a peer field module. Plus hiring and document workflows for HR.",
   darwinboxNote:
     "Enterprise HCM platforms combine time tracking, leave, payroll, and recruitment on one mobile-first stack. Sheetomatic brings the same ideas to Indian MSMEs with WhatsApp-ready ops and workspace reporting.",
 };
@@ -81,8 +81,8 @@ export const attendanceLeaveModule: HrServicesModule = {
 
 export const fieldTrackingModule: HrServicesModule = {
   id: "field-tracking",
-  name: "Field Executive Tracking",
-  tagline: "Separate module for sales & service teams",
+  name: "Field Executive Management Systems",
+  tagline: "Peer module for sales & service teams",
   heroLead:
     "Client geo check-ins, visit notes, and manager visibility for sales and service teams — separate from office punch, with field-only KPIs.",
   href: "/app/field",
@@ -113,7 +113,7 @@ export const fieldTrackingModule: HrServicesModule = {
   ],
   ctaLabel: "Ask about field tracking",
   whatsappMessage:
-    "Hi Sheetomatic, I want to scope Field Executive Tracking for our sales or service team - client geo check-ins and manager visibility.",
+    "Hi Sheetomatic, I want to scope Field Executive Management Systems for our sales or service team - client geo check-ins and manager visibility.",
   features: [
     "Live geo check-in at client location",
     "Visit plan vs actual trail on map (phase 2)",
