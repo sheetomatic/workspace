@@ -14,7 +14,7 @@ tests, and create previews, then must hand the commit SHA and verification notes
 to Codex. Cursor must not push `main`, deploy/promote production, change domain
 aliases or Vercel production settings, or bypass preserved release overlays.
 
-Protected live deployment: `dpl_BkXikNDc54f64ZJLBTqvU3SLFXXe`.
+Verified live checkpoint: `dpl_2C3TEUHc4fVjnaYwJKGMe8utX4Ls`. Inspect actual aliases before future releases; do not restore this checkpoint over newer verified work.
 
 **Goal:** SaaS-level multi-tenant platform ÿ agents work independently, post handoffs here.  
 **Read this file before starting. Append your section when done.**
