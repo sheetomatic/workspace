@@ -38,5 +38,15 @@
     "path": "src/components/marketing/related-services-section.tsx",
     "before": "21c76c01d3ec744c0d1473dfde291ed8eefa3c5dd166064cce88e14beaac0984",
     "sha256": "329759a4c95200b91dadbb86dc972827261af8c6176db33a91072951f100aacf"
+  },
+  {
+    "path": "src/components/marketing/service-detail-content.tsx",
+    "before": "1f2dc5959a53da81e97c7efb36220649b0c3d2463e63c9154ad0461160ef0fc3",
+    "sha256": "254e44a6990472eb6dfe55b7cd8a1d1028360878ca5cd5939e856c6369e7fac9"
+  },
+  {
+    "path": "src/app/video-content.ts",
+    "before": "e67a790860f3aa64c926595aae672de24711f81d16a761401c7875d1b3b92fe3",
+    "sha256": "00c9b16dd73990093da66e8b605bc75898931c809b321c68124f86127aa1a053"
   }
 ]

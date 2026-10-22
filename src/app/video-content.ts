@@ -421,6 +421,7 @@ export const serviceDetailVideos: Partial<
     | "whatsapp-ai"
     | "crm"
     | "hr"
+    | "field-tracking"
     | "automation",
     MarketingVideo
   >
