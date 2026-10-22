@@ -135,17 +135,23 @@ function main() {
   }
   ok("/services/field-tracking → 200");
 
-  const hrField = sh("curl", [
-    "-sI",
-    "-o",
-    "/dev/null",
-    "-w",
-    "%{http_code}",
-    "-L",
-    "--max-redirs",
-    "0",
-    "https://sheetomatic.com/services/hr/field-tracking",
-  ]).trim();
+  // curl exits 47 when --max-redirs 0 hits a redirect; stdout still has the code.
+  let hrField = "";
+  try {
+    hrField = sh("curl", [
+      "-sI",
+      "-o",
+      "/dev/null",
+      "-w",
+      "%{http_code}",
+      "-L",
+      "--max-redirs",
+      "0",
+      "https://sheetomatic.com/services/hr/field-tracking",
+    ]).trim();
+  } catch (err) {
+    hrField = String(err?.stdout ?? "").trim();
+  }
   if (!["301", "308", "307", "302"].includes(hrField)) {
     // After follow, destination must be peer page — check with follow
     const followed = sh("curl", [
