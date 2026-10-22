@@ -3030,3 +3030,6 @@
   height: 52px;
   border-radius: 14px;
 }
+/* Keep the two FMS walkthroughs legible on phones and side-by-side on desktop. */
+.fms-video-compare { display: grid; gap: 1.5rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 640px) { .fms-video-compare { grid-template-columns: minmax(0, 1fr); } }

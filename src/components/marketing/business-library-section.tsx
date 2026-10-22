@@ -9,6 +9,7 @@ import {
   GitBranch,
   GraduationCap,
   LayoutTemplate,
+  MapPin,
   Package,
   type LucideIcon,
 } from "lucide-react";
@@ -28,6 +29,7 @@ const solutionIcons: Record<ServiceCategorySlug, LucideIcon> = {
   automation: Package,
   tasks: ClipboardCheck,
   hr: ClipboardCheck,
+  "field-tracking": MapPin,
   crm: BarChart3,
 };
 

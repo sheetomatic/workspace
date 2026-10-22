@@ -7,6 +7,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   GitBranch,
+  MapPin,
   Package,
   Wrench,
   Users,
@@ -40,11 +41,37 @@ import { servicesPage } from "@/app/page-content";
 import { whatsappDisplayNumber } from "@/app/site-content";
 import "@/components/marketing/minimal-premium.css";
 import "@/components/marketing/services-page.css";
+import { type MarketingVideo } from "@/app/video-content";
+import { VideoEmbed } from "@/components/marketing/video-embed";
+import "@/components/marketing/videos.css";
+
+/** Old sheet FMS vs workspace FMS — must stay on /services/flow (live category page). */
+const fmsSheetCompare: { oldSheet: MarketingVideo; aiFms: MarketingVideo } = {
+  oldSheet: {
+    id: "fms-old-sheets",
+    label: "Old FMS",
+    title: "FMS in Google Sheets and Forms",
+    description:
+      "Stages, owners, and delays lived in a sheet. Someone had to keep the form, the formulas, and the file ready before the weekly review.",
+    youtubeId: "PM8E3mCw67Q",
+    category: "FMS",
+  },
+  aiFms: {
+    id: "fms-ai-workspace",
+    label: "New FMS",
+    title: "AI FMS — the flow runs without a sheet",
+    description:
+      "The same who, when, and delay now sit in the workspace. Planned, actual, and late steps update the Monday board. No Google Form and no sheet formula.",
+    youtubeId: "acTJOocmuZM",
+    category: "FMS",
+  },
+};
 
 const categoryIcons: Record<string, { icon: LucideIcon; tone: string }> = {
   "whatsapp-ai": { icon: Bot, tone: "tone-green" },
   mis: { icon: BarChart3, tone: "tone-sky" },
   hr: { icon: CalendarCheck, tone: "tone-emerald" },
+  "field-tracking": { icon: MapPin, tone: "tone-sky" },
   tasks: { icon: ClipboardList, tone: "tone-indigo" },
   crm: { icon: Users, tone: "tone-violet" },
   inventory: { icon: Package, tone: "tone-amber" },
@@ -124,6 +151,29 @@ export function ServicesCategoryContent({ slug }: ServicesCategoryContentProps) 
             </div>
           </div>
         </section>
+
+        {slug === "flow" ? (
+          <section
+            className="services-detail-features"
+            aria-label="Old sheet FMS compared with AI FMS"
+          >
+            <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-14">
+              <div className="services-section-head services-section-head-center">
+                <p className="services-section-eyebrow">Why the new FMS</p>
+                <h2 className="services-section-title">Old sheet FMS vs AI FMS</h2>
+                <p className="services-section-lead">
+                  The first FMS was a Google Sheet and a Form. It held the flow
+                  until the sheet became the job. The new FMS keeps who, when, and
+                  delay in the workspace, so the Monday review opens without a sheet.
+                </p>
+              </div>
+              <div className="fms-video-compare">
+                <VideoEmbed video={fmsSheetCompare.oldSheet} variant="compact" />
+                <VideoEmbed video={fmsSheetCompare.aiFms} variant="compact" />
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         {slug === "hr" ? (
           <section className="services-hr-modules services-hr-modules-v2">
