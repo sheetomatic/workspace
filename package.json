@@ -29,7 +29,9 @@
     "test:e2e:ui": "playwright test --ui",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
-    "deploy:verify": "node scripts/verify-production-forward.mjs"
+    "deploy:verify": "node scripts/verify-production-forward.mjs",
+    "deploy:pin": "node scripts/pin-production-aliases.mjs",
+    "deploy:lock": "npm run deploy:pin && npm run deploy:verify"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
