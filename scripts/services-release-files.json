@@ -33,5 +33,10 @@
     "path": "src/lib/content/services-wiring.test.ts",
     "before": null,
     "sha256": "aaf440868d92b3cb70bebe5b24a7a85eb3736089347b9b752f3eb3319a785e2a"
+  },
+  {
+    "path": "src/components/marketing/related-services-section.tsx",
+    "before": "21c76c01d3ec744c0d1473dfde291ed8eefa3c5dd166064cce88e14beaac0984",
+    "sha256": "329759a4c95200b91dadbb86dc972827261af8c6176db33a91072951f100aacf"
   }
 ]
