@@ -10,6 +10,7 @@ const digest=b=>createHash('sha256').update(b).digest('hex');
 async function fetchFile(path){const r=await fetch(`https://raw.githubusercontent.com/sheetomatic/workspace/${revision}/${path}`,{redirect:'error'});if(!r.ok)throw Error(`Source fetch failed: ${path}`);return Buffer.from(await r.arrayBuffer());}
 function run(cmd,args,env=process.env){const r=spawnSync(cmd,args,{stdio:'inherit',env});if(r.status!==0)throw Error(`Release step failed: ${cmd}`);}
 const reconstruct=await fetchFile('scripts/reconstruct-preserved.mjs');
+if(digest(reconstruct)!=='0b5a77413c2887590200c986bf5dc5d78126bd1dcf258d28d2921ebea1b8a497')throw Error('Baseline script checksum mismatch');
 await writeFile('/tmp/reconstruct-services-baseline.mjs',reconstruct);
 run(process.execPath,['/tmp/reconstruct-services-baseline.mjs','--prepare-only'],{
   ...process.env,RELEASE_REVISION:'',CALENDAR_RELEASE_REVISION:'',CALENDAR_MIGRATIONS_ENABLED:'false',
