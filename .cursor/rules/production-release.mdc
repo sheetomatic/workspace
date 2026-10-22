@@ -1,0 +1,23 @@
+---
+description: Mandatory production release coordination for Sheetomatic
+alwaysApply: true
+---
+
+# Production safety — Cursor must follow this
+
+- Never deploy or promote a plain checkout of `main` to production.
+- Never run `vercel --prod`, `vercel promote`, or reassign the production domains
+  unless the user explicitly asked to ship and you own the release.
+- Pushing Git changes is not permission to deploy them.
+- The live release contains preserved Workspace, Calendar, Tasks checkout,
+  Templates, Courses, pricing, and contact overlays that are not all present in
+  a plain Git tree.
+- Use a preview deployment for review. Before production, compare against the
+  current live deployment and preserve every existing overlay.
+- Run the guarded release/preflight checks and verify both domains after release.
+- `sheetomatic.com` and `workspace.sheetomatic.com` must always point to the same
+  verified release.
+- Known-good preserved deployment on 22 Oct 2026:
+  `dpl_BkXikNDc54f64ZJLBTqvU3SLFXXe`.
+- If another agent is releasing, do not compete. Hand off the tested commit and
+  wait for the release owner.
