@@ -10,13 +10,19 @@ When a Workspace task is finished (feature, fix, UI, copy), **ship it** in the s
 1. Commit scoped files (no secrets, no logo preview PNGs, no leftover `.cursor/COLLABORATION.md` unless the note is for this ship).
 2. Push `main` to `github.com/sheetomatic/workspace.git` (HTTPS if SSH is denied).
 3. Wait until Vercel production for **sheetomatic-redesign** is **Ready**.
-4. Report commit SHA and what to hard-refresh.
+4. Run **`npm run deploy:verify`** — must exit 0 (forward-only baseline + marketing smoke).
+5. If live `dpl=` is still an older deploy: re-alias / promote the **new** Ready tip on sheetomatic-redesign, then re-run verify. **Never Instant Rollback** behind `docs/PRODUCTION_FORWARD_BASELINE.md`.
+6. Report commit SHA, deploy id, verify PASS, and what to hard-refresh.
 
 Treat “done” as deploy authorization. Do not ask “want me to deploy?”.
 
 ## Target
 
 Sheetomatic only (`sheetomatic.com` / `app.sheetomatic.com`). Named portals (Hingorani / Tops / Anmol) still need an explicit deploy request.
+
+## Forward-only (from 2026-10-22)
+
+See `.cursor/rules/production-forward-only.mdc`. Only newer commits than the locked baseline may serve production.
 
 ## Do not skip
 

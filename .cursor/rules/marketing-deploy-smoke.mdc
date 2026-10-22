@@ -25,15 +25,19 @@ Do **not** put FMS embeds only in unused `service-detail-content.tsx` — live r
 
 ## Pre-ship checklist (release-ops)
 
-After production Ready on **sheetomatic-redesign**:
+After production Ready on **sheetomatic-redesign**, run:
 
-1. `curl -sI https://workspace.sheetomatic.com/login` — `dpl=` equals the new deploy id (not a prior Instant Rollback).
-2. `curl -sI -o /dev/null -w '%{http_code}\n' https://sheetomatic.com/services/field-tracking` → **200**.
-3. `curl -sL https://sheetomatic.com/services/flow | rg -c 'PM8E3mCw67Q|acTJOocmuZM'` → both IDs present (count ≥ 1 each).
-4. If `dpl=` still old: re-alias / promote on **sheetomatic-redesign** only — never attach customer domains to `sheetomatic-redesign-deploy-v2`.
+```bash
+npm run deploy:verify
+```
+
+That script enforces forward-only baseline + field-tracking 200 + FMS dual video markers + legacy HR field redirect. Exit 0 required.
+
+If live `dpl=` is still old: re-alias / promote the **new** Ready tip on **sheetomatic-redesign** only — never Instant Rollback behind the baseline, never attach domains to `sheetomatic-redesign-deploy-v2`.
 
 ## Do not
 
 - Merge marketing branches that skip the FMS compare block.
 - Filter Field Executive out of the **top-level** services browse list.
 - Treat a green GitHub check on deploy-v2 (no `DATABASE_URL`) as production proof.
+- Restore unused `service-detail-content.tsx` as the FMS video host.

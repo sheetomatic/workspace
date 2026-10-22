@@ -1,11 +1,33 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Small image for a single always-on server. Vercel ignores this and uses its own output.
+  output: "standalone",
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "i.ytimg.com",
+        pathname: "/vi/**",
+      },
+    ],
+  },
   async redirects() {
     return [
       {
         source: "/addons",
         destination: "/templates?category=cloud",
+        permanent: true,
+      },
+      // Field Executive Management Systems is a peer service (not under HR).
+      {
+        source: "/services/hr/field-tracking",
+        destination: "/services/field-tracking",
+        permanent: true,
+      },
+      {
+        source: "/services/hr/field-tracking/:path*",
+        destination: "/services/field-tracking",
         permanent: true,
       },
     ];

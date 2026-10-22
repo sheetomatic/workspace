@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import {
   getHrModuleStaticParams,
   HrServiceDetailContent,
@@ -16,11 +16,22 @@ type PageProps = {
 };
 
 export async function generateStaticParams() {
-  return getHrModuleStaticParams();
+  // Field is peer-only at /services/field-tracking — never regenerate under HR.
+  return getHrModuleStaticParams().filter(
+    (entry) => entry.moduleSlug !== "field-tracking",
+  );
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { moduleSlug } = await params;
+  if (moduleSlug === "field-tracking") {
+    return marketingMetadata({
+      title: "Field Executive Management Systems",
+      description:
+        "Client geo check-ins, visit notes, and manager visibility for field teams.",
+      path: "/services/field-tracking",
+    });
+  }
   if (!isHrModuleSlug(moduleSlug)) {
     return marketingMetadata({
       title: "HR Services",
@@ -39,6 +50,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function HrServiceDetailPage({ params }: PageProps) {
   const { moduleSlug } = await params;
+  if (moduleSlug === "field-tracking") {
+    redirect("/services/field-tracking");
+  }
   if (!isHrModuleSlug(moduleSlug)) {
     notFound();
   }

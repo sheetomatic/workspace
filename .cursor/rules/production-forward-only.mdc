@@ -1,0 +1,26 @@
+---
+description: Sheetomatic production is forward-only from 2026-10-22 baseline. Never Instant Rollback to older deploys; only newer tips may ship.
+alwaysApply: true
+---
+
+# Production forward-only lock (from 2026-10-22)
+
+Baseline: see `docs/PRODUCTION_FORWARD_BASELINE.md` (SHA `a0f295e9` — FMS dual videos + Field Executive Management Systems).
+
+## Hard rules
+
+1. **Forward only.** Production aliases on **sheetomatic-redesign** may only point at deploys whose git commit is a **descendant** of the baseline (or the baseline).
+2. **Never Instant Rollback** / promote / `vercel alias set` to an older deploy behind the baseline — even if a newer build failed.
+3. **Never** attach `sheetomatic.com`, `app`, `workspace`, `ai` to `sheetomatic-redesign-deploy-v2`.
+4. After every production Ready: run **`npm run deploy:verify`**. Ship is not done until exit 0.
+5. If tip build fails (e.g. Prisma P3009): fix migrate / tip, redeploy **newer** Ready — do not leave traffic on pre-baseline aliases.
+
+## Legacy paths removed / locked
+
+- `/services/hr/field-tracking` → permanent redirect to `/services/field-tracking`
+- Unused old `service-detail-content.tsx` removed — FMS videos live only in `services-category-content.tsx`
+- Marketing smoke: `.cursor/rules/marketing-deploy-smoke.mdc`
+
+## Advancing the lock
+
+Only when the team lead says to advance the baseline: update `docs/PRODUCTION_FORWARD_BASELINE.md` to the new tip SHA after `deploy:verify` passes.
