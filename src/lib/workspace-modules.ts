@@ -2,6 +2,7 @@ import type { Role, WorkspaceModule } from "@prisma/client";
 import type { SessionUser } from "@/lib/auth";
 import { dedicatedPortalHomePath } from "@/lib/dedicated-client-portals";
 import { hasMinimumRole } from "@/lib/permissions";
+import { canAccessWorkspacePath, canUseTasks, grantedSuiteParts } from "@/lib/workspace-access";
 
 export const WORKSPACE_MODULES: WorkspaceModule[] = [
   "CASES",
@@ -13,6 +14,7 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
   "APPROVALS",
   "REPORTS",
   "SOCIAL",
+  "FLEET",
 ];
 
 /** BCI / platform modules — legal Cases is a dedicated-portal product only (Hingorani). */
@@ -23,7 +25,8 @@ export const PLATFORM_WORKSPACE_MODULES: WorkspaceModule[] = WORKSPACE_MODULES.f
 export const WORKSPACE_MODULE_LABELS: Record<WorkspaceModule, string> = {
   CASES: "Cases",
   TASKS: "Tasks Management",
-  FMS: "FMS",
+  FMS: "Business Systems Suite",
+  FLEET: "Fleet",
   CRM: "CRM",
   HR: "HRMS",
   IMS: "IMS / Stock",
@@ -44,6 +47,7 @@ export const WORKSPACE_MODULE_HREFS: Partial<Record<WorkspaceModule, string>> = 
   REPORTS: "/app/reports",
   APP_BUILDER: "/app/app-builder",
   SOCIAL: "/app/social",
+  FLEET: "/app/fleet",
 };
 
 /** Sidebar/home destination — skip the /app/fms index redirect. */
@@ -70,13 +74,13 @@ export function defaultModulesForRole(role: Role): WorkspaceModule[] {
 }
 
 export function resolveMemberModules(
-  role: Role,
+  _role: Role,
   assigned: WorkspaceModule[] | null | undefined,
 ): WorkspaceModule[] {
-  if (assigned && assigned.length > 0) {
+  if (assigned) {
     return [...new Set(assigned)];
   }
-  return defaultModulesForRole(role);
+  return [];
 }
 
 export function allWorkspaceModules(): WorkspaceModule[] {
@@ -91,10 +95,7 @@ export function hasWorkspaceModule(
   user: Pick<SessionUser, "modules" | "isSuperAdmin">,
   module: WorkspaceModule,
 ) {
-  if (user.modules.length > 0) {
-    return user.modules.includes(module);
-  }
-  return Boolean(user.isSuperAdmin);
+  return user.modules.includes(module);
 }
 
 /** Check Lists / PC sit in the BCI suite even when Tasks is not on the plan. */
@@ -121,20 +122,23 @@ export function formatModuleList(modules: WorkspaceModule[]) {
 
 /** Default landing: staff → my work, managers → team board / lines. */
 export function resolveWorkspaceHomeHref(
-  user: Pick<SessionUser, "modules" | "isSuperAdmin" | "role" | "organizationSlug">,
+  user: Pick<SessionUser, "modules" | "isSuperAdmin" | "role" | "organizationSlug" | "enabledBciSubModules">,
 ) {
   const dedicatedHome = dedicatedPortalHomePath(user.organizationSlug);
   if (dedicatedHome) {
     return dedicatedHome;
   }
 
+  if (grantedSuiteParts(user).length > 0 && hasMinimumRole(user.role, "MANAGER")) return "/app";
+  if (canUseTasks(user)) return "/app/today";
+
   // Platform orgs never land on /app/cases. CASES is dedicated-portal only
   // (Hingorani). Super-admins have every module via hasWorkspaceModule, so
   // iterating WORKSPACE_MODULES would send them to /app/cases and bounce
   // forever with requireLegalCasesSession → /app.
-  for (const module of PLATFORM_WORKSPACE_MODULES) {
-    if (hasWorkspaceModule(user, module)) {
-      if (module === "TASKS") {
+  for (const workspaceModule of PLATFORM_WORKSPACE_MODULES) {
+    if (hasWorkspaceModule(user, workspaceModule)) {
+      if (workspaceModule === "TASKS") {
         // FMS managers stay on the widget home; task-only users go to Today.
         if (
           hasWorkspaceModule(user, "FMS") &&
@@ -144,23 +148,25 @@ export function resolveWorkspaceHomeHref(
         }
         return "/app/today";
       }
-      if (module === "FMS") {
+      if (workspaceModule === "FMS") {
         // Managers land on the widget dashboard (business at a glance);
         // staff go straight to their 2-tap step queue.
-        return hasMinimumRole(user.role, "MANAGER")
-          ? "/app"
-          : "/app/fms/my-stops";
+        if (canAccessWorkspacePath(user, "/app/fms/my-stops")) return "/app/fms/my-stops";
+        const part = grantedSuiteParts(user)[0];
+        if (part === "checklists") return "/app/checklists";
+        if (part === "pc") return "/app/pc/today";
+        continue;
       }
-      if (module === "CRM") {
+      if (workspaceModule === "CRM") {
         return "/app/leads";
       }
-      const href = WORKSPACE_MODULE_HREFS[module];
-      if (href) {
+      const href = WORKSPACE_MODULE_HREFS[workspaceModule];
+      if (href && canAccessWorkspacePath(user, href)) {
         return href;
       }
     }
   }
-  return "/app/today";
+  return "/app";
 }
 
 export function isCasesOnlyWorkspace(

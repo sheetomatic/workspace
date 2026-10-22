@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { WorkspaceBundleSelect } from "@/components/saas/workspace-bundle-select";
 import { useActionState, useState } from "react";
 import {
   addClientAddonsAction,
+  applyClientBusinessPlanAction,
   deleteClientBillingPlanAction,
   removeClientAddonAction,
   updateClientAddonBillingAction,
@@ -141,7 +143,8 @@ export function ClientPlanActions({
   addonLines: WorkspaceAddonCharge[];
   availableAddons: BillableAddon[];
 }) {
-  const [open, setOpen] = useState<"add" | "change" | "addon" | null>(null);
+  const [open, setOpen] = useState<"add" | "change" | "addon" | "published" | null>(null);
+  const [planState, planAction, applyingPlan] = useActionState(applyClientBusinessPlanAction, initial);
   const [saveState, saveAction, saving] = useActionState(
     updateClientBillingAction,
     initial,
@@ -178,6 +181,9 @@ export function ClientPlanActions({
         </section>
       ) : null}
       <div className="ws-client-toolbar">
+        <button className="ws-client-action ws-client-action--primary" type="button" onClick={() => setOpen(open === "published" ? null : "published")}>
+          Apply monthly plan
+        </button>
         <Link className="ws-client-action ws-client-action--link" href={clientUrl}>
           Open client
         </Link>
@@ -231,6 +237,14 @@ export function ClientPlanActions({
           </form>
         ) : null}
       </div>
+      {open === "published" ? <form action={planAction} className="ws-plan-form">
+        <input name="organizationId" type="hidden" value={organizationId} />
+        <WorkspaceBundleSelect moduleSelection plansOnly disabled={applyingPlan} />
+        <p>Save applies the selected monthly rate and module access to this client. Trial expiry and existing invoices stay unchanged.</p>
+        <button className="ws-client-action ws-client-action--primary" type="submit" disabled={applyingPlan}>{applyingPlan ? "Saving…" : "Save plan and module access"}</button>
+        <button className="ws-client-action" type="button" onClick={() => setOpen(null)}>Cancel</button>
+        {planState.message ? <p role="status" className={planState.ok ? "saas-form-success" : "saas-form-error"}>{planState.message}</p> : null}
+      </form> : null}
       {deleteState.message ? (
         <p className={deleteState.ok ? "saas-form-success" : "saas-form-error"}>
           {deleteState.message}

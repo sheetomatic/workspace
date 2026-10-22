@@ -151,6 +151,10 @@ export async function createClientWorkspaceAction(
     ownerEmail: String(formData.get("ownerEmail") ?? ""),
     ownerPhone: String(formData.get("ownerPhone") ?? ""),
     bundle: String(formData.get("activationBundle") ?? ""),
+    selectedModules: formData.get("moduleSelection") === "explicit" ? formData.getAll("selectedModules").map(String) : undefined,
+    selectedSuiteParts: formData.getAll("selectedSuiteParts").map(String),
+    maxMembers: Number(formData.get("maxMembers") || Number.NaN),
+    maxFmsTemplates: Number(formData.get("maxFmsTemplates") || Number.NaN),
     invitedByName: user.name ?? user.email,
     demoTrial: formData.get("demoTrial") === "on",
   });

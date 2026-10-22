@@ -11,6 +11,7 @@ import { LEARN_ADMIN_HOME } from "@/lib/workspace-auth-links";
 import { hasWorkspaceModule, resolveWorkspaceHomeHref } from "@/lib/workspace-modules";
 import { getUserDashboard } from "@/lib/workspace-data";
 import { parseWorkspaceNavPrefs } from "@/lib/workspace-nav-prefs";
+import { canUseTasks, grantedSuiteParts } from "@/lib/workspace-access";
 
 function emptyDashboardForUser(role: import("@prisma/client").Role): DashboardPayload {
   return {
@@ -81,6 +82,9 @@ async function DashboardHome({
   user: Awaited<ReturnType<typeof requireSession>>;
 }) {
   const displayName = user.name ?? user.email.split("@")[0];
+  if (user.modules.filter((module) => module !== "FMS").length === 0 && grantedSuiteParts(user).length === 0) {
+    return <div className="saas-page"><h1>Workspace</h1><p>No modules are enabled for your account. Contact your workspace administrator to update module access.</p></div>;
+  }
 
   // BCI-style platform orgs get the widget grid; AI-CRM orgs keep the
   // classic metric-cards dashboard.
@@ -132,7 +136,8 @@ async function DashboardHome({
           organizationName={organizationName}
           pendingPayments={dashboard.pendingPayments}
           taskStats={dashboard.taskStats}
-          tasksEnabled={hasWorkspaceModule(user, "TASKS")}
+          tasksEnabled={canUseTasks(user)}
+          reportsEnabled={hasWorkspaceModule(user, "REPORTS")}
           userName={displayName}
         />
       </div>

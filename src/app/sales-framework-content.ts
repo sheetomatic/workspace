@@ -20,7 +20,7 @@ export const videoSalesStory = {
   title: "You built the business. Now build the system so it grows without you.",
   lead:
     "Starting is easy. Sustaining is hard when every decision, reminder, and report runs through you. Sheetomatic maps profit, leads, conversions, and team delivery into one workspace - so you review numbers, not chase people.",
-  ctaPrimary: "Scope my workspace",
+  ctaPrimary: "Book a 30-min operations diagnostic",
 } as const;
 
 export type HowWeWorkStep = {

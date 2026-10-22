@@ -57,21 +57,21 @@ export function BciFrameworkSection() {
     >
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <div className="section-heading">
-          <p>BCI Suite</p>
+          <p>Business Systems Suite</p>
           <h2 id="bci-framework-title">
-            Business Control &amp; Intelligence for system-driven MSMEs
+            Business Systems Suite for system-driven MSMEs
           </h2>
           <div className="section-subcopy">
-            BCI is the operating framework behind Sheetomatic. It combines flow
+            Business Systems Suite is the operating framework behind Sheetomatic. It combines flow
             control, stock accuracy, execution discipline, and a weekly review
             cadence so your team runs the work and you review the board.
           </div>
         </div>
 
-        <div className="bci-formula-band" aria-label="BCI formula">
-          <p className="bci-formula-label">The BCI formula</p>
+        <div className="bci-formula-band" aria-label="Business Systems Suite formula">
+          <p className="bci-formula-label">The Business Systems Suite formula</p>
           <p className="bci-formula-copy">
-            BCI = FMS + IMS + Full Kitting + PC + EA + Review Rhythm
+            Business Systems Suite = FMS + IMS + Full Kitting + PC + EA + Review Rhythm
           </p>
           <p className="bci-formula-note">
             Six layers that turn daily operations into visible control, owned
@@ -91,10 +91,10 @@ export function BciFrameworkSection() {
 
         <div className="bci-synthesis-panel">
           <div className="bci-synthesis-copy">
-            <p className="bci-synthesis-kicker">How BCI works together</p>
+            <p className="bci-synthesis-kicker">How Business Systems Suite works together</p>
             <h3>Control the work. Hold the rhythm. Review the exceptions.</h3>
             <p>
-              BCI starts by making operations visible, equips the team to
+              Business Systems Suite starts by making operations visible, equips the team to
               execute with clarity, and closes the loop with a review cadence
               leaders can actually trust.
             </p>

@@ -15,6 +15,8 @@ import { PRIMARY_ORG_SLUG } from "@/lib/platform";
 import { resolveSessionModules } from "@/lib/dedicated-client-portals";
 import { canUseSuspendedWorkspaceApi } from "@/lib/org-access";
 import { getRequestPathname, getRequestTenantSlug } from "@/lib/tenant-host";
+import { getWorkspaceMembershipPrefs, getWorkspaceOrganization } from "@/lib/workspace-shell-data";
+import { canAccessWorkspacePath, grantedSuiteParts } from "@/lib/workspace-access";
 
 export type SessionUser = {
   id: string;
@@ -27,6 +29,7 @@ export type SessionUser = {
   isSuperAdmin: boolean;
   isDepartmentHead: boolean;
   modules: WorkspaceModule[];
+  enabledBciSubModules?: string[];
   staffCode: string | null;
   organizationStatus: OrganizationStatus;
 };
@@ -420,7 +423,13 @@ export const getSessionUser = cache(async function getSessionUser() {
 });
 
 async function sessionAllowsApi(user: SessionUser) {
+  const [prefs, organization] = await Promise.all([
+    getWorkspaceMembershipPrefs(user.id, user.organizationId),
+    getWorkspaceOrganization(user.organizationId),
+  ]);
+  user.enabledBciSubModules = grantedSuiteParts(user, prefs?.enabledBciSubModules, organization?.allowedSuiteParts);
   const pathname = await getRequestPathname();
+  if (pathname.startsWith("/api/") && !canAccessWorkspacePath(user, pathname)) return null;
   if (
     !canUseSuspendedWorkspaceApi({
       status: user.organizationStatus,

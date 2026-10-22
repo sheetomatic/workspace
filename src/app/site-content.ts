@@ -1,9 +1,9 @@
-/** Website / sales communication WhatsApp (not the Cloud Official API line). */
-export const whatsappPhone = "919329103106";
+/** Public sales WhatsApp; independent of the official CRM API sender below. */
+export const whatsappPhone = "919755733107";
 
-export const whatsappDisplayNumber = "+91 93291 03106";
+export const whatsappDisplayNumber = "+91 97557 33107";
 
-export const whatsappTel = "+919329103106";
+export const whatsappTel = "+919755733107";
 
 /** Voice / calling line for website Call buttons (separate from WhatsApp). */
 export const callingPhone = "919755733107";
@@ -12,7 +12,7 @@ export const callingDisplayNumber = "+91 97557 33107";
 
 export const callingTel = "+919755733107";
 
-/** Official Cloud API business number (inbox / Go Live). Do not use for site wa.me CTAs. */
+/** Official Cloud API business number (inbox / Go Live); not the public redirect. */
 export const officialApiWhatsAppPhone = "919685788980";
 export const officialApiWhatsAppDisplay = "+91 96857 88980";
 
@@ -37,7 +37,7 @@ export const siteBrand = {
   name: "Sheetomatic",
   tagline: "AI-Powered Business Automation",
   headerTagline: "AI-Powered Business Automation",
-  descriptor: "Business Control & Intelligence",
+  descriptor: "Business Systems Suite",
   /** Icon-only mark for headers, sidebars, and app tiles */
   iconSrc: "/images/sheetomatic-icon.svg",
   /** White icon for dark backgrounds (login, footer) */
@@ -60,7 +60,7 @@ export const siteBrand = {
 export const finalCtaContent = {
   kicker: "Start on WhatsApp",
   title: "Build a business that scales without you.",
-  text: "BCI Suite brings FMS, IMS, Full Kitting, Process Coordinator, Executive Assistant, and Review Rhythm into one operating system. One conversation to replace spreadsheet firefighting with owner clarity.",
+  text: "Business Systems Suite brings FMS, IMS, Full Kitting, Process Coordinator, Executive Assistant, and Review Rhythm into one operating system. One conversation to replace spreadsheet firefighting with owner clarity.",
   buttonLabel: "WhatsApp",
 };
 

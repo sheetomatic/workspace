@@ -17,6 +17,7 @@ enum Role {
 }
 
 enum WorkspaceModule {
+  FLEET
   TASKS
   HR
   APPROVALS
@@ -109,6 +110,9 @@ enum OrganizationStatus {
 }
 
 enum OrgPlan {
+  BUSINESS_STARTER
+  BUSINESS_SCALE
+  BUSINESS_ENTERPRISE
   BCI_STARTER
   BCI_GROWTH
   ENTERPRISE
@@ -234,10 +238,13 @@ model Organization {
   planStatus      PlanSubscriptionStatus   @default(ACTIVE)
   billingPeriod   PlanBillingPeriod        @default(MONTHLY)
   allowedModules  WorkspaceModule[]        @default([])
+  /// Null for legacy workspaces; an array explicitly caps Suite parts for new clients/trials.
+  allowedSuiteParts Json?
   maxMembers      Int                      @default(8)
   maxFmsTemplates Int                      @default(3)
   isPrimary       Boolean                  @default(false)
   memberships     Membership[]
+  googleCalendarConnections GoogleCalendarConnection[]
   links           WorkspaceLink[]
   kpis            WorkspaceKpi[]
   metricCards     WorkspaceMetricCard[]
@@ -4167,3 +4174,67 @@ model FleetFuelSlip {
   @@index([organizationId, vehicleId, recordedAt])
 }
 
+
+
+model TemplateCheckout {
+  id               String   @id @default(cuid())
+  accessHash       String   @unique
+  requestHash      String
+  organizationId   String
+  snapshot         Json
+  totalPaise       Int
+  gatewayOrderId   String?  @unique
+  gatewayPaymentId String?  @unique
+  paidAt           DateTime?
+  invoiceNumber    String?  @unique
+  emailSentAt      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([organizationId, createdAt])
+}
+
+model TemplateInvoiceCounter {
+  year  String @id
+  value Int
+}
+
+
+model GoogleCalendarConnection {
+  id             String   @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  calendarId     String
+  filterHash     String
+  syncToken      String?
+  pageToken      String?
+  fullSyncId     String?
+  leaseId        String?
+  leaseUntil     DateTime?
+  lastSyncedAt   DateTime?
+  lastError      String?
+  bookings       GoogleCalendarBooking[]
+  @@unique([organizationId, calendarId])
+}
+
+model GoogleCalendarBooking {
+  id                String   @id
+  connectionId      String
+  connection        GoogleCalendarConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  eventId           String
+  summary           String
+  attendeeName      String?
+  attendeeEmail     String?
+  attendeePhone     String?
+  bookingNotes      String?
+  startsAt          DateTime
+  endsAt            DateTime
+  sourceTimeZone    String?
+  status            String
+  providerUpdatedAt DateTime?
+  seenFullSyncId    String?
+  calendarUrl       String?
+  meetUrl           String?
+  @@unique([connectionId, eventId])
+  @@index([connectionId, status, startsAt])
+}

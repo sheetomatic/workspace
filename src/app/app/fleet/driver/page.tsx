@@ -5,6 +5,6 @@ import "@/components/fleet/fleet-dashboard.css";
 export const dynamic = "force-dynamic";
 
 export default async function FleetDriverPage() {
-  await requireSession("STAFF");
+  await requireSession("STAFF", { module: "FLEET" });
   return <FleetDriverClient />;
 }

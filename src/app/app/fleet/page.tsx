@@ -6,7 +6,7 @@ import "@/components/fleet/fleet-dashboard.css";
 export const dynamic = "force-dynamic";
 
 export default async function FleetPage() {
-  const user = await requireSession("MANAGER");
+  const user = await requireSession("MANAGER", { module: "FLEET" });
   const board = await getFleetBoard(user.organizationId);
   return <FleetDashboard initial={board} />;
 }

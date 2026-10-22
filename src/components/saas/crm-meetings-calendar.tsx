@@ -23,17 +23,27 @@ import "./crm-meetings-calendar.css";
 
 export type CrmCalendarMeeting = {
   id: string;
-  leadId: string;
+  leadId: string | null;
   name: string;
   phone: string;
+  email?: string;
+  title?: string;
   whenLabel: string;
   ymd: string;
+  scheduledAt?: string;
   typeLabel: string;
   assignee: string;
   meetUrl: string | null;
   notes: string;
   isToday: boolean;
   completed: boolean;
+  cancelled?: boolean;
+  source?: "CRM" | "GOOGLE_CALENDAR";
+  calendarUrl?: string | null;
+  endsLabel?: string | null;
+  sourceTimeZone?: string | null;
+  sourceStatus?: string;
+  requirements?: string | null;
 };
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -93,6 +103,7 @@ export function CrmMeetingsCalendar({
   const byDay = useMemo(() => {
     const map = new Map<string, CrmCalendarMeeting[]>();
     for (const meeting of meetings) {
+      if (meeting.cancelled) continue;
       const list = map.get(meeting.ymd) ?? [];
       list.push(meeting);
       map.set(meeting.ymd, list);
@@ -262,7 +273,7 @@ function MeetingRow({
               {meeting.phone ? ` · ${meeting.phone}` : ""}
             </span>
           </span>
-          <em>{meeting.typeLabel}</em>
+          <em>{meeting.typeLabel} · Details</em>
         </button>
         <div className="crm-meet-row-actions">
           {meeting.meetUrl ? (
@@ -278,7 +289,7 @@ function MeetingRow({
           ) : (
             <span className="crm-meet-missing">No Meet link</span>
           )}
-          {meeting.completed ? null : (
+          {meeting.completed || meeting.cancelled || meeting.source === "GOOGLE_CALENDAR" ? null : (
             <button
               type="button"
               className="btn-secondary btn-sm"
@@ -289,22 +300,35 @@ function MeetingRow({
               {reminding ? "Sending…" : "Remind"}
             </button>
           )}
-          <Link
+          {meeting.leadId ? <Link
             className="btn-secondary btn-sm"
             href={crmLeadOpenHref(meeting.leadId, { tab: "meeting" })}
           >
             Open
             <ExternalLink size={14} aria-hidden />
-          </Link>
+          </Link> : meeting.calendarUrl ? (
+            <a className="btn-secondary btn-sm" href={meeting.calendarUrl} target="_blank" rel="noopener noreferrer">
+              Edit in Google Calendar <ExternalLink size={14} aria-hidden />
+            </a>
+          ) : null}
         </div>
       </div>
 
       {open ? (
         <div className="crm-meet-row-body">
+          <dl className="crm-meet-details">
+            <div><dt>Title</dt><dd>{meeting.title || meeting.name}</dd></div>
+            <div><dt>Contact</dt><dd>{[meeting.name, meeting.phone, meeting.email].filter(Boolean).join(" · ") || "Not provided"}</dd></div>
+            <div><dt>Date and time</dt><dd>{meeting.whenLabel}{meeting.endsLabel ? ` – ${meeting.endsLabel}` : ""} · IST{meeting.sourceTimeZone && meeting.sourceTimeZone !== "Asia/Kolkata" ? ` (source: ${meeting.sourceTimeZone})` : ""}</dd></div>
+            <div><dt>Source</dt><dd>{meeting.source === "GOOGLE_CALENDAR" ? "Google Calendar" : "CRM"}</dd></div>
+            <div><dt>Status</dt><dd>{meeting.sourceStatus || meeting.typeLabel}</dd></div>
+            <div><dt>Requirements</dt><dd>{meeting.requirements || "Not provided"}</dd></div>
+            <div><dt>Join link</dt><dd>{meeting.meetUrl ? <a href={meeting.meetUrl} target="_blank" rel="noopener noreferrer">{meeting.meetUrl}</a> : "Not provided"}</dd></div>
+          </dl>
           {meeting.assignee ? (
             <p className="crm-meet-notes">Assigned · {meeting.assignee}</p>
           ) : null}
-          {canManage ? (
+          {canManage && meeting.source !== "GOOGLE_CALENDAR" ? (
             <form
               className="crm-meet-save"
               onSubmit={(event) => {
