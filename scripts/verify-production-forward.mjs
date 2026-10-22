@@ -80,9 +80,17 @@ function main() {
   }
 
   const loginHeaders = curlHeaders("https://workspace.sheetomatic.com/login");
-  const liveDpl = extractDpl(loginHeaders);
+  let liveDpl = extractDpl(loginHeaders);
   if (!liveDpl) {
-    fail("Could not read live dpl= from workspace.sheetomatic.com/login Link header");
+    // Deployment Protection / SSO often strips the Link header on /login.
+    // Public marketing HTML still embeds ?dpl= on asset URLs.
+    const marketingHtml = curlBody("https://sheetomatic.com/services/flow");
+    liveDpl = extractDpl(marketingHtml);
+  }
+  if (!liveDpl) {
+    fail(
+      "Could not read live dpl= from workspace.sheetomatic.com/login or sheetomatic.com/services/flow",
+    );
   }
   ok(`live dpl=${liveDpl}`);
 
