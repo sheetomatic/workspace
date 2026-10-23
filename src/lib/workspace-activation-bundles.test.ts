@@ -8,7 +8,8 @@ import {
 describe("workspace activation bundles", () => {
   it("defaults to BCI FMS only", () => {
     expect(DEFAULT_ACTIVATION_BUNDLE).toBe("business_starter");
-    expect(resolveActivationPreset("unknown").allowedModules).not.toContain("TASKS");
+    expect(resolveActivationPreset(DEFAULT_ACTIVATION_BUNDLE).allowedModules).not.toContain("TASKS");
+    expect(() => resolveActivationPreset("unknown")).toThrow("Choose a valid workspace plan.");
   });
 
   it("resolves tasks-only bundle", () => {

@@ -22,9 +22,14 @@ for (const file of manifest.files) {
   if ((before ? hash(before, 'sha1') : null) !== file.before) {
     if (file.path === 'vercel.json' && before) {
       const config = JSON.parse(before.toString());
-      console.error('[release-config] keys:', Object.keys(config));
-      console.error('[release-config] scheduling:', JSON.stringify({crons: config.crons, functions: config.functions}));
-      console.error('[release-config] actual SHA1:', hash(before, 'sha1'), 'expected:', file.before);
+      // Vercel injects the project name and reformats this file before build.
+      // Accept only that known transformation, preserving all other settings.
+      if (config.name === 'sheetomatic-redesign') {
+        delete config.name;
+        const canonical = x => Array.isArray(x) ? x.map(canonical) : x && typeof x === 'object'
+          ? Object.fromEntries(Object.keys(x).sort().map(k => [k, canonical(x[k])])) : x;
+        if (hash(JSON.stringify(canonical(config)), 'sha256') === file.beforeConfig) continue;
+      }
     }
     throw Error(`Live source mismatch: ${file.path}`);
   }
