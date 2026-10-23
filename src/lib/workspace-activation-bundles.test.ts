@@ -7,7 +7,7 @@ import {
 
 describe("workspace activation bundles", () => {
   it("defaults to BCI FMS only", () => {
-    expect(DEFAULT_ACTIVATION_BUNDLE).toBe("bci_starter");
+    expect(DEFAULT_ACTIVATION_BUNDLE).toBe("business_starter");
     expect(resolveActivationPreset("unknown").allowedModules).not.toContain("TASKS");
   });
 

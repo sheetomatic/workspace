@@ -1099,7 +1099,7 @@
     {
       "path": "src/lib/workspace-activation-bundles.test.ts",
       "before": "1bdea70eb355da6b2eebe487a6de904ca48a6802",
-      "after": "d45edcbe6a8bb4b31a1f13ab5ea1d80d955195b0ad6c1fddd9dc108d464fa191"
+      "after": "11577ebe66e1e742d6eacd26e9c90b214e2ad5e9a0fb58d636636915a488538b"
     },
     {
       "path": "src/lib/workspace-activation-bundles.ts",
@@ -1125,6 +1125,11 @@
       "path": "src/lib/workspace-nav-prefs.ts",
       "before": "f42ee64cd8cc4d83f2d5234d819fbc81c2b1af05",
       "after": "0d781d9171598cc8f29c805154cec4a3e11bac0fcc37e9bc212785e1b2edb56e"
+    },
+    {
+      "path": "src/lib/workspace-navigation.bci.test.ts",
+      "before": "631a1f1ef342bb03f3cd373e42dbfdff5c2e8921",
+      "after": "93724ff43acb0b6420c7659e785b86cb1817ad0be5be64b18c0e92c3e1f1fe08"
     },
     {
       "path": "src/lib/workspace-navigation.ts",

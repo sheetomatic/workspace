@@ -19,7 +19,15 @@ for (const file of manifest.files) {
   if (file.path.startsWith('/') || file.path.split('/').includes('..')) throw Error('Unsafe path');
   let before = null;
   try { before = await readFile(file.path); } catch (error) { if (error.code !== 'ENOENT') throw error; }
-  if ((before ? hash(before, 'sha1') : null) !== file.before) throw Error(`Live source mismatch: ${file.path}`);
+  if ((before ? hash(before, 'sha1') : null) !== file.before) {
+    if (file.path === 'vercel.json' && before) {
+      const config = JSON.parse(before.toString());
+      console.error('[release-config] keys:', Object.keys(config));
+      console.error('[release-config] scheduling:', JSON.stringify({crons: config.crons, functions: config.functions}));
+      console.error('[release-config] actual SHA1:', hash(before, 'sha1'), 'expected:', file.before);
+    }
+    throw Error(`Live source mismatch: ${file.path}`);
+  }
 }
 for (let i = 0; i < manifest.files.length; i += 10) {
   await Promise.all(manifest.files.slice(i, i + 10).map(async file => {

@@ -34,7 +34,7 @@ function bciChildLabels(user: SessionUser) {
     allowed,
     parseWorkspaceNavPrefs({ mode: "custom", visibleIds: ["fms", "em"] }),
   );
-  const bci = shown.find((item) => item.label === "BCI");
+  const bci = shown.find((item) => item.label === "Business Systems Suite");
   return (bci?.children ?? []).map((child) => child.label);
 }
 
