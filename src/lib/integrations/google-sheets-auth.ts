@@ -47,13 +47,27 @@ export function createGoogleSheetsWriteClient() {
   ]);
 }
 
-export function createGoogleCalendarReadClient() {
+/**
+ * Mint a short-lived, read-only Calendar token from the service account that is
+ * already configured for Google integrations. The target calendar still has
+ * to be explicitly shared with that service-account address.
+ */
+export async function getGoogleCalendarReadAccessToken() {
   const credentials = getGoogleSheetsCredentials();
   if (!credentials) return null;
   const auth = new google.auth.GoogleAuth({
     credentials,
     scopes: ["https://www.googleapis.com/auth/calendar.readonly"],
   });
+  const token = await auth.getAccessToken();
+  return typeof token === "string" && token.trim() ? token : null;
+}
+
+// Compatibility for legacy callers; no write scope is introduced.
+export function createGoogleCalendarReadClient() {
+  const credentials = getGoogleSheetsCredentials();
+  if (!credentials) return null;
+  const auth = new google.auth.GoogleAuth({ credentials, scopes: ["https://www.googleapis.com/auth/calendar.readonly"] });
   return google.calendar({ version: "v3", auth });
 }
 

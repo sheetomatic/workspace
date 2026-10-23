@@ -7,8 +7,9 @@ import {
 
 describe("workspace activation bundles", () => {
   it("defaults to BCI FMS only", () => {
-    expect(DEFAULT_ACTIVATION_BUNDLE).toBe("bci_starter");
-    expect(resolveActivationPreset("unknown").allowedModules).not.toContain("TASKS");
+    expect(DEFAULT_ACTIVATION_BUNDLE).toBe("business_starter");
+    expect(resolveActivationPreset(DEFAULT_ACTIVATION_BUNDLE).allowedModules).not.toContain("TASKS");
+    expect(() => resolveActivationPreset("unknown")).toThrow("Choose a valid workspace plan.");
   });
 
   it("resolves tasks-only bundle", () => {
@@ -26,7 +27,7 @@ describe("workspace activation bundles", () => {
   });
 
   it("does not offer App Builder as a workspace SKU", () => {
-    expect(ACTIVATION_BUNDLE_OPTIONS.some((option) => option.value === "app_builder")).toBe(
+    expect(ACTIVATION_BUNDLE_OPTIONS.some((option) => String(option.value) === "app_builder")).toBe(
       false,
     );
   });

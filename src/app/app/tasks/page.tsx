@@ -150,7 +150,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
   return (
     <div className="saas-page ws-tasks-page ws-tasks-sf">
       <TaskPageToolbar
-        title="Tasks Management"
+        title={user.modules.includes("TASKS") ? "Tasks Management" : "Task Delegation"}
         description="Task distribution, performance, and team workload."
         actions={
           <>

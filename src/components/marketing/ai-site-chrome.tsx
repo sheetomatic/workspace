@@ -106,7 +106,7 @@ export function AiSiteFooter() {
             <nav aria-label="Sheetomatic company links">
               <Link href="/">Main website</Link>
               <Link href="/services">Services</Link>
-              <Link href="/products">Products</Link>
+              <Link href="/products">Case Studies</Link>
               <Link href="/about">About</Link>
               <Link href="/career">Careers</Link>
               <Link href="/contact">Contact</Link>
@@ -137,6 +137,7 @@ export function AiSiteFooter() {
             </span>
           </div>
           <nav aria-label="Legal" className="site-footer-legal-links">
+            <Link href="/privacy">Privacy Policy</Link>
             <Link href="/terms">Terms &amp; Conditions</Link>
           </nav>
         </div>

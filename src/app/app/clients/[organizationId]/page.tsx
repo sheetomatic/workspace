@@ -72,6 +72,7 @@ export default async function ClientBillingDetailPage({
   const progress = onboardingProgress(detail.onboardingTasks);
   const renewal = detail.organizationPlan?.renewalAt;
   const renewalInput = renewal ? renewal.toISOString().slice(0, 10) : "";
+  const clientPortalUrl = detail.links.find((link) => link.type === "OTHER" && link.label === "Live client portal")?.url;
 
   return (
     <div className="saas-page ws-billing-page">
@@ -138,8 +139,8 @@ export default async function ClientBillingDetailPage({
         <h3>Onboarding checklist</h3>
         <p className="saas-panel-lead">
           Track go-live for this tenant. Portal:{" "}
-          <a href={`${tenantPortalOrigin(detail.slug)}/login`} rel="noreferrer" target="_blank">
-            {detail.slug}.sheetomatic.com
+          <a href={clientPortalUrl ?? `${tenantPortalOrigin(detail.slug)}/login`} rel="noreferrer" target="_blank">
+            {clientPortalUrl ?? `${detail.slug}.sheetomatic.com`}
           </a>
         </p>
         <OnboardingChecklistForm

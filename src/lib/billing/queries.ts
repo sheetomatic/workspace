@@ -55,6 +55,11 @@ export async function listClientBillingRows() {
       onboardingTasks: {
         select: { completedAt: true },
       },
+      links: {
+        where: { type: "OTHER", label: "Live client portal" },
+        take: 1,
+        select: { url: true },
+      },
     },
   });
 
@@ -82,7 +87,9 @@ export async function listClientBillingRows() {
       );
     const owner = org.memberships.find((row) => row.role === "OWNER") ?? org.memberships[0];
     const progress = onboardingProgress(org.onboardingTasks);
-    const monthly = billing?.monthlyRatePaise ?? catalog.monthlyRatePaise;
+    const clientPortalUrl = org.links[0]?.url ?? null;
+    const billingNotActivated = Boolean(clientPortalUrl && !billing && !org.organizationPlan);
+    const monthly = billingNotActivated ? 0 : billing?.monthlyRatePaise ?? catalog.monthlyRatePaise;
     const extraUserMonthlyPaise =
       billing?.extraUserMonthlyPaise ?? catalog.extraUserMonthlyPaise;
     const includedUsers = billing?.includedUsers ?? catalog.includedUsers;
@@ -111,13 +118,14 @@ export async function listClientBillingRows() {
       id: org.id,
       name: org.name,
       slug: org.slug,
+      clientPortalUrl,
       status: org.status,
       unpaid,
       plan: org.plan,
       product,
       productLabel: SOLD_PRODUCT_LABELS[product],
       allowedModules: org.allowedModules,
-      planLabel: ORG_PLAN_LABELS[org.plan] ?? org.plan,
+      planLabel: billingNotActivated ? "Billing not active" : ORG_PLAN_LABELS[org.plan] ?? org.plan,
       addonLines,
       availableAddons: availableWorkspaceAddons(org.allowedModules, org.plan, org.product),
       addonPaise,
@@ -222,6 +230,7 @@ export async function getClientBillingDetail(organizationId: string) {
         include: { payments: { orderBy: { paidAt: "desc" } } },
       },
       onboardingTasks: { orderBy: { sortOrder: "asc" } },
+      links: { orderBy: { sortOrder: "asc" }, select: { label: true, url: true, type: true } },
     },
   });
   return org;

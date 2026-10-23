@@ -1,15 +1,11 @@
 import { FinalCta, SiteFooter, SiteHeader } from "@/app/components";
+import { BusinessLibrarySection } from "./business-library-section";
 import { WorkShowcaseSection } from "./client-projects-showcase";
-import { BciFrameworkSection } from "./bci-framework-section";
-import { FocusOffersSection } from "./focus-offers-section";
-import { HowWeWorkSection } from "./how-we-work-section";
-import { HomeProofVideosSection } from "./home-proof-videos-section";
-import { UspSection } from "./usp-section";
 import {
-  AudienceFilterSection,
   SalesHeroSection,
   SpreadsheetPainSection,
 } from "./sales-journey-sections";
+import { TechnologyLogoStrip } from "./technology-logo-strip";
 
 export function HomePage() {
   return (
@@ -18,23 +14,13 @@ export function HomePage() {
 
       <SalesHeroSection />
 
-      <AudienceFilterSection />
+      <BusinessLibrarySection />
 
       <SpreadsheetPainSection />
 
-      <HowWeWorkSection />
-
-      <BciFrameworkSection />
-
-      {/* Primary dual pair: FMS + WhatsApp→Tasks */}
-      <FocusOffersSection />
-
-      {/* Supporting clips only — no FMS / WhatsApp→Tasks duplicates */}
-      <HomeProofVideosSection />
-
       <WorkShowcaseSection />
 
-      <UspSection />
+      <TechnologyLogoStrip />
 
       <FinalCta />
       <SiteFooter />

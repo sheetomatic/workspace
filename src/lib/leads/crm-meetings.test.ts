@@ -46,6 +46,7 @@ describe("CRM meeting calendar helpers", () => {
     ];
     expect(startOfIstWeekYmd("2026-08-26")).toBe("2026-08-23");
     expect(countCrmMeetings(rows, now)).toEqual({
+      cancelled: 0,
       today: 1,
       week: 1,
       month: 1,

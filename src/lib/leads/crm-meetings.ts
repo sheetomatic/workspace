@@ -75,6 +75,7 @@ export const CRM_MEETING_VIEWS = [
   "month",
   "upcoming",
   "done",
+  "cancelled",
   "day",
 ] as const;
 
@@ -90,6 +91,8 @@ export function parseCrmMeetingView(raw: string | null | undefined): CrmMeetingV
 export type CrmMeetingCountRow = {
   ymd: string;
   completed: boolean;
+  cancelled?: boolean;
+  scheduledAt?: Date | string;
 };
 
 export function countCrmMeetings(rows: CrmMeetingCountRow[], now = new Date()) {
@@ -97,13 +100,17 @@ export function countCrmMeetings(rows: CrmMeetingCountRow[], now = new Date()) {
   const month = today.slice(0, 7);
   const weekStart = startOfIstWeekYmd(today);
   const weekEnd = addIstDays(weekStart, 6);
-  const counts = { today: 0, week: 0, month: 0, upcoming: 0, done: 0 };
+  const counts = { today: 0, week: 0, month: 0, upcoming: 0, done: 0, cancelled: 0 };
   for (const row of rows) {
+    if (row.cancelled) { counts.cancelled += 1; continue; }
     if (row.completed) {
       counts.done += 1;
       continue;
     }
-    if (row.ymd >= today) {
+    const isFuture = row.scheduledAt
+      ? new Date(row.scheduledAt).getTime() >= now.getTime()
+      : row.ymd >= today;
+    if (isFuture) {
       counts.upcoming += 1;
     }
     if (row.ymd === today) {
@@ -124,7 +131,8 @@ export function filterCrmMeetings<T extends CrmMeetingCountRow>(
   view: CrmMeetingView,
   options?: { date?: string | null; now?: Date },
 ) {
-  const today = istYmd(options?.now ?? new Date());
+  const now = options?.now ?? new Date();
+  const today = istYmd(now);
   const month = today.slice(0, 7);
   const weekStart = startOfIstWeekYmd(today);
   const weekEnd = addIstDays(weekStart, 6);
@@ -133,11 +141,15 @@ export function filterCrmMeetings<T extends CrmMeetingCountRow>(
     : today;
 
   return rows.filter((row) => {
+    if (view === "cancelled") return Boolean(row.cancelled);
+    if (row.cancelled) return false;
     switch (view) {
       case "done":
         return row.completed;
       case "upcoming":
-        return !row.completed && row.ymd >= today;
+        return !row.completed && (row.scheduledAt
+          ? new Date(row.scheduledAt).getTime() >= now.getTime()
+          : row.ymd >= today);
       case "week":
         return !row.completed && row.ymd >= weekStart && row.ymd <= weekEnd;
       case "month":
@@ -157,6 +169,8 @@ export function meetingViewTitle(
 ) {
   const noun = count === 1 ? "meeting" : "meetings";
   switch (view) {
+    case "cancelled":
+      return `${count} cancelled ${noun}`;
     case "done":
       return `${count} ${noun} done`;
     case "upcoming":

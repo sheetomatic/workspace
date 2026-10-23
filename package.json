@@ -13,6 +13,9 @@
     "build": "node scripts/prisma-with-env.mjs generate && node scripts/prisma-with-env.mjs migrate deploy && next build",
     "start": "next start",
     "lint": "eslint",
+    "db:local": "node scripts/local-postgres.mjs",
+    "db:pull": "node scripts/pull-vercel-neon.mjs",
+    "db:restore-neon": "node scripts/pull-vercel-neon.mjs restore",
     "db:generate": "node scripts/prisma-with-env.mjs generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
@@ -48,6 +51,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "recharts": "^3.8.1",
+    "server-only": "^0.0.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
@@ -57,6 +61,7 @@
     "@types/pdf-parse": "^1.1.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "embedded-postgres": "^18.4.0-beta.17",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "playwright": "^1.60.0",

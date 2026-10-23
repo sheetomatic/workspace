@@ -14,6 +14,7 @@ import {
   type OrgAddonBillingRow,
 } from "@/lib/billing/org-addon-billing";
 import { rupeesToPaise } from "@/lib/billing/money";
+import { businessWorkspacePlan } from "@/lib/business-workspace-plans";
 
 export type BillingRateCard = {
   label: string;
@@ -107,6 +108,7 @@ export function catalogRateForWorkspace(org: {
   product?: WorkspaceProduct | null;
   allowedModules?: WorkspaceModule[] | null;
 }): BillingRateCard {
+  if (businessWorkspacePlan(org.plan)) return catalogRateForPlan(org.plan);
   const sold = resolveSoldProduct(org);
   switch (sold) {
     case "APP_BUILDER":
@@ -134,6 +136,14 @@ export function catalogRateForWorkspace(org: {
 
 /** List rates from live /pricing. Ops can override per client. */
 export function catalogRateForPlan(plan: OrgPlan): BillingRateCard {
+  const business = businessWorkspacePlan(plan);
+  if (business) return {
+    label: business.label,
+    monthlyRatePaise: rupeesToPaise(business.monthlyInr),
+    extraUserMonthlyPaise: 0,
+    includedUsers: 0,
+    gstPercent: DEFAULT_GST_PERCENT,
+  };
   switch (plan) {
     case "BCI_STARTER":
       return suiteCard("em_ready_starter", "EM Ready Starter");
@@ -276,6 +286,8 @@ function modulesIncludedInSoldSku(
   sold: WorkspaceProduct,
   plan: OrgPlan,
 ): WorkspaceModule[] {
+  const business = businessWorkspacePlan(plan);
+  if (business) return [...business.modules];
   switch (sold) {
     case "APP_BUILDER":
       return ["APP_BUILDER"];

@@ -9,7 +9,7 @@ export const knowledgeTransferLinks = {
 
 export const mainNav = [
   { href: "/services", label: "Services" },
-  { href: "/products", label: "Products" },
+  { href: "/products", label: "Case Studies" },
   { href: "/pricing", label: "Pricing" },
   { href: "/courses", label: "Courses" },
   { href: "/templates", label: "Templates" },
@@ -28,7 +28,7 @@ export const footerCompanyLinks = [
 ];
 
 export const footerProductLinks = [
-  { href: "/products", label: "BCI Suite" },
+  { href: "/products", label: "Case Studies" },
   { href: "/services/flow", label: "FMS" },
   { href: "/services/inventory", label: "IMS" },
   { href: "/services/checklist", label: "Checklists" },
@@ -101,7 +101,7 @@ export const problemSolutionVisual = {
   cards: [
     {
       id: "fms",
-      imageSrc: "/marketing/problem-solution/fms-before-after.jpg",
+      imageSrc: "/marketing/problem-solution/fms-before-after-dice.png",
       imageAlt:
         "Before: stalled orders in WhatsApp chaos. After: FMS stage flow with owners and green progress.",
       problem: "Orders stall between steps",
@@ -114,7 +114,7 @@ export const problemSolutionVisual = {
     },
     {
       id: "ims",
-      imageSrc: "/marketing/problem-solution/ims-before-after.jpg",
+      imageSrc: "/marketing/problem-solution/ims-before-after-dice.png",
       imageAlt:
         "Before: mismatched paper stock register. After: live IMS stock with reorder signal.",
       problem: "Stock on paper ≠ reality",
@@ -575,22 +575,24 @@ export const productCategories = [
 ];
 
 export const productsPage = {
-  eyebrow: "Operating systems, not apps",
-  title: "Modules that protect margin while your team runs without you.",
+  eyebrow: "Case studies · real work, made clearer",
+  title: "Before, work was scattered. Now, the system carries it forward.",
   lead:
-    "For owner-led MSMEs with revenue and payroll — buy the full BCI Suite or individual modules (FMS, IMS, Checklist/Tasks, CRM, HR). Process Coordinator and Executive Assistant roles run on their portals; Monday EM lands without a MIS hire. See Suite vs module pricing on /pricing.",
+    "See how Sheetomatic learns each business process, builds the apps and software around it, and helps the team make the new system part of the workday.",
 };
 
 export const contactPage = {
-  eyebrow: "Contact",
-  title: "Speak with Sheetomatic.",
-  lead: "Message us on WhatsApp. We respond quickly for active projects and new enquiries.",
+  eyebrow: "Start with a conversation",
+  title: "Tell us where work gets stuck.",
+  lead:
+    "Share the process you want to improve. We will help you find a practical first system — then scope the setup and support your team needs.",
 };
 
 export const contactDetails = {
   whatsappNumber: whatsappDisplayNumber,
   callingNumber: callingDisplayNumber,
   callingTel,
+  email: "sheetomatic@gmail.com",
   website: "sheetomatic.com",
   websiteUrl: "https://sheetomatic.com",
 };
@@ -619,10 +621,10 @@ export const socialLinks = [
 ];
 
 export const aboutPage = {
-  eyebrow: "About",
-  title: "Built for operators, not slide decks.",
+  eyebrow: "About Sheetomatic",
+  title: "Software should fit the way your business works.",
   lead:
-    "Sheetomatic builds Workspace SaaS and Sheetomatic AI for Indian MSMEs — founded by Shyam Kumar Banjare.",
+    "We help Indian MSMEs turn scattered updates and manual follow-ups into clear systems their teams can run — with practical apps, thoughtful setup, and training that carries into the workday.",
 };
 
 export const careerPage = {

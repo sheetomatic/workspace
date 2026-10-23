@@ -29,12 +29,15 @@ function bciChildLabels(user: SessionUser) {
     user,
     organizationSlug: user.organizationSlug,
   });
-  const allowed = visibleWorkspaceNavItems(user, sections.flatMap((s) => s.items));
+  const allowed = visibleWorkspaceNavItems(
+    user, sections.flatMap((s) => s.items), null, null, null, false,
+    ["fms", "checklists", "em", "mis", "pc"],
+  );
   const shown = filterNavItemsByPrefs(
     allowed,
     parseWorkspaceNavPrefs({ mode: "custom", visibleIds: ["fms", "em"] }),
   );
-  const bci = shown.find((item) => item.label === "BCI");
+  const bci = shown.find((item) => item.label === "Business Systems Suite");
   return (bci?.children ?? []).map((child) => child.label);
 }
 

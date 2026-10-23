@@ -247,6 +247,11 @@ function WorkspaceClientCard({ row }: { row: ClientBillingRow[][number] }) {
             unpaid={row.unpaid}
             workspaceId={row.id}
           />
+          {row.clientPortalUrl ? (
+            <a className="ws-client-action ws-client-action--primary" href={row.clientPortalUrl} target="_blank" rel="noreferrer">
+              Open client portal
+            </a>
+          ) : null}
           <ClientPlanActions
             addonLines={row.addonLines}
             availableAddons={row.availableAddons}

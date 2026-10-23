@@ -120,6 +120,38 @@
   color: #b91c1c;
 }
 
+.crm-meet-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem 1rem;
+  margin: 0 0 1rem;
+}
+
+.crm-meet-details div {
+  min-width: 0;
+}
+
+.crm-meet-details dt {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.crm-meet-details dd {
+  margin: 0.2rem 0 0;
+  color: #0f172a;
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .crm-meet-details {
+    grid-template-columns: 1fr;
+  }
+}
+
 .crm-submodule-kpis a.crm-submodule-kpi {
   text-decoration: none;
   color: inherit;

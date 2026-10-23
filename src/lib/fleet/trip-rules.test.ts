@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { haversineMeters, shapeContains } from "@/lib/fleet/geofence";
+import type { GeofenceShape } from "@/lib/fleet/types";
 import { ashFromWeights, isGhostTrip, isPayloadAnomaly } from "@/lib/fleet/trip-rules";
 
 describe("geofence", () => {
-  const yard = {
+  const yard: GeofenceShape = {
     kind: "polygon" as const,
     ring: [
       [82.7, 24.2],

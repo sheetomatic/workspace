@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { TaskDepartment, TaskPriority } from "@prisma/client";
+import { canUseTasks } from "@/lib/workspace-access";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { hasMinimumRole } from "@/lib/permissions";
@@ -65,7 +66,7 @@ async function createDelegatedTaskInner(
   formData: FormData,
 ): Promise<TaskActionState> {
   const user = await getSessionUser();
-  if (!user || !canCreateTasks(user.role)) {
+  if (!user || !canUseTasks(user) || !canCreateTasks(user.role)) {
     return { ok: false, message: "You cannot create tasks." };
   }
 
@@ -305,7 +306,7 @@ async function updateTaskStatusInner(
   status: "PENDING" | "IN_PROGRESS" | "COMPLETED",
 ): Promise<TaskActionState> {
   const user = await getSessionUser();
-  if (!user) {
+  if (!user || !canUseTasks(user)) {
     return { ok: false, message: "Sign in required." };
   }
 
@@ -459,7 +460,7 @@ export async function updateDelegatedTask(
   formData: FormData,
 ): Promise<TaskActionState> {
   const user = await getSessionUser();
-  if (!user || !canCreateTasks(user.role)) {
+  if (!user || !canUseTasks(user) || !canCreateTasks(user.role)) {
     return { ok: false, message: "You cannot edit tasks." };
   }
 
@@ -630,7 +631,7 @@ export async function deleteDelegatedTask(
   taskId: string,
 ): Promise<TaskActionState> {
   const user = await getSessionUser();
-  if (!user || !canCreateTasks(user.role)) {
+  if (!user || !canUseTasks(user) || !canCreateTasks(user.role)) {
     return { ok: false, message: "You cannot delete tasks." };
   }
 
@@ -659,7 +660,7 @@ export async function deleteDelegatedTasks(
   taskIds: string[],
 ): Promise<TaskActionState> {
   const user = await getSessionUser();
-  if (!user || (!user.isSuperAdmin && !hasMinimumRole(user.role, "ADMIN"))) {
+  if (!user || !canUseTasks(user) || (!user.isSuperAdmin && !hasMinimumRole(user.role, "ADMIN"))) {
     return { ok: false, message: "Only an admin can delete selected tasks." };
   }
 
@@ -687,7 +688,7 @@ export async function deleteDelegatedTasks(
 
 export async function deleteAllDelegatedTasks(): Promise<TaskActionState> {
   const user = await getSessionUser();
-  if (!user || (!user.isSuperAdmin && !hasMinimumRole(user.role, "ADMIN"))) {
+  if (!user || !canUseTasks(user) || (!user.isSuperAdmin && !hasMinimumRole(user.role, "ADMIN"))) {
     return { ok: false, message: "Only an admin can delete all tasks." };
   }
 
@@ -712,7 +713,7 @@ export async function resendTaskAssignmentReminders(
   taskId: string,
 ): Promise<TaskActionState> {
   const user = await getSessionUser();
-  if (!user || !canCreateTasks(user.role)) {
+  if (!user || !canUseTasks(user) || !canCreateTasks(user.role)) {
     return { ok: false, message: "You cannot resend task notifications." };
   }
 
@@ -773,7 +774,7 @@ export async function resendTaskDueReminders(
   taskId: string,
 ): Promise<TaskActionState> {
   const user = await getSessionUser();
-  if (!user || !canCreateTasks(user.role)) {
+  if (!user || !canUseTasks(user) || !canCreateTasks(user.role)) {
     return { ok: false, message: "You cannot resend due reminders." };
   }
 

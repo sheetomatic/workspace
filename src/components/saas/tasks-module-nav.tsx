@@ -58,7 +58,7 @@ export function TasksModuleNav({ user }: { user: SessionUser }) {
     },
     {
       href: "/app/tasks",
-      label: "Tasks Management",
+      label: user.modules.includes("TASKS") ? "Tasks Management" : "Task Delegation",
       icon: LayoutDashboard,
       visible: isManager,
       description: "Charts, scores & summary",
@@ -101,7 +101,7 @@ export function TasksModuleNav({ user }: { user: SessionUser }) {
         <ListTodo size={18} aria-hidden />
         <div>
           <strong>Task Delegation</strong>
-          <span>Tasks Management</span>
+          <span>{user.modules.includes("TASKS") ? "Tasks Management" : "Task Delegation"}</span>
         </div>
       </div>
       <ul className="ws-module-subnav-list">

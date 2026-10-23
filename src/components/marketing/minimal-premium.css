@@ -1,9 +1,38 @@
+/* Marketing palette: restrained ink, paper, and cobalt, guided by the
+   SunSed reference. It is scoped so Workspace product screens retain their
+   established visual language. */
+.marketing-site {
+  --background: #f4f6fb;
+  --foreground: #12172a;
+  --primary-blue: #356edb;
+  --primary-blue-dark: #2559bd;
+  --accent-sky: #c8dafd;
+  --muted-text: #586174;
+  --border: #d9deea;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.marketing-site .text-sky-700 {
+  color: #315d94;
+}
+
 .minimal-hero {
   padding: clamp(4rem, 12vw, 7rem) 0 clamp(3rem, 8vw, 5rem);
   border-bottom: 1px solid #e2e8f0;
   background:
     radial-gradient(circle at top left, rgba(56, 189, 248, 0.14), transparent 26%),
     linear-gradient(180deg, #f8fafc 0%, #ffffff 70%);
+}
+
+.marketing-site .minimal-hero-title,
+.marketing-site .home-pain-hook-title {
+  color: var(--foreground);
+}
+
+.marketing-site .minimal-hero-lead,
+.marketing-site .home-pain-hook-lead {
+  color: var(--muted-text);
 }
 
 .minimal-hero-inner {
@@ -658,6 +687,14 @@
 .site-nav-mobile a:hover {
   border-color: #93c5fd;
   color: #0f172a;
+}
+
+/* Keep the full site navigation discoverable on phones. This explicit rule
+   avoids relying on utility-generation order for the mobile variant. */
+@media (max-width: 900px) {
+  .site-nav-mobile {
+    display: flex;
+  }
 }
 
 /* Homepage client projects marquee — sits in the white gap below quick links */
