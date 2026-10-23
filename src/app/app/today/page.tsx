@@ -2,12 +2,12 @@ import { MyTodayBoard } from "@/components/saas/my-today-board";
 import { getMyTodayPayload, EMPTY_TODAY_PAYLOAD } from "@/lib/work/my-today";
 import { canCreateTasks } from "@/lib/tasks";
 import { requireSession } from "@/lib/require-session";
-import { hasWorkspaceModule } from "@/lib/workspace-modules";
+import { canUseTasks, hasSuitePart } from "@/lib/workspace-access";
 
 export default async function MyTodayPage() {
   const user = await requireSession();
-  const hasTasks = hasWorkspaceModule(user, "TASKS");
-  const hasFms = hasWorkspaceModule(user, "FMS");
+  const hasTasks = canUseTasks(user);
+  const hasFms = hasSuitePart(user, "fms");
 
   if (!hasTasks && !hasFms) {
     return (
@@ -17,7 +17,7 @@ export default async function MyTodayPage() {
     );
   }
 
-  const payload = await getMyTodayPayload(user.organizationId, user.id).catch(
+  const payload = await getMyTodayPayload(user.organizationId, user.id, { tasks: hasTasks, fms: hasFms, checklists: hasSuitePart(user, "checklists") }).catch(
     (error) => {
       console.error("[today-page] load failed", error);
       return EMPTY_TODAY_PAYLOAD;

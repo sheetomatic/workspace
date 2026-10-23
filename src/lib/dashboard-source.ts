@@ -14,6 +14,7 @@ import { hasMinimumRole, roleRank, ROLE_LABELS } from "@/lib/permissions";
 import { ACTIVE_TASK_STATUSES } from "@/lib/tasks";
 import { buildTaskVisibilityWhere } from "@/lib/task-verification";
 import { prisma } from "@/lib/db";
+import { canAccessWorkspacePath, canUseTasks } from "@/lib/workspace-access";
 
 export type DashboardSourceRows = {
   metricCards: Array<{
@@ -153,11 +154,11 @@ export async function buildDashboardPayload(
       : "personal";
 
   const [tasks, approvalsPending] = await Promise.all([
-    prisma.delegatedTask.findMany({
+    canUseTasks(user) ? prisma.delegatedTask.findMany({
       where: taskWhere,
       select: { status: true, dueAt: true, completedAt: true },
-    }),
-    hasMinimumRole(user.role, "MANAGER")
+    }) : [],
+    user.modules.includes("APPROVALS") && hasMinimumRole(user.role, "MANAGER")
       ? prisma.workspaceApproval.count({
           where: {
             organizationId: user.organizationId,
@@ -168,7 +169,7 @@ export async function buildDashboardPayload(
   ]);
 
   const metricCards = sourceRows.metricCards
-    .filter((card) => canSeeByRole(user.role, card.minRole))
+    .filter((card) => canSeeByRole(user.role, card.minRole) && (!card.actionHref || canAccessWorkspacePath(user, card.actionHref)))
     .map((card) => ({
       id: card.id,
       label: card.label,
@@ -181,7 +182,7 @@ export async function buildDashboardPayload(
     }));
 
   const followUpsAll = sourceRows.followUps.filter((row) =>
-    canSeeAttentionItem(user.role, user.id, row),
+    user.modules.includes("CRM") && canSeeAttentionItem(user.role, user.id, row),
   );
 
   const followUpsToday = followUpsAll.filter((row) =>
@@ -202,7 +203,7 @@ export async function buildDashboardPayload(
   }));
 
   const pendingPayments = sourceRows.pendingPayments
-    .filter((row) => canSeeByRole(user.role, row.minRole))
+    .filter((row) => (user.modules.includes("CRM") || user.modules.includes("REPORTS")) && canSeeByRole(user.role, row.minRole))
     .map((row) => {
       const urgency = paymentUrgency(row.dueAt);
       return {
@@ -314,7 +315,7 @@ export async function buildDashboardPayload(
     taskStats: { pending, inProgress, completedToday, overdue },
     charts,
     approvalsPending,
-    showApprovals: hasMinimumRole(user.role, "MANAGER"),
+    showApprovals: user.modules.includes("APPROVALS") && hasMinimumRole(user.role, "MANAGER"),
     roleScope,
     roleLabel: ROLE_LABELS[user.role],
     dataSource: options.dataSource,

@@ -18,6 +18,7 @@ function context(
     renewalAt: null,
     activatedAt: new Date("2026-01-01"),
     allowedModules: ["TASKS", "FMS"],
+    allowedSuiteParts: null,
     maxMembers: 50,
     maxFmsTemplates: 15,
     tierEnforced: true,

@@ -1,5 +1,4 @@
 import { howWeWork } from "@/app/sales-framework-content";
-import { ExecutionSnapshot } from "./execution-snapshot";
 import { ContactButtons } from "./marketing-buttons";
 import { whatsappDisplayNumber } from "@/app/site-content";
 import "./how-we-work.css";
@@ -44,9 +43,15 @@ export function HowWeWorkSection() {
             ))}
           </ol>
 
-          <aside className="how-we-work-visual" aria-label="Live workspace preview">
-            <p className="how-we-work-visual-kicker">What live ops looks like</p>
-            <ExecutionSnapshot />
+          <aside className="how-we-work-visual" aria-label="Rollout principles">
+            <p className="how-we-work-visual-kicker">The rollout promise</p>
+            <h3 className="how-we-work-visual-title">
+              One meaningful system win before anything else.
+            </h3>
+            <p className="how-we-work-visual-copy">
+              We make the first operating rhythm stick before expanding the
+              workspace. That keeps adoption practical for your team.
+            </p>
             <ul className="how-we-work-principles">
               {howWeWork.principles.map((principle) => (
                 <li key={principle}>{principle}</li>

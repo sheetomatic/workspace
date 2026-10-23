@@ -1,5 +1,5 @@
 import { getSessionUser, type SessionUser } from "@/lib/auth";
-import { hasWorkspaceModule } from "@/lib/workspace-modules";
+import { hasSuitePart } from "@/lib/workspace-access";
 
 export type FmsActorResult =
   | { ok: true; user: SessionUser }
@@ -10,7 +10,7 @@ export async function getFmsActor(): Promise<FmsActorResult> {
   if (!user) {
     return { ok: false, message: "Sign in required." };
   }
-  if (!hasWorkspaceModule(user, "FMS")) {
+  if (!hasSuitePart(user, "fms")) {
     return { ok: false, message: "FMS is not enabled for your account." };
   }
   return { ok: true, user };

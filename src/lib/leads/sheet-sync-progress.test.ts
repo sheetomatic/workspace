@@ -11,6 +11,7 @@ import {
   readSheetSyncWatermark,
   resolveSheetSyncResumeCursor,
   SHEET_SYNC_CATCHUP_TAIL,
+  type SheetSyncProgress,
 } from "@/lib/leads/sheet-sync-progress";
 
 describe("buildSheetSyncWorkPlan", () => {
@@ -114,7 +115,7 @@ describe("advanceSheetSyncProgress", () => {
   });
 
   it("advances tail cursor for appended rows", () => {
-    let progress = {
+    let progress: SheetSyncProgress = {
       cursor: 720,
       total: 897,
       bodyEnd: 800,

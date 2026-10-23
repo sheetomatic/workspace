@@ -13,6 +13,7 @@ export type OrganizationPlanContext = {
   renewalAt: Date | null;
   activatedAt: Date | null;
   allowedModules: import("@prisma/client").WorkspaceModule[];
+  allowedSuiteParts: string[] | null;
   maxMembers: number;
   maxFmsTemplates: number;
   tierEnforced: boolean;
@@ -29,6 +30,7 @@ export async function getOrganizationPlanContext(
       where: { id: organizationId },
       select: {
         allowedModules: true,
+        allowedSuiteParts: true,
         maxMembers: true,
         maxFmsTemplates: true,
         isPrimary: true,
@@ -55,6 +57,8 @@ export async function getOrganizationPlanContext(
     renewalAt: planSnapshot.renewalAt,
     activatedAt: planSnapshot.activatedAt,
     allowedModules: organization.allowedModules,
+    allowedSuiteParts: Array.isArray(organization.allowedSuiteParts)
+      ? organization.allowedSuiteParts.filter((part): part is string => typeof part === "string") : null,
     maxMembers: organization.maxMembers,
     maxFmsTemplates: organization.maxFmsTemplates,
     tierEnforced: isOrgTierEnforced(organization.allowedModules),

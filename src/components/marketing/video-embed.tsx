@@ -1,4 +1,5 @@
 import { Play, Video } from "lucide-react";
+import Image from "next/image";
 import type { MarketingVideo } from "@/app/video-content";
 import "./videos.css";
 
@@ -7,25 +8,36 @@ type VideoEmbedProps = {
   variant?: "default" | "compact" | "featured";
 };
 
-function getEmbedUrl(youtubeId: string) {
-  return `https://www.youtube.com/embed/${youtubeId}?rel=0&modestbranding=1`;
-}
-
 export function VideoEmbed({ video, variant = "default" }: VideoEmbedProps) {
   const hasVideo = Boolean(video.youtubeId?.trim());
+  const watchUrl = hasVideo
+    ? `https://www.youtube.com/watch?v=${video.youtubeId!.trim()}`
+    : undefined;
+  const thumbnailUrl = hasVideo
+    ? `https://i.ytimg.com/vi/${video.youtubeId!.trim()}/hqdefault.jpg`
+    : undefined;
 
   return (
     <figure className={`video-embed video-embed-${variant}`}>
       {hasVideo ? (
-        <div className="video-embed-frame">
-          <iframe
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-            referrerPolicy="strict-origin-when-cross-origin"
-            src={getEmbedUrl(video.youtubeId!.trim())}
-            title={video.title}
+        <a
+          className="video-embed-frame video-embed-thumbnail"
+          href={watchUrl}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`Watch ${video.title} on YouTube`}
+        >
+          <Image
+            alt=""
+            fill
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            src={thumbnailUrl!}
           />
-        </div>
+          <span className="video-embed-play" aria-hidden="true">
+            <Play size={22} fill="currentColor" />
+          </span>
+          <span className="sr-only">Watch on YouTube</span>
+        </a>
       ) : (
         <div className="video-embed-placeholder">
           <span className="video-embed-placeholder-icon">

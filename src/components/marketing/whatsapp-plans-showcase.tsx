@@ -1,5 +1,13 @@
 import Link from "next/link";
 import {
+  ArrowDownRight,
+  Bot,
+  CheckCircle2,
+  MessageCircle,
+  MessagesSquare,
+  Webhook,
+} from "lucide-react";
+import {
   ContactButtons,
 } from "@/components/marketing/marketing-buttons";
 import { WhatsappPlansGrid } from "@/components/marketing/whatsapp-plans-grid";
@@ -23,7 +31,53 @@ export function WhatsappPlansShowcase() {
 
   return (
     <>
-      <section className="wa-plans-hero-cards section wa-plans-hero-surface pb-12">
+      <section className="wa-plans-intro" aria-labelledby="wa-plans-title">
+        <div className="wa-plans-intro-grid mx-auto max-w-7xl px-5 sm:px-8">
+          <div className="wa-plans-intro-copy">
+            <p className="type-kicker">WhatsApp API &amp; automation</p>
+            <h1 id="wa-plans-title">Choose the WhatsApp system your business actually needs.</h1>
+            <p>
+              Connect messages, customer updates, team conversations, and automation to the right plan—without buying a panel your team will not use.
+            </p>
+            <div className="wa-plans-intro-actions">
+              <a className="btn-cta btn-primary" href="#unofficial-plans">See API recharge plans <ArrowDownRight size={18} aria-hidden /></a>
+              <a className="btn-cta btn-secondary" href="#official-plans">See official panel plans</a>
+            </div>
+            <ul className="wa-plans-intro-points">
+              <li><CheckCircle2 size={17} aria-hidden /> Google Sheets and workflow integration</li>
+              <li><CheckCircle2 size={17} aria-hidden /> Team inbox, chatbot, API and webhook options</li>
+              <li><CheckCircle2 size={17} aria-hidden /> Guidance before setup and payment</li>
+            </ul>
+          </div>
+
+          <aside className="wa-plans-intro-visual" aria-label="WhatsApp messages becoming organised business actions">
+            <div className="wa-plans-visual-chat wa-plans-visual-chat--one"><MessageCircle size={17} /> Order update?</div>
+            <div className="wa-plans-visual-chat wa-plans-visual-chat--two"><MessageCircle size={17} /> Payment received</div>
+            <div className="wa-plans-visual-core"><MessagesSquare size={30} /><strong>WhatsApp</strong><span>connected to your system</span></div>
+            <div className="wa-plans-visual-output"><Bot size={18} /><span>AI reply</span></div>
+            <div className="wa-plans-visual-output wa-plans-visual-output--second"><Webhook size={18} /><span>Owner task</span></div>
+          </aside>
+        </div>
+      </section>
+
+      <section className="wa-plans-paths" aria-label="Choose a WhatsApp plan type">
+        <div className="mx-auto grid max-w-6xl gap-4 px-5 sm:grid-cols-2 sm:px-8">
+          <a className="wa-plans-path-card" href="#unofficial-plans">
+            <span>01</span>
+            <strong>Recharge the existing API</strong>
+            <p>For Google Sheets message sending and existing unofficial API automations.</p>
+            <em>View recharge plans <ArrowDownRight size={16} aria-hidden /></em>
+          </a>
+          <a className="wa-plans-path-card wa-plans-path-card--official" href="#official-plans">
+            <span>02</span>
+            <strong>Use the official Business panel</strong>
+            <p>For a panel, team inbox, chatbot builder, bulk templates, API, and webhooks.</p>
+            <em>View official plans <ArrowDownRight size={16} aria-hidden /></em>
+          </a>
+        </div>
+      </section>
+
+      <section className="wa-plans-hero-cards section wa-plans-hero-surface pb-12" id="unofficial-plans">
         <div className="mx-auto grid max-w-4xl gap-5 px-5 sm:grid-cols-2 sm:px-8">
           <article className="wa-plan-hero-card">
             <p className="wa-plan-hero-label">Core</p>
@@ -52,7 +106,7 @@ export function WhatsappPlansShowcase() {
         </div>
       </section>
 
-      <section className="section wa-plans-official-surface pb-16">
+      <section className="section wa-plans-official-surface pb-16" id="official-plans">
         <div className="mx-auto max-w-6xl px-5 sm:px-8">
           <div className="wa-plans-section-head">
             <h2>Official WhatsApp plans from our panel</h2>

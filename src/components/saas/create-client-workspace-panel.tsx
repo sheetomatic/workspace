@@ -58,8 +58,8 @@ export function CreateClientWorkspacePanel({
             Create client workspace
           </h3>
           <p>
-            Each client gets their own workspace for one product — BCI, Tasks,
-            HRMS, or CRM — with its own users and monthly bill. Tick{" "}
+            Choose a monthly plan and tick the modules this client can access.
+            Setup is included and GST is extra. Tick{" "}
             <strong>Demo account (3 days)</strong> for a trial; it auto-expires,
             then convert to a real client when they continue.
           </p>
@@ -106,7 +106,7 @@ export function CreateClientWorkspacePanel({
             autoComplete="tel"
           />
         </label>
-        <WorkspaceBundleSelect defaultValue="tasks_addon" disabled={pending} />
+        <WorkspaceBundleSelect moduleSelection disabled={pending} />
         <label className="ws-attendance-check">
           <input name="demoTrial" type="checkbox" />
           <span>

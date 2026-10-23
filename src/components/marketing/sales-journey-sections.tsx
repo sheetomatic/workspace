@@ -1,42 +1,48 @@
-import {
-  audienceFilter,
-  videoSalesStory,
-} from "@/app/sales-framework-content";
-import { homePainHook, problemSolutionPresets } from "@/app/page-content";
+import Image from "next/image";
+import { audienceFilter } from "@/app/sales-framework-content";
 import {
   ConsultTodayButton,
   WhatsAppButton,
 } from "@/components/marketing/marketing-buttons";
-import { ExecutionSnapshot } from "@/components/marketing/execution-snapshot";
-import { ProblemSolutionVisualSection } from "@/components/marketing/problem-solution-visual";
+import { SystemLaunchSequence } from "@/components/marketing/system-launch-sequence";
 import "./pace-framework.css";
 import "./sales-journey.css";
 
 export function SalesHeroSection() {
   return (
-    <section className="minimal-hero sales-hero">
+    <section className="minimal-hero sales-hero" id="program">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <div className="sales-hero-layout">
           <div className="sales-hero-core">
-            <p className="type-kicker text-sky-700">{videoSalesStory.eyebrow}</p>
-            <h1 className="minimal-hero-title">{videoSalesStory.title}</h1>
-            <p className="minimal-hero-lead">{videoSalesStory.lead}</p>
+            <p className="type-kicker text-sky-700">Business Control &amp; Intelligence for MSMEs</p>
+            <h1 className="minimal-hero-title">Build a business that runs without you chasing it.</h1>
+            <p className="minimal-hero-lead">
+              Sheetomatic turns your orders, stock, follow-ups, and team work into one
+              live system — so you see what needs attention and your team owns the rest.
+            </p>
             <div className="minimal-hero-actions">
-              <ConsultTodayButton label={videoSalesStory.ctaPrimary} />
+              <ConsultTodayButton label="Book a 30-min system call" />
               <WhatsAppButton
                 className="sales-hero-whatsapp"
                 label="WhatsApp now"
                 message="Hi Sheetomatic, I want to scope a workspace for my business."
               />
             </div>
-            <div className="sales-hero-proof">
-              <span className="sales-hero-proof-kicker">Live ops stack</span>
-              <strong>Owners + TAT + Plan vs Actual</strong>
-              <small>FMS, IMS, Checklist, Tasks, and WhatsApp AI in one workflow view.</small>
-            </div>
+            <p className="sales-hero-cta-note">
+              Tell us where work gets stuck. We will recommend the first system worth
+              building — no generic software demo.
+            </p>
           </div>
-          <div className="sales-hero-preview" aria-label="Workspace preview">
-            <ExecutionSnapshot />
+          <div className="sales-hero-engine" aria-label="Sheetomatic turns daily business chaos into an organised system">
+            <Image
+              src="/marketing/unstructured-to-dashboard.png"
+              alt="Unstructured papers and chats flowing into a user-wise task dashboard and phone status view"
+              width={1792}
+              height={1024}
+              priority
+              sizes="(max-width: 900px) 88vw, 48vw"
+            />
+            <span className="sales-hero-engine-caption">Unstructured data → live control</span>
           </div>
         </div>
       </div>
@@ -75,21 +81,5 @@ export function AudienceFilterSection() {
 }
 
 export function SpreadsheetPainSection() {
-  return (
-    <>
-      <section
-        aria-label="Why teams switch from spreadsheets"
-        className="sales-pain section bg-white"
-      >
-        <div className="mx-auto max-w-7xl px-5 sm:px-8">
-          <div className="home-pain-hook home-pain-hook--compact">
-            <p className="home-pain-hook-eyebrow">{homePainHook.eyebrow}</p>
-            <h2 className="home-pain-hook-title">{homePainHook.title}</h2>
-            <p className="home-pain-hook-lead">{homePainHook.lead}</p>
-          </div>
-        </div>
-      </section>
-      <ProblemSolutionVisualSection cardIds={problemSolutionPresets.home} />
-    </>
-  );
+  return <SystemLaunchSequence />;
 }

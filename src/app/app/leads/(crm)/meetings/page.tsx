@@ -13,7 +13,7 @@ import { followUpTypeLabel } from "@/lib/leads/follow-up-types";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
-import { syncGoogleCalendarAppointments } from "@/lib/leads/google-calendar-appointments";
+import { googleCalendarSyncNotice } from "@/lib/leads/google-calendar-bookings";
 
 export default async function CrmMeetingsPage({
   searchParams,
@@ -26,17 +26,21 @@ export default async function CrmMeetingsPage({
   const params = await searchParams;
   const view = parseCrmMeetingView(params.view);
   const selectedDate = params.date?.trim() || null;
-  const calendarSync = await syncGoogleCalendarAppointments(user.organizationId).catch(() => null);
-  const rows = await listCrmMeetings(user.organizationId);
+  const [rows, syncNotice] = await Promise.all([
+    listCrmMeetings(user.organizationId), googleCalendarSyncNotice(user.organizationId),
+  ]);
 
   const meetings = rows.map((row) => {
     const scheduledAt = new Date(row.scheduledAt);
+    const endsAt = row.endsAt ? new Date(row.endsAt) : null;
     const completed = Boolean(row.completedAt);
     return {
       id: row.id,
       leadId: row.lead.id,
       name: row.lead.name || row.lead.company || "Lead",
       phone: row.lead.phone || "",
+      email: row.lead.email || "",
+      title: row.sourceTitle || row.notes?.trim() || "CRM meeting",
       whenLabel: scheduledAt.toLocaleString("en-IN", {
         weekday: "short",
         day: "numeric",
@@ -46,14 +50,22 @@ export default async function CrmMeetingsPage({
         timeZone: "Asia/Kolkata",
       }),
       ymd: istYmd(scheduledAt),
-      typeLabel: completed ? "Done" : followUpTypeLabel(row.type),
+      scheduledAt: scheduledAt.toISOString(),
+      typeLabel: row.cancelled ? "Cancelled" : row.source === "GOOGLE_CALENDAR" ? "Google booking" : completed ? "Done" : followUpTypeLabel(row.type),
       assignee: row.assignee?.name || row.assignee?.email || "",
       meetUrl: resolveFollowUpMeetUrl(row.meetUrl, row.notes),
       notes: row.notes?.trim() || row.lead.meetingNotes?.trim() || "",
       isToday: isIstToday(scheduledAt),
       completed,
-      externalSource: row.externalSource,
-      externalUrl: row.externalUrl,
+      cancelled: row.cancelled,
+      source: row.source,
+      calendarUrl: row.calendarUrl,
+      endsLabel: endsAt ? endsAt.toLocaleTimeString("en-IN", {
+        hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata",
+      }) : null,
+      sourceTimeZone: row.sourceTimeZone,
+      sourceStatus: row.sourceStatus,
+      requirements: row.requirements?.trim() || null,
     };
   });
 
@@ -62,9 +74,7 @@ export default async function CrmMeetingsPage({
   return (
     <CrmSubmoduleShell
       title="Meetings"
-      description={calendarSync?.configured
-        ? "Google Calendar appointments sync here automatically. Open a meeting to view details; Join appears when Google provides a meeting link."
-        : "Click a number to see that list. Calendar appointments appear after the Google Calendar connection is configured."}
+      description="CRM meetings and synced Google bookings, shown in IST. Cancelled bookings are excluded from active counts. Google bookings are read-only here and do not send CRM reminders. Past bookings are not automatically marked as attended."
       kpis={[
         {
           label: "Today",
@@ -98,8 +108,15 @@ export default async function CrmMeetingsPage({
           href: "/app/leads/meetings?view=done",
           active: view === "done",
         },
+        {
+          label: "Cancelled",
+          value: String(stats.cancelled),
+          href: "/app/leads/meetings?view=cancelled",
+          active: view === "cancelled",
+        },
       ]}
     >
+      <p role="status" className="text-sm text-slate-600">{syncNotice}</p>
       <CrmMeetingsCalendar
         meetings={meetings}
         canManage={canManage}

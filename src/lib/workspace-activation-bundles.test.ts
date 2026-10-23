@@ -26,7 +26,7 @@ describe("workspace activation bundles", () => {
   });
 
   it("does not offer App Builder as a workspace SKU", () => {
-    expect(ACTIVATION_BUNDLE_OPTIONS.some((option) => option.value === "app_builder")).toBe(
+    expect(ACTIVATION_BUNDLE_OPTIONS.some((option) => String(option.value) === "app_builder")).toBe(
       false,
     );
   });

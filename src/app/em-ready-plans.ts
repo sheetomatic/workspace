@@ -191,7 +191,7 @@ export const STANDARD_MODULE_LIST = {
 } as const;
 
 export const emReadyPricingFootnotes = [
-  "Prices in INR, exclusive of GST.",
+  "GST is extra and is not included in the listed prices.",
   "Meta WhatsApp conversation charges beyond included message credits are billed separately.",
   "Billing is monthly recurring; annual invoices available where listed.",
   "Implementation is quoted per business from FMS, Check Lists, and related scope.",

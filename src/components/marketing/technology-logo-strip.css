@@ -1,0 +1,79 @@
+.technology-strip {
+  overflow: hidden;
+  padding: clamp(4rem, 8vw, 7rem) 0;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(47, 111, 228, 0.14), transparent 22rem),
+    #12172a;
+  color: #f5f8ff;
+}
+
+.technology-strip-head {
+  max-width: 43rem;
+  margin: 0 auto 2.5rem;
+  text-align: center;
+}
+
+.technology-strip-head .type-kicker { color: #9fc1ff; }
+.technology-strip-head h2 {
+  margin: 0.55rem 0 0;
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 4vw, 3.35rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.04;
+}
+.technology-strip-head > p:last-child {
+  margin: 1rem auto 0;
+  color: #becae0;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.technology-marquee { width: 100%; overflow: hidden; }
+.technology-track {
+  display: flex;
+  width: max-content;
+  animation: technology-marquee 34s linear infinite;
+}
+.technology-marquee:hover .technology-track { animation-play-state: paused; }
+.technology-logo-group { display: flex; gap: 1rem; padding-right: 1rem; }
+.technology-logo {
+  display: inline-flex;
+  min-width: 12.5rem;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid rgba(173, 201, 244, 0.2);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.055);
+  color: #edf3ff;
+  font-size: 0.95rem;
+  font-weight: 760;
+  box-shadow: 0 14px 26px rgba(0, 0, 0, 0.16);
+}
+.technology-logo-mark {
+  display: grid;
+  width: 1.72rem;
+  height: 1.72rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.42rem;
+  background: #dce7f7;
+  color: #182947;
+  font-size: 0.67rem;
+  font-weight: 900;
+  letter-spacing: -0.06em;
+}
+.technology-logo-mark--sheets { border-radius: 0.2rem; background: #1d884c; color: #fff; }
+.technology-logo-mark--appsheet { background: #4d7cf1; color: #fff; }
+.technology-logo-mark--whatsapp { border-radius: 50%; background: #28a966; color: #fff; font-size: 0.48rem; letter-spacing: -0.08em; }
+.technology-logo-mark--workspace { border-radius: 50%; background: conic-gradient(#4285f4 0 25%, #34a853 0 50%, #fbbc05 0 75%, #ea4335 0); color: #fff; }
+.technology-logo-mark--gmail { background: #e9eef8; color: #e24444; font-size: 0.8rem; }
+.technology-logo-mark--openai { border-radius: 50%; background: #e0e7f3; color: #21324f; font-size: 0.56rem; }
+.technology-disclaimer { margin: 1.3rem 1.25rem 0; color: #8da0bd; font-size: 0.72rem; text-align: center; }
+
+@keyframes technology-marquee { to { transform: translateX(-50%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .technology-track { animation: none; }
+}

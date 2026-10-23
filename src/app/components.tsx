@@ -55,17 +55,27 @@ export function SiteBrand({
   );
 }
 
-export function SiteHeader() {
+export function SiteHeader({ homeSimple = false }: { homeSimple?: boolean }) {
   const workspaceOrigin = workspacePortalOrigin();
 
   return (
-    <header className="site-header-saas">
+    <header className={`site-header-saas${homeSimple ? " site-header-home" : ""}`}>
       <link rel="dns-prefetch" href={workspaceOrigin} />
       <link rel="preconnect" href={workspaceOrigin} crossOrigin="" />
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <div className="site-header-bar flex items-center justify-between gap-3 py-3.5">
           <SiteBrand variant="header" />
-          <SiteHeaderNav variant="desktop" />
+          {homeSimple ? (
+            <nav className="site-header-home-nav" aria-label="Homepage sections">
+              <Link href="#solutions">Solutions</Link>
+              <Link href="#bci-framework">How it works</Link>
+              <Link href="#technology-stack">Tools we connect</Link>
+              <Link href="/pricing">Pricing</Link>
+              <Link href="/contact">Contact</Link>
+            </nav>
+          ) : (
+            <SiteHeaderNav variant="desktop" />
+          )}
           <div className="site-header-actions">
             <a
               aria-label={`Call ${callingDisplayNumber}`}
@@ -87,7 +97,17 @@ export function SiteHeader() {
             </a>
           </div>
         </div>
-        <SiteHeaderNav variant="mobile" />
+        {homeSimple ? (
+          <nav className="site-header-home-mobile" aria-label="Homepage sections">
+            <Link href="#solutions">Solutions</Link>
+            <Link href="#bci-framework">How it works</Link>
+            <Link href="#technology-stack">Tools we connect</Link>
+            <Link href="/pricing">Pricing</Link>
+            <Link href="/contact">Contact</Link>
+          </nav>
+        ) : (
+          <SiteHeaderNav variant="mobile" />
+        )}
       </div>
     </header>
   );
@@ -106,8 +126,8 @@ export function SiteFooter() {
             <SocialLinks variant="footer" />
           </div>
           <div className="site-footer-links">
-            <p className="site-footer-col-label">Product</p>
-            <nav aria-label="Product links">
+            <p className="site-footer-col-label">Explore</p>
+            <nav aria-label="Explore systems and case studies">
               {footerProductLinks.map((item) => (
                 <Link href={item.href} key={item.href}>
                   {item.label}
@@ -155,6 +175,7 @@ export function SiteFooter() {
             </span>
           </div>
           <nav aria-label="Legal" className="site-footer-legal-links">
+            <Link href="/privacy">Privacy Policy</Link>
             <Link href="/terms">Terms &amp; Conditions</Link>
           </nav>
         </div>
@@ -237,4 +258,3 @@ export function MarketingPage({ children }: { children: React.ReactNode }) {
     </main>
   );
 }
-

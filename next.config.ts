@@ -15,6 +15,11 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: "/services/hr/field-tracking",
+        destination: "/services/field-tracking",
+        permanent: true,
+      },
+      {
         source: "/addons",
         destination: "/templates?category=cloud",
         permanent: true,

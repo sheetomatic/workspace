@@ -5,6 +5,7 @@ import { ingestInboundLead } from "@/lib/leads/ingest";
 import { getPrimaryOrganization } from "@/lib/platform";
 import { TEMPLATE_PRODUCT_SEEDS } from "@/lib/templates/seed-products";
 import type { TemplateOrderStatus, TemplateProductType } from "@prisma/client";
+import { templatePriceInr } from "@/lib/templates/commerce";
 
 const TEMPLATE_APPROVER_EMAIL =
   process.env.TEMPLATE_APPROVER_EMAIL?.trim() || "founder@sheetomatic.com";
@@ -53,7 +54,7 @@ export async function seedTemplateProducts() {
 }
 
 export async function listActiveTemplateProducts(type?: TemplateProductType) {
-  return prisma.templateProduct.findMany({
+  const rows = await prisma.templateProduct.findMany({
     where: {
       active: true,
       ...(type ? { type } : {}),
@@ -67,9 +68,13 @@ export async function listActiveTemplateProducts(type?: TemplateProductType) {
       priceInr: true,
       description: true,
       thumbnailUrl: true,
-      // copyLink intentionally omitted from public list
+      copyLink: true,
     },
   });
+  return rows.map(({ copyLink, ...row }) => ({
+    ...row, priceInr: templatePriceInr(row.priceInr),
+    purchasable: Boolean(copyLink && /^https:\/\//i.test(copyLink)),
+  }));
 }
 
 export async function listAllTemplateProducts() {

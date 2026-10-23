@@ -13,6 +13,7 @@ import { getStockRows } from "@/lib/ims/ims-store";
 import { mergeLeadContactWhere } from "@/lib/leads/contact-validation";
 import { hasMinimumRole } from "@/lib/permissions";
 import { getSalesOrderWidgetStats } from "@/lib/sales-orders/queries";
+import { hasSuitePart } from "@/lib/workspace-access";
 import { hasWorkspaceModule } from "@/lib/workspace-modules";
 import {
   DEFAULT_WORKSPACE_NAV_PREFS,
@@ -182,11 +183,10 @@ export async function getWidgetDashboardData(
   const isManager = hasMinimumRole(user.role, "MANAGER");
   const personalUserId = isManager ? undefined : user.id;
 
-  const fmsEnabled = hasWorkspaceModule(user, "FMS");
+  const fmsEnabled = hasSuitePart(user, "fms");
   const crmEnabled = hasWorkspaceModule(user, "CRM");
   const imsEnabled = hasWorkspaceModule(user, "IMS") && isManager;
-  const tasksEnabled = hasWorkspaceModule(user, "TASKS");
-  const emEnabled = hasWorkspaceModule(user, "REPORTS") && isManager;
+  const emEnabled = hasSuitePart(user, "em") && isManager;
   const hrEnabled = hasWorkspaceModule(user, "HR") && fmsEnabled && isManager;
 
   const show = (id: Parameters<typeof isDashboardWidgetVisible>[1]) =>
@@ -222,7 +222,7 @@ export async function getWidgetDashboardData(
       imsEnabled && show("ims")
         ? loadImsWidget(organizationId)
         : Promise.resolve(null),
-      tasksEnabled && show("checklists")
+      hasSuitePart(user, "checklists") && show("checklists")
         ? loadChecklistsWidget(organizationId, personalUserId)
         : Promise.resolve(null),
       emPromise,

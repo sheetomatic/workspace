@@ -10,11 +10,11 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sheetomatic.com";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Sheetomatic | BCI Suite for Indian MSMEs",
+    default: "Sheetomatic | Business Systems Suite for Indian MSMEs",
     template: "%s | Sheetomatic",
   },
   description:
-    "BCI Suite: Business Control & Intelligence for system-driven MSMEs — FMS, IMS, Full Kitting, Process Coordinator, Executive Assistant, and Review Rhythm in one operating system.",
+    "Business Systems Suite for system-driven MSMEs — FMS, IMS, Full Kitting, Process Coordinator, Executive Assistant, and Review Rhythm in one operating system.",
   icons: {
     icon: [
       { url: "/favicon.ico?v=10", sizes: "any" },
@@ -27,9 +27,9 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_IN",
     siteName: "Sheetomatic",
-    title: "Sheetomatic | BCI Suite for Indian MSMEs",
+    title: "Sheetomatic | Business Systems Suite for Indian MSMEs",
     description:
-      "BCI Suite for system-driven MSMEs: FMS, IMS, Full Kitting, Process Coordinator, Executive Assistant, and Review Rhythm in one operating system.",
+      "Business Systems Suite for system-driven MSMEs: FMS, IMS, Full Kitting, Process Coordinator, Executive Assistant, and Review Rhythm in one operating system.",
     images: [
       {
         url: "/images/og-default.png",

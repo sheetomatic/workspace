@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { requireSession } from "@/lib/require-session";
-import { BCI_OPS_MODULES } from "@/lib/workspace-modules";
 import { pcWorkHrefKey, type PcWorkKind } from "@/lib/checklists/pc-work";
 import { deliverWhatsAppMessage } from "@/lib/integrations/whatsapp-provider";
 import { PRIMARY_ORG_SLUG } from "@/lib/platform";
@@ -100,7 +99,7 @@ export async function recordPcFollowUp(
   formData: FormData,
 ): Promise<PcJobActionState> {
   try {
-    const user = await requireSession(undefined, { anyModules: BCI_OPS_MODULES });
+    const user = await requireSession(undefined, { suitePart: "pc" });
     const kind = parseKind(formData.get("kind"));
     const workId = formData.get("workId")?.toString() ?? "";
     if (!kind || !workId) {
@@ -144,7 +143,7 @@ export async function markPcJobDone(
   formData: FormData,
 ): Promise<PcJobActionState> {
   try {
-    const user = await requireSession(undefined, { anyModules: BCI_OPS_MODULES });
+    const user = await requireSession(undefined, { suitePart: "pc" });
     const kind = parseKind(formData.get("kind"));
     const workId = formData.get("workId")?.toString() ?? "";
     if (!kind || !workId) {
@@ -192,7 +191,7 @@ export async function completePcDoerWorkAction(
   formData: FormData,
 ): Promise<PcJobActionState> {
   try {
-    const user = await requireSession(undefined, { anyModules: BCI_OPS_MODULES });
+    const user = await requireSession(undefined, { suitePart: "pc" });
     const kind = parseKind(formData.get("kind"));
     const workId = formData.get("workId")?.toString() ?? "";
     if (!kind || !workId) {

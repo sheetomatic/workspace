@@ -30,6 +30,7 @@ type WorkspaceWidgetDashboardProps = {
   taskStats: DashboardTaskStats;
   pendingPayments: DashboardPaymentRow[];
   tasksEnabled: boolean;
+  reportsEnabled?: boolean;
   navPrefs?: WorkspaceNavPrefs;
 };
 
@@ -134,6 +135,7 @@ export function WorkspaceWidgetDashboard({
   taskStats,
   pendingPayments,
   tasksEnabled,
+  reportsEnabled = false,
   navPrefs = DEFAULT_WORKSPACE_NAV_PREFS,
 }: WorkspaceWidgetDashboardProps) {
   const today = new Date().toLocaleDateString("en-IN", {
@@ -210,7 +212,7 @@ export function WorkspaceWidgetDashboard({
               </div>
             </div>
           ) : null}
-          {show("collection") ? (
+          {reportsEnabled && show("collection") ? (
             <div
               className={`ws-widget-hero-stat${pendingPayments.length > 0 ? " is-danger" : ""}`}
             >
@@ -477,7 +479,7 @@ export function WorkspaceWidgetDashboard({
           </Widget>
         ) : null}
 
-        {show("collection") ? (
+        {reportsEnabled && show("collection") ? (
           <Widget
             accent="collection"
             alert={pendingPayments.length > 0}

@@ -1,7 +1,11 @@
 import type { WorkspaceModule } from "@prisma/client";
+import { BUSINESS_WORKSPACE_PLANS } from "@/lib/business-workspace-plans";
 
 /** Super-admin activation bundle keys (form `activationBundle`). */
 export const ACTIVATION_BUNDLE_KEYS = [
+  "business_starter",
+  "business_scale",
+  "business_enterprise",
   "bci_starter",
   "tasks_addon",
   "hrms",
@@ -18,10 +22,17 @@ export type ActivationBundleOption = {
   label: string;
   description: string;
   modules: WorkspaceModule[];
-  group: "product" | "bundle";
+  group: "plan" | "product" | "bundle";
 };
 
 export const ACTIVATION_BUNDLE_OPTIONS: ActivationBundleOption[] = [
+  ...BUSINESS_WORKSPACE_PLANS.map((plan) => ({
+    value: plan.bundle,
+    label: `${plan.label} — ₹${plan.monthlyInr.toLocaleString("en-IN")}/month`,
+    description: "Setup included. GST extra. Monthly plans, no yearly commitment.",
+    modules: [...plan.modules],
+    group: "plan" as const,
+  })),
   {
     value: "bci_starter",
     label: "BCI",
@@ -73,7 +84,7 @@ export const ACTIVATION_BUNDLE_OPTIONS: ActivationBundleOption[] = [
   },
 ];
 
-export const DEFAULT_ACTIVATION_BUNDLE: ActivationBundleKey = "bci_starter";
+export const DEFAULT_ACTIVATION_BUNDLE: ActivationBundleKey = "business_starter";
 
 export function isActivationBundleKey(value: string): value is ActivationBundleKey {
   return (ACTIVATION_BUNDLE_KEYS as readonly string[]).includes(value);

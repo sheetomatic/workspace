@@ -1,0 +1,1165 @@
+{
+  "baseline": "dpl_75i2VWs4yf4BYLeEux7QmuSWJbRu",
+  "files": [
+    {
+      "path": "next.config.ts",
+      "before": "fbbd2e542099b306730908d9345bd7fbd5487ffd",
+      "after": "e3eed02b101abb8245bcfe6aee46bac35ca711a555bc1874bdce0b45bbee7080"
+    },
+    {
+      "path": "package-lock.json",
+      "before": "545d4d3f41f9f6f52630e66737c40751c39dc186",
+      "after": "0a56f5369e51b0ab6e25c5837dd89eca2f7d193b5a603641e68a2f54d4f45743"
+    },
+    {
+      "path": "package.json",
+      "before": "fd0a6c8f17c221585bbb6e20e38d9a9a440931f4",
+      "after": "26c50d048db968740186229b4c215f1899f106beba623c258218ac1f2e60067b"
+    },
+    {
+      "path": "prisma/migrations/20260927160000_organization_social_schedule/migration.sql",
+      "before": null,
+      "after": "3198e0e729a436378889c093a6089b43c278f97753cb3fb96fac41a526eb5997"
+    },
+    {
+      "path": "prisma/migrations/20261019120000_explicit_client_access/migration.sql",
+      "before": null,
+      "after": "64c9c41d76e7826606f91568a9277168b799290f75ba7c6b3cc938dc36841b06"
+    },
+    {
+      "path": "prisma/migrations/20261020050000_google_calendar_bookings/migration.sql",
+      "before": null,
+      "after": "36ce34fe66f24aeed83f257d6cf1f99927a3f271e34f0b8d9f0aca3da955ebc9"
+    },
+    {
+      "path": "prisma/migrations/20261020060000_google_calendar_booking_details/migration.sql",
+      "before": null,
+      "after": "38bad6963e44859f5be2f51072f3f289d7dce7bb96406e486b7b80cfe612e6dc"
+    },
+    {
+      "path": "prisma/migrations/20261021120000_field_checkin_outcomes/migration.sql",
+      "before": null,
+      "after": "4b45942141d8c20e8396ab150908f908d80f6303fda40f27a2d17bdb492ed3bf"
+    },
+    {
+      "path": "prisma/migrations/20261021130000_field_conveyance_claims/migration.sql",
+      "before": null,
+      "after": "a412d23ac0ebd6bcb376d6ad292a47d9b0364b7cb662cac45ab06103aa196cd8"
+    },
+    {
+      "path": "prisma/migrations/20261021140000_hr_google_maps_embed_key/migration.sql",
+      "before": null,
+      "after": "43fd3ace65f85ac0f16d4808a813e8bd1c73eb4303e758691900e106008a00d4"
+    },
+    {
+      "path": "prisma/migrations/20261021160000_linkedin_lead_source/migration.sql",
+      "before": null,
+      "after": "346e9dd1fe5017a0c4a0c4870459f05c0cdb1cfcff5945e61c2b93a9e6b31c9e"
+    },
+    {
+      "path": "prisma/migrations/20261021190000_hr_recruitment_fms/migration.sql",
+      "before": null,
+      "after": "f41ca41af29214fb5e4b5e8ae1ea0b3a4a5560aca789bd5ae86f8951161a03c2"
+    },
+    {
+      "path": "prisma/migrations/20261021200000_google_calendar_appointments/migration.sql",
+      "before": null,
+      "after": "0eccde51b13856d3f3fb3895d0cc941d9acf173663a461ece1d0747000e0a046"
+    },
+    {
+      "path": "prisma/schema.prisma",
+      "before": "66aeb8ffe8f2d264023da5e05ed038b0bd6d0044",
+      "after": "e897730058f6cce92672a70f7bcddc915fa3fbe144e0db78ebaf0962d6c2b19e"
+    },
+    {
+      "path": "scripts/pin-production-aliases.mjs",
+      "before": null,
+      "after": "bdae1c348542c62fdea886a5c38eb1714bf2177025d0fd60b5f00c2f670f8bc8"
+    },
+    {
+      "path": "scripts/reconstruct-preserved.mjs",
+      "before": null,
+      "after": "0b5a77413c2887590200c986bf5dc5d78126bd1dcf258d28d2921ebea1b8a497"
+    },
+    {
+      "path": "scripts/release-schema-preflight.mjs",
+      "before": null,
+      "after": "efe693136773aaecc514f170c2be52b9fb78b558f336e82b4f9c0361e1a1fca6"
+    },
+    {
+      "path": "scripts/services-release-files.json",
+      "before": null,
+      "after": "6d73e1448858ec6c72578d1096daf885f755d7a3c037af9bc12c761bf01887f2"
+    },
+    {
+      "path": "scripts/services-release.mjs",
+      "before": null,
+      "after": "938ee78650d29c150dd04b5e3b81ba495dafdbeaecb4599306cbf24f512f01de"
+    },
+    {
+      "path": "scripts/verify-production-forward.mjs",
+      "before": null,
+      "after": "362970fc9191d545985ce5bf0c5de5390f044e38bb4485c6b1a4da009fa33f94"
+    },
+    {
+      "path": "src/app/about/page.tsx",
+      "before": "dd923a9fbeb7877d40b8b11f9a538721a6ef9467",
+      "after": "b51b7c744e9b846c5e9a17166a7cc94fe8e74f8aafba4350d6ccd81aa322aead"
+    },
+    {
+      "path": "src/app/api/checklists/import/templates/route.ts",
+      "before": "b169d9d650f86c3d9bafea8669941fdd6a356696",
+      "after": "c5b833bae882188e43d019312d3746a487028212584d2df2d5d881a7ecd5b41c"
+    },
+    {
+      "path": "src/app/api/cron/google-calendar-appointments/route.ts",
+      "before": null,
+      "after": "cf64ad9e2f08e0a73ac5e4617f73c8068e27810c548cefebfd79e1758edd125a"
+    },
+    {
+      "path": "src/app/api/cron/google-calendar-bookings/route.ts",
+      "before": null,
+      "after": "6672d0197cd4df904bb59f4464969051eb9af5bb709a8819c7254451f6342c40"
+    },
+    {
+      "path": "src/app/api/fleet/alerts/escalate/route.ts",
+      "before": "27146ad92f3e8b9e9d0f46a6bdf8a73ccd4a0c72",
+      "after": "aaa49a6c0068bf79f28016ee10fa28cc194b1c82d4ee4da70b7187554b1d7157"
+    },
+    {
+      "path": "src/app/api/fleet/alerts/resolve/route.ts",
+      "before": "83a6481e724b8a82e061fdae2995d89cb6ce3cd8",
+      "after": "ae5569e8c086e59eabab68e0c6e3f1b28b77a230d7ed1f4700ed3b89d41fb1bc"
+    },
+    {
+      "path": "src/app/api/fleet/board/route.ts",
+      "before": "8513717e919018e7a86e9079843bc14e5a4fe79a",
+      "after": "1c77eb34501be9da08b79527210109edc68304fb0d3bf83195e84445e7311b97"
+    },
+    {
+      "path": "src/app/api/fleet/demo/route.ts",
+      "before": "620b4b80ad13bd8ddf52a0a980d8f4dafef17752",
+      "after": "e557a75949b2cca7173d0044beebf9665d5bf21c81c7de30f4832418c6bf8dd5"
+    },
+    {
+      "path": "src/app/api/fleet/vehicles/route.ts",
+      "before": "7ffededb95b4cac157331202257dde7b5a0b6c0b",
+      "after": "cd445f457bbcb30ea3af414434d6275191dac4908aaf18589709ed72f7fef95f"
+    },
+    {
+      "path": "src/app/api/fleet/weighbridge/route.ts",
+      "before": "6b31763f9a859978b1eb5f38888d1d19031e7a0e",
+      "after": "289bcd0bb56027dec2b15375d5b219c14ba3336905baca27ae98fcfada397d8d"
+    },
+    {
+      "path": "src/app/api/host-allowed/route.ts",
+      "before": null,
+      "after": "90d0b3db3c3bcc830327c82b4a5c9e1e1d247f9de71fc1edefdeda2b4adfba08"
+    },
+    {
+      "path": "src/app/api/hr/field/conveyance/[claimId]/payment/route.ts",
+      "before": null,
+      "after": "e9acbc4ae5d8ac657c74cecd2a2803633797c098d01279fe2af863a509315534"
+    },
+    {
+      "path": "src/app/api/hr/field/conveyance/[claimId]/review/route.ts",
+      "before": null,
+      "after": "5db07cb4b3ef5c07e03032b1b306ca2dfb162722194dd616294f63995d30ecf1"
+    },
+    {
+      "path": "src/app/api/hr/field/conveyance/attachments/[attachmentId]/route.ts",
+      "before": null,
+      "after": "7aece0e6dae70a70d0dffdb185432187f8cfc8f9fe7cb63db639c25835de959b"
+    },
+    {
+      "path": "src/app/api/hr/field/conveyance/route.ts",
+      "before": null,
+      "after": "dba8b757c32071474158a5ca5b6e6300e2552c9f55183bf3bed24984d39be584"
+    },
+    {
+      "path": "src/app/api/integrations/linkedin/callback/route.ts",
+      "before": null,
+      "after": "d8cb3c79e18682116f672657fe37d5dde19ff05359144f96a7c1612b458783f3"
+    },
+    {
+      "path": "src/app/api/integrations/linkedin/connect/route.ts",
+      "before": null,
+      "after": "e329cbd7106c0a2dfba27780f5f064cd5c0886032476dcf133c0d3c9bf9e3a36"
+    },
+    {
+      "path": "src/app/api/tasks/checkout/route.ts",
+      "before": null,
+      "after": "6c6f632b6bd05a7f90220852792debfc24432ca640c8de1e90bc50c963d32404"
+    },
+    {
+      "path": "src/app/api/templates/checkout/[id]/invoice/route.ts",
+      "before": null,
+      "after": "bf073a935831528867199c41292ad01692df2c628a306ee07683e4f8f5644d83"
+    },
+    {
+      "path": "src/app/api/templates/checkout/[id]/route.ts",
+      "before": null,
+      "after": "494a65aac148d9bb5a6f7fee81e5bbfb478d5b973e8c170566791ee552cbef9b"
+    },
+    {
+      "path": "src/app/api/templates/checkout/route.ts",
+      "before": null,
+      "after": "1a95db2d1544d3a898cf333ae8506119e199e34f45ee5ffc9b3d6a5341c233ea"
+    },
+    {
+      "path": "src/app/api/templates/order/route.ts",
+      "before": "1c147c09ecf1ff55c3ceb6b5b0de7b2f48d34708",
+      "after": "0ab99313d2653011b6043c9b04be19ed1f4da5086fbffdcd2c28e081d1dc2d29"
+    },
+    {
+      "path": "src/app/api/templates/webhook/route.ts",
+      "before": null,
+      "after": "a833e0d879c389158647cc67464940073154459f327e096d22d558686a2c7228"
+    },
+    {
+      "path": "src/app/app-builder/page.tsx",
+      "before": "91fbc183bee37d785859c3652f5637dadf7674cb",
+      "after": "fa70fde145e4f0cb2a3d9e38e20533de952db36c021611f545bd673c34c5171a"
+    },
+    {
+      "path": "src/app/app/approvals/page.tsx",
+      "before": "95f55e046e6c0f012b1265c9b879262da84b0a9e",
+      "after": "a8e6b644f33abe2dcd470a5ea56ec25c704ff2591da012691aadd9ab0e54a8bc"
+    },
+    {
+      "path": "src/app/app/clients/actions.ts",
+      "before": "2a8f9ad2a0350a6a86b80e3dfeaf9757e05d1a73",
+      "after": "1f24ce121ee865ef386c7bc4f62588daf68c0802225980f5b49dc85618130dd8"
+    },
+    {
+      "path": "src/app/app/em/page.tsx",
+      "before": "eb785da9cc10a49fcb4436a19492db767719c6f8",
+      "after": "d17acafd9df2c91cad485e59136c14ee1938019179bc10d26cea07df2ebf02d4"
+    },
+    {
+      "path": "src/app/app/field/conveyance/page.tsx",
+      "before": null,
+      "after": "a5a2cf0981a3dbaff20c47b896ebc851a49a918309cefdb8f6743bc5f39d6b7a"
+    },
+    {
+      "path": "src/app/app/field/page.tsx",
+      "before": null,
+      "after": "91a6d48b753fe90f0716ea2a8e47347b4abd0eab5f69186aabd790c308774de7"
+    },
+    {
+      "path": "src/app/app/fleet/driver/page.tsx",
+      "before": "c3f1ac3dcfc800fbd0e149f8530792d9f03c39eb",
+      "after": "6dcb16761dfc3e694cdec354177c6e9fdb7b0026934908d37ab10c805df79c80"
+    },
+    {
+      "path": "src/app/app/fleet/page.tsx",
+      "before": "0cdabf4ccf5d03d68ae4197e58d4e5ebfa9e03c3",
+      "after": "05e32f3abcc2f7100e921d0f4362db8bd39d40ea1e9be0ac394ff21c7f721614"
+    },
+    {
+      "path": "src/app/app/fms/kits/actions.ts",
+      "before": "435b1f24353add28029ff758d935dbe9fcdab230",
+      "after": "fc90b1f30b636cd3b3b0654e4eeb5eb121c2d3e1455b2c757544b2b2aad348fd"
+    },
+    {
+      "path": "src/app/app/hr/field/conveyance/page.tsx",
+      "before": null,
+      "after": "2b2655ddd3207f6a5249ae0d271e222d780d029bee9d5970553d611ed3b566c5"
+    },
+    {
+      "path": "src/app/app/hr/field/page.tsx",
+      "before": "09f17e940f3d413a36927d8082d5c329be7bf92f",
+      "after": "0ed448679e245f68818359244c3707501990c50f582840fc998b5045ebadf3b0"
+    },
+    {
+      "path": "src/app/app/hr/hiring/page.tsx",
+      "before": "25233146b3c3f9402e20f55a0cd0efcc4995a7a3",
+      "after": "203b6979a2d789c3eb97e731a24f5e1fa8dac884d0579c0890d718cafdb9a2d5"
+    },
+    {
+      "path": "src/app/app/hr/page.tsx",
+      "before": "2821e0587ab9958c4c2696d766783344c19097be",
+      "after": "8ac07824d25ccce1fd8898194c9f560eb62450387f3672c6b8b3e0e563d89040"
+    },
+    {
+      "path": "src/app/app/layout.tsx",
+      "before": "5af90bb7f2ad5752eaa0b2467ea3f9f55f1f4321",
+      "after": "abecaeb5bce4b12ae56016f4db0818ffebfb8c3f5109f88f2910c5dae2c47f2a"
+    },
+    {
+      "path": "src/app/app/leads/(crm)/meetings/page.tsx",
+      "before": "195d371fa4f50ce5b8ade9ebf04a165390e03661",
+      "after": "b2f7f5c4ed50f2384db1c38694a8bf15cf6692524d1eedcd05b239ad8bc09466"
+    },
+    {
+      "path": "src/app/app/page.tsx",
+      "before": "c00b2911a90f27fe95c0456d199f77071be77878",
+      "after": "72830a30d1d8287fdceed677d60893a1401fd7ae2c5b27ace3953bd950edbc6d"
+    },
+    {
+      "path": "src/app/app/pc/actions.ts",
+      "before": "b9b9f1eda5e3bea5fb93317d647dbcc2323be882",
+      "after": "8dbb92dbb140762a3165e29e0f26618fbea336f8956f6f5b16ae0246866f637e"
+    },
+    {
+      "path": "src/app/app/settings/addon-actions.ts",
+      "before": "ff204dca0646589c0f19da7bfe1b6f308976e103",
+      "after": "d12496c3918a15c521ed94425d2554a14e1a89e7fe2bd750c1352b2ad7fbea29"
+    },
+    {
+      "path": "src/app/app/tasks/actions.ts",
+      "before": "619ebe0f09acdc9b117e5df7f48cd81f391ac60a",
+      "after": "e8c5a4adda63eb1d1defc58bff56ae0d1f2d3edc0a65a13c6534ffc72361aca2"
+    },
+    {
+      "path": "src/app/app/tasks/page.tsx",
+      "before": "ac965b9aedaf2df7bd52179a2252425d69f2a2ce",
+      "after": "85a4736f82fe4457eb37303658021b0fffd8bcfa513770fa4cf7af38d62a0ea4"
+    },
+    {
+      "path": "src/app/app/team/actions.ts",
+      "before": "e98a14dac3e28d41bf3f9e58cf286e3fdab71e94",
+      "after": "f1b69218e468c2dcf53ca15bcb5554620e7ab57d7a79881e8ae88e5f90f7a613"
+    },
+    {
+      "path": "src/app/app/team/platform-actions.ts",
+      "before": "08dd6b46a3563fb04abab0c15102bac0cc4fadc4",
+      "after": "e2f504f510f24dc86bad1c66af80e4ffa0caea7a960750c1c341e339e8d3211c"
+    },
+    {
+      "path": "src/app/app/today/page.tsx",
+      "before": "321f67e156c2cf6d262df085d8234a2df4859d9c",
+      "after": "da12fb5ba6a2286331b90adbb01c5bba3b436e44dc08417fbe924a14091ee99f"
+    },
+    {
+      "path": "src/app/app/workspace-resolved-shell.tsx",
+      "before": "a7fba50b73655535e23b31fc57a28b9bbbcbd437",
+      "after": "e2ad0f602a9c489b4f9397e8cfea8c1a734016e5c868501440f2eb70601694f4"
+    },
+    {
+      "path": "src/app/apple-icon.png",
+      "before": "e142fa1caf7cea0c46fb8cdfcb54a98fa68de0f3",
+      "after": "1ba47fa955c13299713eaa1d58dd057674137add364b0986ee0408d673fdc8de"
+    },
+    {
+      "path": "src/app/apps/page.tsx",
+      "before": null,
+      "after": "3e8ba1e62a4d402e95a1fd5e81001238e2cac77bae359fd8af74c3da4e074cfa"
+    },
+    {
+      "path": "src/app/components.tsx",
+      "before": "0271db502161eb7082720cafb509ad9d1a1aaf74",
+      "after": "20fce5080ed0f1f2666e274cd474be86864bc96440c6eeb0d3562a96cf11b8e3"
+    },
+    {
+      "path": "src/app/contact/page.tsx",
+      "before": "cf41aca5029af3a74db4da601d401eba2c055e52",
+      "after": "26e968b37b0fd1bef354cf87a171da2c3422d0f23d50eaaababb77844694ed40"
+    },
+    {
+      "path": "src/app/courses-content.ts",
+      "before": "fffbff971936a6db942980033b4930daf19e4e15",
+      "after": "446ffae5c6f5587dcbc166356429fe32c53712d2c1c15caed7be3b5a0304249b"
+    },
+    {
+      "path": "src/app/courses/page.tsx",
+      "before": "670b325764a88db30f2d1d954cfeec57a79bebce",
+      "after": "51820e899b3505d22ca79cc4cd839404c678d2533d2b4351250eeccae8f31b09"
+    },
+    {
+      "path": "src/app/em-ready-plans.ts",
+      "before": "e90b963ce1d9524b8519d9ddaa0d4b5589641d0b",
+      "after": "30b919670e1879acbd16d6c8d7a85f6d3b4fc52aa5100a893c368ce25dfbc826"
+    },
+    {
+      "path": "src/app/favicon.ico",
+      "before": "85ead8e161ac445541786b466273048dfe942eb4",
+      "after": "fa73bde166a8fec84b749a430fc770ec02119283c29ab96e8c02a3179d38f960"
+    },
+    {
+      "path": "src/app/globals.css",
+      "before": "daa648de5a73768d7106194e6f2c2fc6b2d6de6f",
+      "after": "c43502d0837947e56cc3ebb26e047d48ed5bdd669e17dbb889bc8b5e439a2736"
+    },
+    {
+      "path": "src/app/hr-module-content.ts",
+      "before": "a04c7dd8b7f06dcbecc12831c8cc966736a5a4dd",
+      "after": "7e66c0380289535e2d123b2b73b649579ec509bb7d11d3e67c66f72d6e69e673"
+    },
+    {
+      "path": "src/app/icon.png",
+      "before": "ab2635cb2ddb5aaaf79fd2e5920bd5665cd02617",
+      "after": "818eb2c4cccd3e749f75360edc4180a0c78fe67bda541ed4247c6fbb56c53159"
+    },
+    {
+      "path": "src/app/layout.tsx",
+      "before": "4a3397cc53b7b7f8baf6009447538b391cb61f17",
+      "after": "235ebc50e7860b8513fba4d6982ea6921daed6b3ea3f2b3e9020dd3495758260"
+    },
+    {
+      "path": "src/app/page-content.ts",
+      "before": "a0c0444a774184c6c3ae6574d0d64d337a0af790",
+      "after": "01829714d8b82a66a26c5f2851dc3ed5e469923887f059b97cbc4a801928af13"
+    },
+    {
+      "path": "src/app/page.tsx",
+      "before": "529868381e3f61de23e1e14a14a494dfd868879d",
+      "after": "58a7d86d0b75da0b4a9d59674b09b7b0b286e185aaeb10b0921d79e736edc28e"
+    },
+    {
+      "path": "src/app/pricing/page.tsx",
+      "before": "1f87108c429d994f0b5125b416f536f63f3c5367",
+      "after": "8bdccf4009e017073742d0ad44b418b3f950b73cbd22714fc330012eecc82aea"
+    },
+    {
+      "path": "src/app/privacy/page.tsx",
+      "before": null,
+      "after": "d5cf3eb793bb4ef5b64d68e7f3e933a554d69349c75304ad3a1c5c4877d7d1a3"
+    },
+    {
+      "path": "src/app/products/page.tsx",
+      "before": "82ff31dbf21b1196dffc792dc65f10761da0fcae",
+      "after": "bda442ab27b5b48d5670832e944c95c5a96f5173d21a2281f9e83eae3ea8ff59"
+    },
+    {
+      "path": "src/app/sales-framework-content.ts",
+      "before": "5b5566ef026d8fa4fbfae06b7546f7d5a542a6a4",
+      "after": "989a5cddb2ca624550f936bef4c6e1ba807b247a462c3fbdc5b1c09bac9e5a33"
+    },
+    {
+      "path": "src/app/services-content.ts",
+      "before": "3a639b14ed8ccb8236ee9621846fafd257b03205",
+      "after": "f57f951bac855a492dba98de5890507bd42790d0ffaf2306c506bdc8d3a6783d"
+    },
+    {
+      "path": "src/app/services/hr/[moduleSlug]/page.tsx",
+      "before": "7dc84d4ce3a0e9525ce1b49f1a5e4ec23d6a58f7",
+      "after": "5d5ef50b75769708eaa56430918e78bb5ab7d5dac27ff8d299e0f88620b712fb"
+    },
+    {
+      "path": "src/app/site-content.ts",
+      "before": "91fdf0c8d56324a6babef47c4858163874e2745f",
+      "after": "6ea7e43f34e0b18305d00082e55edfc0e69d718f2644f5ebb20fb8fa15a539ff"
+    },
+    {
+      "path": "src/app/templates/page.tsx",
+      "before": "53e278c06ae09c3f597aaefafc07da3183b227d8",
+      "after": "c960516276b049ad4716462163e2be7bd41af78066da1310288bc3a6ec6b5ff7"
+    },
+    {
+      "path": "src/app/video-content.ts",
+      "before": "58b39a7d636f10785beafd19743f35c20086e7f3",
+      "after": "f1b6684f2df2410d6a9b62404e6cb40963a57e84d8895e7404ef89d9a91db34c"
+    },
+    {
+      "path": "src/app/whatsapp-plans/page.tsx",
+      "before": "5bcce5c062ca1d2ac177c791ee4ce49aeb0b8152",
+      "after": "589e13c6fb93423c492386350a304dc7c9c48c98a3976c3db399987c13f3a338"
+    },
+    {
+      "path": "src/components/hr/field-conveyance-workspace.tsx",
+      "before": null,
+      "after": "83d050b0222f1217ffd4c47b532832bb48a3443323212cc67d99594ec84979b9"
+    },
+    {
+      "path": "src/components/hr/field-day-trail.tsx",
+      "before": "d83634efbccda6d6eb9b99304858643b087dbeaf",
+      "after": "1b4349ecb1847803671996a19a78327a297097986030d949e0e2a9775a3d6233"
+    },
+    {
+      "path": "src/components/hr/field-distance-board.tsx",
+      "before": null,
+      "after": "6009b3a0b1eecdf2b83022d58d8667190de010ba5c1942b6aaaf07b0d6641536"
+    },
+    {
+      "path": "src/components/hr/field-map-board.tsx",
+      "before": null,
+      "after": "2140601062fdf86f537fd2a6df7a7b77be2247e9b03a4259031f7161f1975261"
+    },
+    {
+      "path": "src/components/hr/field-map-settings.tsx",
+      "before": null,
+      "after": "d2f2a0945aff231b70bfa386f1b30ff48b2c5e5fe7ca0b7a5fc24a637d7d576b"
+    },
+    {
+      "path": "src/components/hr/field-proof-upload.tsx",
+      "before": "4014ecc8ef44a103e827fee2d291422852c478ce",
+      "after": "f03957e0202a11c58e313c839d16353edb390bc284e91669c68ffa69f7fd9855"
+    },
+    {
+      "path": "src/components/hr/field-sub-nav.tsx",
+      "before": null,
+      "after": "0ff42ae8c86a2786aa123eaba26602d4d934f4984350e62652eec76a934367b2"
+    },
+    {
+      "path": "src/components/hr/field-visit-status-button.tsx",
+      "before": null,
+      "after": "a5038f1d9ff51dc93908587d2db3136fceb54ccf37b823df9d0a5e6764f3f1d3"
+    },
+    {
+      "path": "src/components/hr/hiring-admin-panel.tsx",
+      "before": "b24dbef39175d3f23f860fdd5aceefd2dc0ffb17",
+      "after": "c479dd61131db5059c2b11ca8c6195d75dee3a496138b8d3ea143a4c6d6152d1"
+    },
+    {
+      "path": "src/components/hr/hr-sub-nav.tsx",
+      "before": "6dc01a147279c45b9ed72f4d05973f8684df7471",
+      "after": "047890ec3f57c5b5625df7fb8c383c78870e71533494ed1e9ee80292223474de"
+    },
+    {
+      "path": "src/components/marketing/ai-site-chrome.tsx",
+      "before": "d584ae068accc57a8415262c50ee40757f4ce4ca",
+      "after": "228bf7ce66d94a9012359d7a5e58f47f156b6cc7c0d3da4869d9c222df444ec5"
+    },
+    {
+      "path": "src/components/marketing/bci-framework-section.tsx",
+      "before": "9748e32c098a3d414ca97f229c27dfb119329007",
+      "after": "bd16f6e965d4247004e9c607c0726eb60486b6dd9642e6eeedf3fde14ea774c0"
+    },
+    {
+      "path": "src/components/marketing/business-library-section.tsx",
+      "before": null,
+      "after": "2245c8433fdcc52e3b17499d55c4a689439f746b506d1c9d9839d26d65c6f60f"
+    },
+    {
+      "path": "src/components/marketing/business-library.css",
+      "before": null,
+      "after": "733d39c394e73f587f2faa95972415cfb420adb74d2f39fd3f8fe76e403c886c"
+    },
+    {
+      "path": "src/components/marketing/business-systems-pricing.css",
+      "before": null,
+      "after": "4eae231ef5f1ad0f1680a2cca30f184c3f2d45804cfe63ff0ddc83efa4c622c8"
+    },
+    {
+      "path": "src/components/marketing/case-studies-page.css",
+      "before": null,
+      "after": "e8b71e21f45804baa45468d4102f4dae2cabf0df6edf4f7c85d8bf257611065f"
+    },
+    {
+      "path": "src/components/marketing/client-projects-showcase.tsx",
+      "before": "637f520914d905f5b00d8b87424f19cb1a4c0d88",
+      "after": "2a06e52ff86bad0cd76e822dec6099f83f3ff62d39a66b63674d4a160057144f"
+    },
+    {
+      "path": "src/components/marketing/cloud-apps-page.css",
+      "before": null,
+      "after": "c13b4a61fabce4ae82765d3bcd743e846fc27ff7c3652e6bc917e4c3fc2abd3b"
+    },
+    {
+      "path": "src/components/marketing/contact-page.css",
+      "before": null,
+      "after": "65b5345f26082012fd30ca616b0b38b2847af8ee4b0a77b41c7a6fc4eb5378cd"
+    },
+    {
+      "path": "src/components/marketing/courses-enroll-pay.tsx",
+      "before": "a1385715267d4d70a11546b3a8205a1318941520",
+      "after": "18b4becf9490246650cdd2637d6fd485b724d1a03060ba0dcd687ec8d7fd6944"
+    },
+    {
+      "path": "src/components/marketing/courses-page-content.tsx",
+      "before": "ea8c001d1d5c7eacccea59f086c5ef9468272133",
+      "after": "1ce64317c17a42722595e2ec84b623739b21c9cbc4219b7701509598aca9435e"
+    },
+    {
+      "path": "src/components/marketing/courses-page.css",
+      "before": "50fd865ca3389b0cc31410e6a80dedce0d268984",
+      "after": "f92c2d0a345e9aabacae02e6423156c3e093634600ca456538085bfec0fc82e9"
+    },
+    {
+      "path": "src/components/marketing/em-ready-pricing.css",
+      "before": "23d9c58c6d12de5132630a301e7e5719dcd90ddc",
+      "after": "748f90244e5b415b3b93a81091cf00808e5b777191b38aaaef18721591b79a59"
+    },
+    {
+      "path": "src/components/marketing/em-ready-pricing.tsx",
+      "before": "03e0f520a68d3f540188d52e81b732bb24efe2fc",
+      "after": "e759441f7ca16a76c7b3df981292c10a9ef1a619b27d08564d5967e4b0c3cc8e"
+    },
+    {
+      "path": "src/components/marketing/home-page.tsx",
+      "before": "882d924c252a5bad474974a47458612e8547079f",
+      "after": "607e0b17bb466ac73c4ff9abd36f2e46208751ef4bd0a2a55086dc6fad41b68b"
+    },
+    {
+      "path": "src/components/marketing/how-we-work-section.tsx",
+      "before": "3837b3582b2c4d906d316dd7fe954494e40f9c73",
+      "after": "2bd4f2e305ff1a4414b2ca5c700d542a211e5df25ccd046940df73b49bf8ee49"
+    },
+    {
+      "path": "src/components/marketing/how-we-work.css",
+      "before": "38180219039bcac5b85855e81af4d5c4db1f1f9a",
+      "after": "cddeb53be8936f5459e35f860b02766636c36d88b6500edb06bae66dc9f4f890"
+    },
+    {
+      "path": "src/components/marketing/hr-service-detail-content.tsx",
+      "before": "1958d8a2168f22c8442808bfab77e276f9124d7a",
+      "after": "b7d3610275a61f107c91daa440d575e4365878c83811ff33a787c6d901c4abad"
+    },
+    {
+      "path": "src/components/marketing/minimal-premium.css",
+      "before": "fa2b1c9aadc839a433175d2ad9ed6d61115300a2",
+      "after": "afa292de433b9c8b0d7ed77d2489d124895714bd855ab4247091fe3515af373a"
+    },
+    {
+      "path": "src/components/marketing/problem-solution-visual.css",
+      "before": "d92854672dacce216ef2d033a4b611e355c68d74",
+      "after": "19c480ebd2630807a657ac2668ed54d2ecdbcecf210629e1ee7cf85dd1a118b8"
+    },
+    {
+      "path": "src/components/marketing/problem-solution-visual.tsx",
+      "before": "08868d439d351d47bff2183bcc895aa3b3917fc6",
+      "after": "55c2b5961f78d862d3ff34c4d8cdf318107bbf61ed4930106c7b41cd6ac3710f"
+    },
+    {
+      "path": "src/components/marketing/products-page-content.tsx",
+      "before": "683e68520d7cb63a5f034d0e3ac2be75b69ca2cc",
+      "after": "d12a81633e41e3993398d54e4b6552d4e36412c07677715f09924da156424923"
+    },
+    {
+      "path": "src/components/marketing/razorpay-checkout-loader.ts",
+      "before": null,
+      "after": "a027b2d19b9e7c8426d34698e42485e1d5df283c0743d71eb3a3b5f756311bd8"
+    },
+    {
+      "path": "src/components/marketing/related-services-section.tsx",
+      "before": "95949c7d7cc16044016ad91ac64e481d838adc6b",
+      "after": "7edef283f42456465a5ef1c7a3946da536b718d2d1054f815d040008d9d83020"
+    },
+    {
+      "path": "src/components/marketing/sales-journey-sections.tsx",
+      "before": "db87ffc53bca45467d00c40c661e693feb81923c",
+      "after": "69e408a1ebe1979e4bea67bc989ea22e9bc38122a7125c4dd1312d952f6f54f3"
+    },
+    {
+      "path": "src/components/marketing/sales-journey.css",
+      "before": "aee6e8ccdb35b49eef55f5b9ef98a3b949d94314",
+      "after": "e53f33de9e2334ddd1cc070d0c0671e7f477a6691cc8562d80f342e348487efe"
+    },
+    {
+      "path": "src/components/marketing/services-category-content.tsx",
+      "before": "95bfee2a708b3d2fee7f4cfc6e7e0abdda3523eb",
+      "after": "b5ef484be7e4f019f731d209e296b50f4bd547c9a1d112c0260d639a50c4d974"
+    },
+    {
+      "path": "src/components/marketing/services-hub-content.tsx",
+      "before": "f6ab686902c0764e04509da9bcccd6e3b0188b07",
+      "after": "e75d4361980278daedbb4a28492af346de1344bee3190566737870d54b4abd62"
+    },
+    {
+      "path": "src/components/marketing/services-page.css",
+      "before": "b6b6a1a6c9499e6109a9e475d34f3022a70b069c",
+      "after": "b0e51822ea8f03f496c6c5c29e50abb59ef9f318088b49ba3d450b6f24f2da3a"
+    },
+    {
+      "path": "src/components/marketing/site-header-nav.tsx",
+      "before": "77310da37c5cd364a59a6002a16fec570d1051a5",
+      "after": "40d1765845477ede0fba71c272ff01bc43102cb906022d844d9b1bebce5507a4"
+    },
+    {
+      "path": "src/components/marketing/system-launch-sequence.tsx",
+      "before": null,
+      "after": "f68243c0e6d3f3803567f70394193790c0e916a8fdd9e5b61bf867f904a4458f"
+    },
+    {
+      "path": "src/components/marketing/tasks-checkout.tsx",
+      "before": null,
+      "after": "a9ab4d6d174c92372870182c0d9028a387b7ccae29d1a5d7c6837d5a609c2835"
+    },
+    {
+      "path": "src/components/marketing/technology-logo-strip.css",
+      "before": null,
+      "after": "e5998bf755e5c053a36363c1f97b0872f84ec062f4554bc2fdb4b11719f93524"
+    },
+    {
+      "path": "src/components/marketing/technology-logo-strip.tsx",
+      "before": null,
+      "after": "a7d7d94aef0d4d18ddd52a781c2129b38e4650c4134a672f953cd47d7a47c795"
+    },
+    {
+      "path": "src/components/marketing/template-cart.css",
+      "before": null,
+      "after": "e590018fc6ae1ce75fff8486bb1e10d936edee329cd2c34556626b51d7731a04"
+    },
+    {
+      "path": "src/components/marketing/templates-store-content.tsx",
+      "before": "7d2f21bb2c9668d46e34c73b783496314a341c16",
+      "after": "3fc3732d88e66cef041b343e87e18dd80dcb97f6dfe9d42ca016dd14502e271c"
+    },
+    {
+      "path": "src/components/marketing/video-embed.tsx",
+      "before": "8b9964d5001ab7d3678d17b6ac756083b33a1d38",
+      "after": "02aea4ef1d24caacafb54466ffb61029e9a193a5f2025284344828461254fa18"
+    },
+    {
+      "path": "src/components/marketing/videos.css",
+      "before": "e164a814013e66468b5694f2b90d78824f86d5e2",
+      "after": "99b2388eb0110e59128e7eecf17fd641a8be3656644e284c4ad76a2cb3e7fd9f"
+    },
+    {
+      "path": "src/components/marketing/wa-product-sections.tsx",
+      "before": "b3b42af6e335e0be84f59ae0c3c299a64b0ddda2",
+      "after": "61a36507b34c5e544a35fc2f9fc26c4d85976a63773e2e88f0df345c9b626a45"
+    },
+    {
+      "path": "src/components/marketing/whatsapp-plans-showcase.tsx",
+      "before": "1939c30c1b02af49ad62610e11f417b42aa78c4f",
+      "after": "8a8c030061b7007edc6b22e14850d600255d2318ccbfd169c9780d2c715acc00"
+    },
+    {
+      "path": "src/components/marketing/whatsapp-plans.css",
+      "before": "5d09740b319bad06e07119ac2955672dcc853950",
+      "after": "4e1dc5bcf532ae6f493747de1adf01d8c32c030b6a760fce1c156137be6c0e5d"
+    },
+    {
+      "path": "src/components/marketing/work-showcase.css",
+      "before": "cfe16da828a80e9ba348f5464b392ac9bd29221e",
+      "after": "19d3d57dd71267af913a2e14aa0c1b17aafae394a174cbb93e3d4f860c6a4645"
+    },
+    {
+      "path": "src/components/saas/client-plan-actions.tsx",
+      "before": "d072f003d050485482aac7229ac8d743fee59652",
+      "after": "c1607043ceb4dda9faca75b06bfd94505218cda6d90846ff47a594ac72b5e263"
+    },
+    {
+      "path": "src/components/saas/create-client-workspace-panel.tsx",
+      "before": "47bb80a5052d0cc512362348de90840194e35e99",
+      "after": "b311c9c3c2a580bfb39597abaee5c334a7a56e8c8465d5feb93d70f9f0ff87ed"
+    },
+    {
+      "path": "src/components/saas/crm-meetings-calendar.css",
+      "before": "b0ec8d092e21d05270b558242dff6af0d40975bc",
+      "after": "f37f41a5f868f1e198d5c930114b047d0c369d8c59f417422b11f95316b1ea23"
+    },
+    {
+      "path": "src/components/saas/crm-meetings-calendar.tsx",
+      "before": "e2876d1e9b7dbb8d5afe5dc6e280eb7bff9ed601",
+      "after": "9620a1fea8a48c2597ebffb493ae6ca8e262c0d4ec44c0c6d13fe1f64bf72d98"
+    },
+    {
+      "path": "src/components/saas/fms-module-nav.tsx",
+      "before": "ab70d8825f09279545878adf16af27129863e871",
+      "after": "bb2a52229306a6da26f85a2ee790782512f088554042207b7204012271716786"
+    },
+    {
+      "path": "src/components/saas/leads-source-settings-panel.tsx",
+      "before": "6e57b7645712075555c33a02a8adb75ce0a8fb9f",
+      "after": "1267a85f6e03b64ce6a4c06eae7b501c75bfae2b5d46419c3c43594e109b32d8"
+    },
+    {
+      "path": "src/components/saas/tasks-module-nav.tsx",
+      "before": "5fa7385f3b3b4183912a11a94e2d39712199f490",
+      "after": "3b1629a0ea25ec6aeca4f85e05171e020866d4639ffe951e580d2731326fe344"
+    },
+    {
+      "path": "src/components/saas/workspace-addons-panel.tsx",
+      "before": "abab7d2b6c190c73af5077d6adfd3f7e5b6b9c73",
+      "after": "e45da30efb847de6db1d5e43516eae17a01ad83c037f39312c2d0e193e84ddce"
+    },
+    {
+      "path": "src/components/saas/workspace-bundle-select.tsx",
+      "before": "54cffe3d9ccd9c67ce8f0cf8af3cb7c4b09f464d",
+      "after": "d0026a91753323a0f7afff7c0db218d20a73767f4d8374c217a2174297c2373a"
+    },
+    {
+      "path": "src/components/saas/workspace-module-fields.tsx",
+      "before": "5fb9d3882b6807cd0e3fd8250fff0c14775226ea",
+      "after": "7cd1ce201b321d3a410051e8b3bbef70312fe6407244db61213cddd880a9f7ba"
+    },
+    {
+      "path": "src/components/saas/workspace-theme.css",
+      "before": "32d483fcfe42c874e3a781e989988d9ee1e93f04",
+      "after": "72e8733e8c6878527dc87336a19650d090c8e889b85548e037c7e809b267c393"
+    },
+    {
+      "path": "src/components/saas/workspace-widget-dashboard.tsx",
+      "before": "938a58e764bd720c536b47868fceeed9a974899f",
+      "after": "60725a7c12cd3a9edb973f48a8a0c73476525a3ba0e6096aeb6d895318fb1f14"
+    },
+    {
+      "path": "src/lib/auth.ts",
+      "before": "e42da6a3434d6cd629ed018b8c7fbe975f662733",
+      "after": "40de46a5464efbda9b0be75a78d602140d1b418551da1bc750ba7ebc50aacd0e"
+    },
+    {
+      "path": "src/lib/bci/bci-access.ts",
+      "before": "43ca06e7ae18491555d164d6c5b7092aa19c6dde",
+      "after": "9beadc9f5998c203cb8c860be84ea8fbbd31f1374365329b5eea82a92c207b71"
+    },
+    {
+      "path": "src/lib/billing/catalog.ts",
+      "before": "ced2716469b447c892cde19546ab55904b68653b",
+      "after": "be3030737266e37f8852dc7cf1a8cacae1eb0bbcfce8d73a4a7132fa70f1d718"
+    },
+    {
+      "path": "src/lib/billing/queries.test.ts",
+      "before": "e8c2ad4bd3ab75081eca013175a60d2b2107af01",
+      "after": "68614b69c083e71fe7f18274fbc44f0afc2b5673b8dbe780d6e81532e375f520"
+    },
+    {
+      "path": "src/lib/business-workspace-plans.ts",
+      "before": null,
+      "after": "e4feb843a0dc3b030c67268e78ff3a928c74a5ef4545a9d3eb09eeefab1f0f27"
+    },
+    {
+      "path": "src/lib/checklists/pc-work.ts",
+      "before": "6c1fc54820da6f0ee43e8bac108ad9e7456ee1a2",
+      "after": "6eacb7b2256211f827a6ef17d2949bff552f2e3871814a77291828b1a912bd40"
+    },
+    {
+      "path": "src/lib/checklists/session.ts",
+      "before": "185c24843eefc981978f59e4d0fcabd5d3454cc2",
+      "after": "9c0a6d1b2f20dbb1a4d5b8c284a841b9be730e201d19db69a5e1c1d44d5df084"
+    },
+    {
+      "path": "src/lib/content/business-systems-pricing.test.ts",
+      "before": null,
+      "after": "6c546b23d36dd890487876349348b26069275ff7584ff38a3ab2dbaabdea54f5"
+    },
+    {
+      "path": "src/lib/content/business-systems-pricing.ts",
+      "before": null,
+      "after": "7f836e97c74d2c97b45e2b60c803fb5873daa3a241889ad1fe2dc0dc5e5366c9"
+    },
+    {
+      "path": "src/lib/content/course-programs.ts",
+      "before": "df9b045e1a37295e954c816cca19fed25c4ad245",
+      "after": "974f2dbc76e4da110a0a9e7756bca3b0bb7d18f1c821166a27c2774aa29c1107"
+    },
+    {
+      "path": "src/lib/content/services-wiring.test.ts",
+      "before": null,
+      "after": "17e085422974a0692212e98d06b05ab46557f76e592841e622145ba2552f2106"
+    },
+    {
+      "path": "src/lib/dashboard-source.ts",
+      "before": "b3d2861f048f1a5b7d682345b89bd042d9de749e",
+      "after": "9a49dc966222a8041eeca8fbef2f187fd5c02b310f22174a280776a5d427999a"
+    },
+    {
+      "path": "src/lib/dashboard/widgets.ts",
+      "before": "c1119e660e33000ed11e5191de2127159b8f8299",
+      "after": "e7eb104029e3d988407da6e16c0211e6796e6baf026ed21d487486f30abe65e8"
+    },
+    {
+      "path": "src/lib/em/em-access.ts",
+      "before": "0ceedebfd9714d93c62dc2f46d6cdb1dea1c8535",
+      "after": "1e9c35cbf9b0b9bd980f2d8f6ace021de7b77a92fcc23091e932696f33110890"
+    },
+    {
+      "path": "src/lib/em/em-ready-data.ts",
+      "before": "e1d21ba26ef77f60f21e3f58a79053f1dce320ff",
+      "after": "ae7106faecf81e48d743cae6a5ea80438ae62d8229580d55abdba961e7ed1273"
+    },
+    {
+      "path": "src/lib/fleet/trip-rules.test.ts",
+      "before": "81e95cfb9e316ac114a7b955bdce11d2a9cbb281",
+      "after": "9d6affa95ce6337c97fcb55a3fbd5a906c115b6d0f7998a0801a6c367ed87608"
+    },
+    {
+      "path": "src/lib/fms/form-templates.ts",
+      "before": "6c1cb5d29bbacbb40b91bb6e6893c3e3cdf69832",
+      "after": "d22a83f1fc35a308df6fe8aeaaacca85c939a484d783f31988ff12d32df6069b"
+    },
+    {
+      "path": "src/lib/fms/sales-fulfillment.ts",
+      "before": "6cad6171906959ff187040fbaad3719cdadd7527",
+      "after": "98dcaea3b6dc6454cf2a08cad1dea12e44d3387f7a281839739e6123a38cc601"
+    },
+    {
+      "path": "src/lib/fms/session.ts",
+      "before": "556937ba8736d510f47b740ee078f37aa779d8b9",
+      "after": "9efcc3e396e7a427e35bf78f73ee14701c477ee0ee7f1e9655bc6e806a420c06"
+    },
+    {
+      "path": "src/lib/fms/workflow-templates.ts",
+      "before": "946dee2223d9a553b84863abbece65a488b1e2e5",
+      "after": "6038dd40086a6c378b788435aa3885738ec63efcdb61faa823ec5b48326ca31a"
+    },
+    {
+      "path": "src/lib/hr/field-conveyance-access.ts",
+      "before": null,
+      "after": "fd41e1056c481815bae911a1c9e851e168ea1007b3929d52885f7a2e0d68ca74"
+    },
+    {
+      "path": "src/lib/hr/field-conveyance-rules.test.ts",
+      "before": null,
+      "after": "a3b60cbfd39e036f192253da0aa3c9f26f20dfba63771de62cf4e43ed3f79c1f"
+    },
+    {
+      "path": "src/lib/hr/field-conveyance-rules.ts",
+      "before": null,
+      "after": "e4ca06b2eb75edb4d38a5bb5453cd83b86d8347ea3a5c2aad596d5c4b40d5026"
+    },
+    {
+      "path": "src/lib/hr/field-conveyance-store.ts",
+      "before": null,
+      "after": "41f6eaf0c6c39a027e32353afff1f3e8c58ae620f6f2456cce3cf24902687650"
+    },
+    {
+      "path": "src/lib/hr/field-distance.test.ts",
+      "before": null,
+      "after": "7fa1bdbf840c63768299371571dc0b436084de77896284b283e7fe9b1335652e"
+    },
+    {
+      "path": "src/lib/hr/field-distance.ts",
+      "before": null,
+      "after": "e7dba0eb83722522fc57ec8c3fb1063a946e31aba120427d4d6da1c34c8a9656"
+    },
+    {
+      "path": "src/lib/hr/field-google-maps.test.ts",
+      "before": null,
+      "after": "c906bcc7896bbaedd6749fd2f0a9d2a6cedbe477c6edab02a06353e9c689dfbe"
+    },
+    {
+      "path": "src/lib/hr/field-google-maps.ts",
+      "before": null,
+      "after": "cb06f61505dee97c799e3bca02d4c4383168d35f5e819d7a67975a50462ca915"
+    },
+    {
+      "path": "src/lib/hr/field-pings.ts",
+      "before": "2fdd3d65be69a34f23e8e3fba6d018e33656df3d",
+      "after": "efb4d0326ab7c267590b9853218b50b92b8be48b72ec2aea885a7c440542d20c"
+    },
+    {
+      "path": "src/lib/hr/field-visit-rules.test.ts",
+      "before": null,
+      "after": "44c8c3d5e1773fddb63c5007cbf2745e1b2eed9b16ba557341097355b58198f9"
+    },
+    {
+      "path": "src/lib/hr/field-visit-rules.ts",
+      "before": null,
+      "after": "a2bc81047862e04f8330a9eb173ed3ef9da5ecd8715da623702c7329f9763faa"
+    },
+    {
+      "path": "src/lib/hr/hr-actions.ts",
+      "before": "b114b6d631b7a2d2e61e26eb0a53d9e08a607c26",
+      "after": "5133283b6b8087d2cb926898c454126361fbab1fe67f8f8e01a436805dd1ac65"
+    },
+    {
+      "path": "src/lib/hr/hr-store.ts",
+      "before": "7779566cb21ee38a09d6e819b240bcb2a72153e0",
+      "after": "aaf328feb629fbeaf2620b0bba1379bb07ce6bfd06b562d3549a57596b62f3ce"
+    },
+    {
+      "path": "src/lib/hr/hr-sub-modules.ts",
+      "before": "6310f3e49c0a29c7542805081388db7f8a5e54ac",
+      "after": "917ce3a41669a0c196dc73bb8e399ce5b58e502da0901bb9030c2b6e93d558b1"
+    },
+    {
+      "path": "src/lib/integrations/google-sheets-auth.ts",
+      "before": "cf4f7609c8760649c1d3f476099df0f9acbbbda1",
+      "after": "2b66f54f2680ce415ebc90f43d2807127cc43a8e190ce2799fc222afbc63e2da"
+    },
+    {
+      "path": "src/lib/leads/calendar-booking-description.ts",
+      "before": null,
+      "after": "cc1fb0bb877ad301016a868ec2de6c6b63ace1dcf43efe668b67e9c3bbc914e0"
+    },
+    {
+      "path": "src/lib/leads/channels.ts",
+      "before": "40c8fca4e34b984918199c8805e2a28d3b2ac88d",
+      "after": "a5867dab13bb86ed5adbc4e7a1ac1aeb385bd7b8afdbde3ea61ea0d774c0982c"
+    },
+    {
+      "path": "src/lib/leads/crm-meetings.test.ts",
+      "before": "845ab738dd1a7c6630a2add3866e68fe558ff9a3",
+      "after": "10f6384d9fdf703c186720a3db3368a375c6da2779b0b2b9688379671f234bdd"
+    },
+    {
+      "path": "src/lib/leads/crm-meetings.ts",
+      "before": "6166cd8e72e378820dab16271e29e0bf8409df83",
+      "after": "014ebfd00c2d0861783ce2ba587ac30daa78d4591a8060f8dda4d057629e4e70"
+    },
+    {
+      "path": "src/lib/leads/crm-module-stats.ts",
+      "before": "eaa78f18ddce85926cc4395d1d638dbb37f8a5ba",
+      "after": "97a55f1fda777a2221e205144a81de552b36fff63e8c22df16bd23fadf0d2ea9"
+    },
+    {
+      "path": "src/lib/leads/google-calendar-appointments.ts",
+      "before": null,
+      "after": "4803cb8d7891e640b98d09857689d57d4c66cbd59cd2e8c0cd58526c7b96dc19"
+    },
+    {
+      "path": "src/lib/leads/google-calendar-bookings.ts",
+      "before": null,
+      "after": "cf597f714171d4cc9139fa73af6078ee5be0043479c799adc8d4a08b9338ce87"
+    },
+    {
+      "path": "src/lib/leads/linkedin.ts",
+      "before": null,
+      "after": "6947d494c4a471b5a215f314808d235ab2544cc4a532684ae872ee456d71cae5"
+    },
+    {
+      "path": "src/lib/leads/meeting-reminders.ts",
+      "before": "d0edc4e04fbaf01fb55f8c0869edebe446cf43d5",
+      "after": "595a4b728af4583be132564fb32e2c6a0845dd6e92a9518b39539e55adeebdaf"
+    },
+    {
+      "path": "src/lib/leads/sheet-sync-progress.test.ts",
+      "before": "af12f12351b82179515f6fb43151a1df186de2b6",
+      "after": "6b69c53081c37271c3194ce7e5a2020531e70f05c79841a369cad24b83403d5b"
+    },
+    {
+      "path": "src/lib/leads/source-settings.ts",
+      "before": "8da25b3e5d48418482f92e9ec5f23891910d5e78",
+      "after": "b8258d35cfbe075f73edbb4ddbd65b4fb552a9d21c086b032636d9c94636c72a"
+    },
+    {
+      "path": "src/lib/org-plan-context.test.ts",
+      "before": "df645e93d82a7e745770371a58ae0575db699f20",
+      "after": "546b469f589bca84f9de8d2ad2df766a2f36ad057a35a3dcb55630a4529b433a"
+    },
+    {
+      "path": "src/lib/org-plan-context.ts",
+      "before": "0108190a41d7748d5b815903e55ab01cd4023ab6",
+      "after": "559f5cb118420bcd8b3826ead6766e1fee7c7cbf1dfe01e618bd6152827fd2c4"
+    },
+    {
+      "path": "src/lib/org-plan-presets.ts",
+      "before": "253528f0cd3505cdea7abc1effe755e9d8c2bcea",
+      "after": "147a9d25e52f7bb3f224518071f737537424c3b81711050e8f7a78af6e408d84"
+    },
+    {
+      "path": "src/lib/require-session.ts",
+      "before": "0f9f37daef699b55e1bd58742fada0bc3f244b25",
+      "after": "40d9440d365bffc56f5b11872db11922c18963bffd6e5ae88dbd06e48f55277d"
+    },
+    {
+      "path": "src/lib/site-assistant/knowledge.ts",
+      "before": "0e8ce165ceb9adac0955c54b023982d67b496481",
+      "after": "08264672a5a10e7169c0ed9f7d63a64d516234932f6035525f11b590377d5c2b"
+    },
+    {
+      "path": "src/lib/tasks/checkout-commerce.test.ts",
+      "before": null,
+      "after": "3a135b52f7ada576ad094c8bb23ea4b97cedf4c363fd26ddde9de782980d3148"
+    },
+    {
+      "path": "src/lib/tasks/checkout-commerce.ts",
+      "before": null,
+      "after": "c736d83e36ef5a115295f05e1a527955a96632fb1c581232101f5146d1fea00c"
+    },
+    {
+      "path": "src/lib/tasks/checkout-readiness.ts",
+      "before": null,
+      "after": "b3e2d7893d52df1ef8839115c3ee55d59e4f8c20b7955dd079ce25918e13e32b"
+    },
+    {
+      "path": "src/lib/templates/checkout.ts",
+      "before": null,
+      "after": "cad613a3800c06142caec7d096effce0b9e8e037fd5d0655979a22547527d9b1"
+    },
+    {
+      "path": "src/lib/templates/commerce.test.ts",
+      "before": null,
+      "after": "c6ff298315f037f060c7220ef63cad578caa9519f631fed46c0a5294e3571509"
+    },
+    {
+      "path": "src/lib/templates/commerce.ts",
+      "before": null,
+      "after": "62de193ad94379ce990fae17029aa93363205588dc1d6d8009beb8c5890cd4d7"
+    },
+    {
+      "path": "src/lib/templates/gateway.ts",
+      "before": null,
+      "after": "fb44c63815e0167f558f41eb7667de1ea61888a1f18d1b84f8e9980964e811f7"
+    },
+    {
+      "path": "src/lib/templates/http.ts",
+      "before": null,
+      "after": "d0ff64c3d4ef3bba2042346e739fdefe2c578cbc6c90d669e83de17eeb08274b"
+    },
+    {
+      "path": "src/lib/templates/invoice.ts",
+      "before": null,
+      "after": "10d26adced569de76ef80e513940b39c16b5dd61b7ab30274030b0f581c93927"
+    },
+    {
+      "path": "src/lib/templates/store.ts",
+      "before": "206d7bc6cef8e7be144ad9b17034d16f4dfc1341",
+      "after": "dcaa71042a606a333fa17b730219c18d155c9a4ac681483a090e5a2831ee2b35"
+    },
+    {
+      "path": "src/lib/work/my-today.ts",
+      "before": "40e8f5f423137de91f8d2f8582136cc1369cc2f8",
+      "after": "dd0d6042d21d986022fec85100cd41d279dbb93cc84055da54b8fdaff53d3c5b"
+    },
+    {
+      "path": "src/lib/workspace-access.ts",
+      "before": null,
+      "after": "776df8ca8c985bea8322420ced8737abf6cb1745ddbc89d98ca68abd12574658"
+    },
+    {
+      "path": "src/lib/workspace-activation-bundles.shared.ts",
+      "before": "5f1f292cf39427c6a5252c71603a6ed9aa2ab569",
+      "after": "a2a8073b8d1759fc7cdb3373f29a34327e6d7d3b1859ee33d10f314e10aa6cce"
+    },
+    {
+      "path": "src/lib/workspace-activation-bundles.test.ts",
+      "before": "1bdea70eb355da6b2eebe487a6de904ca48a6802",
+      "after": "d45edcbe6a8bb4b31a1f13ab5ea1d80d955195b0ad6c1fddd9dc108d464fa191"
+    },
+    {
+      "path": "src/lib/workspace-activation-bundles.ts",
+      "before": "ecec140d977813019b0195a21dfdf09772f95e7b",
+      "after": "b93e00b3ce29efbaf50262bc1690ddad7aa736273fe26e9a93e7df1ba5e1c1db"
+    },
+    {
+      "path": "src/lib/workspace-addons.shared.ts",
+      "before": "a399138ef07c2b078a7bec2247b29876c42c6d46",
+      "after": "6c1f13739e5e198d4a50bcd2bc36cf15f16654f2039265c2ad62183db293af22"
+    },
+    {
+      "path": "src/lib/workspace-modules.ts",
+      "before": "ab6662324756bbc028b5deeab34c4366e71b83ee",
+      "after": "7f98d630dcc1f913e0e9f98ea8a965ab09284c7d3ce5e164fa444f3488f5cd55"
+    },
+    {
+      "path": "src/lib/workspace-nav-prefs.test.ts",
+      "before": "5ba872cd8e9089bcf430b37c2462788e00b43e22",
+      "after": "8014eac7f14e5c19e9713f1110e3c28ed3c9479108e7575ec095f929de6ae22c"
+    },
+    {
+      "path": "src/lib/workspace-nav-prefs.ts",
+      "before": "f42ee64cd8cc4d83f2d5234d819fbc81c2b1af05",
+      "after": "0d781d9171598cc8f29c805154cec4a3e11bac0fcc37e9bc212785e1b2edb56e"
+    },
+    {
+      "path": "src/lib/workspace-navigation.ts",
+      "before": "3b9c40f1f1ec0ba977ae1dffb0a7ef1982451ddc",
+      "after": "6f253a967c0817d02ccfb308d0ae522c3e101e4269b3a2dcf9af8de20cd4cd35"
+    },
+    {
+      "path": "src/lib/workspace-provision-access.ts",
+      "before": null,
+      "after": "1991d417a8cbee866defcbd057db0366248d246f93a9d6e16aca6a6073bf0554"
+    },
+    {
+      "path": "src/lib/workspace-provision.ts",
+      "before": "b43be1330e48ba15da2917ea6b3b4319586fda22",
+      "after": "7ad78e427520e9913c04c382549feecda0194cc1537a9a5e64b00ef4eac36d47"
+    },
+    {
+      "path": "src/lib/workspace-shell-data.ts",
+      "before": "28ae0df9c496554a139a9db1a2f688aa4b9e359a",
+      "after": "174fd536cb39b4a5677a097c94c1dc3da75d039fe8b06a2e9ab63831f6d17c6a"
+    },
+    {
+      "path": "src/middleware.ts",
+      "before": "04ef3737df0418e4c9f3a55c824a1e41544a662b",
+      "after": "3f4dae468ee1f6551e76de2d2afd4970115bd55221de78c962dd9216b17a4554"
+    },
+    {
+      "path": "vercel.json",
+      "before": "b9e7b22695051b5910a96bcbe4f28594fa281aef",
+      "after": "a04d3c17338c25d97b294752d6e261769384903f0618cd9ad33416fcab0d217f"
+    },
+    {
+      "path": "src/components/marketing/service-detail-content.tsx",
+      "before": "c613188ddf02dec4f09da70bcaebd36748bed739",
+      "after": null
+    }
+  ]
+}

@@ -95,6 +95,11 @@
   top: 6rem;
   display: grid;
   gap: 1rem;
+  padding: 1.5rem;
+  border: 1px solid #dbe3ee;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #ffffff, #f3f7ff);
+  box-shadow: 0 18px 42px rgba(37, 99, 235, 0.08);
 }
 
 .how-we-work-visual-kicker {
@@ -104,6 +109,22 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #2563eb;
+}
+
+.how-we-work-visual-title {
+  margin: 0;
+  color: #0f172a;
+  font-family: var(--font-heading);
+  font-size: clamp(1.25rem, 2vw, 1.55rem);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.how-we-work-visual-copy {
+  margin: -0.3rem 0 0;
+  color: #64748b;
+  font-size: var(--text-sm);
+  line-height: 1.55;
 }
 
 .how-we-work-principles {

@@ -1,4 +1,5 @@
 import type { OrgPlan, Role, WorkspaceModule } from "@prisma/client";
+import { businessWorkspacePlan } from "@/lib/business-workspace-plans";
 import {
   defaultModulesForRole,
   platformWorkspaceModules,
@@ -40,7 +41,7 @@ export const TASKS_ADDON_LIMITS = {
   maxFmsTemplates: 0,
 } as const;
 
-/** Legacy orgs keep empty allowedModules until migrated - no tier clamping. */
+/** Client access is explicit; an empty selection grants no modules. */
 export function resolveOrgAllowedModules(
   allowedModules: WorkspaceModule[] | null | undefined,
   options?: { isPrimary?: boolean },
@@ -49,7 +50,7 @@ export function resolveOrgAllowedModules(
     return platformWorkspaceModules();
   }
   if (!allowedModules || allowedModules.length === 0) {
-    return platformWorkspaceModules();
+    return [];
   }
   return [...allowedModules];
 }
@@ -61,6 +62,8 @@ export function isOrgTierEnforced(
 }
 
 export function allowedModulesForPlan(plan: OrgPlan): WorkspaceModule[] {
+  const businessPlan = businessWorkspacePlan(plan);
+  if (businessPlan) return [...businessPlan.modules];
   switch (plan) {
     case "BCI_STARTER":
       return [...BCI_STARTER_ALLOWED];
@@ -78,6 +81,8 @@ export function allowedModulesForPlan(plan: OrgPlan): WorkspaceModule[] {
 }
 
 export function limitsForPlan(plan: OrgPlan) {
+  // New plans require ops to enter agreed operational limits during onboarding.
+  if (businessWorkspacePlan(plan)) return { maxMembers: 0, maxFmsTemplates: 0 };
   switch (plan) {
     case "BCI_STARTER":
       return { ...BCI_STARTER_LIMITS };
@@ -123,14 +128,14 @@ export function effectiveMemberModules(
   options?: { isPrimary?: boolean },
 ): WorkspaceModule[] {
   const orgAllowed = resolveOrgAllowedModules(orgAllowedModules, options);
-  if (role === "OWNER") {
-    return [...orgAllowed];
-  }
   const resolved = resolveMemberModules(role, membershipModules);
   return clampModulesToOrg(resolved, orgAllowed);
 }
 
 export const ORG_PLAN_LABELS: Record<OrgPlan, string> = {
+  BUSINESS_STARTER: "Starter",
+  BUSINESS_SCALE: "Scale",
+  BUSINESS_ENTERPRISE: "Enterprise",
   BCI_STARTER: "BCI FMS Starter",
   BCI_GROWTH: "BCI FMS Growth",
   ENTERPRISE: "Enterprise",

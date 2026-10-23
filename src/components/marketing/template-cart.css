@@ -1,0 +1,141 @@
+.tpl-shop-card {
+  display: flex;
+  gap: 1.2rem;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid #dce5ee;
+  border-radius: 16px;
+  background: white;
+  align-items: flex-start;
+}
+.tpl-shop-card h2,
+.tpl-shop-card h3 {
+  font-size: 1.08rem;
+  line-height: 1.4;
+  margin: 0.25rem 0;
+}
+.tpl-shop-price {
+  font-size: 1.35rem;
+  font-weight: 750;
+}
+.tpl-shop-price small {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 450;
+  color: #475569;
+}
+.tpl-cart-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tpl-cart-lines li {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 1rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+.tpl-cart-remove {
+  border: 0;
+  background: none;
+  color: #075985;
+  align-self: flex-start;
+  text-decoration: underline;
+  font: inherit;
+  cursor: pointer;
+}
+.tpl-cart-totals {
+  padding: 1rem 0;
+}
+.tpl-cart-totals div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.3rem 0;
+}
+.tpl-cart-totals dd {
+  margin: 0;
+  white-space: nowrap;
+}
+.tpl-cart-totals div:last-child {
+  border-top: 1px solid #dce5ee;
+  padding-top: 0.7rem;
+  margin-top: 0.5rem;
+}
+.tpl-cart-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.8rem;
+  min-width: 0;
+}
+.tpl-cart-fields select {
+  width: 100%;
+  padding: 0.65rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: white;
+  font: inherit;
+  color: #0f172a;
+}
+.tpl-form .tpl-cart-consent {
+  display: block;
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+.tpl-form .tpl-cart-consent input {
+  width: auto;
+  margin-right: 0.5rem;
+}
+.tpl-cart-message:not(:empty),
+.tpl-cart-notice {
+  padding: 0.9rem;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #1e3a5f;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+  margin-bottom: 1rem;
+}
+.tpl-cart-message:empty {
+  display: none;
+}
+.tpl-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.tpl-checkout {
+  scroll-margin-top: 90px;
+  min-width: 0;
+}
+.tpl-shop-card > div {
+  min-width: 0;
+}
+.tpl-shop-card .tpl-thumb {
+  flex: 0 0 90px;
+  width: 90px;
+  height: 90px;
+}
+.tpl-cart-fields input {
+  min-width: 0;
+  box-sizing: border-box;
+}
+@media (max-width: 600px) {
+  .tpl-shop-card {
+    gap: 0.8rem;
+    padding: 1rem;
+  }
+  .tpl-shop-card .tpl-thumb {
+    width: 64px;
+    height: 64px;
+    flex-basis: 64px;
+  }
+  .tpl-checkout {
+    padding: 1rem;
+  }
+  .tpl-cart-totals {
+    font-size: 0.88rem;
+  }
+}

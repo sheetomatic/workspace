@@ -3,9 +3,9 @@ import { ProductsPageContent } from "@/components/marketing/products-page-conten
 import { marketingMetadata } from "@/lib/marketing-metadata";
 
 export const metadata: Metadata = marketingMetadata({
-  title: "Products",
+  title: "Case Studies",
   description:
-    "FMS, IMS, CRM, and workspace apps for MSME operations — systems and teams built so your business scales without you and stays profitable.",
+    "Real Sheetomatic client stories: how MSMEs moved from scattered updates to connected apps, software, and operating systems.",
   path: "/products",
 });
 

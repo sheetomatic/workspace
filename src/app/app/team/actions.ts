@@ -7,7 +7,6 @@ import type {
   EmployeeLocationMode,
   Role,
   TaskDepartment,
-  WorkspaceModule,
 } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { getSessionUser } from "@/lib/auth";
@@ -24,7 +23,6 @@ import {
 import { assertOrganizationAccess } from "@/lib/workspace";
 import {
   clampModulesToOrg,
-  modulesForTierRole,
 } from "@/lib/org-plan-presets";
 import {
   getOrganizationPlanContext,
@@ -32,9 +30,7 @@ import {
   memberLimitMessage,
 } from "@/lib/org-plan-context";
 import {
-  defaultModulesForRole,
   parseModulesFromForm,
-  resolveMemberModules,
 } from "@/lib/workspace-modules";
 import { parseEnabledKitKeys } from "@/lib/mobile-shop/kit-access";
 import { persistEnabledHrSubModules } from "@/lib/hr/hr-sub-modules";
@@ -167,17 +163,6 @@ async function validateReportingManager(input: {
   return null;
 }
 
-function resolveModulesForOrg(input: {
-  role: Role;
-  formModules: WorkspaceModule[];
-  fallbackModules: WorkspaceModule[];
-  orgAllowedModules: WorkspaceModule[];
-}) {
-  const requested =
-    input.formModules.length > 0 ? input.formModules : input.fallbackModules;
-  return clampModulesToOrg(requested, input.orgAllowedModules);
-}
-
 export async function inviteTeamMember(
   _prev: TeamActionState,
   formData: FormData,
@@ -292,22 +277,7 @@ export async function inviteTeamMember(
   }
 
   const formModules = parseModulesFromForm(formData);
-  const roleDefaultModules = clampModulesToOrg(
-    defaultModulesForRole(role),
-    orgPlan.orgAllowedModules,
-  );
-  let modules = resolveModulesForOrg({
-    role,
-    formModules,
-    fallbackModules: roleDefaultModules,
-    orgAllowedModules: orgPlan.orgAllowedModules,
-  });
-  if (modules.length === 0) {
-    modules =
-      roleDefaultModules.length > 0
-        ? roleDefaultModules
-        : modulesForTierRole(orgPlan.plan, role);
-  }
+  const modules = clampModulesToOrg(formModules, orgPlan.orgAllowedModules);
 
   const enabledHrSubModules = parseHrSubModulesFromForm(
     formData,
@@ -318,7 +288,7 @@ export async function inviteTeamMember(
     modules.includes("CRM"),
   );
   const enabledKitKeys = parseEnabledKitKeys(formData);
-  const enabledBciSubModules = parseBciSubModulesFromForm(formData);
+  const enabledBciSubModules = modules.includes("FMS") ? parseBciSubModulesFromForm(formData).filter((part) => !orgPlan.allowedSuiteParts || orgPlan.allowedSuiteParts.includes(part)) : [];
 
   await assertOrganizationAccess(user.organizationId, user.id);
 
@@ -643,22 +613,7 @@ export async function updateTeamMemberDetails(
   }
 
   const formModules = parseModulesFromForm(formData);
-  const roleDefaultModules = clampModulesToOrg(
-    defaultModulesForRole(role),
-    orgPlan.orgAllowedModules,
-  );
-  let modules = resolveModulesForOrg({
-    role,
-    formModules,
-    fallbackModules: resolveMemberModules(role, membership.modules),
-    orgAllowedModules: orgPlan.orgAllowedModules,
-  });
-  if (modules.length === 0) {
-    modules =
-      roleDefaultModules.length > 0
-        ? roleDefaultModules
-        : modulesForTierRole(orgPlan.plan, role);
-  }
+  const modules = clampModulesToOrg(formModules, orgPlan.orgAllowedModules);
 
   const enabledHrSubModules = parseHrSubModulesFromForm(
     formData,
@@ -669,7 +624,7 @@ export async function updateTeamMemberDetails(
     modules.includes("CRM"),
   );
   const enabledKitKeys = parseEnabledKitKeys(formData);
-  const enabledBciSubModules = parseBciSubModulesFromForm(formData);
+  const enabledBciSubModules = modules.includes("FMS") ? parseBciSubModulesFromForm(formData).filter((part) => !orgPlan.allowedSuiteParts || orgPlan.allowedSuiteParts.includes(part)) : [];
 
   const previousEmail = membership.user.email.trim().toLowerCase();
   const emailChanged = email !== previousEmail;

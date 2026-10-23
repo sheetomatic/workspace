@@ -150,3 +150,67 @@
   font-weight: 700;
   color: #64748b;
 }
+
+/* Client list: the marquee intentionally carries only names/marks, never the
+   long project-card content that is already explained elsewhere on the page. */
+.client-logo-showcase {
+  overflow: hidden;
+  padding: clamp(4rem, 8vw, 6.5rem) 0;
+  background: #f7f9fd;
+  color: #12172a;
+}
+
+.client-logo-showcase-head {
+  max-width: 44rem;
+  margin: 0 auto 2.25rem;
+  text-align: center;
+}
+.client-logo-showcase-head .type-kicker { color: #3168b4; }
+.client-logo-showcase-head h2 {
+  margin: 0.55rem 0 0;
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 4vw, 3.3rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.04;
+}
+.client-logo-showcase-head > p:last-child {
+  margin: 0.95rem auto 0;
+  color: #62748d;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.client-logo-marquee { overflow: hidden; }
+.client-logo-track { display: flex; width: max-content; animation: client-logo-marquee 70s linear infinite; }
+.client-logo-marquee:hover .client-logo-track { animation-play-state: paused; }
+.client-logo-group { display: flex; gap: 0.9rem; padding-right: 0.9rem; }
+.client-logo-card {
+  display: grid;
+  min-width: 13.5rem;
+  min-height: 6.9rem;
+  place-content: center;
+  justify-items: center;
+  gap: 0.55rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid #dce5f1;
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 14px 30px rgba(22, 43, 75, 0.06);
+  text-align: center;
+}
+.client-logo-wordmark {
+  max-width: 11rem;
+  color: #19243a;
+  font-family: var(--font-heading);
+  font-size: 0.94rem;
+  font-weight: 850;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+.client-logo-image { display: block; width: min(9.5rem, 100%); max-height: 2.4rem; object-fit: contain; }
+.client-logo-card span { color: #5e79a7; font-size: 0.61rem; font-weight: 850; letter-spacing: 0.09em; text-transform: uppercase; }
+.client-logo-note { margin: 1.15rem 1.25rem 0; color: #7a899c; font-size: 0.72rem; text-align: center; }
+
+@keyframes client-logo-marquee { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .client-logo-track { animation: none; } }

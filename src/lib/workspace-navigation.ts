@@ -38,6 +38,7 @@ import type { SessionUser } from "@/lib/auth";
 import { hasWorkspaceModule, resolveFmsHomeHref } from "@/lib/workspace-modules";
 import { getDedicatedClientPortal, isDedicatedClientPortal } from "@/lib/dedicated-client-portals";
 import { PRIMARY_ORG_SLUG } from "@/lib/platform";
+import { canAccessWorkspacePath, grantedSuiteParts } from "@/lib/workspace-access";
 import {
   isNavIdVisible,
   type NavPreferenceOption,
@@ -86,7 +87,7 @@ const ROLE_ORDER = ["VIEWER", "STAFF", "MANAGER", "ADMIN", "OWNER"] as const;
 function bciNavGroup(fmsHref: string): WorkspaceNavItem {
   return {
     href: fmsHref,
-    label: "BCI",
+    label: "Business Systems Suite",
     icon: Briefcase,
     children: [
       {
@@ -119,7 +120,6 @@ function bciNavGroup(fmsHref: string): WorkspaceNavItem {
         href: "/app/em",
         label: "EM",
         icon: Presentation,
-        module: "REPORTS",
         bciSubModule: "em",
         minRole: "MANAGER",
         matchPrefix: "/app/em",
@@ -723,6 +723,11 @@ export function canAccessWorkspaceNav(
   canSeeTeam = false,
   enabledBciSubModules?: string[] | null,
 ) {
+  const accessUser = {
+    ...user,
+    enabledBciSubModules: grantedSuiteParts(user, enabledBciSubModules ?? user.enabledBciSubModules),
+  };
+  if (!item.children?.length && !canAccessWorkspacePath(accessUser, item.href)) return false;
   if (
     item.platformOnly &&
     !(user.isSuperAdmin && user.organizationSlug === PRIMARY_ORG_SLUG)
@@ -750,10 +755,7 @@ export function canAccessWorkspaceNav(
     }
   }
   if (item.bciSubModule) {
-    if (
-      enabledBciSubModules != null &&
-      !enabledBciSubModules.includes(item.bciSubModule)
-    ) {
+    if (!accessUser.enabledBciSubModules.some((id) => id === item.bciSubModule)) {
       return false;
     }
   }
@@ -1090,20 +1092,6 @@ export function getWorkspaceNavSections(params: {
 
   sections.push(
     {
-      id: "fleet",
-      label: "Plant",
-      items: [
-        {
-          id: "fleet",
-          href: "/app/fleet",
-          label: "Ash fleet",
-          icon: Truck,
-          minRole: "MANAGER",
-          matchPrefix: "/app/fleet",
-        },
-      ],
-    },
-    {
       id: "reports",
       label: "Reports",
       items: [
@@ -1122,6 +1110,7 @@ export function getWorkspaceNavSections(params: {
       items: [
         {
           id: "my-space",
+          platformOnly: true,
           href: "/app/my-space",
           label: "My Space",
           icon: Wallet,
