@@ -22,6 +22,7 @@ import { youtubeChannelName, youtubeChannelUrl, consultationUrl } from "@/app/si
 import { WORKSPACE_LOGIN_HREF } from "@/lib/workspace-auth-links";
 import { CoursesEnrollPay } from "@/components/marketing/courses-enroll-pay";
 import { VideoEmbed } from "@/components/marketing/video-embed";
+import { ResilientImage } from "@/components/marketing/resilient-image";
 import Link from "next/link";
 import "./minimal-premium.css";
 import "./courses-page.css";
@@ -352,10 +353,12 @@ export function CoursesPageContent() {
                   target="_blank"
                 >
                   <span className="courses-thumb-media">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <ResilientImage
                       alt=""
                       loading="lazy"
+                      width={480}
+                      height={360}
+                      unoptimized
                       src={youtubeThumbUrl(video.youtubeId)}
                     />
                     <span className="courses-thumb-play" aria-hidden>
