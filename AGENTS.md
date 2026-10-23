@@ -21,8 +21,8 @@ This workspace is **Sheetomatic only** — sheetomatic.com platform (Workspace, 
   production smoke suite, and only then atomically assign both
   `sheetomatic.com` and `workspace.sheetomatic.com`.
 - The verified checkpoint on 23 Oct 2026 is
-  `dpl_As3pjkCEQitYAbZcKnLeR2fz3yCp`, with actual consolidated application source
-  `57bb66894b8f7da636845182a305b691a9cde87f` (image repair PR #73 atop PR #72).
+  `dpl_HK7DwWSVHn7oRwypWSE18yiq1ApK`, with actual consolidated application source
+  `4cd162c3f133c184a4e736150a6d931fb66bf79a` (festive banner PR #74 atop PRs #73 and #72).
   Older checkpoints are historical, not rollback targets. Read
   `docs/PRODUCTION_FORWARD_BASELINE.md` before any release.
 

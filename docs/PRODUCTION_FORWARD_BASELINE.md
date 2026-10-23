@@ -1,5 +1,12 @@
 # Current verified production checkpoint — 23 October 2026
 
+- Both public aliases verified on `dpl_HK7DwWSVHn7oRwypWSE18yiq1ApK`; actual application revision `4cd162c3f133c184a4e736150a6d931fb66bf79a` on `codex/diwali-banner-20261023`, PR #74. The superseded first staging candidate was never activated.
+- Homepage-only Diwali carousel: Sheetomatic no-setup-cost/services-only offer first, AgentDaftar referral second. No invented discount or expiry and no billing configuration changes. Preserves all image repairs and previous consolidated source.
+- 502 tests, lint, full build/typecheck and 15 staged smoke checks passed. Live desktop/mobile checks passed for initial offer, manual controls, external referral target, automatic rotation/pause and no horizontal overflow or JS errors. Workspace login returns 200; authenticated Workspace content remains outside this check.
+- No database writes, credentials, messages, payments or background-schedule changes. PR #74 targets the preserved image branch, not main. Read actual aliases again before the next release; do not restore older checkpoints.
+
+## Previous image-repair checkpoint — 23 October 2026 (superseded, not a rollback target)
+
 - Both `sheetomatic.com` and `workspace.sheetomatic.com` now resolve to `dpl_As3pjkCEQitYAbZcKnLeR2fz3yCp`, verified after scoped activation.
 - Actual application source: `codex/image-audit-20261023` at `57bb66894b8f7da636845182a305b691a9cde87f`; PR #73 targets the preserved consolidated branch, not main. Inherited deployment Git metadata remains unsuitable as source evidence.
 - Preserves the consolidated checkpoint below; repairs the missing homepage image using the existing dashboard example, restores contact QR/vCard, and adds external client-logo/video-image failure fallbacks. The final logo Library pack is still not included.

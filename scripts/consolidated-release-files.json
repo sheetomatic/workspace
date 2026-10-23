@@ -104,7 +104,7 @@
     {
       "path": "scripts/release-http-smoke.mjs",
       "before": null,
-      "after": "79870bff731eaad573e411cf0268fe5d418ef2f4074af60c71ceb8e94664db2a"
+      "after": "9bb9003a8d104abc1f0420990b6f290e8d27246ca0e96d77d5589218e6f92fe8"
     },
     {
       "path": "scripts/release-schema-preflight.mjs",
@@ -602,9 +602,19 @@
       "after": "e759441f7ca16a76c7b3df981292c10a9ef1a619b27d08564d5967e4b0c3cc8e"
     },
     {
+      "path": "src/components/marketing/festive-offers.module.css",
+      "before": null,
+      "after": "c24fd87eabdac7d451b5776904a51f885f9076338f77a29ff52168a8cb8faac0"
+    },
+    {
+      "path": "src/components/marketing/festive-offers.tsx",
+      "before": null,
+      "after": "53b739be5f2ce0c9ceb3fad26e0b96186e1bad35367e6a7e943f717e554a7cc2"
+    },
+    {
       "path": "src/components/marketing/home-page.tsx",
       "before": "882d924c252a5bad474974a47458612e8547079f",
-      "after": "607e0b17bb466ac73c4ff9abd36f2e46208751ef4bd0a2a55086dc6fad41b68b"
+      "after": "c91cceb67482e6fa54255f98f3af6c1b3c4847b4f71a9f45006ca18cd98751fb"
     },
     {
       "path": "src/components/marketing/how-we-work-section.tsx",
