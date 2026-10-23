@@ -1,6 +1,6 @@
 # Consolidated recovery candidate, 23 October 2026
 
-This is a staged candidate, not a claim of production activation.
+Activated on both authorized domains as deployment `dpl_T6nW3n54EHZQsW1adQDuZjYuy6yy`, application revision `331fe690a4964968371e7c435bf5e72cec2b3476`. Read the current production checkpoint for verification limits and the unmerged PR status.
 
 - Actual preflight: both authorized domains serve `dpl_75i2VWs4yf4BYLeEux7QmuSWJbRu`.
 - Source reconciles main `2168e2504111f44ee006e839525cdbed96b7af95`, preserved release `3c586c03ebef773e07d7ecfd7e9d50621b844717`, and the current deployment's three client-billing changes and public assets.

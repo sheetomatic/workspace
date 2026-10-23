@@ -20,8 +20,11 @@ This workspace is **Sheetomatic only** — sheetomatic.com platform (Workspace, 
   currently verified live deployment, apply checksum-gated overlays, run the
   production smoke suite, and only then atomically assign both
   `sheetomatic.com` and `workspace.sheetomatic.com`.
-- The known-good preserved deployment on 22 Oct 2026 is
-  `dpl_2C3TEUHc4fVjnaYwJKGMe8utX4Ls`. Never replace it with a plain Git build.
+- The verified checkpoint on 23 Oct 2026 is
+  `dpl_T6nW3n54EHZQsW1adQDuZjYuy6yy`, with actual consolidated application source
+  `331fe690a4964968371e7c435bf5e72cec2b3476` (PR #72).
+  Older checkpoints are historical, not rollback targets. Read
+  `docs/PRODUCTION_FORWARD_BASELINE.md` before any release.
 
 ## Stack
 Next.js, Prisma, Neon, Resend, Vercel
