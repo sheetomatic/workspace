@@ -49,7 +49,7 @@ function run(command, args) {
   const result = spawnSync(command, args, { stdio: 'inherit', env: process.env });
   if (result.status !== 0) throw Error(`Release step failed: ${command} ${args.join(' ')}`);
 }
-run('npm', ['ci', '--ignore-scripts']);
+run('npm', ['ci', '--include=dev', '--ignore-scripts']);
 run('npm', ['run', 'db:generate']);
 run('node', ['scripts/apply-checkout-storage.mjs', '--apply-reviewed-checkout-storage']);
 run('node', ['scripts/release-schema-preflight.mjs']);
