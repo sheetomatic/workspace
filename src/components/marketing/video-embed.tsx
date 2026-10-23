@@ -1,5 +1,5 @@
 import { Play, Video } from "lucide-react";
-import Image from "next/image";
+import { ResilientImage } from "./resilient-image";
 import type { MarketingVideo } from "@/app/video-content";
 import "./videos.css";
 
@@ -27,7 +27,7 @@ export function VideoEmbed({ video, variant = "default" }: VideoEmbedProps) {
           rel="noreferrer"
           aria-label={`Watch ${video.title} on YouTube`}
         >
-          <Image
+          <ResilientImage
             alt=""
             fill
             sizes="(min-width: 1024px) 50vw, 100vw"

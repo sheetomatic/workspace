@@ -35,14 +35,14 @@ export function SalesHeroSection() {
           </div>
           <div className="sales-hero-engine" aria-label="Sheetomatic turns daily business chaos into an organised system">
             <Image
-              src="/marketing/unstructured-to-dashboard.png"
-              alt="Unstructured papers and chats flowing into a user-wise task dashboard and phone status view"
-              width={1792}
+              src="/workspace-guides/home-dashboard.png"
+              alt="Example Sheetomatic workspace dashboard with FMS exceptions, tasks and inventory alerts"
+              width={1536}
               height={1024}
               priority
               sizes="(max-width: 900px) 88vw, 48vw"
             />
-            <span className="sales-hero-engine-caption">Unstructured data → live control</span>
+            <span className="sales-hero-engine-caption">Example workspace dashboard · Data → clear actions</span>
           </div>
         </div>
       </div>

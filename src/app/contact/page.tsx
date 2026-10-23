@@ -21,7 +21,7 @@ import "@/components/marketing/contact-page.css";
 export const metadata: Metadata = marketingMetadata({
   title: "Contact",
   description:
-    "WhatsApp Sheetomatic at +91 93291 03106 or call +91 97557 33107 for MIS, automation, and AI workflows.",
+    "WhatsApp or call Sheetomatic at +91 97557 33107 for MIS, automation, and AI workflows.",
   path: "/contact",
 });
 
@@ -63,7 +63,7 @@ export default function ContactPage() {
               <div className="contact-qr-topline"><span>Keep Sheetomatic close</span><span className="contact-qr-mark">QR</span></div>
               <div className="contact-qr-image">
                 <Image
-                  src="/contact/sheetomatic-contact-qr.png"
+                  src="/contact/sheetomatic-contact-qr.svg"
                   alt="Scan to add Sheetomatic to your contacts"
                   width={854}
                   height={854}
@@ -76,7 +76,7 @@ export default function ContactPage() {
                 <a href="/contact/sheetomatic-contact.vcf" download>
                   <Mail size={16} aria-hidden="true" /> Add contact card
                 </a>
-                <a href="/contact/sheetomatic-contact-qr.png" download>
+                <a href="/contact/sheetomatic-contact-qr.svg" download>
                   <ArrowDownToLine size={16} aria-hidden="true" /> Download QR
                 </a>
               </div>

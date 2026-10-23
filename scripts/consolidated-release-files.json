@@ -77,6 +77,16 @@
       "after": "e897730058f6cce92672a70f7bcddc915fa3fbe144e0db78ebaf0962d6c2b19e"
     },
     {
+      "path": "public/contact/sheetomatic-contact-qr.svg",
+      "before": null,
+      "after": "18cb1702a8ef4c5872e37a2482adcf1a7d8174257566006b5742063c7f296ca8"
+    },
+    {
+      "path": "public/contact/sheetomatic-contact.vcf",
+      "before": null,
+      "after": "10dfded1b5c8860ee3b7de3c9d76a56a9e276bac680d0e8271bdc611b11d8049"
+    },
+    {
       "path": "scripts/apply-checkout-storage.mjs",
       "before": null,
       "after": "5d1addd3d1bf8f54139233419f87d2932e37af9a6b520c959b188b9362457c47"
@@ -94,7 +104,7 @@
     {
       "path": "scripts/release-http-smoke.mjs",
       "before": null,
-      "after": "7e5f54d3e38906915b3aee2e00948154b21017e693680ede813ffa7c9fd18879"
+      "after": "79870bff731eaad573e411cf0268fe5d418ef2f4074af60c71ceb8e94664db2a"
     },
     {
       "path": "scripts/release-schema-preflight.mjs",
@@ -369,7 +379,7 @@
     {
       "path": "src/app/contact/page.tsx",
       "before": "cf41aca5029af3a74db4da601d401eba2c055e52",
-      "after": "26e968b37b0fd1bef354cf87a171da2c3422d0f23d50eaaababb77844694ed40"
+      "after": "a406cd1d42c249edb45d056c3761ed8b28dfc5e49df5b781947c3676a2e684ef"
     },
     {
       "path": "src/app/courses-content.ts",
@@ -554,7 +564,7 @@
     {
       "path": "src/components/marketing/client-projects-showcase.tsx",
       "before": "637f520914d905f5b00d8b87424f19cb1a4c0d88",
-      "after": "2a06e52ff86bad0cd76e822dec6099f83f3ff62d39a66b63674d4a160057144f"
+      "after": "c38cc2fcdf12d65f5da95f08540fd7af0b12076fac457eb336466165f1013d24"
     },
     {
       "path": "src/components/marketing/cloud-apps-page.css",
@@ -574,7 +584,7 @@
     {
       "path": "src/components/marketing/courses-page-content.tsx",
       "before": "ea8c001d1d5c7eacccea59f086c5ef9468272133",
-      "after": "1ce64317c17a42722595e2ec84b623739b21c9cbc4219b7701509598aca9435e"
+      "after": "dae8e471aa86558cd375283d2c1cb3fa3a3fe9c981d8e29903c7f6d77d09d3d2"
     },
     {
       "path": "src/components/marketing/courses-page.css",
@@ -642,9 +652,14 @@
       "after": "7edef283f42456465a5ef1c7a3946da536b718d2d1054f815d040008d9d83020"
     },
     {
+      "path": "src/components/marketing/resilient-image.tsx",
+      "before": null,
+      "after": "6d1b323c78f4a94328fe5e5e8722a9e1c6d4335226f5a57c49dec98d6f950607"
+    },
+    {
       "path": "src/components/marketing/sales-journey-sections.tsx",
       "before": "db87ffc53bca45467d00c40c661e693feb81923c",
-      "after": "69e408a1ebe1979e4bea67bc989ea22e9bc38122a7125c4dd1312d952f6f54f3"
+      "after": "0eada3eb8ff52876d2c5649a520df8b6cd955f56117971edbb594802f8e8c91b"
     },
     {
       "path": "src/components/marketing/sales-journey.css",
@@ -704,12 +719,12 @@
     {
       "path": "src/components/marketing/video-embed.tsx",
       "before": "8b9964d5001ab7d3678d17b6ac756083b33a1d38",
-      "after": "02aea4ef1d24caacafb54466ffb61029e9a193a5f2025284344828461254fa18"
+      "after": "63fa4272d3d0e6259c6bece225088b865e3dd15ed74d8827e9a2dcb354def815"
     },
     {
       "path": "src/components/marketing/videos.css",
       "before": "e164a814013e66468b5694f2b90d78824f86d5e2",
-      "after": "99b2388eb0110e59128e7eecf17fd641a8be3656644e284c4ad76a2cb3e7fd9f"
+      "after": "0d0dedfff1784287c25428f34b4d09785aae4013b957b29bf8cae406477aab7f"
     },
     {
       "path": "src/components/marketing/wa-product-sections.tsx",
@@ -840,6 +855,11 @@
       "path": "src/lib/content/course-programs.ts",
       "before": "df9b045e1a37295e954c816cca19fed25c4ad245",
       "after": "974f2dbc76e4da110a0a9e7756bca3b0bb7d18f1c821166a27c2774aa29c1107"
+    },
+    {
+      "path": "src/lib/content/image-assets.test.ts",
+      "before": null,
+      "after": "2e1effa71a7f0c4920e4d2ccc7ae3e80c6ea84abf3198f656ff172e6f183702d"
     },
     {
       "path": "src/lib/content/services-wiring.test.ts",

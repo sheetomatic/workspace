@@ -1,7 +1,7 @@
 import { clientProjects } from "@/app/projects-showcase";
 import "./work-showcase.css";
+import { ClientLogo } from "./resilient-image";
 
-export function WorkShowcaseSection() {
   const clients = clientProjects.filter(
     (project, index, all) =>
       all.findIndex((candidate) => candidate.client === project.client) === index,
@@ -21,7 +21,7 @@ export function WorkShowcaseSection() {
         return (
           <article className="client-logo-card" key={`${hidden ? "copy-" : ""}${project.client}`}>
             {logo ? (
-              <img className="client-logo-image" src={logo} alt={hidden ? "" : `${compactName} logo`} />
+              <ClientLogo src={logo} name={compactName} hidden={hidden} />
             ) : (
               <strong className="client-logo-wordmark">{compactName}</strong>
             )}
@@ -32,6 +32,7 @@ export function WorkShowcaseSection() {
     </div>
   );
 
+export function WorkShowcaseSection() {
   return (
     <section className="client-logo-showcase" id="our-work" aria-labelledby="client-logo-title">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">

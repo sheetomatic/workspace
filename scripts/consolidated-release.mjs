@@ -1,5 +1,5 @@
 // Apply a pinned, checksum-gated delta to the verified CURRENT deployed input.
-// Only the explicitly reviewed checkout-storage migration; no backlog migration,
+// Image-repair release: preserve the consolidated application. No migrations,
 // tenant seeding, messaging, credential changes, or alias changes.
 import { readFile, writeFile, mkdir, unlink } from 'node:fs/promises';
 import { dirname } from 'node:path';
@@ -51,8 +51,7 @@ function run(command, args) {
 }
 run('npm', ['ci', '--include=dev', '--ignore-scripts']);
 run('npm', ['run', 'db:generate']);
-run('node', ['scripts/apply-checkout-storage.mjs', '--apply-reviewed-checkout-storage']);
 run('node', ['scripts/release-schema-preflight.mjs']);
 run('npx', ['next', 'build', '--webpack']);
 run('node', ['scripts/release-http-smoke.mjs']);
-console.log(`[consolidated-release] Verified source ${revision}; baseline ${manifest.baseline}; only reviewed checkout-storage migration allowed`);
+console.log(`[consolidated-release] Verified source ${revision}; baseline ${manifest.baseline}; image repair only, no database writes`);

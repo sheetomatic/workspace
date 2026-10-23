@@ -13,6 +13,8 @@ try{
  }
  if(!ready)throw Error('Smoke server not ready');
  const checks=[
+  ['/', ['/workspace-guides/home-dashboard.png']],
+  ['/contact',['/contact/sheetomatic-contact-qr.svg']],
   ['/services/flow',['PM8E3mCw67Q','acTJOocmuZM']],
   ['/services/field-tracking',['Field Executive']],
   ['/pricing',['2,400','2,500']],
@@ -20,6 +22,11 @@ try{
   ['/login',['Sign in']],
   ['/privacy',['Privacy']],
  ];
+ for(const path of ['/workspace-guides/home-dashboard.png','/contact/sheetomatic-contact-qr.svg','/contact/sheetomatic-contact.vcf']){
+   const r=await fetch(origin+path);
+   if(r.status!==200)throw Error(`Missing image/contact asset: ${path}`);
+   console.log(`[release-smoke] PASS ${path} HTTP 200`);
+ }
  for(const [path,needles] of checks){
   const r=await fetch(origin+path,{redirect:'manual'}),html=await r.text();
   if(r.status!==200||needles.some(s=>!html.toLowerCase().includes(s.toLowerCase())))throw Error(`HTTP/content smoke failed: ${path} status ${r.status}`);
