@@ -52,7 +52,7 @@ export function FestiveOffers() {
             <a className={styles.cta} href={offer.href}
               target={index === 1 ? "_blank" : undefined}
               rel={index === 1 ? "noopener noreferrer sponsored" : undefined}>
-              {offer.action} <span aria-hidden="true">↗</span>
+              {offer.action} <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
               {index === 1 && <span className={styles.srOnly}> (opens in a new tab)</span>}
             </a>
             <p className={styles.note}>{offer.note}</p>
