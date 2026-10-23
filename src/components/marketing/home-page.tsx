@@ -6,11 +6,13 @@ import {
   SpreadsheetPainSection,
 } from "./sales-journey-sections";
 import { TechnologyLogoStrip } from "./technology-logo-strip";
+import { FestiveOffers } from "./festive-offers";
 
 export function HomePage() {
   return (
     <main id="main" className="marketing-page marketing-site">
       <SiteHeader />
+      <FestiveOffers />
 
       <SalesHeroSection />
 

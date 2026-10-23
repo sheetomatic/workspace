@@ -13,7 +13,7 @@ try{
  }
  if(!ready)throw Error('Smoke server not ready');
  const checks=[
-  ['/', ['/workspace-guides/home-dashboard.png']],
+  ['/', ['/workspace-guides/home-dashboard.png', 'No setup cost. Pay only for the services.', 'https://app.agentdaftar.com/r/sheetomatic']],
   ['/contact',['/contact/sheetomatic-contact-qr.svg']],
   ['/services/flow',['PM8E3mCw67Q','acTJOocmuZM']],
   ['/services/field-tracking',['Field Executive']],
