@@ -67,9 +67,19 @@
       "after": "0eccde51b13856d3f3fb3895d0cc941d9acf173663a461ece1d0747000e0a046"
     },
     {
+      "path": "prisma/migrations/20261023080000_checkout_storage/migration.sql",
+      "before": null,
+      "after": "a698297e13b4dc03447855d7d0325d2bb79dcdc7dcee44a9aa24b7bd144f8568"
+    },
+    {
       "path": "prisma/schema.prisma",
       "before": "66aeb8ffe8f2d264023da5e05ed038b0bd6d0044",
       "after": "e897730058f6cce92672a70f7bcddc915fa3fbe144e0db78ebaf0962d6c2b19e"
+    },
+    {
+      "path": "scripts/apply-checkout-storage.mjs",
+      "before": null,
+      "after": "5d1addd3d1bf8f54139233419f87d2932e37af9a6b520c959b188b9362457c47"
     },
     {
       "path": "scripts/pin-production-aliases.mjs",
@@ -444,7 +454,7 @@
     {
       "path": "src/app/templates/page.tsx",
       "before": "53e278c06ae09c3f597aaefafc07da3183b227d8",
-      "after": "c960516276b049ad4716462163e2be7bd41af78066da1310288bc3a6ec6b5ff7"
+      "after": "d921293c3999e9a0fd1006021ad4671e77e27a4381d1d693a49e419573b75f9f"
     },
     {
       "path": "src/app/video-content.ts",
@@ -684,7 +694,7 @@
     {
       "path": "src/components/marketing/templates-store-content.tsx",
       "before": "7d2f21bb2c9668d46e34c73b783496314a341c16",
-      "after": "3fc3732d88e66cef041b343e87e18dd80dcb97f6dfe9d42ca016dd14502e271c"
+      "after": "f583afd55e53e28da1f7a74aa0b8f2c0bb781c3adb261a33dea6ac2250ec144e"
     },
     {
       "path": "src/components/marketing/video-embed.tsx",

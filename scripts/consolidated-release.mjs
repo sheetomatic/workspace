@@ -1,11 +1,13 @@
 // Apply a pinned, checksum-gated delta to the verified CURRENT deployed input.
-// No migrations, tenant seeding, messaging, credential changes, or alias changes.
+// Only the explicitly reviewed checkout-storage migration; no backlog migration,
+// tenant seeding, messaging, credential changes, or alias changes.
 import { readFile, writeFile, mkdir, unlink } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 const revision = process.env.CONSOLIDATED_RELEASE_REVISION;
 if (!/^[a-f0-9]{40}$/.test(revision || '')) throw Error('Missing exact release revision');
+if (process.env.TEMPLATE_CHECKOUT_ENABLED === 'true') throw Error('Checkout activation requires separate verified gateway review; keep disabled for recovery release');
 const hash = (b, algorithm) => createHash(algorithm).update(b).digest('hex');
 async function source(path) {
   const response = await fetch(`https://raw.githubusercontent.com/sheetomatic/workspace/${revision}/${path}`, { redirect: 'error' });
@@ -49,6 +51,7 @@ function run(command, args) {
 }
 run('npm', ['ci', '--ignore-scripts']);
 run('npm', ['run', 'db:generate']);
+run('node', ['scripts/apply-checkout-storage.mjs', '--apply-reviewed-checkout-storage']);
 run('node', ['scripts/release-schema-preflight.mjs']);
 run('npx', ['next', 'build', '--webpack']);
-console.log(`[consolidated-release] Verified source ${revision}; baseline ${manifest.baseline}; no migrations performed`);
+console.log(`[consolidated-release] Verified source ${revision}; baseline ${manifest.baseline}; only reviewed checkout-storage migration allowed`);

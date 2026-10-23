@@ -3,7 +3,6 @@ import { MarketingPage, SiteFooter, SiteHeader } from "@/app/components";
 import { TemplatesStoreContent } from "@/components/marketing/templates-store-content";
 import { marketingMetadata } from "@/lib/marketing-metadata";
 import { parseTemplateCategoryParam } from "@/lib/templates/categories";
-import { listCloudSoftwareCatalog } from "@/lib/templates/cloud-softwares";
 import { listActiveTemplateProducts } from "@/lib/templates/store";
 import { templateGatewayReady } from "@/lib/templates/gateway";
 import { getPrimaryOrganization } from "@/lib/platform";
@@ -15,9 +14,9 @@ import { templatePriceInr } from "@/lib/templates/commerce";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = marketingMetadata({
-  title: "Templates | Google Sheets, AppSheet & Cloud Softwares",
+  title: "Templates | Google Sheets & AppSheet",
   description:
-    "Google Sheets Based, AppSheet Based, and Cloud Softwares — including Mobile Shop Counter, a native Sheetomatic app for mobile shops. Not a spreadsheet.",
+    "Ready-made Google Sheets and AppSheet templates under ₹999, without customisation. GST extra at checkout.",
   path: "/templates",
 });
 
@@ -61,7 +60,6 @@ export default async function TemplatesPage({
   const { category } = await searchParams;
   // Browsing must not overwrite admin edits or deactivate products.
   const { products, seller, available } = await loadCatalog();
-  const cloudProducts = listCloudSoftwareCatalog();
 
   return (
     <MarketingPage>
@@ -77,7 +75,6 @@ export default async function TemplatesPage({
           thumbnailUrl: row.thumbnailUrl,
           purchasable: row.purchasable,
         }))}
-        cloudProducts={cloudProducts}
         initialCategory={parseTemplateCategoryParam(category)}
         checkoutEnabled={available && templateGatewayReady()}
         sellerStateCode={seller ? (gstinStateCode(seller.gstin) ?? "22") : "22"}
