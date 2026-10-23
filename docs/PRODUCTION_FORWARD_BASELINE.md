@@ -1,5 +1,15 @@
 # Current verified production checkpoint — 23 October 2026
 
+- Both `sheetomatic.com` and `workspace.sheetomatic.com` now resolve to `dpl_As3pjkCEQitYAbZcKnLeR2fz3yCp`, verified after scoped activation.
+- Actual application source: `codex/image-audit-20261023` at `57bb66894b8f7da636845182a305b691a9cde87f`; PR #73 targets the preserved consolidated branch, not main. Inherited deployment Git metadata remains unsuitable as source evidence.
+- Preserves the consolidated checkpoint below; repairs the missing homepage image using the existing dashboard example, restores contact QR/vCard, and adds external client-logo/video-image failure fallbacks. The final logo Library pack is still not included.
+- 502 non-integration tests, full production build/typecheck, read-only schema compatibility, and 15 staged route/asset/auth checks passed. Post-activation audit of 34 public pages found no broken rendered images or page runtime errors. Home, Contact, About and Courses passed at 1440px and 390px with external-image failures simulated; no horizontal overflow. Live homepage image optimization and Workspace login both returned 200.
+- YouTube thumbnail access is denied from this environment; direct and optimized thumbnail requests were blocked locally in browser tests to exercise fallback without retrying the denied host. External thumbnail availability is not certified. Authenticated Workspace screens remain unverified.
+- This release ran no migrations and changed no credentials, payment settings, messages, Calendar permissions or background schedules. Both PRs remain unmerged to avoid unrelated project releases.
+- Before any next release, verify current aliases and preserve this source. Do not restore the superseded checkpoints below.
+
+## Previous consolidated checkpoint — 23 October 2026 (superseded, not a rollback target)
+
 - Both `sheetomatic.com` and `workspace.sheetomatic.com` were explicitly assigned and re-read on deployment `dpl_T6nW3n54EHZQsW1adQDuZjYuy6yy`.
 - Actual application source: `codex/consolidated-release-20261023` at `331fe690a4964968371e7c435bf5e72cec2b3476`; PR #72. The inherited deployment Git metadata is NOT the application revision. Use `meta.consolidatedRelease` and its checksum manifest.
 - This reconciles main `2168e250`, the preserved `3c586c0` features and actual live `dpl_75i2VWs4yf4BYLeEux7QmuSWJbRu` client-billing/public-asset changes. The branch contains the consolidated application files, not only a patch artifact.
