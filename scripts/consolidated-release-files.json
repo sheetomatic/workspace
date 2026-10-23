@@ -92,6 +92,11 @@
       "after": "0b5a77413c2887590200c986bf5dc5d78126bd1dcf258d28d2921ebea1b8a497"
     },
     {
+      "path": "scripts/release-http-smoke.mjs",
+      "before": null,
+      "after": "7e5f54d3e38906915b3aee2e00948154b21017e693680ede813ffa7c9fd18879"
+    },
+    {
       "path": "scripts/release-schema-preflight.mjs",
       "before": null,
       "after": "efe693136773aaecc514f170c2be52b9fb78b558f336e82b4f9c0361e1a1fca6"

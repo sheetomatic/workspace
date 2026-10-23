@@ -1,0 +1,34 @@
+// Test the built app inside the isolated build environment. No customer writes.
+// This does not disable or access the Vercel-protected deployment URL.
+import { spawn } from 'node:child_process';
+const port=3819,origin=`http://127.0.0.1:${port}`;
+const server=spawn(process.execPath,['node_modules/next/dist/bin/next','start','--port',String(port)],{env:process.env,stdio:'ignore'});
+const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+try{
+ let ready=false;
+ for(let i=0;i<60;i++){
+  if(server.exitCode!==null)throw Error('Smoke server stopped');
+  try{const r=await fetch(origin+'/login');if(r.status===200){ready=true;break;}}catch{}
+  await delay(1000);
+ }
+ if(!ready)throw Error('Smoke server not ready');
+ const checks=[
+  ['/services/flow',['PM8E3mCw67Q','acTJOocmuZM']],
+  ['/services/field-tracking',['Field Executive']],
+  ['/pricing',['2,400','2,500']],
+  ['/templates',['Useful templates']],
+  ['/login',['Sign in']],
+  ['/privacy',['Privacy']],
+ ];
+ for(const [path,needles] of checks){
+  const r=await fetch(origin+path,{redirect:'manual'}),html=await r.text();
+  if(r.status!==200||needles.some(s=>!html.toLowerCase().includes(s.toLowerCase())))throw Error(`HTTP/content smoke failed: ${path} status ${r.status}`);
+  if(path==='/templates'&&html.includes('Hosted Cloud Software'))throw Error('Removed hosted section reappeared');
+  console.log(`[release-smoke] PASS ${path} HTTP 200 and expected content`);
+ }
+ for(const path of ['/app/hr','/app/field','/app/leads/meetings','/app/approvals']){
+  const r=await fetch(origin+path,{redirect:'manual',headers:{host:'workspace.sheetomatic.com'}});
+  if(![302,303,307,308].includes(r.status)||!r.headers.get('location')?.includes('/login'))throw Error(`Unauthenticated access guard failed: ${path}`);
+  console.log(`[release-smoke] PASS ${path} protects authenticated access`);
+ }
+}finally{server.kill('SIGTERM');}

@@ -54,4 +54,5 @@ run('npm', ['run', 'db:generate']);
 run('node', ['scripts/apply-checkout-storage.mjs', '--apply-reviewed-checkout-storage']);
 run('node', ['scripts/release-schema-preflight.mjs']);
 run('npx', ['next', 'build', '--webpack']);
+run('node', ['scripts/release-http-smoke.mjs']);
 console.log(`[consolidated-release] Verified source ${revision}; baseline ${manifest.baseline}; only reviewed checkout-storage migration allowed`);
