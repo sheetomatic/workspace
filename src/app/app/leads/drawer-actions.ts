@@ -10,6 +10,15 @@ import { getAllSalesOrdersByLeadIds } from "@/lib/leads/sales-orders";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { mapPendingTemplateOrdersByLeadIds } from "@/lib/templates/store";
+import { importSheetLeadsMatchingSearch } from "@/lib/leads/search-sheet";
+
+export async function searchConnectedSheetAction(query: string) {
+  const user = await requireSession(undefined, { module: "CRM" });
+  await requireCrmSubModule(user, "leads");
+  const q = query.trim().slice(0, 160);
+  if (q.length < 2) return { matched: 0, imported: 0 };
+  return importSheetLeadsMatchingSearch({ organizationId: user.organizationId, q });
+}
 
 export async function getInboundLeadDrawerPayloadAction(leadId: string) {
   const user = await requireSession(undefined, { module: "CRM" });

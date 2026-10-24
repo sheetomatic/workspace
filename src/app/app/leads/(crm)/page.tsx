@@ -30,7 +30,6 @@ import {
   serializeCrmListLead,
   withCrmDrawerExtras,
 } from "@/lib/leads/crm-lead-payload";
-import { importSheetLeadsMatchingSearch } from "@/lib/leads/search-sheet";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
@@ -202,18 +201,8 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
     );
   }
 
-  // Search also pulls matching rows from the connected Google Sheet so
-  // unsynced names (e.g. Shyam) appear instead of only the imported window.
-  if (listParams.q) {
-    try {
-      await importSheetLeadsMatchingSearch({
-        organizationId: user.organizationId,
-        q: listParams.q,
-      });
-    } catch (error) {
-      console.error("leads sheet search", error);
-    }
-  }
+  // Saved CRM results must not wait for external Sheets I/O/imports.
+  // Matching unsynced rows can be imported explicitly from the search toolbar.
 
   const fmsEnabled = hasWorkspaceModule(user, "FMS");
   const [

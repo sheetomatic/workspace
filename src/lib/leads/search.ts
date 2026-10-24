@@ -10,6 +10,17 @@ export type LeadSearchable = {
   category?: string | null;
 };
 
+/** Search formatting only; never rewrite stored numbers or truncate foreign numbers. */
+export function phoneSearchDigits(raw: string) {
+  if (!/^[+\d\s().-]+$/.test(raw.trim())) return "";
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length < 3) return "";
+  if (digits.length === 12 && digits.startsWith("91")) return digits.slice(2);
+  if (digits.length === 14 && digits.startsWith("0091")) return digits.slice(4);
+  if (digits.length === 11 && digits.startsWith("0")) return digits.slice(1);
+  return digits;
+}
+
 export function leadMatchesSearchQuery(
   lead: LeadSearchable,
   raw: string | null | undefined,
@@ -35,10 +46,10 @@ export function leadMatchesSearchQuery(
     return true;
   }
 
-  const digits = q.replace(/\D/g, "");
-  if (digits.length >= 4) {
+  const digits = phoneSearchDigits(q);
+  if (digits) {
     const phoneDigits = (lead.phone ?? "").replace(/\D/g, "");
-    return phoneDigits.includes(digits.slice(-10));
+    return phoneDigits.includes(digits);
   }
 
   return false;
@@ -60,11 +71,12 @@ export function leadSearchWhere(
     { company: { contains: q, mode: "insensitive" } },
     { requirement: { contains: q, mode: "insensitive" } },
     { category: { contains: q, mode: "insensitive" } },
+    { city: { contains: q, mode: "insensitive" } },
   ];
 
-  const digits = q.replace(/\D/g, "");
-  if (digits.length >= 4) {
-    or.push({ phone: { contains: digits.slice(-10) } });
+  const digits = phoneSearchDigits(q);
+  if (digits) {
+    or.push({ phone: { contains: digits } });
   }
 
   return { OR: or };
