@@ -1,58 +1,48 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, type CSSProperties } from "react";
+import { defaultBanners, type MarketingBanner } from "@/lib/marketing-banners";
 import styles from "./festive-offers.module.css";
 
-import { defaultBanners, type MarketingBanner } from "@/lib/marketing-banners";
-
-export function FestiveOffers({offers = defaultBanners}: {offers?: MarketingBanner[]}) {
-  const [active, setActive] = useState(0);
+export function FestiveOffers({ offers = defaultBanners }: { offers?: MarketingBanner[] }) {
   const [paused, setPaused] = useState(false);
-  const [hovered, setHovered] = useState(false);
-
-  useEffect(() => {
-    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (paused || hovered || motion.matches || offers.length < 2) return;
-    const timer = window.setInterval(() => {
-      if (!document.hidden) setActive((current) => (current + 1) % offers.length);
-    }, 8000);
-    const stop = () => { if (motion.matches) window.clearInterval(timer); };
-    motion.addEventListener("change", stop);
-    return () => { window.clearInterval(timer); motion.removeEventListener("change", stop); };
-  }, [paused, hovered, offers.length]);
-
   if (!offers.length) return null;
-
+  const duration = Math.max(24, offers.reduce((length, offer) => length + offer.label.length + offer.description.length, 0) * 0.14);
   return (
-    <section className={styles.banner} aria-label="Festive offers" aria-roledescription="carousel"
-      onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-      onFocusCapture={() => setPaused(true)}>
-      <div className={styles.decoration} aria-hidden="true">✦</div>
-      <div className={styles.slides} aria-live={paused ? "polite" : "off"}>
-        {offers.map((offer, index) => (
-          <div key={index} hidden={index !== active % offers.length} role="group" aria-roledescription="slide" aria-label={`${index + 1} of ${offers.length}`}>
+    <section className={styles.banner} aria-label="Festive offers" data-paused={paused}
+      style={{ "--ticker-duration": `${duration}s` } as CSSProperties}>
+      <div className={styles.bar}>
+        <span className={styles.badge}><span aria-hidden="true">✦</span> OFFERS</span>
+        {/* The native details below is the accessible, stationary version of every offer. */}
+        <div className={styles.viewport} aria-hidden="true">
+          <div className={styles.track}>
+            {[0, 1].map(copy => <div className={styles.group} key={copy}>
+              {offers.map((offer, index) => <span className={styles.item} key={index}>
+                <strong>{offer.label}</strong><span>{offer.description}</span><span className={styles.star}>✦</span>
+              </span>)}
+            </div>)}
+          </div>
+        </div>
+        <button className={styles.pause} type="button" aria-label={paused ? "Resume offer scrolling" : "Pause offer scrolling"}
+          aria-pressed={paused} onClick={() => setPaused(value => !value)}>{paused ? "Play" : "Pause"}</button>
+      </div>
+      <details className={styles.details}>
+        <summary>View all {offers.length} offers &amp; links</summary>
+        <div className={styles.cards}>
+          {offers.map((offer, index) => <article className={styles.card} key={index}>
             <p className={styles.label}>{offer.label}</p>
             <h2>{offer.title}</h2>
             <p className={styles.description}>{offer.description}</p>
             <a className={styles.cta} href={offer.href}
               target={offer.href.startsWith("https://") ? "_blank" : undefined}
               rel={offer.href.startsWith("https://") ? "noopener noreferrer sponsored" : undefined}>
-              {offer.action} <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+              {offer.action} <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
               {offer.href.startsWith("https://") && <span className={styles.srOnly}> (opens in a new tab)</span>}
             </a>
             <p className={styles.note}>{offer.note}</p>
-          </div>
-        ))}
-      </div>
-      <div className={styles.controls} aria-label="Offer controls">
-        {offers.map((offer, index) => (
-          <button key={index} type="button" aria-label={`Show ${offer.label}`} aria-pressed={index === active % offers.length}
-            onClick={() => { setActive(index); setPaused(true); }}>{String(index + 1).padStart(2, "0")}</button>
-        ))}
-        <button type="button" onClick={() => setPaused(!paused)} aria-label={paused ? "Resume offer rotation" : "Pause offer rotation"}>
-          {paused ? "Play" : "Pause"}
-        </button>
-      </div>
+          </article>)}
+        </div>
+      </details>
     </section>
   );
 }

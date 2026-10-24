@@ -13,8 +13,8 @@ export async function HomePage() {
   const banners = await publicBanners();
   return (
     <main id="main" className="marketing-page marketing-site">
-      <SiteHeader />
       <FestiveOffers offers={banners} />
+      <SiteHeader />
 
       <SalesHeroSection />
 

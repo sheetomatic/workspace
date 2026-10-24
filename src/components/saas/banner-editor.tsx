@@ -29,7 +29,7 @@ export function BannerEditor({initial}: {initial: {version: number; banners: Mar
           <button type="button" className="btn-secondary" onClick={() => {if(window.confirm("Remove this banner? Save changes to publish the removal."))setBanners(current => current.filter((_,i) => i !== index));}}>Remove</button>
         </div>
       </section>)}
-      {!banners.length && <p>No banners. Saving will hide the homepage carousel.</p>}
+      {!banners.length && <p>No banners. Saving will hide the homepage offer strip.</p>}
       <button type="button" className="btn-secondary" disabled={banners.length >= 12} onClick={() => setBanners(current => [...current,{label:"",title:"",description:"",action:"",href:"",note:""}])}>Add banner</button>{" "}
       <button type="submit" className="btn-primary">{pending ? "Saving…" : "Save and publish"}</button>
     </fieldset>
