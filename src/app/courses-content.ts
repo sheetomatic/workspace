@@ -2,20 +2,20 @@ import { buildWhatsAppUrl } from "./site-content";
 import { coursePrograms, type CoursePhase } from "@/lib/content/course-programs";
 
 export const coursesPage = {
-  eyebrow: "Live 1:1 with Shyam",
-  title: "Two programs. Your business, or your skill.",
+  eyebrow: "Live 1:1 with Shyam · Recorded courses",
+  title: "Learn at your pace. Build with a mentor.",
   lead:
-    "Business owners get a ready system for Sales, Operations, Inventory, and Dispatch — after a requirement meeting. Working professionals learn to build an FMS, an IMS, a person-wise deficit, and a checklist.",
+    "Choose live 1:1 training for Working Professionals or Business Owners, or start with a recorded course. Build practical skills in Google Sheets, AppSheet, and business automation.",
   ctaLabel: "Enroll & pay",
   ctaSecondaryLabel: "Open Workspace",
   ctaQuestionsLabel: "Questions on WhatsApp",
   whatsappMessage:
     "Hi Sheetomatic, I have a question about the Business Owners course (₹1,10,000) or the Working Professionals course (₹25,000).",
   videosLead:
-    "Free Sheetomatic videos on Sheets, AppSheet, and the weekly view. The paid programs turn that into your file, or into a skill you can repeat.",
+    "Watch selected Google Sheets, AppSheet, and dashboard lessons from the Sheetomatic channel before choosing a recorded course or live 1:1 program.",
   libraryTitle: "Learn from the channel",
   libraryLead:
-    "Browse the free library. The paid seat is the live work with Shyam.",
+    "Practical walkthroughs for formulas, dashboards, automation, and business systems.",
   funnelTitle: "Owners book a meeting first. Professionals can enroll now.",
   funnelLead:
     "Business Owners: see the system, book a requirement slot, and enroll once you are sure. Working Professionals: pay half to confirm the seat. GST is extra. Balance before class 1.",
