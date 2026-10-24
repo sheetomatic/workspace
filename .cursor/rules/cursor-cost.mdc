@@ -1,0 +1,41 @@
+---
+description: Minimize Cursor Pro+/usage burn without hurting shipping quality
+alwaysApply: true
+---
+
+# Cursor cost (Sheetomatic)
+
+Owner is on **Pro+ (~$60/mo)** and has burned included usage in ~10 days. Stretch budget for the full billing cycle. Full playbook: `docs/CURSOR-COST-PLAYBOOK.md`.
+
+## Hard constraints
+
+- Do **not** sacrifice tenant isolation, security, or correct migrations to “save tokens.”
+- Do **not** launch a swarm of subagents for small, single-file, or investigative tasks.
+- Do **not** read entire huge files (e.g. marketing `globals.css` ~4k lines) for SaaS-only work — follow `sheetomatic.mdc`.
+- Do **not** run `npm run build` / broad test suites unless the change needs it or the user asked.
+- Do **not** start Bugbot / security-review / extra Cloud-style loops unless the user asked.
+
+## Prefer (saves usage)
+
+- **Smallest scope:** @-relevant files only; targeted `Grep`/`Read`; no repo-wide `**/*` globs at root.
+- **One agent** for routine fixes; parallel Frontend+Backend only when files don’t overlap **and** the task is large (`multi-agent-orchestration.mdc`).
+- **Readonly explore** for “why / where” before edit agents.
+- **Short turns:** avoid re-fetching the same URLs/docs; reuse playbooks (`docs/VERCEL-COST-PLAYBOOK.md`, `docs/RAILWAY.md`, this playbook).
+- **Smallest diff;** no drive-by refactors or unsolicited markdown.
+- When user says budget is low: prefer concise answers, fewer tool loops, no speculative parallel work.
+
+## Cloud / long agents
+
+- Treat Cloud Agent runs as **expensive**; batch into one clear PR-sized outcome.
+- Don’t reopen exploration of hosting/pricing if docs already answer it — cite the doc.
+- Stop looping on the same failing command; fix or report once.
+
+## Model / mode (when the product allows choice)
+
+- Routine UI/copy/CSS/docs → cheaper / Auto / Composer-class.
+- Reserve frontier / Max / multi-agent for auth, Prisma, multi-tenant, and hard prod incidents.
+
+## Related
+
+- Hosting $: `.cursor/rules/vercel-cost.mdc`, `docs/VERCEL-COST-PLAYBOOK.md`
+- Edit discipline: `.cursor/rules/sheetomatic.mdc`
