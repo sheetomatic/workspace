@@ -54,6 +54,7 @@ export type WorkspaceNavItem = {
   minRole?: SessionUser["role"];
   /** Sheetomatic Technologies super admins only. */
   platformOnly?: boolean;
+  websiteAdminOnly?: boolean;
   module?: WorkspaceModule;
   /** Visible if the member has any of these modules (used for BCI Check Lists / PC). */
   anyModules?: WorkspaceModule[];
@@ -154,6 +155,14 @@ const CRM_NAV_ITEM: WorkspaceNavItem = {
   module: "CRM",
   matchPrefix: "/app/leads",
   children: [
+    {
+      href: "/app/leads/preleads",
+      label: "Preleads",
+      icon: BarChart3,
+      module: "CRM",
+      websiteAdminOnly: true,
+      matchPrefix: "/app/leads/preleads",
+    },
     {
       href: "/app/leads",
       label: "Leads",
@@ -728,6 +737,7 @@ export function canAccessWorkspaceNav(
     enabledBciSubModules: grantedSuiteParts(user, enabledBciSubModules ?? user.enabledBciSubModules),
   };
   if (!item.children?.length && !canAccessWorkspacePath(accessUser, item.href)) return false;
+  if (item.websiteAdminOnly && !(user.isSuperAdmin || (user.organizationSlug === PRIMARY_ORG_SLUG && ROLE_ORDER.indexOf(user.role) >= ROLE_ORDER.indexOf("ADMIN")))) return false;
   if (
     item.platformOnly &&
     !(user.isSuperAdmin && user.organizationSlug === PRIMARY_ORG_SLUG)
