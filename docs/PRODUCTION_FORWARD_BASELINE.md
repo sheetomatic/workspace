@@ -1,5 +1,13 @@
 # Current verified production checkpoint — 24 October 2026
 
+- Both aliases verified on `dpl_AUAKGTJ8fTg41DA8wb8Uscjwua9q`; actual application revision `f2528225692da4fd7f0054683c5563a4716074b0`, branch `codex/header-nav-polish-20261024`, PR #79.
+- Public header has persistent teal selected-page tabs, click/pending/hover/focus backgrounds and improved spacing. Nested pages retain their section selection; mobile automatically reveals the selected tab. Tablet menu visibility fixed across 901–1180px. Existing links remain direct navigation, not dropdowns.
+- 548 unit tests, targeted lint, full 254-page build/typecheck and 18 staging smoke checks passed. Isolated browser checks at 1440, 1181, 1024 and 390px passed for active colour, refresh, link navigation, nested routes, keyboard focus, mobile selected-tab visibility and no overflow/runtime errors.
+- The same four-width checks passed on the live public site after activation. Live desktop/mobile offer-ticker regression checks also passed for automatic motion, Pause/Play, partner links, disclosures and reduced motion. Tests granted no analytics consent and submitted no customer data. Signed-in production Workspace screens were not inspected.
+- No database, saved settings, credentials, permissions, payments, messages or cron changes. Preserves the latest offer ticker, Preleads and consolidated application source. Continue guarded exact-source releases and verify aliases before activation.
+
+## Previous top-offers checkpoint — 24 October 2026 (superseded, not a rollback target)
+
 - Both aliases verified on `dpl_2Ljh6w8qCQtEjsYsNeQgEtBBJA7z`; actual application revision `27da0f5167d22009607ccc6e9f7906426ceba9f0`, branch `codex/top-offers-ticker-20261024`, PR #78. Earlier staging candidate `dpl_2BFB8HtrqL6a5wTe3HzP6r8GZ2Js` was not activated.
 - Homepage offers now run in a compact continuous text strip above navigation. Native “View all offers & links” expands stationary cards with all existing CTAs/disclosures. Preserves admin-managed content/order, adds explicit Pause/Play, mouse-only hover pause and reduced-motion support. Admin wording updated; no saved banner settings were changed.
 - 545 unit tests, targeted lint, full 254-page build/typecheck and 18 staged smoke checks passed. Final isolated desktop/mobile-touch browser tests verified top placement, movement, pause/resume, correct three links/disclosures, reduced motion and no page overflow/runtime errors.
