@@ -114,7 +114,7 @@
     {
       "path": "scripts/release-http-smoke.mjs",
       "before": null,
-      "after": "1fcfe788a63f1afec7c0368f699de568fe0ca10f9ab39f9f8d96956be2068c7c"
+      "after": "09a923d0e60e51426b35fd6a5fc152298c61bdaf01b44d3b7c8b6a7d80ce0370"
     },
     {
       "path": "scripts/release-schema-preflight.mjs",
@@ -347,6 +347,11 @@
       "after": "e78c4fce1900dc7850964dac557cd4a48adacb3eb9dbc715fe10e28593c8e62f"
     },
     {
+      "path": "src/app/app/leads/preleads/page.tsx",
+      "before": null,
+      "after": "4513c07ce4466567a7df77db98156fc0c1d7f8a0d3eb9bebd458f99ff261a066"
+    },
+    {
       "path": "src/app/app/page.tsx",
       "before": "c00b2911a90f27fe95c0456d199f77071be77878",
       "after": "4782540189216c138cceca88426df0ef687972dbb70c2005d6f519a415cbb3a9"
@@ -409,7 +414,7 @@
     {
       "path": "src/app/app/website-traffic/page.tsx",
       "before": null,
-      "after": "7581900c40810d0182f8f63dc8883216e3821c6ba5059249e36f865211ad4b44"
+      "after": "c914163c303f50e7407e86048a3c90c91c33735cf230e0e40de4105b2c3168e4"
     },
     {
       "path": "src/app/app/workspace-resolved-shell.tsx",
@@ -862,6 +867,16 @@
       "after": "3b1629a0ea25ec6aeca4f85e05171e020866d4639ffe951e580d2731326fe344"
     },
     {
+      "path": "src/components/saas/website-traffic-dashboard.module.css",
+      "before": null,
+      "after": "06cba6103c3ef6fc56d74ef01f9a06f7a06d85142f6ac75562a14e67cdc3c82c"
+    },
+    {
+      "path": "src/components/saas/website-traffic-dashboard.tsx",
+      "before": null,
+      "after": "f1cbb39974f1ea90b87aafa1921d03398b7e556d9537da2b058ae8114a512f04"
+    },
+    {
       "path": "src/components/saas/workspace-addons-panel.tsx",
       "before": "abab7d2b6c190c73af5077d6adfd3f7e5b6b9c73",
       "after": "e45da30efb847de6db1d5e43516eae17a01ad83c037f39312c2d0e193e84ddce"
@@ -1252,6 +1267,16 @@
       "after": "e31516b0e3f5a8929418870adf80a0c99b03fbf02d7c89e6a753e6239ed36a32"
     },
     {
+      "path": "src/lib/website-traffic-report.test.ts",
+      "before": null,
+      "after": "bbeedd870b2416a8d971993d2862f0ef4ad33dfadb7aa90fe9f66e2a3250cc74"
+    },
+    {
+      "path": "src/lib/website-traffic-report.ts",
+      "before": null,
+      "after": "2299da1053e50630fd3e30c60358db681ea2c86388129796788dbe546f32d6c2"
+    },
+    {
       "path": "src/lib/work/my-today.ts",
       "before": "40e8f5f423137de91f8d2f8582136cc1369cc2f8",
       "after": "dd0d6042d21d986022fec85100cd41d279dbb93cc84055da54b8fdaff53d3c5b"
@@ -1302,9 +1327,14 @@
       "after": "a36e192c4845d5ea7c435b3b09649f7765c7c0ef734909b72928451170bd1985"
     },
     {
+      "path": "src/lib/workspace-navigation.preleads.test.ts",
+      "before": null,
+      "after": "48b3e74476311a351fff5482fad42df27b57b312d50bdcff809edb6a4d030ff0"
+    },
+    {
       "path": "src/lib/workspace-navigation.ts",
       "before": "3b9c40f1f1ec0ba977ae1dffb0a7ef1982451ddc",
-      "after": "6f253a967c0817d02ccfb308d0ae522c3e101e4269b3a2dcf9af8de20cd4cd35"
+      "after": "5a203bb72b6a96e71c0d7b2aa51cf0a0dcfac1b607fbf9aede422d681b7f3f8e"
     },
     {
       "path": "src/lib/workspace-provision-access.ts",
