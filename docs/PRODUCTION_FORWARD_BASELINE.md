@@ -1,5 +1,13 @@
 # Current verified production checkpoint — 24 October 2026
 
+- Both aliases verified on `dpl_2Ljh6w8qCQtEjsYsNeQgEtBBJA7z`; actual application revision `27da0f5167d22009607ccc6e9f7906426ceba9f0`, branch `codex/top-offers-ticker-20261024`, PR #78. Earlier staging candidate `dpl_2BFB8HtrqL6a5wTe3HzP6r8GZ2Js` was not activated.
+- Homepage offers now run in a compact continuous text strip above navigation. Native “View all offers & links” expands stationary cards with all existing CTAs/disclosures. Preserves admin-managed content/order, adds explicit Pause/Play, mouse-only hover pause and reduced-motion support. Admin wording updated; no saved banner settings were changed.
+- 545 unit tests, targeted lint, full 254-page build/typecheck and 18 staged smoke checks passed. Final isolated desktop/mobile-touch browser tests verified top placement, movement, pause/resume, correct three links/disclosures, reduced motion and no page overflow/runtime errors.
+- Post-activation live homepage passed the same desktop and mobile-touch motion/link/layout checks. Public browser tests granted no tracking consent and submitted no analytics events. Workspace login remains HTTP 200 and protected Preleads/banner-admin routes redirect unauthenticated visitors; signed-in production Workspace content was not inspected.
+- No migrations, production data edits, credentials, payment settings, permissions or cron changes. Previous Preleads and analytics features preserved. Continue exact-source guarded staging and scoped alias activation; never restore an older READY deployment.
+
+## Previous Preleads checkpoint — 24 October 2026 (superseded, not a rollback target)
+
 - Both aliases verified on `dpl_9K6Pxb5M3zPAx4ywkvvt14RWo5qS`; actual application revision `0e81c68bed0ebede4da6f0ae11e6b703c39f6216`, branch `codex/preleads-dashboard-20261024`, PR #77.
 - CRM → Preleads (`/app/leads/preleads`) now exposes a primary-website-admin-only traffic dashboard; original `/app/website-traffic` URL uses the same component. Four metrics, IST daily chart/detail table, referral categories, top pages, recent 50 page views and 7/30-day filters. No visitor identification, fabricated history, lead creation or Meta Ads spend reporting.
 - 545 unit tests, lint, full 254-page production build/typecheck and 18 staged smoke checks passed. Isolated signed-in desktop/mobile browser tests passed for details, charts, period selection and no overflow/runtime errors; separate isolated empty-state test verified zero-filled days and consent explanation. Signed-in production data remains unverified; no connected production browser session is available.
