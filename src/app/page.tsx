@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { HomePage } from "@/components/marketing/home-page";
 import { marketingMetadata } from "@/lib/marketing-metadata";
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   ...marketingMetadata({

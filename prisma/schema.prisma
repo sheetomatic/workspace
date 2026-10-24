@@ -4339,6 +4339,16 @@ model TemplateInvoiceCounter {
 }
 
 
+model WebsitePageView {
+  id          String   @id
+  visitorHash String
+  path        String
+  source      String
+  createdAt   DateTime @default(now())
+  @@index([createdAt])
+  @@index([visitorHash, createdAt])
+}
+
 model GoogleCalendarConnection {
   id             String   @id
   organizationId String

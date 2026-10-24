@@ -30,7 +30,15 @@ const sections = [
       "When you contact us, request a demonstration, submit a Meta lead form, book a meeting, purchase a product, or use our services, we may collect your name, phone number, email address, company or business type, city or address, number of employees, requirements, preferred appointment time, correspondence, and information you choose to provide.",
       "For billing, we may collect billing name, address, GSTIN, order details, and payment status. Payment credentials such as full card numbers are handled by the payment provider and are not stored by Sheetomatic.",
       "When you use Ask Pulse, we process the questions and conversation context you submit. If you use its voice feature, your browser requests microphone permission and the recorded audio is sent for transcription. Please do not submit sensitive personal information unless it is necessary for your request.",
-      "Our services may also receive technical information such as IP address, browser or device information, page and referral details, and security or diagnostic logs. Signed-in services use essential authentication and security cookies. Optional analytics or advertising technologies, if introduced, will be described or presented with appropriate controls where required.",
+      "Our services may also receive technical information such as IP address, browser or device information, page and referral details, and security or diagnostic logs. Signed-in services use essential authentication and security cookies.",
+    ],
+  },
+  {
+    title: "Optional website measurement and Meta Pixel",
+    paragraphs: [
+      "On our public website, you can allow or decline optional analytics using Privacy preferences. With permission, we use a random identifier stored in your browser to measure page views. Our traffic records contain a public page path, a broad traffic-source category, a timestamp and a daily hash of that identifier—not form contents, URL query strings or complete referrer URLs. Private Workspace and CRM routes are excluded. Counts are approximate browser visitor-days, not identified people.",
+      "Allowing analytics also enables Meta Pixel 2673554139515459 on eligible public pages. Meta may receive browsing, device and network information and use cookies under its own privacy policy. We do not enable automatic form-field matching. Pages with query strings or URL fragments are excluded from Pixel PageView events in this version. Meta data is processed under Meta’s own retention policies.",
+      "Our traffic dashboard covers the last 30 days. Older first-party traffic records are pruned during subsequent collection; old analytics rate-limit identifiers are similarly pruned after expiry. Your consent choice remains in browser storage until you change or clear it. You can decline or withdraw using Privacy preferences; withdrawal stops future optional tracking and removes our random visitor identifier from browser storage. Browser settings can remove cookies already set by Meta.",
     ],
   },
   {
@@ -91,7 +99,7 @@ export default function PrivacyPage() {
       <PageHero
         eyebrow="Legal"
         title="Privacy policy"
-        text="Effective 21 October 2026"
+        text="Effective 21 October 2026 · Updated 24 October 2026"
       />
       <section className="section bg-white pb-20">
         <div className="mx-auto max-w-3xl space-y-8 px-5 sm:px-8">

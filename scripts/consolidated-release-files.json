@@ -72,9 +72,14 @@
       "after": "a698297e13b4dc03447855d7d0325d2bb79dcdc7dcee44a9aa24b7bd144f8568"
     },
     {
+      "path": "prisma/migrations/20261024120000_website_traffic/migration.sql",
+      "before": null,
+      "after": "71dac69f4190f5f8021119d218e8032d90419fcae9f29b6dd7ee745e0153395b"
+    },
+    {
       "path": "prisma/schema.prisma",
       "before": "66aeb8ffe8f2d264023da5e05ed038b0bd6d0044",
-      "after": "e897730058f6cce92672a70f7bcddc915fa3fbe144e0db78ebaf0962d6c2b19e"
+      "after": "0afcbe0b57c188757a1f53d15be40e7187e9ee5d244dad1c5eb196f7ea61c3d7"
     },
     {
       "path": "public/contact/sheetomatic-contact-qr.svg",
@@ -92,6 +97,11 @@
       "after": "5d1addd3d1bf8f54139233419f87d2932e37af9a6b520c959b188b9362457c47"
     },
     {
+      "path": "scripts/ensure-website-traffic.mjs",
+      "before": null,
+      "after": "c30f31cecc99a45a5a8d273bd73963d482559fd6a86b0f121832e9ff57d52de5"
+    },
+    {
       "path": "scripts/pin-production-aliases.mjs",
       "before": null,
       "after": "bdae1c348542c62fdea886a5c38eb1714bf2177025d0fd60b5f00c2f670f8bc8"
@@ -104,7 +114,7 @@
     {
       "path": "scripts/release-http-smoke.mjs",
       "before": null,
-      "after": "9bb9003a8d104abc1f0420990b6f290e8d27246ca0e96d77d5589218e6f92fe8"
+      "after": "1fcfe788a63f1afec7c0368f699de568fe0ca10f9ab39f9f8d96956be2068c7c"
     },
     {
       "path": "scripts/release-schema-preflight.mjs",
@@ -242,6 +252,16 @@
       "after": "a833e0d879c389158647cc67464940073154459f327e096d22d558686a2c7228"
     },
     {
+      "path": "src/app/api/website-traffic/route.test.ts",
+      "before": null,
+      "after": "e38a971d133c45ae4994bb26c7b7cab62697914a01f17bd148b7d56650aac70d"
+    },
+    {
+      "path": "src/app/api/website-traffic/route.ts",
+      "before": null,
+      "after": "2df8497328b33eeb850f10f21a3419f44245fb26cfade4fe99f861f5eb0efd6b"
+    },
+    {
       "path": "src/app/app-builder/page.tsx",
       "before": "91fbc183bee37d785859c3652f5637dadf7674cb",
       "after": "fa70fde145e4f0cb2a3d9e38e20533de952db36c021611f545bd673c34c5171a"
@@ -329,7 +349,7 @@
     {
       "path": "src/app/app/page.tsx",
       "before": "c00b2911a90f27fe95c0456d199f77071be77878",
-      "after": "72830a30d1d8287fdceed677d60893a1401fd7ae2c5b27ace3953bd950edbc6d"
+      "after": "4782540189216c138cceca88426df0ef687972dbb70c2005d6f519a415cbb3a9"
     },
     {
       "path": "src/app/app/pc/actions.ts",
@@ -340,6 +360,26 @@
       "path": "src/app/app/settings/addon-actions.ts",
       "before": "ff204dca0646589c0f19da7bfe1b6f308976e103",
       "after": "d12496c3918a15c521ed94425d2554a14e1a89e7fe2bd750c1352b2ad7fbea29"
+    },
+    {
+      "path": "src/app/app/settings/appearance-actions.ts",
+      "before": "2425a3d5d7781deec1ca338783b95db2c001969d",
+      "after": "ec790ffe2a1ec9f4b94335c44565a703897e730d4b852954adf3499e08e0d598"
+    },
+    {
+      "path": "src/app/app/settings/banners/actions.ts",
+      "before": null,
+      "after": "bc9e8cee4b399d616e6bbfa9efdb9ee22dfe4049011f3d4d6fb7957330e84851"
+    },
+    {
+      "path": "src/app/app/settings/banners/page.tsx",
+      "before": null,
+      "after": "f394399c52b751ccdddca3ee69daed7d90af19a3d48176fff1b7a532c89312fc"
+    },
+    {
+      "path": "src/app/app/settings/page.tsx",
+      "before": "757953a8cce4bfbd83c0898a79930eddc8b9bc1b",
+      "after": "0e67fd01eac300b9c967fbdec906f812a26baa050dfc7719358af6a55837c7d3"
     },
     {
       "path": "src/app/app/tasks/actions.ts",
@@ -365,6 +405,11 @@
       "path": "src/app/app/today/page.tsx",
       "before": "321f67e156c2cf6d262df085d8234a2df4859d9c",
       "after": "da12fb5ba6a2286331b90adbb01c5bba3b436e44dc08417fbe924a14091ee99f"
+    },
+    {
+      "path": "src/app/app/website-traffic/page.tsx",
+      "before": null,
+      "after": "7581900c40810d0182f8f63dc8883216e3821c6ba5059249e36f865211ad4b44"
     },
     {
       "path": "src/app/app/workspace-resolved-shell.tsx",
@@ -429,7 +474,7 @@
     {
       "path": "src/app/layout.tsx",
       "before": "4a3397cc53b7b7f8baf6009447538b391cb61f17",
-      "after": "235ebc50e7860b8513fba4d6982ea6921daed6b3ea3f2b3e9020dd3495758260"
+      "after": "4778a1db8de83e416d6d4cf7852c6bf185a8f3333552bcde5f61592a7121eb36"
     },
     {
       "path": "src/app/page-content.ts",
@@ -439,7 +484,7 @@
     {
       "path": "src/app/page.tsx",
       "before": "529868381e3f61de23e1e14a14a494dfd868879d",
-      "after": "58a7d86d0b75da0b4a9d59674b09b7b0b286e185aaeb10b0921d79e736edc28e"
+      "after": "8a49ca27e47221d6224f6ecaa779dbc680fb01b68b69bddf598ed16bcc664ab3"
     },
     {
       "path": "src/app/pricing/page.tsx",
@@ -449,7 +494,7 @@
     {
       "path": "src/app/privacy/page.tsx",
       "before": null,
-      "after": "d5cf3eb793bb4ef5b64d68e7f3e933a554d69349c75304ad3a1c5c4877d7d1a3"
+      "after": "10506bb6a8efd5dd97ef4556baa9c545611f88d3e0e8d54a77b2de2eb0a6c096"
     },
     {
       "path": "src/app/products/page.tsx",
@@ -619,12 +664,12 @@
     {
       "path": "src/components/marketing/festive-offers.tsx",
       "before": null,
-      "after": "53b739be5f2ce0c9ceb3fad26e0b96186e1bad35367e6a7e943f717e554a7cc2"
+      "after": "83c7934c74244a742ebaa4c23325596291474aaa3cea682b6a0549bdc2076d45"
     },
     {
       "path": "src/components/marketing/home-page.tsx",
       "before": "882d924c252a5bad474974a47458612e8547079f",
-      "after": "c91cceb67482e6fa54255f98f3af6c1b3c4847b4f71a9f45006ca18cd98751fb"
+      "after": "76f8258f854d434f4a4a2f79ba6d19cd217dee21e8d6b516064225cdc1ae7138"
     },
     {
       "path": "src/components/marketing/how-we-work-section.tsx",
@@ -752,6 +797,11 @@
       "after": "61a36507b34c5e544a35fc2f9fc26c4d85976a63773e2e88f0df345c9b626a45"
     },
     {
+      "path": "src/components/marketing/website-analytics.tsx",
+      "before": null,
+      "after": "b125d3a42dfae0fecd8dbb5bafe5170973a2e1d97f6ec452fd3a9958ba894e73"
+    },
+    {
       "path": "src/components/marketing/whatsapp-plans-showcase.tsx",
       "before": "1939c30c1b02af49ad62610e11f417b42aa78c4f",
       "after": "8a8c030061b7007edc6b22e14850d600255d2318ccbfd169c9780d2c715acc00"
@@ -765,6 +815,11 @@
       "path": "src/components/marketing/work-showcase.css",
       "before": "cfe16da828a80e9ba348f5464b392ac9bd29221e",
       "after": "19d3d57dd71267af913a2e14aa0c1b17aafae394a174cbb93e3d4f860c6a4645"
+    },
+    {
+      "path": "src/components/saas/banner-editor.tsx",
+      "before": null,
+      "after": "6aaa3a2c5a754fc1f6bd5dfec43d7a15533ae150f4ac75b2e79e898ee79fdf05"
     },
     {
       "path": "src/components/saas/client-plan-actions.tsx",
@@ -1087,6 +1142,26 @@
       "after": "b8258d35cfbe075f73edbb4ddbd65b4fb552a9d21c086b032636d9c94636c72a"
     },
     {
+      "path": "src/lib/marketing-banner-store.test.ts",
+      "before": null,
+      "after": "75bdac8d5d4741fde233e44f19fdbb0f7f0663b721e8278dc9db9260f3ccfca9"
+    },
+    {
+      "path": "src/lib/marketing-banner-store.ts",
+      "before": null,
+      "after": "2bd2c33e4c6a0f33b984a3c36548dd57ce2effef3e4b33ab803c9b2cc64d0cdb"
+    },
+    {
+      "path": "src/lib/marketing-banners.test.ts",
+      "before": null,
+      "after": "fd8df5d9cc667526b4f25228adf0f08c72a443a18e6d9733f319f12e965614dd"
+    },
+    {
+      "path": "src/lib/marketing-banners.ts",
+      "before": null,
+      "after": "f7e8fe2a3d1283a668c5f0079d3522625b17ca24d799e5f23f080242ae448b41"
+    },
+    {
       "path": "src/lib/org-plan-context.test.ts",
       "before": "df645e93d82a7e745770371a58ae0575db699f20",
       "after": "546b469f589bca84f9de8d2ad2df766a2f36ad057a35a3dcb55630a4529b433a"
@@ -1160,6 +1235,21 @@
       "path": "src/lib/templates/store.ts",
       "before": "206d7bc6cef8e7be144ad9b17034d16f4dfc1341",
       "after": "dcaa71042a606a333fa17b730219c18d155c9a4ac681483a090e5a2831ee2b35"
+    },
+    {
+      "path": "src/lib/website-analytics-retention.ts",
+      "before": null,
+      "after": "795d39c72b221bb735629dc559508b7aabef1bd1a6c95c3d25bc91ae189fcb44"
+    },
+    {
+      "path": "src/lib/website-analytics.test.ts",
+      "before": null,
+      "after": "2db01d64ec3b581a131f1d305af2f108aa4e382edb51d6cd66d4163d5622bf2d"
+    },
+    {
+      "path": "src/lib/website-analytics.ts",
+      "before": null,
+      "after": "e31516b0e3f5a8929418870adf80a0c99b03fbf02d7c89e6a753e6239ed36a32"
     },
     {
       "path": "src/lib/work/my-today.ts",

@@ -97,6 +97,9 @@ export default async function SettingsPage() {
         }
       />
       <div className="saas-settings-grid">
+        {(user.isSuperAdmin || (organization.isPrimary && canManageAdmin)) && (
+          <article className="saas-panel"><h3>Website banners</h3><p>Add, edit, remove and reorder public homepage offers.</p><a className="btn-secondary" href="/app/settings/banners">Manage website banners</a></article>
+        )}
         <ChangePasswordPanel />
         <NotificationSettingsPanel settings={notificationSettings} />
         {!isDedicatedPortal && navOptions.length > 0 ? (

@@ -12,6 +12,7 @@ import { hasWorkspaceModule, resolveWorkspaceHomeHref } from "@/lib/workspace-mo
 import { getUserDashboard } from "@/lib/workspace-data";
 import { parseWorkspaceNavPrefs } from "@/lib/workspace-nav-prefs";
 import { canUseTasks, grantedSuiteParts } from "@/lib/workspace-access";
+import { hasMinimumRole } from "@/lib/permissions";
 
 function emptyDashboardForUser(role: import("@prisma/client").Role): DashboardPayload {
   return {
@@ -121,15 +122,18 @@ async function DashboardHome({
       : Promise.resolve(null),
     prisma.organization.findUnique({
       where: { id: user.organizationId },
-      select: { name: true },
+      select: { name: true, isPrimary: true },
     }),
   ]);
 
   const organizationName = organization?.name ?? user.organizationName;
+  const trafficLink = user.isSuperAdmin || (organization?.isPrimary && hasMinimumRole(user.role,"ADMIN"))
+    ? <section className="saas-panel"><h2>Website Traffic</h2><p>Public-site page views, traffic sources and daily trends.</p><a className="btn-secondary" href="/app/website-traffic">View website traffic</a></section> : null;
 
   if (widgets) {
     return (
       <div className="saas-page">
+        {trafficLink}
         <WorkspaceWidgetDashboard
           data={widgets}
           navPrefs={navPrefs}
@@ -146,6 +150,7 @@ async function DashboardHome({
 
   return (
     <div className="saas-page crm-dashboard-page">
+      {trafficLink}
       <UserDashboard
         {...dashboard}
         organizationName={organizationName}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { SiteAssistant } from "@/components/marketing/site-assistant";
 import { SheetomaticAiLauncher } from "@/components/sheetomatic-ai-launcher";
+import { WebsiteAnalytics } from "@/components/marketing/website-analytics";
 import "@/components/saas/apple-design-system.css";
 import "./globals.css";
 
@@ -71,6 +72,7 @@ export default function RootLayout({
         {children}
         <SiteAssistant />
         <SheetomaticAiLauncher />
+        <WebsiteAnalytics />
       </body>
     </html>
   );
