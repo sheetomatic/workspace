@@ -1,5 +1,15 @@
 # Current verified production checkpoint — 24 October 2026
 
+- Both aliases verified on `dpl_JDFs7f25j1MaQ84esBGzKtDPBfhd`; actual application revision `1572460bfa448853b47cd584d6c02cba8ac29116`, branch `codex/sunsed-banner-20261024`, PR #76. Earlier candidate FYhHs was not activated.
+- Added SunSed third banner, primary-organisation/admin banner editing at `/app/settings/banners`, consent-controlled Pixel 2673554139515459 and first-party `/app/website-traffic` reporting linked from the dashboard. Preserves previous consolidated application source.
+- Scoped additive WebsitePageView migration is applied and recorded; primary-organisation uniqueness and generated schema compatibility passed. Existing cron settings, credentials, payment configuration and customer records were not changed.
+- 539 tests, full 253-page build/typecheck, lint, 17 staged route/asset/auth checks passed. Isolated PostgreSQL tests covered repeat migration, banner concurrency/theme preservation, deduplication and IST reporting. Isolated signed-in browser tested admin add/edit/reorder/remove persistence and visible fixture traffic count. Real isolated collector HTTP tested storage, deduplication and 30-day retention without affecting unrelated data.
+- Live desktop/mobile public-page tests verified SunSed and consent behaviour with outbound traffic/Meta events intercepted to avoid contaminating production. Meta library returned HTTP 200; actual Events Manager receipt is not verified. Live admin/report routes correctly redirect unauthenticated users; no signed-in production session was available. Invalid private-page traffic submission returned 400 without storage.
+- Pixel excludes query/fragment/private-referrer contexts, which limits attribution. No historical traffic backfill or Marketing API ad-spend reporting. The previously reported CRM backend crash remains unresolved.
+- Keep checksum-gated forward releases. Do not deploy plain main or select newest READY automatically. PRs remain unmerged to avoid other connected projects.
+
+## Previous CRM reliability checkpoint — 24 October 2026 (superseded, not a rollback target)
+
 - Both aliases verified on `dpl_DvXezbe62RvuNH6AvsbnbU8b9aQ5`; actual app revision `6bdf3ea1c9d8a93e6917f4c03559094c5ed64bb5`, branch `codex/crm-search-reliability-20261024`, PR #75.
 - Preserves the festive/image/consolidated source. CRM saved-lead search no longer blocks on Google Sheets import; explicit Sheet-search button retains that capability. Immediate filtering of currently loaded rows is provisional until server results arrive. Added drawer timeout/error/close/retry and stale-result isolation; improved phone query formatting without rewriting stored data.
 - 509 unit tests passed, including null/rejection/timeout/cancellation/retry and phone matching; targeted lint and final TypeScript/250-page build passed. Staged schema compatibility and 15 smoke checks passed. Live unauthenticated `/app/leads?page=1&q=908` redirects to login correctly.
