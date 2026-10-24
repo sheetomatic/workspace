@@ -1,4 +1,12 @@
-# Current verified production checkpoint — 23 October 2026
+# Current verified production checkpoint — 24 October 2026
+
+- Both aliases verified on `dpl_DvXezbe62RvuNH6AvsbnbU8b9aQ5`; actual app revision `6bdf3ea1c9d8a93e6917f4c03559094c5ed64bb5`, branch `codex/crm-search-reliability-20261024`, PR #75.
+- Preserves the festive/image/consolidated source. CRM saved-lead search no longer blocks on Google Sheets import; explicit Sheet-search button retains that capability. Immediate filtering of currently loaded rows is provisional until server results arrive. Added drawer timeout/error/close/retry and stale-result isolation; improved phone query formatting without rewriting stored data.
+- 509 unit tests passed, including null/rejection/timeout/cancellation/retry and phone matching; targeted lint and final TypeScript/250-page build passed. Staged schema compatibility and 15 smoke checks passed. Live unauthenticated `/app/leads?page=1&q=908` redirects to login correctly.
+- No authenticated production CRM session was available: the exact backend failure from the user's screenshot and signed-in search performance remain unverified. Do not represent error recovery as proof that the original lead now loads. No migration, real lead edits/imports, messages or permission changes were performed during testing/release.
+- PR #75 targets the preserved banner branch; do not merge plain main or repoint unrelated project domains. Read actual aliases before any later release.
+
+## Previous festive checkpoint — 23 October 2026 (superseded, not a rollback target)
 
 - Both public aliases verified on `dpl_HK7DwWSVHn7oRwypWSE18yiq1ApK`; actual application revision `4cd162c3f133c184a4e736150a6d931fb66bf79a` on `codex/diwali-banner-20261023`, PR #74. The superseded first staging candidate was never activated.
 - Homepage-only Diwali carousel: Sheetomatic no-setup-cost/services-only offer first, AgentDaftar referral second. No invented discount or expiry and no billing configuration changes. Preserves all image repairs and previous consolidated source.
