@@ -114,7 +114,7 @@
     {
       "path": "scripts/release-http-smoke.mjs",
       "before": null,
-      "after": "09a923d0e60e51426b35fd6a5fc152298c61bdaf01b44d3b7c8b6a7d80ce0370"
+      "after": "7c8416c47fc4713cbc73f30fae48c349c25f34c40dbe64eef0342e97c1f068b4"
     },
     {
       "path": "scripts/release-schema-preflight.mjs",
@@ -379,7 +379,7 @@
     {
       "path": "src/app/app/settings/banners/page.tsx",
       "before": null,
-      "after": "f394399c52b751ccdddca3ee69daed7d90af19a3d48176fff1b7a532c89312fc"
+      "after": "3f6fcac3967b4003f413c40ebb6e31f66db0039bedcd23b061e4065a5ff2b63c"
     },
     {
       "path": "src/app/app/settings/page.tsx",
@@ -664,17 +664,17 @@
     {
       "path": "src/components/marketing/festive-offers.module.css",
       "before": null,
-      "after": "c24fd87eabdac7d451b5776904a51f885f9076338f77a29ff52168a8cb8faac0"
+      "after": "625a38911c8ccadb8358a41b704c4e27d8ddba07c45f4a8a9c33e87000156ed2"
     },
     {
       "path": "src/components/marketing/festive-offers.tsx",
       "before": null,
-      "after": "83c7934c74244a742ebaa4c23325596291474aaa3cea682b6a0549bdc2076d45"
+      "after": "579b559b7af1c28342f6f1cd3f07007ca25f1855ad7346112c86699f62a4c2ca"
     },
     {
       "path": "src/components/marketing/home-page.tsx",
       "before": "882d924c252a5bad474974a47458612e8547079f",
-      "after": "76f8258f854d434f4a4a2f79ba6d19cd217dee21e8d6b516064225cdc1ae7138"
+      "after": "97f90bbad9e03c9dcfa4beff4b345b6d9ee44a70e77fb68e90bdc5fc46d79c8d"
     },
     {
       "path": "src/components/marketing/how-we-work-section.tsx",
@@ -824,7 +824,7 @@
     {
       "path": "src/components/saas/banner-editor.tsx",
       "before": null,
-      "after": "6aaa3a2c5a754fc1f6bd5dfec43d7a15533ae150f4ac75b2e79e898ee79fdf05"
+      "after": "43676b5513d5511af54f6a8263e417c670901371ec9fedcfe95471bc3c373877"
     },
     {
       "path": "src/components/saas/client-plan-actions.tsx",
