@@ -1,5 +1,13 @@
 import { z } from "zod";
 export const META_PIXEL_ID = "2673554139515459";
+export function safePixelContext(href: string, referrer: string) {
+  try {
+    const url=new URL(href);
+    if(url.search||url.hash)return false;
+    if(referrer){const previous=new URL(referrer);if(previous.search||previous.hash||previous.hostname==="workspace.sheetomatic.com"||previous.pathname.startsWith("/app"))return false;}
+    return true;
+  }catch{return false;}
+}
 const pages = new Set(["/", "/about", "/contact", "/pricing", "/templates", "/services", "/products", "/courses", "/whatsapp-api", "/ai", "/addons", "/privacy", "/terms"]);
 export function isPublicAnalyticsPath(path: string) {
   return pages.has(path) || /^\/services\/[a-z-]+(?:\/[a-z-]+)?$/.test(path);

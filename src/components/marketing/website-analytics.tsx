@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { isPublicAnalyticsPath, META_PIXEL_ID, trafficSource } from "@/lib/website-analytics";
+import { isPublicAnalyticsPath, META_PIXEL_ID, safePixelContext, trafficSource } from "@/lib/website-analytics";
 
 type Pixel = ((...args: unknown[]) => void) & {queue?: unknown[][];callMethod?: (...args: unknown[]) => void;loaded?: boolean;version?: string;push?: Pixel};
 declare global { interface Window { fbq?: Pixel; _fbq?: Pixel; } }
@@ -33,7 +33,7 @@ export function WebsiteAnalytics() {
     } catch { visitor=crypto.randomUUID(); }
     void fetch("/api/website-traffic", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id:crypto.randomUUID(),visitor,path,source:trafficSource(document.referrer)}),keepalive:true}).catch(()=>{});
     // Meta receives its normal page URL. Do not send query strings or fragments.
-    if (location.search || location.hash) {window.fbq?.("consent","revoke");return;}
+    if (!safePixelContext(location.href,document.referrer)) {window.fbq?.("consent","revoke");return;}
     if (!window.fbq) {
       const pixel: Pixel = (...args) => {if(pixel.callMethod)pixel.callMethod(...args);else pixel.queue?.push(args);};
       pixel.queue=[];pixel.loaded=true;pixel.version="2.0";pixel.push=pixel;

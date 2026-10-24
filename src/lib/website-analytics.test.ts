@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { isPublicAnalyticsPath, trafficEventSchema, trafficSource, META_PIXEL_ID } from "./website-analytics";
+import { isPublicAnalyticsPath, trafficEventSchema, trafficSource, META_PIXEL_ID, safePixelContext } from "./website-analytics";
 describe("website traffic privacy boundaries", () => {
+  it("excludes query strings and private referring pages from Pixel events", () => {
+    expect(safePixelContext("https://sheetomatic.com/pricing", "")).toBe(true);
+    expect(safePixelContext("https://sheetomatic.com/?email=private", "")).toBe(false);
+    expect(safePixelContext("https://sheetomatic.com/", "https://workspace.sheetomatic.com/app/leads")).toBe(false);
+    expect(safePixelContext("https://sheetomatic.com/", "https://example.com/?token=private")).toBe(false);
+  });
   it("uses the confirmed pixel, never the blank snippet", () => expect(META_PIXEL_ID).toBe("2673554139515459"));
   it.each(["/app", "/app/leads", "/login", "/quotation/private-token", "/courses/book-slots", "/contact?email=person@example.com", "/api/auth", "/services/../../app"])("excludes %s", path => expect(isPublicAnalyticsPath(path)).toBe(false));
   it("accepts public pages and stores only coarse referrer categories", () => {

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks=vi.hoisted(()=>({create:vi.fn(),limit:vi.fn()}));
 vi.mock("@/lib/db",()=>({prisma:{websitePageView:{createMany:mocks.create}}}));
 vi.mock("@/lib/rate-limit",()=>({checkRateLimit:mocks.limit}));
+vi.mock("@/lib/website-analytics-retention",()=>({pruneWebsiteAnalytics:vi.fn()}));
 import { POST } from "./route";
 const event={id:"b1cd7eae-1ee2-4a95-94e7-ae01d237a0b1",visitor:"c1cd7eae-1ee2-4a95-94e7-ae01d237a0b1",path:"/pricing",source:"Meta"};
 const request=(body:unknown=event,origin="https://sheetomatic.com")=>new Request("https://sheetomatic.com/api/website-traffic",{method:"POST",headers:{origin,"Content-Type":"application/json"},body:JSON.stringify(body)});

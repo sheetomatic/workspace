@@ -51,7 +51,8 @@ function run(command, args) {
 }
 run('npm', ['ci', '--include=dev', '--ignore-scripts']);
 run('npm', ['run', 'db:generate']);
+run('node', ['scripts/ensure-website-traffic.mjs']);
 run('node', ['scripts/release-schema-preflight.mjs']);
 run('npx', ['next', 'build', '--webpack']);
 run('node', ['scripts/release-http-smoke.mjs']);
-console.log(`[consolidated-release] Verified source ${revision}; baseline ${manifest.baseline}; website banner admin; no database writes during release`);
+console.log(`[consolidated-release] Verified source ${revision}; baseline ${manifest.baseline}; banner admin and analytics; scoped additive traffic migration only`);

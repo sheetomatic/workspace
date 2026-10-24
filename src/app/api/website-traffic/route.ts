@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { trafficEventSchema } from "@/lib/website-analytics";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { pruneWebsiteAnalytics } from "@/lib/website-analytics-retention";
 export async function POST(request: Request) {
   if (!["https://sheetomatic.com","https://www.sheetomatic.com"].includes(request.headers.get("origin") ?? "")) return new Response(null,{status:403});
   if (!request.headers.get("content-type")?.startsWith("application/json")) return new Response(null,{status:415});
@@ -18,6 +19,7 @@ export async function POST(request: Request) {
   const limit=await checkRateLimit(`website-traffic:${visitorHash}`,60,60000);
   if(!limit.allowed)return new Response(null,{status:429});
   try {
+    await pruneWebsiteAnalytics();
     await prisma.websitePageView.createMany({data:[{id:input.data.id,visitorHash,path:input.data.path,source:input.data.source}],skipDuplicates:true});
     return new Response(null,{status:204});
   }catch{return new Response(null,{status:503});}
