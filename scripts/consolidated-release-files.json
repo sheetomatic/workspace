@@ -664,7 +664,7 @@
     {
       "path": "src/components/marketing/festive-offers.module.css",
       "before": null,
-      "after": "625a38911c8ccadb8358a41b704c4e27d8ddba07c45f4a8a9c33e87000156ed2"
+      "after": "960f86dbc1c46b104ba9e0b5f0d47e0806801e22d5a534db2253ab2f73b1f4b6"
     },
     {
       "path": "src/components/marketing/festive-offers.tsx",

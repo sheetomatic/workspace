@@ -15,7 +15,8 @@
 .item strong { color: #ffe0a0; font-weight: 750; }
 .star { color: #eac271; margin: 0 16px; }
 .pause { flex-shrink: 0; border: 1px solid #8caa9a; color: #fff8e7; border-radius: 7px; background: #ffffff0a; min-height: 40px; min-width: 54px; padding: 8px; font-size: 12px; cursor: pointer; }
-.banner[data-paused="true"] .track, .bar:hover .track, .banner:has(details[open]) .track { animation-play-state: paused; }
+.banner[data-paused="true"] .track, .banner:has(details[open]) .track { animation-play-state: paused; }
+@media (hover: hover) { .bar:hover .track { animation-play-state: paused; } }
 .details { border-top: 1px solid #ffffff18; }
 .details > summary { cursor: pointer; padding: 6px clamp(12px, 2vw, 28px); font-size: 12px; color: #ffe0a0; text-align: right; min-height: 32px; }
 .details > summary span { margin-left: 8px; }
