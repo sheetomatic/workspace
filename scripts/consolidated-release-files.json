@@ -752,9 +752,14 @@
       "after": "b0e51822ea8f03f496c6c5c29e50abb59ef9f318088b49ba3d450b6f24f2da3a"
     },
     {
+      "path": "src/components/marketing/site-header-nav.module.css",
+      "before": null,
+      "after": "4308c44b5acc7a2625fbba231f0c4ef1aaac9ee16299857d9a5d31ce65f57a22"
+    },
+    {
       "path": "src/components/marketing/site-header-nav.tsx",
       "before": "77310da37c5cd364a59a6002a16fec570d1051a5",
-      "after": "40d1765845477ede0fba71c272ff01bc43102cb906022d844d9b1bebce5507a4"
+      "after": "9c0297803fe7b5476507729d6759d50cf6b768adb61eb91ace29f116936542b4"
     },
     {
       "path": "src/components/marketing/system-launch-sequence.tsx",
@@ -1175,6 +1180,16 @@
       "path": "src/lib/marketing-banners.ts",
       "before": null,
       "after": "f7e8fe2a3d1283a668c5f0079d3522625b17ca24d799e5f23f080242ae448b41"
+    },
+    {
+      "path": "src/lib/marketing-navigation.test.ts",
+      "before": null,
+      "after": "ea12140a89e79704ddc964e48601b77236cff0efe23ebd94ba979acee8773d7b"
+    },
+    {
+      "path": "src/lib/marketing-navigation.ts",
+      "before": null,
+      "after": "c35b64cf241b787979fe8229a00831809869d6ab93d5b0da0f101f5901d7cbbe"
     },
     {
       "path": "src/lib/org-plan-context.test.ts",
