@@ -1,5 +1,12 @@
 # Current verified production checkpoint — 24 October 2026
 
+- Both aliases verified on `dpl_9K6Pxb5M3zPAx4ywkvvt14RWo5qS`; actual application revision `0e81c68bed0ebede4da6f0ae11e6b703c39f6216`, branch `codex/preleads-dashboard-20261024`, PR #77.
+- CRM → Preleads (`/app/leads/preleads`) now exposes a primary-website-admin-only traffic dashboard; original `/app/website-traffic` URL uses the same component. Four metrics, IST daily chart/detail table, referral categories, top pages, recent 50 page views and 7/30-day filters. No visitor identification, fabricated history, lead creation or Meta Ads spend reporting.
+- 545 unit tests, lint, full 254-page production build/typecheck and 18 staged smoke checks passed. Isolated signed-in desktop/mobile browser tests passed for details, charts, period selection and no overflow/runtime errors; separate isolated empty-state test verified zero-filled days and consent explanation. Signed-in production data remains unverified; no connected production browser session is available.
+- No migration or production data writes; schema compatibility checked read-only. Preserves current source, credentials, cron schedules, payment settings and customer data. Prior analytics migration remains applied. Use `/workspace/preleads-deployment-control.mjs` only as historical release evidence: its baseline must be reverified for any subsequent release.
+
+## Previous analytics checkpoint — 24 October 2026 (superseded, not a rollback target)
+
 - Both aliases verified on `dpl_JDFs7f25j1MaQ84esBGzKtDPBfhd`; actual application revision `1572460bfa448853b47cd584d6c02cba8ac29116`, branch `codex/sunsed-banner-20261024`, PR #76. Earlier candidate FYhHs was not activated.
 - Added SunSed third banner, primary-organisation/admin banner editing at `/app/settings/banners`, consent-controlled Pixel 2673554139515459 and first-party `/app/website-traffic` reporting linked from the dashboard. Preserves previous consolidated application source.
 - Scoped additive WebsitePageView migration is applied and recorded; primary-organisation uniqueness and generated schema compatibility passed. Existing cron settings, credentials, payment configuration and customer records were not changed.
