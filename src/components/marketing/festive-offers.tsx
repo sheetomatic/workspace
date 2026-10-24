@@ -27,7 +27,7 @@ export function FestiveOffers({ offers = defaultBanners }: { offers?: MarketingB
           aria-pressed={paused} onClick={() => setPaused(value => !value)}>{paused ? "Play" : "Pause"}</button>
       </div>
       <details className={styles.details}>
-        <summary>View all {offers.length} offers &amp; links <span aria-hidden="true">↗</span></summary>
+        <summary>View all {offers.length} offers &amp; links</summary>
         <div className={styles.cards}>
           {offers.map((offer, index) => <article className={styles.card} key={index}>
             <p className={styles.label}>{offer.label}</p>
@@ -36,7 +36,7 @@ export function FestiveOffers({ offers = defaultBanners }: { offers?: MarketingB
             <a className={styles.cta} href={offer.href}
               target={offer.href.startsWith("https://") ? "_blank" : undefined}
               rel={offer.href.startsWith("https://") ? "noopener noreferrer sponsored" : undefined}>
-              {offer.action} <span aria-hidden="true">↗</span>
+              {offer.action} <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
               {offer.href.startsWith("https://") && <span className={styles.srOnly}> (opens in a new tab)</span>}
             </a>
             <p className={styles.note}>{offer.note}</p>
