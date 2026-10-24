@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
@@ -68,10 +67,7 @@ export async function saveWorkspaceAppearance(formData: FormData) {
 
   const appearance = buildAppearanceFromForm(formData, user.organizationName);
 
-  await prisma.organization.update({
-    where: { id: user.organizationId },
-    data: { workspaceAppearance: appearance as Prisma.InputJsonValue },
-  });
+  await prisma.$executeRaw`UPDATE "Organization" SET "workspaceAppearance" = COALESCE("workspaceAppearance", '{}'::jsonb) || ${JSON.stringify(appearance)}::jsonb, "updatedAt" = NOW() WHERE "id" = ${user.organizationId}`;
 
   revalidateAppearance();
   return { ok: true };
@@ -127,13 +123,7 @@ export async function resetWorkspaceAppearance() {
     return { ok: false, error: "Admin only." };
   }
 
-  await prisma.organization.update({
-    where: { id: user.organizationId },
-    data: {
-      workspaceAppearance: DEFAULT_WORKSPACE_APPEARANCE as Prisma.InputJsonValue,
-      logoUrl: null,
-    },
-  });
+  await prisma.$executeRaw`UPDATE "Organization" SET "workspaceAppearance" = COALESCE("workspaceAppearance", '{}'::jsonb) || ${JSON.stringify(DEFAULT_WORKSPACE_APPEARANCE)}::jsonb, "logoUrl" = NULL, "updatedAt" = NOW() WHERE "id" = ${user.organizationId}`;
 
   revalidateAppearance();
   return { ok: true };

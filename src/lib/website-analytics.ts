@@ -1,0 +1,21 @@
+import { z } from "zod";
+export const META_PIXEL_ID = "2673554139515459";
+const pages = new Set(["/", "/about", "/contact", "/pricing", "/templates", "/services", "/products", "/courses", "/whatsapp-api", "/ai", "/addons", "/privacy", "/terms"]);
+export function isPublicAnalyticsPath(path: string) {
+  return pages.has(path) || /^\/services\/[a-z-]+(?:\/[a-z-]+)?$/.test(path);
+}
+export const trafficEventSchema = z.object({
+  id: z.string().uuid(), visitor: z.string().uuid(),
+  path: z.string().max(160).refine(isPublicAnalyticsPath),
+  source: z.enum(["Direct", "Google", "Meta", "LinkedIn", "Other"]),
+});
+export function trafficSource(referrer: string) {
+  try {
+    const host = new URL(referrer).hostname.toLowerCase();
+    if (/(^|\.)(google\.[a-z.]+)$/.test(host)) return "Google";
+    if (/(^|\.)(facebook|instagram)\.com$/.test(host)) return "Meta";
+    if (/(^|\.)linkedin\.com$/.test(host)) return "LinkedIn";
+    if (host === "sheetomatic.com" || host === "www.sheetomatic.com") return "Direct";
+    return "Other";
+  } catch { return "Direct"; }
+}

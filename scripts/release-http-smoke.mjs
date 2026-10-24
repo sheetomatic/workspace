@@ -13,7 +13,7 @@ try{
  }
  if(!ready)throw Error('Smoke server not ready');
  const checks=[
-  ['/', ['/workspace-guides/home-dashboard.png', 'No setup cost. Pay only for the services.', 'https://app.agentdaftar.com/r/sheetomatic']],
+  ['/', ['/workspace-guides/home-dashboard.png']],
   ['/contact',['/contact/sheetomatic-contact-qr.svg']],
   ['/services/flow',['PM8E3mCw67Q','acTJOocmuZM']],
   ['/services/field-tracking',['Field Executive']],
@@ -33,7 +33,7 @@ try{
   if(path==='/templates'&&html.includes('Hosted Cloud Software'))throw Error('Removed hosted section reappeared');
   console.log(`[release-smoke] PASS ${path} HTTP 200 and expected content`);
  }
- for(const path of ['/app/hr','/app/field','/app/leads/meetings','/app/approvals']){
+ for(const path of ['/app/hr','/app/field','/app/leads/meetings','/app/approvals','/app/settings/banners']){
   const r=await fetch(origin+path,{redirect:'manual',headers:{host:'workspace.sheetomatic.com'}});
   if(![302,303,307,308].includes(r.status)||!r.headers.get('location')?.includes('/login'))throw Error(`Unauthenticated access guard failed: ${path}`);
   console.log(`[release-smoke] PASS ${path} protects authenticated access`);

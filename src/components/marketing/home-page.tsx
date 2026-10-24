@@ -7,12 +7,14 @@ import {
 } from "./sales-journey-sections";
 import { TechnologyLogoStrip } from "./technology-logo-strip";
 import { FestiveOffers } from "./festive-offers";
+import { publicBanners } from "@/lib/marketing-banner-store";
 
-export function HomePage() {
+export async function HomePage() {
+  const banners = await publicBanners();
   return (
     <main id="main" className="marketing-page marketing-site">
       <SiteHeader />
-      <FestiveOffers />
+      <FestiveOffers offers={banners} />
 
       <SalesHeroSection />
 
