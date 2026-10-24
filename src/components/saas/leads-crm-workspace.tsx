@@ -11,7 +11,9 @@ import {
   logLeadContactAction,
 } from "@/app/app/leads/actions";
 import { addLeadsToWaCampaignAction } from "@/app/app/leads/campaign-actions";
-import { getInboundLeadDrawerPayloadAction } from "@/app/app/leads/drawer-actions";
+import { getInboundLeadDrawerPayloadAction, searchConnectedSheetAction } from "@/app/app/leads/drawer-actions";
+import { leadMatchesSearchQuery } from "@/lib/leads/search";
+import { startDrawerRequest } from "@/lib/leads/drawer-request";
 import { LeadsCsvImportButton } from "@/components/saas/leads-csv-import";
 import { LeadDrawerPanel, type LeadDrawerData } from "@/components/saas/leads-drawer-panel";
 import type { QuotationAccountDetails } from "@/lib/leads/seller-account";
@@ -209,6 +211,8 @@ export function LeadsCrmWorkspace({
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedLeadId);
   const [searchDraft, setSearchDraft] = useState(listParams.q ?? "");
+  const searchDraftRef = useRef(listParams.q ?? "");
+  const searchEdited = useRef(false);
   const [pending, startTransition] = useTransition();
   const [localLeads, setLocalLeads] = useState(leads);
   const [showCreate, setShowCreate] = useState(false);
@@ -225,18 +229,25 @@ export function LeadsCrmWorkspace({
   const [bulkMsg, setBulkMsg] = useState<string | null>(null);
   const [bulkErr, setBulkErr] = useState<string | null>(null);
   const [drawerLead, setDrawerLead] = useState<LeadRow | null>(null);
+  const [drawerError, setDrawerError] = useState<string | null>(null);
+  const [drawerAttempt, setDrawerAttempt] = useState(0);
+  const [sheetSearchMessage, setSheetSearchMessage] = useState<string | null>(null);
   const leadsRef = useRef(localLeads);
-  leadsRef.current = localLeads;
+  useEffect(() => { leadsRef.current = localLeads; }, [localLeads]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronize server deep-link navigation
     setSelectedId(initialSelectedLeadId);
   }, [initialSelectedLeadId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reconcile refreshed server rows with local mutations
     setLocalLeads(leads);
   }, [leads]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset the request state before starting an asynchronous drawer load
+    setDrawerError(null);
     if (!selectedId) {
       setDrawerLead(null);
       return;
@@ -246,31 +257,29 @@ export function LeadsCrmWorkspace({
       setDrawerLead(existing);
       return;
     }
-    let cancelled = false;
     setDrawerLead(null);
-    void getInboundLeadDrawerPayloadAction(selectedId).then((payload) => {
-      if (cancelled || !payload) {
-        return;
-      }
+    return startDrawerRequest(() => getInboundLeadDrawerPayloadAction(selectedId), (payload) => {
       const next = payload as LeadRow;
       setDrawerLead(next);
       setLocalLeads((prev) =>
         prev.map((lead) => (lead.id === next.id ? { ...lead, ...next } : lead)),
       );
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedId]);
+    }, setDrawerError);
+  }, [selectedId, drawerAttempt]);
 
   useEffect(() => {
-    setSearchDraft(listParams.q ?? "");
+    const incoming = listParams.q ?? "";
+    // An older response must never replace text typed while it was in flight.
+    if (searchEdited.current && searchDraftRef.current.trim() !== incoming.trim()) return;
+    searchEdited.current = false;
+    searchDraftRef.current = incoming;
+    setSearchDraft(incoming);
   }, [listParams.q]);
 
   function applySearch(next: string) {
     const href = searchHref(listParams, next);
     startTransition(() => {
-      router.push(href);
+      router.replace(href, { scroll: false });
     });
   }
 
@@ -280,7 +289,7 @@ export function LeadsCrmWorkspace({
     if (draft === committed) {
       return;
     }
-    const timer = window.setTimeout(() => applySearch(searchDraft), 350);
+    const timer = window.setTimeout(() => applySearch(searchDraft), 200);
     return () => window.clearTimeout(timer);
     // listParams identity changes every render from the server props object.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- debounce on draft only
@@ -331,7 +340,10 @@ export function LeadsCrmWorkspace({
   const boardViewHref = `/app/leads?${buildLeadsListQuery(listParams, { view: "board", page: "1" })}`;
 
   const committedSearch = (listParams.q ?? "").trim();
-  const visibleLeads = localLeads;
+  const searchUpdating = searchDraft.trim() !== committedSearch;
+  const visibleLeads = searchUpdating && searchDraft.trim()
+    ? localLeads.filter((lead) => leadMatchesSearchQuery(lead, searchDraft))
+    : localLeads;
 
   const sortHref =
     sort === "newest"
@@ -351,21 +363,28 @@ export function LeadsCrmWorkspace({
           <input
             type="search"
             value={searchDraft}
-            onChange={(event) => setSearchDraft(event.target.value)}
+            onChange={(event) => {
+              searchEdited.current = true;
+              searchDraftRef.current = event.target.value;
+              setSearchDraft(event.target.value);
+              setSheetSearchMessage(null);
+            }}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 event.preventDefault();
                 applySearch(searchDraft);
               }
             }}
-            placeholder="Search CRM + Google Sheets by name, phone, email, or company…"
-            aria-label="Search CRM and Google Sheets by name, phone, email, or company"
+            placeholder="Search saved CRM leads by name, phone, email, or company…"
+            aria-label="Search saved CRM leads by name, phone, email, or company"
           />
           {searchDraft.trim() ? (
             <button
               type="button"
               className="btn-secondary btn-sm"
               onClick={() => {
+                searchEdited.current = true;
+                searchDraftRef.current = "";
                 setSearchDraft("");
                 applySearch("");
               }}
@@ -374,6 +393,23 @@ export function LeadsCrmWorkspace({
             </button>
           ) : null}
         </div>
+        {searchDraft.trim().length >= 2 ? (
+          <button type="button" className="btn-secondary btn-sm" disabled={pending}
+            onClick={() => {
+              const query = searchDraft.trim();
+              setSheetSearchMessage("Searching connected Google Sheet…");
+              startTransition(async () => {
+                try {
+                  const result = await searchConnectedSheetAction(query);
+                  setSheetSearchMessage(`Sheet search complete: ${result.imported} matching leads imported. CRM results refreshed.`);
+                  router.refresh();
+                } catch { setSheetSearchMessage("Sheet search failed. Saved CRM leads are still available. Please retry."); }
+              });
+            }}>Search connected Sheet</button>
+        ) : null}
+        <span role="status" className="leads-machine-muted">
+          {searchUpdating ? "Filtering loaded leads; checking all CRM results…" : sheetSearchMessage}
+        </span>
         <div className="leads-crm-toolbar-actions">
           <span className="leads-crm-period">{periodLabel}</span>
           <div className="leads-view-toggle" role="group" aria-label="Leads view">
@@ -737,7 +773,7 @@ export function LeadsCrmWorkspace({
                 <td colSpan={bulkMode ? 9 : 8}>
                   <div className="leads-empty-state">
                     <p className="leads-machine-muted">
-                      {committedSearch
+                      {searchUpdating ? "Checking all saved CRM leads…" : committedSearch
                         ? pending
                           ? "Searching all leads…"
                           : "No leads match this search."
@@ -1020,10 +1056,13 @@ export function LeadsCrmWorkspace({
           ) : (
             <aside
               className="leads-drawer leads-drawer-wide leads-drawer-glide"
-              aria-busy="true"
+              aria-busy={!drawerError}
               aria-label="Loading lead"
+              onClick={(event) => event.stopPropagation()}
             >
-              <p className="leads-machine-muted">Loading lead…</p>
+              <button type="button" className="btn-secondary btn-sm" onClick={closeDrawer}>Close</button>
+              <p className="leads-machine-muted" role={drawerError ? "alert" : "status"}>{drawerError ?? "Loading lead…"}</p>
+              {drawerError ? <button type="button" className="btn-secondary btn-sm" onClick={() => setDrawerAttempt((attempt) => attempt + 1)}>Retry loading lead</button> : null}
             </aside>
           )}
         </div>

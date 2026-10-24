@@ -1,5 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { leadMatchesSearchQuery, leadSearchWhere } from "@/lib/leads/search";
+import { leadMatchesSearchQuery, leadSearchWhere, phoneSearchDigits } from "@/lib/leads/search";
+
+describe("formatted phone search", () => {
+  it("handles partial digits and Indian prefixes without changing stored values", () => {
+    for (const value of ["+91 98765-43210", "0091 (98765) 43210", "09876543210"]) {
+      expect(phoneSearchDigits(value)).toBe("9876543210");
+      expect(leadMatchesSearchQuery({ phone: "9876543210" }, value)).toBe(true);
+    }
+    expect(leadMatchesSearchQuery({ phone: "+91 908 123 4567" }, "908")).toBe(true);
+    expect(leadSearchWhere("908").OR).toContainEqual({phone: {contains: "908"}});
+  });
+  it("does not silently truncate foreign numbers or turn mixed text into phone searches", () => {
+    expect(phoneSearchDigits("+44 7911 123456")).toBe("447911123456");
+    expect(phoneSearchDigits("order 1234")).toBe("");
+  });
+});
 
 describe("leadSearchWhere", () => {
   it("returns empty filter when query is blank", () => {

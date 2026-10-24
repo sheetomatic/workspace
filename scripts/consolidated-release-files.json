@@ -317,6 +317,16 @@
       "after": "b2f7f5c4ed50f2384db1c38694a8bf15cf6692524d1eedcd05b239ad8bc09466"
     },
     {
+      "path": "src/app/app/leads/(crm)/page.tsx",
+      "before": "0f23e9cf80928c25bbadd64991a54e44e7fb2f84",
+      "after": "0d20a8c7280e6b9ac053281291ef649ca251b01f46bf302faa13a1a86b5523dd"
+    },
+    {
+      "path": "src/app/app/leads/drawer-actions.ts",
+      "before": "3af2c2e72d4aff363b123a3771d64b7cb819c7b3",
+      "after": "e78c4fce1900dc7850964dac557cd4a48adacb3eb9dbc715fe10e28593c8e62f"
+    },
+    {
       "path": "src/app/app/page.tsx",
       "before": "c00b2911a90f27fe95c0456d199f77071be77878",
       "after": "72830a30d1d8287fdceed677d60893a1401fd7ae2c5b27ace3953bd950edbc6d"
@@ -782,6 +792,11 @@
       "after": "bb2a52229306a6da26f85a2ee790782512f088554042207b7204012271716786"
     },
     {
+      "path": "src/components/saas/leads-crm-workspace.tsx",
+      "before": "7357f15b4af05461fbe21ffe7ba8066461ad78f8",
+      "after": "6142f1120ba347a19969b58248f059cf277d031ae9842f9c7b054c845b9be4ca"
+    },
+    {
       "path": "src/components/saas/leads-source-settings-panel.tsx",
       "before": "6e57b7645712075555c33a02a8adb75ce0a8fb9f",
       "after": "1267a85f6e03b64ce6a4c06eae7b501c75bfae2b5d46419c3c43594e109b32d8"
@@ -1022,6 +1037,16 @@
       "after": "97a55f1fda777a2221e205144a81de552b36fff63e8c22df16bd23fadf0d2ea9"
     },
     {
+      "path": "src/lib/leads/drawer-request.test.ts",
+      "before": null,
+      "after": "96d003d6841448a4af50e64389ba9d92adcfc10fc3049cce5a762ae90c4b89d9"
+    },
+    {
+      "path": "src/lib/leads/drawer-request.ts",
+      "before": null,
+      "after": "d26df559c38183f1def479be535c2bb03e05f18d557beda1c5ca5eae0974c6a6"
+    },
+    {
       "path": "src/lib/leads/google-calendar-appointments.ts",
       "before": null,
       "after": "4803cb8d7891e640b98d09857689d57d4c66cbd59cd2e8c0cd58526c7b96dc19"
@@ -1040,6 +1065,16 @@
       "path": "src/lib/leads/meeting-reminders.ts",
       "before": "d0edc4e04fbaf01fb55f8c0869edebe446cf43d5",
       "after": "595a4b728af4583be132564fb32e2c6a0845dd6e92a9518b39539e55adeebdaf"
+    },
+    {
+      "path": "src/lib/leads/search.test.ts",
+      "before": "c19c4c1d132fbd735a79230d6d8d8c643d7f19bd",
+      "after": "198d22b2f7b18afa6ae092bcd7372be72d770224f2f969f80af21f2da74b54e0"
+    },
+    {
+      "path": "src/lib/leads/search.ts",
+      "before": "e081a1e69f225283e156d481754ada8b16b7f665",
+      "after": "142dfb912f6561f8243701b349e2d8fb88dbd4a72c0f9a9ea8bce44aa0e1efb3"
     },
     {
       "path": "src/lib/leads/sheet-sync-progress.test.ts",
