@@ -13,7 +13,7 @@ try{
  }
  if(!ready)throw Error('Smoke server not ready');
  const checks=[
-  ['/', ['/workspace-guides/home-dashboard.png']],
+  ['/', ['/workspace-guides/home-dashboard.png', 'Festive offers']],
   ['/contact',['/contact/sheetomatic-contact-qr.svg']],
   ['/services/flow',['PM8E3mCw67Q','acTJOocmuZM']],
   ['/services/field-tracking',['Field Executive']],
