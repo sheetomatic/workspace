@@ -494,7 +494,7 @@
     {
       "path": "src/app/privacy/page.tsx",
       "before": null,
-      "after": "5371090718a697550df1003f512ca4e099464a3b4ae990a7f55ffef6ed204700"
+      "after": "10506bb6a8efd5dd97ef4556baa9c545611f88d3e0e8d54a77b2de2eb0a6c096"
     },
     {
       "path": "src/app/products/page.tsx",
@@ -1249,7 +1249,7 @@
     {
       "path": "src/lib/website-analytics.ts",
       "before": null,
-      "after": "5d1cc47ecb450335f994a3a9dd2bddeb7533086ea85565cacd7f5852d1d08ca3"
+      "after": "e31516b0e3f5a8929418870adf80a0c99b03fbf02d7c89e6a753e6239ed36a32"
     },
     {
       "path": "src/lib/work/my-today.ts",

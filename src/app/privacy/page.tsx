@@ -99,7 +99,7 @@ export default function PrivacyPage() {
       <PageHero
         eyebrow="Legal"
         title="Privacy policy"
-        text="Effective 21 October 2026"
+        text="Effective 21 October 2026 · Updated 24 October 2026"
       />
       <section className="section bg-white pb-20">
         <div className="mx-auto max-w-3xl space-y-8 px-5 sm:px-8">

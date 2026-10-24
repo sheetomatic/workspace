@@ -8,7 +8,7 @@ export function safePixelContext(href: string, referrer: string) {
     return true;
   }catch{return false;}
 }
-const pages = new Set(["/", "/about", "/contact", "/pricing", "/templates", "/services", "/products", "/courses", "/whatsapp-api", "/ai", "/addons", "/privacy", "/terms"]);
+const pages = new Set(["/", "/about", "/contact", "/pricing", "/templates", "/services", "/products", "/courses", "/career", "/whatsapp-api", "/whatsapp-plans", "/whatsapp-ai", "/ai", "/ai/pricing", "/ai/chatbot", "/ai/crm", "/addons", "/privacy", "/terms", "/terms/services", "/terms/whatsapp-api"]);
 export function isPublicAnalyticsPath(path: string) {
   return pages.has(path) || /^\/services\/[a-z-]+(?:\/[a-z-]+)?$/.test(path);
 }
