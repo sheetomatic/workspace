@@ -1,4 +1,13 @@
-# Current verified production checkpoint — 24 October 2026
+# Current verified production checkpoint — 25 October 2026
+
+- Both aliases verified on `dpl_9RB64mKZX4tBDFskFm4e77PKeRZi`, actual source `ccfd80e6b23dc2dc58efea35f43028873bec8c72`, branch `codex/meta-stats-only-20261025`, PR #81.
+- Adds primary-admin-only Meta statistics at `/app/leads/preleads/meta` linked from Preleads; selected account 1289822315977891 only. Deployment's own token passed read-only Meta Insights verification. No new scopes, credentials, ad spend, migrations, payments or messages.
+- 551 tests passed; subsequent union-narrowing fix passed report tests and full 254-page build/typecheck. All 19 staged route smokes, source hashes and database compatibility passed. Isolated authenticated desktop/mobile UI renders real Meta data without errors/overflow. Live public routes and login passed; Meta route correctly requires authentication. Signed-in production browser verification unavailable.
+- Subscriber and logo work is NOT included. The previous restored source e93a0dd/dpl_49wVGFuRRCCkVaU2AQ3J5MirL1R7 is preserved plus this narrow reporting change.
+- Incident: default redeploys dpl_HPEwC1NhK5vLS453d5eKYBcLGQVs and dpl_4bJJiteWmwoXFfUbHKCBSxEuvXE1 inherited misleading consolidatedRelease metadata but ran default npm build instead of the overlay command. They are NOT safe rollback targets. Check build logs, not just metadata/READY. Do not use default Redeploy.
+- Release controller `/workspace/meta-deployment-control.mjs` is historical, baseline-specific. Verify fresh aliases before later releases. Existing background cron settings were not changed by this scoped domain assignment.
+
+## Previous header checkpoint — 24 October 2026 (superseded)
 
 - Both aliases verified on `dpl_AUAKGTJ8fTg41DA8wb8Uscjwua9q`; actual application revision `f2528225692da4fd7f0054683c5563a4716074b0`, branch `codex/header-nav-polish-20261024`, PR #79.
 - Public header has persistent teal selected-page tabs, click/pending/hover/focus backgrounds and improved spacing. Nested pages retain their section selection; mobile automatically reveals the selected tab. Tablet menu visibility fixed across 901–1180px. Existing links remain direct navigation, not dropdowns.
