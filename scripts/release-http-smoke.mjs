@@ -33,7 +33,7 @@ try{
   if(path==='/templates'&&html.includes('Hosted Cloud Software'))throw Error('Removed hosted section reappeared');
   console.log(`[release-smoke] PASS ${path} HTTP 200 and expected content`);
  }
- for(const path of ['/app/hr','/app/field','/app/leads/meetings','/app/approvals','/app/settings/banners','/app/website-traffic','/app/leads/preleads']){
+ for(const path of ['/app/hr','/app/field','/app/leads/meetings','/app/approvals','/app/settings/banners','/app/website-traffic','/app/leads/preleads','/app/leads/preleads/meta']){
   const r=await fetch(origin+path,{redirect:'manual',headers:{host:'workspace.sheetomatic.com'}});
   if(![302,303,307,308].includes(r.status)||!r.headers.get('location')?.includes('/login'))throw Error(`Unauthenticated access guard failed: ${path}`);
   console.log(`[release-smoke] PASS ${path} protects authenticated access`);
